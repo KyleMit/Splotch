@@ -1,0 +1,46 @@
+connection at load {"type":"wifi","effectiveType":"4g","downlink":1.7,"rtt":50,"saveData":false}
+state at load {"catalog":["farm","dinosaur","creatures","nature","objects","shapes","space","vehicles"],"missing":["objects","shapes","space","vehicles"]}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('#coloringBookButton')
+    - locator resolved to <button id="coloringBookButton" aria-label="Coloring books" class="action-button svelte-1sy5nox">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not visible
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is not visible
+    - retrying click action
+      - waiting 100ms
+    56 × waiting for element to be visible, enabled and stable
+       - element is not visible
+     - retrying click action
+       - waiting 500ms
+
+    at <checkout>/perf-profiles/coloring-coverage-r1/probe-android-install.mjs:20:12 {
+  log: [
+    "  - waiting for locator('#coloringBookButton')",
+    '    - locator resolved to <button id="coloringBookButton" aria-label="Coloring books" class="action-button svelte-1sy5nox">…</button>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is not visible',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is not visible',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    56 × waiting for element to be visible, enabled and stable',
+    '       - element is not visible',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.16.0

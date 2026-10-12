@@ -1,0 +1,80 @@
+# ADR-0020: iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)
+
+**Status:** Active (amended by [0124](0124-exercise-native-release-configurations-in-tag-gates.md))
+**Date:** 2026-06
+
+## Context
+
+Adding iOS as a deployment target (the second native platform after Android, anticipated by
+ADR-0001) required three toolchain choices.
+
+**Dependency manager.** Capacitor 8 scaffolds iOS projects with **CocoaPods** by default, with
+**Swift Package Manager (SPM)** as an opt-in alternative (`cap add ios --packagemanager SPM`).
+CocoaPods is the battle-tested path but drags in a Ruby toolchain and a `pod install` step on every
+plugin change — and CocoaPods itself is in maintenance mode upstream. SPM is Apple's native
+mechanism: Xcode resolves packages itself, no extra runtime. The deciding check: every Capacitor
+plugin Splotch uses ships a `Package.swift` (`@aparajita/capacitor-secure-storage`,
+`@capacitor-community/media`, `@capacitor/filesystem`, `@capacitor/network`,
+`@capacitor/preferences`), so SPM costs nothing in plugin compatibility.
+
+**Build scripting.** Mirror of the Android question that ADR-0012/ADR-0019 answered with `android:*`
+Gradle scripts. The alternatives were "Xcode GUI only" (not scriptable, no parity with
+`npm run info` discoverability) or Fastlane (a Ruby dependency for what is currently two
+`xcodebuild` invocations).
+
+**Signing.** Android uses a manually managed upload keystore (`keystore.properties`). On iOS the
+equivalent manual route (distribution certificates + provisioning profiles exported by hand) is
+notoriously error-prone, and Xcode's **automatic signing** with cloud-managed certificates is
+Apple's recommended default for a single-developer project.
+
+## Decision
+
+* **SPM, no CocoaPods.** The `ios/` project was scaffolded with
+  `npx cap add ios --packagemanager SPM`. Plugins resolve via `ios/App/CapApp-SPM/Package.swift`,
+  which `cap sync` regenerates — that file is generated, never hand-edited. The macOS prerequisite
+  list is therefore just full Xcode (no Ruby, no `pod`); `cap sync ios` works even on a machine with
+  only Command Line Tools, since the SPM update is plain file generation.
+* **Commit the generated SPM manifest and resolution.** `Package.swift` remains tracked so the
+  committed Xcode project can be opened and resolved directly after installing dependencies;
+  `App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` remains tracked so that
+  direct build resolves the same remote revisions. Ignoring either would make the checked-in Xcode
+  project incomplete or leave its remote dependency graph to float. `cap sync` refreshes the
+  manifest, while Xcode package resolution during an iOS build refreshes `Package.resolved`.
+  `tools/tests/ios-spm-lock.test.mjs` requires both files to stay tracked and requires their
+  Capacitor runtime version to match the exact `@capacitor/ios` version in `pnpm-lock.yaml`.
+* **`ios:*` npm scripts wrap `xcodebuild` directly** (per ADR-0019 naming): `ios:build` (simulator
+  Debug `.app`), `ios:build:release` (simulator Release `.app` without store signing, ADR-0124),
+  `ios:archive` → `ios:ipa` (Release archive + App Store export per `ios/App/ExportOptions.plist`,
+  both with `-allowProvisioningUpdates` so automatic signing works headlessly), and `test:ios`
+  (`tools/mobile/ios/run-simulator-smoke-test.mjs`, the simulator twin of the Android emulator smoke
+  test, sharing `.maestro/smoke.yaml`). These scripts are macOS-only by nature and say so in
+  `scripts-info`; Android's corresponding scripts run on both macOS and Linux.
+* **Automatic signing, nothing committed.** `ExportOptions.plist` uses `signingStyle: automatic` +
+  method `app-store-connect`; the developer's `DEVELOPMENT_TEAM` is deliberately kept out of the
+  committed `project.pbxproj` (committing it churns for other contributors and bakes a personal ID
+  into git). It lives in an untracked `ios/local.xcconfig` (gitignored), pulled into Debug builds
+  via `#include? "local.xcconfig"` in `ios/debug.xcconfig` and into the Release archive via
+  `-xcconfig ../local.xcconfig` on `ios:archive`. There is no iOS analog of `keystore.properties` to
+  back up — Apple holds the distribution certificate.
+* Version numbers are not managed in Xcode: `scripts/release.mjs` sets
+  `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` via `capacitor-set-version`, keeping them locked to
+  Android's `versionName`/`versionCode`.
+
+## Consequences
+
+* **+** One less toolchain: contributors install Xcode and nothing else; no
+  `Podfile.lock`/Ruby-version drift class of failures.
+* **+** Headless `.ipa` production (`npm run ios:ipa`) with no Fastlane, and a self-contained smoke
+  test (`npm run test:ios`) that needs no signing at all.
+* **+** A fresh checkout has a complete, deterministic Xcode package graph even before the first
+  Capacitor sync or Xcode resolution.
+* **+** No signing secrets to store or lose, unlike the Android keystore.
+* **-** Capacitor and Xcode generated files create review churn on dependency updates; the drift
+  guard makes that churn explicit instead of allowing a stale runtime pin to ship silently.
+* **-** SPM is the less-traveled Capacitor path; a future plugin without a `Package.swift` would
+  force either a patch or a migration to CocoaPods.
+* **-** Automatic signing means releases can only be built by someone signed into Xcode with the
+  team account — there is no CI-friendly secret to inject until a manual-signing or App Store
+  Connect API-key setup is added.
+* **-** Every `ios:*`/`test:ios` script is hard-gated on a Mac with full Xcode; the repo's other
+  Capacitor tooling still runs on its supported macOS and Linux development platforms.

@@ -1,0 +1,40 @@
+diff --git a/tools/rival-agent/post-review.mjs b/tools/rival-agent/post-review.mjs
+index c47327229..4cb9feefb 100644
+--- a/tools/rival-agent/post-review.mjs
++++ b/tools/rival-agent/post-review.mjs
+@@ -186,12 +186,8 @@ export function readPullRequest(number, gh = defaultGh) {
+   return metadata;
+ }
+ 
+-// `--paginate` alone concatenates one JSON array per page, which is not JSON; `--slurp` wraps the
+-// pages in an outer array. A PR with more than one page of reviews would otherwise fail to parse.
+ export function readReviews(number, gh = defaultGh) {
+-  return JSON.parse(
+-    gh(['api', '--paginate', '--slurp', `repos/${REPOSITORY}/pulls/${number}/reviews`])
+-  ).flat();
++  return JSON.parse(gh(['api', '--paginate', `repos/${REPOSITORY}/pulls/${number}/reviews`]));
+ }
+ 
+ // Posting is one request, so GitHub either creates the whole review or none of it; the marker is
+diff --git a/tools/rival-agent/tests/post-review.test.mjs b/tools/rival-agent/tests/post-review.test.mjs
+index 43deebfef..1a5322923 100644
+--- a/tools/rival-agent/tests/post-review.test.mjs
++++ b/tools/rival-agent/tests/post-review.test.mjs
+@@ -146,7 +146,6 @@ describe('review request', () => {
+   });
+ });
+ 
+-// Reviews come back as `--paginate --slurp` pages: an array of per-page arrays.
+ function fakeGh({ head = HEAD, base = BASE, reviews = [], state = 'OPEN', pageSize = 30 } = {}) {
+   const calls = [];
+   const pages = () => {
+@@ -182,8 +181,7 @@ function fakeGh({ head = HEAD, base = BASE, reviews = [], state = 'OPEN', pageSi
+       reviews.push(created);
+       return JSON.stringify(created);
+     }
+-    expect(args).toContain('--slurp');
+-    return JSON.stringify(pages());
++    return JSON.stringify(pages().flat());
+   };
+   return { gh, calls, reviews };
+ }

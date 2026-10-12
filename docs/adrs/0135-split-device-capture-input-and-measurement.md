@@ -1,0 +1,143 @@
+# ADR-0135: Split the Device Capture's Input and Measurement Channels
+
+**Status:** Active — amends
+[ADR-0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md),
+[ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md), and
+[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md); amended by
+[ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md). **Date:**
+2026-08
+
+> **Amended by
+> [ADR-0174](0174-ipad-drawing-lost-frame-is-judged-against-the-real-finger-floor.md):** on the
+> physical iPad, XCUITest touch synthesis adds about 1.2–1.3 points of lost-frame share to Safari
+> pen drawing captures, through Appium or WebDriverAgent alike. A real finger does not. So a driven
+> capture's drawing lost-frame share on the iPad rows is instrument evidence, and the real-finger
+> floor judges it. Driven captures keep fidelity, paint, discrete actions, and relative regression
+> detection.
+
+## Context
+
+The physical-device drawing capture bundles two unrelated jobs into one transport. Appium drives the
+touch **and** carries the script channel that injects the probe and reads its tables back. That
+coupling produced two independent failures during issue 1196.
+
+**It puts two unrelated prerequisites in series.** Neither existing iOS path ran unattended during
+this campaign, for different reasons and with different weight:
+
+* The XCUITest driver needs a root-owned RemoteXPC tunnel to discover the device. That tunnel is not
+  a new problem and not an unavailable one — `docs/PROFILING-IPAD.md` documents it, including the
+  `osascript … with administrator privileges` recipe that routes its password prompt to the macOS
+  GUI, and the 2026-08-21 physical-iPad matrix rows were captured with it running. What it costs is
+  a human at the keyboard once per host boot, which an overnight run cannot supply.
+* `ios_webkit_debug_proxy` listed the device but zero inspectable pages. **This is the tool being
+  obsolete, not the device lacking a setting.** Apple moved the web inspector service behind
+  RemoteXPC on iOS 17, and `ios_webkit_debug_proxy` still asks the old lockdown service. Safari's
+  own Develop menu on a Mac reaches the same iPad's tabs fine, and so does
+  `pymobiledevice3 webinspector opened-tabs`, which speaks the modern path:
+
+  ```
+  <Safari(3091) TYPE:WIRTypeWebPage URL:http://…:4173/?perf-run=…>
+  ```
+
+  An earlier revision of this ADR claimed the device had no Web Inspector switch and that this
+  closed the whole WebKit Inspector Protocol family. Both halves were wrong. The switch was set; the
+  proxy was the problem. Repointing `perf:ios:webkit:frames` from `ios_webkit_debug_proxy` to
+  `pymobiledevice3` should restore that capture path on a modern OS.
+
+Neither is a permanent blocker. Together they mean an unattended capture depends on a GUI password
+prompt and on a device setting whose location is uncertain, and that a failure in either one takes
+out the whole capture rather than half of it.
+
+**It lets the input transport corrupt the measurement.** ADR-0092 already established that Appium's
+Android browser path does not preserve frame presentation and moved *action* profiles to direct CDP.
+Drawing cells stayed on Appium, and there the damage arrives through cadence rather than through
+pauses. Appium delivered **46.8 contact moves per second** on the Galaxy S21 FE against a fidelity
+band of 100–170; every Android cell in the 2026-08-21 campaign recorded `cadence: false`. Chrome
+raises the display to 120 Hz only while touch input is actually arriving, so at that cadence the
+boost lapses, the panel falls back to 60 Hz, and the lost-frame metric reads the fallback as dropped
+frames. The committed Android physical-web cells recorded 10.1–31.7% lost in-contact frame time. The
+same build under a real OS touch stream at 116 moves/s measures 0.41–1.55%.
+
+## Decision
+
+A physical-device drawing capture takes its input and its measurement from separate channels.
+
+**Input** is the platform's own trusted injection, running the harness's existing
+`trustedGestureActions` plan unchanged:
+
+* iPadOS — WebDriverAgent's own HTTP API. The runner is launched with
+  `xcrun devicectl device process launch` and reached over `iproxy`, so it needs no RemoteXPC tunnel
+  and no Appium session. This is the same XCUITest touch ADR-0084 calibrated against; only the thing
+  that dispatches it changes.
+* Android — `adb shell input swipe` segments. Unlike CDP's `Input.dispatchTouchEvent` this is an OS
+  touchscreen event stream, which is what Chrome's display frame-rate boost responds to.
+
+**Measurement** comes back over HTTP. A capture host proxies the preview server and injects one
+same-origin `<script src>` into the drawing route's HTML; the route's enforcing CSP (ADR-0073)
+already allows `script-src 'self'`, so nothing about the policy is relaxed. That script loads the
+unmodified real-screen probe, selects the brush, and uploads the probe's own tables when the runner
+signals the gesture is done. Scoring imports the harness's existing modules, so a number from this
+transport is comparable with a committed matrix cell.
+
+The pen cell also performs the canonical ten-action undo probe in the page after trusted drawing
+finishes. It uses the same action source and gates as the other capture transports, then uploads the
+raw timings together with the exact history-depth reduction and a downsampled canvas digest before
+and after every undo. A split artifact cannot satisfy campaign status, source folding, or matrix
+generation unless all ten actions have timings, history falls by ten, and every action restores
+different pixels. Those semantic proofs distinguish a measured undo from a button click that did
+nothing.
+
+Three guards exist because each one caught a capture that would otherwise have been scored:
+
+* The plan carries a nonce. Safari keeps earlier tabs alive and their bootstraps poll the same plan;
+  without the nonce a suspended tab's near-empty tables overwrote the real capture.
+* The page proves the route hydrated before measuring. The drawing route's controls are
+  server-rendered, so a page whose modules failed to load still answers every selector and simply
+  does nothing when clicked.
+* The page proves a touch at the canvas centre would hit the paper. Selecting a brush through the
+  menu can leave it open over the canvas, which produced captures with frames but no pointer events
+  at all.
+
+Android native drawing and undo use the same split transport against the packaged WebView because
+Appium under-drives its drawing stream too. Appium remains the Android native discrete-action
+transport, where its app shell and context switching are useful and the touch-cadence limitation is
+irrelevant. iPad web and native capture remain on Appium.
+
+For automated split capture, the served bundle must match the requested deployment variant: web
+captures reject a native static export, and native captures reject web output. Variant agreement
+does not replace identity: both paths compare the served application chunks with the local build
+bytes and retain the commit stamped when that build was produced. Capture-time HEAD cannot identify
+a bundle that predates a later harness or evidence commit.
+
+For automated native split capture, the installed app loads the instrumented native export through
+its capture-only `server.url`. This is remote probe delivery inside the native WebView, not an
+offline packaged-origin measurement. Its fixed URL does not carry the browser path's per-cell nonce,
+so the artifact preserves `pageIdentity: unprovable`; live report gating and served-build checks do
+not upgrade that into browser URL-identity proof. Packaged-origin native action captures remain
+separate.
+
+The guided hand-input calibration workflow retains its web-preview contract inside the native
+WebView. Its runtime names the input environment; it does not certify the native product build.
+
+## Consequences
+
+* \+ A physical-device drawing capture no longer depends on a root-owned tunnel, on a Web Inspector
+  setting, or on Appium being able to see the device — so it can run unattended, which the Appium
+  path cannot while its tunnel needs a GUI password prompt.
+* − That is a convenience, not a capability. The Appium path still works when a human is present, it
+  is the calibrated one (ADR-0084/0090), and its input cadence is better than this transport's. A
+  release-gating capture should still prefer it; this path is for unattended and comparative work.
+* \+ Android browser input reaches a fidelity-passing cadence, so the Android cells measure the
+  product rather than the driver.
+* \+ Android web and native pen cells carry fresh undo timing and semantic proof from the same
+  product build as their drawing evidence instead of preserving an older Appium measurement.
+* \+ The same host serves both platforms, so the two differ only in how touch is injected.
+* − Two more device-side prerequisites to keep working: a WebDriverAgent build installed on the
+  iPad, and `iproxy`.
+* − The capture host must proxy the real preview server rather than serve files itself; serving the
+  build directly missed the SvelteKit env module and the route failed to hydrate.
+* − WebDriverAgent's action synthesis tops out near 60 events per second, below the 100–170 fidelity
+  band, so an iPad capture through this transport is paced below a real finger. It is sound for
+  comparing builds and for frame pacing at one move per frame; it cannot exercise the
+  input-outruns-frames condition, and any candidate aimed at that must be judged on another
+  transport.

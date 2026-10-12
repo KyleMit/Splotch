@@ -1,0 +1,267 @@
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import {
+  seedPhase,
+  setCrayonOptions,
+  getCrayonMix,
+  crayonPassCount,
+  crayonPassWidthScale,
+  crayonColorMix,
+  crayonPatternFor,
+  shadeShift,
+  CRAYON_DEFAULTS,
+  MAX_CRAYON_MIX,
+  MAX_COLOR_TILES,
+  warmCrayonTiles,
+  cancelCrayonWarmup,
+} from './crayonBrush';
+
+// The crayon's wax buildup comes from phase-shifting one deterministic tooth
+// field per stroke seed (ADR-0065). These cover the pure, DOM-free half of that
+// contract; the rendered look + buildup live in the engine E2E spec.
+
+describe('seedPhase', () => {
+  it('is deterministic — the same seed always yields the same phase', () => {
+    expect(seedPhase(42, 256)).toEqual(seedPhase(42, 256));
+    expect(seedPhase(7, 128)).toEqual(seedPhase(7, 128));
+  });
+
+  it('stays within the tile so the pattern tiles seamlessly', () => {
+    for (const seed of [0, 1, 2, 999, 65535, 1234567]) {
+      const [px, py] = seedPhase(seed, 256);
+      expect(px).toBeGreaterThanOrEqual(0);
+      expect(px).toBeLessThan(256);
+      expect(py).toBeGreaterThanOrEqual(0);
+      expect(py).toBeLessThan(256);
+    }
+  });
+
+  it('spreads consecutive seeds to distinct phases (so consecutive strokes build up)', () => {
+    const phases = new Set<string>();
+    for (let seed = 1; seed <= 30; seed++) phases.add(seedPhase(seed, 256).join(','));
+    // Consecutive stroke seeds must not collapse onto one phase, or a redraw
+    // would re-punch the same tooth pits and never fill in.
+    expect(phases.size).toBeGreaterThan(25);
+  });
+});
+
+describe('shadeShift', () => {
+  it('is zero when the amplitude is zero (flat body colour)', () => {
+    expect(Math.abs(shadeShift(0.9, 0.1, 0))).toBe(0);
+    expect(Math.abs(shadeShift(0.2, 0.8, 0))).toBe(0);
+  });
+
+  it('never exceeds the amplitude in either direction', () => {
+    for (const h of [0, 0.25, 0.5, 0.7, 0.9, 1]) {
+      for (const b of [0, 0.5, 1]) {
+        expect(Math.abs(shadeShift(h, b, 0.08))).toBeLessThanOrEqual(0.08 + 1e-12);
+      }
+    }
+  });
+
+  it('darkens thick deposit and lightens sparse patches', () => {
+    // Taller tooth bump (thicker wax) at the same body value → darker.
+    expect(shadeShift(0.95, 0.5, 0.08)).toBeLessThan(shadeShift(0.5, 0.5, 0.08));
+    // Higher body value thins waxAlpha's coverage — shade must lighten with it
+    // so mottled-sparse patches read lighter, not darker.
+    expect(shadeShift(0.7, 0.9, 0.08)).toBeGreaterThan(shadeShift(0.7, 0.1, 0.08));
+  });
+
+  it('is deterministic — a paper texel always gets the same shift', () => {
+    expect(shadeShift(0.63, 0.41, 0.08)).toBe(shadeShift(0.63, 0.41, 0.08));
+  });
+});
+
+describe('crayon options seam', () => {
+  afterEach(() => setCrayonOptions(CRAYON_DEFAULTS));
+
+  it('exposes the tuned default passes (widest-first, denser core last)', () => {
+    const passes = CRAYON_DEFAULTS.passes;
+    expect(crayonPassCount()).toBe(passes.length);
+    expect(passes.length).toBeGreaterThanOrEqual(2);
+    expect(passes[0].widthScale).toBe(1);
+    expect(passes.at(-1)!.coverage).toBeGreaterThan(passes[0].coverage);
+  });
+
+  it('ships a visible but bounded colour mix — enough to actually read green', () => {
+    // Below ~0.45 blue-over-yellow never crosses into green-dominance on the
+    // palette colours; past ~0.7 crossings read as paint blending, not wax.
+    // Strength costs nothing on buildup — the darken mix is exact on
+    // same-colour overdraw.
+    expect(CRAYON_DEFAULTS.colorMix).toBeGreaterThanOrEqual(0.45);
+    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.7);
+  });
+
+  it('ships a nonzero but very subtle shade variation by default', () => {
+    // The splat pattern already varies coverage, so the colour wobble must stay
+    // gentle — a default past ~0.12 reads as mottled paint, not wax.
+    expect(CRAYON_DEFAULTS.shadeVariation).toBeGreaterThan(0);
+    expect(CRAYON_DEFAULTS.shadeVariation).toBeLessThanOrEqual(0.12);
+  });
+
+  it('setCrayonOptions overrides then restores (the dev A/B seam)', () => {
+    setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
+    expect(crayonPassCount()).toBe(1);
+    setCrayonOptions(CRAYON_DEFAULTS);
+    expect(crayonPassCount()).toBe(CRAYON_DEFAULTS.passes.length);
+  });
+
+  it('the non-cloning hot-path accessors read the active passes', () => {
+    const passes = CRAYON_DEFAULTS.passes;
+    expect(crayonPassCount()).toBe(passes.length);
+    for (let i = 0; i < passes.length; i++) {
+      expect(crayonPassWidthScale(i)).toBe(passes[i].widthScale);
+    }
+    setCrayonOptions({ passes: [{ widthScale: 0.5, coverage: 0.9 }] });
+    expect(crayonPassCount()).toBe(1);
+    expect(crayonPassWidthScale(0)).toBe(0.5);
+  });
+
+  it('crayonColorMix returns the raw, unclamped stored mix (not getCrayonMix)', () => {
+    expect(crayonColorMix()).toBe(CRAYON_DEFAULTS.colorMix);
+    // getCrayonMix clamps to [0, MAX_CRAYON_MIX]; the raw getter must NOT — it
+    // drives the live overlay's top-plane opacity and needs the stored value
+    // verbatim.
+    setCrayonOptions({ colorMix: 0.95 });
+    expect(crayonColorMix()).toBe(0.95);
+    expect(getCrayonMix()).toBe(MAX_CRAYON_MIX);
+  });
+});
+
+// colorTile is internal, so eviction is observed through crayonPatternFor: a
+// fresh target context on each call skips the per-context pattern cache, so
+// every call re-touches colorTileCache and returns the tile canvas actually
+// used to build the pattern.
+describe('colorTileCache LRU eviction', () => {
+  let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
+
+  beforeEach(() => {
+    origGetContext = HTMLCanvasElement.prototype.getContext;
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
+      this: HTMLCanvasElement,
+      kind: string
+    ) {
+      if (kind !== '2d') return null;
+      return {
+        createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData: () => {},
+      };
+    };
+    setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
+  });
+
+  afterEach(() => {
+    HTMLCanvasElement.prototype.getContext = origGetContext;
+    setCrayonOptions(CRAYON_DEFAULTS);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function frameQueue() {
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextFrameId = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      const id = ++nextFrameId;
+      frames.set(id, callback);
+      return id;
+    });
+    const cancel = vi.fn((id: number) => frames.delete(id));
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    return { frames, cancel };
+  }
+
+  function tileFor(color: string): HTMLCanvasElement {
+    const createdWith: HTMLCanvasElement[] = [];
+    const target = {
+      createPattern: (tile: HTMLCanvasElement) => {
+        createdWith.push(tile);
+        return { setTransform: () => {} };
+      },
+    } as unknown as CanvasRenderingContext2D;
+    crayonPatternFor(target, color, 1, 0);
+    return createdWith[0];
+  }
+
+  it('evicts the oldest untouched colour past the cap, while a recently-touched colour survives', () => {
+    const colors = Array.from(
+      { length: MAX_COLOR_TILES },
+      (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`
+    );
+    const tiles = colors.map(tileFor);
+
+    // Re-touch an early colour so it is no longer the least-recently-used entry.
+    const recentTile = tileFor(colors[1]);
+    expect(recentTile).toBe(tiles[1]);
+
+    // A new colour past the cap must evict the true LRU entry: colors[0].
+    tileFor('#abcdef');
+
+    expect(tileFor(colors[0])).not.toBe(tiles[0]);
+    expect(tileFor(colors[1])).toBe(recentTile);
+  });
+
+  it('warms tile rows and density passes across separate frames', () => {
+    setCrayonOptions({
+      tile: 128,
+      passes: [
+        { widthScale: 1, coverage: 0.45 },
+        { widthScale: 0.68, coverage: 0.63 },
+      ],
+    });
+    const { frames } = frameQueue();
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => (now += 0.75));
+
+    warmCrayonTiles('#123456');
+    expect(frames.size).toBe(1);
+
+    let frameCount = 0;
+    while (frames.size > 0) {
+      const [id, callback] = frames.entries().next().value!;
+      frames.delete(id);
+      callback(frameCount * 16);
+      frameCount++;
+      expect(frames.size).toBeLessThanOrEqual(1);
+      expect(frameCount).toBeLessThan(100);
+    }
+    expect(frameCount).toBeGreaterThan(4);
+  });
+
+  // Warming and lookup must key the colour-tile cache identically. If the stored
+  // key and the looked-up key disagree, the warm still runs and still spends its
+  // animation frames, but produces a tile no lookup can reach — silent, and it
+  // costs exactly what warming exists to save. colorTileKey is the single
+  // declaration that holds them together.
+  it('keeps the warm and lookup paths on one cache key', () => {
+    setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
+    const { frames } = frameQueue();
+    vi.spyOn(performance, 'now').mockImplementation(() => 0);
+    const color = '#5a189a';
+
+    warmCrayonTiles(color);
+    while (frames.size > 0) {
+      const [id, callback] = frames.entries().next().value!;
+      frames.delete(id);
+      callback(0);
+    }
+
+    // Any rebuild here would need a fresh canvas; a cache hit needs none.
+    const createElement = vi.spyOn(document, 'createElement');
+    const tile = tileFor(color);
+
+    expect(tile).toBeDefined();
+    expect(createElement.mock.calls.filter(([tag]) => tag === 'canvas')).toHaveLength(0);
+  });
+
+  it('keeps one warm chain when rapid color changes supersede each other', () => {
+    const { frames, cancel } = frameQueue();
+    const colors = Array.from({ length: 11 }, (_, index) => `#${index.toString(16).repeat(6)}`);
+
+    for (const color of colors) warmCrayonTiles(color);
+
+    expect(frames.size).toBe(1);
+    expect(cancel).toHaveBeenCalledTimes(colors.length - 1);
+
+    cancelCrayonWarmup();
+    expect(frames.size).toBe(0);
+  });
+});

@@ -1,0 +1,39 @@
+{
+  "extends": "./.svelte-kit/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    // src/ is TypeScript-only; allowJs: false enforces that rule. Root config files
+    // and build scripts live outside src/ and are therefore exempt.
+    "allowJs": false,
+    "skipLibCheck": true,
+    // tokens.ts is also executed directly by node (gen:tokens, via
+    // --experimental-strip-types), which needs the real .ts specifier on its
+    // relative imports since there's no bundler to resolve an extensionless one.
+    "allowImportingTsExtensions": true
+  },
+  // Restates the include list generated into .svelte-kit/tsconfig.json (rebased from
+  // .svelte-kit/ to here) so the web-root unit tests — outside every SvelteKit-generated
+  // glob, and imported by nothing — are type-checked too, as are the Playwright configs and
+  // reporter, which Playwright transpiles without type-checking. tsconfig.test.ts fails when
+  // the generated list gains an entry this one lacks; tools/tests/web-root-unit-tests.test.mjs
+  // fails when the `*.test.ts` entry here or its counterpart in vitest.config.ts goes missing.
+  "include": [
+    "./.svelte-kit/ambient.d.ts",
+    "./.svelte-kit/env.d.ts",
+    "./.svelte-kit/non-ambient.d.ts",
+    "./.svelte-kit/types/**/$types.d.ts",
+    "./vite.config.js",
+    "./vite.config.ts",
+    "./*.test.ts",
+    "./playwright*.ts",
+    "./src/**/*.js",
+    "./src/**/*.ts",
+    "./src/**/*.svelte",
+    "./test/**/*.js",
+    "./test/**/*.ts",
+    "./test/**/*.svelte",
+    "./tests/**/*.js",
+    "./tests/**/*.ts",
+    "./tests/**/*.svelte"
+  ]
+}

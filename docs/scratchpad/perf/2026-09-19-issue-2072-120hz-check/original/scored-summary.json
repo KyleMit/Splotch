@@ -1,0 +1,886 @@
+{
+ "runs": [
+  {
+   "label": "c1-ctl",
+   "arm": "ctl",
+   "entry": "start.BWCvNp7k.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 1424.5,
+   "undoWindowsOverGate": 2,
+   "undoWindowWorstMs": [
+    1425,
+    1425,
+    17,
+    17,
+    17,
+    17,
+    25,
+    17,
+    17,
+    25,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25,
+    "over25": 0,
+    "lateExcessMs": 0
+   },
+   "settle": {
+    "maxMs": 58.3,
+    "over25": 10,
+    "lateExcessMs": 257.8
+   },
+   "undo": {
+    "maxMs": 1424.5,
+    "over25": 1,
+    "lateExcessMs": 1407.8
+   },
+   "sessionLateExcessMs": 1665.6,
+   "commitP95Ms": 3.1,
+   "foldMaxMs": 56.6,
+   "foldCount": 10,
+   "undoJsMaxMs": 13.1,
+   "undoJsSumMs": 112.5,
+   "drawJsSumMs": 4934.2
+  },
+  {
+   "label": "t1-trt",
+   "arm": "trt",
+   "entry": "start.BE2GeFJm.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 25,
+   "undoWindowsOverGate": 0,
+   "undoWindowWorstMs": [
+    17,
+    17,
+    17,
+    17,
+    17,
+    25,
+    17,
+    17,
+    17,
+    17,
+    17,
+    25,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 4,
+    "lateExcessMs": 33.6
+   },
+   "settle": {
+    "maxMs": 91.6,
+    "over25": 10,
+    "lateExcessMs": 290.8
+   },
+   "undo": {
+    "maxMs": 25,
+    "over25": 0,
+    "lateExcessMs": 0
+   },
+   "sessionLateExcessMs": 324.4,
+   "commitP95Ms": 3.4,
+   "foldMaxMs": 57.2,
+   "foldCount": 10,
+   "undoJsMaxMs": 11,
+   "undoJsSumMs": 132.5,
+   "drawJsSumMs": 4951.8
+  },
+  {
+   "label": "t2-trt",
+   "arm": "trt",
+   "entry": "start.BE2GeFJm.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 25,
+   "undoWindowsOverGate": 0,
+   "undoWindowWorstMs": [
+    25,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    25,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 33.3,
+    "over25": 6,
+    "lateExcessMs": 58.6
+   },
+   "settle": {
+    "maxMs": 74.9,
+    "over25": 10,
+    "lateExcessMs": 299.6
+   },
+   "undo": {
+    "maxMs": 25,
+    "over25": 0,
+    "lateExcessMs": 0
+   },
+   "sessionLateExcessMs": 358.2,
+   "commitP95Ms": 3.4,
+   "foldMaxMs": 58.7,
+   "foldCount": 10,
+   "undoJsMaxMs": 11.3,
+   "undoJsSumMs": 132.5,
+   "drawJsSumMs": 4951.2
+  },
+  {
+   "label": "c2-ctl",
+   "arm": "ctl",
+   "entry": "start.BWCvNp7k.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 1408.3,
+   "undoWindowsOverGate": 2,
+   "undoWindowWorstMs": [
+    1408,
+    1408,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 2,
+    "lateExcessMs": 16.8
+   },
+   "settle": {
+    "maxMs": 41.7,
+    "over25": 10,
+    "lateExcessMs": 208
+   },
+   "undo": {
+    "maxMs": 1408.3,
+    "over25": 1,
+    "lateExcessMs": 1391.6
+   },
+   "sessionLateExcessMs": 1616.4,
+   "commitP95Ms": 3.6,
+   "foldMaxMs": 57.5,
+   "foldCount": 10,
+   "undoJsMaxMs": 10.3,
+   "undoJsSumMs": 128,
+   "drawJsSumMs": 4865.7
+  },
+  {
+   "label": "c3-ctl",
+   "arm": "ctl",
+   "entry": "start.BWCvNp7k.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 1416.9,
+   "undoWindowsOverGate": 2,
+   "undoWindowWorstMs": [
+    1417,
+    1417,
+    21,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    25,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 3,
+    "lateExcessMs": 25.2
+   },
+   "settle": {
+    "maxMs": 58.4,
+    "over25": 10,
+    "lateExcessMs": 266.3
+   },
+   "undo": {
+    "maxMs": 1416.9,
+    "over25": 2,
+    "lateExcessMs": 1408.6
+   },
+   "sessionLateExcessMs": 1700.1,
+   "commitP95Ms": 3.2,
+   "foldMaxMs": 58.6,
+   "foldCount": 10,
+   "undoJsMaxMs": 11.8,
+   "undoJsSumMs": 135.4,
+   "drawJsSumMs": 4945.4
+  },
+  {
+   "label": "t3-trt",
+   "arm": "trt",
+   "entry": "start.BE2GeFJm.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.6,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 22.7,
+   "undoWindowsOverGate": 0,
+   "undoWindowWorstMs": [
+    18,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    23,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 3,
+    "lateExcessMs": 25.5
+   },
+   "settle": {
+    "maxMs": 91.6,
+    "over25": 10,
+    "lateExcessMs": 283.9
+   },
+   "undo": {
+    "maxMs": 22.7,
+    "over25": 0,
+    "lateExcessMs": 0
+   },
+   "sessionLateExcessMs": 309.4,
+   "commitP95Ms": 3.8,
+   "foldMaxMs": 55.6,
+   "foldCount": 10,
+   "undoJsMaxMs": 8.9,
+   "undoJsSumMs": 134.6,
+   "drawJsSumMs": 4838.5
+  },
+  {
+   "label": "t4-trt",
+   "arm": "trt",
+   "entry": "start.BE2GeFJm.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 22.7,
+   "undoWindowsOverGate": 0,
+   "undoWindowWorstMs": [
+    20,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    23,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 3,
+    "lateExcessMs": 25.2
+   },
+   "settle": {
+    "maxMs": 75,
+    "over25": 10,
+    "lateExcessMs": 258.1
+   },
+   "undo": {
+    "maxMs": 22.7,
+    "over25": 0,
+    "lateExcessMs": 0
+   },
+   "sessionLateExcessMs": 283.3,
+   "commitP95Ms": 2.9,
+   "foldMaxMs": 57.1,
+   "foldCount": 10,
+   "undoJsMaxMs": 9.8,
+   "undoJsSumMs": 129.6,
+   "drawJsSumMs": 4902.6
+  },
+  {
+   "label": "c4-ctl",
+   "arm": "ctl",
+   "entry": "start.BWCvNp7k.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 1424.5,
+   "undoWindowsOverGate": 2,
+   "undoWindowWorstMs": [
+    1425,
+    1425,
+    21,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    25,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 4,
+    "lateExcessMs": 33.6
+   },
+   "settle": {
+    "maxMs": 58.4,
+    "over25": 10,
+    "lateExcessMs": 258
+   },
+   "undo": {
+    "maxMs": 1424.5,
+    "over25": 1,
+    "lateExcessMs": 1407.8
+   },
+   "sessionLateExcessMs": 1699.4,
+   "commitP95Ms": 2.9,
+   "foldMaxMs": 57.4,
+   "foldCount": 10,
+   "undoJsMaxMs": 10.2,
+   "undoJsSumMs": 126.7,
+   "drawJsSumMs": 4788.2
+  },
+  {
+   "label": "c5-ctl",
+   "arm": "ctl",
+   "entry": "start.BWCvNp7k.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 1424.8,
+   "undoWindowsOverGate": 2,
+   "undoWindowWorstMs": [
+    1425,
+    1425,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 33.2,
+    "over25": 7,
+    "lateExcessMs": 66.9
+   },
+   "settle": {
+    "maxMs": 58.3,
+    "over25": 10,
+    "lateExcessMs": 233
+   },
+   "undo": {
+    "maxMs": 1424.8,
+    "over25": 1,
+    "lateExcessMs": 1408.1
+   },
+   "sessionLateExcessMs": 1708,
+   "commitP95Ms": 3.6,
+   "foldMaxMs": 58.1,
+   "foldCount": 10,
+   "undoJsMaxMs": 10,
+   "undoJsSumMs": 129.1,
+   "drawJsSumMs": 4850.4
+  },
+  {
+   "label": "t5-trt",
+   "arm": "trt",
+   "entry": "start.BE2GeFJm.js",
+   "viewport": "360x643@3 PORTRAIT",
+   "brush": "crayon",
+   "deposition": "restamp",
+   "cadenceMs": 16.7,
+   "strokes": 30,
+   "historyBeforeUndo": {
+    "historyLength": 20,
+    "snapshots": 20,
+    "baseRasters": 20,
+    "rasterBytes": 8027008,
+    "baseRasterBytes": 3703680
+   },
+   "undos": 20,
+   "inkAfterUndo": 334027,
+   "undoPhaseMaxMs": 23.1,
+   "undoWindowsOverGate": 0,
+   "undoWindowWorstMs": [
+    23,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17
+   ],
+   "draw": {
+    "maxMs": 25.1,
+    "over25": 3,
+    "lateExcessMs": 25.2
+   },
+   "settle": {
+    "maxMs": 83.3,
+    "over25": 10,
+    "lateExcessMs": 299.7
+   },
+   "undo": {
+    "maxMs": 23.1,
+    "over25": 0,
+    "lateExcessMs": 0
+   },
+   "sessionLateExcessMs": 324.9,
+   "commitP95Ms": 3.1,
+   "foldMaxMs": 57.1,
+   "foldCount": 10,
+   "undoJsMaxMs": 11,
+   "undoJsSumMs": 136.6,
+   "drawJsSumMs": 4838
+  }
+ ],
+ "comparison": {
+  "undoPhaseMaxMs": {
+   "control": {
+    "n": 5,
+    "median": 1424.5,
+    "min": 1408.3,
+    "max": 1424.8
+   },
+   "treatment": {
+    "n": 5,
+    "median": 23.1,
+    "min": 22.7,
+    "max": 25
+   },
+   "medianDifference": -1401.4,
+   "medianDifferenceCi95": [
+    -1401.8,
+    -1385.2
+   ],
+   "permutation": {
+    "p": 0.007936507936507936,
+    "permutations": 252
+   }
+  },
+  "undoWindowsOverGate": {
+   "control": {
+    "n": 5,
+    "median": 2,
+    "min": 2,
+    "max": 2
+   },
+   "treatment": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "medianDifference": -2,
+   "medianDifferenceCi95": [
+    -2,
+    -2
+   ],
+   "permutation": {
+    "p": 0.007936507936507936,
+    "permutations": 252
+   }
+  },
+  "undo.lateExcessMs": {
+   "control": {
+    "n": 5,
+    "median": 1407.8,
+    "min": 1391.6,
+    "max": 1408.6
+   },
+   "treatment": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "medianDifference": -1407.8,
+   "medianDifferenceCi95": [
+    -1408.6,
+    -1391.6
+   ],
+   "permutation": {
+    "p": 0.007936507936507936,
+    "permutations": 252
+   }
+  },
+  "settle.maxMs": {
+   "control": {
+    "n": 5,
+    "median": 58.3,
+    "min": 41.7,
+    "max": 58.4
+   },
+   "treatment": {
+    "n": 5,
+    "median": 83.3,
+    "min": 74.9,
+    "max": 91.6
+   },
+   "medianDifference": 25,
+   "medianDifferenceCi95": [
+    16.6,
+    41.6
+   ],
+   "permutation": {
+    "p": 0.007936507936507936,
+    "permutations": 252
+   }
+  },
+  "settle.lateExcessMs": {
+   "control": {
+    "n": 5,
+    "median": 257.8,
+    "min": 208,
+    "max": 266.3
+   },
+   "treatment": {
+    "n": 5,
+    "median": 290.8,
+    "min": 258.1,
+    "max": 299.7
+   },
+   "medianDifference": 33,
+   "medianDifferenceCi95": [
+    0.3,
+    82.8
+   ],
+   "permutation": {
+    "p": 0.015873015873015872,
+    "permutations": 252
+   }
+  },
+  "draw.lateExcessMs": {
+   "control": {
+    "n": 5,
+    "median": 25.2,
+    "min": 0,
+    "max": 66.9
+   },
+   "treatment": {
+    "n": 5,
+    "median": 25.5,
+    "min": 25.2,
+    "max": 58.6
+   },
+   "medianDifference": 0.3,
+   "medianDifferenceCi95": [
+    -41.4,
+    33.6
+   ],
+   "permutation": {
+    "p": 0.6587301587301587,
+    "permutations": 252
+   }
+  },
+  "sessionLateExcessMs": {
+   "control": {
+    "n": 5,
+    "median": 1699.4,
+    "min": 1616.4,
+    "max": 1708
+   },
+   "treatment": {
+    "n": 5,
+    "median": 324.4,
+    "min": 283.3,
+    "max": 358.2
+   },
+   "medianDifference": -1375,
+   "medianDifferenceCi95": [
+    -1416.1,
+    -1292
+   ],
+   "permutation": {
+    "p": 0.007936507936507936,
+    "permutations": 252
+   }
+  },
+  "commitP95Ms": {
+   "control": {
+    "n": 5,
+    "median": 3.2,
+    "min": 2.9,
+    "max": 3.6
+   },
+   "treatment": {
+    "n": 5,
+    "median": 3.4,
+    "min": 2.9,
+    "max": 3.8
+   },
+   "medianDifference": 0.2,
+   "medianDifferenceCi95": [
+    -0.5,
+    0.6
+   ],
+   "permutation": {
+    "p": 0.9682539682539683,
+    "permutations": 252
+   }
+  },
+  "foldMaxMs": {
+   "control": {
+    "n": 5,
+    "median": 57.5,
+    "min": 56.6,
+    "max": 58.6
+   },
+   "treatment": {
+    "n": 5,
+    "median": 57.1,
+    "min": 55.6,
+    "max": 58.7
+   },
+   "medianDifference": -0.4,
+   "medianDifferenceCi95": [
+    -1.9,
+    1.2
+   ],
+   "permutation": {
+    "p": 0.4603174603174603,
+    "permutations": 252
+   }
+  },
+  "undoJsSumMs": {
+   "control": {
+    "n": 5,
+    "median": 128,
+    "min": 112.5,
+    "max": 135.4
+   },
+   "treatment": {
+    "n": 5,
+    "median": 132.5,
+    "min": 129.6,
+    "max": 136.6
+   },
+   "medianDifference": 4.5,
+   "medianDifferenceCi95": [
+    -2.9,
+    20
+   ],
+   "permutation": {
+    "p": 0.09523809523809523,
+    "permutations": 252
+   }
+  }
+ }
+}

@@ -1,0 +1,5337 @@
+{
+  "orientation": "LANDSCAPE",
+  "theme": "light",
+  "captureRuntime": "ios-safari",
+  "frameStampEpoch": 2,
+  "samples": [
+    {
+      "label": "change ink color",
+      "eventType": "pointerup",
+      "trusted": true,
+      "activation": "native-touch",
+      "firstFrameMs": 1.999999999998181,
+      "readyMs": 240.99999999999818,
+      "postActionFrameGapsMs": [
+        5, 8, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 8, 9, 8, 9, 8, 8, 9, 9, 7, 9,
+        8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 9, 8, 8,
+        9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 12, 4, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8,
+        9, 8, 8, 9, 9, 7, 9, 8, 8, 9, 8, 8, 9, 8, 8
+      ],
+      "postActionFrames": [
+        {
+          "gapMs": 5,
+          "startFromActionMs": 1.999999999998181,
+          "endFromActionMs": 6.999999999998181,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 6.999999999998181,
+          "actualGapMs": 5
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 6.999999999998181,
+          "endFromActionMs": 14.999999999998181,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 14.999999999998181,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 14.999999999998181,
+          "endFromActionMs": 22.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 22.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 22.99999999999818,
+          "endFromActionMs": 30.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 32,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 30.99999999999818,
+          "endFromActionMs": 39.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 39.99999999999818,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 39.99999999999818,
+          "endFromActionMs": 47.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 48,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 47.99999999999818,
+          "endFromActionMs": 55.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 56.99999999999818,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 55.99999999999818,
+          "endFromActionMs": 64.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 64.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 64.99999999999818,
+          "endFromActionMs": 72.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 72.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 72.99999999999818,
+          "endFromActionMs": 80.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 81.99999999999818,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 80.99999999999818,
+          "endFromActionMs": 89.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 89.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 89.99999999999818,
+          "endFromActionMs": 97.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 97.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 97.99999999999818,
+          "endFromActionMs": 105.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 106.99999999999818,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 105.99999999999818,
+          "endFromActionMs": 114.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 114.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 114.99999999999818,
+          "endFromActionMs": 122.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 122.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 122.99999999999818,
+          "endFromActionMs": 130.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 131.99999999999818,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 130.99999999999818,
+          "endFromActionMs": 139.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 139.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 139.99999999999818,
+          "endFromActionMs": 147.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 147.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 147.99999999999818,
+          "endFromActionMs": 156.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 157,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 156.99999999999818,
+          "endFromActionMs": 164.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 164.99999999999818,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 164.99999999999818,
+          "endFromActionMs": 172.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 173,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 172.99999999999818,
+          "endFromActionMs": 180.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 181.99999999999818,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 180.99999999999818,
+          "endFromActionMs": 189.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 189.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 189.99999999999818,
+          "endFromActionMs": 197.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 197.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 197.99999999999818,
+          "endFromActionMs": 206.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 206.99999999999818,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 206.99999999999818,
+          "endFromActionMs": 214.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 214.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 214.99999999999818,
+          "endFromActionMs": 222.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 222.99999999999818,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 222.99999999999818,
+          "endFromActionMs": 231.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 231.99999999999818,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 231.99999999999818,
+          "endFromActionMs": 240.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 240.99999999999818,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 240.99999999999818,
+          "endFromActionMs": 247.99999999999818,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 247.99999999999818,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 247.99999999999818,
+          "endFromActionMs": 256.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 256.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 256.9999999999982,
+          "endFromActionMs": 264.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 264.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 264.9999999999982,
+          "endFromActionMs": 272.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 272.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 272.9999999999982,
+          "endFromActionMs": 281.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 282,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 281.9999999999982,
+          "endFromActionMs": 289.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 289.9999999999982,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 289.9999999999982,
+          "endFromActionMs": 297.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 298,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 297.9999999999982,
+          "endFromActionMs": 306.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 306.9999999999982,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 306.9999999999982,
+          "endFromActionMs": 314.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 314.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 314.9999999999982,
+          "endFromActionMs": 322.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 323.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 322.9999999999982,
+          "endFromActionMs": 331.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 331.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 331.9999999999982,
+          "endFromActionMs": 339.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 339.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 339.9999999999982,
+          "endFromActionMs": 347.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 348.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 347.9999999999982,
+          "endFromActionMs": 356.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 356.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 356.9999999999982,
+          "endFromActionMs": 364.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 364.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 364.9999999999982,
+          "endFromActionMs": 373.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 373.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 373.9999999999982,
+          "endFromActionMs": 381.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 381.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 381.9999999999982,
+          "endFromActionMs": 389.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 389.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 389.9999999999982,
+          "endFromActionMs": 397.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 398.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 397.9999999999982,
+          "endFromActionMs": 406.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 407,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 406.9999999999982,
+          "endFromActionMs": 414.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 414.9999999999982,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 414.9999999999982,
+          "endFromActionMs": 422.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 423.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 422.9999999999982,
+          "endFromActionMs": 431.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 431.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 431.9999999999982,
+          "endFromActionMs": 439.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 439.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 439.9999999999982,
+          "endFromActionMs": 447.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 447.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 447.9999999999982,
+          "endFromActionMs": 456.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 456.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 456.9999999999982,
+          "endFromActionMs": 464.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 464.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 464.9999999999982,
+          "endFromActionMs": 473.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 473.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 473.9999999999982,
+          "endFromActionMs": 481.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 481.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 481.9999999999982,
+          "endFromActionMs": 489.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 489.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 489.9999999999982,
+          "endFromActionMs": 498.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 498.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 498.9999999999982,
+          "endFromActionMs": 506.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 506.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 506.9999999999982,
+          "endFromActionMs": 514.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 514.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 514.9999999999982,
+          "endFromActionMs": 523.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 523.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 523.9999999999982,
+          "endFromActionMs": 531.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 532,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 531.9999999999982,
+          "endFromActionMs": 539.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 539.9999999999982,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 539.9999999999982,
+          "endFromActionMs": 548.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 548.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 548.9999999999982,
+          "endFromActionMs": 556.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 556.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 556.9999999999982,
+          "endFromActionMs": 564.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 564.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 564.9999999999982,
+          "endFromActionMs": 573.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 573.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 573.9999999999982,
+          "endFromActionMs": 581.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 581.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 581.9999999999982,
+          "endFromActionMs": 589.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 589.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 589.9999999999982,
+          "endFromActionMs": 598.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 598.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 598.9999999999982,
+          "endFromActionMs": 606.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 606.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 606.9999999999982,
+          "endFromActionMs": 614.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 614.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 614.9999999999982,
+          "endFromActionMs": 623.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 623.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 12,
+          "startFromActionMs": 623.9999999999982,
+          "endFromActionMs": 635.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 635.9999999999982,
+          "actualGapMs": 12
+        },
+        {
+          "gapMs": 4,
+          "startFromActionMs": 635.9999999999982,
+          "endFromActionMs": 639.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 639.9999999999982,
+          "actualGapMs": 4
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 639.9999999999982,
+          "endFromActionMs": 648.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 648.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 648.9999999999982,
+          "endFromActionMs": 656.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 657,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 656.9999999999982,
+          "endFromActionMs": 664.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 664.9999999999982,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 664.9999999999982,
+          "endFromActionMs": 673.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 673.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 673.9999999999982,
+          "endFromActionMs": 681.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 681.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 681.9999999999982,
+          "endFromActionMs": 689.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 689.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 689.9999999999982,
+          "endFromActionMs": 698.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 698.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 698.9999999999982,
+          "endFromActionMs": 706.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 706.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 706.9999999999982,
+          "endFromActionMs": 714.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 714.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 714.9999999999982,
+          "endFromActionMs": 723.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 724.9999999999982,
+          "actualGapMs": 10
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 723.9999999999982,
+          "endFromActionMs": 731.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 731.9999999999982,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 731.9999999999982,
+          "endFromActionMs": 739.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 739.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 739.9999999999982,
+          "endFromActionMs": 748.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 748.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 748.9999999999982,
+          "endFromActionMs": 756.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 756.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 756.9999999999982,
+          "endFromActionMs": 764.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 764.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 764.9999999999982,
+          "endFromActionMs": 773.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 773.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 773.9999999999982,
+          "endFromActionMs": 781.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 782,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 781.9999999999982,
+          "endFromActionMs": 789.9999999999982,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 790.9999999999982,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 789.9999999999982,
+          "endFromActionMs": 798.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 798.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 798.9999999999982,
+          "endFromActionMs": 807.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 807.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 807.9999999999982,
+          "endFromActionMs": 814.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 814.9999999999982,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 814.9999999999982,
+          "endFromActionMs": 823.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 823.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 823.9999999999982,
+          "endFromActionMs": 831.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 831.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 831.9999999999982,
+          "endFromActionMs": 839.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 839.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 839.9999999999982,
+          "endFromActionMs": 848.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 848.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 848.9999999999982,
+          "endFromActionMs": 856.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 856.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 856.9999999999982,
+          "endFromActionMs": 864.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 864.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 864.9999999999982,
+          "endFromActionMs": 873.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 873.9999999999982,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 873.9999999999982,
+          "endFromActionMs": 881.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 881.9999999999982,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 881.9999999999982,
+          "endFromActionMs": 889.9999999999982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 889.9999999999982,
+          "actualGapMs": 8
+        }
+      ],
+      "activities": [
+        {
+          "atFromActionMs": -79.00000000000182
+        },
+        {
+          "atFromActionMs": 0
+        },
+        {
+          "atFromActionMs": 0.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 1.999999999998181
+        },
+        {
+          "atFromActionMs": 6.999999999998181
+        },
+        {
+          "atFromActionMs": 6.999999999998181
+        },
+        {
+          "atFromActionMs": 14.999999999998181
+        },
+        {
+          "atFromActionMs": 14.999999999998181
+        },
+        {
+          "atFromActionMs": 22.99999999999818
+        },
+        {
+          "atFromActionMs": 22.99999999999818
+        },
+        {
+          "atFromActionMs": 32
+        },
+        {
+          "atFromActionMs": 32
+        },
+        {
+          "atFromActionMs": 39.99999999999818
+        },
+        {
+          "atFromActionMs": 39.99999999999818
+        },
+        {
+          "atFromActionMs": 48
+        },
+        {
+          "atFromActionMs": 48
+        },
+        {
+          "atFromActionMs": 56.99999999999818
+        },
+        {
+          "atFromActionMs": 56.99999999999818
+        },
+        {
+          "atFromActionMs": 64.99999999999818
+        },
+        {
+          "atFromActionMs": 64.99999999999818
+        },
+        {
+          "atFromActionMs": 72.99999999999818
+        },
+        {
+          "atFromActionMs": 72.99999999999818
+        },
+        {
+          "atFromActionMs": 81.99999999999818
+        },
+        {
+          "atFromActionMs": 81.99999999999818
+        },
+        {
+          "atFromActionMs": 89.99999999999818
+        },
+        {
+          "atFromActionMs": 89.99999999999818
+        },
+        {
+          "atFromActionMs": 97.99999999999818
+        },
+        {
+          "atFromActionMs": 97.99999999999818
+        },
+        {
+          "atFromActionMs": 97.99999999999818
+        },
+        {
+          "atFromActionMs": 106.99999999999818
+        },
+        {
+          "atFromActionMs": 106.99999999999818
+        },
+        {
+          "atFromActionMs": 114.99999999999818
+        },
+        {
+          "atFromActionMs": 114.99999999999818
+        },
+        {
+          "atFromActionMs": 122.99999999999818
+        },
+        {
+          "atFromActionMs": 122.99999999999818
+        },
+        {
+          "atFromActionMs": 131.99999999999818
+        },
+        {
+          "atFromActionMs": 131.99999999999818
+        },
+        {
+          "atFromActionMs": 139.99999999999818
+        },
+        {
+          "atFromActionMs": 139.99999999999818
+        },
+        {
+          "atFromActionMs": 147.99999999999818
+        },
+        {
+          "atFromActionMs": 147.99999999999818
+        },
+        {
+          "atFromActionMs": 157
+        },
+        {
+          "atFromActionMs": 157
+        },
+        {
+          "atFromActionMs": 164.99999999999818
+        },
+        {
+          "atFromActionMs": 164.99999999999818
+        },
+        {
+          "atFromActionMs": 173
+        },
+        {
+          "atFromActionMs": 173
+        },
+        {
+          "atFromActionMs": 181.99999999999818
+        },
+        {
+          "atFromActionMs": 181.99999999999818
+        },
+        {
+          "atFromActionMs": 189.99999999999818
+        },
+        {
+          "atFromActionMs": 189.99999999999818
+        },
+        {
+          "atFromActionMs": 197.99999999999818
+        },
+        {
+          "atFromActionMs": 197.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 206.99999999999818
+        },
+        {
+          "atFromActionMs": 214.99999999999818
+        },
+        {
+          "atFromActionMs": 214.99999999999818
+        },
+        {
+          "atFromActionMs": 222.99999999999818
+        },
+        {
+          "atFromActionMs": 222.99999999999818
+        },
+        {
+          "atFromActionMs": 231.99999999999818
+        },
+        {
+          "atFromActionMs": 231.99999999999818
+        },
+        {
+          "atFromActionMs": 240.99999999999818
+        },
+        {
+          "atFromActionMs": 240.99999999999818
+        },
+        {
+          "atFromActionMs": 247.99999999999818
+        },
+        {
+          "atFromActionMs": 247.99999999999818
+        },
+        {
+          "atFromActionMs": 256.9999999999982
+        },
+        {
+          "atFromActionMs": 256.9999999999982
+        },
+        {
+          "atFromActionMs": 264.9999999999982
+        },
+        {
+          "atFromActionMs": 264.9999999999982
+        },
+        {
+          "atFromActionMs": 272.9999999999982
+        },
+        {
+          "atFromActionMs": 272.9999999999982
+        },
+        {
+          "atFromActionMs": 282
+        },
+        {
+          "atFromActionMs": 282
+        },
+        {
+          "atFromActionMs": 289.9999999999982
+        },
+        {
+          "atFromActionMs": 289.9999999999982
+        },
+        {
+          "atFromActionMs": 298
+        },
+        {
+          "atFromActionMs": 298
+        },
+        {
+          "atFromActionMs": 306.9999999999982
+        },
+        {
+          "atFromActionMs": 306.9999999999982
+        },
+        {
+          "atFromActionMs": 314.9999999999982
+        },
+        {
+          "atFromActionMs": 314.9999999999982
+        },
+        {
+          "atFromActionMs": 322.9999999999982
+        },
+        {
+          "atFromActionMs": 323.9999999999982
+        },
+        {
+          "atFromActionMs": 331.9999999999982
+        },
+        {
+          "atFromActionMs": 331.9999999999982
+        },
+        {
+          "atFromActionMs": 339.9999999999982
+        },
+        {
+          "atFromActionMs": 339.9999999999982
+        },
+        {
+          "atFromActionMs": 348.9999999999982
+        },
+        {
+          "atFromActionMs": 348.9999999999982
+        },
+        {
+          "atFromActionMs": 356.9999999999982
+        },
+        {
+          "atFromActionMs": 356.9999999999982
+        },
+        {
+          "atFromActionMs": 364.9999999999982
+        },
+        {
+          "atFromActionMs": 364.9999999999982
+        },
+        {
+          "atFromActionMs": 373.9999999999982
+        },
+        {
+          "atFromActionMs": 373.9999999999982
+        },
+        {
+          "atFromActionMs": 381.9999999999982
+        },
+        {
+          "atFromActionMs": 381.9999999999982
+        },
+        {
+          "atFromActionMs": 389.9999999999982
+        },
+        {
+          "atFromActionMs": 389.9999999999982
+        },
+        {
+          "atFromActionMs": 398.9999999999982
+        },
+        {
+          "atFromActionMs": 398.9999999999982
+        },
+        {
+          "atFromActionMs": 407
+        },
+        {
+          "atFromActionMs": 407
+        },
+        {
+          "atFromActionMs": 414.9999999999982
+        },
+        {
+          "atFromActionMs": 414.9999999999982
+        },
+        {
+          "atFromActionMs": 423.9999999999982
+        },
+        {
+          "atFromActionMs": 423.9999999999982
+        },
+        {
+          "atFromActionMs": 423.9999999999982
+        },
+        {
+          "atFromActionMs": 423.9999999999982
+        },
+        {
+          "atFromActionMs": 431.9999999999982
+        },
+        {
+          "atFromActionMs": 431.9999999999982
+        },
+        {
+          "atFromActionMs": 623.9999999999982
+        },
+        {
+          "atFromActionMs": 623.9999999999982
+        },
+        {
+          "atFromActionMs": 798.9999999999982
+        },
+        {
+          "atFromActionMs": 866.9999999999982
+        }
+      ],
+      "canvasMutations": [],
+      "measures": [
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -89.00000000000182,
+          "duration": 0
+        },
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -1.000000000001819,
+          "duration": 0
+        },
+        {
+          "name": "action:change ink color:2",
+          "startFromActionMs": 0,
+          "duration": 901.9999999999982
+        }
+      ],
+      "repeat": 1,
+      "warmup": true,
+      "frameStampEpoch": 2
+    },
+    {
+      "label": "change ink color",
+      "eventType": "pointerup",
+      "trusted": true,
+      "activation": "native-touch",
+      "firstFrameMs": 0.9999999999990905,
+      "readyMs": 243,
+      "postActionFrameGapsMs": [
+        8, 7, 10, 8, 8, 8, 7, 7, 9, 8, 8, 9, 8, 8, 9, 8, 8, 8, 9, 8, 9, 8, 8, 8, 9, 8, 8, 9, 8, 9,
+        8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 9, 8, 8,
+        9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 12, 5, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8,
+        9, 8, 8, 9, 8, 9, 8, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8
+      ],
+      "postActionFrames": [
+        {
+          "gapMs": 8,
+          "startFromActionMs": 0.9999999999990905,
+          "endFromActionMs": 8.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 8.99999999999909,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 8.99999999999909,
+          "endFromActionMs": 15.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 16.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 10,
+          "startFromActionMs": 15.99999999999909,
+          "endFromActionMs": 25.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 25.99999999999909,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 25.99999999999909,
+          "endFromActionMs": 33.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 33.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 33.99999999999909,
+          "endFromActionMs": 41.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 42.99999999999909,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 41.99999999999909,
+          "endFromActionMs": 49.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 49.99999999999909,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 49.99999999999909,
+          "endFromActionMs": 56.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 56.99999999999909,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 56.99999999999909,
+          "endFromActionMs": 63.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 64,
+          "actualGapMs": 7.0000000000009095
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 63.99999999999909,
+          "endFromActionMs": 72.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 72.99999999999909,
+          "actualGapMs": 8.99999999999909
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 72.99999999999909,
+          "endFromActionMs": 80.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 80.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 80.99999999999909,
+          "endFromActionMs": 88.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 89,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 88.99999999999909,
+          "endFromActionMs": 97.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 97.99999999999818,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 97.99999999999909,
+          "endFromActionMs": 105.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 105.99999999999909,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 105.99999999999909,
+          "endFromActionMs": 113.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 113.99999999999818,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 113.99999999999909,
+          "endFromActionMs": 122.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 122.99999999999909,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 122.99999999999909,
+          "endFromActionMs": 130.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 131,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 130.9999999999991,
+          "endFromActionMs": 138.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 138.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 138.9999999999991,
+          "endFromActionMs": 146.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 147.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 146.9999999999991,
+          "endFromActionMs": 155.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 155.99999999999818,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 155.9999999999991,
+          "endFromActionMs": 163.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 163.9999999999991,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 163.9999999999991,
+          "endFromActionMs": 172.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 173,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 172.9999999999991,
+          "endFromActionMs": 180.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 180.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 180.9999999999991,
+          "endFromActionMs": 188.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 189,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 188.9999999999991,
+          "endFromActionMs": 196.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 198,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 196.9999999999991,
+          "endFromActionMs": 205.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 205.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 205.9999999999991,
+          "endFromActionMs": 213.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 214,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 213.9999999999991,
+          "endFromActionMs": 221.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 222.99999999999818,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 221.9999999999991,
+          "endFromActionMs": 230.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 230.9999999999991,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 230.9999999999991,
+          "endFromActionMs": 238.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 238.99999999999818,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 238.9999999999991,
+          "endFromActionMs": 247.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 247.9999999999991,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 247.9999999999991,
+          "endFromActionMs": 255.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 256,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 255.9999999999991,
+          "endFromActionMs": 263.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 263.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 263.9999999999991,
+          "endFromActionMs": 272.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 272.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 272.9999999999991,
+          "endFromActionMs": 280.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 280.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 280.9999999999991,
+          "endFromActionMs": 288.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 288.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 288.9999999999991,
+          "endFromActionMs": 297.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 297.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 297.9999999999991,
+          "endFromActionMs": 305.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 305.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 305.9999999999991,
+          "endFromActionMs": 313.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 313.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 313.9999999999991,
+          "endFromActionMs": 322.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 322.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 322.9999999999991,
+          "endFromActionMs": 330.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 330.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 330.9999999999991,
+          "endFromActionMs": 338.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 338.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 338.9999999999991,
+          "endFromActionMs": 347.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 347.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 347.9999999999991,
+          "endFromActionMs": 355.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 355.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 355.9999999999991,
+          "endFromActionMs": 363.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 364.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 363.9999999999991,
+          "endFromActionMs": 372.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 372.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 372.9999999999991,
+          "endFromActionMs": 380.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 380.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 380.9999999999991,
+          "endFromActionMs": 388.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 390.0000000000009,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 388.9999999999991,
+          "endFromActionMs": 397.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 397.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 397.9999999999991,
+          "endFromActionMs": 405.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 405.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 405.9999999999991,
+          "endFromActionMs": 413.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 414.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 413.9999999999991,
+          "endFromActionMs": 422.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 423.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 422.9999999999991,
+          "endFromActionMs": 430.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 431.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 430.9999999999991,
+          "endFromActionMs": 438.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 439.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 438.9999999999991,
+          "endFromActionMs": 447.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 447.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 447.9999999999991,
+          "endFromActionMs": 455.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 455.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 455.9999999999991,
+          "endFromActionMs": 464.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 464.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 464.9999999999991,
+          "endFromActionMs": 472.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 472.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 472.9999999999991,
+          "endFromActionMs": 480.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 480.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 480.9999999999991,
+          "endFromActionMs": 489.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 489.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 489.9999999999991,
+          "endFromActionMs": 497.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 497.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 497.9999999999991,
+          "endFromActionMs": 505.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 505.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 505.9999999999991,
+          "endFromActionMs": 514.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 515.0000000000009,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 514.9999999999991,
+          "endFromActionMs": 522.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 522.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 522.9999999999991,
+          "endFromActionMs": 530.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 530.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 530.9999999999991,
+          "endFromActionMs": 539.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 539.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 539.9999999999991,
+          "endFromActionMs": 547.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 547.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 547.9999999999991,
+          "endFromActionMs": 555.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 555.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 555.9999999999991,
+          "endFromActionMs": 564.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 564.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 564.9999999999991,
+          "endFromActionMs": 572.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 572.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 572.9999999999991,
+          "endFromActionMs": 580.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 580.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 580.9999999999991,
+          "endFromActionMs": 589.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 589.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 589.9999999999991,
+          "endFromActionMs": 597.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 597.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 597.9999999999991,
+          "endFromActionMs": 605.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 605.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 605.9999999999991,
+          "endFromActionMs": 614.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 614.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 614.9999999999991,
+          "endFromActionMs": 622.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 622.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 12,
+          "startFromActionMs": 622.9999999999991,
+          "endFromActionMs": 634.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 634.9999999999991,
+          "actualGapMs": 12
+        },
+        {
+          "gapMs": 5,
+          "startFromActionMs": 634.9999999999991,
+          "endFromActionMs": 639.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 640.0000000000009,
+          "actualGapMs": 5.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 639.9999999999991,
+          "endFromActionMs": 647.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 647.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 647.9999999999991,
+          "endFromActionMs": 655.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 656.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 655.9999999999991,
+          "endFromActionMs": 664.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 664.9999999999991,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 664.9999999999991,
+          "endFromActionMs": 672.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 672.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 672.9999999999991,
+          "endFromActionMs": 680.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 680.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 680.9999999999991,
+          "endFromActionMs": 689.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 689.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 689.9999999999991,
+          "endFromActionMs": 697.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 697.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 697.9999999999991,
+          "endFromActionMs": 705.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 705.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 705.9999999999991,
+          "endFromActionMs": 714.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 714.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 714.9999999999991,
+          "endFromActionMs": 722.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 722.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 722.9999999999991,
+          "endFromActionMs": 730.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 730.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 730.9999999999991,
+          "endFromActionMs": 739.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 739.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 739.9999999999991,
+          "endFromActionMs": 747.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 747.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 747.9999999999991,
+          "endFromActionMs": 755.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 755.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 755.9999999999991,
+          "endFromActionMs": 764.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 765.0000000000009,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 764.9999999999991,
+          "endFromActionMs": 772.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 772.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 772.9999999999991,
+          "endFromActionMs": 780.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 781.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 780.9999999999991,
+          "endFromActionMs": 789.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 789.9999999999991,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 789.9999999999991,
+          "endFromActionMs": 797.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 798.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 797.9999999999991,
+          "endFromActionMs": 806.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 806.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 806.9999999999991,
+          "endFromActionMs": 814.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 814.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 814.9999999999991,
+          "endFromActionMs": 822.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 822.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 822.9999999999991,
+          "endFromActionMs": 830.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 831.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 830.9999999999991,
+          "endFromActionMs": 839.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 839.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 839.9999999999991,
+          "endFromActionMs": 847.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 847.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 847.9999999999991,
+          "endFromActionMs": 855.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 855.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 855.9999999999991,
+          "endFromActionMs": 864.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 864.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 864.9999999999991,
+          "endFromActionMs": 872.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 872.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 872.9999999999991,
+          "endFromActionMs": 880.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 880.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 880.9999999999991,
+          "endFromActionMs": 889.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 890.0000000000009,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 889.9999999999991,
+          "endFromActionMs": 897.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 897.9999999999991,
+          "actualGapMs": 7.999999999998181
+        }
+      ],
+      "activities": [
+        {
+          "atFromActionMs": -72.00000000000091
+        },
+        {
+          "atFromActionMs": -1.0000000000009095
+        },
+        {
+          "atFromActionMs": 0.9999999999990905
+        },
+        {
+          "atFromActionMs": 0.9999999999990905
+        },
+        {
+          "atFromActionMs": 0.9999999999990905
+        },
+        {
+          "atFromActionMs": 0.9999999999990905
+        },
+        {
+          "atFromActionMs": 0.9999999999990905
+        },
+        {
+          "atFromActionMs": 0.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 8.99999999999909
+        },
+        {
+          "atFromActionMs": 8.99999999999909
+        },
+        {
+          "atFromActionMs": 16.99999999999909
+        },
+        {
+          "atFromActionMs": 16.99999999999909
+        },
+        {
+          "atFromActionMs": 25.99999999999909
+        },
+        {
+          "atFromActionMs": 25.99999999999909
+        },
+        {
+          "atFromActionMs": 33.99999999999909
+        },
+        {
+          "atFromActionMs": 33.99999999999909
+        },
+        {
+          "atFromActionMs": 41.99999999999909
+        },
+        {
+          "atFromActionMs": 41.99999999999909
+        },
+        {
+          "atFromActionMs": 49.99999999999909
+        },
+        {
+          "atFromActionMs": 49.99999999999909
+        },
+        {
+          "atFromActionMs": 56.99999999999909
+        },
+        {
+          "atFromActionMs": 56.99999999999909
+        },
+        {
+          "atFromActionMs": 64
+        },
+        {
+          "atFromActionMs": 64
+        },
+        {
+          "atFromActionMs": 72.99999999999909
+        },
+        {
+          "atFromActionMs": 72.99999999999909
+        },
+        {
+          "atFromActionMs": 80.99999999999909
+        },
+        {
+          "atFromActionMs": 80.99999999999909
+        },
+        {
+          "atFromActionMs": 89
+        },
+        {
+          "atFromActionMs": 89
+        },
+        {
+          "atFromActionMs": 97.99999999999818
+        },
+        {
+          "atFromActionMs": 97.99999999999818
+        },
+        {
+          "atFromActionMs": 97.99999999999818
+        },
+        {
+          "atFromActionMs": 105.99999999999909
+        },
+        {
+          "atFromActionMs": 105.99999999999909
+        },
+        {
+          "atFromActionMs": 113.99999999999818
+        },
+        {
+          "atFromActionMs": 113.99999999999818
+        },
+        {
+          "atFromActionMs": 122.99999999999909
+        },
+        {
+          "atFromActionMs": 122.99999999999909
+        },
+        {
+          "atFromActionMs": 131
+        },
+        {
+          "atFromActionMs": 131
+        },
+        {
+          "atFromActionMs": 138.9999999999991
+        },
+        {
+          "atFromActionMs": 138.9999999999991
+        },
+        {
+          "atFromActionMs": 147.9999999999991
+        },
+        {
+          "atFromActionMs": 147.9999999999991
+        },
+        {
+          "atFromActionMs": 155.99999999999818
+        },
+        {
+          "atFromActionMs": 155.99999999999818
+        },
+        {
+          "atFromActionMs": 163.9999999999991
+        },
+        {
+          "atFromActionMs": 163.9999999999991
+        },
+        {
+          "atFromActionMs": 173
+        },
+        {
+          "atFromActionMs": 173
+        },
+        {
+          "atFromActionMs": 180.9999999999991
+        },
+        {
+          "atFromActionMs": 180.9999999999991
+        },
+        {
+          "atFromActionMs": 189
+        },
+        {
+          "atFromActionMs": 189
+        },
+        {
+          "atFromActionMs": 198
+        },
+        {
+          "atFromActionMs": 198
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 214
+        },
+        {
+          "atFromActionMs": 214
+        },
+        {
+          "atFromActionMs": 222.99999999999818
+        },
+        {
+          "atFromActionMs": 222.99999999999818
+        },
+        {
+          "atFromActionMs": 230.9999999999991
+        },
+        {
+          "atFromActionMs": 230.9999999999991
+        },
+        {
+          "atFromActionMs": 238.99999999999818
+        },
+        {
+          "atFromActionMs": 238.99999999999818
+        },
+        {
+          "atFromActionMs": 247.9999999999991
+        },
+        {
+          "atFromActionMs": 247.9999999999991
+        },
+        {
+          "atFromActionMs": 256
+        },
+        {
+          "atFromActionMs": 256
+        },
+        {
+          "atFromActionMs": 263.9999999999991
+        },
+        {
+          "atFromActionMs": 263.9999999999991
+        },
+        {
+          "atFromActionMs": 272.9999999999991
+        },
+        {
+          "atFromActionMs": 272.9999999999991
+        },
+        {
+          "atFromActionMs": 280.9999999999991
+        },
+        {
+          "atFromActionMs": 280.9999999999991
+        },
+        {
+          "atFromActionMs": 288.9999999999991
+        },
+        {
+          "atFromActionMs": 288.9999999999991
+        },
+        {
+          "atFromActionMs": 297.9999999999991
+        },
+        {
+          "atFromActionMs": 297.9999999999991
+        },
+        {
+          "atFromActionMs": 305.9999999999991
+        },
+        {
+          "atFromActionMs": 305.9999999999991
+        },
+        {
+          "atFromActionMs": 313.9999999999991
+        },
+        {
+          "atFromActionMs": 313.9999999999991
+        },
+        {
+          "atFromActionMs": 322.9999999999991
+        },
+        {
+          "atFromActionMs": 322.9999999999991
+        },
+        {
+          "atFromActionMs": 330.9999999999991
+        },
+        {
+          "atFromActionMs": 330.9999999999991
+        },
+        {
+          "atFromActionMs": 338.9999999999991
+        },
+        {
+          "atFromActionMs": 338.9999999999991
+        },
+        {
+          "atFromActionMs": 347.9999999999991
+        },
+        {
+          "atFromActionMs": 347.9999999999991
+        },
+        {
+          "atFromActionMs": 355.9999999999991
+        },
+        {
+          "atFromActionMs": 355.9999999999991
+        },
+        {
+          "atFromActionMs": 363.9999999999991
+        },
+        {
+          "atFromActionMs": 363.9999999999991
+        },
+        {
+          "atFromActionMs": 372.9999999999991
+        },
+        {
+          "atFromActionMs": 372.9999999999991
+        },
+        {
+          "atFromActionMs": 380.9999999999991
+        },
+        {
+          "atFromActionMs": 380.9999999999991
+        },
+        {
+          "atFromActionMs": 390.0000000000009
+        },
+        {
+          "atFromActionMs": 390.0000000000009
+        },
+        {
+          "atFromActionMs": 397.9999999999991
+        },
+        {
+          "atFromActionMs": 397.9999999999991
+        },
+        {
+          "atFromActionMs": 405.9999999999991
+        },
+        {
+          "atFromActionMs": 405.9999999999991
+        },
+        {
+          "atFromActionMs": 414.9999999999991
+        },
+        {
+          "atFromActionMs": 414.9999999999991
+        },
+        {
+          "atFromActionMs": 422.9999999999991
+        },
+        {
+          "atFromActionMs": 422.9999999999991
+        },
+        {
+          "atFromActionMs": 422.9999999999991
+        },
+        {
+          "atFromActionMs": 423.9999999999991
+        },
+        {
+          "atFromActionMs": 430.9999999999991
+        },
+        {
+          "atFromActionMs": 431.9999999999991
+        },
+        {
+          "atFromActionMs": 622.9999999999991
+        },
+        {
+          "atFromActionMs": 622.9999999999991
+        },
+        {
+          "atFromActionMs": 797.9999999999991
+        },
+        {
+          "atFromActionMs": 815.9999999999991
+        }
+      ],
+      "canvasMutations": [],
+      "measures": [
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -81.00000000000091,
+          "duration": 0
+        },
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -1.0000000000009095,
+          "duration": 0
+        },
+        {
+          "name": "action:change ink color:2",
+          "startFromActionMs": 0,
+          "duration": 901.9999999999991
+        }
+      ],
+      "repeat": 2,
+      "warmup": false,
+      "frameStampEpoch": 2
+    },
+    {
+      "label": "change ink color",
+      "eventType": "pointerup",
+      "trusted": true,
+      "activation": "native-touch",
+      "firstFrameMs": 2,
+      "readyMs": 336,
+      "postActionFrameGapsMs": [
+        6, 7, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9,
+        8, 9, 8, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8,
+        9, 8, 8, 9, 8, 9, 8, 8, 9, 8, 8, 8, 9, 12, 4, 9, 8, 9, 8, 8, 8, 9, 8, 9, 8, 8, 9, 8, 8, 9,
+        8, 8, 8, 9, 9, 8, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9
+      ],
+      "postActionFrames": [
+        {
+          "gapMs": 6,
+          "startFromActionMs": 2,
+          "endFromActionMs": 8,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 8,
+          "actualGapMs": 5.9999999999990905
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 8,
+          "endFromActionMs": 15,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 15.00000000000091,
+          "actualGapMs": 7.0000000000009095
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 15,
+          "endFromActionMs": 23,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 23.00000000000091,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 23,
+          "endFromActionMs": 32,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 32,
+          "actualGapMs": 8.99999999999909
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 32,
+          "endFromActionMs": 40,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 40,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 40,
+          "endFromActionMs": 48,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 48,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 48,
+          "endFromActionMs": 57,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 57,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 57,
+          "endFromActionMs": 65,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 65,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 65,
+          "endFromActionMs": 73,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 73,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 73,
+          "endFromActionMs": 82,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 82,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 82,
+          "endFromActionMs": 90,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 90,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 90,
+          "endFromActionMs": 98,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 99,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 98,
+          "endFromActionMs": 107,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 107,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 107,
+          "endFromActionMs": 115,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 115,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 115,
+          "endFromActionMs": 123,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 124,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 123,
+          "endFromActionMs": 132,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 132,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 132,
+          "endFromActionMs": 140,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 140.0000000000009,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 140,
+          "endFromActionMs": 148,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 149.0000000000009,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 148,
+          "endFromActionMs": 157,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 157,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 157,
+          "endFromActionMs": 165,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 165.0000000000009,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 165,
+          "endFromActionMs": 173,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 173.9999999999991,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 173,
+          "endFromActionMs": 182,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 182,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 182,
+          "endFromActionMs": 190,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 189.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 190,
+          "endFromActionMs": 198,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 199,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 198,
+          "endFromActionMs": 207,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 207.0000000000009,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 207,
+          "endFromActionMs": 215,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 215,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 215,
+          "endFromActionMs": 223,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 224,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 223,
+          "endFromActionMs": 232,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 232.0000000000009,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 232,
+          "endFromActionMs": 240,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 240,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 240,
+          "endFromActionMs": 248,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 249,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 248,
+          "endFromActionMs": 257,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 257,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 257,
+          "endFromActionMs": 265,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 265.0000000000009,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 265,
+          "endFromActionMs": 274,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 274.0000000000009,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 274,
+          "endFromActionMs": 282,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 282,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 282,
+          "endFromActionMs": 290,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 290.0000000000009,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 290,
+          "endFromActionMs": 298,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 298.9999999999991,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 298,
+          "endFromActionMs": 307,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 307,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 307,
+          "endFromActionMs": 315,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 315,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 315,
+          "endFromActionMs": 323,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 324,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 323,
+          "endFromActionMs": 332,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 332,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 332,
+          "endFromActionMs": 340,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 340,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 340,
+          "endFromActionMs": 349,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 349,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 349,
+          "endFromActionMs": 357,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 357.0000000000018,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 357,
+          "endFromActionMs": 365,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 365,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 365,
+          "endFromActionMs": 374,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 374,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 374,
+          "endFromActionMs": 382,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 382,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 382,
+          "endFromActionMs": 390,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 391,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 390,
+          "endFromActionMs": 399,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 399,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 399,
+          "endFromActionMs": 407,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 407,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 407,
+          "endFromActionMs": 415,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 416,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 415,
+          "endFromActionMs": 424,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 424,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 424,
+          "endFromActionMs": 432,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 432,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 432,
+          "endFromActionMs": 440,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 440,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 440,
+          "endFromActionMs": 449,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 449,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 449,
+          "endFromActionMs": 457,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 457,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 457,
+          "endFromActionMs": 465,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 466.0000000000018,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 465,
+          "endFromActionMs": 474,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 474,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 474,
+          "endFromActionMs": 482,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 482.0000000000018,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 482,
+          "endFromActionMs": 490,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 491,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 490,
+          "endFromActionMs": 499,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 499,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 499,
+          "endFromActionMs": 507,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 507,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 507,
+          "endFromActionMs": 515,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 516,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 515,
+          "endFromActionMs": 524,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 524,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 524,
+          "endFromActionMs": 532,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 532,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 532,
+          "endFromActionMs": 540,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 541,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 540,
+          "endFromActionMs": 549,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 549,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 549,
+          "endFromActionMs": 557,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 557,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 557,
+          "endFromActionMs": 566,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 566,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 566,
+          "endFromActionMs": 574,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 574,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 574,
+          "endFromActionMs": 582,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 582,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 582,
+          "endFromActionMs": 591,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 591.0000000000018,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 591,
+          "endFromActionMs": 599,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 599,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 599,
+          "endFromActionMs": 607,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 607.0000000000018,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 607,
+          "endFromActionMs": 615,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 616,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 615,
+          "endFromActionMs": 624,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 624,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 12,
+          "startFromActionMs": 624,
+          "endFromActionMs": 636,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 636,
+          "actualGapMs": 12
+        },
+        {
+          "gapMs": 4,
+          "startFromActionMs": 636,
+          "endFromActionMs": 640,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 640,
+          "actualGapMs": 4
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 640,
+          "endFromActionMs": 649,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 649,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 649,
+          "endFromActionMs": 657,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 657,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 657,
+          "endFromActionMs": 666,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 666,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 666,
+          "endFromActionMs": 674,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 674,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 674,
+          "endFromActionMs": 682,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 682,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 682,
+          "endFromActionMs": 690,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 691,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 690,
+          "endFromActionMs": 699,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 699,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 699,
+          "endFromActionMs": 707,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 707,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 707,
+          "endFromActionMs": 716,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 716.0000000000018,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 716,
+          "endFromActionMs": 724,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 724,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 724,
+          "endFromActionMs": 732,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 732.0000000000018,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 732,
+          "endFromActionMs": 741,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 741,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 741,
+          "endFromActionMs": 749,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 749,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 749,
+          "endFromActionMs": 757,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 757,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 757,
+          "endFromActionMs": 766,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 766,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 766,
+          "endFromActionMs": 774,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 774,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 774,
+          "endFromActionMs": 782,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 782,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 782,
+          "endFromActionMs": 790,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 791,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 790,
+          "endFromActionMs": 799,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 799,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 799,
+          "endFromActionMs": 808,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 808,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 808,
+          "endFromActionMs": 816,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 816,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 816,
+          "endFromActionMs": 824,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 824,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 824,
+          "endFromActionMs": 832,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 832,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 832,
+          "endFromActionMs": 841,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 841.0000000000018,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 841,
+          "endFromActionMs": 849,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 849,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 849,
+          "endFromActionMs": 857,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 857.0000000000018,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 857,
+          "endFromActionMs": 866,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 866,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 866,
+          "endFromActionMs": 874,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 874,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 874,
+          "endFromActionMs": 882,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 882,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 882,
+          "endFromActionMs": 891,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 891,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 891,
+          "endFromActionMs": 899,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 899,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 899,
+          "endFromActionMs": 907,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 907,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 907,
+          "endFromActionMs": 916,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 916,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 916,
+          "endFromActionMs": 924,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 924,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 924,
+          "endFromActionMs": 932,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 932,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 932,
+          "endFromActionMs": 941,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 941,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 941,
+          "endFromActionMs": 949,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 949,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 949,
+          "endFromActionMs": 957,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 957,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 957,
+          "endFromActionMs": 966,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 966.0000000000018,
+          "actualGapMs": 9.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 966,
+          "endFromActionMs": 974,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 974,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 974,
+          "endFromActionMs": 982,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 982.0000000000018,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 982,
+          "endFromActionMs": 991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 991,
+          "actualGapMs": 8.999999999998181
+        }
+      ],
+      "activities": [
+        {
+          "atFromActionMs": -74
+        },
+        {
+          "atFromActionMs": 0
+        },
+        {
+          "atFromActionMs": 1
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 2.0000000000009095
+        },
+        {
+          "atFromActionMs": 8
+        },
+        {
+          "atFromActionMs": 8
+        },
+        {
+          "atFromActionMs": 15.00000000000091
+        },
+        {
+          "atFromActionMs": 15.00000000000091
+        },
+        {
+          "atFromActionMs": 23.00000000000091
+        },
+        {
+          "atFromActionMs": 23.00000000000091
+        },
+        {
+          "atFromActionMs": 32
+        },
+        {
+          "atFromActionMs": 32
+        },
+        {
+          "atFromActionMs": 40
+        },
+        {
+          "atFromActionMs": 40
+        },
+        {
+          "atFromActionMs": 48
+        },
+        {
+          "atFromActionMs": 48
+        },
+        {
+          "atFromActionMs": 57
+        },
+        {
+          "atFromActionMs": 57
+        },
+        {
+          "atFromActionMs": 65
+        },
+        {
+          "atFromActionMs": 65
+        },
+        {
+          "atFromActionMs": 73
+        },
+        {
+          "atFromActionMs": 73
+        },
+        {
+          "atFromActionMs": 82
+        },
+        {
+          "atFromActionMs": 82
+        },
+        {
+          "atFromActionMs": 90
+        },
+        {
+          "atFromActionMs": 90
+        },
+        {
+          "atFromActionMs": 98
+        },
+        {
+          "atFromActionMs": 98
+        },
+        {
+          "atFromActionMs": 99
+        },
+        {
+          "atFromActionMs": 107
+        },
+        {
+          "atFromActionMs": 107
+        },
+        {
+          "atFromActionMs": 115
+        },
+        {
+          "atFromActionMs": 115
+        },
+        {
+          "atFromActionMs": 124
+        },
+        {
+          "atFromActionMs": 124
+        },
+        {
+          "atFromActionMs": 132
+        },
+        {
+          "atFromActionMs": 132
+        },
+        {
+          "atFromActionMs": 140.0000000000009
+        },
+        {
+          "atFromActionMs": 140.0000000000009
+        },
+        {
+          "atFromActionMs": 148
+        },
+        {
+          "atFromActionMs": 148
+        },
+        {
+          "atFromActionMs": 157
+        },
+        {
+          "atFromActionMs": 157
+        },
+        {
+          "atFromActionMs": 165.0000000000009
+        },
+        {
+          "atFromActionMs": 165.0000000000009
+        },
+        {
+          "atFromActionMs": 173.9999999999991
+        },
+        {
+          "atFromActionMs": 173.9999999999991
+        },
+        {
+          "atFromActionMs": 182
+        },
+        {
+          "atFromActionMs": 182
+        },
+        {
+          "atFromActionMs": 189.9999999999991
+        },
+        {
+          "atFromActionMs": 189.9999999999991
+        },
+        {
+          "atFromActionMs": 198
+        },
+        {
+          "atFromActionMs": 199
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 207.0000000000009
+        },
+        {
+          "atFromActionMs": 215
+        },
+        {
+          "atFromActionMs": 215
+        },
+        {
+          "atFromActionMs": 224
+        },
+        {
+          "atFromActionMs": 224
+        },
+        {
+          "atFromActionMs": 232.0000000000009
+        },
+        {
+          "atFromActionMs": 232.0000000000009
+        },
+        {
+          "atFromActionMs": 240
+        },
+        {
+          "atFromActionMs": 240
+        },
+        {
+          "atFromActionMs": 249
+        },
+        {
+          "atFromActionMs": 249
+        },
+        {
+          "atFromActionMs": 257
+        },
+        {
+          "atFromActionMs": 257
+        },
+        {
+          "atFromActionMs": 265.0000000000009
+        },
+        {
+          "atFromActionMs": 265.0000000000009
+        },
+        {
+          "atFromActionMs": 274.0000000000009
+        },
+        {
+          "atFromActionMs": 274.0000000000009
+        },
+        {
+          "atFromActionMs": 282
+        },
+        {
+          "atFromActionMs": 282
+        },
+        {
+          "atFromActionMs": 290.0000000000009
+        },
+        {
+          "atFromActionMs": 290.0000000000009
+        },
+        {
+          "atFromActionMs": 298.9999999999991
+        },
+        {
+          "atFromActionMs": 298.9999999999991
+        },
+        {
+          "atFromActionMs": 307
+        },
+        {
+          "atFromActionMs": 307
+        },
+        {
+          "atFromActionMs": 315
+        },
+        {
+          "atFromActionMs": 315
+        },
+        {
+          "atFromActionMs": 324
+        },
+        {
+          "atFromActionMs": 324
+        },
+        {
+          "atFromActionMs": 332
+        },
+        {
+          "atFromActionMs": 332
+        },
+        {
+          "atFromActionMs": 340
+        },
+        {
+          "atFromActionMs": 340
+        },
+        {
+          "atFromActionMs": 349
+        },
+        {
+          "atFromActionMs": 349
+        },
+        {
+          "atFromActionMs": 357.0000000000018
+        },
+        {
+          "atFromActionMs": 357.0000000000018
+        },
+        {
+          "atFromActionMs": 365
+        },
+        {
+          "atFromActionMs": 365
+        },
+        {
+          "atFromActionMs": 374
+        },
+        {
+          "atFromActionMs": 374
+        },
+        {
+          "atFromActionMs": 382
+        },
+        {
+          "atFromActionMs": 382
+        },
+        {
+          "atFromActionMs": 390
+        },
+        {
+          "atFromActionMs": 390
+        },
+        {
+          "atFromActionMs": 399
+        },
+        {
+          "atFromActionMs": 399
+        },
+        {
+          "atFromActionMs": 407
+        },
+        {
+          "atFromActionMs": 407
+        },
+        {
+          "atFromActionMs": 416
+        },
+        {
+          "atFromActionMs": 416
+        },
+        {
+          "atFromActionMs": 424
+        },
+        {
+          "atFromActionMs": 424
+        },
+        {
+          "atFromActionMs": 424
+        },
+        {
+          "atFromActionMs": 424
+        },
+        {
+          "atFromActionMs": 432
+        },
+        {
+          "atFromActionMs": 432
+        },
+        {
+          "atFromActionMs": 624
+        },
+        {
+          "atFromActionMs": 624
+        },
+        {
+          "atFromActionMs": 799
+        },
+        {
+          "atFromActionMs": 809.0000000000018
+        }
+      ],
+      "canvasMutations": [],
+      "measures": [
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -80,
+          "duration": 0
+        },
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -1,
+          "duration": 0
+        },
+        {
+          "name": "action:change ink color:2",
+          "startFromActionMs": 0,
+          "duration": 995
+        }
+      ],
+      "repeat": 3,
+      "warmup": false,
+      "frameStampEpoch": 2
+    },
+    {
+      "label": "change ink color",
+      "eventType": "pointerup",
+      "trusted": true,
+      "activation": "native-touch",
+      "firstFrameMs": 1.9999999999990905,
+      "readyMs": 231.9999999999991,
+      "postActionFrameGapsMs": [
+        7, 8, 8, 8, 7, 8, 8, 9, 8, 8, 9, 9, 7, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8,
+        9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8,
+        8, 9, 8, 9, 8, 8, 9, 8, 8, 8, 9, 8, 8, 13, 4, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8,
+        8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9, 8, 8, 9
+      ],
+      "postActionFrames": [
+        {
+          "gapMs": 7,
+          "startFromActionMs": 1.9999999999990905,
+          "endFromActionMs": 8.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 9.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 8.99999999999909,
+          "endFromActionMs": 16.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 16.99999999999909,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 16.99999999999909,
+          "endFromActionMs": 24.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 24.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 24.99999999999909,
+          "endFromActionMs": 32.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 32.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 32.99999999999909,
+          "endFromActionMs": 39.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 40,
+          "actualGapMs": 7.0000000000009095
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 39.99999999999909,
+          "endFromActionMs": 47.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 48,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 47.99999999999909,
+          "endFromActionMs": 55.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 56,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 55.99999999999909,
+          "endFromActionMs": 64.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 64.99999999999909,
+          "actualGapMs": 8.99999999999909
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 64.99999999999909,
+          "endFromActionMs": 72.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 72.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 72.99999999999909,
+          "endFromActionMs": 80.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 80.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 80.99999999999909,
+          "endFromActionMs": 89.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 89.99999999999909,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 89.99999999999909,
+          "endFromActionMs": 98.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 98.99999999999909,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 7,
+          "startFromActionMs": 98.99999999999909,
+          "endFromActionMs": 105.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 105.99999999999909,
+          "actualGapMs": 7
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 105.99999999999909,
+          "endFromActionMs": 114.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 114.99999999999909,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 114.99999999999909,
+          "endFromActionMs": 122.99999999999909,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 122.99999999999909,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 122.99999999999909,
+          "endFromActionMs": 130.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 130.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 130.9999999999991,
+          "endFromActionMs": 139.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 139.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 139.9999999999991,
+          "endFromActionMs": 147.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 147.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 147.9999999999991,
+          "endFromActionMs": 155.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 155.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 155.9999999999991,
+          "endFromActionMs": 164.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 165,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 164.9999999999991,
+          "endFromActionMs": 172.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 173,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 172.9999999999991,
+          "endFromActionMs": 180.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 181,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 180.9999999999991,
+          "endFromActionMs": 189.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 189.9999999999991,
+          "actualGapMs": 8.99999999999909
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 189.9999999999991,
+          "endFromActionMs": 197.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 197.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 197.9999999999991,
+          "endFromActionMs": 205.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 205.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 205.9999999999991,
+          "endFromActionMs": 214.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 214.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 214.9999999999991,
+          "endFromActionMs": 222.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 222.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 222.9999999999991,
+          "endFromActionMs": 230.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 230.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 230.9999999999991,
+          "endFromActionMs": 239.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 239.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 239.9999999999991,
+          "endFromActionMs": 247.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 247.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 247.9999999999991,
+          "endFromActionMs": 255.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 256,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 255.9999999999991,
+          "endFromActionMs": 264.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 264.9999999999982,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 264.9999999999991,
+          "endFromActionMs": 272.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 272.9999999999991,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 272.9999999999991,
+          "endFromActionMs": 280.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 280.9999999999982,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 280.9999999999991,
+          "endFromActionMs": 289.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 289.9999999999991,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 289.9999999999991,
+          "endFromActionMs": 297.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 298,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 297.9999999999991,
+          "endFromActionMs": 305.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 305.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 305.9999999999991,
+          "endFromActionMs": 314.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 314.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 314.9999999999991,
+          "endFromActionMs": 322.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 323,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 322.9999999999991,
+          "endFromActionMs": 330.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 331.9999999999982,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 330.9999999999991,
+          "endFromActionMs": 339.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 339.9999999999991,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 339.9999999999991,
+          "endFromActionMs": 347.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 347.9999999999982,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 347.9999999999991,
+          "endFromActionMs": 355.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 356.9999999999991,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 355.9999999999991,
+          "endFromActionMs": 364.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 365,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 364.9999999999991,
+          "endFromActionMs": 372.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 372.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 372.9999999999991,
+          "endFromActionMs": 380.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 381.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 380.9999999999991,
+          "endFromActionMs": 389.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 389.9999999999982,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 389.9999999999991,
+          "endFromActionMs": 397.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 398.9999999999991,
+          "actualGapMs": 9.00000000000091
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 397.9999999999991,
+          "endFromActionMs": 406.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 407,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 406.9999999999991,
+          "endFromActionMs": 414.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 414.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 414.9999999999991,
+          "endFromActionMs": 422.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 423.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 422.9999999999991,
+          "endFromActionMs": 431.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 432,
+          "actualGapMs": 8.00000000000091
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 431.9999999999991,
+          "endFromActionMs": 439.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 439.9999999999991,
+          "actualGapMs": 7.9999999999990905
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 439.9999999999991,
+          "endFromActionMs": 447.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 448.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 447.9999999999991,
+          "endFromActionMs": 456.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 456.9999999999991,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 456.9999999999991,
+          "endFromActionMs": 464.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 464.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 464.9999999999991,
+          "endFromActionMs": 472.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 472.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 472.9999999999991,
+          "endFromActionMs": 481.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 481.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 481.9999999999991,
+          "endFromActionMs": 489.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 489.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 489.9999999999991,
+          "endFromActionMs": 497.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 498.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 497.9999999999991,
+          "endFromActionMs": 506.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 506.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 506.9999999999991,
+          "endFromActionMs": 514.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 514.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 514.9999999999991,
+          "endFromActionMs": 522.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 522.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 522.9999999999991,
+          "endFromActionMs": 531.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 531.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 531.9999999999991,
+          "endFromActionMs": 539.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 539.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 539.9999999999991,
+          "endFromActionMs": 548.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 548.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 548.9999999999991,
+          "endFromActionMs": 556.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 557.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 556.9999999999991,
+          "endFromActionMs": 564.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 564.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 564.9999999999991,
+          "endFromActionMs": 573.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 573.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 573.9999999999991,
+          "endFromActionMs": 581.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 581.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 581.9999999999991,
+          "endFromActionMs": 589.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 590.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 589.9999999999991,
+          "endFromActionMs": 597.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 598.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 597.9999999999991,
+          "endFromActionMs": 606.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 606.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 606.9999999999991,
+          "endFromActionMs": 614.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 614.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 614.9999999999991,
+          "endFromActionMs": 622.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 623.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 13,
+          "startFromActionMs": 622.9999999999991,
+          "endFromActionMs": 635.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 635.9999999999991,
+          "actualGapMs": 12
+        },
+        {
+          "gapMs": 4,
+          "startFromActionMs": 635.9999999999991,
+          "endFromActionMs": 639.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 639.9999999999991,
+          "actualGapMs": 4
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 639.9999999999991,
+          "endFromActionMs": 647.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 647.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 647.9999999999991,
+          "endFromActionMs": 656.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 656.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 656.9999999999991,
+          "endFromActionMs": 664.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 664.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 664.9999999999991,
+          "endFromActionMs": 672.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 673.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 672.9999999999991,
+          "endFromActionMs": 681.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 682.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 681.9999999999991,
+          "endFromActionMs": 689.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 689.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 689.9999999999991,
+          "endFromActionMs": 697.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 698.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 697.9999999999991,
+          "endFromActionMs": 706.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 706.9999999999991,
+          "actualGapMs": 8.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 706.9999999999991,
+          "endFromActionMs": 714.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 714.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 714.9999999999991,
+          "endFromActionMs": 722.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 722.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 722.9999999999991,
+          "endFromActionMs": 731.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 731.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 731.9999999999991,
+          "endFromActionMs": 739.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 739.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 739.9999999999991,
+          "endFromActionMs": 747.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 747.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 747.9999999999991,
+          "endFromActionMs": 756.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 756.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 756.9999999999991,
+          "endFromActionMs": 764.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 764.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 764.9999999999991,
+          "endFromActionMs": 772.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 773.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 772.9999999999991,
+          "endFromActionMs": 781.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 781.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 781.9999999999991,
+          "endFromActionMs": 789.9999999999991,
+          "visualEffectsActive": true,
+          "ranFromActionMs": 789.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 789.9999999999991,
+          "endFromActionMs": 797.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 798.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 797.9999999999991,
+          "endFromActionMs": 806.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 807.0000000000009,
+          "actualGapMs": 8.000000000001819
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 806.9999999999991,
+          "endFromActionMs": 814.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 814.9999999999991,
+          "actualGapMs": 7.999999999998181
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 814.9999999999991,
+          "endFromActionMs": 822.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 823.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 822.9999999999991,
+          "endFromActionMs": 831.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 831.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 831.9999999999991,
+          "endFromActionMs": 839.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 839.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 839.9999999999991,
+          "endFromActionMs": 847.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 847.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 847.9999999999991,
+          "endFromActionMs": 856.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 856.9999999999991,
+          "actualGapMs": 9
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 856.9999999999991,
+          "endFromActionMs": 864.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 864.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 8,
+          "startFromActionMs": 864.9999999999991,
+          "endFromActionMs": 872.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 872.9999999999991,
+          "actualGapMs": 8
+        },
+        {
+          "gapMs": 9,
+          "startFromActionMs": 872.9999999999991,
+          "endFromActionMs": 881.9999999999991,
+          "visualEffectsActive": false,
+          "ranFromActionMs": 881.9999999999991,
+          "actualGapMs": 9
+        }
+      ],
+      "activities": [
+        {
+          "atFromActionMs": -74.00000000000091
+        },
+        {
+          "atFromActionMs": 0
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 1.9999999999990905
+        },
+        {
+          "atFromActionMs": 9.99999999999909
+        },
+        {
+          "atFromActionMs": 9.99999999999909
+        },
+        {
+          "atFromActionMs": 16.99999999999909
+        },
+        {
+          "atFromActionMs": 16.99999999999909
+        },
+        {
+          "atFromActionMs": 24.99999999999909
+        },
+        {
+          "atFromActionMs": 24.99999999999909
+        },
+        {
+          "atFromActionMs": 32.99999999999909
+        },
+        {
+          "atFromActionMs": 32.99999999999909
+        },
+        {
+          "atFromActionMs": 40
+        },
+        {
+          "atFromActionMs": 40
+        },
+        {
+          "atFromActionMs": 48
+        },
+        {
+          "atFromActionMs": 48
+        },
+        {
+          "atFromActionMs": 56
+        },
+        {
+          "atFromActionMs": 56
+        },
+        {
+          "atFromActionMs": 64.99999999999909
+        },
+        {
+          "atFromActionMs": 64.99999999999909
+        },
+        {
+          "atFromActionMs": 72.99999999999909
+        },
+        {
+          "atFromActionMs": 72.99999999999909
+        },
+        {
+          "atFromActionMs": 80.99999999999909
+        },
+        {
+          "atFromActionMs": 80.99999999999909
+        },
+        {
+          "atFromActionMs": 89.99999999999909
+        },
+        {
+          "atFromActionMs": 89.99999999999909
+        },
+        {
+          "atFromActionMs": 98.99999999999909
+        },
+        {
+          "atFromActionMs": 98.99999999999909
+        },
+        {
+          "atFromActionMs": 98.99999999999909
+        },
+        {
+          "atFromActionMs": 105.99999999999909
+        },
+        {
+          "atFromActionMs": 105.99999999999909
+        },
+        {
+          "atFromActionMs": 114.99999999999909
+        },
+        {
+          "atFromActionMs": 114.99999999999909
+        },
+        {
+          "atFromActionMs": 122.99999999999909
+        },
+        {
+          "atFromActionMs": 122.99999999999909
+        },
+        {
+          "atFromActionMs": 130.9999999999991
+        },
+        {
+          "atFromActionMs": 130.9999999999991
+        },
+        {
+          "atFromActionMs": 139.9999999999991
+        },
+        {
+          "atFromActionMs": 139.9999999999991
+        },
+        {
+          "atFromActionMs": 147.9999999999991
+        },
+        {
+          "atFromActionMs": 147.9999999999991
+        },
+        {
+          "atFromActionMs": 155.9999999999991
+        },
+        {
+          "atFromActionMs": 155.9999999999991
+        },
+        {
+          "atFromActionMs": 165
+        },
+        {
+          "atFromActionMs": 165
+        },
+        {
+          "atFromActionMs": 173
+        },
+        {
+          "atFromActionMs": 173
+        },
+        {
+          "atFromActionMs": 181
+        },
+        {
+          "atFromActionMs": 181
+        },
+        {
+          "atFromActionMs": 189.9999999999991
+        },
+        {
+          "atFromActionMs": 189.9999999999991
+        },
+        {
+          "atFromActionMs": 197.9999999999991
+        },
+        {
+          "atFromActionMs": 197.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 205.9999999999991
+        },
+        {
+          "atFromActionMs": 214.9999999999991
+        },
+        {
+          "atFromActionMs": 214.9999999999991
+        },
+        {
+          "atFromActionMs": 222.9999999999991
+        },
+        {
+          "atFromActionMs": 222.9999999999991
+        },
+        {
+          "atFromActionMs": 230.9999999999991
+        },
+        {
+          "atFromActionMs": 230.9999999999991
+        },
+        {
+          "atFromActionMs": 239.9999999999991
+        },
+        {
+          "atFromActionMs": 239.9999999999991
+        },
+        {
+          "atFromActionMs": 247.9999999999991
+        },
+        {
+          "atFromActionMs": 247.9999999999991
+        },
+        {
+          "atFromActionMs": 256
+        },
+        {
+          "atFromActionMs": 256
+        },
+        {
+          "atFromActionMs": 264.9999999999982
+        },
+        {
+          "atFromActionMs": 264.9999999999982
+        },
+        {
+          "atFromActionMs": 272.9999999999991
+        },
+        {
+          "atFromActionMs": 272.9999999999991
+        },
+        {
+          "atFromActionMs": 280.9999999999982
+        },
+        {
+          "atFromActionMs": 280.9999999999982
+        },
+        {
+          "atFromActionMs": 289.9999999999991
+        },
+        {
+          "atFromActionMs": 289.9999999999991
+        },
+        {
+          "atFromActionMs": 298
+        },
+        {
+          "atFromActionMs": 298
+        },
+        {
+          "atFromActionMs": 305.9999999999991
+        },
+        {
+          "atFromActionMs": 305.9999999999991
+        },
+        {
+          "atFromActionMs": 314.9999999999991
+        },
+        {
+          "atFromActionMs": 314.9999999999991
+        },
+        {
+          "atFromActionMs": 323
+        },
+        {
+          "atFromActionMs": 323
+        },
+        {
+          "atFromActionMs": 331.9999999999982
+        },
+        {
+          "atFromActionMs": 331.9999999999982
+        },
+        {
+          "atFromActionMs": 339.9999999999991
+        },
+        {
+          "atFromActionMs": 339.9999999999991
+        },
+        {
+          "atFromActionMs": 347.9999999999982
+        },
+        {
+          "atFromActionMs": 347.9999999999982
+        },
+        {
+          "atFromActionMs": 356.9999999999991
+        },
+        {
+          "atFromActionMs": 356.9999999999991
+        },
+        {
+          "atFromActionMs": 365
+        },
+        {
+          "atFromActionMs": 365
+        },
+        {
+          "atFromActionMs": 372.9999999999991
+        },
+        {
+          "atFromActionMs": 372.9999999999991
+        },
+        {
+          "atFromActionMs": 381.9999999999991
+        },
+        {
+          "atFromActionMs": 381.9999999999991
+        },
+        {
+          "atFromActionMs": 389.9999999999982
+        },
+        {
+          "atFromActionMs": 389.9999999999982
+        },
+        {
+          "atFromActionMs": 397.9999999999991
+        },
+        {
+          "atFromActionMs": 398.9999999999991
+        },
+        {
+          "atFromActionMs": 407
+        },
+        {
+          "atFromActionMs": 407
+        },
+        {
+          "atFromActionMs": 414.9999999999991
+        },
+        {
+          "atFromActionMs": 414.9999999999991
+        },
+        {
+          "atFromActionMs": 423
+        },
+        {
+          "atFromActionMs": 423
+        },
+        {
+          "atFromActionMs": 423.9999999999991
+        },
+        {
+          "atFromActionMs": 423.9999999999991
+        },
+        {
+          "atFromActionMs": 432
+        },
+        {
+          "atFromActionMs": 432
+        },
+        {
+          "atFromActionMs": 623.9999999999991
+        },
+        {
+          "atFromActionMs": 623.9999999999991
+        },
+        {
+          "atFromActionMs": 798.9999999999991
+        }
+      ],
+      "canvasMutations": [],
+      "measures": [
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -80,
+          "duration": 0
+        },
+        {
+          "name": "engine.commit",
+          "startFromActionMs": -1.0000000000009095,
+          "duration": 0
+        },
+        {
+          "name": "action:change ink color:2",
+          "startFromActionMs": 0,
+          "duration": 892.9999999999991
+        }
+      ],
+      "repeat": 4,
+      "warmup": false,
+      "frameStampEpoch": 2
+    }
+  ]
+}

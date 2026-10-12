@@ -1,0 +1,45 @@
+{
+  "idea": 11,
+  "title": "Whiten pen solids out of the chalk keep reference",
+  "verdict": "WORKED",
+  "oneline": "Gate fix validated: all 19 overridden chalks now pass, zero regressions, regen passes first try",
+  "summary": "The chalk keep gate scored candidates against the raw pen, so correctly whitening a solid pen pupil read as lost ink — 19 of 94 shipped chalks fail the current gate and were hand-shipped. A ~10-line patch builds the keep reference via whitenSolidRegions (existing lib/solid-regions.mjs machinery, same exemption the outline normalizer grants): all 19 jump from 49.7-79.2% worst-tile to 88.7-97.5% and pass, while the 29 solid-free pages move at most 0.64pp. A live regen of shapes/circle-tall with the fixed gate passed every gate on the first Gemini attempt.",
+  "tried": [
+    "Full-catalog offline re-score of all 94 shipped chalks: outlineMatch against raw pen vs solid-whitened pen reference",
+    "Implemented the fix in gen-coloring-chalk.mjs (scoreSolidity + whitenSolidRegions build the keep reference; other gates still use the raw pen)",
+    "Verified through the real tool's --rescore path on the 19 failing pages plus 2 clean controls",
+    "Live regen of shapes/circle-tall (worst page, 49.7%) with the fixed gate active (1 Gemini call)"
+  ],
+  "worked": [
+    "All 19 gate-blocked shipped chalks flip to PASS (worst tile 49.7-79.2% -> 88.7-97.5%); audit's >=80% criterion met",
+    "Zero pass->fail regressions across the catalog; solid-free pages change <=0.64pp (bee-tall's 4e-5pp 'drop' is PNG re-encode noise)",
+    "Real-tool --rescore run prints clean lines, exits 0; warn-only eye notes on controls preserved",
+    "Fresh circle-tall chalk passed every gate on Gemini attempt 1 (localKeep 90.8%) — --apply would ship with zero manual steps",
+    "Patch re-applies cleanly to baseline 8e471b8"
+  ],
+  "failed": [],
+  "limitations": [
+    "AUDIT.md's 13-override count is an undercount: 19 shipped chalks fail today's gate (extras sat at exactly the 80% bar or shipped earlier); same root cause",
+    "flower-tall (91.5%) and circle-tall (88.7%) remain lowest — thin residual red rings where the chalk pupil outline sits slightly inside the pen blob rim",
+    "Does not implement the audit's fallback --apply-reviewed flag (likely unnecessary now)",
+    "Rim width SOLID_RIM_WIDTH=6 shared with the normalizer; untuned, but no page needed tuning"
+  ],
+  "comparisons": [
+    {"label": "circle-tall keep reference (pen solids whitened)", "before": "shapes-circle-tall-ref-before.webp", "after": "shapes-circle-tall-ref-after.webp", "note": "Solid pupils hollowed to outline rims; rest untouched"},
+    {"label": "circle-tall keep overlay (49.7% -> 88.7% worst tile)", "before": "shapes-circle-tall-overlay-before.webp", "after": "shapes-circle-tall-overlay-after.webp", "note": "Red 'lost ink' eye discs vanish; blue = chalk's new sclera ink (not penalized)"},
+    {"label": "owl-tall keep overlay (59.0% -> 95.1% worst tile)", "before": "creatures-owl-tall-overlay-before.webp", "after": "creatures-owl-tall-overlay-after.webp"}
+  ],
+  "images": [
+    {"file": "shapes-circle-tall-chalk-display.webp", "caption": "Shipped (hand-overridden) circle-tall chalk, dark-mode polarity"},
+    {"file": "regen-circle-tall-display.webp", "caption": "Fresh Gemini chalk that passed the FIXED gate on attempt 1 (localKeep 90.8%)"},
+    {"file": "regen-circle-tall-overlay.webp", "caption": "New candidate's keep overlay against the fixed reference"},
+    {"file": "creatures-owl-tall-ref-before.webp", "caption": "owl-tall pen reference before whitening (solid pupils, blob 2908px)"},
+    {"file": "creatures-owl-tall-ref-after.webp", "caption": "owl-tall fixed keep reference (interiors whitened, rims kept)"},
+    {"file": "creatures-owl-tall-chalk-display.webp", "caption": "Shipped owl-tall chalk, dark-mode polarity"}
+  ],
+  "code": [
+    {"title": "The fix: whiten pen solids out of the keep reference (applies to 8e471b8)", "file": "code/whiten-pen-solids-keep-reference.patch"},
+    {"title": "Full-catalog before/after re-scorer (run from repo root, copy into tools/asset-gen/)", "file": "code/idea11-rescore.mjs"},
+    {"title": "Evidence-image generator (reference + overlay before/after)", "file": "code/idea11-evidence.mjs"}
+  ]
+}

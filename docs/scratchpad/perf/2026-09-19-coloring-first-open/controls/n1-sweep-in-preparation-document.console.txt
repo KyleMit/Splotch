@@ -1,0 +1,12 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54824/ --engine=chromium --actions=coloring --output=perf-profiles/coloring-coverage-r1/n1-negative/actions.json
+
+Coloring books prepared in 3579 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 1/4
+Error: The coloring picker already holds 8 rendered tiles, so it has opened in this document and its next open is not a first open
+    at assertPickerNeverOpened (file://<checkout>/tools/perf/lib/coloring-books-ready.mjs:175:24)
+    at async runActionSweep (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:1960:5)
+    at async runDesktopActions (file://<checkout>/tools/perf/web/capture-desktop-actions.mjs:237:21)
+exit=1

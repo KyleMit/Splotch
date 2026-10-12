@@ -1,0 +1,9 @@
+{
+  "name": "paginate-without-slurp",
+  "control": false,
+  "title": "gh api --paginate without --slurp concatenates pages into non-JSON",
+  "path": "tools/rival-agent/post-review.mjs",
+  "lines": [189, 191],
+  "severity": "suggestion",
+  "keywords": ["--slurp", "paginate", "concatenat", "second page", "more than one page"]
+}

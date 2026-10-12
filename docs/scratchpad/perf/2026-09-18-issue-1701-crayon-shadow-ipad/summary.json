@@ -1,0 +1,3380 @@
+{
+  "gateMs": 33.5,
+  "gateSource": "ACTION_FRAME_MAX_GATE_MS (tools/perf/lib/action-stats.mjs), confirmed in 2 of 3 scored repeats (ADR-0156 decision 4); agreed before capture",
+  "synchronousBurst": [
+    {
+      "run": "warmup",
+      "arm": "main (aac6e68f00)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT",
+        "screen": {
+          "w": 1024,
+          "h": 1366
+        }
+      },
+      "workload": {
+        "strokes": 22,
+        "pointsPerStroke": 1200,
+        "margin": 160,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "burstMs": 116506,
+      "history": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25747556,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25747556,
+        "pendingCommands": 0
+      },
+      "inkPixels": 935662,
+      "folds": [
+        {
+          "startMs": 124078,
+          "durMs": 7,
+          "frameMs": 13314
+        },
+        {
+          "startMs": 125586,
+          "durMs": 2993,
+          "frameMs": 13314
+        }
+      ],
+      "crayonShadow": [
+        {
+          "startMs": 129862,
+          "durMs": 0,
+          "frameMs": 10
+        }
+      ],
+      "framesOverGateAfterBurst": [
+        {
+          "atMs": 116548,
+          "gapMs": 13314
+        }
+      ]
+    },
+    {
+      "run": "scored-1",
+      "arm": "main (aac6e68f00)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT",
+        "screen": {
+          "w": 1024,
+          "h": 1366
+        }
+      },
+      "workload": {
+        "strokes": 22,
+        "pointsPerStroke": 1200,
+        "margin": 160,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "burstMs": 117789,
+      "history": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25747556,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25747556,
+        "pendingCommands": 0
+      },
+      "inkPixels": 935662,
+      "folds": [
+        {
+          "startMs": 125914,
+          "durMs": 7,
+          "frameMs": 13644
+        },
+        {
+          "startMs": 127422,
+          "durMs": 2896,
+          "frameMs": 13644
+        }
+      ],
+      "crayonShadow": [
+        {
+          "startMs": 131439,
+          "durMs": 0,
+          "frameMs": 4
+        }
+      ],
+      "framesOverGateAfterBurst": [
+        {
+          "atMs": 117795,
+          "gapMs": 13644
+        }
+      ]
+    },
+    {
+      "run": "scored-2",
+      "arm": "main (aac6e68f00)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT",
+        "screen": {
+          "w": 1024,
+          "h": 1366
+        }
+      },
+      "workload": {
+        "strokes": 22,
+        "pointsPerStroke": 1200,
+        "margin": 160,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "burstMs": 117854,
+      "history": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25747556,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25747556,
+        "pendingCommands": 0
+      },
+      "inkPixels": 935662,
+      "folds": [
+        {
+          "startMs": 119354,
+          "durMs": 4929,
+          "frameMs": 13740
+        },
+        {
+          "startMs": 125785,
+          "durMs": 4433,
+          "frameMs": 13740
+        }
+      ],
+      "crayonShadow": [
+        {
+          "startMs": 131611,
+          "durMs": 0,
+          "frameMs": 9
+        }
+      ],
+      "framesOverGateAfterBurst": [
+        {
+          "atMs": 117871,
+          "gapMs": 13740
+        }
+      ]
+    },
+    {
+      "run": "scored-3",
+      "arm": "main (aac6e68f00)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT",
+        "screen": {
+          "w": 1024,
+          "h": 1366
+        }
+      },
+      "workload": {
+        "strokes": 22,
+        "pointsPerStroke": 1200,
+        "margin": 160,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "burstMs": 117696,
+      "history": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25747556,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25747556,
+        "pendingCommands": 0
+      },
+      "inkPixels": 935662,
+      "folds": [
+        {
+          "startMs": 119196,
+          "durMs": 4916,
+          "frameMs": 13732
+        },
+        {
+          "startMs": 125613,
+          "durMs": 4442,
+          "frameMs": 13732
+        }
+      ],
+      "crayonShadow": [
+        {
+          "startMs": 131445,
+          "durMs": 0,
+          "frameMs": 3
+        }
+      ],
+      "framesOverGateAfterBurst": [
+        {
+          "atMs": 117713,
+          "gapMs": 13732
+        }
+      ]
+    }
+  ],
+  "pacedEngine": [
+    {
+      "run": "main-1",
+      "arm": "main (aac6e68f00)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69260,
+      "crayonShadow": [
+        {
+          "startMs": 2037,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4355,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6673,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 8991,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11293,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13594,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15912,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18230,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20548,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22866,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25184,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27502,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29820,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32138,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34456,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36757,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39075,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41410,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43745,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 46063,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48381,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50715,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 53033,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55368,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57686,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 60004,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62322,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64640,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66958,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69293,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 70778,
+          "durMs": 916,
+          "frameMs": 917,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72294,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73812,
+          "durMs": 194,
+          "frameMs": 200,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75313,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76814,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78331,
+          "durMs": 696,
+          "frameMs": 701,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79832,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81333,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82834,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84351,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70760,
+          "durMs": 17,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72279,
+          "durMs": 3,
+          "frameMs": 22,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73783,
+          "durMs": 7,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75291,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76794,
+          "durMs": 6,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78301,
+          "durMs": 4,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79806,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81309,
+          "durMs": 3,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82813,
+          "durMs": 6,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84319,
+          "durMs": 3,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": [
+        {
+          "atMs": -14,
+          "gapMs": 38,
+          "inDraw": true
+        },
+        {
+          "atMs": 40493,
+          "gapMs": 35,
+          "inDraw": true
+        },
+        {
+          "atMs": 48714,
+          "gapMs": 35,
+          "inDraw": true
+        },
+        {
+          "atMs": 68376,
+          "gapMs": 41,
+          "inDraw": true
+        },
+        {
+          "atMs": 70778,
+          "gapMs": 917,
+          "inDraw": false
+        },
+        {
+          "atMs": 73812,
+          "gapMs": 194,
+          "inDraw": false
+        },
+        {
+          "atMs": 78331,
+          "gapMs": 696,
+          "inDraw": false
+        },
+        {
+          "atMs": 86386,
+          "gapMs": 153,
+          "inDraw": false
+        },
+        {
+          "atMs": 87854,
+          "gapMs": 92,
+          "inDraw": false
+        }
+      ]
+    },
+    {
+      "run": "B-1",
+      "arm": "treatment (c769f34bfa)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69173,
+      "crayonShadow": [
+        {
+          "startMs": 2051,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4369,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6670,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 8988,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11306,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13624,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15926,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18227,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20545,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22863,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25181,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27499,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29817,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32135,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34453,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36771,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39089,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41407,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43742,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 46060,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48378,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50696,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 53014,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55332,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57667,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 59968,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62286,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64587,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66889,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69206,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70675,
+          "durMs": 17,
+          "frameMs": 51,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72193,
+          "durMs": 4,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73697,
+          "durMs": 6,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75205,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76708,
+          "durMs": 6,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78214,
+          "durMs": 5,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79720,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81222,
+          "durMs": 3,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82726,
+          "durMs": 6,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84233,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": [
+        {
+          "atMs": -16,
+          "gapMs": 43,
+          "inDraw": true
+        },
+        {
+          "atMs": 70657,
+          "gapMs": 35,
+          "inDraw": false
+        }
+      ]
+    },
+    {
+      "run": "B-2",
+      "arm": "treatment (c769f34bfa)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69153,
+      "crayonShadow": [
+        {
+          "startMs": 2048,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4365,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6684,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 9002,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11303,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13621,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15939,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18257,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20575,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22893,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25211,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27529,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29847,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32165,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34466,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36784,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39102,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41420,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43722,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 46023,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48324,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50642,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 52960,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55295,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57630,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 59931,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62249,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64550,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66868,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69186,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70654,
+          "durMs": 19,
+          "frameMs": 37,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72173,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73676,
+          "durMs": 6,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75183,
+          "durMs": 3,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76687,
+          "durMs": 5,
+          "frameMs": 19,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78193,
+          "durMs": 5,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79698,
+          "durMs": 3,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81202,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82705,
+          "durMs": 6,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84211,
+          "durMs": 3,
+          "frameMs": 33,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": [
+        {
+          "atMs": 12704,
+          "gapMs": 34,
+          "inDraw": true
+        },
+        {
+          "atMs": 54378,
+          "gapMs": 41,
+          "inDraw": true
+        },
+        {
+          "atMs": 70637,
+          "gapMs": 36,
+          "inDraw": false
+        }
+      ]
+    },
+    {
+      "run": "B-3",
+      "arm": "treatment (c769f34bfa)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69075,
+      "crayonShadow": [
+        {
+          "startMs": 2036,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4354,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6672,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 8973,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11291,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13609,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15910,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18229,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20547,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22848,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25166,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27484,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29802,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32120,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34421,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36739,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39057,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41375,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43676,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 45994,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48312,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50614,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 52932,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55233,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57535,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 59853,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62170,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64472,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66790,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69108,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70576,
+          "durMs": 10,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72087,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73591,
+          "durMs": 6,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75098,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76601,
+          "durMs": 5,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78107,
+          "durMs": 5,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79612,
+          "durMs": 3,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81115,
+          "durMs": 3,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82618,
+          "durMs": 5,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84123,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": [
+        {
+          "atMs": -15,
+          "gapMs": 37,
+          "inDraw": true
+        }
+      ]
+    },
+    {
+      "run": "main-2",
+      "arm": "main (aac6e68f00 product tree, rebuilt for the interleave)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69148,
+      "crayonShadow": [
+        {
+          "startMs": 2042,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4360,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6678,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 8996,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11314,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13632,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15950,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18268,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20586,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22904,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25205,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27540,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29858,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32176,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34494,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36795,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39113,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41431,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43749,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 46051,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48352,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50653,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 52971,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55289,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57607,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 59925,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62227,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64545,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66863,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69181,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 70665,
+          "durMs": 902,
+          "frameMs": 905,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72182,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73683,
+          "durMs": 202,
+          "frameMs": 217,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75201,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76702,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78203,
+          "durMs": 705,
+          "frameMs": 717,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79704,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81221,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82722,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84223,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70648,
+          "durMs": 11,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72160,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73663,
+          "durMs": 7,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75171,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76674,
+          "durMs": 5,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78181,
+          "durMs": 4,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79685,
+          "durMs": 3,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81188,
+          "durMs": 3,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82691,
+          "durMs": 6,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84198,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": [
+        {
+          "atMs": 70665,
+          "gapMs": 905,
+          "inDraw": false
+        },
+        {
+          "atMs": 73683,
+          "gapMs": 202,
+          "inDraw": false
+        },
+        {
+          "atMs": 78203,
+          "gapMs": 705,
+          "inDraw": false
+        }
+      ]
+    },
+    {
+      "run": "B-4",
+      "arm": "treatment (c769f34bfa)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69125,
+      "crayonShadow": [
+        {
+          "startMs": 2035,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4354,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6672,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 8990,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11291,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13592,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15910,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18228,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20546,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22864,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25166,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27467,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29785,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32103,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34421,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36739,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39057,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41375,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43676,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 45978,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48296,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50614,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 52932,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55250,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57568,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 59886,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62204,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64522,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66840,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69158,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70625,
+          "durMs": 11,
+          "frameMs": 28,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72137,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73641,
+          "durMs": 6,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75148,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76651,
+          "durMs": 6,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78158,
+          "durMs": 4,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79663,
+          "durMs": 3,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81166,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82669,
+          "durMs": 5,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84175,
+          "durMs": 2,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": []
+    },
+    {
+      "run": "main-3",
+      "arm": "main (aac6e68f00 product tree, rebuilt for the interleave)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "W": 1024,
+        "H": 1227,
+        "dpr": 2,
+        "orientation": "PORTRAIT"
+      },
+      "workload": {
+        "STROKES": 30,
+        "POINTS": 240,
+        "MOVES_PER_FRAME": 2,
+        "GAP_MS": 300,
+        "shape": "scribble(i%6), sweeps=8"
+      },
+      "history": {
+        "strokeRevision": 30,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 25703172,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 20103168,
+        "historyLength": 20,
+        "patchBytes": 25703172,
+        "pendingCommands": 0
+      },
+      "inkPixels": 944742,
+      "lastLiftMs": 69179,
+      "crayonShadow": [
+        {
+          "startMs": 2040,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 4358,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 6676,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 8978,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 11296,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 13614,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 15932,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 18250,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 20551,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 22852,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 25154,
+          "durMs": 1,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 27472,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 29790,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 32108,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 34442,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 36760,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 39078,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 41413,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 43731,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 46049,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 48367,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 50685,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 53003,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 55321,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 57656,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 59974,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 62275,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 64576,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 66895,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 69212,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 70704,
+          "durMs": 912,
+          "frameMs": 914,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72231,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73732,
+          "durMs": 199,
+          "frameMs": 200,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75233,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76733,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78251,
+          "durMs": 701,
+          "frameMs": 702,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79752,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81253,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82754,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84271,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 70680,
+          "durMs": 22,
+          "frameMs": 40,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 72203,
+          "durMs": 3,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 73707,
+          "durMs": 6,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 75214,
+          "durMs": 3,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 76718,
+          "durMs": 6,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 78225,
+          "durMs": 4,
+          "frameMs": 16,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 79730,
+          "durMs": 2,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 81233,
+          "durMs": 3,
+          "frameMs": 33,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 82737,
+          "durMs": 6,
+          "frameMs": 34,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 84243,
+          "durMs": 3,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "commitMaxMs": 1,
+      "framesOverGate": [
+        {
+          "atMs": 32858,
+          "gapMs": 34,
+          "inDraw": true
+        },
+        {
+          "atMs": 40496,
+          "gapMs": 36,
+          "inDraw": true
+        },
+        {
+          "atMs": 70663,
+          "gapMs": 40,
+          "inDraw": false
+        },
+        {
+          "atMs": 70704,
+          "gapMs": 914,
+          "inDraw": false
+        },
+        {
+          "atMs": 73732,
+          "gapMs": 200,
+          "inDraw": false
+        },
+        {
+          "atMs": 78251,
+          "gapMs": 702,
+          "inDraw": false
+        }
+      ]
+    }
+  ],
+  "trustedTouch": [
+    {
+      "run": "ipad-crayon-portrait",
+      "arm": "main (aac6e68f00)",
+      "buildEntry": "/_app/immutable/entry/start.TO--ZiKV.js",
+      "buildDigest": "19dfb240139afaa833cff83c7b3bcbabc59163d990e62a4cd62e527271cd3658",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 17,
+          "max": 34
+        },
+        "lostFrameTimeShare": 0.0047,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 161938,
+      "crayonShadow": [
+        {
+          "startMs": 146847,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 161956,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 163473,
+          "durMs": 754,
+          "frameMs": 754,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 163456,
+          "durMs": 10,
+          "frameMs": 27,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 754
+    },
+    {
+      "run": "ipad-crayon-portrait-2",
+      "arm": "main (aac6e68f00)",
+      "buildEntry": "/_app/immutable/entry/start.TO--ZiKV.js",
+      "buildDigest": "19dfb240139afaa833cff83c7b3bcbabc59163d990e62a4cd62e527271cd3658",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 17,
+          "max": 28
+        },
+        "lostFrameTimeShare": 0.0046,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 162585,
+      "crayonShadow": [
+        {
+          "startMs": 162602,
+          "durMs": 1,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 164120,
+          "durMs": 779,
+          "frameMs": 780,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 164096,
+          "durMs": 11,
+          "frameMs": 20,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 780
+    },
+    {
+      "run": "ipad-crayon-portrait-3",
+      "arm": "main (aac6e68f00)",
+      "buildEntry": "/_app/immutable/entry/start.TO--ZiKV.js",
+      "buildDigest": "19dfb240139afaa833cff83c7b3bcbabc59163d990e62a4cd62e527271cd3658",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 18,
+          "max": 27
+        },
+        "lostFrameTimeShare": 0.0043,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 162387,
+      "crayonShadow": [
+        {
+          "startMs": 97853,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 162405,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 163922,
+          "durMs": 610,
+          "frameMs": 612,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 163905,
+          "durMs": 11,
+          "frameMs": 28,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 612
+    },
+    {
+      "run": "B-ipad-crayon-portrait-1",
+      "arm": "treatment (c769f34bfa)",
+      "buildEntry": "/_app/immutable/entry/start.ehOM9ioD.js",
+      "buildDigest": "8850e11e8c9212055313cc79d40ef2a1d13b926a7c1295f2cd929631650aaf05",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 17,
+          "max": 29
+        },
+        "lostFrameTimeShare": 0.0033,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 162235,
+      "crayonShadow": [
+        {
+          "startMs": 113557,
+          "durMs": 1,
+          "frameMs": 29,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 147143,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 162268,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 163752,
+          "durMs": 9,
+          "frameMs": 26,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 26
+    },
+    {
+      "run": "B-ipad-crayon-portrait-2",
+      "arm": "treatment (c769f34bfa)",
+      "buildEntry": "/_app/immutable/entry/start.ehOM9ioD.js",
+      "buildDigest": "8850e11e8c9212055313cc79d40ef2a1d13b926a7c1295f2cd929631650aaf05",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 16,
+          "max": 43
+        },
+        "lostFrameTimeShare": 0.0036,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 161997,
+      "crayonShadow": [
+        {
+          "startMs": 153476,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 154143,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 162030,
+          "durMs": 0,
+          "frameMs": 16,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 163507,
+          "durMs": 10,
+          "frameMs": 19,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 19
+    },
+    {
+      "run": "B-ipad-crayon-portrait-3",
+      "arm": "treatment (c769f34bfa)",
+      "buildEntry": "/_app/immutable/entry/start.ehOM9ioD.js",
+      "buildDigest": "8850e11e8c9212055313cc79d40ef2a1d13b926a7c1295f2cd929631650aaf05",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 16,
+          "max": 53
+        },
+        "lostFrameTimeShare": 0.0034,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": false,
+          "starvation": true
+        },
+        "passed": false
+      },
+      "lastContactMs": 162872,
+      "crayonShadow": [
+        {
+          "startMs": 102822,
+          "durMs": 0,
+          "frameMs": 20,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 130487,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 146780,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 147113,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 147447,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 147780,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 148114,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 162889,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 164390,
+          "durMs": 12,
+          "frameMs": 32,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 32
+    },
+    {
+      "run": "ipad-crayon-portrait-4",
+      "arm": "main (aac6e68f00 product tree, rebuilt for the interleave)",
+      "buildEntry": "/_app/immutable/entry/start.CE4aw1MY.js",
+      "buildDigest": "b3da8820b01acf80076737dee438f4901a4f8fd8d08a3545cc044d9406509b18",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 18,
+          "max": 49
+        },
+        "lostFrameTimeShare": 0.005,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 160769,
+      "crayonShadow": [
+        {
+          "startMs": 111425,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 111758,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 112092,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 138090,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 140091,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 160787,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 162304,
+          "durMs": 660,
+          "frameMs": 661,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 162287,
+          "durMs": 11,
+          "frameMs": 28,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 661
+    },
+    {
+      "run": "B-ipad-crayon-portrait-4",
+      "arm": "treatment (c769f34bfa)",
+      "buildEntry": "/_app/immutable/entry/start.ehOM9ioD.js",
+      "buildDigest": "8850e11e8c9212055313cc79d40ef2a1d13b926a7c1295f2cd929631650aaf05",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 16,
+          "max": 27
+        },
+        "lostFrameTimeShare": 0.004,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 162617,
+      "crayonShadow": [
+        {
+          "startMs": 162651,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 164127,
+          "durMs": 11,
+          "frameMs": 20,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 20
+    },
+    {
+      "run": "ipad-crayon-portrait-5",
+      "arm": "main (aac6e68f00 product tree, rebuilt for the interleave)",
+      "buildEntry": "/_app/immutable/entry/start.CE4aw1MY.js",
+      "buildDigest": "b3da8820b01acf80076737dee438f4901a4f8fd8d08a3545cc044d9406509b18",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 17,
+          "max": 28
+        },
+        "lostFrameTimeShare": 0.0036,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 162569,
+      "crayonShadow": [
+        {
+          "startMs": 125715,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 126049,
+          "durMs": 0,
+          "frameMs": 20,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 154048,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 154715,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 155049,
+          "durMs": 0,
+          "frameMs": 18,
+          "afterLastLift": false
+        },
+        {
+          "startMs": 162603,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        },
+        {
+          "startMs": 164104,
+          "durMs": 616,
+          "frameMs": 617,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 164079,
+          "durMs": 10,
+          "frameMs": 20,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 617
+    },
+    {
+      "run": "B-ipad-crayon-portrait-5",
+      "arm": "treatment (c769f34bfa)",
+      "buildEntry": "/_app/immutable/entry/start.ehOM9ioD.js",
+      "buildDigest": "8850e11e8c9212055313cc79d40ef2a1d13b926a7c1295f2cd929631650aaf05",
+      "brush": "crayon",
+      "committedBrush": "crayon",
+      "orientation": "PORTRAIT",
+      "theme": "light",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15",
+      "viewport": {
+        "w": 1024,
+        "h": 1227
+      },
+      "canvasBacking": {
+        "w": 1,
+        "h": 1
+      },
+      "fidelity": {
+        "runtime": "ios-safari",
+        "passed": true,
+        "checks": {
+          "trustedTouch": true,
+          "cadence": true,
+          "pressure": true,
+          "contactGeometry": true
+        },
+        "uncalibrated": [],
+        "notApplicable": [
+          "coalescing"
+        ]
+      },
+      "gestureRepeats": 10,
+      "gesturePlan": "fixed-geometry",
+      "liveTiles": 20,
+      "drawingGate": {
+        "paint": {
+          "p50": 8,
+          "p95": 15,
+          "p99": 16,
+          "max": 28
+        },
+        "lostFrameTimeShare": 0.004,
+        "checks": {
+          "paintP95": true,
+          "paintP99": true,
+          "paintMax": true,
+          "starvation": true
+        },
+        "passed": true
+      },
+      "lastContactMs": 162577,
+      "crayonShadow": [
+        {
+          "startMs": 162595,
+          "durMs": 0,
+          "frameMs": 17,
+          "afterLastLift": true
+        }
+      ],
+      "folds": [
+        {
+          "startMs": 164088,
+          "durMs": 11,
+          "frameMs": 22,
+          "afterLastLift": true
+        }
+      ],
+      "maxFrameAfterLastLiftMs": 22
+    }
+  ],
+  "synchronousBurstDrainReads": {
+    "run": "diag-1 (drawImage instrumented; not scored)",
+    "callsInDrain": 28,
+    "bySource": {
+      "512x490 live tile (in DOM)": 4,
+      "512x491 live tile (in DOM)": 16,
+      "512x490 history base (offscreen)": 4,
+      "512x491 history base (offscreen)": 4
+    }
+  }
+}

@@ -1,0 +1,107 @@
+<!-- Source: .ruler/skill-notes/improve-performance-matrix.md.template -->
+
+# Improve performance matrix — design notes
+
+## Product-first sequencing
+
+The 2026-09-01 campaign exposed a workflow failure rather than a measurement failure. The skill was
+invoked for product improvement, but the session stopped after refreshing five of eleven targets,
+repairing manifest provenance, and documenting capture-path behavior. It had established fourteen
+scoreable physical-iPad action reds and still landed no product experiment.
+
+Every individual action was defensible under the old runbook. It required a complete cell inventory
+before editing, treated capture-path repair as a peer campaign output, and made full target currency
+part of the path to product work as well as the completion gate. On a mature harness, those rules
+created a ratchet: small evidence imperfections were concrete and easy to close, while causal
+product work remained uncertain and could always be postponed until one more target was current.
+
+The accepted correction separates **starting product work** from **finishing the campaign**. One
+current calibrated physical failure is enough to select a product hypothesis and run an A/B. Full
+current target coverage is still mandatory before completion, but stale advisory rows cannot block
+the first product experiment. Harness work is stable by default and stays subordinate to an already
+named product experiment.
+
+The harness exception deliberately requires a concrete product experiment and immediate utility. A
+harness change can repair invalid evidence, add a diagnostic that distinguishes the hypothesis, or
+make its faithful A/B materially more reliable; it does not need to wait for a total blocker. The
+same cluster must use it immediately and return to the product loop. Without that tie, a mature
+harness always has another edge worth improving, so convenience, generalized reuse, and
+advisory-only anomalies remain issue material rather than campaign deliverables.
+
+Two alternatives were rejected:
+
+* Requiring all eleven targets to be current before any product edit protects breadth but repeats
+  the observed starvation failure. Breadth belongs in validation and the completion gate.
+* Banning harness edits unless the experiment is completely blocked excludes useful diagnostics and
+  validation improvements that product work genuinely motivates. The direct-utility rule keeps the
+  product experiment as the unit of work and requires an immediate return to it.
+
+The user explicitly declined a drift-guard test for this policy, not harness changes themselves. Do
+not add a keyword or prose-matching test whose purpose is to police the skill text. Continue adding
+ordinary behavioral regression coverage when actual harness code changes, and allow useful harness
+work when the named product experiment motivates and immediately exercises it.
+
+## A product pass ends with review, not with a commit
+
+The 2026-09-04 campaign demonstrated a second scheduling failure. Seven bounded product/evidence
+commits accumulated on one campaign branch while physical capture continued. Although the skill
+already instructed the agent to open each accepted cluster immediately and review before the next
+layer, those rules appeared in separate long sections and were treated as eventual shipping work. No
+rival agent ran until the user noticed the entire stack had been deferred.
+
+The correction promotes the full loop near the top of the skill and repeats its gate at branch
+creation: verify, commit, open/link the PR, complete two rival rounds, address findings, and get CI
+green before beginning the next accepted treatment. Two rounds are explicit because performance
+changes can preserve behavior and still encode a mistaken causal theory; the resumed second pass
+checks the disposition of the first even when that first pass reported no findings. It resumes the
+first reviewer conversation so that disposition has context. A material fix from round two earns an
+additional verification round rather than treating the second review as a ceremony.
+
+The first rival review caught two boundary cases. `address-pr-review` must be explicitly restricted
+to the single current-tip PR or its normal stacked-campaign mode creates a feedback child while the
+review gate is still open. And a verification rule scoped only to round-two fixes drops material
+changes prompted later by a human or CI. The skill now keys the extra verification on any material
+fix after round two and bounds the three-round ceiling: one fresh final pass is allowed after a
+material round-three finding, then another material finding stops new layers and returns the blocker
+to the user.
+
+## The review loop moved out (issue #1539)
+
+The "Stack and review discipline" section used to spell out the whole reviewer procedure — the rival
+launch, the resumed second round, the three-round budget, the `address-pr-review` scoping, the
+green-tip check — alongside four other skills' versions of the same loop. Issue #1539 extracted the
+PR-agnostic core into `drive-pr-to-mergeable`; this skill now names it and keeps only what is
+genuinely its own: the perf-PR evidence body, the harness-cluster prohibition, and the reviewer
+budget override (round two unconditional, one verification round after a material fix, then one
+`--fresh` pass, then stop). The override is a caller parameter of the core by design, not a
+divergence — the 2026-09-04 lesson above is why this campaign pays for the second round when nobody
+else does. The "stop adding layers and report the blocker" rule for an unavailable reviewer is now
+the core's own rule that a substituted review unlocks no next layer, so it is no longer restated
+here.
+
+## Merge as you go, not a stack
+
+Until 2026-09-18 the campaign delivered clusters as a stacked chain that stayed unmerged until the
+user landed it. The stacks produced the failures the sections above record — review deferred across
+a whole chain, fix-ups on lower layers, a stack only partly registered with GitHub, rebases the
+auto-mode classifier denied — and a merge-ready claim that rested on per-PR CI rather than the
+chain. With a rival review on every PR, each cluster now merges under `ship-issue` step 5's gate
+before the next cluster branches from the updated `main`, so a later experiment always measures
+against a trunk that contains the earlier fix. The live ledger moved from the stack-tip PR body,
+which had to be copied forward at every layer, to one edited comment on the tracking issue.
+Unattended runs go through `ship-campaign profile=performance`, whose design note records the
+cross-campaign evidence for the switch.
+
+## Destination consent before the first capture
+
+The 2026-10-01 iPhone campaign's merge/publication approval unblocked its GitHub ledger but did not
+unblock sending private code, device context, and measurements to Anthropic Claude. A separate
+explicit destination-and-payload quote did unblock the installed reviewer launcher. The campaign
+also retained its 8 AM Eastern stop after automatic approval review rejected indefinite
+continuation. The user requested a self-heal so these boundaries surface while they are still
+present.
+
+The improvement skill now routes startup through `ship-campaign`'s consent preflight before ledger
+publication, external consultation, or unattended capture. Existing human approval is reused instead
+of requested again; the first real publishing operation and reviewer launch verify their own tool
+acceptance. This changes startup consent, not the product acceptance, review, CI, or merge gates.

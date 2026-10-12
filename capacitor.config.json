@@ -1,0 +1,17 @@
+{
+  "appId": "art.splotch.app",
+  "appName": "Splotch",
+  "webDir": "web/build",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

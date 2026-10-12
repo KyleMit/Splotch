@@ -1,0 +1,52 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --url=https://<mac>.local:54825/ --no-serve --capabilities-file=~/.splotch-rig/ipad-caps-r2.json --appium-url=http://127.0.0.1:4727 --device-class=tablet --actions=idle,palette,color-picker,brushes,stroke-width,settings,coloring,screenshot,ai-waiting,undo,unavailable,clear --output=perf-profiles/coloring-coverage-r1/i1-ipad-safari-full-groups/actions.json
+
+Serving already: https://<mac>.local:54825/
+Coloring books prepared in 143948 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Action sweep 1/4
+Coloring books prepared in 4283 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Action sweep 2/4
+Coloring books prepared in 4271 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Action sweep 3/4
+Coloring books prepared in 4311 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Action sweep 4/4
+
+Discrete action response
+┌─────────┬────────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                             │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'idle frame control'               │ '3/4' │ '4/4'      │ 6         │ undefined      │ undefined      │ 10       │ 13       │ 14      │ '72/1799'         │ 10         │ 0               │ 'PASS'  │
+│ 1       │ 'change ink color'                 │ '3/4' │ '4/4'      │ 2         │ 243            │ 336            │ 9        │ 13       │ 13      │ '303/333'         │ 9          │ 0               │ 'PASS'  │
+│ 2       │ 'open custom color picker'         │ '3/4' │ '4/4'      │ 13        │ 241            │ 245            │ 11       │ 19       │ 19      │ '273/477'         │ 11         │ 0               │ 'PASS'  │
+│ 3       │ 'select custom color'              │ '3/4' │ '4/4'      │ 9         │ 674            │ 686            │ 15       │ 37       │ 37      │ '107/626'         │ 15         │ 0               │ 'PASS'  │
+│ 4       │ 'open brush menu'                  │ '3/4' │ '4/4'      │ 2         │ 241            │ 332            │ 9        │ 10       │ 10      │ '187/336'         │ 9          │ 0               │ 'PASS'  │
+│ 5       │ 'select crayon brush'              │ '3/4' │ '4/4'      │ 2         │ 249            │ 255            │ 9        │ 29       │ 29      │ '175/325'         │ 9          │ 0               │ 'PASS'  │
+│ 6       │ 'select Magic brush'               │ '3/4' │ '4/4'      │ 2         │ 339            │ 340            │ 9        │ 74       │ 74      │ '173/340'         │ 9          │ 0               │ 'PASS'  │
+│ 7       │ 'select eraser'                    │ '3/4' │ '4/4'      │ 1         │ 242            │ 242            │ 9        │ 9        │ 12      │ '178/323'         │ 9          │ 0               │ 'PASS'  │
+│ 8       │ 'select pen brush'                 │ '3/4' │ '4/4'      │ 1         │ 240            │ 338            │ 9        │ 10       │ 10      │ '179/336'         │ 9          │ 0               │ 'PASS'  │
+│ 9       │ 'open stroke-width menu'           │ '3/4' │ '4/4'      │ 2         │ 252            │ 340            │ 9        │ 10       │ 10      │ '198/337'         │ 9          │ 0               │ 'PASS'  │
+│ 10      │ 'change stroke width'              │ '3/4' │ '4/4'      │ 1         │ 250            │ 339            │ 9        │ 9        │ 12      │ '12/337'          │ 9          │ 0               │ 'PASS'  │
+│ 11      │ 'open Settings'                    │ '3/4' │ '4/4'      │ 18        │ 592            │ 600            │ 11       │ 25       │ 35      │ '208/593'         │ 11         │ 0               │ 'PASS'  │
+│ 12      │ 'close Settings'                   │ '3/4' │ '4/4'      │ 4         │ 67             │ 71             │ 15       │ 49       │ 49      │ '117/410'         │ 16         │ 0               │ 'PASS'  │
+│ 13      │ 'first open of coloring books'     │ '3/4' │ '4/4'      │ 13        │ 582            │ 591            │ 9        │ 15       │ 21      │ '184/601'         │ 9          │ 0               │ 'PASS'  │
+│ 14      │ 'reopen coloring books'            │ '3/4' │ '4/4'      │ 7         │ 588            │ 588            │ 9        │ 15       │ 24      │ '186/604'         │ 9          │ 0               │ 'PASS'  │
+│ 15      │ 'open coloring book'               │ '3/4' │ '4/4'      │ 8         │ 11             │ 11             │ 9        │ 24       │ 24      │ '81/396'          │ 9          │ 0               │ 'PASS'  │
+│ 16      │ 'scroll coloring pages'            │ '3/4' │ '4/4'      │ 17        │ 1100           │ 1109           │ 10       │ 12       │ 13      │ '97/629'          │ 10         │ 0               │ 'PASS'  │
+│ 17      │ 'select coloring page'             │ '3/4' │ '4/4'      │ 2         │ 63             │ 67             │ 22       │ 23       │ 27      │ '21/410'          │ 22         │ 0               │ 'PASS'  │
+│ 18      │ 'clear coloring page'              │ '3/4' │ '4/4'      │ 2         │ 596            │ 597            │ 17       │ 17       │ 25      │ '18/606'          │ 17         │ 0               │ 'PASS'  │
+│ 19      │ 'save screenshot'                  │ '3/4' │ '4/4'      │ 1         │ 234            │ 239            │ 9        │ 14       │ 14      │ '758/1166'        │ 9          │ 0               │ 'PASS'  │
+│ 20      │ 'show AI waiting print'            │ '3/4' │ '4/4'      │ 16        │ 20             │ 22             │ 9        │ 24       │ 24      │ '398/398'         │ 9          │ 0               │ 'PASS'  │
+│ 21      │ 'finish AI waiting print'          │ '3/4' │ '4/4'      │ 7         │ 61             │ 61             │ 9        │ 15       │ 15      │ '1952/2191'       │ 9          │ 0               │ 'PASS'  │
+│ 22      │ 'undo latest stroke'               │ '3/4' │ '4/4'      │ 11        │ 236            │ 238            │ 9        │ 15       │ 23      │ '185/480'         │ 9          │ 0               │ 'PASS'  │
+│ 23      │ 'tap unavailable undo'             │ '3/4' │ '4/4'      │ 1         │ 241            │ 245            │ 9        │ 10       │ 10      │ '251/485'         │ 9          │ 0               │ 'PASS'  │
+│ 24      │ 'clear drawing'                    │ '3/4' │ '4/4'      │ 26        │ 1043           │ 1044           │ 10       │ 29       │ 29      │ '363/752'         │ 10         │ 0               │ 'PASS'  │
+│ 25      │ 'clear drawing on a coloring page' │ '3/4' │ '4/4'      │ 8         │ 1045           │ 1045           │ 10       │ 43       │ 43      │ '361/748'         │ 10         │ 0               │ 'PASS'  │
+└─────────┴────────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-coverage-r1/i1-ipad-safari-full-groups/actions.json
+exit=0

@@ -1,0 +1,20 @@
+{"label":"c1-ctl","arm":"restamp","entry":"start.BWCvNp7k.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+07:51:21 c1-ctl exit=0
+{"label":"t1-trt","arm":"restamp","entry":"start.BE2GeFJm.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+07:53:19 t1-trt exit=0
+{"label":"t2-trt","arm":"restamp","entry":"start.BE2GeFJm.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+07:55:17 t2-trt exit=0
+{"label":"c2-ctl","arm":"restamp","entry":"start.BWCvNp7k.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+07:57:15 c2-ctl exit=0
+{"label":"c3-ctl","arm":"restamp","entry":"start.BWCvNp7k.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+07:59:13 c3-ctl exit=0
+{"label":"t3-trt","arm":"restamp","entry":"start.BE2GeFJm.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+08:01:11 t3-trt exit=0
+{"label":"t4-trt","arm":"restamp","entry":"start.BE2GeFJm.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+08:03:09 t4-trt exit=0
+{"label":"c4-ctl","arm":"restamp","entry":"start.BWCvNp7k.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+08:05:08 c4-ctl exit=0
+{"label":"c5-ctl","arm":"restamp","entry":"start.BWCvNp7k.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+08:07:06 c5-ctl exit=0
+{"label":"t5-trt","arm":"restamp","entry":"start.BE2GeFJm.js","vp":{"W":360,"H":643,"dpr":3,"orientation":"PORTRAIT"},"ua":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Mobile Safari/537.36"}
+08:09:04 t5-trt exit=0

@@ -1,0 +1,8 @@
+launched [360,780,"portrait-primary"] mDisplayRotation=ROTATION_0
+initial {"lockedOrientation":"portrait"}
+after-unlock+0 [360,780,"portrait-primary"] mDisplayRotation=ROTATION_0
+after-unlock+500 [360,780,"portrait-primary"] mDisplayRotation=ROTATION_0
+after-unlock+1500 [360,780,"portrait-primary"] mDisplayRotation=ROTATION_0
+after-unlock+3000 [360,780,"portrait-primary"] mDisplayRotation=ROTATION_0
+after-reassert [780,360,"landscape-primary"] mDisplayRotation=ROTATION_90
+after-restore [360,780,"portrait-primary"] mDisplayRotation=ROTATION_0

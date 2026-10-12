@@ -1,0 +1,13 @@
+diff --git a/tools/rival-agent/tests/ledger.test.mjs b/tools/rival-agent/tests/ledger.test.mjs
+index e265a89b8..590ed9296 100644
+--- a/tools/rival-agent/tests/ledger.test.mjs
++++ b/tools/rival-agent/tests/ledger.test.mjs
+@@ -24,7 +24,7 @@ afterEach(() => {
+ });
+ 
+ describe('ledger', () => {
+-  it('keys one reviewer per checkout, scope kind, and ref', () => {
++  it('keys one reviewer per checkout, scope kind, and ref, never across kinds', () => {
+     const pr = ledgerKey({ repoRoot: '/r', kind: 'pr', ref: '7' });
+     expect(pr).toHaveLength(32);
+     expect(pr).not.toBe(ledgerKey({ repoRoot: '/r', kind: 'pr', ref: '8' }));

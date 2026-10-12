@@ -1,0 +1,4 @@
+connection at load {"type":"wifi","effectiveType":"4g","downlink":1.55,"rtt":50,"saveData":false}
+state at load {"catalog":["farm","dinosaur","creatures","nature","objects","shapes","space","vehicles"],"missing":[]}
+raw fetch of the manifest over adb reverse {"bytes":185330,"ms":13}
+5s missing=0 {"type":"wifi","effectiveType":"4g","downlink":1.55,"rtt":50,"saveData":false} visibility visible

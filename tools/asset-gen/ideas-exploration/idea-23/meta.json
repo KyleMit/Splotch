@@ -1,0 +1,40 @@
+{
+  "idea": 23,
+  "title": "Golden-set regression fixtures",
+  "verdict": "WORKED",
+  "oneline": "Catalog-wide golden score freeze/diff works: deterministic, ~54s, caught one-page revert",
+  "summary": "Froze all offline audit scores (solidity/eye-rings, light keep/localKeep+eyes, night drift/bgLuma/lineWhite+eyes) for 102 pages into one committed 67KB JSON in ~54s, after extracting the night gates from the generator into lib/night-scores.mjs. Re-freeze is byte-identical (deterministic) and a no-op diff is clean; reverting bee-wide's night raw to its pre-chalk version was caught as exactly that page (lineWhite 252->195, exit 1). 134 already-failing verdicts freeze as an explicit baseline so only changes gate. One caveat: a swap between two score-identical renders diffs clean — the golden set guards scores, not content identity.",
+  "tried": [
+    "Extracted scoreDrift/scoreNightness/scoreLineColor from gen-coloring-fills-dark.mjs into lib/night-scores.mjs so committed night raws can be re-scored offline",
+    "Built audit-golden.mjs with --freeze/--diff modes over all 5 audit surfaces, 4-way concurrency",
+    "Cross-validated golden scores against all three canonical audits (drift, eyes, solidity)",
+    "Determinism check: two freezes byte-compared with cmp",
+    "One-page revert spot-check with two different historical assets",
+    "npm scripts gen:coloring:golden:freeze / :diff per ADR-0019, verified via npm run",
+    "Patch re-apply check on pristine tree plus a full diff run from the re-applied state"
+  ],
+  "worked": [
+    "Freeze: 102 pages in ~54s, fully offline, 0 Gemini calls",
+    "Byte-identical re-freeze (fully deterministic; no nondeterministic score found)",
+    "No-op diff exactly clean, exit 0",
+    "bee-wide night raw revert caught as exactly 1 page, exit 1 (bgLuma 43.9->49, lineWhite 252->195)",
+    "Golden numbers match canonical audits to the digit",
+    "134 known-failing verdicts frozen as explicit baseline without blocking"
+  ],
+  "failed": [
+    "First revert attempt (ant-wide light raw to a81be48) diffed clean — that older render is score-identical (keep 1.0/1.0) against the current outline, so score-invisible asset swaps exist"
+  ],
+  "limitations": [
+    "Guards scores, not content identity: two valid renders with identical rounded scores diff clean (a content-hash column would fix this at the cost of golden churn on every intentional regen)",
+    "Whole-catalog only (~1 min per diff), no page filter",
+    "Shipped punched fills/thumbs not scored (derived from raws by design)",
+    "No chalk-only metric exists in today's audits; chalks only show up via night scoring",
+    "night.eyesOk on the old dead-eyed bee raw did NOT flip because the current chalk composite rescues it — numeric movement detection carried that catch"
+  ],
+  "comparisons": [],
+  "images": [],
+  "code": [
+    { "title": "Golden freeze/diff tool + night-score lib extraction + npm scripts", "file": "code/golden-tooling.patch" },
+    { "title": "The generated catalog snapshot golden-scores.json as a patch", "file": "code/golden-scores-snapshot.patch" }
+  ]
+}

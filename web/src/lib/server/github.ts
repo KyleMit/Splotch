@@ -1,0 +1,90 @@
+import { GITHUB_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import { config } from './config';
+
+// Server-only seam for the one thing we do with GitHub: open an issue from an
+// in-app feedback report. Isolated here (mirroring the AI provider seam,
+// ADR-0047) so route code never touches the token or the REST shape directly.
+
+const GITHUB_API = 'https://api.github.com';
+const GITHUB_ACCEPT = 'application/vnd.github+json';
+const GITHUB_API_VERSION = '2022-11-28';
+const GITHUB_USER_AGENT = 'splotch-feedback';
+// Bounds the thrown message (and every log line downstream) — a GitHub error
+// body can be a full HTML page.
+const ERROR_DETAIL_MAX_CHARS = 300;
+
+function targetRepo(): string {
+  return config.githubIssueRepo();
+}
+
+/** Whether a token is configured — the endpoint uses this to fail gracefully. */
+export function isReportingConfigured(): boolean {
+  return Boolean(config.githubIssueToken());
+}
+
+/**
+ * Neutralize GitHub-flavoured Markdown in untrusted text before it is embedded
+ * in an issue body. `/api/report` is unauthenticated, so a submitter must not be
+ * able to make the issue notify people or embed remote content: we backslash-
+ * escape the trigger characters (all ASCII-punctuation escapes GitHub honours),
+ * which renders the literal text the user typed, minus the powers:
+ *
+ *  - `@name` / `@org/team` → no user or team mention (which would fire a notification)
+ *  - `#123`               → no issue/PR back-reference (also a notification)
+ *  - `![alt](url)`        → no image embed (plain `[text](url)` links are left intact)
+ *  - `<img …>` / `<a …>`  → no raw HTML tags at all
+ *
+ * Backslashes are escaped first: otherwise a `\` the text already carries would
+ * pair with the one added here into a literal backslash, leaving the `@`, `#`,
+ * `![` or `<` after it live again.
+ *
+ * Applied to every issue-body string the server did not write: the report
+ * message, every device value, and an AI report's refusal reason. Issue
+ * *titles* need no escaping — GitHub renders them as plain text, so a mention
+ * or ref there neither links nor notifies.
+ */
+export function escapeIssueMarkdown(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/</g, '\\<')
+    .replace(/@(?=[A-Za-z0-9_-])/g, '\\@')
+    .replace(/#(?=\d)/g, '\\#')
+    .replace(/!(?=\[)/g, '\\!');
+}
+
+export interface CreateIssueInput {
+  title: string;
+  body: string;
+  labels: string[];
+}
+
+/**
+ * Create an issue in the target repo. Throws if the token is missing or GitHub
+ * returns anything but 201 — the caller maps that to a friendly 5xx so a
+ * child's parent never sees a raw error.
+ */
+export async function createIssue(input: CreateIssueInput): Promise<void> {
+  const token = config.githubIssueToken();
+  if (!token) throw new Error('GITHUB_ISSUE_TOKEN is not configured');
+
+  const res = await fetch(`${GITHUB_API}/repos/${targetRepo()}/issues`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: GITHUB_ACCEPT,
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
+      'Content-Type': 'application/json',
+      // GitHub rejects API calls without a User-Agent.
+      'User-Agent': GITHUB_USER_AGENT,
+    },
+    body: JSON.stringify(input),
+    signal: AbortSignal.timeout(GITHUB_REQUEST_TIMEOUT_MS),
+  });
+
+  if (res.status !== 201) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(
+      `GitHub issue creation failed (${res.status}): ${detail.slice(0, ERROR_DETAIL_MAX_CHARS)}`
+    );
+  }
+}

@@ -1,0 +1,4820 @@
+{
+  "version": 6,
+  "thresholds": {
+    "keep": 0.92,
+    "localKeep": 0.8,
+    "localWarpMax": 4,
+    "nightDriftMax": 0.004,
+    "bgLumaMax": 60,
+    "lineWhiteMin": 150,
+    "solidBlobMax": 100,
+    "solidInteriorMax": 60,
+    "eyeRingDepthMax": 4,
+    "frameSideCoverageMin": 0.7,
+    "ghostLumaMax": 245,
+    "ghostSideCoverageMin": 0.9,
+    "chalkInkDiffMax": 362
+  },
+  "pages": {
+    "creatures/dragon-tall": {
+      "outline": {
+        "darkPx": 110237,
+        "interiorPx": 3073,
+        "solidPx": 6543,
+        "biggestBlob": 1861,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1289,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 95,
+        "solidInkPx": 119,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9984,
+        "localKeep": 0.9032,
+        "worstTile": "3,5",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 5,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0.00007,
+        "bgLuma": 40.5,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.23,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/dragon-wide": {
+      "outline": {
+        "darkPx": 103774,
+        "interiorPx": 1802,
+        "solidPx": 4066,
+        "biggestBlob": 1003,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 3,
+        "frameCoverage": 0.1276,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 83,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 24.4,
+        "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.27,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/fairy-tall": {
+      "outline": {
+        "darkPx": 107425,
+        "interiorPx": 535,
+        "solidPx": 2175,
+        "biggestBlob": 252,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1241,
+        "ghostCoverage": 0.0065,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 38,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00248,
+        "bgLuma": 33.9,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/fairy-wide": {
+      "outline": {
+        "darkPx": 132582,
+        "interiorPx": 476,
+        "solidPx": 1576,
+        "biggestBlob": 239,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.2561,
+        "ghostCoverage": 0.0061,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9978,
+        "localKeep": 0.9698,
+        "worstTile": "4,4",
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00077,
+        "bgLuma": 33.6,
+        "lineWhite": 242,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/mermaid-tall": {
+      "outline": {
+        "darkPx": 103607,
+        "interiorPx": 1997,
+        "solidPx": 4667,
+        "biggestBlob": 1002,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.1107,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 3,
+        "solidInkPx": 33,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 8,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 35.2,
+        "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.58,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/mermaid-wide": {
+      "outline": {
+        "darkPx": 118957,
+        "interiorPx": 1799,
+        "solidPx": 5169,
+        "biggestBlob": 956,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.145,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 5,
+        "solidInkPx": 11,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 3,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.4,
+        "lineWhite": 246,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.53,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/owl-tall": {
+      "outline": {
+        "darkPx": 103610,
+        "interiorPx": 5640,
+        "solidPx": 9520,
+        "biggestBlob": 2915,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 28,
+        "solidInkPx": 343,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 18.5,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.25,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/owl-wide": {
+      "outline": {
+        "darkPx": 133339,
+        "interiorPx": 2761,
+        "solidPx": 5463,
+        "biggestBlob": 1461,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 3,
+        "frameCoverage": 0.1528,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 143,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00366,
+        "bgLuma": 24.4,
+        "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.19,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/pegasus-tall": {
+      "outline": {
+        "darkPx": 101613,
+        "interiorPx": 1277,
+        "solidPx": 2747,
+        "biggestBlob": 1267,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1918,
+        "ghostCoverage": 0.0035,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 128,
+        "solidInkPx": 10,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9999,
+        "localKeep": 0.9971,
+        "worstTile": "1,2",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 1,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 38.4,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.67,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/pegasus-wide": {
+      "outline": {
+        "darkPx": 97324,
+        "interiorPx": 556,
+        "solidPx": 1336,
+        "biggestBlob": 556,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 29.2,
+        "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.39,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/unicorn-tall": {
+      "outline": {
+        "darkPx": 117076,
+        "interiorPx": 1260,
+        "solidPx": 3003,
+        "biggestBlob": 1260,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1649,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 1,
+        "solidInkPx": 60,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 45.5,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.34,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "creatures/unicorn-wide": {
+      "outline": {
+        "darkPx": 108065,
+        "interiorPx": 819,
+        "solidPx": 1974,
+        "biggestBlob": 819,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.0764,
+        "ghostCoverage": 0.0065,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 204,
+        "solidInkPx": 58,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9999,
+        "localKeep": 0.9979,
+        "worstTile": "6,6",
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 1,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 42.9,
+        "lineWhite": 246,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.18,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/brachiosaurus-tall": {
+      "outline": {
+        "darkPx": 98204,
+        "interiorPx": 92,
+        "solidPx": 532,
+        "biggestBlob": 91,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1467,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 3,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.8,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/brachiosaurus-wide": {
+      "outline": {
+        "darkPx": 99319,
+        "interiorPx": 126,
+        "solidPx": 732,
+        "biggestBlob": 124,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1563,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 8,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 39.4,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/pterodactyl-tall": {
+      "outline": {
+        "darkPx": 74982,
+        "interiorPx": 714,
+        "solidPx": 1769,
+        "biggestBlob": 714,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1042,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 123,
+        "solidInkPx": 64,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.7,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/pterodactyl-wide": {
+      "outline": {
+        "darkPx": 96292,
+        "interiorPx": 597,
+        "solidPx": 1756,
+        "biggestBlob": 546,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.138,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.3,
+        "lineWhite": 251,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/stegosaurus-tall": {
+      "outline": {
+        "darkPx": 101882,
+        "interiorPx": 210,
+        "solidPx": 1342,
+        "biggestBlob": 210,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1458,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9999,
+        "localKeep": 0.9964,
+        "worstTile": "6,7",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 1,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 27.2,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.46,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/stegosaurus-wide": {
+      "outline": {
+        "darkPx": 111348,
+        "interiorPx": 281,
+        "solidPx": 1041,
+        "biggestBlob": 280,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.0764,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 47.9,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/trex-tall": {
+      "outline": {
+        "darkPx": 115779,
+        "interiorPx": 1484,
+        "solidPx": 3084,
+        "biggestBlob": 1436,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1159,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 114,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 5,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.7,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.61,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/trex-wide": {
+      "outline": {
+        "darkPx": 100548,
+        "interiorPx": 528,
+        "solidPx": 1308,
+        "biggestBlob": 528,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1024,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 13,
+        "solidInkPx": 29,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9998,
+        "localKeep": 0.9934,
+        "worstTile": "4,3",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 3,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 20.9,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/triceratops-tall": {
+      "outline": {
+        "darkPx": 116867,
+        "interiorPx": 2554,
+        "solidPx": 5626,
+        "biggestBlob": 1297,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.0964,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 56,
+        "solidInkPx": 156,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 5,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.6,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.29,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/triceratops-wide": {
+      "outline": {
+        "darkPx": 91528,
+        "interiorPx": 433,
+        "solidPx": 1708,
+        "biggestBlob": 396,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.0859,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 302,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 24.3,
+        "lineWhite": 245,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/velociraptor-tall": {
+      "outline": {
+        "darkPx": 117934,
+        "interiorPx": 1448,
+        "solidPx": 2748,
+        "biggestBlob": 1447,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 55,
+        "solidInkPx": 149,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 1,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 47.8,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.41,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "dinosaur/velociraptor-wide": {
+      "outline": {
+        "darkPx": 134265,
+        "interiorPx": 452,
+        "solidPx": 1326,
+        "biggestBlob": 452,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1198,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 40,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 30.4,
+        "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/cat-tall": {
+      "outline": {
+        "darkPx": 113936,
+        "interiorPx": 2409,
+        "solidPx": 5159,
+        "biggestBlob": 1205,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1658,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 124,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 41.9,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.21,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/cat-wide": {
+      "outline": {
+        "darkPx": 103515,
+        "interiorPx": 973,
+        "solidPx": 2541,
+        "biggestBlob": 521,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0065,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 20,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.7,
+        "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/cow-tall": {
+      "outline": {
+        "darkPx": 107974,
+        "interiorPx": 785,
+        "solidPx": 2350,
+        "biggestBlob": 441,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 25,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.7,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.15,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/cow-wide": {
+      "outline": {
+        "darkPx": 109148,
+        "interiorPx": 903,
+        "solidPx": 2526,
+        "biggestBlob": 527,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 3,
+        "frameCoverage": 0.0781,
+        "ghostCoverage": 0.0065,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 11,
+        "solidInkPx": 36,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.7,
+        "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/dog-tall": {
+      "outline": {
+        "darkPx": 110027,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 8,
+        "ringDepth": 3,
+        "frameCoverage": 0.1497,
+        "ghostCoverage": 0.0035,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 3,
+        "eyeLively": 3,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 27.7,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/dog-wide": {
+      "outline": {
+        "darkPx": 99523,
+        "interiorPx": 1721,
+        "solidPx": 4733,
+        "biggestBlob": 1101,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.1146,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 27,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00056,
+        "bgLuma": 38.5,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/duck-tall": {
+      "outline": {
+        "darkPx": 112031,
+        "interiorPx": 1380,
+        "solidPx": 3370,
+        "biggestBlob": 851,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1445,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 48,
+        "solidInkPx": 3,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 27.1,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.68,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/duck-wide": {
+      "outline": {
+        "darkPx": 101891,
+        "interiorPx": 498,
+        "solidPx": 1378,
+        "biggestBlob": 498,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1241,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 1,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00182,
+        "bgLuma": 33.7,
+        "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/horse-tall": {
+      "outline": {
+        "darkPx": 101779,
+        "interiorPx": 865,
+        "solidPx": 2566,
+        "biggestBlob": 676,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1263,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 4,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0.00028,
+        "bgLuma": 32.8,
+        "lineWhite": 252,
+        "localWarpMax": 6.08,
+        "warpTiles": 3,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.52,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/horse-wide": {
+      "outline": {
+        "darkPx": 102818,
+        "interiorPx": 366,
+        "solidPx": 1186,
+        "biggestBlob": 363,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.0825,
+        "ghostCoverage": 0.0043,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9999,
+        "localKeep": 0.9979,
+        "worstTile": "2,4",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00188,
+        "bgLuma": 49.1,
+        "lineWhite": 248,
+        "localWarpMax": 5.1,
+        "warpTiles": 1,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/pig-tall": {
+      "outline": {
+        "darkPx": 81595,
+        "interiorPx": 1288,
+        "solidPx": 3308,
+        "biggestBlob": 711,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1285,
+        "ghostCoverage": 0.0017,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 139,
+        "solidInkPx": 48,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 27.9,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "farm/pig-wide": {
+      "outline": {
+        "darkPx": 103704,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.0964,
+        "ghostCoverage": 0.0065,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 892,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 3,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 39.8,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/ant-tall": {
+      "outline": {
+        "darkPx": 99686,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 3,
+        "frameCoverage": 0.1068,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 183,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0.00026,
+        "bgLuma": 10.7,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/ant-wide": {
+      "outline": {
+        "darkPx": 92840,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.0729,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 143,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.7,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/bee-tall": {
+      "outline": {
+        "darkPx": 79921,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.0538,
+        "ghostCoverage": 0.0065,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 8,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 6,
+        "eyeLively": 6,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.9,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/bee-wide": {
+      "outline": {
+        "darkPx": 109603,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.1337,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 82,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 4,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0.00232,
+        "bgLuma": 33.9,
+        "lineWhite": 252,
+        "localWarpMax": 6.4,
+        "warpTiles": 1,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/caterpillar-tall": {
+      "outline": {
+        "darkPx": 84690,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 5,
+        "frameCoverage": 0.0716,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": false,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 481,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 0.9998,
+        "localKeep": 0.9942,
+        "worstTile": "4,3",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 5,
+        "eyeLively": 5,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 46.8,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/caterpillar-wide": {
+      "outline": {
+        "darkPx": 88580,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 4,
+        "frameCoverage": 0.0399,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 37,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9937,
+        "localKeep": 0.8465,
+        "worstTile": "3,4",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 40.7,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/ladybug-tall": {
+      "outline": {
+        "darkPx": 110246,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 7.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.069,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 118,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 11,
+        "eyeLively": 6,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 39.7,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/ladybug-wide": {
+      "outline": {
+        "darkPx": 117991,
+        "interiorPx": 2,
+        "solidPx": 182,
+        "biggestBlob": 2,
+        "strokeWidth": 7.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 39,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 36,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/snail-tall": {
+      "outline": {
+        "darkPx": 99558,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1523,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 95,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 17.4,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/snail-wide": {
+      "outline": {
+        "darkPx": 86352,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.0998,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 507,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 33.8,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/spider-tall": {
+      "outline": {
+        "darkPx": 95767,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.0195,
+        "ghostCoverage": 0.0009,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 149,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 4,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.6,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "nature/spider-wide": {
+      "outline": {
+        "darkPx": 107099,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 3,
+        "frameCoverage": 0.0365,
+        "ghostCoverage": 0.0052,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 24,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 6,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 41.7,
+        "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/apple-tall": {
+      "outline": {
+        "darkPx": 90724,
+        "interiorPx": 11,
+        "solidPx": 319,
+        "biggestBlob": 11,
+        "strokeWidth": 8.484000205993652,
+        "ringDepth": 0,
+        "frameCoverage": 0.0938,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 3,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 27.9,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/apple-wide": {
+      "outline": {
+        "darkPx": 93117,
+        "interiorPx": 36,
+        "solidPx": 770,
+        "biggestBlob": 26,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1502,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 2,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 41,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/balloon-tall": {
+      "outline": {
+        "darkPx": 61197,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.0486,
+        "ghostCoverage": 0.0078,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 703,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.8,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/balloon-wide": {
+      "outline": {
+        "darkPx": 98347,
+        "interiorPx": 538,
+        "solidPx": 2221,
+        "biggestBlob": 274,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.1241,
+        "ghostCoverage": 0.0065,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 63,
+        "solidInkPx": 24,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 38.4,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/flower-tall": {
+      "outline": {
+        "darkPx": 105002,
+        "interiorPx": 655,
+        "solidPx": 3567,
+        "biggestBlob": 332,
+        "strokeWidth": 9.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1224,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 668,
+        "solidInkPx": 2,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 18.8,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/flower-wide": {
+      "outline": {
+        "darkPx": 107005,
+        "interiorPx": 577,
+        "solidPx": 1807,
+        "biggestBlob": 295,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1016,
+        "ghostCoverage": 0.0061,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 498,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 31.4,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/house-tall": {
+      "outline": {
+        "darkPx": 108946,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.1311,
+        "ghostCoverage": 0.0052,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 239,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 14,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00147,
+        "bgLuma": 27,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/house-wide": {
+      "outline": {
+        "darkPx": 93951,
+        "interiorPx": 5,
+        "solidPx": 265,
+        "biggestBlob": 4,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.066,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 163,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 1,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 40.7,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/teddy-tall": {
+      "outline": {
+        "darkPx": 81277,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.0929,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 4,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 37.7,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/teddy-wide": {
+      "outline": {
+        "darkPx": 108809,
+        "interiorPx": 1256,
+        "solidPx": 3728,
+        "biggestBlob": 629,
+        "strokeWidth": 7.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.2127,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 7,
+        "solidInkPx": 58,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 1,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 24.5,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/umbrella-tall": {
+      "outline": {
+        "darkPx": 47582,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0,
+        "ghostCoverage": 0.0017,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 70,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.8,
+        "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "objects/umbrella-wide": {
+      "outline": {
+        "darkPx": 100244,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.1007,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 289,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.9,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/circle-tall": {
+      "outline": {
+        "darkPx": 76455,
+        "interiorPx": 0,
+        "solidPx": 272,
+        "biggestBlob": 0,
+        "strokeWidth": 7.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1259,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 267,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 4,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 42,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/circle-wide": {
+      "outline": {
+        "darkPx": 72681,
+        "interiorPx": 0,
+        "solidPx": 49,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.1432,
+        "ghostCoverage": 0.0052,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 33.8,
+        "lineWhite": 251,
+        "localWarpMax": 7.07,
+        "warpTiles": 1,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/heart-tall": {
+      "outline": {
+        "darkPx": 86997,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.1224,
+        "ghostCoverage": 0.0052,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 5241,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 31.2,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/heart-wide": {
+      "outline": {
+        "darkPx": 52123,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0,
+        "ghostCoverage": 0.0052,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 24.5,
+        "lineWhite": 240,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/rectangle-tall": {
+      "outline": {
+        "darkPx": 81161,
+        "interiorPx": 3501,
+        "solidPx": 7101,
+        "biggestBlob": 1767,
+        "strokeWidth": 8,
+        "ringDepth": 0,
+        "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 225,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 35,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/rectangle-wide": {
+      "outline": {
+        "darkPx": 52564,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 3,
+        "frameCoverage": 0.0234,
+        "ghostCoverage": 0,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 607,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 4,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 31.1,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/square-tall": {
+      "outline": {
+        "darkPx": 82197,
+        "interiorPx": 2804,
+        "solidPx": 6176,
+        "biggestBlob": 1400,
+        "strokeWidth": 8,
+        "ringDepth": 0,
+        "frameCoverage": 0.0825,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 179,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 23.5,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.25,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/square-wide": {
+      "outline": {
+        "darkPx": 84142,
+        "interiorPx": 2402,
+        "solidPx": 5377,
+        "biggestBlob": 1202,
+        "strokeWidth": 8,
+        "ringDepth": 0,
+        "frameCoverage": 0.1337,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 149,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 25.7,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.23,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/star-tall": {
+      "outline": {
+        "darkPx": 68580,
+        "interiorPx": 2133,
+        "solidPx": 5241,
+        "biggestBlob": 1072,
+        "strokeWidth": 9.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.1133,
+        "ghostCoverage": 0.0017,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 160,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 22.2,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.27,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/star-wide": {
+      "outline": {
+        "darkPx": 59584,
+        "interiorPx": 713,
+        "solidPx": 3121,
+        "biggestBlob": 366,
+        "strokeWidth": 8.484000205993652,
+        "ringDepth": 0,
+        "frameCoverage": 0,
+        "ghostCoverage": 0.0013,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 44,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 17.7,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/triangle-tall": {
+      "outline": {
+        "darkPx": 72951,
+        "interiorPx": 1674,
+        "solidPx": 4829,
+        "biggestBlob": 838,
+        "strokeWidth": 8.484000205993652,
+        "ringDepth": 0,
+        "frameCoverage": 0.0972,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 124,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.9,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.24,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/triangle-wide": {
+      "outline": {
+        "darkPx": 88365,
+        "interiorPx": 2868,
+        "solidPx": 6147,
+        "biggestBlob": 1462,
+        "strokeWidth": 8,
+        "ringDepth": 0,
+        "frameCoverage": 0.1155,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 182,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.5,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.42,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/astronaut-tall": {
+      "outline": {
+        "darkPx": 102132,
+        "interiorPx": 934,
+        "solidPx": 2734,
+        "biggestBlob": 472,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.0938,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 61,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 6,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 28,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/astronaut-wide": {
+      "outline": {
+        "darkPx": 89784,
+        "interiorPx": 400,
+        "solidPx": 2170,
+        "biggestBlob": 112,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 0.9989,
+        "localKeep": 0.9694,
+        "worstTile": "3,5",
+        "localWarpMax": 7.21,
+        "warpTiles": 1,
+        "residualShift": 1.41,
+        "eyeCores": 6,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 20.8,
+        "lineWhite": 250,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/meteor-tall": {
+      "outline": {
+        "darkPx": 86980,
+        "interiorPx": 972,
+        "solidPx": 4104,
+        "biggestBlob": 466,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 0,
+        "frameCoverage": 0.1068,
+        "ghostCoverage": 0.0017,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 5,
+        "solidInkPx": 39,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.3,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/meteor-wide": {
+      "outline": {
+        "darkPx": 90426,
+        "interiorPx": 110,
+        "solidPx": 730,
+        "biggestBlob": 58,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 3,
+        "frameCoverage": 0.1832,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 265,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 7,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 23.6,
+        "lineWhite": 249,
+        "localWarpMax": 2.24,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/moon-tall": {
+      "outline": {
+        "darkPx": 64534,
+        "interiorPx": 1176,
+        "solidPx": 3732,
+        "biggestBlob": 649,
+        "strokeWidth": 8,
+        "ringDepth": 0,
+        "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 59,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 2,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.7,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.26,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/moon-wide": {
+      "outline": {
+        "darkPx": 65613,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 7.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.0408,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 362,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 20.1,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/rover-tall": {
+      "outline": {
+        "darkPx": 103752,
+        "interiorPx": 1173,
+        "solidPx": 2705,
+        "biggestBlob": 1173,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.1918,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 198,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 5,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 23.2,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.76,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/rover-wide": {
+      "outline": {
+        "darkPx": 136171,
+        "interiorPx": 638,
+        "solidPx": 1925,
+        "biggestBlob": 345,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.1545,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 18,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 10,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 21.4,
+        "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/ship-tall": {
+      "outline": {
+        "darkPx": 76894,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 0,
+        "frameCoverage": 0.0538,
+        "ghostCoverage": 0.0017,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 8,
+        "eyeLively": 8,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0.00026,
+        "bgLuma": 30.2,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/ship-wide": {
+      "outline": {
+        "darkPx": 97239,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 7.656000137329102,
+        "ringDepth": 0,
+        "frameCoverage": 0.151,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 1722,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
+      "light": {
+        "keep": 0.9999,
+        "localKeep": 0.9961,
+        "worstTile": "2,6",
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 34.9,
+        "lineWhite": 254,
+        "localWarpMax": 6.08,
+        "warpTiles": 1,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/station-tall": {
+      "outline": {
+        "darkPx": 110084,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.1576,
+        "ghostCoverage": 0.0069,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00034,
+        "bgLuma": 25.6,
+        "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "space/station-wide": {
+      "outline": {
+        "darkPx": 101100,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0039,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 274,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 27.9,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/excavator-tall": {
+      "outline": {
+        "darkPx": 119934,
+        "interiorPx": 352,
+        "solidPx": 1624,
+        "biggestBlob": 187,
+        "strokeWidth": 6.828000068664551,
+        "ringDepth": 4,
+        "frameCoverage": 0.1554,
+        "ghostCoverage": 0.0017,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 23,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 6,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 51.2,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.75,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/excavator-wide": {
+      "outline": {
+        "darkPx": 131103,
+        "interiorPx": 753,
+        "solidPx": 2053,
+        "biggestBlob": 383,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.0868,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 15,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 8,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 24.4,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.69,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/fire-tall": {
+      "outline": {
+        "darkPx": 147551,
+        "interiorPx": 1293,
+        "solidPx": 3563,
+        "biggestBlob": 720,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.125,
+        "ghostCoverage": 0.0039,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 210,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 12,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 40.6,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.4,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/fire-wide": {
+      "outline": {
+        "darkPx": 138887,
+        "interiorPx": 762,
+        "solidPx": 2151,
+        "biggestBlob": 408,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.1181,
+        "ghostCoverage": 0.0091,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 14,
+        "eyeLively": 7,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 23.3,
+        "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/garbage-tall": {
+      "outline": {
+        "darkPx": 114880,
+        "interiorPx": 958,
+        "solidPx": 2488,
+        "biggestBlob": 552,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.1185,
+        "ghostCoverage": 0.0017,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 36,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 3,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 17.3,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.69,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/garbage-wide": {
+      "outline": {
+        "darkPx": 135679,
+        "interiorPx": 901,
+        "solidPx": 2769,
+        "biggestBlob": 529,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.1293,
+        "ghostCoverage": 0.0091,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 56,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 11,
+        "eyeLively": 0,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.8,
+        "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.55,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/monster-tall": {
+      "outline": {
+        "darkPx": 127997,
+        "interiorPx": 1548,
+        "solidPx": 3508,
+        "biggestBlob": 778,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.1237,
+        "ghostCoverage": 0.0017,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 253,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyeCores": 8,
+        "eyeLively": 4,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 31.5,
+        "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.49,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/monster-wide": {
+      "outline": {
+        "darkPx": 116379,
+        "interiorPx": 1073,
+        "solidPx": 3503,
+        "biggestBlob": 707,
+        "strokeWidth": 5.656000137329102,
+        "ringDepth": 4,
+        "frameCoverage": 0.1102,
+        "ghostCoverage": 0.0065,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 1844,
+        "solidInkPx": 15,
+        "regionsFlagged": 1
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 6,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 31.4,
+        "lineWhite": 246,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/police-tall": {
+      "outline": {
+        "darkPx": 105471,
+        "interiorPx": 23,
+        "solidPx": 446,
+        "biggestBlob": 23,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.0924,
+        "ghostCoverage": 0.0026,
+        "solidOk": true,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 73,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 13,
+        "eyeLively": 7,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.4,
+        "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/police-wide": {
+      "outline": {
+        "darkPx": 105652,
+        "interiorPx": 1447,
+        "solidPx": 3477,
+        "biggestBlob": 765,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.0903,
+        "ghostCoverage": 0.0052,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 124,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 7,
+        "eyeLively": 2,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 26.7,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.56,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/train-tall": {
+      "outline": {
+        "darkPx": 131343,
+        "interiorPx": 1450,
+        "solidPx": 4731,
+        "biggestBlob": 505,
+        "strokeWidth": 6,
+        "ringDepth": 4,
+        "frameCoverage": 0.1081,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 59,
+        "solidInkPx": 7,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyeCores": 5,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": null
+      },
+      "night": {
+        "drift": 0.00028,
+        "bgLuma": 34.1,
+        "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.71,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "vehicles/train-wide": {
+      "outline": {
+        "darkPx": 146393,
+        "interiorPx": 700,
+        "solidPx": 2630,
+        "biggestBlob": 279,
+        "strokeWidth": 6,
+        "ringDepth": 3,
+        "frameCoverage": 0.0616,
+        "ghostCoverage": 0.0026,
+        "solidOk": false,
+        "ringsOk": true,
+        "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 10,
+        "solidInkPx": 4,
+        "regionsFlagged": 0
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyeCores": 2,
+        "eyeLively": 1,
+        "driftOk": true,
+        "warpOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.6,
+        "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "warpOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    }
+  }
+}

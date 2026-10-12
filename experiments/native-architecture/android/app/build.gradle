@@ -1,0 +1,64 @@
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+
+def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+def releaseSigningNames = ['splotch.probe.release.storeFile', 'splotch.probe.release.storePassword', 'splotch.probe.release.keyAlias', 'splotch.probe.release.keyPassword']
+def releaseSigning = releaseSigningNames.collect { findProperty(it) }
+if (releaseSigning.any { !it }) {
+    throw new GradleException("Candidate Release signing inputs are required")
+}
+def releaseStore = new File(releaseSigning[0].toString())
+if (!releaseStore.isAbsolute() || !releaseStore.isFile() || releaseStore.canonicalPath.startsWith(projectRoot + File.separator) || releaseStore.name != 'candidate-release.keystore') {
+    throw new GradleException("Candidate Release keystore must be an external owned file")
+}
+
+react {
+    entryFile = file(["node", "-e", "require('expo/scripts/resolveAppEntry')", projectRoot, "android", "absolute"].execute(null, rootDir).text.trim())
+    reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
+    hermesCommand = new File(["node", "--print", "require.resolve('hermes-compiler/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + "/hermesc/%OS-BIN%/hermesc"
+    codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
+    cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
+    bundleCommand = "export:embed"
+    autolinkLibrariesWithApp()
+}
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
+    namespace "art.splotch.migration.probe"
+    defaultConfig {
+        applicationId "art.splotch.migration.probe"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", '"stable"'
+    }
+    signingConfigs {
+        candidateRelease {
+            storeFile releaseStore
+            storePassword releaseSigning[1].toString()
+            keyAlias releaseSigning[2].toString()
+            keyPassword releaseSigning[3].toString()
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.candidateRelease
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            crunchPngs true
+        }
+    }
+    packagingOptions {
+        jniLibs { useLegacyPackaging false }
+    }
+}
+
+dependencies {
+    implementation("com.facebook.react:react-android")
+    implementation("com.facebook.react:hermes-android")
+}

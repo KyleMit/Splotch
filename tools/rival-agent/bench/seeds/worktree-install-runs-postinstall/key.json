@@ -1,0 +1,9 @@
+{
+  "name": "worktree-install-runs-postinstall",
+  "control": false,
+  "title": "the disposable worktree install runs a PR-controlled postinstall at launch",
+  "path": "tools/rival-agent/worktree.mjs",
+  "lines": [96, 101],
+  "severity": "blocking",
+  "keywords": ["--ignore-scripts", "postinstall", "lifecycle script", "before anyone"]
+}

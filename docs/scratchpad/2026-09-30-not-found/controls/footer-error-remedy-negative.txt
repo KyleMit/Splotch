@@ -1,0 +1,43 @@
+$ vitest run src/lib/components/page/PageFooter.ssr.test.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./standalonePageEntries" without a file extension (vitest.config.ts:3:39). Add the file extension
+  - import "./defines" without a file extension (vitest.config.ts:4:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /Users/kylemit/.codex/worktrees/ed28/Splotch/web
+
+ ❯ src/lib/components/page/PageFooter.ssr.test.ts (12 tests | 2 failed) 29ms
+   ❯ standalone page footer (12)
+     × keeps sibling links available on a missing page at /privacy/missing 5ms
+     × keeps sibling links available on a missing page at /changelog/missing 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/components/page/PageFooter.ssr.test.ts > standalone page footer > keeps sibling links available on a missing page at /privacy/missing
+ FAIL  src/lib/components/page/PageFooter.ssr.test.ts > standalone page footer > keeps sibling links available on a missing page at /changelog/missing
+AssertionError: expected <span …(2)>…(1)</span> to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ src/lib/components/page/PageFooterTestHarness.ts:70:65
+     68|       (pathname) => {
+     69|         const document = renderedFooter(pathname, 404, { message: 'Not…
+     70|         expect(document.querySelectorAll('nav [aria-current]')).toHave…
+       |                                                                 ^
+     71|         expect(document.querySelector('nav a[href="/privacy"]')).not.t…
+     72|         expect(document.querySelector('nav a[href="/changelog"]')).not…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 10 passed (12)
+   Start at  21:27:56
+   Duration  377ms (transform 61%, import 29%, tests 9%, setup 1%)
+
+
+CONTROL_EXIT=1

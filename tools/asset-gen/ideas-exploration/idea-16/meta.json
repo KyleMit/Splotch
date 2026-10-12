@@ -1,0 +1,52 @@
+{
+  "idea": 16,
+  "title": "Night fill as a recolor edit of the light raw",
+  "verdict": "PARTIAL",
+  "oneline": "Perfect registration, polarity, and palette coherence, but mood too bright and desaturated",
+  "summary": "Recolor-editing the shipped punched light fill (per #8 prior art) produced night fills with zero drift, zero dark re-inking, and near-perfect light-night palette coherence (hueMedian 3.6-15 deg vs shipped 14-61 deg; the ant blanket and blue train finally keep their colors). But all 8 takes across 3 prompt generations came back 20-40 luma brighter than shipped with grey-slate skies and muddy desaturated subjects (yellow duck goes olive despite explicit notes) - the model anchors on the bright daylight input. The chalk-conditioned path still wins on the actual night look; recolor is best kept as a coherence ingredient (hybrid second-image conditioning or a #9 COLOR PLAN source).",
+  "tried": [
+    "Recolor-edit of the shipped punched light fill (not the raw - known dead from #8) on nature/ant-wide, farm/duck-wide, vehicles/train-wide",
+    "Standard night gates (scoreDrift/scoreNightness/scoreLineColor verbatim) + eye gate on the simulated chalk composite, scored identically for shipped nights as baseline",
+    "New lineBand polarity metric and a light-night hue-distance palette-coherence metric",
+    "Three prompt escalations: v1 dim-and-cool, v2 saturated jewel-tone demands, v3 page --notes (much darker + keep duck yellow)"
+  ],
+  "worked": [
+    "Registration inherited: drift 0.000 on all 6 scored takes (2-8 px nudge fully undone by alignToSource)",
+    "Line polarity solved by construction: punched (line-free) input means nothing to re-ink; 0/6 takes drew dark outlines, even on train-wide",
+    "Palette coherence massive win: recoloredShare 0-10% vs shipped up to 50% (ant blanket stays red/white, train stays blue/red)",
+    "Eye structure preserved: pupils inherit from the light fill, chalk owns sclera/catchlights; ant 3/3 and duck 2/3 pass where shipped duck/train fail the same composite judge",
+    "All takes pass the standard gate bars (drift <= .004, bgLuma <= 100)"
+  ],
+  "failed": [
+    "Night mood consistently inferior to shipped: bgLuma 68-91 vs shipped 39-64; v1 skies slate-grey, not indigo",
+    "Subject desaturation is the stubborn failure: dimmed = greyed/muddy (duck turns olive, faces ashen) and survived v2 jewel-tone prompting AND v3 explicit all-caps --notes",
+    "Temperature ladder useless here: same-prompt takes at t 0.35 vs 0.50 scored near-identically (the edit is highly deterministic)"
+  ],
+  "limitations": [
+    "8-call budget: no two-image hybrid (light fill + chalk display), no COLOR PLAN variant, no tall page or dark-bodied subject tested",
+    "Output is fills-only, not a raw: cannot land in fill-src/ as night.raw.webp without breaking the raws-are-source-of-truth invariant and blinding the drift audit - adopting this path needs a new asset class",
+    "Coherence metric only samples chromatic pixels, so the recolor path's desaturation failure slightly flatters its coherence win",
+    "Composite eye gate is noisy (2 of 3 shipped nights fail it); eye scores are comparative only"
+  ],
+  "comparisons": [
+    {"label": "nature/ant-wide", "before": "ant-wide.before-shipped-night.webp", "after": "ant-wide.after-recolor-night.webp", "note": "Recolor keeps the red/white blanket (shipped repaints it teal/navy) but sky and face are duller"},
+    {"label": "farm/duck-wide", "before": "duck-wide.before-shipped-night.webp", "after": "duck-wide.after-recolor-night.webp", "note": "Best take (v3 dark notes): proper navy sky, but the duck is olive vs shipped's warm yellow"},
+    {"label": "vehicles/train-wide", "before": "train-wide.before-shipped-night.webp", "after": "train-wide.after-recolor-night.webp", "note": "Train keeps its blue/red identity (shipped swaps to red) with zero dark re-inking, but the scene reads dusk-grey, not moonlit"}
+  ],
+  "images": [
+    {"file": "ant-wide.light-ref.webp", "caption": "ant-wide shipped light fill + pen (palette-coherence reference)"},
+    {"file": "ant-wide.before-shipped-night.webp", "caption": "ant-wide BEFORE: shipped chalk-conditioned night composite"},
+    {"file": "ant-wide.after-recolor-night.webp", "caption": "ant-wide AFTER: recolor-edit night composite (v2 prompt)"},
+    {"file": "duck-wide.light-ref.webp", "caption": "duck-wide shipped light fill + pen (palette-coherence reference)"},
+    {"file": "duck-wide.before-shipped-night.webp", "caption": "duck-wide BEFORE: shipped night composite (warm yellow duck)"},
+    {"file": "duck-wide.after-recolor-night.webp", "caption": "duck-wide AFTER: best recolor take (v3 dark notes) - navy sky but olive duck"},
+    {"file": "duck-wide.recolor-v1-desaturated.webp", "caption": "duck-wide recolor v1: the desaturation failure mode (olive duck, slate sky)"},
+    {"file": "train-wide.light-ref.webp", "caption": "train-wide shipped light fill + pen (palette-coherence reference)"},
+    {"file": "train-wide.before-shipped-night.webp", "caption": "train-wide BEFORE: shipped night composite (train swapped to dark red)"},
+    {"file": "train-wide.after-recolor-night.webp", "caption": "train-wide AFTER: recolor v2 - train stays blue/red, no dark re-inking, but grey-dusk mood"},
+    {"file": "ant-wide.recolor-v1-grey.webp", "caption": "ant-wide recolor v1: grey-slate sky / ashen face failure mode"}
+  ],
+  "code": [
+    {"title": "Recolor-edit night generator + bake-off scorer (gates, lineBand polarity, palette coherence)", "file": "code/idea16-recolor-night.mjs"}
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "idea": 25,
+  "title": "Light-mode byte-stability check in CI",
+  "verdict": "WORKED",
+  "oneline": "Committed sha256 manifest + CI drift check validated in both directions",
+  "summary": "Chose the manifest variant over a commit-message-scoped check (repo has the exact img:audit/img:audit:check precedent and no commit-message convention). Implemented tools/asset-gen/gen-asset-manifest.mjs with gen:assets:manifest / check:assets:manifest npm scripts (ADR-0019) hashing 682 committed art assets (shipped coloring pages, style covers, fill-src raws), plus a Quality-job CI step. Validated: manifest regeneration is byte-deterministic; a sharp re-encode of one *.light.webp is caught as exactly that file (exit 1); a legitimate night change localizes to one night hash line with zero light-side lines in the diff. Patch applies cleanly to baseline; repo left pristine.",
+  "tried": [
+    "Evaluated commit-message-scoped CI check vs committed manifest against repo conventions (test.yml, ADR-0019, img:audit precedent)",
+    "Implemented gen-asset-manifest.mjs (sha256sum-compatible manifest, --check verifier) inside tools/asset-gen/",
+    "Wired gen:assets:manifest + check:assets:manifest npm scripts with scripts-info entries and a Quality-job CI step",
+    "Determinism test (two runs, cmp byte-identical)",
+    "Simulated accidental light re-encode during a night pass (sharp round-trip of farm/dog-wide.light.webp)",
+    "Simulated legitimate night regen (farm/dog-wide.night.webp) and inspected manifest diff localization",
+    "Tested ADDED/REMOVED detection with a stray and a deleted asset",
+    "eslint + prettier + npm-run wiring + YAML parse verification; git apply --check of the patch on the pristine tree"
+  ],
+  "worked": [
+    "Manifest generation is deterministic (byte-identical across runs)",
+    "check catches an accidental light-byte change as exactly the one touched file, exit 1",
+    "Legit night change shows as a single night hash line; 0 light/outline/thumb lines change",
+    "ADDED and REMOVED assets are also detected",
+    "Whole check hashes 682 assets in ~1-2s offline — cheap enough for every PR, no asset-PR filtering needed",
+    "Patch applies cleanly to baseline 8e471b8"
+  ],
+  "failed": [],
+  "limitations": [
+    "Enforces manifest freshness, not night-only intent: after a regen the reviewer must still spot a light hash line in the PR diff (the check makes that line exist; it does not judge it)",
+    "Every legitimate asset change now needs `npm run gen:assets:manifest` before commit (CI message says so)",
+    "Scoped to *.webp in the three art trees; prerelease and pipeline.md runbook integration left as follow-ups"
+  ],
+  "comparisons": [],
+  "images": [],
+  "code": [
+    {
+      "title": "Full implementation: script + manifest + package.json scripts/scripts-info + CI step",
+      "file": "code/asset-manifest-check.patch"
+    },
+    { "title": "The manifest generator/verifier script (standalone copy)", "file": "code/gen-asset-manifest.mjs" }
+  ]
+}

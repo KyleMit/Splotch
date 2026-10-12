@@ -1,0 +1,498 @@
+import { crayonBufferIsDirty, crayonDepositsOnTiles } from './crayonPassBuffer';
+import { crayonOpShowsTile } from './crayonPassBuffer';
+import { withCanvasRasterFlush } from './canvasRasterFlush';
+import {
+  MIN_TILED_UNDO_COMMANDS,
+  TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE,
+  TILE_HISTORY_FOLD_IDLE_MS,
+} from './tiledHistoryLimits';
+import { createDrawingWorkCounters } from './drawingWorkDebug';
+import { scanCanvasIsEmpty } from './emptyScan';
+import { PERF_MARKS } from './perf';
+import type { MagicSheetSnapshot } from './magicBrush';
+import { opPaddedUserBounds } from './opGeometry';
+import type { PaperView } from './paperView';
+import { createProgressiveClearCapture } from './progressiveClearCapture';
+import { isCrayonInkOp, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import { MAX_UNDO_DEPTH, type RecordedPaperState } from './undoHistory';
+import * as geo from './tiledGeometry';
+import { createTiledUndoPatches, restoreUndoPatch, undoPatchesFitTiles } from './tiledUndoPatches';
+import { createHiddenBackingMigration, layoutLiveTiles } from './tiledLayout';
+import { createTiledMagicRecode } from './tiledMagicRecode';
+import { createTiledContextRecovery } from './tiledContextRecovery';
+import {
+  clearTileBacking,
+  clipTilesToPaper,
+  cloneHistoryBaseTiles,
+  createLiveTiles,
+  applyLiveTileView,
+  deferHiddenTileClear,
+  ensureCrayonTileBacking,
+  ensureNormalTileBacking,
+  renderHistoryBaseOp,
+  restoreBlankLiveTiles,
+  restoreTileContexts,
+  type HistoryBaseTile,
+  type LiveTile,
+  type TiledCanvasSnapshot,
+} from './tiledSurfaces';
+import * as readback from './tiledRendererReadback';
+
+interface TiledRendererHost {
+  paperSize: () => { width: number; height: number } | null;
+  // Optional only so the renderer's own test hosts can omit it; engine.ts always supplies it.
+  recordedPaper?: () => RecordedPaperState | null;
+  hasActivePointers: () => boolean;
+}
+
+function recordedCommand(ops: StrokeOp[], wasEmpty: boolean): StrokeGroupCommand {
+  const recordedPaper = host?.recordedPaper?.();
+  return { ops, wasEmpty, ...(recordedPaper ? { recordedPaper } : {}) };
+}
+
+let canvas: HTMLCanvasElement | null = null;
+let host: TiledRendererHost | null = null;
+let liveTiles: LiveTile[] = [];
+let rendererWidth = 0;
+let rendererHeight = 0;
+let rendererScale = 0;
+let historyBase: HistoryBaseTile[] = [];
+let historyBaseWidth = 0;
+let historyBaseHeight = 0;
+let activeCommand: StrokeGroupCommand | null = null;
+const history: StrokeGroupCommand[] = [];
+const undoPatches = createTiledUndoPatches();
+let undoableCommands = 0;
+let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
+const backingMigration = createHiddenBackingMigration(() => liveTiles);
+const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
+const workCounters = import.meta.env?.DEV || isDevHarness ? createDrawingWorkCounters() : null;
+const tiledContextRecovery = createTiledContextRecovery(
+  () => repaintTiledRenderer(),
+  () => historyBase
+);
+
+export function adoptTiledRenderer(
+  canvasElement: HTMLCanvasElement,
+  rendererHost: TiledRendererHost
+) {
+  canvas = canvasElement;
+  host = rendererHost;
+  liveTiles = createLiveTiles(canvasElement);
+  tiledContextRecovery.adopt(liveTiles);
+}
+
+export function recoverTiledRendererIfNeeded(repaintRecoveredPixels = true) {
+  return tiledContextRecovery.recoverIfNeeded(repaintRecoveredPixels);
+}
+
+export function tiledSurfaceTopologyDebug() {
+  return liveTiles.map(({ width, height }) => ({ width, height }));
+}
+
+export function syncTiledCrayonMix(opacity: string) {
+  for (const tile of liveTiles) tile.crayonTop.style.opacity = opacity;
+}
+
+export function resizeTiledRenderer(
+  width: number,
+  height: number,
+  renderScale: number,
+  deferHiddenBackings = false
+) {
+  if (!canvas) return false;
+  if (rendererWidth === width && rendererHeight === height && rendererScale === renderScale) {
+    return false;
+  }
+  clearCapture.resolve();
+  rendererWidth = width;
+  rendererHeight = height;
+  rendererScale = renderScale;
+  layoutLiveTiles(liveTiles, width, height, renderScale, deferHiddenBackings);
+  if (historyBase.length > 0) ensureHistoryBase();
+  if (deferHiddenBackings) backingMigration.start();
+  else backingMigration.cancel();
+  return true;
+}
+
+function ensureHistoryBase() {
+  const paper = host?.paperSize();
+  if (!paper) return;
+  if (
+    historyBase.length > 0 &&
+    historyBaseWidth === paper.width &&
+    historyBaseHeight === paper.height
+  ) {
+    return;
+  }
+  const previous = historyBase;
+  historyBase = cloneHistoryBaseTiles(previous, paper.width, paper.height);
+  historyBaseWidth = paper.width;
+  historyBaseHeight = paper.height;
+}
+
+const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
+  history: () => history,
+  activeCommand: () => activeCommand,
+  canBeginUndo: () => activeCommand === null && !host?.hasActivePointers(),
+  currentBase: () => historyBase,
+  cloneBase: (source) => cloneHistoryBaseTiles(source, historyBaseWidth, historyBaseHeight),
+  rebuildBase: (baseline, tail) => {
+    historyBase = cloneHistoryBaseTiles(baseline, historyBaseWidth, historyBaseHeight);
+    const paper = host?.paperSize();
+    if (!paper) return;
+    clipTilesToPaper(historyBase, paper);
+    for (const command of tail) {
+      for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
+    }
+    restoreTileContexts(historyBase);
+  },
+  commitUndo: (command) => {
+    cancelHistoryFold();
+    // A recode changes existing pixels rather than adding geometry, so its undo
+    // patch is the complete visible paper state (ADR-0121).
+    for (const [index, tile] of liveTiles.entries()) {
+      if (!tile.canvas.hidden) undoPatches.capture(command, tile, index);
+    }
+    pushUndoableCommand(command);
+  },
+  repaint: (preserveUndoThrough) => repaintTiledRenderer(true, preserveUndoThrough),
+});
+
+export const hasRetainedTiledMagicOps = magicRecode.hasRetainedOps;
+export const hasUnrevealedTiledMagicOps = magicRecode.hasUnrevealedOps;
+export const contributingTiledMagicSheets = magicRecode.contributingSheets;
+
+export function applyTiledView(paperView: PaperView) {
+  applyLiveTileView(liveTiles, paperView);
+}
+
+function enforceUndoPatchBudget() {
+  // Index arithmetic rather than negative slice offsets. At undoableCommands
+  // === 0 both negative forms invert: -0 === 0, so slice(0, -0) is the empty
+  // array (dropping nothing, exactly when every patch is outside the undo
+  // window) and slice(-0) is the whole history (so the budget totals patches it
+  // does not own). Neither throws — the budget just silently stops being
+  // enforced. `undoableStart` is the same value repaintTiledRenderer computes.
+  const undoableStart = history.length - undoableCommands;
+  for (const command of history.slice(0, undoableStart)) {
+    undoPatches.delete(command);
+  }
+  const budget =
+    liveTiles.reduce((total, tile) => total + tile.width * tile.height * 4, 0) *
+    TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE;
+  let bytes = history
+    .slice(undoableStart)
+    .reduce((total, command) => total + undoPatches.bytes(command), 0);
+  while (undoableCommands > MIN_TILED_UNDO_COMMANDS && bytes > budget) {
+    const command = history[history.length - undoableCommands];
+    bytes -= undoPatches.bytes(command);
+    undoPatches.delete(command);
+    undoableCommands--;
+  }
+}
+
+function pushUndoableCommand(command: StrokeGroupCommand) {
+  history.push(command);
+  undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);
+  enforceUndoPatchBudget();
+  scheduleTiledHistoryFold();
+}
+
+const clearCapture = createProgressiveClearCapture<StrokeGroupCommand>({
+  tileCount: () => liveTiles.length,
+  capture(command, index) {
+    const tile = liveTiles[index];
+    if (!tile) return false;
+    undoPatches.capture(command, tile, index, undefined, false);
+    deferHiddenTileClear(tile);
+    return true;
+  },
+  onComplete: enforceUndoPatchBudget,
+});
+
+function prepareTileForMutation(tile: LiveTile, index: number) {
+  if (!tile.needsClear) return;
+  clearCapture.captureBeforeMutation(index);
+  clearTileBacking(tile);
+}
+
+function showTileForOp(tile: LiveTile, op: StrokeOp) {
+  if (op.kind === 'clear') {
+    tile.canvas.hidden = true;
+    tile.needsClear = false;
+    return;
+  }
+  if (isCrayonInkOp(op) && !crayonOpShowsTile(tile.ctx, tile.canvas.hidden === true)) return;
+  tile.canvas.hidden = false;
+}
+
+function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | null) {
+  let surfaceVisits = 0;
+  if (op.kind !== 'dot' && op.kind !== 'path') {
+    for (const [index, tile] of liveTiles.entries()) {
+      // A flush with nothing buffered has no pixel work anywhere on this
+      // tile — skip it before any backing or visibility bookkeeping.
+      if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) continue;
+      ensureNormalTileBacking(tile);
+      prepareTileForMutation(tile, index);
+      if (command && !command.wasEmpty && op.kind !== 'crayonFlush') {
+        undoPatches.capture(command, tile, index);
+      }
+      showTileForOp(tile, op);
+      renderOp(tile.ctx, op);
+      if (workCounters) surfaceVisits++;
+    }
+  } else {
+    const bounds = opPaddedUserBounds(op);
+    for (const [index, tile] of liveTiles.entries()) {
+      if (geo.geometryIntersectsTile(bounds, tile)) {
+        ensureNormalTileBacking(tile);
+        if (isCrayonInkOp(op) && !crayonDepositsOnTiles()) ensureCrayonTileBacking(tile);
+        prepareTileForMutation(tile, index);
+        if (command && !command.wasEmpty) {
+          undoPatches.capture(command, tile, index, geo.opDeviceBounds(tile, bounds));
+        }
+        showTileForOp(tile, op);
+        renderOp(tile.ctx, op);
+        if (workCounters) surfaceVisits++;
+      }
+    }
+  }
+  if (workCounters && command === activeCommand) workCounters.record(surfaceVisits);
+}
+
+export function renderTiledOp(op: StrokeOp) {
+  renderTiledOpForCommand(op, activeCommand);
+}
+
+export function recordTiledOp(op: StrokeOp) {
+  activeCommand?.ops.push(op);
+}
+
+function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = false) {
+  const paper = host?.paperSize();
+  if (!paper) return;
+  clipTilesToPaper(liveTiles, paper);
+  for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
+  restoreTileContexts(liveTiles);
+  if (captureUndo) undoPatches.crop(command);
+}
+
+// Measured under PERF_MARKS like engine.draw and engine.commit, so a profiling
+// harness watching the history settle after a batched draw can attribute the
+// main-thread time it waited through to folds rather than infer it from gaps.
+function foldOldestCommand() {
+  const paper = host?.paperSize();
+  if (!paper || paper.width <= 0 || paper.height <= 0) return;
+  const command = history.shift();
+  if (!command) return;
+  if (PERF_MARKS) performance.mark('engine.fold:start');
+  undoPatches.delete(command);
+  ensureHistoryBase();
+  magicRecode.beforeFold(command);
+  clipTilesToPaper(historyBase, paper);
+  for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
+  restoreTileContexts(historyBase);
+  magicRecode.afterFold(command);
+  if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
+}
+
+function cancelHistoryFold() {
+  if (historyFoldTimer !== null) clearTimeout(historyFoldTimer);
+  historyFoldTimer = null;
+}
+
+export function scheduleTiledHistoryFold() {
+  cancelHistoryFold();
+  if (history.length <= undoableCommands) return;
+  historyFoldTimer = setTimeout(() => {
+    historyFoldTimer = null;
+    if (host?.hasActivePointers() || history.length <= undoableCommands) return;
+    withCanvasRasterFlush(foldOldestCommand);
+    scheduleTiledHistoryFold();
+  }, TILE_HISTORY_FOLD_IDLE_MS);
+}
+
+export function repaintTiledRenderer(
+  rebuildUndoPatches = true,
+  preserveUndoThrough: StrokeGroupCommand | null = null
+) {
+  clearCapture.cancel();
+  workCounters?.historyRepainted();
+  const undoableStart = history.length - undoableCommands;
+  const preserveUndoThroughIndex = preserveUndoThrough ? history.indexOf(preserveUndoThrough) : -1;
+  const rebuildUndo = rebuildUndoPatches && (undoableCommands > 0 || activeCommand !== null);
+  for (const tile of liveTiles) {
+    ensureNormalTileBacking(tile);
+    tile.canvas.hidden = true;
+    clearTileBacking(tile);
+    for (const base of historyBase) {
+      if (base.painted && geo.tilesIntersect(base, tile)) {
+        tile.ctx.drawImage(base.canvas, base.x, base.y);
+        tile.canvas.hidden = false;
+      }
+    }
+  }
+  for (const [index, command] of history.entries()) {
+    const preserveExistingUndo =
+      command.magicRecode?.applied === true ||
+      (preserveUndoThroughIndex >= 0 && index <= preserveUndoThroughIndex);
+    const captureUndo = rebuildUndo && index >= undoableStart && !preserveExistingUndo;
+    if (rebuildUndo && !preserveExistingUndo) undoPatches.delete(command);
+    renderCommandAcrossTiles(command, captureUndo);
+  }
+  if (activeCommand) {
+    workCounters?.begin();
+    if (rebuildUndo) undoPatches.delete(activeCommand);
+    for (const op of activeCommand.ops) renderTiledOp(op);
+  }
+  if (rebuildUndo) enforceUndoPatchBudget();
+}
+
+export function beginTiledMagicRecode(
+  targetSourceKey: string | null,
+  restoreAppearance: () => void
+) {
+  return magicRecode.beginUndo(targetSourceKey, restoreAppearance);
+}
+
+export function recodeTiledMagicOps(snapshot: MagicSheetSnapshot, sourceKey: string | null) {
+  return magicRecode.recode(snapshot, sourceKey);
+}
+
+export function beginTiledCommand(wasEmpty: boolean) {
+  cancelHistoryFold();
+  activeCommand = recordedCommand([], wasEmpty);
+  workCounters?.begin();
+}
+
+export function commitTiledCommand() {
+  if (!activeCommand) return false;
+  undoPatches.crop(activeCommand);
+  pushUndoableCommand(activeCommand);
+  activeCommand = null;
+  workCounters?.commit();
+  return true;
+}
+
+export const peekTiledUndoCommand = () => history.at(-1);
+
+export const peekTiledUndoPaper = (): RecordedPaperState | undefined =>
+  history.at(-1)?.wasEmpty === false ? history.at(-1)?.recordedPaper : undefined;
+
+export function undoTiledCommand(renderScale: number) {
+  const undone = history.pop();
+  undoableCommands = Math.max(0, undoableCommands - 1);
+  magicRecode.restore(undone);
+  if (undone && activeCommand) activeCommand.wasEmpty = undone.wasEmpty;
+  const pendingIndices = undone ? clearCapture.takePendingIndices(undone) : [];
+  const snapshots = undone && undoPatches.get(undone);
+  const snapshotsFit =
+    (snapshots || pendingIndices.length > 0) && undoPatchesFitTiles(snapshots, liveTiles);
+  if (undone?.wasEmpty && !activeCommand) {
+    restoreBlankLiveTiles(liveTiles);
+  } else if (snapshotsFit && !activeCommand) {
+    for (const [index, snapshot] of snapshots ?? []) {
+      const tile = liveTiles[index];
+      prepareTileForMutation(tile, index);
+      restoreUndoPatch(tile, snapshot);
+    }
+    for (const index of pendingIndices) {
+      const tile = liveTiles[index];
+      tile.needsClear = false;
+      tile.canvas.hidden = false;
+    }
+  } else {
+    repaintTiledRenderer(activeCommand !== null || snapshots === undefined);
+  }
+  if (undone) undoPatches.delete(undone);
+  const empty =
+    undone && !host?.hasActivePointers() ? undone.wasEmpty : scanTiledRendererIsEmpty(renderScale);
+  return {
+    empty,
+    canUndo: undoableCommands > 0,
+    ...(undone?.recordedPaper ? { recordedPaper: undone.recordedPaper } : {}),
+    ...(undone?.magicRecode ? { restoreAppearance: undone.magicRecode.restoreAppearance } : {}),
+  };
+}
+
+export function clearTiledRenderer(wasEmpty: boolean) {
+  const clearCommand = recordedCommand([{ kind: 'clear' }], wasEmpty);
+  const captureIndices: number[] = [];
+  pushUndoableCommand(clearCommand);
+  for (const [index, tile] of liveTiles.entries()) {
+    const wasVisible = !tile.canvas.hidden;
+    if (!wasVisible && !crayonBufferIsDirty(tile.ctx)) continue;
+    tile.canvas.hidden = true;
+    tile.crayonBottom.hidden = true;
+    tile.crayonTop.hidden = true;
+    if (wasVisible) {
+      tile.needsClear = true;
+      captureIndices.push(index);
+    } else {
+      deferHiddenTileClear(tile);
+    }
+  }
+  clearCapture.schedule(clearCommand, captureIndices);
+  if (activeCommand) {
+    undoPatches.delete(activeCommand);
+    activeCommand.ops.length = 0;
+    activeCommand.wasEmpty = true;
+    workCounters?.begin();
+  }
+  return { empty: activeCommand === null, canUndo: true };
+}
+
+export function scanTiledRendererIsEmpty(renderScale: number) {
+  return liveTiles.every(
+    (tile) => tile.canvas.hidden || scanCanvasIsEmpty(tile.canvas, renderScale)
+  );
+}
+
+export function tiledHistoryDebug() {
+  const undoSnapshots = history.map((command) => undoPatches.get(command));
+  return readback.buildTiledHistoryDebug({
+    history,
+    undoableCommands,
+    undoSnapshots,
+    baseTiles: [...historyBase, ...magicRecode.baseTiles()],
+    strokeRevision: workCounters?.strokeRevision(),
+    activeCommand,
+  });
+}
+
+export const tiledWorkDebug = () =>
+  workCounters?.debug(liveTiles, backingMigration.pending()) ?? null;
+
+export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
+  return readback.captureTiledCanvasReadback({
+    canvas,
+    liveTiles,
+    hasActivePointers: host?.hasActivePointers() ?? false,
+    width: rendererWidth,
+    height: rendererHeight,
+  });
+}
+
+export const paintVisibleTiledInk = (target: CanvasRenderingContext2D) =>
+  readback.paintTiledInk(target, liveTiles);
+
+export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
+  const paper = host?.paperSize() ?? null;
+  readback.renderTiledReadback(target, historyBase, history, activeCommand, paper);
+}
+
+export function detachTiledRenderer() {
+  cancelHistoryFold();
+  clearCapture.cancel();
+  backingMigration.cancel();
+  tiledContextRecovery.detach();
+  canvas = null;
+  host = null;
+  liveTiles = [];
+  rendererWidth = 0;
+  rendererHeight = 0;
+  rendererScale = 0;
+  workCounters?.reset();
+}

@@ -1,0 +1,31 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54824/ --engine=chromium --actions=coloring --output=perf-profiles/coloring-coverage-r1/d1-chromium-coloring/actions.json
+
+Coloring books prepared in 3654 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 1/4
+Coloring books prepared in 3806 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 2/4
+Coloring books prepared in 3807 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 3/4
+Coloring books prepared in 3819 ms: 8 listed; the sweep runs in document 2 of this repeat
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬────────────────────┬────────────────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                         │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max           │ raw max            │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼────────────────────┼────────────────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'first open of coloring books' │ '3/4' │ '4/4'      │ 6.6       │ 2.4            │ 3.3            │ 16.8     │ 16.800000000000182 │ 16.800000000000182 │ '111/197'         │ 17.4       │ 0               │ 'PASS'  │
+│ 1       │ 'reopen coloring books'        │ '3/4' │ '4/4'      │ 11.2      │ 1.1            │ 1.2            │ 16.7     │ 16.800000000000182 │ 16.800000000000182 │ '114/195'         │ 17.4       │ 0               │ 'PASS'  │
+│ 2       │ 'open coloring book'           │ '3/4' │ '4/4'      │ 11.3      │ 3.9            │ 4.2            │ 16.8     │ 16.800000000000182 │ 16.800000000000182 │ '63/195'          │ 18.2       │ 0               │ 'PASS'  │
+│ 3       │ 'scroll coloring pages'        │ '3/4' │ '4/4'      │ 15.9      │ 54.3           │ 54.4           │ 16.7     │ 16.800000000000182 │ 16.800000000000182 │ '53/123'          │ 18.1       │ 0               │ 'PASS'  │
+│ 4       │ 'select coloring page'         │ '3/4' │ '4/4'      │ 13.7      │ 106.1          │ 106.5          │ 16.7     │ 16.700000000000728 │ 16.80000000000109  │ '36/213'          │ 18.5       │ 0               │ 'PASS'  │
+│ 5       │ 'clear coloring page'          │ '3/4' │ '4/4'      │ 14        │ 107            │ 108.5          │ 16.7     │ 16.80000000000109  │ 16.80000000000109  │ '56/213'          │ 18.4       │ 0               │ 'PASS'  │
+└─────────┴────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴────────────────────┴────────────────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-coverage-r1/d1-chromium-coloring/actions.json
+exit=0

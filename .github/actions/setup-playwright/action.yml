@@ -1,0 +1,119 @@
+name: Set up Playwright
+description: Cache and install Playwright browsers plus their apt system libraries, on the Ubuntu runners
+
+# macOS has its own setup-playwright-webkit: no apt step, and a different
+# browser cache path. Keeping them separate avoids per-OS branching in both.
+
+inputs:
+  browsers:
+    description: Space-separated Playwright browsers to install (e.g. "chromium", "webkit")
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve Playwright version
+      id: playwright-version
+      shell: bash
+      run: node tools/print-playwright-version.mjs >> "$GITHUB_OUTPUT"
+
+    - name: Resolve runner image OS
+      id: runner-image
+      shell: bash
+      # ImageOS names the OS release (ubuntu24) and changes only when GitHub moves the
+      # runner label to a new release, unlike ImageVersion, which changes with every image
+      # rebuild. A step has to read it: the env context holds only workflow-set variables.
+      run: echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        # The browser set is part of the key, so jobs installing different
+        # browsers can't restore each other's half-populated cache — a cache
+        # missing WebKit would silently drop the WebKit project
+        # (playwright.config.ts omits it when the binary is absent). The OS
+        # release and architecture are part of it because Playwright downloads
+        # a separate build for each, yet builds sharing a revision unpack into
+        # the same <browser>-<revision> directory, which then counts as installed.
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.runner-image.outputs.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Resolve apt package cache layout
+      id: apt-layout
+      shell: bash
+      # The runner image identity is part of the key because a cached .deb set is only
+      # complete against the package lists baked into that exact image build — a new
+      # image rotates the key and the network step below rebuilds the set.
+      run: |
+        echo "deb-dir=$HOME/.cache/playwright-apt-debs" >> "$GITHUB_OUTPUT"
+        echo "image=${ImageOS:-unknown-os}-${ImageVersion:-unknown-version}" >> "$GITHUB_OUTPUT"
+
+    - name: Cache apt packages
+      id: apt-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.apt-layout.outputs.deb-dir }}
+        key: playwright-apt-${{ steps.apt-layout.outputs.image }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
+
+    # Installing from the cached .deb set is what keeps the common path off the network:
+    # `playwright install-deps` opens with an unconditional `apt-get update`, so even a
+    # warm /var/cache/apt cannot make that command network-free — the cached files have
+    # to be handed straight to dpkg instead. apt-get cannot substitute here: under
+    # --no-download it classifies even a command-line local .deb as a fetch and refuses
+    # it ("E: Unable to fetch some archives"), so it can only confirm packages that are
+    # already installed, never install a missing one from the cache. dpkg -i installs
+    # the whole set in one offline transaction and exits non-zero if the set stopped
+    # being complete; the --dry-run check is a local `apt-get install -s` that exits
+    # non-zero on any missing package. Every failure routes to the network step below,
+    # so a stale cache costs seconds, not a run — this step is never red.
+    - name: Install system deps from cached packages
+      id: offline-deps
+      if: steps.apt-cache.outputs.cache-hit == 'true'
+      shell: bash
+      env:
+        DEB_DIR: ${{ steps.apt-layout.outputs.deb-dir }}
+      run: |
+        install_from_cache() {
+          shopt -s nullglob
+          local debs=("$DEB_DIR"/*.deb)
+          if ((${#debs[@]})); then
+            sudo dpkg -i "${debs[@]}"
+          fi
+          npx playwright install-deps --dry-run ${{ inputs.browsers }}
+        }
+        if install_from_cache; then
+          echo "complete=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning title=Playwright apt cache incomplete::Cached packages did not satisfy install-deps; falling back to the network install."
+          echo "complete=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    # The network steps below carry no bound of their own — a composite action's steps
+    # cannot take `timeout-minutes`, so the calling job's timeout is the backstop when a
+    # degraded runner starves them of bandwidth. They run only on a cache miss (runner
+    # image rotation or Playwright version bump); warm-playwright-cache.yml keeps the
+    # default-branch caches populated so pull requests rarely take this path at all.
+    - name: Install Playwright system deps
+      if: steps.apt-cache.outputs.cache-hit != 'true' || steps.offline-deps.outputs.complete != 'true'
+      shell: bash
+      env:
+        DEB_DIR: ${{ steps.apt-layout.outputs.deb-dir }}
+      # apt-get (unlike the `apt` porcelain) leaves what it downloads in
+      # /var/cache/apt/archives; copying those files aside after a successful install
+      # is what the offline step above consumes. The cache action's post step persists
+      # them only when this run's key missed and the job succeeds, so a failed
+      # install can never poison the cache.
+      run: |
+        npx playwright install-deps ${{ inputs.browsers }}
+        mkdir -p "$DEB_DIR"
+        shopt -s nullglob
+        debs=(/var/cache/apt/archives/*.deb)
+        if ((${#debs[@]})); then
+          cp -- "${debs[@]}" "$DEB_DIR"/
+        fi
+
+    - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install ${{ inputs.browsers }}

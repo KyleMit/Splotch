@@ -1,0 +1,4 @@
+Error: the page is PORTRAIT at 360x780, not the requested LANDSCAPE — after releasing the app's rotation lock ({"lockedOrientation":"portrait"})
+    at establishRequestedOrientation (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:239:11)
+    at async measure (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:368:22)
+    at async captureBundledFrames (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:320:16)

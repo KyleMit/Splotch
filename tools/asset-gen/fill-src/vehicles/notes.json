@@ -1,0 +1,58 @@
+{
+  "fire-tall": {
+    "night": {
+      "flags": {
+        "halo-score-max": 2.5
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.421 / rawScore 7.610 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 2.5 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  },
+  "excavator-wide": {
+    "light": {
+      "review": "Issue #1139 Combined proof-sheet review accepted the shipped fill: the extra piston-like edge reads as a coherent hydraulic linkage at display size and creates no visible color leak under the pen overlay. Registration remains exact (100% global keep, 100% worst-tile keep, 0px local warp); retain unless a future candidate is visibly better.",
+      "why": "Issue #1139 bounded semantic review on the shipped Vehicles proof sheet; Outline, Color, and Combined views compared at the final catalog tree."
+    }
+  },
+  "excavator-tall": {
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Keep the excavator's daytime identity colors, just moonlit-dimmed: warm YELLOW cab body, deep ORANGE digging arm and bucket (never teal, blue, or navy), and a warm light-peach face in the cab window so the eyes and smile read clearly. CRITICAL: every outline is a crisp WHITE line sitting DIRECTLY on the flat fill color — do NOT add dark outlines, dark rims, shading, or drop shadows beside or under the white lines anywhere; the flat fill color runs right up to the white line edge with no darkening."
+      },
+      "review": "Fixed 2026-07-13: shipped haloScore 0.171 / rawScore 0.959 (was 6.5 / 21.9 — #2 in the catalog). After any regen re-run gen:coloring-fills:audit:halo and expect ≤1, then zoom the arm/bucket joints and cab-window edges at 3-4x — no dark rims beside the white lines. Also confirm identity colors: yellow cab, orange arm+bucket, light-peach cab face — unpinned takes re-roll them teal/navy (the night-contrast trap). bgLuma 51 was accepted (gate ≤60; golden re-frozen). Issue #1139's canary cleared every composed gate (halo 0.005, rawHalo 0.704, warp 0px) but painted an olive cab and grey arm/bucket, so it was rejected.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (night regen + re-punch, this session): the seeded no-re-ink note ALONE cleared the halo (take-1 rawScore 0.6) but re-rolled the arm teal and the face navy; appending palette pins at the default -t 0.6 brought thin re-ink back (take-2 rawScore 5.8); the combined notes at -t 0.4 shipped clean on take 3. Lesson: when notes carry both a line instruction and palette pins, drop the temperature. Issue #1139 confirmed the new halo path on real model output while retaining the visually faithful shipped palette."
+    }
+  },
+  "garbage-tall": {
+    "night": {
+      "retry": {
+        "notes": "The trash can's body is plain slatted metal — do NOT paint a leaf, recycling emblem, or any logo on the can. Keep the leaves on the ground where the pen draws them. The garbage truck is GREEN all over — cab and body both a deep moonlit green, never navy or blue — and the trash can stays plain grey metal."
+      },
+      "review": "Zoom the can's slats and confirm bare metal — the 2026-07 wave's fill invented a translucent green leaf emblem there (first confirmed fill-side subject-interior invention; no gate or audit scans subject interiors), fixed by a seeded-notes night regen 2026-07-13. Also confirm the cab stays GREEN: without the palette pin a retake painted it sky-navy (the night-contrast trap). Also note: this page's light fill is on the flat-eye list (cab face, light FAIL) — consult the ISSUES flat-eye item before a light-side regen.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (night regen, this session): the no-emblem notes removed the leaf on every take, but take 1 re-rolled the cab navy-on-navy — the truck-green + grey-can pin was appended and the combined notes shipped clean on take 2 (drift 0.0000, bgLuma 17, lineW 255)."
+    }
+  },
+  "police-tall": {
+    "chalk": {
+      "review": "The pen is a 2026-07-13 fresh drawing with RINGED pupils (fresh-outline-regen.md), so the eye-polarity gate is live again for this page. The 3.1 wave's erase-and-redraw --notes + -t 0.4 (gemini-3.1-migration.md) applied only to the OLD solid-pupil pen — do not re-apply it to the current pen.",
+      "why": "The wave's chalk whitened the pupils with the sclera (gate-blind on the old solid-pupil pen — no eye cores, vacuous pass); the pen replacement removed that class here. Recorded so the migration table's note is not blindly reused."
+    }
+  },
+  "police-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Erase the solid white inside each pupil and redraw it: white sclera, a black outlined pupil, and a small white catchlight inside the pupil. Never leave a pupil as one solid white disc."
+      },
+      "review": "Solid-pen-eye page: the pen's pupils are solid ink, so findEyeCores finds nothing and the eye-polarity gate passes VACUOUSLY (the gate-blind class in ISSUES). Render the night composite and confirm the pupils stayed black before trusting any chalk of this page.",
+      "why": "Sibling police-tall's 3.1-wave chalk whitened both pupils exactly this way and only composite review caught it; an erase-and-redraw note + -t 0.4 fixed it (gemini-3.1-migration.md). Retry text reconstructed. 3.1 resists erase-style edits on solid ink — budget extra attempts."
+    }
+  },
+  "train-tall": {
+    "light": {
+      "review": "The light eye gate intentionally reports n/a: its two pupil cores are source-solid pen regions, while the third annotated core is the mouth/tongue. The Combined light view retains the natural dark pupils through the pen overlay; do not make the raw fill paint beyond their boundaries to force a gated verdict.",
+      "why": "Issue #1139 catalog sweep confirmed vehicles/train-tall is the only page besides space/astronaut-wide whose light verdict becomes ungated when source-solid pen pupils are excluded. The committed golden transition from true to null is reviewed rather than silent."
+    }
+  }
+}

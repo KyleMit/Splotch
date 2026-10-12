@@ -1,0 +1,54 @@
+{
+  "idea": 3,
+  "title": "Chalk whites the night fill disagrees with",
+  "verdict": "WORKED",
+  "oneline": "Offline scorer works; ranking is near-all true positives, a dozen new flags",
+  "summary": "Built the proposed scorer fully offline (zero Gemini calls): chalk-whitened regions (chalk-gate definitions, 2px-eroded) sampled against the committed night raw, scored by area x colored-fraction (chroma >= 40). 70 pages scored in ~50s; 33 score 0 (true agreements), and every eyeballed high scorer is a real disagreement. dog-tall collar and cat-tall ears confirmed as predicted; unicorn-tall's night fill actually COMPLIED with the chalk (score 0), but a one-line light-raw variant proves canon wants the horn/cheek tinted — closing that blind spot. New finds nobody listed: astronaut-wide's whited-out child face, two windshields, duck bill, pig snout, cow bell + muzzle, magenta web/umbrella flowers, teddy paw pad.",
+  "tried": [
+    "Whitened-region detection reusing idea #2's inventory (chalk-gate INK/SLACK/flood definitions)",
+    "2px region erosion + chroma sampling of the committed night raw in the same 512 fit:fill space",
+    "Page ranking by area x coloredFrac, plus a chroma-weighted severity alternative",
+    "3-up evidence crops (chalk | night raw | shipped composite) for the top 20, eyeballed all",
+    "Light-raw variant (one-line change) as an independent 'what does canon want' signal"
+  ],
+  "worked": [
+    "Ranking is essentially all true positives; the 33 zero-score pages are genuine chalk/fill agreements",
+    "farm/dog-tall collar (chroma 136, canon red per light raw) and farm/cat-tall ears confirmed exactly as IDEAS.md predicted",
+    "Surfaced ~12 unlisted disagreements: astronaut-wide face, fire-tall/police-wide windshields, duck bill, pig snout, cow bell/muzzle, spider-wide + umbrella-wide flowers, teddy paw pad, dog-wide ear",
+    "Erode+MIN_SAMPLED eliminated misregistration false positives outright",
+    "Light-raw variant resolves night-compliant cases: unicorn horn is canon-tinted (chroma 43) even though the night fill painted it white"
+  ],
+  "failed": [
+    "IDEAS.md's unicorn-tall hypothesis is wrong on the night axis - the night fill agreed with the chalk (chroma 4-6), so the night-raw signal alone misses canon-vs-chalk disagreement when the fill complied"
+  ],
+  "limitations": [
+    "Finds disagreement, not wrongness - white celestial motifs at night are often deliberate; the list needs a human pass by design",
+    "CHROMA_MIN=40 misses pale pastels (cat nose at meanChroma 36 scored 0); lower to ~30 or report the 15-40 band",
+    "Light-raw signal over-flags at night (canon-yellow stars are deliberately white at night) - use only to adjudicate night-compliant regions",
+    "Region granularity is the chalk's: mixed regions (owl sclera + facial disc) dilute coloredFrac"
+  ],
+  "comparisons": [
+    { "label": "farm/dog-tall collar (IDEAS.md, confirmed)", "before": "farm-dog-tall-before.webp", "after": "farm-dog-tall-after.webp", "note": "night raw paints a golden collar + tag; ships blank white (canon per light raw: red)" },
+    { "label": "space/astronaut-wide face (new find)", "before": "space-astronaut-wide-before.webp", "after": "space-astronaut-wide-after.webp", "note": "the child's warm skin + rosy cheeks whited out - the most important new flag" },
+    { "label": "farm/duck-tall bill (new find)", "before": "farm-duck-tall-before.webp", "after": "farm-duck-tall-after.webp", "note": "orange bill + pink mouth ships as white" },
+    { "label": "farm/pig-wide snout (new find)", "before": "farm-pig-wide-before.webp", "after": "farm-pig-wide-after.webp", "note": "pink snout with nostrils ships as white" },
+    { "label": "farm/cow-tall bell (new find)", "before": "farm-cow-tall-before.webp", "after": "farm-cow-tall-after.webp", "note": "golden bell (chroma 131) ships as white" },
+    { "label": "vehicles/fire-tall windshield (new find)", "before": "vehicles-fire-tall-before.webp", "after": "vehicles-fire-tall-after.webp", "note": "dark glass with streaks ships as a huge white blank" },
+    { "label": "nature/spider-wide flower (rank 1)", "before": "nature-spider-wide-before.webp", "after": "nature-spider-wide-after.webp", "note": "magenta flower with yellow center ships as white" },
+    { "label": "farm/cat-tall inner ear (IDEAS.md, confirmed)", "before": "farm-cat-tall-before.webp", "after": "farm-cat-tall-after.webp", "note": "dusty-pink ear whited; the nose sits just under the chroma bar" },
+    { "label": "creatures/unicorn-tall horn (control, score 0)", "before": "creatures-unicorn-tall-before.webp", "after": "creatures-unicorn-tall-after.webp", "note": "night fill complied with the chalk - true negative; light raw shows canon wants pale cyan" }
+  ],
+  "images": [
+    { "file": "crops/farm-dog-tall.webp", "caption": "3-up: chalk display | night raw (golden collar) | shipped composite (white)" },
+    { "file": "crops/space-astronaut-wide.webp", "caption": "3-up: astronaut child's face - warm skin in the raw, white in what ships" },
+    { "file": "crops/vehicles-police-wide.webp", "caption": "3-up: police windshield - blue glass behind the eyes whited out" },
+    { "file": "crops/objects-teddy-wide.webp", "caption": "3-up: teddy paw pad - dark brown pad ships as white" },
+    { "file": "crops/space-moon-wide.webp", "caption": "3-up: golden glowing face-star vs white - the celestial art-call family" },
+    { "file": "crops/creatures-unicorn-tall.webp", "caption": "3-up control: unicorn horn - raw already near-white, composite unchanged" }
+  ],
+  "code": [
+    { "title": "Disagreement scorer (run from tools/asset-gen/)", "file": "code/chalk-fill-disagreement.mjs" },
+    { "title": "3-up evidence crops (chalk | raw | composite)", "file": "code/disagreement-crops.mjs" },
+    { "title": "Before/after crop pairs", "file": "code/disagreement-pairs.mjs" }
+  ]
+}

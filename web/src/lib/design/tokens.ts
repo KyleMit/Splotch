@@ -1,0 +1,632 @@
+import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
+import { BLACK_INK, paletteHex, type PaletteLabel } from '../palette.ts';
+
+// Design-token single source of truth (ADR-0071).
+//
+// Every value here is emitted into web/src/tokens.css by `npm run gen:tokens`
+// (tools/tokens/gen-token-css.mjs) — camelCase keys become kebab-case custom
+// properties (`appBg` → `--app-bg`). Components consume the CSS variables;
+// the few JS consumers that can't read CSS (canvas export fill, Notch Band,
+// theme-color meta) import the typed objects below, so there is no
+// hand-synced mirror to drift.
+//
+// The `ThemeTokens` interface is what keeps light and dark structurally
+// identical: a token added to one theme and not the other fails the compiler.
+
+export const hues = {
+  huePurple: paletteHex('Purple'),
+  hueIndigo: paletteHex('Indigo'),
+  hueBlue: paletteHex('Blue'),
+  hueTeal: paletteHex('Teal'),
+  hueMint: paletteHex('Mint'),
+  hueGreen: paletteHex('Green'),
+  hueLime: paletteHex('Lime'),
+  hueYellow: paletteHex('Yellow'),
+  hueOrange: paletteHex('Orange'),
+  hueBrown: paletteHex('Brown'),
+  hueRed: paletteHex('Red'),
+  huePink: paletteHex('Pink'),
+  hueMagenta: paletteHex('Magenta'),
+  hueGrey: paletteHex('Grey'),
+} satisfies Record<`hue${Exclude<PaletteLabel, 'Black'>}`, string>;
+
+const BRAND_HEX = '#ab71e1';
+const DARK_BRAND_TEXT = '#c9a9f0';
+
+function yellowWash(strength: number): string {
+  const channels = hues.hueYellow.slice(1).match(/../g);
+  if (!channels || channels.length !== 3) throw new Error('Yellow must be a six-digit palette hex');
+  return `rgb(${channels.map((pair) => Number.parseInt(pair, 16)).join(' ')} / ${strength}%)`;
+}
+
+// Brand accent used for active/hover chrome across parent + AI UI.
+// Custom properties pierce Svelte's style scoping, so components reference
+// these directly via var().
+//
+// --brand is the identity hue: hairlines, focus rings, accent-color, and the
+// fills that carry no text (it is only 3.4:1 against --on-brand). A brand fill
+// that carries a label rests on the themed --brand-solid instead, and every
+// brand fill — labeled or not — darkens through the same themed ramp on hover
+// (--brand-solid, then --brand-solid-hover). There is deliberately no second,
+// unthemed hover step.
+export const brand = {
+  brand: BRAND_HEX,
+  // Text/icon ink on --brand fills. Lives here (unthemed) because --brand
+  // itself is constant across themes, so what sits on it is too.
+  onBrand: '#fff',
+} as const;
+
+// Theme-independent scales. These are the vocabulary for component styles —
+// prefer them over literal px/shadow/easing values so spacing, corners, type,
+// and motion stay on one ramp app-wide. It also holds the handful of unthemed
+// *fills*: chrome color that reads the same on both papers, so it has no
+// light/dark pair to live in ThemeTokens.
+export const scale = {
+  glassRail: '77%',
+  glassStrip: '85%',
+  space1: '4px',
+  space2: '8px',
+  space3: '12px',
+  space4: '16px',
+  space5: '20px',
+  space6: '24px',
+  space7: '32px',
+  space8: '40px',
+
+  // Controls sit on sm/md, everything card-sized and up on lg, pills on pill.
+  // There is no xs step (inline chips round at sm) and no xl step (page
+  // sheets, banners, and modal cards all share lg — one corner for every
+  // surface bigger than a control).
+  radiusSm: '8px',
+  radiusMd: '12px',
+  radiusLg: '16px',
+  radiusPill: '999px',
+  radiusBlob1: '58% 42% 55% 45% / 45% 58% 42% 55%',
+  radiusBlob2: '45% 55% 48% 52% / 55% 45% 58% 42%',
+  radiusBlob3: '52% 48% 55% 45% / 45% 55%',
+
+  borderWidth: '1px',
+  focusRingWidth: '2px',
+  focusRingOffset: '2px',
+
+  // Named --font-size-*, not --text-*, so the type ramp can't collide with
+  // the themed text-color family (--text, --text-strong, --text-soft).
+  // Five steps, one role each: xs fine print · sm UI chrome · md body prose ·
+  // lg ledes and section heads · xl titles. xl is the ceiling inside any
+  // surface — modal titles, card titles, section H2s all share it; the only
+  // thing bigger is a full-page hero on the display tier below.
+  fontSizeXs: '12px',
+  fontSizeSm: '14px',
+  fontSizeMd: '16px',
+  fontSizeLg: '18px',
+  fontSizeXl: '22px',
+  // The display tier above the body ramp: the H1 of a whole page — PageShell's
+  // hero, the crash screen, the dev index. Fluid — 34px on a phone, 46px once
+  // the sheet has room — rather than swapping fixed sizes at a breakpoint.
+  fontSizeDisplay: 'clamp(34px, 3.2vw + 17px, 46px)',
+
+  // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
+  // viewport when a focused input's font-size is < 16px, which on the
+  // drawing route would strand the canvas zoomed with no way to reset it
+  // (ADR-0076). Every text input in Settings must reference this.
+  inputFontSize: 'max(16px, var(--font-size-md))',
+
+  // The app-wide sans stack. Components reference var(--font-family) rather
+  // than hand-copying it (ErrorScreen, AdminConsole) so there is one source of
+  // truth for the family name.
+  fontFamily: `'${QUICKSAND_FONT_FAMILY}', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
+
+  // Raw code values (masked API keys, inline code, ledger ids). The system
+  // mono stack rather than Courier New: Courier's thin strokes fell below
+  // comfortable contrast at 12–14px, most of all on the dark paper.
+  fontMono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+
+  // The weight ladder: 400 (untokenized default) body prose · medium quiet
+  // labels · semibold buttons, active states, sub-heads · bold headings.
+  fontWeightMedium: '500',
+  fontWeightSemibold: '600',
+  fontWeightBold: '700',
+
+  durationFast: '0.15s',
+  durationBase: '0.2s',
+  durationSlow: '0.35s',
+  // What an exit takes: a dialog flying back, the coloring page lifting off.
+  // The same number as durationBase, named so an exit's ratio to its entrance
+  // reads at the call site (exits run at roughly 0.6 of the entrance).
+  durationExit: '0.2s',
+  // Two expressive curves: the springy overshoot for a two-state pop or a
+  // single-segment keyframe (download-done, the drawer's button cascade, the
+  // Clear Button), and the glide for anything that settles or leaves (the
+  // polaroid, the swatch ring, the undo ghost). ADR-0097 folded the former
+  // softer pop into this one. A keyframe block that draws its own overshoot
+  // takes neither at the shorthand — it runs linear with per-keyframe curves
+  // (the design skill's one-curve-per-cue rule).
+  easePop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+  easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  // The symmetric curve for two things that must move as one object — the
+  // drawer's edge and its chevron. Neither end front-loads, so both are at the
+  // same fraction of their journey on every frame.
+  easeDrawer: 'cubic-bezier(0.4, 0, 0.2, 1)',
+
+  // The one dimming for a whole parked control — a disabled toggle row, chip,
+  // button, or gate key. Text and glyphs on their own never take it: they
+  // change ink token instead (design rule 5). The canvas action buttons keep
+  // a deeper bespoke fade of their own in app.css.
+  disabledOpacity: '0.65',
+
+  // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
+  // --float-shadow instead — these are for modal-layer chrome where one
+  // shadow reads correctly on both themes.
+  //
+  // shadowControl is the tight, hard lift on a small raised control — a
+  // segmented toggle's selected thumb, the Actions Panel's popovers — close
+  // enough that the control reads as sitting just above its surface.
+  // shadowPop is the deep overlay lift for whole modal cards.
+  shadowControl: '0 1px 4px rgb(0 0 0 / 18%)',
+  shadowPop: '0 8px 32px rgb(0 0 0 / 30%)',
+
+  // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
+  // ghost so the tutorial always matches the real control.
+  clearGradientRest: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
+
+  // Every polaroid in the app is the same physical object: the screenshot
+  // flight, the card's download send-off, the waiting print in the canvas
+  // corner, and the styleguide's map of them. A photograph does not repaint at
+  // night, so the print white is pinned rather than themed — and the brand ink
+  // written on it is pinned with it (--brand-text's dark reading would be pale
+  // lavender on white). This is --brand-text's light value, held to the paper
+  // it sits on.
+  polaroidPaper: '#fdfcf7',
+  polaroidInk: '#7c50bb',
+
+  // Disclosure text sits on dark scrim glass under either app theme.
+  scrimInk: '#b3b1bf',
+  scrimInkDanger: '#e09393',
+  scrimInkSoft: '#a6a3b0',
+  scrimPill: 'rgb(23 23 29 / 72%)',
+} as const;
+
+// The cross-component stacking order, low to high. Scoped to "chrome" — the
+// fixed/absolute-positioned UI that can visually collide with something outside
+// its own component. Layers sealed inside a real stacking context (everything
+// under DrawingCanvas's .canvas-stack, which sets isolation: isolate; the close
+// buttons on the AI and coloring-book cards; the hovered palette hexagon) stay
+// as local integers: tokenizing them would imply a global relationship they
+// don't have.
+//
+// These are ONE ordered list but not one stacking context, so a bigger number
+// does not always win. The bottom dock contains the Settings Button, Actions
+// Panel, and Install Banner; the panel in turn contains zFlyout. Other values
+// resolve in the root context — notably .canvas-container is position: relative with no z-index, so it
+// establishes nothing and its children compete directly with the fixed chrome.
+// The tiers are a convention, not a containment guarantee.
+export const zIndex = {
+  zToolbarPaper: 3,
+  zPointerHalo: 4,
+  // FullscreenToggle — the floor of that shared root context, not a separate
+  // local scale. It clears DrawingCanvas's other root-level layers
+  // (.paper-sheet 0, .canvas-stack 1, .paper-view 2, .brush-ring/.eraser-bubble
+  // zPointerHalo) and deliberately loses to every persistent control below.
+  zCanvasChrome: 5,
+
+  // Clear Button drag feedback: the paper wash previewing the clear, then the
+  // departing page over it. Both sit above the canvas and below every
+  // persistent control, so the page passes beneath the Clear Button it flies into.
+  zClearPreview: 400,
+  zClearInk: 600,
+
+  zCornerButton: 900, // SettingsButton
+  zPanel: 901, // Bottom dock and its ActionsPanel
+  // app.css .flyout-menu (Brush Menu + Stroke Width Menu) — the one value here
+  // that is local to the Actions Panel. .actions-panel is position: fixed with a
+  // z-index, so it establishes its own, and this only orders the flyout inside
+  // that subtree. Hence the tie with zPanel is inert; hence also raising this
+  // past zBanner would change nothing, because zPanel caps the whole subtree.
+  // The banner hides while the drawer is open so the flyout remains reachable.
+  zFlyout: 901,
+  zBanner: 950, // InstallBanner inside the bottom dock; SaveFailureBanner atop the canvas
+  zClearAcceptZone: 998, // below the button it rings, so the button stays on top
+  zRailGlass: 999, // Bare palette glass and its margin rules cover the accept ring as the Buttons palette does
+  zClearButton: 1000,
+  // Pre-existing tie with zClearButton: both are fixed, and which one paints on
+  // top is DOM order today. Preserved deliberately — resolving it is a visual
+  // change, not a rename.
+  zNotch: 1000,
+  zClearCoachmark: 1001, // the ghost button, above the real one
+  zPalette: 1002,
+  // AiWaitingPolaroid — the only way back into a minimized generation
+  // (ADR-0116), and it is pinned to the canvas corner the Color Palette shares,
+  // where its tilt and shadow graze the palette's edge. Above the palette so
+  // that edge paints over it rather than being clipped under it, and well above
+  // the Install Banner it once merely tied with: a tie is settled by DOM order,
+  // and bootHiddenOverlays mounts the banner second, which left the print
+  // completely covered and a paid run stranded behind it.
+  zWaitingPolaroid: 1003,
+  zPolaroid: 1004, // app.css .polaroid-overlay — the save-screenshot flight
+} as const;
+
+// Themed tokens. Dark mode swaps these — and only these — so themed chrome
+// must reference colors through them. The one deliberately unthemed control
+// is the Clear Button — its red danger chrome reads the same on light or
+// dark paper.
+export interface ThemeTokens {
+  appBg: string;
+  /** modal cards, palette bar */
+  surface: string;
+  /**
+   * --surface as bare RGB channels, for `rgb(var(--surface-rgb) / alpha)`: a
+   * fade to the surface that needs no color-mix(). tokens.test.ts holds it
+   * equal to --surface in both themes.
+   */
+  surfaceRgb: string;
+  /** setting cards, inset panels */
+  surface2: string;
+  /** Crayon contribution to numbered-step discs and digits. */
+  stepWashStrength: string;
+  stepInkStrength: string;
+  tapeStrength: string;
+  tapeInk: string;
+  squiggleStrength: string;
+  linkCrayon: string;
+  highlighter: string;
+  arrivalWash: string;
+  blobShadow: string;
+  /** hover fill for quiet controls on any surface, paper-toned chrome included */
+  surfaceHover: string;
+  border: string;
+  borderWarm: string;
+  borderWarmStrong: string;
+  /**
+   * Every inactive track: the toggle-switch off state, slider rails, and
+   * segmented-picker grounds — the segment variant's track and the chip
+   * variant's unselected fill alike — one recessed gray, so tracks read as the
+   * same kind of thing wherever they appear. Its value is pinned to hold 4.5:1
+   * under --text-soft in both themes, because segmented pickers set their
+   * unselected labels directly on the track (a11y.spec.ts enforces it).
+   */
+  controlTrack: string;
+  controlTrackHover: string;
+  /** snap-detent tick over track + fill */
+  sliderNotch: string;
+  textStrong: string;
+  text: string;
+  /**
+   * The single de-emphasized step — help text, metadata, separators,
+   * placeholders. Its value is pinned to hold 4.5:1 on the app grounds in
+   * both themes, so small soft text never needs a darker exception.
+   *
+   * The 4.5:1 floor alone is not enough to place it, because WCAG 2's ratio
+   * overstates how readable light ink is on a dark ground: the dark value
+   * cleared 8.5:1 on --app-bg and still read as washed out beside the light
+   * theme's 5.3:1. What tracks the eye is the perceptual step down from
+   * --text, so the two themes hold the same APCA step between --text and
+   * --text-soft on --surface (~13 Lc) rather than a ratio. The step is widened
+   * from the --text side: --text-soft cannot move without breaking the
+   * --control-track pairing above.
+   */
+  textSoft: string;
+  /** Tracked labels need stronger apparent weight on dark surfaces. */
+  labelInk: string;
+  /**
+   * Monochrome icon fill — matches the SVGs' baked fill, guarded against
+   * drift by web/src/lib/components/Icon.svelte.test.ts. Also the hover
+   * state of --icon-muted: quiet chrome icons rest muted and hover to full
+   * ink — there is no intermediate hover step.
+   */
+  iconInk: string;
+  iconMuted: string;
+  /** brand-tinted active/selected fills */
+  brandWash: string;
+  /**
+   * One step stronger, for hovering washed elements. Held to 4.5:1 under
+   * --brand-text in both themes (tokens.test.ts), which caps how deep the
+   * light step can go.
+   */
+  brandWashHover: string;
+  brandText: string;
+  /**
+   * The brand as a FILL that carries text. `--brand` itself is the identity
+   * hue and only clears 3.4:1 against --on-brand, so a solid purple control
+   * with a white label fails WCAG AA at body size; this is the darkened step
+   * that clears 4.5:1 in both themes. Use it wherever brand-colored background
+   * sits under words (the report kind picker, a page's primary call to
+   * action); keep `--brand` for hairlines, focus rings, accent-color and tints,
+   * where the 3:1 non-text floor applies instead.
+   */
+  brandSolid: string;
+  /**
+   * The hovered step of --brand-solid. Both themes darken rather than lighten:
+   * a brighter purple cannot hold 4.5:1 against the white label it carries.
+   */
+  brandSolidHover: string;
+  /** verification / feedback banners */
+  successWash: string;
+  /**
+   * The one success green: ink on --success-wash and the confirmation
+   * check/icon color (download-done, setup check). Tuned per theme.
+   */
+  successText: string;
+  dangerWash: string;
+  /**
+   * One step stronger, for hovering danger washes. Held to 4.5:1 under
+   * --danger-text in both themes (tokens.test.ts), which caps how deep the
+   * light step can go.
+   */
+  dangerWashHover: string;
+  dangerText: string;
+  warningWash: string;
+  warningText: string;
+  warningChip: string;
+  /**
+   * The drawing paper. The handmade-paper texture webp is a LOW-ALPHA grain
+   * layer, so one texture serves both themes — only the color beneath it
+   * changes. JS consumers (canvas export fill, Notch Band eraser color) read
+   * this via PAPER_COLORS in lib/theme.ts, which writes the value literally
+   * rather than importing this map — it is on the startup path, and the import
+   * edge would ship every token with it. theme.tokens.test.ts guards the copy
+   * against this source (ADR-0071's 2026-09 amendment).
+   */
+  paper: string;
+  glassTintRgb: string;
+  ruleInk: string;
+  ruleBlend: string;
+  ruleOpacity: string;
+  ruleSecondaryOpacity: string;
+  /** the flat tone behind the rotation-locked sheet */
+  paperMargin: string;
+  /**
+   * The crayon-yellow highlighter a standalone page paints selected text with:
+   * palette Yellow over the sheet, flattened to an opaque hex because browsers
+   * treat a translucent ::selection inconsistently (Chrome adds its own alpha).
+   * Held to 4.5:1 under the two inks a selection wears — --text-strong, and
+   * --brand-text on links (tokens.test.ts).
+   */
+  selectionHighlight: string;
+  /**
+   * The paint blob behind the "leaves the app" arrow on a standalone outbound
+   * link (Settings › About). Not --paper-margin: its dark step sits below the
+   * sheet and the blob would vanish. Holds 3:1 under --icon-muted.
+   */
+  externalMarkWash: string;
+  /**
+   * Dashed outline of the size-eraser "hole" previews (ActionsPanel flyout +
+   * trigger icon) — neutral gray so the holes never read as ink. Their fill
+   * is --paper, so the holes literally show the canvas through the flyout.
+   */
+  holeStroke: string;
+  /**
+   * Coloring-page line art: black lines multiplied over light paper; dark
+   * mode inverts them to white "chalk" lines and screens them over the dark
+   * paper (ADR-0052, direction B). The overlay only renders while a page is
+   * applied, so these effectively drive the dark+coloring treatment.
+   */
+  lineartFilter: string;
+  lineartBlend: string;
+  /**
+   * Cards floating over the paper (action buttons, stroke flyout). In dark
+   * mode a step lighter than --paper so they still read as raised cards.
+   */
+  floatSurface: string;
+  floatSurfaceHover: string;
+  /**
+   * Hairline edge + lift for the float cards. In light mode the edge is
+   * transparent (the warm drop shadow does the separating); in dark mode a
+   * faint light hairline plus a real drop shadow give the cards a visible
+   * edge against the dark paper, where the warm shadow vanishes. One lift for
+   * every paper-floating surface — cards, flyouts, page sheets alike.
+   */
+  floatBorder: string;
+  floatShadow: string;
+  /**
+   * Keyline ringing near-black currentColor ink on the float cards — the
+   * dark twin of the white-ink black keyline (ActionsPanel .white-stroke).
+   * Inert in light mode, where dark ink already reads on the light cards.
+   */
+  darkInkKeyline: string;
+  /**
+   * The fill of the palette's Black swatch, which shows white on dark paper.
+   * A token so the prerendered swatch already wears the theme's color: a fill
+   * resolved in JS paints black until hydration and then fades to white.
+   * colors.svelte.ts owns the ink the swatch draws with;
+   * colors.svelte.test.ts holds the two to the same answer.
+   */
+  blackSwatchInk: string;
+}
+
+export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
+  light: {
+    appBg: '#f5f5f5',
+    surface: '#ffffff',
+    surfaceRgb: '255 255 255',
+    surface2: '#f8f8f8',
+    stepWashStrength: '9%',
+    stepInkStrength: '45%',
+    tapeStrength: '100%',
+    tapeInk: '#333',
+    squiggleStrength: '100%',
+    linkCrayon: brand.brand,
+    highlighter: yellowWash(70),
+    arrivalWash: yellowWash(26),
+    blobShadow: '0 3px 8px color-mix(in srgb, var(--brand-solid) 35%, transparent)',
+    surfaceHover: '#f5f5f5',
+    border: '#e0e0e0',
+    borderWarm: '#ddd6cc',
+    borderWarmStrong: '#c4bbad',
+    controlTrack: '#e9e9e9',
+    controlTrackHover: '#ccc',
+    sliderNotch: 'rgb(0 0 0 / 22%)',
+    textStrong: '#333',
+    text: '#474747',
+    textSoft: '#666',
+    labelInk: '#666',
+    iconInk: '#1f1f1f',
+    iconMuted: '#737373',
+    brandWash: '#ede7f6',
+    brandWashHover: '#ede1ff',
+    brandText: '#7c50bb',
+    brandSolid: '#7c50bb',
+    brandSolidHover: '#6b3fbf',
+    successWash: '#e9f7ec',
+    successText: '#2e7d4f',
+    dangerWash: '#fdecec',
+    dangerWashHover: '#ffe6e6',
+    dangerText: '#b04a4a',
+    warningWash: '#fff2d3',
+    warningText: '#895a0a',
+    warningChip: '#ffe5a8',
+    paper: '#fcfbf8',
+    glassTintRgb: '252 251 248',
+    ruleInk: '#e4a0ab',
+    ruleBlend: 'multiply',
+    ruleOpacity: '1',
+    ruleSecondaryOpacity: '.6',
+    paperMargin: '#f1efeb',
+    selectionHighlight: '#fce69e',
+    externalMarkWash: '#f1efeb',
+    holeStroke: '#8a8a93',
+    lineartFilter: 'none',
+    lineartBlend: 'multiply',
+    floatSurface: '#ffffff',
+    floatSurfaceHover: '#f5f5f5',
+    floatBorder: 'transparent',
+    floatShadow: '0 2px 6px rgb(93 84 68 / 14%), 0 6px 16px rgb(93 84 68 / 10%)',
+    darkInkKeyline: 'transparent',
+    blackSwatchInk: BLACK_INK,
+  },
+  dark: {
+    appBg: '#17171d',
+    surface: '#23232b',
+    surfaceRgb: '35 35 43',
+    stepWashStrength: '24%',
+    stepInkStrength: '0%',
+    tapeStrength: '45%',
+    tapeInk: '#f4f1ea',
+    squiggleStrength: '70%',
+    linkCrayon: DARK_BRAND_TEXT,
+    highlighter: yellowWash(30),
+    arrivalWash: yellowWash(14),
+    blobShadow: 'none',
+    surface2: '#2d2d37',
+    surfaceHover: '#33333e',
+    border: '#3d3d49',
+    borderWarm: '#3d3d49',
+    borderWarmStrong: '#4d4d5b',
+    controlTrack: '#3a3a45',
+    controlTrackHover: '#575765',
+    sliderNotch: 'rgb(255 255 255 / 40%)',
+    textStrong: '#eceaf2',
+    text: '#d3d1dc',
+    textSoft: '#bdbbc8',
+    labelInk: '#d3d1dc',
+    iconInk: '#dedce8',
+    iconMuted: '#a8a6b3',
+    brandWash: '#3b2f4f',
+    brandWashHover: '#46395c',
+    brandText: DARK_BRAND_TEXT,
+    brandSolid: '#8058c0',
+    brandSolidHover: '#6f47b0',
+    successWash: '#24382b',
+    successText: '#8bcfa4',
+    dangerWash: '#422a2c',
+    dangerWashHover: '#4e3134',
+    dangerText: '#e09393',
+    warningWash: '#3e331c',
+    warningText: '#f2d488',
+    warningChip: '#544620',
+    paper: '#211f29',
+    glassTintRgb: '33 31 41',
+    ruleInk: '#b07683',
+    ruleBlend: 'screen',
+    ruleOpacity: '.55',
+    ruleSecondaryOpacity: '.33',
+    paperMargin: '#1a1922',
+    selectionHighlight: '#4e4632',
+    externalMarkWash: '#33333e',
+    holeStroke: '#b9b9c2',
+    lineartFilter: 'invert(1)',
+    lineartBlend: 'screen',
+    floatSurface: '#2e2c38',
+    floatSurfaceHover: '#393744',
+    floatBorder: 'rgb(255 255 255 / 10%)',
+    floatShadow: '0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%)',
+    darkInkKeyline: '#e9e7f0',
+    blackSwatchInk: '#ffffff',
+  },
+};
+
+// Whether a themed token's value is a paintable color. A handful carry filters,
+// blend modes and shadows instead, so anything that renders tokens as swatches
+// (the /design styleguide) has to split them apart. Typed as a total Record so
+// the compiler forces every new themed token to be classified here rather than
+// letting a consumer re-derive the split by hand.
+export const isColorToken: Record<keyof ThemeTokens, boolean> = {
+  appBg: true,
+  surface: true,
+  surfaceRgb: false,
+  surface2: true,
+  stepWashStrength: false,
+  stepInkStrength: false,
+  tapeStrength: false,
+  tapeInk: true,
+  squiggleStrength: false,
+  linkCrayon: true,
+  highlighter: true,
+  arrivalWash: true,
+  blobShadow: false,
+  surfaceHover: true,
+  border: true,
+  borderWarm: true,
+  borderWarmStrong: true,
+  controlTrack: true,
+  controlTrackHover: true,
+  sliderNotch: true,
+  textStrong: true,
+  text: true,
+  textSoft: true,
+  labelInk: true,
+  iconInk: true,
+  iconMuted: true,
+  brandWash: true,
+  brandWashHover: true,
+  brandText: true,
+  brandSolid: true,
+  brandSolidHover: true,
+  successWash: true,
+  successText: true,
+  dangerWash: true,
+  dangerWashHover: true,
+  dangerText: true,
+  warningWash: true,
+  warningText: true,
+  warningChip: true,
+  paper: true,
+  glassTintRgb: false,
+  ruleInk: true,
+  ruleBlend: false,
+  ruleOpacity: false,
+  ruleSecondaryOpacity: false,
+  paperMargin: true,
+  selectionHighlight: true,
+  externalMarkWash: true,
+  holeStroke: true,
+  lineartFilter: false,
+  lineartBlend: false,
+  floatSurface: true,
+  floatSurfaceHover: true,
+  floatBorder: true,
+  floatShadow: false,
+  darkInkKeyline: true,
+  blackSwatchInk: true,
+};
+
+// `appBg` → `app-bg`, `surface2` → `surface-2`. Exported for iconTokens.ts, which
+// composes its names from more than one segment and so can't use the `--`-prefixed
+// form below.
+export function toKebabCase(key: string): string {
+  return key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
+}
+
+// `appBg` → `--app-bg`, `surface2` → `--surface-2`, `brandSolidHover` → `--brand-solid-hover`.
+export function toCssVarName(key: string): string {
+  return `--${toKebabCase(key)}`;
+}

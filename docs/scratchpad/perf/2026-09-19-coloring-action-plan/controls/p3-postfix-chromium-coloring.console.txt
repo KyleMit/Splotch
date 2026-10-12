@@ -1,0 +1,25 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54804/ --engine=chromium --actions=coloring --output=perf-profiles/coloring-state-r1/postfix-chromium-coloring/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+
+Desktop action sweep 3/4
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬─────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬────────────────────┬────────────────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                  │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max           │ raw max            │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼─────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼────────────────────┼────────────────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'open coloring books'   │ '3/4' │ '4/4'      │ 10.3      │ 1.2            │ 1.3            │ 16.7     │ 16.800000000000182 │ 16.800000000000182 │ '111/196'         │ 17.5       │ 0               │ 'PASS'  │
+│ 1       │ 'open coloring book'    │ '3/4' │ '4/4'      │ 11.6      │ 3.2            │ 3.6            │ 16.7     │ 16.800000000000182 │ 16.800000000000182 │ '62/195'          │ 17.8       │ 0               │ 'PASS'  │
+│ 2       │ 'scroll coloring pages' │ '3/4' │ '4/4'      │ 15.7      │ 53.2           │ 53.6           │ 16.8     │ 16.800000000000182 │ 16.800000000000182 │ '52/123'          │ 18.2       │ 0               │ 'PASS'  │
+│ 3       │ 'select coloring page'  │ '3/4' │ '4/4'      │ 12.4      │ 108            │ 108.8          │ 16.8     │ 16.800000000000182 │ 16.800000000000182 │ '36/213'          │ 18.5       │ 0               │ 'PASS'  │
+│ 4       │ 'clear coloring page'   │ '3/4' │ '4/4'      │ 14.1      │ 106.5          │ 107.8          │ 16.8     │ 16.80000000000109  │ 16.80000000000109  │ '33/213'          │ 18.4       │ 0               │ 'PASS'  │
+└─────────┴─────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴────────────────────┴────────────────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-state-r1/postfix-chromium-coloring/actions.json

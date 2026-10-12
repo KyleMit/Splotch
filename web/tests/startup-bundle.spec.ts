@@ -1,0 +1,190 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { expect, test } from '@playwright/test';
+
+// Issue #461: the save pipeline (the export compositor, the platform image save,
+// the Screenshot Button flow, folder save, screenshot feedback) loads on demand at save time. Nothing else
+// stops a future static import from silently merging it back onto the startup
+// critical path, so this spec pins the prerendered `/` page's modulepreload list:
+// no chunk the browser must fetch before hydration may contain the save modules'
+// code.
+//
+// It reads the build output on disk — the default Playwright web server runs
+// `vite build` first, so the output is fresh. Skipped under DEV_SERVER=1 (the
+// dev server serves unbundled modules; the disk output may be stale or absent).
+
+const outputDir = fileURLToPath(new URL('../.svelte-kit/output', import.meta.url));
+const prerenderedIndex = `${outputDir}/prerendered/pages/index.html`;
+const clientDir = `${outputDir}/client`;
+const deferredIconsDir = fileURLToPath(new URL('../src/lib/icons/deferred', import.meta.url));
+
+// One minification-proof string literal per lazily-loaded save module.
+const SAVE_MODULE_MARKERS: Record<string, string> = {
+  'exportDrawing.ts': 'handmade-paper',
+  'imageSave.ts': 'accessDenied',
+  'screenshot.ts': 'discardPreview',
+  'folderSave.ts': 'Persisting the save folder failed:',
+  'screenshotFeedback.ts': 'screenshot-capture-feedback',
+};
+// nativeStore.ts has no entry: manager.ts reaches it only behind
+// `__IS_CAPACITOR__`, so the web client build compiles it out entirely and no
+// marker can identify it here. A bare `ColoringPacks` marker used to stand in
+// for it and matched unrelated identifiers instead (`createColoringPacks`,
+// `setColoringPacksAllowMetered`), which is how it failed the moment a settings
+// mutator became a property name in the startup chunk.
+const COLORING_PACK_MODULE_MARKERS: Record<string, string> = {
+  'manager.ts': 'Coloring-pack download paused',
+  // The startup-path boot copies its cache family prefix instead of importing
+  // this module (boot/coloringPacks.ts); the marker keeps the import from
+  // coming back.
+  'cacheKeys.ts': '/coloring/.installed/',
+};
+
+// ADR-0164: the icons under src/lib/icons/deferred/ ship in the chunk of
+// lib/components/deferredIcons.ts, and a static import of that module from a
+// startup module (the shape deferredIcons.test.ts's per-file import rule gives
+// the regression) hauls every one of them back onto the critical path. The
+// marker is path data from one deferred icon: raw SVG is inlined as a string
+// literal, so it survives minification verbatim.
+const DEFERRED_ICON_MARKER_LENGTH = 40;
+const DEFERRED_ICON_MODULE_MARKERS: Record<string, string> = {
+  'deferredIcons.ts': deferredIconPathMarker('whats-new'),
+};
+
+function deferredIconPathMarker(name: string): string {
+  const svg = readFileSync(`${deferredIconsDir}/${name}.svg`, 'utf8');
+  const pathData = /\sd="([^"]+)"/.exec(svg)?.[1];
+  if (!pathData || pathData.length < DEFERRED_ICON_MARKER_LENGTH) {
+    throw new Error(`${name}.svg has no path data long enough to serve as a marker`);
+  }
+  return pathData.slice(0, DEFERRED_ICON_MARKER_LENGTH);
+}
+
+// The positive twin of the markers above: modules that must stay ON the
+// startup path. ADR-0039: install.svelte.ts registers its one-shot
+// `beforeinstallprompt` listener at module evaluation, which only beats the
+// event while the module is modulepreloaded. Behind a lazy import every other
+// gate still passes, while Chromium's one-tap Install silently falls back to
+// the browser-menu hint.
+const STARTUP_REQUIRED_MARKERS: Record<string, string> = {
+  'install.svelte.ts': 'beforeinstallprompt',
+};
+
+test.skip(!!process.env.DEV_SERVER, 'guards the production build output');
+
+function modulepreloadHrefs(): string[] {
+  const html = readFileSync(prerenderedIndex, 'utf8');
+  return [...html.matchAll(/<link[^>]+rel="modulepreload"[^>]*>/g)]
+    .map((m) => /href="([^"]+)"/.exec(m[0])?.[1])
+    .filter((href): href is string => !!href);
+}
+
+test('modules that must register before hydration stay in the prerendered modulepreload list', () => {
+  const chunks = modulepreloadHrefs().map((href) =>
+    readFileSync(`${clientDir}/${href.replace(/^\.\//, '')}`, 'utf8')
+  );
+  expect(chunks.length).toBeGreaterThan(0);
+  for (const [module, marker] of Object.entries(STARTUP_REQUIRED_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `${module} (marker "${marker}") left every modulepreloaded chunk — its module-load listener now registers after the event it must catch`
+    ).toBe(true);
+  }
+});
+
+test('the save pipeline stays out of the prerendered modulepreload list', () => {
+  const hrefs = modulepreloadHrefs();
+  expect(hrefs.length).toBeGreaterThan(0);
+
+  for (const href of hrefs) {
+    const chunkPath = `${clientDir}/${href.replace(/^\.\//, '')}`;
+    expect(
+      existsSync(chunkPath),
+      `modulepreload href ${href} resolved to no chunk on disk — the href format changed and this test would scan nothing`
+    ).toBe(true);
+    const chunk = readFileSync(chunkPath, 'utf8');
+    for (const [module, marker] of Object.entries(SAVE_MODULE_MARKERS)) {
+      expect(
+        chunk.includes(marker),
+        `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — a static import has pulled the save pipeline onto the startup critical path`
+      ).toBe(false);
+    }
+    for (const [module, marker] of Object.entries(COLORING_PACK_MODULE_MARKERS)) {
+      expect(
+        chunk.includes(marker),
+        `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — coloring-pack I/O must stay off the drawing startup path`
+      ).toBe(false);
+    }
+    for (const [module, marker] of Object.entries(DEFERRED_ICON_MODULE_MARKERS)) {
+      expect(
+        chunk.includes(marker),
+        `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — a startup module imports the deferred icon registry, putting every deferred icon on the critical path`
+      ).toBe(false);
+    }
+  }
+});
+
+// The boot-hidden overlays (components/overlayChunk.ts) mount at idle, so their
+// stylesheet has no business in the prerendered head; lib/components/
+// overlayChunkLoader.ts is the dynamic-import hop that keeps SvelteKit from
+// inlining it. One scoped selector per dialog is the marker: a class name
+// survives the CSS build verbatim.
+const OVERLAY_CSS_MARKERS: Record<string, string> = {
+  'SettingsModal.svelte': '.settings-modal',
+  'ParentalGate.svelte': '.parental-gate',
+};
+
+test('the boot-hidden overlay stylesheet stays out of the prerendered head', () => {
+  const html = readFileSync(prerenderedIndex, 'utf8');
+  const inlineStyles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+    .map((m) => m[1])
+    .join('\n');
+  expect(inlineStyles.length).toBeGreaterThan(0);
+  for (const [component, marker] of Object.entries(OVERLAY_CSS_MARKERS)) {
+    expect(
+      inlineStyles.includes(marker),
+      `${component} (marker "${marker}") is inlined into the prerendered head again — the overlay chunk is being imported at dynamic depth one`
+    ).toBe(false);
+  }
+});
+
+test('the overlay CSS markers still identify styles in the client build', () => {
+  const css = readdirSync(`${clientDir}/_app/immutable/assets`)
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => readFileSync(`${clientDir}/_app/immutable/assets/${f}`, 'utf8'))
+    .join('\n');
+  for (const [component, marker] of Object.entries(OVERLAY_CSS_MARKERS)) {
+    expect(
+      css.includes(marker),
+      `marker "${marker}" for ${component} no longer appears in any built stylesheet — update OVERLAY_CSS_MARKERS`
+    ).toBe(true);
+  }
+});
+
+test('the save-module markers still identify code in the client build', () => {
+  // Anti-vacuity check for the test above: if a marker string is renamed away,
+  // it must fail loudly here instead of silently guarding nothing.
+  const chunks = readdirSync(`${clientDir}/_app/immutable`, { recursive: true })
+    .map(String)
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => readFileSync(`${clientDir}/_app/immutable/${f}`, 'utf8'));
+
+  for (const [module, marker] of Object.entries(SAVE_MODULE_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `marker "${marker}" for ${module} no longer appears anywhere in the client build — update SAVE_MODULE_MARKERS`
+    ).toBe(true);
+  }
+  for (const [module, marker] of Object.entries(COLORING_PACK_MODULE_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `marker "${marker}" for ${module} no longer appears anywhere in the client build — update COLORING_PACK_MODULE_MARKERS`
+    ).toBe(true);
+  }
+  for (const [module, marker] of Object.entries(DEFERRED_ICON_MODULE_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `marker "${marker}" for ${module} no longer appears anywhere in the client build — the deferred icon is not shipping at all`
+    ).toBe(true);
+  }
+});

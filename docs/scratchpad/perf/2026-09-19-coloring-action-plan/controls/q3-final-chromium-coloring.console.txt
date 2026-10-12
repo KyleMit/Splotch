@@ -1,0 +1,25 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54804/ --engine=chromium --actions=coloring --output=perf-profiles/coloring-state-r1/r2-chromium-coloring/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+
+Desktop action sweep 3/4
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬─────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬────────────────────┬────────────────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                  │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max           │ raw max            │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼─────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼────────────────────┼────────────────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'open coloring books'   │ '3/4' │ '4/4'      │ 10.6      │ 1.1            │ 1.7            │ 16.7     │ 16.800000000000182 │ 16.800000000000182 │ '111/195'         │ 17.3       │ 0               │ 'PASS'  │
+│ 1       │ 'open coloring book'    │ '3/4' │ '4/4'      │ 9.5       │ 3.5            │ 3.5            │ 16.8     │ 16.800000000000182 │ 16.800000000000182 │ '60/195'          │ 17.5       │ 0               │ 'PASS'  │
+│ 2       │ 'scroll coloring pages' │ '3/4' │ '4/4'      │ 14.8      │ 54.3           │ 54.3           │ 16.7     │ 16.700000000000728 │ 16.800000000000182 │ '53/123'          │ 17.4       │ 0               │ 'PASS'  │
+│ 3       │ 'select coloring page'  │ '3/4' │ '4/4'      │ 11.2      │ 108.1          │ 109.1          │ 16.7     │ 16.800000000000182 │ 16.800000000000182 │ '36/213'          │ 18.3       │ 0               │ 'PASS'  │
+│ 4       │ 'clear coloring page'   │ '3/4' │ '4/4'      │ 13.3      │ 107.1          │ 107.7          │ 16.8     │ 16.80000000000109  │ 16.80000000000109  │ '33/213'          │ 18.2       │ 0               │ 'PASS'  │
+└─────────┴─────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴────────────────────┴────────────────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote perf-profiles/coloring-state-r1/r2-chromium-coloring/actions.json

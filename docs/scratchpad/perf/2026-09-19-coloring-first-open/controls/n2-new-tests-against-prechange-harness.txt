@@ -1,0 +1,19 @@
+# New tests against the pre-change sweep and runners (origin/main 1640c81c versions of the three capture files; lib and tests from 3453f1f2)
+     × is what each runner hands the preparation that reads the install state 11ms
+     × never opens the picker for setup inside the sweep that owes a first open 3ms
+     × settles them in a document each runner loads before the one it sweeps 1ms
+     × checks the picker never opened, then measures the first open before the reopen 0ms
+     × measures nothing under the label that never said which open it was 4ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  perf/tests/coloring-books-ready.test.mjs > the transport that carries the install state > is what each runner hands the preparation that reads the install state
+AssertionError: expected 'import { existsSync, mkdirSync, readF…' to contain 'const executePromise = (expression) =…'
+ Test Files  1 failed (1)
+      Tests  5 failed | 30 passed (35)
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > never opens the picker for setup inside the sweep that owes a first open
+AssertionError: expected 'export async function runActionSweep(…' not to contain 'prepareColoringBooks('
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > settles them in a document each runner loads before the one it sweeps
+AssertionError: expected -1 to be greater than -1
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > checks the picker never opened, then measures the first open before the reopen
+AssertionError: expected -1 to be greater than -1
+ FAIL  perf/tests/coloring-books-ready.test.mjs > where the sweeps settle the installed books > measures nothing under the label that never said which open it was
+AssertionError: expected 'import { existsSync, mkdirSync, readF…' not to contain 'label: \'open coloring books\''

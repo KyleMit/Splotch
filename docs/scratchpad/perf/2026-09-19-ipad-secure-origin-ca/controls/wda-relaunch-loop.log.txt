@@ -1,0 +1,11 @@
+16:34:17 attempt 1
+Timed out while enabling automation mode
+Timed out while enabling automation mode
+16:35:27 attempt 2
+Timed out while enabling automation mode
+Timed out while enabling automation mode
+16:36:36 attempt 3
+Timed out while enabling automation mode
+Timed out while enabling automation mode
+16:37:46 attempt 4
+16:37:50 WDA READY (xcodebuild pid [local])

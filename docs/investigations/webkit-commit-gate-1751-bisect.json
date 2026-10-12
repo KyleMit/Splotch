@@ -1,0 +1,2551 @@
+{
+  "issue": 1751,
+  "bisectWindow": {
+    "lastGreen": "3d069154a2ed09129462f19bf84866cacbd50481",
+    "firstRed": "56741af7e5c91a96dabbb806461bbff5f71a09ba",
+    "firstMeasuredRed": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+    "playwrightBump": "e2709af5a3443a2dd5ffba029a00b8c7bf47b593 (merged in a38003caa591b9efe35740f762e90ef791d85716)"
+  },
+  "webkitByPlaywright": {
+    "1.62.1": {
+      "revision": 2336,
+      "version": "26.5"
+    },
+    "1.63.0": {
+      "revision": 2359,
+      "version": "26.6"
+    }
+  },
+  "projection": "Each run keeps every raw commit duration, the draw and undo totals, the undo entry count and history raster size for both the initial and the confirmation pass. Per-call draw/undo measure distributions, settle traces, frame observers and the Markdown report are omitted; the linked CI artifacts and the local perf-profiles directories retain them. Local runs carry no browserVersion in settings before PR 1749, so their WebKit version is derived from the Playwright version in the checkout that ran them.",
+  "runs": [
+    {
+      "name": "ci-main-3d06915-green",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34311175562",
+      "buildCommit": "3d069154a2ed09129462f19bf84866cacbd50481",
+      "product": "pre-1733",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (post-merge gate, first runner)",
+      "startedAt": "2026-09-09T04:31:04.478Z",
+      "durationMs": 88678,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 979,
+            "commitCount": 21,
+            "commitMs": 233,
+            "commitP95Ms": 1,
+            "commitMaxMs": 228,
+            "commitDurationsMs": [0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 228, 0, 0, 0]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 12,
+            "avgMs": 1.0909090909090908,
+            "maxMs": 6
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 49920,
+            "commitCount": 22,
+            "commitMs": 97,
+            "commitP95Ms": 10,
+            "commitMaxMs": 16,
+            "commitDurationsMs": [
+              1, 0, 10, 16, 2, 2, 4, 9, 3, 6, 1, 3, 5, 7, 5, 1, 6, 3, 3, 6, 3, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 5,
+            "avgMs": 0.25,
+            "maxMs": 2
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "Last green post-merge gate before the not-comparable window."
+    },
+    {
+      "name": "ci-main-c1ce4c9-first",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34336768214",
+      "buildCommit": "c1ce4c9f40415fc4ae012680dad3bf755be747da",
+      "product": "pre-1733 (PR 1732, the A/B control point)",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (post-merge gate, first runner)",
+      "startedAt": "2026-09-09T09:49:42.236Z",
+      "durationMs": 83316,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 402,
+            "commitCount": 22,
+            "commitMs": 952,
+            "commitP95Ms": 194,
+            "commitMaxMs": 747,
+            "commitDurationsMs": [
+              0, 1, 1, 0, 1, 1, 3, 0, 0, 0, 747, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 194
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 4,
+            "avgMs": 0.36363636363636365,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 42320,
+            "commitCount": 22,
+            "commitMs": 90,
+            "commitP95Ms": 13,
+            "commitMaxMs": 15,
+            "commitDurationsMs": [
+              0, 1, 3, 5, 2, 4, 2, 3, 5, 2, 1, 3, 8, 2, 2, 2, 2, 7, 13, 15, 5, 3
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 4,
+            "avgMs": 0.2,
+            "maxMs": 1
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 341,
+            "commitCount": 22,
+            "commitMs": 207,
+            "commitP95Ms": 48,
+            "commitMaxMs": 150,
+            "commitDurationsMs": [
+              0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 150, 1, 1, 1, 0, 0, 1, 0, 1, 0, 48
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 17,
+            "avgMs": 1.5454545454545454,
+            "maxMs": 6
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        }
+      ],
+      "note": "Multi-finger confirmed on this runner before PR 1733 existed on main."
+    },
+    {
+      "name": "ci-main-c1ce4c9-retry",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34336768214",
+      "buildCommit": "c1ce4c9f40415fc4ae012680dad3bf755be747da",
+      "product": "pre-1733 (PR 1732, the A/B control point)",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (fresh-runner retry)",
+      "startedAt": "2026-09-09T09:53:07.110Z",
+      "durationMs": 115739,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 141,
+            "commitCount": 21,
+            "commitMs": 1074,
+            "commitP95Ms": 182,
+            "commitMaxMs": 754,
+            "commitDurationsMs": [
+              0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 754, 15, 2, 115, 0, 1, 0, 1, 1, 182, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 13,
+            "avgMs": 1.1818181818181819,
+            "maxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 67891,
+            "commitCount": 22,
+            "commitMs": 108,
+            "commitP95Ms": 10,
+            "commitMaxMs": 21,
+            "commitDurationsMs": [
+              0, 1, 7, 10, 1, 3, 4, 3, 4, 2, 4, 2, 9, 2, 4, 2, 3, 5, 21, 3, 8, 10
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 14,
+            "avgMs": 0.7,
+            "maxMs": 3
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 287,
+            "commitCount": 21,
+            "commitMs": 275,
+            "commitP95Ms": 15,
+            "commitMaxMs": 235,
+            "commitDurationsMs": [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 15, 1, 0, 1, 12, 1, 235, 0, 1, 1, 0]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 12,
+            "avgMs": 1.0909090909090908,
+            "maxMs": 6
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        }
+      ],
+      "note": "The retry acquitted multi-finger, so no issue was filed."
+    },
+    {
+      "name": "ci-main-fdbb0ff-first",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34181443861",
+      "buildCommit": "fdbb0ff54c852880da5612019b795feef025ad73",
+      "product": "pre-1733 (2026-09-08, the run that filed issue 1717)",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (post-merge gate, first runner)",
+      "startedAt": "2026-09-08T02:51:55.762Z",
+      "durationMs": 95715,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 240,
+            "commitCount": 21,
+            "commitMs": 781,
+            "commitP95Ms": 97,
+            "commitMaxMs": 643,
+            "commitDurationsMs": [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 643, 0, 0, 7, 1, 0, 97, 23, 0, 2, 5]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 52154,
+            "commitCount": 22,
+            "commitMs": 80,
+            "commitP95Ms": 9,
+            "commitMaxMs": 9,
+            "commitDurationsMs": [0, 0, 7, 7, 1, 3, 8, 1, 5, 0, 1, 3, 9, 3, 5, 1, 2, 2, 6, 5, 9, 2]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 7,
+            "avgMs": 0.35,
+            "maxMs": 1
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 455,
+            "commitCount": 22,
+            "commitMs": 114,
+            "commitP95Ms": 32,
+            "commitMaxMs": 49,
+            "commitDurationsMs": [
+              0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 49, 1, 32, 0, 14, 1, 12, 0
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        }
+      ]
+    },
+    {
+      "name": "ci-main-fdbb0ff-retry",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34181443861",
+      "buildCommit": "fdbb0ff54c852880da5612019b795feef025ad73",
+      "product": "pre-1733 (2026-09-08, the run that filed issue 1717)",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (fresh-runner retry)",
+      "startedAt": "2026-09-08T02:55:51.454Z",
+      "durationMs": 127603,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 221,
+            "commitCount": 22,
+            "commitMs": 1705,
+            "commitP95Ms": 349,
+            "commitMaxMs": 1046,
+            "commitDurationsMs": [
+              1, 16, 0, 0, 0, 1, 0, 5, 1046, 1, 0, 0, 349, 1, 0, 1, 272, 0, 0, 0, 1, 11
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 8,
+            "avgMs": 0.7272727272727273,
+            "maxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 68811,
+            "commitCount": 22,
+            "commitMs": 130,
+            "commitP95Ms": 21,
+            "commitMaxMs": 35,
+            "commitDurationsMs": [
+              0, 0, 11, 19, 1, 4, 35, 4, 3, 2, 2, 3, 4, 2, 3, 1, 3, 3, 4, 2, 3, 21
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 10,
+            "avgMs": 0.5,
+            "maxMs": 2
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 220,
+            "commitCount": 22,
+            "commitMs": 852,
+            "commitP95Ms": 246,
+            "commitMaxMs": 465,
+            "commitDurationsMs": [
+              0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 246, 0, 0, 0, 0, 101, 1, 35, 0, 465, 0, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 9,
+            "avgMs": 0.8181818181818182,
+            "maxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        }
+      ]
+    },
+    {
+      "name": "ci-main-cf19b6b-first",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34498053518",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "product": "post-1733 (first run whose instrumented build reached measurement)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (post-merge gate, first runner)",
+      "startedAt": "2026-09-10T15:49:24.277Z",
+      "durationMs": 115171,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 79,
+            "commitCount": 22,
+            "commitMs": 427,
+            "commitP95Ms": 85,
+            "commitMaxMs": 167,
+            "commitDurationsMs": [
+              0, 1, 64, 0, 1, 41, 0, 0, 64, 0, 0, 0, 2, 85, 0, 1, 0, 0, 167, 0, 0, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 9,
+            "avgMs": 0.8181818181818182,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 8347,
+            "commitCount": 22,
+            "commitMs": 34468,
+            "commitP95Ms": 3236,
+            "commitMaxMs": 3572,
+            "commitDurationsMs": [
+              0, 168, 0, 1684, 0, 1, 3198, 263, 3199, 1588, 2065, 3572, 3236, 285, 2736, 1523, 2126,
+              2812, 2542, 200, 2045, 1225
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 35564,
+            "avgMs": 1778.2,
+            "maxMs": 2989
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 89,
+            "commitCount": 22,
+            "commitMs": 797,
+            "commitP95Ms": 163,
+            "commitMaxMs": 244,
+            "commitDurationsMs": [
+              1, 1, 2, 2, 128, 0, 1, 0, 163, 0, 1, 1, 29, 29, 147, 1, 0, 1, 17, 28, 244, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 4,
+            "avgMs": 0.36363636363636365,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 6952,
+            "commitCount": 22,
+            "commitMs": 37837,
+            "commitP95Ms": 3924,
+            "commitMaxMs": 4197,
+            "commitDurationsMs": [
+              0, 180, 1, 1270, 0, 0, 2145, 202, 2221, 1761, 2690, 4197, 3407, 197, 2703, 1294, 2238,
+              3785, 3525, 233, 3924, 1864
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 45794,
+            "avgMs": 2289.7,
+            "maxMs": 3309
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "ci-arm-x-run1",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34594882882 (attempt 1)",
+      "buildCommit": "250b030922ce0ee382d0cc07bc8a1d95b85076bb",
+      "product": "PR 1733 head 56741af7e5c9 + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (workflow_dispatch)",
+      "startedAt": "2026-09-11T11:37:47.377Z",
+      "durationMs": 98718,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 300,
+            "commitCount": 21,
+            "commitMs": 25,
+            "commitP95Ms": 3,
+            "commitMaxMs": 13,
+            "commitDurationsMs": [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 3, 0, 1, 13, 0, 3, 0, 0, 0]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 6,
+            "avgMs": 0.5454545454545454,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 32611,
+            "commitCount": 22,
+            "commitMs": 56,
+            "commitP95Ms": 7,
+            "commitMaxMs": 9,
+            "commitDurationsMs": [0, 0, 4, 1, 7, 2, 2, 1, 9, 1, 1, 3, 3, 1, 2, 3, 5, 3, 4, 1, 2, 1]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 3132,
+            "avgMs": 156.6,
+            "maxMs": 1519
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "Arm X: the PR 1733 product on the browser build the last green gate used."
+    },
+    {
+      "name": "ci-arm-x-run2",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34594882882 (attempt 2)",
+      "buildCommit": "250b030922ce0ee382d0cc07bc8a1d95b85076bb",
+      "product": "PR 1733 head 56741af7e5c9 + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (workflow_dispatch re-run)",
+      "startedAt": "2026-09-11T12:01:14.215Z",
+      "durationMs": 208530,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 991,
+            "commitCount": 22,
+            "commitMs": 2286,
+            "commitP95Ms": 333,
+            "commitMaxMs": 1924,
+            "commitDurationsMs": [
+              0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1924, 0, 0, 0, 23, 0, 1, 2, 333, 0, 0, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 15,
+            "avgMs": 1.3636363636363635,
+            "maxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 85923,
+            "commitCount": 22,
+            "commitMs": 119,
+            "commitP95Ms": 22,
+            "commitMaxMs": 23,
+            "commitDurationsMs": [
+              0, 0, 6, 3, 2, 2, 6, 2, 4, 7, 1, 6, 5, 2, 23, 4, 2, 11, 4, 2, 22, 5
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 2713,
+            "avgMs": 135.65,
+            "maxMs": 2333
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 352,
+            "commitCount": 22,
+            "commitMs": 64,
+            "commitP95Ms": 23,
+            "commitMaxMs": 27,
+            "commitDurationsMs": [
+              1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 27, 0, 0, 0, 0, 2, 4, 23, 1, 1, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 35,
+            "avgMs": 3.1818181818181817,
+            "maxMs": 8
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        }
+      ],
+      "note": "Arm X confirmation run."
+    },
+    {
+      "name": "ci-arm-y-run1",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34595338398/job/103249678084 (attempt 1, job log)",
+      "buildCommit": "b83eee4408325bdbdfa29f0540bc1e76f0ddd90e",
+      "product": "c1ce4c9f4041 product tree (PR 1733 reverted) + PR 1748 tool files + e2709af5a344 (@playwright/test 1.63.0)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (workflow_dispatch)",
+      "samplesUnavailable": "The webkit-undo-fast-diagnostics artifact of attempt 1 was discarded when the run was re-run for its confirmation sample; only the job log survived. Download an attempt artifact before re-running a workflow.",
+      "gate": {
+        "failures": ["crayon-scribbles:breach", "multi-finger:breach"]
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 91,
+            "commitP95Ms": 139,
+            "commitMaxMs": 262
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 5,
+            "avgMs": 0.5,
+            "maxMs": 1
+          },
+          "undoEntries": 11
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 10098,
+            "commitP95Ms": 3808,
+            "commitMaxMs": 3876
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 2,
+            "avgMs": 0.1,
+            "maxMs": 1
+          },
+          "undoEntries": 20
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "commitP95Ms": 97,
+            "commitMaxMs": 207
+          },
+          "undo": {
+            "steps": 11,
+            "avgMs": 0.6,
+            "maxMs": 1
+          }
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "commitP95Ms": 3757,
+            "commitMaxMs": 3902
+          },
+          "undo": {
+            "steps": 20,
+            "avgMs": 0.2,
+            "maxMs": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "ci-arm-y-run2",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34595338398 (attempt 2)",
+      "buildCommit": "b83eee4408325bdbdfa29f0540bc1e76f0ddd90e",
+      "product": "c1ce4c9f4041 product tree (PR 1733 reverted) + PR 1748 tool files + e2709af5a344 (@playwright/test 1.63.0)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": false
+      },
+      "host": "macos-latest (workflow_dispatch re-run)",
+      "startedAt": "2026-09-11T11:53:23.514Z",
+      "durationMs": 158783,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1766,
+            "commitCount": 22,
+            "commitMs": 3667,
+            "commitP95Ms": 595,
+            "commitMaxMs": 1267,
+            "commitDurationsMs": [
+              1, 96, 89, 78, 66, 58, 69, 70, 60, 72, 68, 61, 49, 1267, 180, 126, 595, 122, 163, 193,
+              136, 48
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 319,
+            "avgMs": 29,
+            "maxMs": 43
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 105806,
+            "commitCount": 22,
+            "commitMs": 709,
+            "commitP95Ms": 61,
+            "commitMaxMs": 117,
+            "commitDurationsMs": [
+              1, 19, 44, 61, 17, 117, 31, 23, 27, 16, 20, 38, 31, 22, 33, 20, 19, 32, 34, 20, 49, 35
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 113,
+            "avgMs": 5.65,
+            "maxMs": 15
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1765,
+            "commitCount": 22,
+            "commitMs": 2064,
+            "commitP95Ms": 183,
+            "commitMaxMs": 299,
+            "commitDurationsMs": [
+              1, 299, 83, 72, 68, 81, 82, 101, 97, 181, 183, 83, 108, 76, 89, 73, 77, 65, 66, 59,
+              67, 53
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 366,
+            "avgMs": 33.27272727272727,
+            "maxMs": 42
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 120478,
+            "commitCount": 22,
+            "commitMs": 671,
+            "commitP95Ms": 49,
+            "commitMaxMs": 50,
+            "commitDurationsMs": [
+              1, 21, 49, 21, 45, 36, 36, 21, 40, 20, 20, 38, 40, 20, 39, 22, 27, 50, 43, 20, 42, 20
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 86,
+            "avgMs": 4.3,
+            "maxMs": 7
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "Arm Y confirmation run."
+    },
+    {
+      "name": "ci-fix-tileghost-all-dispatch",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34597294730",
+      "buildCommit": "de8799b875a3ac3c2078fc673144a2a9730b572e",
+      "product": "current main + the first undo ghost revision (tiles read for every command)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "macos-latest (workflow_dispatch)",
+      "startedAt": "2026-09-11T12:08:56.202Z",
+      "durationMs": 174469,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1978,
+            "commitCount": 22,
+            "commitMs": 2125,
+            "commitP95Ms": 120,
+            "commitMaxMs": 392,
+            "commitDurationsMs": [
+              1, 114, 88, 94, 97, 71, 79, 96, 64, 62, 392, 81, 86, 110, 76, 69, 72, 120, 90, 120,
+              66, 77
+            ],
+            "undoPatchCropTotalMs": 2118,
+            "undoPatchCaptureTotalMs": 3155
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 1271,
+            "avgMs": 115.54545454545455,
+            "maxMs": 212,
+            "inkMotionTotalMs": 873,
+            "inkMotionMaxMs": 160
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 125307,
+            "commitCount": 22,
+            "commitMs": 751,
+            "commitP95Ms": 53,
+            "commitMaxMs": 116,
+            "commitDurationsMs": [
+              1, 26, 40, 13, 15, 43, 43, 34, 116, 25, 17, 53, 47, 22, 37, 20, 18, 39, 51, 31, 39, 21
+            ],
+            "undoPatchCropTotalMs": 734,
+            "undoPatchCaptureTotalMs": 1165
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 319,
+            "avgMs": 15.95,
+            "maxMs": 27,
+            "inkMotionTotalMs": 244,
+            "inkMotionMaxMs": 25
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1965,
+            "commitCount": 22,
+            "commitMs": 2276,
+            "commitP95Ms": 196,
+            "commitMaxMs": 213,
+            "commitDurationsMs": [
+              1, 90, 186, 130, 139, 213, 152, 196, 115, 108, 80, 103, 100, 111, 67, 61, 61, 62, 85,
+              91, 54, 71
+            ],
+            "undoPatchCropTotalMs": 2272,
+            "undoPatchCaptureTotalMs": 2117
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 505,
+            "avgMs": 45.90909090909091,
+            "maxMs": 85,
+            "inkMotionTotalMs": 344,
+            "inkMotionMaxMs": 70
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 123744,
+            "commitCount": 22,
+            "commitMs": 885,
+            "commitP95Ms": 80,
+            "commitMaxMs": 127,
+            "commitDurationsMs": [
+              0, 38, 127, 36, 75, 80, 48, 20, 51, 23, 16, 46, 39, 40, 38, 20, 22, 30, 54, 18, 41, 23
+            ],
+            "undoPatchCropTotalMs": 871,
+            "undoPatchCaptureTotalMs": 934
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 390,
+            "avgMs": 19.5,
+            "maxMs": 35,
+            "inkMotionTotalMs": 316,
+            "inkMotionMaxMs": 33
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "Rejected revision: its multi-finger ghost cost up to 160 ms per undo (engine.undoInkMotion), which is why pen commands went back to the replay."
+    },
+    {
+      "name": "ci-fix-dispatch-run1",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34598675267",
+      "buildCommit": "e49f25996e3151abd437dc4eeffd1696824b9c63",
+      "product": "current main + the undo ghost change (tiles read for crayon and magic ink, pen replays)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "macos-latest (workflow_dispatch)",
+      "startedAt": "2026-09-11T12:25:42.107Z",
+      "durationMs": 166787,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2018,
+            "commitCount": 22,
+            "commitMs": 1993,
+            "commitP95Ms": 132,
+            "commitMaxMs": 159,
+            "commitDurationsMs": [
+              0, 132, 101, 66, 80, 121, 109, 92, 72, 99, 70, 103, 159, 118, 125, 70, 108, 64, 60,
+              76, 88, 80
+            ],
+            "undoPatchCropTotalMs": 1988,
+            "undoPatchCaptureTotalMs": 3260
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 387,
+            "avgMs": 35.18181818181818,
+            "maxMs": 48,
+            "inkMotionTotalMs": 13,
+            "inkMotionMaxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 120240,
+            "commitCount": 22,
+            "commitMs": 729,
+            "commitP95Ms": 67,
+            "commitMaxMs": 92,
+            "commitDurationsMs": [
+              0, 21, 48, 12, 21, 38, 40, 21, 49, 21, 17, 60, 92, 20, 40, 16, 17, 67, 46, 20, 44, 19
+            ],
+            "undoPatchCropTotalMs": 721,
+            "undoPatchCaptureTotalMs": 967
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 315,
+            "avgMs": 15.75,
+            "maxMs": 29,
+            "inkMotionTotalMs": 246,
+            "inkMotionMaxMs": 26
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1335,
+            "commitCount": 22,
+            "commitMs": 1523,
+            "commitP95Ms": 99,
+            "commitMaxMs": 107,
+            "commitDurationsMs": [
+              1, 73, 77, 74, 68, 79, 76, 89, 107, 64, 52, 58, 61, 99, 63, 61, 57, 73, 97, 55, 75, 64
+            ],
+            "undoPatchCropTotalMs": 1518,
+            "undoPatchCaptureTotalMs": 1476
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 283,
+            "avgMs": 25.727272727272727,
+            "maxMs": 49,
+            "inkMotionTotalMs": 18,
+            "inkMotionMaxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 116170,
+            "commitCount": 22,
+            "commitMs": 789,
+            "commitP95Ms": 60,
+            "commitMaxMs": 123,
+            "commitDurationsMs": [
+              1, 20, 42, 20, 24, 47, 50, 21, 58, 47, 20, 40, 32, 20, 40, 19, 21, 60, 123, 20, 41, 23
+            ],
+            "undoPatchCropTotalMs": 776,
+            "undoPatchCaptureTotalMs": 898
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 336,
+            "avgMs": 16.8,
+            "maxMs": 29,
+            "inkMotionTotalMs": 277,
+            "inkMotionMaxMs": 26
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "The change under review, measured on the runner the gate uses."
+    },
+    {
+      "name": "ci-fix-dispatch-run2",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34599430905",
+      "buildCommit": "d8123cb8d2f2071be349b12d4258d50dd48ef7e0",
+      "product": "current main + the undo ghost change; d8123cb8d2f2 trims bytes for the release startup budget with no behaviour change",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "macos-latest (workflow_dispatch)",
+      "startedAt": "2026-09-11T12:33:22.850Z",
+      "durationMs": 75801,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 82,
+            "commitCount": 22,
+            "commitMs": 572,
+            "commitP95Ms": 102,
+            "commitMaxMs": 169,
+            "commitDurationsMs": [
+              1, 1, 99, 1, 7, 75, 1, 0, 97, 0, 1, 1, 4, 102, 1, 0, 0, 1, 10, 169, 0, 1
+            ],
+            "undoPatchCropTotalMs": 570,
+            "undoPatchCaptureTotalMs": 10
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 12,
+            "avgMs": 1.0909090909090908,
+            "maxMs": 2,
+            "inkMotionTotalMs": 8,
+            "inkMotionMaxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 7719,
+            "commitCount": 22,
+            "commitMs": 33954,
+            "commitP95Ms": 3088,
+            "commitMaxMs": 3437,
+            "commitDurationsMs": [
+              1, 161, 0, 1358, 0, 1, 2571, 218, 2403, 1410, 2051, 3088, 2818, 237, 2481, 1469, 2190,
+              3437, 3085, 242, 2984, 1749
+            ],
+            "undoPatchCropTotalMs": 33951,
+            "undoPatchCaptureTotalMs": 5
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 2035,
+            "avgMs": 101.75,
+            "maxMs": 2001,
+            "inkMotionTotalMs": 2032,
+            "inkMotionMaxMs": 2001
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 72,
+            "commitCount": 22,
+            "commitMs": 619,
+            "commitP95Ms": 173,
+            "commitMaxMs": 200,
+            "commitDurationsMs": [
+              0, 0, 1, 1, 104, 0, 1, 1, 13, 200, 0, 1, 1, 3, 21, 34, 173, 1, 0, 1, 29, 34
+            ],
+            "undoPatchCropTotalMs": 617,
+            "undoPatchCaptureTotalMs": 8
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 9,
+            "avgMs": 0.8181818181818182,
+            "maxMs": 1,
+            "inkMotionTotalMs": 7,
+            "inkMotionMaxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 8936,
+            "commitCount": 22,
+            "commitMs": 35084,
+            "commitP95Ms": 3092,
+            "commitMaxMs": 3184,
+            "commitDurationsMs": [
+              0, 203, 0, 1533, 1, 0, 2972, 258, 3092, 1618, 2138, 3184, 3088, 257, 2589, 1524, 2080,
+              3069, 2913, 265, 2680, 1620
+            ],
+            "undoPatchCropTotalMs": 35083,
+            "undoPatchCaptureTotalMs": 4
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 3515,
+            "avgMs": 175.75,
+            "maxMs": 3373,
+            "inkMotionTotalMs": 3511,
+            "inkMotionMaxMs": 3373
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "Second sample of the change under review, on the PR head."
+    },
+    {
+      "name": "local-pre-3d06915-webkit26.5",
+      "source": "local",
+      "buildCommit": "3d069154a2ed09129462f19bf84866cacbd50481",
+      "product": "pre-1733 + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T11:30:46.266Z",
+      "durationMs": 56187,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 312,
+            "commitCount": 21,
+            "commitMs": 23,
+            "commitP95Ms": 3,
+            "commitMaxMs": 6,
+            "commitDurationsMs": [1, 3, 2, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 6, 0, 1, 1, 1, 1, 1]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 6,
+            "avgMs": 0.5454545454545454,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1565,
+            "commitCount": 21,
+            "commitMs": 17387,
+            "commitP95Ms": 3265,
+            "commitMaxMs": 3282,
+            "commitDurationsMs": [
+              0, 1, 3282, 0, 1, 1, 3096, 1, 1495, 0, 0, 1, 3120, 1, 1574, 1, 0, 0, 3265, 0, 1548
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 10,
+            "avgMs": 0.5,
+            "maxMs": 3
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1478,
+            "commitCount": 22,
+            "commitMs": 16729,
+            "commitP95Ms": 3198,
+            "commitMaxMs": 3250,
+            "commitDurationsMs": [
+              1, 1, 2542, 0, 0, 1, 3071, 0, 1532, 0, 0, 0, 3198, 0, 1562, 1, 1, 1, 3250, 1, 1566, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 18,
+            "avgMs": 0.9,
+            "maxMs": 5
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "Linux WebKit charges the deferred crayon raster at commit on both builds, so this host cannot reproduce the macOS 26.5 baseline; it separates the undo path only."
+    },
+    {
+      "name": "local-post-56741af-webkit26.5",
+      "source": "local",
+      "buildCommit": "56741af7e5c91a96dabbb806461bbff5f71a09ba",
+      "product": "PR 1733 head + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T11:33:17.323Z",
+      "durationMs": 70284,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 318,
+            "commitCount": 22,
+            "commitMs": 32,
+            "commitP95Ms": 3,
+            "commitMaxMs": 5,
+            "commitDurationsMs": [1, 1, 3, 1, 1, 2, 2, 3, 1, 1, 1, 0, 2, 1, 2, 0, 1, 1, 1, 1, 1, 5]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 27,
+            "avgMs": 2.4545454545454546,
+            "maxMs": 6
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1853,
+            "commitCount": 22,
+            "commitMs": 16939,
+            "commitP95Ms": 3170,
+            "commitMaxMs": 3497,
+            "commitDurationsMs": [
+              1, 0, 2689, 0, 0, 1, 3086, 0, 1543, 0, 0, 0, 3170, 1, 1456, 1, 1, 1, 3497, 1, 1490, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1036,
+            "avgMs": 51.8,
+            "maxMs": 63
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2204,
+            "commitCount": 22,
+            "commitMs": 18828,
+            "commitP95Ms": 3419,
+            "commitMaxMs": 3911,
+            "commitDurationsMs": [
+              1, 1, 3246, 1, 1, 1, 3419, 1, 1651, 1, 1, 1, 3383, 1, 1657, 0, 1, 1, 3911, 1, 1547, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 994,
+            "avgMs": 49.7,
+            "maxMs": 60
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-walk-478c88ba8eb0",
+      "source": "local",
+      "buildCommit": "478c88ba8eb0bacf6b768b114d1ceebac2d7da20",
+      "product": "PR 1733 commit \"Animate flyout arrivals from their triggers\" + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T12:02:25.103Z",
+      "durationMs": 53799,
+      "gate": {
+        "failures": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 307,
+            "commitCount": 22,
+            "commitMs": 23,
+            "commitP95Ms": 2,
+            "commitMaxMs": 5,
+            "commitDurationsMs": [0, 1, 1, 1, 2, 0, 1, 1, 1, 1, 0, 1, 2, 0, 1, 1, 1, 1, 1, 5, 0, 1]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1614,
+            "commitCount": 22,
+            "commitMs": 16465,
+            "commitP95Ms": 3067,
+            "commitMaxMs": 3106,
+            "commitDurationsMs": [
+              1, 1, 2583, 0, 0, 1, 3106, 0, 1615, 1, 0, 1, 3067, 1, 1646, 1, 1, 1, 2953, 0, 1484, 2
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 43,
+            "avgMs": 2.15,
+            "maxMs": 30
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1651,
+            "commitCount": 22,
+            "commitMs": 17746,
+            "commitP95Ms": 3411,
+            "commitMaxMs": 3443,
+            "commitDurationsMs": [
+              1, 1, 2872, 0, 0, 0, 3443, 0, 1522, 1, 0, 0, 3071, 1, 1616, 1, 1, 1, 3411, 1, 1802, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9,
+            "avgMs": 0.45,
+            "maxMs": 1
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-walk-20dc972a21bc",
+      "source": "local",
+      "buildCommit": "20dc972a21bc9b71c7a8d9fc1a9f819280d4ac7b",
+      "product": "PR 1733 commit \"Roll the brush face on explicit changed menu picks\" + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T12:04:10.512Z",
+      "durationMs": 54417,
+      "gate": {
+        "failures": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 342,
+            "commitCount": 22,
+            "commitMs": 28,
+            "commitP95Ms": 3,
+            "commitMaxMs": 5,
+            "commitDurationsMs": [1, 1, 1, 1, 3, 1, 1, 2, 0, 1, 3, 1, 1, 0, 1, 3, 1, 0, 5, 0, 0, 1]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 9,
+            "avgMs": 0.8181818181818182,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1907,
+            "commitCount": 22,
+            "commitMs": 17234,
+            "commitP95Ms": 3214,
+            "commitMaxMs": 3318,
+            "commitDurationsMs": [
+              0, 0, 2573, 0, 0, 2, 3214, 1, 1611, 1, 1, 1, 3318, 2, 1619, 0, 1, 1, 3134, 0, 1754, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 18,
+            "avgMs": 0.9,
+            "maxMs": 5
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1602,
+            "commitCount": 21,
+            "commitMs": 16080,
+            "commitP95Ms": 2946,
+            "commitMaxMs": 3149,
+            "commitDurationsMs": [
+              0, 0, 2510, 1, 0, 0, 2856, 0, 1466, 0, 0, 0, 3149, 0, 1653, 0, 0, 0, 2946, 0, 1499
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 13,
+            "avgMs": 0.65,
+            "maxMs": 1
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-walk-bbd51a7d882e",
+      "source": "local",
+      "buildCommit": "bbd51a7d882e774ce5cb0933a71de111e550a063",
+      "product": "PR 1733 commit \"Shrink removed stroke ink and spin successful undo feedback\" + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T12:05:52.477Z",
+      "durationMs": 68124,
+      "gate": {
+        "failures": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 306,
+            "commitCount": 22,
+            "commitMs": 17,
+            "commitP95Ms": 1,
+            "commitMaxMs": 1,
+            "commitDurationsMs": [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 25,
+            "avgMs": 2.272727272727273,
+            "maxMs": 7
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1680,
+            "commitCount": 21,
+            "commitMs": 16450,
+            "commitP95Ms": 3042,
+            "commitMaxMs": 3153,
+            "commitDurationsMs": [
+              1, 0, 2593, 0, 0, 1, 2944, 1, 1477, 1, 0, 1, 3042, 0, 1631, 0, 0, 1, 3153, 1, 1603
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 980,
+            "avgMs": 49,
+            "maxMs": 64
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1708,
+            "commitCount": 21,
+            "commitMs": 17805,
+            "commitP95Ms": 3260,
+            "commitMaxMs": 3447,
+            "commitDurationsMs": [
+              0, 1, 2836, 5, 0, 0, 3177, 1, 1663, 1, 0, 0, 3260, 1, 1589, 1, 1, 0, 3447, 1, 1821
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1057,
+            "avgMs": 52.85,
+            "maxMs": 61
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-walk-5d4a7414efe2",
+      "source": "local",
+      "buildCommit": "5d4a7414efe2adfa24c1d80d1c518c73e13b379e",
+      "product": "PR 1733 commit \"Pull a drawing snapshot toward the trash on clear\" + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T12:08:06.122Z",
+      "durationMs": 66164,
+      "gate": {
+        "failures": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 327,
+            "commitCount": 22,
+            "commitMs": 26,
+            "commitP95Ms": 2,
+            "commitMaxMs": 4,
+            "commitDurationsMs": [1, 1, 2, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 0, 1, 1, 1, 1, 1]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 28,
+            "avgMs": 2.5454545454545454,
+            "maxMs": 6
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1732,
+            "commitCount": 22,
+            "commitMs": 16452,
+            "commitP95Ms": 3025,
+            "commitMaxMs": 3215,
+            "commitDurationsMs": [
+              1, 1, 2541, 1, 1, 1, 3025, 0, 1538, 0, 1, 1, 3215, 1, 1737, 1, 0, 0, 2907, 1, 1478, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1000,
+            "avgMs": 50,
+            "maxMs": 61
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1717,
+            "commitCount": 21,
+            "commitMs": 16251,
+            "commitP95Ms": 2961,
+            "commitMaxMs": 3025,
+            "commitDurationsMs": [
+              0, 1, 2954, 0, 0, 1, 3025, 1, 1504, 0, 1, 0, 2961, 1, 1472, 0, 3, 1, 2819, 0, 1507
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1035,
+            "avgMs": 51.75,
+            "maxMs": 61
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-walk-bb21685a68c5",
+      "source": "local",
+      "buildCommit": "bb21685a68c5b940c9e3b3e880177b636a3ab628",
+      "product": "PR 1733 commit \"Cascade drawer controls on explicit opening\" + PR 1748 tool files",
+      "browser": {
+        "webkit": "26.5",
+        "recordedBySettings": false
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.62.1",
+      "startedAt": "2026-09-11T12:10:16.733Z",
+      "durationMs": 70297,
+      "gate": {
+        "failures": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 337,
+            "commitCount": 22,
+            "commitMs": 28,
+            "commitP95Ms": 4,
+            "commitMaxMs": 4,
+            "commitDurationsMs": [1, 3, 4, 0, 1, 2, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 2, 1, 1, 1, 4]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 29,
+            "avgMs": 2.6363636363636362,
+            "maxMs": 8
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2282,
+            "commitCount": 22,
+            "commitMs": 17400,
+            "commitP95Ms": 3262,
+            "commitMaxMs": 3268,
+            "commitDurationsMs": [
+              1, 1, 2829, 1, 0, 1, 3262, 1, 1757, 1, 1, 0, 3268, 1, 1537, 0, 1, 1, 3137, 1, 1598, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1077,
+            "avgMs": 53.85,
+            "maxMs": 91
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1746,
+            "commitCount": 22,
+            "commitMs": 18213,
+            "commitP95Ms": 3489,
+            "commitMaxMs": 3534,
+            "commitDurationsMs": [
+              0, 0, 2706, 1, 0, 1, 3340, 0, 1698, 0, 0, 1, 3489, 1, 1713, 1, 4, 1, 3534, 1, 1721, 1
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1121,
+            "avgMs": 56.05,
+            "maxMs": 94
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-main-d213010-run1",
+      "source": "local",
+      "buildCommit": "d213010b9b263e2e29b6a2f2a254292365f2acf5",
+      "product": "current main (control)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T11:39:29.815Z",
+      "durationMs": 70929,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 386,
+            "commitCount": 22,
+            "commitMs": 45,
+            "commitP95Ms": 5,
+            "commitMaxMs": 6,
+            "commitDurationsMs": [0, 1, 1, 2, 0, 1, 6, 1, 2, 4, 3, 1, 1, 5, 4, 3, 1, 1, 2, 1, 2, 3],
+            "undoPatchCropTotalMs": 38,
+            "undoPatchCaptureTotalMs": 49
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 20,
+            "avgMs": 1.8181818181818181,
+            "maxMs": 4
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1609,
+            "commitCount": 22,
+            "commitMs": 16920,
+            "commitP95Ms": 3169,
+            "commitMaxMs": 3212,
+            "commitDurationsMs": [
+              0, 1, 2751, 1, 0, 1, 3112, 0, 1497, 0, 1, 0, 3169, 1, 1603, 0, 0, 1, 3212, 0, 1570, 0
+            ],
+            "undoPatchCropTotalMs": 16916,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 943,
+            "avgMs": 47.15,
+            "maxMs": 63
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1691,
+            "commitCount": 21,
+            "commitMs": 17354,
+            "commitP95Ms": 3257,
+            "commitMaxMs": 3450,
+            "commitDurationsMs": [
+              1, 1, 2538, 1, 1, 1, 3139, 0, 1644, 0, 1, 1, 3450, 0, 1671, 1, 0, 0, 3257, 1, 1646
+            ],
+            "undoPatchCropTotalMs": 17351,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 989,
+            "avgMs": 49.45,
+            "maxMs": 60
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-main-d213010-run2",
+      "source": "local",
+      "buildCommit": "d213010b9b263e2e29b6a2f2a254292365f2acf5",
+      "product": "current main (control)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T11:54:55.419Z",
+      "durationMs": 65668,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 309,
+            "commitCount": 22,
+            "commitMs": 21,
+            "commitP95Ms": 1,
+            "commitMaxMs": 4,
+            "commitDurationsMs": [0, 0, 1, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
+            "undoPatchCropTotalMs": 14,
+            "undoPatchCaptureTotalMs": 40
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 23,
+            "avgMs": 2.090909090909091,
+            "maxMs": 4
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1448,
+            "commitCount": 21,
+            "commitMs": 15851,
+            "commitP95Ms": 2950,
+            "commitMaxMs": 2988,
+            "commitDurationsMs": [
+              0, 1, 2419, 0, 1, 1, 2950, 0, 1471, 0, 3, 1, 2887, 0, 1467, 0, 1, 0, 2988, 1, 1660
+            ],
+            "undoPatchCropTotalMs": 15848,
+            "undoPatchCaptureTotalMs": 6
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 1116,
+            "avgMs": 55.8,
+            "maxMs": 144
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1567,
+            "commitCount": 21,
+            "commitMs": 16700,
+            "commitP95Ms": 3020,
+            "commitMaxMs": 3285,
+            "commitDurationsMs": [
+              1, 0, 2895, 1, 1, 3, 3285, 1, 1480, 0, 1, 0, 2993, 0, 1515, 0, 1, 1, 3020, 1, 1501
+            ],
+            "undoPatchCropTotalMs": 16694,
+            "undoPatchCaptureTotalMs": 11
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 980,
+            "avgMs": 49,
+            "maxMs": 77
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-fix-tileghost-all-run1",
+      "source": "local",
+      "buildCommit": "de8799b875a3ac3c2078fc673144a2a9730b572e",
+      "product": "current main + the first undo ghost revision (tiles read for every command)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T11:53:22.003Z",
+      "durationMs": 54308,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 283,
+            "commitCount": 22,
+            "commitMs": 17,
+            "commitP95Ms": 1,
+            "commitMaxMs": 1,
+            "commitDurationsMs": [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+            "undoPatchCropTotalMs": 14,
+            "undoPatchCaptureTotalMs": 24
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 60,
+            "avgMs": 5.454545454545454,
+            "maxMs": 7,
+            "inkMotionTotalMs": 46,
+            "inkMotionMaxMs": 6
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1541,
+            "commitCount": 22,
+            "commitMs": 16847,
+            "commitP95Ms": 3183,
+            "commitMaxMs": 3205,
+            "commitDurationsMs": [
+              1, 0, 2468, 0, 0, 1, 3020, 0, 1549, 0, 1, 1, 3205, 1, 1656, 1, 1, 1, 3183, 1, 1756, 1
+            ],
+            "undoPatchCropTotalMs": 16842,
+            "undoPatchCaptureTotalMs": 9
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 151,
+            "avgMs": 7.55,
+            "maxMs": 11,
+            "inkMotionTotalMs": 139,
+            "inkMotionMaxMs": 10
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1540,
+            "commitCount": 21,
+            "commitMs": 16752,
+            "commitP95Ms": 3066,
+            "commitMaxMs": 3275,
+            "commitDurationsMs": [
+              0, 1, 2809, 1, 1, 0, 3275, 0, 1685, 1, 0, 1, 3066, 1, 1472, 1, 0, 0, 2978, 1, 1459
+            ],
+            "undoPatchCropTotalMs": 16750,
+            "undoPatchCaptureTotalMs": 9
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 181,
+            "avgMs": 9.05,
+            "maxMs": 15,
+            "inkMotionTotalMs": 169,
+            "inkMotionMaxMs": 15
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-fix-tileghost-all-run2",
+      "source": "local",
+      "buildCommit": "de8799b875a3ac3c2078fc673144a2a9730b572e",
+      "product": "current main + the first undo ghost revision (tiles read for every command)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T11:57:23.998Z",
+      "durationMs": 55715,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 310,
+            "commitCount": 21,
+            "commitMs": 23,
+            "commitP95Ms": 2,
+            "commitMaxMs": 4,
+            "commitDurationsMs": [1, 1, 4, 1, 1, 1, 1, 1, 2, 0, 1, 1, 1, 1, 2, 1, 0, 1, 0, 1, 1],
+            "undoPatchCropTotalMs": 19,
+            "undoPatchCaptureTotalMs": 43
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 52,
+            "avgMs": 4.7272727272727275,
+            "maxMs": 6,
+            "inkMotionTotalMs": 39,
+            "inkMotionMaxMs": 5
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1657,
+            "commitCount": 22,
+            "commitMs": 17153,
+            "commitP95Ms": 3200,
+            "commitMaxMs": 3423,
+            "commitDurationsMs": [
+              0, 0, 2725, 0, 0, 1, 3119, 0, 1487, 0, 1, 1, 3200, 0, 1643, 1, 1, 1, 3423, 1, 1548, 1
+            ],
+            "undoPatchCropTotalMs": 17150,
+            "undoPatchCaptureTotalMs": 11
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 148,
+            "avgMs": 7.4,
+            "maxMs": 12,
+            "inkMotionTotalMs": 137,
+            "inkMotionMaxMs": 11
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1615,
+            "commitCount": 22,
+            "commitMs": 17095,
+            "commitP95Ms": 3183,
+            "commitMaxMs": 3565,
+            "commitDurationsMs": [
+              0, 1, 2542, 0, 0, 0, 3051, 0, 1528, 0, 1, 1, 3565, 1, 1591, 1, 1, 1, 3183, 0, 1627, 1
+            ],
+            "undoPatchCropTotalMs": 17091,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 159,
+            "avgMs": 7.95,
+            "maxMs": 15,
+            "inkMotionTotalMs": 144,
+            "inkMotionMaxMs": 14
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-fix-run1",
+      "source": "local",
+      "buildCommit": "e49f25996e3151abd437dc4eeffd1696824b9c63",
+      "product": "current main + the undo ghost change (tiles read for crayon and magic ink, pen replays)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T12:18:59.813Z",
+      "durationMs": 53569,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 338,
+            "commitCount": 22,
+            "commitMs": 27,
+            "commitP95Ms": 4,
+            "commitMaxMs": 4,
+            "commitDurationsMs": [0, 1, 2, 0, 1, 4, 1, 1, 1, 2, 1, 4, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+            "undoPatchCropTotalMs": 23,
+            "undoPatchCaptureTotalMs": 50
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 22,
+            "avgMs": 2,
+            "maxMs": 4,
+            "inkMotionTotalMs": 12,
+            "inkMotionMaxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1516,
+            "commitCount": 21,
+            "commitMs": 16498,
+            "commitP95Ms": 3075,
+            "commitMaxMs": 3133,
+            "commitDurationsMs": [
+              1, 0, 2531, 1, 1, 1, 3075, 0, 1594, 1, 0, 1, 2953, 1, 1567, 1, 1, 0, 3133, 1, 1635
+            ],
+            "undoPatchCropTotalMs": 16494,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 151,
+            "avgMs": 7.55,
+            "maxMs": 11,
+            "inkMotionTotalMs": 136,
+            "inkMotionMaxMs": 10
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1594,
+            "commitCount": 22,
+            "commitMs": 17076,
+            "commitP95Ms": 3202,
+            "commitMaxMs": 3279,
+            "commitDurationsMs": [
+              0, 1, 2646, 0, 0, 0, 3073, 0, 1552, 2, 0, 1, 3279, 1, 1691, 5, 0, 0, 3202, 1, 1621, 1
+            ],
+            "undoPatchCropTotalMs": 17071,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 173,
+            "avgMs": 8.65,
+            "maxMs": 11,
+            "inkMotionTotalMs": 155,
+            "inkMotionMaxMs": 11
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-fix-run2",
+      "source": "local",
+      "buildCommit": "e49f25996e3151abd437dc4eeffd1696824b9c63",
+      "product": "current main + the undo ghost change (tiles read for crayon and magic ink, pen replays)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T12:20:24.404Z",
+      "durationMs": 54878,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 282,
+            "commitCount": 22,
+            "commitMs": 22,
+            "commitP95Ms": 2,
+            "commitMaxMs": 5,
+            "commitDurationsMs": [0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 5, 1, 1],
+            "undoPatchCropTotalMs": 19,
+            "undoPatchCaptureTotalMs": 24
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 22,
+            "avgMs": 2,
+            "maxMs": 3,
+            "inkMotionTotalMs": 13,
+            "inkMotionMaxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1586,
+            "commitCount": 22,
+            "commitMs": 17560,
+            "commitP95Ms": 3288,
+            "commitMaxMs": 3367,
+            "commitDurationsMs": [
+              0, 1, 2656, 0, 2, 2, 3229, 1, 1587, 0, 1, 0, 3367, 0, 1656, 0, 1, 1, 3288, 0, 1768, 0
+            ],
+            "undoPatchCropTotalMs": 17552,
+            "undoPatchCaptureTotalMs": 8
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 180,
+            "avgMs": 9,
+            "maxMs": 23,
+            "inkMotionTotalMs": 163,
+            "inkMotionMaxMs": 22
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1514,
+            "commitCount": 22,
+            "commitMs": 16646,
+            "commitP95Ms": 3117,
+            "commitMaxMs": 3169,
+            "commitDurationsMs": [
+              0, 0, 2473, 0, 1, 1, 3169, 0, 1596, 1, 0, 0, 3092, 0, 1454, 0, 2, 0, 3117, 1, 1738, 1
+            ],
+            "undoPatchCropTotalMs": 16643,
+            "undoPatchCaptureTotalMs": 17
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 189,
+            "avgMs": 9.45,
+            "maxMs": 16,
+            "inkMotionTotalMs": 177,
+            "inkMotionMaxMs": 16
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-fix-subtract-run1",
+      "source": "local",
+      "buildCommit": "f24dccb80400a2dbc7472c6fc360752c6525a723",
+      "product": "current main + the undo ghost change with the post-undo subtraction pass (older ink inside the footprint knocked out of the ghost)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T14:57:09.930Z",
+      "durationMs": 62586,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 308,
+            "commitCount": 21,
+            "commitMs": 29,
+            "commitP95Ms": 3,
+            "commitMaxMs": 3,
+            "commitDurationsMs": [0, 2, 3, 3, 2, 3, 2, 1, 2, 3, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1],
+            "undoPatchCropTotalMs": 26,
+            "undoPatchCaptureTotalMs": 46
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 21,
+            "avgMs": 1.9090909090909092,
+            "maxMs": 4,
+            "inkMotionTotalMs": 16,
+            "inkMotionMaxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1201,
+            "commitCount": 22,
+            "commitMs": 15726,
+            "commitP95Ms": 3115,
+            "commitMaxMs": 3177,
+            "commitDurationsMs": [
+              0, 0, 2258, 1, 1, 1, 2821, 0, 1288, 0, 0, 1, 3115, 0, 1563, 0, 1, 0, 3177, 1, 1497, 1
+            ],
+            "undoPatchCropTotalMs": 15724,
+            "undoPatchCaptureTotalMs": 9
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 122,
+            "avgMs": 6.1,
+            "maxMs": 8,
+            "inkMotionTotalMs": 116,
+            "inkMotionMaxMs": 8
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1273,
+            "commitCount": 22,
+            "commitMs": 14555,
+            "commitP95Ms": 2676,
+            "commitMaxMs": 2930,
+            "commitDurationsMs": [
+              0, 1, 2059, 0, 1, 1, 2555, 0, 1355, 0, 0, 1, 2676, 0, 1397, 1, 0, 0, 2930, 0, 1577, 1
+            ],
+            "undoPatchCropTotalMs": 14554,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 151,
+            "avgMs": 7.55,
+            "maxMs": 10,
+            "inkMotionTotalMs": 139,
+            "inkMotionMaxMs": 9
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "engine.undoInkMotion carries two entries per crayon undo from this revision on: the tile copy and the subtraction pass."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+diff --git a/tools/rival-agent/spool.mjs b/tools/rival-agent/spool.mjs
+index 3883c89db..4a3a416df 100644
+--- a/tools/rival-agent/spool.mjs
++++ b/tools/rival-agent/spool.mjs
+@@ -10,8 +10,8 @@ import {
+ import { tmpdir } from 'node:os';
+ import { dirname, join } from 'node:path';
+ 
+-// Every session directory is owner-only: the spool carries whole command outputs from the reviewed
+-// checkout, and tmpdir() is world-listable on Linux.
++// Every session directory is owner-only. The spool carries whole command outputs from the reviewed
++// checkout, and on Linux tmpdir() can be listed by every user on the host.
+ const SESSION_DIRECTORY_MODE = 0o700;
+ const FILE_MODE = 0o600;
+ export const SESSION_ROOT = join(tmpdir(), 'splotch-rival-agent');

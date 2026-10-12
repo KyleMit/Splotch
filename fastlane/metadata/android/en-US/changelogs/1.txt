@@ -1,0 +1,7 @@
+New
+
+• First public release of Splotch — a quiet, ad-free drawing app made for the youngest artists.
+• Draw with big, chunky, crayon-like strokes and a row of bright, friendly colors.
+• Rainbow color picker for hundreds more colors.
+• Coloring book pages to fill in.
+• Settings: preferences, install help, and an About page — no ads, no tracking, no accounts.

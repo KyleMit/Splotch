@@ -1,0 +1,121 @@
+import { error, json } from '@sveltejs/kit';
+import { verifySessionToken, buildInvites, bearerToken } from '$lib/server/admin';
+import type { Invite } from '$lib/server/admin';
+import {
+  getTokensStatus,
+  addToken,
+  removeToken,
+  MAX_TOKEN_MUTATION_BODY_BYTES,
+  MUTATION_FAILURE_STATUS,
+} from '$lib/server/tokens';
+import type { MutationFailure, MutationResult } from '$lib/server/tokens';
+import { apiHandler, readJsonBody, stringField } from '$lib/server/http';
+import type { RequestHandler } from './$types';
+
+// JSON twin of the /admin console's token management, driven by the API smoke
+// tests (tools/api-smoke/lib/admin-client.mjs), which is how the deploy
+// contract proves Blobs persistence; no in-product client calls it (ADR-0101).
+// The web console does NOT go through here; it calls the same
+// $lib/server functions directly in its form actions, so the already-running
+// server never loops back through its own HTTP layer.
+//
+// This is a GET endpoint, so opt out of the site-wide prerender explicitly —
+// responses depend on the Authorization header and live Blobs data.
+export const prerender = false;
+
+export type TokenSnapshot = {
+  ok: true;
+  tokens: string[];
+  invites: Invite[];
+  persistent: boolean;
+};
+
+// A mutation also says whether it wrote anything: a DELETE that matched no
+// token is still a 200 (the operation is idempotent) but reports `changed: false`.
+export type TokenMutationSnapshot = TokenSnapshot & { changed: boolean };
+
+export type TokenMutationError = { ok: false; error: string };
+
+type MutationSuccess = Extract<MutationResult, { ok: true }>;
+
+/**
+ * Every method requires `Authorization: Bearer <session>`, where <session> is
+ * the derived token from POST /api/admin/login (identical to the value the
+ * cookie flow stores — same secret, same invalidation story). Verified in
+ * constant time; failures get a uniform 401 so the response can't be used as
+ * an oracle for anything beyond "not a valid session".
+ */
+function requireSession(request: Request) {
+  if (!verifySessionToken(bearerToken(request))) {
+    throw error(401, 'Unauthorized');
+  }
+}
+
+// All three methods return the same { ok, tokens, invites, persistent } snapshot
+// so a mutation never costs the client a second round trip to re-fetch the list —
+// it just replaces its local state with the response. `persistent` reports whether
+// the list is durably backed by Netlify Blobs (true) or the in-memory env-seeded
+// fallback (false) — the same signal the web /admin banner uses (ADR-0025), and
+// what the deploy smoke test (tools/api-smoke/check-deployed-contract.mjs) asserts to prove the
+// deployed function actually has the Blobs context.
+//
+// A mutation carries both halves back from the write it just did, rather than
+// asking the store again: its `tokens` are authoritative (read-after-write safe
+// under eventual consistency) and its `persistent` comes from the same read that
+// authorised the write. A second read would not only cost a round trip on the
+// mutation path, it would race the write it follows — under the eventual
+// consistency this module documents at length it can land on a replica that has
+// not caught up.
+function snapshot(origin: string, tokens: string[], persistent: boolean): TokenSnapshot {
+  return { ok: true, tokens, invites: buildInvites(tokens, origin), persistent };
+}
+
+// The read-only front door has nothing to carry, so it asks.
+async function readSnapshot(origin: string) {
+  const { tokens, persistent } = await getTokensStatus();
+  return json(snapshot(origin, tokens, persistent));
+}
+
+function mutationSnapshot(origin: string, result: MutationSuccess) {
+  const payload = {
+    ...snapshot(origin, result.tokens, result.persistent),
+    changed: result.changed,
+  } satisfies TokenMutationSnapshot;
+  return json(payload);
+}
+
+// The status per failure reason is MUTATION_FAILURE_STATUS in
+// $lib/server/tokens, shared with the /admin form action so the two front doors
+// can't drift. The `reason` itself stays server-side: clients read the status.
+function mutationError(result: MutationFailure) {
+  const payload = { ok: false, error: result.error } satisfies TokenMutationError;
+  return json(payload, { status: MUTATION_FAILURE_STATUS[result.reason] });
+}
+
+/** List access tokens and their prebuilt invite URLs. */
+export const GET: RequestHandler = apiHandler(async ({ request, url }) => {
+  requireSession(request);
+  return readSnapshot(url.origin);
+});
+
+/** Add an access token. Body: { token }. */
+export const POST: RequestHandler = apiHandler(async ({ request, url }) => {
+  requireSession(request);
+
+  const parsed = await readJsonBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
+  if (!parsed.ok) return parsed.response;
+  const result = await addToken(stringField(parsed.body, 'token'));
+  if (!result.ok) return mutationError(result);
+  return mutationSnapshot(url.origin, result);
+});
+
+/** Remove an access token. Body: { token }. */
+export const DELETE: RequestHandler = apiHandler(async ({ request, url }) => {
+  requireSession(request);
+
+  const parsed = await readJsonBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
+  if (!parsed.ok) return parsed.response;
+  const result = await removeToken(stringField(parsed.body, 'token'));
+  if (!result.ok) return mutationError(result);
+  return mutationSnapshot(url.origin, result);
+});

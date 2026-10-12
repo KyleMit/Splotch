@@ -1,0 +1,350 @@
+<script lang="ts">
+  import { slide } from 'svelte/transition';
+  import { calm } from '$lib/platform/calmTransition';
+  import Disclosure from '../design/Disclosure.svelte';
+  import SegmentedPicker from '../design/SegmentedPicker.svelte';
+  import { collectDeviceInfo } from '$lib/platform/deviceInfo';
+  import { createSingleFlight } from '$lib/singleFlight';
+  import { describeDeviceInfo, type DeviceInfo } from '$lib/platform/deviceReport';
+  import {
+    attachesDevice,
+    MAX_REPORT_MESSAGE_LENGTH,
+    REPORT_FORM_FIELDS,
+    REPORT_KINDS,
+    type ReportKind,
+  } from '$lib/report';
+
+  // One reveal timing for both device disclosures below — the outer toggle and
+  // the details block it wraps. Named locally rather than taken from settings'
+  // SECTION_SLIDE because this field set is also hosted by /feedback, outside
+  // Settings, and reaching for that constant would couple a component used
+  // outside Settings to Settings internals. Shorter than a section reveal
+  // because these uncover a couple of rows inside an already-open block rather
+  // than opening a section.
+  const DEVICE_REVEAL_SLIDE_MS = 180;
+
+  const deviceReveal = calm(slide, { duration: DEVICE_REVEAL_SLIDE_MS });
+
+  // What the message box asks for each kind, so a new ReportKind fails to
+  // compile here until it has its own question.
+  const MESSAGE_PROMPT_BY_KIND: Record<ReportKind, { label: string; placeholder: string }> = {
+    bug: {
+      label: 'What went wrong?',
+      placeholder: 'Describe what happened, and what you expected instead…',
+    },
+    feature: {
+      label: "What's your idea?",
+      placeholder: "Describe the feature or change you'd love to see…",
+    },
+  };
+
+  // The feedback form's field set, shared by its two hosts: Settings'
+  // ReportForm (which posts JSON to /api/report) and the standalone /feedback
+  // page (which posts to a SvelteKit form action). Only the submit mechanism,
+  // heading, and card chrome differ, so everything between the kind picker and
+  // the honeypot lives here — including the copy, which is what a reporter
+  // actually reads.
+  //
+  // Every control is a real, named form control rather than a scripted one, so
+  // the whole field set submits correctly with JavaScript unavailable. Inside
+  // Settings there is no <form> around them and the names are inert.
+  interface Props {
+    mode?: 'feedback' | 'device-only';
+    kind?: ReportKind;
+    message?: string;
+    includeDevice: boolean;
+    /**
+     * Bindable so ReportForm can forward it in its JSON body; /feedback posts
+     * the field itself. No host has business reading a bot trap beyond that.
+     */
+    honeypot?: string;
+  }
+
+  let {
+    mode = 'feedback',
+    kind = $bindable('bug'),
+    message = $bindable(''),
+    includeDevice = $bindable(),
+    honeypot = $bindable(''),
+  }: Props = $props();
+
+  // The collected snapshot, owned here alone: the hosts that send it as JSON
+  // reach it through `ensureDevice` below rather than a binding, so a host
+  // resetting its form cannot race the collection that writes it.
+  let device = $state<DeviceInfo | null>(null);
+
+  let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
+
+  // Whether this kind offers the opt-in, and whether this report carries the
+  // snapshot: one rule for both, so a snapshot is never sent without its
+  // opt-in and preview rendered below.
+  let deviceOffered = $derived(attachesDevice(kind, true));
+  let deviceAttached = $derived(attachesDevice(kind, includeDevice));
+
+  // What the parent opted into, serialized for a plain form post.
+  let devicePayload = $derived(deviceAttached && device ? JSON.stringify(device) : '');
+
+  // One collection shared by every caller, writing through into `device` as it
+  // resolves. The single-flight memo is what makes the preview and submit agree:
+  // both await the same in-flight run rather than racing two collections, so
+  // submit cannot send a snapshot the preview never rendered. Its behaviour in
+  // the in-flight window is covered by singleFlight.test.ts — an end-to-end test
+  // can only observe the settled state, where a weaker result-only memo looks
+  // identical.
+  const collectDeviceOnce = createSingleFlight(async () => {
+    const info = await collectDeviceInfo();
+    device = info;
+    return info;
+  });
+
+  // Collect the device snapshot the first time the parent opts in, so the
+  // preview below reflects exactly what will be sent. Exported so a host that
+  // sends the snapshot as JSON (ReportForm, AiImageReport, via bind:this)
+  // awaits the same in-flight/memoized collection this component's own effect
+  // starts, instead of calling collectDeviceInfo independently — the callers
+  // share one collection (in flight or already resolved into `device`), never
+  // two concurrent ones, so submit always sends what the preview last
+  // rendered. A failed collection resolves to undefined rather than throwing —
+  // an unavailable snapshot must not surface to the reporter as a failed send
+  // — and clears the memo so a later opt-in retries.
+  export function ensureDevice(): Promise<DeviceInfo | undefined> {
+    if (device) return Promise.resolve(device);
+    return collectDeviceOnce().catch(() => undefined);
+  }
+
+  $effect(() => {
+    if (deviceAttached && !device) {
+      void ensureDevice();
+    }
+  });
+</script>
+
+<div class="report-fields">
+  {#if mode === 'feedback'}
+    <SegmentedPicker
+      class="report-kind"
+      label="Report type"
+      options={REPORT_KINDS}
+      selected={kind}
+      onSelect={(value) => (kind = value)}
+      inputName={REPORT_FORM_FIELDS.kind}
+    />
+
+    <label class="report-label" for="reportMessage">{MESSAGE_PROMPT_BY_KIND[kind].label}</label>
+    <textarea
+      id="reportMessage"
+      name={REPORT_FORM_FIELDS.message}
+      class="report-textarea"
+      rows="4"
+      required
+      maxlength={MAX_REPORT_MESSAGE_LENGTH}
+      placeholder={MESSAGE_PROMPT_BY_KIND[kind].placeholder}
+      bind:value={message}></textarea>
+  {/if}
+
+  {#if deviceOffered}
+    <div class="report-device" transition:deviceReveal>
+      <label class="report-check">
+        <input
+          type="checkbox"
+          name={REPORT_FORM_FIELDS.includeDevice}
+          bind:checked={includeDevice}
+        />
+        <span>Include device info <em>(helps us reproduce the bug)</em></span>
+      </label>
+
+      {#if includeDevice}
+        <!-- The slide rides a wrapper: transition directives only attach to DOM
+             elements, never to a component instance. -->
+        <div transition:deviceReveal>
+          <Disclosure class="report-device-details">
+            {#snippet summary()}What will be sent?{/snippet}
+            {#if deviceRows.length}
+              <ul class="report-device-list">
+                {#each deviceRows as row (row.label)}
+                  <li><span class="report-device-key">{row.label}:</span> {row.value}</li>
+                {/each}
+              </ul>
+            {:else}
+              <p class="report-device-empty">Gathering device info…</p>
+            {/if}
+            <p class="report-device-note">
+              No names, accounts, or location — just the basics about your device and app version.
+            </p>
+          </Disclosure>
+        </div>
+      {/if}
+    </div>
+  {/if}
+  <input type="hidden" name={REPORT_FORM_FIELDS.device} value={devicePayload} />
+
+  <!-- Last, so it sits directly above whichever submit button the host renders:
+       it is the one line a reporter must not miss, and mid-form it read as
+       fine print between two controls. -->
+  {#if mode === 'feedback'}
+    <p class="report-privacy-note">
+      Your report goes to our private support tracker. Please don't include personal details like
+      names or email addresses.
+    </p>
+
+    <!-- Honeypot: off-screen and aria-hidden, so a person never sees it but a
+       form-filling bot does. A filled value is quietly dropped server-side. -->
+    <input
+      class="report-hp"
+      type="text"
+      name={REPORT_FORM_FIELDS.honeypot}
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+      bind:value={honeypot}
+    />
+  {/if}
+</div>
+
+<style>
+  .report-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* A phone tightens the kind picker's track rather than stacking the two
+     options: stacked, they stop reading as one control and the selected one
+     looks like a button someone already pressed. Reached through the picker's
+     forwarded class because these two labels are the primitive's longest — the
+     other pickers' fit at every supported width. */
+  @media (max-width: 400px) {
+    .report-fields :global(.report-kind) {
+      gap: 4px;
+      padding: 3px;
+    }
+
+    .report-fields :global(.report-kind .option) {
+      padding: 9px 6px;
+      font-size: var(--font-size-xs);
+      white-space: nowrap;
+    }
+  }
+
+  .report-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text);
+  }
+
+  .report-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 88px;
+    padding: 10px 12px;
+    font-size: var(--input-font-size);
+    font-family: inherit;
+    line-height: 1.5;
+    color: var(--text-strong);
+    background: var(--surface);
+    border: var(--border-width) solid var(--border-warm-strong);
+    border-radius: var(--radius-sm);
+  }
+
+  .report-textarea:focus-visible {
+    border-color: var(--brand);
+  }
+
+  .report-privacy-note {
+    margin: -2px 0 0;
+    font-size: var(--font-size-xs);
+    line-height: 1.45;
+    /* --text-soft, deliberately: this note is fine print, but fine print
+       still owes 4.5:1, which the soft step is pinned to hold. */
+    color: var(--text-soft);
+  }
+
+  .report-device {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .report-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: var(--font-size-sm);
+    color: var(--text);
+    line-height: 1.4;
+    cursor: pointer;
+  }
+
+  .report-check input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: var(--brand);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .report-check em {
+    font-style: normal;
+    color: var(--text-soft);
+  }
+
+  /* The device-info preview's own chrome on the Disclosure primitive — reached
+     with :global() because the class lands on the primitive's own markup. */
+  .report-device :global(.report-device-details) {
+    background: var(--surface);
+  }
+
+  .report-device :global(.report-device-details summary) {
+    padding: 8px 12px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--brand-text);
+  }
+
+  .report-device-list {
+    margin: 0;
+    padding: 0 12px 4px;
+    list-style: none;
+  }
+
+  .report-device-list li {
+    font-size: var(--font-size-xs);
+    color: var(--text-soft);
+    line-height: 1.7;
+    word-break: break-word;
+  }
+
+  /* The whole preview sits on --text-soft (pinned to hold 4.5:1 on the
+     panel); the key stays distinct on weight alone. */
+  .report-device-key {
+    color: var(--text-soft);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .report-device-empty {
+    margin: 0;
+    padding: 0 12px 8px;
+    font-size: var(--font-size-xs);
+    color: var(--text-soft);
+  }
+
+  .report-device-note {
+    margin: 0;
+    padding: 4px 12px 10px;
+    font-size: var(--font-size-xs);
+    color: var(--text-soft);
+    line-height: 1.4;
+  }
+
+  /* Off-screen, non-interactive: a bot fills it, a person can't reach it. */
+  .report-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>

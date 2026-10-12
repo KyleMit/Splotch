@@ -1,0 +1,5 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+Error: pass 1 erased 0 of 81920 census samples, under the 0.5% floor, so the stroke removed no measurable ink
+    at driveEraserPasses (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:499:24)
+    at async measure (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:702:16)
+    at async captureBundledFrames (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:600:16)

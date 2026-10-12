@@ -1,0 +1,10 @@
+{
+  "MD004": { "style": "asterisk" },
+  "MD012": false,
+  "MD013": false,
+  "MD026": { "punctuation": ".,;:!。，；：！" },
+  "MD033": { "allowed_elements": ["del"] },
+  "MD035": { "style": "---" },
+  "MD046": { "style": "fenced" },
+  "MD049": { "style": "asterisk" }
+}

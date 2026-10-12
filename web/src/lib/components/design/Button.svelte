@@ -1,0 +1,233 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
+
+  // Design-system button primitive (ADR-0071): the shared chrome for
+  // text-labeled buttons on modal/settings surfaces. Canvas-floating controls
+  // (Actions Panel, corner buttons) keep their bespoke paper treatments.
+  //
+  // Sizes step the label, not just the box: sm/md both carry the 14px chrome
+  // label and differ only in padding, while lg takes --font-size-md so a pair
+  // of buttons can read as a screen's primary decision rather than as chrome.
+  // hero is the kid-facing recovery button: a lifted pill with an 18px bold
+  // label, the one way forward from a Dottie error screen.
+  interface ChromeProps {
+    variant?: 'brand' | 'wash' | 'outline' | 'danger';
+    size?: 'sm' | 'md' | 'lg' | 'hero';
+  }
+
+  interface ButtonProps extends ChromeProps, HTMLButtonAttributes {
+    busy?: boolean;
+    href?: never;
+    target?: never;
+    rel?: never;
+    children: Snippet;
+  }
+
+  /**
+   * The same chrome on an `<a>`, which renders only these props. `disabled`
+   * and `busy` are `never`, so a link can be neither, even through a spread.
+   * Other button attributes are rejected by the excess-property check
+   * on attributes written at the call site, which a spread bypasses; making
+   * every one `never` pushes the props type past what TypeScript can
+   * represent in `svelte/server`'s `render`.
+   */
+  interface LinkProps extends ChromeProps {
+    href: string;
+    target?: HTMLAnchorAttributes['target'];
+    rel?: string;
+    class?: HTMLAnchorAttributes['class'];
+    busy?: never;
+    disabled?: never;
+    children: Snippet;
+  }
+
+  type Props = ButtonProps | LinkProps;
+
+  let {
+    variant = 'wash',
+    size = 'md',
+    busy = false,
+    disabled = false,
+    href,
+    target,
+    rel,
+    children,
+    class: className,
+    ...rest
+  }: Props = $props();
+</script>
+
+{#if href !== undefined}
+  <a class={['btn', variant, size, className]} {href} {target} {rel}>{@render children()}</a>
+{:else}
+  <button
+    type="button"
+    class={['btn', variant, size, className]}
+    {...rest}
+    disabled={disabled || busy}
+    aria-busy={busy || undefined}
+  >
+    {#if busy}<span class="ring" aria-hidden="true"></span>{/if}
+    {@render children()}
+  </button>
+{/if}
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+    /* The app's touch-target floor lives in the primitive, so no call site
+       has to re-add it; `sm` shrinks the type and padding, never the target. */
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      background var(--duration-base) ease,
+      border-color var(--duration-base) ease,
+      color var(--duration-base) ease,
+      transform var(--duration-fast) ease;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  /* The label takes --text, not --text-soft: --disabled-opacity already dims
+     the whole control, and pre-dimmed ink under it lands near 2:1. */
+  .btn:disabled:not([aria-busy='true']) {
+    background: var(--control-track);
+    color: var(--text);
+    opacity: var(--disabled-opacity);
+    box-shadow: none;
+    cursor: default;
+    transform: none;
+  }
+
+  .btn.outline:disabled:not([aria-busy='true']) {
+    background: transparent;
+    border-color: var(--border);
+  }
+
+  .btn[aria-busy='true'] {
+    cursor: progress;
+  }
+
+  .ring {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--radius-pill);
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    opacity: 0.9;
+    flex-shrink: 0;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  :global(:root[data-reduce-motion]) .ring {
+    animation: none;
+  }
+
+  /* The vertical padding keeps the large label centered in its target. */
+  .lg {
+    padding: 14px var(--space-4);
+    font-size: var(--font-size-md);
+  }
+
+  .md {
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--font-size-sm);
+  }
+
+  .sm {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-sm);
+  }
+
+  /* ErrorScreen cannot import this primitive (the crash path renders without
+     tokens), so its .error-restart repeats these values with fallbacks;
+     ErrorScreen.heroButton.test.ts holds the two equal. */
+  .hero {
+    min-height: 56px;
+    padding: 0 var(--space-6);
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    gap: 10px;
+  }
+
+  /* --brand-solid, not --brand: this fill carries a text label, and --brand is
+     only 3.4:1 against --on-brand (fails WCAG AA at body size). */
+  .brand {
+    background: var(--brand-solid);
+    color: var(--on-brand);
+  }
+
+  .wash {
+    background: var(--brand-wash);
+    color: var(--brand-text);
+  }
+
+  .danger {
+    background: var(--danger-wash);
+    color: var(--danger-text);
+  }
+
+  .outline {
+    background: transparent;
+    color: var(--brand-text);
+    border: var(--border-width) solid var(--brand-text);
+  }
+
+  .outline.lg {
+    padding: calc(14px - var(--border-width)) calc(var(--space-4) - var(--border-width));
+  }
+
+  .outline.md {
+    padding: calc(var(--space-3) - var(--border-width)) calc(var(--space-5) - var(--border-width));
+  }
+
+  .outline.sm {
+    padding: calc(var(--space-2) - var(--border-width)) calc(var(--space-4) - var(--border-width));
+  }
+
+  .outline.hero {
+    padding: 0 calc(var(--space-6) - var(--border-width));
+  }
+
+  .brand.hero {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
+  }
+
+  @media (hover: hover) {
+    .brand:hover:not(:disabled) {
+      background: var(--brand-solid-hover);
+    }
+
+    .wash:hover:not(:disabled) {
+      background: var(--brand-wash-hover);
+    }
+
+    .outline:hover:not(:disabled) {
+      background: var(--brand-wash);
+    }
+
+    .danger:hover:not(:disabled) {
+      background: var(--danger-wash-hover);
+    }
+  }
+</style>

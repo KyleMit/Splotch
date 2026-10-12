@@ -1,0 +1,240 @@
+---
+name: capture-performance-matrix
+description: Capture Splotch's drawing, undo, and discrete-action performance suites across macOS web, physical or simulated iPad web/native, and physical or emulated Android web/native targets. Use when producing a deployment-target performance snapshot, comparing renderer architectures, validating a performance change across platforms, or refreshing the committed performance matrix.
+---
+
+# Capture performance matrix
+
+Capture comparable performance evidence across Splotch deployment targets without confusing
+transport artifacts, simulator results, or stale builds with product behavior.
+
+## Before running
+
+Physical iPad or Android in scope? **Start with the `start-capture-session` skill.** It takes the
+rig over and proves both devices will actually accept a capture — every other readiness check is
+host-side, which is how a device blocked by Guided Access reports ready while every capture fails.
+
+Read the `profiling` skill completely. Read the `mobile` skill completely when any iOS, Android, or
+Capacitor target is in scope. Read [`references/platforms.md`](references/platforms.md) completely
+before starting a multi-target run or any target whose setup is not already active.
+
+Run `npm run info` and read the `perf:*` rows before composing commands. The script descriptions own
+current flags; this skill owns sequencing and interpretation.
+
+Record:
+
+* branch and exact product commit;
+* target, OS/browser/WebView version, model, orientation, and web/native mode;
+* runner and input transport;
+* input-fidelity classification;
+* raw output path;
+* whether the run is a snapshot, rejection check, or approval gate.
+
+Never put device IDs, credentials, provider tokens, or signing data in committed artifacts.
+
+## Choose the campaign
+
+### Snapshot
+
+Measure the current build and report what happens. Do not change product failures during the
+capture. Preserve the first valid red result instead of repeating until green. Use `--report-only`
+when the runner would otherwise stop before saving the complete requested suite.
+
+### Focused improvement validation
+
+Use this mode when the task starts with one known bottleneck or candidate change and ends with
+focused validation. Use `improve-performance-matrix` when the task starts from a matrix inventory,
+requires causal discovery across red cells, or will ship a stacked improvement campaign.
+
+Measure one action or brush on the first failing target, make one implementation change, and rerun
+that exact test. Back out rejected trials. Once the candidate passes, run the same focused test on
+the other targets whose rendering path could be affected. Do not broaden to the full matrix until
+the focused result is stable.
+
+**A focused result attributes; only the canonical sequence validates.** Action cost depends on the
+state earlier actions in the full sweep leave behind, so a reduced `--actions` subset measures a
+different product state under the same label — the 2026-08-31 session had focused greens turn
+canonical red three times (a `will-change` layer promotion and a theme round-trip residue that only
+the full order exposes) and one focused red that the real user path never shows. Before claiming a
+cell fixed, rerun the canonical full plan for that mode; use subsets to reproduce and isolate a
+canonical failure, never to certify its absence. `docs/PROFILING-CAMPAIGNS.md` ("A focused
+`--actions` subset is not the canonical sweep") carries the incident detail.
+
+### Architecture comparison
+
+Use the current runner, probe, action plan, gates, viewport, and input plan against both builds.
+Serve the control from a detached worktree and use the runner’s external `--url=` seam. Do not
+compare an old runner with a new runner. Run at least three identical samples and report ranges or
+median-plus-worst, including between-stroke and whole-window gaps rather than only in-contact P95.
+
+## Run serially
+
+Run one target at a time. Within a target, run one brush/action family at a time when diagnosing.
+Stop or detach old preview, Appium, proxy, and forwarding sessions before changing targets. A single
+machine’s GPU, simulator, browser, and Appium sessions contend with one another; parallel captures
+are not comparable.
+
+For a full target snapshot, capture:
+
+1. drawing for pen, crayon, Magic, and eraser;
+2. undo after pen history setup;
+3. the full discrete-action plan with four repeats (one warmup plus three scored samples);
+4. a screenshot or visible-state check when rendering topology changed.
+
+Save each raw artifact path before continuing.
+
+## Build discipline
+
+Use a fresh instrumented build at the beginning of a target campaign. `PERF_MARKS` and the dev
+harness are compile-time inputs; an ordinary build cannot be made instrumented by changing only the
+server environment.
+
+For a shared web preview:
+
+```sh
+npm run perf:build
+npm run perf:serve --ignore-scripts
+```
+
+Reuse that preview with runner-specific `--no-serve`, `--no-build`, or `--ignore-scripts` flags as
+described by `npm run info`. Rebuilding between two halves of one comparison invalidates the
+comparison unless both halves deliberately use the new commit.
+
+Native apps must be built/synced with performance marks before installation. Normal `npm run build`
+and `npm run build:cap` run post-build guards that prove profiling seams and engine marks are
+tree-shaken from release output. Run the applicable release build after changing a seam.
+
+## Use the correct transport
+
+* **Mac web:** headed Playwright WebKit for comparable local drawing/actions.
+* **iPad web/native, physical or Simulator:** Appium/XCUITest drives native touch; the in-page probe
+  measures frames. Physical MobileSafari is the calibrated iPad approval target.
+* **Android Chrome web:** direct CDP via `perf:android:browser:actions` for actions. Do not approve
+  browser frames from the Appium action transport.
+* **Android native:** Appium attached to the Capacitor WebView with
+  `--native-app --native-webview-class=android.webkit.WebView`.
+
+Appium automation round-trip time is not an application frame metric. The probe must measure inside
+the page. Native rotation must go through whatever orientation control the product actually offers,
+and restore what it changed; do not bypass product persistence with a test-only preference mutation.
+Which control that is depends on the platform, and the runner resolves it rather than assuming:
+
+* Where the product persists an in-app rotation lock, the run flips that Settings control and
+  restores the observed lock and orientation in cleanup. On the Android phone app that release
+  selects Auto, which requests `SCREEN_ORIENTATION_SENSOR` and follows only the accelerometer, so
+  Appium's rotation is refused ("locked programmatically?") on a phone lying still. The runner then
+  pins the display to user rotation with `wm fixed-to-user-rotation enabled` — the stand-in for
+  turning the phone — and puts the prior mode back after the lock
+  (`tools/perf/lib/android-user-rotation.mjs`). A failed unpin fails the capture, and a phone found
+  already pinned is refused until `npm run perf:release` resets it.
+* On a native tablet there is no such control — `supportsOrientationLock()` is false because iPadOS
+  windowing ignores an in-app lock — so device rotation is the only path the product offers and the
+  runner takes it, recording `platformOwnsRotation` in the capture. A missing toggle there is the
+  product's answer, not a targeting failure; treating it as unavailable is what left the iPad
+  simulator's native landscape cells unmeasured in the 2026-08-20 campaign.
+* On a **web** target the control is state-dependent, not just platform-dependent:
+  `orientationLockApplies()` hides it outside element fullscreen and outside an installed
+  `fullscreen` display mode, because Chromium refuses the lock there (ADR-0172). So a missing picker
+  in a browser tab is a refusing *context*, not the product's answer about the platform — the
+  opposite reading from the tablet case above. Enter fullscreen and re-read the control before
+  concluding anything; recording `platformOwnsRotation` off a plain tab would file a browser
+  limitation as a platform fact.
+
+Shells differ by mode too, and an action plan that assumes one will time out against the other. A
+landscape phone renders the compact Settings shell — quick toggles and a pointer to portrait instead
+of the section list — so the sweep measures that shell's own controls under compact-specific labels
+and records which shell it measured. Compare a mode against the same shell, never across two.
+
+## iPad web action sweeps need the secure origin
+
+iPad Safari's LAN origin is not a secure context, so `perf:campaign` refuses an `ipad-device-web`
+action sweep as `blocked-coverage`. Run it behind the HTTPS front (`docs/PROFILING-IPAD.md`, "A
+trusted HTTPS origin for iPad Safari"):
+
+1. Serve the instrumented preview on a free port (`npm run perf:build`, then
+   `npm run perf:serve --ignore-scripts -- --port=<preview>`).
+2. Read `ipconfig getifaddr en0`, then start the front **as a background command of its own, in
+   exactly this form, with the address typed out**:
+   `npm run perf:ios:secure-origin -- serve --listen=<address>:<tls> --upstream=<preview>`. The
+   maintainer's local allow rule matches only this form. Never bind `0.0.0.0`, never add `--http`,
+   never start the constraint-probe front, and never wrap the command in another script or a `$(…)`.
+3. `npm run perf:ios:secure-origin -- check --url=https://<mac>.local:<tls>/ --device-id=<udid>`,
+   where `<mac>` is `scutil --get LocalHostName`. When it refuses, stop the front and report its
+   reason. An iPad on an unproven iPadOS release needs a person, not a retry.
+4. `NODE_EXTRA_CA_CERTS=~/.splotch-rig/secure-origin-ca/ca.pem npm run perf:campaign -- --target=ipad-device-web --items=actions --url=https://<mac>.local:<tls>/`
+   with the session's usual `--device-id=`, `--wda-url=`, and `--appium-url=`. Every AI-waiting
+   sample must carry `secureContext: true`.
+5. Stop the front as soon as the sweep ends. `npm run perf:release` also stops one that was left
+   running.
+
+If step 2 is denied, the local rules are not installed on this Mac. Report that, and do not retry
+the start in another form. The sweep then waits for `npm run perf:session:person` with the
+maintainer present (`docs/PROFILING-CAMPAIGNS.md`).
+
+## Apply fidelity tiers
+
+Only a hand-calibrated physical target may approve its deployment class. The physical-iPad web
+calibration checks trusted cadence/contact geometry and owns the Safari gates. Native iPad,
+simulator, Android, and Mac samples remain advisory until separately calibrated even when their
+timing gates pass.
+
+Use emulators, simulators, and local browsers as rejection tiers:
+
+* a failure is a useful lead and may reject a candidate after attribution;
+* a pass does not prove the physical device is good;
+* the iOS Simulator is known to reproduce the historical pre-tiling Magic/crayon/undo cliff and is a
+  valuable architecture negative control.
+
+Never relabel one target’s calibration as another target’s approval.
+
+## Interpret a failure before changing code
+
+Read the raw action/drawing sample and the action-aligned trace. Determine whether work is owned by
+the action:
+
+1. check input time, first frame, readiness, post-action intervals, and transition completion;
+2. inspect engine marks, long tasks, layout, paint, raster, and GPU/compositor bursts;
+3. compare the same window with an idle/no-op control when the page is already static;
+4. distinguish an interval that began before event delivery from work after delivery;
+5. retain deferred image decode, worker response, CSS transition, and compositor work even if DOM
+   state was ready earlier.
+
+A late rAF gap with no UI mutation and no corresponding app/layout/paint/raster/GPU work can be an
+idle renderer omission. It is not automatically product jank. Conversely, do not truncate the window
+at a DOM-ready flag when visible work is still pending.
+
+## Report the result
+
+For drawing, report paint P95/P99/max and the cumulative lost-frame share of in-contact time. For
+undo, report engine P95 and next-frame P95/max. For actions, report first-frame P95, post-action
+frame P95, post-action max, activation fidelity, and the count/list of failed actions. Include input
+fidelity and the raw artifact path beside the result.
+
+Before attributing any committed red cell to the product, run
+`npm run check:matrix-staleness -- --base=origin/main`. It ranks every section by capture age and
+counts the commits that landed since (ADR-0175): the cell describes the commit it was captured at.
+The check's default `--base=HEAD` counts a campaign branch's own commits as drift from any branch
+that carries its own work.
+
+When refreshing the committed matrix:
+
+1. update `scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json` with raw sources
+   from one clearly identified product commit;
+2. run the report generator shown in that directory’s `index.md`;
+3. inspect `data.json`, `index.md`, and `index.html`;
+4. keep unavailable rows explicit;
+5. do not copy raw timelines or device identifiers into the scrapbook.
+
+If a target was blocked, record the exact last successful setup check and continue to the next
+target in a snapshot campaign.
+
+## Verification
+
+After harness or scorer changes, run focused script tests plus `npm run check`, `npm run lint`, and
+`npm run format:check`. Reanalyze preserved captures when metric definitions change. Cross-check a
+new scorer against known historical failures so a convenient green rule does not hide deferred
+visual work.
+
+After product changes, run the focused behavior tests for the changed interaction and visually check
+the real route. Timing without correct pixels, alignment, undo semantics, sound, or rotation state
+is a failed trial.

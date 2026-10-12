@@ -1,0 +1,61 @@
+# Verifies the hosted site as one deployed system: prerendered routes, security
+# and cache headers, the version built from this commit, native CORS, safe API
+# failure shapes, and the ADR-0025 Blobs persistence signal. Preview targets
+# also exercise the token write round-trip; production remains read-only.
+#
+# GitHub's deployment_status event is repository-wide, and this repository's
+# deployment records belong to the static scrapbook on GitHub Pages rather than
+# Netlify. The daily run probes production; workflow_dispatch can target any
+# intended Netlify preview or production URL.
+#
+# Requires a repo secret ADMIN_ACCESS_TOKEN matching the deploy's admin secret;
+# it only travels in the login POST body over https. Preview runs remove their
+# probe token; production runs never create one.
+name: Hosted Deploy Smoke
+
+on:
+  schedule:
+    - cron: '23 9 * * *'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Deploy URL to smoke (defaults to production)
+        required: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+# Every deploy shares one site-wide Blobs store, so serialize all workflow runs. An in-flight run
+# is not cancelled and can clean up; GitHub may replace an older pending run when another queues.
+concurrency:
+  group: hosted-deploy-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Hosted deploy contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # ADR-0030 derives the web version from the last release tag and the
+          # intervening commit count, so freshness needs the complete graph.
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-pnpm
+        with:
+          cache: 'false'
+          install: 'false'
+
+      # No install: the smoke and its local imports use only Node builtins.
+      - name: Check the hosted deploy contract
+        env:
+          DEPLOY_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}
+          # The checker derives version strictness from this target (requiresCurrentVersion).
+          ADMIN_ACCESS_TOKEN: ${{ secrets.ADMIN_ACCESS_TOKEN }}
+        run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs

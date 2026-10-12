@@ -1,0 +1,117 @@
+## Conventions
+
+* **No comments** unless the WHY is non-obvious. Well-named identifiers are the documentation. A
+  comment that does survive states stable facts about code that exists: no temporal phrasing ("now",
+  "previously") and no restating mutable facts (counts, dates, values, paths) owned elsewhere — name
+  the owning identifier or file instead.
+* Numbered step comments (`// 1. …`) or section banners inside one function are the signal to
+  extract each step into a named helper — write it that way the first time.
+* **Tuning literals get names.** A numeric literal that encodes a tunable decision — threshold,
+  duration, dimension, curve shaping, byte offset, retry count — gets a named constant at module
+  scope, or in a Svelte component at the top of its `<script>` (instance or `<script module>`), with
+  the unit in the name (`_MS`, `_PX`, `SNAP_BAND_FRACTION`); the WHY comment lives on the constant.
+  Plain geometry arithmetic stays inline. (ESLint's `no-magic-numbers` was evaluated and rejected:
+  ~750 hits in this canvas-heavy codebase.)
+* **Cross-file agreement is never maintained by prose.** A value that must agree with another module
+  is imported from one exported constant; when the agreeing sites can't share code (the `app.html`
+  boot script, YAML, native config, generated output), add a drift-guard test that reads both sides
+  and fails on divergence — the pattern of `web/src/app.html.test.ts`,
+  `tools/mobile/android/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep
+  in sync with X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage
+  keys, query params, event names, special-case ids): declared once, imported everywhere (tests
+  deliberately excepted). A **bundle boundary** is one of the places that can't share code: a static
+  import into a startup-path module hands Rollup an edge that re-partitions chunks no matter how
+  small the imported module, so there the duplication is deliberate and the sharing itself is the
+  defect (`web/src/lib/state/saveFolder.svelte.ts` vs `folderSave.ts`, drift-guarded by
+  `saveFolder.svelte.test.ts` and pinned by `web/tests/startup-bundle.spec.ts`). Such a site keeps
+  its inline copy, adds the drift-guard test, and carries a comment stating the constraint and
+  naming the enforcing spec — that comment is load-bearing evidence of intent, not the "keep in
+  sync" defect above, and refactoring the duplication away past it breaks the boundary it protects.
+* **TypeScript everywhere.** No plain `.js` source files in `src/`, and no `any`
+  (`@typescript-eslint/no-explicit-any` enforces the zero count).
+* **Near-universal conventions are lint rules, not review vigilance** (ADR-0031, which also records
+  the measured rejected candidates — don't re-litigate them without new evidence). The empirically
+  ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
+  uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
+  `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), browser-only globals are
+  banned at the top level of Svelte components, module scripts, and `.svelte.ts` modules
+  (`svelte/no-top-level-browser-globals`; Node-shared globals such as `navigator` still require an
+  explicit `browser` guard), and "should" is banned from test titles. CSS gets its own linter:
+  `npm run lint:css` runs stylelint over every `<style>` block and hand-authored `.css` file in the
+  repo, and its rules were chosen the same measured way — the ones that catch CSS the parser keeps
+  and the browser silently never applies (`media-feature-name-no-unknown`, `property-no-unknown`,
+  `selector-pseudo-class-no-unknown`) plus the notation conventions, colour included
+  (`rgb(0 0 0 / 60%)`, never `rgba(`). `!important` fails `npm run lint:tokens`; test placement
+  (`.test.ts` colocated under `web/src`, `.spec.ts` in `web/tests`) is drift-guarded by
+  `tools/tests/test-file-placement.test.mjs`. Prose-only by choice: PascalCase component files,
+  camelCase lib modules, and dot-joined multi-aspect test names (`platform.osLabel.test.ts`).
+* **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
+  platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
+  `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or
+  `satisfies`), not `Record<string, V>`.
+* **`as` is a boundary tool.** Cast only where typed code meets untyped input (storage, wire,
+  non-standard browser APIs) after runtime validation, or augment globals in `app.d.ts` (the
+  `WindowEventMap` pattern). Never cast to silence a generated union — fix the type at its source.
+* **No speculative surface.** A new prop, option, or optional parameter needs a production caller
+  that exercises it; a seam kept only for tests gets a comment saying so at the declaration.
+* **Coding standards.** Each rule below has its incident and enforcement in
+  `docs/CODING-STANDARDS.md`; read it before adding, relaxing, or re-proposing a rule.
+  * **Ask the owner.** Call the module that owns a rule (a store method, a policy function) instead
+    of re-deriving it from raw fields at the call site; state has one writer.
+  * **One union per mode.** Each variant carries only the fields it uses, so props and fields cannot
+    combine into a state the code ignores; pin a props union with an `expectTypeOf` type test.
+  * **Names tell the truth.** A query-named function has no side effects, and paired verbs behave
+    alike.
+  * **Validate at the trust boundary.** Narrow untrusted input from `unknown` with a strict guard
+    and fail loudly. An API has one failure convention, or its declaration names both and every
+    caller handles both.
+  * **One contract per wire boundary**, with a test that reads both sides and test stubs typed from
+    the real function.
+  * **Every lint fence has a positive control**: a test that fails if the rule stops firing.
+  * **The startup path is a budget.** The release builds pin the `/` modulepreload count exactly; a
+    runtime import from a startup module into a module that lazy code also imports is the usual way
+    to add a startup chunk. No principle outranks measured startup or hot-path cost.
+  * **Tests prove they can fail.** Note each guard's negative control in the PR. A test builds its
+    own fixture, drives real stores, pins copy as rendered, and names its timeouts.
+  * **Exceptions are declared in one list and ratchet down** (grandfathered caps, allowlists, ADR
+    carve-outs): remove an obsolete entry and lower a stale cap; add or raise one only with its
+    reason in the diff.
+* Module-scope mutable `let` is either a pure memoization cache or lives behind a `createX()`
+  factory so tests get fresh instances — never a shipped `*ForTests` reset export. A memoized
+  promise resets itself on rejection (see `web/src/lib/idb.ts`) unless permanent failure is
+  intended.
+* **Svelte 5 runes only.** No legacy stores (`writable`, `readable`, `derived` from `svelte/store`).
+* All npm scripts must run on macOS and Linux (ADR-0017; Windows dev support was dropped in
+  ADR-0062): env vars are set inline (`VAR=value cmd`, no `cross-env`), and platform-specific tools
+  (the Gradle wrapper, the file-manager opener) are invoked via Node helpers in `tools/` rather than
+  inline shell.
+* **pnpm installs; npm runs** (ADR-0119). `npm run <script>` is correct everywhere and stays the
+  documented way to invoke the script graph (ADR-0019) — pre/post hooks and all. But **never run
+  `npm install` or `npm ci` here**: both succeed, both produce a working flat `node_modules`, and
+  both write a `package-lock.json` that resolves the tree independently of `pnpm-lock.yaml` and then
+  drifts from it with nothing to announce the divergence. Use `pnpm install` (or
+  `pnpm install --frozen-lockfile` to reproduce the committed tree exactly), and `pnpm add <pkg>` to
+  add one. `package-lock.json` is gitignored and `tools/tests/package-manager.test.mjs` fails if any
+  CI, hook, or bootstrap file starts installing with npm again. pnpm itself comes from
+  `corepack enable pnpm` — re-run that after every `nvm install`, since the shim is written into the
+  active Node's `bin/`.
+* **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
+  Netlify web build needs (runtime imports such as `sharp` and `openai` + vite/SvelteKit/adapter);
+  `devDependencies` = local/CI-only tooling (Playwright, dprint, the Capacitor CLIs, …). Netlify
+  installs with `--prod`, so a build-needed package filed under `devDependencies` breaks the deploy.
+  CI installs everything, so only `npm run lint:deps:prod` (knip over `knip.production.json`)
+  catches it; a new `tools/` script the build runs needs an entry there. When adding a dependency,
+  ask "does the Netlify web build import or execute this?"
+* **Formatting is split: Prettier owns code, dprint owns Markdown** (`*.md` is in `.prettierignore`;
+  ADR-0057). The `format-edited-file.sh` PostToolUse hook auto-formats each file you edit through
+  the right one, but if you write Markdown any other way (or aren't sure), run
+  `npm run format:check` before you commit — CI's `dprint check` fails on unwrapped Markdown, and
+  that's the most common reason a fresh PR is red. The cloud-only `session-start.sh` and
+  `cloud-branch-preview.sh` SessionStart hooks run only when `CLAUDE_CODE_REMOTE=true`; see
+  `docs/CLOUD/Claude-Code.md` for details.
+* ESLint's `max-lines` counts CSS comment lines inside a Svelte `<style>` block, even with
+  `skipComments: true`. After editing a large style block, run `npm run lint` and shorten or extract
+  code when it crosses its configured cap.
+* Evidence packages can lose files to `.gitignore`: `logs/` directories and `*.log` files are
+  ignored anywhere in the tree. Store captured logs as `controls/*.log.txt`, run `git check-ignore`
+  on the package, and compare its tracked file list with the manifest before committing.

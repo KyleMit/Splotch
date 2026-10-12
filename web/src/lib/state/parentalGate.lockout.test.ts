@@ -1,0 +1,248 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import {
+  createParentalGate,
+  gateAcceptsInput,
+  GATE_ANNOUNCE_DELAY_MS,
+  GATE_ERROR_MESSAGE,
+  GATE_SHAKE_MS,
+  type ParentalGateState,
+} from './parentalGate.svelte';
+import {
+  gateLockoutMessage,
+  GATE_ESCALATION_QUIET_MS,
+  GATE_LOCKOUT_BASE_MS,
+  GATE_LOCKOUT_ENDED_MESSAGE,
+  GATE_LOCKOUT_MAX_MS,
+  GATE_WRONG_ANSWERS_BEFORE_LOCKOUT,
+} from './parentalGateLockout';
+
+// Each case builds its own gate: every policy at the build default (always,
+// under the store-build flag the unit suite compiles with), no escalation state.
+let gate: ParentalGateState;
+
+const ELAPSED_BEFORE_REOPEN_MS = 25_000;
+const ONE_SECOND_MS = 1000;
+const ONE_DAY_MS = 86_400_000;
+
+function typeAnswer(value: string) {
+  for (const digit of value) gate.pressGateDigit(Number(digit));
+  gate.submitGateAnswer();
+}
+
+function correctAnswer() {
+  return String(gate.x * gate.y);
+}
+
+function answerWrongly() {
+  typeAnswer('');
+  vi.advanceTimersByTime(GATE_SHAKE_MS);
+}
+
+function lockOut() {
+  for (let i = 1; i < GATE_WRONG_ANSWERS_BEFORE_LOCKOUT; i++) answerWrongly();
+  typeAnswer('');
+}
+
+function remainingLockoutMs() {
+  return gate.lockoutUntil === null ? null : gate.lockoutUntil - Date.now();
+}
+
+describe('parental gate lockout', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+    gate = createParentalGate();
+    gate.requireParentalGate('aiImage', vi.fn());
+  });
+
+  afterEach(() => {
+    gate.dismissGate();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('pauses the keypad after repeated wrong answers, ignoring even a right one', () => {
+    lockOut();
+    expect(remainingLockoutMs()).toBe(GATE_LOCKOUT_BASE_MS);
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(false);
+    expect(gate.input).toBe('');
+  });
+
+  it('counts the pause down on each whole second while the card is open', () => {
+    lockOut();
+    expect(gate.lockoutMessage).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS));
+
+    vi.advanceTimersByTime(ONE_SECOND_MS);
+    expect(gate.lockoutMessage).toBe(gateLockoutMessage(GATE_LOCKOUT_BASE_MS - ONE_SECOND_MS));
+
+    vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS - ONE_SECOND_MS);
+    expect(gate.lockoutUntil).toBeNull();
+    expect(gate.lockoutMessage).toBeNull();
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(true);
+  });
+
+  it('shows the time actually left when the card is reopened mid-pause', () => {
+    lockOut();
+    gate.dismissGate();
+    vi.advanceTimersByTime(ELAPSED_BEFORE_REOPEN_MS);
+
+    gate.requireParentalGate('aiImage', vi.fn());
+    expect(gate.lockoutMessage).toBe(
+      gateLockoutMessage(GATE_LOCKOUT_BASE_MS - ELAPSED_BEFORE_REOPEN_MS)
+    );
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(false);
+
+    vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS - ELAPSED_BEFORE_REOPEN_MS);
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(true);
+  });
+
+  it('ends the pause by the clock, even when no timer ran through it', () => {
+    lockOut();
+    gate.dismissGate();
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+
+    gate.requireParentalGate('aiImage', vi.fn());
+    expect(gate.lockoutMessage).toBeNull();
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(true);
+  });
+
+  it('ends a pause that ran out unseen on the next digit, which it also takes', () => {
+    lockOut();
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    expect(gate.lockoutUntil).not.toBeNull();
+
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).toBeNull();
+    expect(gate.lockoutMessage).toBeNull();
+    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+    expect(gate.input).toBe('7');
+  });
+
+  it('leaves a pause that ran out mid-shake to the first press after the shake', () => {
+    lockOut();
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    const announcement = gate.announcement;
+
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).not.toBeNull();
+    expect(gate.announcement).toBe(announcement);
+    expect(gate.input).toBe('');
+
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).toBeNull();
+    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+    expect(gate.input).toBe('7');
+  });
+
+  it('asks whether the keypad takes input without settling a pause that ran out', () => {
+    lockOut();
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    const fields = JSON.stringify(gate);
+    const timers = vi.getTimerCount();
+
+    expect(gateAcceptsInput(gate)).toBe(false);
+    expect(JSON.stringify(gate)).toBe(fields);
+    expect(vi.getTimerCount()).toBe(timers);
+
+    gate.pressGateBackspace();
+    expect(gateAcceptsInput(gate)).toBe(true);
+  });
+
+  it('announces a pause when it starts, on reopen, and when it ends, never per tick', () => {
+    lockOut();
+    const started = gateLockoutMessage(GATE_LOCKOUT_BASE_MS);
+    expect(gate.announcement).toBe(started);
+    vi.advanceTimersByTime(ONE_SECOND_MS);
+    expect(gate.announcement).toBe(started);
+
+    gate.dismissGate();
+    gate.requireParentalGate('aiImage', vi.fn());
+    expect(gate.announcement).toBe('');
+    vi.advanceTimersByTime(GATE_ANNOUNCE_DELAY_MS);
+    expect(gate.announcement).toBe(gate.lockoutMessage);
+
+    vi.advanceTimersByTime(GATE_LOCKOUT_BASE_MS);
+    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+  });
+
+  it('says a wrong answer again when the last one is still showing', () => {
+    answerWrongly();
+    expect(gate.announcement).toBe(GATE_ERROR_MESSAGE);
+
+    typeAnswer('');
+    expect(gate.announcement).toBe('');
+    vi.advanceTimersByTime(GATE_ANNOUNCE_DELAY_MS);
+    expect(gate.announcement).toBe(GATE_ERROR_MESSAGE);
+  });
+
+  it('holds a pause to the longest one when the clock is set backwards', () => {
+    lockOut();
+    vi.setSystemTime(Date.now() - ONE_DAY_MS);
+    gate.dismissGate();
+
+    gate.requireParentalGate('aiImage', vi.fn());
+    expect(remainingLockoutMs()).toBe(GATE_LOCKOUT_MAX_MS);
+  });
+
+  it('lengthens each pause up to the cap, and a solve resets it', () => {
+    const expected = [GATE_LOCKOUT_BASE_MS];
+    while (expected.at(-1)! < GATE_LOCKOUT_MAX_MS) {
+      expected.push(Math.min(expected.at(-1)! * 2, GATE_LOCKOUT_MAX_MS));
+    }
+    expected.push(GATE_LOCKOUT_MAX_MS);
+    for (const lockoutMs of expected) {
+      lockOut();
+      expect(remainingLockoutMs()).toBe(lockoutMs);
+      vi.advanceTimersByTime(lockoutMs);
+    }
+
+    answerWrongly();
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(true);
+    expect(gate.wrongStreak).toBe(0);
+    expect(gate.lockouts).toBe(0);
+  });
+
+  it('starts a quiet device back at the first pause instead of the last one', () => {
+    let lockoutMs = 0;
+    while (lockoutMs < GATE_LOCKOUT_MAX_MS) {
+      lockOut();
+      lockoutMs = remainingLockoutMs()!;
+      vi.advanceTimersByTime(lockoutMs);
+    }
+
+    vi.advanceTimersByTime(GATE_ESCALATION_QUIET_MS - ONE_SECOND_MS);
+    lockOut();
+    expect(remainingLockoutMs()).toBe(GATE_LOCKOUT_MAX_MS);
+    vi.advanceTimersByTime(GATE_LOCKOUT_MAX_MS);
+
+    vi.advanceTimersByTime(GATE_ESCALATION_QUIET_MS);
+    lockOut();
+    expect(remainingLockoutMs()).toBe(GATE_LOCKOUT_BASE_MS);
+  });
+
+  it('forgets wrong answers left over from before a quiet period', () => {
+    for (let i = 1; i < GATE_WRONG_ANSWERS_BEFORE_LOCKOUT; i++) answerWrongly();
+    vi.advanceTimersByTime(GATE_ESCALATION_QUIET_MS);
+
+    answerWrongly();
+    expect(gate.wrongStreak).toBe(1);
+    expect(gate.lockoutUntil).toBeNull();
+  });
+
+  it('names the time left in rounded-up seconds, then whole minutes', () => {
+    expect(gateLockoutMessage(30_000)).toBe('Too many tries — wait 30 seconds');
+    expect(gateLockoutMessage(4_200)).toBe('Too many tries — wait 5 seconds');
+    expect(gateLockoutMessage(1_000)).toBe('Too many tries — wait 1 second');
+    expect(gateLockoutMessage(60_000)).toBe('Too many tries — wait 1 minute');
+    expect(gateLockoutMessage(230_000)).toBe('Too many tries — wait 4 minutes');
+  });
+});

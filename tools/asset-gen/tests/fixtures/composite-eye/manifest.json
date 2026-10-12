@@ -1,0 +1,42 @@
+[
+  {
+    "name": "stegosaurus-tall",
+    "source": "dinosaur/stegosaurus-tall",
+    "kind": "blank-orb (recovered pre-fix original)",
+    "expectBlankOrb": true,
+    "worstCoreDarkFrac": 0.04,
+    "note": "solid-pen band-blind orb — the original regression the gate was built for"
+  },
+  {
+    "name": "horse-tall",
+    "source": "farm/horse-tall",
+    "kind": "blank-orb (recovered pre-fix original)",
+    "expectBlankOrb": true,
+    "worstCoreDarkFrac": 0.05,
+    "note": "ringed-chalk whitened orb — a second, distinct blank-orb mechanism"
+  },
+  {
+    "name": "unicorn-tall",
+    "source": "creatures/unicorn-tall",
+    "kind": "legible (shipped)",
+    "expectBlankOrb": false,
+    "worstCoreDarkFrac": 0.35,
+    "note": "legible small-pupil/big-sclera eye — the tightest over-flag (guards the threshold from below)"
+  },
+  {
+    "name": "owl-tall",
+    "source": "creatures/owl-tall",
+    "kind": "legible (shipped)",
+    "expectBlankOrb": false,
+    "worstCoreDarkFrac": 0.25,
+    "note": "legible eye an earlier reviewer wrongly called a real defect"
+  },
+  {
+    "name": "square-tall",
+    "source": "shapes/square-tall",
+    "kind": "legible (shipped)",
+    "expectBlankOrb": false,
+    "worstCoreDarkFrac": 0.24,
+    "note": "legible cartoon shape-face eyes"
+  }
+]

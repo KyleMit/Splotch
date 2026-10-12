@@ -1,0 +1,20 @@
+diff --git a/tools/rival-agent/launch.mjs b/tools/rival-agent/launch.mjs
+--- a/tools/rival-agent/launch.mjs
++++ b/tools/rival-agent/launch.mjs
+@@ -337,8 +337,6 @@
+   onProgress(`session: ${session}`);
+   for (const note of notes) onProgress(note);
+ 
+-  // session.json lands before provisioning so a failure there is still observable through
+-  // `broker next` rather than as "no session".
+   const writeSessionRecord = () =>
+     writeJsonAtomic(sessionPath(session, SESSION_FILES.session), {
+       id,
+@@ -354,7 +352,6 @@
+       branch,
+       createdAt: new Date().toISOString(),
+     });
+-  writeSessionRecord();
+   const logPath = sessionPath(session, SESSION_FILES.log);
+   let rivalSession;
+   let authorizationClaim;

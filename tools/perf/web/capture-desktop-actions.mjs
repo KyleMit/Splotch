@@ -1,0 +1,302 @@
+import { actionProbeSource } from '../lib/action-probe-source.mjs';
+import { chromium, firefox, webkit } from '@playwright/test';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import {
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
+  actionFailures,
+  actionRows,
+  rotationFirstFrameNa,
+  summarizeActions,
+} from '../lib/action-stats.mjs';
+import { parsePerfArgs } from '../lib/cli-args.mjs';
+import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
+import {
+  profilingUrl,
+  actionCaptureVerdict,
+  loadActionSweepDocument,
+  logColoringPreparation,
+  reportActionCaptureVerdict,
+  runActionSweep,
+  selectedActions,
+  stableActionPlan,
+} from '../ios/capture-xcuitest-actions.mjs';
+import { profilePath } from '../lib/profile-paths.mjs';
+import { assertServedBuildIsFresh, buildAndPreview } from '../lib/profile-preview.mjs';
+import {
+  POSITIVE_INTEGER,
+  POSITIVE_NUMBER,
+  fail,
+  isMain,
+  parseOrFail,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
+import { waitForUrl } from '../../lib/net.mjs';
+import { chromiumExecutablePath } from '../../lib/playwright.mjs';
+import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
+import {
+  ensureCampaignTheme,
+  parseCampaignTheme,
+  readResolvedTheme,
+} from '../lib/campaign-state.mjs';
+
+const PROFILE_DIR_PREFIX = 'splotch-desktop-actions-';
+// The runtime this transport is judged as (tools/perf/lib/input-fidelity.mjs
+// vocabulary, and the mac-* targets' declared `captureRuntime`). One runtime
+// spans all three engines; rotation first-frame applicability additionally
+// keys on the engine (ROTATION_INERT_DESKTOP_ENGINES).
+const DESKTOP_CAPTURE_RUNTIME = 'desktop-playwright';
+const DEFAULT_VIEWPORT = { width: 1512, height: 982 };
+const DEFAULT_DEVICE_SCALE_FACTOR = 2;
+const READY_TIMEOUT_MS = 60_000;
+const REPEAT_SETTLE_MS = 500;
+const SESSION_ID = 'desktop';
+
+const ENGINES = {
+  chromium,
+  firefox,
+  webkit,
+};
+
+export function resolveViewport(value) {
+  if (!value) return DEFAULT_VIEWPORT;
+  const match = /^([1-9]\d*)x([1-9]\d*)$/.exec(value);
+  if (!match) fail(`--viewport=${value} must use WIDTHxHEIGHT`);
+  return { width: Number(match[1]), height: Number(match[2]) };
+}
+
+export function hasMinimumActionRepeats(repeats) {
+  return repeats >= WARMUP_REPEATS + MIN_GATED_SAMPLES;
+}
+
+function browserLaunchOptions(engineName, headless) {
+  return engineName === 'chromium'
+    ? { headless, executablePath: chromiumExecutablePath(chromium) }
+    : { headless };
+}
+
+// The artifact envelope, as a pure value (the drivenCaptureArtifact pattern):
+// the fields a later reader TRUSTS — `captureRuntime` feeding the matrix's
+// runtime-agreement check and `engine` feeding the per-engine rotation
+// declaration — can be asserted without launching a browser.
+export function desktopActionsArtifact({
+  engineName,
+  base,
+  viewport,
+  deviceScaleFactor,
+  headless,
+  theme,
+  settingsShell,
+  actionPlan,
+  coloringPreparation,
+  actions,
+  repeats,
+  samples,
+  summaries,
+  passed,
+  servedBuild,
+}) {
+  return {
+    device: {
+      name: `Mac desktop (${engineName})`,
+      os: process.platform,
+    },
+    appUrl: base,
+    ...servedBuild,
+    engine: engineName,
+    // Recorded so the matrix's runtime-agreement check has an artifact side
+    // to compare against the target's declared runtime — a desktop capture
+    // folded into a device target (or vice versa) must collide, not score
+    // under the other's rotation rules.
+    captureRuntime: DESKTOP_CAPTURE_RUNTIME,
+    viewport: { ...viewport, deviceScaleFactor },
+    headless,
+    theme,
+    settingsShell,
+    actionPlan,
+    coloringPreparation,
+    actions,
+    repeats,
+    samples,
+    // Which frame clocks every sample carries (ADR-0163): a reader tells a
+    // dual-channel capture from a legacy one here, without opening a sample.
+    frameStampEpoch: frameStampEpochOf(samples),
+    summaries,
+    passed,
+  };
+}
+
+export async function runDesktopActions(argv = process.argv.slice(2)) {
+  const { flag, numberFlag, has, port, build } = parsePerfArgs(
+    {
+      extra: [
+        'engine',
+        'url',
+        'viewport',
+        'device-scale-factor',
+        'headed',
+        'actions',
+        'repeats',
+        'label',
+        'output',
+        'report-only',
+        'allow-foreign-build',
+        'theme',
+      ],
+    },
+    argv
+  );
+  const engineName = flag('engine', 'webkit');
+  const engine = ENGINES[engineName];
+  if (!engine) fail(`--engine must be one of ${Object.keys(ENGINES).join(', ')}`);
+  const viewport = resolveViewport(flag('viewport'));
+  const deviceScaleFactor = numberFlag(
+    'device-scale-factor',
+    DEFAULT_DEVICE_SCALE_FACTOR,
+    POSITIVE_NUMBER
+  );
+  const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
+  if (!hasMinimumActionRepeats(repeats)) {
+    fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
+  }
+  const actions = selectedActions(flag('actions'));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
+  const headless = !has('headed');
+  const externalUrl = flag('url');
+  if (has('allow-foreign-build') && !externalUrl) {
+    fail('--allow-foreign-build needs --url= naming the externally served build it allows');
+  }
+  const preview = externalUrl
+    ? { base: new URL(externalUrl).toString(), stop: () => {} }
+    : await buildAndPreview(port, { build });
+  const { base, stop } = preview;
+  // A `--url` capture skips buildAndPreview, which is where the build is normally
+  // proved — and that is the path every campaign cell takes, so without this the
+  // identity assertion covered only the path nobody uses.
+  let servedBuild;
+  if (externalUrl) {
+    await waitForUrl(base, READY_TIMEOUT_MS);
+    servedBuild = await assertServedBuildIsFresh(base, {
+      allowForeignBuild: has('allow-foreign-build'),
+    });
+  } else {
+    servedBuild = await assertServedBuildIsFresh(base);
+  }
+  // A capture reloads the app once per sweep, and an ephemeral WebKit context
+  // does not carry Cache Storage across that reload the way a browser profile
+  // does: with no service worker yet it empties every cache and then fails each
+  // later pack install, and with one it keeps them, so which coloring picker a
+  // sweep met depended on the groups that ran before it. A throwaway profile
+  // gives every sweep a real browser's storage; it starts as empty as the
+  // context it replaces.
+  const profileDir = mkdtempSync(join(tmpdir(), PROFILE_DIR_PREFIX));
+  let context;
+
+  try {
+    context = await engine.launchPersistentContext(profileDir, {
+      ...browserLaunchOptions(engineName, headless),
+      viewport,
+      deviceScaleFactor,
+    });
+    const page = context.pages()[0] ?? (await context.newPage());
+    const client = new PlaywrightWebDriver(page, { useWheelForScroll: true });
+    const execute = (script) => page.evaluate(`(() => {${script}})()`);
+    const originalOrientation = await client.orientation();
+    let settingsShell = null;
+    let actionPlan = null;
+    const samples = [];
+    const expectedLabels = new Set();
+    const coloringPreparation = [];
+    let baselineTheme;
+
+    const executePromise = (expression) => page.evaluate(expression);
+    for (let repeat = 1; repeat <= repeats; repeat++) {
+      const sweepDocument = await loadActionSweepDocument({
+        actions,
+        execute,
+        executePromise,
+        loadDocument: async () => {
+          await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
+          await page.waitForFunction(
+            () => {
+              const canvas = document.querySelector('#drawingCanvas');
+              return !!canvas && canvas.width > 0;
+            },
+            undefined,
+            { timeout: READY_TIMEOUT_MS }
+          );
+        },
+      });
+      coloringPreparation.push({ repeat, ...sweepDocument });
+      logColoringPreparation(sweepDocument);
+      await ensureCampaignTheme(execute, requestedTheme);
+      baselineTheme = await readResolvedTheme(execute);
+      await page.evaluate(actionProbeSource());
+      await sleep(REPEAT_SETTLE_MS);
+      console.log(`\nDesktop action sweep ${repeat}/${repeats}`);
+      const sweep = await runActionSweep({
+        client,
+        sessionId: SESSION_ID,
+        execute,
+        actions,
+        originalOrientation,
+        baselineTheme,
+        listedColoringBooks: sweepDocument.listedColoringBooks,
+      });
+      settingsShell = sweep.settingsShell;
+      actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
+      if (repeat <= WARMUP_REPEATS) {
+        for (const label of sweep.actionPlan.applicableLabels) expectedLabels.add(label);
+      }
+      samples.push(
+        ...sweep.samples.map((sample) => ({
+          ...sample,
+          repeat,
+          warmup: repeat <= WARMUP_REPEATS,
+        }))
+      );
+    }
+
+    const summaries = summarizeActions(samples, expectedLabels, {}, (label) =>
+      rotationFirstFrameNa(DESKTOP_CAPTURE_RUNTIME, label, engineName)
+    );
+    const failures = actionFailures(summaries);
+    const { blockedCoverage, passed } = actionCaptureVerdict({ failures, actionPlan });
+    const output =
+      flag('output') ??
+      join(profilePath('desktop-actions', engineName, flag('label', 'full-suite')), 'actions.json');
+    mkdirSync(dirname(output), { recursive: true });
+    const artifact = desktopActionsArtifact({
+      engineName,
+      base,
+      viewport,
+      deviceScaleFactor,
+      headless,
+      theme: baselineTheme,
+      settingsShell,
+      actionPlan,
+      coloringPreparation,
+      actions: [...actions],
+      repeats,
+      samples,
+      summaries,
+      passed,
+      servedBuild,
+    });
+    writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
+    console.log('\nDesktop discrete action response');
+    console.table(actionRows(summaries));
+    console.log(`\nWrote ${output}`);
+    reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
+    return artifact;
+  } finally {
+    await context?.close();
+    rmSync(profileDir, { recursive: true, force: true });
+    stop();
+  }
+}
+
+if (isMain(import.meta.url)) runMain(runDesktopActions);

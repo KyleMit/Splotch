@@ -1,0 +1,40 @@
+
+> splotch@1.6.0 perf:web:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-desktop-actions.mjs --url=http://127.0.0.1:54835/ --allow-foreign-build --engine=webkit --headed --viewport=1512x982 --device-scale-factor=2 --repeats=4 --report-only --actions=idle,palette,color-picker,brushes,stroke-width,settings,screenshot,ai-waiting,undo,unavailable,clear --output=<rig-evidence>/runs/macos-web-pilot-no-coloring/after/actions.json
+
+
+Desktop action sweep 1/4
+
+Desktop action sweep 2/4
+
+Desktop action sweep 3/4
+
+Desktop action sweep 4/4
+
+Desktop discrete action response
+┌─────────┬────────────────────────────────────┬───────┬────────────┬───────────┬────────────────┬────────────────┬──────────┬──────────┬─────────┬───────────────────┬────────────┬─────────────────┬─────────┐
+│ (index) │ action                             │ runs  │ activation │ first p95 │ ready seen p50 │ ready seen p95 │ post p95 │ post max │ raw max │ scored/raw frames │ actual p95 │ hidden overruns │ verdict │
+├─────────┼────────────────────────────────────┼───────┼────────────┼───────────┼────────────────┼────────────────┼──────────┼──────────┼─────────┼───────────────────┼────────────┼─────────────────┼─────────┤
+│ 0       │ 'idle frame control'               │ '3/4' │ '4/4'      │ 11        │ undefined      │ undefined      │ 18       │ 19       │ 20      │ '72/898'          │ 18         │ 0               │ 'PASS'  │
+│ 1       │ 'change ink color'                 │ '3/4' │ '4/4'      │ 15        │ 2              │ 3              │ 19       │ 20       │ 20      │ '116/116'         │ 19         │ 0               │ 'PASS'  │
+│ 2       │ 'open custom color picker'         │ '3/4' │ '4/4'      │ 12        │ 10             │ 11             │ 19       │ 26       │ 26      │ '135/197'         │ 19         │ 0               │ 'PASS'  │
+│ 3       │ 'select custom color'              │ '3/4' │ '4/4'      │ 15        │ 144            │ 146            │ 19       │ 27       │ 27      │ '74/220'          │ 19         │ 0               │ 'PASS'  │
+│ 4       │ 'open brush menu'                  │ '3/4' │ '4/4'      │ 14        │ 2              │ 2              │ 19       │ 19       │ 19      │ '96/114'          │ 19         │ 0               │ 'PASS'  │
+│ 5       │ 'select crayon brush'              │ '3/4' │ '4/4'      │ 12        │ 2              │ 2              │ 19       │ 19       │ 19      │ '94/114'          │ 19         │ 0               │ 'PASS'  │
+│ 6       │ 'select Magic brush'               │ '3/4' │ '4/4'      │ 15        │ 2              │ 3              │ 19       │ 19       │ 19      │ '93/115'          │ 19         │ 0               │ 'PASS'  │
+│ 7       │ 'select eraser'                    │ '3/4' │ '4/4'      │ 14        │ 2              │ 3              │ 19       │ 19       │ 19      │ '93/114'          │ 19         │ 0               │ 'PASS'  │
+│ 8       │ 'select pen brush'                 │ '3/4' │ '4/4'      │ 16        │ 2              │ 2              │ 19       │ 19       │ 19      │ '93/114'          │ 19         │ 0               │ 'PASS'  │
+│ 9       │ 'open stroke-width menu'           │ '3/4' │ '4/4'      │ 14        │ 2              │ 3              │ 19       │ 22       │ 22      │ '105/114'         │ 19         │ 0               │ 'PASS'  │
+│ 10      │ 'change stroke width'              │ '3/4' │ '4/4'      │ 13        │ 1              │ 2              │ 18       │ 19       │ 19      │ '29/114'          │ 18         │ 0               │ 'PASS'  │
+│ 11      │ 'open Settings'                    │ '3/4' │ '4/4'      │ 15        │ 7              │ 10             │ 19       │ 24       │ 24      │ '133/196'         │ 19         │ 0               │ 'PASS'  │
+│ 12      │ 'close Settings'                   │ '3/4' │ '4/4'      │ 12        │ 54             │ 55             │ 19       │ 19       │ 19      │ '117/204'         │ 19         │ 0               │ 'PASS'  │
+│ 13      │ 'save screenshot'                  │ '3/4' │ '4/4'      │ 11        │ 108            │ 109            │ 19       │ 19       │ 19      │ '370/556'         │ 19         │ 0               │ 'PASS'  │
+│ 14      │ 'show AI waiting print'            │ '3/4' │ '4/4'      │ 15        │ 2              │ 2              │ 19       │ 19       │ 19      │ '195/195'         │ 19         │ 0               │ 'PASS'  │
+│ 15      │ 'finish AI waiting print'          │ '3/4' │ '4/4'      │ 4         │ 53             │ 108            │ 19       │ 21       │ 21      │ '984/1091'        │ 19         │ 0               │ 'PASS'  │
+│ 16      │ 'undo latest stroke'               │ '3/4' │ '4/4'      │ 13        │ 2              │ 3              │ 19       │ 19       │ 19      │ '96/195'          │ 19         │ 0               │ 'PASS'  │
+│ 17      │ 'tap unavailable undo'             │ '3/4' │ '4/4'      │ 15        │ 1              │ 2              │ 19       │ 19       │ 19      │ '133/196'         │ 19         │ 0               │ 'PASS'  │
+│ 18      │ 'clear drawing'                    │ '3/4' │ '4/4'      │ 24        │ 540            │ 555            │ 19       │ 23       │ 23      │ '206/292'         │ 19         │ 0               │ 'PASS'  │
+│ 19      │ 'clear drawing on a coloring page' │ '3/4' │ '4/4'      │ 23        │ 534            │ 538            │ 19       │ 28       │ 28      │ '205/290'         │ 19         │ 0               │ 'PASS'  │
+└─────────┴────────────────────────────────────┴───────┴────────────┴───────────┴────────────────┴────────────────┴──────────┴──────────┴─────────┴───────────────────┴────────────┴─────────────────┴─────────┘
+
+Wrote <rig-evidence>/runs/macos-web-pilot-no-coloring/after/actions.json

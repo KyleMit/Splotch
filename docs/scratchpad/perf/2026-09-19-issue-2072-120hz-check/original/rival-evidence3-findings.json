@@ -1,0 +1,5 @@
+{
+  "summary": "OK to post. Both round 2 defects are resolved: the reproducibility promise now explicitly excludes phase medians, and the t3 explanation correctly identifies twenty additional 25.0 ms intervals adding 168.0 ms, raising excess from 25.5 to 193.5 ms.\n\nI independently computed both maxima-in-beats and all three phase sensitivity excesses from compact.json for all 10 runs. All 50 values match the supplementary table and scored-cadence.json. The derivability claim is true: both maxima exceed 20 ms in every run, and the sensitivity thresholds are 24.9 or 25.05 ms, so omitted intervals cannot affect these results.\n\nRe-running reproduce.mjs matches the per-run and comparison tables. The embedded scripts and compact data match their evidence files, and the compact data’s published SHA-256 matches. No further regression found within this final verification’s scope.",
+  "findings": [],
+  "unverified": []
+}

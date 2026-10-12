@@ -1,0 +1,109 @@
+---
+name: create-adr
+description: Document a new architectural decision as an ADR in docs/adrs/. Use when a significant decision was just made or confirmed — one that chose an approach over real alternatives, has non-obvious consequences, or encodes a constraint a future contributor would want to understand.
+---
+
+# Create ADR
+
+Document a new architectural decision as an ADR in `docs/adrs/`.
+
+## When to create an ADR
+
+An ADR is warranted when a decision:
+
+* Chose one approach over meaningful alternatives (not just "we used the default")
+* Has non-obvious consequences that a future contributor would want to understand
+* Involves a tradeoff that could be revisited (so the original reasoning should be recorded)
+* Fixes a non-obvious constraint (a bug workaround, a platform quirk, a security requirement)
+
+Skip trivial implementation details, stylistic choices, and decisions that are self-evident from
+reading the code.
+
+## Tooling carve-outs
+
+Agent workflow, skill, and harness decisions belong in the relevant skill note or a `NOTES.md`
+beside shared tooling, not a numbered ADR. Existing tooling ADRs remain historical records.
+
+Decisions about the **asset-generation pipeline** (line art, coloring fills, the tools under
+`tools/asset-gen/`) do NOT become numbered ADRs — they live as un-numbered decision records in
+`tools/asset-gen/docs/` (same Context/Decision/Consequences structure, a descriptive kebab-case
+filename, no number). Everything below about numbering and the index applies only to product, app,
+and infrastructure decisions in `docs/adrs/`.
+
+## Process
+
+1. **Identify the decision.** If the user named it, use that. Otherwise infer it from the current
+   conversation, recent git log (`git log --oneline -20`), or the code change being made.
+
+2. **Check for duplicates.** Read `docs/adrs/README.md` and scan existing ADR titles. If the
+   decision is already covered, update the existing ADR instead of creating a new one.
+
+3. **Verify against current code.** Before writing, confirm that the decision is actually reflected
+   in the codebase — read the relevant file(s) and grep for the key patterns. Do not document a
+   decision that has already been reversed.
+
+4. **Determine the next ADR number.** Identify `<base-branch>`, the branch this work will merge into
+   (`main` for a direct PR, its parent branch for a stack). Fetch its current remote state with
+   `git fetch origin +refs/heads/<base-branch>:refs/remotes/origin/<base-branch>` and use
+   `origin/<base-branch>` as `<base-ref>`. Find the highest four-digit ADR prefix across both
+   `docs/adrs/` and `git ls-tree --name-only <base-ref>:docs/adrs`; if the fetch or lookup fails,
+   stop and fix the ref rather than falling back to the working tree alone. Add one and zero-pad to
+   four digits. Do not count files: a gap — such as the one left by moved records `0053`–`0056` —
+   leaves the count below the highest number in use, and counting can reissue a number that already
+   exists. This matches the canonical `nextAdrNumber()` used by
+   `npm run check:adrs -- --base=<base-ref>`, which unions the branch with its base before picking
+   and rejects a working-tree number that collides with its merge target.
+
+5. **Write the ADR file** at `docs/adrs/NNNN-kebab-case-title.md` using the template below.
+
+6. **Update the index.** `docs/adrs/README.md` is a curated, tiered index — a "Start here" tier,
+   area-grouped sections for the remaining Active ADRs, and a Historical section for
+   Superseded/Rejected/Moved records. Slot the new row into the matching area section, in numeric
+   order within that section. New ADRs default to their area section — only promote one to "Start
+   here" when the decision is genuinely load-bearing for the whole project (rare). Every ADR appears
+   exactly once in the index. The integrity check recognizes two canonical entry shapes: an
+   unindented Start here bullet whose leading link is bold
+   (`* **[NNNN — Title](NNNN-kebab-title.md)**`), or a section table row whose first cell is
+   `[NNNN](NNNN-kebab-title.md)`. Status text, summaries, and other cross-links do not count as the
+   record's index entry, but every local ADR link label must still match its target filename.
+
+## ADR template
+
+```markdown
+# ADR-NNNN: Title
+
+**Status:** Active **Date:** YYYY-MM (approximate is fine)
+
+## Context
+
+What situation or constraint made this decision necessary? What alternatives were considered and why
+were they inadequate? Name the alternatives explicitly — "we considered X and Y" is more useful than
+a blank "we needed Z."
+
+## Decision
+
+What was decided, and exactly how is it implemented? Cite the key files/lines. If the decision has
+gotchas or non-obvious invariants, call them out here (not in Consequences).
+
+## Consequences
+
+Use `\+` / `−` bullets — escape the plus (a bare `+` after the list marker parses as a nested list
+and dprint restructures it, ADR-0057) and use U+2212 `−` for minus. Be honest about the downsides —
+an ADR with only upsides is not credible and not useful.
+```
+
+## Status values
+
+* **Active** — in force right now
+* **Superseded by ADR-NNNN** — replaced; link to the successor
+* **Deprecated** — no longer in force but not replaced by a specific decision
+
+When an ADR's status changes to Superseded, Rejected, or Deprecated, also move its row in
+`docs/adrs/README.md` to the Historical section (keep the supersession links intact). Never
+renumber, rename, or delete the ADR file itself — the sole exception is a number issued twice by
+mistake (see `docs/adrs/README.md`).
+
+## Output
+
+After creating the ADR, print a one-paragraph summary of what was documented and why it merited an
+ADR rather than just a code comment.

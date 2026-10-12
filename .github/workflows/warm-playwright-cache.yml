@@ -1,0 +1,52 @@
+# Actions cache entries saved by a pull-request run are scoped to that PR's merge ref —
+# sibling PRs cannot restore them. Only caches saved on the default branch are visible
+# to every PR. So when a cache key rotates (a runner-image update rotates the apt deb
+# key roughly weekly; a Playwright bump rotates both keys), each open PR would pay the
+# full network install itself unless main repopulates the shared entry first. This
+# workflow is that repopulation: it runs setup-playwright for each browser set so the
+# default-branch caches exist before PR runs ask for them. On a warm cache it is a
+# ~1-minute no-op (restore + offline dpkg + dry-run, no save).
+#
+# The daily schedule tracks runner-image rotations, which land on GitHub's clock, not
+# this repo's. Playwright bumps are covered by the push trigger: the lockfile path
+# filter fires exactly when a merge changes dependency versions.
+#
+# Tests also warms these caches incidentally — it runs on every push to main and its
+# jobs save on a key miss — so on an active day this workflow mostly no-ops. Its
+# marginal coverage, the reason it is not redundant with Tests: a rotation that lands
+# when nothing is merging (weekends and quiet stretches, when Dependabot still opens
+# PRs against the cold key), a main Tests run that goes red after setup (the cache
+# post step saves only when the job succeeds), and the head start of a ~1-minute
+# setup-only job over a ~4-minute test run.
+name: Warm Playwright caches
+
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  push:
+    branches: [main]
+    paths:
+      - pnpm-lock.yaml
+      - .github/actions/setup-playwright/action.yml
+      - .github/workflows/warm-playwright-cache.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    name: Warm ${{ matrix.browsers }} caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        browsers: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: ${{ matrix.browsers }}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="AppTheme.Base">
+        <!-- WebView reads this API 29 framework attribute to resolve prefers-color-scheme. -->
+        <item name="android:isLightTheme">@bool/app_theme_is_light</item>
+    </style>
+</resources>

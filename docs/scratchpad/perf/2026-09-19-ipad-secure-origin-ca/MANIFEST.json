@@ -1,0 +1,128 @@
+[
+  {
+    "path": "runs/c1-ipad-ca-ai-waiting.json.gz",
+    "sha256": "35532b84eee302a603e8631f2d414dad96a4a79fde6f7b6c52489ba7625f6809",
+    "original": "perf-profiles/secure-origin-r2/ipad-ca-ai-waiting.json",
+    "originalSha256": "718b834ebc3382ba5a612783af0028815f5885a0464bca959375fe4b40d70af4",
+    "transform": "redact+gzip"
+  },
+  {
+    "path": "runs/n1-ipad-lan-http-negative.json.gz",
+    "sha256": "9043a89fc130ee2264faeef543da86fb0c5069868c01934b6491a7e6b3b96425",
+    "original": "perf-profiles/secure-origin-r2/ipad-lan-http-negative.json",
+    "originalSha256": "c4a6dee495b5f5f191b3b1a5eb96d0431d532553999c8e3cc090a11d58d85997",
+    "transform": "redact+gzip"
+  },
+  {
+    "path": "controls/c1-ipad-ca-ai-waiting.log.txt",
+    "sha256": "0732b637269078c3278fc9baac9aa551450e87aa548b66bea32887db33e330db",
+    "original": "perf-profiles/secure-origin-r2/ipad-ca-ai-waiting.log",
+    "originalSha256": "cb0b8a3c25219f9f3bf4ef383415b229520b39e923e3532e56f84ed490ab0777",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/n1-ipad-lan-http-negative.log.txt",
+    "sha256": "568585b59be474d17e22185b1c7e3b8b2c9423a10f8006406b8c3b461784f74c",
+    "original": "perf-profiles/secure-origin-r2/ipad-lan-http-negative.log",
+    "originalSha256": "8acb557f056a7285c24478b73dfb419f28324078e0746fdab013c2b21bb80dfc",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/route-probes-ca2.jsonl.txt",
+    "sha256": "6be4e855de1323ffe21d4e5b2daddfe76b0b1355e9282e04b0ea6f1bb3a66420",
+    "original": "perf-profiles/secure-origin-r2/route-probes-ca2.jsonl",
+    "originalSha256": "2c2a03c663169905ec40f1c3b23f0defe0082db81e43dab3c349771ea49cc067",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/route-probes-first-ca-and-tunnel.jsonl.txt",
+    "sha256": "740be70fd83e224597617c6a393061cede8965c677abfc8af31ae64330b63c6a",
+    "original": "perf-profiles/secure-origin-r2/route-probes.jsonl",
+    "originalSha256": "c9993927feb712c8a28909cd28f4b359064eda43f2134c2dd5c12622cdf70129",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/mac-trust-checks.txt",
+    "sha256": "17cafa13c86bede81e2b28bad9dadedf9dc65fdffa069b6e0659c3c3091a4960",
+    "original": "perf-profiles/secure-origin-r2/mac-trust-checks.txt",
+    "originalSha256": "882c176fa1a5c29c72664e7566eb5b2827ddeb2f49ef9c8393b7907a54881a99",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/front-tls-check.txt",
+    "sha256": "ee7d09b797e1b04036f40b62d5e5df960cb3501369cb083f1664cff5b25fac5c",
+    "original": "perf-profiles/secure-origin-r2/front-tls-check-v1.txt",
+    "originalSha256": "ee7d09b797e1b04036f40b62d5e5df960cb3501369cb083f1664cff5b25fac5c",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/front-local-check.txt",
+    "sha256": "3e45d32c3cf35679a237c9c77f9059f4724de8e594b4719b1442692ec22a3372",
+    "original": "perf-profiles/secure-origin-r2/front-local-check.txt",
+    "originalSha256": "3e45d32c3cf35679a237c9c77f9059f4724de8e594b4719b1442692ec22a3372",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/front-public-check-1.txt",
+    "sha256": "f9b25a7ef0e77e6811458347f6906fd47fd175f4604665d69d87cba20706620b",
+    "original": "perf-profiles/secure-origin-r2/front-public-check.txt",
+    "originalSha256": "f9b25a7ef0e77e6811458347f6906fd47fd175f4604665d69d87cba20706620b",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/front-public-check-2.txt",
+    "sha256": "21aa997ef920ad6f752260beb74a1d953eee27466921839d3f04e046a33b81ed",
+    "original": "perf-profiles/secure-origin-r2/front-public-check-2.txt",
+    "originalSha256": "21aa997ef920ad6f752260beb74a1d953eee27466921839d3f04e046a33b81ed",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/front-ca-requests.tsv.txt",
+    "sha256": "55820a1a4435ce5b4bea3e09834d16fc6f0f3ded723d65c6531cc89b25577915",
+    "original": "perf-profiles/secure-origin-r2/front-54785-requests.tsv",
+    "originalSha256": "55820a1a4435ce5b4bea3e09834d16fc6f0f3ded723d65c6531cc89b25577915",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/front-tunnel-requests.tsv.txt",
+    "sha256": "e040f9e8e694998b3c069e57e586cc61ac847da98d312c74ff05e4743508c637",
+    "original": "perf-profiles/secure-origin-r2/front-54788-tunnel-requests.tsv",
+    "originalSha256": "e040f9e8e694998b3c069e57e586cc61ac847da98d312c74ff05e4743508c637",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/preflight.log.txt",
+    "sha256": "937caaf92dbefcee18f0d53870e7c1affd91fc18454042271e340bacc63220d0",
+    "original": "perf-profiles/secure-origin-r2/preflight.log",
+    "originalSha256": "4c57e6e43e16640b080b4036ff3553d4060f84e6002bf4c022df42cdab3a2817",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/preflight-ios-fresh-appium.log.txt",
+    "sha256": "a0cffa018425594639fe43f192cbd1003682ddcb57ef50adf800ac8fb41fa6e0",
+    "original": "perf-profiles/secure-origin-r2/preflight-ios-4727.log",
+    "originalSha256": "37513bf343b32c486572283641d1c6c3dbe391c36495b73a9493b5ee20a3ff4b",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/discovery.log.txt",
+    "sha256": "8a8827fa11819a1e9ce30d4a799b1017f9205f0ea9af4b38e195de43a66237a1",
+    "original": "perf-profiles/secure-origin-r2/discovery.log.txt",
+    "originalSha256": "6b32628a1642d41f4faf394306d5a4c46f47aac48d25c7b15cc21f41c9ea860e",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/wda-relaunch-loop.log.txt",
+    "sha256": "81af1f2ff1f1f055c0e7c3d68a097eb75c20e876fc8f6f1338d3da345fccb4bf",
+    "original": "perf-profiles/secure-origin-r2/wda-relaunch-loop.log",
+    "originalSha256": "6a40ea1869567badf999a5b274e4a95279388831d2e5d476a5603b1e9db26087",
+    "transform": "redact"
+  },
+  {
+    "path": "controls/perf-build.log.txt",
+    "sha256": "a205fabe0982fd1d3eb42203678b9ae78e38c9b8d20b6291c87f648a203cb208",
+    "original": "perf-profiles/secure-origin-r2/perf-build.log",
+    "originalSha256": "a205fabe0982fd1d3eb42203678b9ae78e38c9b8d20b6291c87f648a203cb208",
+    "transform": "redact"
+  }
+]

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Run Rival Agent'
+  short_description: 'Pair this session with a Claude rival agent for an independent review'
+  default_prompt: 'Use $run-rival-agent to get an independent Claude review of this work, serving its broker requests as the native handler.'

@@ -1,0 +1,316 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { tick } from 'svelte';
+import { themes } from '$lib/design/tokens';
+import { THEME_COLORS } from '../theme';
+import { REDUCE_MOTION_ATTRIBUTE, REDUCED_MOTION_QUERY } from '../platform/reducedMotion';
+import * as themeModule from '../theme';
+import { createAppearance, type AppearanceState } from './appearance.svelte';
+import { BLACK_INK, WHITE_INK, createColors } from './colors.svelte';
+import { createSettings, type SettingsState } from './settings.svelte';
+import { createTool } from './tool.svelte';
+
+const THEME_COLOR_DARK = themes.dark.appBg;
+
+// One controllable prefers-color-scheme query, recording every subscription so
+// the test can prove exactly one listener is registered per install.
+type ChangeHandler = (e: { matches: boolean }) => void;
+const query = vi.hoisted(() => ({
+  matches: false,
+  handlers: [] as ChangeHandler[],
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+}));
+
+// The prefers-reduced-motion query, kept apart so an OS theme switch and an OS
+// motion switch can be emitted independently.
+const motionQuery = vi.hoisted(() => ({
+  matches: false,
+  handlers: [] as ChangeHandler[],
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+}));
+
+function installMatchMedia() {
+  for (const list of [query, motionQuery]) {
+    list.matches = false;
+    list.handlers = [];
+    list.addEventListener = vi.fn((_type: string, cb: ChangeHandler) => list.handlers.push(cb));
+    list.removeEventListener = vi.fn();
+  }
+  const factory = vi.fn((wanted: string) =>
+    wanted === REDUCED_MOTION_QUERY ? motionQuery : query
+  );
+  window.matchMedia = factory as unknown as typeof window.matchMedia;
+  return factory;
+}
+
+function emitSystemChange(matches: boolean) {
+  query.matches = matches;
+  query.handlers.forEach((cb) => cb({ matches }));
+}
+
+function emitSystemMotionChange(matches: boolean) {
+  motionQuery.matches = matches;
+  motionQuery.handlers.forEach((cb) => cb({ matches }));
+}
+
+function motionAttributeStamped() {
+  return document.documentElement.hasAttribute(REDUCE_MOTION_ATTRIBUTE);
+}
+
+let installed: AppearanceState | null = null;
+
+// Builds the settings → appearance pair on the query installMatchMedia() left in
+// place and installs it, the way the module singleton does at load.
+async function freshAppearance(): Promise<{
+  settings: SettingsState;
+  appearance: AppearanceState;
+}> {
+  const settings = createSettings(createTool());
+  const appearance = createAppearance(settings, createColors());
+  appearance.install();
+  installed = appearance;
+  await tick();
+  return { settings, appearance };
+}
+
+function themeColorContent() {
+  return document.querySelector('meta[name="theme-color"]')?.getAttribute('content');
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  document.head.innerHTML = `<meta name="theme-color" content="${THEME_COLORS.light}" />`;
+});
+
+afterEach(() => {
+  installed?.dispose();
+  installed = null;
+  document.documentElement.removeAttribute(REDUCE_MOTION_ATTRIBUTE);
+  vi.restoreAllMocks();
+});
+
+describe('single prefers-color-scheme source', () => {
+  it('hands its resolved theme to the colors store it was built with', () => {
+    installMatchMedia();
+    const settings = createSettings(createTool());
+    const colors = createColors();
+    installed = createAppearance(settings, colors);
+    installed.install();
+    colors.selectPaletteColor(BLACK_INK);
+
+    emitSystemChange(true);
+    expect(colors.activeColor).toBe(WHITE_INK);
+
+    settings.setTheme('light');
+    expect(colors.activeColor).toBe(BLACK_INK);
+  });
+
+  it('does not repaint the theme-color meta when the active swatch changes', async () => {
+    installMatchMedia();
+    const colors = createColors();
+    const writeMeta = vi.spyOn(themeModule, 'updateThemeColorMeta');
+    installed = createAppearance(createSettings(createTool()), colors);
+    installed.install();
+    await tick();
+    expect(writeMeta).toHaveBeenCalledTimes(1);
+
+    colors.selectPaletteColor('#ff0000');
+    await tick();
+    expect(writeMeta).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens exactly one media-query subscription per install', async () => {
+    const matchMedia = installMatchMedia();
+    const { appearance } = await freshAppearance();
+    appearance.install();
+
+    const darkQueries = matchMedia.mock.calls.filter(([q]) => q === '(prefers-color-scheme: dark)');
+    expect(darkQueries).toHaveLength(1);
+    expect(query.addEventListener).toHaveBeenCalledTimes(1);
+    expect(query.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+
+  it('one OS change event updates BOTH resolvedTheme() and the theme-color meta', async () => {
+    installMatchMedia();
+    const { appearance } = await freshAppearance();
+
+    // Default setting is 'system' with the OS reporting light.
+    expect(appearance.resolvedTheme()).toBe('light');
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
+
+    emitSystemChange(true);
+    await tick();
+
+    expect(appearance.resolvedTheme()).toBe('dark');
+    expect(themeColorContent()).toBe(THEME_COLOR_DARK);
+
+    emitSystemChange(false);
+    await tick();
+
+    expect(appearance.resolvedTheme()).toBe('light');
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
+  });
+
+  it('an explicit setting change repaints the meta from the same reactive source', async () => {
+    installMatchMedia();
+    const { settings, appearance } = await freshAppearance();
+
+    settings.setTheme('dark');
+    await tick();
+    expect(appearance.resolvedTheme()).toBe('dark');
+    expect(themeColorContent()).toBe(THEME_COLOR_DARK);
+
+    settings.setTheme('light');
+    await tick();
+    expect(appearance.resolvedTheme()).toBe('light');
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
+  });
+
+  it('seeds systemDark from the query at install so a dark OS resolves before any event', async () => {
+    installMatchMedia();
+    query.matches = true;
+    const { appearance } = await freshAppearance();
+
+    expect(appearance.resolvedTheme()).toBe('dark');
+    expect(themeColorContent()).toBe(THEME_COLOR_DARK);
+  });
+
+  it('stops following the OS and the setting once disposed', async () => {
+    installMatchMedia();
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.dispose();
+    expect(query.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+
+    settings.setTheme('dark');
+    await tick();
+    expect(themeColorContent()).toBe(THEME_COLORS.light);
+  });
+});
+
+describe('setResolvedTheme', () => {
+  it('requesting the appearance the dark OS already renders restores system', async () => {
+    installMatchMedia();
+    query.matches = true;
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('dark');
+    await tick();
+
+    expect(settings.theme).toBe('system');
+  });
+
+  it('requesting the appearance opposite a dark OS pins an explicit choice', async () => {
+    installMatchMedia();
+    query.matches = true;
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('light');
+    await tick();
+
+    expect(settings.theme).toBe('light');
+  });
+
+  it('requesting the appearance opposite a light OS pins an explicit choice', async () => {
+    installMatchMedia();
+    query.matches = false;
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('dark');
+    await tick();
+
+    expect(settings.theme).toBe('dark');
+  });
+
+  it('requesting the appearance the light OS already renders restores system', async () => {
+    installMatchMedia();
+    query.matches = false;
+    const { settings, appearance } = await freshAppearance();
+
+    appearance.setResolvedTheme('light');
+    await tick();
+
+    expect(settings.theme).toBe('system');
+  });
+});
+
+describe('reduced motion', () => {
+  it('opens exactly one prefers-reduced-motion subscription per install', async () => {
+    const matchMedia = installMatchMedia();
+    const { appearance } = await freshAppearance();
+    appearance.install();
+
+    expect(matchMedia.mock.calls.filter(([q]) => q === REDUCED_MOTION_QUERY)).toHaveLength(1);
+    expect(motionQuery.addEventListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('seeds the OS answer at install and stamps it before any event', async () => {
+    installMatchMedia();
+    motionQuery.matches = true;
+    const { appearance } = await freshAppearance();
+
+    expect(appearance.reducedMotion()).toBe(true);
+    expect(motionAttributeStamped()).toBe(true);
+  });
+
+  it('one OS change updates BOTH reducedMotion() and the attribute in system mode', async () => {
+    installMatchMedia();
+    const { appearance } = await freshAppearance();
+    expect(motionAttributeStamped()).toBe(false);
+
+    emitSystemMotionChange(true);
+    await tick();
+    expect(appearance.reducedMotion()).toBe(true);
+    expect(motionAttributeStamped()).toBe(true);
+
+    emitSystemMotionChange(false);
+    await tick();
+    expect(motionAttributeStamped()).toBe(false);
+  });
+
+  it('an explicit preference overrides the OS in both directions', async () => {
+    installMatchMedia();
+    const { settings, appearance } = await freshAppearance();
+
+    settings.setReduceMotion('reduce');
+    await tick();
+    expect(motionAttributeStamped()).toBe(true);
+
+    settings.setReduceMotion('full');
+    emitSystemMotionChange(true);
+    await tick();
+    expect(appearance.reducedMotion()).toBe(false);
+    expect(motionAttributeStamped()).toBe(false);
+  });
+
+  it('stops following the OS once disposed', async () => {
+    installMatchMedia();
+    const { appearance } = await freshAppearance();
+    appearance.dispose();
+
+    expect(motionQuery.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+});
+
+describe('setReducedMotion', () => {
+  it.each([
+    { os: false, wanted: true, stored: 'reduce' },
+    { os: false, wanted: false, stored: 'system' },
+    { os: true, wanted: true, stored: 'system' },
+    { os: true, wanted: false, stored: 'full' },
+  ] as const)(
+    'with the OS at $os, requesting $wanted stores $stored',
+    async ({ os, wanted, stored }) => {
+      installMatchMedia();
+      motionQuery.matches = os;
+      const { settings, appearance } = await freshAppearance();
+
+      appearance.setReducedMotion(wanted);
+      await tick();
+
+      expect(settings.reduceMotion).toBe(stored);
+      expect(appearance.reducedMotion()).toBe(wanted);
+    }
+  );
+});

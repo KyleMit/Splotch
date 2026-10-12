@@ -1,0 +1,372 @@
+// Shared wiring for the app's native <dialog> modals. Five dialogs all need the
+// same scaffolding: open/close the dialog in response to a reactive flag, animate
+// it out from the button that opened it (--origin-x/y), dismiss it when the
+// backdrop is tapped (swallowing that tap so it never reaches the drawing canvas
+// underneath), and re-sync the flag when the dialog is closed via Esc. This action
+// owns all of that; each component supplies only its reactive options.
+//
+// Usage:
+//   <dialog use:modalDialog={() => ({ open: ui.fooOpen, origin: ui.fooOrigin,
+//                                     onRequestClose: closeFoo })}>
+//
+// The argument is a *getter* — the action reads it inside a $effect, so any runes
+// it touches become reactive dependencies.
+//
+// Closing plays an exit before the dialog leaves the top layer: the card flies
+// back toward its opener (or sinks in place with no opener), and `close` fires
+// only once that exit has finished. waitForDialogRetirement resolves on it.
+//
+// Options:
+//   open            (required) whether the dialog should be shown.
+//   onRequestClose  called to dismiss — should flip `open` to false.
+//                   Invoked on a backdrop tap and on an Esc close.
+//   origin          {x, y} screen point to fly in from; omit for no fly-in.
+//   onOpen          side-effect fired just before showModal() on each open.
+//   onClose         side-effect fired on the dialog's `close` event (Esc and
+//                   programmatic close alike).
+//   allowDismiss    () => boolean gate for *both* backdrop tap and Esc. When it
+//                   returns false the dismissal is blocked (the backdrop tap is
+//                   still swallowed; Esc is preventDefault'd).
+//   blockBackdropAt (x, y) => boolean positional veto for backdrop dismissal only:
+//                   return true to swallow a tap in that region without dismissing.
+//
+// On each open the action also arms a short-lived launch dead zone around
+// `origin` (see launchGuard) that swallows every tap and click at the
+// just-vacated button spot — backdrop AND dialog content alike. That covers a
+// toddler's repeat taps (which would dismiss the modal they just opened) and
+// the opening tap's own trailing synthesized click (which would activate
+// whatever content painted under the finger — issue #308).
+import { untrack } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
+import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
+import type { Origin } from '$lib/state/modal.svelte';
+import { stampMotionAtStart } from '$lib/platform/reducedMotion';
+
+interface ModalOptions {
+  open: boolean;
+  onRequestClose: () => void;
+  origin?: Origin | null;
+  onOpen?: () => void;
+  onClose?: () => void;
+  allowDismiss?: () => boolean;
+  blockBackdropAt?: (x: number, y: number) => boolean;
+}
+
+// Absent gate means dismissal is allowed.
+function dismissAllowed(o: ModalOptions) {
+  return o.allowDismiss?.() !== false;
+}
+
+/** What a dismissal request did: closed the dialog, or was refused while it stays up. */
+export type ModalDismissal = 'dismissed' | 'refused';
+
+interface OpenModal {
+  node: HTMLDialogElement;
+  requestDismiss: () => ModalDismissal;
+  closing: boolean;
+}
+
+interface ModalStackObserver {
+  opened: (node: HTMLDialogElement) => void;
+  closing: (node: HTMLDialogElement) => void;
+}
+
+// The top layer is already the app's modal stack — showModal() order is paint
+// order and the topmost dialog is the only one not inert — but the platform
+// offers no way to read that order back. Each action records its own
+// showModal() here and leaves on close, so this mirrors the top layer exactly.
+// Module-level on purpose: a document has one top layer.
+const openModals: OpenModal[] = [];
+const modalStackObservers = new SvelteSet<ModalStackObserver>();
+
+export function observeModalStack(observer: ModalStackObserver): () => void {
+  modalStackObservers.add(observer);
+  for (const entry of openModals) observer.opened(entry.node);
+  return () => modalStackObservers.delete(observer);
+}
+
+/**
+ * Ask the topmost open modal to dismiss itself the way a backdrop tap would:
+ * through its own `onRequestClose`, behind its `allowDismiss` gate. Returns
+ * null when no modal is open. A dialog already retiring after its own close
+ * refuses, so a request racing that retirement cannot reach the dialog beneath.
+ */
+export function dismissTopModal(): ModalDismissal | null {
+  return openModals.at(-1)?.requestDismiss() ?? null;
+}
+
+function forgetOpenModal(node: HTMLDialogElement) {
+  const index = openModals.findIndex((entry) => entry.node === node);
+  if (index !== -1) openModals.splice(index, 1);
+}
+
+// Observers are told from inside a dialog's effect. Neither the observer set
+// nor what an observer reads (the web Back handler reads page.state) may become
+// that effect's dependency, or every later change to either would re-run the
+// dialog's open/close logic.
+function notifyModalStackObservers(change: keyof ModalStackObserver, node: HTMLDialogElement) {
+  untrack(() => {
+    for (const observer of modalStackObservers) observer[change](node);
+  });
+}
+
+function noticeModalClosing(node: HTMLDialogElement) {
+  const entry = openModals.find((candidate) => candidate.node === node);
+  if (!entry || entry.closing) return;
+  entry.closing = true;
+  notifyModalStackObservers('closing', node);
+}
+
+// The class that plays a dialog's exit (app.css `.closing` rules). The dialog
+// stays open underneath it until the exit finishes, then closes.
+export const DIALOG_CLOSING_CLASS = 'closing';
+
+// How far past its own declared length an exit may run before the dialog closes
+// anyway. A dropped frame or a throttled background tab can hold `finished` back;
+// a stuck exit would otherwise strand a dialog that state already closed.
+const EXIT_GUARD_FACTOR = 1.5;
+
+export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
+  if (!node.open) return Promise.resolve();
+  return new Promise((resolve) => {
+    let frame = 0;
+    let timer: number | undefined;
+    const settle = () => {
+      node.removeEventListener('close', settle);
+      cancelAnimationFrame(frame);
+      if (timer !== undefined) clearTimeout(timer);
+      resolve();
+    };
+    const scheduleFallback = () => {
+      frame = requestAnimationFrame(() => {
+        timer = window.setTimeout(() => {
+          if (node.open && node.classList.contains(DIALOG_CLOSING_CLASS)) {
+            scheduleFallback();
+            return;
+          }
+          settle();
+        });
+      });
+    };
+    node.addEventListener('close', settle, { once: true });
+    scheduleFallback();
+  });
+}
+
+function afterNextPaint(): { done: Promise<void>; cancel: () => void } {
+  let timer: number | undefined;
+  let frame = 0;
+  const done = new Promise<void>((resolve) => {
+    frame = requestAnimationFrame(() => {
+      timer = window.setTimeout(resolve);
+    });
+  });
+  return {
+    done,
+    cancel: () => {
+      cancelAnimationFrame(frame);
+      if (timer !== undefined) clearTimeout(timer);
+    },
+  };
+}
+
+// Resolves when every animation on the dialog itself has finished — its exit —
+// or when the guard lapses. A cancelled exit (the dialog reopening under it)
+// rejects `finished`, which is an ending too. A dialog with no running
+// animation still waits one painted frame, so the inert content is on screen
+// before the close.
+function exitFinished(node: HTMLDialogElement): { done: Promise<void>; cancel: () => void } {
+  const exits = node.getAnimations();
+  const longestMs = Math.max(
+    0,
+    ...exits.map((animation) => Number(animation.effect?.getComputedTiming().endTime) || 0)
+  );
+  if (exits.length === 0 || !Number.isFinite(longestMs)) return afterNextPaint();
+  let timer: number | undefined;
+  const done = new Promise<void>((resolve) => {
+    timer = window.setTimeout(resolve, longestMs * EXIT_GUARD_FACTOR);
+    void Promise.all(exits.map((animation) => animation.finished.catch(() => undefined))).then(() =>
+      resolve()
+    );
+  });
+  return { done, cancel: () => clearTimeout(timer) };
+}
+
+function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions) {
+  const contentRoots = [...node.children].filter(
+    (child): child is HTMLElement => child instanceof HTMLElement
+  );
+  const initiallyInert = new Map(contentRoots.map((root) => [root, root.hasAttribute('inert')]));
+  // The card stays on screen while it leaves, so it must stop taking input the
+  // moment it starts to.
+  for (const root of contentRoots) {
+    root.inert = true;
+    root.style.pointerEvents = 'none';
+  }
+  stampMotionAtStart(node);
+  node.classList.add(DIALOG_CLOSING_CLASS);
+  const exit = exitFinished(node);
+  let abandoned = false;
+  void exit.done.then(() => {
+    if (abandoned || getOptions().open || !node.open) return;
+    node.close();
+    for (const root of contentRoots) root.style.visibility = 'hidden';
+  });
+  return () => {
+    abandoned = true;
+    exit.cancel();
+    // Dropping the class on a dialog still open swaps its exit back for the
+    // fly-in, which restarts from its first frame rather than resuming mid-exit.
+    node.classList.remove(DIALOG_CLOSING_CLASS);
+    for (const root of contentRoots) {
+      if (!initiallyInert.get(root)) root.inert = false;
+      root.style.removeProperty('pointer-events');
+      root.style.removeProperty('visibility');
+    }
+  };
+}
+
+export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOptions) {
+  function isInsideDialog(x: number, y: number) {
+    const r = node.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }
+
+  function onPointerDown(e: PointerEvent) {
+    // Within the launch window, a tap where the opening button sat is a stray
+    // toddler repeat — swallow it whether it landed on the backdrop or on
+    // content that painted under the finger (capture phase, so content
+    // handlers never see it).
+    if (isPointInLaunchZone(e.clientX, e.clientY)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    // A dialog may deliberately render a top-layer control outside its own
+    // border box. This handler captures the event before the control sees it,
+    // so treating it as a backdrop tap would swallow it — it is content.
+    if (e.target !== node) return;
+    // Taps on the content fall through to the dialog's own controls.
+    if (isInsideDialog(e.clientX, e.clientY)) return;
+    // Tap landed on the backdrop. Always swallow it so it can't leak to the
+    // canvas underneath, then decide whether it also dismisses. Only the
+    // primary button dismisses (ADR-0002).
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.button !== 0) return;
+    const o = getOptions();
+    if (o.blockBackdropAt?.(e.clientX, e.clientY)) return;
+    if (!dismissAllowed(o)) return;
+    o.onRequestClose();
+  }
+
+  // The opening tap itself activates on pointerup, so its trailing synthesized
+  // click dispatches after showModal() and is hit-tested against the
+  // freshly-painted dialog — landing on whatever control sits at the launch
+  // point (issue #308: the coloring book picker opened drilled into a "random"
+  // book). Its pointerdown/up targeted the launcher, so the launch-zone check
+  // above never sees it; swallow the click itself. detail 0 is keyboard/AT
+  // activation, which has no meaningful coordinates and is never a ghost.
+  function onClick(e: MouseEvent) {
+    if (e.detail === 0) return;
+    if (isPointInLaunchZone(e.clientX, e.clientY)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  function onCancel(e: Event) {
+    const o = getOptions();
+    // Block Esc when dismissal is currently disallowed (e.g. an in-flight
+    // request the dialog can't get back). Chromium's CloseWatcher lets this
+    // hold only while the page has user activation to spend, so the native
+    // close it fails to stop is caught again in onClose.
+    if (!dismissAllowed(o)) e.preventDefault();
+  }
+
+  // A `cancel` the platform refused to let onCancel block — a repeated Escape
+  // or Android back gesture with no user activation since the last one — has
+  // closed the dialog natively while state still owns it open. Reopen it in
+  // place rather than letting state follow the DOM. The fly-in is keyed on
+  // [open], so it is held off until the dialog closes for real; otherwise the
+  // re-show would replay the launch from the opener.
+  function reopenRefusedDismissal() {
+    node.style.animation = 'none';
+    node.showModal();
+  }
+
+  function requestDismiss(): ModalDismissal {
+    const o = getOptions();
+    if (!o.open || !dismissAllowed(o)) return 'refused';
+    o.onRequestClose();
+    return 'dismissed';
+  }
+
+  function onClose() {
+    // `close` is dispatched from a queued task, so a dialog reopened in the
+    // meantime receives its previous close while open again. That event belongs
+    // to an opening that is over: acting on it would unregister, clean up after,
+    // and re-close the one now on screen.
+    if (node.open) return;
+    const o = getOptions();
+    if (o.open && !dismissAllowed(o)) {
+      reopenRefusedDismissal();
+      return;
+    }
+    node.style.removeProperty('animation');
+    noticeModalClosing(node);
+    forgetOpenModal(node);
+    // A closed dialog has no backdrop to protect; drop the zone so it can't
+    // bleed into whatever modal opens next.
+    clearLaunchZones();
+    o.onClose?.();
+    // Closed via Esc while the flag is still set — re-sync it.
+    if (o.open) o.onRequestClose();
+  }
+
+  node.addEventListener('pointerdown', onPointerDown, true);
+  node.addEventListener('click', onClick, true);
+  node.addEventListener('cancel', onCancel);
+  node.addEventListener('close', onClose);
+
+  $effect(() => {
+    const o = getOptions();
+    if (o.open) {
+      if (o.origin) {
+        node.style.setProperty('--origin-x', `${o.origin.x - window.innerWidth / 2}px`);
+        node.style.setProperty('--origin-y', `${o.origin.y - window.innerHeight / 2}px`);
+      } else {
+        node.style.removeProperty('--origin-x');
+        node.style.removeProperty('--origin-y');
+      }
+      if (!node.open) {
+        guardLaunchZone(o.origin ?? null);
+        untrack(() => o.onOpen?.());
+        stampMotionAtStart(node);
+        node.showModal();
+        forgetOpenModal(node);
+        openModals.push({ node, requestDismiss, closing: false });
+        notifyModalStackObservers('opened', node);
+      } else {
+        const entry = openModals.find((candidate) => candidate.node === node);
+        if (entry) entry.closing = false;
+      }
+    } else if (node.open) {
+      noticeModalClosing(node);
+      return closeAfterExit(node, getOptions);
+    }
+  });
+
+  return {
+    destroy() {
+      // Unmounting an open dialog takes it out of the top layer without a
+      // `close` event, so onClose never tells the observers it left.
+      noticeModalClosing(node);
+      forgetOpenModal(node);
+      node.removeEventListener('pointerdown', onPointerDown, true);
+      node.removeEventListener('click', onClick, true);
+      node.removeEventListener('cancel', onCancel);
+      node.removeEventListener('close', onClose);
+    },
+  };
+}

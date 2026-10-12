@@ -1,0 +1,513 @@
+import { actionProbeSource } from '../lib/action-probe-source.mjs';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { chromium } from '@playwright/test';
+import { ADB } from '../../mobile/android/lib/android-toolchain.mjs';
+import {
+  POSITIVE_INTEGER,
+  TCP_PORT,
+  fail,
+  isMain,
+  parseOrFail,
+  pollUntil,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
+import {
+  MIN_GATED_SAMPLES,
+  WARMUP_REPEATS,
+  actionFailures,
+  actionRows,
+  summarizeActions,
+} from '../lib/action-stats.mjs';
+import { parsePerfArgs } from '../lib/cli-args.mjs';
+import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
+import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
+import {
+  profilingUrl,
+  actionCaptureVerdict,
+  loadActionSweepDocument,
+  logColoringPreparation,
+  reportActionCaptureVerdict,
+  runActionSweep,
+  selectedActions,
+  stableActionPlan,
+} from '../ios/capture-xcuitest-actions.mjs';
+import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
+import { ensurePreviewServer } from '../lib/profile-device-session.mjs';
+import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { resolveAndroidDevice } from '../lib/android-serial.mjs';
+import { profilePath } from '../lib/profile-paths.mjs';
+import { servedBuildBinding } from '../lib/profile-preview.mjs';
+import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
+import {
+  ensureCampaignTheme,
+  parseCampaignOrientation,
+  parseCampaignTheme,
+  readResolvedTheme,
+} from '../lib/campaign-state.mjs';
+
+const APP_PATH = '/';
+const SESSION_ID = 'android-web-cdp';
+const DEFAULT_CDP_PORT = 9_224;
+const CDP_READY_TIMEOUT_MS = 20_000;
+const PAGE_READY_TIMEOUT_MS = 30_000;
+const PAGE_SETTLE_MS = 2_500;
+const STABLE_FRAME_WINDOW_MS = 500;
+const STABLE_FRAME_GAP_MAX_MS = 32;
+const STABLE_FRAME_TIMEOUT_MS = 10_000;
+const ORIENTATION_SETTLE_MS = 1_000;
+const PROFILER_PARAM = 'perf-android-web';
+
+// One decision, two consumers: the settings writes and the artifact's
+// requestedHz both derive from this (ADR-0143).
+const PINNED_REFRESH_RATE_HZ = 60;
+const REFRESH_RATE_SETTINGS = ['peak_refresh_rate', 'min_refresh_rate'];
+
+// Restore args for one refresh-rate setting. Anything that is not a finite
+// number — 'null' from an unset key, and an empty read that would otherwise
+// become `settings put <name>` with a missing operand, which the device
+// rejects while allowFailure swallows it — restores by deleting the key.
+export function refreshRateRestoreArgs(name, original) {
+  return Number.isFinite(Number.parseFloat(original))
+    ? ['shell', 'settings', 'put', 'system', name, original]
+    : ['shell', 'settings', 'delete', 'system', name];
+}
+
+// The pin is proven by the display, not the settings write: these are @hide
+// keys a device may accept and ignore, and dumpsys names the rate the panel
+// is actually rendering at.
+export function renderFrameRateFrom(dumpsysOutput) {
+  const match = /renderFrameRate\s+([0-9.]+)/.exec(dumpsysOutput ?? '');
+  return match ? Math.round(Number.parseFloat(match[1])) : null;
+}
+
+// Quick Boot restores the guest snapshot, so a new emulator host process proves
+// nothing about guest freshness; /proc/uptime's first field is guest uptime,
+// while its second is summed core idle time.
+export function deviceUptimeSecondsFrom(procUptimeOutput) {
+  const match = /^\s*([0-9]+(?:\.[0-9]+)?)/.exec(procUptimeOutput ?? '');
+  return match ? Number.parseFloat(match[1]) : null;
+}
+
+export function adb(deviceId, args, { allowFailure = false } = {}) {
+  const result = spawnSync(ADB, ['-s', deviceId, ...args], {
+    encoding: 'utf8',
+  });
+  if (!allowFailure && result.status !== 0) {
+    throw new Error(`adb ${args.join(' ')} failed: ${result.stderr?.trim() || result.status}`);
+  }
+  return result.stdout?.trim() ?? '';
+}
+
+export function profilerUrl(base, token) {
+  const url = new URL(base);
+  url.searchParams.set(PROFILER_PARAM, token);
+  return url.toString();
+}
+
+export function isOwnedProfilerUrl(base, candidate) {
+  try {
+    const expected = new URL(base);
+    const url = new URL(candidate);
+    return (
+      url.origin === expected.origin &&
+      (url.searchParams.has(PROFILER_PARAM) || url.searchParams.has('perf-actions'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function cdpTargets(endpoint) {
+  const response = await fetch(`${endpoint}/json/list`);
+  if (!response.ok) throw new Error(`CDP target list returned ${response.status}`);
+  return response.json();
+}
+
+export async function closeTarget(endpoint, id) {
+  await fetch(`${endpoint}/json/close/${encodeURIComponent(id)}`).catch(() => null);
+}
+
+export async function selectProfilerTarget(endpoint, base, token) {
+  const target = await pollUntil(
+    async () => {
+      const targets = await cdpTargets(endpoint).catch(() => []);
+      return targets.find((candidate) => {
+        try {
+          return new URL(candidate.url).searchParams.get(PROFILER_PARAM) === token;
+        } catch {
+          return false;
+        }
+      });
+    },
+    CDP_READY_TIMEOUT_MS,
+    250
+  );
+  if (!target) throw new Error('Android Chrome did not expose the launched profiler tab over CDP');
+  const targets = await cdpTargets(endpoint);
+  await Promise.all(
+    targets
+      .filter((candidate) => candidate.id !== target.id && isOwnedProfilerUrl(base, candidate.url))
+      .map((candidate) => closeTarget(endpoint, candidate.id))
+  );
+  return target;
+}
+
+export async function clearBrowserCaches(page) {
+  await page.evaluate(async () => {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  });
+}
+
+// Every later document gets the guard before its own scripts run; the document
+// already loaded gets it now, and its answer is what the artifact records.
+export async function blockServiceWorkerRegistration(page) {
+  const guard = `(() => {${SERVICE_WORKER_REGISTRATION_GUARD_SOURCE}})()`;
+  await page.addInitScript(guard);
+  return page.evaluate(guard);
+}
+
+export async function waitForStableFrames(page) {
+  await sleep(PAGE_SETTLE_MS);
+  await page.evaluate(
+    ({ stableWindowMs, maxGapMs, timeoutMs }) =>
+      new Promise((resolve, reject) => {
+        let previous;
+        let stableSince;
+        const timeout = setTimeout(
+          () => reject(new Error(`Frames did not stabilize within ${timeoutMs} ms`)),
+          timeoutMs
+        );
+        const frame = (at) => {
+          if (previous !== undefined && at - previous <= maxGapMs) stableSince ??= at;
+          else stableSince = undefined;
+          previous = at;
+          if (stableSince !== undefined && at - stableSince >= stableWindowMs) {
+            clearTimeout(timeout);
+            resolve(true);
+          } else requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      }),
+    {
+      stableWindowMs: STABLE_FRAME_WINDOW_MS,
+      maxGapMs: STABLE_FRAME_GAP_MAX_MS,
+      timeoutMs: STABLE_FRAME_TIMEOUT_MS,
+    }
+  );
+}
+
+export async function waitForCanvas(page) {
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector('#drawingCanvas');
+      return canvas instanceof HTMLCanvasElement && canvas.width > 0;
+    },
+    undefined,
+    { timeout: PAGE_READY_TIMEOUT_MS }
+  );
+}
+
+export function rotationFor(orientation) {
+  return orientation === 'LANDSCAPE' ? '1' : '0';
+}
+
+export async function runAndroidWebActions(argv = process.argv.slice(2)) {
+  const { flag, numberFlag, has, port } = parsePerfArgs(
+    {
+      extra: [
+        'url',
+        'device-id',
+        'cdp-port',
+        'orientation',
+        'actions',
+        'repeats',
+        'label',
+        'output',
+        'trace',
+        'report-only',
+        'no-serve',
+        'allow-foreign-build',
+        'theme',
+      ],
+    },
+    argv
+  );
+  const base = flag('url') ?? `http://localhost:${port}${APP_PATH}`;
+  // The override is only for a build another worktree serves at --url; with
+  // the preview this runner spawns itself it would also switch off the
+  // native-export and stale-build guards.
+  const allowForeignBuild = has('allow-foreign-build');
+  if (allowForeignBuild && !flag('url')) {
+    fail('--allow-foreign-build needs --url= naming the externally served build it allows');
+  }
+  const cdpPort = numberFlag('cdp-port', DEFAULT_CDP_PORT, TCP_PORT);
+  const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
+  if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
+    fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
+  }
+  const actions = selectedActions(flag('actions'));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
+  const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
+  const deviceId = resolveAndroidDevice(flag('device-id'), ADB);
+  const token = `${Date.now()}`;
+  const endpoint = `http://127.0.0.1:${cdpPort}`;
+  const originalAutoRotation = adb(deviceId, [
+    'shell',
+    'settings',
+    'get',
+    'system',
+    'accelerometer_rotation',
+  ]);
+  const originalRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'user_rotation']);
+  const deviceUptimeSeconds = deviceUptimeSecondsFrom(
+    adb(deviceId, ['shell', 'cat', '/proc/uptime'])
+  );
+  console.log(`guest uptime at capture start: ${deviceUptimeSeconds ?? 'unknown'} seconds`);
+  // Reads stay outside the try (the rotation-settings pattern above): a failed
+  // read throws before anything was mutated. The WRITES sit inside the try —
+  // pinning outside it opened a crash window where one setting was written and
+  // the finally never armed, capping the panel with nothing to say so, and a
+  // leaked pin fails every later drawing cell on this phone as
+  // off-refresh-regime.
+  const originalRefreshRates = REFRESH_RATE_SETTINGS.map((name) =>
+    adb(deviceId, ['shell', 'settings', 'get', 'system', name])
+  );
+  const restoreDeviceSettings = () => {
+    adb(deviceId, ['shell', 'settings', 'put', 'system', 'user_rotation', originalRotation], {
+      allowFailure: true,
+    });
+    adb(
+      deviceId,
+      ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', originalAutoRotation],
+      { allowFailure: true }
+    );
+    REFRESH_RATE_SETTINGS.forEach((name, index) => {
+      adb(deviceId, refreshRateRestoreArgs(name, originalRefreshRates[index]), {
+        allowFailure: true,
+      });
+    });
+  };
+  // fail() calls process.exit, which skips the finally below: an unserved URL
+  // or a stale build left the panel pinned at 60Hz, and every later drawing
+  // cell on the phone then failed as off-refresh-regime. adb here is
+  // spawnSync, so the exit listener can restore on that path too.
+  process.once('exit', restoreDeviceSettings);
+  let observedRefreshRateHz;
+  let server;
+  let servedBuild;
+  let devicePage;
+  let browser;
+  let cdp;
+  let target;
+  let traceActive = false;
+  let traceEvents;
+  const output =
+    flag('output') ??
+    join(profilePath('android-web-actions', flag('label', 'full-suite')), 'actions.json');
+
+  try {
+    // Pin the panel for the whole sweep. Chrome boosts an adaptive-sync panel
+    // to 120Hz around touch, and after the tap the presentation steps down
+    // through a flat 25.0ms cadence behind instantaneous first frames — a
+    // cadence the gates charged as dropped frames across the entire
+    // toggle/theme family (issue 1251, ADR-0143). Pinned, the same actions
+    // score 16.7-16.8 flat. The pin is verified by reading the display's
+    // renderFrameRate back rather than trusting the write: these are @hide
+    // settings a device may accept and ignore, and an artifact must record
+    // what the panel actually did.
+    for (const name of REFRESH_RATE_SETTINGS) {
+      adb(deviceId, ['shell', 'settings', 'put', 'system', name, String(PINNED_REFRESH_RATE_HZ)]);
+    }
+    observedRefreshRateHz = renderFrameRateFrom(adb(deviceId, ['shell', 'dumpsys', 'display']));
+    if (observedRefreshRateHz !== PINNED_REFRESH_RATE_HZ) {
+      console.warn(
+        `refresh-rate pin not confirmed: requested ${PINNED_REFRESH_RATE_HZ}, display reports ${observedRefreshRateHz ?? 'unknown'} — the artifact records what was observed`
+      );
+    }
+    // A historical comparison serves another commit's build from its own
+    // worktree; the flag is how a caller says that build is foreign on purpose.
+    server = await ensurePreviewServer(base, port, !has('no-serve'), { allowForeignBuild });
+    // Binds the artifact to the bytes measured; a foreign build keeps its
+    // entry and digest and records no product commit.
+    servedBuild = await servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
+    // The host checks the preview at `base`; Chrome loads it at localhost.
+    devicePage = await reverseToLocalhost(base, (args, { bestEffort }) =>
+      adb(deviceId, args, { allowFailure: bestEffort })
+    );
+    const launchUrl = profilerUrl(devicePage.url, token);
+    adb(deviceId, [
+      'shell',
+      'am',
+      'start',
+      '-a',
+      'android.intent.action.VIEW',
+      '-d',
+      launchUrl,
+      'com.android.chrome',
+    ]);
+    adb(deviceId, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
+    target = await selectProfilerTarget(endpoint, devicePage.url, token);
+    browser = await chromium.connectOverCDP(endpoint);
+    const context = browser.contexts()[0];
+    const page = context.pages().find((candidate) => candidate.url() === target.url);
+    if (!page) throw new Error(`Playwright could not attach to ${target.url}`);
+    await page.bringToFront();
+    await waitForCanvas(page);
+    await clearBrowserCaches(page);
+    const serviceWorkerRegistration = await blockServiceWorkerRegistration(page);
+
+    const readOrientation = () =>
+      page.evaluate(() => (innerWidth > innerHeight ? 'LANDSCAPE' : 'PORTRAIT'));
+    const rotate = async (orientation) => {
+      adb(deviceId, ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
+      adb(deviceId, [
+        'shell',
+        'settings',
+        'put',
+        'system',
+        'user_rotation',
+        rotationFor(orientation),
+      ]);
+      await page.waitForFunction(
+        (next) => (next === 'LANDSCAPE' ? innerWidth > innerHeight : innerHeight > innerWidth),
+        orientation,
+        { timeout: PAGE_READY_TIMEOUT_MS }
+      );
+      await sleep(ORIENTATION_SETTLE_MS);
+    };
+    cdp = await context.newCDPSession(page);
+    const client = new PlaywrightWebDriver(page, {
+      cdp,
+      readOrientation,
+      rotate,
+      readWindowRect: () =>
+        page.evaluate(() => ({ x: 0, y: 0, width: innerWidth, height: innerHeight })),
+      includeBrowserChrome: false,
+      useWebGeometryForClear: true,
+    });
+    if (requestedOrientation) await client.setOrientation(requestedOrientation);
+    const originalOrientation = await client.orientation();
+    const execute = (script) => page.evaluate(`(() => {${script}})()`);
+    let settingsShell = null;
+    let actionPlan = null;
+    const samples = [];
+    const expectedLabels = new Set();
+    const coloringPreparation = [];
+    let baselineTheme;
+    if (has('trace')) {
+      traceEvents = await startTrace(cdp);
+      traceActive = true;
+    }
+
+    const executePromise = (expression) => page.evaluate(expression);
+    for (let repeat = 1; repeat <= repeats; repeat++) {
+      const sweepDocument = await loadActionSweepDocument({
+        actions,
+        execute,
+        executePromise,
+        loadDocument: async () => {
+          await page.goto(profilingUrl(devicePage.url, repeat), { waitUntil: 'load' });
+          await waitForCanvas(page);
+        },
+      });
+      coloringPreparation.push({ repeat, ...sweepDocument });
+      logColoringPreparation(sweepDocument);
+      await ensureCampaignTheme(execute, requestedTheme);
+      baselineTheme = await readResolvedTheme(execute);
+      await page.evaluate(actionProbeSource());
+      await waitForStableFrames(page);
+      console.log(`\nAndroid web action sweep ${repeat}/${repeats}`);
+      const sweep = await runActionSweep({
+        client,
+        sessionId: SESSION_ID,
+        execute,
+        actions,
+        originalOrientation,
+        baselineTheme,
+        listedColoringBooks: sweepDocument.listedColoringBooks,
+      });
+      settingsShell = sweep.settingsShell;
+      actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
+      if (repeat <= WARMUP_REPEATS) {
+        for (const label of sweep.actionPlan.applicableLabels) expectedLabels.add(label);
+      }
+      samples.push(
+        ...sweep.samples.map((sample) => ({
+          ...sample,
+          repeat,
+          warmup: repeat <= WARMUP_REPEATS,
+        }))
+      );
+    }
+
+    if (traceActive) {
+      await stopTrace(cdp);
+      traceActive = false;
+    }
+
+    const summaries = summarizeActions(samples, expectedLabels);
+    const failures = actionFailures(summaries);
+    const { blockedCoverage, passed } = actionCaptureVerdict({ failures, actionPlan });
+    mkdirSync(dirname(output), { recursive: true });
+    const artifact = {
+      device: {
+        name: adb(deviceId, ['shell', 'getprop', 'ro.product.model']) || deviceId,
+        os: adb(deviceId, ['shell', 'getprop', 'ro.build.version.release']) || 'unknown',
+        id: deviceId,
+        uptimeSeconds: deviceUptimeSeconds,
+      },
+      appUrl: devicePage.url,
+      ...servedBuild,
+      serviceWorkerRegistration,
+      transport: 'android-chrome-cdp',
+      uiActivation: 'trusted-cdp-touch',
+      refreshRatePin: {
+        requestedHz: PINNED_REFRESH_RATE_HZ,
+        observedHz: observedRefreshRateHz,
+      },
+      actions: [...actions],
+      repeats,
+      orientation: originalOrientation,
+      theme: baselineTheme,
+      settingsShell,
+      actionPlan,
+      coloringPreparation,
+      samples,
+      frameStampEpoch: frameStampEpochOf(samples),
+      summaries,
+      passed,
+    };
+    writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
+    if (traceEvents) {
+      writeFileSync(join(dirname(output), 'trace.json'), JSON.stringify({ traceEvents }));
+    }
+    console.log('\nAndroid Chrome discrete action response');
+    console.table(actionRows(summaries));
+    console.log(`\nWrote ${output}`);
+    reportActionCaptureVerdict({ failures, blockedCoverage, reportOnly: has('report-only') });
+    return artifact;
+  } finally {
+    if (traceActive && cdp) await stopTrace(cdp).catch(() => null);
+    // Guarded like stopTrace: a rejected close — likeliest exactly when the
+    // device dropped mid-sweep — must not abort the adb restores below it.
+    await browser?.close().catch(() => null);
+    if (target) await closeTarget(endpoint, target.id);
+    adb(deviceId, ['forward', '--remove', `tcp:${cdpPort}`], { allowFailure: true });
+    devicePage?.release();
+    process.removeListener('exit', restoreDeviceSettings);
+    restoreDeviceSettings();
+    server?.stop();
+  }
+}
+
+if (isMain(import.meta.url)) runMain(runAndroidWebActions);

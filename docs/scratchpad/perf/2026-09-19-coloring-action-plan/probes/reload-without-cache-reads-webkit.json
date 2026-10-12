@@ -1,0 +1,25 @@
+{
+  "base": "http://127.0.0.1:54804/",
+  "freshFirstOpen": {
+    "books": 0,
+    "pages": 6
+  },
+  "freshSamePageAfter40s": {
+    "books": 3,
+    "pages": 0
+  },
+  "reloadAfter25s": {
+    "books": 0,
+    "pages": 6
+  },
+  "reloadAfter65s": {
+    "books": 0,
+    "pages": 6
+  },
+  "cachesAtEnd": {
+    "coloring-packs-v2-full": 0
+  },
+  "console": [
+    "Coloring-pack download paused Error: Coloring pack changed while installing: dinosaur"
+  ]
+}

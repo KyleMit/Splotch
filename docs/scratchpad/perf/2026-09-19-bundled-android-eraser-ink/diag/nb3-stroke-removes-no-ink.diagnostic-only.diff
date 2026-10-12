@@ -1,0 +1,14 @@
+diff --git a/tools/perf/android/capture-bundled-frames.mjs b/tools/perf/android/capture-bundled-frames.mjs
+index 76ab0ae7b..901bf9859 100644
+--- a/tools/perf/android/capture-bundled-frames.mjs
++++ b/tools/perf/android/capture-bundled-frames.mjs
+@@ -470,6 +470,9 @@ export async function driveEraserPasses({ page, fence, repeats, canvas, dpr, dis
+     const unprepared = inkPreparedProblem(before, pass);
+     if (unprepared) throw new Error(unprepared);
+     await idleFrames(page);
++    // DIAGNOSTIC NEGATIVE CONTROL ONLY, never commit: draw the pass with the pen, which removes no ink.
++    await page.evaluate(brushPickScript('pen'));
++    await fence.wait(1_500);
+     const fromEvent = (await page.evaluate(() => window.__probe.counts())).events;
+     for (const instruction of instructions) {
+       fence.checkpoint();

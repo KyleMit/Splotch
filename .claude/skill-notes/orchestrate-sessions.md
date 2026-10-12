@@ -1,0 +1,234 @@
+<!-- Source: .ruler/skill-notes/orchestrate-sessions.md.template -->
+
+# orchestrate-sessions — design notes
+
+## Scope and choice
+
+Issue #2078 asks for the attended counterpart to `ship-campaign`: a human relays prompts and reports
+between separate workers while the orchestrator owns the plan and verification. The name
+`orchestrate-sessions` covers both explicit issue lists and epics; `orchestrate-epic` would hide the
+list case. The procedure stays inline because it is a workflow, with no extra driver, scheduler,
+provider fork, or competing implementation/review loop.
+
+Workers delegate shipping to the existing skills. The orchestrator neither launches them nor runs
+their experiments. It may maintain a plan and scoped issue/PR records; implementing from the
+orchestrator, as happened in the #2020 session, is outside this skill's scope. Prompt preparation,
+delivery, observed activity, and verified completion are distinct states because the relay does not
+prove that a prepared prompt reached a worker.
+
+## Research method and limits
+
+Research conducted 2026-09-19 over sessions active during September 14–19, within the requested week
+beginning September 12. The existing `ship-campaign` note was background, not a substitute for
+reading the transcripts. Independent readers used each provider's `analyze-session-transcripts`
+skeleton extractor, read the complete skeleton, and drilled raw JSONL for truncated or failed calls.
+They wrote factual per-session reports; this note preserves the specific observations and excerpts
+used to shape the skill rather than all routine commands.
+
+The raw sources are local private session stores, not portable repository artifacts. Session IDs,
+UTC dates, raw record numbers, short relevant excerpts and the reasoning are preserved here so the
+rules remain understandable without those stores. These observations are a qualitative sample, not
+success-rate estimates or a controlled provider comparison. Relayed reports are explicitly
+distinguished from direct worker evidence; an orchestrator's assertion is not proof of its cause.
+
+| Session                                | Provider and role               | Dates (UTC) | Locator                                                                             |
+| -------------------------------------- | ------------------------------- | ----------- | ----------------------------------------------------------------------------------- |
+| `2bebe74e-9e19-4454-b38c-145baa1ee06d` | Claude, epic #1926 orchestrator | Sep 14–15   | Claude project ending `ping-e4f58d`, matching session JSONL                         |
+| `4dffc2b7-e105-4325-ae67-5383043256d2` | Claude, epic #2020 orchestrator | Sep 15–16   | Claude project ending `convert-to-markdown-d8aaf7`, matching session JSONL          |
+| `01a0ab9a-35c4-7682-afe6-619c6a0bd903` | Codex, performance orchestrator | Sep 16–19   | Codex `sessions/2026/09/16/`, rollout ending in this ID                             |
+| `01a0a6ee-347a-7df2-90c8-74e77f38fe7b` | Codex, #2013/#2015/#2016 worker | Sep 15–16   | Codex `archived_sessions/`, rollout ending in this ID                               |
+| `175d124d-1558-5e53-be00-594e7f4f9709` | Claude, #564 worker             | Sep 15      | Claude project ending `bridge-cse-01H3rz9St8TQW6h7M276LHem`, matching session JSONL |
+
+Claude locators are beneath `~/.claude/projects/-Users-kylemit-Code-Splotch--claude-worktrees-*`;
+Codex locators beneath `~/.codex/`. Use the corresponding provider's `skeleton.mjs <path>` and open
+raw record `L<n>` with `sed -n '<n>p' <path> | jq .`. Do not substitute a resumed session's
+compaction summary. Private transcripts need not be published to execute the new skill.
+
+## What the prompt and report research established
+
+### Prompt shapes and first-pass outcomes
+
+In `2bebe74e`, L121 (Sep 14 17:56Z), the initial worker contract named ordered issues, autonomous
+shipping and merge authority, full issue comments, one PR per issue, parallel exclusions, explicit
+ports, and a final PR/status/verified-SHA/leftovers report. Later prompts added manual claim cleanup
+and negative controls after actual failures. In L281 → L293/L301 (Sep 15 10:04–10:13Z), admin tests
+that could pass on broken code led to the requirement to run the regression against old code. This
+is why the fixed block names negative controls, with an explicit non-code validation alternative.
+
+In `4dffc2b7`, L72 (Sep 16 12:15Z), the user pasted three Track A snapshots at once: implemented but
+review blocked, reviewed but merge blocked, then merged. They retained head and merge SHAs and a
+leftover link, but omitted the raw rival-refusal command and intermediate worker instructions. The
+report was not first-pass completion merely because its last section said merged. L81–L89 verified
+the actual PR states, merge ancestry, labels and CI, resolving the older snapshots.
+
+The later Track B prompt at L545 (Sep 16 16:15Z) added explicit review/merge authority and current
+policy preflight. Its single return at L554 (17:31Z) preserved the exact local cleanup failure while
+distinguishing it from successful remote merges; L559–L562 verified that report. The solo prompt and
+return at L567/L576 passed a named lint-warning breadcrumb through to its resolution. The changed
+prompts and changed installed policy co-occurred: the sample cannot establish that prompt text alone
+caused the cleaner outcomes.
+
+### Direct workers and provider differences
+
+The direct Claude #564 worker `175d124d` received explicit autonomous merge authority and a concrete
+final-report contract at L3 (Sep 15 10:18:48Z). It needed no human follow-up. Rival review found
+four blockers at L428 (10:39:58Z), then a generic negative-control escape at L606 (10:50:04Z). It
+published the leftover extraction draft on the PR before returning (L642–L644, 10:51:26–29Z). Its
+first final at L767 (11:03:14Z) included PR, merge SHA, guard path, findings, fixes, verification,
+and the leftover. The earlier PR body had dismissed actual rendered braces as formatting; the
+reviewed body and final report corrected that claim. A complete first final report can follow
+substantial internal correction without needing another human relay.
+
+The direct Codex Track A worker `01a0a6ee` likewise had explicit autonomous merge authority in L9
+(Sep 15 21:17Z), but review export was rejected at L876 (21:37:52Z). The user supplied “Rival review
+authorized” at L1383 (23:26:55Z). Merge commands were then rejected by the old machine policy at
+L2347/L2706/L3083; the user reported merging the PRs at L3110 (Sep 16 01:44:56Z), and the worker
+completed the follow-up verification/cleanup. This directly shows the intermediate interventions
+absent from the orchestrator's combined relay. Generic merge authority did not resolve either the
+review-data-sharing boundary or the installed merge ban.
+
+These are similar prompt contracts, not the same task run twice. The observed provider difference is
+the historical runtime/policy path, not evidence that one model follows instructions better. Keep
+shared prompts provider-neutral, route to the installed rival package, carry only actually granted
+data-sharing authorization, and ask for the exact current refusal rather than inventing its cause.
+During this skill's authoring, automatic approval review also rejected adding blanket private-source
+export authority; the final skill explicitly makes that a separate user decision and cannot grant it
+to itself.
+
+### Follow-up versus next batch, including wrong calls
+
+`2bebe74e` used shared test-file overlap to serialize batches despite disjoint product files
+(L195/L217, Sep 15 01:06–01:30Z). Standards work waited until bug fixes and a rename had landed
+because those changes reshaped the patch targets (L121/L301/L357). Those observations support small
+related sequential batches and independent parallel batches, rather than a fixed batch size.
+
+The same session mishandled superseded information. L369 (Sep 15 15:29Z) included both “Git is
+broken” and a later “Checking with the restored git” in one relay; L385 and L395 repeated the
+Xcode-license instruction even after the restored-git-only report at L389. Reading the whole report
+and reconciling the latest evidence is a required step, not optional cleanup.
+
+In `4dffc2b7`, a missing local assertion initially became a FILE recommendation (L618, Sep 16).
+Actual bug injection then left the individual test green but made the Vitest process fail; restoring
+the fix returned exit zero (L643–L652, 18:30Z). The recommendation changed to DROP (L666). The new
+skill preserves and verifies claims and delegates bounded empirical work rather than filing a
+plausible leftover from prose alone.
+
+In `01a0ab9a`, prompts were treated as active owners before delivery was established (L378 → L402).
+A partial worker update triggered revised steering at L688/L693; later progress at L700/L703 caused
+that steering to be withdrawn. The plan therefore records prompt revision and delivery, while
+progress notes do not automatically trigger duplicate workers or replacement experiments.
+
+### Information lost or overstated in the relay
+
+* `2bebe74e`, L157 → L195 (Sep 15 01:04–01:06Z): the worker explicitly said #1902 “no longer counts
+  as the realistic trigger” for #1901. The next prompt carried the harness changes but lost that
+  causal retraction. Retractions and decision limits belong in the durable plan and report.
+* `2bebe74e`, L577/L603/L609 (Sep 15 20:27Z): prose totals disagreed with eight actual API children.
+  Per-parent API reconciliation is the completion condition.
+* `4dffc2b7`, L463/L489: the orchestrator attributed a private-source refusal to a bare Claude
+  command it had not seen. L497–L530 later showed the policy PR had removed merge bans rather than
+  installed the initially proposed uninstall mechanism. Inspect actual current commands, refusals
+  and merged content; do not diagnose a policy from its title, markers, or a worker's paraphrase.
+* `01a0ab9a`, L641/L644 → L657/L662: a keep-rig instruction was followed by a stopped-rig report,
+  but the transcript did not prove the worker received the amended policy. Each prompt carries the
+  policy, and the orchestrator verifies delivery before attributing noncompliance.
+* `01a0ab9a`, L802 (Sep 19 00:21:20Z): the worker said the native install had never been attempted;
+  an earlier TLS refusal had become a generalized native-signing blocker. Current exact failures and
+  unattempted steps must remain separate.
+
+### Preservation is independent of whether code ships
+
+`01a0ab9a`, L838 (Sep 19 00:23Z), requested preservation after a no-new-PR completion report. L855
+(00:51Z) reported 27 raw runs preserved, a missing artifact for failed run 3, and a runner
+attachment lesson. The numerical outcome alone did not discharge those obligations. L896 (10:09Z,
+call `call_IIl884IJkggEXfXaYBY5Ip7L`) counted three of five targets complete; L901 corrected that to
+partial coverage because coloring/AI workloads and verified refresh-rate coverage were missing. A
+preserved subset cannot stand in for the larger claimed result.
+
+Issue #2078 also identifies the #2072 verification report as a motivating example: its main
+comparison was published, while supplementary medians, probe/trace inputs and the panel-versus-page
+cadence lesson needed separate homes. PR #2081 subsequently packaged that evidence on main before
+this branch was cut. This skill describes the general check, not a claim that those historical gaps
+are still open.
+
+The sweep includes successful and unsuccessful experiments, scoped decisions, reproducibility,
+reusable lessons, unfinished patches and blockers. Shared portable records and local sensitive
+handoffs serve different needs. A path or hash inventories an artifact but cannot replace its
+contents, analysis and sufficient reconstruction inputs. Existing adequate records pass; mandatory
+new “lessons” edits or ceremonial PRs would manufacture work.
+
+### Effort and context
+
+In `01a0ab9a`, L576/L588/L593, a six-hour overnight run returned seven PRs without product changes
+or issue closures; the next prompt was narrowed after the user's correction. L742/L763 carried the
+user's eight-hour same-gate cap, with L770 deferring that change to a future prompt. The new
+workflow tracks cumulative effort across handoffs and stops marginal tuning at the limit. It does
+not reinterpret “best version” as a passed release gate or broaden merge authority.
+
+The #2020 initial contract required a next prompt after verification (L3); L530 instead asked for
+reports, and the user had to request the next prompt at L534. The skill emits one actionable prompt
+when dispatch is possible, with an explicit exception for decisions, blockers and completion. Long
+evidence and reference lists remain in durable records; prompts stage the reading.
+
+## Validation approach
+
+Behavioral evaluation uses fresh independent agents, each given the skill, a realistic pasted
+report, a durable-plan target, and complete mocked GitHub/git/artifact reads. No expected answer is
+included in their instructions, and they cannot mutate live GitHub or launch workers. This checks
+decisions and generated prompts rather than headings or regex matches. It is not a live integration
+test of connectors or an estimate of behavior across models.
+
+The fixtures share an in-flight batch A, an independent ready batch B, existing scoped preservation
+and autonomous shipping authority, distinct ports, no device work, and fully registered green CI on
+fresh main. Opaque fixture SHAs stand for mocked git outputs. Each evaluation must write its updated
+plan before its user-facing response.
+
+| Fixture                      | Supplied records and report                                                                                                                                                                                                             | Decision to inspect                                                                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No-PR investigation          | Open claimed issue; published two-row result table; full raw inputs, traces, analysis and diagnostic patch exist only in a disposable worktree; warm-up lesson absent from docs; worker available                                       | A preservation follow-up to the originating session identifies the missing inputs/analysis/lesson/patch and disposition; it does not rerun the experiment or declare completion |
+| Merged PR, knowledge missing | Merge ancestry, issue closure/claim cleanup, reviews and all CI verified; numerical evidence package complete; report contains an undocumented page-clock lesson and adapter follow-up absent from docs/discussions                     | Shipping stays recorded as complete while those specific preservation obligations get a bounded same-session follow-up                                                          |
+| Sufficient existing records  | Same merge evidence; inputs, executable analysis, method and limits accessible at the merge revision; lesson in maintained docs; existing comment contains rejected-experiment evidence and accepted disposition; no unfinished patches | Batch A becomes verified and one prompt advances to B, without new publishing, reruns, PRs or lesson edits for A                                                                |
+
+### Observed forward-test results — 2026-09-19
+
+All three independent executions selected the intended branch of the workflow. The no-PR and
+merged-PR evaluators wrote their simulated plan before returning one same-worker preservation
+prompt. The sufficient-records evaluator selected A verified complete and one prompt for B. These
+are observed single executions, not guarantees across runners.
+
+* **No-PR:** the response identified that C1 lacked method, inputs and the warm-up caveat. Prompt
+  `A-r2` reused the existing raw inputs, traces and notebook; required the supported lesson in
+  maintained guidance, the diagnostic patch in a handoff, and scoped disposition on the issue;
+  prohibited rerunning experiments and direct issue closure. The plan retained the claim and blocked
+  disposal. It marked cumulative effort unknown rather than inventing a zero baseline.
+* **Merged:** the response said “A still has two preservation gaps” while keeping PR 5101, ancestry,
+  reviews, CI and claim cleanup verified. Prompt `A-preservation-1` requested the exact page-clock
+  reset procedure and limits plus a concrete adapter follow-up with an owner in the existing
+  discussion. It explicitly prohibited executing that new adapter investigation or duplicating the
+  complete numerical evidence package.
+* **Sufficient:** the evaluator accepted the existing evidence package, maintained lesson and
+  accepted rejected-experiment disposition. It selected A complete and prepared B's prompt; it
+  requested no further publication, experiments or PR for A. Automatic approval review rejected
+  writing its synthetic fixture artifacts, so it returned proposed plan/response contents in chat.
+  The decision was evaluated; durable-plan persistence was not exercised for this case. Its drafted
+  “I updated” response must not be mistaken for a successful write. In actual use, the skill's
+  write-failure blocker prevents dispatch until the plan is saved.
+
+To repeat, provide a fresh reader only the skill and one fixture row plus the common inputs above;
+ask it to update an isolated simulated plan and produce the user-facing next response. Do not give
+it this expected/observed-results section. Evaluate the artifact contents and chosen action, not
+wording matches. The fixture IDs and SHA handles are synthetic; these exercises did not touch live
+issues, perform merges, or launch worker sessions.
+
+## Remaining limits
+
+The first independent Claude review found a conflict between the narrower-authority rule and the
+template's unconditional autonomous workflow line. The correction selects the shipping mode before
+filling the template: no-merge work uses default `ship-issue` and retains the live claim, with merge
+and cleanup handed to the user; planning-only work does not dispatch. Merely replacing the opening
+authorization paragraph left contradictory operational commands later in the prompt.
+
+The plan is a maintained record, not a transactional scheduler. Explicit reservations and live
+claims reduce collisions but cannot atomically lock human-relayed workers. Missing permissions,
+inaccessible evidence, or unknown report delivery stay explicit blockers. Skill invocation cannot
+prove that a worker followed its prompt; live verification is the boundary.

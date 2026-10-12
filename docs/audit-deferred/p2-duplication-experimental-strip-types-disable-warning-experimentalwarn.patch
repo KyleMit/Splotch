@@ -1,0 +1,323 @@
+diff --git a/package-lock.json b/package-lock.json
+index 174d6e3e..e2f57d76 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -60,7 +60,7 @@
+         "vitest": "^4.1.9"
+       },
+       "engines": {
+-        "node": ">=22.13"
++        "node": ">=22.18"
+       }
+     },
+     "node_modules/@aparajita/capacitor-secure-storage": {
+diff --git a/package.json b/package.json
+index 894d53ce..1cd0b5e2 100644
+--- a/package.json
++++ b/package.json
+@@ -3,7 +3,7 @@
+   "version": "1.3.0",
+   "type": "module",
+   "engines": {
+-    "node": ">=22.13"
++    "node": ">=22.18"
+   },
+   "scripts": {
+     "info": "npx scripts-info",
+@@ -17,12 +17,12 @@
+     "prebuild": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
+     "build": "node scripts/web.mjs vite build",
+     "prebuild:cap": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
+-    "build:cap": "CAPACITOR=true node scripts/web.mjs vite build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/strip-native-assets.mjs",
++    "build:cap": "CAPACITOR=true node scripts/web.mjs vite build && node scripts/strip-native-assets.mjs",
+     "preview": "node scripts/web.mjs vite preview",
+     "precheck": "node scripts/check-native-app-id.mjs && node scripts/web.mjs svelte-kit sync",
+     "check": "node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json",
+     "check:watch": "node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json --watch",
+-    "check:assets": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-assets.mjs",
++    "check:assets": "node scripts/check-assets.mjs",
+     "check:assets:manifest": "node tools/asset-gen/bin/gen-asset-manifest.mjs --check",
+     "img:audit": "node scripts/image-audit.mjs",
+     "img:audit:check": "node scripts/image-audit.mjs --check",
+@@ -59,37 +59,37 @@
+     "test:android": "node scripts/android-emulator-smoke.mjs",
+     "test:android:device": "maestro test .maestro/smoke.yaml",
+     "test:ios": "node scripts/ios-simulator-smoke.mjs",
+-    "test:api:smoke": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/api-smoke.mjs",
++    "test:api:smoke": "node scripts/api-smoke.mjs",
+     "test:blobs:smoke": "node scripts/blobs-smoke.mjs",
+     "test:driver:smoke": "node scripts/driver-smoke.mjs",
+     "redteam": "node scripts/redteam-run.mjs",
+     "redteam:encrypt": "node scripts/redteam-fixtures.mjs encrypt",
+     "redteam:decrypt": "node scripts/redteam-fixtures.mjs decrypt",
+-    "model-eval": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/model-eval-run.mjs",
+-    "model-eval:fixtures": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/model-eval-fixtures.mjs",
+-    "model-eval:gen-inputs": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/model-eval-gen-inputs.mjs",
++    "model-eval": "node scripts/model-eval-run.mjs",
++    "model-eval:fixtures": "node scripts/model-eval-fixtures.mjs",
++    "model-eval:gen-inputs": "node scripts/model-eval-gen-inputs.mjs",
+     "gen:icons": "node scripts/generate-icon-names.mjs",
+     "gen:releases": "node scripts/generate-releases.mjs",
+-    "gen:tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-tokens.mjs",
+-    "gen:tokens:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-tokens.mjs --check",
+-    "gen:large-image": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-large-image.mjs",
+-    "gen:shots": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/store-shots.mjs",
+-    "gen:style-covers": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/bin/gen-style-covers.mjs",
+-    "gen:coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/bin/gen-coloring-chalk.mjs",
+-    "gen:coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/bin/gen-coloring-fills.mjs",
++    "gen:tokens": "node scripts/gen-tokens.mjs",
++    "gen:tokens:check": "node scripts/gen-tokens.mjs --check",
++    "gen:large-image": "node scripts/gen-large-image.mjs",
++    "gen:shots": "node scripts/store-shots.mjs",
++    "gen:style-covers": "node tools/asset-gen/bin/gen-style-covers.mjs",
++    "gen:coloring-chalk": "node tools/asset-gen/bin/gen-coloring-chalk.mjs",
++    "gen:coloring-fills": "node tools/asset-gen/bin/gen-coloring-fills.mjs",
+     "gen:coloring-fills:audit": "node tools/asset-gen/bin/check-coloring-drift.mjs",
+     "gen:coloring-fills:audit:eyes": "node tools/asset-gen/bin/audit-fill-eyes.mjs",
+     "gen:coloring-fills:audit:eyes:review": "node tools/asset-gen/bin/review-orb-eyes.mjs",
+     "gen:coloring-fills:audit:shapes": "node tools/asset-gen/bin/audit-invented-shapes.mjs",
+     "gen:coloring-fills:audit:halo": "node tools/asset-gen/bin/audit-night-halo.mjs",
+     "gen:coloring-outlines:audit": "node tools/asset-gen/bin/audit-outline-solidity.mjs",
+-    "gen:coloring-outlines:fresh": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs",
+-    "gen:coloring-outlines:normalize": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/bin/normalize-outline-strokes.mjs",
++    "gen:coloring-outlines:fresh": "node tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs",
++    "gen:coloring-outlines:normalize": "node tools/asset-gen/bin/normalize-outline-strokes.mjs",
+     "gen:coloring-golden:freeze": "node tools/asset-gen/bin/audit-golden.mjs --freeze",
+     "gen:coloring-golden:diff": "node tools/asset-gen/bin/audit-golden.mjs --diff",
+     "gen:coloring-punch": "node tools/asset-gen/bin/punch-fill-outlines.mjs",
+     "gen:coloring-thumbs": "node tools/asset-gen/bin/gen-coloring-thumbs.mjs",
+-    "gen:coloring-book-proof-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs",
++    "gen:coloring-book-proof-sheet": "node tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs",
+     "gen:icons-sheet": "node scripts/gen-icons-sheet.mjs",
+     "gen:assets:manifest": "node tools/asset-gen/bin/gen-asset-manifest.mjs",
+     "scrapbook:publish": "node scripts/publish-scrapbook.mjs",
+diff --git a/scripts/.ruler/AGENTS.md b/scripts/.ruler/AGENTS.md
+index 16b0e3a5..60ea0397 100644
+--- a/scripts/.ruler/AGENTS.md
++++ b/scripts/.ruler/AGENTS.md
+@@ -16,8 +16,8 @@
+   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
+   tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
+   Check there before writing new glue.
+-* TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
+-  script).
++* TypeScript-flavored scripts run directly via `node`; the `>=22.18` engine floor enables type
++  stripping by default (see the `check:assets` npm script).
+ * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
+   on macOS/Linux.
+ * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**
+diff --git a/scripts/AGENTS.md b/scripts/AGENTS.md
+index 46a4f85f..03a54856 100644
+--- a/scripts/AGENTS.md
++++ b/scripts/AGENTS.md
+@@ -20,8 +20,8 @@
+   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
+   tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
+   Check there before writing new glue.
+-* TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
+-  script).
++* TypeScript-flavored scripts run directly via `node`; the `>=22.18` engine floor enables type
++  stripping by default (see the `check:assets` npm script).
+ * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
+   on macOS/Linux.
+ * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**
+diff --git a/scripts/CLAUDE.md b/scripts/CLAUDE.md
+index b28b8043..bd4491b6 100644
+--- a/scripts/CLAUDE.md
++++ b/scripts/CLAUDE.md
+@@ -18,8 +18,8 @@
+   `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
+   tests, and `adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing they both drive.
+   Check there before writing new glue.
+-* TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
+-  script).
++* TypeScript-flavored scripts run directly via `node`; the `>=22.18` engine floor enables type
++  stripping by default (see the `check:assets` npm script).
+ * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
+   on macOS/Linux.
+ * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**
+diff --git a/scripts/api-smoke.mjs b/scripts/api-smoke.mjs
+index 0c01808d..30687e97 100644
+--- a/scripts/api-smoke.mjs
++++ b/scripts/api-smoke.mjs
+@@ -12,9 +12,9 @@ import { spawnViteServer } from './lib/vite-server.mjs';
+ import { waitForUrl } from './lib/utils.mjs';
+ import { check, fatal, summarize, json } from './lib/smoke.mjs';
+ import { adminClient } from './lib/adminClient.mjs';
+-// Type-stripped at runtime (the npm script passes --experimental-strip-types)
+-// so the absence assertions below name the same headers the hook stamps — a new
+-// security header is covered here the moment it's added to that module.
++// Type-stripped at runtime by default on the Node 22.18+ project floor, so the
++// absence assertions below name the same headers the hook stamps — a new security
++// header is covered here the moment it's added to that module.
+ import { SECURITY_HEADERS } from '../web/src/lib/server/securityHeaders.ts';
+ import { tinyPngBuffer } from '../web/tests/fixtures.ts';
+
+diff --git a/scripts/gen-large-image.mjs b/scripts/gen-large-image.mjs
+index 6da49a6a..4f630e56 100644
+--- a/scripts/gen-large-image.mjs
++++ b/scripts/gen-large-image.mjs
+@@ -9,7 +9,7 @@
+ // Facebook Sharing Debugger since scrapers cache the old card for weeks.
+ //
+ // A dev server is started automatically (or reused if one is already on 4173):
+-//   node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-large-image.mjs
++//   node scripts/gen-large-image.mjs
+
+ import { chromium } from '@playwright/test';
+ import { readFileSync } from 'node:fs';
+diff --git a/scripts/model-eval-fixtures.mjs b/scripts/model-eval-fixtures.mjs
+index a9aa8ce9..9d29e499 100644
+--- a/scripts/model-eval-fixtures.mjs
++++ b/scripts/model-eval-fixtures.mjs
+@@ -4,7 +4,7 @@
+ // any coloring-page line art, and the child's pen / magic-brush marks. Deterministic
+ // (seeded), so re-running reproduces the same corpus.
+ //
+-//   node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/model-eval-fixtures.mjs
++//   node scripts/model-eval-fixtures.mjs
+ //
+ // Categories (filename prefix = category):
+ //   coloring-outline  a coloring page just opened / barely colored
+diff --git a/scripts/strip-native-assets.mjs b/scripts/strip-native-assets.mjs
+index 2137a178..3039c1e7 100644
+--- a/scripts/strip-native-assets.mjs
++++ b/scripts/strip-native-assets.mjs
+@@ -7,8 +7,8 @@
+ // that does not list 'mobile' (e.g. licensed IP like Bluey / Frozen) has its
+ // asset folder deleted here, matching the runtime filter in ColoringBook.svelte.
+ //
+-// books.ts is TypeScript, so this script is launched with Node's
+-// --experimental-strip-types (see the build:cap npm script) to import it directly.
++// Node 22.18+ strips the TypeScript syntax in books.ts by default so this script
++// can import it directly.
+
+ import { rmSync, existsSync } from 'node:fs';
+ import { join, dirname } from 'node:path';
+diff --git a/tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs b/tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs
+index 1cb1e93b..f20e9f17 100644
+--- a/tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs
++++ b/tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs
+@@ -3,9 +3,8 @@
+ // coloring-book-proof-sheet-assets/ — it holds the CLI contract, the layer/compositing
+ // model, and the size constraints that shape this generator.
+ //
+-//   node --experimental-strip-types --disable-warning=ExperimentalWarning \
+-//     tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
+-//       [--source shipped|samples] [--out FILE]
++//   node tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
++//     [--source shipped|samples] [--out FILE]
+ import { parseArgs } from 'node:util';
+ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+ import { execFileSync } from 'node:child_process';
+diff --git a/tools/asset-gen/bin/gen-style-covers.mjs b/tools/asset-gen/bin/gen-style-covers.mjs
+index 6eff5c5f..b5a0d5f3 100644
+--- a/tools/asset-gen/bin/gen-style-covers.mjs
++++ b/tools/asset-gen/bin/gen-style-covers.mjs
+@@ -1,8 +1,8 @@
+ // Regenerates the AI style cover thumbnails in web/static/styles/ by running
+ // the source drawing (web/static/styles/source.svg) through Gemini once per
+ // style in STYLE_SUFFIXES, using the same prompt assembly as /api/generate-image.
+-// Requires GEMINI_API_KEY in the environment. Run via npm so the TypeScript
+-// imports resolve (node --experimental-strip-types):
++// Requires GEMINI_API_KEY in the environment. Node 22.18+'s default type stripping
++// resolves the TypeScript imports:
+ //   npm run gen:style-covers                                  all styles
+ //   npm run gen:style-covers -- --style Crayon                one style
+ //   npm run gen:style-covers -- --style Crayon --temperature 1.4
+diff --git a/tools/asset-gen/docs/coloring-book-proof-sheet.md b/tools/asset-gen/docs/coloring-book-proof-sheet.md
+index e7c78316..8632b859 100644
+--- a/tools/asset-gen/docs/coloring-book-proof-sheet.md
++++ b/tools/asset-gen/docs/coloring-book-proof-sheet.md
+@@ -20,8 +20,7 @@ capped), so the images simply grow with the viewport until they hit that cap.
+ ## CLI
+
+ ```bash
+-node --experimental-strip-types --disable-warning=ExperimentalWarning \
+-  tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
++node tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
+     [--source shipped|samples|git:<ref>] [--out FILE]
+ ```
+
+diff --git a/tools/asset-gen/docs/pipeline.md b/tools/asset-gen/docs/pipeline.md
+index 54501a64..86124812 100644
+--- a/tools/asset-gen/docs/pipeline.md
++++ b/tools/asset-gen/docs/pipeline.md
+@@ -223,8 +223,7 @@ partially apply a batch. `--samples N` remains review-only and cannot be combine
+ ## Stage 4 — Night fills
+
+ ```bash
+-node --experimental-strip-types --disable-warning=ExperimentalWarning \
+-  tools/asset-gen/bin/gen-coloring-fills-dark.mjs <category|page> [flags]
++node tools/asset-gen/bin/gen-coloring-fills-dark.mjs <category|page> [flags]
+ ```
+
+ Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
+diff --git a/tools/asset-gen/package.json b/tools/asset-gen/package.json
+index 15239a22..56ef2c22 100644
+--- a/tools/asset-gen/package.json
++++ b/tools/asset-gen/package.json
+@@ -5,13 +5,13 @@
+   "type": "module",
+   "description": "AI/sharp asset-generation pipeline for Splotch. NOT a workspace and NOT separately installed — its dependencies (sharp, @google/genai) live in the repo-root package.json so the root node_modules stays flat for cap sync (ADR-0029/0053). Run these via `npm run gen:*` from the repo root, or the aliases below from inside this folder; either way binaries resolve from the hoisted root node_modules. Do not `npm install` here.",
+   "scripts": {
+-    "style-covers": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-style-covers.mjs",
+-    "coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-chalk.mjs",
+-    "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-fills.mjs",
+-    "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-fills-dark.mjs",
++    "style-covers": "node bin/gen-style-covers.mjs",
++    "coloring-chalk": "node bin/gen-coloring-chalk.mjs",
++    "coloring-fills": "node bin/gen-coloring-fills.mjs",
++    "coloring-fills-dark": "node bin/gen-coloring-fills-dark.mjs",
+     "coloring-punch": "node bin/punch-fill-outlines.mjs",
+     "coloring-thumbs": "node bin/gen-coloring-thumbs.mjs",
+-    "coloring-book-proof-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-book-proof-sheet.mjs",
++    "coloring-book-proof-sheet": "node bin/gen-coloring-book-proof-sheet.mjs",
+     "asset-manifest": "node bin/gen-asset-manifest.mjs",
+     "png-to-webp": "node bin/png-to-webp.mjs"
+   }
+diff --git a/web/src/lib/ai/prompt.ts b/web/src/lib/ai/prompt.ts
+index 397ae2e3..c54cddf9 100644
+--- a/web/src/lib/ai/prompt.ts
++++ b/web/src/lib/ai/prompt.ts
+@@ -1,6 +1,6 @@
+ // Prompt assembly for AI image generation, shared by the /api/generate-image
+-// endpoint and tools/asset-gen/bin/gen-style-covers.mjs (which imports it via
+-// --experimental-strip-types, so keep this module dependency-free).
++// endpoint and tools/asset-gen/bin/gen-style-covers.mjs (which imports it directly
++// with Node's default type stripping, so keep this module dependency-free).
+ export const DEFAULT_PROMPT =
+   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Pay special attention to the ground: render it as one solidly filled area of even color.";
+
+diff --git a/web/src/lib/server/ai/geminiSafety.ts b/web/src/lib/server/ai/geminiSafety.ts
+index 86186b3a..8fd99d19 100644
+--- a/web/src/lib/server/ai/geminiSafety.ts
++++ b/web/src/lib/server/ai/geminiSafety.ts
+@@ -4,8 +4,8 @@ import type { GenerateContentResponse } from '@google/genai';
+ // tell a *safety refusal* (the child should draw something else) apart from a
+ // genuine upstream/empty failure (try again). See ADR-0023. Kept as its own
+ // dependency-free module (only a type import) because the asset scripts
+-// (tools/asset-gen/bin/gen-style-covers.mjs, gen-coloring-fills.mjs) import it directly via
+-// --experimental-strip-types.
++// (tools/asset-gen/bin/gen-style-covers.mjs, gen-coloring-fills.mjs) import it directly with
++// Node's default type stripping.
+
+ export type SafetyClassification =
+   | { kind: 'image'; data: string; mimeType: string }
+diff --git a/web/tsconfig.json b/web/tsconfig.json
+index d308773c..06fd2a15 100644
+--- a/web/tsconfig.json
++++ b/web/tsconfig.json
+@@ -6,9 +6,9 @@
+     // and build scripts live outside src/ and are therefore exempt.
+     "allowJs": false,
+     "skipLibCheck": true,
+-    // tokens.ts is also executed directly by node (gen:tokens, via
+-    // --experimental-strip-types), which needs the real .ts specifier on its
+-    // relative imports since there's no bundler to resolve an extensionless one.
++    // tokens.ts is also executed directly by node (gen:tokens, using Node 22.18+'s
++    // default type stripping), which needs the real .ts specifier on its relative
++    // imports since there's no bundler to resolve an extensionless one.
+     "allowImportingTsExtensions": true
+   }
+ }

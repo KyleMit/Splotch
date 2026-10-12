@@ -1,0 +1,419 @@
+---
+name: design
+description: Design-system reference — the token vocabulary (color, spacing, radius, type, elevation, motion), the primitives in lib/components/design/, the voice & copy rules, brand/iconography, and the rules for styling UI. Use before writing or changing any component styles, picking a color/size/shadow/easing, adding a UI element, writing user-facing copy, or when visual consistency or the /design styleguide comes up.
+---
+
+# Splotch design system
+
+The visual language is defined once, in **`web/src/lib/design/tokens.ts`** (ADR-0071), and emitted
+as CSS custom properties into **`web/src/tokens.css`** by `npm run gen:tokens`. Custom properties
+pierce Svelte's style scoping, so every component references them directly via `var(--…)`.
+
+## Hard rules
+
+1. **Never edit `web/src/tokens.css`** — it's generated. Edit `tokens.ts`, run `npm run gen:tokens`,
+   commit both. CI fails on drift (`npm run gen:tokens:check`). Nothing regenerates it
+   automatically: `npm run dev` and the Netlify build both serve the *committed* file (unlike
+   `gen:icon-names`/`gen:releases` it's deliberately not in `prebuild` — the Netlify build runs on
+   the platform-default Node, which may lack `--experimental-strip-types`), so a `tokens.ts` edit is
+   invisible until you rerun `gen:tokens`. If a token change doesn't show up, that's why.
+2. **No raw values where a token exists.** In component `<style>` blocks, don't write hex colors, px
+   radii, px font sizes, shadow literals, or easing curves that a token already covers — use the
+   `var(--…)`. A raw value is only acceptable for genuine one-offs (e.g. the ground behind a
+   picture, confetti colors, canvas ink) — and say why in a comment if it isn't obvious. A one-off
+   stops being one the moment a second surface wants it: the polaroids' photographic white was the
+   documented example here until a third copy of it turned up, and it is `--polaroid-paper` now.
+3. **Themed color goes through the theme tokens.** Light and dark values live side by side in
+   `tokens.ts` (`themes.light` / `themes.dark` — the shared `ThemeTokens` interface keeps them
+   structurally identical). If a new color should differ in dark mode, it belongs there, not in a
+   component.
+4. **JS never mirrors a token by hand.** The few JS consumers of token values (canvas export fill,
+   Notch Band, theme-color meta) import from `$lib/design/tokens`. Don't paste a hex into
+   TypeScript. The one exception is `lib/theme.ts`, which sits on the startup path: `themes` is a
+   single object literal, so importing it for one value drags every token into a modulepreloaded
+   chunk. It writes its three values literally, and `lib/theme.tokens.test.ts` fails on drift
+   (ADR-0071's 2026-09 amendment). Copy that only with the same three things — a startup-path
+   module, a measured saving, and a drift guard.
+
+5. **Text and glyphs change token, never opacity**, when de-emphasized. Whole disabled controls
+   retain their component treatment.
+
+## Voice & copy
+
+Two voices, one maker. Kid-adjacent copy is playful and warm ("Open it up, hand over the device, and
+let them make a mess. That's the whole idea."). Parent-facing copy — Settings, store listings,
+privacy — is plain, professional, and direct ("We never keep a copy of your key.").
+
+* **Sentence case everywhere** — buttons, labels, headings ("Clear drawing", "Save screenshot").
+  Title Case only for proper feature names (Night Mode, Parent Center, Guided Access).
+* **No emoji in UI chrome — anywhere.** The one historical exception (`/privacy` used emoji as
+  friendly bullet leads on its "no ___" highlight cards) was retired in the 2026-08 privacy
+  redesign: list leads that want warmth get a crayon pill (`CrayonStrip` vocabulary, hues via
+  `paletteHex`) instead. Don't reintroduce the exception.
+* **Short, concrete, reassuring.** Feature bullets lead with verbs ("Draw with big, chunky,
+  crayon-like strokes"); Settings help text is one calm sentence.
+* **"You" is the parent, "they"/"kids" is the child.** First-person-plural "we" for the maker's
+  promises.
+* **Honest about tradeoffs** — copy explains *why* ("so playtime stays in Splotch").
+* **Cut stock AI phrasing.** Review drafts for formulaic lead-ins, repeated bold leads, contrast
+  formulas, and chains of em dashes. Use short active sentences and one term per concept, with the
+  app's actual UI names. Describe routine mechanics as calm promises while preserving required
+  privacy and permission facts. Critique and revise important public copy before publishing.
+
+## Token vocabulary
+
+Every token carries a one-line "reach for it when…" rule in **`web/src/lib/design/tokenUsage.ts`**,
+rendered beside its specimen on `/design` (ADR-0097). The table below is the shape of the
+vocabulary; the usage rules are the law — start from the defaults callout at the top of `/design`'s
+Foundations and only reach past a default when a rule says so.
+
+| Group     | Tokens                                                                                                                                                                                           |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Brand     | `--brand`, `--on-brand` (the ink on brand fills).                                                                                                                                                |
+|           | `--brand` is the identity hue — hairlines, focus rings, `accent-color`, tints, and **textless** fills                                                                                            |
+|           | (it is only 3.4:1 against `--on-brand`). A brand fill that carries a label rests on the themed                                                                                                   |
+|           | `--brand-solid`, and every brand fill hovers through the same ramp (`--brand-solid`, then                                                                                                        |
+|           | `--brand-solid-hover`) — there is deliberately no second, unthemed hover step (ADR-0097)                                                                                                         |
+| Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                                                                                                         |
+| Radius    | `--radius-sm/md/lg` (8/12/16px), `--radius-pill` — inline chips sm, controls md, everything                                                                                                      |
+|           | card-sized and up (cards, modal cards, banners, page sheets) lg, pills pill. There is no xs step                                                                                                 |
+|           | and no xl step (ADR-0098 folded it into lg)                                                                                                                                                      |
+|           | `--radius-blob-1/2/3` — paint daubs for gate operands, answer dabs, numbered steps, section links, back links and external marks.                                                                |
+| Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,                                                                                                     |
+|           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token                                                                                              |
+| Type      | `--font-size-xs/sm/md/lg/xl` (12/14/16/18/22px) — fine print · UI chrome · body prose ·                                                                                                          |
+|           | ledes/section heads · titles (the ceiling inside any surface) — plus `--font-size-display`                                                                                                       |
+|           | (fluid 34–46px), the H1 of a whole page: PageShell's hero, the crash screen. There is no 2xl                                                                                                     |
+|           | step between them (ADR-0098). `--font-family`, `--font-mono`,                                                                                                                                    |
+|           | `--font-weight-medium/semibold/bold` (500/600/700 — quiet labels · buttons/active states/sub-heads ·                                                                                             |
+|           | headings; body prose stays at the untokenized 400 default)                                                                                                                                       |
+| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s) and `--duration-exit` (0.2s, what an exit takes);                                                                                                   |
+|           | `--ease-pop` (springy overshoot: two-state pops and single-segment keyframes), `--ease-glide`                                                                                                    |
+|           | (anything that settles or leaves), and `--ease-drawer` (symmetric, for two things that must move                                                                                                 |
+|           | as one — the drawer and its chevron).                                                                                                                                                            |
+|           | Control-state motion (hover, press, reveal, fades) pairs a curve with a duration token; tuned                                                                                                    |
+|           | one-shot choreography — celebration keyframes, staged sequences like the AI reveal and polaroid                                                                                                  |
+|           | flight, gesture feedback — carries its own timing, whichever CSS mechanism renders it. The rules                                                                                                 |
+|           | for choosing among them are under **Motion** below                                                                                                                                               |
+| Elevation | Three shadows only: `--shadow-control` (the tight lift on a small raised control — selected                                                                                                      |
+|           | segment thumb, tool popover), `--shadow-pop` (deep overlay lift under modal cards), and the                                                                                                      |
+|           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)                                                                                                         |
+| Opacity   | `--disabled-opacity` — the one dimming for a whole parked control (toggle rows, chips, buttons,                                                                                                  |
+|           | gate keys). Text and glyphs on their own never take it: they change ink token (rule 5). The                                                                                                      |
+|           | canvas action buttons keep their deeper bespoke fade                                                                                                                                             |
+| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                                                                                                             |
+|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on                                                                                                     |
+|           | purpose (ADR-0052): it reads the same on both papers. `--polaroid-paper` / `--polaroid-ink` —                                                                                                    |
+|           | the print white every polaroid in the app is made of and the brand ink written on it, unthemed                                                                                                   |
+|           | for the same kind of reason (ADR-0117): a photograph doesn't repaint at night, so what is                                                                                                        |
+|           | written on it can't either                                                                                                                                                                       |
+| Stacking  | `--z-*` — the cross-component chrome order, from toolbar paper and pointer halos through `--z-canvas-chrome` up to `--z-polaroid`                                                                |
+|           | (1004, the screenshot flight), listed low-to-high in `tokens.ts`. One list, not one context: all                                                                                                 |
+|           | root-context except                                                                                                                                                                              |
+|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under                                                                                             |
+|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                                                                                                                  |
+| Glass     | `--glass-rail` / `--glass-strip` set Bare toolbar tint strength; `--glass-tint-rgb` follows paper. `--rule-ink`, `--rule-blend`, `--rule-opacity` / `--rule-secondary-opacity` paint its margin. |
+| Scrim     | `--scrim-ink`, `--scrim-ink-danger`, `--scrim-ink-soft`, `--scrim-pill` —                                                                                                                        |
+|           | fixed inks and glass for disclosure text on the dark backdrop in both themes.                                                                                                                    |
+| Steps     | `--step-wash-strength` / `--step-ink-strength` — numbered-step disc and digit mixes.                                                                                                             |
+|           | Light sheets keep crayon tints; dark digits use full heading ink on lifted discs.                                                                                                                |
+| Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                                                                                                          |
+|           | `--text-soft` de-emphasized, pinned to hold 4.5:1 at small sizes), icon inks, brand/success/danger                                                                                               |
+|           | washes (the brand and danger washes each with a `-hover` step), paper, float-card chrome, and                                                                                                    |
+|           | `--surface-rgb` (`--surface` as channels, for a fade that paints without `color-mix()`) — the                                                                                                    |
+|           | full list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                                                                                                  |
+
+**Adding a token:** it must earn its place — a semantic meaning used (or clearly about to be used)
+in 2–3 places. Prefer reusing an existing step of a ramp over minting a near-duplicate (ADR-0097
+pruned the last crop of ≤2-consumer tokens; don't regrow them). New themed tokens need both light
+and dark values (the compiler enforces this). Minting a token isn't done until it's registered in
+the vocabulary table above, has its usage rule in `tokenUsage.ts` (the `Record` types make the
+compiler demand one), and renders on `/design` — an undiscoverable token guarantees the next
+hardcoded duplicate (a failure review has caught three times).
+
+## Motion
+
+Keep what already works: the one `:root[data-reduce-motion]` answer with per-element
+`data-start-reduced-motion` stamps, nothing animating while a stroke may be live, pre-rasterized
+bitmaps behind the undo ghost and the clear sheet, and durations justified against measured frames
+rather than taste.
+
+1. **One curve per cue.** A shorthand timing function applies between *every* pair of keyframes. A
+   keyframe block that draws its own overshoot runs `linear` at the shorthand and sets
+   `animation-timing-function` per keyframe (`undo-spin`, `dialogFlyFromOrigin`). `--ease-pop` is
+   for two-state transitions and single-segment keyframes. `ease-in-out` is fine per segment when
+   every stop is a turning point — a shake, a wiggle, a pulse. `npm run lint:css` enforces it
+   (`splotch/keyframe-curves`, three or more transform stops).
+2. **Every entrance owes an exit.** An exit runs at roughly 0.6 of its entrance, on `--ease-glide`,
+   heading back toward where the entrance came from. Under reduced motion an exit is a **fade, never
+   `animation: none`** — code waits on it finishing (ADR-0170).
+3. **Compositor-only while ink can be live.** Anything that can run during a stroke animates
+   `transform`, `opacity` or `clip-path`. Known exceptions to work off: the drawer's grid track,
+   `action-unavailable-flash`, the Clear Button's lid `margin` and dock `border-radius`, the Bare
+   toolbar's sibling `filter`, the color picker hexagon `filter`.
+4. **Interruptible by construction.** A cue that can reverse mid-flight restarts or reverses from
+   the current state (the swatch press rewinds with `currentTime = 0`; a dialog reopened mid-exit
+   drops its closing class and restarts the fly-in) rather than cutting to an end state.
+5. **Whole-screen state changes swap layers, not properties.** A theme change swaps every token at
+   once and fades a veil of the open card's previous surface off the new one — opacity on one small
+   layer, never a whole-screen snapshot, whose capture and teardown each cost a frame on the
+   release-gate devices (ADR-0171).
+6. **Frame budget on a 60 Hz beat.** WebKit hands web content 60 Hz even on a 120 Hz iPad: no cue
+   under 120 ms unless it follows the finger, keyframe stops at least two frames (33 ms) apart, and
+   a stagger capped so the last item lands within 1.3× the single-item duration.
+7. **Declare the calm twin beside the cue**, in the same commit. Entrances and exits fade; state
+   changes snap; loops slow or hold one frame.
+8. **`will-change` is a loan.** Promote in the frame before a cue and release after, or justify a
+   permanent layer in place.
+
+| Kind           | Duration                  | Curve                                                 | Reduced motion          |
+| -------------- | ------------------------- | ----------------------------------------------------- | ----------------------- |
+| Enter          | 300–360 ms                | `--ease-pop`, or `linear` + per-keyframe curves       | fade, `--duration-base` |
+| Exit           | `--duration-exit` (≈0.6×) | `--ease-glide`, 30–40% of the way back toward origin  | fade, `--duration-base` |
+| State change   | 150–200 ms                | `ease`; a symmetric curve when two things move as one | snap                    |
+| Gesture-follow | 0, or ≤120 ms catch-up    | `linear`                                              | instant                 |
+| Celebration    | own timing, ≤2 s          | `linear` + per-keyframe curves                        | 0.7 s fade, or hidden   |
+| Ambient loop   | 0.8–2.8 s                 | `linear` / `ease-in-out`                              | slow, or hold one frame |
+
+**The undo ghost's cost is accepted.** The ghost is built inside the undo call, so it counts toward
+the gated `engine.undo` time: on a Galaxy S21 FE in Android Chrome, about 2 ms median and 4 ms P95
+per pen undo (`engine.undoInkMotion`, Reduce Motion off against on; the restore barely moved, and
+every undo gate passed). Keep it synchronous rather than trimming it or deferring it to the next
+frame. Deferral would buy back time no gate needs, and only part of it: a crayon or magic ghost
+reads the live tiles before the restore overwrites them, and whatever moves lands in the frame after
+the undo, where the A/B could not settle its effect. Evidence:
+[#2238's device A/B](https://github.com/KyleMit/Splotch/issues/2238#issuecomment-5828881795); the
+rationale sits on `undo` in `web/src/lib/drawing/inkMotion.ts`.
+
+## Primitives
+
+Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
+from tokens and are for modal/settings surfaces — the canvas-floating controls (Actions Panel,
+corner buttons, Clear Button) keep their bespoke paper treatments. The admin console (`/admin`) is
+themed (the 2026-08 redesign, recorded in the ADR-0071 amendments) and takes its sign-in, add-code
+and Sign out buttons from the Button primitive, but keeps its own bespoke controls where the
+primitives offer no shape: the ledger table and its link-shaped actions.
+
+| Primitive                | Use for                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 48px targets: flat back, outlined close.                                                                                                                                                                                                                                                                                                                                                               |
+|                          | Omit children for a floating close; `closeFeedback` preserves Settings press feedback.                                                                                                                                                                                                                                                                                                                                                          |
+| `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `lg` / `md` / `sm` / `hero`                                                                                                                                                                                                                                                                                                                                                   |
+|                          | (`lg` takes a 16px label, for a pair that is a screen's primary decision rather                                                                                                                                                                                                                                                                                                                                                                 |
+|                          | than chrome; `hero` is the 56px lifted pill with an 18px bold label, the kid-facing way                                                                                                                                                                                                                                                                                                                                                         |
+|                          | forward from a Dottie error screen, which `ErrorScreen` restates with fallbacks). Not for                                                                                                                                                                                                                                                                                                                                                       |
+|                          | controls with a **selected state** — those are pickers, not                                                                                                                                                                                                                                                                                                                                                                                     |
+|                          | actions: use `SegmentedPicker`                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup with roving                                                                                                                                                                                                                                                                                                                                                         |
+|                          | tabindex + arrow-key selection: the theme pickers) / `toggle` (`aria-pressed`; deselection                                                                                                                                                                                                                                                                                                                                                      |
+|                          | and multi-select stay with the caller: the controls chips).                                                                                                                                                                                                                                                                                                                                                                                     |
+|                          | `variant` = `segment` (raised-thumb track) / `chip` (borderless toggle grid) / `underline`                                                                                                                                                                                                                                                                                                                                                      |
+|                          | (tab row on a hairline, for a standalone page switching between two views of itself —                                                                                                                                                                                                                                                                                                                                                           |
+|                          | `/beta`'s platform tabs; the live tab replaces its stretch of the rule with a brand                                                                                                                                                                                                                                                                                                                                                             |
+|                          | segment and takes the brand ink, and its icon follows that ink rather than `--icon-ink`);                                                                                                                                                                                                                                                                                                                                                       |
+|                          | `fill={false}` hugs content — except under `underline`, which owns its                                                                                                                                                                                                                                                                                                                                                                          |
+|                          | own width (hugs left on a sheet, splits the row evenly at phone width, where a caller                                                                                                                                                                                                                                                                                                                                                           |
+|                          | wanting the rule at the glass supplies the bleed past its own gutter); `inputName` renders                                                                                                                                                                                                                                                                                                                                                      |
+|                          | the options as real native radios for a form that must post without JavaScript (the                                                                                                                                                                                                                                                                                                                                                             |
+|                          | report-kind row); the forwarded `class` carries call-site restyling — for the segment skin, by setting its `--segment-*` custom properties (option direction, gap, padding, and the track and option radii), never by selecting its internal classes                                                                                                                                                                                            |
+| `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the                                                                                                                                                                                                                                                                                                                                                            |
+|                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`)                                                                                                                                                                                                                                                                                                                                                     |
+| `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` / `warning`.                                                                                                                                                                                                                                                                                                                                        |
+|                          | It has no outer margin: a gap container spaces it, and a host that is not one places it                                                                                                                                                                                                                                                                                                                                                         |
+|                          | through the forwarded `class`                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `ScrollCue.svelte`       | The fade that says a scroller's content carries on below. Render it as the                                                                                                                                                                                                                                                                                                                                                                      |
+|                          | **last child of the scrolling content** and it plants its own end-of-content sentinel                                                                                                                                                                                                                                                                                                                                                           |
+|                          | there; one IntersectionObserver gives all three states, so it is absent when the content                                                                                                                                                                                                                                                                                                                                                        |
+|                          | fits, absent at the end of the scroll, and present only in between. Depth is the inherited                                                                                                                                                                                                                                                                                                                                                      |
+|                          | `--scroll-cue-height` (default 72px), set by the call site on any ancestor. The scroller hosting the bare form declares `--scrollport-bottom-padding` beside its own `padding-bottom` (drift-guarded by `ScrollCue.scrollportPadding.test.ts`) so the fade reaches the edge the scrollport clips at — never compensate for it at the call site. A scroller                                                                                      |
+|                          | that already paints its own edge affordance (the settings sidebar's `local` shades) does                                                                                                                                                                                                                                                                                                                                                        |
+|                          | not take one as well. For a bounded pane, the `children(end)` snippet wraps the scroller;                                                                                                                                                                                                                                                                                                                                                       |
+|                          | render `end()` last inside it so the fade can paint beside it, clear of scrollbar gutters.                                                                                                                                                                                                                                                                                                                                                      |
+|                          | A caller staging mounting or presentation passes `contentPending` to show the fade                                                                                                                                                                                                                                                                                                                                                              |
+|                          | immediately until its content is whole, then returns to the observed fit/end behavior.                                                                                                                                                                                                                                                                                                                                                          |
+| `VisuallyHidden.svelte`  | Text a screen reader announces and the eye never sees: the word an icon stands in for, what a badge means. `as` = `span` (default) / `p` / `label` (+ `for`); a live announcement passes `role="status"`. A component rather than an `app.css` class, so the rule stays out of the render-blocking startup stylesheet                                                                                                                           |
+| `ExternalMark.svelte`    | The "leaves the app" paint blob and arrow ending every `<a>` that opens outside Splotch (a `target`), placed inside the anchor after the label. `variant` = `inline` (in prose, on `--brand-wash` in the link's ink) / `standalone` (muted, beside an icon-led link). Adds "(opens outside Splotch)" to the link's name. Filled `Button`s and `mailto:` links go without; `ExternalMark.coverage.test.ts` fails on a targeted anchor missing it |
+
+Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
+
+| Global class (`app.css`)                                            | Use for                                                                                                                    |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `.modal-dialog` / `.modal-fly-in`                                   | The dimmed, blurred `<dialog>` backdrop and the fly-in from the opening                                                    |
+|                                                                     | button. Two exceptions take a plain deeper dim instead: every modal under                                                  |
+|                                                                     | `prefers-reduced-transparency`, and the coloring picker alone under                                                        |
+|                                                                     | `pointer: coarse` (its backdrop blurs the canvas stack while it retires;                                                   |
+|                                                                     | ADR-0157). AiImageResult has its own open choreography, so it takes                                                        |
+|                                                                     | `.modal-dialog` alone                                                                                                      |
+| `.modal-shell`                                                      | The centered modal card — surface, radius, shadow, and re-inked                                                            |
+|                                                                     | monochrome icons. Max-height/overflow stay per-modal; a card that stretches                                                |
+|                                                                     | with the viewport is `width: calc(100vw - 2 * var(--modal-gutter))` with its                                               |
+|                                                                     | own `max-width` cap (the explicit cap is what beats the UA `<dialog>` max-width,                                           |
+|                                                                     | whose 19px inset otherwise wins on phones), so the `--modal-gutter` phone-edge                                             |
+|                                                                     | inset is shared and only the cap is per-modal. AiImagePrompt, AiImageResult                                                |
+|                                                                     | (its own safe-area-aware bound), ColoringBook, SettingsModal                                                               |
+| `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared control sizing and glyphs. `DialogHeader` gives back a flat fill and keeps `.modal-close-btn` on raised close only. |
+| `.confirm-card` / `.confirm-card-content` / `.confirm-card-heading` | The two-choice confirmation card — width, padding, and the title-and-consequence group;                                    |
+|                                                                     | the action row stays per dialog. Parent Center's unprotected-check confirmation, the AI                                    |
+|                                                                     | report confirmation, Leave Splotch                                                                                         |
+| `.step-number`                                                      | Numbered steps in beta, Install settings, and Safari install instructions.                                                 |
+|                                                                     | Layouts own size and position; themed strengths own contrast.                                                              |
+| `.corner-button` / `.corner-button-icon`                            | Muted canvas-corner chrome: a 48px transparent button whose opacity and                                                    |
+|                                                                     | icon tint step idle → hover → pressed. Drawer toggle (ActionsPanel),                                                       |
+|                                                                     | Fullscreen Toggle, Settings Button; positioning and z-index stay                                                           |
+|                                                                     | per-component                                                                                                              |
+| `.flyout-menu` / `.flyout-option`                                   | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu                                                      |
+| `.white-stroke` / `.dark-stroke`                                    | Ink keylines ringing an icon's ink-colored parts so white ink reads on the                                                 |
+|                                                                     | white cards (black ring) and near-black ink reads on the dark ones                                                         |
+|                                                                     | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger                                                      |
+|                                                                     | buttons (BrushControl, StrokeControl), BrushMenu, StrokeWidthMenu                                                          |
+
+They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
+pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.
+That second case is how a canvas-floating control de-duplicates: hoist the shared *rules* to
+`app.css` with a comment naming the consumers, leaving each component only what genuinely differs —
+not a wrapper component, which the bespoke-paper-treatment carve-out above rules out anyway.
+
+`app.css` also dresses one piece of UA chrome the app never marks up: a **classic, space-taking
+scrollbar** gets a transparent track with the thumb in `--icon-muted`, so a scroller's gutter shows
+its own surface instead of a system track painted through its rounded corners. It is one inherited
+`:root` declaration, and deliberately color only — the gutter's width is the reader's OS preference
+— using the standard property rather than `::-webkit-scrollbar`, which would trade WebKit's overlay
+scrollbar for a permanent gutter on iOS and macOS Safari. Don't restyle scrollbars per component;
+`scrollbar-chrome.spec.ts` guards the shared treatment, and `scrollbarThumbContrast.test.ts` holds
+the thumb to the 3:1 non-text minimum on every ground it can be revealed over — an authored
+`scrollbar-color` forfeits the UA-control exemption in WCAG 2.2 SC 1.4.11.
+
+**Extract a new primitive at the third duplicate**, not before — and add it to `/design` and the
+component table above when you do.
+
+## Page chrome — standalone pages
+
+Every standalone page — the link-shareable parent pages (`/privacy`, `/changelog`, `/beta`,
+`/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
+**`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
+shell (the sticky `StyleguideHeader`, plus a scrollspy TOC in its route file); it still signs itself
+with `BrandMark`:
+
+| Component            | Use for                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------- |
+| `PageShell.svelte`   | The whole page frame: ground, centered 880px sheet, masthead (back link + `BrandMark`),     |
+|                      | hero H1 + lede. Exposes the `--page-*` palette (ground/sheet/ink/body/muted/rule/link/      |
+|                      | accent/shadow/measure/gutter, plus the accent's hover and on-accent variants), resolved     |
+|                      | from the themed app tokens                                                                  |
+| `RuleLabel.svelte`   | The small-caps section marker with a hairline running to the sheet edge — a real `<h2>`     |
+| `BrandMark.svelte`   | Crayon strip + small-caps wordmark lockup (the masthead's second way home). A page passes   |
+|                      | only the word after "Splotch" (`wordmarkSuffix="beta"`); on phones a suffixed mark shows    |
+|                      | just that word, with the full name kept in the link's accessible name                       |
+| `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
+
+**No page opts out of night mode.** Every route wearing the shell follows the parent's Appearance
+setting, `/privacy`, `/changelog` and `/beta` included — the older pages pinned a light `--page-*`
+palette until 2026-08-10 and no longer do (ADR-0071's amendment records the reversal). Content
+inside the shell reads `--page-*`, never restates a color, and a page that wants a color the palette
+doesn't carry reaches for a themed app token, never a hex; `/design` styles itself from the themed
+tokens directly, so its theme toggle keeps working.
+
+Two consequences worth knowing before styling one:
+
+* **A link hovers on its underline, not a second color.** The themed ramp stops at `--page-link`
+  (`--brand-text`) — there is no deeper accessible step — so hover thickens the underline or brings
+  one in. `/feedback` is the pattern.
+* **A per-item accent gets mixed, not pinned.** A color keyed to content (BetaStep's four crayon
+  hues) derives its wash and ink with `color-mix()` against `--page-sheet` and `--page-ink`, which
+  darkens the hue on the light sheet and lightens it on the dark one from one declaration. The mix
+  strengths are named custom properties; contrast is measured on both grounds by
+  `web/tests/beta.spec.ts` rather than assumed from the light reading.
+
+## Brand & iconography
+
+* **Mascot & marks.** Splotchy (`web/src/lib/icons/splotchy.svg`) is the mascot, rendered
+  structurally via `SplotchyIcon.svelte`, which pulls that one canonical file in as a Vite URL
+  import (it's in `NON_RENDERABLE_ICONS`, so `<Icon>` won't take it). The installed-app icons are
+  separate: `site.webmanifest` points at the `web-app-manifest-*.png` files in `web/static/`. The
+  wordmark is plain Quicksand — no drawn logo. The crayon strip (`CrayonStrip.svelte`, seven pills
+  in rainbow order, hues looked up from `lib/palette.ts`) is the wordmark's companion mark on parent
+  pages.
+* **Dottie.** The little purple companion uses `dottie-*` spot icons for everyday and error
+  expressions, catalogued at `/design#dottie`; reach for those expressions for friendly error or
+  empty states. `ErrorScreen.svelte` imports the stumped SVG directly to keep recovery independent
+  of the icon registry. Her shared silhouette and brand fill are guarded by `dottie.test.ts`.
+* **Icons are first-party inline SVG** through `<Icon name="…">` — no icon font, no CDN set, no
+  emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with
+  `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and
+  are **never tinted wholesale** — the split is the `COLOR_ICONS` set in `Icon.svelte`. Adding an
+  icon: see the icon steps in `.claude/rules/svelte.md`.
+* **A single path inside a spot icon can still be themed** (ADR-0102). Declare it in
+  `web/src/lib/design/iconTokens.ts` — keyed by icon then part, with a `light` and a `dark` hex —
+  run `npm run gen:tokens`, and paint the path with
+  `style="fill:var(--icon-<icon>-<part>,#lightHex)"`; then `npm run optimize:svg-assets`. The
+  fallback hex must equal the `light` value and every declared part must be referenced by an SVG,
+  both enforced by `web/src/lib/icons/tokenFallback.test.ts`. These are **not** `ThemeTokens`
+  entries and need no `tokenUsage.ts` rule: they are a per-asset lookup table, and no component
+  style may reference one. Reach for it when a path is illegible on a theme's grounds — the spot
+  icons rest on `--surface`, `--surface-2` *and* the near-constant `--brand-solid`, so each theme's
+  colors must clear both.
+* **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
+  (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
+  color beneath. `--paper-margin` is the flat tone behind the rotation-locked sheet.
+* **Touch targets are chunky.** The shared dialog chrome, Button, SegmentedPicker, and Settings
+  switches use `--touch-target-min` (48px) in both axes across web and native. Compact switch tracks
+  can remain smaller inside the full button. Keep targets separate from neighboring controls and
+  verify effective hit regions on Android alongside accessibility bounds; CSS pixels alone are not a
+  dp measurement. Existing bespoke page/admin controls still have their own sizing; changing the
+  shared floor does not certify every app target. Kid-facing controls run deliberately larger. Don't
+  shrink a control to fit a layout — rework the layout.
+
+## The living styleguide
+
+`/design` — public, live at <https://splotch.art/design> — renders the whole system from the real
+source objects, in three parts ordered most-reusable-first: **Foundations** (every token group,
+paper, the crayon palette, the icon set split by `COLOR_ICONS`, and the composed **recipes** — card,
+form row, callout, CTA — showing tokens assembled into real surfaces), **Components & chrome** (the
+primitives, the settings furniture `ToggleRow`/`SliderRow`, specimens of the shared `app.css` chrome
+classes, and a named index of the bespoke canvas/page chrome), and **Brand & voice** (the copy rules
+and brand marks), under a sticky header with a binary light/dark preview toggle (the 3-way choice
+with System stays with the app Settings) and a scrollspy-driven table of contents — the shared
+`SidebarToc` rail on wide screens, and on narrow ones the `TocDisclosure` row that opens onto that
+same rail, its collapsed state naming the section being read. Each part's sections are partials in
+`lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
+`RecipeSections`, `PrimitiveSections` + `ChromeSections` (which renders `NamedChromeSection`),
+`VoiceSections`); because everything is imported from `tokens.ts`, `palette.ts`, and the icon glob,
+the page cannot drift from the implementation. The chrome those partials share (section rhythm,
+section titles, intro paragraphs, inline `code`, the `.value` caption) lives once in
+`styleguide/sectionChrome.css` at zero specificity; a partial's own style block holds only what
+differs. `prerender = false` keeps the page out of the native static export — no native surface
+links to it — and serves it via SSR on the web. Use it to:
+
+* review a token or primitive change in both themes (screenshot it for the PR — see the
+  `pr-screenshots` skill);
+* check what already exists before inventing a new value.
+
+## Migration status
+
+Colors, type, weights, radii, easing, and the swept surfaces' spacing are migrated; **spacing
+elsewhere is not** — raw px padding/margin/gap is still the norm in older components, and only the
+hex and font-size ratchets enforce anything, so rule 2 is what governs spacing in new and edited
+styles. What remains raw beyond that is deliberate — documented one-offs (the photographic white
+behind a picture, confetti colors, canvas chrome, functional literals like ColoringBook's label
+reserve; the print white itself and ClearButton's danger red are tokens, unthemed on purpose). The
+**light-only pages are gone**: `/admin` left that set in the 2026-08 redesign and `/privacy`,
+`/changelog` and the beta sign-up page followed on 2026-08-10, so no surface pins a palette against
+`data-theme`/`prefers-color-scheme` any more.
+
+CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
+allowlisted baselines (with per-file reasons) live in `tools/tokens/lint-token-styles.mjs`, plus a
+zero-tolerance check on multi-digit raw z-index. A new raw hex color or raw `font-size` fails the
+Quality job: use a token, or (for a genuine one-off) add a WHY comment and bump the baseline. When
+you remove a one-off, lower its baseline entry so the ratchet holds. box-shadow is deliberately not
+ratcheted: raw shadows are dominated by the canvas chrome's legitimate one-off alpha lifts, so a
+baseline would blunt the signal (the elevation tokens govern modal/settings surfaces via rule 2).
+
+`npm run lint:css` is the other CSS gate — stylelint over every `<style>` block and hand-authored
+`.css` file in the repo (ADR-0031). Where the token linter asks whether a value should have been a
+token, stylelint asks whether the CSS does anything at all: a misspelled media feature,
+pseudo-class, property or value is *retained* by the parser, reports unmatched, and silently never
+applies. Every rule was at zero before being enabled — measured there, or brought there by one
+isolated reformat — so a fresh violation is always something you just wrote. That includes colour
+notation: write `rgb(0 0 0 / 60%)`, not `rgba(0, 0, 0, 0.6)`. Because the generated `tokens.css` is
+outside stylelint's scope, `tokens.test.ts` holds every token value to the same notation.
+`:global()` is configured as known Svelte syntax, not an exception.

@@ -1,0 +1,75 @@
+<!-- Source: .ruler/skill-notes/burn-down-oversized-code.md.template -->
+
+# burn-down-oversized-code — design notes
+
+## Origin
+
+Two hand-run campaigns preceded the skill, on 2026-09-24/25:
+
+* **PR 2265, "Give every file 75 lines of max-lines headroom"** — 38 files, 76 plan agents, 36
+  splits, one split reverted to a raise (`exportDrawing.test.ts`: the split duplicated ~40 lines of
+  mock harness), one split plus a raise (`tiledRenderer.ts`), one stale grandfathered cap retired
+  (`AdminConsole.svelte`: 650 over a 395-line file).
+* **PR 2266, "Cap app functions at 125 lines with max-lines-per-function"** — added the rule, then
+  17 functions: 13 extractions, 4 raises. Its prompt was written by the 2265 session as a
+  lessons-learned rerun of the same procedure, so the skill is that prompt generalized over both
+  modes.
+
+## Why it is shaped this way
+
+* **One model for both modes.** A unit is a candidate when it is within the headroom of its own cap,
+  and a raise sets the cap to length + headroom. With headroom = hard cap − soft target (75 and 25),
+  "75 lines of headroom" and "pay down to 425" are the same test for default-capped files, and it
+  extends unchanged to files with overrides and to functions.
+* **`measure.mjs` reads caps from the resolved ESLint config**, never from prose. The default block
+  is identified as the one glob-scoped block setting the rule; literal-path blocks are overrides. If
+  the config ever grows a second glob-scoped block for either rule, the script throws and the
+  real-config test fails — the shape assumption is enforced, not documented.
+* **The probe drops type information** (`projectService: false`, `ruleFilter` to the size rule),
+  taking a full measurement from minutes to ~4 s. Counts were cross-checked against the plain CLI.
+* **Stale = retire when back under the soft target; lower when the cap grants more than 2× the
+  headroom.** Flagging any cap above length + headroom would flag `engine.ts` (1030 over 954) for
+  one line — churn with no value. The multiple is `STALE_ROOM_MULTIPLE`.
+
+## Failures that earned a rule
+
+* `test:tools` in the implementer gates: 2265's SettingsModal split moved the row template to
+  `HubList.svelte`, and three `tools/` drift guards reading it by path failed only in CI.
+* `build:cap` in the tip gates: 2266's `createPWAUpdates` split made the bundler unable to prove the
+  unused instance side-effect-free, leaking service-worker code into native; only CI's Release build
+  smoke caught it (fixed with `@__NO_SIDE_EFFECTS__`).
+* Commit order decided before cherry-picking, and no push before the tip verifies: rebase and
+  force-push are denied in this environment, so both campaigns ended with an unfoldable trailing fix
+  commit, and 2265 rebuilt its branch once.
+* Concise plan record: 2265 committed 3,930 lines of raw agent output — two thirds of its +11.6k
+  diff — which prompted a "why so much green?" question.
+* Rival per-commit loop and log check: 2266's rival said it reviewed each commit but only printed
+  titles and file lists, then read the combined diff.
+* Per-commit patch files for the rival, not a `git show` loop: the first draft of this skill told
+  the coordinator to hand the rival a `git show <sha>` loop, but the rival's own contract forbids
+  spending commands on `git show` and its packet carries only the combined diff. The rival flagged
+  the conflict reviewing this skill's own PR, so per-commit review now rides on patch files the
+  coordinator writes.
+* Runner-prefixed implementer branches keyed on the plan SHA: the same review found that implementer
+  branches named `claude/burn-down-<mode>-<slug>` collide on a second campaign before the first
+  campaign's leftovers are pruned, and the hardcoded `claude/` was wrong from Codex anyway. A date
+  was tried first; round two showed a same-day rerun still collides, while every run commits a fresh
+  plan whose SHA cannot repeat.
+* Anti-gaming check in the checker brief: the user asked after 2266 whether lines were cut by
+  deleting comments or chaining statements; it had to be verified by hand after the fact.
+
+## Decisions (2026-09-25, from the user)
+
+* **Shared skill, runner-neutral fan-out** — not a Claude/Codex fork. The briefs are plain text so
+  either runner's parallel-agent mechanism can carry them; nothing references a runner-specific
+  tool.
+* **No stale-cap drift-guard test.** The stale sweep stays a campaign step (`--check` covers it at
+  the tip) rather than a CI failure between campaigns.
+* **No batch limit.** 2265's size came from being the first run; steady-state campaigns are small.
+* **New unit tests allowed** for a new pure helper or sub-factory, listed in the PR body.
+
+## Open questions
+
+* Neither mode has been run through the skill itself yet, and never from Codex.
+* Family naming: `burn-down-*` was proposed as the prefix for all periodic tech-debt skills but not
+  yet decided; this skill was named under that proposal.

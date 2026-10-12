@@ -1,0 +1,266 @@
+# ADR-0032: Automated Performance Profiling Harness
+
+**Status:** Active — amended by ADR-0066 (2026-07): the harness and the analyzer stand unchanged,
+but the mark set below is replay-era — `engine.foldBaseline` (and ADR-0035's `engine.keyframe`) were
+deleted with the replay system; a commit now splits into `engine.snapshot` + `engine.fold`, and
+`engine.undo` pairs an explicit end mark. Further amended by ADR-0079 (2026-07): a **fourth capture
+path** drives a physical iOS device over the WebKit Inspector Protocol, so "device-accurate iOS
+profiling stays a documented manual step" below now holds only for Timeline recording. Further
+amended by ADR-0090 (2026-07): calibrated physical-iPad drawing and discrete-action measurements are
+absolute regression gates, while shared-runner browser profiles remain on-demand diagnostics.
+Further amended by ADR-0092 (2026-07): Android Chrome discrete-action profiles use direct CDP rather
+than Appium. Further amended by ADR-0093 (2026-08): a narrowly calibrated WebKit commit-shape gate
+runs in shared CI without claiming device-accurate timing. See the amendments at the end. **Date:**
+2026-06
+
+## Context
+
+ADR-0015 (capped-DPR canvas rendering) shipped strokes at `min(devicePixelRatio, 2)` — 4× the pixels
+and fill rate — and explicitly marked the cost as "not yet verified on a real device," naming Chrome
+DevTools profiling as the follow-up. That follow-up was manual: plug in a phone, open
+`chrome://inspect`, draw by hand, click Stop, save a `.json`, and read it by eye. Manual profiling
+isn't repeatable, isn't comparable run to run, and can't be handed to an agent — so the DPR cost
+(and any future regression) went unmeasured.
+
+We wanted to **programmatically** capture a profile while the app is driven through a realistic
+session (multi-finger drawing, color/size changes, erasing, undo, clear), read that profile to find
+bottlenecks, and re-run it later to catch degradation — across web, Android, and iOS.
+
+## Decision
+
+A profiling harness in `scripts/perf/`, built on the existing Playwright app-driver
+(`scripts/lib/app-driver.mjs`), with these deliberate choices:
+
+* **Build-flag-gated instrumentation, not always-on.** A `__PERF_MARKS__` compile-time constant
+  (Vite `define`, ADR-0010), set only by `PERF_MARKS=true`, wraps `performance.mark/measure` around
+  the engine's hot paths (`draw`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`, and — since ADR-0033
+  replaced the snapshot stack — `commit`/`foldBaseline` in place of the old `saveUndoSnapshot`).
+  With the literal `false` in normal builds the blocks — and their mark-name strings — dead-code-
+  eliminate, so **nothing reaches production** (grep-verified in the harness). These marks are the
+  clean, framework-agnostic signal the analyzer keys on; they survive minification where CPU-sampler
+  names don't.
+
+* **Profile the production preview build, not the dev server.** The harness builds with
+  `PERF_MARKS=true`, serves via `vite preview`, and drives the minified bundle that actually ships.
+  Profiling-only builds add `keepNames` so the CPU sampler's self-time is readable.
+
+  Web release byte budgets apply to the uninstrumented artifact. With `PERF_MARKS=true` or
+  `PUBLIC_ENABLE_DEV_HARNESS=true`, the postbuild checker measures startup JS/CSS and the largest
+  lazy chunk and logs their sizes against those budgets as report-only; build-output integrity
+  checks remain mandatory. CI's release build smoke explicitly unsets profiling and dev-harness
+  flags and enforces the unchanged limits. Native export limits remain enforced. Instrumented
+  startup and lazy-chunk sizes deliberately have no separate hard limit; exceeding a release budget
+  produces an explicit diagnostic. A second absolute size limit would bound the diagnostic artifact,
+  but would not measure its overhead relative to the production artifact. We retain the production
+  gate and visible diagnostic measurements rather than adopting a second limit without a
+  profiling-overhead contract, increasing the release allowance, or dropping useful trace names to
+  satisfy a release-size constraint (issue #1746).
+
+* **One shared session, three page sources.** `session.mjs` owns the deterministic scenario +
+  capture; the platform entries differ only in how the page is obtained:
+  * **Web** — headless Chromium + preview, selectable viewport and CPU throttle (4× to approximate a
+    phone). Full CDP Chrome trace.
+  * **Android** — the **real Capacitor WebView** on a device/emulator, reached over `adb forward` +
+    `connectOverCDP`, no throttle (the device is the target). Full CDP trace; the native bundle is
+    rebuilt with `PERF_MARKS=true`.
+  * **iOS** — Playwright's **WebKit** (the same WebKit + JavaScriptCore engine the WKWebView runs).
+    WebKit exposes no CDP/Chrome trace, so capture falls back to reading the `engine.*` marks via
+    the Performance API + FPS. This profiles the *engine*, not the Simulator's app shell;
+    device-accurate numbers come from a manual Safari Web Inspector Timeline export fed to the same
+    analyzer. *(ADR-0079 added a fourth path that drives a physical device directly; the Timeline
+    export remains the manual half.)*
+
+* **A pure analyzer.** `analyze.mjs` takes only a saved `trace.json` (+ optional `metrics.json`) and
+  is re-runnable standalone — so a native-exported trace, or an old capture, re-summarizes without
+  re-driving. It emits both `report.md` (for a human or agent) and `summary.json`
+  (machine-readable): per-phase main-thread busy time, the engine hot-path table, frame health, long
+  tasks, JS self-time (harness/instrumentation symbols excluded), and heap.
+
+### Alternatives rejected
+
+* **Manual `chrome://inspect`** — not repeatable, not comparable, not agent-readable.
+* **Playwright's coarse `browser.startTracing`** — less control than a direct CDP `Tracing` session
+  and no clean reuse path for the native WebView.
+* **Always-on user-timing marks** — measurable overhead (thousands of `measure` calls per session)
+  and mark strings shipping to production for zero user benefit.
+* **A hard CI perf gate** — headless-runner variance makes absolute-threshold gating flaky; the
+  harness is run on demand (and the analyzer is cheap to re-run on a saved trace) rather than
+  blocking PRs. ADR-0093 makes one narrow exception: WebKit commit work has a wide, shape-level
+  threshold that separates a healthy dirty-region commit from a catastrophic full-raster encode.
+
+## Consequences
+
+* **+** Profiling is one command per platform (`npm run perf:web` / `perf:android` / `perf:ios`) and
+  produces a machine-readable report an agent can act on.
+* **+** First real-hardware numbers for ADR-0015: on the Android emulator the capped-DPR canvas
+  spends ~4970 ms in raster/paint over the session (vs ~210 ms on throttled desktop), confirming the
+  "4× fill rate" cost — while the main thread stays at 60 FPS with `engine.draw` well under one
+  frame. The DPR/compositing cost is a real crispness-vs-perf tradeoff, left for a separate decision
+  rather than changed here.
+* **+** The web drawing path profiled clean (0 forced reflows, sub-ms `draw`, no long tasks),
+  validating the engine's rect-caching and deferred-snapshot design.
+* **−** Headless + CPU throttle only *approximates* a phone; absolute frame numbers want the Android
+  path. The harness labels each capture's target/throttle/build so numbers aren't compared across
+  modes by accident.
+* **−** The iOS path measures the WebKit engine, not the Simulator app, and WebKit clamps
+  `performance.now()` to ~1 ms so its marks are coarse. Device-accurate iOS profiling stays a
+  documented manual step. *(Superseded in part by ADR-0079: the gates run is automated on a physical
+  device; the Timeline recording is what stays manual.)*
+* **−** `perf:android` / `perf:ios` are local-only (need the device/emulator + toolchain and a
+  `PERF_MARKS` native build); they can't run in CI or a cloud session.
+
+The `profiling` skill is the entry point for running the harness and reading a report.
+
+## Amendment (ADR-0066, 2026-07)
+
+ADR-0066 replaced command-replay undo (ADR-0033) with snapshot undo — the paper raster is the
+committed source of truth, with a depth-20 stack of pre-stroke snapshots. The harness, the three
+capture paths, and the analyzer are untouched; what changes is the engine mark set the Decision's
+first bullet lists:
+
+* **Current set:** `engine.draw`, `engine.commit`, `engine.snapshot`, `engine.fold`,
+  `engine.encode`, `engine.reinflate`, `engine.undo`, `engine.resize`, `engine.scanEmpty`
+  (`web/src/lib/drawing/engine.ts`, `undoHistory.ts`, `emptyScan.ts`).
+* **`engine.foldBaseline` is deleted** with the replay system, as is ADR-0035's `engine.keyframe` —
+  there is no baseline fold or keyframing left to measure.
+* **`engine.snapshot` and `engine.fold` sit inside `engine.commit`** and split the commit cost by
+  stage: `engine.snapshot` isolates the pre-stroke paper copy (canvas alloc + `drawImage` + stack
+  push), `engine.fold` isolates rendering the committed stroke's ops onto the paper — the exact
+  workload ADR-0066's commit-hitch gate bounds — so a hot commit attributes to the right stage.
+* **`engine.undo` is measured end-to-end across tasks.** A deep undo is async (pop, await blob
+  decode, restore blit), so the undo step emits an explicit `engine.undo:end` mark at restore
+  completion (closed in a `finally`, so a failed decode still ends the pair) and the measure spans
+  `engine.undo:start` → `engine.undo:end`. Marks-only consumers — WebKit's Web Inspector timeline
+  export exposes marks but not measures — pair the start/end marks instead of the
+  smallest-enclosing-record heuristic, which bounded only the first task of an async undo.
+* **`engine.draw`, `engine.commit`, and `engine.scanEmpty` also emit an explicit `:end` mark now,**
+  each closed in a `finally` alongside its function body. All three have early returns (a buffered
+  edge-swipe candidate in `draw`, the deferred-restore/no-op paths in `commitStrokeGroup`, a missing
+  scratch context in `scanCanvasIsEmpty`) that used to leave the `:start` mark unmatched — a mark
+  with no measure isn't just missing a number, it corrupts the marks-only consumer above: WebKit's
+  timeline export has no measures to fall back on, so an orphaned start left the Web Inspector
+  marker stream with a dangling `:start` and no way to attribute its cost. The `finally` guarantees
+  the pair closes on every exit path, matching `engine.undo`'s shape.
+
+ADR-0066 also deleted the `perf:sweep`/`perf:units` harnesses that tuned the replay machinery; the
+platform commands this ADR ships (`perf:web`/`perf:android`/`perf:ios`) are unchanged.
+
+## Amendment (ADR-0079, 2026-07)
+
+The Decision's capture list gains a **fourth path**. `npm run perf:ipad` drives a physical iOS
+device over the **WebKit Inspector Protocol** (relayed by `ios-webkit-debug-proxy`), reusing the
+same `/dev/engine` scenarios and the same ADR-0066 gates that `perf:undo` drives — only the
+transport is new. So this ADR's "device-accurate iOS profiling stays a documented manual step" now
+holds **only for Timeline recording**: the protocol's `Timeline` domain does not emit the Web
+Inspector *export* shape `perf:ios:analyze` parses, so paint/composite and dropped-frame questions
+still route through the manual runbook.
+
+This ADR's premise that a physical device offers no automation socket was true of **CDP** and
+overstated for automation generally. ADR-0079 records the protocol's non-obvious shapes (Target
+multiplexing, no `awaitPromise`, `page`-vs-`frame` targets, suspended background tabs) and why
+`ios-webkit-debug-proxy` was chosen over `pymobiledevice3`.
+
+The analyzer, the mark set, and the three original paths are untouched.
+
+## Amendment (ADR-0164, 2026-09): the release startup budget's headroom rule
+
+`MAX_STARTUP_JS_CSS_BYTES` in `tools/check-bundle-budgets.mjs` was set on 2026-08-19 at 525,000
+bytes against a 470,860-byte reviewed baseline. Ordinary feature work consumed the 54,140 bytes of
+headroom in 23 days, and on 2026-09-11 `main` crossed the budget (525,442 bytes), turning the check
+into a cost every PR touching startup code paid. Issue #1776 records the day-by-day readings.
+
+Two readings of the number that matter when it fails:
+
+* **A `pull_request` run measures the PR merged into the `main` of that moment**, not the PR's own
+  tree — `actions/checkout` builds `refs/pull/N/merge`. Two runs of an unchanged PR sixteen minutes
+  apart differed by 459 bytes because PR #1777 had landed on `main` in between; the build is
+  byte-stable for a fixed tree. A budget failure on a PR can therefore be `main`'s growth, and the
+  first check is a local release build of `main`.
+* **A local build sits a few bytes under CI.** CI's shallow, tagless clone makes `buildVersion.ts`
+  fall back to the `major.minor.0+sha` version string, which is longer than the tag-derived
+  `major.minor.N`. Treat a local reading within a dozen bytes of the budget as failing.
+
+The rule the budget now carries: **when a PR consumes the headroom, look for a lever that moves code
+off the startup path before raising the number.** ADR-0164 was the first lever, moving the 49 icons
+only lazily loaded UI renders into a deferred registry, which brought the startup set to 473,352
+bytes and restored 51,648 bytes (9.8%) of headroom under the unchanged 525,000 limit. The next known
+slice is the ~85 kB of CSS SvelteKit inlines for dynamically imported components; when no lever is
+left, raise the constant and record the new baseline, its date, and the rationale on the constant
+and here, so the number never moves silently.
+
+## Amendment (2026-09): the startup modulepreload count
+
+`STARTUP_MODULEPRELOAD_COUNT` in `tools/check-bundle-budgets.mjs` pins how many chunks the
+prerendered `/` page modulepreloads, measured on the uninstrumented release build and enforced by
+the same postbuild step as the byte budgets. It was set on 2026-09-28 at 40.
+
+The byte budget cannot see a new startup chunk that is small. PR #2391 added a 158-byte chunk,
+taking the count from 40 to 41 while the startup set stayed about 73 kB under budget. It happened
+because a startup module imported a runtime export from a module that lazy code also imported, so
+Rolldown split the shared module into a chunk of its own. That is one more request before hydration,
+and none of `web/tests/startup-bundle.spec.ts`'s module markers could name it in advance.
+
+The pin is exact, not a ceiling. With a ceiling, a later drop would leave slack for the next
+regression to hide in, so a build whose count falls also fails and asks for the constant to come
+down. Raising it is allowed when the PR says which chunk now loads before hydration and why.
+
+Alternatives weighed:
+
+* **A count assertion in `startup-bundle.spec.ts`.** Rejected because that spec reads Playwright's
+  `PUBLIC_ENABLE_DEV_HARNESS=true` build. Instrumented and release builds can split startup code
+  differently, and a reviewer showed a release-only startup chunk (a startup import behind
+  `!__DEV_HARNESS__`) that left the instrumented count unchanged.
+* **A per-chunk name allowlist.** It would catch a same-count swap, but every bundler re-partition
+  would break it.
+
+Instrumented builds report a count mismatch without failing, as they do for the byte budgets.
+
+## Amendment (2026-09): the native startup modulepreload count
+
+`NATIVE_STARTUP_MODULEPRELOAD_COUNT` in the same tool pins the count for the native export. It reads
+the `index.html` that `build:cap` prerenders into `web/build`, the page the app's WebView boots, and
+`postbuild:cap` enforces it with the web pin's exact semantics and messages. It was set on
+2026-09-28 at 28.
+
+The web pin cannot stand in for it. A runtime import used only inside an `__IS_CAPACITOR__` branch
+is dead code in the web build, so the web count holds while the native build gains a chunk. A
+reviewer on PR #2406 found one that took the native count from 28 to 29 with the web build at 40.
+The native export byte budget cannot catch it either, since it sums the whole export, mostly assets.
+
+An instrumented native build (`perf:build:cap`) reports a count mismatch without failing. The native
+export byte budget stays enforced there.
+
+### Friendly error pages and the eager root-error boundary
+
+SvelteKit starts the root error loader on every route, outside the HTML modulepreload list.
+Importing a standalone shell there can fetch its complete icon registry and native dialog owners
+before a drawing has failed. `check-eager-error-bundle.mjs` follows the release manifest's static
+root-error imports and CSS on both targets, rejects those deferred owners, and reports the resources
+outside the HTML links. The web guard counts their union plus inline CSS against the existing
+`MAX_STARTUP_JS_CSS_BYTES` owner, so unlinked imports cannot evade the byte budget. Its fixture
+proves a transitive import fails while a dynamic import remains lazy. The preload pins still cover
+the original linked sets; their counts alone do not establish the complete cold-start request cost.
+
+`standalonePageEntries.ts` selects entries through the existing `CAPACITOR=true` build boundary. Web
+keeps a synchronous friendly 404 using the actual `PageShell`, with two canonical raw page glyphs
+and an unreachable native-controller entry that has no runtime dialog imports. Native keeps the
+existing icon registry and synchronous native link gate; its friendly page loads only when the
+client encounters a 404. While that local chunk loads, a neutral missing-page message offers drawing
+recovery without an alert. A failed import retains the existing `ErrorScreen` recovery. There is no
+async web SSR or duplicated shell.
+
+The full shell's idle scheduler and the token's font identity have independent importers. A startup
+import of that identity partitions another linked chunk on both targets. `fonts.ts` owns the
+canonical name; `warmDisplayFont.ts` retains the existing idle, Save-Data and cancellation policy
+with an inline identity guarded by `fonts.test.ts`. Exact-base trials without that boundary still
+produced an extra native request after deferring the error entry. Both existing preload pins remain
+unchanged. The extra eager web 404 composition is a measured cost, not a zero-cost claim; the PR's
+verification package records the exact base comparison.
+
+The synchronous web composition accepts a measured cold drawing delta of 13 requests, 25,173 raw
+bytes and 10,074 individually gzipped bytes against the exact base under identical idle-disabled
+capture conditions. A catch-all route could avoid this cost for unmatched URLs, but would leave
+`error(404)` from route loads on the crash screen and introduce route-status hooks and prerender
+semantics. The root error branch covers every 404 through the same shared shell and retains real
+no-JavaScript HTTP 404 rendering. The guarded byte union remains below the existing limit; this is
+an explicit tradeoff for uniform recovery, rather than evidence that startup is unchanged.

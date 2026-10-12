@@ -1,0 +1,110 @@
+[
+  {
+    "profile": "phone-2x-portrait (iPhone SE)",
+    "viewport": "375x667@2",
+    "asset": "dragon-tall.outline.webp",
+    "assetPx": "1024x1536",
+    "artBoxCss": "375x563",
+    "outlineDisplayDevicePx": "750x1125",
+    "outlineScaleVsNative": 0.732,
+    "renderScale": 2,
+    "fillSheetPx": "750x1125",
+    "fillScaleVsNative": 0.732
+  },
+  {
+    "profile": "phone-3x-portrait (iPhone 15)",
+    "viewport": "393x852@3",
+    "asset": "dragon-tall.outline.webp",
+    "assetPx": "1024x1536",
+    "artBoxCss": "393x590",
+    "outlineDisplayDevicePx": "1179x1769",
+    "outlineScaleVsNative": 1.151,
+    "renderScale": 2,
+    "fillSheetPx": "786x1179",
+    "fillScaleVsNative": 0.768
+  },
+  {
+    "profile": "phone-3x-landscape (iPhone 15)",
+    "viewport": "852x393@3",
+    "asset": "dragon-wide.outline.webp",
+    "assetPx": "1536x1024",
+    "artBoxCss": "590x393",
+    "outlineDisplayDevicePx": "1769x1179",
+    "outlineScaleVsNative": 1.151,
+    "renderScale": 2,
+    "fillSheetPx": "1179x786",
+    "fillScaleVsNative": 0.768
+  },
+  {
+    "profile": "phone-3x-landscape (iPhone 16 Pro Max)",
+    "viewport": "932x430@3",
+    "asset": "dragon-wide.outline.webp",
+    "assetPx": "1536x1024",
+    "artBoxCss": "645x430",
+    "outlineDisplayDevicePx": "1935x1290",
+    "outlineScaleVsNative": 1.26,
+    "renderScale": 2,
+    "fillSheetPx": "1290x860",
+    "fillScaleVsNative": 0.84
+  },
+  {
+    "profile": "phone-2.6x-portrait (Pixel 8)",
+    "viewport": "412x915@2.625",
+    "asset": "dragon-tall.outline.webp",
+    "assetPx": "1024x1536",
+    "artBoxCss": "412x618",
+    "outlineDisplayDevicePx": "1082x1622",
+    "outlineScaleVsNative": 1.056,
+    "renderScale": 2,
+    "fillSheetPx": "824x1236",
+    "fillScaleVsNative": 0.805
+  },
+  {
+    "profile": "tablet-2x-landscape (Pixel Tablet / Tab S9)",
+    "viewport": "1280x800@2",
+    "asset": "dragon-wide.outline.webp",
+    "assetPx": "1536x1024",
+    "artBoxCss": "1196x797",
+    "outlineDisplayDevicePx": "2392x1595",
+    "outlineScaleVsNative": 1.557,
+    "renderScale": 2,
+    "fillSheetPx": "2392x1595",
+    "fillScaleVsNative": 1.557
+  },
+  {
+    "profile": "tablet-2x-landscape (iPad Air 11)",
+    "viewport": "1180x820@2",
+    "asset": "dragon-wide.outline.webp",
+    "assetPx": "1536x1024",
+    "artBoxCss": "1096x731",
+    "outlineDisplayDevicePx": "2192x1461",
+    "outlineScaleVsNative": 1.427,
+    "renderScale": 2,
+    "fillSheetPx": "2192x1461",
+    "fillScaleVsNative": 1.427
+  },
+  {
+    "profile": "tablet-2x-landscape (iPad Pro 13)",
+    "viewport": "1366x1024@2",
+    "asset": "dragon-wide.outline.webp",
+    "assetPx": "1536x1024",
+    "artBoxCss": "1282x855",
+    "outlineDisplayDevicePx": "2564x1709",
+    "outlineScaleVsNative": 1.669,
+    "renderScale": 2,
+    "fillSheetPx": "2564x1709",
+    "fillScaleVsNative": 1.669
+  },
+  {
+    "profile": "tablet-2x-portrait (iPad Pro 13)",
+    "viewport": "1024x1366@2",
+    "asset": "dragon-tall.outline.webp",
+    "assetPx": "1024x1536",
+    "artBoxCss": "861x1291",
+    "outlineDisplayDevicePx": "1721x2582",
+    "outlineScaleVsNative": 1.681,
+    "renderScale": 2,
+    "fillSheetPx": "1721x2582",
+    "fillScaleVsNative": 1.681
+  }
+]

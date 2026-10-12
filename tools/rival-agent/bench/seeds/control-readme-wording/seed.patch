@@ -1,0 +1,15 @@
+diff --git a/tools/rival-agent/README.md b/tools/rival-agent/README.md
+index dd4703023..282a46193 100644
+--- a/tools/rival-agent/README.md
++++ b/tools/rival-agent/README.md
+@@ -10,8 +10,8 @@ findings against one schema and the handler posts them after a sensitive-value c
+ holds the design history: why this shape, what was rejected, the accepted exposures, and the Claude
+ versus Codex parity table.
+ 
+-The runtime files in this folder import nothing from outside it. The Codex-side installer copies
+-those files into `~/.local/libexec` as hashed trusted bytes, where the rest of the checkout does not
++The runtime files in this folder import nothing from outside it, because the Codex-side installer
++copies them into `~/.local/libexec` as hashed trusted bytes, where the rest of the checkout does not
+ exist. The checkout-only live acceptance generator and its templates are not installed.
+ 
+ ## Entry points

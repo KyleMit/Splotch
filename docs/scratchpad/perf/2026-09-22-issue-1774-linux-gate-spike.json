@@ -1,0 +1,289 @@
+{
+ "note": "Curated projection of local fast-gate runs (issue 1774 spike). Per scenario: every raw engine.commit duration, draw and undo totals. Per-call measure distributions are omitted; the perf-profiles directories retained them in the session only.",
+ "runs": [
+  {
+   "label": "main-766e5953",
+   "browserVersion": "26.6",
+   "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "release": "6.18.44-fc-v37",
+    "node": "v22.22.2"
+   },
+   "buildEntry": null,
+   "gate": {
+    "enforced": false,
+    "budgetMs": 25,
+    "percentile": 0.95,
+    "breaches": [
+     "crayon-scribbles"
+    ]
+   },
+   "scenarios": [
+    {
+     "key": "multi-finger",
+     "commitP95Ms": 3,
+     "commitMaxMs": 5,
+     "commitTotalMs": 21,
+     "drawTotalMs": 217,
+     "commitDurationsMs": [
+      0,
+      0,
+      5,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      3,
+      0
+     ],
+     "undoTotalMs": 23,
+     "undoMaxMs": 3,
+     "undoSteps": 11
+    },
+    {
+     "key": "crayon-scribbles",
+     "commitP95Ms": 2445,
+     "commitMaxMs": 2453,
+     "commitTotalMs": 13042,
+     "drawTotalMs": 1119,
+     "commitDurationsMs": [
+      0,
+      1,
+      2032,
+      1,
+      0,
+      1,
+      2453,
+      0,
+      1208,
+      0,
+      0,
+      1,
+      2445,
+      1,
+      1235,
+      1,
+      0,
+      0,
+      2428,
+      0,
+      1234,
+      1
+     ],
+     "undoTotalMs": 123,
+     "undoMaxMs": 10,
+     "undoSteps": 20
+    }
+   ],
+   "confirmations": [
+    {
+     "key": "crayon-scribbles",
+     "commitP95Ms": 2628,
+     "commitMaxMs": 2749,
+     "commitTotalMs": 13786,
+     "drawTotalMs": 1210,
+     "commitDurationsMs": [
+      0,
+      1,
+      2093,
+      0,
+      0,
+      1,
+      2628,
+      0,
+      1273,
+      0,
+      1,
+      1,
+      2749,
+      0,
+      1224,
+      5,
+      0,
+      0,
+      2565,
+      1,
+      1243,
+      1
+     ],
+     "undoTotalMs": 143,
+     "undoMaxMs": 11,
+     "undoSteps": 20
+    }
+   ]
+  },
+  {
+   "label": "main-766e5953-plus-planted-40ms-commit",
+   "browserVersion": "26.6",
+   "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "release": "6.18.44-fc-v37",
+    "node": "v22.22.2"
+   },
+   "buildEntry": null,
+   "gate": {
+    "enforced": false,
+    "budgetMs": 25,
+    "percentile": 0.95,
+    "breaches": [
+     "multi-finger",
+     "crayon-scribbles"
+    ]
+   },
+   "scenarios": [
+    {
+     "key": "multi-finger",
+     "commitP95Ms": 44,
+     "commitMaxMs": 46,
+     "commitTotalMs": 907,
+     "drawTotalMs": 231,
+     "commitDurationsMs": [
+      40,
+      46,
+      41,
+      40,
+      44,
+      41,
+      41,
+      42,
+      41,
+      41,
+      41,
+      41,
+      42,
+      40,
+      41,
+      41,
+      41,
+      41,
+      41,
+      41,
+      40,
+      40
+     ],
+     "undoTotalMs": 23,
+     "undoMaxMs": 3,
+     "undoSteps": 11
+    },
+    {
+     "key": "crayon-scribbles",
+     "commitP95Ms": 2500,
+     "commitMaxMs": 2523,
+     "commitTotalMs": 13902,
+     "drawTotalMs": 1088,
+     "commitDurationsMs": [
+      40,
+      40,
+      2055,
+      40,
+      40,
+      41,
+      2466,
+      41,
+      1239,
+      41,
+      41,
+      40,
+      2523,
+      40,
+      1262,
+      40,
+      40,
+      40,
+      2500,
+      40,
+      1252,
+      41
+     ],
+     "undoTotalMs": 124,
+     "undoMaxMs": 10,
+     "undoSteps": 20
+    }
+   ],
+   "confirmations": [
+    {
+     "key": "multi-finger",
+     "commitP95Ms": 41,
+     "commitMaxMs": 41,
+     "commitTotalMs": 892,
+     "drawTotalMs": 226,
+     "commitDurationsMs": [
+      40,
+      41,
+      41,
+      40,
+      40,
+      40,
+      41,
+      41,
+      40,
+      40,
+      41,
+      41,
+      40,
+      41,
+      40,
+      41,
+      41,
+      40,
+      41,
+      41,
+      41,
+      40
+     ],
+     "undoTotalMs": 20,
+     "undoMaxMs": 3,
+     "undoSteps": 11
+    },
+    {
+     "key": "crayon-scribbles",
+     "commitP95Ms": 2488,
+     "commitMaxMs": 2506,
+     "commitTotalMs": 14038,
+     "drawTotalMs": 1183,
+     "commitDurationsMs": [
+      41,
+      40,
+      2140,
+      41,
+      40,
+      40,
+      2488,
+      41,
+      1251,
+      41,
+      41,
+      40,
+      2462,
+      41,
+      1246,
+      40,
+      40,
+      41,
+      2506,
+      40,
+      1337,
+      41
+     ],
+     "undoTotalMs": 136,
+     "undoMaxMs": 10,
+     "undoSteps": 20
+    }
+   ]
+  }
+ ]
+}

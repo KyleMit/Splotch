@@ -1,0 +1,425 @@
+diff --git a/package.json b/package.json
+index 32fb485..df0ef83 100644
+--- a/package.json
++++ b/package.json
+@@ -166,7 +166,7 @@
+     "gen:coloring-outlines:normalize": "Redraw an outline's solid black regions as thin outlined strokes via Gemini, gated on solidity + outline registration; candidates land in .coloring-samples-dark/normalize/ (needs GEMINI_API_KEY; -- page… [--apply] [--max-attempts N] [-t F] [--notes \"…\"])",
+     "gen:coloring-punch": "Re-derive the shipped fills-only .light/.night.webp from the raw fills in tools/asset-gen/fill-src/ by punching their outlines out (line art as mask). Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-thumbs": "Regenerate the .thumb.webp grid thumbnails beside every coloring cover/page for the picker (-- category… to filter)",
+-    "gen:contact-sheet": "Build a self-contained HTML contact sheet of ONE coloring category — light + night fills side by side with outline-keep scores — to review/publish as an Artifact (-- category[/page[-orient]], --source shipped|samples, --out FILE)",
++    "gen:contact-sheet": "Build a self-contained HTML contact sheet of ONE coloring category — light + night fills side by side with outline-keep scores — to review/publish as an Artifact (-- category[/page[-orient]], --source shipped|samples|git:<ref>, --compare git:<ref> for before/after pairs, --out FILE)",
+     "gen:shots": "Regenerate the store screenshots + feature graphic for both stores into store-assets/ (Playwright)",
+     "cap:sync": "build:cap + copy web assets & plugins into the native projects",
+     "cap:android": "cap:sync + open the Android project in Android Studio",
+diff --git a/tools/asset-gen/contact-sheet.md b/tools/asset-gen/contact-sheet.md
+index acb1818..811b71f 100644
+--- a/tools/asset-gen/contact-sheet.md
++++ b/tools/asset-gen/contact-sheet.md
+@@ -24,7 +24,7 @@ simply grow with the viewport until they hit that cap.
+ ```bash
+ node --experimental-strip-types --disable-warning=ExperimentalWarning \
+   tools/asset-gen/gen-contact-sheet.mjs <category>[/page[-orient]] \
+-    [--source shipped|samples] [--out FILE]
++    [--source shipped|samples|git:<ref>] [--compare git:<ref>] [--out FILE]
+ ```
+ 
+ | Argument | Meaning |
+@@ -32,8 +32,17 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
+ | `<category>` | Exactly **one** category per sheet (`nature`), optionally focused to a page (`nature/ant` — both orientations) or a single cell (`nature/ant-wide`). `all` is rejected: a whole-catalog sheet exceeds the 16 MB Artifact upload cap — build one sheet per category. |
+ | `--source shipped` | (default) read the committed assets — the live `web/static/coloring/**/*.night.webp` night fills. |
+ | `--source samples` | read fresh night-fill takes from the gitignored `.coloring-samples-dark/` instead — the human review gate before a take is punched and committed. Line art and light fills always come from `web/static` either way. |
++| `--source git:<ref>` | read **every** layer (outline, chalk, light, night) from that commit's blobs — `git cat-file`, nothing is checked out. Pre-rename refs (before the dot-separated scheme, `099204f`) resolve through the legacy names (`{page}-{orient}.webp`, `.color.webp`). The outline % badge is scored from the ref's own `fill-src/` raw when it exists there. |
++| `--compare git:<ref>` | **before/after mode**: each page orientation renders twice — the ref's light+night pair first, the current `--source` pair (shipped or samples) directly below it — with a provenance tag (`git:<short>` / `shipped`) on every caption. Combine with `--source samples` to judge a fresh regen against history before committing. Mutually exclusive with `--source git:`. |
+ | `--out FILE` | output path (default `.coloring-samples/contact-sheet.html`, gitignored). |
+ 
++Identical images are interned once (cells reference an image table by index), so
++a compare sheet costs roughly one sheet plus only the layers that actually
++changed between the two sides — farm's compare sheet is ~6.9 MB vs ~5.7 MB
++plain. One caveat on very old refs: fills committed before the inpainted punch
++(`48d38d4`) still carry their own outlines, and the Combined view draws git
++fills as-is, so those render with doubled lines — judge them on the Color view.
++
+ Page IDs come from the real catalog (`web/src/lib/state/books.ts` — one of the
+ four sanctioned `web/src` imports), so the sheet always matches what will ship.
+ A missing image renders as a placeholder, not a crash.
+@@ -80,7 +89,8 @@ outlines, which the dark-ink mask can't read. Badge colors: green ≥ 99, yellow
+ 
+ - `gen-contact-sheet.mjs` — assembles the HTML shell, embeds the images, scores
+   the badges, and injects the cell data as a JSON global
+-  (`window.__CONTACT_SHEET__`). No build-time string interpolation reaches the
++  (`window.__CONTACT_SHEET__`: an interned `images` data-URI table plus `cells`
++  referencing it by index). No build-time string interpolation reaches the
+   runtime.
+ - `contact-sheet/contact-sheet.css` — the entire look.
+ - `contact-sheet/contact-sheet.client.js` — the in-browser render/interaction
+diff --git a/tools/asset-gen/contact-sheet/contact-sheet.client.js b/tools/asset-gen/contact-sheet/contact-sheet.client.js
+index 55507a3..7318c07 100644
+--- a/tools/asset-gen/contact-sheet/contact-sheet.client.js
++++ b/tools/asset-gen/contact-sheet/contact-sheet.client.js
+@@ -1,8 +1,10 @@
+ // Client runtime for the contact sheet. The generator injects the cell data as
+ // `window.__CONTACT_SHEET__` (a JSON blob) ahead of this script, so nothing here
+ // is string-interpolated at build time — this file is plain, lintable JS that
+-// reads its inputs from that global. See ../contact-sheet.md for the layer model.
+-const { cells: CELLS, source: SOURCE } = window.__CONTACT_SHEET__;
++// reads its inputs from that global. Cells reference images by index into the
++// interned `images` table (identical layers are stored once — see
++// ../contact-sheet.md for the layer model and compare mode).
++const { cells: CELLS, images: IMAGES } = window.__CONTACT_SHEET__;
+ const RENDER_MAX = 640;
+ const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
+ const PAPER = { dark: '#211f29', light: '#fcfbf8' };
+@@ -12,17 +14,17 @@ const VIEWS = ['outline', 'color', 'combined'];
+ 
+ let gView = 'combined';
+ 
+-// Decode a data URI into an <img>, or null.
+-function load(uri) {
++// Decode an interned image index into an <img>, or null.
++function load(idx) {
+   return new Promise((res) => {
+-    if (!uri) {
++    if (idx == null) {
+       res(null);
+       return;
+     }
+     const im = new Image();
+     im.onload = () => res(im);
+     im.onerror = () => res(null);
+-    im.src = uri;
++    im.src = IMAGES[idx];
+   });
+ }
+ 
+@@ -32,13 +34,15 @@ function fit(w, h) {
+   return [Math.round(w * s), Math.round(h * s)];
+ }
+ 
+-// Fills-only fill for `--source samples` ONLY: fresh Gemini takes still carry
+-// their outlines, so punch them with the line art as a mask (luma<OUTLINE_LUMA
+-// -> transparent), approximating the punch asset-gen bakes into shipped fills
+-// (lib/punch-fill.mjs). Shipped fills are already fills-only (opaque, outline
+-// pixels inpainted) and MUST be drawn as-is: re-cutting them here with a binary
+-// mask at render resolution punches paper-holes whose resample phase never
+-// matches the line art's — a dotted dark ring around every line in dark mode
++// Fills-only fill for punched cells ONLY (the generator sets `cell.punch` for
++// `--source samples` cells): fresh Gemini takes still carry their outlines, so
++// punch them with the line art as a mask (luma<OUTLINE_LUMA -> transparent),
++// approximating the punch asset-gen bakes into shipped fills
++// (lib/punch-fill.mjs). Shipped fills — current or read from a git ref — are
++// already fills-only (opaque, outline pixels inpainted) and MUST be drawn
++// as-is: re-cutting them here with a binary mask at render resolution punches
++// paper-holes whose resample phase never matches the line art's — a dotted
++// dark ring around every line in dark mode
+ // (see tools/asset-gen/docs/inpainted-fill-punch.md).
+ function buildFills(fill, lineArt, w, h) {
+   const fc = document.createElement('canvas');
+@@ -109,7 +113,7 @@ function render(tile) {
+   ctx.fillRect(0, 0, w, h);
+ 
+   if (view === 'combined' && fill) {
+-    if (SOURCE === 'samples') {
++    if (tile.punch) {
+       if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
+       ctx.drawImage(tile.fills, 0, 0, w, h);
+     } else {
+@@ -145,19 +149,25 @@ function buildHalf(pair, cell, theme, imgsP) {
+   nm.className = 'name';
+   nm.textContent = cell.id + '-' + cell.orient;
+   cap.appendChild(nm);
++  if (cell.tag) {
++    const tag = document.createElement('span');
++    tag.className = 'tag';
++    tag.textContent = cell.tag;
++    cap.appendChild(tag);
++  }
+   if (theme === 'light' && cell.keep != null) {
+     const k = document.createElement('span');
+     k.className = 'keep ' + keepClass(cell.keep);
+     k.textContent = 'outline ' + cell.keep.toFixed(1) + '%';
+     cap.appendChild(k);
+   }
+-  if (theme === 'dark' && !cell.night) {
++  if (theme === 'dark' && cell.night == null) {
+     const note = document.createElement('span');
+     note.className = 'note';
+     note.textContent = 'no night fill';
+     cap.appendChild(note);
+   }
+-  if (theme === 'dark' && !cell.chalk) {
++  if (theme === 'dark' && cell.chalk == null) {
+     const note = document.createElement('span');
+     note.className = 'note';
+     note.textContent = 'no chalk (inverted pen)';
+@@ -172,7 +182,14 @@ function buildHalf(pair, cell, theme, imgsP) {
+   pair.appendChild(fig);
+ 
+   imgsP.then(([night, lineArt, light, chalk]) => {
+-    const tile = { canvas, theme, vlabel: vl, imgs: { night, lineArt, light, chalk }, view: null };
++    const tile = {
++      canvas,
++      theme,
++      vlabel: vl,
++      punch: !!cell.punch,
++      imgs: { night, lineArt, light, chalk },
++      view: null,
++    };
+     tiles.push(tile);
+     frame.addEventListener('click', () => {
+       const cur = tile.view || gView;
+diff --git a/tools/asset-gen/contact-sheet/contact-sheet.css b/tools/asset-gen/contact-sheet/contact-sheet.css
+index 72f8fec..a5051b5 100644
+--- a/tools/asset-gen/contact-sheet/contact-sheet.css
++++ b/tools/asset-gen/contact-sheet/contact-sheet.css
+@@ -205,3 +205,12 @@ figcaption {
+   font-size: 0.72rem;
+   color: var(--c-red);
+ }
++.tag {
++  font-size: 0.68rem;
++  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
++  color: var(--muted);
++  background: color-mix(in srgb, var(--ink) 7%, transparent);
++  padding: 2px 8px;
++  border-radius: 99px;
++  white-space: nowrap;
++}
+diff --git a/tools/asset-gen/gen-contact-sheet.mjs b/tools/asset-gen/gen-contact-sheet.mjs
+index 7f1edfa..89ed604 100644
+--- a/tools/asset-gen/gen-contact-sheet.mjs
++++ b/tools/asset-gen/gen-contact-sheet.mjs
+@@ -5,15 +5,17 @@
+ //
+ //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
+ //     tools/asset-gen/gen-contact-sheet.mjs <category>[/page[-orient]] \
+-//       [--source shipped|samples] [--out FILE]
++//       [--source shipped|samples|git:<ref>] [--compare git:<ref>] [--out FILE]
+ import { parseArgs } from 'node:util';
+ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
++import { spawnSync } from 'node:child_process';
+ import { join, dirname } from 'node:path';
+ import { outlineMatch } from './lib/outline-match.mjs';
+ import {
+   ASSET_GEN_DIR,
+   COLORING_DIR,
+   FILL_SRC_DIR,
++  REPO_ROOT,
+   SAMPLES_DIR,
+   SAMPLES_DARK_DIR,
+   fail,
+@@ -24,11 +26,17 @@ const { values, positionals } = parseArgs({
+   allowPositionals: true,
+   options: {
+     source: { type: 'string' },
++    compare: { type: 'string' },
+     out: { type: 'string' },
+   },
+ });
+ const source = values.source ?? 'shipped';
+-if (!['shipped', 'samples'].includes(source)) fail('--source must be shipped or samples');
++if (!['shipped', 'samples'].includes(source) && !source.startsWith('git:'))
++  fail('--source must be shipped, samples, or git:<ref>');
++if (values.compare && !values.compare.startsWith('git:'))
++  fail('--compare takes a git ref, e.g. --compare git:abc1234');
++if (values.compare && source.startsWith('git:'))
++  fail('--compare already reads its old side from git — pair it with --source shipped|samples');
+ if (positionals.length !== 1)
+   fail(
+     'give exactly one category (one sheet per category — the Artifact cap is 16 MB), e.g. "nature", "nature/ant", or "nature/ant-wide"'
+@@ -50,6 +58,47 @@ const wantsCell = (id, orient) =>
+ 
+ const OUT = values.out ?? join(SAMPLES_DIR, 'contact-sheet.html');
+ 
++// --- git-ref asset access (--source git:<ref> and --compare git:<ref>) -------
++// Assets are read straight from the ref's blobs (git cat-file), never by
++// checking anything out. Tree paths are always forward-slash, on every OS.
++function resolveRef(spec) {
++  const ref = spec.slice('git:'.length);
++  const r = spawnSync(
++    'git',
++    ['-C', REPO_ROOT, 'rev-parse', '--short', '--verify', `${ref}^{commit}`],
++    {
++      encoding: 'utf8',
++    }
++  );
++  if (r.status !== 0) fail(`git ref "${ref}" does not resolve to a commit`);
++  return { ref, short: r.stdout.trim() };
++}
++function gitBlob(ref, treePath) {
++  const r = spawnSync('git', ['-C', REPO_ROOT, 'cat-file', 'blob', `${ref}:${treePath}`], {
++    maxBuffer: 64 * 1024 * 1024,
++  });
++  return r.status === 0 ? r.stdout : null;
++}
++// Older refs predate the dot-separated rename (099204f): the pen outline was
++// {page}-{orient}.webp and the light fill {page}-{orient}.color.webp. Try the
++// modern name first, then the legacy one, so pre-rename refs still render.
++function gitColoring(ref, id, orient, kind) {
++  const names = {
++    outline: [`${id}-${orient}.outline.webp`, `${id}-${orient}.webp`],
++    chalk: [`${id}-${orient}.chalk.webp`],
++    light: [`${id}-${orient}.light.webp`, `${id}-${orient}.color.webp`],
++    night: [`${id}-${orient}.night.webp`],
++  }[kind];
++  for (const name of names) {
++    const blob = gitBlob(ref, `web/static/coloring/${catId}/${name}`);
++    if (blob) return blob;
++  }
++  return null;
++}
++
++const gitSource = source.startsWith('git:') ? resolveRef(source) : null;
++const compareRef = values.compare ? resolveRef(values.compare) : null;
++
+ // The night fill: the shipped .night.webp (default), or a fresh ungated take from
+ // .coloring-samples-dark/ (--source samples — the human review gate before commit).
+ function nightPath(id, orient) {
+@@ -65,40 +114,88 @@ const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.o
+ const chalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.chalk.webp`);
+ const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.light.webp`);
+ 
+-function dataUri(p) {
+-  if (!existsSync(p)) return null;
+-  return `data:image/webp;base64,${readFileSync(p).toString('base64')}`;
++// Identical images are interned once and cells reference them by index — in
++// compare mode the outline/chalk/light layers are usually byte-identical on
++// both sides, so this keeps a two-source sheet near single-source size.
++const images = [];
++const imageIndex = new Map();
++function intern(buf) {
++  if (!buf) return null;
++  const uri = `data:image/webp;base64,${buf.toString('base64')}`;
++  let i = imageIndex.get(uri);
++  if (i === undefined) {
++    i = images.length;
++    images.push(uri);
++    imageIndex.set(uri, i);
++  }
++  return i;
+ }
++const readOrNull = (p) => (existsSync(p) ? readFileSync(p) : null);
+ 
+ // Outline-keep % for a cell, scored on the lined raw fill in fill-src/ (the
+ // shipped fill is punched fills-only, leaving no outline to register — same
+ // reason check-coloring-drift.mjs scores the raws). Night raws have WHITE
+ // outlines, which the dark-ink mask in lib/outline-match.mjs can't read, so only
+ // the light half carries the badge.
+-async function lightKeep(id, orient) {
+-  const raw = join(FILL_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
+-  const src = lineArtPath(id, orient);
+-  if (!existsSync(raw) || !existsSync(src)) return null;
+-  const { keep } = await outlineMatch(readFileSync(src), readFileSync(raw));
++async function scoreKeep(src, raw) {
++  if (!src || !raw) return null;
++  const { keep } = await outlineMatch(src, raw);
+   return Math.round(keep * 1000) / 10;
+ }
++const rawPath = (id, orient) => join(FILL_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
++
++// One cell = one light+night pair, from the working tree (shipped/samples) or
++// from a git ref's blobs. `tag` labels the cell's provenance in compare mode;
++// `punch` tells the client whether the fills still carry their own outlines
++// (fresh samples do; shipped and committed-at-a-ref fills are already punched).
++async function fsCell(p, orient) {
++  return {
++    id: p.id,
++    name: p.name,
++    orient,
++    tag: compareRef ? source : null,
++    punch: source === 'samples',
++    night: intern(readOrNull(nightPath(p.id, orient))),
++    lineArt: intern(readOrNull(lineArtPath(p.id, orient))),
++    chalk: intern(readOrNull(chalkPath(p.id, orient))),
++    light: intern(readOrNull(lightPath(p.id, orient))),
++    keep: await scoreKeep(readOrNull(lineArtPath(p.id, orient)), readOrNull(rawPath(p.id, orient))),
++  };
++}
++async function gitCell(p, orient, { ref, short }) {
++  return {
++    id: p.id,
++    name: p.name,
++    orient,
++    tag: `git:${short}`,
++    punch: false,
++    night: intern(gitColoring(ref, p.id, orient, 'night')),
++    lineArt: intern(gitColoring(ref, p.id, orient, 'outline')),
++    chalk: intern(gitColoring(ref, p.id, orient, 'chalk')),
++    light: intern(gitColoring(ref, p.id, orient, 'light')),
++    keep: await scoreKeep(
++      gitColoring(ref, p.id, orient, 'outline'),
++      gitBlob(ref, `tools/asset-gen/fill-src/${catId}/${p.id}-${orient}.light.raw.webp`)
++    ),
++  };
++}
+ 
+ // Each cell renders as a light+night pair; a page's orientations stay together
+-// (wide row, then its tall row) so a page is judged as one unit.
++// (wide row, then its tall row) so a page is judged as one unit. In compare
++// mode each orientation renders twice — the ref's pair first, the current pair
++// directly below it — so old-vs-new is judged in one glance.
+ const cells = [];
+ for (const p of book.pages) {
+   for (const orient of ['wide', 'tall']) {
+     if (!wantsCell(p.id, orient)) continue;
+-    cells.push({
+-      id: p.id,
+-      name: p.name,
+-      orient,
+-      night: dataUri(nightPath(p.id, orient)),
+-      lineArt: dataUri(lineArtPath(p.id, orient)),
+-      chalk: dataUri(chalkPath(p.id, orient)),
+-      light: dataUri(lightPath(p.id, orient)),
+-      keep: await lightKeep(p.id, orient),
+-    });
++    if (compareRef) {
++      cells.push(await gitCell(p, orient, compareRef));
++      cells.push(await fsCell(p, orient));
++    } else if (gitSource) {
++      cells.push(await gitCell(p, orient, gitSource));
++    } else {
++      cells.push(await fsCell(p, orient));
++    }
+   }
+ }
+ if (!cells.length) fail(`no pages matched "${target}"`);
+@@ -111,9 +208,17 @@ const SHEET_DIR = join(ASSET_GEN_DIR, 'contact-sheet');
+ const css = readFileSync(join(SHEET_DIR, 'contact-sheet.css'), 'utf8');
+ const clientJs = readFileSync(join(SHEET_DIR, 'contact-sheet.client.js'), 'utf8');
+ 
+-const bootData = JSON.stringify({ cells, source });
++const bootData = JSON.stringify({ cells, images, source });
+ 
+-const html = `<title>Splotch contact sheet — ${book.name} · ${source}</title>
++const sourceLabel = compareRef
++  ? `git:${compareRef.short} vs ${source}`
++  : gitSource
++    ? `git:${gitSource.short}`
++    : source;
++const compareLede = compareRef
++  ? ` Each page shows the <b>git:${compareRef.short}</b> pair first, the <b>${source}</b> pair below it.`
++  : '';
++const html = `<title>Splotch contact sheet — ${book.name} · ${sourceLabel}</title>
+ <style>
+ ${css}</style>
+ <div class="wrap">
+@@ -123,9 +228,9 @@ ${css}</style>
+       <span style="background:var(--c-yellow)"></span><span style="background:var(--c-green)"></span>
+       <span style="background:var(--c-blue)"></span><span style="background:var(--c-purple)"></span>
+     </div>
+-    <h1>Coloring fills &mdash; ${book.name} <span class="accent">${source}</span></h1>
++    <h1>Coloring fills &mdash; ${book.name} <span class="accent">${sourceLabel}</span></h1>
+     <p class="lede">Every page <b>light</b> and <b>night</b> side by side, each page&rsquo;s wide row
+-    followed by its tall row.
++    followed by its tall row.${compareLede}
+     <b>Combined</b> reproduces the real canvas &mdash; the fills-only fill under the themed
+     line art over the paper &mdash; so judge fills there; a blown-out eye only shows once the
+     layers merge. <b>outline %</b> is how much of the line art the light raw fill preserves.</p>
+@@ -149,7 +254,7 @@ mkdirSync(dirname(OUT), { recursive: true });
+ writeFileSync(OUT, html);
+ const bytes = Buffer.byteLength(html);
+ console.log(
+-  `wrote ${OUT}  (${(bytes / 1024 / 1024).toFixed(2)} MB, source=${source}, ${cells.length} pages × 2 themes)`
++  `wrote ${OUT}  (${(bytes / 1024 / 1024).toFixed(2)} MB, source=${sourceLabel}, ${cells.length} pages × 2 themes)`
+ );
+ // The Artifact tool rejects uploads over 16 MB — if one category ever outgrows
+ // the cap, focus the sheet on a page range instead of publishing it whole.

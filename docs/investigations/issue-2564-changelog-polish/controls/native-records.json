@@ -1,0 +1,68 @@
+[
+  {
+    "route": "changelog",
+    "theme": "light",
+    "initialFoldedFragmentLanded": true,
+    "narrowFoldedPickGap": 26.21875,
+    "arrival": true
+  },
+  {
+    "route": "changelog",
+    "theme": "dark",
+    "initialFoldedFragmentLanded": true,
+    "narrowFoldedPickGap": 26.21875,
+    "arrival": true
+  },
+  {
+    "route": "privacy",
+    "theme": "light",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "privacy",
+    "theme": "dark",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "changelog",
+    "theme": "light",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "changelog",
+    "theme": "dark",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "privacy",
+    "existingBodyLinkGated": true,
+    "manageSingleHost": true,
+    "closeReturnsFocus": true
+  },
+  {
+    "mode": "never",
+    "immediateOriginalClickPopup": true,
+    "gateVisible": false
+  },
+  {
+    "mode": "session",
+    "immediateOriginalClickPopup": true,
+    "gateVisible": false
+  }
+]

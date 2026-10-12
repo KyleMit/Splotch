@@ -1,0 +1,282 @@
+// @vitest-environment node
+import { describe, it, expect } from 'vitest';
+import {
+  containFit,
+  computePaperView,
+  isIdentityView,
+  IDENTITY_PAPER_VIEW,
+  paperToView,
+  rotationDelta,
+  paperCssLength,
+  paperPresentationFor,
+  viewMatrix,
+  viewToPaper,
+  viewTransformCss,
+  type PaperView,
+  type ViewRotation,
+} from './paperView';
+
+const ROTATIONS: ViewRotation[] = [0, 90, 180, 270];
+
+describe('containFit', () => {
+  it('returns identity geometry for an exact fit', () => {
+    expect(containFit({ width: 400, height: 800 }, { width: 400, height: 800 })).toEqual({
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+    });
+  });
+
+  it('centers letterboxed content at a uniform scale', () => {
+    expect(containFit({ width: 600, height: 300 }, { width: 500, height: 400 })).toEqual({
+      scale: 500 / 600,
+      offsetX: 0,
+      offsetY: 75,
+    });
+  });
+});
+
+describe('paperPresentationFor', () => {
+  // A portrait phone in immersive mode; the system bars are worth ~48 CSS px.
+  const PAPER = { width: 412, height: 915 };
+  const presentation = (
+    viewport: { width: number; height: number },
+    overrides: { canvasEmpty?: boolean; screenAngle?: number; layoutOnly?: boolean } = {}
+  ) =>
+    paperPresentationFor({
+      canvasEmpty: false,
+      paper: PAPER,
+      paperAngle: 0,
+      screenAngle: 0,
+      viewport,
+      layoutOnly: false,
+      ...overrides,
+    });
+
+  it('windows the paper when the system bars shrink the viewport', () => {
+    expect(presentation({ width: 412, height: 867 })).toBe('window');
+  });
+
+  it('windows an exact match and a bar-sized loss on either axis alone', () => {
+    expect(presentation(PAPER)).toBe('window');
+    expect(presentation({ width: 412, height: 819 })).toBe('window');
+    expect(presentation({ width: 316, height: 915 })).toBe('window');
+  });
+
+  // An identity view maps the paper one-to-one, so it cannot cover a viewport
+  // even slightly larger: those pixels would have no paper or tile behind them,
+  // unpresented yet still accepting gestures (the out-of-paper guard only arms
+  // on a non-identity view). Keep the paper — re-adopting inset drift
+  // invalidates every tile — but fit it over the drift.
+  it('fits rather than windows a viewport a few pixels larger than the paper', () => {
+    expect(presentation({ width: 412, height: 923 })).toBe('fit');
+    expect(presentation({ width: 420, height: 915 })).toBe('fit');
+    expect(presentation({ width: 413, height: 915 })).toBe('fit');
+    // Both axes at once — the shape the tolerance exists for.
+    expect(presentation({ width: 420, height: 923 })).toBe('fit');
+  });
+
+  it('windows a bar occlusion that also drifts a pixel WITHIN the paper', () => {
+    expect(presentation({ width: 411, height: 867 })).toBe('window');
+  });
+
+  it('adopts once either axis grows past the tolerance', () => {
+    expect(presentation({ width: 412, height: 924 })).toBe('adopt');
+    expect(presentation({ width: 421, height: 915 })).toBe('adopt');
+  });
+
+  // A deliberate resize — a dragged window edge, split-screen, a keyboard — is
+  // too big to be system chrome, and re-fits the drawing rather than hiding
+  // part of it behind nothing.
+  it('adopts a shrink too large to be system chrome', () => {
+    expect(presentation({ width: 412, height: 818 })).toBe('adopt');
+    expect(presentation({ width: 315, height: 915 })).toBe('adopt');
+    expect(presentation({ width: 412, height: 500 })).toBe('adopt');
+  });
+
+  // Page layout resizing the canvas box is not a new screen; re-adopting inked
+  // paper would re-fit its coloring art out from under the strokes.
+  it('fits rather than adopts inked paper when only layout resized the canvas', () => {
+    expect(presentation({ width: 412, height: 960 }, { layoutOnly: true })).toBe('fit');
+    expect(presentation({ width: 412, height: 500 }, { layoutOnly: true })).toBe('fit');
+    expect(presentation({ width: 412, height: 960 }, { canvasEmpty: true, layoutOnly: true })).toBe(
+      'adopt'
+    );
+  });
+
+  it('adopts for an empty canvas whatever the geometry', () => {
+    expect(presentation({ width: 412, height: 867 }, { canvasEmpty: true })).toBe('adopt');
+    expect(presentation({ width: 915, height: 412 }, { canvasEmpty: true, screenAngle: 90 })).toBe(
+      'adopt'
+    );
+  });
+
+  it('fits a rotation, by changed angle or by flipped orientation', () => {
+    expect(presentation({ width: 915, height: 412 }, { screenAngle: 90 })).toBe('fit');
+    // A 180° flip keeps the orientation, so only the angle marks it a rotation.
+    expect(presentation(PAPER, { screenAngle: 180 })).toBe('fit');
+    // An angle the platform never reported still reads as a rotation when the
+    // viewport's orientation flipped under it.
+    expect(presentation({ width: 915, height: 412 })).toBe('fit');
+  });
+});
+
+describe('rotationDelta', () => {
+  it('is the adoption angle minus the current angle, normalized to 0–270', () => {
+    expect(rotationDelta(0, 0)).toBe(0);
+    expect(rotationDelta(0, 90)).toBe(270);
+    expect(rotationDelta(0, 270)).toBe(90);
+    expect(rotationDelta(90, 0)).toBe(90);
+    expect(rotationDelta(90, 270)).toBe(180);
+    expect(rotationDelta(270, 90)).toBe(180);
+  });
+
+  it('returning to the adoption angle is always identity', () => {
+    for (const a of [0, 90, 180, 270]) expect(rotationDelta(a, a)).toBe(0);
+  });
+});
+
+describe('computePaperView', () => {
+  it('same shape and no rotation is the identity', () => {
+    const view = computePaperView({ width: 400, height: 800 }, { width: 400, height: 800 }, 0);
+    expect(isIdentityView(view)).toBe(true);
+  });
+
+  it('a quarter turn contain-fits the swapped dimensions and centers the rest', () => {
+    // Portrait 400×800 paper rotated into an 800×400 viewport: the rotated
+    // paper is 800×400 — an exact fit, no letterbox.
+    const view = computePaperView({ width: 400, height: 800 }, { width: 800, height: 400 }, 90);
+    expect(view.scale).toBe(1);
+    const corners = [
+      paperToView(view, 0, 0),
+      paperToView(view, 400, 0),
+      paperToView(view, 0, 800),
+      paperToView(view, 400, 800),
+    ];
+    const xs = corners.map((c) => c.x);
+    const ys = corners.map((c) => c.y);
+    expect(Math.min(...xs)).toBeCloseTo(0);
+    expect(Math.max(...xs)).toBeCloseTo(800);
+    expect(Math.min(...ys)).toBeCloseTo(0);
+    expect(Math.max(...ys)).toBeCloseTo(400);
+  });
+
+  it('letterboxes with a uniform downscale when the rotated paper does not fit', () => {
+    // 300×600 paper rotated 90 into 500×400: rotated paper is 600×300 → scale
+    // is bounded by width (500/600), the leftover height splits into margins.
+    const view = computePaperView({ width: 300, height: 600 }, { width: 500, height: 400 }, 90);
+    expect(view.scale).toBeCloseTo(500 / 600);
+    const corners = [
+      paperToView(view, 0, 0),
+      paperToView(view, 300, 0),
+      paperToView(view, 0, 600),
+      paperToView(view, 300, 600),
+    ];
+    const xs = corners.map((c) => c.x);
+    const ys = corners.map((c) => c.y);
+    expect(Math.min(...xs)).toBeCloseTo(0);
+    expect(Math.max(...xs)).toBeCloseTo(500);
+    const drawnH = 300 * (500 / 600);
+    expect(Math.min(...ys)).toBeCloseTo((400 - drawnH) / 2);
+    expect(Math.max(...ys)).toBeCloseTo((400 + drawnH) / 2);
+  });
+
+  it('maps the whole paper inside the viewport for every rotation', () => {
+    const paper = { width: 320, height: 720 };
+    const viewport = { width: 640, height: 360 };
+    for (const rotate of ROTATIONS) {
+      const view = computePaperView(paper, viewport, rotate);
+      for (const [px, py] of [
+        [0, 0],
+        [paper.width, 0],
+        [0, paper.height],
+        [paper.width, paper.height],
+        [paper.width / 2, paper.height / 2],
+      ]) {
+        const { x, y } = paperToView(view, px, py);
+        expect(x).toBeGreaterThanOrEqual(-1e-9);
+        expect(x).toBeLessThanOrEqual(viewport.width + 1e-9);
+        expect(y).toBeGreaterThanOrEqual(-1e-9);
+        expect(y).toBeLessThanOrEqual(viewport.height + 1e-9);
+      }
+    }
+  });
+
+  it('a 180 turn keeps the paper centered at the same size', () => {
+    const view = computePaperView({ width: 400, height: 800 }, { width: 400, height: 800 }, 180);
+    expect(view.scale).toBe(1);
+    expect(paperToView(view, 0, 0)).toEqual({ x: 400, y: 800 });
+    expect(paperToView(view, 400, 800)).toEqual({ x: 0, y: 0 });
+    expect(paperToView(view, 200, 400)).toEqual({ x: 200, y: 400 });
+  });
+});
+
+describe('viewMatrix / viewToPaper', () => {
+  it('viewMatrix agrees with paperToView', () => {
+    for (const rotate of ROTATIONS) {
+      const view: PaperView = { scale: 0.75, rotate, tx: 37, ty: -12 };
+      const [a, b, c, d, e, f] = viewMatrix(view);
+      for (const [x, y] of [
+        [0, 0],
+        [10, 250],
+        [-30, 4.5],
+      ]) {
+        const mapped = paperToView(view, x, y);
+        expect(a * x + c * y + e).toBeCloseTo(mapped.x);
+        expect(b * x + d * y + f).toBeCloseTo(mapped.y);
+      }
+    }
+  });
+
+  it('viewToPaper inverts paperToView for every rotation', () => {
+    for (const rotate of ROTATIONS) {
+      const view: PaperView = { scale: 0.6, rotate, tx: 120, ty: 80 };
+      for (const [x, y] of [
+        [0, 0],
+        [400, 0],
+        [123.4, 567.8],
+        [-20, 300],
+      ]) {
+        const round = viewToPaper(view, paperToView(view, x, y).x, paperToView(view, x, y).y);
+        expect(round.x).toBeCloseTo(x);
+        expect(round.y).toBeCloseTo(y);
+      }
+    }
+  });
+
+  it('the identity view maps points to themselves', () => {
+    expect(paperToView(IDENTITY_PAPER_VIEW, 42, 7)).toEqual({ x: 42, y: 7 });
+    expect(viewToPaper(IDENTITY_PAPER_VIEW, 42, 7)).toEqual({ x: 42, y: 7 });
+    expect(viewMatrix(IDENTITY_PAPER_VIEW)).toEqual([1, 0, 0, 1, 0, 0]);
+  });
+});
+
+// The coloring art, the paper sheet and the ink tiles are separate elements over
+// one drawing, so they must present identical geometry or they slide apart under
+// a rotation lock. Deriving it once is what makes that true by construction.
+describe('viewTransformCss / paperCssLength', () => {
+  it('spells the identity view as a CSS matrix', () => {
+    expect(viewTransformCss(IDENTITY_PAPER_VIEW)).toBe('matrix(1, 0, 0, 1, 0, 0)');
+  });
+
+  // Parsed back rather than compared against the same template the source uses:
+  // restating the format would pass for the wrong reason if both sides moved.
+  it.each(ROTATIONS)('carries the %s° view through in matrix order', (rotate) => {
+    const view: PaperView = { scale: 2, rotate, tx: 30, ty: -4 };
+
+    const parsed = viewTransformCss(view)
+      .replace(/^matrix\(|\)$/g, '')
+      .split(', ')
+      .map(Number);
+
+    expect(parsed).toEqual(viewMatrix(view));
+  });
+
+  it('sizes against the paper once the engine reports one', () => {
+    expect(paperCssLength(320)).toBe('320px');
+  });
+
+  it('fills the container before the engine reports a paper size', () => {
+    expect(paperCssLength(0)).toBe('100%');
+  });
+});

@@ -1,0 +1,7 @@
+GET     /                              200
+GET     /api/generate-image            403
+POST    /api/generate-image            403
+GET     /admin                         403
+GET     /dev/store-frames/identity     403
+POST    /                              403
+OPTIONS /                              403

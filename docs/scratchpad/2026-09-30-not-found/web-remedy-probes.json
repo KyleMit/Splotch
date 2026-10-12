@@ -1,0 +1,277 @@
+[
+  {
+    "colorScheme": "light",
+    "forcedColors": "none",
+    "glyphs": [
+      {
+        "name": "chevron-left",
+        "rect": {
+          "x": 304,
+          "y": 49,
+          "width": 24,
+          "height": 24,
+          "top": 49,
+          "right": 328,
+          "bottom": 73,
+          "left": 304
+        },
+        "fill": "rgb(255, 255, 255)",
+        "parentColor": "rgb(124, 80, 187)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 816.890625,
+          "y": 2083.328125,
+          "width": 9,
+          "height": 9,
+          "top": 2083.328125,
+          "right": 825.890625,
+          "bottom": 2092.328125,
+          "left": 816.890625
+        },
+        "fill": "rgb(124, 80, 187)",
+        "parentColor": "rgb(124, 80, 187)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 700.609375,
+          "y": 2212.859375,
+          "width": 9,
+          "height": 9,
+          "top": 2212.859375,
+          "right": 709.609375,
+          "bottom": 2221.859375,
+          "left": 700.609375
+        },
+        "fill": "rgb(124, 80, 187)",
+        "parentColor": "rgb(124, 80, 187)"
+      }
+    ]
+  },
+  {
+    "colorScheme": "light",
+    "forcedColors": "active",
+    "glyphs": [
+      {
+        "name": "chevron-left",
+        "rect": {
+          "x": 304,
+          "y": 49,
+          "width": 24,
+          "height": 24,
+          "top": 49,
+          "right": 328,
+          "bottom": 73,
+          "left": 304
+        },
+        "fill": "rgb(255, 255, 255)",
+        "parentColor": "rgb(0, 0, 159)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 816.890625,
+          "y": 2083.328125,
+          "width": 9,
+          "height": 9,
+          "top": 2083.328125,
+          "right": 825.890625,
+          "bottom": 2092.328125,
+          "left": 816.890625
+        },
+        "fill": "rgb(0, 0, 159)",
+        "parentColor": "rgb(0, 0, 159)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 700.609375,
+          "y": 2212.859375,
+          "width": 9,
+          "height": 9,
+          "top": 2212.859375,
+          "right": 709.609375,
+          "bottom": 2221.859375,
+          "left": 700.609375
+        },
+        "fill": "rgb(0, 0, 159)",
+        "parentColor": "rgb(0, 0, 159)"
+      }
+    ]
+  },
+  {
+    "colorScheme": "dark",
+    "forcedColors": "none",
+    "glyphs": [
+      {
+        "name": "chevron-left",
+        "rect": {
+          "x": 304,
+          "y": 49,
+          "width": 24,
+          "height": 24,
+          "top": 49,
+          "right": 328,
+          "bottom": 73,
+          "left": 304
+        },
+        "fill": "rgb(255, 255, 255)",
+        "parentColor": "rgb(201, 169, 240)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 816.890625,
+          "y": 2083.328125,
+          "width": 9,
+          "height": 9,
+          "top": 2083.328125,
+          "right": 825.890625,
+          "bottom": 2092.328125,
+          "left": 816.890625
+        },
+        "fill": "rgb(201, 169, 240)",
+        "parentColor": "rgb(201, 169, 240)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 700.609375,
+          "y": 2212.859375,
+          "width": 9,
+          "height": 9,
+          "top": 2212.859375,
+          "right": 709.609375,
+          "bottom": 2221.859375,
+          "left": 700.609375
+        },
+        "fill": "rgb(201, 169, 240)",
+        "parentColor": "rgb(201, 169, 240)"
+      }
+    ]
+  },
+  {
+    "colorScheme": "dark",
+    "forcedColors": "active",
+    "glyphs": [
+      {
+        "name": "chevron-left",
+        "rect": {
+          "x": 304,
+          "y": 49,
+          "width": 24,
+          "height": 24,
+          "top": 49,
+          "right": 328,
+          "bottom": 73,
+          "left": 304
+        },
+        "fill": "rgb(255, 255, 255)",
+        "parentColor": "rgb(255, 255, 0)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 816.890625,
+          "y": 2083.328125,
+          "width": 9,
+          "height": 9,
+          "top": 2083.328125,
+          "right": 825.890625,
+          "bottom": 2092.328125,
+          "left": 816.890625
+        },
+        "fill": "rgb(255, 255, 0)",
+        "parentColor": "rgb(255, 255, 0)"
+      },
+      {
+        "name": "external",
+        "rect": {
+          "x": 700.609375,
+          "y": 2212.859375,
+          "width": 9,
+          "height": 9,
+          "top": 2212.859375,
+          "right": 709.609375,
+          "bottom": 2221.859375,
+          "left": 700.609375
+        },
+        "fill": "rgb(255, 255, 0)",
+        "parentColor": "rgb(255, 255, 0)"
+      }
+    ]
+  },
+  {
+    "webColdDrawingRequests": [
+      "_app/immutable/assets/1.bszPfC0u.css",
+      "_app/immutable/assets/BrandMark.BF2RCRgY.css",
+      "_app/immutable/assets/Button.CgPk23bj.css",
+      "_app/immutable/assets/ErrorScreen.BAsnDDLh.css",
+      "_app/immutable/assets/ExternalMark.fHWf2Kwa.css",
+      "_app/immutable/assets/PageShell.D5Jghpdb.css",
+      "_app/immutable/assets/VisuallyHidden.hTv0YsBg.css",
+      "_app/immutable/chunks/5JOi5NYt.js",
+      "_app/immutable/chunks/B0-ouz6y.js",
+      "_app/immutable/chunks/B4wJ6CGd.js",
+      "_app/immutable/chunks/B62k1xjg.js",
+      "_app/immutable/chunks/B9l0slTC.js",
+      "_app/immutable/chunks/BC0BexSV.js",
+      "_app/immutable/chunks/BKvMqjWi.js",
+      "_app/immutable/chunks/BP47YlX3.js",
+      "_app/immutable/chunks/BZeDhS3z.js",
+      "_app/immutable/chunks/BdctqR6V.js",
+      "_app/immutable/chunks/BfQanwG6.js",
+      "_app/immutable/chunks/Bow7yfCs.js",
+      "_app/immutable/chunks/BpaeGJEw.js",
+      "_app/immutable/chunks/BremjLX6.js",
+      "_app/immutable/chunks/BuQfFw3R.js",
+      "_app/immutable/chunks/BwreI3Q-.js",
+      "_app/immutable/chunks/C0dh7zpS.js",
+      "_app/immutable/chunks/C3KjjavH.js",
+      "_app/immutable/chunks/C4N_Dyn-.js",
+      "_app/immutable/chunks/C5fhnAD8.js",
+      "_app/immutable/chunks/CE-pyptm.js",
+      "_app/immutable/chunks/CFuXUqwI.js",
+      "_app/immutable/chunks/CGvyOB2I.js",
+      "_app/immutable/chunks/CHcc3uX1.js",
+      "_app/immutable/chunks/CPMQQdre.js",
+      "_app/immutable/chunks/CUAfk6A7.js",
+      "_app/immutable/chunks/CVzDiTR_.js",
+      "_app/immutable/chunks/CcZDD9Mj.js",
+      "_app/immutable/chunks/CnHuj6oC.js",
+      "_app/immutable/chunks/Ct5w0zZs.js",
+      "_app/immutable/chunks/CyvbiIbU.js",
+      "_app/immutable/chunks/CzYkrnRs.js",
+      "_app/immutable/chunks/DAzioRIS.js",
+      "_app/immutable/chunks/DCByc0N7.js",
+      "_app/immutable/chunks/DJZYgvVX.js",
+      "_app/immutable/chunks/DUNUpTf8.js",
+      "_app/immutable/chunks/DWcthZPV.js",
+      "_app/immutable/chunks/Dae5TLCx.js",
+      "_app/immutable/chunks/DcucUwKl.js",
+      "_app/immutable/chunks/DeW0MInd.js",
+      "_app/immutable/chunks/Dngf80wj.js",
+      "_app/immutable/chunks/Dt-HX3Vu.js",
+      "_app/immutable/chunks/Fr5QFgpt.js",
+      "_app/immutable/chunks/FuHqQ8zz.js",
+      "_app/immutable/chunks/IC6_-5h6.js",
+      "_app/immutable/chunks/KljQJ3yi.js",
+      "_app/immutable/chunks/M_wT5VOB.js",
+      "_app/immutable/chunks/RqI6njQt.js",
+      "_app/immutable/chunks/UgwNNCqx.js",
+      "_app/immutable/chunks/XbqD8bYN.js",
+      "_app/immutable/chunks/j9EJZS56.js",
+      "_app/immutable/chunks/lCyuK3p4.js",
+      "_app/immutable/chunks/uBIymjUX.js",
+      "_app/immutable/chunks/wl2ohwfF.js",
+      "_app/immutable/chunks/xihTtKlq.js",
+      "_app/immutable/entry/app.JmmLiS0t.js",
+      "_app/immutable/entry/start.xCvrl7tc.js",
+      "_app/immutable/nodes/0.DSdj3hRM.js",
+      "_app/immutable/nodes/1.CB_deXPP.js",
+      "_app/immutable/nodes/3.DG3KZDC1.js"
+    ]
+  }
+]

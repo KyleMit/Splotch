@@ -1,0 +1,132 @@
+# Run Rival Agent (Codex side: Codex handles, Claude rivals) — handler-side notes
+
+## Managed Codex Cloud
+
+The cloud adapter uses fixed `/workspace/.cache` CLI, configuration, transcript, ledger, and
+installed-wrapper paths. Setup and maintenance provision a pinned Claude CLI and hashed wrappers
+from the trusted `/workspace/Splotch` checkout. They do not rewrite the platform's Codex approval
+configuration or desktop rules. The desktop installer remains fixed to its canonical Mac checkout.
+
+A nested `bwrap` probe on this worker failed while setting up the UID map with a read-only
+filesystem. Allowing an unsandboxed Bash fallback would remove the desktop trust boundary, so the
+cloud adapter instead removes Bash from both tool lists and keeps restricted file reads plus the
+broker. Its prompt asks for every command through the handler and never asks for a prior shell
+failure. The desktop prompt and sandboxed shell stay independent. Validate this mode with a real
+question round that reads the packet and requests a harmless command; health's local auth status
+alone cannot establish proxy-substituted token validity.
+
+GitHub PR discovery and publication through `gh` are separate from the configured feedback issue
+token. A native handler without a validated CLI login uses app tools to validate the reviewed range
+and publish the marked findings. It must retain the moved-range and sensitive-value checks.
+
+This is the Codex-side package of `run-rival-agent`: Codex is the **native handler**, Claude Code
+the **rival agent**. The design history both packages share — why a handler and a rival, what the
+probes changed, the 2026-09-02 decisions and their rejected alternatives, the accepted exposures,
+the seeded-defect bench, and the Claude versus Codex parity table — lives in
+`tools/rival-agent/NOTES.md`, beside the code, so that neither provider's note is the primary one.
+Read that first. This note keeps only what is specific to Codex being the handler and Claude the
+rival. The Claude-side package, with its own note under `.claude/skill-notes/`, has the roles
+swapped.
+
+## What is different when Codex is the handler
+
+Codex runs its `exec_command` inside a Seatbelt sandbox that cannot read the macOS Keychain, and
+both the Claude plan login and the GitHub token live there. So the three things that need them —
+launching the rival, posting the review, and the health probe — are installed under
+`~/.local/libexec/splotch-rival-agent/` as trusted bytes and invoked through `exec_command` with
+`sandbox_permissions: "require_escalated"` under `prefix_rule` prompts that Auto-review evaluates.
+Everything else stays in the sandbox: `broker next`, `broker reply`, and the rival's commands only
+touch the session directory under the temp root and the worktree beside it, which the
+workspace-write sandbox allows. That split is the reason the broker CLI is not an escalated wrapper
+and has no policy rule.
+
+The installed copy verifies itself. The installer writes a manifest hashing every file it copied,
+and every wrapper hashes its siblings against that manifest before doing anything; in the checkout
+there is no manifest and nothing to verify, because the checkout is the source. Earlier versions
+hashed a fixed list of files by name in each wrapper; hashing the whole directory means a file
+nobody expected in there fails the check too. The reviewed worktree is untrusted material, and the
+installed wrappers import nothing from it — which is why the vendor-neutral core is *copied* into
+the install rather than referenced from the checkout, and why the package files' core imports are
+rewritten to point at their new siblings on the way in. A package file that still reaches outside
+the install directory after rewriting fails the installer.
+
+The install is not a review-quality choice and is not up for deletion on those grounds: it is the
+Keychain workaround, and it stays until Codex's sandbox can read the login some other way.
+
+## The Claude rival's launch shape
+
+`--restricted`, not `--safe-mode`. Safe mode disables `--mcp-config` along with CLAUDE.md, skills,
+plugins, and hooks, which is how the first probe of this design attached no broker at all and
+reported the tool absent. Restricted mode removes the command-running tools, confines the file tools
+to the working directories (`--add-dir` for the packet), refuses `bypassPermissions`, and ignores
+user and project settings *files* — which also retired the hashed `settings.json` the previous
+runner carried. It still honours `--settings` on the command line, which is how the sandboxed Bash
+is pinned: `--tools Read,Grep,Glob,Bash` plus `--allowedTools` naming the broker tool, under
+`--permission-mode dontAsk`, gives the rival reads, one confined shell, and the one door. The
+confinement is computed, not hard-coded: `denyWrite` on the canonical `.git` resolved through
+`git rev-parse --git-common-dir` from the worktree, and `denyRead` on `~/.codex` plus every path
+`.worktreeinclude` names, at its canonical location. Claude's default sandbox grants a linked
+worktree write access to the whole canonical `.git` (measured: a push from the rival created a
+branch there), which is the one place Claude's sandbox is looser than Codex's, and the reason the
+deny list exists. Never `denyRead` `~/.claude`; it is the rival's own state. `--json-schema` with
+the findings schema puts the document on the result event as `structured_output`, which the reducer
+prefers over the prose result.
+
+`MCP_TOOL_TIMEOUT` is raised to the pending-request budget in the rival's environment; without it a
+brokered call that waits through a handler turn and a test run times out inside Claude.
+
+Session ids are wrapper-issued (`--session-id` on the first round, `--resume` later) because Claude
+does not report a thread id the way Codex does; the ledger records the issued id. `--end-session`
+deletes that conversation's transcript and sidecar under `~/.claude/projects/` — only for an id the
+ledger holds, which only ever holds ids this launcher issued, so it can never reach a human's
+interactive session.
+
+## The orchestrated alias (removed)
+
+`~/.local/libexec/splotch-claude-review-publish.mjs --pr <n>` was one fixed command that reviewed
+and posted with no handler: it launched the rival, declined every broker request with one fixed
+reason, waited for it to finish, and posted one marked `COMMENT` review. It existed because an
+unattended orchestrator cannot serve the broker, and it had replaced the Auto-mode publisher, which
+gave Claude its full tool set in the disposable worktree and let it post its own review — the second
+policy engine the pairing exists to remove.
+
+Its only caller was `implement-issue-stack`. Campaigns now run through `ship-campaign` →
+`ship-issue` → `drive-pr-to-mergeable`, which reviews with a live handler and posts through
+`post-review.mjs`, and `orchestrate-sessions` only hands out prompts, so its worker sessions take
+that same path. Issue #2077 weighed keeping the alias for a future hands-off Codex runner against
+the repo's no-speculative-surface rule and removed it: an escalated entry point with posting
+authority and no caller is trust-boundary surface, not a free option. A hands-off runner that comes
+back gets a real handler rather than this alias; the publish boundary it would need
+(`postFromSession` and its pre-publish guard) is still the core's.
+
+The removal dropped the script, its shim, its exec-policy rule and policy case, and its tests, and
+bumped the manifest. The installer deletes the old shim through `STALE_PATHS`, but only the owner
+can run it: until `npm run run-claude:install` runs from the canonical checkout and Codex restarts,
+the machine keeps the old shim and the old prompt rule, and `npm run run-claude:policy:check`
+reports the install as stale.
+
+## What was deleted and why
+
+* The `ask` and `inspect` profiles and the ask-to-inspect widening rule. One paired profile covers a
+  question (a fresh, unrecorded turn with `--question-file`) and a review alike.
+* The Auto-mode publisher, its rubric injection of `leave-pr-review`, and the runner-boundary and
+  reviewer-rubric prompts. The rival prompt in the core carries the analysis half of that rubric
+  without its posting section; posting belongs to the handler.
+* The Claude-side stream wrapper, which was a near-copy of the Codex-side one. One runner in the
+  core, two event renderers.
+* The hashed `settings.json`, retired by `--restricted`.
+
+## Unvalidated on this side
+
+* Whether the workspace-write sandbox lets a brokered command write inside the disposable worktree
+  under the temp root without escalation on every Codex version. The skill tells the handler to try
+  the sandbox first and escalate only a legitimate denial through Auto-review.
+* Whether `exec_command`'s yield and `write_stdin` polling stay comfortable with
+  `broker next --timeout-seconds 60`; the number was chosen to sit under the yield, not measured
+  against it. One real Codex-handler round found the 30-second yield shorter than the wait, so each
+  quiet wait needed one follow-up poll.
+* The whole Codex-as-handler loop has been exercised from the checkout with a Claude session serving
+  as the handler, which proves the launcher, the rival, the broker, and the poster, but not Codex's
+  own `exec_command` ergonomics around them — and not yet with the sandboxed shell, whose rounds so
+  far were all served by a Claude session. The installer is fixed to the canonical checkout and is
+  only ever run there by the owner.

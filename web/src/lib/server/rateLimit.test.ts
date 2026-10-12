@@ -1,0 +1,118 @@
+// @vitest-environment node
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { peekRateLimit, rateLimit, SWEEP_BUCKET_THRESHOLD } from './rateLimit';
+
+// The limiter keeps state in a module-level Map keyed by the caller-supplied
+// string, so each test uses a distinct key to stay independent of the others.
+
+describe('rateLimit', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('allows hits up to the limit, then blocks the next one', () => {
+    const key = 'allow-then-block';
+    for (let i = 0; i < 3; i++) {
+      expect(rateLimit(key, { limit: 3, windowMs: 60_000 }).limited).toBe(false);
+    }
+    expect(rateLimit(key, { limit: 3, windowMs: 60_000 }).limited).toBe(true);
+  });
+
+  it('reports a retryAfter of at least one second once limited', () => {
+    const key = 'retry-after';
+    rateLimit(key, { limit: 1, windowMs: 60_000 });
+    const result = rateLimit(key, { limit: 1, windowMs: 60_000 });
+    expect(result.limited).toBe(true);
+    expect(result.retryAfter).toBeGreaterThanOrEqual(1);
+  });
+
+  it('lets requests through again once the window slides past', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const key = 'sliding-window';
+    for (let i = 0; i < 3; i++) rateLimit(key, { limit: 3, windowMs: 1000 });
+    expect(rateLimit(key, { limit: 3, windowMs: 1000 }).limited).toBe(true);
+
+    // Advance past the window so every recorded hit ages out.
+    vi.advanceTimersByTime(1001);
+    expect(rateLimit(key, { limit: 3, windowMs: 1000 }).limited).toBe(false);
+  });
+
+  it('unblocks a client that retries after retryAfter, even if it retried while limited', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const key = 'honors-retry-after';
+    expect(rateLimit(key, { limit: 1, windowMs: 10_000 }).limited).toBe(false);
+
+    // Rejected attempts must not extend the window. The budget of one is what
+    // makes a violation observable: were the rejection recorded as a hit, the
+    // key would still be limited after retryAfter — a wider budget absorbs the
+    // stray hit and passes either way (found by the issue-1066 kill-check).
+    vi.advanceTimersByTime(2000);
+    const rejected = rateLimit(key, { limit: 1, windowMs: 10_000 });
+    expect(rejected.limited).toBe(true);
+    expect(rejected.retryAfter).toBe(8);
+
+    vi.advanceTimersByTime(rejected.retryAfter * 1000);
+    expect(rateLimit(key, { limit: 1, windowMs: 10_000 }).limited).toBe(false);
+  });
+
+  it('sweeps a long-window bucket by its own window, not by the calling window', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const hourly = { limit: 3, windowMs: 60 * 60_000 };
+    const perMinute = { limit: 10, windowMs: 60_000 };
+    const reporter = 'sweep-hourly-victim';
+
+    for (let i = 0; i < hourly.limit; i++) expect(rateLimit(reporter, hourly).limited).toBe(false);
+    expect(rateLimit(reporter, hourly).limited).toBe(true);
+
+    // Two minutes later the hourly budget is still spent, but every hit in it is
+    // older than a per-minute caller's cutoff.
+    vi.advanceTimersByTime(2 * 60_000);
+
+    // Push the shared Map past the threshold so the next call sweeps, then make
+    // that call a per-minute one — the window mismatch is the defect.
+    for (let i = 0; i <= SWEEP_BUCKET_THRESHOLD; i++) {
+      rateLimit(`sweep-filler-${i}`, perMinute);
+    }
+
+    expect(peekRateLimit(reporter, hourly).limited).toBe(true);
+  });
+
+  it('tracks each key independently', () => {
+    expect(rateLimit('key-a', { limit: 1, windowMs: 60_000 }).limited).toBe(false);
+    expect(rateLimit('key-a', { limit: 1, windowMs: 60_000 }).limited).toBe(true);
+    // A different key has its own budget and is unaffected.
+    expect(rateLimit('key-b', { limit: 1, windowMs: 60_000 }).limited).toBe(false);
+  });
+});
+
+describe('peekRateLimit', () => {
+  it('never consumes budget, no matter how often it is called', () => {
+    const key = 'peek-free';
+    for (let i = 0; i < 10; i++) {
+      expect(peekRateLimit(key, { limit: 1, windowMs: 60_000 }).limited).toBe(false);
+    }
+    expect(rateLimit(key, { limit: 1, windowMs: 60_000 }).limited).toBe(false);
+  });
+
+  it('reports the limited state recorded by rateLimit, with a retryAfter', () => {
+    const key = 'peek-sees-hits';
+    rateLimit(key, { limit: 1, windowMs: 60_000 });
+    const peeked = peekRateLimit(key, { limit: 1, windowMs: 60_000 });
+    expect(peeked.limited).toBe(true);
+    expect(peeked.retryAfter).toBeGreaterThanOrEqual(1);
+  });
+
+  it('reports unlimited again once the window slides past', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const key = 'peek-sliding-window';
+    rateLimit(key, { limit: 1, windowMs: 1000 });
+    expect(peekRateLimit(key, { limit: 1, windowMs: 1000 }).limited).toBe(true);
+
+    vi.advanceTimersByTime(1001);
+    expect(peekRateLimit(key, { limit: 1, windowMs: 1000 }).limited).toBe(false);
+  });
+});

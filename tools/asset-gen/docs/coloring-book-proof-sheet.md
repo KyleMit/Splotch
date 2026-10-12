@@ -1,0 +1,100 @@
+# The coloring-book proof sheet — `coloring/gen-book-proof-sheet.mjs`
+
+**Read this before modifying `coloring/gen-book-proof-sheet.mjs` or anything under
+`coloring-book-proof-sheet-assets/`.** It is the single review surface for the coloring-book assets
+— the pen line art, the chalk outline, the day/night fills, and the composited page — the
+review-sheet role previously split across `gen-coloring-sheet.mjs` lives here now.
+
+## What it builds
+
+A **self-contained HTML proof sheet** of the coloring assets for **one category**, so they can be
+reviewed in a browser and published as an Artifact. Images are embedded as base64 data URIs (no
+external file refs), so the page renders anywhere — including the Artifact sandbox, whose CSP blocks
+linking to local files.
+
+The sheet has a light page background and shows every page as a **light + night pair, side by side**
+(light fill left, night fill right). A page's orientations stay together — its wide row, then its
+tall row — so each page is judged as one unit. The layout is a single centered column (`max-width`
+capped), so the images simply grow with the viewport until they hit that cap.
+
+## CLI
+
+```bash
+node --experimental-strip-types --disable-warning=ExperimentalWarning \
+  tools/asset-gen/coloring/gen-book-proof-sheet.mjs <category>[/page[-orient]] \
+    [--source shipped|samples|git:<ref>] [--out FILE]
+```
+
+| Argument             | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<category>`         | Exactly **one** category per sheet (`nature`), optionally focused to a page (`nature/ant` — both orientations) or a single cell (`nature/ant-wide`). `all` is rejected: a whole-catalog sheet exceeds the 16 MB Artifact upload cap — build one sheet per category.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `--source shipped`   | (default) read the committed assets — the live `web/static/coloring/**/*.night.webp` night fills.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `--source samples`   | read fresh night-fill takes from the gitignored `.coloring-samples-dark/` instead — the human review gate before a take is punched and committed. Line art and light fills always come from `web/static` either way.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `--source git:<ref>` | render each page's committed assets **at `<ref>`** (before) directly above the current working-tree assets (after), so a regen reads as an old-vs-new pair in one sheet. Before-cell layers come straight from history via `git show <ref>:<path>`; where the shipped fills-only `.night.webp`/`.light.webp` predate a ref (pre-fork revisions) it falls back to the lined raw fill (`fill-src/…{light,night}.raw.webp`) and tags the tile `raw fill (pre-fork fallback)`. An asset absent at `<ref>` (it predates the ref) renders as a placeholder tile. A `<ref>` that does not resolve to a commit in this clone — a typo, or a commit a shallow clone never fetched — stops the run with a one-line hint to check the ref or fetch it, because every before tile would otherwise be a placeholder in a sheet indistinguishable from a real comparison. |
+| `--out FILE`         | output path (default `.coloring-samples/coloring-book-proof-sheet.html`, gitignored).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+
+Page IDs come from the real catalog (`web/src/lib/state/books.ts` — one of the sanctioned `web/src`
+imports in [`README.md`](../README.md)), so the sheet always matches what will ship. A missing image
+renders as a placeholder, not a crash.
+
+## The three views
+
+A sticky toolbar (only the view toggle is sticky, not the whole header) sets the view for every
+tile: **Outline → Color → Combined**, defaulting to **Combined**. Tapping a tile cycles that tile on
+its own, in the same order. Each tile embeds the layers to reproduce what a child actually sees, not
+just the raw generated fill:
+
+* **outline** — the line art alone over the paper, drawn as the canvas draws it: the PEN's black ink
+  on light paper and the CHALK's white ink on dark paper. A night tile whose page has no chalk shows
+  the pen in white ink instead (tagged `no chalk (inverted pen)`). The sheet embeds the canonical
+  SVGs themselves as `image/svg+xml` data URIs; the generator rasterizes them only to score the
+  outline-keep badge.
+* **color** — the generated colored fill alone (`.light.webp` in the light half, night fill in the
+  dark half).
+* **combined** — the real canvas composite: the fills-only fill under the themed line-art layer,
+  over the paper. Shipped fills draw **as-is** — they are already fills-only (opaque, outline pixels
+  inpainted with bled fill color; `lib/punch-fill.mjs`, `docs/inpainted-fill-punch.md`) and
+  re-cutting them with a binary mask at render resolution is exactly what used to stitch a dotted
+  dark ring around every line in dark mode. Only a lined fill runs the in-browser punch — a
+  `--source samples` night take, or a git-mode raw-fill fallback — because it still carries its own
+  outline. The mask is the tile's own line art (pen light half, chalk night half): SVG alpha above
+  `LINE_ART_ALPHA_THRESHOLD` (`lib/line-art.mjs`, the shipped punch's threshold), or luma below
+  `OUTLINE_LUMA_THRESHOLD` for a raster-era master. **This is the view to trust when judging a
+  fill** — a bug like blown-out eyes only shows once the layers are merged.
+
+The line art composites the way the app presents it (ADR-0129): plain source-over, with no filter or
+blend, because each SVG bakes its ink colour. A `git:<ref>` era that predates a layer's SVG supplies
+that layer's opaque ink-on-white raster master (`.outline.webp`, `.chalk.webp`) instead, which keeps
+the raster model: multiply on light paper, `invert(1)` then screen on dark. The generator marks each
+cell's `lineArtKind` and `chalkKind` as `vector` or `raster` so the client picks the model per
+layer; an era between the pen and chalk vectorizations mixes the two. The raster night model needs
+canvas `filter`, which WebKit does not implement, so review a raster-era sheet in Chromium.
+
+## The outline % badge
+
+Each **light** tile carries an outline-keep badge: the % of the source line art the fill preserves,
+scored by the shared `lib/outline-match.mjs` (the same scorer as the `check:coloring-fill-drift`
+drift audit). It is computed from the **lined raw fill** in `fill-src/` — the shipped fill is
+punched fills-only, leaving nothing to register. Night tiles have no badge: night raws have *white*
+outlines, which the dark-ink mask can't read. Badge color buckets are defined by
+`KEEP_GOOD`/`KEEP_OK` in `coloring-book-proof-sheet.client.js`.
+
+## Where the code lives
+
+* `coloring/gen-book-proof-sheet.mjs` — assembles the HTML shell, embeds the images, scores the
+  badges, and injects the cell data as a JSON global (`window.__COLORING_BOOK_PROOF_SHEET__`). No
+  build-time string interpolation reaches the runtime.
+* `coloring-book-proof-sheet-assets/coloring-book-proof-sheet.css` — the entire look.
+* `coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js` — the in-browser
+  render/interaction runtime (canvas compositing, view toggle, per-tile cycling).
+
+Change look or behavior in those two real files (they get editor highlighting, Prettier, and ESLint)
+— never by interpolating strings in the generator.
+
+## When to rebuild and how to view
+
+Rebuild the sheet **every time you touch an asset** (generate, retouch, regenerate, or ship a fill)
+and **publish it with the Artifact tool** — it is self-contained, so it renders in the sandbox; do
+NOT hand-composite a PNG. Judge on the Combined view. The Artifact tool caps uploads at **16 MB**;
+one category per sheet stays comfortably under it (the generator warns if a sheet ever exceeds the
+cap — focus it to a page range if that happens).

@@ -1,0 +1,16 @@
+diff --git a/tools/perf/android/capture-bundled-frames.mjs b/tools/perf/android/capture-bundled-frames.mjs
+index 66944ada5..1af45f9f4 100644
+--- a/tools/perf/android/capture-bundled-frames.mjs
++++ b/tools/perf/android/capture-bundled-frames.mjs
+@@ -382,9 +382,8 @@ export async function captureBundledFrames({
+             if (initial?.lockedOrientation) state.lockToRestore = initial;
+           },
+         }),
+-      reassertRotation: () => {
+-        for (const command of androidRotationCommands(orientation)) exec(serial, command);
+-      },
++      // DIAGNOSTIC NEGATIVE CONTROL ONLY — never commit: skip the re-assert so the page stays portrait.
++      reassertRotation: () => {},
+     });
+     await ensureCampaignTheme(execute, requestedTheme);
+     const observedTheme = await readResolvedTheme(execute);

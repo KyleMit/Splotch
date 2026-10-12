@@ -1,0 +1,1089 @@
+// Preflight for a physical-device performance campaign.
+//
+//   npm run perf:preflight                    report only
+//   npm run perf:preflight -- --wake-android        wake it and set stay-awake
+//   npm run perf:preflight -- --hold-android-awake  the same, re-asserted for the session
+//   npm run perf:preflight -- --verify-ios-launch   launch a real WDA session (slow, exclusive)
+//   npm run perf:preflight -- --verify-android-input drive a real touch, read the cadence, and
+//                                                    prove the device and page both rotate
+//   npm run perf:preflight -- --json                machine-readable, for a campaign runner
+//   npm run perf:preflight -- --ios-only           skip Android when capturing an iPhone alone
+//
+// Every check here exists because a campaign produced numbers without it and the
+// numbers were wrong. See docs/PROFILING-CAMPAIGNS.md for what each failure looks
+// like when it is not caught.
+//
+// Everything except --verify-ios-launch is host-side, which is the gap it closes: a
+// device blocked by Guided Access stays enumerated, answers ideviceinfo, keeps
+// its tunnel up and reports ready here, because none of those launch an app.
+//
+// It never stops a listener another session owns. Anything that cost a human
+// approval — the root-owned RemoteXPC tunnel above all — is reused where it is
+// already running, and anything cheap moves to a free port instead.
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import {
+  ROOT,
+  argFlag,
+  argSwitch,
+  isMain,
+  parseOrFail,
+  readSwitch,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
+import { portListenerOwners } from '../lib/vite-server.mjs';
+import {
+  ANDROID_PORT_ROLES,
+  androidWakeActions,
+  classifyAppiumLog,
+  classifyLaunchProbe,
+  deviceAccessProblem,
+  iosLaunchBlocker,
+  pageFollowedRotation,
+  safariWindowProblem,
+  PORT_ROLES,
+  probeHostReuse,
+  resolvePort,
+  summarize,
+  androidVerificationBlockers,
+} from './lib/capture-readiness.mjs';
+import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
+import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
+import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
+import { overlayCheck, readOverlayVerdict } from './lib/android-overlay-verdict.mjs';
+import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
+import { rethrowIfBroken } from './lib/error-classification.mjs';
+import { selectAndroidSerial } from './lib/android-serial.mjs';
+import { iosChecks } from './lib/ios-device-checks.mjs';
+import { WDA_BUNDLE_ID } from './lib/ios-provisioning.mjs';
+import {
+  DEVICE_WDA_PORT,
+  describeRecovery,
+  grantFromRunnerLaunch,
+  iproxyForwardPorts,
+  isStaleDeviceDiscovery,
+  launchAttemptRows,
+  newestDeviceXctestrun,
+  runnerHoldsDevice,
+} from './lib/wda-recovery.mjs';
+
+const ANDROID_STAY_AWAKE_TIMEOUT_MS = 1_800_000;
+// Android clears stay-awake on its own across a USB reconnect or a reboot, and a
+// campaign that spans hours will meet one. Re-asserting costs one adb round trip
+// and is the difference between an overnight run and a locked screen at 3am.
+const ANDROID_WATCH_INTERVAL_MS = 60_000;
+
+const sh = (cmd, args) => {
+  const result = spawnSync(cmd, args, { encoding: 'utf8' });
+  return {
+    ok: result.status === 0,
+    out: (result.stdout ?? '').trim(),
+    err: result.error ? result.error.message : (result.stderr ?? '').trim(),
+  };
+};
+
+function portHolder(port) {
+  const listeners = portListenerOwners(port, ROOT);
+  return listeners.find((listener) => !listener.owned) ?? listeners[0] ?? null;
+}
+
+// `run` is a seam for tests; production runs the real adb through `sh`. The
+// touch-overlay check reads adb on its own, so a test stops at the device pick.
+export function androidChecks({ fix, explicit, run = sh }) {
+  const selection = selectAndroidSerial(run('adb', ['devices']), explicit);
+  const { serial, attached: devices } = selection;
+  const detail = selection.problem ?? serial ?? 'no device in `adb devices`';
+  const checks = [{ name: 'android device', status: serial ? 'ok' : 'blocked', detail }];
+  if (!serial) return { checks, serial, devices };
+
+  const trust = run('adb', ['-s', serial, 'shell', 'dumpsys', 'trust']).out;
+  const locked = /deviceLocked=1/.test(trust);
+  const power = run('adb', ['-s', serial, 'shell', 'dumpsys', 'power']).out;
+  const screenOn = /Display Power: state=ON/i.test(power) || /mWakefulness=Awake/i.test(power);
+  const stayOn = /mStayOn=true/i.test(power) || /stayOn=true/i.test(power);
+
+  const { actions, blockers } = androidWakeActions({ screenOn, stayOn, locked });
+  for (const blocker of blockers) {
+    checks.push({ name: 'android lock', status: 'blocked', detail: blocker });
+  }
+
+  if (actions.length === 0) {
+    checks.push({ name: 'android stays awake', status: 'ok', detail: 'screen on, stay-awake set' });
+  } else if (!fix) {
+    checks.push({
+      name: 'android stays awake',
+      status: 'warn',
+      detail: `would ${actions.join(' + ')} — re-run with --wake-android`,
+    });
+  } else {
+    if (actions.includes('wake'))
+      run('adb', ['-s', serial, 'shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
+    if (actions.includes('stayon')) {
+      run('adb', ['-s', serial, 'shell', 'svc', 'power', 'stayon', 'true']);
+      run('adb', [
+        '-s',
+        serial,
+        'shell',
+        'settings',
+        'put',
+        'system',
+        'screen_off_timeout',
+        String(ANDROID_STAY_AWAKE_TIMEOUT_MS),
+      ]);
+    }
+    checks.push({
+      name: 'android stays awake',
+      status: 'ok',
+      detail: `applied ${actions.join(' + ')}`,
+    });
+  }
+
+  const chrome = run('adb', [
+    '-s',
+    serial,
+    'shell',
+    'pm',
+    'list',
+    'packages',
+    'com.android.chrome',
+  ]).out;
+  checks.push({
+    name: 'android chrome',
+    status: chrome.includes('com.android.chrome') ? 'ok' : 'blocked',
+    detail: chrome ? 'installed' : 'com.android.chrome is not installed',
+  });
+  checks.push(overlayCheck(readOverlayVerdict(serial)));
+
+  return { checks, serial, devices };
+}
+
+// Short: a live server answers immediately on loopback, and a hung one must not
+// hold up a preflight that exists to be run before every campaign.
+const APPIUM_PROBE_TIMEOUT_MS = 4_000;
+
+async function probeAppium(port) {
+  const get = async (path) => {
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+      signal: AbortSignal.timeout(APPIUM_PROBE_TIMEOUT_MS),
+    }).catch(() => null);
+    if (!response) return null;
+    return response.json().catch(() => null);
+  };
+  const status = await get('/status');
+  if (!status?.value) return { responds: false };
+  const sessions = await get('/appium/sessions');
+  return {
+    responds: true,
+    ready: status.value.ready === true,
+    version: status.value.build?.version,
+    // Absent unless the server runs with --allow-insecure=session_discovery, so
+    // null means "unknown", never "idle".
+    sessionCount: Array.isArray(sessions?.value) ? sessions.value.length : null,
+  };
+}
+
+export async function probeProbeHost(port, intendedUpstream) {
+  const base = `http://127.0.0.1:${port}`;
+  const response = await fetch(`${base}/__probe/state`, {
+    signal: AbortSignal.timeout(APPIUM_PROBE_TIMEOUT_MS),
+  }).catch(() => null);
+  if (!response?.ok) return { responds: false, intendedUpstream };
+  const state = await response.json().catch(() => null);
+  if (!state) return { responds: false, intendedUpstream };
+  const identity = { responds: true, intendedUpstream, buildProblem: null, ...state };
+  if (!probeHostReuse(identity).reuse) return identity;
+  const buildProblem = await servedBuildFingerprintProblem(`${base}/`).catch(
+    (error) => `build identity could not be proved: ${error.message}`
+  );
+  return { ...identity, buildProblem };
+}
+
+async function inspectedPortHolder(role, port, intendedProbeUpstream) {
+  const holder = portHolder(port);
+  if (!holder) return null;
+  return {
+    pid: holder.pid,
+    cwd: holder.cwd,
+    ours: holder.owned,
+    probe:
+      role === 'probe' && holder.owned
+        ? await probeProbeHost(port, intendedProbeUpstream)
+        : undefined,
+    appium: role === 'appium' ? await probeAppium(port) : undefined,
+  };
+}
+
+async function portChecks({ android }) {
+  const checks = [];
+  const resolved = {};
+  const decisions = {};
+  for (const [role, spec] of Object.entries(PORT_ROLES)) {
+    if (!android && ANDROID_PORT_ROLES.includes(role)) continue;
+    if (role === 'probe' && resolved.preview === undefined) {
+      throw new Error('PORT_ROLES must resolve preview before probe');
+    }
+    const intendedProbeUpstream =
+      role === 'probe' ? `http://127.0.0.1:${resolved.preview}` : undefined;
+    const holder = await inspectedPortHolder(role, spec.port, intendedProbeUpstream);
+    const alternatives = await Promise.all(
+      (spec.shiftTo ?? []).map(async (port) => ({
+        port,
+        holder: await inspectedPortHolder(role, port, intendedProbeUpstream),
+      }))
+    );
+    const decision = resolvePort(role, {
+      holder,
+      alternatives,
+    });
+    resolved[role] = decision.port;
+    decisions[role] = decision;
+    checks.push({
+      name: `port ${role}`,
+      role,
+      status: decision.action === 'blocked' ? 'blocked' : 'ok',
+      detail: `${decision.port} — ${decision.action} (${decision.reason})`,
+    });
+  }
+  return { checks, resolved, decisions };
+}
+
+// Holds BOTH devices ready for the length of a session, not just the one being
+// captured right now. Captures are serialized — two campaigns driving input from
+// one host is the contention that corrupts input cadence — but the idle device
+// still has to be awake and enumerated when its turn comes, and still has to be
+// reachable afterwards for a follow-up question.
+//
+// Android is held actively (stay-awake is a setting this can re-assert). iOS is
+// only observed: nothing here can hold an iPad awake, so Auto-Lock must be Never
+// on the device itself, and all this can do is say when it has gone away.
+export async function watchAndroid(
+  serial,
+  { intervalMs = ANDROID_WATCH_INTERVAL_MS, iosUdid } = {}
+) {
+  console.log(`watching ${serial}; re-asserting stay-awake every ${intervalMs / 1000}s`);
+  let lastIos = null;
+  let lastLocked = null;
+  for (;;) {
+    const locked = /deviceLocked=1/.test(
+      sh('adb', ['-s', serial, 'shell', 'dumpsys', 'trust']).out
+    );
+    if (locked !== lastLocked) {
+      console.log(
+        locked
+          ? `LOCKED ${serial} — unlock it by hand; captures from here are not scoreable`
+          : `awake ${serial}`
+      );
+      lastLocked = locked;
+    }
+    if (!locked) {
+      // Stay-awake is STAY_ON_WHILE_PLUGGED_IN, so it only holds while the
+      // framework reports the device plugged. A phone that has reached 100% and
+      // stopped drawing current still reports `AC powered: true` on the hardware
+      // this was written against — but firmware that does not would silently
+      // stop honouring stay-awake mid-campaign. The debug override makes the
+      // framework report plugged regardless; `dumpsys battery reset` undoes it.
+      const battery = sh('adb', ['-s', serial, 'shell', 'dumpsys', 'battery']).out;
+      const plugged = /(AC|USB|Wireless) powered: true/.test(battery);
+      if (!plugged) {
+        console.log(
+          `unplugged-looking ${serial} — forcing a plugged state so stay-awake still applies`
+        );
+        sh('adb', ['-s', serial, 'shell', 'dumpsys', 'battery', 'set', 'ac', '1']);
+      }
+      sh('adb', ['-s', serial, 'shell', 'svc', 'power', 'stayon', 'true']);
+      sh('adb', [
+        '-s',
+        serial,
+        'shell',
+        'settings',
+        'put',
+        'system',
+        'screen_off_timeout',
+        String(ANDROID_STAY_AWAKE_TIMEOUT_MS),
+      ]);
+    }
+    if (iosUdid) {
+      const enumerated = sh('idevice_id', ['-l']).out.includes(iosUdid);
+      const tunnel = sh('pgrep', ['-f', 'tunnel-creation.mjs']).ok;
+      const state = enumerated && tunnel;
+      if (state !== lastIos) {
+        console.log(
+          state
+            ? `ios ready ${iosUdid}`
+            : `IOS UNAVAILABLE ${iosUdid} — ${enumerated ? 'tunnel gone' : 'device not enumerated'}`
+        );
+        lastIos = state;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+}
+
+// Building and launching WebDriverAgent is the only check here that proves the
+// device will actually accept a capture, and the only one that catches a
+// device-side denial — Guided Access above all. It costs a real WDA build, so it
+// is opt-in rather than part of the default report, and it must not run while a
+// capture holds the device.
+const LAUNCH_PROBE_TIMEOUT_MS = 300_000;
+// Only paid on the failure path, and only once. A reused Appium writes its log to
+// whatever terminal started it, so the innermost cause is unreachable from here —
+// a server we start ourselves puts it on a pipe we own.
+const DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS = 30_000;
+const DIAGNOSTIC_APPIUM_POLL_MS = 500;
+const DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS = 5_000;
+// Kept small on purpose: the interesting lines are the innermost error, and a
+// whole Appium session log is megabytes of noise around them.
+const DIAGNOSTIC_LOG_EXCERPT_CHARS = 4_000;
+const DIAGNOSTIC_LOG_SETTLE_MS = 5_000;
+const DIAGNOSTIC_LOG_POLL_MS = 100;
+// A rotation is a physical animation on a real panel, and the page's own
+// dimensions do not update until it settles.
+const IOS_ROTATION_SETTLE_MS = 2_000;
+const IOS_ORIENTATIONS = ['LANDSCAPE', 'PORTRAIT'];
+
+async function wdaSession(appiumUrl, sessionId, method, path, body) {
+  const response = await fetch(`${appiumUrl}/session/${sessionId}${path}`, {
+    method,
+    headers: body ? { 'content-type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const payload = await response.json();
+  if (payload.value?.error) throw new Error(String(payload.value.message ?? payload.value.error));
+  return payload.value;
+}
+
+// Half the matrix is landscape, and until #1248 nothing proved a device would
+// turn — a rotation fault passed every cheap check on Android and then failed
+// eight landscape cells. This is the iPad counterpart, and it asks the same
+// question that one does: not whether the OS accepted the request, but whether
+// the PAGE ended up in the orientation that was asked for. Those can differ, and
+// the difference is the whole failure mode.
+//
+// It reuses the launch probe's session rather than opening its own. That session
+// already costs about a minute of WebDriverAgent build, and it already runs
+// Safari, so the page this needs is one navigation away.
+async function verifyIosRotation(appiumUrl, sessionId) {
+  const original = await wdaSession(appiumUrl, sessionId, 'GET', '/orientation');
+  await wdaSession(appiumUrl, sessionId, 'POST', '/url', { url: 'about:blank' });
+  try {
+    for (const orientation of IOS_ORIENTATIONS) {
+      await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', { orientation });
+      await new Promise((resolve) => setTimeout(resolve, IOS_ROTATION_SETTLE_MS));
+      const [width, height, screenWidth, screenHeight] = await wdaSession(
+        appiumUrl,
+        sessionId,
+        'POST',
+        '/execute/sync',
+        {
+          script: 'return [window.innerWidth, window.innerHeight, screen.width, screen.height]',
+          args: [],
+        }
+      );
+      const windowRect = await wdaSession(appiumUrl, sessionId, 'GET', '/window/rect');
+      const windowProblem = safariWindowProblem(
+        orientation,
+        windowRect?.width,
+        screenWidth,
+        screenHeight
+      );
+      if (windowProblem) return { ok: false, message: windowProblem };
+      const followed = pageFollowedRotation(orientation, width, height);
+      if (followed !== true) {
+        const reported =
+          followed === null
+            ? `${width}x${height}`
+            : `${height > width ? 'PORTRAIT' : 'LANDSCAPE'} (${width}x${height})`;
+        return {
+          ok: false,
+          message:
+            `the device was asked for ${orientation} and the page reports ${reported} ` +
+            "— check the iPad's rotation lock in Control Centre",
+        };
+      }
+    }
+    return { ok: true };
+  } finally {
+    // Restoring matters more here than on Android: the orientation a capture
+    // session inherits is the one a human left the iPad in, and silently leaving
+    // it portrait would change what the next cell measures.
+    await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', {
+      orientation: original,
+    }).catch(() => null);
+  }
+}
+
+// A port nothing is listening on, proven by holding it ourselves and releasing
+// it immediately before the child claims it. A fixed port cannot be trusted: if
+// something else already answers there, the child can exit while `/status`
+// succeeds against the stranger, and the device session then goes to a server we
+// do not own and whose log we will never read.
+async function freeDiagnosticPort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.on('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+// Re-runs the failed session against an Appium we own, capturing its output, and
+// classifies the innermost cause from it. The HTTP response never carries that
+// cause — verified against a real failure — so the server log is the only source.
+//
+// Returns `{ cause, diagnostic }`. `cause` is null whenever this could not get an
+// answer, because a diagnostic that fails must not overwrite the outer message
+// with a wrong story. `diagnostic` says WHY it could not, so an integration
+// failure here is visible rather than looking like "no known cause".
+//
+// `spawnDiagnostic` is a seam: the whole path — spawn, wait for ready, send the
+// session, read the log, classify, tear down — is otherwise only reachable with a
+// real blocked device, which is how it shipped broken. `waitsMs` ({ readyPoll,
+// logSettle, exitSettle }) is a test seam too: it shortens the idle waits a
+// fixture that never logs a cause, or never honours SIGTERM, would otherwise
+// sit through in full.
+export async function diagnoseLaunchFailure(sessionBody, options = {}) {
+  const { spawnDiagnostic = defaultDiagnosticAppium, retried = false, waitsMs = {} } = options;
+  const { readyPoll = DIAGNOSTIC_APPIUM_POLL_MS, logSettle = DIAGNOSTIC_LOG_SETTLE_MS } = waitsMs;
+  let port;
+  try {
+    port = await freeDiagnosticPort();
+  } catch {
+    return { cause: null, diagnostic: 'could not reserve a port for the diagnostic server' };
+  }
+
+  let child;
+  let log = '';
+  let exited = null;
+  try {
+    child = spawnDiagnostic(port);
+  } catch (error) {
+    return { cause: null, diagnostic: `could not start a diagnostic server: ${error.message}` };
+  }
+
+  // `spawn` reports a missing binary asynchronously on `error`, not by throwing,
+  // so a try/catch around it protects nothing and an unhandled event would take
+  // the preflight down with it.
+  let spawnError = null;
+  child.on('error', (error) => (spawnError = error));
+  // Both halves of the exit event: a child terminated by signal reports
+  // `code === null, signal === 'SIGTERM'`, and recording only the code left
+  // `exited` null — a signal-killed server was indistinguishable from one
+  // still running, so teardown re-signalled a corpse and waited out its full
+  // escalation timeout (issue 1309).
+  child.on('exit', (code, signal) => (exited = { code, signal }));
+  child.stdout?.on('data', (chunk) => (log += chunk));
+  child.stderr?.on('data', (chunk) => (log += chunk));
+
+  try {
+    const deadline = Date.now() + DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS;
+    let ready = false;
+    while (!ready && Date.now() < deadline && !spawnError && exited === null) {
+      ready = await fetch(`http://127.0.0.1:${port}/status`)
+        .then((response) => response.ok)
+        .catch((error) => {
+          rethrowIfBroken(error);
+          return false;
+        });
+      if (!ready) await new Promise((resolve) => setTimeout(resolve, readyPoll));
+    }
+    if (spawnError) {
+      return {
+        cause: null,
+        diagnostic: `diagnostic server could not start: ${spawnError.message}`,
+      };
+    }
+    if (exited !== null) {
+      // The port was proven free and then released before the child claimed it,
+      // so a busy machine can take it in between. Worth one retry before
+      // reporting a dead server, because the alternative reads as "no cause
+      // found" for a reason that has nothing to do with the device.
+      if (!retried) {
+        return diagnoseLaunchFailure(sessionBody, { ...options, retried: true });
+      }
+      const how = exited.signal ? `signal ${exited.signal}` : `code ${exited.code}`;
+      return { cause: null, diagnostic: `diagnostic server exited early with ${how}` };
+    }
+    if (!ready) return { cause: null, diagnostic: 'diagnostic server never became ready' };
+
+    await fetch(`http://127.0.0.1:${port}/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(sessionBody),
+      signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
+    }).catch(() => null);
+
+    // The child's stdout reaches this process asynchronously, so classifying the
+    // instant the session request returns can read an empty log and report "no
+    // cause found" for a server that logged one a millisecond later. Wait for a
+    // cause to appear, bounded — the happy path exits as soon as the line lands.
+    const logDeadline = Date.now() + logSettle;
+    let cause = classifyAppiumLog(log);
+    while (!cause && Date.now() < logDeadline) {
+      await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_LOG_POLL_MS));
+      cause = classifyAppiumLog(log);
+    }
+    return {
+      cause,
+      diagnostic: cause
+        ? null
+        : `diagnostic server logged no cause this knows (${log.length} chars captured)`,
+      log: log.slice(-DIAGNOSTIC_LOG_EXCERPT_CHARS),
+    };
+  } catch (error) {
+    return { cause: null, diagnostic: `diagnostic failed: ${error.message}` };
+  } finally {
+    await terminateDiagnostic(child, () => exited, waitsMs.exitSettle);
+  }
+}
+
+// Waiting for an exit is not the same as ensuring one. A child that ignores
+// SIGTERM outlived the race this used to do: the function returned, the comment
+// claimed nothing was left behind, and the server kept the port. Appium can also
+// leave descendants, so the whole group is signalled where the platform allows
+// it, and SIGKILL follows a TERM that was not honoured.
+// The child's own exitCode/signalCode are consulted beside the caller's
+// tracking: an exit that lands between the check and the settle has already
+// fired its event, and waiting on a corpse's next exit runs out the full
+// escalation timeout with nothing to wait for. (This clause is also what
+// spares the ENOENT child two settles: spawn's error path never emits `exit`,
+// while the child object still records how it ended.) Checked positively
+// rather than as !== null, so an injected fake child without the properties
+// reads as still running instead of already gone.
+async function terminateDiagnostic(child, hasExited, settleMs = DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS) {
+  const exitedNow = () =>
+    hasExited() !== null ||
+    Number.isInteger(child.exitCode) ||
+    typeof child.signalCode === 'string';
+  const settle = (ms) =>
+    Promise.race([
+      new Promise((resolve) => child.once('exit', resolve)),
+      new Promise((resolve) => setTimeout(resolve, ms)),
+    ]);
+
+  for (const signal of ['SIGTERM', 'SIGKILL']) {
+    if (exitedNow()) return true;
+    // Negative pid signals the process GROUP; a detached child is the only kind
+    // that has one, so a plain kill is the fallback rather than the exception.
+    try {
+      process.kill(-child.pid, signal);
+    } catch {
+      child.kill(signal);
+    }
+    await settle(settleMs);
+  }
+  return exitedNow();
+}
+
+const defaultDiagnosticAppium = (port) =>
+  spawn('appium', ['--port', String(port), '--log-timestamp'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // Its own process group, so a server that spawns helpers is terminated whole
+    // rather than leaving descendants holding the port.
+    detached: true,
+  });
+
+function safariSessionBody(udid, transport) {
+  return {
+    capabilities: {
+      alwaysMatch: {
+        platformName: 'iOS',
+        'appium:automationName': 'XCUITest',
+        'appium:udid': udid,
+        'appium:updatedWDABundleId': WDA_BUNDLE_ID,
+        'appium:browserName': 'Safari',
+        'appium:newCommandTimeout': 120,
+        ...transport,
+      },
+      firstMatch: [{}],
+    },
+  };
+}
+
+// Opens a session, optionally proves a rotation through it, and deletes it.
+// `opened: false` carries Appium's refusal message for the caller to classify.
+async function openAndCloseSession(appiumUrl, body, verifyRotation) {
+  const response = await fetch(`${appiumUrl}/session`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
+  });
+  const payload = await response.json();
+  const sessionId = payload.value?.sessionId;
+  if (!sessionId) {
+    return { ok: false, opened: false, message: String(payload.value?.message ?? '') };
+  }
+  const rotation = verifyRotation
+    ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
+        ok: false,
+        message: error instanceof Error ? error.message : String(error),
+      }))
+    : null;
+  const closeProblem = await sessionCloseProblem(appiumUrl, sessionId);
+  if (rotation && !rotation.ok) return { ...rotation, opened: true };
+  // A session left open keeps WebDriverAgent occupied, so the next capture
+  // meets a busy runner; an unproved close is not a clean launch.
+  if (closeProblem) return { ok: false, opened: true, message: closeProblem };
+  return { ok: true, opened: true, rotationVerified: verifyRotation };
+}
+
+async function sessionCloseProblem(appiumUrl, sessionId) {
+  try {
+    const response = await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
+    if (response.ok) return null;
+    const payload = await response.json().catch((error) => {
+      rethrowIfBroken(error);
+      return null;
+    });
+    return (
+      `session ${sessionId} could not be deleted (HTTP ${response.status}` +
+      `${payload?.value?.message ? `: ${payload.value.message}` : ''})`
+    );
+  } catch (error) {
+    rethrowIfBroken(error);
+    return `session ${sessionId} could not be deleted: ${error.message}`;
+  }
+}
+
+// `recoverStaleDiscovery` is the preflight's: the operator harness arms the
+// grant through the borrowed server itself, so a recovery that goes around
+// that server would report a grant step it did not take.
+export async function probeIosLaunch({
+  udid,
+  appiumUrl,
+  wdaPort,
+  verifyRotation = false,
+  diagnose = true,
+  recoverStaleDiscovery = false,
+  // Test seam: overrides members of the recovery's process rig.
+  wdaRig,
+}) {
+  const body = safariSessionBody(udid, {
+    'appium:xcodeConfigFile': join(ROOT, 'ios', 'local.xcconfig'),
+    'appium:wdaLocalPort': wdaPort,
+  });
+  try {
+    const result = await openAndCloseSession(appiumUrl, body, verifyRotation);
+    if (result.opened) return result;
+    const { message } = result;
+    // Checked before the diagnostic, which would replay the full launch on a
+    // fresh server and so build a second runner over one a campaign may hold.
+    if (recoverStaleDiscovery && isStaleDeviceDiscovery(message)) {
+      return {
+        ok: false,
+        message,
+        recovery: await recoverStaleDiscoveryLaunch({
+          udid,
+          wdaPort,
+          verifyRotation,
+          rig: wdaRig,
+        }),
+      };
+    }
+    const probe = diagnose ? await diagnoseLaunchFailure(body) : null;
+    return { ok: false, message, logCause: probe?.cause ?? null, diagnostic: probe?.diagnostic };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+// Recovery from a borrowed Appium whose device discovery cannot see the iPad
+// (issue 2218). Discovery is skipped only by `appium:webDriverAgentUrl`, so the
+// recovery first finds or starts a WebDriverAgent it can name by URL, then
+// opens a session through it on a fresh Appium this process owns.
+//
+// A runner already on the device is reused rather than relaunched: only one
+// XCTest runner can hold a device, and a second launch would end whichever
+// capture started the first.
+const WDA_STATUS_TIMEOUT_MS = 3_000;
+// A runner that holds the grant answered in seconds on every recorded manual
+// recovery; an expired grant logs its timeout after about a minute (the
+// 2026-09-19 relaunch loop), so this bounds both with room.
+const DIRECT_WDA_LAUNCH_TIMEOUT_MS = 120_000;
+const DIRECT_WDA_POLL_MS = 1_000;
+// How long a forward this process just started gets to reach a runner that is
+// already on the device before the recovery concludes there is none.
+const FORWARD_SETTLE_MS = 2_000;
+const DERIVED_DATA = join(homedir(), 'Library', 'Developer', 'Xcode', 'DerivedData');
+
+async function wdaStatus(url) {
+  const response = await fetch(`${url}/status`, {
+    signal: AbortSignal.timeout(WDA_STATUS_TIMEOUT_MS),
+  }).catch((error) => {
+    rethrowIfBroken(error);
+    return null;
+  });
+  if (!response?.ok) return null;
+  try {
+    const payload = await response.json();
+    return { ready: payload?.value?.ready === true, sessionId: payload?.sessionId ?? null };
+  } catch (error) {
+    rethrowIfBroken(error);
+    return null;
+  }
+}
+
+function deviceXctestruns() {
+  if (!existsSync(DERIVED_DATA)) return [];
+  return readdirSync(DERIVED_DATA)
+    .filter((name) => name.startsWith('WebDriverAgent-'))
+    .flatMap((name) => {
+      const products = join(DERIVED_DATA, name, 'Build', 'Products');
+      if (!existsSync(products)) return [];
+      return readdirSync(products)
+        .filter((file) => file.endsWith('.xctestrun'))
+        .map((file) => join(products, file));
+    })
+    .map((path) => ({ path, mtimeMs: statSync(path).mtimeMs }));
+}
+
+// Each member is a seam for the tests, which reach this path without an iPad.
+const defaultWdaRig = {
+  processList: () => sh('ps', ['-axo', 'pid=,args=']).out,
+  wdaStatus,
+  deviceXctestrun: () => newestDeviceXctestrun(deviceXctestruns()),
+  startForward: (udid, hostPort) =>
+    spawn('iproxy', ['-u', udid, `${hostPort}:${DEVICE_WDA_PORT}`], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    }),
+  startRunner: (udid, xctestrun) =>
+    spawn(
+      'xcodebuild',
+      ['test-without-building', '-xctestrun', xctestrun, '-destination', `id=${udid}`],
+      { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+    ),
+  spawnAppium: defaultDiagnosticAppium,
+  forwardSettleMs: FORWARD_SETTLE_MS,
+  launchTimeoutMs: DIRECT_WDA_LAUNCH_TIMEOUT_MS,
+  pollMs: DIRECT_WDA_POLL_MS,
+};
+
+// A child this process started, with its exit and output tracked so teardown
+// can tell a live process from a corpse (see terminateDiagnostic).
+function ownedChild(child) {
+  const state = { child, log: '', exited: null, spawnError: null };
+  child.on('error', (error) => (state.spawnError = error));
+  child.on('exit', (code, signal) => (state.exited = { code, signal }));
+  child.stdout?.on('data', (chunk) => (state.log += chunk));
+  child.stderr?.on('data', (chunk) => (state.log += chunk));
+  state.stop = () => terminateDiagnostic(child, () => state.exited);
+  state.gone = () => state.exited !== null || state.spawnError !== null;
+  return state;
+}
+
+async function readyForwardedWda(rig, udid) {
+  for (const port of iproxyForwardPorts(rig.processList(), udid)) {
+    const url = `http://127.0.0.1:${port}`;
+    const status = await rig.wdaStatus(url);
+    if (status?.ready) return { url, status };
+  }
+  return null;
+}
+
+async function pollRunner(rig, url, runner, forward) {
+  const deadline = Date.now() + rig.launchTimeoutMs;
+  while (Date.now() < deadline && !runner.gone() && !forward.gone()) {
+    if ((await rig.wdaStatus(url))?.ready) return true;
+    if (grantFromRunnerLaunch({ ready: false, log: runner.log }).cause) return false;
+    await new Promise((resolve) => setTimeout(resolve, rig.pollMs));
+  }
+  return (await rig.wdaStatus(url))?.ready === true;
+}
+
+// Returns `{ route, grant, wdaUrl, cause, reason, xctestrun, release }`; `wdaUrl`
+// is null when nothing answered, and `release` stops whatever this started.
+async function acquireReadyWda({ udid, wdaPort, rig }) {
+  const forwarded = await readyForwardedWda(rig, udid);
+  if (forwarded) {
+    return {
+      route: 'reused',
+      grant: 'undetermined',
+      wdaUrl: forwarded.url,
+      busy: forwarded.status,
+    };
+  }
+  const url = `http://127.0.0.1:${wdaPort}`;
+  const owned = [ownedChild(rig.startForward(udid, wdaPort))];
+  const release = () => Promise.all(owned.map((child) => child.stop()));
+  try {
+    return { ...(await readyBehindOwnForward({ udid, url, rig, owned })), release };
+  } catch (error) {
+    await release();
+    throw error;
+  }
+}
+
+// Everything after this process started its own forward. Every child it starts
+// joins `owned`, so the caller releases all of them whether this returns or throws.
+async function readyBehindOwnForward({ udid, url, rig, owned }) {
+  const [forward] = owned;
+  await new Promise((resolve) => setTimeout(resolve, rig.forwardSettleMs));
+  const refusal = (reason) => ({ route: 'launched', grant: 'undetermined', reason });
+  // Without the forward nothing can observe a runner, so launching one would
+  // only wait out the launch timeout on a device it may still take over. Asked
+  // again immediately before the launch, because the forward can exit while the
+  // checks between here and there await.
+  const forwardLost = () => {
+    if (!forward.gone()) return null;
+    const how = forward.spawnError?.message ?? `it exited (${JSON.stringify(forward.exited)})`;
+    return `the WebDriverAgent forward on ${url} stopped: ${how}.`;
+  };
+  if (forwardLost()) return refusal(forwardLost());
+  const unforwarded = await rig.wdaStatus(url);
+  if (unforwarded?.ready) {
+    return {
+      route: 'reused',
+      grant: 'undetermined',
+      wdaUrl: url,
+      forwardedHere: true,
+      busy: unforwarded,
+    };
+  }
+  if (runnerHoldsDevice(rig.processList(), udid)) {
+    return refusal(
+      'an XCTest runner already holds this iPad and answered on no forward; launching another ' +
+        'would end it.'
+    );
+  }
+  const xctestrun = rig.deviceXctestrun();
+  if (!xctestrun) {
+    return refusal(
+      'no built WebDriverAgent device test run in Xcode DerivedData; one Appium launch that ' +
+        'reaches the device builds it.'
+    );
+  }
+  if (forwardLost()) return refusal(forwardLost());
+  const runner = ownedChild(rig.startRunner(udid, xctestrun));
+  owned.push(runner);
+  const ready = await pollRunner(rig, url, runner, forward);
+  const { grant, cause } = grantFromRunnerLaunch({ ready, log: runner.log });
+  return {
+    route: 'launched',
+    grant,
+    cause,
+    xctestrun,
+    wdaUrl: ready ? url : null,
+    reason: ready ? null : (forwardLost() ?? `the direct launch did not answer ready at ${url}.`),
+  };
+}
+
+async function sessionThroughWda({ udid, wdaUrl, verifyRotation, rig }) {
+  const appium = await startOwnedAppium(rig);
+  if (!appium.url) return { ok: false, message: appium.failure };
+  try {
+    const body = safariSessionBody(udid, { 'appium:webDriverAgentUrl': wdaUrl });
+    return await openAndCloseSession(appium.url, body, verifyRotation);
+  } catch (error) {
+    rethrowIfBroken(error);
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  } finally {
+    await appium.server.stop();
+  }
+}
+
+async function startOwnedAppium(rig) {
+  let port;
+  try {
+    port = await freeDiagnosticPort();
+  } catch (error) {
+    return { failure: `could not reserve a port for a fresh Appium: ${error.message}` };
+  }
+  let server;
+  try {
+    server = ownedChild(rig.spawnAppium(port));
+  } catch (error) {
+    return { failure: `could not start a fresh Appium: ${error.message}` };
+  }
+  const url = `http://127.0.0.1:${port}`;
+  const deadline = Date.now() + DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS;
+  while (Date.now() < deadline && !server.gone()) {
+    if (await rig.wdaStatus(url)) return { url, server };
+    await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
+  }
+  await server.stop();
+  return { failure: `a fresh Appium on ${port} never became ready` };
+}
+
+// `rig` overrides members of defaultWdaRig; only the tests pass it.
+export async function recoverStaleDiscoveryLaunch({ udid, wdaPort, verifyRotation = false, rig }) {
+  const wdaRig = { ...defaultWdaRig, ...rig };
+  const wda = await acquireReadyWda({ udid, wdaPort, rig: wdaRig });
+  try {
+    const report = (session) =>
+      describeRecovery({ ...wda, udid, wdaPort, session: session ?? null });
+    if (!wda.wdaUrl) return report();
+    // WebDriverAgent serves one session at a time, so opening one here would end
+    // whatever capture holds it.
+    if (wda.busy?.sessionId) {
+      return report({
+        ok: false,
+        message: `it is serving session ${wda.busy.sessionId}; not opened, to leave that capture running`,
+      });
+    }
+    return report(
+      await sessionThroughWda({ udid, wdaUrl: wda.wdaUrl, verifyRotation, rig: wdaRig })
+    );
+  } finally {
+    await wda.release?.();
+  }
+}
+
+// `android: false` is for a caller that needs only the iPad (the person
+// session's second visit): a detached phone, or a busy port only an Android
+// capture uses, must not count as a blocker.
+export async function prepareCapture(
+  argv = process.argv.slice(2),
+  { android: withAndroid = true } = {}
+) {
+  const fix = parseOrFail(() => readSwitch(argv, 'wake-android'));
+  const json = parseOrFail(() => readSwitch(argv, 'json'));
+  const android = withAndroid
+    ? androidChecks({ fix, explicit: argFlag('android-serial', null) })
+    : { checks: [], serial: null, devices: [] };
+  const ios = iosChecks();
+  const ports = await portChecks({ android: withAndroid });
+  const usbProblem =
+    Array.isArray(ios.udids) &&
+    deviceAccessProblem({
+      androidDevices: android.devices,
+      iosDevices: ios.udids,
+      // Codex exposes a sandbox marker; Claude Code exposes none, so its identical
+      // USB denial must be diagnosed by re-running this preflight outside its sandbox.
+      sandbox: process.env.CODEX_SANDBOX,
+    });
+  const deviceChecks = usbProblem
+    ? [{ name: 'device USB access', status: 'blocked', detail: usbProblem }]
+    : [...android.checks, ...ios.checks];
+  const result = summarize([...deviceChecks, ...ports.checks]);
+  const report = {
+    ...result,
+    androidSerial: android.serial,
+    iosUdid: ios.udid,
+    iosDeveloperModeEnabled: ios.developerModeEnabled ?? null,
+    iosProvisioningReady: ios.provisioningReady ?? null,
+    ports: ports.resolved,
+    portDecisions: ports.decisions,
+    androidVerificationBlockers: androidVerificationBlockers({
+      androidChecks: usbProblem ? deviceChecks : android.checks,
+      portChecks: ports.checks,
+    }),
+  };
+
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    for (const check of report.checks) {
+      const mark = check.status === 'ok' ? '✓' : check.status === 'warn' ? '!' : '✗';
+      console.log(`${mark} ${check.name.padEnd(22)} ${check.detail}`);
+    }
+    console.log(
+      report.ready ? '\nReady to capture.' : `\nNot ready: ${report.blockers.length} blocker(s).`
+    );
+  }
+  if (!report.ready) process.exitCode = 1;
+  return report;
+}
+
+// prepareCapture reads the first four itself: the switches from the argv it is
+// handed, the serial and the UDID from this process's.
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags([
+    'wake-android',
+    'json',
+    'android-serial',
+    'ios-udid',
+    'ios-only',
+    'verify-android-input',
+    'verify-ios-launch',
+    'hold-android-awake',
+    'appium-url',
+  ]);
+  runMain(async () => {
+    const iosOnly = argSwitch('ios-only');
+    const verifyInput = argSwitch('verify-android-input');
+    const verifyLaunch = argSwitch('verify-ios-launch');
+    const holdAwake = argSwitch('hold-android-awake');
+    const appiumUrl = argFlag('appium-url', null);
+    // Judged here because prepareCapture reads them only on reaching each device,
+    // the UDID after --wake-android has already written to the phone.
+    argFlag('android-serial', null);
+    argFlag('ios-udid', null);
+    const report = await prepareCapture(process.argv.slice(2), { android: !iosOnly });
+    // Android first: it is the cheaper of the two verifications, so a bad
+    // input path surfaces before a minute is spent building WebDriverAgent.
+    const androidBlockers = report.androidVerificationBlockers;
+    if (verifyInput && report.androidSerial && androidBlockers.length) {
+      console.log(`✗ ${'android input'.padEnd(22)} not attempted — ${androidBlockers.join('; ')}`);
+      process.exitCode = 1;
+    } else if (verifyInput && report.androidSerial) {
+      console.log('\nverifying Android input against the floor control…');
+      const input = await verifyAndroidInput({
+        serial: report.androidSerial,
+        port: report.ports.floorControl,
+        // The RESOLVED port, which can differ from the role's default when the
+        // preflight shifted it off a holder two lines of output earlier.
+        cdpPort: report.ports.androidCdp,
+      });
+      console.log(`${input.ok ? '✓' : '✗'} ${'android input'.padEnd(22)} ${input.detail}`);
+      if (input.contact) console.log(`  ${''.padEnd(22)} observed: ${input.contact}`);
+      if (!input.ok) process.exitCode = 1;
+
+      // Folded into the same flag rather than given its own, because the promise
+      // this flag was making — "a real touch reaches a page at usable cadence" —
+      // was true and irrelevant for half the matrix. A rig must not be declarable
+      // ready on a device that will not turn.
+      console.log('\nverifying the device and page both rotate…');
+      const rotation = await verifyAndroidRotation({
+        serial: report.androidSerial,
+        port: report.ports.floorControl,
+      });
+      console.log(`${rotation.ok ? '✓' : '✗'} ${'android rotation'.padEnd(22)} ${rotation.detail}`);
+      if (!rotation.ok) process.exitCode = 1;
+    }
+    const launchBlocker = iosLaunchBlocker(report);
+    if (verifyLaunch && report.iosUdid && launchBlocker) {
+      console.log(`✗ ${'ios launch'.padEnd(22)} not attempted — ${launchBlocker}`);
+      process.exitCode = 1;
+    } else if (verifyLaunch && report.iosUdid) {
+      console.log(
+        '\nprobing a real WebDriverAgent launch and a rotation ' +
+          '(this builds WDA and takes a minute)…'
+      );
+      // Issue 1299: the automation grant expires silently, and the passcode
+      // prompt exists ONLY while this launch is failing — so the warning has
+      // to land before the attempt, while someone nearby can still look.
+      console.log(
+        '  If the automation grant has expired, watch the iOS device for an XCTest ' +
+          'passcode / Enable UI Automation prompt DURING this minute.'
+      );
+      console.log(`  ${describeGrantHistory(report.iosUdid)}`);
+      const launch = await probeIosLaunch({
+        udid: report.iosUdid,
+        appiumUrl: appiumUrl ?? `http://127.0.0.1:${report.ports.appium}`,
+        wdaPort: report.ports.wda,
+        verifyRotation: true,
+        recoverStaleDiscovery: true,
+      });
+      const probe = classifyLaunchProbe(launch);
+      // Every launch attempt feeds the grant-lifetime dataset, not only the
+      // operator harness's — the preflight makes most of them.
+      for (const row of launchAttemptRows(launch, probe)) {
+        recordGrantAttempt(report.iosUdid, row.outcome, row.detail);
+      }
+      const mark = probe.status === 'ok' ? '✓' : probe.status === 'warn' ? '!' : '✗';
+      console.log(`${mark} ${'ios launch'.padEnd(22)} ${probe.detail}`);
+      if (probe.status === 'blocked') process.exitCode = 1;
+    }
+    if (holdAwake && report.androidSerial) {
+      process.exitCode = 0;
+      await watchAndroid(report.androidSerial, { iosUdid: report.iosUdid });
+    }
+  });
+}

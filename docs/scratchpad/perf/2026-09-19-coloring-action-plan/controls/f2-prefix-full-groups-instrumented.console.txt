@@ -1,0 +1,45 @@
+[diag +15ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +81ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+
+Desktop action sweep 1/4
+[diag +7185ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +8474ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +17948ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +19145ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +20377ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag picker] {"t":21501,"books":0,"pages":6,"nav":"navigate","sw":false}
+[diag +22960ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +24149ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +25410ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +31275ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +31993ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +39203ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +39864ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +46089ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +48343ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +52641ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +53775ms navigated] http://127.0.0.1:54804/?perf-actions=1789844191321-1
+[diag +54983ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +55013ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+
+Desktop action sweep 2/4
+[diag +61408ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +62678ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +71989ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +73195ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +74427ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag picker] {"t":20594,"books":3,"pages":0,"nav":"navigate","sw":true}
+[diag +78177ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +79367ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +80625ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +86455ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +87160ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +94318ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +94979ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +101191ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +103441ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +107775ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+[diag +108910ms navigated] http://127.0.0.1:54804/?perf-actions=1789844246275-2
+Error: The applicable action plan changed between scored repeats: +open coloring book
+    at stableActionPlan (file://<checkout>/tools/perf/ios/capture-xcuitest-actions.mjs:172:11)
+    at runDesktopActions (file://<checkout>/tools/perf/web/capture-desktop-actions.mjs:226:20)

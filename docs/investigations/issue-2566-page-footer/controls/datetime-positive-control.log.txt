@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/release/tests/gen-release-notes.test.mjs
+
+
+ RUN  v5.0.1 /Users/kylemit/.codex/worktrees/ed28/Splotch/tools
+
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  19:07:22
+   Duration  85ms (transform 46%, tests 32%, import 19%, worker 3%)
+

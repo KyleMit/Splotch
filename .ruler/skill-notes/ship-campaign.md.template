@@ -1,0 +1,301 @@
+# ship-campaign — design notes
+
+## Why the skill exists
+
+Between 2026-08-27 and 2026-09-18 the user ran roughly 45 multi-issue campaigns across Claude Code
+and Codex, each opened with a hand-written prompt of several thousand characters. The prompts kept
+restating the same ingredients: start from a fresh `origin/main`, take the child list from the
+sub-issues API, an explicit authorization block, `ship-issue mode=autonomous` per issue, quarantine
+after two failed cycles, "nothing may wait on Kyle", a stop margin, and a morning report that
+names the product-facing impact. This skill is those ingredients, so that the next campaign's
+prompt is one line.
+
+It replaced two skills. `implement-issue-stack` (Codex-only) shipped an ordered issue list as an
+unmerged stacked chain; `burn-down-backlog` shipped the newest unclaimed issue, one per session.
+The first became the list source, the second the `backlog` source. `create-stacked-prs` survives as
+the explicit opt-in for a chain the user asks for.
+
+## Why merge-as-you-go instead of stacks
+
+The campaigns that finished were the merge-as-you-go ones: epics #1847, #1891, #1926, and #2020 all
+closed, each unit reviewed by the rival and merged before the next branched from the new `main`.
+The stacked campaigns carried a recurring class of failure that the shape itself produced:
+
+* Review deferred to the end. One Codex run opened all its PRs at the end and ran no rival review
+  until asked; the user's correction was "I'd like to review as we go along, not all at the end".
+* Fix-ups landing on lower layers, against the stack's own no-commits-below rule.
+* A stack only partly registered with GitHub (four of nine PRs linked).
+* Rebases the auto-mode classifier denied, leaving `*-rebased` branches for the user to push.
+* A mistaken causal premise compounding through the layers above it before any review saw it.
+
+With an adversarial reviewer on every PR, the stack's one advantage — batching review of related
+changes — stopped paying for these costs. Merging each unit also makes every later unit's base the
+real trunk, so CI on a unit proves the unit, not the chain beneath it.
+
+## What was salvaged from implement-issue-stack
+
+* **Preflight the whole queue before any mutation**, with the global-versus-issue-local split: an
+  issue-local blocker quarantines one unit; a blocker that invalidates every later unit stops the
+  queue.
+* **Causality before budget.** PR #729's run quarantined issue #709 after two WebKit failures that
+  reproduced on the exact base under system-wide renderer slowdown. The evidence belonged to the
+  gate. The rule is to compare the head against its exact base first, and repair a broken gate as
+  its own unit with a negative control, rather than blaming the product change.
+* **A fresh implementer per issue, resumed for that issue's own repairs.** Codex campaigns compacted
+  context ten to fifteen times a night when run inline.
+* **Autonomous decisions recorded in the PR**, and a final table verified against GitHub.
+
+Dropped: the stack mechanics (`gh stack` pinning, `last_good_base`, unstack-on-quarantine) and the
+`.issue-stack/run.json` checkpoint. With every unit merged, GitHub's PR, issue, and label state is
+enough to resume from, so the ledger is a view re-derived on resume rather than a second source of
+truth that can drift from it. Its Codex GitHub and push approval rules moved into the
+`run-rival-agent` installer, which removes the old managed block on upgrade.
+
+## Why the preflight has to run with the user present
+
+The overnight failures that cost the most were all discoverable at bedtime:
+
+* Overnight 2026-09-10 to 11: a Codex campaign stalled from 23:21 to 04:47 EDT because the Claude
+  rival bridge was not installed.
+* The machine-global Codex rule forbidding `gh pr merge` stranded PRs in the epic #2020 run until
+  PR #2026 removed it.
+* 2026-09-18: neither capture device was usable all night — the iPad's UI-automation grant had
+  expired and the phone was PIN-locked — and the run produced seven PRs with no product change.
+
+A check that could have run at 22:00 but ran at 03:00 is the most expensive kind of failure an
+unattended run has.
+
+## Never end the turn to ask
+
+2026-09-12: a Claude campaign stopped at 01:06 EDT with "Two things for you" and sat idle until the
+user answered at 04:08 EDT. Parking the question in the ledger and continuing costs nothing when the
+answer turns out not to matter, and costs one unit of rework when it does.
+
+## Control messages
+
+On 2026-08-29 a Codex goal auto-resumed the campaign after "wrap up at the next finished cell"
+("wrap up doesn't mean resume current campaign"). The definitions in the skill follow
+`improve-performance-matrix`'s, with wrap up stated as a stop.
+
+## Performance campaigns
+
+The best performance results of the period came from sessions where the user was at the devices,
+with a control capture in the same session. Unattended performance nights produced harness and
+evidence PRs instead (2026-09-01, 2026-09-06, 2026-09-18), hence the device-loss rule and the
+product/harness/evidence split in the ledger. The eight-hour cap on one gate is the user's standing
+call from the 2026-09-16 orchestrator session ("if we have more than 8 hours of running the same
+gate, we just have to accept the best version").
+
+## 2026-09-20 deadline-reserve correction
+
+The #1870 performance campaign quarantined draft PR #2115 around 03:50 EDT, then stopped even
+though its deadline was 06:00. The prior rule scaled the stop margin to the longest completed
+unit's elapsed time, including serial device, review, and CI waits, leaving roughly two hours
+unused. The user explicitly asked to keep taking the next independent item after a documented
+quarantine and not stop two hours early. A fixed 15-minute deadline reserve is for live-state
+verification and reporting; each new unit must leave enough earlier time for its full quarantine
+unwind if it cannot ship. An issue that depends on quarantined or skipped work is skipped by name
+while independent items continue. Partial work stays a draft with its exact remainder; no review
+or merge gate is relaxed.
+
+## Parallel mode (2026-09-28)
+
+The 2026-09-27/28 clean-code campaign (tracking issue #2376) ran up to seven file-disjoint units at
+once and merged 64 PRs in about 13 hours. The serial loop would have fit perhaps a third of that,
+because each unit spent most of its 20–60 minutes waiting on rival review and CI. `main`'s
+post-merge CI never stayed red. The single-session orchestrator saw every lane. It used that view to
+keep units off each other's files, relay lessons between them, and fix one cross-unit regression
+forward: #2391 added a startup chunk, and #2404 removed it and pinned the count.
+
+The user agreed to fold this into the skill (2026-09-28), with two conditions:
+
+* units must be separate enough that merge conflicts are unlikely;
+* an orchestrator must be aware of everything happening at once, so it can manage git and semantic
+  conflicts.
+
+They also noted that `reconcile-with-main` "can also sometimes be a bit noisy if the changes are
+genuinely unrelated". That shaped `references/parallel.md`:
+
+* **Admission** requires disjoint file sets and no import dependency either way.
+* **Hot shared files** have one holder at a time. `docs/ARCHITECTURE.md`, whose table re-pads on a
+  long row, was the campaign's usual collision point.
+* **The merge gate** grades each moving-`main` merge with the survey's new relation verdict. Full
+  semantic passes happen only for `coupled` merges. The campaign's hand-rolled trial merge
+  (file-overlap diff, `check`, `lint`, targeted tests) is the `unrelated` path. Before that rule,
+  one unit spent three 8-minute CI cycles re-merging an unrelated `main`.
+* **Broadcasts** carry renamed identifiers and new guards to units still in flight. In the
+  campaign, relaying such lessons by hand saved later units CI rounds.
+
+Two failures to keep in mind:
+
+* **An account usage limit ends every lane at once.** It happened twice in that campaign; the
+  second hit landed inside the deadline reserve and cost three units that hadn't opened PRs. Hence
+  the "prefer finishing over opening lanes late" rule.
+* **The harness flagged one merge as "merge without review."** The final head was a merge of
+  `main` after two posted rival rounds, and the flag was a false positive. Checking live state
+  settled it in a minute.
+
+## 2026-09-29 a refused merge pauses the queue
+
+In the #2467 parallel campaign the classifier refused the orchestrator's first merge, and from 09:57
+the run downgraded the queue as a reviewer outage does: every unit stopped at shippable as an open
+PR. #2493 later wrote that downgrade into the skill. At 12:00 the user rejected that: "no
+no no - we're supposed to be merging as we go to prevent merge conflicts". By then 29 reviewed PRs
+sat open against one base, and no later unit could build on an earlier one; the guarantee the
+campaign's shape exists for had been gone for three hours. The pause rule replaced #2493's
+downgrade: start no new unit, and take the block to the user at once. The reviewer-outage downgrade
+stays, because there review is missing, not merging.
+
+The same day the user made merge approval a preflight item: "make merge approval part of the
+preflight - ask me to explicitly say merges are approved for this campaign, so there's something
+noted in the chat history". Their quoted approval now travels with the authorization block.
+#2498 first wrote it as a gate the campaign could not start without; on 2026-09-29 the user
+clarified that invoking the campaign is the approval and the statement only puts it on record, so
+autonomous campaigns merge instead of silently piling up conflicting PRs (#2467). Whether an
+explicit quote actually changes a guardrail's merge verdict is unverified.
+
+## 2026-10-01 destination and payload consent before unattended work
+
+The iPhone performance campaign first received approval to "merge and publish performance details".
+Its GitHub ledger update then passed automatic approval review, but the installed Claude launcher
+was rejected: the classifier said that grant did not cover sending private repository code, device
+context, and measurements to Anthropic Claude. The user separately approved "code, device context,
+and measurements all to be sent to anthropic claude", and the same installed launcher passed and
+started a live Claude consultation. These are observed operation-level results, not a blanket
+promise that any future merge will pass. No merge was attempted merely to test consent.
+
+Another rejected update removed the scheduled 8 AM Eastern stop. Its classifier reason was that
+overnight approval did not authorize indefinite publishing and merging. The existing bounded
+heartbeat was preserved.
+
+The user's later instruction to turn the campaign into a continuous goal explicitly replaced that
+deadline. A continuous completion condition is therefore also accepted in preflight; the earlier
+overnight grant alone still cannot be stretched into one. The goal and its per-cell quarantine rule
+were recorded from that new human instruction.
+
+The consent preflight now runs before external ledger publication and review. It reuses existing
+human quotes, bundles only missing destinations, payloads, merge authority, and duration into one
+question, and validates each through its first real authorized operation. A planned, useful queue
+consultation can validate the reviewer transfer while the user is present; otherwise its verdict
+remains explicitly pending until a real review is available. A classifier refusal then stops new
+dispatches rather than being retried or treated as a reviewer outage. Both rival-provider directions
+are named, and `burn-down-code-smells` carries the bundled consent question through its constrained
+preflight questionnaire. A campaign with only a local ledger also keeps repository publishing
+pending until its first real push or PR; it does not invent a tracking issue to test the boundary.
+A successful installation policy check
+cannot establish that consent, and a broad workflow invocation cannot bypass a classifier denial.
+The earlier merge-only quote remains useful but is insufficient evidence for an additional external
+destination. The user explicitly requested this correction; no prose-matching test was added.
+
+## 2026-09-29 evening: integration trials, one catch-up, usage thresholds
+
+The #2500 parallel campaign merged about 20 PRs in under three hours. Four changes came from it:
+
+* **The integration trial.** Ready PRs gated on an older `main` were merged locally onto the current
+  one, checked once with `check`, `lint`, and `test:browserless`, then merged one at a time with
+  `--match-head-commit`. One trial covered #2504, #2506, and #2508 together (16:44); single trials
+  covered #2509, #2512, #2514, #2515, #2517, and #2522–#2525. That replaced about eight worker
+  re-gates or CI rounds. #2511, whose catch-up was `coupled`, still took its CI round. The trial for
+  #2517 hit a stderr flake in `deployed-admin-target.test.mjs`; it passed 8/8 alone on `main` and
+  on the trial merge, and the diff could not reach it, so no unit was charged. Those two cases set
+  the trial's limits in the parallel reference. The campaign's trials ran only the browserless
+  tier; the rival on the PR that wrote this up added each PR's own targeted tests and build guards,
+  which the worker's fast path already required.
+* **Catch up once.** One unit (#2507) chased `main` through three full CI rounds before reporting
+  ready. The working brief then told units to catch up once, after review, and leave later moves
+  to the orchestrator. The same run found that worktrees share `refs/remotes/origin/main` (#2515),
+  so the gated `main` is read from the merge commit's second parent.
+* **The serialized WebKit gate.** The post-merge WebKit fast gate then ran one commit at a time
+  (`.github/workflows/test.yml`), and that day it ran about three hours behind: gates for merges at
+  12:36 EDT started at 15:45 EDT. Step 2's "finished green", read literally, would have held each unit that
+  long. Verification now takes the push `Tests` run's standard jobs per merge and collects the
+  WebKit gates once at the end. PR #2537 later took the first-run gate and its retry out of the
+  shared concurrency group (decisions 5 and 6 of the #2500 leftovers); only the failure reporter
+  behind the retry still runs one at a time.
+* **Usage thresholds.** Preflight found the weekly usage window at 88%. The user agreed no new
+  launch at 94% and wrap-up at 97%. Launches paused at 94% (17:48) and reopened at 17:56 when the
+  user reported a reset, which the host's usage tool confirmed. Whether those thresholds suit a
+  campaign that starts lower is unvalidated.
+
+## 2026-09-30: two campaigns on one queue
+
+The user started #2529 (a Claude orchestrator) and #2530 (a Codex orchestrator) 94 seconds apart,
+22:48 and 22:49 EDT. Both were on the #2500 leftovers comment, under the same verbatim decision
+instruction. Every unit was free-form, so no `in-progress` label existed for either run to see. The
+first collision was on decision 1: #2530's #2531 merged the same fix #2529's lane was about to open.
+By then #2529 also had duplicate or conflicting drafts on decisions 2 and 3, where the two
+handler-and-rival pairs had split on the hold. That incident is the source of the "No second
+campaign" preflight check and step 2's peer re-check. A preflight search can only find a campaign
+that started earlier, which is why the check repeats before every launch.
+
+* **The split.** #2529 left every decision to #2530, which was further along, and took follow-ups
+  from the far end of #2530's order. It posted the split on #2530's ledger. The rival agreed,
+  correcting one point: a posted claim is a notification, not a lock.
+* **A new advisory hit both campaigns at 03:10Z.** A newly published brace-expansion advisory failed
+  `pnpm audit --audit-level=high` on `main`'s own lockfile. Quality went red on every PR head in
+  both campaigns.
+  * #2530 read step 3 as "`main` red for a reason no campaign merge caused" and stopped (03:39Z).
+  * #2529 read it as a check proven broken on its own base, and shipped a gate repair: two overrides
+    in #2538, merged 03:44Z.
+  * Step 3 now says which reading applies.
+* **Taking over, and a classifier denial.** #2529 then took over the rest of the queue. Its first
+  pick also adopted #2530's two approved drafts (#2532, #2537) under #2530's own documented resume
+  path. The rival disagreed on a fact: every catch-up surveys `coupled` after a lockfile change,
+  which would have stranded both. The auto-mode classifier then denied a plain `gh pr view` of those
+  PRs' files, citing "External System Writes", which read as refusing the adoption itself. So the
+  drafts stayed #2530's overnight.
+  * That afternoon the user handed them over explicitly ("You may adopt and update the Codex
+    drafts").
+  * #2529 adopted #2532 and #2537 from a differently named local branch, because the stopped
+    Codex worktrees still had the PR branches checked out. It pushed fast-forward only, ran the
+    survey and a full coupled reconcile, and got a fresh rival review and a new CI round on each
+    new head. Both then merged.
+  * Step 2 records that sequence. The same classifier later refused the
+  orchestrator's batch removal of its own 13 clean lane worktrees at the end. The parallel reference
+  then preferred cleanup after each merge, until the 2026-10-04 section below.
+* **Lanes and the broker.** Two lanes reported that their worktree isolation refused a brokered
+  command that ran git in the rival's worktree, including one whose text only contained "github".
+  Both declined it and supplied their own equivalent result. The parallel reference records this.
+
+## 2026-10-04: a Workflow script as the orchestrator (#2650)
+
+The #2650 code-smell campaign ran its lanes from Workflow-tool rounds; the burn-down-code-smells
+skill note has the run record. Four changes to this skill came from it:
+
+* **Workflow agents hear the user only through the relayed request.** The harness relays the user
+  message whose turn launched a workflow to every agent as its only user voice, says that message
+  wins over the agent's computed prompt, and says approval quoted in the prompt carries no user
+  authority. Both incidents fit that mechanism. A haiku usage probe took the relayed campaign
+  request as its own task (#2678). A round launched from a completion-notification turn relayed no
+  user message at all, and the classifier refused its third merge. The parallel reference now
+  anchors every helper's prompt and launches merge-capable rounds only from the user's approval
+  turn. The refusal paused the queue, as the 2026-09-29 rule requires, until the user's close-out
+  approval.
+* **Lanes stay until the end.** The 2026-09-30 batch-removal refusal had moved cleanup to after each
+  merge, and on 2026-10-04 a merge agent's per-lane removal was flagged too. The parallel reference
+  now leaves every lane for `prune-git-workspace`, and covers what a resumed unit then meets: its old
+  lane still holding the branch, and a rival ledger keyed by the old worktree root.
+* **Merge the surveyed commit.** A unit that merged `origin/main` after its survey could pull in
+  commits another lane's fetch had just brought, so the gate names the commit to merge.
+* **Waking for a usage reset.** No session cron fired in about ten hours of background workflow
+  runs, while a background Bash command's completion did wake the session. The preflight's usage
+  bullet now asks what wakes the run at a reset.
+
+## Open questions
+
+* The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign
+  merge that turned `main` red; the user chose roll-forward instead (2026-09-19), because the red is
+  often a flaky test the merge surfaced rather than a defect it introduced, and a revert discards
+  reviewed work without fixing anything.
+* Running several campaign sessions on one epic in parallel is the orchestrator pattern (epic
+  #1926), deliberately left to a separate skill that hands out prompts rather than implementing.
+* **A classifier denial of the merge.** On 2026-09-29 (#2467, parallel mode) the auto-mode
+  classifier denied the orchestrator's first merge, giving no reason. The merge was a `/tmp` script
+  run with `/bin/bash`: the gate, then `gh pr merge --merge --delete-branch --match-head-commit`,
+  then verification. The run treated the denial as binding and did not route around it; every unit
+  then ended as an open, shippable PR for the user to merge. The cause is unvalidated, and so is
+  whether any preflight check could have surfaced it while the user was present. On 2026-10-04
+  (#2650) a Workflow merge agent was refused "[Merge Without Review]" in a round that relayed no
+  user message (see that section). The missing user voice is the leading explanation, but two
+  merges in the same round passed without it, and how a later unattended round could carry the
+  user's merge approval is open.

@@ -1,0 +1,109 @@
+
+> splotch@1.3.0 gen:coloring-outlines:audit
+> node tools/asset-gen/audit-outline-solidity.mjs
+
+page                                  solid px  interior px  biggest blob  ring depth   verdict
+creatures/owl-tall                        9490         5630          2908           0   SOLID (blob > 100 or interior > 60)
+farm/dog-tall                             8053         3793          2309           0   SOLID (blob > 100 or interior > 60)
+shapes/circle-tall                        9573         4393          2253           0   SOLID (blob > 100 or interior > 60)
+vehicles/police-tall                      7421         3732          1886           0   SOLID (blob > 100 or interior > 60)
+creatures/dragon-tall                     6568         3068          1861           0   SOLID (blob > 100 or interior > 60)
+shapes/rectangle-tall                     7105         3505          1767           0   SOLID (blob > 100 or interior > 60)
+shapes/triangle-wide                      6161         2877          1463           0   SOLID (blob > 100 or interior > 60)
+creatures/owl-wide                        5475         2764          1462           3   SOLID (blob > 100 or interior > 60)
+dinosaur/velociraptor-tall                2746         1446          1445           0   SOLID (blob > 100 or interior > 60)
+dinosaur/trex-tall                        3083         1483          1436           0   SOLID (blob > 100 or interior > 60)
+shapes/square-tall                        6151         2791          1388           0   SOLID (blob > 100 or interior > 60)
+dinosaur/triceratops-tall                 5649         2577          1312           0   SOLID (blob > 100 or interior > 60)
+creatures/pegasus-tall                    2745         1275          1265           0   SOLID (blob > 100 or interior > 60)
+creatures/unicorn-tall                    3003         1262          1262           0   SOLID (blob > 100 or interior > 60)
+farm/cat-tall                             5162         2422          1214           0   SOLID (blob > 100 or interior > 60)
+shapes/square-wide                        5424         2423          1214           0   SOLID (blob > 100 or interior > 60)
+space/rover-tall                          2707         1170          1169           3   SOLID (blob > 100 or interior > 60)
+farm/dog-wide                             4737         1725          1102           0   SOLID (blob > 100 or interior > 60)
+shapes/star-tall                          5278         2170          1087           0   SOLID (blob > 100 or interior > 60)
+creatures/dragon-wide                     4066         1810          1013           3   SOLID (blob > 100 or interior > 60)
+creatures/mermaid-tall                    4694         2004          1004           0   SOLID (blob > 100 or interior > 60)
+creatures/mermaid-wide                    5237         1857           963           0   SOLID (blob > 100 or interior > 60)
+farm/duck-tall                            3374         1384           851           0   SOLID (blob > 100 or interior > 60)
+shapes/triangle-tall                      4835         1687           850           0   SOLID (blob > 100 or interior > 60)
+creatures/unicorn-wide                    1958          814           814           0   SOLID (blob > 100 or interior > 60)
+vehicles/monster-tall                     3506         1546           777           4   SOLID (blob > 100 or interior > 60)
+vehicles/police-wide                      3335         1445           763           3   SOLID (blob > 100 or interior > 60)
+objects/teddy-tall                        3180         1370           719           3   SOLID (blob > 100 or interior > 60)
+farm/pig-tall                             3335         1295           714           0   SOLID (blob > 100 or interior > 60)
+dinosaur/pterodactyl-tall                 1777          713           713           0   SOLID (blob > 100 or interior > 60)
+vehicles/fire-tall                        3528         1278           710           3   SOLID (blob > 100 or interior > 60)
+vehicles/monster-wide                     8512         1086           708           4   SOLID (blob > 100 or interior > 60)
+farm/horse-tall                           2609          887           697           0   SOLID (blob > 100 or interior > 60)
+space/moon-tall                           3724         1168           646           0   SOLID (blob > 100 or interior > 60)
+space/meteor-tall                         4598         1438           628           0   SOLID (blob > 100 or interior > 60)
+objects/teddy-wide                        3695         1223           626           0   SOLID (blob > 100 or interior > 60)
+objects/cover                             2104          664           603           3   SOLID (blob > 100 or interior > 60)
+creatures/pegasus-wide                    1334          554           554           0   SOLID (blob > 100 or interior > 60)
+dinosaur/pterodactyl-wide                 1752          592           540           0   SOLID (blob > 100 or interior > 60)
+vehicles/garbage-tall                     2577          947           537           3   SOLID (blob > 100 or interior > 60)
+farm/cow-wide                             2532          908           532           3   SOLID (blob > 100 or interior > 60)
+vehicles/garbage-wide                     2778          904           529           4   SOLID (blob > 100 or interior > 60)
+shapes/star-wide                          3311         1019           525           0   SOLID (blob > 100 or interior > 60)
+dinosaur/trex-wide                        1302          522           522           0   SOLID (blob > 100 or interior > 60)
+farm/cat-wide                             2544          975           522           0   SOLID (blob > 100 or interior > 60)
+vehicles/train-tall                       4737         1452           498           4   SOLID (blob > 100 or interior > 60)
+farm/duck-wide                            1366          496           496           0   SOLID (blob > 100 or interior > 60)
+space/astronaut-tall                      2744          942           475           3   SOLID (blob > 100 or interior > 60)
+dinosaur/velociraptor-wide                1329          453           453           0   SOLID (blob > 100 or interior > 60)
+farm/cow-tall                             2352          794           444           3   SOLID (blob > 100 or interior > 60)
+vehicles/fire-wide                        2146          767           409           3   SOLID (blob > 100 or interior > 60)
+dinosaur/triceratops-wide                 1701          432           396           0   SOLID (blob > 100 or interior > 60)
+vehicles/excavator-wide                   2058          758           386           4   SOLID (blob > 100 or interior > 60)
+farm/horse-wide                           1190          370           366           0   SOLID (blob > 100 or interior > 60)
+space/rover-wide                          1963          655           349           4   SOLID (blob > 100 or interior > 60)
+space/cover                               3311          911           337           3   SOLID (blob > 100 or interior > 60)
+objects/flower-tall                       3495          667           335           0   SOLID (blob > 100 or interior > 60)
+objects/flower-wide                       1795          585           299           0   SOLID (blob > 100 or interior > 60)
+vehicles/train-wide                       2630          700           280           3   SOLID (blob > 100 or interior > 60)
+objects/balloon-wide                      2223          542           279           0   SOLID (blob > 100 or interior > 60)
+dinosaur/stegosaurus-wide                  908          278           278           0   SOLID (blob > 100 or interior > 60)
+creatures/fairy-tall                      2181          541           254           0   SOLID (blob > 100 or interior > 60)
+creatures/fairy-wide                      1600          490           250           0   SOLID (blob > 100 or interior > 60)
+creatures/cover                           2229          549           241           3   SOLID (blob > 100 or interior > 60)
+dinosaur/stegosaurus-tall                 1338          210           210           0   SOLID (blob > 100 or interior > 60)
+vehicles/excavator-tall                   1631          371           190           4   SOLID (blob > 100 or interior > 60)
+dinosaur/brachiosaurus-wide                738          132           130           0   SOLID (blob > 100 or interior > 60)
+space/astronaut-wide                      2175          405           113           4   SOLID (blob > 100 or interior > 60)
+shapes/cover                              5709          699           100           0   SOLID (blob > 100 or interior > 60)
+dinosaur/brachiosaurus-tall                517           92            92           0   SOLID (blob > 100 or interior > 60)
+dinosaur/cover                             769           89            70           0   SOLID (blob > 100 or interior > 60)
+space/meteor-wide                          733          113            61           3   SOLID (blob > 100 or interior > 60)
+objects/apple-wide                         749           34            26           0   ok
+nature/cover                               936           46            21           3   ok
+objects/apple-tall                         303            9             9           0   ok
+nature/ladybug-wide                        208            4             4           4   ok
+objects/house-wide                         265            5             4           0   ok
+farm/cover                                 363            3             1           3   ok
+farm/pig-wide                                0            0             0           0   ok
+nature/ant-tall                              0            0             0           3   ok
+nature/ant-wide                              0            0             0           4   ok
+nature/bee-tall                              0            0             0           4   ok
+nature/bee-wide                              0            0             0           4   ok
+nature/caterpillar-tall                      0            0             0           4   ok
+nature/caterpillar-wide                      0            0             0           4   ok
+nature/ladybug-tall                          0            0             0           4   ok
+nature/snail-tall                            0            0             0           0   ok
+nature/snail-wide                            0            0             0           0   ok
+nature/spider-tall                           0            0             0           4   ok
+nature/spider-wide                           0            0             0           3   ok
+objects/balloon-tall                         0            0             0           0   ok
+objects/house-tall                           0            0             0           3   ok
+objects/umbrella-wide                        0            0             0           0   ok
+shapes/circle-wide                          48            0             0           0   ok
+shapes/heart-tall                            0            0             0           0   ok
+shapes/rectangle-wide                        0            0             0           0   ok
+space/moon-wide                              0            0             0           0   ok
+space/ship-tall                              0            0             0           0   ok
+space/ship-wide                              0            0             0           0   ok
+space/station-tall                           0            0             0           3   ok
+space/station-wide                           0            0             0           3   ok
+vehicles/cover                               0            0             0           4   ok
+
+72/102 outline(s) need normalizing (solid regions or over-ringed eyes) — npm run gen:coloring-outlines:normalize -- <page>

@@ -1,0 +1,106 @@
+[
+  {
+    "colorScheme": "light",
+    "geometry": [
+      {
+        "text": "Start drawing",
+        "href": "/",
+        "rect": {
+          "x": 20,
+          "y": 338.625,
+          "width": 136.453125,
+          "height": 53.90625,
+          "top": 338.625,
+          "right": 156.453125,
+          "bottom": 392.53125,
+          "left": 20
+        }
+      },
+      {
+        "text": "Changelog",
+        "href": "/changelog",
+        "rect": {
+          "x": 20,
+          "y": 404.53125,
+          "width": 113.90625,
+          "height": 53.90625,
+          "top": 404.53125,
+          "right": 133.90625,
+          "bottom": 458.4375,
+          "left": 20
+        }
+      },
+      {
+        "text": "Privacy",
+        "href": "/privacy",
+        "rect": {
+          "x": 145.90625,
+          "y": 404.53125,
+          "width": 88.265625,
+          "height": 53.90625,
+          "top": 404.53125,
+          "right": 234.171875,
+          "bottom": 458.4375,
+          "left": 145.90625
+        }
+      }
+    ],
+    "missingRecovered": true,
+    "privacyCurrent": true,
+    "drawingBooted": true,
+    "drawingPainted": true,
+    "pageErrors": []
+  },
+  {
+    "colorScheme": "dark",
+    "geometry": [
+      {
+        "text": "Start drawing",
+        "href": "/",
+        "rect": {
+          "x": 20,
+          "y": 338.625,
+          "width": 136.453125,
+          "height": 53.90625,
+          "top": 338.625,
+          "right": 156.453125,
+          "bottom": 392.53125,
+          "left": 20
+        }
+      },
+      {
+        "text": "Changelog",
+        "href": "/changelog",
+        "rect": {
+          "x": 20,
+          "y": 404.53125,
+          "width": 113.90625,
+          "height": 53.90625,
+          "top": 404.53125,
+          "right": 133.90625,
+          "bottom": 458.4375,
+          "left": 20
+        }
+      },
+      {
+        "text": "Privacy",
+        "href": "/privacy",
+        "rect": {
+          "x": 145.90625,
+          "y": 404.53125,
+          "width": 88.265625,
+          "height": 53.90625,
+          "top": 404.53125,
+          "right": 234.171875,
+          "bottom": 458.4375,
+          "left": 145.90625
+        }
+      }
+    ],
+    "missingRecovered": true,
+    "privacyCurrent": true,
+    "drawingBooted": true,
+    "drawingPainted": true,
+    "pageErrors": []
+  }
+]

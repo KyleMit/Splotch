@@ -1,0 +1,48 @@
+01-treatment               treatment    crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=26/42 >33=1/20 paced draw=69556 present=69589 commit p95/max=1/2 undo p95/max=17/26 (20) session=106441 maxGap=48 >33=2 lateExcess=162 ink=1116310
+   draw     span=69556 maxGap=48 >33=1 lateExcess=31 []  draw 3600×/918/max3 · commit 30×/12/max2 · undoPatchCapture 182×/8/max2 · undoPatchCrop 29×/4/max2
+   present  span=33 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18844 maxGap=42 >33=1 lateExcess=25 [engine.undoInkMotion:22 engine.undo:23 engine.undoInkMotion:0]  fold 10×/33/max6
+   undo     span=14007 maxGap=42 >33=1 lateExcess=131 [engine.undoInkMotion:22 engine.undo:23 engine.undoInkMotion:0]  undoInkMotion 40×/146/max22 · undo 20×/152/max23
+   tail     span=4001 maxGap=17 >33=0 lateExcess=0 []  
+02-control                 control      crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=20/42 >33=2/20 paced draw=69532 present=69564 commit p95/max=1/1 undo p95/max=14/14 (20) session=106431 maxGap=42 >33=2 lateExcess=84 ink=1116310
+   draw     span=69532 maxGap=20 >33=0 lateExcess=0 [engine.draw:0]  draw 3600×/817/max3 · commit 30×/3/max1 · undoPatchCapture 182×/13/max3 · undoPatchCrop 29×/2/max1
+   present  span=32 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18843 maxGap=22 >33=0 lateExcess=0 [engine.undoInkMotion:2 engine.undo:2 engine.undoInkMotion:0]  fold 10×/36/max5
+   undo     span=14023 maxGap=42 >33=2 lateExcess=84 []  undoInkMotion 40×/25/max2 · undo 20×/32/max2
+   tail     span=4001 maxGap=17 >33=0 lateExcess=0 []  
+04-treatment               treatment    crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=24/27 >33=0/20 paced draw=69541 present=69573 commit p95/max=1/5 undo p95/max=17/17 (20) session=106444 maxGap=33 >33=0 lateExcess=53 ink=1116310
+   draw     span=69541 maxGap=33 >33=0 lateExcess=16 [engine.commit:5 engine.undoPatchCrop:4]  draw 3600×/837/max2 · commit 30×/6/max5 · undoPatchCapture 182×/8/max2 · undoPatchCrop 29×/4/max4
+   present  span=32 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18852 maxGap=25 >33=0 lateExcess=0 []  fold 10×/40/max11
+   undo     span=14017 maxGap=27 >33=0 lateExcess=37 [engine.undoInkMotion:7 engine.undo:8 engine.undoInkMotion:0]  undoInkMotion 40×/143/max12 · undo 20×/150/max12
+   tail     span=4002 maxGap=21 >33=0 lateExcess=0 []  
+05-treatment               treatment    crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=22/28 >33=0/20 paced draw=69529 present=69561 commit p95/max=1/1 undo p95/max=16/16 (20) session=106435 maxGap=28 >33=0 lateExcess=30 ink=1116310
+   draw     span=69529 maxGap=20 >33=0 lateExcess=0 []  draw 3600×/897/max4 · commit 30×/16/max1 · undoPatchCapture 182×/15/max4 · undoPatchCrop 29×/2/max1
+   present  span=32 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18848 maxGap=20 >33=0 lateExcess=0 [engine.fold:4]  fold 10×/38/max5
+   undo     span=14026 maxGap=28 >33=0 lateExcess=30 [engine.undo:7 engine.undoInkMotion:7 engine.undoInkMotion:0]  undoInkMotion 40×/142/max12 · undo 20×/146/max13
+   tail     span=4000 maxGap=18 >33=0 lateExcess=0 []  
+06-control                 control      crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=18/28 >33=0/20 paced draw=69540 present=69572 commit p95/max=1/2 undo p95/max=14/14 (20) session=106432 maxGap=28 >33=0 lateExcess=29 ink=1116310
+   draw     span=69540 maxGap=20 >33=0 lateExcess=0 []  draw 3600×/846/max4 · commit 30×/6/max2 · undoPatchCapture 182×/22/max3 · undoPatchCrop 29×/2/max2
+   present  span=32 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18847 maxGap=26 >33=0 lateExcess=9 []  fold 10×/36/max5
+   undo     span=14012 maxGap=28 >33=0 lateExcess=20 []  undoInkMotion 40×/25/max2 · undo 20×/32/max3
+   tail     span=4001 maxGap=17 >33=0 lateExcess=0 []  
+07-control                 control      crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=23/38 >33=2/20 paced draw=69529 present=69561 commit p95/max=0/2 undo p95/max=11/11 (20) session=106430 maxGap=38 >33=2 lateExcess=83 ink=1116310
+   draw     span=69529 maxGap=21 >33=0 lateExcess=0 [engine.draw:0]  draw 3600×/880/max3 · commit 30×/2/max2 · undoPatchCapture 182×/11/max2 · undoPatchCrop 29×/2/max2
+   present  span=32 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18850 maxGap=18 >33=0 lateExcess=0 []  fold 10×/31/max5
+   undo     span=14018 maxGap=38 >33=2 lateExcess=83 []  undoInkMotion 40×/29/max3 · undo 20×/38/max8
+   tail     span=4001 maxGap=17 >33=0 lateExcess=0 []  
+08-treatment               treatment    crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=26/33 >33=0/20 paced draw=69540 present=69572 commit p95/max=1/1 undo p95/max=17/17 (20) session=106427 maxGap=33 >33=0 lateExcess=105 ink=1116310
+   draw     span=69540 maxGap=19 >33=0 lateExcess=0 []  draw 3600×/865/max3 · commit 30×/18/max1 · undoPatchCapture 182×/19/max2 · undoPatchCrop 29×/4/max1
+   present  span=32 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18844 maxGap=33 >33=0 lateExcess=16 [engine.undoInkMotion:13 engine.undo:14 engine.undoInkMotion:0]  fold 10×/40/max10
+   undo     span=14011 maxGap=33 >33=0 lateExcess=105 [engine.undoInkMotion:13 engine.undo:14 engine.undoInkMotion:0]  undoInkMotion 40×/146/max13 · undo 20×/154/max14
+   tail     span=4000 maxGap=17 >33=0 lateExcess=0 []  
+09-control                 control      crayon/ghost-on/gap700 ghosts=20 undoWin p50/max=22/39 >33=2/20 paced draw=69533 present=69564 commit p95/max=1/2 undo p95/max=11/11 (20) session=106434 maxGap=39 >33=2 lateExcess=88 ink=1116310
+   draw     span=69533 maxGap=22 >33=0 lateExcess=0 []  draw 3600×/864/max4 · commit 30×/28/max2 · undoPatchCapture 182×/10/max1 · undoPatchCrop 29×/23/max2
+   present  span=31 maxGap=17 >33=0 lateExcess=0 []  
+   settle   span=18850 maxGap=24 >33=0 lateExcess=0 []  fold 10×/38/max6
+   undo     span=14019 maxGap=39 >33=2 lateExcess=88 []  undo 20×/31/max4 · undoInkMotion 40×/24/max2
+   tail     span=4001 maxGap=17 >33=0 lateExcess=0 []  

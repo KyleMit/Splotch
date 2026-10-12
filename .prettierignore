@@ -1,0 +1,61 @@
+android/
+ios/
+!experiments/native-architecture/android/
+!experiments/native-architecture/android/**
+!experiments/native-architecture/ios/
+!experiments/native-architecture/ios/**
+**/.svelte-kit/
+**/build/
+**/.netlify/
+**/node_modules/
+# Worktree-isolated agent checkouts. A nested copy under .claude/worktrees/agent-*/ does not
+# match the path-anchored rules below (web/src/tokens.css, the ideas-review.html dashboard),
+# so `prettier --check .` fails on files that are correctly ignored at their real location.
+# Stated here rather than left to Prettier's .gitignore fallback, which is a CLI default.
+.claude/worktrees/
+# Committed scrapbook run outputs (ADR-0059) are generated/promoted output, not
+# hand-authored source — the index.html and any published HTML/CSS/JS reports
+# must not be reformatted. scrapbook/README.md is dprint-owned via *.md below.
+scrapbook/
+# Verbatim run output retained under docs/scratchpad/ (ADR-0059) — the bytes a
+# tool emitted, kept as written so a later reader sees what the run actually
+# produced. Named per tree rather than as the whole folder: hand-authored probes
+# beside them (popover-probe/) are maintained source and stay in Prettier's
+# scope. The notes are Markdown, dprint-owned via *.md below.
+docs/scratchpad/perf/
+docs/scratchpad/triage/
+docs/scratchpad/icon-toolbar-alignment/
+pnpm-lock.yaml
+web/src/lib/components/icon-names.d.ts
+web/src/lib/components/page/ReleaseHistory.svelte
+web/src/lib/components/settings/CurrentReleaseNotes.svelte
+web/src/lib/releases.json
+web/src/lib/releaseHues.ts
+web/src/tokens.css
+tools/store-drawings/generated/store-drawings.mjs
+web/tests/**/*-snapshots/
+*.svg
+# Frozen empirical run output; live pipeline configuration remains formatted.
+tools/asset-gen/ideas-exploration/**/*.json
+# Imported centerline evidence retains the producing Python serializer's stable shape.
+tools/centerline-tracing/benchmark/corpus/corpus.json
+tools/centerline-tracing/benchmark/metrics.json
+tools/centerline-tracing/docs/source-manifest.json
+# Frozen review dashboard Prettier cannot round-trip: its reformatted output
+# fails its own HTML parser (raw ">" inside <pre> blocks), so formatting it
+# would leave the check permanently red.
+tools/asset-gen/ideas-exploration/ideas-review.html
+
+# Markdown is owned by dprint (dprint.json, ADR-0057) — permanently out of Prettier scope
+*.md
+
+# ADR-0138 stores tracked capture evidence MINIFIED — the corpus is sized on the
+# dense form, and reformatting it would roughly quadruple every file for frame
+# tables no human reads. The README beside them is Markdown and dprint's to own.
+perf-profiles/evidence/**/*.json
+
+# Frozen migration archive and lock receipts retain their producing serializers; recorded byte digests bind their evidence.
+docs/migration/evidence/rsd-drawing-graph-20261010/archive-reuse.json
+docs/migration/evidence/rsd-safe-insets-20261011/archive-reconciliation.json
+docs/migration/evidence/rsd-safe-insets-20261011/root-lock-approval.json
+docs/migration/evidence/rsd-safe-insets-20261011/whole-lock-metadata.json

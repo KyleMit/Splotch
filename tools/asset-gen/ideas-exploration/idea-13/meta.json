@@ -1,0 +1,75 @@
+{
+  "idea": 13,
+  "title": "Gate colored-shape invention on open background",
+  "verdict": "WORKED",
+  "oneline": "Detector works; 11 shipped night fills carry confirmed invented shapes",
+  "summary": "Built an offline flood-fill + median-background-color + connected-blob detector that flags floating foreign blobs on the open background. Sweeping all 188 committed raws confirmed the gap is real: 11 of 94 night fills shipped with invented shapes (sparkles, extra road dashes, a smoke puff, rings, glow orbs, pebbles) — mostly PALE blobs, the exact thick-white class scoreDrift's opening exempts. A synthesized planet+star injection flags (2 blobs) while the unmodified page stays clean. Anchor-fraction (line/border contact < 5%) plus a 60-8000 px area window yields ~0 false positives across the catalog.",
+  "tried": [
+    "Flood open bg from border via scoreNightness machinery, mask dilated source ink, median bg color, flag deviant blobs (DEV_T=60 RGB)",
+    "Full sweep of all 188 committed raws (94 light + 94 night) with visual confirmation of every flag against source line art",
+    "Synthesized positive: auto-locate deep-open-bg spots, inject saturated planet (r=36) + star (r=16) into clean space/ship-tall.night",
+    "Three anchoring variants: line-only, absolute border-px wash rule, combined line+border fraction (winner)"
+  ],
+  "worked": [
+    "Detector catches both synthesized blobs (areas 1221, 84) while unmodified page flags 0",
+    "Catalog sweep found 23 confirmed invented blobs on 11 shipped night pages incl. two of the idea's three try-on pages (trex-wide smoke puff, police-wide extra road dashes)",
+    "Anchor-fraction rule (<5% line+border contact) suppresses all false-positive classes: source-drawn moons/stars, line glow, corner vignettes, ground washes, edge-open legit regions",
+    "MAX_BLOB=8000 cleanly splits compact inventions (<=1283 px) from painted ground washes (>=21668 px), reported as info"
+  ],
+  "failed": [
+    "Absolute border-contact wash rule: un-flagged the real police-wide road dash (touches frame bottom) — relative anchoring required",
+    "Saturation/chroma alone as the signal: most real shipped inventions are PALE (smoke, dashes, rings), not saturated"
+  ],
+  "limitations": [
+    "Misses inventions hugging a source line or page edge (>5% contact) or colored within DEV_T~60 of the bg median",
+    "Enclosed source regions never audited; edge-open source regions enter the bg mask (handled by anchoring, not prevented)",
+    "Faint glow wisps (rover-tall) sit near the boundary — as a generation gate prefer keep-best-of-N on flagged area over hard reject",
+    "Thresholds calibrated on this catalog + gemini-2.5-flash-image; re-sweep after any model change"
+  ],
+  "comparisons": [
+    {
+      "label": "Synthesized positive: clean page vs injected planet+star with detection",
+      "before": "img/ship-clean.webp",
+      "after": "img/ship-injected-detect.webp",
+      "note": "Unmodified space/ship-tall.night flags 0; injected copy flags exactly the 2 pasted shapes (red boxes; amber = pixels deviating from bg median)"
+    },
+    {
+      "label": "Shipped invention: trex-wide.night smoke puff",
+      "before": "img/real-trex-smoke-source.webp",
+      "after": "img/real-trex-smoke-fill.webp",
+      "note": "Source (chalk) has open sky between cloud and volcano; the shipped fill painted an eruption puff there"
+    },
+    {
+      "label": "Shipped invention: police-wide.night road dashes",
+      "before": "img/real-police-dash-source.webp",
+      "after": "img/real-police-dash-fill.webp",
+      "note": "Source outlines one road dash; the shipped fill painted three white dashes"
+    },
+    {
+      "label": "Shipped invention: star-tall.night sparkles",
+      "before": "img/real-star-sparkles-source.webp",
+      "after": "img/real-star-sparkles-fill.webp",
+      "note": "Four pink/teal sparkles with no source counterpart; the source's own bottom sparkles are correctly not flagged"
+    }
+  ],
+  "images": [
+    { "file": "img/ship-clean.webp", "caption": "Clean shipped night raw (space/ship-tall) — 0 flags" },
+    { "file": "img/ship-injected.webp", "caption": "Same page with synthesized planet + star injected into open background" },
+    { "file": "img/ship-injected-detect.webp", "caption": "Detection overlay on injected page: both synthetic shapes flagged (red), deviant bg pixels amber" },
+    { "file": "img/real-trex-smoke-source.webp", "caption": "trex-wide chalk source: open sky between cloud and volcano" },
+    { "file": "img/real-trex-smoke-fill.webp", "caption": "trex-wide.night shipped raw: invented pale smoke puff (flagged, 1279 px)" },
+    { "file": "img/real-police-dash-source.webp", "caption": "police-wide chalk source: one road-dash outline" },
+    { "file": "img/real-police-dash-fill.webp", "caption": "police-wide.night shipped raw: three painted dashes — extras invented (flagged)" },
+    { "file": "img/real-star-sparkles-source.webp", "caption": "star-tall chalk source (negated): sparkles only near the bottom" },
+    { "file": "img/real-star-sparkles-fill.webp", "caption": "star-tall.night shipped raw: invented pink/teal sparkles around the star" },
+    { "file": "img/real-star-sparkles-detect.webp", "caption": "star-tall.night detection overlay: 4 invented sparkles flagged, source-drawn ones passed" },
+    { "file": "img/real-station-orbs.webp", "caption": "station-tall.night: free-floating teal glow orbs (flagged)" },
+    { "file": "img/real-train-pebbles.webp", "caption": "train-tall.night: invented grey pebbles on open ground (flagged)" },
+    { "file": "img/real-owl-tuft.webp", "caption": "owl-wide.night: invented brown tuft hanging under the branch (flagged)" },
+    { "file": "img/real-astronaut-ring.webp", "caption": "astronaut-tall.night: invented white ring in open sky (flagged)" }
+  ],
+  "code": [
+    { "title": "Invented-shape detector + catalog sweep CLI", "file": "code/invented-shape-audit.mjs" },
+    { "title": "Synthesized-positive injector (planet + star)", "file": "code/inject-blob.mjs" }
+  ]
+}

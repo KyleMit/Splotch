@@ -1,0 +1,56 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { basename, dirname } from 'node:path';
+
+// Split a "---\nkey: value\n---\nbody" document. Returns null if the document
+// has no frontmatter block. `frontmatter` is the raw text between the fences;
+// `meta` is the parsed key/value pairs (flat — we never need nested YAML).
+export function parseFrontmatter(raw) {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!match) return null;
+  const meta = {};
+  for (const [index, line] of match[1].split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
+    const m = line.match(/^([A-Za-z]\w*):\s*(.*)$/);
+    if (!m) throw new Error(`Malformed frontmatter line ${index + 1}: ${line}`);
+    meta[m[1]] = m[2].trim();
+  }
+  return { frontmatter: match[1], meta, body: match[2].trim() };
+}
+
+export function writeFileDeep(path, contents) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, contents);
+}
+
+// What the release scripts accept as a version on the command line. No prerelease
+// suffix: App Store Connect requires MARKETING_VERSION to be dot-separated integers,
+// and gen-release-notes only reads plain x.y.z release files, so a `1.4.0-beta.1`
+// cut would tag and ship the previous release's notes.
+export const SEMVER = /^\d+\.\d+\.\d+$/;
+
+// The frontmatter version is what the generator sorts by and renders (anchors,
+// headings, the footer's current version), while cut-release picks the file by its
+// name. A file copied forward with the previous release's version left inside would
+// tie with that release and could ship its notes as the newest.
+export function assertVersionMatchesFilename(filename, version) {
+  if (!SEMVER.test(version ?? '')) {
+    throw new Error(
+      `${filename}: frontmatter version must look like 1.2.0, got "${version ?? ''}"`
+    );
+  }
+  const fileVersion = basename(filename, '.md');
+  if (version !== fileVersion) {
+    throw new Error(
+      `${filename}: frontmatter version ${version} does not match the filename version ${fileVersion}`
+    );
+  }
+}
+
+export function compareSemverDesc(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pb[i] || 0) !== (pa[i] || 0)) return (pb[i] || 0) - (pa[i] || 0);
+  }
+  return 0;
+}

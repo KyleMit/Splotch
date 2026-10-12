@@ -1,0 +1,45 @@
+{
+  "idea": 21,
+  "title": "Before/after contact sheet from git history",
+  "verdict": "WORKED",
+  "oneline": "--source git:<ref> and --compare git:<ref> validated on farm and owl-tall, offline",
+  "summary": "Implemented --source git:<ref> (all layers read from the commit's blobs via git cat-file, nothing checked out) and --compare git:<ref> (old pair rendered above the current shipped/samples pair with provenance tag chips) in gen-contact-sheet.mjs. Validated end-to-end against real refs: farm vs 46bc770 (all 12 pre-fork night fills differ) and creatures/owl-tall vs 6e3f14f and pre-rename 34a606f via a legacy-filename fallback. Interning identical images by index keeps the farm compare sheet at 6.86 MB vs 5.72 MB plain (naive doubling would be ~11.4 MB), well under the 16 MB Artifact cap, and plain shipped/samples modes were regression-verified untouched.",
+  "tried": [
+    "Reading every layer (outline/chalk/light/night) from a git ref's blobs with git cat-file instead of materializing a temp dir",
+    "--compare git:<ref> rendering the ref's light+night pair directly above the current pair, with provenance tag chips",
+    "Interning identical data URIs into an indexed image table to keep compare sheets under the 16 MB cap",
+    "Legacy-filename fallback for refs older than the 099204f dot-separated rename",
+    "Scoring the outline-keep badge from the ref's own fill-src raws",
+    "Playwright screenshot verification of every mode plus samples/shipped regression runs"
+  ],
+  "worked": [
+    "All modes render correctly with zero console errors; bad refs fail cleanly",
+    "farm vs 46bc770 shows all 12 pre-fork vs chalk-fork night fills side by side; owl-tall vs 6e3f14f isolates its regenerated night fill",
+    "Pre-rename ref 34a606f renders via legacy names and surfaces the historical blown-out-sclera owl",
+    "Compare sheet 6.86 MB (vs 5.72 plain) thanks to interning; shipped mode byte-size unchanged",
+    "Patch (5 files, +187/-46) re-applies cleanly to a pristine tree; ESLint clean"
+  ],
+  "failed": [
+    "First cut rendered a false 'no night fill' note: interned index 0 is falsy, so !cell.night misfired — fixed with == null checks"
+  ],
+  "limitations": [
+    "Fills committed before the inpainted punch (48d38d4) still carry outlines and draw doubled in Combined view — judge those refs on the Color view (documented)",
+    "Keep badge on git cells requires fill-src raws to exist at the ref under the modern name",
+    "Old/new stack vertically (pair above pair) rather than in one row, doubling scroll length"
+  ],
+  "comparisons": [
+    {"label": "farm/cat-wide night", "before": "pair-cat-wide-before.webp", "after": "pair-cat-wide-after.webp", "note": "pre-fork (git:46bc770) vs shipped chalk-fork fill"},
+    {"label": "farm/cow-tall night", "before": "pair-cow-tall-before.webp", "after": "pair-cow-tall-after.webp", "note": "pre-fork (git:46bc770) vs shipped chalk-fork fill"},
+    {"label": "farm/horse-tall night", "before": "pair-horse-tall-before.webp", "after": "pair-horse-tall-after.webp", "note": "largest byte delta in the regen (78k to 107k)"}
+  ],
+  "images": [
+    {"file": "overview-owl-compare.webp", "caption": "Full owl-tall compare sheet: git:6e3f14f pair above the shipped pair, tag chips on every caption"},
+    {"file": "pair-cat-wide-before.webp", "caption": "farm/cat-wide night, pre-fork fill at git:46bc770 (Combined view)"},
+    {"file": "pair-cat-wide-after.webp", "caption": "farm/cat-wide night, current shipped chalk-fork fill (Combined view)"}
+  ],
+  "code": [
+    {"title": "gen-contact-sheet.mjs git-source + compare mode (5-file patch incl. docs)", "file": "code/contact-sheet-git-source-and-compare.patch"},
+    {"title": "Throwaway Playwright sheet-screenshot helper", "file": "code/tmp-shoot-sheet.mjs"},
+    {"title": "Throwaway tile-rect dumper for crops", "file": "code/tmp-rects.mjs"}
+  ]
+}

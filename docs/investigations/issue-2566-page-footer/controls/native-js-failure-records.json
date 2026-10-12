@@ -1,0 +1,33 @@
+[
+  {
+    "route": "privacy",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "changelog",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "privacy",
+    "existingBodyLinkGated": true,
+    "manageSingleHost": true,
+    "closeReturnsFocus": true
+  },
+  {
+    "retryConsole": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "retryConsole": "Page parental gate failed to load: TypeError: Failed to fetch dynamically imported module: http://localhost:5302/_app/immutable/chunks/CK1hs_sl.js"
+  },
+  {
+    "retryConsole": "Page parental gate failed to load: TypeError: Failed to fetch dynamically imported module: http://localhost:5302/_app/immutable/chunks/CK1hs_sl.js"
+  }
+]

@@ -1,0 +1,53 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test changelog.spec.ts -g rapid fragment changes --project=chromium --workers=1
+
+$ playwright test changelog.spec.ts -g rapid fragment changes --project=chromium --workers=1
+[WebServer] (node:94579) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:94610) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 1 test using 1 worker
+
+(node:94625) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › tests/changelog.spec.ts:386:1 › rapid fragment changes leave only the latest arrival and reduced motion keeps it still (468ms)
+
+
+  1) [chromium] › tests/changelog.spec.ts:386:1 › rapid fragment changes leave only the latest arrival and reduced motion keeps it still 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 3000
+    Received: 2400
+
+      416 |     return lifetime;
+      417 |   });
+    > 418 |   expect(changedLifetimeMs).toBe(3000);
+          |                             ^
+      419 |   await page.evaluate(
+      420 |     (ids) => {
+      421 |       document.documentElement.setAttribute('data-reduce-motion', '');
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/changelog.spec.ts:418:29
+
+    Error Context: ../test-results/changelog-rapid-fragment-c-06a9b-duced-motion-keeps-it-still-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/changelog.spec.ts:386:1 › rapid fragment changes leave only the latest arrival and reduced motion keeps it still 

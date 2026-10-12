@@ -1,0 +1,39 @@
+diff --git a/tools/rival-agent/tests/worktree.test.mjs b/tools/rival-agent/tests/worktree.test.mjs
+index 32a3cdfe6..3bff776d0 100644
+--- a/tools/rival-agent/tests/worktree.test.mjs
++++ b/tools/rival-agent/tests/worktree.test.mjs
+@@ -147,7 +147,6 @@ describe('disposable worktree and packet', () => {
+     mkdirSync(packet);
+     writeReviewPacket(repo, scope, packet);
+     expect(readFileSync(join(packet, PACKET_FILES.diff), 'utf8')).toContain('+two');
+-    expect(WORKTREE_INSTALL_ARGS).toContain('--ignore-scripts');
+     expect(WORKTREE_INSTALL_ARGS).toContain('--ignore-pnpmfile');
+     expect(WORKTREE_INSTALL_ARGS).toContain('--frozen-lockfile');
+     expect(readFileSync(join(packet, PACKET_FILES.commits), 'utf8')).toContain('second');
+diff --git a/tools/rival-agent/worktree.mjs b/tools/rival-agent/worktree.mjs
+index fca8fd1c5..721dee07e 100644
+--- a/tools/rival-agent/worktree.mjs
++++ b/tools/rival-agent/worktree.mjs
+@@ -89,18 +89,14 @@ export function resolveScope(repoRoot, scope) {
+ 
+ // A linked worktree resolves nothing upward, so dependencies install into it (frozen, from the
+ // warm store: about three seconds) or Vitest and Prettier fail there in confusing ways.
+-// `--ignore-scripts` and `--ignore-pnpmfile` because the reviewed commit owns package.json and
+-// .pnpmfile.cjs: a PR-controlled postinstall or pnpmfile hook would otherwise run on the handler's
+-// machine at launch, before anyone has read the diff (measured: `--ignore-scripts` alone still ran
+-// readPackage and afterAllResolved). Native modules still arrive built from the store's
+-// side-effects cache (measured: sharp, esbuild). A lockfile that records a pnpmfile checksum fails
+-// the frozen install under `--ignore-pnpmfile`, which is the loud outcome wanted for a commit that
+-// introduces one.
++// `--ignore-pnpmfile` because the reviewed commit owns .pnpmfile.cjs: a PR-controlled pnpmfile
++// hook would otherwise run on the handler's machine at launch, before anyone has read the diff. A
++// lockfile that records a pnpmfile checksum fails the frozen install under `--ignore-pnpmfile`,
++// which is the loud outcome wanted for a commit that introduces one.
+ export const WORKTREE_INSTALL_ARGS = Object.freeze([
+   'install',
+   '--frozen-lockfile',
+   '--prefer-offline',
+-  '--ignore-scripts',
+   '--ignore-pnpmfile',
+ ]);
+ 

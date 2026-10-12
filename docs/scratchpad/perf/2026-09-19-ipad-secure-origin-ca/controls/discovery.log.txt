@@ -1,0 +1,5 @@
+# tunnel registry (root RemoteXPC) as Appium reads it, 2026-09-19T17:18:52Z
+{"status":"OK","tunnels":{},"metadata":{"lastUpdated":"2026-09-19T17:18:52.159Z","totalTunnels":0,"activeTunnels":0}}
+# appium 4727 discovery lines
+2026-09-19 16:31:21:776 - [4610d2a0][XCUITestDriver@1b42] Available real devices: 
+2026-09-19 16:31:21:864 - [4610d2a0][AppiumDriver@76ea] Encountered internal error running command: Error: Unknown device or simulator UDID: '[redacted]'

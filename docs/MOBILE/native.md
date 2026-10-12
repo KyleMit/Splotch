@@ -1,0 +1,379 @@
+<!-- cspell:ignore prerendered -->
+
+# Splotch — Native App (Capacitor): General Guide
+
+This file covers everything **common to both native targets** (Android + iOS): how the static build
+works, what runs offline vs. online, storage, the privacy/data posture stores ask about, the shared
+store-listing assets, and cross-platform follow-ups. For platform-specific build/test/release steps
+see **[android.md](android.md)** and **[ios.md](ios.md)**.
+
+> Both platforms are active: the `android/` and `ios/` projects live in the repo. Android
+> development works on macOS or Linux; iOS builds require macOS + Xcode.
+
+## 1. How the native build works
+
+Splotch is a SvelteKit app. For the web it builds with `adapter-netlify` (SSR + the
+`/api/generate-image` serverless function + the `/admin` console). The native apps can't run a
+server, so they build a **fully static** export instead:
+
+* **`CAPACITOR=true vite build`** swaps in `adapter-static` (see `web/svelte.config.js`) and skips
+  the PWA service worker (see `web/vite.config.ts`).
+* Output goes to **`build/`**, which Capacitor copies into the native projects (`webDir` in
+  `capacitor.config.json`).
+* The server-only routes (`/api`, `/admin`, `/dev`) are excluded from the bundle (`strict: false`).
+  The home page is prerendered to `index.html`; `200.html` is the SPA fallback.
+* The admin console is **web-only** and has no native counterpart. It is also unlinked from the app
+  on every platform — reached by typing `/admin`. A hidden in-app gesture that reveals a
+  token-minting console is exactly the shape Play's Deceptive Behavior policy and App Review 2.3.1
+  are written against, and worse in an app declared for a children's audience.
+* Routes that must not reach the bundle at all are listed in `web/nativeExcludedRoutes.ts`, whose
+  Vite plugin blanks their module source at build time; `tools/mobile/check-static-bundle.mjs` scans
+  the built output and fails `build:cap` if a forbidden host or web-only boot-service marker
+  survives. A route's `prerender` flag alone drops only its HTML — the JS chunk, and every string in
+  it, still ships.
+
+### Offline vs. online
+
+The **core engine is 100% offline**: canvas, colors, stroke widths, eraser, sounds, the Farm starter
+coloring book, and screenshots are bundled on-device. No network is needed to draw or use anything
+already installed.
+
+Two background features use the network. The **AI image button** calls the hosted endpoint
+`https://splotch.art/api/generate-image` (`__NATIVE_API_BASE__`, injected at build time in
+`web/vite.config.ts`). When the device is offline the AI button is **hidden** automatically
+(`web/src/lib/state/network.svelte.ts` + `@capacitor/network`). When Coloring Book is enabled, the
+seven non-starter books download automatically, one complete verified book at a time (ADR-0103).
+Turning it off cancels active background work without deleting completed packs. Compact screens
+receive 1,152 px fills; larger or denser screens receive the canonical tier. Both native pack
+variants retain canonical 400 px cover thumbnails, canonical SVG overlays, and 400 px selector
+rasters. The web-only 240 px selector candidates are omitted. Android WorkManager stores the
+selected bytes under `noBackupFilesDir/coloring/<resolution>`; iOS background `URLSession` stores
+them under the same layout in Application Support, with backup exclusion. The picker exposes a book
+only after its install marker is written. Storage is not scoped by app version, so an app update
+keeps every book whose files did not change and downloads only the files that did (ADR-0103).
+
+### Storage
+
+`web/src/lib/storage.ts` is dual-layer:
+
+* Synchronous **localStorage** for fast reads (web + native WebView).
+* On native, every write is also mirrored to **Capacitor Preferences** (durable
+  `UserDefaults`/`SharedPreferences`). On launch, `hydrateDurableStorage()` restores any settings
+  the WebView may have evicted. The web is unaffected.
+
+Client-held AI credentials use `web/src/lib/secureStorage.ts` instead: separate Keychain/Keystore
+slots on native and AES-GCM-encrypted IndexedDB rows on web. Live credential state stays empty until
+boot hydration completes. Native hydration first recovers legacy plaintext values from Preferences,
+then migrates them into secure storage and removes both plaintext copies.
+
+Both native stores keep a saved credential on the device: the iOS Keychain item is written
+`whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, and the Android copy is never backed up
+(`android:allowBackup="false"`). `docs/MOBILE/compliance.md` (Apple 5.1.1) records the decision.
+
+### Loading native plugins (read before adding one)
+
+Two rules, both load-bearing:
+
+**1. Gate every plugin code path on the literal `__IS_CAPACITOR__`** (usually
+`__IS_CAPACITOR__ && isNative()`). `isNative()` alone is a runtime check Rollup can't tree-shake
+across modules, so without the compile-time literal the plugin chunks ship in the web bundle and get
+precached by the service worker. In a component (function scope), inline the `import()` inside the
+gated branch; in a shared `.ts` module, use `lazyPluginModule()` with the ternary below — Rollup
+retains a module-level thunk even when every caller is dead code, so the `import()` itself must sit
+behind the literal.
+
+**2. Destructure the plugin out of the module namespace *after* awaiting:**
+
+```ts
+const getPrefs = lazyPluginModule(() =>
+  __IS_CAPACITOR__
+    ? import('@capacitor/preferences')
+    : Promise.reject(new Error('native-only plugin'))
+);
+const { Preferences } = await getPrefs();
+```
+
+Never let a Promise resolve to the plugin object itself (e.g.
+`import('…').then((m) => m.Preferences)` or `async () => (await import('…')).Preferences`). A
+registered plugin is a Proxy whose every property — `then` included — is a native-method call, so
+it's "thenable": promise assimilation invokes `plugin.then(resolve, reject)`, Capacitor dispatches a
+native method named `then` ("not implemented"), and it **never settles**. The awaiting promise hangs
+forever. This silently blanked a since-removed native page whose render gated on an awaited plugin
+load, until the loaders were funnelled through `lazyPluginModule`. A gated inline
+`import('…').then(({ Plugin }) => …)` in a component is equally safe — it resolves to the module
+namespace, never the proxy.
+
+### Custom native plugins
+
+When no published plugin exposes a native capability, add a small **local** plugin in the app target
+itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-only `PhotoLibrary`
+(ADR-0037) and `SystemBack` (ADR-0165)):
+
+* iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
+  `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that
+  `cap sync` writes into `capacitor.config.json` from installed **npm plugin packages**. An
+  app-local class is never in that list, so it must be registered by hand — otherwise every call
+  fails with `"<name>" plugin is not implemented on ios` (our JS catches this and silently reads
+  "unlocked"). Two files, both added to the App target's Compile Sources:
+  * `DeviceLockPlugin.swift` — an `@objc(...)` class conforming to `CAPPlugin` **and**
+    `CAPBridgedPlugin` (provide `identifier`, `jsName`, `pluginMethods` in Swift;
+    `registerPluginInstance` casts to `CAPPlugin & CAPBridgedPlugin`, so the conformance is
+    required).
+  * `MainViewController.swift` — subclass `CAPBridgeViewController` and override
+    `capacitorDidLoad()` to call `bridge?.registerPluginInstance(DeviceLockPlugin())`. Then point
+    the root VC at it in `ios/App/App/Base.lproj/Main.storyboard`
+    (`customClass="MainViewController" customModule="App" customModuleProvider="target"`).
+    `capacitorDidLoad()` runs right after the bridge is created, before the web view loads.
+  * Do **not** use the legacy Obj-C `CAP_PLUGIN` macro `.m` for an app-local plugin — its
+    category-based conformance is unreliable in the app target and is moot anyway, since discovery
+    is by explicit registration, not runtime enumeration.
+  * Both Swift files need `project.pbxproj` entries (`PBXBuildFile`, `PBXFileReference`, App
+    `PBXGroup` children, `PBXSourcesBuildPhase`) — the App target uses classic Xcode file
+    references, not synchronized groups, and `cap sync` won't add them. Mirror `AppDelegate.swift`.
+    No `Package.swift` edit (SPM, ADR-0020).
+* Android — a `@CapacitorPlugin` class in `android/app/src/main/java/art/splotch/app/`
+  (`DeviceLockPlugin.java`), registered via `registerPlugin(...)` **before** `super.onCreate` in
+  `MainActivity`.
+* JS side — a typed `registerPlugin(...)` facade (`web/src/lib/plugins/deviceLock.ts`), imported
+  only behind `__IS_CAPACITOR__` (`lazyPluginModule()` or a gated inline `import()`). It needs no
+  `web` fallback: Capacitor uses one only on the `web` platform, and the shipped app calls a local
+  plugin only inside the native shells. The caller's own `catch` handles a native call that fails.
+* Guard — add the plugin to the table in `web/src/lib/plugins/registration.test.ts`. It fails until
+  the JS name, each platform's registration, the iOS Compile Sources entry, the native method names,
+  and the field names each method resolves with agree with the facade; without it, a mismatch
+  surfaces only on a device, as `"<name>" plugin is not implemented` or a result field that reads as
+  `undefined`. It reads a Java payload by following each `resolve(…)` through the class's own
+  methods to the `put` calls on the resolved variable (a helper it follows needs exactly one
+  `return`), and a Swift payload as the dictionary literal inside a `resolve(…)` in the method's own
+  body.
+
+A second local plugin, **`PencilEraser`** (ADR-0028, iOS-only), shows the **event-emitting** variant
+and how to **attach a UIKit interaction to the web view**: the Apple Pencil double-tap
+(`UIPencilInteraction`) never reaches the WebView, so `PencilEraserPlugin.swift` conforms to
+`UIPencilInteractionDelegate`, and `MainViewController.capacitorDidLoad()` both
+`registerPluginInstance`s it **and** calls `attach(to: bridge?.webView)` to install the interaction
+(hold the instance strongly — `UIPencilInteraction.delegate` is weak). It has empty `pluginMethods`
+and instead `notifyListeners("doubleTap", …)`; the JS facade (`web/src/lib/plugins/pencilEraser.ts`)
+subscribes with `addListener` and exports `initPencilEraser()`, which `DrawingCanvas.svelte`
+lazy-starts only when `isNative()` so `@capacitor/core` never loads on web. The web fallback's
+`addListener` is inert. The feature is on by default but parent-disablable: the listener's
+`handleDoubleTap()` sets a sticky `applePencilSeen` flag (lazy detection — there's no web API to
+query pencil pairing) and only toggles when `pencilEraserEnabled` is on and the Actions Panel shows
+Eraser (`actionControlShown('eraserEnabled')`, which also honours the Tool Drawer switch); Settings
+shows that toggle only once `applePencilSeen` is set, so it appears solely on pencil-capable
+devices.
+
+Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`); `cap:sync`
+alone won't compile/register the new Swift/Java classes.
+
+### Screen orientation
+
+The Settings rotation toggle (`lockRotationEnabled` + `forceLandscapeOrientation`) is applied by
+`web/src/lib/platform/orientation.ts`. On native it locks via **`@capacitor/screen-orientation`**,
+which calls Android's `Activity.setRequestedOrientation` — a Portrait or Landscape lock **overrides
+the OS Auto-Rotate setting**, so the parent's choice is honored even on a device with rotation
+turned off. The plugin's `unlock()` does not: it requests `SCREEN_ORIENTATION_UNSPECIFIED`, which
+defers to that setting. So on Android, Auto goes through the app-local `SensorOrientation` plugin
+(`SensorOrientationPlugin.java`), which requests `SCREEN_ORIENTATION_SENSOR` — accelerometer
+rotation past the OS toggle, excluding upside-down portrait. iOS has no public way past the Control
+Center rotation lock and keeps `unlock()`. The Web Screen Orientation API (the web fallback) has no
+equivalent for Auto — and the reason is narrower than "the web can't override the OS". Chromium maps
+a web Portrait or Landscape lock to `SCREEN_ORIENTATION_SENSOR_PORTRAIT`/`_LANDSCAPE`, which **do**
+beat the OS toggle; it maps `unlock()` to `SCREEN_ORIENTATION_USER` and `lock('any')` to
+`FULL_USER`, and only those two defer to it. So on the web it is Auto alone that no-ops with
+Auto-Rotate off, which is why every non-Android target captions the Settings picker to say Auto
+follows the device setting (`autoOrientationOverridesSystemLock`). The branch is keyed on
+`isNative()` (ADR-0013). Adding/removing this plugin requires a fresh native build — `cap:sync`
+alone won't register it.
+
+### Data & privacy posture (important for store forms)
+
+The reviewed machine-readable declaration is `tools/mobile/privacy-permission-inventory.json`.
+Tools-tier drift guards compare it with the native manifests, store data categories, retention
+constants, production outbound call sites, and `/privacy`; store forms remain human-submitted from
+the platform checklists.
+
+* **No analytics, tracking, ads, accounts, or advertising/analytics/tracking SDKs.** The native
+  dependency set is Capacitor plus functional plugins for device APIs, storage, media saving,
+  networking, screen orientation, and coloring-pack downloads.
+* Deliberate data-out features are a **drawing image**, chosen style, and generation credential sent
+  for AI generation; a confirmed AI report; and private feedback. Nothing is sold or used for
+  tracking. Ordinary AI jobs are temporary within Splotch: collected jobs are deleted immediately;
+  uncollected jobs expire after 20 minutes and an hourly cleanup removes them. OpenAI separately
+  normally keeps an abuse-monitoring copy for up to 30 days, subject to the exceptions in its
+  published policy.
+* While free AI is enabled, the app automatically checks its server-authoritative ten-creation
+  allowance with a one-way installation pseudonym derived from the platform app/vendor identifier.
+  The server stores the pseudonym with allowance attempts, successes, failures, timestamps, and
+  short-lived reservations. Access-code and own-key requests also create operational generation
+  metadata; the full key and drawing are excluded.
+* A confirmed AI report retains the input, server-resolved prompt, style, and timestamp privately
+  until a daily purge after its 30-day retention date; a refusal report also retains the provider's
+  signed refusal reason, and a picture report retains the generated output. Optional feedback device
+  details are private. Coloring-pack requests contain only public static asset paths and normal host
+  request details, not a drawing or child identity.
+* Photos are saved **locally** to the device photo library: the camera roll on iOS, and a shared
+  `Pictures/Splotch` folder on Android that belongs to the photo library, so saved drawings survive
+  uninstalling the app.
+
+## 2. Shared web-asset / sync commands
+
+These produce the static web bundle and copy it into both native projects; the platform-specific
+Gradle/Xcode commands build on top of them (see the platform files).
+
+```bash
+npm run build:cap     # static build into build/ (CAPACITOR=true)
+npm run cap:sync      # build:cap + copy web assets & plugins into native projects
+npm run cap:android   # cap:sync + open the Android project in Android Studio
+npm run cap:ios       # cap:sync + open the iOS project in Xcode (macOS-only)
+```
+
+Regenerate launcher icons / splash after changing artwork in `assets/`:
+
+```bash
+npm run gen:android:assets
+npx @capacitor/assets generate --ios
+```
+
+The Android command restores the monochrome layer after Capacitor regenerates the ordinary color
+icons and splash. Edit `assets/icon-monochrome.xml` for the themed launcher artwork: it is a 108dp
+VectorDrawable traced from the smiling S in `assets/icon.png`, with transparent eyes and smile. Its
+centered 48 × 65.5dp silhouette fits within the 66dp circular safe area. The generator copies that
+source to `android/app/src/main/res/drawable/ic_launcher_monochrome.xml` and references it from both
+adaptive icon definitions. Android 13+ themed icons depend on the user's setting and launcher
+support; ordinary color and pre-adaptive launcher icons use their existing artwork.
+
+## 3. Store listing assets & copywriting (both stores)
+
+Everything lives in **`store-assets/`** (see its README for sizes and regeneration notes) and is
+generated from the real app where possible:
+
+* [x] **Copywriting** — Google Play fields in `store-assets/STORE-LISTING-ANDROID.md`; App Store
+      fields (name, subtitle, promo text, keywords, categories, privacy label) in
+      `store-assets/STORE-LISTING-IOS.md`.
+* [x] **Screenshots, both stores** — `npm run gen:store-assets` drives the app in headless Chromium
+      and captures Play phone/tablet sets **and** App Store iPhone 6.9" / iPad 13" sets at the exact
+      required pixel sizes, plus the Play feature graphic. Re-run after meaningful UI changes.
+* [x] **Play app icon** 512×512 (`store-assets/icon-512.png`); the App Store icon ships inside the
+      binary's asset catalog (no separate upload).
+* [x] **Release notes / "What's new"** — generated per release from `releases/<version>.md` into
+      `fastlane/metadata/` and the bundled `/changelog` page (`npm run gen:releases`).
+* [ ] (Optional) short promo video.
+
+> Keep screenshots text-light and kid-friendly, and only show the generic coloring books (no
+> trademarked packs) — see `store-assets/README.md`.
+
+## 4. Kids / Families compliance (shared posture)
+
+Because the audience is children, **both** stores apply stricter rules. Splotch never collects a
+drawing in the background, but it does automatically check the free AI allowance and download
+enabled coloring packs. Those requests and its deliberate AI/support flows need exact disclosure.
+The per-store attestations live with each platform's release checklist:
+
+* Google Play — Families policy → **[android.md](android.md)**
+* Apple App Store — Kids Category → **[ios.md](ios.md)**
+
+The shared baseline both depend on:
+
+* **No ad SDKs / no analytics SDKs** ship (Splotch has none — keep it that way).
+* **COPPA / GDPR-K**: Splotch requests no child's name, account, email, or location. The consoles
+  still require exact disclosure of the optional drawings, feedback, report evidence, and device
+  snapshot described above.
+* Don't request permissions you don't use.
+
+### Legal / privacy artifacts (required by both stores)
+
+* [x] **Privacy Policy** page — created at `/privacy` (`web/src/routes/privacy/+page.svelte`), live
+      at `https://splotch.art/privacy` and bundled into both native apps. ← required by both stores.
+      Contact is through Splotch's private feedback form. Native opens the hosted form behind the
+      external-link gate because the static app cannot run the form's server action; the hosted
+      page's conditional email fallback is excluded from the native bundle. The policy must state:
+      no background drawing collection, ads, tracking, or third-party analytics; explain the
+      automatic allowance and coloring-pack requests, ordinary ephemeral AI processing, private
+      feedback, and the confirmed-report-only 30-day retention rule.
+* [ ] (Optional) **Terms of Use**.
+* [x] Wording for the **photo-library add** permission prompt: iOS
+      `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` and guarded by the
+      privacy-permission inventory; the Android runtime prompt is system-worded.
+
+## 5. Known follow-ups / nice-to-haves (cross-platform)
+
+* [ ] **Final hi-res app icon** (placeholder is upscaled from 512px) — produce a crisp **1024×1024**
+      source at `assets/icon.png` (and tune `assets/splash.png`), then rerun
+      `npm run gen:android:assets` and `npx @capacitor/assets generate --ios`.
+* [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
+      **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
+      link opens the app and applies the token automatically.
+* [ ] Consider `@capacitor/splash-screen` for finer control over splash dismissal timing.
+* [ ] Verify the **Wake Lock** behavior inside the WebView on real devices; if unreliable, add a
+      native keep-awake plugin.
+
+## 6. Native support matrix
+
+This is a release-time compatibility matrix, not a UI journey matrix. Every automated row reuses the
+one boot-and-paint assertion in `.maestro/smoke.yaml` (ADR-0120); phone/tablet layout and
+orientation behavior stay in the web test tiers. The automated rows run on `v*` tags and can be
+started from `workflow_dispatch`. There is no periodic `schedule` trigger: on-demand dispatch is the
+preflight and reproduction path, while the iOS floor row is completed manually for each release.
+
+Before publishing signed artifacts, confirm all four rows for that tag:
+
+| Coverage        | Target and check                                                                                                                                        | Result and diagnostic evidence                                                                                                                                                                                                                                                               | Evidence owner                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Android current | Current Android API 33 on a throwaway `google_apis` / `x86_64` emulator; install the test-signed optimized Release APK and wait for `Settings` to paint | The `Maestro launch smoke test (API 33)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-33` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
+| Android floor   | Android API 24 on the same emulator/image shape; install the same Release APK and run the same first-paint assertion                                    | The `Maestro launch smoke test (API 24)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-24` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
+| iOS current     | Newest installed iPhone simulator on `macos-latest`; compile Release without store signing, then install and boot the Debug app                         | The `Maestro launch smoke test (iOS simulator)` job status is the result. The log names the selected iPhone and UDID, and Xcode's destination identifies its runtime; `maestro-ios-report` contains the Maestro flow log and screenshot.                                                     | GitHub Actions owns the run, job log, and artifact.                                                    |
+| iOS floor       | iOS 16.4 on a named iPhone simulator or physical device; follow the [manual iOS 16.4 floor gate](ios.md#manual-ios-164-floor-gate)                      | The GitHub Release notes state the exact OS version, simulator/device, and pass result. No Maestro artifact is expected: hosted 16.4 runs can build and boot the simulator, but Maestro 2.4.0 fails before it can observe the app; `docs/COMPATIBILITY.md` owns that infeasibility evidence. | The release operator owns the Release-notes entry before `publish-artifacts` attaches signed binaries. |
+
+When an automated gate is red on a tag, that platform's deploy workflow files or updates its
+platform-specific failure issue. A manual dispatch does not file an issue because its dispatcher
+already owns the run; use the named job log and report artifact directly. The Android matrix derives
+both API levels from code owners rather than YAML literals, and `docs/COMPATIBILITY.md` remains the
+canonical ledger for what each row proves and what it leaves uncovered.
+
+## 7. Uploading builds to the stores
+
+> **Both uploads are currently manual.** The npm pipeline ends at producing the signed binary;
+> getting it to the store is a hands-on step today.
+
+* **Android** — `npm run android:bundle` → `app-release.aab`, then upload it in the **Play Console
+  web UI** (drag the `.aab` into a release on a track). `npm run android:open` reveals the output
+  folder.
+* **iOS** — `npm run ios:ipa` → `App.ipa`, then drag it into the **Transporter** app (free, Mac App
+  Store) and hit Deliver. `npm run ios:open` reveals the output folder. (Xcode → Organizer →
+  Distribute App is the GUI alternative.)
+
+For a solo project shipping infrequently this is fine — you're already in both consoles doing the
+listing/compliance work, and the GUIs give the clearest validation feedback. Automate only when the
+manual step starts to hurt.
+
+### Future: fastlane (the intended automation path)
+
+The repo is already **fastlane-shaped**: `fastlane/metadata/` holds the store copy and per-release
+changelogs in fastlane's exact format, generated by `npm run gen:releases` (see §3). What's missing
+is the upload wiring — there is **no `Fastfile`/`Appfile` yet**, so nothing actually runs fastlane.
+fastlane is the natural finish because one tool uploads **both** platforms *and* pushes that
+already-generated metadata in the same run; bespoke `altool`/service-account scripts would bypass
+the metadata pipeline that's already in place.
+
+When release cadence justifies automating, set it up roughly as:
+
+1. **Install** fastlane (a `Gemfile` + `bundle add fastlane`, or `brew install fastlane`).
+2. **`fastlane/Appfile`** — iOS bundle ID `art.splotch.app`, the Android package name, and the path
+   to the Google Play service-account JSON.
+3. **`fastlane/Fastfile`** with two lanes:
+   * **iOS** — build via the existing `npm run ios:ipa`, then `upload_to_app_store` (deliver) to
+     push `App.ipa` **plus** `fastlane/metadata/en-US/`.
+   * **Android** — build via `npm run android:bundle`, then `upload_to_play_store` (supply) to push
+     `app-release.aab` **plus** `fastlane/metadata/android/en-US/`.
+4. **Credentials** (gitignored, same posture as `ios/local.xcconfig` and
+   `android/keystore.properties`):
+   * iOS — an **App Store Connect API key** (`.p8` + Key ID + Issuer ID), App Manager role.
+   * Android — a **Google Cloud service-account JSON**, granted release permission in Play Console →
+     Users & permissions.
+5. **npm scripts** per ADR-0019 — `ios:publish` / `android:publish` (build + upload), each with a
+   matching `scripts-info` entry, routed through a `tools/` Node helper where shell specifics are
+   involved.
+
+Because the metadata folders are already in fastlane format, deliver/supply consume them directly —
+don't duplicate that copy step.

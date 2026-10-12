@@ -1,0 +1,61 @@
+function hexToRgb(color: string): { r: number; g: number; b: number } {
+  let hex = color.replace('#', '');
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  return {
+    r: parseInt(hex.slice(0, 2), 16),
+    g: parseInt(hex.slice(2, 4), 16),
+    b: parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+// Perceived brightness of a hex color on a 0–1 scale (ITU-R BT.601 weights).
+// Accepts `#rgb`, `#rrggbb`, or the same without the leading `#`.
+// Internal to this module since the keyline moved to WCAG relative luminance:
+// BT.601 brightness answers "does this look light or dark to the eye", which is
+// the right question for the status-bar icon style and the selection ring, and
+// the wrong one for whether ink contrasts against a surface.
+function perceivedBrightness(color: string): number {
+  const { r, g, b } = hexToRgb(color);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+// Whether dark foreground content (text/icons) reads better than light on top
+// of this color. Used to pick a contrasting status-bar icon style.
+export function isLightColor(color: string): boolean {
+  return perceivedBrightness(color) >= LIGHT_COLOR_BRIGHTNESS;
+}
+
+const LIGHT_COLOR_BRIGHTNESS = 0.5;
+const DARK_SWATCH_LUMINANCE = 0.2;
+const LIGHTEN_STEP = 38;
+const DARKEN_FACTOR = 0.9;
+// Whole pixels: a half-pixel ring or seam anti-aliases into a grey smear on
+// 1x desktop screens.
+export const SELECTION_RING_WIDTH_PX = 4;
+export const SELECTION_RING_GAP_PX = 4;
+
+// Compute a selection-ring color for a swatch: ~10% darker than the swatch so
+// the ring reads as a contrasting outline — but for very dark swatches (e.g.
+// black) darkening is invisible, so we lighten instead. Pure function, kept out
+// of the .svelte component so it can be unit-tested directly.
+export function getRingColor(color: string): string {
+  const { r, g, b } = hexToRgb(color);
+
+  const shift =
+    perceivedBrightness(color) < DARK_SWATCH_LUMINANCE
+      ? (v: number) => Math.min(255, Math.round(v + LIGHTEN_STEP))
+      : (v: number) => Math.max(0, Math.round(v * DARKEN_FACTOR));
+
+  const toHex = (v: number) => v.toString(16).padStart(2, '0');
+  return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;
+}
+
+export function selectionRingShadow(ringColor: string, surfaceColor: string): string {
+  // The seam inherits the swatch's surface, so it stays legible on light, dark and bare paper;
+  // the trailing float shadow keeps the selected swatch's lift, themed like the resting one.
+  return `0 0 0 1px ${surfaceColor}, 0 0 0 ${SELECTION_RING_WIDTH_PX}px ${ringColor}, var(--float-shadow)`;
+}

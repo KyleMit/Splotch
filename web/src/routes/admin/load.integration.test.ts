@@ -1,0 +1,85 @@
+// @vitest-environment node
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { envState } = vi.hoisted(() => ({
+  envState: {} as Record<string, string | undefined>,
+}));
+vi.mock('$env/dynamic/private', () => ({ env: envState }));
+
+vi.mock('$lib/server/tokens', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/server/tokens')>()),
+  getTokensStatus: vi.fn(),
+}));
+vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
+vi.mock('$lib/server/freeGenerationGrants', () => ({
+  getFreeGenerationGrantAdminStats: vi.fn().mockResolvedValue(null),
+}));
+
+import { sessionToken } from '$lib/server/admin';
+import { getTokensStatus } from '$lib/server/tokens';
+import { readUsageAndPurgeExpired } from '$lib/server/usage';
+import { load } from './+page.server';
+
+const SECRET = 'the-raw-secret';
+
+beforeEach(() => {
+  envState.ADMIN_ACCESS_TOKEN = SECRET;
+  vi.mocked(getTokensStatus).mockResolvedValue({ tokens: ['managed-code'], persistent: true });
+});
+
+describe('the /admin loader usage state', () => {
+  it('flags an unavailable usage snapshot instead of saying the code was never used', async () => {
+    vi.mocked(readUsageAndPurgeExpired).mockResolvedValue(null);
+
+    const data = await load({
+      cookies: { get: () => sessionToken(), set: vi.fn() },
+      url: new URL('https://splotch.art/admin'),
+      setHeaders: vi.fn(),
+    } as unknown as Parameters<typeof load>[0]);
+
+    // The row is empty either way; usageAvailable is what tells them apart, so
+    // the console can say the tally is broken rather than silently dropping the
+    // columns as though this build had no usage tracking.
+    expect(data).toMatchObject({
+      usageAvailable: false,
+      invites: [{ token: 'managed-code', usage: null }],
+    });
+  });
+
+  it('still represents an available snapshot without a tally as never used', async () => {
+    vi.mocked(readUsageAndPurgeExpired).mockResolvedValue({});
+
+    const data = await load({
+      cookies: { get: () => sessionToken(), set: vi.fn() },
+      url: new URL('https://splotch.art/admin'),
+      setHeaders: vi.fn(),
+    } as unknown as Parameters<typeof load>[0]);
+
+    expect(data).toMatchObject({
+      usageAvailable: true,
+      invites: [{ token: 'managed-code', usage: null }],
+    });
+  });
+});
+
+describe('the /admin loader cache policy', () => {
+  // The authed document carries every live access code, so a stored copy is a
+  // credential leak; the login branch is asserted too because the header is set
+  // before the branch precisely so neither exit can drop it.
+  it.for([
+    { name: 'an authenticated load', cookie: () => sessionToken(), authed: true },
+    { name: 'the login form', cookie: () => undefined, authed: false },
+  ])('sends no-store on $name', async ({ cookie, authed }) => {
+    vi.mocked(readUsageAndPurgeExpired).mockResolvedValue({});
+    const setHeaders = vi.fn();
+
+    const data = await load({
+      cookies: { get: cookie, set: vi.fn() },
+      url: new URL('https://splotch.art/admin'),
+      setHeaders,
+    } as unknown as Parameters<typeof load>[0]);
+
+    expect(data).toMatchObject({ authed });
+    expect(setHeaders).toHaveBeenCalledWith({ 'cache-control': 'no-store' });
+  });
+});

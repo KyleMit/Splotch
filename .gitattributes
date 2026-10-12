@@ -1,0 +1,55 @@
+# Generated agent-instruction output (ADR-0058, ADR-0107).
+#
+# `linguist-generated=true` collapses a file in GitHub's diff view by default —
+# still expandable, still reviewable — and drops it from the language stats.
+# Every path below is written by `npm run ruler:apply` from a `.ruler/` source;
+# reviewing the generated copy duplicates reviewing the source.
+# `tools/ruler/tests/layout.test.mjs` fails if a runner's output root in
+# `tools/ruler/lib/layout.mjs` is missing here.
+
+CLAUDE.md              linguist-generated=true
+AGENTS.md              linguist-generated=true
+.claude/skills/**      linguist-generated=true
+.agents/skills/**      linguist-generated=true
+.claude/skill-notes/** linguist-generated=true
+.agents/skill-notes/** linguist-generated=true
+
+# `.ruler/**` is the authored source, including its own `AGENTS.md` files, which
+# the unanchored patterns above would otherwise match. Later rules win.
+.ruler/** linguist-generated=false
+
+# Direct-maintained provider packages are canonical, not generated — they have no
+# `.ruler/` source. Registered in `tools/ruler/lib/direct-provider-skills.mjs`.
+.claude/skills/burn-down-audits/**             linguist-generated=false
+.agents/skills/burn-down-audits/**             linguist-generated=false
+.claude/skills/run-rival-agent/**              linguist-generated=false
+.agents/skills/run-rival-agent/**              linguist-generated=false
+.claude/skills/reconcile-agent-memories/**     linguist-generated=false
+.claude/skills/analyze-session-transcripts/**  linguist-generated=false
+.agents/skills/analyze-session-transcripts/**  linguist-generated=false
+.claude/skill-notes/burn-down-audits.md              linguist-generated=false
+.agents/skill-notes/burn-down-audits.md              linguist-generated=false
+.claude/skill-notes/run-rival-agent.md               linguist-generated=false
+.agents/skill-notes/run-rival-agent.md               linguist-generated=false
+.claude/skill-notes/reconcile-agent-memories.md      linguist-generated=false
+.claude/skill-notes/analyze-session-transcripts.md   linguist-generated=false
+.agents/skill-notes/analyze-session-transcripts.md   linguist-generated=false
+
+# Kept captures are immutable measurement payloads. Their readable index and
+# provenance are reviewed as text; rendering multi-megabyte one-line JSON as a
+# diff exhausts review tooling without making the samples reviewable.
+perf-profiles/evidence/**/*.json            binary
+perf-profiles/evidence/**/index.json         text diff merge
+perf-profiles/evidence/**/checkpoint.json    text diff merge
+perf-profiles/evidence/**/controls/*.json    text diff merge
+
+# Generated scrapbook bulk (ADR-0059). Each coloring-book proof sheet is a
+# multi-megabyte page of inlined renders written by `gen:coloring-book-proof-sheet`,
+# and `ideas-review.html` is written by `tools/asset-gen/ideas-exploration/build-review.mjs`;
+# together they make GitHub report the repo's primary language as HTML. The
+# proof-sheet hub and every other scrapbook entry page are authored against the
+# shared chrome and reviewed as ordinary diffs, so the rule targets the sheets by
+# path rather than the whole tree.
+scrapbook/coloring-book-proof-sheets/*.html          linguist-generated=true
+scrapbook/coloring-book-proof-sheets/index.html      linguist-generated=false
+tools/asset-gen/ideas-exploration/ideas-review.html  linguist-generated=true

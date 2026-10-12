@@ -1,0 +1,30 @@
+diff --git a/tools/perf/ios/capture-xcuitest-actions.mjs b/tools/perf/ios/capture-xcuitest-actions.mjs
+index b127a1214..a141fc0d1 100644
+--- a/tools/perf/ios/capture-xcuitest-actions.mjs
++++ b/tools/perf/ios/capture-xcuitest-actions.mjs
+@@ -1846,6 +1846,7 @@ export async function runActionSweep({
+     const hasBookChoice = await execute(
+       `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
+     );
++    console.log(`[diag picker] ${JSON.stringify(await execute(`return { t: Math.round(performance.now()), books: document.querySelectorAll('#coloring-book-dialog button[aria-label$="coloring book"]').length, pages: document.querySelectorAll('#coloring-book-dialog button[aria-label$="coloring page"]').length, nav: performance.getEntriesByType('navigation')[0]?.type, sw: !!navigator.serviceWorker?.controller };`))}`);
+     for (const step of coloringSelectionSteps(hasBookChoice)) {
+       if (step.label === 'select coloring page') {
+         const scroll = await measureColoringPageScroll(client, sessionId, execute);
+diff --git a/tools/perf/web/capture-desktop-actions.mjs b/tools/perf/web/capture-desktop-actions.mjs
+index b75848e40..54b91ea0c 100644
+--- a/tools/perf/web/capture-desktop-actions.mjs
++++ b/tools/perf/web/capture-desktop-actions.mjs
+@@ -182,6 +182,13 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
+     browser = await engine.launch(browserLaunchOptions(engineName, headless));
+     const context = await browser.newContext({ viewport, deviceScaleFactor });
+     const page = await context.newPage();
++    const diagStart = Date.now();
++    page.on('console', (message) => {
++      if (/coloring|pack/i.test(message.text())) console.log(`[diag +${Date.now() - diagStart}ms console] ${message.text().slice(0, 200)}`);
++    });
++    page.on('framenavigated', (frame) => {
++      if (frame === page.mainFrame()) console.log(`[diag +${Date.now() - diagStart}ms navigated] ${frame.url()}`);
++    });
+     const client = new PlaywrightWebDriver(page, { useWheelForScroll: true });
+     const execute = (script) => page.evaluate(`(() => {${script}})()`);
+     const originalOrientation = await client.orientation();

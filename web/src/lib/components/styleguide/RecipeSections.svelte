@@ -1,0 +1,319 @@
+<script lang="ts">
+  import RuleLabel from '$lib/components/design/RuleLabel.svelte';
+  import Button from '$lib/components/design/Button.svelte';
+  import SidebarToc, { type SidebarTocButtonItem } from '$lib/components/nav/SidebarToc.svelte';
+
+  // Composed specimens — the styleguide's bridge from single tokens to real
+  // surfaces. Every rule in these specimens is a token reference; each recipe
+  // names what it reaches for so a contributor can copy the composition, not
+  // the values. Specimen first, caption below: the specimen is the object,
+  // the caption its label.
+
+  // Button rows, not anchors: the specimen's own ids would otherwise jump the
+  // reader to the real sections they name.
+  const TOC_ITEMS = [
+    { id: 'color', label: 'Color', group: 'Foundations' },
+    { id: 'type', label: 'Type scale', group: 'Foundations' },
+    { id: 'motion', label: 'Motion', group: 'Foundations' },
+  ] as const satisfies readonly SidebarTocButtonItem[];
+
+  let tocActive = $state<(typeof TOC_ITEMS)[number]['id']>('color');
+</script>
+
+<section id="recipes" data-sg-section>
+  <h3>Recipes</h3>
+  <p>
+    The defaults, composed — how a handful of tokens assemble into the surfaces the app builds.
+    Start from one of these before inventing a new arrangement; if a recipe and a rule disagree, the
+    token's usage rule wins.
+  </p>
+
+  <div class="recipe-grid">
+    <figure class="recipe" id="numbered-steps">
+      <ol class="specimen numbered-steps">
+        <li><span class="step-number">1</span><span>Install as App</span></li>
+        <li><span class="step-number">2</span><span>Set up playtime</span></li>
+        <li><span class="step-number">3</span><span>Start drawing</span></li>
+      </ol>
+      <figcaption>
+        <h4>Numbered steps</h4>
+        <p class="recipe-tokens">
+          Shared <code>step-number</code> discs use <code>--step-wash-strength</code> and
+          <code>--step-ink-strength</code>. Light sheets keep a crayon tint; night digits use
+          <code>--text-strong</code> over a lifted disc. Layouts supply size and an optional crayon hue.
+        </p>
+      </figcaption>
+    </figure>
+    <figure class="recipe">
+      <div class="specimen card">
+        <h5>Coloring Book</h5>
+        <p>Line-art pages for the crayons to color in — open one up and let them scribble.</p>
+        <span class="card-meta">Two books · updated with each release</span>
+      </div>
+      <figcaption>
+        <h4>Card</h4>
+        <p class="recipe-tokens">
+          <code>--surface</code> · <code>--border</code> hairline · <code>--radius-lg</code> ·
+          <code>--space-4</code> padding · <code>--text-strong</code> heading over
+          <code>--text</code> body and <code>--text-soft</code> meta
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen form-row">
+        <label for="recipe-input">Access code</label>
+        <input
+          id="recipe-input"
+          type="text"
+          placeholder="splotch-1234"
+          aria-describedby="recipe-input-help"
+        />
+        <span class="form-help" id="recipe-input-help"
+          >Saved on this device — forget it any time.</span
+        >
+      </div>
+      <figcaption>
+        <h4>Form row</h4>
+        <p class="recipe-tokens">
+          <code>--font-size-sm</code> <code>--font-weight-medium</code> label ·
+          <code>--input-font-size</code> input on <code>--surface</code> with a
+          <code>--border</code> hairline at <code>--radius-sm</code>, typing in
+          <code>--text-strong</code> over a <code>--text-soft</code> placeholder ·
+          <code>--font-size-xs</code> <code>--text-soft</code> help
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen callout">
+        <h5>Not sure? Start here</h5>
+        <p>
+          A brand-tinted aside that guides without shouting — the wash flips with the theme and the
+          ink stays readable on it.
+        </p>
+      </div>
+      <figcaption>
+        <h4>Callout</h4>
+        <p class="recipe-tokens">
+          <code>--brand-wash</code> fill · <code>--radius-lg</code> · <code>--space-4</code> padding
+          · <code>--text-strong</code> lead, <code>--text</code> body. For a form's submit result,
+          use the <code>StatusMessage</code> primitive instead
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen card cta">
+        <h5 class="cta-lede">Ready when they are</h5>
+        <p>Open it up, hand over the device, and let them make a mess. That's the whole idea.</p>
+        <Button variant="brand">Start drawing</Button>
+      </div>
+      <figcaption>
+        <h4>CTA block</h4>
+        <p class="recipe-tokens">
+          A card composed with the <code>Button</code> primitive's <code>brand</code> variant —
+          <code>--font-size-lg</code> lede · <code>--space-3</code> between body and action
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen toc-specimen">
+        <SidebarToc
+          items={TOC_ITEMS}
+          active={tocActive}
+          label="Sidebar TOC specimen"
+          onSelect={(id) => (tocActive = id)}
+        />
+      </div>
+      <figcaption>
+        <h4>Sidebar TOC</h4>
+        <p class="recipe-tokens">
+          A scrollspy table of contents over one continuous document — live: pick a row and the
+          track follows. <code>--border</code> hairline track down the full list · active segment
+          3px <code>--brand</code> · active row <code>--brand-wash</code> fill with
+          <code>--brand-text</code> ink · <code>--radius-sm</code> on the trailing corners only.
+          Icons and a second line are per-item. Use it wherever a column indexes one scrolling page;
+          use the <code>Button</code> primitive's chip variant for anything that actually switches pages
+        </p>
+      </figcaption>
+    </figure>
+    <figure class="recipe">
+      <div class="specimen form-row">
+        <Button variant="wash">Tab here to see focus</Button>
+      </div>
+      <figcaption>
+        <h4>Focus</h4>
+        <p class="recipe-tokens">
+          Every interactive element gets the global brand outline. Override only
+          <code>outline-offset</code>: use a negative offset for a filled pill inside a clipped
+          track. Never remove an outline without a replacement ring.
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen card rule-section">
+        <RuleLabel count={12}>Access codes</RuleLabel>
+        <p>The section owns the space below its label.</p>
+      </div>
+      <figcaption>
+        <h4>Rule label</h4>
+        <p class="recipe-tokens">
+          Section marker on standalone pages. Never used inside dialogs; there the
+          <code>SettingsSection</code> heading applies. <code>--space-5</code> below the label;
+          <code>--space-8</code> between sections.
+        </p>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .numbered-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    color: var(--text-strong);
+  }
+
+  .numbered-steps li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .recipe-grid {
+    display: grid;
+    /* min(100%, …) lets the single column shrink under the 280px floor on
+       narrow phones instead of forcing sideways scroll. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: var(--space-6);
+  }
+
+  .recipe {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  h4 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .recipe-tokens {
+    max-width: 60ch;
+    margin: 2px 0 0;
+    font-size: var(--font-size-xs);
+    color: var(--text-soft);
+    line-height: 1.6;
+  }
+
+  .specimen {
+    flex: none;
+  }
+
+  .card {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+  }
+
+  h5 {
+    margin: 0 0 var(--space-2);
+    color: var(--text-strong);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .specimen p {
+    margin: 0;
+    color: var(--text);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+
+  .card-meta {
+    display: block;
+    margin-top: var(--space-2);
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+  }
+
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    background: var(--surface-2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+  }
+
+  .form-row label {
+    color: var(--text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .form-row input {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    color: var(--text-strong);
+    font-family: inherit;
+    font-size: var(--input-font-size);
+  }
+
+  .form-row input:focus-visible {
+    border-color: var(--brand-solid);
+  }
+
+  .rule-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .form-help {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+  }
+
+  .callout {
+    background: var(--brand-wash);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+  }
+
+  .cta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .cta h5,
+  .cta p {
+    margin: 0;
+  }
+
+  .cta-lede {
+    font-size: var(--font-size-lg);
+  }
+
+  /* The real hosts are columns of their own; the specimen gives it one so the
+     track has a full-height run to draw. */
+  .toc-specimen {
+    max-width: 232px;
+    padding: var(--space-3) 0;
+  }
+</style>

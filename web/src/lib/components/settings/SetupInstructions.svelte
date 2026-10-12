@@ -1,0 +1,376 @@
+<script lang="ts">
+  import { isNative, getPlatform } from '$lib/platform';
+  import { iosShareButtonLocation } from '$lib/iosShareButtonLocation';
+  import { layoutState } from '$lib/state/layout.svelte';
+  import { settingsModal } from '$lib/state/ui.svelte';
+  import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
+  import Disclosure from '../design/Disclosure.svelte';
+  import RuleLabel from '../design/RuleLabel.svelte';
+  import '$lib/components/deferredIcons';
+  import {
+    installState,
+    promptInstall,
+    installDeviceOs,
+    isIosOutsideSafari,
+    type InstallDeviceOs,
+  } from '$lib/state/install.svelte';
+
+  // The two platforms that own an app lock (Guided Access / App Pinning). Desktop
+  // has no analogue, so it is absent here and answered by its own arm below.
+  type LockOs = 'ios' | 'android';
+
+  const OS_LABEL: Record<InstallDeviceOs, string> = {
+    ios: 'iOS',
+    android: 'Android',
+    desktop: 'Desktop',
+  };
+
+  // The second step's title: the lock to turn on, or — on desktop, where there is
+  // none — what a parent can do instead.
+  const LOCK_STEP_TITLE: Record<InstallDeviceOs, string> = {
+    ios: 'Enable Guided Access',
+    android: 'Enable App Pinning',
+    desktop: 'Keep kids in the app',
+  };
+
+  let installing = $state(false);
+
+  async function oneTapInstall() {
+    installing = true;
+    try {
+      await promptInstall();
+    } finally {
+      installing = false;
+    }
+  }
+
+  // The one device family whose manual steps are shown on the web, from the
+  // install module's shared detection (never re-sniffed here). The other
+  // families' steps are not something this parent can act on.
+  const deviceOs = installDeviceOs();
+  // Whether the iOS steps need their "open it in Safari" lead-in, from the same
+  // shared detection.
+  const outsideSafari = isIosOutsideSafari();
+  // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
+  // only — the web can't observe either, so it stays false there. Re-checked on open.
+  let deviceLocked = $state(false);
+  // True inside a native Capacitor shell — a build-time fact, so the compile-time
+  // flag leads and the isNative() factor exists for unit tests (which define
+  // __IS_CAPACITOR__ as true and steer via runtime isNative() mocks). Native builds
+  // are already "installed", so we drop the PWA install step and only show the
+  // device-lock setup for the platform we're actually running on.
+  const native = __IS_CAPACITOR__ && isNative();
+
+  // The lock steps a native build shows: the platform it is running on, and only
+  // that one. ios-vs-android stays a runtime read: one CAPACITOR=true bundle ships
+  // in both the iPhone and Android binaries, so it's a per-device fact.
+  const nativeLockOs: LockOs = getPlatform() === 'android' ? 'android' : 'ios';
+
+  const shareLocation = $derived(
+    iosShareButtonLocation(layoutState.viewportWidth, layoutState.orientation)
+  );
+
+  function lockTitle(os: LockOs) {
+    if (deviceLocked) return os === 'ios' ? 'Guided Access is on' : 'App Pinning is on';
+    return LOCK_STEP_TITLE[os];
+  }
+
+  $effect(() => {
+    if (!settingsModal.open) return;
+
+    // Lock state is a native-only async query, so reset and re-detect each open. The
+    // `cancelled` guard drops a stale result if the modal closes/reopens mid-flight.
+    // The literal __IS_CAPACITOR__ keeps the DeviceLock wrapper (and @capacitor/core)
+    // out of the web bundle; the inline import() resolves to the module namespace,
+    // never the plugin proxy.
+    deviceLocked = false;
+    if (__IS_CAPACITOR__ && native) {
+      let cancelled = false;
+      (async () => {
+        try {
+          const { DeviceLock } = await import('$lib/plugins/deviceLock');
+          const { locked } = await DeviceLock.isLocked();
+          if (!cancelled) deviceLocked = locked;
+        } catch {
+          // Plugin missing/unavailable — treat as unlocked (show the enable steps).
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+  });
+</script>
+
+<!-- Every checklist is authored once here; the device decides which single one is
+     rendered, across the web accordion and the flat native view alike. -->
+{#snippet installSteps(os: InstallDeviceOs)}
+  {#if os === 'ios'}
+    <ol class="steps">
+      <!-- The steps below are Safari's — its Share sheet, its button placement.
+           A third-party iOS browser may have Add to Home Screen of its own
+           (iOS 16.4+) but reaches it differently, and an in-app webview has none
+           at all, so send those parents to Safari rather than describing a
+           screen they aren't looking at. -->
+      {#if outsideSafari}
+        <li>Open this page in <strong>Safari</strong> — the steps below are Safari's</li>
+      {/if}
+      <li>
+        Tap the <Icon name="share-ios" class="step-icon" aria-hidden="true" />
+        <strong>Share</strong> button {shareLocation}
+      </li>
+      <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
+      <li>Tap <strong>"Add"</strong> in the top right</li>
+      <li>Launch from your home screen for fullscreen mode</li>
+    </ol>
+  {:else if os === 'android'}
+    <ol class="steps">
+      <li>Tap the <strong>menu</strong> (three dots)</li>
+      <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+      <li>Follow the prompts</li>
+      <li>Launch from your home screen for fullscreen mode</li>
+    </ol>
+  {:else}
+    <ol class="steps">
+      <li>
+        In Chrome or Edge, click the <strong>install</strong> icon at the end of the address bar —
+        or open the browser <strong>menu</strong> and choose <strong>"Install Splotch"</strong>
+      </li>
+      <li>
+        In Safari on macOS Sonoma or later, choose <strong>File → Add to Dock</strong>
+      </li>
+      <li>Follow the prompts</li>
+      <li>Launch it from your dock, desktop, or taskbar for fullscreen mode</li>
+    </ol>
+    <p class="steps-note">
+      Firefox has no install of its own, so it keeps Splotch in a tab — that works too.
+    </p>
+  {/if}
+{/snippet}
+
+{#snippet lockSteps(os: InstallDeviceOs)}
+  {#if os === 'ios'}
+    <ol class="steps">
+      <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
+      <li>Turn on <strong>Guided Access</strong></li>
+      <li>Set a passcode</li>
+      <li>Open Splotch and triple-click the side button</li>
+      <li>Tap <strong>Start</strong> to lock the app</li>
+      <li>Triple-click and enter passcode to exit</li>
+    </ol>
+  {:else if os === 'android'}
+    <ol class="steps">
+      <li>Go to <strong>Settings → Security → App Pinning</strong></li>
+      <li>Turn on <strong>App Pinning</strong></li>
+      <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
+      <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
+      <li>Tap <strong>Start</strong> to lock the app</li>
+      <li>Long-press Back + Recent Apps to exit</li>
+    </ol>
+  {:else}
+    <p class="steps-note">
+      A computer has no Guided Access or App Pinning to turn on — nothing locks it to one app. These
+      come closest:
+    </p>
+    <ul class="steps">
+      <li>Install Splotch above, so it opens in its own window with no tabs or address bar</li>
+      <li>
+        Put the browser in full screen — <strong>F11</strong> on Windows and Linux,
+        <strong>Control-Command-F</strong> on a Mac
+      </li>
+      <li>Stay nearby — a keyboard can leave the app at any time</li>
+    </ul>
+  {/if}
+{/snippet}
+
+<!-- Shown in place of the enable steps once the lock is already active, so the parent
+     just needs to know how to get back out. Native only, so it needs no desktop arm. -->
+{#snippet exitSteps(os: LockOs)}
+  {#if os === 'ios'}
+    <ol class="steps">
+      <li>Triple-click the <strong>side button</strong> (or Home button)</li>
+      <li>Enter your Guided Access passcode</li>
+      <li>Tap <strong>End</strong> in the top left</li>
+    </ol>
+  {:else}
+    <ol class="steps">
+      <li>Touch and hold <strong>Back</strong> + <strong>Recent Apps</strong> together</li>
+      <li>(or swipe up and hold, then tap <strong>Unpin</strong>)</li>
+      <li>Splotch is now unlocked</li>
+    </ol>
+  {/if}
+{/snippet}
+
+<!-- Chromium hands us a real one-tap install dialog (Android and desktop alike),
+     so offer it above the manual steps rather than inside the section — the
+     checklist below stays as the fallback. Never true on native. -->
+{#if installState.mode === 'oneTap'}
+  <div class="one-tap">
+    <Button variant="brand" onclick={oneTapInstall} disabled={installing}>
+      <Icon name="home" class="one-tap-icon" />
+      Install Splotch
+    </Button>
+    <p class="one-tap-hint">One tap — your browser will do the rest.</p>
+  </div>
+{/if}
+
+{#if native}
+  <!-- Native builds have a single setup step, so the lock-setup title stands
+       in as the section header and the steps render flat — no OS label, no
+       accordion toggle. -->
+  <section class="os-section">
+    <h3 class="lock-heading">
+      {lockTitle(nativeLockOs)}
+      {#if deviceLocked}<span class="install-check">✓</span>{/if}
+    </h3>
+    {#if deviceLocked}
+      {@render exitSteps(nativeLockOs)}
+    {:else}
+      {@render lockSteps(nativeLockOs)}
+    {/if}
+  </section>
+{:else}
+  <section class="os-section">
+    <RuleLabel as="h3" strong class="os-heading">{OS_LABEL[deviceOs]}</RuleLabel>
+    <Disclosure class="help-section">
+      {#snippet summary()}
+        <span class="summary-text">
+          <span class="section-number step-number">1</span> Install as App
+          {#if installState.installed}<span class="install-check">✓</span>{/if}
+        </span>
+      {/snippet}
+      {@render installSteps(deviceOs)}
+    </Disclosure>
+
+    <Disclosure class="help-section">
+      {#snippet summary()}
+        <span class="summary-text">
+          <span class="section-number step-number">2</span>
+          {LOCK_STEP_TITLE[deviceOs]}
+        </span>
+      {/snippet}
+      {@render lockSteps(deviceOs)}
+    </Disclosure>
+  </section>
+{/if}
+
+<style>
+  /* The accordion's own chrome on the Disclosure primitive — reached with
+     :global() because the class lands on the primitive's own markup. */
+  .os-section :global(.help-section) {
+    margin-bottom: 16px;
+  }
+
+  .os-section :global(.help-section:last-of-type) {
+    margin-bottom: 0;
+  }
+
+  .os-section :global(.help-section summary) {
+    padding: 16px;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text);
+    background: var(--surface-2);
+    transition: background var(--duration-base) ease;
+    text-align: left;
+  }
+
+  @media (hover: hover) {
+    .os-section :global(.help-section summary:hover) {
+      background: var(--surface-hover);
+    }
+  }
+
+  .os-section :global(.help-section summary::after) {
+    font-size: var(--font-size-xl);
+    flex-shrink: 0;
+  }
+
+  .os-section :global(h3.os-heading) {
+    margin-bottom: 10px;
+  }
+
+  /* Native: the lock-setup title is the section header, styled to match the
+     accordion summary it replaces. */
+  .lock-heading {
+    margin: 0;
+    padding: 16px 16px 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text);
+  }
+
+  .summary-text {
+    flex: 1;
+    text-align: left;
+  }
+
+  .section-number {
+    --step-number-size: 26px;
+    margin-right: var(--space-2);
+  }
+
+  .install-check {
+    color: var(--success-text);
+    font-weight: var(--font-weight-bold);
+    margin-left: 8px;
+    font-size: var(--font-size-lg);
+  }
+
+  .one-tap {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  :global(.one-tap-icon) {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+
+  .one-tap-hint {
+    margin: 8px 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-soft);
+  }
+
+  :global(.step-icon) {
+    display: inline-flex;
+    width: 17px;
+    height: 17px;
+    vertical-align: -3px;
+  }
+
+  .steps {
+    padding: 16px 24px 16px 40px;
+    margin: 0;
+    color: var(--text-soft);
+    line-height: 1.8;
+  }
+
+  .steps li {
+    margin-bottom: 8px;
+  }
+
+  .steps li:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Prose beside a checklist — the desktop arms, where what a parent needs to know
+     is a caveat rather than another step. */
+  .steps-note {
+    margin: 0;
+    padding: 16px 24px;
+    font-size: var(--font-size-sm);
+    color: var(--text-soft);
+    line-height: 1.6;
+  }
+
+  /* A note and the list it introduces (or qualifies) are one block, so the two
+     paddings don't stack where they meet. */
+  .steps-note + .steps,
+  .steps + .steps-note {
+    padding-top: 8px;
+  }
+</style>

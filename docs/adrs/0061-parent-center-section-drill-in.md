@@ -1,0 +1,405 @@
+# ADR-0061: Settings — One Section List, Two Responsive Shells (Drill-In / Sidebar)
+
+**Status:** Active **Date:** 2026-07
+
+## Context
+
+The modal had grown to four top tabs (Settings, AI, Setup, About) rendered through a horizontal
+scroll-snap pager (`TabPager.svelte`). Two problems compounded:
+
+* **The former Settings tab was one long scroll** — appearance, sounds, save-on-delete, folder,
+  rotation lock, advanced controls, a button-size slider, and a stack of six per-button toggle rows
+  all lived on a single panel. Finding one control meant scrolling past all the others.
+* **The tab pager fought its own hosts.** Its programmatic tab nav (`scrollTo` on a scroll-snap-x
+  container) is a no-op in the iOS WKWebView, so the native smoke test had to drive About with
+  manual horizontal swipes, and a vertical drag on a panel could be misread as a sideways tab
+  change.
+
+Adding a fifth destination (the new Submit Feedback form, ADR-0060 — which landed as a *section
+inside the About tab* precisely to avoid a fifth tab) would have made the tab bar more crowded
+still.
+
+We wanted: no giant scroll, room to grow the destination list, and a shape that works in a phone
+modal and on a tablet/desktop where there's horizontal room to spare.
+
+A later physical-iPad action sweep found one cold-path exception: the first What's New render called
+`Date.prototype.toLocaleDateString` for five release cards. MobileSafari lazily initialized its
+locale machinery on the first call, so one of ten focused opens took 42 ms to present while the
+other nine took 9–11 ms. No canvas or drawing-engine work occurred.
+
+A subsequent cross-target sweep found a second cold path after date formatting was removed. The
+section still instantiated up to five cards from runtime `{@html}` strings. Android Chrome reached a
+66.7 ms post-action frame, and desktop WebKit took 90 ms to present the current-release-only variant
+on its first open. Rendering older cards one per animation frame merely split the work across
+blocking presentation frames; it did not remove HTML parsing and DOM construction from the
+interaction.
+
+## Decision
+
+Replace the tabs with **one flat, ordered list of sections**, rendered through **two shells chosen
+by viewport width** — both reading the same section definitions, so the layouts can't drift.
+
+* **Single source of sections** — `web/src/lib/components/settings/sections.ts` exports the ordered
+  `SECTIONS` list (`id`, `label`, `icon`) and a `sectionSubtitle(id)` helper (the live one-line
+  status shown under each hub row). The order is: Appearance & Display, Sound, Saving, Controls &
+  Buttons, AI Art, Setup Guide, What's New, Submit Feedback, About.
+* **One section, one component** (`settings/`): `AppearanceSection` (theme + rotation lock + force
+  landscape, merged as "how the app looks/orients"), `SoundSection`, `SavingSection`,
+  `ControlsSection`, `AiKeyManager`, `SetupInstructions`, `WhatsNewSection` (release notes, split
+  out of About), `ReportForm`, `AboutSection` (identity, links, version). `SettingsModal.svelte` is
+  a thin shell that renders the active section's component into whichever layout is active.
+* **Phone (`< 700px`): hub + full-page drill-in.** A scrollable list of rows (icon, title, status
+  subtitle, chevron); tapping one opens that section as its own page with a back arrow (`‹`).
+* **Tablet/desktop (`≥ 700px`): sidebar + content pane.** A persistent left nav (all sections, the
+  selected one highlighted in brand purple) that never scrolls, beside a content pane that does. The
+  breakpoint is a `matchMedia('(min-width: 700px)')` read, seeded synchronously on mount (the modal
+  first mounts on the opening tap, so there's no narrow-then-wide flash) and kept live for rotation.
+* **The per-button on/off list became a 2-column chip grid** ("Show these buttons") in Controls &
+  Buttons, replacing the stack of six toggle rows.
+* **Release notes split into their own What's New section**; About now holds only identity, links,
+  and version. Submit Feedback is promoted from an About sub-section to a top-level section. The
+  build generates metadata JSON plus a Svelte component containing the current release's compiled
+  markup. The section renders only that current release and links to GitHub for full history. The
+  generator validates the hand-authored ISO date and emits its UTC `en-US` display label, preserving
+  the same `July 28, 2026` presentation without constructing `Date` objects, shifting across time
+  zones, initializing `Intl`, or parsing HTML on the response frame. The generator splits the
+  current note at its level-two headings; the first compiled section renders with the card and the
+  remaining sections appear one per presentation frame. No frame has to construct and lay out the
+  entire note at once, and no work is added to app boot.
+
+`TabPager`/`TabPagerTab`/`tabPagerContext` are deleted — the pager was Settings-only.
+
+Alternatives considered:
+
+* **Keep the tabs, just split the former Settings panel into more tabs** — more tabs is exactly the
+  crowding we were trying to escape, and it doesn't fix the WKWebView pager quirks.
+* **An accordion of collapsible sections on one scroll** — avoids a second layout, but re-creates
+  the long-scroll problem on a phone and wastes the horizontal room a tablet has.
+* **A single responsive component with CSS-only layout switching** — the two shells differ in
+  structure (a hub has no persistent nav; the pane always shows a section), not just in CSS, so a
+  small `wide` branch in the shell is clearer than contorting one DOM to serve both.
+* **`content-visibility: auto` on release cards** — Android still produced a 66.8 ms maximum frame
+  because the browser had to parse and construct the DOM even when layout and paint were deferred.
+* **Reveal historical cards over successive animation frames** — the browser performs each callback
+  before paint, so runtime HTML parsing still consumed presentation frames. Keeping the complete
+  history behind the existing release link removes that low-value work entirely.
+* **Keep only the current release but retain runtime `{@html}`** — Android improved to a 33.4 ms
+  maximum frame, but desktop WebKit still showed a 90 ms cold response. Compiling the same markup as
+  Svelte eliminates the runtime parser path without changing the visible current-release content.
+* **Prewarm the compiled note in a detached element during boot idle** — this reduced the iPad
+  simulator's cold response to 10 ms and added no mount-profile long task, but detached DOM does not
+  perform visible layout or font shaping. Two of three desktop WebKit samples retained a 43–47 ms
+  cold response. Progressive compiled sections address the remaining visible work and avoid another
+  boot responsibility.
+
+## Consequences
+
+* \+ No more one-giant-scroll settings page; each concern is a focused page/pane, and the list has
+  clear room to grow.
+* \+ One `SECTIONS` list drives both shells, so a new section is added once and appears correctly in
+  phone and tablet layouts.
+* \+ Navigation is plain button clicks (drill-in or sidebar select), so the native smoke test taps
+  "About" directly instead of driving fragile horizontal swipes, and the WKWebView pager no-op is
+  gone.
+* \+ The locale-free date path reduced the original physical-iPad sample from 42 ms first-frame P95
+  to 16 ms, with a 25 ms maximum post-action frame.
+* \+ Compiled, progressive current notes reduced the iPad simulator's later cold response from 72 ms
+  to 13 ms first-frame P95, with 17 ms post-action P95 / maximum. Android measured 9.5 ms
+  first-frame P95 and 16.8 ms post-action P95 / maximum. Two ten-run desktop WebKit samples measured
+  25 ms and 23 ms first-frame P95, with 19 ms maximum post-action frames. These pass the shared 20
+  ms post-action P95 and 33.5 ms first-frame / maximum gates with the same complete current-release
+  content, filled in over two subsequent frames.
+* \+ A 4× CPU tablet mount trace remained at 74/89 ms for its two pre-existing long tasks, matching
+  the no-prewarm 76/89 ms baseline. The persistent 89 ms task is the sound preload; release-note
+  work no longer runs during boot.
+* − The in-app section shows only the current release. Older notes remain available through “See all
+  releases,” trading embedded history for consistently responsive navigation.
+* − Two layouts to keep in mind when styling a section, and a viewport-width branch in the shell
+  (mitigated by every section rendering the same component in both).
+* − Deep-linking to a specific section still isn't a URL (Settings is a client-only modal);
+  reopening always lands on the hub / first section. Acceptable for a settings modal.
+
+Supersedes the tab-based Settings. The Submit Feedback placement note in ADR-0060 (a section within
+the About tab) is superseded here — it is now its own top-level section.
+
+ADR-0094 later renamed the shell to Settings and separated the surface's branding from the
+operation-level parental gates required by app-store policy; this responsive structure is unchanged.
+
+## Amendment (2026-08)
+
+The Decision's sidebar "never scrolls" — one scroller, the pane. Growing the section icons to the
+size the illustrations actually read at pushed the nine rows past the column, and the clipping
+`overflow: hidden` hid the last sections with no gesture that brought them back.
+
+The nav is now `overflow-y: auto` with `overscroll-behavior: contain`, plus scroll-position edge
+shades (paired `background-attachment: local`/`scroll` layers, so no scroll listener) as the
+affordance — a row clipped at a gap leaves the column looking finished, and touch overlay scrollbars
+don't paint until the flick starts.
+
+**The second scroller is not rare.** The eleven 50px rows and ten 2px gaps make the list exactly
+570px. The 85vh card gives the nav 412px at the 600px viewport floor (158px overflow), 446px at
+640px (124px), 534px at 744px (36px), and 555px at 768px (15px); the full list first fits at a 787px
+viewport. A landscape iPad in Safari starts from 744–834 CSS px of device height and loses roughly
+70–95px to browser chrome, so it routinely lands below that threshold. "One scroller" therefore
+describes roomy desktop and portrait-tablet layouts rather than every tablet.
+
+Because the dialog is closed rather than unmounted, the nav also has to be scrolled back to the top
+whenever Settings reopens: the section resets to the first one, so a nav left scrolled would reopen
+with the selected row above the visible top and no highlight in view. `flows-settings.spec.ts` holds
+both invariants at the 600px floor — the column either fits or scrolls, and a reopen leaves the
+active row inside the column.
+
+The section labels and their order also changed (Appearance, Sound, Buttons, Saving, Coloring, AI
+Art, Parent Center, Install, Feedback, What's New, About) — additions and wording/order changes
+within the same structure, listed here because the Decision names the original order. Parent Center
+uses the same section navigation but gates entry at its own operation boundary under ADR-0094;
+Settings and the other sections remain directly accessible.
+
+## Amendment (2026-08): the wide shell is a table of contents over one continuous scroll
+
+The Decision's wide shell swapped one section's content into the Pane per Sidebar click. Sections
+differ enormously in length, so a light one (Sound is a switch and a slider) left most of an 860px
+card empty and read as broken rather than short.
+
+The wide Pane now stacks **every** section in nav order in one scroller, each behind its own pane
+title, separated by whitespace alone (`--section-gap`, 60px — deliberately past the `--space-8`
+ceiling, so no divider rule is needed). The card fills to its existing `max-height` cap and the Pane
+is the scroller it already was. The phone hub/drill-in shell and the compact landscape-phone shell
+are unchanged, which is why the wide shell moved to its own `settings/WideShell.svelte` and both
+shells now render a section through the shared `settings/SectionBody.svelte`.
+
+The Sidebar becomes a scrollspy-driven table of contents: same rows, icons, and order, but the
+highlight follows a reading line 130px past the Pane's top edge (last section wins at the scroll
+end), a click smooth-scrolls that section's heading to `SECTION_JUMP_INSET_PX` (12px) below the top
+edge, and a deep link scrolls rather than swaps. The Sidebar also **scrolls the spied row back into
+its own column**: a click can only ever highlight a row already on screen, but the Pane's scroll
+elects rows the parent never scrolled the column to, and the column overflows on every viewport
+shorter than ~800px — without it the table of contents simply shows no highlight for the bottom of
+the Pane. The glide honours `prefers-reduced-motion`, which Chrome does not apply to programmatic
+smooth scrolls on its own. That jump is **arithmetic on the Pane's own `scrollTop`, never
+`scrollIntoView`** — the latter scrolls every scrollable ancestor, and both the card and the
+`<dialog>` are `overflow: hidden` boxes, so it dragged the Settings header and the close button
+clean out of the top of the card on every open. Dividing the rect delta by the Pane's visual scale
+keeps the arithmetic in layout pixels under the fly-in transform and a pinch-zoomed pane alike. The
+spy re-reads live rects on scroll *and* on a `ResizeObserver` of the Pane content, because a
+conditional reveal inside a section (the volume slider, advanced controls, the force-landscape row,
+the AI toggles) moves every section below it. Because the highlight is now an indicator rather than
+a page state — several sections can be on-screen at once — the active row softened from the solid
+`--brand-solid` pill to a `--brand-wash`/`--brand-text` fill with a `--brand` left rail, and carries
+`aria-current="location"` instead of `"page"`.
+
+Two consequences of "everything is mounted at once" are load-bearing:
+
+* **Parent Center can no longer be protected by not navigating to it.** ADR-0094 puts the gate at
+  the operation boundary, and in this shell reaching those controls *is* that boundary — so
+  `ParentCenterLock.svelte` stands in for the section's body until the gate is solved, and the
+  Sidebar's Parent Center row still runs the gate before it jumps.
+* **A spec that proved navigation by asserting the other sections were absent now passes
+  vacuously.** Such assertions were rewritten to measure the heading's offset from the Pane's top
+  edge (`headingOffsetFromPaneTop`/`SECTION_LANDED_MAX_PX` in `tests/helpers.ts`) or scoped to one
+  `.settings-section`.
+
+The whole suite sailed past the ancestor-scroll defect above, because every spec read section
+content rather than the card's own chrome; `settings-toc.spec.ts` now holds that invariant directly
+("a jump scrolls the pane and never the card itself"), alongside the scrollspy band, the bottom
+election, the nav reveal, and the glide.
+
+A third consequence is a cost rather than a hazard, and is accepted rather than solved here. Eleven
+section bodies mount on the first open instead of one. On the production build under a `longtask`
+observer that is a single 329 ms task at 4x CPU throttle against 93 ms for the phone hub (same modal
+chrome, eleven rows, no section bodies) — roughly 240 ms of section construction, first-open only
+and off the drawing hot path that ADR-0049 protects. `content-visibility: auto` does not help, for
+the reason this ADR already records for the release cards: the browser still parses and constructs
+the DOM. A deferred mount would also have to preserve each section's true height, since the
+scrollspy's live offsets and the jump arithmetic both read it. Tracked as issue 910.
+
+The reopen reset from the previous amendment also had to move a frame later. A closed `<dialog>` is
+`display: none`, so both the nav and the Pane report `scrollTop` 0 and ignore a `scrollTo` — and the
+browser restores the offsets it kept the moment the card gets a layout box. Both resets now run in
+the `requestAnimationFrame` after `open` flips, which is what makes them stick.
+
+Pinch-text-zoom (ADR-0076) is unchanged on the phone shell, where drilling into a section still
+resets it. The wide Pane deliberately drops that reset: a table-of-contents jump stays inside one
+continuous document, so only closing the overlay returns the text to its normal size.
+
+Superseded from the original Consequences: "reopening always lands on the hub / first section" now
+reads "the hub (phone) / the top of the Pane, or the deep-linked section scrolled into place".
+
+## Amendment (2026-08): the wide Pane fills a section per frame
+
+The cost the amendment above accepted — eleven section bodies constructed in the one task that opens
+the dialog — is now paid a frame at a time. The Pane mounts the run of sections from the first up to
+whichever one this open lands on (one, for a default open; a deep link pays for its own prefix,
+since a section's offset depends only on what stacks above it), and a `requestAnimationFrame` pump
+appends the rest in nav order. This is the same shape as the idle overlay pump ADR-0049 established,
+for the same reason: batching the work only relocates the long task.
+
+Nothing is mounted at a fake height. Every section is either absent or laid out in full, so the
+scrollspy's live offsets and the jump arithmetic stay exact for whatever exists — which is why
+`content-visibility: auto` and a placeholder-height scheme were both still rejected. Three
+adjustments make that hold while the Pane is filling:
+
+* The scroll-end fallback that elects the last section is gated on the Pane being whole. Until then
+  the end of the scroll is merely the end of what has arrived, and electing About there would strobe
+  the highlight down the column on open.
+* A table-of-contents row is live from the first frame, so a click mounts through the section it
+  names before scrolling to it — never a silent no-op.
+* Because that click can raise the watermark past where the pump had reached, the pump asks each
+  frame for one more than the watermark currently holds rather than counting up privately, which
+  would leave every section below a jumped-to one stranded.
+
+**The fill waits for the card to land.** The dialog flies in over its own run of frames, and the
+first version of this spent them — the one section body too big to construct inside a frame dropped
+one of the animation's, ~120 ms into an open. The pump now starts on the card's
+`Animation.finished`, so the fill and the fly-in never contend. Nothing may read the Pane before
+then in any case, which is what `aria-busy` states.
+
+The cost is not spread evenly across the eleven, and the shape is worth recording because it is
+where any further work goes. Frame cost per section at 4x, median of five, sampled a reading per
+frame from inside the page:
+
+| section                                       | 4x     |
+| --------------------------------------------- | ------ |
+| the tap itself: card, Sidebar, Appearance     | 106 ms |
+| Buttons (`ControlsSection`)                   | 62 ms  |
+| AI Art (`AiKeyManager`)                       | 42 ms  |
+| Install, Feedback, Updates                    | ~30 ms |
+| Sound, Saving, Coloring, Parent Center, About | ~20 ms |
+
+A section that fits inside its frame reads as ~17–25 ms because that *is* one frame — the pump
+mounts one per frame — so only Buttons clearly overruns, and it is the one task still over the
+long-task threshold. It is not a large component: `advancedControlsEnabled` defaults **on**, so it
+renders the Button Size slider plus two chip pickers carrying six icon-bearing chips, which is the
+densest body in the dialog. Install is mid-pack despite rendering both OS checklists.
+
+The Pane carries `aria-busy` until the last section is in. That is what `tests/helpers.ts`'s
+`openSettingsModal` and `gen-page-inventory.mjs` wait on before reading an offset or taking a shot;
+the fly-in is no substitute, since it is wall-clock and this is frames.
+`scripts/tests/perf-actions.test.mjs` guards the token, and `npm run perf:settings`
+(`scripts/perf/settings-open.mjs`) is the measurement, scoring both shells on the production build
+under a `longtask` observer, with both timings taken in the page — read from the driver, a
+`waitForSelector` plus a round trip lands ~150 ms of its own polling on numbers this small.
+
+Median of five, this host, production build. The phone hub is the floor: same modal chrome, same
+eleven rows, no section bodies.
+
+| viewport, CPU     | before                | after                                     |
+| ----------------- | --------------------- | ----------------------------------------- |
+| wide 1280x800, 1x | 53 ms on the tap      | none over 50 ms                           |
+| wide 1280x800, 4x | **281 ms** on the tap | **89 ms** on the tap, 60 ms at ~475 ms in |
+| phone hub, 4x     | 67 ms                 | 67 ms — untouched                         |
+
+The tap's own task is within ~22 ms of that floor; the residue is the Sidebar plus the first
+section. The one task still over the threshold at 4x is a *single* section body — Buttons, per the
+per-section table above — that does not fit in one frame on its own; thinning it is a separate
+change.
+
+The trade is wall clock. Click to all-eleven-attached goes 287 ms → 798 ms at 4x (53 ms → 549 ms at
+1x), of which ~460 ms is the fly-in the fill now waits out rather than works through; the fill
+itself is one frame per section either way. That buys a card that is interactive on its first
+painted frame and an open animation nothing competes with, at the price of the *bottom* of a
+settings list nobody has scrolled to yet arriving half a second later.
+
+## Amendment (2026-08): the phone hub answers its two most-flipped booleans in place
+
+A hub row was a uniform "go somewhere else": icon, title, live subtitle, chevron. That is the right
+shape for a section a parent goes to configure, and the wrong one for a boolean they flip mid-play —
+Night Mode and Sound both cost a drill-in, a tap, and a trip back for a state the row was already
+reporting in words.
+
+The alternative considered first was porting the `/design` styleguide's `TocDisclosure` to phone
+Settings: one continuous pane behind a collapsed expander, the same document the wide shell shows.
+It was **rejected**. A Settings visit is task-oriented and usually one section deep, so a table of
+contents that must be opened before it can be read is a step backwards from a hub that names every
+section and reports its state without being asked; and the continuous pane's mount cost is the one
+the amendment above exists to manage — the phone hub is the floor precisely because it mounts no
+section bodies at all.
+
+So the hub stays hub-and-drill, and the investment goes into the row:
+
+* **A split row where — and only where — the boolean is legible from the row's own name and worth
+  flipping mid-session.** That test admits exactly two: Night Mode (Appearance) and Sound. The row
+  body keeps the drill-in; a hairline separates it from a trailing switch that acts on the spot.
+  Auto-Save fails the second half of the test (set-and-forget) and Advanced Controls the first
+  ("Tool Drawer" doesn't say what it would be turning on), so both stay drill-ins. The switch is
+  binary over the *resolved* theme, the quick toggle `CompactShell` and `/design`'s header already
+  carry, with the same accepted trade: flipping it while on System pins the preference. The
+  three-way choice including System stays in the Appearance section.
+* **No chevrons anywhere.** With a switch on some rows, a chevron on the rest read as two kinds of
+  row rather than one. The tile already says tappable — `SidebarToc` and `CompactShell` carry no
+  chevron either — and dropping it returns ~32px of subtitle width to every row.
+* **A subtitle that names the boolean instead of stating it.** A row with a switch drops the on/off
+  word the switch now carries: Appearance reads "Night Mode", Sound reads "Volume 40%" or "Muted".
+  The rotation lock stays appended, shortened to two words, because the switch leaves that row the
+  least subtitle width in the hub and a summary that wraps past two lines is clipped.
+* **`SECTIONS` reordered** so the switch rows lead, the drill-ins follow by how often a parent goes
+  configuring, and Saving — set once, then left alone — sits below the feature sections. One list
+  drives both shells and the wide sidebar, so the order moves everywhere at once; that is the point.
+* **"Buttons" became "Tool Drawer"** — the nav row and the drilled-in heading alike, so the heading
+  echoes the row that was tapped. A `title` override putting the literal "Drawing Tools" at the top
+  of the section was drafted and then dropped: the literal name went to the chip grid below it
+  instead, and carrying both would stack the same two words twice on one screen — the exact thing
+  that mechanism (the "What's New" → "Updates" split) exists to avoid.
+* **The camera button moved to Saving**, where it leads the section above Auto-Save on Delete. It is
+  the other way a drawing gets saved — and the deliberate one, above the two rows that govern what
+  happens without anyone asking — and Coloring and AI Art already own their own buttons' visibility
+  in their feature sections rather than in the chip grid behind Advanced Controls.
+* **The two chip grids became one**, headed "Drawing Tools": brushes first, then the controls beside
+  them. The old split named an implementation boundary — a brush lives in the brush menu, a button
+  on the panel — and not the one a parent is acting on, which is what a child can reach. Losing it
+  also retires a two-chip group, which read as a stub next to the three-chip one.
+
+The switch itself is now `settings/ToggleSwitch.svelte`, shared by `ToggleRow` and the hub, and the
+tools the chip grid shows and hides are one exported list (`settings/drawingTools.ts`) — the hub row
+summarizes it ("2 tools hidden"), and a second copy would let the summary and the grid disagree
+about what a tool is. The shared switch also takes taps past its own box: the track is deliberately
+32px tall, under the 44px floor, and a ToggleRow's label makes up the difference where the hub row's
+switch stands alone.
+
+**Both hub summaries of the Tool Drawer answer to Advanced Controls first.** *(Superseded by the
+2026-09 amendment below: the switch no longer gates the whole drawer.)* That setting is the umbrella
+over every tool below it — with it off the drawer cannot be opened at all, because its own toggle is
+hidden too (`data-off-adv` in `ActionsPanel`) — so the row reads "All tools hidden" rather than
+counting per-tool flags that describe a panel the child cannot reach. Saving's camera row is the
+same story from the other side: every action button lives inside that drawer, so the row's help line
+says what it can actually deliver in the state the parent is in rather than promising a button
+Advanced Controls is currently suppressing.
+
+**A jump made while the Pane is still filling now re-aims until it lands.** The reorder surfaced
+this rather than causing it: such a jump computes its scroll from offsets the sections above it then
+invalidate (the fill mounting them, their own conditional reveals landing), and until enough content
+exists *below* the target there is no scroll extent to reach it with, so the first attempt lands
+clamped however correct its arithmetic was. The section could finish several hundred pixels below
+the reading line with the table of contents naming a section the parent never chose. So a mid-fill
+jump is held in `pendingJump` and re-applied on every content resize, with one last aim when the
+Pane reports itself whole; from there the position belongs to whoever moves it next, and any hand on
+the Pane (pointer, wheel, key) ends it sooner. Such a jump is also instant rather than glided — an
+animation in flight leaves nothing to re-aim against. A jump on a finished Pane is untouched: its
+offsets are already final, and re-aiming there would fight the parent's own scrolling.
+
+## Amendment (2026-09): the Tool Drawer switch owns only the drawer's own tools
+
+Issue #1927 retired "Enable Advanced Controls". The switch predated the split of the button toggles
+across sections — Saving owns the camera, Coloring owns the books, AI Art owns its button — and
+still hid the entire Actions Panel, so a parent decluttering the drawer lost the coloring books
+without being told, and Saving and Coloring then showed switches for buttons that could not appear.
+
+It is now **Enable tool drawer** (`toolDrawerEnabled`, key `splotch-tool-drawer-enabled`; the old
+name, key, and `data-off-adv` were removed outright rather than aliased, the app being in beta) and
+it governs exactly `TOOL_DRAWER_CONTROLS` in `settings.svelte.ts` — the crayon, magic brush, eraser,
+stroke width, and undo — which is also the list `settings/drawingTools.ts` renders, so the switch,
+the chip grid, and the hub count cannot disagree about what a tool is. The switch hides those tools
+without touching their stored flags (`actionControlShown`), so turning it back on restores the set
+the parent chose; a drawer brush held at that moment falls back to ink the way switching that one
+brush off does. The chevron has no rule of its own any more: the panel's existing all-off rule
+(`data-no-actions`) hides it when nothing from any section is left to show, and `app.html`'s boot
+script reaches the same state pre-hydration by gating the same five keys behind the switch
+(drift-guarded by `app.html.test.ts`).
+
+The hub row reads "Tool drawer off" while the switch is off — naming the switch, as Coloring's row
+does — and counts hidden tools otherwise. Saving's camera help no longer branches on the switch: the
+camera row alone decides whether its button appears.
+
+The Button Size slider moved out from behind the switch in the same change: it sizes every Actions
+Panel button, and the other sections' buttons stay on screen while the drawer's own tools are off,
+so hiding the slider with them left the parent no way to size what remained.

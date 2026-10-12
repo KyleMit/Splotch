@@ -1,0 +1,157 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test page-footer.spec.ts -g final visible release --project=chromium --workers=1
+
+$ playwright test page-footer.spec.ts -g final visible release --project=chromium --workers=1
+[WebServer] (node:80037) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:80068) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 5 tests using 1 worker
+
+(node:80116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×800 (452ms)
+  ✘  2 [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×600 (5.2s)
+(node:80132) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×501 (5.2s)
+(node:80176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  4 [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 320×568 (5.2s)
+(node:80184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  5 [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 812×375 (5.2s)
+
+
+  1) [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×600 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+    Expected: "location"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first() with timeout 5000ms
+      - waiting for locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+        14 × locator resolved to <a href="#release-1-4-0" data-section="release-1-4-0" class="toc-row svelte-1qcx184 hued">…</a>
+           - unexpected value "null"
+
+
+      111 |     await expect(
+      112 |       page.locator(`nav[aria-label="Changelog contents"] a[href="#${releases[2].id}"]`).first()
+    > 113 |     ).toHaveAttribute('aria-current', 'location');
+          |       ^
+      114 |   });
+      115 | }
+      116 |
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:113:7
+
+    Error Context: ../test-results/page-footer-the-final-visi-8d258-ry-stays-folded-on-1280×600-chromium/error-context.md
+
+  2) [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×501 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+    Expected: "location"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first() with timeout 5000ms
+      - waiting for locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+        14 × locator resolved to <a href="#release-1-4-0" data-section="release-1-4-0" class="toc-row svelte-1qcx184 hued">…</a>
+           - unexpected value "null"
+
+
+      111 |     await expect(
+      112 |       page.locator(`nav[aria-label="Changelog contents"] a[href="#${releases[2].id}"]`).first()
+    > 113 |     ).toHaveAttribute('aria-current', 'location');
+          |       ^
+      114 |   });
+      115 | }
+      116 |
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:113:7
+
+    Error Context: ../test-results/page-footer-the-final-visi-247d6-ry-stays-folded-on-1280×501-chromium/error-context.md
+
+  3) [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 320×568 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+    Expected: "location"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first() with timeout 5000ms
+      - waiting for locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+        14 × locator resolved to <a href="#release-1-4-0" data-section="release-1-4-0" class="toc-row svelte-1qcx184 hued">…</a>
+           - unexpected value "null"
+
+
+      111 |     await expect(
+      112 |       page.locator(`nav[aria-label="Changelog contents"] a[href="#${releases[2].id}"]`).first()
+    > 113 |     ).toHaveAttribute('aria-current', 'location');
+          |       ^
+      114 |   });
+      115 | }
+      116 |
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:113:7
+
+    Error Context: ../test-results/page-footer-the-final-visi-b43c7-ory-stays-folded-on-320×568-chromium/error-context.md
+
+  4) [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 812×375 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+    Expected: "location"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first() with timeout 5000ms
+      - waiting for locator('nav[aria-label="Changelog contents"] a[href="#release-1-4-0"]').first()
+        14 × locator resolved to <a href="#release-1-4-0" data-section="release-1-4-0" class="toc-row svelte-1qcx184 hued">…</a>
+           - unexpected value "null"
+
+
+      111 |     await expect(
+      112 |       page.locator(`nav[aria-label="Changelog contents"] a[href="#${releases[2].id}"]`).first()
+    > 113 |     ).toHaveAttribute('aria-current', 'location');
+          |       ^
+      114 |   });
+      115 | }
+      116 |
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:113:7
+
+    Error Context: ../test-results/page-footer-the-final-visi-bf76b-ory-stays-folded-on-812×375-chromium/error-context.md
+
+  4 failed
+    [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×600 
+    [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×501 
+    [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 320×568 
+    [chromium] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 812×375 
+  1 passed (27.4s)

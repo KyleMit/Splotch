@@ -1,0 +1,244 @@
+{
+  "settings": {
+    "target": "web",
+    "device": "tablet",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2
+    },
+    "throttle": 4,
+    "buildMode": "production-preview",
+    "captureMode": "cdp-trace",
+    "startedAt": "2026-07-22T16:18:35.893Z",
+    "durationMs": 206856
+  },
+  "longTasks": [
+    {
+      "start": 2116,
+      "duration": 132
+    },
+    {
+      "start": 2260.1999999999534,
+      "duration": 119
+    },
+    {
+      "start": 3554.399999999907,
+      "duration": 60
+    },
+    {
+      "start": 3976,
+      "duration": 72
+    },
+    {
+      "start": 11724.899999999907,
+      "duration": 111
+    },
+    {
+      "start": 32608.899999999907,
+      "duration": 61
+    },
+    {
+      "start": 32692.600000000093,
+      "duration": 126
+    },
+    {
+      "start": 32851.5,
+      "duration": 258
+    },
+    {
+      "start": 33137.69999999995,
+      "duration": 85
+    },
+    {
+      "start": 33259.10000000009,
+      "duration": 82
+    },
+    {
+      "start": 35209.19999999995,
+      "duration": 81
+    },
+    {
+      "start": 36562.89999999991,
+      "duration": 67
+    },
+    {
+      "start": 41091.60000000009,
+      "duration": 55
+    },
+    {
+      "start": 56857.39999999991,
+      "duration": 50
+    },
+    {
+      "start": 60908.39999999991,
+      "duration": 50
+    },
+    {
+      "start": 61064.69999999995,
+      "duration": 55
+    },
+    {
+      "start": 64207,
+      "duration": 95
+    },
+    {
+      "start": 64341.19999999995,
+      "duration": 70
+    },
+    {
+      "start": 64457.80000000005,
+      "duration": 195
+    },
+    {
+      "start": 64707.5,
+      "duration": 52
+    },
+    {
+      "start": 67330.8999999999,
+      "duration": 102
+    },
+    {
+      "start": 69940.1000000001,
+      "duration": 111
+    },
+    {
+      "start": 70131.8999999999,
+      "duration": 138
+    },
+    {
+      "start": 70323.6000000001,
+      "duration": 94
+    },
+    {
+      "start": 70690.1000000001,
+      "duration": 201
+    },
+    {
+      "start": 71007,
+      "duration": 83
+    },
+    {
+      "start": 75582.1000000001,
+      "duration": 73
+    },
+    {
+      "start": 76642.6000000001,
+      "duration": 66
+    },
+    {
+      "start": 96632.80000000005,
+      "duration": 88
+    },
+    {
+      "start": 96752.6000000001,
+      "duration": 156
+    },
+    {
+      "start": 96940.19999999995,
+      "duration": 66
+    },
+    {
+      "start": 97068.30000000005,
+      "duration": 62
+    },
+    {
+      "start": 97176.1000000001,
+      "duration": 92
+    },
+    {
+      "start": 102155.8999999999,
+      "duration": 95
+    },
+    {
+      "start": 102373.69999999995,
+      "duration": 207
+    },
+    {
+      "start": 102673.30000000005,
+      "duration": 79
+    },
+    {
+      "start": 104906,
+      "duration": 66
+    },
+    {
+      "start": 105075.8999999999,
+      "duration": 79
+    },
+    {
+      "start": 106189.3999999999,
+      "duration": 53
+    },
+    {
+      "start": 110322.19999999995,
+      "duration": 58
+    },
+    {
+      "start": 128258.19999999995,
+      "duration": 64
+    },
+    {
+      "start": 128371.5,
+      "duration": 50
+    },
+    {
+      "start": 139004.6000000001,
+      "duration": 60
+    },
+    {
+      "start": 139104.3999999999,
+      "duration": 220
+    },
+    {
+      "start": 139337.8999999999,
+      "duration": 75
+    },
+    {
+      "start": 154331.30000000005,
+      "duration": 50
+    },
+    {
+      "start": 154421.1000000001,
+      "duration": 80
+    },
+    {
+      "start": 167837.30000000005,
+      "duration": 54
+    },
+    {
+      "start": 167939.5,
+      "duration": 84
+    },
+    {
+      "start": 168093.69999999995,
+      "duration": 53
+    },
+    {
+      "start": 168162.30000000005,
+      "duration": 58
+    },
+    {
+      "start": 168417.6000000001,
+      "duration": 51
+    },
+    {
+      "start": 168708.3999999999,
+      "duration": 57
+    },
+    {
+      "start": 169715.19999999995,
+      "duration": 74
+    }
+  ],
+  "frames": {
+    "count": 8873,
+    "durationMs": 168310,
+    "fps": 52.71225714455469,
+    "longFrames": 920
+  },
+  "heap": {
+    "beforeBytes": 10000000,
+    "afterBytes": 10000000
+  }
+}

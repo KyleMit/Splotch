@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Capture Performance Matrix'
+  short_description: 'Capture Splotch performance across web and native targets'
+  default_prompt: 'Use $capture-performance-matrix to capture and compare Splotch performance across the available deployment targets.'

@@ -1,0 +1,269 @@
+import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+
+// Executable form of the responsive-trim ladders in ColorPalette.svelte,
+// ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim
+// swatches/rows/columns with pure CSS, so every breakpoint is a hand-evaluated
+// arithmetic result baked into a `@media` or `@container` rule. This module
+// holds the geometry, the formulas and the step tables — the whole ladder — so
+// a size change is re-derivable rather than re-guessable, and
+// trimGeometry.test.ts parses each component's `<style>` block and asserts the
+// committed CSS still matches what these functions produce.
+
+// A `max-*` breakpoint has to sit just below the threshold at which the layout
+// still fits (e.g. 588 → 587.98).
+function justBelowPx(thresholdPx: number): number {
+  return thresholdPx - BREAKPOINT_EPSILON_PX;
+}
+
+// ── ColorPalette ───────────────────────────────────────────────────────────
+// The palette is a single flow of equal squares — a landscape column or a
+// portrait row — so both axes share one extent formula.
+
+export interface PaletteStackGeometry {
+  swatchPx: number;
+  gapPx: number;
+  /** Both edges combined, not one side. */
+  paddingPx: number;
+}
+
+export const PALETTE_COLUMN_GEOMETRY: PaletteStackGeometry = {
+  swatchPx: 60,
+  gapPx: 12,
+  paddingPx: 24,
+};
+
+export const PALETTE_ROW_GEOMETRY: PaletteStackGeometry = {
+  swatchPx: 55,
+  gapPx: 8,
+  paddingPx: 20,
+};
+
+function stackExtentPx(
+  items: number,
+  { swatchPx, gapPx, paddingPx }: PaletteStackGeometry
+): number {
+  return items * swatchPx + (items - 1) * gapPx + paddingPx;
+}
+
+// The custom (gradient) swatch shares the flow but is never trimmed, so every
+// capacity below is a color count plus this.
+const GRADIENT_SLOTS = 1;
+
+/** The portrait row trims all the way down to the untrimmable gradient swatch. */
+const PORTRAIT_FLOOR_SLOTS = GRADIENT_SLOTS;
+
+// The landscape Color Palette and Actions Panel both need this inline extent
+// before hydration. app.css emits the values as a responsive custom property;
+// actionButtonLayout.fallback.test.ts guards that copy against this source.
+export const PALETTE_LANDSCAPE_WIDTH_PX = stackExtentPx(1, PALETTE_COLUMN_GEOMETRY);
+
+/** One rule of a trim ladder: what it fires at, and what it takes away. */
+export interface TrimStep {
+  /** The `max-width`/`max-height` the rule is written against. */
+  thresholdPx: number;
+  /** Trim ranks this step hides, on top of everything a roomier step hid. */
+  ranks: number[];
+}
+
+/** A ladder rung before its remaining-color count is turned into ranks. */
+interface TrimRung {
+  thresholdPx: number;
+  /** Colors still on screen once this rung's rule applies. */
+  remainingColors: number;
+}
+
+/**
+ * Ladders are written as "how many colors survive here"; the CSS needs "which
+ * ranks does this rule hide". Swatches leave in trim-rank order, so each rung
+ * hides the ranks between the last rung's count and its own.
+ */
+function trimSteps(colorCount: number, rungs: readonly TrimRung[]): TrimStep[] {
+  let hidden = 0;
+  return rungs.map(({ thresholdPx, remainingColors }) => {
+    const nowHidden = colorCount - Math.min(remainingColors, colorCount);
+    const ranks = Array.from({ length: nowHidden - hidden }, (_, offset) => hidden + offset);
+    hidden = nowHidden;
+    return { thresholdPx, ranks };
+  });
+}
+
+/**
+ * One rung per swatch for a single flow, roomiest first: just below the extent
+ * that fits `slots`, one more swatch has to go.
+ */
+function stackRungs(
+  colorCount: number,
+  floorSlots: number,
+  geometry: PaletteStackGeometry
+): TrimRung[] {
+  const rungs: TrimRung[] = [];
+  for (let slots = colorCount + GRADIENT_SLOTS; slots > floorSlots; slots--) {
+    rungs.push({
+      thresholdPx: justBelowPx(stackExtentPx(slots, geometry)),
+      remainingColors: slots - 1 - GRADIENT_SLOTS,
+    });
+  }
+  return rungs;
+}
+
+/** Heights below which the single column loses another swatch. */
+export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
+  return trimSteps(
+    colorCount,
+    stackRungs(colorCount, GRADIENT_SLOTS, PALETTE_COLUMN_GEOMETRY).filter(
+      ({ thresholdPx }) => thresholdPx >= TABLET_MIN_SIDE_PX
+    )
+  );
+}
+
+/** Widths below which the portrait row loses another swatch. */
+export function portraitTrimSteps(colorCount: number): TrimStep[] {
+  return trimSteps(colorCount, stackRungs(colorCount, PORTRAIT_FLOOR_SLOTS, PALETTE_ROW_GEOMETRY));
+}
+
+// ── ColorMenu ──────────────────────────────────────────────────────────────
+// The phone-landscape color flyout is one more row of equal squares, but its
+// room is not the viewport: it is what is left to the right of the Color
+// Button, which depends on the button's size and the safe-area insets. So its
+// ladder is a `@container` query on the sizing box the menu sits in.
+
+export const COLOR_MENU_GEOMETRY: PaletteStackGeometry = {
+  swatchPx: PALETTE_ROW_GEOMETRY.swatchPx,
+  gapPx: PALETTE_ROW_GEOMETRY.gapPx,
+  paddingPx: PALETTE_ROW_GEOMETRY.paddingPx,
+};
+
+/**
+ * Container widths below which the flyout loses another swatch. The custom
+ * swatch takes the same untrimmable slot the palette's gradient does. Ranks
+ * are TRIM_ORDER positions, so the ladder starts at `firstRank`, the rank of
+ * the first color the menu carries.
+ */
+export function colorMenuTrimSteps(colorCount: number, firstRank: number): TrimStep[] {
+  return trimSteps(colorCount, stackRungs(colorCount, GRADIENT_SLOTS, COLOR_MENU_GEOMETRY)).map(
+    ({ thresholdPx, ranks }) => ({ thresholdPx, ranks: ranks.map((rank) => rank + firstRank) })
+  );
+}
+
+// ── ColorPicker ────────────────────────────────────────────────────────────
+// The hexagon honeycomb overlaps its rows and indents alternating ones, so the
+// two axes need different extents. Height is divided by the 90vh cap the grid
+// is sized against; width adds the shared dialog gutter on each side. The
+// height minimum lands off-pixel, so each step rounds up, and the tables below
+// carry the two hand-tightened exceptions.
+
+export interface HexGridGeometry {
+  /** Full hexagon height; later rows overlap and only add `rowPitchPx`. */
+  firstRowPx: number;
+  rowPitchPx: number;
+  columnPitchPx: number;
+  /** Honeycomb indent on alternating rows, which widens the grid by one. */
+  rowOffsetPx: number;
+  /** Both edges combined, not one side. */
+  paddingPx: number;
+  /** The grid is capped at 90vh, so a viewport buys only this fraction of height. */
+  viewportHeightFraction: number;
+  /** app.css's --modal-gutter-min, the gutter on each side of the width cap. */
+  widthGutterPx: number;
+}
+
+export const HEX_GRID_GEOMETRY: HexGridGeometry = {
+  firstRowPx: 69,
+  rowPitchPx: 51,
+  columnPitchPx: 60,
+  rowOffsetPx: 30,
+  paddingPx: 32,
+  viewportHeightFraction: 0.9,
+  widthGutterPx: 16,
+};
+
+interface HexGridLadderRule {
+  /** The raw minimum is rounded up to a multiple of this before slack. */
+  roundToPx: number;
+  /** Slack past the rounded minimum, counted in `roundToPx` units. */
+  slackSteps: number;
+}
+
+interface HexGridStep {
+  /** Rows (or columns) still shown above this breakpoint. */
+  count: number;
+  /** Overrides the ladder's default slack for a hand-tightened step. */
+  slackSteps?: number;
+}
+
+// Rows land on whole pixels with no slack…
+const HEX_GRID_ROW_RULE: HexGridLadderRule = { roundToPx: 1, slackSteps: 0 };
+
+const HEX_GRID_ROW_LADDER: readonly HexGridStep[] = [
+  // Nine rows need 565.56px of viewport; this step is tightened down to 565
+  // rather than up to 566, so the honeycomb overruns the 90vh cap by half a
+  // pixel — invisible, and the picker clips it (overflow: hidden) anyway.
+  { count: 9, slackSteps: -1 },
+  { count: 8 },
+  { count: 7 },
+  { count: 6 },
+  { count: 5 },
+  { count: 4 },
+];
+
+// …while columns round to 5px and then take one more 5px step, keeping the
+// wider ladder on round numbers with a little breathing room.
+const HEX_GRID_COLUMN_RULE: HexGridLadderRule = { roundToPx: 5, slackSteps: 1 };
+
+const HEX_GRID_COLUMN_LADDER: readonly HexGridStep[] = [
+  { count: 9 },
+  { count: 8 },
+  { count: 7 },
+  { count: 6 },
+  { count: 5 },
+  // Four columns need 334px, and this step stops at the first multiple of 5
+  // above that (335) instead of the second (340) its neighbours take — 1px of
+  // slack rather than 6px. The narrowest steps are the ones a small phone
+  // actually lands on, so the tighter fit buys one more column there.
+  { count: 4, slackSteps: 0 },
+  { count: 3 },
+];
+
+function hexGridBreakpointPx(
+  minViewportPx: number,
+  rule: HexGridLadderRule,
+  step: HexGridStep
+): number {
+  const roundedPx = Math.ceil(minViewportPx / rule.roundToPx) * rule.roundToPx;
+  const slackSteps = step.slackSteps ?? rule.slackSteps;
+  return justBelowPx(roundedPx + slackSteps * rule.roundToPx);
+}
+
+/** Height below which the honeycomb drops below `step.count` rows. */
+function hexGridRowMaxHeightPx(step: HexGridStep): number {
+  const contentPx =
+    HEX_GRID_GEOMETRY.firstRowPx +
+    HEX_GRID_GEOMETRY.rowPitchPx * (step.count - 1) +
+    HEX_GRID_GEOMETRY.paddingPx;
+  return hexGridBreakpointPx(
+    contentPx / HEX_GRID_GEOMETRY.viewportHeightFraction,
+    HEX_GRID_ROW_RULE,
+    step
+  );
+}
+
+/** Width below which the honeycomb drops below `step.count` columns. */
+function hexGridColumnMaxWidthPx(step: HexGridStep): number {
+  const contentPx =
+    HEX_GRID_GEOMETRY.columnPitchPx * step.count +
+    HEX_GRID_GEOMETRY.rowOffsetPx +
+    HEX_GRID_GEOMETRY.paddingPx;
+  return hexGridBreakpointPx(
+    contentPx + 2 * HEX_GRID_GEOMETRY.widthGutterPx,
+    HEX_GRID_COLUMN_RULE,
+    step
+  );
+}
+
+export function hexGridRowLadderPx(): number[] {
+  return HEX_GRID_ROW_LADDER.map((step) => hexGridRowMaxHeightPx(step));
+}
+
+export function hexGridColumnLadderPx(): number[] {
+  return HEX_GRID_COLUMN_LADDER.map((step) => hexGridColumnMaxWidthPx(step));
+}

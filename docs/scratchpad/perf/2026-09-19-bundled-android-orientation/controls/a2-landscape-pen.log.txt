@@ -1,0 +1,6 @@
+canvas {"x":33,"y":0,"width":747,"height":360} scale 3
+
+Observed LANDSCAPE 780x360 (app rotation lock released for the capture)
+Fidelity: PASS (android-capacitor-webview) · {"trustedTouch":true,"cadence":true}
+  blank: lost 0.00% · paint max 8ms · PASS
+Wrote perf-profiles/bundled/units-2026-09-19/unit-a/a2-landscape-pen.json

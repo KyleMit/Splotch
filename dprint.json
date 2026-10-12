@@ -1,0 +1,34 @@
+{
+  "lineWidth": 100,
+  "indentWidth": 2,
+  "markdown": {
+    "textWrap": "always",
+    "emphasisKind": "asterisks",
+    "strongKind": "asterisks",
+    "unorderedListKind": "asterisks",
+    // Code spans hold commands, paths, and flags that are grepped for and copied out of the raw
+    // source; a span broken across lines no longer matches what it names (issue 1634).
+    "wrapCodeSpans": false
+  },
+  "typescript": {
+    "quoteStyle": "preferSingle"
+  },
+  "includes": ["**/*.md"],
+  "excludes": [
+    "**/node_modules",
+    "**/.svelte-kit",
+    "**/.netlify",
+    "**/.gradle",
+    // Worktree-isolated agent checkouts duplicate every Markdown file in the repo.
+    ".claude/worktrees/**",
+    // Keep committed Markdown outside generated web and native build output in scope.
+    "**/web/build/",
+    "android/**/build",
+    "ios/**/build"
+  ],
+  "plugins": [
+    "node_modules/@dprint/markdown/plugin.wasm",
+    "node_modules/@dprint/typescript/plugin.wasm",
+    "node_modules/@dprint/json/plugin.wasm"
+  ]
+}

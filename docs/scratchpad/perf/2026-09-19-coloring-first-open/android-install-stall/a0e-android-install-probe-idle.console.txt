@@ -1,0 +1,16 @@
+connection at load {"type":"wifi","effectiveType":"4g","downlink":1.45,"rtt":50,"saveData":false}
+state at load {"catalog":["farm","dinosaur","creatures","nature","objects","shapes","space","vehicles"],"missing":["objects","shapes","space","vehicles"]}
+[console.info] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+state after clear+reload {"catalog":["farm","dinosaur","creatures","nature","objects","shapes","space","vehicles"],"missing":["dinosaur","creatures","nature","objects","shapes","space","vehicles"]}
+5s missing=6 {"type":"wifi","effectiveType":"4g","downlink":1.45,"rtt":50,"saveData":false} visibility visible
+  locks {"held":[],"pending":[]} pending fetches 0 coloring resources 130
+  idle probe {"idleCallbackMs":3,"didTimeout":false,"animations":[]}
+10s missing=4 {"type":"wifi","effectiveType":"4g","downlink":1.45,"rtt":50,"saveData":false} visibility visible
+  locks {"held":[],"pending":[]} pending fetches 0 coloring resources 166
+  idle probe {"idleCallbackMs":12,"didTimeout":false,"animations":[]}
+16s missing=1 {"type":"wifi","effectiveType":"4g","downlink":1.45,"rtt":50,"saveData":false} visibility visible
+  locks {"held":[],"pending":[]} pending fetches 0 coloring resources 166
+  idle probe {"idleCallbackMs":0,"didTimeout":false,"animations":[]}
+21s missing=0 {"type":"wifi","effectiveType":"4g","downlink":1.45,"rtt":50,"saveData":false} visibility visible
+  locks {"held":[],"pending":[]} pending fetches 0 coloring resources 166
+  idle probe {"idleCallbackMs":1,"didTimeout":false,"animations":[]}

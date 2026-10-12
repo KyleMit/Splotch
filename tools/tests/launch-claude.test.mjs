@@ -1,0 +1,489 @@
+import { describe, expect, it } from 'vitest';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join, relative, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import {
+  BROKER_TOOL,
+  buildClaudeArgs,
+  claudeEnvironment,
+  claudeVendor,
+  DENIED_READ_DIRECTORIES,
+  removeClaudeTranscripts,
+  resolveClaudeModel,
+  resolveSandboxPaths,
+  RIVAL_TOOLS,
+} from '../../.agents/skills/run-rival-agent/scripts/launch-claude.mjs';
+import {
+  digest,
+  MANIFEST_NAME,
+  verifyInstalledBytes,
+} from '../../.agents/skills/run-rival-agent/scripts/claude-health.mjs';
+import {
+  ESCALATED_WRAPPERS,
+  POLICY_RULES,
+  replaceManagedRules,
+  upsertTopLevelToml,
+} from '../../.agents/skills/run-rival-agent/scripts/install-codex-policy.mjs';
+import {
+  POLICY_CASES,
+  REQUIRED_SKILL_EXECUTION_CONTRACT,
+  validateCodexConfig,
+  validateManagedRules,
+  validateSkillExecutionContract,
+} from '../../.agents/skills/run-rival-agent/scripts/check-codex-policy.mjs';
+import {
+  CORE_FILES,
+  EXPECTED_HOME,
+  expectedInstalledFiles,
+  INSTALL_ROOT,
+  INSTALL_SHIMS,
+  installRunClaude,
+  PACKAGE_FILES,
+  rewriteCoreImports,
+  shimSource,
+  STALE_PATHS,
+} from '../../.agents/skills/run-rival-agent/scripts/install-run-claude.mjs';
+import {
+  assertClaudePlanAuthentication,
+  assertNoApiBillingEnvironment,
+} from '../../.agents/skills/run-rival-agent/scripts/splotch-claude-subscription-auth.mjs';
+import { PENDING_REQUEST_TIMEOUT_MS } from '../rival-agent/spool.mjs';
+import { FINDINGS_SCHEMA_PATH } from '../rival-agent/validate-findings.mjs';
+import {
+  CLAUDE_RUNTIME,
+  DESKTOP_CLAUDE_PATH,
+  resolveClaudeRuntime,
+} from '../../.agents/skills/run-rival-agent/scripts/claude-runtime.mjs';
+
+const repositoryRoot = resolve(import.meta.dirname, '../..');
+const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+const canonicalHome = (path) => resolve(EXPECTED_HOME, relative(homedir(), path));
+
+describe('Claude rival command construction', () => {
+  const sandboxPaths = { denyWrite: ['/repo/.git'], denyRead: ['/home/.codex', '/repo/web/.env'] };
+  const options = {
+    runtime: resolveClaudeRuntime(false),
+    worktree: '/tmp/session/worktree',
+    session: '/tmp/session',
+    packetDir: '/tmp/session/packet',
+    brokerServerPath: '/core/broker-server.mjs',
+    nodePath: '/usr/local/bin/node',
+    sandboxPaths,
+    model: 'opus',
+    effort: 'high',
+    rivalSession: { mode: 'create', id: SESSION_ID },
+  };
+
+  // --safe-mode silently dropped --mcp-config in the first probe; restricted mode is the shape
+  // that attached the broker and still refused every write path.
+  it('runs restricted with read tools, a sandboxed Bash, and the broker, never safe mode or bypass', () => {
+    const args = buildClaudeArgs(options);
+    expect(args).toContain('--print');
+    expect(args).toContain('--restricted');
+    expect(args).not.toContain('--safe-mode');
+    expect(args).not.toContain('--dangerously-skip-permissions');
+    expect(args).not.toContain('bypassPermissions');
+    expect(args).not.toContain('--bare');
+    expect(
+      args.slice(args.indexOf('--permission-mode'), args.indexOf('--permission-mode') + 2)
+    ).toEqual(['--permission-mode', 'dontAsk']);
+    expect(args.slice(args.indexOf('--tools'), args.indexOf('--tools') + 2)).toEqual([
+      '--tools',
+      RIVAL_TOOLS,
+    ]);
+    expect(args.slice(args.indexOf('--allowedTools'), args.indexOf('--allowedTools') + 2)).toEqual([
+      '--allowedTools',
+      `${RIVAL_TOOLS},${BROKER_TOOL}`,
+    ]);
+    expect(RIVAL_TOOLS.split(',')).toContain('Bash');
+    expect(RIVAL_TOOLS.split(',')).not.toContain('WebSearch');
+    expect(RIVAL_TOOLS.split(',')).not.toContain('Edit');
+    expect(RIVAL_TOOLS.split(',')).not.toContain('Write');
+    expect(args).toContain('--strict-mcp-config');
+    expect(args).toContain('--no-chrome');
+    const addDirs = args.flatMap((arg, index) => (arg === '--add-dir' ? [args[index + 1]] : []));
+    expect(addDirs).toEqual(['/tmp/session/packet', '/tmp/session/tmp']);
+    expect(args).toContain('stream-json');
+    expect(args).toContain('--verbose');
+  });
+
+  // Claude's default sandbox writes into the canonical .git from a linked worktree (measured: a
+  // push landed there) and reads every credential store; both lists are pinned on the command
+  // line, where --restricted still honours them, and the sandbox is required rather than optional.
+  it('confines Bash with a required sandbox, no network, and the two deny lists', () => {
+    const args = buildClaudeArgs(options);
+    const settings = JSON.parse(args[args.indexOf('--settings') + 1]);
+    expect(settings.sandbox).toMatchObject({
+      enabled: true,
+      failIfUnavailable: true,
+      allowUnsandboxedCommands: false,
+      autoAllowBashIfSandboxed: true,
+      network: { strictAllowlist: true, allowedDomains: [] },
+      filesystem: sandboxPaths,
+    });
+    expect(args).not.toContain('--dangerously-skip-permissions');
+  });
+
+  it('derives the deny lists from the worktree: the canonical .git and the carried-in secrets', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rival-claude-sandbox-'));
+    try {
+      const canonical = join(root, 'canonical');
+      mkdirSync(canonical);
+      const git = (cwd, args) =>
+        execFileSync('git', args, {
+          cwd,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 't',
+            GIT_AUTHOR_EMAIL: 't@t',
+            GIT_COMMITTER_NAME: 't',
+            GIT_COMMITTER_EMAIL: 't@t',
+          },
+        }).trim();
+      git(canonical, ['init', '-q', '-b', 'main']);
+      writeFileSync(
+        join(canonical, '.worktreeinclude'),
+        '# secrets\nweb/.env\n\nios/local.xcconfig\n'
+      );
+      git(canonical, ['add', '.worktreeinclude']);
+      git(canonical, ['commit', '-q', '-m', 'one']);
+      const linked = join(root, 'linked');
+      git(canonical, ['worktree', 'add', '-q', '--detach', linked, 'HEAD']);
+      const paths = resolveSandboxPaths(linked);
+      const realCanonical = git(canonical, [
+        'rev-parse',
+        '--path-format=absolute',
+        '--git-common-dir',
+      ]);
+      expect(paths.denyWrite).toEqual([realCanonical]);
+      expect(paths.denyRead).toEqual([
+        ...DENIED_READ_DIRECTORIES,
+        join(dirname(realCanonical), 'web/.env'),
+        join(dirname(realCanonical), 'ios/local.xcconfig'),
+      ]);
+      expect(DENIED_READ_DIRECTORIES.some((path) => path.endsWith('.claude'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('attaches exactly the broker server pointed at the session', () => {
+    const args = buildClaudeArgs(options);
+    const config = JSON.parse(args[args.indexOf('--mcp-config') + 1]);
+    expect(Object.keys(config.mcpServers)).toEqual(['broker']);
+    expect(config.mcpServers.broker).toEqual({
+      command: '/usr/local/bin/node',
+      args: ['/core/broker-server.mjs'],
+      env: { RIVAL_SESSION_DIR: '/tmp/session' },
+    });
+  });
+
+  // Claude's validator refused the draft 2020-12 `$schema` key on the first real launch.
+  it('passes the findings schema without its dialect declaration, then the model and effort', () => {
+    const args = buildClaudeArgs(options);
+    const passed = JSON.parse(args[args.indexOf('--json-schema') + 1]);
+    const { $schema: dialect, ...expected } = JSON.parse(
+      readFileSync(FINDINGS_SCHEMA_PATH, 'utf8')
+    );
+    expect(dialect).toContain('2020-12');
+    expect(passed).toEqual(expected);
+    expect(args.slice(-4)).toEqual(['--model', 'opus', '--effort', 'high']);
+  });
+
+  it('issues the session id up front and resumes the recorded one later', () => {
+    const created = buildClaudeArgs(options);
+    expect(
+      created.slice(created.indexOf('--session-id'), created.indexOf('--session-id') + 2)
+    ).toEqual(['--session-id', SESSION_ID]);
+    expect(created).not.toContain('--resume');
+    const resumed = buildClaudeArgs({
+      ...options,
+      rivalSession: { mode: 'resume', id: SESSION_ID },
+    });
+    expect(resumed.slice(resumed.indexOf('--resume'), resumed.indexOf('--resume') + 2)).toEqual([
+      '--resume',
+      SESSION_ID,
+    ]);
+    expect(resumed).not.toContain('--session-id');
+  });
+
+  it('raises the MCP tool timeout to the pending-request budget', () => {
+    expect(claudeEnvironment({ PATH: '/bin' }, resolveClaudeRuntime(false))).toEqual({
+      PATH: '/bin',
+      MCP_TOOL_TIMEOUT: String(PENDING_REQUEST_TIMEOUT_MS),
+    });
+  });
+
+  it('accepts only the two model aliases and defaults to opus', () => {
+    expect(resolveClaudeModel(undefined)).toBe('opus');
+    expect(resolveClaudeModel('sonnet')).toBe('sonnet');
+    expect(() => resolveClaudeModel('haiku')).toThrow(/unsupported model/);
+  });
+
+  it('exposes the vendor adapter the shared launcher drives', () => {
+    expect(claudeVendor).toMatchObject({
+      rival: 'claude',
+      command: CLAUDE_RUNTIME.command,
+    });
+    expect(claudeVendor.newSessionId()).toMatch(/^[0-9a-f-]{36}$/);
+    expect(claudeVendor.buildArgs).toBe(buildClaudeArgs);
+  });
+
+  it('removes a session transcript and its sidecar, and nothing else', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rival-claude-transcripts-'));
+    try {
+      const project = join(root, 'some-project');
+      mkdirSync(join(project, SESSION_ID, 'tool-results'), { recursive: true });
+      writeFileSync(join(project, `${SESSION_ID}.jsonl`), '{}');
+      writeFileSync(join(project, 'other.jsonl'), '{}');
+      expect(removeClaudeTranscripts(SESSION_ID, root)).toBe(2);
+      expect(existsSync(join(project, `${SESSION_ID}.jsonl`))).toBe(false);
+      expect(existsSync(join(project, SESSION_ID))).toBe(false);
+      expect(existsSync(join(project, 'other.jsonl'))).toBe(true);
+      expect(removeClaudeTranscripts(SESSION_ID, join(root, 'absent'))).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects API-billed environments and accepts a logged-in plan session', () => {
+    expect(() => assertNoApiBillingEnvironment({ ANTHROPIC_API_KEY: 'secret' })).toThrow(
+      'API-billed authentication'
+    );
+    expect(() => assertNoApiBillingEnvironment({ CLAUDE_CODE_USE_BEDROCK: '1' })).toThrow(
+      'CLAUDE_CODE_USE_BEDROCK'
+    );
+    expect(() =>
+      assertNoApiBillingEnvironment({ CLAUDE_CODE_OAUTH_TOKEN: 'plan-token' })
+    ).not.toThrow();
+    expect(() =>
+      assertClaudePlanAuthentication({ loggedIn: true, authMethod: 'oauth' })
+    ).not.toThrow();
+    expect(() => assertClaudePlanAuthentication({ loggedIn: true, authMethod: 'api_key' })).toThrow(
+      'API-key'
+    );
+  });
+});
+
+describe('review-mode contracts', () => {
+  it('keeps the review-mode contracts the posted reviews and their responders rely on', () => {
+    const leaveReview = readFileSync(
+      join(repositoryRoot, '.ruler/skills/leave-pr-review/SKILL.md'),
+      'utf8'
+    );
+    const addressReview = readFileSync(
+      join(repositoryRoot, '.ruler/skills/address-pr-review/SKILL.md'),
+      'utf8'
+    );
+    expect(leaveReview).toContain('mode=post-comments');
+    expect(leaveReview).toMatch(/Posting is the default/);
+    expect(leaveReview).toMatch(/means exactly this\s+default/);
+    expect(leaveReview).toContain('`git diff <base-oid>...<head-oid>`');
+    expect(leaveReview).not.toContain('git diff origin/main...HEAD');
+    expect(addressReview).toContain('mode=autonomous');
+    expect(addressReview).toContain('The default remains interactive');
+    expect(addressReview).toContain('<!-- splotch-rival-review:');
+    expect(addressReview).toMatch(
+      /Include the marked review body\s+itself and every inline comment/
+    );
+  });
+});
+
+describe('trusted installation', () => {
+  it('copies the whole core and repoints the package files at it', () => {
+    const { files, shims, manifest } = expectedInstalledFiles();
+    expect([...files.keys()]).toEqual([...CORE_FILES, ...PACKAGE_FILES]);
+    for (const name of PACKAGE_FILES) {
+      expect(files.get(name).toString()).not.toContain('../../../../');
+    }
+    // Assembled rather than written inline: the specifier-resolution guard reads a literal
+    // `from './x'` in any tools/ file as a real import and would resolve it against this file.
+    const importOf = (spec) => `import x from '${spec}';`;
+    expect(files.get('launch-claude.mjs').toString()).toContain(`from '${'./launch.mjs'}'`);
+    const parsed = JSON.parse(manifest.toString());
+    expect(Object.keys(parsed.files)).toEqual([...files.keys()]);
+    for (const [name, content] of files) expect(parsed.files[name]).toBe(digest(content));
+    expect(Object.keys(parsed.shims).map(canonicalHome)).toEqual(
+      Object.values(INSTALL_SHIMS).map(canonicalHome)
+    );
+    expect([...shims.keys()]).toEqual(Object.keys(INSTALL_SHIMS));
+    expect(shimSource('claude-health.mjs')).toContain(
+      `import { main } from '${'./splotch-rival-agent/claude-health.mjs'}'`
+    );
+    expect(() => rewriteCoreImports(importOf('../../../../tools/lib/proc.mjs'), 'x.mjs')).toThrow(
+      /outside the install directory/
+    );
+    expect(rewriteCoreImports(importOf('../../../../tools/rival-agent/spool.mjs'), 'x.mjs')).toBe(
+      importOf('./spool.mjs')
+    );
+  });
+
+  it('retires the handler-less publisher alias from the package and from existing installs', () => {
+    const retiredShim = join(EXPECTED_HOME, '.local/libexec/splotch-claude-review-publish.mjs');
+    expect(STALE_PATHS.map(canonicalHome)).toContain(retiredShim);
+    expect(Object.values(INSTALL_SHIMS).map(canonicalHome)).not.toContain(retiredShim);
+    expect(PACKAGE_FILES).not.toContain('claude-review-publish.mjs');
+  });
+
+  it('verifies every installed byte against the manifest and says what drifted', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rival-manifest-'));
+    try {
+      writeFileSync(join(root, 'a.mjs'), 'a');
+      writeFileSync(join(root, 'b.mjs'), 'b');
+      const manifest = {
+        version: 5,
+        files: { 'a.mjs': digest('a'), 'b.mjs': digest('b') },
+        shims: {},
+      };
+      writeFileSync(join(root, MANIFEST_NAME), JSON.stringify(manifest));
+      expect(verifyInstalledBytes(root)).toEqual({ installed: true, version: 5 });
+      writeFileSync(join(root, 'b.mjs'), 'tampered');
+      expect(() => verifyInstalledBytes(root)).toThrow(/changed: b\.mjs/);
+      writeFileSync(join(root, 'b.mjs'), 'b');
+      writeFileSync(join(root, 'extra.mjs'), 'x');
+      expect(() => verifyInstalledBytes(root)).toThrow(/unexpected: extra\.mjs/);
+      rmSync(join(root, 'extra.mjs'));
+      rmSync(join(root, 'a.mjs'));
+      expect(() => verifyInstalledBytes(root)).toThrow(/missing: a\.mjs/);
+      expect(verifyInstalledBytes(join(root, 'nowhere'))).toEqual({ installed: false });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('reports a missing or stale install in check mode', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rival-install-check-'));
+    try {
+      const shims = {
+        health: join(root, 'shim-health.mjs'),
+      };
+      expect(() =>
+        installRunClaude({ check: true, root: join(root, 'pkg'), shims, home: EXPECTED_HOME })
+      ).toThrow(/missing or stale/);
+      expect(() => installRunClaude({ check: true, root, shims, home: '/home/other' })).toThrow(
+        /fixed to/
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('Codex policy', () => {
+  it('requires the skill to enter the host approval boundary before invoking wrappers', () => {
+    const skill = readFileSync(
+      join(repositoryRoot, '.agents/skills/run-rival-agent/SKILL.md'),
+      'utf8'
+    );
+    expect(() => validateSkillExecutionContract(skill)).not.toThrow();
+    for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
+      expect(skill).toContain(requirement);
+      expect(() => validateSkillExecutionContract(skill.replaceAll(requirement, ''))).toThrow(name);
+    }
+  });
+
+  it('documents every setup, verification, and handler command in the authoritative skill', () => {
+    const skill = readFileSync(
+      join(repositoryRoot, '.agents/skills/run-rival-agent/SKILL.md'),
+      'utf8'
+    );
+    for (const required of [
+      'cd /Users/kylemit/Code/Splotch',
+      'npm run run-claude:install',
+      'npm run run-claude:policy:check',
+      canonicalHome(ESCALATED_WRAPPERS.health),
+      canonicalHome(ESCALATED_WRAPPERS.launch),
+      canonicalHome(ESCALATED_WRAPPERS.post),
+      `node ${canonicalHome(join(INSTALL_ROOT, 'broker.mjs'))} next --session <dir>`,
+      'splotch-rival-review',
+    ]) {
+      expect(skill).toContain(required);
+    }
+  });
+
+  it('upserts top-level approval policy before TOML tables', () => {
+    let config = 'model = "gpt"\n\n[features]\napps = true\n';
+    config = upsertTopLevelToml(config, 'approval_policy', 'on-request');
+    config = upsertTopLevelToml(config, 'approval_policy', 'on-request');
+    expect(config.match(/^approval_policy = "on-request"$/gm)).toHaveLength(1);
+    expect(config.indexOf('approval_policy')).toBeLessThan(config.indexOf('[features]'));
+  });
+
+  it('keeps the escalated wrapper paths aligned across installer, rules, and cases', () => {
+    const wrapperPaths = Object.values(ESCALATED_WRAPPERS).map(canonicalHome);
+    const policyRulePaths = [
+      ...POLICY_RULES.matchAll(/pattern = \["([^"\]]+libexec[^"\]]+)"\]/g),
+    ].map((match) => canonicalHome(match[1]));
+    expect(policyRulePaths).toEqual(wrapperPaths);
+    expect(
+      POLICY_CASES.slice(0, wrapperPaths.length).map(({ command }) => canonicalHome(command[0]))
+    ).toEqual(wrapperPaths);
+    expect(POLICY_CASES.at(-1)).toEqual({
+      command: ['claude', '--print', 'review'],
+      expected: 'forbidden',
+    });
+    expect(canonicalHome(ESCALATED_WRAPPERS.launch)).toBe(
+      canonicalHome(join(INSTALL_ROOT, 'launch-claude.mjs'))
+    );
+    expect(canonicalHome(ESCALATED_WRAPPERS.health)).toBe(canonicalHome(INSTALL_SHIMS.health));
+    const forbidden = [
+      ...POLICY_RULES.matchAll(/pattern = \["([^"\]]*claude)"\], decision = "forbidden"/g),
+    ].map((match) => match[1]);
+    expect(forbidden).toEqual(['claude', DESKTOP_CLAUDE_PATH]);
+  });
+
+  it('replaces its managed rules idempotently and keeps unrelated rules', () => {
+    const existing = 'prefix_rule(pattern = ["npm"], decision = "allow")\n';
+    const once = replaceManagedRules(existing);
+    const twice = replaceManagedRules(once);
+    expect(twice).toBe(once);
+    expect(once).toContain('launch-claude.mjs');
+    expect(once).toContain('splotch-claude-health.mjs');
+    expect(once).toContain('pattern = ["npm"]');
+    expect(() => validateManagedRules(once)).not.toThrow();
+    expect(() => validateManagedRules(existing)).toThrow(/missing or stale/);
+  });
+
+  it('owns the GitHub and push rules and removes the retired issue-stack block', () => {
+    const legacy = [
+      'prefix_rule(pattern = ["npm"], decision = "allow")',
+      '',
+      '# BEGIN SPLOTCH ISSUE STACK',
+      'prefix_rule(pattern = ["gh"], decision = "prompt")',
+      'prefix_rule(pattern = ["gh", "pr", "merge"], decision = "forbidden")',
+      '# END SPLOTCH ISSUE STACK',
+      'prefix_rule(pattern = ["ls"], decision = "allow")',
+      '',
+    ].join('\n');
+    const upgraded = replaceManagedRules(legacy);
+    expect(upgraded).not.toContain('SPLOTCH ISSUE STACK');
+    expect(upgraded).not.toMatch(/"merge"/);
+    expect(upgraded).toContain('pattern = ["gh"]');
+    expect(upgraded).toContain('pattern = ["git", "push"]');
+    expect(upgraded).toContain('pattern = ["npm"]');
+    expect(upgraded).toContain('pattern = ["ls"]');
+    expect(replaceManagedRules(upgraded)).toBe(upgraded);
+    expect(POLICY_CASES).toContainEqual({
+      command: ['gh', 'pr', 'merge', '1'],
+      expected: 'prompt',
+    });
+  });
+
+  it('requires the three Codex approval settings exactly once at top level', () => {
+    const config = [
+      'approval_policy = "on-request"',
+      'approvals_reviewer = "auto_review"',
+      'sandbox_mode = "workspace-write"',
+      '',
+      '[projects."/tmp"]',
+      'trust_level = "trusted"',
+      '',
+    ].join('\n');
+    expect(() => validateCodexConfig(config)).not.toThrow();
+    expect(() => validateCodexConfig(config.replace('auto_review', 'off'))).toThrow(
+      'approvals_reviewer'
+    );
+  });
+});

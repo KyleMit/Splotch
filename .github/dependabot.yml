@@ -1,0 +1,65 @@
+version: 2
+# Both ecosystems share one weekly slot, in UTC (Dependabot's default zone) so the
+# Dependabot triage routine (docs/DEPENDABOT.md) stays an hour behind it
+# through DST changes.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: '10:00'
+    open-pull-requests-limit: 10
+    groups:
+      github-actions:
+        patterns: ['*']
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: '10:00'
+    open-pull-requests-limit: 30
+    # Families that release in lockstep, majors included: a single-package PR
+    # for one member cannot install (@vitest/coverage-v8 peers on its exact
+    # vitest version), and one Capacitor release otherwise fans out into a PR
+    # per package that supersede each other.
+    groups:
+      capacitor:
+        patterns: ['@capacitor/*']
+      vitest:
+        patterns: ['vitest', '@vitest/*']
+        exclude-patterns: ['@vitest/eslint-plugin']
+      svelte:
+        patterns: ['svelte', '@sveltejs/*']
+      eslint:
+        patterns: ['eslint', '@eslint/*', 'typescript-eslint', '@typescript-eslint/*']
+    ignore:
+      # SDK/template alignment is reviewed as one unit; these name rules cover the shared root graph.
+      - dependency-name: 'expo'
+      - dependency-name: 'react'
+      - dependency-name: 'react-native'
+      - dependency-name: 'react-dom'
+      - dependency-name: 'react-native-web'
+      - dependency-name: 'react-native-safe-area-context'
+      - dependency-name: 'react-strict-dom'
+      - dependency-name: 'react-native-svg'
+      - dependency-name: 'expo-asset'
+      - dependency-name: 'expo-audio'
+      - dependency-name: 'expo-file-system'
+      - dependency-name: 'expo-sharing'
+      - dependency-name: '@types/react'
+      - dependency-name: 'babel-preset-expo'
+      - dependency-name: '@babel/core'
+      # The @types/node major tracks the Node runtime major, which Dependabot
+      # cannot see or bump. Pinned to the runtime's major until the upgrade
+      # tracked by issue 1624 lands; remove this rule with that issue.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint and svelte-check do not yet support TypeScript 7;
+      # remove with the adoption tracked by issue 602.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']

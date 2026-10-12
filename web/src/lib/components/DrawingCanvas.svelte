@@ -1,0 +1,470 @@
+<script lang="ts">
+  import { onMount, untrack } from 'svelte';
+  import {
+    adoptDrawingCanvas,
+    setColor,
+    applyColoringFill,
+    setSafeAreaInsets,
+    INITIAL_ENGINE_VIEW_STATE,
+    type EngineViewState,
+  } from '$lib/drawing/engine';
+  import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
+  import { COLORING_OVERLAY_ID, rememberDecodedCanonicalOverlay } from '$lib/drawing/overlay';
+  import { paperCssLength, viewTransformCss } from '$lib/drawing/paperView';
+  import { layoutState } from '$lib/state/layout.svelte';
+  import { colorsState } from '$lib/state/colors.svelte';
+  import { toolState } from '$lib/state/tool.svelte';
+  import { canvasState } from '$lib/state/canvas.svelte';
+  import { coloringBookModal } from '$lib/state/ui.svelte';
+  import {
+    strokeWidthState,
+    getStrokeWidthPx,
+    getEraserWidthPx,
+  } from '$lib/state/strokeWidth.svelte';
+  import {
+    hasOverlayPage,
+    coloringBookState,
+    themedOverlayUrl as currentThemedOverlayUrl,
+    fillSheetUrl,
+  } from '$lib/state/coloringBook.svelte';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { pageCompositionKey } from '$lib/state/books';
+  import {
+    canPlayDrawingSound,
+    playDrawSound,
+    preloadDrawSounds,
+    preloadFirstDrawSound,
+    stopDrawSound,
+  } from '$lib/audio/drawingSound';
+  import { isNative } from '$lib/platform';
+  import { scheduleIdle } from '$lib/idle';
+  import { prefersReducedMotion } from '$lib/platform/reducedMotion';
+  import { prefetchImages } from '$lib/imagePrefetch';
+  import FullscreenToggle from './FullscreenToggle.svelte';
+  import LiveSurface from './LiveSurface.svelte';
+  import PointerHalos from './PointerHalos.svelte';
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Svelte's bind:this idiom: LiveSurface's bind:canvasEl assigns it before onMount reads it
+  let canvasEl: HTMLCanvasElement = $state()!;
+  let pointerHalos: PointerHalos;
+
+  // The engine's paper view (ADR-0050): identity in normal use; after a device
+  // rotation with ink on the canvas it presents the locked paper upright,
+  // contain-fit and centered (scaled down when it doesn't fit). The overlay
+  // wrapper below is positioned with the exact same transform the canvas paints
+  // through, so page art and strokes stay aligned.
+  const paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
+  let paperPresentationResident = $state(hasOverlayPage());
+
+  $effect(() => {
+    if (coloringBookModal.open || hasOverlayPage()) {
+      paperPresentationResident = true;
+    }
+  });
+
+  const paperTransform = $derived(viewTransformCss(paperView));
+
+  const eraserSizePx = $derived(
+    getEraserWidthPx(strokeWidthState.eraserSize) * (paperView.active ? paperView.scale : 1)
+  );
+
+  // Pen and magic strokes share the pen width (the engine applies no multiplier
+  // to magic ops), so both ring flavors share this size.
+  const brushRingSizePx = $derived(
+    getStrokeWidthPx(strokeWidthState.penSize) * (paperView.active ? paperView.scale : 1)
+  );
+
+  // The sheet/wrapper track the engine's paper; before the engine reports a
+  // size, fill the container and let responsive-image selection use the viewport.
+  const paperCssWidth = $derived(paperCssLength(paperView.paperCssWidth));
+  const paperCssHeight = $derived(paperCssLength(paperView.paperCssHeight));
+  onMount(() => {
+    // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
+    // this prerendered canvas at module-evaluation time, so drawing works
+    // before hydration; this mount attaches the reactive callbacks and replays
+    // any state pre-hydration strokes advanced. When the engine isn't live on
+    // this exact element (client-side nav back to `/`, dev HMR), adopt falls
+    // back to a full init.
+    const engine = adoptDrawingCanvas(canvasEl, {
+      initialColor: colorsState.activeColor,
+      onUndo: canvasState.recordUndo,
+      onDrawSound: playDrawSound,
+      onDrawStop: stopDrawSound,
+      onUndoStateChange: canvasState.setCanUndo,
+      onCanvasEmptyChange: canvasState.setCanvasEmpty,
+      // The engine tells us where a stroke really began, so a down-less pen
+      // stream it adopts mid-move (WebKit merges a fast tap-then-stroke into
+      // one, dropping the pointerdown) grows its ring like any other stroke.
+      // Ordinary strokes reach PointerHalos's own pointerdown listener too and
+      // land the same ring.
+      onStrokeStart: (stroke) => {
+        if (toolState.brush === 'eraser') return;
+        pointerHalos?.growBrushRing(stroke);
+      },
+      onStrokeEnd: canvasState.recordStrokeEnd,
+      onViewChange: (view) => {
+        Object.assign(paperView, view);
+        canvasState.setPaperView(view);
+      },
+    });
+
+    // Apple Pencil double-tap → toggle eraser (iOS native only). Not needed for the
+    // first paint or first stroke (a toddler draws with a finger, and even a pencil
+    // user won't double-tap in the opening frames), so its chunk load + native bridge
+    // subscription is deferred to idle time to keep it off the mount/first-paint path.
+    // Subscription is async, so hold the cleanup behind a ref the teardown can call
+    // once it resolves. The literal __IS_CAPACITOR__ keeps the wrapper (and
+    // @capacitor/core) out of the web bundle; the inline import() resolves to the
+    // module namespace, never the plugin proxy.
+    let pencilCleanup: (() => void) | undefined;
+    let cancelPencilIdle: (() => void) | undefined;
+    let disposed = false;
+    if (__IS_CAPACITOR__ && isNative()) {
+      const initPencil = () => {
+        import('$lib/plugins/pencilEraser')
+          .then(({ initPencilEraser }) => {
+            if (!disposed) pencilCleanup = initPencilEraser();
+          })
+          .catch(() => {});
+      };
+      cancelPencilIdle = scheduleIdle(initPencil);
+    }
+
+    return () => {
+      disposed = true;
+      engine.teardown();
+      cancelPencilIdle?.();
+      pencilCleanup?.();
+    };
+  });
+
+  // Tell the engine where the OS gesture/navbar zones are so it can ignore
+  // edge-swipes that summon the system bars (see engine EDGE_SWIPE_BAND_PX).
+  // The insets move between edges on rotation; the shared layout module
+  // re-measures them, and this re-pushes whenever a value actually changes.
+  $effect(() => {
+    setSafeAreaInsets({ ...layoutState.safeArea });
+  });
+
+  // The first pencil sound is prepared on the earliest drawing boot path.
+  // The other variants stay behind idle so their transfer and decode do not
+  // compete with first paint. Enabling drawing sound later takes the same fast path.
+  $effect(() => {
+    if (!canPlayDrawingSound()) {
+      stopDrawSound();
+      return;
+    }
+    preloadFirstDrawSound();
+    return scheduleIdle(preloadDrawSounds);
+  });
+
+  // Reactive bridges: when the store changes, push into the imperative engine.
+  $effect(() => {
+    setColor(colorsState.activeColor);
+  });
+
+  // Push the toolState-derived engine settings the pre-hydration boot also
+  // pushes (the helper's reads of toolState.brush and activeStrokeSize() are
+  // this effect's dependencies), so the engine follows the brush and switching
+  // pen↔eraser restores that tool's width.
+  $effect(() => {
+    pushToolStateToEngine();
+  });
+
+  // The magic brush reveals the active page's colored fill (ADR-0043), theme-
+  // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
+  // reveals the pre-colored NIGHT fill where one exists, falling back to the
+  // light fill for pages/orientations whose night asset isn't generated yet.
+  // The canonical SVG is the presentation, export, and Magic authority. Selector
+  // surfaces use responsive raster previews, but the paper never substitutes a
+  // derivative whose registration or scale could diverge from the SVG.
+  // Reading resolvedTheme() re-picks the theme sibling on a live switch.
+  const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
+
+  // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
+  // and swaps the page art to the other tall/wide composition. Hide art when
+  // the composition changes, decode the browser-selected file off-DOM, and show
+  // it only once ready. The DOM image still decodes asynchronously because
+  // WebKit can otherwise block the selection frame while rasterizing that
+  // decoded source at its paper-sized layout. A theme sibling has identical
+  // registration, so it keeps the current art visible until the sibling is ready.
+  let displayedOverlayUrl = $state<string | null>(null);
+  // A cleared page stays on the paper through its exit: the art it was showing
+  // lifts off (.retiring) before the element takes `hidden`.
+  let retiringOverlayUrl = $state<string | null>(null);
+  // The reduced-motion answer captured as the art's arrival or exit starts, so
+  // a live setting change cannot restart either on the mounted image.
+  let overlayMotionStartedReduced = $state(false);
+
+  $effect(() => {
+    const url = themedOverlayUrl;
+    if (!url) {
+      const shown = untrack(() => displayedOverlayUrl);
+      if (shown) {
+        overlayMotionStartedReduced = prefersReducedMotion();
+        retiringOverlayUrl = shown;
+      }
+      displayedOverlayUrl = null;
+      return;
+    }
+    retiringOverlayUrl = null;
+    const displayed = untrack(() => displayedOverlayUrl);
+    if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
+      displayedOverlayUrl = null;
+    }
+    let stale = false;
+    const img = new Image();
+    img.fetchPriority = 'high';
+    img.src = url;
+    // Show on decode failure too — the <img> then surfaces the same broken
+    // state a direct src assignment would have.
+    const show = () => {
+      if (!stale) {
+        rememberDecodedCanonicalOverlay(img);
+        if (!untrack(() => displayedOverlayUrl)) {
+          overlayMotionStartedReduced = prefersReducedMotion();
+        }
+        displayedOverlayUrl = url;
+      }
+    };
+    img.decode().then(show, show);
+    return () => {
+      stale = true;
+    };
+  });
+
+  // Release the cleared page once its exit has played. Awaiting the element's
+  // own animations rather than listening for animationend means a page with no
+  // exit running at all is released too, instead of staying on the paper.
+  let overlayEl: HTMLImageElement | undefined = $state();
+  $effect(() => {
+    const retiring = retiringOverlayUrl;
+    if (!retiring || !overlayEl) return;
+    let abandoned = false;
+    void Promise.all(
+      overlayEl.getAnimations().map((animation) => animation.finished.catch(() => undefined))
+    ).then(() => {
+      if (!abandoned && retiringOverlayUrl === retiring) retiringOverlayUrl = null;
+    });
+    return () => {
+      abandoned = true;
+    };
+  });
+
+  // The canonical line art is the only asset needed to make a selected page visible.
+  // Start the magic fill and rotation warm-up after it decodes so those
+  // other art transfers cannot delay the page the child just picked.
+  $effect(() => {
+    const url = themedOverlayUrl;
+    const displayed = displayedOverlayUrl;
+    if (!url) {
+      applyColoringFill(null);
+      return;
+    }
+    if (displayed !== url) {
+      return;
+    }
+    const theme = resolvedTheme();
+    applyColoringFill(fillSheetUrl(theme));
+    const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
+    const otherUrl = currentThemedOverlayUrl(theme, other);
+    if (!otherUrl) return;
+    return scheduleIdle(() => prefetchImages([otherUrl]));
+  });
+</script>
+
+<div class="canvas-container" class:paper-locked={paperView.active}>
+  <!-- The paper sheet: the off-white textured page the child draws on, sitting
+       beneath the (transparent) canvas. Full-container in normal use; after a
+       rotation locks the paper (ADR-0050) it carries the same transform the
+       canvas paints through, so the page reads as a distinct sheet over the
+       container's plain lighter margins — no border needed. -->
+  <div
+    class="paper-sheet"
+    class:paper-lifted={paperView.active}
+    style:width={paperCssWidth}
+    style:height={paperCssHeight}
+    style:transform={paperTransform}
+  ></div>
+  <!-- The coloring page overlay, positioned against the same paper so the art
+       contain-fits exactly where the magic sheet's math puts its colors, and
+       page + strokes move as one sheet across rotations. -->
+  <div
+    class="paper-view"
+    class:paper-presentation-resident={paperPresentationResident}
+    data-paper-active={hasOverlayPage() ? '' : undefined}
+    style:width={paperCssWidth}
+    style:height={paperCssHeight}
+    style:transform={paperPresentationResident ? paperTransform : undefined}
+  >
+    <img
+      class="coloring-overlay"
+      class:overlay-ready={!!displayedOverlayUrl}
+      class:retiring={!!retiringOverlayUrl}
+      data-start-reduced-motion={overlayMotionStartedReduced ? '' : undefined}
+      id={COLORING_OVERLAY_ID}
+      src={displayedOverlayUrl ?? retiringOverlayUrl ?? ''}
+      decoding="async"
+      data-canonical-url={themedOverlayUrl ?? undefined}
+      alt=""
+      hidden={!hasOverlayPage() && !retiringOverlayUrl}
+      bind:this={overlayEl}
+    />
+  </div>
+  <LiveSurface bind:canvasEl {paperView} erasing={toolState.brush === 'eraser'} />
+  <PointerHalos bind:this={pointerHalos} {canvasEl} {eraserSizePx} {brushRingSizePx} />
+  <FullscreenToggle />
+</div>
+
+<style>
+  .canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    /* The sheet is sized by the engine, which settles a resize before it
+       follows one, so a viewport that grows shows this box past the sheet's
+       edge until then: an installed app entering fullscreen does it on every
+       launch. It wears the sheet's own paper, tiled from the same corner, so
+       that strip is more page rather than a dark band. */
+    background-color: var(--paper);
+    background-image: var(--paper-texture);
+    background-repeat: repeat;
+  }
+
+  /* Around the lifted sheet while a rotation has the paper locked: a flat tone
+     slightly apart from the sheet's, so the original page reads as distinct
+     without any border line. */
+  .canvas-container.paper-locked {
+    background-color: var(--paper-margin);
+    background-image: none;
+  }
+
+  .paper-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    z-index: 0;
+    pointer-events: none;
+    /* The texture is a low-alpha grain layer, so the theme only has to swap
+       the color beneath it — same webp in light and dark. */
+    background-color: var(--paper);
+    background-image: var(--paper-texture);
+    background-repeat: repeat;
+  }
+
+  /* The themed float shadow rather than a warm literal: its dark value carries
+     the hairline that gives the locked sheet an edge against the night margin. */
+  .paper-sheet.paper-lifted {
+    box-shadow: var(--float-shadow);
+  }
+
+  /* The generated overlay carries only transparent black or white ink, so it
+     can use ordinary source-over composition without a full-page blend/filter
+     layer. */
+  .paper-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+    z-index: 2;
+    mix-blend-mode: normal;
+  }
+
+  .paper-view.paper-presentation-resident {
+    will-change: transform;
+  }
+
+  /* Hidden while the next art variant decodes, then shown once it's ready —
+     see displayedOverlayUrl. */
+  .coloring-overlay {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+  }
+
+  /* The page settles onto the paper rather than appearing in a frame: a fade
+     with a slight scale-down, transform and opacity only because the paper may
+     still be settling underneath. `both` holds the first frame so the art never
+     shows at full size before it animates. It replays on a composition change
+     (a blank-canvas rotation re-gates the art) but not on a theme sibling,
+     which keeps overlay-ready throughout. */
+  .coloring-overlay.overlay-ready {
+    opacity: 1;
+    animation: page-land var(--duration-slow) var(--ease-glide) both;
+  }
+
+  @keyframes page-land {
+    0% {
+      opacity: 0;
+      transform: scale(1.025);
+    }
+    55% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* A cleared page lifts off. The element is only held for this exit; the
+     script releases it once the animation finishes. */
+  .coloring-overlay.retiring {
+    animation: page-leave var(--duration-exit) var(--ease-glide) forwards;
+  }
+
+  @keyframes page-leave {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.985);
+    }
+  }
+
+  /* Calm twins, stamped when the cue starts: opacity only, no scale. */
+  .coloring-overlay.overlay-ready[data-start-reduced-motion] {
+    animation: overlay-fade-in var(--duration-base) ease both;
+  }
+
+  .coloring-overlay.retiring[data-start-reduced-motion] {
+    animation: overlay-fade-out var(--duration-base) ease forwards;
+  }
+
+  @keyframes overlay-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes overlay-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .coloring-overlay[hidden] {
+    display: none;
+  }
+
+  @media (orientation: portrait) {
+    .canvas-container {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+    }
+  }
+</style>

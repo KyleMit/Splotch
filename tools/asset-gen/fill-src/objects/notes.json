@@ -1,0 +1,100 @@
+{
+  "apple-tall": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.3,
+        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature. Also do NOT add catchlights, highlight dots, dew drops, or any white circles anywhere — not on the apple, not on the leaf. Redraw ONLY the lines the pen already has; add nothing new anywhere."
+      },
+      "review": "Fixed 2026-07-13: the 2026-07 wave chalk had INVENTED a pair of eerily human lidded eyes on the faceless apple (this page's regen passed first take with the extended no-face + no-dots note; the sibling apple-wide needed the no-dots clause after inventing leaf dew-drop dots). Confirm the apple is faceless — no eyes, lids, mouth, or white dots anywhere — on the chalk-over-night COMPOSITE after any regen; every gate passes an invented face (the eye audit is light-referenced, 0 cores here).",
+      "why": "2026-07-13 ISSUES Tier 1 fix (chalk-invented facial features) — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); regenerated chalk + night, re-punched."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The apple has NO FACE — do not paint eyes, a mouth, or any facial mark on it; it is a plain apple. PALETTE: the apple stays its daytime identity DEEP RED dimmed for night — never navy, never purple; the leaf stays green, the stem brown, the grass mound deep green. The three flowers keep their daytime hues dimmed: the middle one dusty pink with a golden center, the two side ones soft periwinkle blue with golden centers — every flower must clearly stand out against the night sky, NEVER the same navy as the sky."
+      },
+      "review": "Conditions on the 2026-07-13 faceless chalk. Confirm on the composite: faceless deep-red apple matching the light fill's identity, all three flowers distinct from the navy sky. First pinned take shipped (drift 0.0000, bgLuma 28, lineW 255, haloScore 0.057).",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the faceless chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
+    }
+  },
+  "apple-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.3,
+        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature. Also do NOT add catchlights, highlight dots, dew drops, or any white circles anywhere — not on the apple, not on the leaf. Redraw ONLY the lines the pen already has; add nothing new anywhere."
+      },
+      "review": "Fixed 2026-07-13: the 2026-07 wave chalk had INVENTED googly cartoon eyes on the faceless apple. The plain NO-FACE note was not enough — the first regen take was faceless but invented two white dew-drop/catchlight dots on the LEAF (white 0.3%, invented 0.0000: inside pen-bounded interiors the enclosure gate reads them as deliberate whitening); the no-dots clause in the retry notes is what cleared it. Confirm the apple AND leaf carry no invented marks on the chalk-over-night COMPOSITE after any regen; every gate passes an invented face.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (chalk-invented facial features) — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); regenerated chalk + night, re-punched."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The apple has NO FACE — do not paint eyes, a mouth, or any facial mark on it; it is a plain apple. PALETTE: the apple stays its daytime identity DEEP RED dimmed for night — never navy, never purple; the leaf stays green, the stem brown; the picnic blanket keeps its red-and-cream checker pattern dimmed for night; the flowers keep their daytime hues (yellow on the left, purple on the right) dimmed. NEVER paint the apple or the flowers the same navy as the sky."
+      },
+      "review": "Conditions on the 2026-07-13 faceless chalk. Confirm on the composite: faceless deep-red apple matching the light fill's identity, red-and-cream checker blanket. First pinned take shipped (drift 0.0000, bgLuma 41, lineW 255, haloScore 0.192); its small left background flower re-rolled dusty pink vs the light fill's yellow — background-motif palette coherence is the known unenforced gap (ISSUES Tier 4), subject identity held.",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the faceless chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
+    }
+  },
+  "flower-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The big flower's two eyes currently read as solid white pupil-blobs (the source drawing has solid-ink pupils). Erase the solid white inside each eye and redraw it: white sclera, a BLACK outlined pupil, and a small white catchlight circle inside the pupil. CRITICAL: each pupil must sit DEAD CENTER in its eye — the white sclera must surround the pupil EVENLY, with the SAME thickness of white on the left, right, top, and bottom of the pupil. Do NOT place the pupil toward the nose or leave a big white lobe on the outer side of the eye — that reads cross-eyed. Never leave an eye as one solid white disc, and keep both eyes symmetric with each other."
+      },
+      "review": "Solid-pen-eye page (0 cores, eye-polarity gate vacuous — the police-wide class). The CHALK owns pupil placement: chalk ink screens to solid white in the composite, so the pupil can only appear in the chalk's non-ink opening — judge pupil CENTERING on the chalk itself (ASCII luma map the eyes) and on the composite against the light fill; a night regen cannot move a pupil the chalk placed. A softer centered-pupil note at these settings still left the openings inner-biased; the EVEN-sclera phrasing above is what centered them (take 2).",
+      "why": "2026-07-13 ISSUES Tier 1 fix (cross-eyed night face): the 2026-07 wave chalk enlarged each eye outward into a big sclera lobe while leaving the fillable pupil hole at the pen's solid-pupil position — the inner edge of the new bigger eye — and every gate passed. The original ISSUES entry blamed the night fill; per-layer ASCII luma maps proved the chalk defines pupil position via its opening."
+    },
+    "night": {
+      "retry": {
+        "notes": "Each eye's white sclera and small white catchlight are already drawn — your only eye job is to fill each pupil circle a deep near-black; do NOT paint any extra white catchlight or highlight inside the pupils. Draw crisp WHITE lines only — do NOT add dark outlines, rims, or drop shadows beside the white lines. PALETTE: the big flower keeps deep plum-magenta petals with a warm golden face; the four background flowers keep their daytime hues dimmed for night — the tall left flower dusty rose-pink, the small left flower muted burnt orange, the small right flower soft violet, the tall right flower slate blue. NEVER paint any flower's petals the same navy as the sky — every flower must clearly stand out against the night sky."
+      },
+      "review": "Judge pupil placement on the chalk-over-night COMPOSITE against the light fill — placement is chalk-owned (see this page's chalk entry), invisible to every gate. Without the palette pin the secondary flowers re-roll badly: the 2026-07-13 regen's unpinned take painted both small background flowers sky-navy (the ISSUES night-contrast blind spot) and both tall siblings the same teal. Pre-fix this page sat at haloScore 4.0 (dark rims in the old raw); the pinned regen landed 0.18 — re-run gen:coloring-fills:audit:halo after any regen.",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the recentered chalk (take 1 unpinned lost the background flowers to sky-navy; take 2 with the pin shipped)."
+    }
+  },
+  "house-tall": {
+    "night": {
+      "flags": {
+        "halo-score-max": 2.5
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.474 / rawScore 6.246 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 2.5 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  },
+  "house-wide": {
+    "night": {
+      "flags": {
+        "halo-score-max": 2.3
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.234 / rawScore 4.065 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. Inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 2.3 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    },
+    "chalk": {
+      "flags": {
+        "notes": "This scene has NO EYES — that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
+      },
+      "why": "Durable page quirk: the chalk instruction is eye-flavored and the eyeless scene made 2.5 REFUSE ('there are no eyes in the image to edit' — commits 46daba9 + 6f6e223; pipeline.md status-table lesson). Note text reconstructed. The 3.1 wave chalked it clean without the note, but the instruction is still eye-flavored, so the guard stays."
+    }
+  },
+  "umbrella-tall": {
+    "chalk": {
+      "flags": {
+        "notes": "This page has NO eyes and NO faces anywhere - that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
+      },
+      "why": "idea-24 orphan-page completion (ideas-exploration/idea-24/report.md): the eye-flavored chalk instruction can refuse eyeless scenes (house-wide precedent); this preemptive note cleared the 2.5-era chalk in one attempt (keep 99.9%). Kept for future regens."
+    },
+    "light": {
+      "review": "The shipped 2.5-era light fill leaves the raindrop interiors a near-white pale tint — passes the white gate (0.0%) but a reviewer may want them bluer. The pen also carries slightly larger top/bottom margins than umbrella-wide; a regenerate-with-note is ~1 call if that bothers review (idea-24 report §6).",
+      "why": "idea-24 orphan-page completion — the light fill took 4 attempts to clear the gates; these are the accepted take's known cosmetic quirks."
+    }
+  },
+  "teddy-tall": {
+    "chalk": {
+      "retry": {
+        "notes": "Keep the pupils exactly as the pen draws them — outlined rings with a small catchlight circle — and never fill a pupil with solid ink; solid chalk ink renders as glowing white in dark mode."
+      },
+      "review": "The pen is a 2026-07-13 FRESH drawing with healthy ringed pupils, but the shipped 2026-07 chalk solidified the eye interiors anyway, so the composited night eyes are hollow white rings with no legible pupil (ISSUES Tier 1). Judge on the chalk-over-night COMPOSITE; after a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the ISSUES chalk-whitening class introduced by the chalk itself; a fresh ringed pen does not protect the chalk stage, and every gate passes the defective take."
+    }
+  }
+}

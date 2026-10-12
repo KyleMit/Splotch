@@ -1,0 +1,64 @@
+{
+  "route": "privacy",
+  "colorScheme": "light",
+  "overflow": false,
+  "nav": [
+    {
+      "x": 20,
+      "y": 356.515625,
+      "width": 65.953125,
+      "height": 44,
+      "top": 356.515625,
+      "right": 85.953125,
+      "bottom": 400.515625,
+      "left": 20
+    },
+    {
+      "x": 103.953125,
+      "y": 356.515625,
+      "width": 71.65625,
+      "height": 44,
+      "top": 356.515625,
+      "right": 175.609375,
+      "bottom": 400.515625,
+      "left": 103.953125
+    },
+    {
+      "x": 20,
+      "y": 404.515625,
+      "width": 119.90625,
+      "height": 44,
+      "top": 404.515625,
+      "right": 139.90625,
+      "bottom": 448.515625,
+      "left": 20
+    }
+  ],
+  "feedbackExternalMark": true,
+  "current": "Privacy"
+}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(received).toBe(expected) // Object.is equality
+
+Expected: 1
+Received: 2
+    at captureRawStack (/Users/kylemit/.codex/worktrees/ed28/Splotch/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/Users/kylemit/.codex/worktrees/ed28/Splotch/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBe (/Users/kylemit/.codex/worktrees/ed28/Splotch/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at /private/tmp/splotch-polish-campaign/2566/native-narrow.mjs:29:60 {
+  matcherResult: {
+    actual: 2,
+    expected: 1,
+    message: 'expect(received).toBe(expected) // Object.is equality\n' +
+      '\n' +
+      'Expected: 1\n' +
+      'Received: 2',
+    name: 'toBe',
+    pass: false
+  }
+}
+
+Node.js v24.16.0

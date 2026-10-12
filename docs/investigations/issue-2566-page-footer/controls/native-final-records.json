@@ -1,0 +1,34 @@
+[
+  {
+    "route": "privacy",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "changelog",
+    "coldGateRequestsBeforeClick": 0,
+    "gateRequests": 1,
+    "externalBeforeSolve": false,
+    "replayTarget": "https://splotch.art/feedback",
+    "oneDialog": true
+  },
+  {
+    "route": "privacy",
+    "existingBodyLinkGated": true,
+    "manageSingleHost": true,
+    "closeReturnsFocus": true
+  },
+  {
+    "mode": "never",
+    "immediateOriginalClickPopup": true,
+    "gateVisible": false
+  },
+  {
+    "mode": "session",
+    "immediateOriginalClickPopup": true,
+    "gateVisible": false
+  }
+]

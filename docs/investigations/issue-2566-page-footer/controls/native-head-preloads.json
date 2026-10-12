@@ -1,0 +1,118 @@
+[
+  {
+    "file": "_app/immutable/entry/start.CPK4Y0Gv.js",
+    "name": "entry/start"
+  },
+  {
+    "file": "_app/immutable/chunks/Brr66KSS.js",
+    "name": "client"
+  },
+  {
+    "file": "_app/immutable/chunks/DVHbr_SI.js",
+    "name": "index-client"
+  },
+  {
+    "file": "_app/immutable/chunks/DK3Fl9T5.js",
+    "name": "rolldown-runtime"
+  },
+  {
+    "file": "_app/immutable/entry/app.CSNi9aF9.js",
+    "name": "entry/app"
+  },
+  {
+    "file": "_app/immutable/chunks/uBIymjUX.js",
+    "name": "preload-helper"
+  },
+  {
+    "file": "_app/immutable/chunks/DCByc0N7.js",
+    "name": "errorLog"
+  },
+  {
+    "file": "_app/immutable/chunks/xihTtKlq.js",
+    "name": "disclose-version"
+  },
+  {
+    "file": "_app/immutable/nodes/0.CU7nYjFU.js",
+    "name": "nodes/0"
+  },
+  {
+    "file": "_app/immutable/chunks/ayZlCzLY.js",
+    "name": "fonts"
+  },
+  {
+    "file": "_app/immutable/chunks/CzYkrnRs.js",
+    "name": "idle"
+  },
+  {
+    "file": "_app/immutable/nodes/3.C_gMGjHf.js",
+    "name": "nodes/3"
+  },
+  {
+    "file": "_app/immutable/chunks/BK3nMQWp.js",
+    "name": "legacy"
+  },
+  {
+    "file": "_app/immutable/chunks/BGzhwt8Q.js",
+    "name": "SocialCard"
+  },
+  {
+    "file": "_app/immutable/chunks/DahPR3-D.js",
+    "name": "settings.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/D72oUk2X.js",
+    "name": "policy"
+  },
+  {
+    "file": "_app/immutable/chunks/CIZJa7rn.js",
+    "name": "sessionCounters.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/DV1zzdJN.js",
+    "name": "appearance.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/3Wu6m9kV.js",
+    "name": "saveFailure.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/BrTlAeGm.js",
+    "name": "promiseWithResolvers"
+  },
+  {
+    "file": "_app/immutable/chunks/rrOAP6Yd.js",
+    "name": "parentalGate.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/CDbUUdnt.js",
+    "name": "scribbleGuard"
+  },
+  {
+    "file": "_app/immutable/chunks/C2xMfJUB.js",
+    "name": "aiGeneration.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/te76ON7o.js",
+    "name": "aiImage"
+  },
+  {
+    "file": "_app/immutable/chunks/Dgmf6r3t.js",
+    "name": "freeGenerations"
+  },
+  {
+    "file": "_app/immutable/chunks/wl2ohwfF.js",
+    "name": "limits"
+  },
+  {
+    "file": "_app/immutable/chunks/DkrQnTjz.js",
+    "name": "actionUnavailableFeedback"
+  },
+  {
+    "file": "_app/immutable/chunks/DQ41HvRI.js",
+    "name": "haptics"
+  },
+  {
+    "file": "_app/immutable/chunks/jQfK7wHx.js",
+    "name": "persistedState"
+  }
+]

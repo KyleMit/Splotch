@@ -1,0 +1,2762 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  ACTION_FIRST_FRAME_GATE_MS,
+  ACTION_FRAME_MAX_GATE_MS,
+  ACTION_FRAME_P95_GATE_MS,
+  ANDROID_WEB_ACTION_GATE_ALLOWANCES,
+  IOS_ACTION_GATE_ALLOWANCES,
+} from '../lib/action-stats.mjs';
+import {
+  mergeActionResults,
+  normalizeMatrix,
+  renderMarkdown,
+  renderReport,
+} from '../gen-performance-matrix.mjs';
+import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
+import { summarizeUndoActions } from '../lib/undo-action-stats.mjs';
+import { REAL_SCREEN_SCHEMA_VERSION } from '../lib/real-screen-stats.mjs';
+import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
+
+const temporaryDirectories = [];
+const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
+const modeSpecs = [
+  { id: 'portrait-light', orientation: 'PORTRAIT', theme: 'light' },
+  { id: 'portrait-dark', orientation: 'PORTRAIT', theme: 'dark' },
+  { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' },
+  { id: 'landscape-dark', orientation: 'LANDSCAPE', theme: 'dark' },
+];
+
+function fullActionPlan({ orientation, settingsShell, applicableLabels, notApplicable = [] }) {
+  return {
+    schemaVersion: 1,
+    actionGroups: FULL_ACTION_GROUPS,
+    applicableLabels,
+    notApplicable,
+    context: { orientation, settingsShell },
+  };
+}
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+function action(label, passed, productCommit = 'abcdef123456') {
+  return {
+    label,
+    count: 3,
+    firstFrame: distribution,
+    ready: distribution,
+    postActionFrames: distribution,
+    passed,
+    source: 'perf-profiles/actions.json',
+    productCommit,
+  };
+}
+
+function drawing() {
+  return Object.fromEntries(
+    ['pen', 'crayon', 'magic', 'eraser'].map((brush) => [
+      brush,
+      {
+        aggregate: {
+          paint: { p95: 1, p99: 1, max: 1 },
+          lostFrameTimeShare: 0,
+          blankPassed: true,
+        },
+      },
+    ])
+  );
+}
+
+function unavailableMode(spec, reason = 'Device disconnected.') {
+  return { ...spec, status: 'unavailable', reason };
+}
+
+function capturedManifestMode(spec, overrides = {}) {
+  return {
+    ...spec,
+    status: 'captured',
+    drawingProductCommit: 'final123',
+    drawing: {},
+    ...overrides,
+  };
+}
+
+function manifestTarget(modes) {
+  return {
+    id: 'fixture',
+    number: 1,
+    label: 'Fixture',
+    platform: 'test',
+    deviceKind: 'physical',
+    runtime: 'web',
+    environment: 'test device',
+    fidelity: 'synthetic-advisory',
+    modes,
+  };
+}
+
+function manifest(modes) {
+  return {
+    schemaVersion: 3,
+    recordedOn: '2026-08-20',
+    productCommit: 'final123',
+    targets: [manifestTarget(modes)],
+  };
+}
+
+function normalizedActions(results) {
+  return {
+    actionCount: results.length,
+    passedActionCount: results.filter((result) => result.passed).length,
+    sources: [{ productCommit: 'abcdef123456' }],
+    worst: {
+      firstFrameP95: 1,
+      postActionFrameP95: 1,
+      postActionFrameMax: 1,
+    },
+    results,
+  };
+}
+
+function normalizedMode(spec, overrides = {}) {
+  return {
+    ...spec,
+    status: 'captured',
+    fidelity: 'synthetic-advisory',
+    drawingProductCommit: 'abcdef123456',
+    undoProductCommit: 'abcdef123456',
+    drawing: drawing(),
+    undo: null,
+    actions: null,
+    ...overrides,
+  };
+}
+
+function splitUndoCapture(overrides = {}) {
+  return {
+    transport: 'split-input-measurement',
+    orientation: 'PORTRAIT',
+    theme: 'light',
+    undoCount: UNDO_COUNT,
+    undo: {
+      count: UNDO_COUNT,
+      engine: distribution,
+      nextFrame: { p50: 2, p95: 2, p99: 2, max: 2 },
+      passed: true,
+    },
+    undoActions: Array.from({ length: UNDO_COUNT }, (_, index) => ({
+      index,
+      beforeCount: index,
+      afterCount: index + 1,
+      engineMs: 1,
+      nextFrameMs: 2,
+    })),
+    historyBeforeUndo: { historyLength: 20 },
+    historyAfterUndo: { historyLength: 10 },
+    undoVisual: {
+      changedEveryStep: true,
+      samples: Array.from({ length: UNDO_COUNT + 1 }, (_, index) => ({ digests: [index] })),
+      steps: Array.from({ length: UNDO_COUNT }, (_, index) => ({ index, changed: true })),
+    },
+    ...overrides,
+  };
+}
+
+describe('split undo normalization', () => {
+  function matrixFor(capture) {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(join(directory, 'undo.json'), JSON.stringify(capture));
+    const source = manifest([
+      capturedManifestMode(modeSpecs[0], { undoSource: 'undo.json' }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source.targets[0].id = 'android-device-web';
+    return () => normalizeMatrix(source, directory);
+  }
+
+  it('publishes a complete split undo artifact', () => {
+    const matrix = matrixFor(splitUndoCapture())();
+
+    expect(matrix.targets[0].modes[0].undo).toMatchObject({ count: UNDO_COUNT, passed: true });
+  });
+
+  it('publishes the ink-motion split beside the gated engine time', () => {
+    const inkMotion = { p50: 0.4, p95: 0.4, p99: 0.4, max: 0.4 };
+    const restore = { p50: 0.6, p95: 0.6, p99: 0.6, max: 0.6 };
+    const capture = splitUndoCapture();
+    capture.undo = { ...capture.undo, inkMotion, restore };
+    capture.undoActions = capture.undoActions.map((action) => ({ ...action, inkMotionMs: 0.4 }));
+
+    const matrix = matrixFor(capture)();
+
+    expect(matrix.targets[0].modes[0].undo).toMatchObject({
+      engine: distribution,
+      inkMotion,
+      restore,
+    });
+    expect(renderMarkdown(matrix)).toContain('ink motion P95 0.4 ms · restore P95 0.6 ms');
+  });
+
+  it('publishes the unscored callback clock beside the next-frame figure', () => {
+    const callbackTimes = [11.9, 17.3, 31.6];
+    const capture = splitUndoCapture();
+    capture.undoActions = capture.undoActions.map((action, index) => {
+      const startedAt = index * 1000;
+      const endedAt = startedAt + callbackTimes[index % 3];
+      return { ...action, startedAt, endedAt, callbackMs: endedAt - startedAt };
+    });
+    const { callback } = summarizeUndoActions(capture.undoActions, []);
+    capture.undo = { ...capture.undo, callback };
+
+    const matrix = matrixFor(capture)();
+
+    expect(matrix.targets[0].modes[0].undo).toMatchObject({
+      nextFrame: capture.undo.nextFrame,
+      callback: { p50: 17.3, p95: 31.6, p99: 31.6, max: 31.6 },
+      passed: true,
+    });
+    expect(renderMarkdown(matrix)).toContain(
+      'callback P50 17.3 · P95 31.6 · max 31.6 ms, unscored'
+    );
+    expect(renderReport(matrix)).toContain('callback P50 17.3 · P95 31.6 · max 31.6 ms, unscored');
+  });
+
+  it('leaves a capture without the ink-motion split unchanged', () => {
+    const matrix = matrixFor(splitUndoCapture())();
+
+    expect(matrix.targets[0].modes[0].undo).not.toHaveProperty('inkMotion');
+    expect(renderMarkdown(matrix)).not.toContain('ink motion P95');
+    expect(matrix.targets[0].modes[0].undo).not.toHaveProperty('callback');
+    expect(renderMarkdown(matrix)).not.toContain('callback P50');
+  });
+
+  it('fails closed when the split artifact has timing but no semantic proof', () => {
+    expect(matrixFor(splitUndoCapture({ undoVisual: null }))).toThrow(
+      'does not prove that every undo restored different pixels'
+    );
+  });
+});
+
+function normalizedMatrix(modes) {
+  return {
+    schemaVersion: 3,
+    recordedOn: '2026-08-20',
+    productCommit: 'abcdef123456',
+    limitations: ['Retained capture.'],
+    candidateActions: [],
+    gates: {
+      drawing: {
+        paintP95Ms: 20,
+        paintP99Ms: 33,
+        paintMaxMs: 50,
+        lostFrameTimeShare: 0.01,
+      },
+      undo: { engineP95Ms: 20, nextFrameP95Ms: 33, nextFrameMaxMs: 50 },
+      actions: {
+        firstFrameP95Ms: ACTION_FIRST_FRAME_GATE_MS,
+        postActionFrameP95Ms: ACTION_FRAME_P95_GATE_MS,
+        postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
+      },
+    },
+    targets: [
+      {
+        id: 'fixture',
+        number: 1,
+        label: 'Android device · web',
+        platform: 'Android',
+        deviceKind: 'physical',
+        runtime: 'web',
+        environment: 'test device',
+        modes,
+      },
+    ],
+  };
+}
+
+function writeActionCapture(
+  directory,
+  name,
+  {
+    orientation,
+    theme,
+    summaries,
+    samples,
+    transport,
+    captureRuntime,
+    engine,
+    actionPlan,
+    gateAllowances,
+  }
+) {
+  const path = join(directory, name);
+  writeFileSync(
+    path,
+    JSON.stringify({
+      orientation,
+      theme,
+      repeats: 4,
+      summaries,
+      samples,
+      transport,
+      captureRuntime,
+      engine,
+      actionPlan,
+      gateAllowances,
+    })
+  );
+  return name;
+}
+
+function actionSample(label, warmup) {
+  return {
+    label,
+    warmup,
+    eventType: 'click',
+    trusted: true,
+    firstFrameMs: 1,
+    readyMs: 1,
+    postActionFrameGapsMs: [1],
+  };
+}
+
+describe('deployment matrix report', () => {
+  it('keeps profiling controls out of grouped target-mode comparisons', () => {
+    const results = [action('idle frame control', true), action('expand action drawer', false)];
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { actions: normalizedActions(results) }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const html = renderReport(matrix);
+
+    expect(html).toContain('<b>1</b> action measured');
+    expect(html).toContain('<b>0/1</b>');
+    expect(html).toContain('Action 1: expand action drawer');
+    expect(html).toContain('Portrait · Light');
+    expect(html).toContain('ready P95 1 ms');
+    expect(html).not.toContain('idle frame control');
+  });
+
+  it('keeps more than 46 action columns in one dynamically sized heatmap row', () => {
+    const results = Array.from({ length: 49 }, (_, index) => action(`action ${index + 1}`, true));
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { actions: normalizedActions(results) }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const html = renderReport(matrix);
+    const grids = [...html.matchAll(/<div class="heat-cells">(.*?)<\/div>/g)];
+
+    expect(html).toContain('style="--action-columns:49"');
+    expect(html).toContain('grid-template-columns:repeat(var(--action-columns),var(--heat-cell))');
+    expect(html).not.toContain('repeat(46,15px)');
+    // The header row plus the one captured mode; unavailable modes render a
+    // spanning reason note instead of a grid of placeholder cells.
+    expect(grids).toHaveLength(2);
+    for (const [, cells] of grids) {
+      expect(cells.match(/class="(?:action-number|heat-cell)/g)).toHaveLength(49);
+    }
+  });
+
+  it('normalizes and renders measured, no-control, N/A, and missing action coordinates', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-applicability-'));
+    temporaryDirectories.push(manifestDirectory);
+    const repeated = (label, postActionFrameGapsMs = [1]) =>
+      Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample(label, index === 0),
+        postActionFrameGapsMs,
+      }));
+    const portraitSource = writeActionCapture(manifestDirectory, 'portrait-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [...repeated('idle frame control'), ...repeated('expand action drawer')],
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
+        applicableLabels: ['idle frame control', 'expand action drawer', 'open coloring book'],
+        notApplicable: [
+          {
+            label: 'scroll coloring pages',
+            reason: 'the coloring-page grid fits without scrolling in this target mode',
+          },
+          {
+            label: 'not-applicable-only action',
+            reason: 'the capture explicitly excluded this fixture action',
+          },
+        ],
+      }),
+    });
+    const landscapeSource = writeActionCapture(manifestDirectory, 'landscape-actions.json', {
+      orientation: 'LANDSCAPE',
+      theme: 'light',
+      samples: [
+        ...repeated('idle frame control', [40]),
+        ...repeated('enable Night Mode in the compact shell'),
+        ...repeated('scroll coloring pages'),
+      ],
+      actionPlan: fullActionPlan({
+        orientation: 'LANDSCAPE',
+        settingsShell: 'compact',
+        applicableLabels: [
+          'idle frame control',
+          'enable Night Mode in the compact shell',
+          'scroll coloring pages',
+        ],
+      }),
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: portraitSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[1]),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: landscapeSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[3]),
+      ]),
+      manifestDirectory
+    );
+    const portrait = matrix.targets[0].modes[0];
+    const landscape = matrix.targets[0].modes[2];
+    const coordinate = (mode, label) =>
+      mode.actionCoordinates.find((candidate) => candidate.label === label);
+
+    expect(coordinate(portrait, 'expand action drawer')).toEqual({
+      label: 'expand action drawer',
+      state: 'measured',
+    });
+    expect(coordinate(portrait, 'open coloring book')).toMatchObject({ state: 'missing' });
+    expect(coordinate(portrait, 'enable Night Mode in the compact shell')).toEqual({
+      label: 'enable Night Mode in the compact shell',
+      state: 'not-applicable',
+      reason: 'this target mode’s declared action plan does not offer the action',
+    });
+    expect(coordinate(portrait, 'scroll coloring pages')).toEqual({
+      label: 'scroll coloring pages',
+      state: 'not-applicable',
+      reason: 'the coloring-page grid fits without scrolling in this target mode',
+    });
+    expect(coordinate(portrait, 'not-applicable-only action')).toEqual({
+      label: 'not-applicable-only action',
+      state: 'not-applicable',
+      reason: 'the capture explicitly excluded this fixture action',
+    });
+    expect(coordinate(landscape, 'scroll coloring pages')).toMatchObject({
+      state: 'no-control',
+      reason: 'idle frame control failed',
+    });
+
+    const html = renderReport(matrix);
+    expect(html).toContain('class="heat-cell not-applicable"');
+    expect(html).toContain(
+      'N/A: this target mode’s declared action plan does not offer the action'
+    );
+    expect(html).toContain(
+      'N/A: the coloring-page grid fits without scrolling in this target mode'
+    );
+    expect(html).toContain('missing: applicable action has no valid measurement');
+    expect(html).toContain('<i class="heat-cell not-applicable"></i><b>N/A by design</b>');
+    expect(html).toContain('<i class="heat-cell unscoreable"></i><b>Unavailable</b>');
+    expect(html).toContain('<i class="heat-cell missing"></i><b>Missing</b>');
+    // Each of the three empty meanings lands on its own cell class, keyed by
+    // the coordinate the tooltip names, so no two render alike.
+    const cellClass = (fragment) =>
+      html.match(new RegExp(`<span class="heat-cell ([^"]+)" title="[^"]*${fragment}`))?.[1];
+    expect(cellClass('scroll coloring pages · Fixture · Portrait · Light · N/A')).toBe(
+      'not-applicable'
+    );
+    expect(cellClass('scroll coloring pages · Fixture · Landscape · Light · first P95')).toBe(
+      'unscoreable'
+    );
+    expect(cellClass('open coloring book · Fixture · Portrait · Light · missing')).toBe('missing');
+    expect(html).toContain('<h2>Discrete actions</h2>');
+    expect(html).toContain('5 action columns');
+    expect(html).toContain('<b>5</b> actions measured');
+  });
+
+  // Issue #1870: a required cue the capture could not reach is BLOCKED, which
+  // must never render as N/A by design nor drop out of the matrix — the rival
+  // review reproduced exactly that before normalization learned the field.
+  it('keeps blocked coverage as its own coordinate, never N/A, and never drops it', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-blocked-'));
+    temporaryDirectories.push(manifestDirectory);
+    const repeated = (label) =>
+      Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample(label, index === 0),
+        postActionFrameGapsMs: [1],
+      }));
+    const source = writeActionCapture(manifestDirectory, 'blocked-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [...repeated('idle frame control'), ...repeated('expand action drawer')],
+      actionPlan: {
+        ...fullActionPlan({
+          orientation: 'PORTRAIT',
+          settingsShell: 'sectioned',
+          applicableLabels: ['idle frame control', 'expand action drawer'],
+        }),
+        blocked: [
+          {
+            label: 'show AI waiting print',
+            reason: 'the AI run failed before the waiting print appeared',
+          },
+        ],
+      },
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const mode = matrix.targets[0].modes[0];
+
+    expect(mode.actions.actionPlan.blocked).toEqual([
+      {
+        label: 'show AI waiting print',
+        reason: 'the AI run failed before the waiting print appeared',
+      },
+    ]);
+    expect(matrix.actionLabels).toContain('show AI waiting print');
+    expect(
+      mode.actionCoordinates.find((candidate) => candidate.label === 'show AI waiting print')
+    ).toEqual({
+      label: 'show AI waiting print',
+      state: 'blocked',
+      reason: 'blocked coverage: the AI run failed before the waiting print appeared',
+    });
+
+    const html = renderReport(matrix);
+    expect(html).toContain('BLOCKED: blocked coverage: the AI run failed before');
+    expect(html).not.toContain('N/A: blocked coverage');
+
+    // Every aggregate has to show it too (review round two): a reader of the
+    // overview, the heatmap, the masthead, or the Markdown must not see green.
+    expect(html).toContain('1/1 · 1 blocked');
+    expect(html).toContain('blocked: show AI waiting print');
+    expect(html).not.toMatch(/class="mx-cell num pass"[^>]*>1\/1 · 1 blocked/);
+    expect(html).toContain('<span class="chip"><b>1</b> action measured</span>');
+    expect(html).toContain('<b>1</b> blocked, 1 never measured');
+
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain('1 / 1 · 1 blocked');
+    expect(markdown).toContain('show AI waiting print (blocked)');
+  });
+
+  it('reads a plan recorded before blocked coverage existed as having none', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-legacy-plan-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'legacy-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample('idle frame control', index === 0),
+        postActionFrameGapsMs: [1],
+      })),
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
+        applicableLabels: ['idle frame control'],
+      }),
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+
+    expect(matrix.targets[0].modes[0].actions.actionPlan.blocked).toEqual([]);
+  });
+
+  it('applies an agreeing focused capture only to its measured labels', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      results: [
+        action('expand action drawer', true, 'final'),
+        action('change ink color', false, 'final'),
+      ],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      results: [{ ...action('expand action drawer', true, 'final'), refreshed: true }],
+    };
+
+    expect(mergeActionResults([baseline, focused])).toEqual([
+      { ...action('expand action drawer', true, 'final'), refreshed: true },
+      action('change ink color', false, 'final'),
+    ]);
+  });
+
+  // Same-commit is necessary, not sufficient: a focused pass over the sweep's
+  // failure is the focused-green/canonical-red trap wearing a matching commit,
+  // and folding it would publish the exact green the guard refuses.
+  it('refuses a focused verdict that contradicts its same-commit sweep', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      source: 'actions-full.json',
+      results: [action('expand action drawer', false, 'final')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'final')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('focused-contradicts-sweep');
+    expect(() => mergeActionResults([baseline, focused])).toThrow('actions-focused.json');
+  });
+
+  it('refuses a focused label its same-commit sweep never measured', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      source: 'actions-full.json',
+      results: [action('change ink color', true, 'final')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'final')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('unconfirmed-focused-action');
+  });
+
+  // Session 01a0556d: focused greens turned canonical red three times — earlier
+  // actions in the full sweep leave state a reduced plan never creates, so a
+  // focused capture is only the isolation of a validated sweep, never a
+  // substitute for one. No committed manifest carries a focused source, so the
+  // guard fails closed with no predating tolerance.
+  it('refuses a focused capture with no full sweep at the same product commit', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'sweep-commit',
+      source: 'actions-full.json',
+      results: [action('expand action drawer', false, 'sweep-commit')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'later-commit',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'later-commit')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('unconfirmed-focused-action');
+    expect(() => mergeActionResults([baseline, focused])).toThrow('actions-focused.json');
+    expect(() => mergeActionResults([{ ...focused, productCommit: undefined }])).toThrow(
+      'unconfirmed-focused-action'
+    );
+  });
+
+  it('excludes warmup-only labels while retaining the real scored action', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const scoredLabel = "open Settings section: What's New";
+    const warmupOnlyLabel = `${scoredLabel}  new`;
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        actionSample(warmupOnlyLabel, true),
+        actionSample(scoredLabel, true),
+        actionSample(scoredLabel, false),
+        actionSample(scoredLabel, false),
+        actionSample(scoredLabel, false),
+      ],
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const actions = matrix.targets[0].modes[0].actions;
+
+    expect(actions.results).toHaveLength(1);
+    expect(actions.results[0]).toMatchObject({ label: scoredLabel, count: 3, passed: true });
+    expect(actions.actionCount).toBe(1);
+    expect(actions.passedActionCount).toBe(1);
+    expect(actions.results.some((result) => result.label === warmupOnlyLabel)).toBe(false);
+  });
+
+  // ADR-0156: a max breach in one of three scored repeats does not fail the
+  // cell, but it must not disappear either — data.json is the next regeneration's
+  // preservation source for a captured-untracked cell, so the state has to survive
+  // normalization and be visible in both renderers.
+  it('preserves and renders a passing cell whose max breached in one scored repeat', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const label = 'save screenshot';
+    const steady = Array.from({ length: 12 }, () => 16.7);
+    const sample = (gaps, warmup = false) => ({
+      ...actionSample(label, warmup),
+      postActionFrameGapsMs: gaps,
+    });
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        { ...actionSample('idle frame control', true), postActionFrameGapsMs: steady },
+        { ...actionSample('idle frame control', false), postActionFrameGapsMs: steady },
+        { ...actionSample('idle frame control', false), postActionFrameGapsMs: steady },
+        { ...actionSample('idle frame control', false), postActionFrameGapsMs: steady },
+        sample(steady, true),
+        sample([...steady.slice(0, 6), 40, ...steady.slice(6)]),
+        sample(steady),
+        sample(steady),
+      ],
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find((r) => r.label === label);
+
+    expect(result.passed).toBe(true);
+    expect(result.postActionFrames).toMatchObject({
+      max: 40,
+      maxBreachSamples: 1,
+      maxUnconfirmed: true,
+    });
+    expect(matrix.targets[0].modes[0].actions.scoreable).not.toBe(false);
+    const html = renderReport(matrix);
+    expect(html).toContain('class="heat-cell unconfirmed" title=');
+    expect(html).toContain('PASS, max unconfirmed (over the gate in one scored repeat');
+    expect(renderMarkdown(matrix)).toContain('save screenshot (max 40 ms unconfirmed)');
+  });
+
+  // ADR-0142 amendment (issue 1324): an iPad Safari rotation first frame is
+  // 0-2 ms by construction, so it is declared N/A instead of publishing a green
+  // 0. Applicability keys on the capture RUNTIME — `transport: "browser"` is
+  // the Appium web transport generally, and an Android Chrome artifact records
+  // it too, so an artifact carrying that transport but no ios-safari runtime
+  // (and no target declaring one) must keep its gate.
+  it('declares Safari rotation first frames not-applicable and keeps other runtimes gated', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationSamples = Array.from({ length: 4 }, (_, index) => ({
+      ...actionSample(rotationLabel, index === 0),
+      firstFrameMs: 100,
+    }));
+    const safariSource = writeActionCapture(manifestDirectory, 'safari-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      transport: 'browser',
+      captureRuntime: 'ios-safari',
+      samples: rotationSamples,
+    });
+    const appiumAndroidSource = writeActionCapture(manifestDirectory, 'android-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'dark',
+      transport: 'browser',
+      samples: rotationSamples,
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: safariSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        capturedManifestMode(modeSpecs[1], {
+          actionSources: [{ source: appiumAndroidSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const safariResult = matrix.targets[0].modes[0].actions.results[0];
+    const androidResult = matrix.targets[0].modes[1].actions.results[0];
+
+    expect(safariResult).toMatchObject({ label: rotationLabel, passed: true });
+    expect(safariResult.firstFrame.na).toBe(true);
+    expect(matrix.targets[0].modes[0].actions.worst.firstFrameP95).toBeNull();
+    expect(androidResult.firstFrame.na).toBeUndefined();
+    expect(androidResult.passed).toBe(false);
+    const html = renderReport(matrix);
+    expect(html).toContain('first P95 N/A');
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain('N/A');
+  });
+
+  // Review round 2: a cross-engine artifact (campaign acceptance only tells web
+  // from native) must not fold under a target declaring another runtime —
+  // silently preferring the target scored an android-chrome capture's rotation
+  // rows as ios-safari N/A. Both present and different is a refusal, not an
+  // ordering.
+  it('refuses an artifact whose recorded runtime disagrees with the target’s declared one', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'cross-engine-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      transport: 'browser',
+      captureRuntime: 'android-chrome',
+      samples: [
+        actionSample('with ink: PORTRAIT to LANDSCAPE rotation', true),
+        ...Array.from({ length: 3 }, () =>
+          actionSample('with ink: PORTRAIT to LANDSCAPE rotation', false)
+        ),
+      ],
+    });
+    const source_manifest = manifest([
+      capturedManifestMode(modeSpecs[0], {
+        actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+      }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source_manifest.targets[0].id = 'ipad-device-web';
+
+    expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
+      'records captureRuntime android-chrome, but target ipad-device-web declares ios-safari'
+    );
+  });
+
+  // ADR-0142's second amendment: the desktop runtime spans three engines, and
+  // only WebKit shares Safari's inert construction (measured in
+  // perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/). A
+  // mac-safari rotation row is N/A; a mac-chrome one keeps its gate.
+  it('declares desktop WebKit rotation first frames not-applicable and keeps Chromium gated', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationSamples = Array.from({ length: 4 }, (_, index) => ({
+      ...actionSample(rotationLabel, index === 0),
+      firstFrameMs: 100,
+    }));
+    const capture = (name, engine) =>
+      writeActionCapture(manifestDirectory, name, {
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        captureRuntime: 'desktop-playwright',
+        engine,
+        samples: rotationSamples,
+      });
+    const foldedFor = (targetId, source) => {
+      const source_manifest = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source_manifest.targets[0].id = targetId;
+      return normalizeMatrix(source_manifest, manifestDirectory).targets[0].modes[0].actions
+        .results[0];
+    };
+
+    const webkitResult = foldedFor('mac-safari', capture('webkit-actions.json', 'webkit'));
+    expect(webkitResult.firstFrame.na).toBe(true);
+    expect(webkitResult.passed).toBe(true);
+
+    const chromiumResult = foldedFor('mac-chrome', capture('chromium-actions.json', 'chromium'));
+    expect(chromiumResult.firstFrame.na).toBeUndefined();
+    expect(chromiumResult.passed).toBe(false);
+
+    // The misfile hole the review found: an artifact recording NEITHER
+    // runtime nor engine (the Android CDP action runner's shape) folded under
+    // mac-safari must keep its gate — the declaration alone cannot remove it.
+    // Its 100 ms first frames then surface the misfile as a red cell.
+    const anonymous = writeActionCapture(manifestDirectory, 'anonymous-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: rotationSamples,
+    });
+    const anonymousResult = foldedFor('mac-safari', anonymous);
+    expect(anonymousResult.firstFrame.na).toBeUndefined();
+    expect(anonymousResult.passed).toBe(false);
+  });
+
+  // The engine gets the runtime's agreement rule: a capture recorded under one
+  // engine must not fold into a target declaring another, because the rotation
+  // rules it is scored under are the engine's.
+  it('refuses an artifact whose recorded engine disagrees with the target’s declared one', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'cross-desktop-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      captureRuntime: 'desktop-playwright',
+      engine: 'chromium',
+      samples: [
+        actionSample('with ink: PORTRAIT to LANDSCAPE rotation', true),
+        ...Array.from({ length: 3 }, () =>
+          actionSample('with ink: PORTRAIT to LANDSCAPE rotation', false)
+        ),
+      ],
+    });
+    const source_manifest = manifest([
+      capturedManifestMode(modeSpecs[0], {
+        actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+      }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source_manifest.targets[0].id = 'mac-safari';
+
+    expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
+      'records engine chromium, but target mac-safari declares webkit'
+    );
+  });
+
+  it('identifies cumulative provenance in the Markdown summary', () => {
+    const matrix = normalizedMatrix([]);
+    matrix.targets = [];
+    matrix.productCommit = 'final123';
+    const markdown = renderMarkdown(matrix);
+
+    expect(markdown).toContain('This deployment-target snapshot');
+    expect(markdown).toContain('`final123` is the measured product commit');
+    expect(markdown).toContain('npm run gen:performance-matrix');
+  });
+
+  it('normalizes and renders the optional candidate-action inventory in manifest order', () => {
+    const source = manifest(modeSpecs.map((spec) => unavailableMode(spec)));
+    source.candidateActions = [
+      {
+        priority: 'P0',
+        action: 'Pinch & zoom',
+        rationale: 'Exercises viewport transforms.',
+        applicability: 'Touch targets',
+        status: 'Planned',
+      },
+      {
+        priority: 'P2',
+        action: 'Recover screenshot',
+        rationale: 'Exercises failure recovery.',
+      },
+    ];
+    const matrix = normalizeMatrix(source);
+    const markdown = renderMarkdown(matrix);
+    const html = renderReport(matrix);
+
+    expect(matrix.candidateActions).toEqual(source.candidateActions);
+    expect(markdown).toContain(
+      '| P0 | Pinch & zoom | Exercises viewport transforms. | Touch targets | Planned |'
+    );
+    expect(markdown).toContain('| P2 | Recover screenshot | Exercises failure recovery. | — | — |');
+    expect(markdown.indexOf('## Candidate actions')).toBeGreaterThan(
+      markdown.indexOf('## Capture limitations')
+    );
+    expect(markdown.indexOf('## Candidate actions')).toBeLessThan(
+      markdown.indexOf('## Commit provenance')
+    );
+    expect(html).toContain('Pinch &amp; zoom');
+    expect(html.indexOf('<h2>Candidate actions</h2>')).toBeGreaterThan(
+      html.indexOf('<h2>Capture limitations</h2>')
+    );
+    expect(html.indexOf('<h2>Candidate actions</h2>')).toBeLessThan(
+      html.indexOf('<h2>Commit provenance</h2>')
+    );
+  });
+
+  it('keeps schema-v3 manifests without candidate actions backward compatible', () => {
+    const matrix = normalizeMatrix(manifest(modeSpecs.map((spec) => unavailableMode(spec))));
+
+    expect(matrix.candidateActions).toEqual([]);
+    expect(renderMarkdown(matrix)).not.toContain('## Candidate actions');
+    expect(renderReport(matrix)).not.toContain('<h2>Candidate actions</h2>');
+  });
+
+  it('rejects incomplete candidate-action entries', () => {
+    const source = manifest(modeSpecs.map((spec) => unavailableMode(spec)));
+    source.candidateActions = [{ priority: 'P1', action: 'Rotate' }];
+
+    expect(() => normalizeMatrix(source)).toThrow(
+      'Performance matrix candidateActions[0].rationale must be text'
+    );
+  });
+
+  it('reports missing drawing sources as unavailable rather than failed', () => {
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0]),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ])
+    );
+    const markdown = renderMarkdown(matrix);
+    const portraitLightRows = markdown
+      .split('\n')
+      .filter((line) => line.startsWith('| 1. Fixture · Portrait · Light |'));
+
+    expect(
+      portraitLightRows.some((line) =>
+        line.includes(
+          '| Unavailable: not measured | Unavailable: not measured | Unavailable: not measured | Unavailable: not measured |'
+        )
+      )
+    ).toBe(true);
+    expect(markdown).not.toContain('**FAIL — / — / — · L—%**');
+  });
+
+  it('resolves mode evidence from the manifest directory and preserves missing metrics', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    mkdirSync(join(manifestDirectory, 'captures'));
+    const source = writeActionCapture(manifestDirectory, 'captures/actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [
+        {
+          label: 'expand action drawer',
+          count: 3,
+          firstFrame: { p50: null, p95: null, p99: null, max: null },
+          ready: distribution,
+          frames: { p50: null, p95: null, p99: null, max: null },
+          passed: false,
+        },
+        {
+          label: 'idle frame control',
+          count: 3,
+          firstFrame: distribution,
+          ready: distribution,
+          frames: distribution,
+          passed: true,
+        },
+      ],
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+
+    expect(matrix.targets[0].modes[0].actions.worst).toEqual({
+      firstFrameP95: null,
+      readyP95: 1,
+      postActionFrameP95: null,
+      postActionFrameMax: null,
+    });
+    expect(renderReport(matrix)).not.toContain('repeat(46,15px)');
+  });
+
+  it('retains the same action label independently in separate modes', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const portraitSource = writeActionCapture(manifestDirectory, 'portrait.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [
+        {
+          label: 'expand action drawer',
+          count: 3,
+          firstFrame: distribution,
+          ready: distribution,
+          frames: distribution,
+          passed: true,
+        },
+      ],
+    });
+    const landscapeSource = writeActionCapture(manifestDirectory, 'landscape.json', {
+      orientation: 'LANDSCAPE',
+      theme: 'light',
+      summaries: [
+        {
+          label: 'expand action drawer',
+          count: 3,
+          firstFrame: distribution,
+          ready: distribution,
+          frames: distribution,
+          passed: false,
+        },
+      ],
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: portraitSource, productCommit: 'portrait', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[1]),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: landscapeSource, productCommit: 'landscape', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[3]),
+      ]),
+      manifestDirectory
+    );
+
+    expect(matrix.targets[0].modes[0].actions.results[0]).toMatchObject({
+      label: 'expand action drawer',
+      passed: true,
+      productCommit: 'portrait',
+    });
+    expect(matrix.targets[0].modes[2].actions.results[0]).toMatchObject({
+      label: 'expand action drawer',
+      passed: false,
+      productCommit: 'landscape',
+    });
+  });
+
+  it('renders unavailable mode cells with their recorded reason', () => {
+    const results = [action('expand action drawer', true)];
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { actions: normalizedActions(results) }),
+      unavailableMode(modeSpecs[1], 'Safari session crashed repeatedly.'),
+      ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
+    ]);
+
+    expect(renderReport(matrix)).toContain('unavailable: Safari session crashed repeatedly.');
+    expect(renderMarkdown(matrix)).toContain('Unavailable: Safari session crashed repeatedly.');
+  });
+
+  it('rejects capture metadata that does not match its manifest mode', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'LANDSCAPE',
+      theme: 'light',
+      summaries: [],
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('actions.json recorded landscape orientation; expected portrait');
+  });
+
+  it('rejects capture theme metadata that does not match its manifest mode', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'dark',
+      summaries: [],
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('actions.json recorded dark theme; expected light');
+  });
+
+  it('rejects a measured action omitted from the capture’s declared plan', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-plan-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) =>
+        actionSample('expand action drawer', index === 0)
+      ),
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
+        applicableLabels: ['open Settings'],
+      }),
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('measured actions outside its declared actionPlan: expand action drawer');
+  });
+
+  it('rejects a subset action run folded as a full sweep', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-plan-subset-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) =>
+        actionSample('idle frame control', index === 0)
+      ),
+      actionPlan: {
+        schemaVersion: 1,
+        actionGroups: ['idle'],
+        applicableLabels: ['idle frame control'],
+        notApplicable: [],
+        context: { orientation: 'PORTRAIT', settingsShell: null },
+      },
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('is marked full but its actionPlan records a subset action run');
+  });
+
+  it('rejects captures without explicit theme metadata', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: undefined,
+      summaries: [],
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('actions.json is missing theme metadata for portrait / light');
+  });
+
+  it('rejects a focused capture whose declared labels are absent', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('measured action', true)],
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [
+              {
+                source,
+                productCommit: 'final123',
+                kind: 'focused',
+                labels: ['missing action'],
+              },
+            ],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('actions.json does not contain: missing action');
+  });
+
+  // The manifest path of the unconfirmed-focused-action guard: a focused
+  // source folds beside a same-commit full sweep and refuses beside any other.
+  it('folds a focused source only beside a full sweep at the same commit', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const full = writeActionCapture(manifestDirectory, 'actions-full.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('idle frame control', true), action('expand action drawer', true)],
+    });
+    const focused = writeActionCapture(manifestDirectory, 'actions-focused.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('expand action drawer', true)],
+    });
+    const manifestWith = (focusedCommit) =>
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [
+            { source: full, productCommit: 'sweep123', kind: 'full' },
+            {
+              source: focused,
+              productCommit: focusedCommit,
+              kind: 'focused',
+              labels: ['expand action drawer'],
+            },
+          ],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+    const folded = normalizeMatrix(manifestWith('sweep123'), manifestDirectory);
+    const drawer = folded.targets[0].modes[0].actions.results.find(
+      (result) => result.label === 'expand action drawer'
+    );
+    expect(drawer.passed).toBe(true);
+
+    expect(() => normalizeMatrix(manifestWith('later456'), manifestDirectory)).toThrow(
+      'unconfirmed-focused-action'
+    );
+  });
+
+  it('reports a clear migration error for the previous schema', () => {
+    expect(() => normalizeMatrix({ schemaVersion: 2, targets: [] })).toThrow(
+      'Performance matrix manifest schemaVersion 2 is unsupported; expected 3. Move each target’s capture fields into four targets[].modes entries.'
+    );
+  });
+
+  it('requires every target to declare each orientation-theme mode exactly once', () => {
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          unavailableMode(modeSpecs[0]),
+          unavailableMode(modeSpecs[1]),
+          unavailableMode(modeSpecs[2]),
+        ])
+      )
+    ).toThrow('Target fixture must contain exactly four explicit modes (missing: landscape-dark)');
+  });
+  describe('preserved evidence', () => {
+    // A red gate the raw capture can no longer justify is exactly what preservation
+    // has to carry forward intact — recapturing it would quietly turn it green.
+    // A factory, not a shared object: a test that edits a shared copy turns every
+    // later test's red into a pass, and the exemption tests then pass without
+    // their deciding input.
+    const publishedDrawing = () =>
+      Object.fromEntries(
+        ['pen', 'crayon', 'magic', 'eraser'].map((brush) => [
+          brush,
+          {
+            aggregate: {
+              runCount: 1,
+              paint: { p95: 44, p99: 48, max: 52 },
+              lostFrameTimeShare: 0.09,
+              blankPassed: false,
+              allPhasesPassed: false,
+            },
+            runs: [
+              { source: `perf-profiles/gone/${brush}/real-screen.json`, productCommit: 'final123' },
+            ],
+          },
+        ])
+      );
+
+    function publishReport(directory, mode = {}, otherModes = []) {
+      const drawing = mode.drawing ?? publishedDrawing();
+      writeFileSync(
+        join(directory, 'data.json'),
+        JSON.stringify({
+          targets: [
+            {
+              id: 'fixture',
+              label: 'Fixture',
+              modes: [{ id: 'portrait-light', undo: null, ...mode, drawing }, ...otherModes],
+            },
+          ],
+        })
+      );
+      return 'data.json';
+    }
+
+    function preservingManifest(directory, overrides = {}) {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = {
+        from: publishReport(directory),
+        reason: 'The raw captures were local scratch and are gone.',
+        ...overrides,
+      };
+      return source;
+    }
+
+    it('copies a published section forward when its raw capture is gone', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+
+      const matrix = normalizeMatrix(preservingManifest(manifestDirectory), manifestDirectory);
+      const mode = matrix.targets[0].modes[0];
+
+      // The published measurements are carried forward untouched. Scoreability is
+      // the one thing re-derived, from the fidelity verdict those runs already
+      // carry — without it a preserved fidelity-failed cell rendered a bold product
+      // FAIL while a freshly captured one with the identical verdict rendered
+      // unscoreable.
+      expect(mode.drawing.crayon.runs).toEqual(publishedDrawing().crayon.runs);
+      expect(mode.drawing.crayon.aggregate).toMatchObject(publishedDrawing().crayon.aggregate);
+      // Copied forward, and not scored: a preserved verdict cannot be re-derived
+      // under current expectations, so it is kept as provenance rather than allowed
+      // to drive the plots and the failure ranking.
+      expect(mode.drawing.crayon.aggregate.scoreable).toBe(false);
+      expect(mode.preservedSections).toEqual(['drawing']);
+      expect(matrix.preservedEvidence).toEqual({
+        from: 'data.json',
+        reason: 'The raw captures were local scratch and are gone.',
+      });
+    });
+
+    it('backfills readiness summaries when preserved action evidence predates the column', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        { ...action('slow action', true), ready: { ...distribution, p95: 42 } },
+        { ...action('faster action', true), ready: { ...distribution, p95: 7 } },
+      ]);
+      delete actions.worst.readyP95;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.worst.readyP95).toBe(42);
+      expect(renderMarkdown(matrix)).toContain('| 42 |');
+    });
+
+    // ADR-0175: a section is read by how old its evidence is, so the date travels
+    // into data.json and every provenance cell states its age at the report date.
+    it('carries each section capture date into data.json and renders its age', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory, {
+        actions: normalizedActions([action('old action', true, 'old123')]),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          drawing: {},
+          actionSources: 'preserved',
+          capturedOn: { actions: '2026-08-01', drawing: '2026-08-19' },
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const markdown = renderMarkdown(matrix);
+
+      expect(matrix.targets[0].modes[0].capturedOn).toEqual({
+        drawing: '2026-08-19',
+        actions: '2026-08-01',
+      });
+      expect(markdown).toContain('abcdef123456 (2026-08-01 · 19 days)');
+      expect(markdown).toContain('final123 (2026-08-19 · 1 day)');
+      expect(renderReport(matrix)).toContain('<span class="age">2026-08-01 · 19 days</span>');
+    });
+
+    // The exact-SHA coverage count punished routine merge traffic: every product
+    // commit after a capture turned it to zero (issue 2267). Age replaces it.
+    it('drops the retired final-commit action coverage from the report', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory, {
+        actions: normalizedActions([action('old action', true, 'old123')]),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions).not.toHaveProperty(
+        'finalProductCommitActionCount'
+      );
+      expect(renderMarkdown(matrix)).not.toContain('At final commit');
+      expect(renderReport(matrix)).not.toContain('Actions at final commit');
+    });
+
+    it('refuses a capture date that is not a real calendar day', () => {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { capturedOn: { drawing: '2026-02-30' } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+      expect(() => normalizeMatrix(source)).toThrow(
+        'capturedOn.drawing 2026-02-30 is not YYYY-MM-DD'
+      );
+    });
+
+    // Ages count to recordedOn, so a later capture date would publish a negative age.
+    it('refuses a capture date after the report date', () => {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { capturedOn: { drawing: '2026-08-21' } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+      expect(() => normalizeMatrix(source)).toThrow(
+        "capturedOn.drawing 2026-08-21 is after the report's recordedOn 2026-08-20"
+      );
+    });
+
+    it('refuses a capture date for a section the matrix does not have', () => {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { capturedOn: { rotation: '2026-08-01' } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+      expect(() => normalizeMatrix(source)).toThrow('capturedOn names unknown section rotation');
+    });
+
+    // The ADR-0175 gate: zero scoreable, unexplained red cells on the release-gate
+    // rows, each shown with its capture age. An old red keeps counting.
+    it('lists every open release-gate red with its capture age, oldest first', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        action('idle frame control', true, 'old123'),
+        action('old failing action', false, 'old123'),
+        action('old passing action', true, 'old123'),
+      ]);
+      publishReport(manifestDirectory, { actions }, [
+        {
+          id: 'portrait-dark',
+          undo: null,
+          drawing: publishedDrawing(),
+          actions: normalizedActions([
+            action('idle frame control', true, 'mid123'),
+            action('newer failing action', false, 'mid123'),
+          ]),
+        },
+      ]);
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          drawing: {},
+          actionSources: 'preserved',
+          capturedOn: { actions: '2026-08-10' },
+        }),
+        capturedManifestMode(modeSpecs[1], {
+          drawing: {},
+          actionSources: 'preserved',
+          capturedOn: { actions: '2026-07-31' },
+        }),
+        ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const markdown = renderMarkdown(normalizeMatrix(source, manifestDirectory));
+      const openReds = markdown.slice(
+        markdown.indexOf('## Open release-gate reds'),
+        markdown.indexOf('## Acceptance gates')
+      );
+
+      expect(openReds).toContain('2 unexplained red cells on the release-gate rows');
+      expect(openReds).not.toContain('old passing action');
+      expect(openReds.indexOf('newer failing action')).toBeLessThan(
+        openReds.indexOf('old failing action')
+      );
+      expect(openReds).toContain('2026-07-31 · 20 days');
+      expect(openReds).toContain('2026-08-10 · 10 days');
+    });
+
+    it('states the completion gate holds when no release-gate red is open', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory, {
+        actions: normalizedActions([
+          action('idle frame control', true, 'old123'),
+          action('old passing action', true, 'old123'),
+        ]),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      expect(renderMarkdown(normalizeMatrix(source, manifestDirectory))).toContain(
+        'the ADR-0175 completion gate holds on this report'
+      );
+    });
+
+    // ADR-0175 decision 6 and issue 2268: an old red keeps counting until it is
+    // recaptured or explained, and carrying a release-gate drawing section forward
+    // as preserved is neither. Its published red stays on the open-reds list.
+    describe('a preserved release-gate drawing red', () => {
+      const openRedsOf = (drawing) => {
+        const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+        temporaryDirectories.push(manifestDirectory);
+        publishReport(manifestDirectory, { drawing });
+        const source = manifest([
+          capturedManifestMode(modeSpecs[0], {
+            drawing: 'preserved',
+            capturedOn: { drawing: '2026-08-01' },
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]);
+        source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+        const matrix = normalizeMatrix(source, manifestDirectory);
+        const markdown = renderMarkdown(matrix);
+        return {
+          html: renderReport(matrix),
+          markdown,
+          openReds: markdown.slice(
+            markdown.indexOf('## Open release-gate reds'),
+            markdown.indexOf('## Acceptance gates')
+          ),
+        };
+      };
+      const withRunFidelity = (fidelity) =>
+        Object.fromEntries(
+          Object.entries(publishedDrawing()).map(([brush, entry]) => [
+            brush,
+            { ...entry, runs: entry.runs.map((run) => ({ ...run, fidelity })) },
+          ])
+        );
+
+      it('keeps counting, dated by its capture', () => {
+        const { html, markdown, openReds } = openRedsOf(publishedDrawing());
+
+        expect(openReds).toContain('4 unexplained red cells on the release-gate rows');
+        expect(openReds).toContain('preserved, published red (ADR-0175): paint P95 44');
+        expect(openReds).toContain('2026-08-01 · 19 days');
+        expect(html).toContain('published red keeps counting on a release-gate row (ADR-0175)');
+        expect(markdown).toContain('published red keeps counting on a release-gate row (ADR-0175)');
+      });
+
+      it('counts one whose published verdict failed only uncalibrated checks', () => {
+        const passingDrawing = withRunFidelity({
+          passed: false,
+          checks: { coalescing: false },
+          uncalibrated: ['coalescing'],
+        });
+        for (const entry of Object.values(passingDrawing)) entry.aggregate.blankPassed = true;
+
+        expect(openRedsOf(passingDrawing).openReds).toContain('4 unexplained red cells');
+      });
+
+      it('does not count one whose published verdict failed a calibrated check', () => {
+        const { openReds } = openRedsOf(
+          withRunFidelity({ passed: false, checks: { cadence: false }, uncalibrated: [] })
+        );
+
+        expect(openReds).toContain('the ADR-0175 completion gate holds on this report');
+      });
+
+      it('does not count one a recorded disposition explains', () => {
+        const disposed = Object.fromEntries(
+          Object.entries(publishedDrawing()).map(([brush, entry]) => [
+            brush,
+            { ...entry, disposition: { adr: 'ADR-0174' } },
+          ])
+        );
+
+        expect(openRedsOf(disposed).openReds).toContain(
+          'the ADR-0175 completion gate holds on this report'
+        );
+      });
+
+      it('does not count a published pass', () => {
+        const passed = Object.fromEntries(
+          Object.entries(publishedDrawing()).map(([brush, entry]) => [
+            brush,
+            { ...entry, aggregate: { ...entry.aggregate, blankPassed: true } },
+          ])
+        );
+
+        expect(openRedsOf(passed).openReds).toContain(
+          'the ADR-0175 completion gate holds on this report'
+        );
+      });
+    });
+
+    it('renders preserved action evidence that predates readiness samples', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([action('legacy action', true)]);
+      delete actions.worst.readyP95;
+      for (const result of actions.results) delete result.ready;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.worst.readyP95).toBeNull();
+      expect(renderMarkdown(matrix)).toContain('| — |');
+      expect(renderReport(matrix)).toContain('ready P95 — ms');
+    });
+
+    it('marks an action a preserved sweep predates as missing, not N/A by design', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([action('expand action drawer', true, 'old123')]);
+      actions.actionPlan = {
+        ...fullActionPlan({
+          orientation: 'PORTRAIT',
+          settingsShell: 'sectioned',
+          applicableLabels: ['expand action drawer'],
+          notApplicable: [
+            { label: 'declared exclusion', reason: 'the old capture excluded this on purpose' },
+          ],
+        }),
+        actionGroups: FULL_ACTION_GROUPS.filter(
+          (group) => group !== 'ai-waiting' && group !== 'unavailable'
+        ),
+      };
+      publishReport(manifestDirectory, { actions });
+      const repeated = (label) =>
+        Array.from({ length: 4 }, (_, index) => ({
+          ...actionSample(label, index === 0),
+          postActionFrameGapsMs: [1],
+        }));
+      const sectionedLabels = [
+        'expand action drawer',
+        'show AI waiting print',
+        'declared exclusion',
+      ];
+      const compactLabel = 'enable Night Mode in the compact shell';
+      const sectionedSource = writeActionCapture(manifestDirectory, 'sectioned-actions.json', {
+        orientation: 'LANDSCAPE',
+        theme: 'light',
+        samples: [
+          ...repeated('idle frame control'),
+          ...sectionedLabels.flatMap((label) => repeated(label)),
+        ],
+        actionPlan: fullActionPlan({
+          orientation: 'LANDSCAPE',
+          settingsShell: 'sectioned',
+          applicableLabels: ['idle frame control', ...sectionedLabels],
+        }),
+      });
+      const compactSource = writeActionCapture(manifestDirectory, 'compact-actions.json', {
+        orientation: 'LANDSCAPE',
+        theme: 'dark',
+        samples: [...repeated('idle frame control'), ...repeated(compactLabel)],
+        actionPlan: fullActionPlan({
+          orientation: 'LANDSCAPE',
+          settingsShell: 'compact',
+          applicableLabels: ['idle frame control', compactLabel],
+        }),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        unavailableMode(modeSpecs[1]),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: sectionedSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        capturedManifestMode(modeSpecs[3], {
+          actionSources: [{ source: compactSource, productCommit: 'final123', kind: 'full' }],
+        }),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const coordinate = (label) =>
+        matrix.targets[0].modes[0].actionCoordinates.find((candidate) => candidate.label === label);
+
+      expect(coordinate('show AI waiting print')).toEqual({
+        label: 'show AI waiting print',
+        state: 'missing',
+        reason:
+          'the sweep predates this action: its plan omits the ai-waiting, unavailable action groups',
+      });
+      expect(coordinate('declared exclusion')).toMatchObject({
+        state: 'not-applicable',
+        reason: 'the old capture excluded this on purpose',
+      });
+      // Only a current plan in the SAME shell vouches that the action is offered,
+      // so the compact shell's toggles stay N/A on the sectioned preserved mode.
+      expect(coordinate(compactLabel)).toMatchObject({ state: 'not-applicable' });
+    });
+
+    it('treats a preserved sweep in a shell no current sweep covers as unknown for new actions', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const predatingGroups = FULL_ACTION_GROUPS.filter(
+        (group) => group !== 'ai-waiting' && group !== 'unavailable'
+      );
+      const olderActions = (orientation, settingsShell, applicableLabels) => ({
+        ...normalizedActions([action('expand action drawer', true, 'old123')]),
+        actionPlan: {
+          ...fullActionPlan({ orientation, settingsShell, applicableLabels }),
+          actionGroups: predatingGroups,
+        },
+      });
+      const olderLabel = 'open Settings section: Sound';
+      publishReport(
+        manifestDirectory,
+        { actions: olderActions('PORTRAIT', 'compact', ['expand action drawer']) },
+        [
+          {
+            id: 'portrait-dark',
+            undo: null,
+            drawing: publishedDrawing(),
+            actions: olderActions('PORTRAIT', 'sectioned', ['expand action drawer', olderLabel]),
+          },
+        ]
+      );
+      const repeated = (label) =>
+        Array.from({ length: 4 }, (_, index) => ({
+          ...actionSample(label, index === 0),
+          postActionFrameGapsMs: [1],
+        }));
+      const currentLabels = ['expand action drawer', 'show AI waiting print', olderLabel];
+      const currentSource = writeActionCapture(manifestDirectory, 'current-actions.json', {
+        orientation: 'LANDSCAPE',
+        theme: 'light',
+        samples: [
+          ...repeated('idle frame control'),
+          ...currentLabels.flatMap((label) => repeated(label)),
+        ],
+        actionPlan: fullActionPlan({
+          orientation: 'LANDSCAPE',
+          settingsShell: 'sectioned',
+          applicableLabels: ['idle frame control', ...currentLabels],
+        }),
+      });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        capturedManifestMode(modeSpecs[1], { drawing: {}, actionSources: 'preserved' }),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: currentSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[3]),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const compactCoordinate = (label) =>
+        matrix.targets[0].modes[0].actionCoordinates.find((candidate) => candidate.label === label);
+
+      expect(compactCoordinate('show AI waiting print')).toEqual({
+        label: 'show AI waiting print',
+        state: 'missing',
+        reason:
+          'the sweep predates this action (its plan omits the ai-waiting, unavailable action groups), and no current sweep in its Settings shell shows whether that shell offers it',
+      });
+      // An older harness knew this label and left it out of the compact shell,
+      // so that omission is still a judgement and stays N/A.
+      expect(compactCoordinate(olderLabel)).toMatchObject({ state: 'not-applicable' });
+    });
+
+    it('keeps a freshly captured untracked section scoreable and labels its provenance', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory);
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: 'captured-untracked' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = {
+        from: 'data.json',
+        reason: 'Per-mode raw captures remain local scratch under ADR-0138.',
+      };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const mode = matrix.targets[0].modes[0];
+
+      expect(mode.drawing).toEqual(publishedDrawing());
+      expect(mode.preservedSections).toBeUndefined();
+      expect(mode.untrackedSections).toEqual(['drawing']);
+      for (const rendered of [renderMarkdown(matrix), renderReport(matrix)]) {
+        expect(rendered).toContain('captured for this campaign');
+        expect(rendered).toContain('Fixture · portrait-light (drawing)');
+      }
+    });
+
+    // The hazard this guards is structural and it already bit once: the committed
+    // matrix sets `preservedEvidence.from` to `data.json`, so the generator
+    // preserves from ITS OWN previous output. Anything a regeneration drops from a
+    // preserved run is dropped from the source the NEXT regeneration reads, and the
+    // loss compounds silently — a revision that moved the run-level fidelity verdict
+    // to a new key destroyed every historical verdict in one pass, recoverable only
+    // because git still had the file.
+    //
+    // So regenerating from your own output has to be a fixpoint. This feeds the
+    // first result back in as the published report and requires the second to match.
+    it('is a fixpoint when it preserves from its own output', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const withVerdicts = publishedDrawing();
+      withVerdicts.crayon.runs[0].fidelity = {
+        passed: false,
+        checks: { coalescing: false, cadence: true },
+      };
+      publishReport(manifestDirectory, { drawing: withVerdicts });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const first = normalizeMatrix(source, manifestDirectory);
+      writeFileSync(join(manifestDirectory, 'data.json'), JSON.stringify(first));
+      const second = normalizeMatrix(source, manifestDirectory);
+
+      expect(second.targets[0].modes[0].drawing).toEqual(first.targets[0].modes[0].drawing);
+      // Named separately from the deep-equal because this is the field that was
+      // lost: it is provenance AND the input the next regeneration preserves from.
+      expect(second.targets[0].modes[0].drawing.crayon.runs[0].fidelity).toEqual({
+        passed: false,
+        checks: { coalescing: false, cadence: true },
+      });
+    });
+
+    it('states the preservation in both rendered reports', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+
+      const matrix = normalizeMatrix(preservingManifest(manifestDirectory), manifestDirectory);
+
+      for (const rendered of [renderMarkdown(matrix), renderReport(matrix)]) {
+        expect(rendered).toContain('1 cell carry historical results preserved from data.json');
+        expect(rendered).toContain('Fixture · portrait-light (drawing)');
+      }
+    });
+
+    it('refuses a preserved section with no declared source', () => {
+      expect(() =>
+        normalizeMatrix(
+          manifest([
+            capturedManifestMode(modeSpecs[0], { drawing: 'preserved' }),
+            ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+          ])
+        )
+      ).toThrow(
+        'Target fixture mode portrait-light marks drawing preserved, but the manifest declares no preservedEvidence source'
+      );
+    });
+
+    it('refuses a preserved section the published report does not carry', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const source = preservingManifest(manifestDirectory);
+      source.targets[0].modes[0].actionSources = 'preserved';
+
+      expect(() => normalizeMatrix(source, manifestDirectory)).toThrow(
+        'data.json has no actions for fixture mode portrait-light'
+      );
+    });
+
+    it('requires a stated reason for preserving evidence', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const source = preservingManifest(manifestDirectory, { reason: '' });
+
+      expect(() => normalizeMatrix(source, manifestDirectory)).toThrow(
+        'Performance matrix preservedEvidence.reason must say why raw inputs are gone'
+      );
+    });
+  });
+});
+
+// Issue 1297: the gesture-repeat count decides a cell's first-touch-to-repeat
+// mix, so runs at different recorded counts measured different quantities. The
+// matrix publishes each run's count and refuses to fold two different ones; a
+// run predating the field (null) proves nothing and folds as before.
+describe('the gesture-repeat contract in a folded cell', () => {
+  function writeDrawingCapture(directory, name, gestureRepeats) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gestureRepeats,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  it('publishes each run’s recorded count and refuses to fold two different ones', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const ten = writeDrawingCapture(directory, 'pen-ten.json', 10);
+    const legacy = writeDrawingCapture(directory, 'pen-legacy.json', undefined);
+    const modesWith = (pen) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { pen } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    const matrix = normalizeMatrix(manifest(modesWith([ten, legacy])), directory);
+    const runs = matrix.targets[0].modes[0].drawing.pen.runs;
+    expect(runs.map((run) => run.gestureRepeats)).toEqual([10, null]);
+
+    const three = writeDrawingCapture(directory, 'pen-three.json', 3);
+    expect(() => normalizeMatrix(manifest(modesWith([ten, three])), directory)).toThrow(
+      'folds captures with different gesture-repeat counts (10, 3)'
+    );
+  });
+});
+
+// Issue 2217: a floor-control capture matches a browser cell's mode, and a
+// manifest can name it directly without the campaign fold's identity check.
+describe('a floor-control capture named as a matrix source', () => {
+  it('is refused before it is scored under the manifest’s product commit', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, 'floor.json'),
+      JSON.stringify({
+        page: 'floor-control',
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        productCommit: null,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    const modes = [
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: ['floor.json'] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    expect(() => normalizeMatrix(manifest(modes), directory)).toThrow(
+      'floor.json is a floor-control capture'
+    );
+  });
+});
+
+// Issue 1292's companion boundary: HOW the repeats were fed ink. An unrefilled
+// eraser run is optimistic by an unknown amount, so folding it beside a
+// refilled one launders the optimism into the cell. A run predating the field
+// (null) proves nothing and folds as before.
+describe('the gesture-plan contract in a folded cell', () => {
+  function writeDrawingCapture(directory, name, gesturePlan) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gesturePlan,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  it('publishes each run’s recorded plan and refuses to fold two different ones', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const refilled = writeDrawingCapture(
+      directory,
+      'eraser-refilled.json',
+      'fixed-geometry-refilled'
+    );
+    const legacy = writeDrawingCapture(directory, 'eraser-legacy.json', undefined);
+    const modesWith = (eraser) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    const matrix = normalizeMatrix(manifest(modesWith([refilled, legacy])), directory);
+    const runs = matrix.targets[0].modes[0].drawing.eraser.runs;
+    expect(runs.map((run) => run.gesturePlan)).toEqual(['fixed-geometry-refilled', null]);
+
+    const unrefilled = writeDrawingCapture(directory, 'eraser-unrefilled.json', 'fixed-geometry');
+    expect(() => normalizeMatrix(manifest(modesWith([refilled, unrefilled])), directory)).toThrow(
+      'folds captures under different gesture plans (fixed-geometry-refilled, fixed-geometry)'
+    );
+  });
+
+  // A single run is the published norm, so the run-vs-run refusal above never
+  // fires for it — a lone eraser run recording a retired or unrefilled plan
+  // must collide with the CONTRACT on a repeat-driven target. An unknown
+  // target has no contract, and a null-plan artifact stays accepted.
+  it('refuses a lone recorded plan that disagrees with a repeat-driven target’s contract', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const unrefilled = writeDrawingCapture(directory, 'eraser-unrefilled.json', 'fixed-geometry');
+    const legacy = writeDrawingCapture(directory, 'eraser-legacy.json', undefined);
+    const manifestFor = (eraser, targetId) => {
+      const built = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      if (targetId) built.targets[0].id = targetId;
+      return built;
+    };
+
+    expect(() =>
+      normalizeMatrix(manifestFor([unrefilled], 'android-device-web'), directory)
+    ).toThrow(
+      'folds a capture recording gesture plan fixed-geometry, not the campaign contract of ' +
+        'fixed-geometry-refilled'
+    );
+    expect(() =>
+      normalizeMatrix(manifestFor([legacy], 'android-device-web'), directory)
+    ).not.toThrow();
+    expect(() => normalizeMatrix(manifestFor([unrefilled], null), directory)).not.toThrow();
+  });
+});
+
+// Issue 1290's surviving claim: the matrix publishes one capture per cell and a
+// single capture decides a pass/fail gate. Its spread figures were retracted
+// twice, so the matrix states the structural fact — prose, runCount, tooltip
+// basis — and publishes no figure. The verdict itself must not change.
+describe('single-capture verdict provenance', () => {
+  const failingAggregate = (runCount) => ({
+    runCount,
+    paint: { p95: 30, p99: 40, max: 60 },
+    lostFrameTimeShare: 0.027,
+    blankPassed: false,
+  });
+
+  it('states the single-capture basis in prose without resurrecting retracted figures', () => {
+    const brushes = drawing();
+    brushes.magic.aggregate = failingAggregate(1);
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { drawing: brushes }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const markdown = renderMarkdown(matrix);
+
+    expect(markdown).toContain('provisional until it has been compared against the previous run');
+    expect(markdown).toContain('retracted twice');
+    expect(markdown).not.toContain('2.71');
+    expect(markdown).toContain('**FAIL 30 / 40 / 60 · L2.7%**');
+  });
+
+  it('states each fresh cell’s capture basis in the plot tooltips, and none for preserved cells', () => {
+    const brushes = drawing();
+    brushes.magic.aggregate = failingAggregate(1);
+    brushes.crayon.aggregate = failingAggregate(4);
+    brushes.eraser.aggregate = {
+      ...failingAggregate(1),
+      scoreable: false,
+      unscoreableReason: 'preserved: no current verdict',
+    };
+    brushes.pen.aggregate.runCount = 0;
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { drawing: brushes }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const html = renderReport(matrix);
+
+    expect(html).toContain('· 1 capture');
+    expect(html).toContain('· 4 captures');
+    // A preserved cell's runCount is an inherited claim, and a zero-run cell
+    // has no basis to state — neither asserts one.
+    expect(html).not.toContain('· 0 captures');
+    expect(html.match(/capture · unscoreable: preserved/g)).toBeNull();
+  });
+});
+
+describe('release gate prose', () => {
+  const gated = (modes) => {
+    const matrix = normalizedMatrix(modes);
+    matrix.targets[0].fidelity = 'physical-safari-gated';
+    return matrix;
+  };
+  const failingDrawing = () => {
+    const brushes = drawing();
+    brushes.crayon.aggregate.blankPassed = false;
+    return brushes;
+  };
+
+  it('reports the gate target as captured and red when its aggregates fail', () => {
+    const matrix = gated(
+      modeSpecs.map((spec) => normalizedMode(spec, { drawing: failingDrawing() }))
+    );
+
+    expect(renderReport(matrix)).toContain(
+      'The release gate is one physical row, Android device · web. Android device · web carries a calibrated drawing instrument — 4/4 modes captured, 4 of 16 brush aggregates over gate (4 open, 0 explained by a recorded disposition).'
+    );
+  });
+
+  it('reports the gate target as green when no aggregate is over gate', () => {
+    const matrix = gated(modeSpecs.map((spec) => normalizedMode(spec)));
+
+    expect(renderReport(matrix)).toContain(
+      '4/4 modes captured, all 16 brush aggregates inside gate.'
+    );
+  });
+
+  it('calls the gate unavailable only when no mode of it was captured', () => {
+    const matrix = gated(
+      modeSpecs.map((spec) => ({ ...spec, status: 'unavailable', reason: 'No tunnel.' }))
+    );
+
+    expect(renderReport(matrix)).toContain(
+      'Android device · web carries a calibrated drawing instrument and is unavailable in this campaign.'
+    );
+  });
+
+  // ADR-0156 decision 1: a physical row gates a release whatever its fidelity
+  // class, so an uncalibrated one is a gate-in-waiting, not an advisory row.
+  it('keeps an uncalibrated physical row on the gate as a gate-in-waiting', () => {
+    const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
+
+    expect(renderReport(matrix)).toContain(
+      'The release gate is one physical row, Android device · web. It carries no calibrated drawing instrument yet, so it is a gate-in-waiting.'
+    );
+  });
+
+  it('names every present role when several rows gate and none is calibrated', () => {
+    const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
+    const [gate] = matrix.targets;
+    matrix.targets = [
+      gate,
+      { ...gate, id: 'second', number: 2, label: 'Second device' },
+      { ...gate, id: 'mac', number: 3, label: 'Mac', deviceKind: 'desktop' },
+      { ...gate, id: 'sim', number: 4, label: 'Simulator', deviceKind: 'simulator' },
+    ];
+
+    expect(renderReport(matrix)).toContain(
+      'The release gate is the 2 physical rows: Android device · web, Second device. None of them carries a calibrated drawing instrument yet, so both are gates-in-waiting. Mac rows are a regression tripwire, and simulator and emulator rows are advisory (ADR-0156).'
+    );
+  });
+
+  it('says so when no target is a release-gate row', () => {
+    const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
+    matrix.targets[0].deviceKind = 'desktop';
+
+    expect(renderReport(matrix)).toContain(
+      'No target in this campaign is a release-gate row. Mac rows are a regression tripwire (ADR-0156).'
+    );
+  });
+});
+
+// The refill record is consumed at the fold too (issue 1355, hardened by the
+// PR 1363 review): a run with a recorded anomaly, or a clean record shorter
+// than its own repeat contract implies, measured erasing blank paper — the
+// fold refuses loudly instead of publishing the optimistic cell.
+describe('the eraser refill record in a folded cell', () => {
+  function writeEraserCapture(directory, name, { eraserRefills, gestureRepeats } = {}) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gestureRepeats,
+        eraserRefills,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  const eraserManifest = (eraser) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    built.targets[0].id = 'ipad-device-web';
+    return built;
+  };
+
+  it('refuses a fold containing an anomalous refill, naming the source and record', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const anomalous = writeEraserCapture(directory, 'eraser-anomalous.json', {
+      eraserRefills: [{ afterStroke: 4, pending: true, transparentTiles: [] }],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([anomalous]), directory)).toThrow(
+      /eraser folds a capture whose eraser refills recorded an anomaly.*eraser-anomalous\.json/s
+    );
+  });
+
+  it('refuses a clean record shorter than its own repeat contract', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const short = writeEraserCapture(directory, 'eraser-short.json', {
+      gestureRepeats: 10,
+      eraserRefills: [{ afterStroke: 4, pending: false, transparentTiles: [] }],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([short]), directory)).toThrow(
+      /refills never fired.*eraser-short\.json \(recorded 1, expected 9\)/s
+    );
+  });
+
+  it('refuses a self-consistent refill record whose repeat count differs from the campaign', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const foreign = writeEraserCapture(directory, 'eraser-foreign-repeats.json', {
+      gestureRepeats: 3,
+      eraserRefills: [
+        { afterStroke: 4, pending: false, transparentTiles: [] },
+        { afterStroke: 8, pending: false, transparentTiles: [] },
+      ],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([foreign]), directory)).toThrow(
+      /recording 3 gesture repeats, not the campaign contract of 10.*eraser-foreign-repeats\.json/s
+    );
+  });
+
+  it('folds an absent record and a contract-complete clean one', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const legacy = writeEraserCapture(directory, 'eraser-legacy.json', {});
+    const complete = writeEraserCapture(directory, 'eraser-complete.json', {
+      gestureRepeats: GESTURE_REPEATS,
+      eraserRefills: Array.from({ length: GESTURE_REPEATS - 1 }, (_, index) => ({
+        afterStroke: (index + 1) * 10,
+        pending: false,
+        transparentTiles: [],
+      })),
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([legacy]), directory)).not.toThrow();
+    expect(() => normalizeMatrix(eraserManifest([complete]), directory)).not.toThrow();
+  });
+});
+
+// Capture 7c37d255: a blank renderer passed every temporal gate. The split
+// probe now records whether the canvas changed during the pass; the fold
+// refuses a recorded no-change run and publishes the guarantee as a trust
+// dimension, while runs predating the record stay a visible `unrecorded`.
+describe('the painted-output record in a folded cell', () => {
+  function writePaintedCapture(directory, name, paintedOutput) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        ...(paintedOutput === undefined
+          ? {}
+          : { report: { meta: { schema: REAL_SCREEN_SCHEMA_VERSION }, paintedOutput } }),
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  const penRun = (directory, source) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: [source] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    return normalizeMatrix(built, directory).targets[0].modes[0].drawing.pen.runs[0];
+  };
+
+  it('refuses to fold a capture whose report records no canvas change', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const blank = writePaintedCapture(directory, 'pen-blank.json', { changed: false });
+
+    expect(() => penRun(directory, blank)).toThrow(
+      'records no canvas change during the pass (blank-output)'
+    );
+  });
+
+  it('publishes the guarantee as a trust dimension, unrecorded for legacy runs', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const changed = writePaintedCapture(directory, 'pen-changed.json', { changed: true });
+    const legacy = writePaintedCapture(directory, 'pen-legacy.json', undefined);
+    const trustRow = (source) =>
+      penRun(directory, source).trust.find((entry) => entry.name === 'paintedOutput');
+
+    expect(trustRow(changed)).toEqual({ name: 'paintedOutput', state: 'verified' });
+    expect(trustRow(legacy)).toEqual({ name: 'paintedOutput', state: 'unrecorded' });
+  });
+
+  it('surfaces an unprovable record as a loud fold error naming the source', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const unprovable = writePaintedCapture(directory, 'pen-unprovable.json', {
+      error: 'no 2d scratch context to sample through',
+    });
+
+    expect(() => penRun(directory, unprovable)).toThrow('carries no boolean changed verdict');
+  });
+});
+
+// The eraserInk trust dimension's positive paths, on synthetic profiles the
+// corpus cannot supply (its captures predate the fill recorder).
+describe('the eraserInk trust dimension', () => {
+  function writeEraserTrustCapture(directory, name, extra) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+        ...extra,
+      })
+    );
+    return name;
+  }
+
+  const eraserTrust = (directory, source) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser: [source] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const matrix = normalizeMatrix(built, directory);
+    const run = matrix.targets[0].modes[0].drawing.eraser.runs[0];
+    return run.trust.find((entry) => entry.name === 'eraserInk');
+  };
+
+  it('verifies a sound fill, carrying a settle repair in the detail', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const sound = writeEraserTrustCapture(directory, 'eraser-sound.json', {
+      eraserFill: { tiles: 16, backings: [], transparentTiles: [] },
+    });
+    const repaired = writeEraserTrustCapture(directory, 'eraser-repaired.json', {
+      eraserFill: { tiles: 16, backings: [], transparentTiles: [], repairedAfterSettle: true },
+    });
+
+    expect(eraserTrust(directory, sound)).toEqual({ name: 'eraserInk', state: 'verified' });
+    expect(eraserTrust(directory, repaired)).toEqual({
+      name: 'eraserInk',
+      state: 'verified',
+      detail: 'repaired-after-settle',
+    });
+  });
+
+  it('fails a refill record with no setup fill behind it', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const orphanRefills = writeEraserTrustCapture(directory, 'eraser-orphan.json', {
+      eraserRefills: [{ afterStroke: 4, pending: false, transparentTiles: [] }],
+    });
+
+    expect(eraserTrust(directory, orphanRefills)).toEqual({
+      name: 'eraserInk',
+      state: 'failed',
+      detail: 'no setup fill recorded',
+    });
+  });
+});
+
+// The PR 1366 review: the test named for this mapping never exercised it — the
+// corpus re-derives to a clean pass, and the fabricated verdict only reached
+// the classifier, so reverting `unrecorded` back to `failed` stayed green.
+// This drives an uncalibrated-only artifact through normalizeMatrix itself.
+// The judging runtime is desktop-playwright — since the Android WebView's
+// pressure/contact expectations were measured (android-webview-fidelity
+// .test.mjs), desktop is the one runtime that still carries UNCALIBRATED
+// entries, and a stored verdict makes even its artifact fidelity-reporting —
+// so a capture passing every real check re-derives to passed:false with only
+// uncalibrated non-passes.
+describe('trust publishes instrument silence as unrecorded', () => {
+  it('maps an uncalibrated-only verdict to unrecorded with its detail', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, 'native-pen.json'),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        // A stored verdict makes the artifact a fidelity-reporting capture (the
+        // desktop carve-out re-derives nothing) — and a FLATTERING one proves
+        // re-derivation overrides it rather than trusting the day-of claim.
+        fidelity: { passed: true, checks: { trustedTouch: true, cadence: true } },
+        summaries: {
+          intervalMs: 16.7,
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+              input: {
+                kinds: 'touch',
+                trust: { share: 1 },
+                movesPerSecond: 116,
+                movesPerFrame: 1.9,
+                moveGapP95Ms: 9,
+              },
+            },
+          ],
+        },
+      })
+    );
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: ['native-pen.json'] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    built.targets[0].id = 'mac-safari';
+
+    const matrix = normalizeMatrix(built, directory);
+    const run = matrix.targets[0].modes[0].drawing.pen.runs[0];
+
+    expect(run.fidelity.passed).toBe(false);
+    expect(run.fidelity.uncalibrated).toEqual(['pressure', 'contactGeometry']);
+    expect(run.trust.find((entry) => entry.name === 'inputFidelity')).toEqual({
+      name: 'inputFidelity',
+      state: 'unrecorded',
+      detail: 'pressure(uncalibrated)+contactGeometry(uncalibrated)',
+    });
+  });
+});
+
+// ADR-0160: the matrix scores a capture under the SHIPPED allowance policy for
+// its target, never under the ledger the artifact recorded, so a policy change
+// reaches every published cell on regeneration — and the allowance rides on
+// the result, is priced into the heat ratio, and is rendered beside the gates.
+describe('per-target action allowances', () => {
+  const label = 'select coloring page';
+  const allowedP95 = IOS_ACTION_GATE_ALLOWANCES.p95[label];
+  const allowedSample = (warmup) => ({
+    ...actionSample(label, warmup),
+    postActionFrameGapsMs: Array.from({ length: 20 }, () => allowedP95 - 1),
+  });
+
+  function matrixFor(targetOverrides, captureOverrides = {}) {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-allowance-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        ...[true, false, false, false].map((warmup) => actionSample('idle frame control', warmup)),
+        ...[true, false, false, false].map(allowedSample),
+      ],
+      ...captureOverrides,
+    });
+    const target = {
+      ...manifestTarget([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      ...targetOverrides,
+    };
+    return normalizeMatrix({ ...manifest([]), targets: [target] }, manifestDirectory);
+  }
+
+  it('scores the calibrated iPad web row under the shipped ledger, whatever the artifact recorded', () => {
+    expect(allowedP95).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+    const matrix = matrixFor(
+      { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
+      { captureRuntime: 'ios-safari', gateAllowances: {} }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toEqual({ p95Ms: allowedP95 });
+    expect(result.postActionFrames.p95).toBe(allowedP95 - 1);
+  });
+
+  it('keeps every other target on the base gates, whatever the artifact recorded', () => {
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      { captureRuntime: 'ios-capacitor-webview', gateAllowances: IOS_ACTION_GATE_ALLOWANCES }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // A summary-only artifact keeps the verdict it was written with, so the shipped
+  // policy cannot reach it: on the ledger's target the fold refuses rather than
+  // labelling a stored verdict with an allowance it never scored under, and on
+  // every other target it folds as before, carrying no allowance.
+  it('refuses a summary-only capture on the ledger target and folds it plainly elsewhere', () => {
+    const summaryOnly = {
+      samples: undefined,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: false,
+        },
+      ],
+    };
+    expect(() =>
+      matrixFor({ id: 'ipad-device-web', fidelity: 'physical-safari-gated' }, summaryOnly)
+    ).toThrow('allowance policy (ADR-0160) cannot be applied');
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      summaryOnly
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // The stored verdict of a summary-only artifact was scored under the ledger
+  // it recorded. A native artifact carrying the iPad ledger stores PASS at a
+  // P95 the native row's base gate fails, so the fold refuses it — in both the
+  // structured and the legacy flat recorded shapes — rather than publishing a
+  // verdict the target never scored.
+  it('refuses a summary-only capture whose recorded ledger is not the target policy', () => {
+    const storedPass = (gateAllowances) => ({
+      samples: undefined,
+      gateAllowances,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: true,
+        },
+      ],
+    });
+    const native = { id: 'ipad-device-native', fidelity: 'physical-native-advisory' };
+    expect(() => matrixFor(native, storedPass(IOS_ACTION_GATE_ALLOWANCES))).toThrow(
+      'recorded gateAllowances that target ipad-device-native does not grant'
+    );
+    expect(() => matrixFor(native, storedPass({ [label]: allowedP95 }))).toThrow('does not grant');
+    const plain = matrixFor(native, storedPass({ p95: {}, max: {} }));
+    const result = plain.targets[0].modes[0].actions.results.find((entry) => entry.label === label);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  it('renders every ledger beside the gates and names the allowance in the cell verdict', () => {
+    const matrix = matrixFor(
+      { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
+      { captureRuntime: 'ios-safari' }
+    );
+    const ledgers = matrix.gates.actions.postActionAllowances;
+    expect(ledgers.map((ledger) => ledger.target)).toEqual([
+      'ipad-device-web',
+      'android-device-web',
+    ]);
+    const ipad = ledgers.find((ledger) => ledger.target === 'ipad-device-web');
+    expect(ipad.adrs).toEqual(['ADR-0090', 'ADR-0160']);
+    expect(ipad.p95[label].ms).toBe(allowedP95);
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain(`**${label}** — post-action P95 ≤ ${allowedP95} ms.`);
+    expect(markdown).toContain('**open Settings** — post-action max ≤ 56 ms.');
+    expect(markdown).toContain(`**${nightModeLabel}** — post-action P95 ≤ ${nightModeP95} ms.`);
+    const html = renderReport(matrix);
+    expect(html).toContain(
+      'Action allowances on <code>ipad-device-web</code> (ADR-0090, ADR-0160)'
+    );
+    expect(html).toContain('Action allowances on <code>android-device-web</code> (ADR-0162)');
+    expect(html).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${allowedP95} ms; ADR-0090, ADR-0160)`
+    );
+  });
+
+  // ADR-0162: the physical Android web row scores under its own one-entry
+  // ledger, priced and named per that ADR, while the native Android row beside
+  // it stays on the base gates. The fixture has the committed capture's shape:
+  // one two-beat frame in each of ~17 scored gaps per repeat, so the pooled
+  // P95 over three repeats is the third-highest gap and reads the two beats.
+  const nightModeLabel = `disable ${compactSettingsActionLabel('Night Mode')}`;
+  const nightModeP95 = ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95[nightModeLabel];
+  const twoBeatSample = (warmup) => ({
+    ...actionSample(nightModeLabel, warmup),
+    postActionFrameGapsMs: [33.4, ...Array.from({ length: 16 }, () => 16.7)],
+  });
+  const androidCapture = (captureRuntime) => ({
+    captureRuntime,
+    samples: [
+      ...[true, false, false, false].map((warmup) => actionSample('idle frame control', warmup)),
+      ...[true, false, false, false].map(twoBeatSample),
+    ],
+  });
+
+  it('scores the physical Android web row under the ADR-0162 ledger and names it', () => {
+    expect(nightModeP95).toBe(33.5);
+    const matrix = matrixFor(
+      { id: 'android-device-web', fidelity: 'physical-web-advisory' },
+      androidCapture('android-chrome')
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === nightModeLabel
+    );
+    expect(result.postActionFrames.p95).toBe(33.4);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toEqual({ p95Ms: nightModeP95 });
+    expect(renderReport(matrix)).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${nightModeP95} ms; ADR-0162)`
+    );
+  });
+
+  it('keeps the physical Android native row on the base gates for the same capture', () => {
+    const matrix = matrixFor(
+      { id: 'android-device-native', fidelity: 'physical-native-advisory' },
+      androidCapture('android-capacitor-webview')
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === nightModeLabel
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+});

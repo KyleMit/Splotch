@@ -1,0 +1,270 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT, isMain, runMain } from './lib/proc.mjs';
+import { isInstrumentedBuild } from './lib/build-instrumentation.mjs';
+
+const CLIENT_BUNDLE_DIR = join(ROOT, 'web/.svelte-kit/output/client/_app/immutable');
+const AI_KEY_SOURCE_PATH = 'web/src/lib/state/aiKey.ts';
+const ENGINE_SOURCE_PATH = 'web/src/lib/drawing/engine.ts';
+const TILED_RENDERER_SOURCE_PATH = 'web/src/lib/drawing/tiledRenderer.ts';
+export const RELEASE_SEAM_SOURCE_FILES = [
+  'web/src/lib/boot/devHarnessSeam.ts',
+  'web/src/lib/drawing/imageSave.ts',
+  ENGINE_SOURCE_PATH,
+  // Carries `engine.draw`, which moved out of the engine when the per-frame
+  // raster queue was extracted. A measure in a file missing from this list is
+  // not scanned, so the derived token list silently loses it.
+  'web/src/lib/drawing/strokeRasterQueue.ts',
+  // Carries `engine.fold`, the idle history compaction the settle trace attributes.
+  'web/src/lib/drawing/tiledRenderer.ts',
+  // Carries `engine.crayonShadow`, the deferred whole-tile shadow reads after a crayon stroke.
+  'web/src/lib/drawing/crayonPassBuffer.ts',
+  // Carries `engine.undoPatchCapture` / `engine.undoPatchCrop`, the undo patch brackets.
+  'web/src/lib/drawing/tiledUndoPatches.ts',
+  'web/src/lib/drawing/undoHistory.ts',
+  'web/src/lib/drawing/emptyScan.ts',
+  'web/src/lib/drawing/magicBrush.ts',
+  'web/src/lib/drawing/magicSheetRasterClient.ts',
+  'web/src/lib/drawing/magicWorkWitness.ts',
+  'web/src/lib/storeCapture.ts',
+];
+const RELEASE_ONLY_DEBUG_PROPERTIES = [
+  'backingMigrationPending',
+  'baseRasterBytes',
+  'historyRepaints',
+  'inputOps',
+  'liveSurfaceElements',
+  'liveRasters',
+  'magicBrushState',
+  'magicBrushWorkerRequests',
+  'magicDeferredFill',
+  'magicEngineFacts',
+  'magicEnsureOutcomes',
+  'magicFillUrl',
+  'magicGradientSelections',
+  'magicHeldGradient',
+  'magicInitialPosts',
+  'magicMainAttempts',
+  'magicMainCauses',
+  'magicMainOrigins',
+  'magicMainOutcomes',
+  'magicMainPaints',
+  'magicMainStaleAttempts',
+  'magicOrphanedReplyDisposals',
+  'magicPaperSize',
+  'magicPendingFillRaster',
+  'magicPendingGradientRaster',
+  'magicPendingLoad',
+  'magicPoolBuilds',
+  'magicPoolExists',
+  'magicRecodeChanges',
+  'magicRecodeCompletedDelegations',
+  'magicRecodeInvocations',
+  'magicRecodeNoChanges',
+  'magicRecodeNoContext',
+  'magicRecodeNoSnapshot',
+  'magicRecodeThrows',
+  'magicRecodes',
+  'magicRejectedRequests',
+  'magicResolvedRequests',
+  'magicRetryPosts',
+  'magicSheetBounds',
+  'magicSheetGeometryStale',
+  'magicSheetOrigin',
+  'magicSheetReady',
+  'magicSheetSourceUrl',
+  'magicSourceKind',
+  'magicSupersededDisposals',
+  'magicWitnessRevision',
+  'magicWorkCounts',
+  'magicWorkerAcquisitions',
+  'magicWorkerConstructed',
+  'magicWorkerConstructionAttempts',
+  'magicWorkerExists',
+  'magicWorkerFailures',
+  'magicWorkerNextRequestId',
+  'magicWorkerPending',
+  'magicWorkerPublications',
+  'magicWorkerRequests',
+  'magicWorkerRetirements',
+  'magicWorkerState',
+  'magicWorkerSupported',
+  'maxLiveBackingBytes',
+  'maxSurfaceVisitsPerOp',
+  'pendingCommands',
+  'rasterizedOps',
+  'realizedCrayonBackings',
+  'realizedNormalBackings',
+  'totalLiveBackingBytes',
+];
+
+const DEV_GATED_ENGINE_EXPORTS = [
+  'getDrawingWorkDebug',
+  'getMagicWorkDebug',
+  'getUndoDebug',
+  'setCrayonParams',
+  'replayHarnessStroke',
+];
+export const DEV_GATED_EXPORTS = [
+  ...DEV_GATED_ENGINE_EXPORTS.map((name) => ({ name, sourcePath: ENGINE_SOURCE_PATH })),
+  // engine.ts re-exports it; the gate lives on the definition.
+  { name: 'setScreenAngleOverride', sourcePath: 'web/src/lib/drawing/screenAngle.ts' },
+  { name: 'prepareRefusedAiKeyForget', sourcePath: AI_KEY_SOURCE_PATH },
+];
+
+// Source extensions that can ship client code and therefore emit an engine measure.
+export const CLIENT_SOURCE_EXTENSIONS = ['.ts', '.svelte'];
+
+function withoutComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+}
+
+// The one lexer for `performance.mark('engine.…')` / `performance.measure('engine.…')`
+// calls, shared by the token derivation and the drift guard that checks every
+// emitting source file is in RELEASE_SEAM_SOURCE_FILES. It tolerates a line
+// break between the parenthesis and the string, which Prettier inserts when the
+// call wraps.
+export function engineMeasureNames(source) {
+  return [
+    ...withoutComments(source).matchAll(/performance\.(?:mark|measure)\(\s*'(engine\.[A-Za-z]+)/g),
+  ].map((match) => match[1]);
+}
+
+export function magicWitnessMeasureNames(source) {
+  const live = source.replace(
+    /(["'`])(?:\\[\s\S]|(?!\1)[^\\])*\1|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+    (token) => (token.startsWith('/') ? '' : token)
+  );
+  return [
+    ...live.matchAll(/performance\.(?:mark|measure)\(\s*(['"`])(magicWitness\.[^'"`]*?)\1/g),
+  ].map((match) => match[2]);
+}
+
+export const RELEASE_ONLY_TOKENS = [
+  ...new Set(
+    RELEASE_ONLY_DEBUG_PROPERTIES.concat(
+      RELEASE_SEAM_SOURCE_FILES.flatMap((relativePath) => {
+        const source = readFileSync(join(ROOT, relativePath), 'utf8');
+        return [
+          ...[...withoutComments(source).matchAll(/window\.(__[A-Za-z0-9_]+)/g)].map(
+            (match) => match[1]
+          ),
+          ...engineMeasureNames(source),
+          ...magicWitnessMeasureNames(source),
+        ];
+      })
+    )
+  ),
+].sort();
+
+function exportedFunctionBody(source, name) {
+  const declaration = new RegExp(`export\\s+(?:async\\s+)?function\\s+${name}\\b`).exec(source);
+  if (!declaration) return null;
+  const declarationStart = declaration.index;
+  const bodyStart = source.indexOf('{', declarationStart);
+  if (bodyStart === -1) return null;
+
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index++) {
+    if (source[index] === '{') depth++;
+    if (source[index] !== '}') continue;
+    depth--;
+    if (depth === 0) return source.slice(bodyStart + 1, index);
+  }
+  return null;
+}
+
+export function devGateProblems(
+  readSource = (sourcePath) => readFileSync(join(ROOT, sourcePath), 'utf8')
+) {
+  return DEV_GATED_EXPORTS.flatMap(({ name, sourcePath }) => {
+    const source = readSource(sourcePath);
+    const body = exportedFunctionBody(withoutComments(source), name);
+    if (body === null) return [`${name} export is missing from ${sourcePath}`];
+    if (
+      !/^if\s*\(\s*!dev\s*&&\s*!__DEV_HARNESS__(?:\s*&&\s*!PERF_MARKS)?\s*\)\s*(?:return\b|throw\b|\{\s*(?:return\b|throw\b))/.test(
+        body.trimStart()
+      )
+    ) {
+      return [`${name} in ${sourcePath} must begin with the __DEV_HARNESS__ compile-time guard`];
+    }
+    return [];
+  });
+}
+
+export function drawingWorkHotPathProblems(
+  source = readFileSync(join(ROOT, TILED_RENDERER_SOURCE_PATH), 'utf8')
+) {
+  const guardedRanges = [];
+  const guardedBlock = /if\s*\(\s*workCounters\s*\)\s*\{/g;
+  for (const match of source.matchAll(guardedBlock)) {
+    const start = match.index + match[0].lastIndexOf('{');
+    let depth = 1;
+    let end = start + 1;
+    while (depth > 0 && end < source.length) {
+      if (source[end] === '{') depth++;
+      if (source[end] === '}') depth--;
+      end++;
+    }
+    guardedRanges.push({ start, end });
+  }
+  for (const match of source.matchAll(
+    /if\s*\(\s*workCounters\s*\)\s*surfaceVisits\s*(?:\+\+|\+=\s*[^;\n]+)\s*;/g
+  )) {
+    guardedRanges.push({ start: match.index, end: match.index + match[0].length });
+  }
+
+  return [...source.matchAll(/surfaceVisits\s*(?:\+\+|\+=\s*[^;\n]+)/g)].flatMap((match) => {
+    const guarded = guardedRanges.some(
+      ({ start, end }) => match.index > start && match.index < end
+    );
+    if (guarded) return [];
+    const line = source.slice(0, match.index).split('\n').length;
+    return [
+      `${TILED_RENDERER_SOURCE_PATH}:${line}: surface-visit accounting must stay behind the compile-time workCounters gate`,
+    ];
+  });
+}
+
+function javascriptFiles(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return javascriptFiles(path);
+    return entry.name.endsWith('.js') ? [path] : [];
+  });
+}
+
+// A token is matched whole: `engine.undo` must not report itself for
+// `engine.undoInkMotion`, which is its own entry in the list.
+const tokenPattern = (token) =>
+  new RegExp(`${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`);
+
+export function releaseSeamProblems(dir) {
+  if (!existsSync(dir)) return [`Client bundle directory does not exist: ${dir}`];
+  const problems = [];
+  for (const path of javascriptFiles(dir)) {
+    const source = readFileSync(path, 'utf8');
+    for (const token of RELEASE_ONLY_TOKENS) {
+      if (tokenPattern(token).test(source)) problems.push(`${token} remains in ${path}`);
+    }
+  }
+  return problems;
+}
+
+export async function checkReleaseSeams({
+  dir = CLIENT_BUNDLE_DIR,
+  env = process.env,
+  log = console.log,
+} = {}) {
+  const sourceProblems = [...devGateProblems(), ...drawingWorkHotPathProblems()];
+  if (sourceProblems.length) throw new Error(sourceProblems.join('\n'));
+  if (isInstrumentedBuild(env)) {
+    log('[release-seams] instrumented build: profiling seams retained');
+    return;
+  }
+  const problems = releaseSeamProblems(dir);
+  if (problems.length) throw new Error(problems.join('\n'));
+  log('[release-seams] release client contains no profiling seams or engine marks');
+}
+
+if (isMain(import.meta.url)) runMain(checkReleaseSeams);

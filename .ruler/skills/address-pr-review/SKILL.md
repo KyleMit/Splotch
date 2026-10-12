@@ -1,0 +1,224 @@
+---
+name: address-pr-review
+description: Triage and address every reviewer comment on a pull request — validate each one against the current code, fix the valid ones and reply with the solution, reply to and resolve the invalid ones with the rationale. Use when asked to address, respond to, or work through the comments/feedback/review received on a PR. To produce a review of a PR (author the critique), use leave-pr-review instead.
+---
+
+# Review PR Comments
+
+Work through the comments left on a pull request: decide for each one whether it calls for a code
+change, make the valid fixes, and answer every thread so the reviewer can see at a glance what
+happened. The deliverable is a PR where **no comment is left hanging** — each thread ends with
+either a fix (and a reply pointing at it) or a reasoned reply explaining why no change is needed.
+
+This is the receiving side of [`leave-pr-review`](../leave-pr-review/SKILL.md) — that sister skill
+authors and posts review comments; this one works through them.
+
+An orchestrator may invoke this skill with `mode=autonomous`. The default remains interactive. In
+autonomous mode, a question you would otherwise have asked the user goes through
+`walk-through-decision` in `mode=autonomous` — **the autonomous-decision rule** below. It locks the
+agent's own calls after a rival review (marked unreviewed if none can run) and parks the user's
+(anything a parent or child sees, among others); return every resulting record to the orchestrator
+for the PR body or comment. A thread with an obvious answer is just addressed; the rule is for what
+you would have escalated. This mode does not authorize crossing a security boundary, merging or
+closing a PR, weakening tests or protections, destructive data changes, spending money, or acting
+outside the named PR; those remain blockers.
+
+## Setup
+
+1. **Identify the PR.** Use the PR the user named, or the open PR for the current branch. If the
+   branch has no open PR, say so and stop — there is nothing to review. Once identified, check
+   whether the PR sits in an active stacked campaign — that widens the sweep and moves where fixes
+   commit (see "In a stacked campaign" below).
+2. **Check out the PR's head branch** and make sure the working tree is clean and up to date with
+   the remote (`git pull origin <branch>`). Fixes commit onto this branch; never mix them with
+   unrelated local work.
+3. **Fetch every kind of comment** — reviewers leave feedback in three places, and a sweep that only
+   reads one of them misses comments:
+   * **Inline review comments** (threads anchored to a diff line) — GitHub MCP `pull_request_read`
+     with `method: "get_review_comments"`.
+   * **Review summaries** (the approve/request-changes body text) — `method: "get_reviews"`.
+   * **Conversation comments** (top-level comments on the PR itself) — `method: "get_comments"`.
+
+   With `gh` available, `gh pr view <n> --comments` and
+   `gh api repos/{owner}/{repo}/pulls/{n}/comments` cover the same ground. In cloud sessions `gh` is
+   not available — use the MCP tools.
+4. **Filter to open threads only — resolved is done.** The worklist is exclusively the
+   **unresolved** threads: because this skill resolves every thread it finishes (see Replying), a
+   resolved thread is a completed round, and re-triaging it duplicates effort. This is what lets
+   review rounds compose — `leave-pr-review` posts a fresh batch, this skill works and resolves it,
+   and the next run picks up only what's new or reopened (a reviewer unresolving a thread puts it
+   back in scope on purpose). If the comment listing doesn't expose resolution state, fall back to
+   the same signal by content: skip any thread whose last reply is your own disposition. Also skip
+   your own comments elsewhere, but treat bot reviews (Copilot, CI annotations) the same as human
+   ones — triage them on merit, not on author.
+
+   One orchestrated exception is load-bearing: the rival agent (`run-rival-agent`) posts its review
+   through the handler's own GitHub account, so it may share the implementer's identity. In
+   `mode=autonomous`, a review body containing `<!-- splotch-rival-review:` identifies that
+   independent review. Include the marked review body itself and every inline comment belonging to
+   that review ID even though GitHub reports your own account as its author.
+
+## In a stacked campaign — sweep the whole stack, fix at the tip
+
+A PR opened by the `create-stacked-prs` skill is one layer of a chained campaign, and two of this
+skill's defaults change inside one. Detect it before touching anything: list the open PRs' head and
+base branches — chained bases (the identified PR's base is another open PR's head, or its head is
+another open PR's base) signal a stack. Chained bases alone are not proof: a lone fix-up PR based on
+a reviewed PR's head (`leave-pr-review`'s implement path), or any two-PR chain with no registered
+stack link and no campaign shape behind it, stays on the default flow — a plain fix-up pair carries
+no linear-history contract that a commit below would break. Treat the chain as a campaign when it is
+three or more PRs long, a `gh stack` link is registered, or the PR bodies name their position in a
+stack.
+
+* **The sweep covers the whole campaign, not one PR.** Reviewers leave feedback wherever the diff
+  they cared about lives, so fetch all three comment kinds (Setup step 3) from **every open PR in
+  the chain** and triage them as one worklist — one plan, one ordering pass, one composed
+  verification run.
+* **Fixes never commit onto a reviewed branch.** The stack's load-bearing rule — never add a commit
+  to a PR once a PR sits above it — overrides Setup step 2 and the fix flow's commit target. Every
+  fix from the sweep lands in a **single feedback PR stacked on the current tip**: branch off the
+  tip PR's head (name it for the campaign, e.g. `claude/<campaign-slug>-review-feedback`), one
+  commit per finding, then open the PR with its base set to the tip's branch and link it into the
+  stack when one is registered (append with the recorded stack number — mechanics in
+  `create-stacked-prs`). A dedicated feedback PR also keeps each work PR's diff scoped to its own
+  change — cross-campaign fixes don't belong inside the tip PR's diff.
+* **Subsequent rounds reuse the same feedback PR.** Once the campaign's feedback PR exists at the
+  top of the stack, every later review round — including review of the feedback PR itself — commits
+  onto it rather than opening another PR. That stays legal precisely because nothing sits above it;
+  if the campaign has since stacked new work on top, the feedback PR is frozen like any other layer
+  and the new round starts a fresh feedback PR at the new tip.
+
+One scoped exception, keyed on the scoping of the invocation rather than on who invokes: when the
+invocation **explicitly restricts this skill to a single PR that is the current tip with nothing
+above it** — as a stack's per-layer review rounds do, addressing each PR before the next one stacks
+on top — the default applies: fixes commit onto that PR's own branch, since no rule forbids commits
+at the tip and the feedback is scoped to that layer. A bare request that merely *names* the tip PR
+is not that scoping: inside an active stack it still gets the whole-campaign sweep and the feedback
+PR above.
+
+Everything else in this skill applies unchanged. Replies still go **on the original thread, on
+whichever PR of the campaign carries it**, naming the pushed commit in the feedback PR, and threads
+still get resolved. Give the feedback PR's body an index of what it addresses — each source PR and
+the comments taken from it (references to the campaign's own PRs are deliberate, so those
+`#`-numbers stay unescaped).
+
+## Plan the order before starting
+
+With the full comment list in hand, decide the order to address them **before** touching anything —
+working comments in arrival order wastes effort when a later comment invalidates an earlier fix. Lay
+out the plan (a short ordered list of comments with a one-line reason for the sequencing), then work
+it top to bottom:
+
+1. **Ambiguous / scope-changing comments first.** In the default mode, anything that will need an
+   `AskUserQuestion` (see Triage) goes to the front — ask early so the answer arrives while you work
+   the rest. In `mode=autonomous`, settle it with the autonomous-decision rule above before
+   dependent fixes.
+2. **Broad before narrow.** A comment questioning an approach, an abstraction, or a file's whole
+   structure comes before line-level comments *inside* that structure — a restructure can moot or
+   relocate the nits, and fixing the nits first means fixing them twice.
+3. **Group comments touching the same file or subsystem** and handle the group consecutively, so the
+   code is fresh in context and related fixes can share one commit and one verification run.
+4. **Deep-diff order within a group.** Where one fix feeds another (a rename a later comment's fix
+   would build on, a helper another fix would call), sequence the dependency first.
+5. **Questions and reply-only dispositions last** (or interleaved freely) — they change no code, so
+   nothing else depends on them.
+
+If the triage below reclassifies a comment in a way that changes the plan (e.g. a "nit" turns out to
+demand the restructure), reorder the remaining items rather than pushing through the stale plan.
+
+## Triage — validate before touching anything
+
+Triage each comment **adversarially, in both directions** — the same stance `leave-pr-review` takes
+when authoring a review. Try to prove the comment right (assume it found a real defect, and hunt for
+the failure it describes) *and* try to refute it (assume it misread the code, and look for the
+evidence that clears it). Classification follows whichever side the evidence lands on — never the
+reviewer's confidence, seniority, or bot/human status. Agreeably fixing whatever is asked ships
+wrong changes; reflexively defending the code dismisses real defects.
+
+For each remaining comment, read the code it points at **as it exists now** and classify it:
+
+* **Valid** — the comment identifies a real defect, risk, or clear improvement, and the fix is in
+  scope for this PR. → Fix it (below).
+* **Already addressed / outdated** — the code changed since the comment was written and the concern
+  no longer applies. → Reply with the commit that addressed it (or the reason it's moot) and resolve
+  the thread.
+* **Invalid** — the comment misreads the code, proposes something worse, or conflicts with a
+  documented decision (check the `adrs` skill — an ADR is the strongest rationale you can cite). →
+  Don't change the code. Reply with the concrete rationale — cite the code path, test, or ADR that
+  shows why — and resolve the thread.
+* **Question** — the reviewer is asking, not requesting. → Answer it in a reply; change nothing
+  unless the answer reveals a real problem.
+* **Ambiguous or architecturally significant** — the comment could be read multiple ways, the fix
+  would ripple beyond the PR's scope, or valid-vs-invalid genuinely depends on a product call. → Ask
+  the user with `AskUserQuestion` before acting, with enough context to answer without scrolling
+  back. In `mode=autonomous`, instead apply the autonomous-decision rule and record what was chosen
+  and rejected. A thread whose decision is parked for the user stays open with a reply saying so.
+  Never resolve a thread you still cannot classify safely.
+
+### The verify pass — empirical, not rhetorical
+
+A classification is an *evidence-backed verdict*, not a reading. Wherever a comment makes a
+checkable claim, check it before classifying — the branch is checked out locally, so run it:
+
+* **Claimed bug or regression** → try to reproduce it: a targeted test, `npm run check`, or running
+  the app (see `run-splotch`). A failing test is the ideal proof the comment is valid — and the
+  regression test then ships with the fix. A failed reproduction attempt is the strongest basis for
+  an **invalid** verdict — cite what you ran and what it showed.
+* **Claimed better approach** → check it against reality: does it type-check, pass the existing
+  tests, and hold up against the ADRs? A suggestion that breaks under `npm run check` is refuted by
+  the output, not by argument.
+* **Unverifiable claims** (style, preference, product judgment) → these can't be settled
+  empirically; classify on the merits, and lean toward **ambiguous** (ask the user) rather than
+  forcing a verdict the evidence can't support.
+
+Every reply then cites its evidence — the repro, the command output, the test, or the ADR — so the
+reviewer sees a verdict that was checked, not asserted.
+
+## Fixing the valid ones
+
+1. Implement the fix the comment actually asks for — smallest correct change, matching the
+   surrounding code's style. If the reviewer's suggested implementation is flawed but the underlying
+   concern is real, fix the concern your way and say so in the reply.
+2. Verify: `npm run check` plus the tests covering the touched files (see the `testing` skill). For
+   doc/Markdown-only fixes run `npm run format:check` instead — dprint drift is the usual reason a
+   fresh push goes red. Keep this step read-only. A **destructive** check — reverting the fix to
+   prove a new regression test actually fails without it — belongs after the commit in step 3, not
+   here, because restoring the file discards any other uncommitted work in it.
+3. Commit with a descriptive message — one commit per comment, or one per logical group when several
+   comments hit the same spot. Granular commits let each reply point at the exact SHA that addressed
+   it.
+4. Push once after all fixes (`git push -u origin <branch>`), **before** posting replies — a reply
+   that references an unpushed SHA is a dead link.
+
+## Replying — close every loop
+
+* **Fixed** → reply **on the same thread** stating what changed and the commit SHA
+  (`Fixed in <sha> — <one line on the approach>`). The SHA must already be pushed — reply order is
+  always push first, then reply, then resolve. Use `add_reply_to_pull_request_comment` for inline
+  threads, `add_issue_comment` for conversation comments.
+* **Invalid / already addressed / question** → reply with the rationale or answer — the concrete
+  reason the comment isn't being addressed (the code path, test, command output, or ADR from the
+  verify pass), never a bare dismissal.
+* **After replying, resolve the thread** (`resolve_review_thread` in the GitHub MCP) — every
+  disposition, fixed or not. The reply is the record; resolving is what makes the remaining open
+  threads an accurate worklist. Conversation comments and review summaries have no resolve button —
+  there the reply alone closes them out. The one exception: never resolve a thread you escalated to
+  the user and haven't heard back on.
+* Keep replies short and concrete: the code path, test, ADR, or SHA that settles it — not a
+  restatement of the comment. Be gracious; the reviewer's time produced the feedback.
+* **Escape `#`-numbers** that aren't deliberate issue/PR references (`\#1`, or backticks) — a bare
+  `#1` in a reply auto-links to an unrelated issue (see "Writing on GitHub" in the root
+  instructions).
+
+## Completion
+
+1. If any fix landed, run the composed verification once — `npm run check` and the tests relevant to
+   everything the sweep touched together, not just per-fix.
+2. If the PR touched UI and a fix changed what renders, refresh the PR's screenshots per the
+   `pr-screenshots` skill.
+3. Summarize in the final response: each comment with its disposition — **fixed** (SHA),
+   **replied-and-resolved** (rationale in one line), **answered**, or **escalated to the user** —
+   plus the overall check/test result. Every comment fetched in Setup must appear; a comment with no
+   disposition means the sweep isn't done.
+4. In `mode=autonomous`, include every `walk-through-decision` decision record and every parked
+   decision. The orchestrator must copy them to the PR even when no code change resulted.

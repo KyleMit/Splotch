@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "sourceDigest": "d6f3ea2c4d4eaf47d86cc67602c7c1fe1654e19def1bbd508c0c3a525c35d551",
+  "baselineSource": {
+    "matches": false,
+    "baselineDigest": "6d8d309d14e46bd31b345da9c87f23358ec2c741f6ae271a60fe597f407545ae",
+    "currentDigest": "d6f3ea2c4d4eaf47d86cc67602c7c1fe1654e19def1bbd508c0c3a525c35d551"
+  },
+  "samples": 3,
+  "summary": {
+    "phone-portrait": {
+      "first": {
+        "fcpMs": 1902,
+        "lcpMs": 2877,
+        "tbtMs": 175,
+        "performanceScore": 92
+      },
+      "repeat": {
+        "fcpMs": 639,
+        "lcpMs": 750,
+        "tbtMs": 330,
+        "performanceScore": 93
+      }
+    },
+    "tablet-landscape": {
+      "first": {
+        "fcpMs": 1977,
+        "lcpMs": 3764,
+        "tbtMs": 173,
+        "performanceScore": 85
+      },
+      "repeat": {
+        "fcpMs": 640,
+        "lcpMs": 900,
+        "tbtMs": 337,
+        "performanceScore": 92
+      }
+    }
+  },
+  "measurements": [
+    {
+      "profile": "phone-portrait",
+      "visit": "first",
+      "sample": 1,
+      "fcpMs": 1756,
+      "lcpMs": 2579,
+      "tbtMs": 184,
+      "performanceScore": 93
+    },
+    {
+      "profile": "phone-portrait",
+      "visit": "repeat",
+      "sample": 1,
+      "fcpMs": 639,
+      "lcpMs": 750,
+      "tbtMs": 336,
+      "performanceScore": 93
+    },
+    {
+      "profile": "tablet-landscape",
+      "visit": "first",
+      "sample": 1,
+      "fcpMs": 1902,
+      "lcpMs": 2877,
+      "tbtMs": 171,
+      "performanceScore": 92
+    },
+    {
+      "profile": "tablet-landscape",
+      "visit": "repeat",
+      "sample": 1,
+      "fcpMs": 659,
+      "lcpMs": 1874,
+      "tbtMs": 308,
+      "performanceScore": 93
+    },
+    {
+      "profile": "phone-portrait",
+      "visit": "first",
+      "sample": 2,
+      "fcpMs": 1902,
+      "lcpMs": 2877,
+      "tbtMs": 175,
+      "performanceScore": 92
+    },
+    {
+      "profile": "phone-portrait",
+      "visit": "repeat",
+      "sample": 2,
+      "fcpMs": 640,
+      "lcpMs": 900,
+      "tbtMs": 330,
+      "performanceScore": 93
+    },
+    {
+      "profile": "tablet-landscape",
+      "visit": "first",
+      "sample": 2,
+      "fcpMs": 1977,
+      "lcpMs": 3765,
+      "tbtMs": 173,
+      "performanceScore": 85
+    },
+    {
+      "profile": "tablet-landscape",
+      "visit": "repeat",
+      "sample": 2,
+      "fcpMs": 640,
+      "lcpMs": 900,
+      "tbtMs": 337,
+      "performanceScore": 92
+    },
+    {
+      "profile": "phone-portrait",
+      "visit": "first",
+      "sample": 3,
+      "fcpMs": 1977,
+      "lcpMs": 3764,
+      "tbtMs": 172,
+      "performanceScore": 85
+    },
+    {
+      "profile": "phone-portrait",
+      "visit": "repeat",
+      "sample": 3,
+      "fcpMs": 639,
+      "lcpMs": 750,
+      "tbtMs": 330,
+      "performanceScore": 93
+    },
+    {
+      "profile": "tablet-landscape",
+      "visit": "first",
+      "sample": 3,
+      "fcpMs": 1977,
+      "lcpMs": 3764,
+      "tbtMs": 178,
+      "performanceScore": 85
+    },
+    {
+      "profile": "tablet-landscape",
+      "visit": "repeat",
+      "sample": 3,
+      "fcpMs": 640,
+      "lcpMs": 662,
+      "tbtMs": 345,
+      "performanceScore": 92
+    }
+  ]
+}

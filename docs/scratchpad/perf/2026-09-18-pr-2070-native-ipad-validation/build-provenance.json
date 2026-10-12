@@ -1,0 +1,50 @@
+{
+ "method": {
+  "appTreeDigest": "cd App.app && find . -type f ! -path './_CodeSignature/*' ! -name embedded.mobileprovision | sort | xargs shasum -a 256 | shasum -a 256 (first 16 hex)",
+  "publicDigest": "cd App.app/public && find . -type f | sort | xargs shasum -a 256 | shasum -a 256 (first 16 hex)",
+  "build": "per arm, in a clean detached worktree at the commit: npm run perf:build:cap; then in ios/App: xcodebuild -project App.xcodeproj -scheme App -configuration Debug -destination id=<device> -derivedDataPath <dd-arm> -allowProvisioningUpdates build",
+  "note": "Signed bundles, provisioning profiles, and signing identities are not published."
+ },
+ "arms": {
+  "control": {
+   "commit": "7a2365631aba6078f94038235d661add6e2e42cb",
+   "appTreeDigest": "75a0786335cbb65f",
+   "publicDigest": "e5f697863b46335e",
+   "bundleIdentifier": "art.splotch.app",
+   "version": "1.6.0",
+   "build": "8",
+   "capacitorDebug": "true",
+   "nsAppTransportSecurity": null,
+   "capacitorServer": {
+    "androidScheme": "https"
+   },
+   "entryChunks": [
+    "start.C4bxo72t.js"
+   ],
+   "filesContainingSettleReadback": [],
+   "perfMarksPresent": true,
+   "devHarnessSeamPresent": true
+  },
+  "treatment": {
+   "commit": "33a4d43b6ef8b43ca77c5d77578630220c37a4d9",
+   "appTreeDigest": "9a1bbfcc6d49da90",
+   "publicDigest": "a3e5f263422d61ec",
+   "bundleIdentifier": "art.splotch.app",
+   "version": "1.6.0",
+   "build": "8",
+   "capacitorDebug": "true",
+   "nsAppTransportSecurity": null,
+   "capacitorServer": {
+    "androidScheme": "https"
+   },
+   "entryChunks": [
+    "start.Coc95Aql.js"
+   ],
+   "filesContainingSettleReadback": [
+    "_app/immutable/chunks/C8MCU7B2.js"
+   ],
+   "perfMarksPresent": true,
+   "devHarnessSeamPresent": true
+  }
+ }
+}

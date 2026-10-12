@@ -1,0 +1,58 @@
+{
+  "idea": 4,
+  "title": "Night-sky brightness varies ~4x across the catalog",
+  "verdict": "WORKED",
+  "oneline": "Deterministic background-luma normalization hits target exactly with no edge artifacts; regen at <=50 also works",
+  "summary": "Recomputed bgLuma for all 94 shipped night raws: 16.5-65.3, median 36, with 17 pages over 50. Approach (b) works end-to-end: flood-fill the scoreNightness background region at full res, scale RGB by a single k=target/median with a feathered mask and bright-pixel (white line) protection - cow-wide 65->30.3 and unicorn-wide 62->30.0 with byte-untouched subjects/clouds, crisp lines, and all other gates still passing. Approach (a) also works (cow-wide regen passed at bgLuma 48 with --night-luma-max 50, on attempt 4/4) but costs API calls and replaces the artwork. Approach (c) ordering is defeated by a measured 14.4 mean intra-page tall/wide bgLuma gap (owl alone spans 16.5-54.7) since page order is shared across orientations.",
+  "tried": [
+    "Offline bgLuma recompute of all 94 night raws with the exact scoreNightness machinery (vs their chalks)",
+    "Deterministic post-normalization (b) on the 4 brightest pages: full-res flood-filled bg region, multiplicative luma scaling toward target 30, feathered mask + luma-based white-line protection",
+    "Edge-artifact hunt: 2x zoom before/after crops at flower/grass/cloud boundaries plus pixel sampling and diff maps",
+    "Gate-compatibility check: re-scored normalized raws with scoreNightness and scoreLineColor",
+    "Regen (a) of farm/cow-wide with --night-luma-max 50 --max-attempts 4 (4 Gemini calls)",
+    "Ordering assessment (c): farm book dusk->midnight order from measured bgLuma, checked per-orientation monotonicity"
+  ],
+  "worked": [
+    "Normalization hit the target exactly: cow-wide 65.3->30.3, unicorn-wide 61.6->30.0, ant-wide and balloon-wide ~30; no visible edge artifacts, enclosed regions byte-identical, lines stay white",
+    "scoreLineColor still passes on all four normalized pages (cow 199->199, ant 249->248, balloon 253->252, unicorn 168->160)",
+    "Regen with the gate tightened to <=50 passed on the catalog's brightest page (bgLuma 48, drift 0.0001, lineW 209) within the 4-attempt budget"
+  ],
+  "failed": [
+    "First normalizer version had blotchy artifacts from a sharp gotcha: blur().raw() on a 1-channel raw buffer silently returns 3 channels (sRGB conversion), so the mask indexed garbage - fixed with .toColourspace('b-w')",
+    "Dusk->midnight ordering (c) cannot work per-book: tall/wide variants of the same page differ by 14.4 bgLuma on average (owl 16.5 vs 54.7) and the page order is shared across orientations"
+  ],
+  "limitations": [
+    "Normalized pages were judged on simulated composites and zoom crops, not a contact-sheet human pass; nothing was committed or punched",
+    "Luma-based line protection erodes lineWhite margin slightly on dim-lined pages (unicorn 168->160, still over the 150 bar); distance-based protection is the fallback",
+    "A single multiplicative k dims any intentional bright accent in the open background (none present on the four pages tried)",
+    "bgLuma conflates sky and border-connected open ground - wides average +10 over talls because they carry more ground"
+  ],
+  "comparisons": [
+    { "label": "Mood clash: darkest vs brightest shipped page", "before": "mood-clash-owl16-vs-cow65.webp", "after": "mood-clash-owl16-vs-cow65.webp", "note": "single side-by-side image: owl-tall bgLuma 16 (left) vs cow-wide 65 (right)" },
+    { "label": "farm/cow-wide normalized (b), 65->30", "before": "cow-wide.before.webp", "after": "cow-wide.after-normalized.webp" },
+    { "label": "farm/cow-wide regenerated (a) at gate <=50", "before": "cow-wide.before.webp", "after": "cow-wide.after-regen48.webp", "note": "passes at bgLuma 48 but is a different artwork" },
+    { "label": "creatures/unicorn-wide normalized (b), 62->30", "before": "unicorn-wide.before.webp", "after": "unicorn-wide.after-normalized.webp" },
+    { "label": "nature/ant-wide normalized (b)", "before": "ant-wide.before.webp", "after": "ant-wide.after-normalized.webp" },
+    { "label": "objects/balloon-wide normalized (b)", "before": "balloon-wide.before.webp", "after": "balloon-wide.after-normalized.webp" }
+  ],
+  "images": [
+    { "file": "mood-clash-owl16-vs-cow65.webp", "caption": "Shipped night composites side by side: owl-tall (bgLuma 16, midnight) vs cow-wide (bgLuma 65, dusk) - the mood clash" },
+    { "file": "cow-wide.before.webp", "caption": "farm/cow-wide shipped night composite, bgLuma 65 (catalog's brightest)" },
+    { "file": "cow-wide.after-normalized.webp", "caption": "farm/cow-wide after deterministic normalization to bgLuma 30 - same artwork, midnight mood" },
+    { "file": "cow-wide.after-regen48.webp", "caption": "farm/cow-wide regenerated with --night-luma-max 50: passed at bgLuma 48 on attempt 4/4, but a different artwork" },
+    { "file": "unicorn-wide.before.webp", "caption": "creatures/unicorn-wide shipped composite, bgLuma 62" },
+    { "file": "unicorn-wide.after-normalized.webp", "caption": "creatures/unicorn-wide normalized to bgLuma 30" },
+    { "file": "ant-wide.before.webp", "caption": "nature/ant-wide shipped composite, bgLuma 64" },
+    { "file": "ant-wide.after-normalized.webp", "caption": "nature/ant-wide normalized to ~30" },
+    { "file": "balloon-wide.before.webp", "caption": "objects/balloon-wide shipped composite, bgLuma 62" },
+    { "file": "balloon-wide.after-normalized.webp", "caption": "objects/balloon-wide normalized to ~30" },
+    { "file": "edge-cow-flower-grass.webp", "caption": "2x zoom before|after at the flower/grass boundary - no halos or stepping, lines crisp" },
+    { "file": "edge-cow-cloud-sky.webp", "caption": "2x zoom before|after at cloud/sky/cow-rim - cloud interior byte-identical (contrast illusion only)" },
+    { "file": "edge-unicorn-flowers.webp", "caption": "2x zoom before|after in the unicorn's flower bed - enclosed flowers untouched, hillside darkened" },
+    { "file": "cow-wide-bgregion.webp", "caption": "Flood-filled background region (red) over the cow-wide chalk: sky plus border-connected grass; subject/clouds/flowers excluded" }
+  ],
+  "code": [
+    { "title": "Catalog-wide bgLuma measurement (offline, exact scoreNightness logic)", "file": "code/measure-night-bgluma.mjs" },
+    { "title": "Deterministic night-sky luma normalizer (flood-fill + feathered multiplicative scaling)", "file": "code/normalize-night-sky.mjs" }
+  ]
+}

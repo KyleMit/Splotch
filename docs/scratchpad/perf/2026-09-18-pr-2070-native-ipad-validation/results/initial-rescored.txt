@@ -1,0 +1,23 @@
+{'label': '01-treatment', 'arm': 'treatment', 'entry': 'start.Coc95Aql.js', 'digest': None, 'draw': 48, 'settle': 25, 'tail': 17, 'commitMax': 2, 'commitP95': 1, 'foldTotal': 33, 'undoOver': 1, 'undoWorst': 42, 'callP50': 26, 'postP95': 21, 'engP95': 8, 'engMax': 23, 'nextP95': 17, 'nextMax': 25, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '02-control', 'arm': 'control', 'entry': 'start.C4bxo72t.js', 'digest': None, 'draw': 20, 'settle': 20, 'tail': 17, 'commitMax': 1, 'commitP95': 1, 'foldTotal': 36, 'undoOver': 2, 'undoWorst': 42, 'callP50': 17, 'postP95': 37, 'engP95': 2, 'engMax': 2, 'nextP95': 14, 'nextMax': 14, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '04-treatment', 'arm': 'treatment', 'entry': 'start.Coc95Aql.js', 'digest': None, 'draw': 33, 'settle': 25, 'tail': 21, 'commitMax': 5, 'commitP95': 1, 'foldTotal': 40, 'undoOver': 0, 'undoWorst': 27, 'callP50': 20, 'postP95': 17, 'engP95': 10, 'engMax': 12, 'nextP95': 16, 'nextMax': 16, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '05-treatment', 'arm': 'treatment', 'entry': 'start.Coc95Aql.js', 'digest': None, 'draw': 20, 'settle': 20, 'tail': 18, 'commitMax': 1, 'commitP95': 1, 'foldTotal': 38, 'undoOver': 0, 'undoWorst': 28, 'callP50': 20, 'postP95': 22, 'engP95': 8, 'engMax': 13, 'nextP95': 15, 'nextMax': 15, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '06-control', 'arm': 'control', 'entry': 'start.C4bxo72t.js', 'digest': None, 'draw': 20, 'settle': 26, 'tail': 17, 'commitMax': 2, 'commitP95': 1, 'foldTotal': 36, 'undoOver': 0, 'undoWorst': 28, 'callP50': 17, 'postP95': 26, 'engP95': 3, 'engMax': 3, 'nextP95': 13, 'nextMax': 13, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '07-control', 'arm': 'control', 'entry': 'start.C4bxo72t.js', 'digest': None, 'draw': 21, 'settle': 18, 'tail': 17, 'commitMax': 2, 'commitP95': 0, 'foldTotal': 31, 'undoOver': 2, 'undoWorst': 38, 'callP50': 18, 'postP95': 35, 'engP95': 4, 'engMax': 8, 'nextP95': 10, 'nextMax': 11, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '08-treatment', 'arm': 'treatment', 'entry': 'start.Coc95Aql.js', 'digest': None, 'draw': 19, 'settle': 23, 'tail': 17, 'commitMax': 1, 'commitP95': 1, 'foldTotal': 40, 'undoOver': 0, 'undoWorst': 33, 'callP50': 25, 'postP95': 24, 'engP95': 12, 'engMax': 14, 'nextP95': 16, 'nextMax': 16, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+{'label': '09-control', 'arm': 'control', 'entry': 'start.C4bxo72t.js', 'digest': None, 'draw': 22, 'settle': 24, 'tail': 17, 'commitMax': 2, 'commitP95': 1, 'foldTotal': 38, 'undoOver': 2, 'undoWorst': 39, 'callP50': 17, 'postP95': 35, 'engP95': 2, 'engMax': 4, 'nextP95': 10, 'nextMax': 11, 'undos': 20, 'ghosts': 20, 'depth': (20, 0), 'mem': (29705848, 19937664, 19937664), 'leak': 0, 'ink': 1116310}
+
+scored runs: control 4 treatment 4
+criterion 4 (exception = >control max + tol in >=2 treatment runs):
+  draw: control max 22 limit 39 treatment [48, 33, 20, 19] -> ok
+  settle: control max 26 limit 43 treatment [25, 25, 20, 23] -> ok
+  tail: control max 17 limit 34 treatment [17, 21, 18, 17] -> ok
+  commitMax: control max 2 limit 5 treatment [2, 5, 1, 1] -> ok
+  commitP95: control max 1 limit 4 treatment [1, 1, 1, 1] -> ok
+fold totals: control [36, 36, 31, 38] treatment [33, 40, 38, 40]
+criterion 2: over-gate per run control [2, 0, 2, 2] treatment [1, 0, 0, 0] | worst control 42 treatment 42
+criterion 3 (treatment): engine P95 max 12 next P95 max 17 next max 25
+   (control):             engine P95 max 4 next P95 max 14 next max 14
+call-frame p50 per run control [17, 17, 18, 17] treatment [26, 20, 20, 25]
+post-action frame p95 per run control [37, 26, 35, 35] treatment [21, 17, 22, 24]
+criterion 1/5: [('control', 20, 20, (20, 0), (29705848, 19937664, 19937664), 0, 1116310, 'start.C4bxo72t.js'), ('treatment', 20, 20, (20, 0), (29705848, 19937664, 19937664), 0, 1116310, 'start.Coc95Aql.js')]

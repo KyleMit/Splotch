@@ -1,0 +1,53 @@
+# Publishes the committed /scrapbook folder to GitHub Pages (ADR-0059) so the
+# kept run outputs — contact sheets, Lighthouse reports, model & prompt tests —
+# render live at https://KyleMit.github.io/Splotch/. The committed folder is the
+# source of truth; this just mirrors it. Classic branch-source Pages can only
+# serve root or /docs, so the Actions path is what lets us serve /scrapbook.
+#
+# One-time setup: repo Settings → Pages → Source: GitHub Actions (configure-pages
+# below attempts to enable it, but org/repo policy may still require the manual
+# toggle on the first run).
+name: Deploy scrapbook to Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['scrapbook/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialize deploys; don't cancel an in-flight publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+        with:
+          enablement: true
+
+      # Upload only the scrapbook/ folder — it becomes the Pages site root.
+      # include-hidden-files defaults off, and scrapbook/.nojekyll is a dotfile at the artifact
+      # root — without it the committed folder stops being what deploys, breaking the property
+      # ADR-0059 and this workflow both assert. .git and .github stay excluded either way.
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: scrapbook
+          include-hidden-files: true
+
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

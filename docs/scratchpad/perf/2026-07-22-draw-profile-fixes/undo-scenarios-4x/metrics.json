@@ -1,0 +1,127 @@
+{
+  "settings": {
+    "target": "web/dev-engine (headless Chromium — not WebKit/real GPU)",
+    "device": "ipad-pro-12.9",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2,
+      "label": "ipad-pro-12.9"
+    },
+    "throttle": 4,
+    "refreshHz": 120,
+    "frameBudgetMs": 8.333333333333334,
+    "longOps": 1200,
+    "buildMode": "production-preview",
+    "captureMode": "cdp-trace",
+    "raster": {
+      "backingW": 2048,
+      "backingH": 2732,
+      "side": 2732,
+      "bytesPerRaster": 29855296,
+      "mbPerRaster": 28.47222900390625
+    },
+    "startedAt": "2026-07-22T16:25:57.098Z",
+    "durationMs": 153077
+  },
+  "longTasks": [
+    {
+      "start": 2064.5,
+      "duration": 43568
+    },
+    {
+      "start": 46159.5,
+      "duration": 203
+    },
+    {
+      "start": 46469.10000000009,
+      "duration": 199
+    },
+    {
+      "start": 46677.39999999991,
+      "duration": 206
+    },
+    {
+      "start": 46924.5,
+      "duration": 57
+    },
+    {
+      "start": 47016.30000000028,
+      "duration": 59
+    },
+    {
+      "start": 47104.60000000009,
+      "duration": 57
+    },
+    {
+      "start": 47163.39999999991,
+      "duration": 53
+    },
+    {
+      "start": 47247.89999999991,
+      "duration": 59
+    },
+    {
+      "start": 47339.10000000009,
+      "duration": 59
+    },
+    {
+      "start": 47427.200000000186,
+      "duration": 58
+    },
+    {
+      "start": 47514.700000000186,
+      "duration": 59
+    },
+    {
+      "start": 47603.10000000009,
+      "duration": 65
+    },
+    {
+      "start": 47695.80000000028,
+      "duration": 60
+    },
+    {
+      "start": 47784.10000000009,
+      "duration": 60
+    },
+    {
+      "start": 47872.80000000028,
+      "duration": 60
+    },
+    {
+      "start": 47959.39999999991,
+      "duration": 60
+    },
+    {
+      "start": 48047.700000000186,
+      "duration": 59
+    },
+    {
+      "start": 48133.30000000028,
+      "duration": 59
+    },
+    {
+      "start": 48220.80000000028,
+      "duration": 59
+    },
+    {
+      "start": 48308.10000000009,
+      "duration": 59
+    },
+    {
+      "start": 48395.700000000186,
+      "duration": 59
+    }
+  ],
+  "frames": {
+    "count": 84,
+    "durationMs": 47064.8,
+    "fps": 1.7635260321939112,
+    "longFrames": 37
+  },
+  "heap": {
+    "beforeBytes": 0,
+    "afterBytes": 16100000
+  }
+}

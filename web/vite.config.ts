@@ -1,0 +1,277 @@
+import { createHash } from 'node:crypto';
+import { appShellBuildNonce } from './appShellBuildNonce.ts';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig, type Plugin } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import { buildDefines } from './defines';
+import { BROWSER_TARGETS } from './browserTargets';
+import { buildMetadataOncePerProcess } from './buildVersion';
+import {
+  RESPONSIVE_COLORING_URL_PATTERN,
+  serveResponsiveColoringWithCanonicalFallback,
+} from './src/lib/pwa/coloringFallback';
+import { CACHE_BUST_VERSION_PARAM, VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
+import {
+  BOOKS,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES,
+  STARTER_COLORING_BOOK_ID,
+} from './src/lib/state/books';
+import { excludeNativeRoutes } from './nativeExcludedRoutes';
+import { buildColoringPackManifest } from './coloringPackManifest';
+import { nativeApiBaseFor } from './securityPolicy.ts';
+import {
+  COLORING_PACK_ASSET_URL_PATTERN,
+  serveInstalledColoringPackAsset,
+} from './src/lib/pwa/coloringPackRoute';
+import { serveAdminWithoutCaching } from './src/lib/pwa/adminRoute.ts';
+import {
+  appShellPrecacheUrl,
+  createAppShellFallbackPlugin,
+  isAppShellNavigation,
+  prependAppShellEntry,
+} from './src/lib/pwa/appShellRoute.ts';
+import {
+  PAGE_CACHE_CLEANUP_SCRIPT_PREFIX,
+  PAGES_CACHE_NAME,
+  pageCacheCleanupScript,
+  pageCacheCleanupScriptFilename,
+} from './src/lib/pwa/pageCacheCleanup.ts';
+
+// The native apps bundle a static export and never use a service worker (the
+// shell and all assets are already on-device), so skip the PWA plugin there.
+const isCapacitor = process.env.CAPACITOR === 'true';
+const responsiveColoringGlobIgnores = RESPONSIVE_COLORING_TIER_DIRECTORIES.map(
+  (directory) => `${directory.slice(1)}/**/*`
+);
+
+// Opt-in `performance.mark/measure` instrumentation on the drawing engine's hot
+// paths, read by the profiling harness (tools/perf/, `npm run perf:web`). Off
+// by default so the marks never ship: with the literal `false` the guarded
+// blocks — and their mark-name strings — dead-code-eliminate from the bundle.
+const perfMarks = process.env.PERF_MARKS === 'true';
+const devHarness = process.env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
+const profilingEsbuildOptions: import('vite').ESBuildOptions & {
+  keepNames: boolean;
+} = { keepNames: true };
+
+// The paper-sheet texture is the drawing route's largest contentful paint. Served
+// as a file it is one more request queued behind the forty modulepreloaded
+// startup chunks on a slow connection; inlined into the route's CSS it arrives
+// with the document and the paint follows the first one. Only this file qualifies:
+// every other asset keeps Vite's default byte threshold (`undefined` here).
+const INLINED_TEXTURE_FILENAME = 'handmade-paper.webp';
+function inlineStartupTextures(filePath: string): boolean | undefined {
+  return filePath.endsWith(`/${INLINED_TEXTURE_FILENAME}`) ? true : undefined;
+}
+
+// Version semantics: ADR-0030; derivation + fallbacks live in ./buildVersion.ts.
+const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadataOncePerProcess({
+  isCapacitor,
+  env: process.env,
+});
+
+// On a native device there is no local server, so the AI button must call the
+// hosted endpoint. On the web this stays empty and the relative path is used.
+const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);
+// Unique per build rather than derived from content: SvelteKit prerenders the
+// shell after the service worker is generated, so its bytes cannot be hashed
+// here, and a URL no earlier worker cached makes each install fetch its own copy.
+const APP_SHELL_PRECACHE_URL = appShellPrecacheUrl(appShellBuildNonce({ env: process.env }));
+// A stalled navigation answers from the service worker after this long instead of
+// leaving a child waiting for a load that may not finish.
+const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;
+// The page cache holds only the secondary pages (privacy, changelog, and the
+// like), so the cap sits well above that set and bounds only what unexpected
+// navigations could accumulate against the origin's storage, which is evicted
+// whole, coloring books included, under storage pressure. There is no age
+// limit: Workbox refuses an expired entry even when the network is down, and a
+// stale page offline is better than none.
+const PAGES_CACHE_MAX_ENTRIES = 20;
+const PAGE_CACHE_CLEANUP_SCRIPT = pageCacheCleanupScript();
+const PAGE_CACHE_CLEANUP_SCRIPT_FILENAME = pageCacheCleanupScriptFilename(
+  createHash('sha256').update(PAGE_CACHE_CLEANUP_SCRIPT).digest('hex').slice(0, 8)
+);
+const coloringPackManifest = buildColoringPackManifest(APP_VERSION, isCapacitor ? 'mobile' : 'web');
+const downloadableColoringGlobIgnores = BOOKS.filter(
+  (book) => book.id !== STARTER_COLORING_BOOK_ID
+).map((book) => `coloring/${book.id}/**/*`);
+
+// Generated rather than committed, so every consumer reads this one list: the
+// build emits them as assets and the dev server serves them from memory.
+const BUILD_MANIFEST_ASSETS = [
+  { fileName: VERSION_JSON_FILENAME, source: JSON.stringify({ version: APP_VERSION }) },
+  { fileName: coloringPackManifest.fileName, source: coloringPackManifest.source },
+];
+
+export default defineConfig({
+  server: {
+    // Every executable consumer of this port — netlify.toml, dev:stop,
+    // start-cloud-tunnel, the emulator/simulator live-reload runs, and adb:reverse —
+    // is guarded against it by tools/tests/dev-ports.test.mjs.
+    port: 5173,
+    strictPort: true,
+    // Allow a phone-preview reverse tunnel (e.g. chisel) to forward in under its
+    // own hostname; no effect on normal dev/build, only when TUNNEL_HOST is set.
+    ...(process.env.TUNNEL_HOST ? { allowedHosts: [process.env.TUNNEL_HOST] } : {}),
+  },
+  define: buildDefines({
+    appVersion: APP_VERSION,
+    buildTime: BUILD_TIME,
+    nativeApiBase: NATIVE_API_BASE,
+    isCapacitor,
+    perfMarks,
+    devHarness,
+  }),
+  build: { target: BROWSER_TARGETS, assetsInlineLimit: inlineStartupTextures },
+  // Profiling builds (PERF_MARKS=true) keep function names through minification
+  // so the trace's CPU-sampler self-time is readable instead of mangled (`ci`).
+  // No effect on shipping builds.
+  ...(perfMarks
+    ? {
+        esbuild: profilingEsbuildOptions,
+      }
+    : {}),
+  plugins: [
+    excludeNativeRoutes(isCapacitor),
+    sveltekit(),
+    // Emit a version.json on every build so the running app can detect
+    // when the deployed version has moved on and force a fresh fetch.
+    {
+      name: 'emit-build-manifests',
+      generateBundle() {
+        for (const { fileName, source } of BUILD_MANIFEST_ASSETS) {
+          this.emitFile({ type: 'asset', fileName, source });
+        }
+      },
+      // generateBundle is a build-only hook, so without this middleware both
+      // URLs 404 under `vite dev`: the coloring-pack manager's very first fetch
+      // fails and no book ever installs for anyone developing the app. Serving
+      // the identical bytes off the one BUILD_MANIFEST_ASSETS list keeps dev
+      // and prod from drifting.
+      configureServer(server) {
+        server.middlewares.use((request, response, next) => {
+          const { pathname } = new URL(request.url ?? '/', 'http://localhost');
+          const asset = BUILD_MANIFEST_ASSETS.find(({ fileName }) => pathname === `/${fileName}`);
+          if (!asset) return next();
+          response.setHeader('Content-Type', 'application/json');
+          response.setHeader('Cache-Control', 'no-store');
+          response.end(asset.source);
+        });
+      },
+    },
+    ...(isCapacitor
+      ? []
+      : [
+          {
+            name: 'emit-service-worker-imports',
+            generateBundle() {
+              this.emitFile({
+                type: 'asset',
+                fileName: PAGE_CACHE_CLEANUP_SCRIPT_FILENAME,
+                source: PAGE_CACHE_CLEANUP_SCRIPT,
+              });
+            },
+          } satisfies Plugin,
+          VitePWA({
+            // 'prompt' disables vite-plugin-pwa's own auto-send-SKIP_WAITING /
+            // auto-reload, leaving updates.ts as the sole driver. This preserves
+            // the canvas-empty guard (never interrupt a mid-drawing session).
+            registerType: 'prompt',
+            // No auto-injected registerSW.js: the precache includes the app shell and
+            // starter coloring book, and a window.load registration would
+            // saturate a slow connection right as boot's idle-deferred work runs
+            // and the child starts drawing. updates.ts registers the SW itself —
+            // deferred behind the stroke-count + idle gate on a first visit,
+            // immediately at idle on a repeat visit (issue #462).
+            injectRegister: null,
+            includeAssets: [
+              'favicon.ico',
+              'favicon-96x96.png',
+              'apple-touch-icon.png',
+              'sounds/*.mp3',
+            ],
+            manifest: false,
+            workbox: {
+              additionalManifestEntries: [
+                {
+                  url: coloringPackManifest.fileName,
+                  revision: coloringPackManifest.revision,
+                },
+              ],
+              // additionalManifestEntries are appended after this transform runs,
+              // so the shell is prepended here to be the first entry installed.
+              manifestTransforms: [prependAppShellEntry(APP_SHELL_PRECACHE_URL)],
+              // The worker fetches imported scripts itself when it installs.
+              importScripts: [`/${PAGE_CACHE_CLEANUP_SCRIPT_FILENAME}`],
+              // Exclude html — navigations stay NetworkFirst below so a manual
+              // refresh always fetches fresh markup; the app shell is precached
+              // above under a URL no navigation requests.
+              globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
+              globIgnores: [
+                // The social card is served but never fetched by the application.
+                'large-image.png',
+                'share/**',
+                // The icons the manifest named before ADR-0177. The store-frame
+                // harness and installs made before it still request them by URL;
+                // the installed app does not.
+                'web-app-manifest-192x192.png',
+                'web-app-manifest-512x512.png',
+                `${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}*.js`,
+                '**/*.outline.webp',
+                '**/*.chalk.webp',
+                ...responsiveColoringGlobIgnores,
+                ...downloadableColoringGlobIgnores,
+              ],
+              // Do NOT set skipWaiting here. The new SW enters "waiting" state
+              // and updates.ts activates it (via SKIP_WAITING message) only when
+              // the canvas is blank, so mid-drawing sessions are never disrupted.
+              clientsClaim: true,
+              // vite-plugin-pwa defaults navigateFallback to 'index.html', which
+              // would register a CacheFirst NavigationRoute that shadows our
+              // NetworkFirst handler. Override to '' to suppress it.
+              navigateFallback: '',
+              runtimeCaching: [
+                {
+                  urlPattern: RESPONSIVE_COLORING_URL_PATTERN,
+                  handler: serveResponsiveColoringWithCanonicalFallback,
+                },
+                {
+                  urlPattern: COLORING_PACK_ASSET_URL_PATTERN,
+                  handler: serveInstalledColoringPackAsset,
+                },
+                {
+                  // Must precede the navigation route below: Workbox takes the
+                  // first matching route, and the admin document must never be
+                  // written to Cache Storage.
+                  urlPattern: ({ request, url }) =>
+                    request.mode === 'navigate' && url.pathname.startsWith('/admin'),
+                  handler: serveAdminWithoutCaching,
+                },
+                {
+                  urlPattern: isAppShellNavigation,
+                  handler: 'NetworkFirst',
+                  options: {
+                    networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
+                    plugins: [
+                      createAppShellFallbackPlugin(
+                        APP_SHELL_PRECACHE_URL,
+                        CACHE_BUST_VERSION_PARAM
+                      ),
+                    ],
+                  },
+                },
+                {
+                  urlPattern: ({ request }) => request.mode === 'navigate',
+                  handler: 'NetworkFirst',
+                  options: {
+                    cacheName: PAGES_CACHE_NAME,
+                    networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
+                    expiration: { maxEntries: PAGES_CACHE_MAX_ENTRIES },
+                  },
+                },
+              ],
+            },
+          }),
+        ]),
+  ],
+});

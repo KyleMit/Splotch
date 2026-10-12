@@ -1,0 +1,1034 @@
+<!-- cspell:ignore Maestro maestro Vitest happydom apksigner swiftshader reactivecircus avds xcodebuild simctl -->
+
+# Splotch — Testing Guide
+
+Splotch's automated suites span three test layers. The app-unit, asset-pipeline, store-drawing,
+repo-script, and E2E suites run on every push/PR, alongside the Firefox and WebKit smoke jobs. The
+two-scenario WebKit commit-timing gate runs post-merge, on pushes to `main`, because its verdict is
+a millisecond P95 that needs WebKit and a quiet host; its full seven-scenario form and the
+real-device launch tests run only on tagged releases. The native shells still compile on every PR
+that touches a native input, in a path-filtered workflow nothing waits on. ADR-0100's 2026-08-11
+amendment records why its obsolete pre-merge blob-encoding guard retired.
+
+| Layer                 | Tool                | Command                             | Runs in CI                                   |
+| --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`        | every push / PR                              |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
+| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
+| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer/consumer paths + manual dispatch      |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
+| E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
+| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (browserless job)            |
+| Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`         | daily production + manual deploy URL         |
+| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`        | every push / PR (parallel job)               |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
+| Compile (Android)     | Gradle javac        | `npm run android:compile`           | PRs touching native inputs (path-filtered)   |
+| Compile (iOS)         | xcodebuild          | `npm run ios:build:release`         | PRs touching native inputs (macOS runner)    |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
+| WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
+
+A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
+`pnpm audit --audit-level=high`) also runs on every push/PR alongside the tests — see Continuous
+integration below. Two commands reproduce the non-browser half of that gate before a push, each in
+CI's order and each continuing past a failure so one run reports everything: `npm run check:quality`
+mirrors the `quality` job, and `npm run test:browserless` mirrors the `browserless` job — the four
+Vitest tiers plus `test:api:smoke`, about a minute locally. A tools test per script reads its job's
+steps out of `test.yml` and fails on drift. The hosted deploy smoke runs separately against real
+deployments; its narrower `test:blobs:smoke` diagnostic is manual.
+
+Before pushing a deletion that may leave an export unused, run `npm run lint:dead`. An edit to the
+inline boot script in `web/src/app.html` also needs its CSP hash checked through
+`web/securityPolicy.test.ts`; take the new hash from the test output rather than typing it. After
+adding or renaming a Playwright spec, run the repo-script tier too: it scans spec files outside the
+touched directory.
+
+`npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
+`test:tools` + `test:e2e`). It is not a mirror of any one CI job: it adds the Playwright suite and
+omits `test:api:smoke`, and `test:unit` alone runs only the first tier. The native smoke tests are
+intentionally **not** part of `npm test` — they need an emulator/simulator and the native
+toolchains.
+
+Centerline tracing is also intentionally outside `npm test`: it is the repository's first isolated
+Python/uv capability. Its dedicated path-filtered workflow provisions Python 3.11 and uv only when
+`tools/centerline-tracing/**`, the store-drawing consumer, or that workflow changes. The quick named
+suite runs ruff, pytest without the representative integration mark, and the capability-local Vitest
+bridge/consumer contract. The workflow then runs the marked representative trace; the full corpus
+benchmark remains manual.
+
+## A test that cannot fail is a lint error
+
+A test that has only ever passed carries no evidence it is connected to anything, and a green suite
+looks identical whether the coverage is real or vacuous. `npm run lint` catches that whole class in
+the `quality` job, at no runtime cost. `eslint.config.js` scopes `@vitest/eslint-plugin` onto
+`**/*.test.{ts,mjs}` and `web/src/**/*TestHarness.ts`, and `eslint-plugin-playwright` onto
+`web/tests/**/*.spec.ts`, and turns on the same six guards under each plugin's spelling: a test body
+with no assertion, a committed `.only` (which silently skips the rest of its file), an unconditional
+skip, an `expect` that never reaches a matcher, a retrying assertion whose promise is dropped
+(`expect.poll`, a web-first assertion), and an assertion reachable only through a branch. The shared
+E2E helpers — every other `web/tests/**/*.ts` module — get only the three rules about an assertion's
+own shape (`valid-expect`, `missing-playwright-await`, `valid-expect-in-promise`): a helper is not a
+test, so the rules that judge a test body do not apply. Code outside those globs is not checked.
+
+The branch rule is the only one that constrains how a test is written. **A parametrized case states
+its expectation as a value rather than branching around the assertion:**
+
+```ts
+// Not this — the assertion is skipped for half the table, and the skip is silent.
+if (expected === 'shown') expect(label).toBeVisible();
+
+// This — the case's own value drives the matcher, so every row asserts.
+await expect(label).toBeVisible({ visible: expected === 'shown' });
+expect(output.includes(hint)).toBe(scenario.wantsHint);
+```
+
+The other two shapes that replace a branch: narrow a union through an `asserts`-signature `expect*`
+helper (`expectParsedBody` in `web/src/lib/server/http.test.ts`) rather than an `if` on the
+discriminant, and split a case that asserts something genuinely different into its own parametrized
+block (`web/src/lib/components/Icon.svelte.test.ts`) — pairing the split with a test that the two
+lists still partition the input, so an exception naming something that no longer exists fails rather
+than quietly emptying a block.
+
+Helpers named `expect*` count as assertions, so a test that delegates is not read as assertion-free.
+Conditional skips (`test.skip(!!process.env.DEV_SERVER, '…')`) stay allowed — that is the supported
+way to gate a spec on the environment.
+
+The rules themselves have the same failure mode as the tests they police: one scoped to a glob
+nothing matches reports nothing, which is indistinguishable from a clean repo.
+`tools/tests/vacuous-test-lint.test.mjs` is the positive control — it seeds each defect and asserts
+the rule fires, and pins what each deliberate relaxation lets through. Extend it when you add a
+rule.
+
+### A regression test must fail against the old code
+
+The lint rules above catch a test that *structurally* cannot fail. They cannot catch the other
+shape: a test full of real assertions that would have passed against the code as it was before the
+fix. It reads as coverage, ships as coverage, and pins nothing — and unlike a vacuous test, nothing
+in the suite will ever tell you.
+
+**So prove it: revert the fix, rerun the test, and require it to fail.** A test that stays green
+against the unfixed code is evidence about the test, not the fix. Either it asserts the wrong thing
+or the behavior it describes is unobservable at that seam — both are worth knowing before the test
+is committed as protection.
+
+Two shapes from the Codex rival wrapper (now `tools/rival-agent/tests/stream.test.mjs` and
+`tools/tests/launch-codex.test.mjs`) are the worked examples, because both passed in the broken
+state before the revert check caught them:
+
+* **The defect is real but unobservable through the seam under test.** Asserting that a log file was
+  complete when a promise resolved passed either way, because in practice the flush always wins the
+  race; a volume-based attempt at 20,000 lines could not separate the two versions either.
+  Distinguishing them needed an injected stream that fails while flushing — the ordering was only
+  observable once the failure was injectable.
+* **The assertion never reaches the path a user runs.** Asserting an argument parser's return value
+  passed while the command that parser feeds crashed on invocation, because the crash lived in the
+  caller. A unit assertion on a helper is not a test of the command documented in a skill.
+
+**Commit the fix before running the revert check.** The check is destructive, and
+`git checkout -- <file>` restores the working tree from the **index** (`HEAD` only when nothing is
+staged), so it cannot separate the temporary revert from unrelated uncommitted work in the same file
+— it silently discards both, and if the revert itself was staged it restores the reverted shape
+rather than the fix. Commit first, or invert the edit rather than restoring the file. Never reach
+for a bare `git stash` here: the stash stack is shared across worktrees and other sessions pop it.
+
+### A test owns its inputs
+
+A test also passes for the wrong reason when something outside it decides the outcome. Four shapes
+the 2026-09 clean-code campaign found (rule 9 of `docs/CODING-STANDARDS.md`):
+
+* **Build the fixture per test.** Two performance-matrix release-gate tests passed with their
+  deciding input removed, because a sibling test had mutated the shared fixture object they read (PR
+  \#2414). Return a fresh fixture from a factory, and register cleanup with `onTestFinished` where
+  the test creates a temp directory or a listener.
+* **Drive the real store, not a double that copies its rule.** Plain-object settings doubles broke
+  23 tests when PR \#2386 changed the store's surface, and the repair copied the store's
+  `aiCredentialKind()` rule into them, so the request-header assertions checked the tests' own copy.
+  PR \#2413 moved them onto the real `settingsState`. Import the owner's constant or function rather
+  than re-declaring it, and type any remaining stub from the real function
+  (`vi.fn<typeof realFn>()`) so a changed signature fails `npm run check`.
+* **Pin copy exactly as rendered.** Never collapse whitespace before comparing rendered text. A
+  Prettier re-wrap of a template text line changes the DOM text, which a whitespace-normalizing unit
+  test hides and an anchored E2E regex then catches (PR \#2400). If Prettier wants to wrap a long
+  interpolation, bind a short local alias for it instead (PR \#2411).
+* **Name a timeout and give it measured headroom.** A per-test cap sized near the slowest observed
+  run fails on a loaded runner. Measure, name the constant (`PNPM_LAUNCHES_TIMEOUT_MS`,
+  `REAL_REPO_TEST_OPTIONS`), and prefer fake timers or a mocked `sleep` over real waits (PRs \#2401,
+  \#2407, \#2417).
+
+## Server-contract smoke tests — `test:api:smoke`, `test:deploy:smoke`, `test:blobs:smoke`
+
+Three Node smoke entry points guard the server contract:
+
+* **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
+  bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
+  apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
+  `browserless` job on every push/PR; run it locally after any endpoint change (see the `api`
+  skill). Its dev server listens on `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`; in a concurrent worktree,
+  set `SMOKE_PORT` to an unused port.
+* **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
+  SSR-rendered `/admin`, security and cache headers, `version.json` (exactly the checked-out
+  commit's on a preview or loopback target), both native-origin CORS preflights, safe
+  unauthenticated API failures, and the admin persistence contract. Production and unrecognized
+  targets use only the read-only `persistent:true` assertion; Netlify previews add the token
+  write/read/delete round-trip. It never makes a model call. Run it from the ref that produced the
+  target deploy:
+  ```bash
+  DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+  ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
+  ```
+  The Hosted Deploy Smoke workflow probes production daily and accepts an optional preview or
+  production URL on manual dispatch. It does not use the unrelated GitHub Pages `deployment_status`
+  event. The checker derives version strictness from the target, in the workflow and on the command
+  line alike: a preview must serve the selected ref's version exactly, while production, its
+  aliases, and any unrecognized remote host need only a valid, non-cacheable version, so production
+  can trail docs/tooling-only commits that ADR-0070 intentionally excludes from Netlify builds.
+  `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=true` or `false` overrides that choice.
+* **`test:blobs:smoke`** is the narrower diagnostic that proves Netlify Blobs is actually live on
+  the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
+  structurally cannot catch:
+  ```bash
+  BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+  ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
+  ```
+  It asserts `persistent:true`. On a Netlify preview it also round-trips a unique token through
+  Blobs and cleans up; production and unrecognized targets remain read-only. Run it on a PR's deploy
+  preview before merging any adapter/Netlify-config change, and against production to isolate a
+  persistence failure. The full hosted gate includes this same target-sensitive contract.
+
+---
+
+## Unit tests — Vitest
+
+```bash
+npm run test:unit          # one-shot, then the web-build SSR guards
+npm run test:unit:coverage # the same, with the measured coverage ratchet enforced on the first run
+npm run test:unit:watch    # watch mode (unit config only)
+node tools/run-web-tool.mjs vitest run src/lib/server/securityHeaders.test.ts  # one file, path relative to web/
+node tools/run-web-tool.mjs vitest run -t "name"  # by test name: Vitest's -t, not Playwright's -g
+```
+
+`npm run test:unit -- <file>` does not target one file. The script chains two `vitest run`s with
+`&&`, and npm appends the arguments to the second (webSsr) run only, so the first still runs the
+whole suite.
+
+Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). Covers the pure
+logic + state modules (`colorRing`, `state/*`, `storage`, including the native dual-layer hydrate
+via a mocked `@capacitor/preferences`).
+
+The coverage command uses V8 over every TypeScript module under `web/src`, including unimported
+files at zero coverage; tests, declarations, and explicit `*TestHarness.ts` seams are excluded. The
+committed baseline floors are 83.8% statements, 74.5% branches, 85.6% functions, and 86.4% lines,
+derived from the measured 83.90% / 74.57% / 85.73% / 86.56% baseline and the 0.00–0.06 percentage
+point variance observed between Node 22 and Node 24. They advance through reviewed configuration
+changes rather than rewriting themselves during a test run.
+
+The TypeScript-only denominator is deliberate: `.svelte` component bodies are outside this report,
+even when a Vitest test imports a component's module script. Moving logic from a `.ts` module into a
+`.svelte` file can therefore raise the ratio without adding coverage; a green gate proves the
+committed floor only across the `.ts` surface. Browser and component coverage remain separate and
+are not merged into this Vitest-only report.
+
+Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a
+`// @vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's
+biggest fixed cost). Keep the happy-dom default for any test whose module (or its imports) touches
+`localStorage`, `document`, or `window` — running those in `node` would silently switch the code
+onto its non-browser fallback paths.
+
+Vitest aborts a timed-out test's context signal, but it cannot cancel the callback's underlying
+async continuation. A unit test that polls through real timers and can later touch shared or global
+mocks accepts `{ signal }` and calls `signal.throwIfAborted()` after every `await` before
+continuing. Without that guard, teardown can install the next test's globals while the timed-out
+callback keeps running, producing secondary mock-count failures in a test that did nothing wrong.
+Prefer fake timers when they represent the behavior faithfully. They do not represent
+`AbortSignal.timeout`: Node runs it on internal timers the fake clock never advances, so a deadline
+test stubs it with a controller that aborts on the faked `setTimeout` (the pattern in
+`web/src/lib/server/github.test.ts`). If a cold dynamic import alone exceeds the default timeout on
+a contended shared host, scope a named larger timeout to that one test — never raise the whole
+file's timeout with `vi.setConfig`.
+
+### Mounting components and actions in happy-dom
+
+A component, route page, or action test mounts into the happy-dom environment above with Svelte's
+own `mount`, settles with `flushSync` (or `await tick()` for effects), and awaits `unmount()`, which
+returns a promise. `web/src/routes/feedback/page.test.ts` is the reference. What it needs that is
+not obvious:
+
+* **`browser` stays `true` in a server render here.** `web/vitest-setup.ts` pins
+  `$app/environment`'s `browser` to `true` for every unit-tier file, `@vitest-environment node` ones
+  included. A `svelte/server` `render` of markup that does not branch on `browser` is fine in this
+  tier (the `*.ssr.test.ts` files); one that must see what the server bundle sees belongs in the
+  web-build SSR tier below.
+* **A route page needs `$app/forms` mocked** for its `use:enhance`, and
+  `$lib/platform/calmTransition` mocked to zero duration: happy-dom cancels a running transition on
+  unmount with an unhandled rejection.
+* **Give a stand-in pointer event `button: 0`** (and `buttons: 1` while pressed). The pointer
+  handlers act on the primary button only, and an event built with `new Event('pointerdown')` has no
+  `button` at all, so the handler ignores it (the `pointerEvent` helper in
+  `web/src/lib/actions/scribbleTap.test.ts`).
+* **Import Svelte state modules statically.** A `vi.resetModules()` harness hands the re-imported
+  modules a second copy of Svelte's runtime, and an effect created under the test's `$effect.root`
+  is then an orphan to the module's effects (`web/src/lib/state/dialogTheme.svelte.test.ts`).
+
+### Web-build SSR guards
+
+`test:unit` and `test:unit:coverage` each finish with a second Vitest run,
+`vitest run --config vitest.webSsr.config.ts`, over `web/src/**/*.webSsr.test.ts` only. The unit
+config excludes that pattern. These differences from the unit config are the point of the tier:
+
+* It compiles `__IS_CAPACITOR__` as `false`, as the Netlify SSR bundle does. The unit config
+  compiles it `true`, so a web-only render branch never renders there.
+* Its environment is `node`, not happy-dom, so a test here has no `window`, `document`, or
+  `localStorage`, as on the server.
+* It loads no setup file, so `browser` is not pinned `true`. A test in this tier mocks
+  `$app/environment` to `browser: false`, which is what the server bundle sees.
+
+`perRequestRoutes.webSsr.test.ts` lives here (#1924). It server-renders every page the web build
+renders per request and fails if any module-level state reads differently afterwards, because that
+state is shared by every request a server instance answers. Its drift checks fail when a new
+module-level instance under `lib/` has no observer in its table, when a component's
+`<script module>` declares rune state, or when a page's effective `prerender` becomes `false`
+without an entry in its render table. A new per-request page or a new `lib/state` singleton
+therefore needs a line in that file before the suite is green.
+
+Run the tier on its own with:
+
+```bash
+node tools/run-web-tool.mjs vitest run --config vitest.webSsr.config.ts
+```
+
+## Asset-pipeline unit tests — Vitest
+
+```bash
+npm run test:asset-gen
+```
+
+Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against committed fixtures and
+mocked generator workflows, with no model calls or network access. CI runs them in the browser-free
+`browserless` job, after the app-unit suite and alongside the repo-script suite, in parallel with
+the e2e shards. Like the repo-script suite below, it needs `web/.svelte-kit/` generated first.
+
+## Store-drawing pipeline unit tests — Vitest
+
+```bash
+npm run test:store-drawings
+```
+
+Configured in `tools/store-drawings/vitest.config.mjs`. These run in Node against the committed SVG
+samples and static instruction module. They cover the supported SVG subset, coordinate fitting,
+closed width/color vocabularies, and exact generator drift without launching a browser.
+
+`web/tests/store-drawing-replay.spec.ts` is the complementary browser contract for ADR-0122's hero
+capture seam: it invokes one stroke on the real drawing route and asserts that the engine commits a
+rendered history command without leaving synthetic pointer chrome behind. A small three-stroke scene
+then runs through both the pointer and engine paths on separate live pages and requires their
+composited canvases to retain greater than 0.9998 soft color fidelity.
+
+## Opt-in centerline tracing
+
+```bash
+npm run test:centerline-tracing
+uv run --project tools/centerline-tracing --locked \
+  pytest -m integration tools/centerline-tracing/tests/test_integration.py
+```
+
+The Python package, lockfile, and local virtual environment stay under `tools/centerline-tracing/`.
+The quick suite covers graph schema round-trips, pruning geometry and scale invariance, fill rules,
+vector/raster agreement, bridge behavior, deterministic repeated tracing, locked-environment
+failure, batch atomicity, and direct handoff to the exported `convertSvg()` consumer. The marked
+integration case compares a representative trace against the golden using metric thresholds rather
+than bytes so small SciPy/BLAS selection drift does not create a platform-fragile test.
+
+## Repo-script unit tests — Vitest
+
+```bash
+npm run test:tools
+```
+
+In a fresh checkout or worktree, run `npm run check` first: its `precheck` runs `svelte-kit sync`,
+which generates the `web/.svelte-kit/tsconfig.json` that `web/tsconfig.json` extends. Neither the
+worktree bootstrap nor `pnpm install` creates it, and without it the suites that load `web/src`
+modules fail with `[TSCONFIG_ERROR] Failed to load tsconfig 'web/.svelte-kit/tsconfig.json'`.
+
+Configured in `tools/vitest.config.mjs` (Node env), tests in `tools/tests/`. Covers repo automation
+helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md` surgery in
+`tools/audit-burndown/lib/burndown-core.mjs` (entry-boundary parsing, pure block removal,
+dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
+in `tools/ruler/apply-skill-forks.mjs` (package isolation, paired-runner coverage, and shared-source
+collision guards). The latter covers generic Ruler-managed forks; packages listed in
+`tools/ruler/lib/direct-provider-skills.mjs` are maintained directly in their declared provider
+trees and excluded from Ruler drift ownership. `tools/ruler/apply-ruler.mjs` snapshots and restores
+every registered path around generation, including its failure path. Add a test here when a `tools/`
+helper's failure mode is corrupting state rather than crashing.
+
+The suite also hosts the **drift guards** over things prose can't keep in agreement —
+`e2e-engine-tags.test.mjs` and `e2e-harness-imports.test.mjs` over the specs themselves, and
+`skill-spec-citations.test.mjs` over the docs: every `tests/…` path an agent-instruction file names
+must resolve to a real file in `web/tests/`, so a spec split can't strand a documented command that
+then selects zero tests. The scan covers the skill trees, every `CLAUDE.md`/`AGENTS.md`, and the
+audit-burndown role prompts. Globs and placeholders (`engine-*.spec.ts`, `tests/<name>.ts`) read as
+prose and are skipped; design history — skill notes, ADRs, `docs/AUDIT.md` — is outside the scanned
+surface on purpose, as is any non-Markdown source, whose spec names are indistinguishable from the
+synthetic ones the `tools/tests/` fixtures feed their reporters.
+
+## E2E web tests — Playwright
+
+Visual baselines with a `-chromium-linux.png` suffix must come from CI's Linux render, not from a
+Mac update run. Download the failing shard's `playwright-report-shard-N` artifact and inspect its
+`index.html` template named `playwrightReportBase64`; its embedded zip maps each `*-actual.png`
+attachment to a `data/<hash>.png` file. Copy the actual image only after verifying the failing
+snapshot name and platform. A local `--update-snapshots` updates the Darwin baseline instead.
+
+```bash
+npm run test:e2e           # headless — whole suite
+npm run test:e2e:ui        # Playwright UI mode
+npm run test:e2e:headed    # headed, slowed down (SLOWMO=500)
+npm run test:e2e:debug     # inspector
+
+# one spec / one title, not the whole suite (trailing args pass through to Playwright):
+npm run test:e2e -- flows-undo-persistence.spec.ts -g "the undo button enables on a stroke and reverts it"
+```
+
+For ad-hoc validation of a single change, filter through the npm script — **not** raw
+`npx playwright test` from the repo root. The config + `baseURL` live in `web/`, so raw `npx` from
+the root navigates to an empty `baseURL` (`Cannot navigate to invalid URL`) and also loses the
+Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/run-web-tool.mjs`
+sets the `web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
+
+Configured in `web/playwright.config.ts`. By default it builds the production artifact and serves it
+with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). Specs live in
+`web/tests/` and exercise the real drawing engine, the responsive palette, and the full UI flows.
+
+Run Vitest and SvelteKit sync/type checks before or after production Playwright runs in the same
+checkout. Their SvelteKit plugins rewrite shared generated files; overlapping them with the browser
+build can mismatch the HTML and client bootstrap IDs and prevent the app from starting. Use separate
+checkouts when these commands need to run concurrently.
+
+These run on real Chromium but **cannot catch native or WebView boot failures** — that's what the
+Android smoke test is for.
+
+### Flake-hunting protocol
+
+Start discovery at the repository's supported CI contention level: one worker per logical CPU
+available to the process (ADR-0078), with retries disabled. Read that count with
+`node -p "require('node:os').availableParallelism()"`, then run at least three independent full
+suites through the sweep driver:
+
+```bash
+npm run test:e2e:sweep -- --workers=<printed count> --reps=3 --out=/tmp/splotch-e2e-discovery
+```
+
+The driver builds once, unsets the CI variables that enable retries, and lets Playwright start a
+fresh preview server for every repetition. That fresh server is part of the protocol: the suite
+fills server-side rate-limit windows, so a shell loop against one long-lived server manufactures
+failures that the next real run would never inherit.
+
+Use this sequence for a suspected flake:
+
+1. Reproduce the failure on the pre-fix code at the supported CI worker count. Record the failing
+   product state, not only the assertion text.
+2. Decide whether the timing window is reachable by a real user. Contention can amplify either a
+   test-harness race or a product bug; a failure under stress alone does not classify it. Fix the
+   product when a user can reach the bad state. Otherwise make the spec wait for the durable outcome
+   its next operation actually needs.
+3. Keep the pre-fix reproduction as evidence, then run a focused diagnostic amplifier with retries
+   disabled, for example
+   `npm run test:e2e -- <spec> -g "<title>" --workers=<higher count> --retries=0 --repeat-each=10`.
+   Higher-than-supported worker counts are diagnostic amplification only, never a new default.
+4. Verify the outcome-based fix with that focused amplifier, then run at least three clean
+   full-suite repetitions through `test:e2e:sweep` at the supported CI worker count. Use the sweep
+   for any stateful or full-suite repetition so every repetition gets fresh server state.
+
+A clean streak is validation, not proof of a zero flake rate. Report the sample size and contention
+level so a later recurrence can update the evidence instead of contradicting an absolute claim.
+
+### Writing flake-resistant specs
+
+The full suite runs parallel workers, derived from the machine rather than hardcoded: a worker costs
+~2 cores, so capacity is **`cores / 2`** — local runs sit there and CI goes to **twice** it, i.e.
+`cores` (`playwright.config.ts`, ADR-0078; on the 4-core boxes measured, 2 and 4). So every spec
+shares the CPU with the others, and a test that passes alone but fails in the full run is almost
+always a timing race under that contention, not a real regression. Locally `retries: 0` surfaces it
+immediately; CI retries, so a flake can still ship green — which is why a retried pass is annotated
+(`playwright-flaky-reporter.ts`) rather than left silent in the log of a job nobody opens. Neither
+annotations nor job summaries can be searched across runs, so the same reporter also writes every
+run — clean or not — as `playwright-report/flaky.json` inside the job's uploaded report artifact:
+each retried pass with its project and spec file, plus the run id, attempt, commit, branch (the real
+head branch on a pull request, not the `<n>/merge` ref), shard, run status, and test count, so
+masked flakes can be summed over a week of jobs instead of scraped from thirty log archives. The
+scheduled `Flaky digest` workflow does that summing: it carries those records forward in a history
+artifact past the reports' 7-day expiry and ranks masked flakes per test, with `main` and PR-branch
+counts kept apart and every report job it could not read listed as a gap rather than a clean run.
+Read its job summary, or run `npm run gen:flaky-digest` locally (`tools/flaky-digest/README.md`).
+Write specs that can't race in the first place:
+
+* **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
+  (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare
+  `.click()` + `expect(modal).toBeVisible()` flakes. `tests/helpers.ts` exports a shared
+  `retryOpen(ready, open, opts?)` primitive for this — it retries `open()` until `ready` shows,
+  skipping the click when it is already open. The ready locator must be durable: prerendered or
+  native behavior must not be able to satisfy it before hydration and then reset it. Either wait on
+  a hydration-only sentinel before interacting (the Beta page's on-mount-only support link and
+  `openHydratedContents`' computed panel cap are examples), or retry the complete action plus its
+  durable product outcome as one transaction. `openSettingsModal` (also `tests/helpers.ts`) and
+  `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate` (`tests/flows-harness.ts`)
+  are all one-liners over `retryOpen`. Reach for one of those contracts (or wrap the complete
+  open-and-outcome transaction in `expect(...).toPass()`) rather than repeating a bare click or
+  treating transient visibility as readiness.
+* **A view an overlay picks *at open time* can't be waited into — reopen it.** Retrying an assertion
+  only works while the thing asserted on is still coming; when the open itself chose a different
+  view, no timeout reaches it. `ColoringBook` picks between its book grid and a single book's pages
+  in `onOpen` and holds the books that open shows until it closes: a book that becomes known
+  mid-open, by download or by the installed-book scan (a manifest fetch plus a store scan), joins at
+  the next open, so the picker never moves under a finger. So a picker opened while only the starter
+  book is known shows its pages and *stays* there, which is how "no viewport draws a cover smaller
+  than four columns" came to fail with the cover grid simply absent (issue \#936). The sentinel to
+  retry the open against is the view you need, not the dialog: `openColoringBookGrid`
+  (`tests/flows-harness.ts`) closes and reopens until an open lands on the grid, since each open
+  re-reads the installed set. Prefer it over `openColoringDialog` in any spec that then reads a book
+  cover, and seed the page with `gotoAppWithInstalledColoringBook`/`…AllColoringBooksInstalled` so
+  there is a grid to land on — a spec that means to exercise the fresh-install view drives the
+  dialog directly instead (`coloring-pack-download.spec.ts`). On the web, seeding is also what makes
+  a boot count as a returning visit: a device with no pack storage downloads nothing until the child
+  draws a few strokes or opens the picker, so a plain `gotoApp` spec that needs other books must
+  engage first.
+* **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
+  retries until the condition holds (`expect(locator).toBeVisible()`, `expect.poll(() => …)`,
+  `expect(...).toPass()`). A fixed sleep is only legitimate when it is **monotonic-safe under
+  load**: (a) deliberately idling *past* a known threshold to reproduce a timing bug (e.g. the
+  stroke-resume gap in `engine-pointer-recovery.spec.ts`), or (b) proving a *negative* — that state
+  must **not** change within a window (e.g. the "SW never registers" check in
+  `pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases, so they
+  can't false-red. Comment the reason when you keep one.
+* **Use the drawing app's durable ready state.** `gotoApp()` does not return merely because the
+  prerendered `#drawingCanvas` is visible: it waits for the hydrated drawing debug seam and a
+  non-zero rendered composite. Specs intentionally covering first paint or hydration navigate with
+  `page.goto()` so the shared postcondition stays strong. Use `drawCommittedStroke` when setup
+  requires one durable command: it retries input only while the renderer's monotonic stroke revision
+  proves that the previous attempt produced neither a pending nor a committed stroke, so a slow
+  commit cannot become a duplicate stroke. Keep the visual or product-specific assertion in the
+  spec.
+* **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
+  debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
+  sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
+  (`REVEAL_SETTLE_MS` in `flows-magic-brush.spec.ts`); the engine debounces resize by
+  `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot
+  `await page.evaluate(...)` + `expect(...)`.
+* **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
+  reads exactly once and races the repaint; `await expect.poll(() => count(page)).toBe(n)` waits for
+  it to settle. Same for `getViewState()`/`pixelAt()` reads after a rotation.
+* **A sequence that must land inside a timing window must retry as a whole.** A triple-tap that has
+  to fall inside dragToClear's 1000ms multi-click window (`clear-tutorial.spec.ts`) can straddle it
+  under load — wrap the entire burst in `toPass()`, don't just add a longer wait between taps.
+* **A mocked endpoint control resolves after delivery, not after queuing.** If a helper exposes
+  `succeed()` or `fail()`, resolve that control only after the intercepted handler's awaited
+  `route.fulfill()` completes. Queuing a response does not prove the page has received it, so an
+  assertion started from that signal races the network operation it means to observe. Keep the
+  delivery handshake beside the mock that owns it; do not create a generic route-controller
+  abstraction without a second honest caller.
+* **Pace synthetic gesture phases on rendered frames.** Touch start, dependent moves, and touch end
+  can be delivered to the compositor as one coalescible burst under load even when arbitrary
+  wall-clock sleeps separate them in the test process. Advance a phase with `requestAnimationFrame`
+  in the page when the next phase depends on compositor observation. Keep that pacing local until a
+  second real caller earns a narrowly named helper; do not introduce a generic `nextFrame` or
+  `waitForStable` abstraction.
+* **Leave an element by moving the real mouse, never by dispatching a boundary event.** A synthetic
+  `pointerleave` runs the app's handler but leaves the browser's hover target where the cursor is.
+  Any later hover recompute — an overlay under the parked cursor unmounting, such as a flyout
+  closing on the click that chose from it — then sends a trusted `pointerenter` back to the element,
+  on whichever frame the removal paints. The eraser-bubble spec in `flows-palette-brush.spec.ts`
+  lost that race 3 in 60 single-worker runs (7 in 40 with event logging slowing the frame): the
+  flyout closed, the synthetic leave hid the bubble, and the recompute re-entered the canvas a frame
+  later. Hover a stable control instead (`locator.hover()`), which moves the hit-test target itself.
+* **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
+  engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
+  through a Svelte `$effect` (`setBrush` in `DrawingCanvas`), so `aria-pressed=true` does not prove
+  the engine switched, and a stroke drawn in that window would commit under the previous brush —
+  already painted before anything can observe it. `pickBrush()` closes it by polling the engine's
+  own `window.__committedBrushMode` (the dev-harness seam in `lib/boot/devHarnessSeam.ts`,
+  ADR-0080); prefer that shape — a signal for the state you actually depend on — over retrying an
+  action until its effect appears. Where you must assert instead, pick a metric a wrong-mode action
+  can't satisfy: a canvas-fill pixel count is not one, since a pen stroke fills the band too.
+* **Let a fly-in dialog land before acting on it — a real click included.** An `evaluate` that reads
+  `getBoundingClientRect()` and dispatches synthetic pointer events there never waits for the dialog
+  to stop moving, and a real Playwright `.click()` only *usually* does: its stability check is two
+  consecutive frames with an identical rect, and a CSS animation still **pending** its start time (a
+  starved compositor grants it late) holds its first keyframe across frames and passes that check.
+  Captured under full-suite contention in `ai-report.spec.ts`: the click on the confirmation's Send
+  button dispatched 52ms after open, at a 17×21px dialog (the 5% keyframe), 9px from the launch
+  origin — inside the dead zone below, so it was swallowed and nothing was sent. The immune tests in
+  that spec were the ones that pressed Escape or ran under reduced motion, which is the tell.
+  `dialogFlyFromOrigin` (app.css) starts a modal scaled down **on the button that opened it**, and
+  `modalDialog` arms a launch dead zone at that same point (`launchGuard`: 72px, 600ms) whose
+  capture-phase `pointerdown` handler swallows everything inside it — dialog content included, by
+  design (issue \#308's ghost click). So for the opening frames the whole dialog sits in the dead
+  zone: Settings' content pane centers **6px** from the launch origin at the first keyframe and only
+  clears the radius ~13ms into the animation. A CSS animation advances with *rendered frames*, so a
+  starved worker parks the dialog on that keyframe for far longer than 13ms of wall clock, and the
+  gesture is aimed straight into the guard and silently does nothing. That was issue \#665 — the
+  three zoom/pinch specs that were the entire residual flake rate (ADR-0078 §4), all failing as "the
+  pinch produced no zoom". The fix is to await the dialog's `Animation.finished` before touching it
+  — `settleFlyIn` (`tests/helpers.ts`), which `openSettingsModal` and `landedReportConfirm`
+  (`tests/ai-harness.ts`) wrap. Landed, the Settings pane rests 574px from the origin and the report
+  confirmation's buttons 130px+, so the dependency on animation progress is removed instead of
+  timed. Every dialog carrying `modal-fly-in` (`#settingsModal`, `#color-picker`,
+  `#coloring-book-dialog`, `.ai-prompt-modal`, `.parental-gate`, `.ai-report-confirm`) needs the
+  same wait between its open and the first pointer action on its content. The colour picker is the
+  sharpest case: it snapshots every hexagon's center and its snap radius on the `pointerdown` that
+  starts a drag, so a drag begun on an unlanded grid would keep a scaled-down snapshot for the whole
+  gesture. Whether that explains the one red run ADR-0078 §4a recorded for the pointer-exploration
+  spec is unproven — a down at the first keyframe is swallowed by the launch zone before the picker
+  sees it, and the failure was never reproduced — but the spec now waits like its tap sibling, which
+  closes the window either way. Query `getAnimations()` on the dialog element alone — the fly-in
+  animates it directly, and `{ subtree: true }` would start waiting on unrelated descendant
+  animations too.
+* **Budget a frame-paced condition in frames, not milliseconds.** The wide Settings pane mounts one
+  section per frame once the card lands (issue \#910), and `aria-busy` clears only when the last one
+  is in — so the wait for it is on the fill's clock, which is the frame. Playwright's assertion
+  timeout is wall clock, and contention stretches a frame without adding any, which is how the
+  default 5s cap on `expect(pane).toHaveAttribute('aria-busy', 'false')` came to fail a WebKit smoke
+  run three times over on a fill that was merely unfinished (issue \#918 — the `web/` tree under
+  test was byte-identical to a green `main`). `settleSettingsPane` (`tests/helpers.ts`) samples the
+  attribute from inside the page once per `requestAnimationFrame` and gives up only after
+  `SETTINGS_FILL_FRAME_BUDGET` frames, so a starved worker costs it wall clock and nothing else, and
+  the budget still bounds a fill that has genuinely stopped. Sampling from inside the page is half
+  the point: a round trip to the test process measures the harness, and on a starved worker one can
+  span the whole fill. Reach for the same shape wherever the thing being waited on advances with
+  rendered frames — and note this is the *complementary* half of the bullet above: a CSS animation
+  runs on rendered frames too, but it exposes `Animation.finished`, so there you await the browser's
+  own signal instead of counting.
+* **Pace a spec on the animation it depends on, never on a clock sized to it.** The lifting-halo
+  spec in `drawing-motion.spec.ts` needs a lift that has started and not ended when reduced motion
+  switches it off, and the `animationcancel` that switch produces is dispatched only by a rendering
+  update. Three fixed sleeps sized that on an idle machine and went red 8 times in 20 repeats at
+  four times capacity (issue \#2196): the shard rendered no frame inside the 300 ms budget, so the
+  cancel never came and the ring was still there. The rewrite waits on the browser's own signal for
+  each phase — the grow-in's `animationend`, then the lift's `Animation.ready` before the attribute
+  flips, then the lift's `animationcancel` — and asserts the removal through a web-first
+  `toHaveCount(0)`, so a starved worker stretches each wait and breaks none of them. Two of those
+  choices are load-bearing, both measured in Chromium: a play-pending animation cancelled before its
+  first frame fires no `animationcancel` at all, so `ready` is what makes the cancel certain; and an
+  `Animation.finished` continuation runs before `animationend` dispatches, so a spec that depends on
+  the product's end handler having run waits on the event, not the promise. Svelte scopes a
+  component's keyframe names with its hash, so match `animationName` by suffix, not equality.
+
+  A spec that has to act *inside* an animation needs the mirror-image move: widen the animation
+  rather than timing the act. The halo lift-off specs in `halo-lift.spec.ts` release the stroke
+  partway through a 120 ms grow-in, which no sleep can hit reliably, so they override
+  `--halo-in-duration` to 5 s through a `:root:root` rule that outranks the component's scoped
+  declaration — the lift keeps its real duration, and no slow frame can end the grow-in before the
+  release. The override has to come from a stylesheet rather than an inline style: the halo does not
+  exist until the press mounts it, so by the time a spec could reach the element a starved frame may
+  already have finished the grow-in. Those specs also resolve their outcome on the element's
+  *removal* as well as on its animation events, so the pre-fix product — which deleted the halo
+  before the lift could start — fails the assertion instead of hanging on an event that never comes.
+* **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
+  by any tap that repaints something else under the finger, so a spec can be swallowed well after
+  the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's
+  pages, which is exactly where a spec then clicks a page tile — two specs went red on the first run
+  of that guard. `flows-harness`'s `settleTapGuard(page)` idles past the window (it is one of the
+  few legitimate fixed sleeps: a known duration, and a zone self-clears on the next query rather
+  than exposing state to poll), and `openFarmPageGrid` already calls it so its callers don't have
+  to. When a click at a just-tapped point mysteriously does nothing, check for a zone before
+  suspecting the control.
+* **Drive strokes through `draw`/`dragStroke`, never a hand-rolled run of `mouse.move`s.** The
+  engine reads a sample far from the previous one and more than `POINTER_RESUME_GAP_MS` later as a
+  finger that lifted and set down (`strokeMath.pointerWasResumed`), restarts the stroke there, and
+  never paints the span between — so under contention a four-point sweep can come back as its start
+  dot alone. A starved worker owns the timing half of that predicate; the helper holds the other
+  half by subdividing every hop with `mouse.move`'s `steps`, sized from `POINTER_RESUME_JUMP_RATIO`
+  imported from the engine's own module (ADR-0080).
+* **Calibrate a discriminating threshold against measured distributions on *both* sides.** The magic
+  reveal's colour count had to reject a flat pen pass (measured 1-3 buckets) and accept a rainbow
+  slice (measured min 3 at the old quantization) — the two overlapped, so a correct reveal failed a
+  few percent of the time and no retry could help, since a redraw repaints the same gradient. Sample
+  both populations before picking the number, and leave margin on each side, rather than reasoning
+  about what the value "should" be.
+* **Shared per-test setup belongs in a fixture, never in a helper module's top-level
+  `test.beforeEach`.** A helper is evaluated once per worker process, so a hook it registers at
+  import time attaches only to the *first* spec file in that worker that imports it; every later
+  spec file gets no setup at all and runs against `about:blank`. That was issue \#624 — ~12
+  `/dev/engine` specs "flaking" with a missing `#drawingCanvas` or an undefined `window.__engine`,
+  green on retry (a retry re-runs the file alone) and green in isolation. Extend `test` in the
+  helper instead (`base.extend({ page: async ({ page }, use) => { …setup…; await use(page) } })`,
+  see `tests/engine-harness.ts`) and have specs import `test`/`expect` from the helper;
+  `tools/tests/e2e-harness-imports.test.mjs` fails the build if one imports `test` from
+  `@playwright/test` instead.
+* **Prove it's fixed under load, not in isolation.** Flakes only appear under contention, so verify
+  with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the configured
+  workers) before trusting green — a single isolated pass proves nothing. A stubborn one may only
+  show every ~1-in-5 runs; raise `--repeat-each` until you've seen it both fail on the old code and
+  hold on the new.
+
+### Cross-engine critical-path smoke — `tests/engine-smoke.spec.ts`
+
+The full suite is Chromium-only. A tiny critical-path subset (boot, draw a stroke, Settings dialog,
+Color Picker dialog) also runs in the `firefox` and `webkit` Playwright projects so every declared
+browser engine has an automated push/PR signal:
+
+* Each project joins only when its binary is installed, so Chromium-only local and cloud checkouts
+  keep working. CI explicitly installs the selected browser and sets `REQUIRE_FIREFOX` or
+  `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with
+  `npm run test:firefox:smoke` or `npm run test:webkit:smoke`.
+* CI keeps `firefox-smoke` and `webkit-smoke` parallel to the sharded Chromium Tests job. Firefox is
+  the cheaper leg because it needs none of WebKit's GStreamer/ffmpeg stack. WebKit adds ~110 system
+  packages, and installing them lands on every run; the setup action's apt cache removes network
+  fetches, not the install. Keeping both browsers out of every Chromium shard avoids adding either
+  setup cost to the critical path.
+* All three Ubuntu browser jobs get their browsers from `.github/actions/setup-playwright` (browser
+  cache + `install-deps` behind an apt `.deb` cache, each keyed per browser set); macOS keeps its
+  own `setup-playwright-webkit`, which needs no apt step and caches elsewhere. On a cache hit the
+  whole setup is offline (`dpkg -i` from the cached debs); the network path runs only when a key
+  rotates, and `warm-playwright-cache.yml` repopulates the default-branch caches daily and on
+  dependency merges so PR runs rarely take it. A setup step dragged out by a network-starved runner
+  is bounded only by the job's `timeout-minutes` — re-run it by hand for a fresh machine.
+* **Routing is by tag, not filename.** `ENGINE_SMOKE_TAG` (`tests/tags.ts`) sits on the spec's
+  `test.describe`; Firefox and WebKit `grep` for it while Chromium `grepInvert`s it. Add portable
+  cross-engine coverage by tagging it; an untagged spec runs under Chromium.
+* **Import the tag, never type it.** Playwright validates no tag, so a typo can route a spec to
+  Chromium alone while both smoke jobs remain green on the correctly tagged tests.
+  `tools/tests/e2e-engine-tags.test.mjs` rejects literals and unknown tags, requires a tagged spec,
+  and guards agreement among the project, script, and CI-job names.
+* Keep the spec cross-engine portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and
+  the `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
+  assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
+  already in the full suite.
+* `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
+  debugging; it is still not part of `npm test`.
+
+CI runs current Firefox and WebKit, not Firefox 114 or Safari 16.4 — it proves engine-family
+coverage, not the floor version or a native iOS boot. The declared bundle target has separate drift
+coverage, while native iOS 16.4 remains a manual/device concern; see `docs/COMPATIBILITY.md` for the
+exact boundary and hosted-run evidence.
+
+### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
+
+The **adult-facing surfaces** get an automated axe-core scan (`@axe-core/playwright`, a
+devDependency per ADR-0070 — CI-only tooling, never in the Netlify build) as part of the normal E2E
+run — no separate command or workflow:
+
+* **What's scanned:** `/privacy`, `/changelog`, `/admin` (logged-out *and* logged-in, via the
+  `test-admin-secret` web-server key), and Settings dialog opened over `/`.
+* **What's deliberately not:** the drawing canvas and toddler-facing chrome. Toddler UX (giant
+  wordless buttons, no reading order) isn't WCAG's model, so Settings scan is **scoped to
+  `#settingsModal`** via `AxeBuilder.include()` instead of scanning the whole drawing page.
+* **The gate:** only violations with impact `serious` or `critical` fail the test, but the failure
+  message prints *every* violation axe found (id, impact, offending selectors, fix hints), so the
+  moderate/minor tail is visible in any red run.
+* **Adding a surface:** add a test to `tests/a11y.spec.ts` that navigates (or opens the overlay),
+  waits for a stable element, and calls `expectNoSeriousViolations(page)` — pass a CSS selector as
+  the second argument to scope the scan when the surface is an overlay above toddler chrome.
+* **What axe cannot see inside a modal `<dialog>`:** its `aria-dialog-name` rule matches only
+  `[role=dialog]`, so a native `<dialog>` with no name scans green, and it reports every text node
+  inside a modal as *incomplete* (the top-layer backdrop overlaps it), so dialog text contrast goes
+  unchecked. `NAMED_DIALOGS` in the same spec opens every modal the web build can raise and asserts
+  its accessible name, then `expectTextContrast` (`tests/text-contrast.ts`) measures each one's
+  visible text against the AA floors in both themes, compositing ink over the backgrounds beneath
+  it. Its doc comment lists what it still cannot see. A new modal gets an entry there.
+* **Fixing vs suppressing:** fix violations in the app source. Only suppress (axe `disableRules` or
+  an exclusion) for a genuine false positive or an unfixable-by-design case, each with a comment
+  saying why.
+
+### Cloud session gotchas
+
+* **`Executable doesn't exist … chromium-<rev>`** — the env's cached Chromium revision drifted from
+  the one this Playwright version wants. `playwright.config.ts` and the `run-splotch` driver now
+  self-heal: if the pinned binary is missing they fall back to any Chromium under
+  `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override the pick with
+  `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. **Never** run `npx playwright install` in a cloud session.
+  The permanent fix is keeping `.claude/cloud/setup.sh`'s browser install pinned to this package's
+  `@playwright/test` version (it now derives it from `package.json`). See
+  `docs/CLOUD/Claude-Code.md`.
+* **`DEV_SERVER=1` is unreliable in cloud** — global-setup has hit `window is not defined` (SSR) /
+  `/dev/engine never became ready` there. Use the default production-build path (just
+  `npm run test:e2e`); it's slower per run but works.
+
+---
+
+## Native deployment smoke test — Maestro (Android + iOS)
+
+### What it does and why
+
+The web E2E suite runs in a browser, so it can't tell you whether the *shipped native app* actually
+boots. The smoke test fills that gap: it installs the app on a real Android emulator or iOS
+simulator, launches it, and asserts that the UI renders — proving the Capacitor WebView started
+**and** loaded the production web bundle (not a white screen or a crash).
+
+The assertion is a single, meaningful signal: the **"Settings"** button (the always-present corner
+button, `web/src/lib/components/SettingsButton.svelte`) must become visible. Seeing its
+accessibility label means real UI painted, not just that the process launched.
+
+That the flow stops there is a decision, not an omission — **ADR-0120**. Steps that navigated the UI
+broke on a UI change within three releases every time they were added, and because these workflows
+are tag-only, each break surfaced as a red release gate instead of a failing PR. Coverage of what
+the UI *does* belongs in Playwright, which runs on every push and can select elements properly. Do
+not grow this flow; `tools/tests/native-smoke-flow.test.mjs` fails on `npm test` if it selects a
+string the app no longer renders, or selects by pattern instead of by exact label.
+
+### The flow
+
+The test itself is a declarative [Maestro](https://maestro.dev) flow — `.maestro/smoke.yaml`:
+
+```yaml
+appId: art.splotch.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Settings'
+    timeout: 30000
+- takeScreenshot: .maestro/screenshots/smoke-launch
+```
+
+`takeScreenshot` writes `smoke-launch.png` under `.maestro/screenshots/`; it's git-ignored. On CI
+the whole Maestro report — flow log plus the screenshot taken at a failing step — is uploaded as a
+build artifact, and a failure on a **tag** push files or comments on a GitHub issue, since nobody is
+watching a tag-triggered run at the moment it goes red.
+
+The iOS job budgets XCTest driver startup with `MAESTRO_DRIVER_STARTUP_TIMEOUT` separately from the
+flow's app-paint timeout. Its report also retains `~/Library/Logs/maestro/xctest_runner_logs/`:
+Maestro's flow log alone can show connection refusals without the underlying `xcodebuild` error. A
+failed `test:ios` command can mean simulator setup, build/install, or driver startup failed before
+the app assertion ran. Inspect that phase before calling it a product boot regression. Issue
+[#1734](https://github.com/KyleMit/Splotch/issues/1734) was filed after the XCTest driver timed out,
+with no flow execution or screenshot.
+
+After a Maestro failure, `test:ios` also captures a bounded diagnostic relaunch of the installed app
+in `~/.maestro/tests/ios-app-relaunch.log` before simulator teardown. The console can expose native
+or WebView startup errors; it describes a second launch and does not replace the original failure
+evidence. A successful relaunch never changes the smoke result.
+
+### npm scripts
+
+```bash
+npm run test:android          # headless one-shot: boot → build+install → test → tear down
+npm run test:android:device   # run against an emulator you already have running
+npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
+```
+
+| Script                | What happens                                                                                                                                                                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                      |
+| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.      |
+
+> The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
+> platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
+> SDK locations resolve per-platform in `tools/mobile/android/lib/android-toolchain.mjs`; override
+> the SDK with `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's
+> install location resolves in `tools/mobile/lib/maestro.mjs`.
+
+For the required iOS floor check, follow the
+[manual iOS 16.4 floor gate](MOBILE/ios.md#manual-ios-164-floor-gate). Its primary path is
+Maestro-free; `npm run test:ios` is only an optional diagnostic on 16.4 because the hosted
+experiments could download, boot, and build for that runtime but Maestro's XCTest driver never
+became reachable. `docs/COMPATIBILITY.md` records both experiments and the complementary
+current-WebKit CI coverage.
+
+### Prerequisites
+
+1. **Android toolchain** — the same one used to build the app: Node ≥ 22, full JDK 21, and the
+   Android SDK. See the `mobile` skill and the `android:*` scripts.
+2. **An AVD** — the scripts default to `Pixel_7_Pro_API_33`. List yours with `emulator -list-avds`.
+3. **Maestro CLI** — see below. Needs Java 17+ (the JDK 21 above covers it).
+
+> On macOS/Linux, `npm run android:setup` provisions all three (system image, the
+> `Pixel_7_Pro_API_33` AVD, **and** Maestro) and is safe to re-run — it skips whatever is already
+> present.
+
+### Installing Maestro
+
+Maestro is **not** an npm package, so it can't be a dev dependency — it's a standalone JVM-based CLI
+installed separately.
+
+**macOS / Linux:** `npm run android:setup` installs it automatically (re-run it if Maestro is
+missing). To install it on its own:
+
+```bash
+curl -fsSL "https://get.maestro.mobile.dev" | bash
+# adds the binary to ~/.maestro/bin
+```
+
+> Use `get.maestro.mobile.dev` — `get.maestro.dev` does not work.
+>
+> The smoke scripts resolve Maestro via `tools/mobile/lib/maestro.mjs` (PATH first, then
+> `~/.maestro/bin`), so they run even before you reopen your shell to pick up the PATH entry the
+> installer adds.
+
+### Running it locally
+
+```bash
+# Simplest — one command, nothing to clean up:
+npm run test:android
+
+# Fast iteration — boot once, run many times:
+npm run android:emulator        # boot + build + install (or: boot an AVD, then npm run android:run)
+npm run test:android:device     # re-run as often as you like
+```
+
+---
+
+## Continuous integration
+
+| Workflow                                    | Trigger                                           | What it runs                                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`                | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
+| `.github/workflows/android-deploy.yml`      | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                                    |
+| `.github/workflows/ios-deploy.yml`          | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                                   |
+| `.github/workflows/native-compile.yml`      | PRs and `main` pushes touching native inputs      | Android Release Java compile (no web build) and iOS Release simulator compile, in parallel with `test.yml`; no emulator or simulator boots                                      |
+| `.github/workflows/hosted-deploy-smoke.yml` | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip               |
+
+Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
+public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
+`test:store-drawings` + `test:tools`) run in a browser-free `browserless` job
+(`npm run test:browserless` locally), and the Playwright e2e suite runs as a matrix in `Tests` —
+each shard builds the app itself (a shared build artifact was measured slower: it serializes shards
+behind `needs:`), and each uploads its own `playwright-report-shard-N` artifact. The app-driver and
+worker-sweep smokes ride shard 1 only. With `fullyParallel` on, `--shard` deals out individual tests
+(not files) in a deterministic order, balanced by count and blind to duration — so the longest shard
+is bounded by the slowest single test, which lives among the deliberately heavy stress tests of
+`tests/flows-tile-history.spec.ts` (the header comment there explains why their cost is intrinsic).
+
+The 2026-08-19 shard-count measurement is preserved in the
+[shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring
+report-derived partitions, the fixed build/preview term, and the first real eight-way pull-request
+run. Four count-based shards kept the adjacent tile-history stress tests concentrated; eight cut the
+modeled slowest test load roughly in half. Holding the measured 17.1-second build/preview cost out
+of that scaling projected a roughly 77-second slowest e2e step, which the real warm-cache run
+matched. At that point checkout, dependency/browser setup, the two shard-1 smokes, and the
+browserless job dominate the pull-request floor. Cold-cache eight-way contention has not been
+measured; the warming workflow mitigates it, and the scratchpad records what to inspect on the next
+runner-image rotation. Further sharding should re-measure setup and the whole workflow, not
+extrapolate the test-load reduction alone.
+
+The Hosted Deploy Smoke workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching production's
+admin secret; without it the automatic job fails at the login step. A manually supplied preview must
+use that same secret. Production never creates a probe token. A process-level interruption of a
+preview check can strand an unguessable but live `blobs-smoke-*` credential; inspect and remove one
+manually from the admin console because an automatic prefix sweep could race a smoke against another
+URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the debug build targets the
+simulator, so no signing secrets are involved. Both deploy workflows file a tag failure from a
+downstream `report-failure` job keyed on the build and smoke jobs' results, so a job cut off by its
+timeout still files, and only that reporter holds `issues: write`.
+
+The Native compile workflow (`native-compile.yml`) is the pre-merge half of those tag gates. Its
+path filter is `android/**`, `ios/**`, `capacitor.config.json`, `package.json` (which holds both
+compile commands), `pnpm-lock.yaml`, the Gradle helper and its imports, and the workflow itself. A
+match costs runner minutes, not merge wall clock. Android compiles only the Release Java (the app
+and every Capacitor plugin module): `cap update` regenerates the gitignored Cordova plugin project
+that `settings.gradle` includes, and an empty Android web-assets directory stops it from copying a
+web build that javac never reads. iOS runs the tag gate's `ios:build:release`, web build included,
+because Xcode copies the synced `public/` and `capacitor.config.json` as bundle resources. Neither
+job is required by a branch rule. ADR-0008's 2026-09-28 amendment records both jobs' measured wall
+time against the slowest `test.yml` job.
+
+ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
+The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside
+a commit. Tiled history (ADR-0085/0086) has no encode path, so that pre-merge job and command
+retired instead of passing vacuously.
+
+**Post-merge**, on pushes to `main`, the `webkit-commit-gate-fast` job keeps the `COMMIT_GATE_MS`
+P95 verdict over `multi-finger` (the sole multi-pointer exerciser) and `crayon-scribbles` (the sole
+mid-stroke pass-split exerciser) on `macos-latest`. That verdict genuinely needs a faithful engine
+and absolute milliseconds, and it is expensive: it was the wall-clock floor of a pull-request run,
+so it remains off that path.
+
+**That verdict is advisory, as a standing decision** (ADR-0173). `COMMIT_GATE_ENFORCED`
+(`tools/perf/lib/undo-commit-gate.mjs`) is off, because the gate's breaches were bisected to the
+WebKit 26.6 browser build rather than the app, and a gate that fails every merge cannot catch a
+regression. The commit contract is held by the physical iPad instead, checked once per release (the
+iOS release checklist in `docs/MOBILE/ios.md`). The job still measures, confirms and reports a
+breach and still uploads its diagnostics — it exits 0. The retry and filing described next key on
+this job failing, so neither runs while it is advisory. A green job with a nonempty failure
+fingerprint puts that finding in the run's step summary and keeps the raw distributions in the
+diagnostics artifact. A reporter failure is also surfaced there rather than read as an empty
+fingerprint. The release-tag full gate is advisory under the same switch but does not yet publish a
+fingerprint; its evidence stays in its diagnostics artifact. ADR-0173 records the decision and the
+rejected alternatives; issue 1779 has the evidence.
+
+A failure does not file on its own. `webkit-commit-gate-fast-retry` re-runs the identical gate on a
+fresh `macos-latest` VM, and an issue opens only when **the same scenario failed the same way on
+both runners** — a shared runner can stall long enough to span one whole job, measurement and in-job
+confirmation together, so a second VM is the only rerun that changes the environment the failure
+happened in. Each runner publishes a failure fingerprint derived from its own `undo-scenarios.json`
+(`multi-finger:breach`, `crayon-scribbles:incomplete`, `run:no-commit-samples`) via
+`tools/perf/report-undo-gate-failures.mjs`, and the retry publishes the intersection to
+`webkit-commit-gate-fast-report`. Comparing job outcomes instead filed a 2026-09-02 run where one
+runner skipped `crayon-scribbles` and the other breached `multi-finger` — two failures with nothing
+in common (ADR-0158). A pair that cannot be compared at all files, which is the fail-closed
+direction. The issue comments on the existing open one rather than filing per red commit, and the
+first job stays red either way as telemetry.
+
+The first run and retry measure independently across commits. Only the downstream Ubuntu reporter
+holds `issues: write`; it checks out no source and installs or builds nothing. The reporter receives
+the retry gate outcome, comparison outcome and reproduced fingerprint through job outputs, including
+after a reproduced breach re-fails the retry. Its constant concurrency group serializes the issue
+check and create. `cancel-in-progress: false` and `queue: max` retain up to 100 pending reporters;
+additional pending jobs can still be canceled. This is a bounded queue, not an unlimited guarantee
+of per-commit filing. A canceled workflow does not report.
+
+**Release tags** run all seven scenarios.
+
+A timing breach, an incomplete or unknown requested scenario, or a bundle with no `engine.commit`
+samples fails the job. Every tier attempts to upload `undo-scenarios.json` and `undo-scenarios.md`
+after a failure; an early build/browser failure may leave no reports, which warns without masking
+the original error.
+
+**A slow history settle is not an incomplete scenario.** After each scenario's batched draw the
+harness waits for tiled history to reach its idle steady state — no open command, nothing left for
+the fold loop to fold — before it reads the memory table and starts the undo phase. That wait is
+diagnostic: the `engine.commit` samples the gate scores are complete before it begins. So its
+deadline (`DEFAULT_HISTORY_SETTLE_TIMEOUT_MS` in `tools/perf/web/run-undo-scenarios.mjs`) bounds
+wall clock only. An expired wait records `settle.settled: false` with the whole poll trace on the
+scenario result, marks the report row "history unsettled", and the gate scores the scenario as
+measured. Through 2026-09-06 that expiry was a thrown skip and fingerprinted as
+`crayon-scribbles:incomplete` on roughly one main push in four, because a shared runner stalls the
+page's main thread for 5–10 s after a crayon burst before the first poll can return (ADR-0161).
+
+The workflow's concurrency group folds `github.sha` in for `push` events. Pull requests still
+collapse per ref so a new push cancels the run it supersedes, but back-to-back merges no longer
+cancel each other — which would drop a commit's only WebKit coverage exactly when merge traffic is
+highest.
+
+Every tier scores the **raw** `engine.commit` P95 against the 25 ms gate — nothing is normalized.
+ADR-0140 retired the crayon divisor: its calibration rested on a single run, and `Math.max(1, …)`
+meant it could only ever move a score toward passing. The host slowdown it was derived from is still
+measured and reported per run (`hostSlowdown` in the artifact), so the multi-run `macos-latest`
+distribution a real calibration needs can be collected from ordinary runs; `NORMALIZATION_ENABLED`
+turns it back on once someone has. What replaced it is confirmation: a scenario whose first pass
+breached is re-measured through the same `runUndoScenario` and fails only if it breaches again, and
+a confirmation that could not be scored acquits nothing. The JSON and Markdown diagnostics retain
+raw P95, maximum, every sample, the measured host slowdown, and the gate value; `confirmations`
+holds each re-measured scenario's full result, so a confirmed breach can be read as a distribution
+rather than as two numbers.
+
+`FAST_UNDO_SCENARIO_KEYS` is the fast set's only declaration. A repo-script unit test derives sole
+exercisers from every scenario's declared paths and requires each one in that set. Release runs also
+restore and update the durable `webkit-undo-full-history` artifact: the harness records each
+scenario's measured-to-budget ratio, recomputes ideal membership from the three most recent full
+runs, and records whether the fast tier would have caught a breach. Membership drift and two
+consecutive fast-set misses fail the full job; the updated history and full diagnostics upload even
+when that check fails. Invalid restored history falls back to the compatible seed, and a full run
+without commit samples is rejected without appending zero-valued evidence.
+
+A timing failure is not product evidence until it is causal. Compare the failing head and its exact
+base with the same command and runner class; for noisy gates, use repeated or interleaved runs. If
+the base fails with the same shape or the changed code cannot reach the harness path, fix the test
+or harness and retry the product PR. Do not quarantine product work for a repository-owned flaky
+gate.
+
+The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
+thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
+The Android workflow runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
+runners hit an HVF init failure). Its build job generates a disposable test key, builds the
+**Release** APK once with R8 and resource shrinking, and uploads that shared artifact. Both matrix
+legs download and boot the same APK on the current API 33 emulator and the declared API 24 floor.
+The matrix reads those levels from their source modules rather than carrying a second floor literal
+in YAML. Each leg runs `npm run test:android:device` through
+`reactivecircus/android-emulator-runner`; the Play upload key never enters CI. The iOS job first
+compiles a Release simulator app without store signing, with `CODE_SIGNING_ALLOWED=NO`, then runs
+`npm run test:ios` on a macOS runner, which boots a simulator, builds the Debug app, and runs the
+same Maestro flow. The Release compile catches configuration-only failures while the established
+Debug smoke remains the boot signal. Each Maestro leg uploads its own report artifact.
+
+> CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
+> provides a booted emulator — the one-shot would try to boot a second one.

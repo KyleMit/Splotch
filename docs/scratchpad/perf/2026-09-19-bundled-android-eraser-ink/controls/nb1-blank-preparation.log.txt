@@ -1,0 +1,5 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+Error: before pass 1, the paper is not fully inked where the eraser will travel: tile 0 0/4096 opaque, tile 1 0/4096 opaque, tile 2 0/4096 opaque, tile 3 0/4096 opaque, tile 4 0/4096 opaque, tile 5 0/4096 opaque, tile 6 0/4096 opaque, tile 7 0/4096 opaque, tile 8 0/4096 opaque, tile 9 0/4096 opaque, tile 10 0/4096 opaque, tile 11 0/4096 opaque, tile 12 0/4096 opaque, tile 13 0/4096 opaque, tile 14 0/4096 opaque, tile 15 0/4096 opaque, tile 16 0/4096 opaque, tile 17 0/4096 opaque, tile 18 0/4096 opaque, tile 19 0/4096 opaque
+    at driveEraserPasses (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:471:27)
+    at async measure (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:700:16)
+    at async captureBundledFrames (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:597:16)

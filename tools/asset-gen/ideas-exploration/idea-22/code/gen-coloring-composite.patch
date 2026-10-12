@@ -1,0 +1,277 @@
+diff --git a/package.json b/package.json
+index 32fb485..479d70d 100644
+--- a/package.json
++++ b/package.json
+@@ -67,6 +67,7 @@
+     "gen:coloring-fills:audit:eyes": "node tools/asset-gen/audit-fill-eyes.mjs",
+     "gen:coloring-outlines:audit": "node tools/asset-gen/audit-outline-solidity.mjs",
+     "gen:coloring-outlines:normalize": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/normalize-outline-strokes.mjs",
++    "gen:coloring-composite": "node tools/asset-gen/gen-coloring-composite.mjs",
+     "gen:coloring-punch": "node tools/asset-gen/punch-fill-outlines.mjs",
+     "gen:coloring-thumbs": "node tools/asset-gen/gen-coloring-thumbs.mjs",
+     "gen:contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/gen-contact-sheet.mjs",
+@@ -164,6 +165,7 @@
+     "gen:coloring-fills:audit:eyes": "Audit the committed raw fills' EYES — flags a fill whose outlined eye rings were flooded one flat color (light fill is the reference for which nested regions are real eyes). Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-outlines:audit": "Audit shipped line art for SOLID black regions (they invert to white blobs in dark mode; ADR pending); lists offenders for gen:coloring-outlines:normalize. Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-outlines:normalize": "Redraw an outline's solid black regions as thin outlined strokes via Gemini, gated on solidity + outline registration; candidates land in .coloring-samples-dark/normalize/ (needs GEMINI_API_KEY; -- page… [--apply] [--max-attempts N] [-t F] [--notes \"…\"])",
++    "gen:coloring-composite": "Render what the canvas ACTUALLY shows for a coloring page — light (fill under multiplied pen) + night (lib/night-composite.mjs: chalk-punched fill + screened chalk over dark paper) — into .coloring-samples/composite/, for judging gate overrides on the final render. Deterministic, no API key/network (-- page-or-category…, --source shipped|raw|samples, --out DIR)",
+     "gen:coloring-punch": "Re-derive the shipped fills-only .light/.night.webp from the raw fills in tools/asset-gen/fill-src/ by punching their outlines out (line art as mask). Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-thumbs": "Regenerate the .thumb.webp grid thumbnails beside every coloring cover/page for the picker (-- category… to filter)",
+     "gen:contact-sheet": "Build a self-contained HTML contact sheet of ONE coloring category — light + night fills side by side with outline-keep scores — to review/publish as an Artifact (-- category[/page[-orient]], --source shipped|samples, --out FILE)",
+diff --git a/tools/asset-gen/README.md b/tools/asset-gen/README.md
+index 15a9dd3..4bb56f1 100644
+--- a/tools/asset-gen/README.md
++++ b/tools/asset-gen/README.md
+@@ -57,6 +57,7 @@ npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
+ npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
+ npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
+ npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
++npm run gen:coloring-composite -- vehicles/train-wide # write the final light+night canvas renders to .coloring-samples/composite/ (no key/network; --source shipped|raw|samples)
+ npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
+ npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*.thumb.webp
+ npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
+diff --git a/tools/asset-gen/gen-coloring-composite.mjs b/tools/asset-gen/gen-coloring-composite.mjs
+new file mode 100644
+index 0000000..1ae87db
+--- /dev/null
++++ b/tools/asset-gen/gen-coloring-composite.mjs
+@@ -0,0 +1,211 @@
++// Render what the canvas ACTUALLY shows for a coloring page, in both themes:
++// the light composite (fill under the multiplied PEN outline on light paper)
++// and the night composite (lib/night-composite.mjs — chalk-punched fill with
++// the chalk's negation screened over dark paper). The contact sheet's Combined
++// view simulates the same thing in-browser; this writes it to disk so any
++// "should I override this gate?" call — a candidate that failed scoreLineColor
++// or judgeNightEyes, a raw that failed the drift audit — can be judged on the
++// final render instead of the raw fill (see pipeline.md: vehicles/train-wide
++// held lineW 51–105 for ~27 attempts while its composite rendered perfectly).
++// Deterministic sharp only — no network, no GEMINI_API_KEY.
++//
++//   npm run gen:coloring-composite -- vehicles/train-wide       one page, shipped assets
++//   npm run gen:coloring-composite -- farm                      a whole category
++//   npm run gen:coloring-composite -- vehicles/train-wide --source raw      the committed lined raws in fill-src/
++//   npm run gen:coloring-composite -- vehicles/train-wide --source samples  fresh candidates in .coloring-samples*/
++//
++// Outputs land in .coloring-samples/composite/ (gitignored; --out DIR to move).
++import { parseArgs } from 'node:util';
++import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
++import { glob } from 'node:fs/promises';
++import { existsSync, statSync } from 'node:fs';
++import { join, relative, dirname } from 'node:path';
++import sharp from 'sharp';
++import {
++  REPO_ROOT,
++  COLORING_DIR,
++  FILL_SRC_DIR,
++  SAMPLES_DIR,
++  SAMPLES_DARK_DIR,
++  fail,
++} from './lib/paths.mjs';
++import { compositeNight } from './lib/night-composite.mjs';
++
++const PUNCH_LUMA = 150; // lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD
++const PAPER_LIGHT = [0xfc, 0xfb, 0xf8]; // app.css --paper (light)
++
++const { values, positionals } = parseArgs({
++  allowPositionals: true,
++  options: {
++    source: { type: 'string', default: 'shipped' },
++    out: { type: 'string' },
++  },
++});
++const SOURCES = ['shipped', 'raw', 'samples'];
++if (!SOURCES.includes(values.source))
++  fail(`--source must be one of ${SOURCES.join('|')} (got "${values.source}")`);
++
++// The light-mode canvas render: the fill multiplied under the pen outline on
++// light paper (app.css --lineart-blend: multiply). Shipped fills are already
++// fills-only and draw as-is (punch: false); lined raws/candidates get the same
++// binary punch the shipped derivation applies, so the fill's own outline copy
++// isn't doubled under the overlay.
++async function compositeLight(fillBuf, penBuf, { punch }) {
++  const {
++    data: fill,
++    info: { width, height },
++  } = await sharp(fillBuf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
++  const { data: ink } = await sharp(penBuf)
++    .grayscale()
++    .resize(width, height, { fit: 'fill' })
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const out = Buffer.alloc(width * height * 3);
++  for (let p = 0, i = 0; p < width * height; p++, i += 3) {
++    const punched = punch && ink[p] < PUNCH_LUMA;
++    for (let c = 0; c < 3; c++) {
++      const base = punched ? PAPER_LIGHT[c] : fill[i + c];
++      out[i + c] = (base * ink[p]) / 255;
++    }
++  }
++  return sharp(out, { raw: { width, height, channels: 3 } })
++    .png()
++    .toBuffer();
++}
++
++// The dark-mode render of a SHIPPED night fill: already fills-only (outline
++// pixels inpainted — docs/inpainted-fill-punch.md), so no punch; just the
++// chalk's negation screened on top, exactly as the canvas blends the themed
++// overlay. Lined raws/candidates go through lib/night-composite.mjs instead,
++// byte-identical to the gates' simulated composite.
++async function compositeNightShipped(fillBuf, chalkBuf) {
++  const {
++    data: fill,
++    info: { width, height },
++  } = await sharp(fillBuf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
++  const { data: ink } = await sharp(chalkBuf)
++    .grayscale()
++    .resize(width, height, { fit: 'fill' })
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const out = Buffer.alloc(width * height * 3);
++  for (let p = 0, i = 0; p < width * height; p++, i += 3) {
++    for (let c = 0; c < 3; c++) {
++      out[i + c] = 255 - ((255 - fill[i + c]) * ink[p]) / 255;
++    }
++  }
++  return sharp(out, { raw: { width, height, channels: 3 } })
++    .png()
++    .toBuffer();
++}
++
++// Resolve args to source line-art pages, same shapes as the drift audit: a
++// page ("vehicles/train-wide"), a category dir ("farm"), or nothing (all).
++async function pagesUnder(sub = '') {
++  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
++  const out = [];
++  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd }))
++    out.push(join(cwd, entry));
++  return out;
++}
++async function resolveArg(arg) {
++  if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
++  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
++  if (existsSync(asFile)) return [asFile];
++  const asDir = join(COLORING_DIR, arg);
++  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
++  return [asFile];
++}
++
++const pages = (
++  positionals.length ? (await Promise.all(positionals.map(resolveArg))).flat() : await pagesUnder()
++).sort();
++if (!pages.length) fail('No pages matched.');
++
++const outDir = values.out ?? join(SAMPLES_DIR, 'composite');
++await mkdir(outDir, { recursive: true });
++
++// Candidate takes in the scratch dirs, as the generators name them:
++// night — .coloring-samples-dark/{cat}/{page}.webp or {page}.sample-N.webp
++// (never the *.input.webp montage aid); light — .coloring-samples/{cat}/{page}/sample-N.webp.
++async function nightCandidates(rel) {
++  const dir = join(SAMPLES_DARK_DIR, dirname(rel));
++  const base = rel.split('/').pop();
++  if (!existsSync(dir)) return [];
++  const takes = (await readdir(dir)).filter(
++    (f) => f === `${base}.webp` || (f.startsWith(`${base}.sample-`) && f.endsWith('.webp'))
++  );
++  return takes.map((f) => ({
++    path: join(dir, f),
++    tag: f.match(/(\.sample-\d+)\.webp$/)?.[1] ?? '.take',
++  }));
++}
++async function lightCandidates(rel) {
++  const dir = join(SAMPLES_DIR, rel);
++  if (!existsSync(dir)) return [];
++  const takes = (await readdir(dir)).filter((f) => /^sample-\d+\.webp$/.test(f));
++  return takes.map((f) => ({ path: join(dir, f), tag: `.${f.replace(/\.webp$/, '')}` }));
++}
++
++let written = 0;
++let skipped = 0;
++async function emit(name, bufP) {
++  const out = join(outDir, name);
++  await writeFile(out, await bufP);
++  written++;
++  console.log(`  -> ${relative(REPO_ROOT, out)}`);
++}
++function skip(what) {
++  skipped++;
++  console.log(`  (no ${what})`);
++}
++
++for (const page of pages) {
++  if (!existsSync(page))
++    fail(`No such page: ${relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '')}`);
++  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
++  const flat = rel.replace(/\//g, '-');
++  const pen = await readFile(page);
++  const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
++  const chalk = existsSync(chalkPath) ? await readFile(chalkPath) : pen;
++  const chalkNote = existsSync(chalkPath) ? 'chalk' : 'no chalk (pen)';
++  console.log(`${rel}  [${values.source}, night line art: ${chalkNote}]`);
++
++  if (values.source === 'shipped') {
++    const light = join(COLORING_DIR, `${rel}.light.webp`);
++    const night = join(COLORING_DIR, `${rel}.night.webp`);
++    if (existsSync(light))
++      await emit(`${flat}.light.png`, compositeLight(await readFile(light), pen, { punch: false }));
++    else skip('shipped light fill');
++    if (existsSync(night))
++      await emit(`${flat}.night.png`, compositeNightShipped(await readFile(night), chalk));
++    else skip('shipped night fill');
++  } else if (values.source === 'raw') {
++    const light = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
++    const night = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
++    if (existsSync(light))
++      await emit(
++        `${flat}.raw.light.png`,
++        compositeLight(await readFile(light), pen, { punch: true })
++      );
++    else skip('light raw');
++    if (existsSync(night))
++      await emit(`${flat}.raw.night.png`, compositeNight(await readFile(night), chalk));
++    else skip('night raw');
++  } else {
++    const lights = await lightCandidates(rel);
++    const nights = await nightCandidates(rel);
++    if (!lights.length && !nights.length) skip('candidates in scratch');
++    for (const c of lights)
++      await emit(
++        `${flat}${c.tag}.light.png`,
++        compositeLight(await readFile(c.path), pen, { punch: true })
++      );
++    for (const c of nights)
++      await emit(`${flat}${c.tag}.night.png`, compositeNight(await readFile(c.path), chalk));
++  }
++}
++
++console.log(
++  `Done. ${written} composite(s) written${skipped ? `, ${skipped} side(s) skipped` : ''}.`
++);
+diff --git a/tools/asset-gen/package.json b/tools/asset-gen/package.json
+index f7eb0e8..8919de6 100644
+--- a/tools/asset-gen/package.json
++++ b/tools/asset-gen/package.json
+@@ -9,6 +9,7 @@
+     "coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-chalk.mjs",
+     "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills.mjs",
+     "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills-dark.mjs",
++    "coloring-composite": "node gen-coloring-composite.mjs",
+     "coloring-punch": "node punch-fill-outlines.mjs",
+     "coloring-thumbs": "node gen-coloring-thumbs.mjs",
+     "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-contact-sheet.mjs",
+diff --git a/tools/asset-gen/pipeline.md b/tools/asset-gen/pipeline.md
+index d79af71..9168892 100644
+--- a/tools/asset-gen/pipeline.md
++++ b/tools/asset-gen/pipeline.md
+@@ -424,7 +424,10 @@ migration, all verified on overlays/composites before hand-shipping:
+   (strict gate, low temp, dilate, notes); its simulated composite
+   (`lib/night-composite.mjs`) rendered perfectly — the chalk owns the lines
+   and the punch clears the fill's ink. When a page resists the gate, render
+-  the composite before burning more attempts.
++  the composite before burning more attempts:
++  `npm run gen:coloring-composite -- <page> --source samples` writes the
++  final light/night renders of the scratch candidates (and `--source
++  shipped|raw` of committed assets) to `.coloring-samples/composite/`.
+ - **The eye-flavored redraw instruction can refuse eyeless scenes** —
+   objects/house-wide came back "there are no eyes in the image to edit."
+   A `--notes` telling the model the eyeless scene is expected fixed it in one

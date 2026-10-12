@@ -1,0 +1,242 @@
+/* Palette restated from the shared scrapbook chrome (tools/scrapbook/lib/scrapbook-chrome.mjs),
+   which asset-gen can't import across that boundary; tools/tests/proof-sheet-colors.test.mjs
+   fails when a :root token here drifts from the chrome's, bar the sheet-only ones it lists.
+   --accent is the site's interactive blue; --gold is the warm "shipped/source" tag. */
+:root {
+  --paper: #f5f3ee;
+  --card: #fdfbf6;
+  --ink: #23212a;
+  --muted: #6b6774;
+  --hair: #e6e1d8;
+  --accent: #2f6fed;
+  --gold: #b1780a;
+  --c-red: #ec534e;
+  --c-orange: #f89c45;
+  --c-yellow: #f9d24f;
+  --c-green: #8cc864;
+  --c-blue: #62a2e9;
+  --c-purple: #ab71e1;
+  --c-pink: #f47cb0;
+  --shadow: 0 1px 2px rgb(30 28 40 / 6%), 0 8px 24px rgb(30 28 40 / 7%);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family:
+    ui-rounded,
+    'SF Pro Rounded',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 48px) 72px;
+}
+header {
+  padding-top: clamp(20px, 4vw, 44px);
+}
+.crayons {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.crayons span {
+  width: 22px;
+  height: 7px;
+  border-radius: 99px;
+}
+h1 {
+  font-size: clamp(1.7rem, 3.6vw, 2.4rem);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.accent {
+  display: inline-block;
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  border-radius: 999px;
+  padding: 0.15em 0.7em;
+  font-size: 0.5em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+  transform: translateY(-0.15em);
+}
+.lede {
+  color: var(--muted);
+  max-width: 72ch;
+  margin: 0 0 8px;
+}
+.lede b {
+  color: var(--ink);
+  font-weight: 650;
+}
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 0;
+  margin-top: 10px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--hair);
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--card);
+}
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.seg button.on {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.seg-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(14px, 2.4vw, 28px);
+  margin: clamp(22px, 3.5vw, 36px) 0;
+}
+/* git mode: the before/after era tag spans the pair, and a before pair hugs the
+   after pair beneath it so each page's old-vs-new reads as one group. */
+.era {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: -6px;
+}
+.pair.before {
+  margin-bottom: 4px;
+}
+.pair.before .era {
+  color: var(--accent);
+}
+.pair.after {
+  margin-top: 0;
+  margin-bottom: clamp(30px, 4.5vw, 48px);
+}
+.pair.after .era {
+  color: var(--gold);
+}
+figure.half {
+  margin: 0;
+  min-width: 0;
+}
+.frame {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.frame canvas {
+  width: 100%;
+  display: block;
+}
+.vlabel {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgb(20 18 26 / 60%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+figcaption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+.name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.pill {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-weight: 700;
+}
+.pill.light {
+  background: color-mix(in srgb, var(--c-green) 20%, transparent);
+  color: color-mix(in srgb, var(--c-green) 65%, var(--ink));
+}
+.pill.night {
+  background: color-mix(in srgb, var(--c-blue) 20%, transparent);
+  color: color-mix(in srgb, var(--c-blue) 65%, var(--ink));
+}
+.keep {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.keep.good {
+  background: color-mix(in srgb, var(--c-green) 18%, transparent);
+  color: color-mix(in srgb, var(--c-green) 80%, var(--ink));
+}
+.keep.ok {
+  background: color-mix(in srgb, var(--c-yellow) 22%, transparent);
+  color: color-mix(in srgb, var(--c-orange) 78%, var(--ink));
+}
+.keep.warn {
+  background: color-mix(in srgb, var(--c-red) 18%, transparent);
+  color: color-mix(in srgb, var(--c-red) 82%, var(--ink));
+}
+.note {
+  font-size: 0.72rem;
+  color: var(--c-red);
+}

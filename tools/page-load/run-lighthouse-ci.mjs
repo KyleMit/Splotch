@@ -1,0 +1,466 @@
+#!/usr/bin/env node
+
+import { createHash } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from '@playwright/test';
+import {
+  ROOT,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  argSwitch,
+  fail,
+  isMain,
+  parseOrFail,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
+import { MEASURED_SURFACE, SPEC_FILE } from '../perf/check-matrix-staleness.mjs';
+import { buildAndPreview } from '../perf/lib/profile-preview.mjs';
+
+export const PROFILE_VERSION = 1;
+export const PROFILES = {
+  'phone-portrait': { width: 412, height: 915, deviceScaleFactor: 2.625 },
+  'tablet-landscape': { width: 1133, height: 744, deviceScaleFactor: 2 },
+};
+export const VISITS = ['first', 'repeat'];
+export const GATED_METRICS = ['fcpMs', 'lcpMs'];
+export const REPORTED_METRICS = ['tbtMs', 'performanceScore'];
+
+const DEFAULT_BASELINE = 'tools/page-load/baseline.json';
+const DEFAULT_OUT = 'lighthouse-reports/ci';
+const DEFAULT_PORT = 4197;
+const DEFAULT_SAMPLES = 3;
+export const LIGHTHOUSE_TIMEOUT_MS = 120_000;
+const LIGHTHOUSE_CLI = fileURLToPath(import.meta.resolve('lighthouse/cli/index.js'));
+
+// A name alone proves nothing about who wrote a file, so the runner leaves this in every folder
+// it makes and replaces no folder without it.
+export const OWNERSHIP_MARKER_FILE = '.page-load-reports';
+const OWNERSHIP_MARKER_TEXT =
+  'tools/page-load/run-lighthouse-ci.mjs made this folder and replaces it whole on every run.\n';
+const SUMMARY_FILE = 'summary.json';
+const CHROME_PROFILES_FOLDER = '.profiles';
+// Finder drops this into a folder a person opens; it holds view state, never their work.
+const FINDER_METADATA_FILE = '.DS_Store';
+const REPLACEABLE_ENTRIES = [
+  OWNERSHIP_MARKER_FILE,
+  SUMMARY_FILE,
+  CHROME_PROFILES_FOLDER,
+  FINDER_METADATA_FILE,
+];
+const REPORT_FILE = new RegExp(
+  `^(?:${Object.keys(PROFILES).join('|')})-(?:${VISITS.join('|')})-\\d+\\.report\\.json$`
+);
+
+export const reportFileName = (profileName, visit, sample) =>
+  `${profileName}-${visit}-${sample}.report.json`;
+
+export function median(values) {
+  if (!values.length) throw new Error('median needs at least one value');
+  const sorted = [...values].sort((a, b) => a - b);
+  const midpoint = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[midpoint] : (sorted[midpoint - 1] + sorted[midpoint]) / 2;
+}
+
+export function summarizeMeasurements(measurements) {
+  return Object.fromEntries(
+    Object.keys(PROFILES).map((profile) => [
+      profile,
+      Object.fromEntries(
+        VISITS.map((visit) => {
+          const rows = measurements.filter(
+            (measurement) => measurement.profile === profile && measurement.visit === visit
+          );
+          if (!rows.length) throw new Error(`no measurements for ${profile} ${visit}`);
+          return [
+            visit,
+            Object.fromEntries(
+              [...GATED_METRICS, ...REPORTED_METRICS].map((metric) => [
+                metric,
+                median(rows.map((row) => row[metric])),
+              ])
+            ),
+          ];
+        })
+      ),
+    ])
+  );
+}
+
+export function assessSummary(summary, baseline) {
+  const failures = [];
+  for (const profile of Object.keys(PROFILES)) {
+    for (const visit of VISITS) {
+      for (const metric of GATED_METRICS) {
+        const actual = summary[profile]?.[visit]?.[metric];
+        const limit = baseline.profiles?.[profile]?.[visit]?.limits?.[metric];
+        if (!Number.isFinite(actual) || !Number.isFinite(limit)) {
+          failures.push(`${profile} ${visit} ${metric}: missing measurement or limit`);
+        } else if (actual > limit) {
+          failures.push(`${profile} ${visit} ${metric}: ${actual} ms > ${limit} ms`);
+        }
+      }
+    }
+  }
+  return failures;
+}
+
+export function validateBaseline(baseline) {
+  if (baseline.schemaVersion !== 1) fail('unsupported page-load baseline schema');
+  if (baseline.profileVersion !== PROFILE_VERSION) {
+    fail(
+      `page-load profile version ${baseline.profileVersion} does not match runner version ${PROFILE_VERSION}`
+    );
+  }
+  for (const profile of Object.keys(PROFILES)) {
+    for (const visit of VISITS) {
+      const entry = baseline.profiles?.[profile]?.[visit];
+      if (!entry) fail(`page-load baseline is missing ${profile} ${visit}`);
+      for (const metric of GATED_METRICS) {
+        if (
+          !Number.isFinite(entry.baseline?.[metric]) ||
+          !Number.isFinite(entry.limits?.[metric])
+        ) {
+          fail(`page-load baseline is missing numeric ${profile} ${visit} ${metric} values`);
+        }
+      }
+    }
+  }
+}
+
+export function readBaseline(baselinePath) {
+  const baseline = JSON.parse(readFileSync(resolve(ROOT, baselinePath), 'utf8'));
+  validateBaseline(baseline);
+  return baseline;
+}
+
+// Symlinks resolved, so the folder judged is the folder the run would replace.
+function physicalPath(path) {
+  let existing = path;
+  while (!existsSync(existing)) existing = dirname(existing);
+  return join(realpathSync(existing), relative(existing, path));
+}
+
+const isReplaceable = (entry) => REPLACEABLE_ENTRIES.includes(entry) || REPORT_FILE.test(entry);
+
+// The run replaces this folder whole, so it has to be one this runner made and nothing else has
+// written to. `root` is a parameter so a test can stand a temporary folder in for the repository.
+export function resolveOutDir(out, root = ROOT) {
+  const outDir = physicalPath(resolve(root, out));
+  const fromRoot = relative(realpathSync(root), outDir);
+  const refuse = (reason) => {
+    throw new Error(`--out=${out} resolves to ${outDir}, ${reason}`);
+  };
+  if (fromRoot === '') refuse('the repository root: name a folder inside it for the reports');
+  if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
+    refuse('outside the repository: the run replaces this folder, so keep it inside the checkout');
+  }
+  if (!existsSync(outDir)) return outDir;
+  if (!statSync(outDir).isDirectory()) refuse('which is a file: name a folder for the reports');
+  const entries = readdirSync(outDir);
+  if (entries.length && !entries.includes(OWNERSHIP_MARKER_FILE)) {
+    refuse(
+      `which holds files but not ${OWNERSHIP_MARKER_FILE}, the mark this runner leaves in a ` +
+        'folder it made: remove the folder yourself, or name a new one'
+    );
+  }
+  const foreign = entries.find((entry) => !isReplaceable(entry));
+  if (foreign !== undefined) {
+    refuse(
+      `which holds entries this runner did not write, such as ${foreign}: ` +
+        'move them out, or name a new folder'
+    );
+  }
+  return outDir;
+}
+
+// Judges the folder again at the moment it is replaced, so nothing can be deleted unjudged.
+export function replaceOutDir(out, root = ROOT) {
+  const outDir = resolveOutDir(out, root);
+  rmSync(outDir, { recursive: true, force: true });
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, OWNERSHIP_MARKER_FILE), OWNERSHIP_MARKER_TEXT);
+  return outDir;
+}
+
+function trackedMeasuredFiles() {
+  return execFileSync('git', ['ls-files', '-z', '--', ...MEASURED_SURFACE], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\0')
+    .filter(Boolean)
+    .filter((path) => !SPEC_FILE.test(path));
+}
+
+export function measuredSourceDigest() {
+  const hash = createHash('sha256');
+  for (const path of trackedMeasuredFiles().sort()) {
+    hash.update(path);
+    hash.update('\0');
+    hash.update(readFileSync(join(ROOT, path)));
+    hash.update('\0');
+  }
+  // MEASURED_SURFACE intentionally excludes package.json because ordinary
+  // script edits cannot change a capture. This digest adds only production
+  // dependency declarations; the resolved tree remains owned by pnpm-lock.yaml.
+  const { dependencies = {} } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  hash.update('package.json#dependencies\0');
+  hash.update(JSON.stringify(Object.entries(dependencies).sort(([a], [b]) => a.localeCompare(b))));
+  return hash.digest('hex');
+}
+
+export function baselineSourceStatus(baseline, currentDigest = measuredSourceDigest()) {
+  return {
+    matches: baseline.sourceDigest === currentDigest,
+    baselineDigest: baseline.sourceDigest,
+    currentDigest,
+  };
+}
+
+function reportBaselineSourceStatus(status) {
+  if (status.matches) return;
+  console.warn(
+    'Page-load baseline provenance is stale for this production surface. The absolute FCP/LCP ' +
+      'limits still gate this run; recalibrate before claiming the baseline medians are current.'
+  );
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(
+      '::warning title=Page-load baseline provenance is stale::The absolute limits still gate; ' +
+        'review the uploaded measurements and refresh baseline.json before treating its medians as current.'
+    );
+  }
+}
+
+function lighthouseResult(path, profile, visit, sample) {
+  const report = JSON.parse(readFileSync(path, 'utf8'));
+  if (report.runtimeError) {
+    throw new Error(`${profile} ${visit} sample ${sample} failed: ${report.runtimeError.message}`);
+  }
+  const audits = report.audits;
+  const metric = (name) => {
+    const value = audits[name]?.numericValue;
+    if (!Number.isFinite(value)) {
+      throw new Error(`${profile} ${visit} sample ${sample} has no ${name}`);
+    }
+    return Math.round(value);
+  };
+  const performanceScore = report.categories.performance?.score;
+  if (!Number.isFinite(performanceScore)) {
+    throw new Error(`${profile} ${visit} sample ${sample} has no performance score`);
+  }
+  return {
+    profile,
+    visit,
+    sample,
+    fcpMs: metric('first-contentful-paint'),
+    lcpMs: metric('largest-contentful-paint'),
+    tbtMs: metric('total-blocking-time'),
+    performanceScore: Math.round(performanceScore * 100),
+  };
+}
+
+function runLighthouse({ base, out, profileName, visit, sample, profileDir }) {
+  const profile = PROFILES[profileName];
+  const reportPath = join(out, reportFileName(profileName, visit, sample));
+  rmSync(reportPath, { force: true });
+  const chromeFlags = [
+    '--headless=new',
+    '--no-sandbox',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    `--user-data-dir=${profileDir}`,
+  ].join(' ');
+  const args = [
+    LIGHTHOUSE_CLI,
+    base,
+    '--form-factor=mobile',
+    '--screenEmulation.mobile',
+    `--screenEmulation.width=${profile.width}`,
+    `--screenEmulation.height=${profile.height}`,
+    `--screenEmulation.deviceScaleFactor=${profile.deviceScaleFactor}`,
+    '--throttling-method=simulate',
+    '--only-categories=performance',
+    '--output=json',
+    `--output-path=${reportPath}`,
+    `--chrome-path=${chromium.executablePath()}`,
+    `--chrome-flags=${chromeFlags}`,
+    '--quiet',
+  ];
+  if (visit === 'repeat') args.push('--disable-storage-reset');
+  const result = spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: LIGHTHOUSE_TIMEOUT_MS,
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `${profileName} ${visit} sample ${sample} Lighthouse failed: ` +
+        `${result.stderr?.trim() || result.error?.message || `exit ${result.status}`}`
+    );
+  }
+  return lighthouseResult(reportPath, profileName, visit, sample);
+}
+
+export function withOneRetry(operation, onRetry = () => {}) {
+  try {
+    return operation(1);
+  } catch (error) {
+    onRetry(error);
+    return operation(2);
+  }
+}
+
+function renderSummary(summary, baseline, reportOnly) {
+  const rows = [];
+  for (const profile of Object.keys(PROFILES)) {
+    for (const visit of VISITS) {
+      const result = summary[profile][visit];
+      const limits = baseline?.profiles?.[profile]?.[visit]?.limits;
+      rows.push({
+        profile,
+        visit,
+        'FCP ms': Math.round(result.fcpMs),
+        'FCP limit': reportOnly ? 'report' : limits.fcpMs,
+        'LCP ms': Math.round(result.lcpMs),
+        'LCP limit': reportOnly ? 'report' : limits.lcpMs,
+        'TBT ms (report)': Math.round(result.tbtMs),
+        'score (report)': Math.round(result.performanceScore),
+      });
+    }
+  }
+  console.table(rows);
+  return rows;
+}
+
+function appendGitHubSummary(rows, sourceStatus) {
+  if (!process.env.GITHUB_STEP_SUMMARY) return;
+  const header =
+    '| Profile | Visit | FCP / limit (ms) | LCP / limit (ms) | TBT (ms, report) | Score (report) |\n' +
+    '| --- | --- | ---: | ---: | ---: | ---: |\n';
+  const body = rows
+    .map(
+      (row) =>
+        `| ${row.profile} | ${row.visit} | ${row['FCP ms']} / ${row['FCP limit']} | ` +
+        `${row['LCP ms']} / ${row['LCP limit']} | ${row['TBT ms (report)']} | ` +
+        `${row['score (report)']} |`
+    )
+    .join('\n');
+  const provenance = sourceStatus.matches
+    ? 'Current'
+    : 'Stale (warning only; absolute limits still gate)';
+  appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    `## Page-load performance\n\n${header}${body}\n\nBaseline provenance: ${provenance}.\n`
+  );
+}
+
+export async function runLighthouseCi({
+  baselinePath = DEFAULT_BASELINE,
+  out = DEFAULT_OUT,
+  port = DEFAULT_PORT,
+  samples = DEFAULT_SAMPLES,
+  build = true,
+  reportOnly = false,
+} = {}) {
+  if (!Number.isInteger(port) || port <= 0) fail('--port must be a positive integer');
+  if (!Number.isInteger(samples) || samples < 3 || samples % 2 === 0) {
+    fail('--samples must be an odd integer of at least 3 so the median resists one outlier');
+  }
+  parseOrFail(() => resolveOutDir(out));
+  const baseline = readBaseline(baselinePath);
+  const sourceStatus = baselineSourceStatus(baseline);
+  reportBaselineSourceStatus(sourceStatus);
+
+  const absoluteOut = parseOrFail(() => replaceOutDir(out));
+  const preview = await buildAndPreview(port, { build });
+  const measurements = [];
+  try {
+    for (let sample = 1; sample <= samples; sample += 1) {
+      for (const profileName of Object.keys(PROFILES)) {
+        const profileDir = join(absoluteOut, CHROME_PROFILES_FOLDER, `${profileName}-${sample}`);
+        mkdirSync(profileDir, { recursive: true });
+        for (const visit of VISITS) {
+          console.log(`${profileName} ${visit} sample ${sample}/${samples}`);
+          const runOptions = {
+            base: preview.base,
+            out: absoluteOut,
+            profileName,
+            visit,
+            sample,
+            profileDir,
+          };
+          measurements.push(
+            withOneRetry(
+              () => runLighthouse(runOptions),
+              (error) => {
+                console.warn(
+                  `${profileName} ${visit} sample ${sample} failed once; retrying: ${error.message}`
+                );
+                if (visit === 'first') {
+                  rmSync(profileDir, { recursive: true, force: true });
+                  mkdirSync(profileDir, { recursive: true });
+                }
+              }
+            )
+          );
+        }
+        rmSync(profileDir, { recursive: true, force: true });
+      }
+    }
+  } finally {
+    preview.stop();
+    rmSync(join(absoluteOut, CHROME_PROFILES_FOLDER), { recursive: true, force: true });
+  }
+
+  const summary = summarizeMeasurements(measurements);
+  const rows = renderSummary(summary, baseline, reportOnly);
+  appendGitHubSummary(rows, sourceStatus);
+  const artifact = {
+    schemaVersion: 1,
+    profileVersion: PROFILE_VERSION,
+    sourceDigest: measuredSourceDigest(),
+    baselineSource: sourceStatus,
+    samples,
+    summary,
+    measurements,
+  };
+  writeFileSync(join(absoluteOut, SUMMARY_FILE), `${JSON.stringify(artifact, null, 2)}\n`);
+  console.log(`Reports: ${relative(ROOT, absoluteOut)}`);
+
+  if (reportOnly) return artifact;
+  const failures = assessSummary(summary, baseline);
+  if (failures.length) {
+    fail(`page-load regression:\n${failures.map((failure) => `- ${failure}`).join('\n')}`);
+  }
+  console.log('FCP and LCP medians are within the committed wide regression limits.');
+  return artifact;
+}
+
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['baseline', 'out', 'port', 'samples', 'no-build', 'report-only']);
+  runMain(() =>
+    runLighthouseCi({
+      baselinePath: argFlag('baseline'),
+      out: argFlag('out'),
+      port: argNumber('port', undefined, TCP_PORT),
+      samples: argNumber('samples', undefined, { integer: true, min: 3 }),
+      build: !argSwitch('no-build'),
+      reportOnly: argSwitch('report-only'),
+    })
+  );
+}

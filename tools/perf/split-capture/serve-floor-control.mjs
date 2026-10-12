@@ -1,0 +1,319 @@
+// The floor control: the cheapest drawing app that could exist, measured by the
+// same probe, the same maths, and the same trusted touch as Splotch.
+//
+//   npm run perf:device:floor -- --port=4176
+//
+// It answers the question the 1% lost-frame gate cannot answer on its own — how
+// much of a browser's in-contact frame loss is the browser rather than the app.
+// The page is one full-size canvas, one `stroke()` per pointermove: no tiles, no
+// blend planes, no halos, no framework. Whatever this page loses is that
+// browser's floor on that device, and only the difference above it is Splotch's.
+//
+// This is a DIAGNOSTIC, not a gate. ADR-0136 used it to establish that a
+// physical-iPad capture scoring 1.46% "lost" frame time had a presentation
+// deficit of exactly zero — a page containing nothing but a canvas and a stroke
+// call cannot be losing frames, so the charge was pricing rAF callback jitter.
+// That finding is why the credited charge exists.
+//
+// Its own architecture is one ADR-0085 rejected: a single full-viewport canvas,
+// which on the iPad is ~3 Mpx and causes the WebKit surface-flush starvation the
+// tiled live canvas exists to avoid. So it measures a bad implementation rather
+// than a platform limit, and a gate derived from it would enshrine that. Reach
+// for it to answer "is this the app or the browser", never to score a release.
+//
+// The DOM shape (#drawingCanvas, .paper-view) is what the probe requires.
+//
+// Drive a capture against it with `perf:device:frames --host=<this host>`, or
+// draw on it by hand with `perf:device:hand --host=<this host>`. Either capture
+// recognises the floor by `/__probe/state`'s `page` and, in place of the
+// SvelteKit build guard the floor can never satisfy, proves the served bytes are
+// this checkout's floor (`floorControlIdentity`).
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
+import { join } from 'node:path';
+import { TCP_PORT, argFlag, argNumber, isMain, ROOT, runMain } from '../../lib/proc.mjs';
+import { PROBE_INSTALL_SOURCE } from './lib/page-bootstrap.mjs';
+import { PROBE_SOURCE, readJsonBody, sendJson, sendText } from './lib/probe-host.mjs';
+import {
+  CONTACT_BANK_MS,
+  FLOOR_CONTROL_PAGE,
+  PROBE_REPORT_PATH,
+} from './lib/probe-host-protocol.mjs';
+import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
+
+const DEFAULT_PORT = 4176;
+const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
+// The app's live-canvas cap (MAX_RENDER_SCALE in engine.ts), so the control is
+// not handed a cheaper surface than the thing it is a control for.
+// render-scale-cap.test.mjs fails when the two disagree.
+const MAX_RENDER_SCALE = 2;
+const STROKE_WIDTH_CSS_PX = 12;
+// The page paints one fixed light paper; there is no dark variant to request.
+export const FLOOR_CONTROL_THEME = 'light';
+
+const PAGE = `<!doctype html>
+<html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>floor control</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #f4f1ea; }
+  body { touch-action: none; user-select: none; }
+  .paper-view { position: fixed; inset: 0; }
+  #drawingCanvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+</style></head>
+<body>
+<!-- The absent data-paper-active marker is load-bearing. It gives this control
+     page the same logical blank-paper state as DrawingCanvas; setting the marker
+     would make the probe wait for an active coloring page instead of starting
+     the blank phase. -->
+<div class="paper-view"></div>
+<canvas id="drawingCanvas"></canvas>
+<script src="/__probe/control.js"></script>
+<script src="/__probe/bootstrap.js"></script>
+</body></html>`;
+
+const CONTROL = `
+const canvas = document.getElementById('drawingCanvas');
+const scale = Math.min(window.devicePixelRatio || 1, ${MAX_RENDER_SCALE});
+canvas.width = Math.round(canvas.clientWidth * scale);
+canvas.height = Math.round(canvas.clientHeight * scale);
+const context = canvas.getContext('2d');
+context.lineCap = 'round';
+context.lineJoin = 'round';
+context.lineWidth = ${STROKE_WIDTH_CSS_PX} * scale;
+context.strokeStyle = '#7c4dff';
+const live = new Map();
+canvas.addEventListener('pointerdown', (event) => {
+  canvas.setPointerCapture(event.pointerId);
+  live.set(event.pointerId, { x: event.clientX * scale, y: event.clientY * scale });
+});
+canvas.addEventListener('pointermove', (event) => {
+  const previous = live.get(event.pointerId);
+  if (!previous) return;
+  event.preventDefault();
+  // Coalesced samples are consumed the way the app consumes them, so the
+  // control is not accidentally cheaper by dropping input the app draws.
+  const samples = event.getCoalescedEvents ? event.getCoalescedEvents() : [event];
+  context.beginPath();
+  context.moveTo(previous.x, previous.y);
+  let point = previous;
+  for (const sample of samples.length ? samples : [event]) {
+    point = { x: sample.clientX * scale, y: sample.clientY * scale };
+    context.lineTo(point.x, point.y);
+  }
+  context.stroke();
+  live.set(event.pointerId, point);
+});
+const end = (event) => live.delete(event.pointerId);
+canvas.addEventListener('pointerup', end);
+canvas.addEventListener('pointercancel', end);
+`;
+
+// Exported for the executed floor-bootstrap test only — a source-substring
+// assertion would stay green with the identity branch disabled.
+export const FLOOR_BOOTSTRAP_SOURCE = `
+(async () => {
+  const post = (path, body) =>
+    fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const plan = await fetch('/__probe/plan').then((response) => response.json());
+  const nonce = plan.nonce;
+  // The same opened-page identity the capture bootstrap proves (issue 1307):
+  // the launcher opens this page at a URL carrying the run's nonce — ?verify=
+  // from the Android preflight, ?probe= from perf:device:frames — so a restored
+  // or delayed floor page from an earlier run can prove it is not this run's
+  // page and stand down instead of adopting the current plan. Only when the
+  // plan carries a nonce — a hand-opened standalone host asks for no proof.
+  const params = new URLSearchParams(location.search);
+  const openedFor = params.get('probe') ?? params.get('verify');
+  if (nonce && openedFor !== nonce) {
+    location.replace('${STAND_DOWN_PATH}');
+    return;
+  }
+  ${PROBE_INSTALL_SOURCE}
+  const rect = document.querySelector('#drawingCanvas').getBoundingClientRect();
+  await post('/__probe/ready', {
+    nonce,
+    resolvedTheme: '${FLOOR_CONTROL_THEME}',
+    geometry: {
+      canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      viewport: { width: innerWidth, height: innerHeight },
+      outerViewport: { width: outerWidth, height: outerHeight },
+      screenX: window.screenX,
+      screenY: window.screenY,
+      dpr: window.devicePixelRatio,
+      orientation: innerWidth > innerHeight ? 'LANDSCAPE' : 'PORTRAIT',
+    },
+  });
+  while (true) {
+    const current = await fetch('/__probe/plan').then((response) => response.json());
+    if (current.nonce !== nonce) return;
+    if (current.finish) break;
+    await wait(400);
+  }
+  const report = window.__probe.finish();
+  const counts = report.meta.counts;
+  const read = (accessor, expected) => {
+    const rows = [];
+    while (rows.length < expected) {
+      const slice = window.__probe[accessor](rows.length, 5000);
+      if (!slice || !slice.length) break;
+      rows.push(...slice);
+    }
+    return rows;
+  };
+  report.frames = read('frames', counts.frames);
+  report.events = read('events', counts.events);
+  report.measures = read('measures', counts.measures);
+  window.__probe.stop();
+  await post('/__probe/report', { nonce, report });
+})();
+`;
+
+// The scripted bytes a floor host serves, by path. One table feeds both the
+// server and the identity check, so a capture compares exactly what is served.
+const FLOOR_SERVED_BODIES = {
+  '/': () => PAGE,
+  '/__probe/control.js': () => CONTROL,
+  '/__probe/bootstrap.js': () => FLOOR_BOOTSTRAP_SOURCE,
+  '/__probe/probe.js': () => readFileSync(PROBE_SOURCE, 'utf8'),
+};
+
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+// The floor's counterpart to the served-build guard: it has no SvelteKit
+// manifest, so its identity is its own served bytes. A floor host another
+// checkout or an older commit left on the port serves a different page or
+// probe, and a capture against it would measure a different control. Returns
+// the first differing path as `problem`, and one digest over every served file
+// as `buildDigest` so the artifact records which floor it measured.
+export async function floorControlIdentity(host, fetchText = defaultFetchText) {
+  const digests = [];
+  for (const [path, localBody] of Object.entries(FLOOR_SERVED_BODIES)) {
+    const served = sha256(await fetchText(new URL(path, host)));
+    if (served !== sha256(localBody())) {
+      return {
+        problem:
+          `${host} serves ${path} with different content from this checkout's floor control — ` +
+          'the port is held by another checkout or an older floor host. Choose a free port ' +
+          'rather than stopping a listener another session owns.',
+        buildDigest: null,
+      };
+    }
+    digests.push(`${path} ${served}`);
+  }
+  return { problem: null, buildDigest: sha256(digests.join('\n')) };
+}
+
+async function defaultFetchText(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+  return response.text();
+}
+
+export function createFloorControlHost({ reportDir, log = console.log } = {}) {
+  if (reportDir) mkdirSync(reportDir, { recursive: true });
+  const state = {
+    plan: { finish: false, label: 'control', contactMs: CONTACT_BANK_MS },
+    report: null,
+    progress: null,
+  };
+
+  const server = createServer(async (req, res) => {
+    const { pathname } = new URL(req.url, 'http://localhost');
+    if (pathname === '/__probe/plan') return sendJson(res, state.plan);
+    // Same inert husk page the probe host serves: the litter matcher treats
+    // this path as a constant meaning "dead page", and the floor host's
+    // catch-all would otherwise answer it with a LIVE page that adopts the
+    // current plan.
+    if (pathname === STAND_DOWN_PATH) {
+      return sendText(res, 'text/html', STAND_DOWN_PAGE_HTML);
+    }
+    if (pathname === '/__probe/state') {
+      return sendJson(res, {
+        page: FLOOR_CONTROL_PAGE,
+        ready: state.progress,
+        hasReport: !!state.report,
+      });
+    }
+    if (req.method === 'GET' && pathname === PROBE_REPORT_PATH) {
+      return state.report
+        ? sendJson(res, state.report)
+        : sendJson(res, { error: 'no accepted report for the current plan' }, 404);
+    }
+    if (pathname !== '/' && Object.hasOwn(FLOOR_SERVED_BODIES, pathname)) {
+      return sendText(res, 'text/javascript', FLOOR_SERVED_BODIES[pathname]());
+    }
+    if (req.method === 'PUT' && pathname === '/__probe/control') {
+      const patch = await readJsonBody(req);
+      state.plan = { ...state.plan, ...patch };
+      if (state.plan.reset) {
+        state.report = null;
+        state.progress = null;
+        delete state.plan.reset;
+      }
+      return sendJson(res, state.plan);
+    }
+    if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
+      const payload = await readJsonBody(req);
+      if (pathname === PROBE_REPORT_PATH) {
+        // The plan nonce arms the stale-run gate in reportRejectionReason;
+        // omitting it here left that gate disabled on the floor path, so a
+        // restored floor page could bank an earlier run's cadence under the
+        // current preflight (issue 1307).
+        const rejection = reportRejectionReason(state.report, payload, state.plan.nonce);
+        if (rejection) {
+          log(`ignored ${rejection} for ${state.plan.label}`);
+          return sendJson(res, {});
+        }
+        if (keepIncomingReport(state.report, payload)) {
+          state.report = payload;
+          if (reportDir) {
+            writeFileSync(join(reportDir, reportFileName(state.plan)), JSON.stringify(payload));
+          }
+          log(`report received for ${state.plan.label}`);
+        }
+      } else if (pathname === '/__probe/ready') {
+        if (payload.nonce !== state.plan.nonce) return sendJson(res, {});
+        state.progress = payload;
+        log('floor control ready');
+      }
+      return sendJson(res, {});
+    }
+    return sendText(res, 'text/html; charset=utf-8', FLOOR_SERVED_BODIES['/']());
+  });
+
+  return { server, state };
+}
+
+// `server.close()` stops the listener accepting new connections and then waits for
+// the established ones to end on their own. The device's browser holds its
+// keep-alive sockets open long after the capture is done, so those sockets keep the
+// event loop non-empty and the process never exits — a verification that passed every
+// check still hangs, which is invisible interactively and fatal in a chained
+// unattended run. Destroying them is the only thing that releases the loop.
+export function closeFloorControlHost(server) {
+  return new Promise((resolve) => {
+    server.close(resolve);
+    server.closeAllConnections();
+  });
+}
+
+export function serveFloorControl({ port = DEFAULT_PORT, reportDir = DEFAULT_REPORT_DIR } = {}) {
+  const { server } = createFloorControlHost({ reportDir });
+  server.listen(port, '0.0.0.0', () => console.log(`floor control on ${port}`));
+  return server;
+}
+
+if (isMain(import.meta.url)) {
+  runMain(async () => {
+    serveFloorControl({
+      port: argNumber('port', undefined, TCP_PORT),
+      reportDir: argFlag('report-dir'),
+    });
+  });
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rival agent findings",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The review verdict in prose: what was checked, how, and the overall call. Becomes the review body. For a question rather than a review, the answer."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Repository-relative path of the file the finding anchors to."
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Line number in the version named by side. Must be a line the diff shows."
+          },
+          "startLine": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "description": "First line of a multi-line span, or null for a single line."
+          },
+          "side": {
+            "type": "string",
+            "enum": ["RIGHT", "LEFT"],
+            "description": "RIGHT for the new version of the file, LEFT only for a deleted line."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["blocking", "suggestion", "nit", "question"]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One issue: the claim, why it matters, the evidence, and the concrete fix. Markdown."
+          }
+        },
+        "required": ["path", "line", "startLine", "side", "severity", "body"],
+        "additionalProperties": false
+      }
+    },
+    "unverified": {
+      "type": "array",
+      "description": "Claims that needed a command the handler declined or that could not be run. Each stays a question, not a finding.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": { "type": "string", "minLength": 1 },
+          "command": { "type": "string", "minLength": 1 },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why it stayed unverified: the handler's decline reason, or what went wrong."
+          }
+        },
+        "required": ["claim", "command", "reason"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["summary", "findings", "unverified"],
+  "additionalProperties": false
+}

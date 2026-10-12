@@ -1,0 +1,38 @@
+$ vitest run src/lib/fonts.test.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./standalonePageEntries" without a file extension (vitest.config.ts:3:39). Add the file extension
+  - import "./defines" without a file extension (vitest.config.ts:4:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /Users/kylemit/.codex/worktrees/ed28/Splotch/web
+
+ ❯ src/lib/fonts.test.ts (2 tests | 1 failed) 3ms
+   ❯ QUICKSAND_FONT_FAMILY (2)
+     × matches the startup copy without importing its shared module 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/fonts.test.ts > QUICKSAND_FONT_FAMILY > matches the startup copy without importing its shared module
+AssertionError: expected 'Wrong Family' to be 'Quicksand Variable' // Object.is equality
+
+Expected: "Quicksand Variable"
+Received: "Wrong Family"
+
+ ❯ src/lib/fonts.test.ts:23:75
+     21|
+     22|   it('matches the startup copy without importing its shared module', (…
+     23|     expect(/const DISPLAY_FONT_FAMILY = '([^']+)'/.exec(warmSource)?.[…
+       |                                                                           ^
+     24|       QUICKSAND_FONT_FAMILY
+     25|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  21:27:56
+   Duration  54ms (transform 52%, setup 16%, tests 15%, import 9%, worker 7%)
+
+
+CONTROL_EXIT=1

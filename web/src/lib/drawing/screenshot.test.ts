@@ -1,0 +1,341 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  exportCanvasBlob: vi.fn(),
+  isNative: vi.fn(() => false),
+  saveBlobToFolder: vi.fn(),
+  playScreenshotFeedback: vi.fn(),
+  playScreenshotSuppressedFeedback: vi.fn(),
+  createPolaroidPreviewRequest: vi.fn(),
+  triggerDownload: vi.fn(),
+  savePhoto: vi.fn(),
+  reportSaveFailure: vi.fn(),
+}));
+
+// The camera flow saves through the real imageSave.ts, so the media, platform, folder, and download
+// mocks here stand in for the collaborators beneath it (imageSave.test.ts covers it on its own).
+vi.mock('@capacitor-community/media', () => ({ Media: { savePhoto: mocks.savePhoto } }));
+
+vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
+vi.mock('$lib/platform', () => ({ getPlatform: vi.fn(), isNative: mocks.isNative }));
+vi.mock('./folderSave', () => ({ saveBlobToFolder: mocks.saveBlobToFolder }));
+vi.mock('./screenshotFeedback', () => ({
+  playScreenshotFeedback: mocks.playScreenshotFeedback,
+  playScreenshotSuppressedFeedback: mocks.playScreenshotSuppressedFeedback,
+}));
+vi.mock('./polaroidAnimation', () => ({
+  createPolaroidPreviewRequest: mocks.createPolaroidPreviewRequest,
+}));
+vi.mock('$lib/savedFile', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/savedFile')>()),
+  triggerDownload: mocks.triggerDownload,
+}));
+vi.mock('$lib/state/saveFailure.svelte', () => ({
+  reportSaveFailure: mocks.reportSaveFailure,
+}));
+vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
+
+beforeEach(() => {
+  vi.resetModules();
+  vi.clearAllMocks();
+  mocks.isNative.mockReturnValue(false);
+  mocks.createPolaroidPreviewRequest.mockReturnValue(null);
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:polaroid');
+});
+
+describe('saveScreenshot', () => {
+  it('starts lightweight capture feedback before the PNG export settles', async () => {
+    const exported = Promise.withResolvers<Blob | null>();
+    mocks.exportCanvasBlob.mockReturnValue(exported.promise);
+    const { saveScreenshot } = await import('./screenshot');
+
+    const save = saveScreenshot();
+
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledWith();
+    expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
+    expect(mocks.createPolaroidPreviewRequest).toHaveBeenCalledOnce();
+
+    exported.resolve(null);
+    await save;
+
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['retry']));
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.createPolaroidPreviewRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the polaroid and skips the unavailable cue when the save lands', async () => {
+    const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(null);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.triggerDownload).toHaveBeenCalledOnce();
+    expect(preview.discard).not.toHaveBeenCalled();
+    expect(mocks.playScreenshotSuppressedFeedback).not.toHaveBeenCalled();
+  });
+
+  it('takes the polaroid back and shakes the camera when the gallery save fails', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.isNative.mockReturnValue(true);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing'], { type: 'image/png' }));
+    mocks.savePhoto.mockRejectedValueOnce(new Error('User denied access')).mockResolvedValue({});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(preview.discard).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+
+    now.mockReturnValue(1_001);
+    await saveScreenshot();
+
+    expect(mocks.savePhoto).toHaveBeenCalledTimes(2);
+    expect(preview.discard).toHaveBeenCalledOnce();
+  });
+
+  it('hands the parent banner the exact picture a denied save captured', async () => {
+    const drawing = new Blob(['drawing'], { type: 'image/png' });
+    mocks.isNative.mockReturnValue(true);
+    mocks.exportCanvasBlob.mockResolvedValue(drawing);
+    mocks.savePhoto.mockRejectedValue(
+      Object.assign(new Error('Access to photos not allowed by user'), { code: 'accessDenied' })
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.reportSaveFailure).toHaveBeenCalledExactlyOnceWith('denied', {
+      blob: drawing,
+      baseName: 'splotch',
+    });
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a landed save silent', async () => {
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(null);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.reportSaveFailure).not.toHaveBeenCalled();
+  });
+
+  it('takes the polaroid back when the export produces no image', async () => {
+    const preview = { width: 640, onReady: vi.fn(), discard: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockResolvedValue(null);
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(preview.discard).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+    expect(mocks.reportSaveFailure).toHaveBeenCalledExactlyOnceWith('failed', null);
+  });
+
+  it('requests the worker preview alongside the settled export snapshot', async () => {
+    const preview = { width: 640, onReady: vi.fn() };
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledWith({
+      preview: { width: preview.width, onReady: expect.any(Function) },
+    });
+  });
+
+  it('defers fallback export and feedback until activation', async () => {
+    const exported = Promise.withResolvers<Blob | null>();
+    const onReady = vi.fn();
+    const preview = { width: 640, onReady };
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockReturnValue(exported.promise);
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot(() => null);
+
+    expect(mocks.exportCanvasBlob).not.toHaveBeenCalled();
+    expect(mocks.playScreenshotFeedback).not.toHaveBeenCalled();
+    expect(onReady).not.toHaveBeenCalled();
+
+    const save = saveScreenshot();
+    const deferredPreview = mocks.exportCanvasBlob.mock.calls[0][0]?.preview;
+    deferredPreview?.onReady(bitmap);
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(onReady).toHaveBeenCalledWith(bitmap);
+    exported.resolve(new Blob(['drawing']));
+    await save;
+  });
+
+  it('completes a synchronously captured engine export only on activation', async () => {
+    const blob = new Blob(['drawing']);
+    const complete = vi.fn(async () => blob);
+    const cancel = vi.fn();
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot(() => ({ complete, cancel }));
+
+    expect(complete).not.toHaveBeenCalled();
+    await saveScreenshot();
+
+    expect(complete).toHaveBeenCalledOnce();
+    expect(mocks.exportCanvasBlob).not.toHaveBeenCalled();
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('does not capture a preparation while a save is in flight', async () => {
+    const exported = Promise.withResolvers<Blob | null>();
+    const prepareExport = vi.fn();
+    mocks.exportCanvasBlob.mockReturnValue(exported.promise);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    const save = saveScreenshot();
+    prepareScreenshot(prepareExport);
+
+    expect(prepareExport).not.toHaveBeenCalled();
+    exported.resolve(null);
+    await save;
+  });
+
+  it('does not capture a preparation during the post-save cooldown', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    const prepareExport = vi.fn();
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+    now.mockReturnValue(4_999);
+    prepareScreenshot(prepareExport);
+
+    expect(prepareExport).not.toHaveBeenCalled();
+  });
+
+  it('releases once across repeated cancellation requests without completing', async () => {
+    const complete = vi.fn(async () => new Blob(['cancelled']));
+    const cancel = vi.fn();
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { cancelScreenshotPreparation, prepareScreenshot, saveScreenshot } =
+      await import('./screenshot');
+
+    prepareScreenshot(() => ({ complete, cancel }));
+    cancelScreenshotPreparation();
+    cancelScreenshotPreparation();
+
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(complete).not.toHaveBeenCalled();
+
+    await saveScreenshot();
+
+    expect(complete).not.toHaveBeenCalled();
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+  });
+
+  it('releases and replaces an orphaned preparation before the next press', async () => {
+    const firstComplete = vi.fn(async () => new Blob(['stale']));
+    const firstCancel = vi.fn();
+    const secondComplete = vi.fn(async () => new Blob(['current']));
+    const secondCancel = vi.fn();
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot(() => ({ complete: firstComplete, cancel: firstCancel }));
+    prepareScreenshot(() => ({ complete: secondComplete, cancel: secondCancel }));
+
+    expect(firstCancel).toHaveBeenCalledOnce();
+    expect(firstComplete).not.toHaveBeenCalled();
+    await saveScreenshot();
+
+    expect(secondComplete).toHaveBeenCalledOnce();
+    expect(secondCancel).not.toHaveBeenCalled();
+  });
+
+  it('coalesces overlapping saves and permits a later save after persistence settles', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    const save = Promise.withResolvers<boolean>();
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockReturnValueOnce(save.promise).mockResolvedValueOnce('Drawings');
+    const { saveScreenshot } = await import('./screenshot');
+
+    const first = saveScreenshot();
+    const second = saveScreenshot();
+
+    expect(second).toBe(first);
+    await vi.waitFor(() => expect(mocks.saveBlobToFolder).toHaveBeenCalledOnce());
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+
+    now.mockReturnValue(3_000);
+    save.resolve(true);
+    await first;
+    now.mockReturnValue(6_999);
+    await saveScreenshot();
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    now.mockReturnValue(7_000);
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.saveBlobToFolder).toHaveBeenCalledTimes(2);
+  });
+
+  it('suppresses duplicate saves during the post-save cooldown', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+    now.mockReturnValue(4_999);
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+
+    now.mockReturnValue(5_000);
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears the active save after a rejection', async () => {
+    const error = new Error('export failed');
+    mocks.exportCanvasBlob
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
+    const { saveScreenshot } = await import('./screenshot');
+
+    await expect(saveScreenshot()).rejects.toThrow(error);
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+    await saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
+  });
+});

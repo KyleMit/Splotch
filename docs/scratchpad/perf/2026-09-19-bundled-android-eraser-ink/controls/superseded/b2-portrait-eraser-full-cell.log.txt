@@ -1,0 +1,16 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+eraser pass 1: 14/16 strokes, erased 6523/81920 census samples
+eraser pass 2: 14/16 strokes, erased 6569/81920 census samples
+eraser pass 3: 14/16 strokes, erased 6510/81920 census samples
+eraser pass 4: 14/16 strokes, erased 6511/81920 census samples
+eraser pass 5: 14/16 strokes, erased 6514/81920 census samples
+eraser pass 6: 14/16 strokes, erased 6547/81920 census samples
+eraser pass 7: 14/16 strokes, erased 6526/81920 census samples
+eraser pass 8: 14/16 strokes, erased 6553/81920 census samples
+eraser pass 9: 14/16 strokes, erased 6539/81920 census samples
+eraser pass 10: 14/16 strokes, erased 6529/81920 census samples
+
+Observed PORTRAIT 360x780
+Fidelity: PASS (android-capacitor-webview) · {"trustedTouch":true,"cadence":true}
+  blank: lost 0.02% · paint max 8.3ms · PASS
+Wrote perf-profiles/bundled/units-2026-09-19/unit-b/b2-portrait-eraser-full-cell.json

@@ -1,0 +1,133 @@
+# Runtime smoke test for the iOS *deployment* — the simulator/Xcode counterpart
+# of android-deploy.yml. Compiles a Release simulator app without store signing, then boots
+# an iPhone simulator, builds + installs the Debug app, and asserts via Maestro
+# that the UI renders (the Capacitor WebView booted and loaded the production web
+# bundle). Neither the web E2E suite (test.yml) nor the Android smoke can catch
+# Release-only compiler/configuration errors or an iOS-only WebView boot failure.
+#
+# Tag-only by design: macOS runners are the most expensive thing in CI, so this
+# runs only when a release tag is pushed (the moment an iOS crash would reach App
+# Store users), plus on demand from the Actions tab. The debug build targets the
+# simulator, so no signing secrets or provisioning profiles are involved.
+name: iOS Deploy Smoke
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: # allow ad-hoc runs from the GitHub Actions tab
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  smoke:
+    name: Maestro launch smoke test (iOS simulator)
+    # macOS runners ship full Xcode and pre-installed iPhone simulators.
+    runs-on: macos-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    # The reporter below names the failing phase from these. A job cut off by
+    # its timeout may leave them empty, which the report reads as never reached.
+    outputs:
+      smoke-outcome: ${{ steps.smoke.outcome }}
+      report-outcome: ${{ steps.report.outcome }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Compile iOS Release app without store signing
+        run: npm run ios:build:release
+
+      - uses: ./.github/actions/install-maestro
+
+      # ios:build:release already ran cap:sync, so --skip-sync reuses that exact production web
+      # bundle. test:ios (tools/mobile/ios/run-simulator-smoke-test.mjs) auto-discovers and boots
+      # an iPhone simulator, builds the Debug app, installs it, runs .maestro/smoke.yaml — the
+      # same flow the Android smoke runs — then shuts the simulator down.
+      - name: Run iOS simulator smoke test
+        id: smoke
+        # Leave time to upload diagnostics before the job-wide cancellation deadline.
+        timeout-minutes: 20
+        env:
+          # Budget cold hosted XCTest startup separately from the app's paint assertion.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000
+        run: npm run test:ios -- --skip-sync
+
+      - name: Upload Maestro report
+        id: report
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/upload-maestro-report
+        with:
+          name: maestro-ios-report
+          # Collect both legacy appdirs and session-local XCTest logs across CLI upgrades.
+          path: |
+            ~/.maestro/tests/
+            ~/Library/Logs/maestro/xctest_runner_logs/
+
+  # Same reasoning as android-deploy.yml's report-failure job. Filing from a
+  # downstream job, not a step inside the smoke job, is what lets a smoke job
+  # cut off by its timeout still file (a timed-out job runs none of its own
+  # failure() steps), and keeps issues: write away from the install and build
+  # steps. The title is platform-specific because a red iOS gate and a green
+  # Android one are different facts about the release.
+  report-failure:
+    name: File iOS deploy failure
+    needs: smoke
+    if: ${{ !cancelled() && github.event_name == 'push' && needs.smoke.result != 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: File the failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          SMOKE_OUTCOME: ${{ needs.smoke.outputs.smoke-outcome }}
+          REPORT_OUTCOME: ${{ needs.smoke.outputs.report-outcome }}
+          PLATFORM: iOS
+          ARTIFACT: maestro-ios-report
+        run: |
+          title="${PLATFORM} native deploy gate failed"
+          if [[ "$SMOKE_OUTCOME" == "failure" ]]; then
+            cause="The smoke command failed during simulator setup, build/install, XCTest driver startup,
+          or the app launch assertion. A failed command alone does not prove the app failed to boot.
+          Inspect the run and XCTest logs to identify the failing phase before classifying a product
+          regression. The flow checks only launch and first paint (ADR-0120)."
+          else
+            cause="The smoke step did not fail (outcome: ${SMOKE_OUTCOME:-never reached}); the job went red
+          somewhere else — checkout, toolchain, the build (including a hang that ran into the job
+          timeout), or the report upload. Read the run before treating this as a product regression."
+          fi
+          if [[ "$REPORT_OUTCOME" == "success" ]]; then
+            evidence="* Evidence: the report upload step succeeded for ${ARTIFACT}. When produced, the
+            artifact includes Maestro flow logs, failure screenshots, and XCTest runner startup logs.
+            A failure before Maestro starts may leave no report files; inspect the job log too."
+          else
+            evidence="* No ${ARTIFACT} artifact was produced (upload outcome: ${REPORT_OUTCOME:-never reached})."
+          fi
+          body_file="${RUNNER_TEMP}/native-deploy-gate-failure.md"
+          cat >"$body_file" <<EOF
+          The ${PLATFORM} native deploy gate failed for ${GITHUB_REF_NAME}.
+
+          * Run: ${RUN_URL}
+          * Result: smoke job=${SMOKE_RESULT:-unknown}.
+          ${evidence}
+
+          ${cause}
+          EOF
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body-file "$body_file"
+          else
+            gh issue create --title "$title" --label type:bug --label area:native --body-file "$body_file"
+          fi

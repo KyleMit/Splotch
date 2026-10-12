@@ -1,0 +1,62 @@
+# ADR-0006: Server-Side AI Image Generation via Netlify Serverless Function
+
+**Status:** Active\
+**Date:** 2025
+
+## Context
+
+The AI "color this drawing" feature calls the Gemini API to transform a canvas screenshot into a
+styled colored version. Calling the Gemini API requires an API key.
+
+Options:
+
+* **Client-side (browser)** — simpler, no server needed, but exposes the Gemini API key to every
+  user, allowing quota abuse.
+* **Server-side (Netlify function)** — the key stays in server environment variables; the endpoint
+  can enforce token-gating and rate limiting.
+* **BYO Key** — allow parents on web or native to supply their own Gemini API key via secure
+  storage.
+
+## Decision
+
+Image generation runs in a **Netlify serverless function** at `/api/generate-image`. The Gemini key
+is stored in a Netlify environment variable (`GEMINI_API_KEY`) and never sent to the client.
+
+Access to the managed endpoint is **token-gated**: the client must supply an `access-token` form
+field that is validated against an allowlist stored in Netlify Blobs (storage details, consistency
+constraints, and the env-seeded fallback: ADR-0025). Tokens are provisioned via the `/admin` console
+and can be revoked by removing them from the list.
+
+A **rate limiter** (sliding window, in-memory per instance) caps managed tokens at 15 requests per
+minute to blunt a leaked token being hammered before it's noticed and revoked.
+
+**Usage is audited** to Netlify Blobs (`ai-usage` store): each managed generation updates a 30-day,
+HMAC-keyed tally containing timestamps plus closed style/outcome categories. Operational logs carry
+the same categories for managed and BYOK requests. Neither surface stores the code, prompt, drawing,
+provider detail, or BYOK key. This allows admins to detect rogue codes and track short-window quota
+consumption without a separate database (storage and expiry details: ADR-0025).
+
+The model is `gemini-2.5-flash-image` (flash tier: lower cost and latency vs. Pro/Ultra, adequate
+quality for children's coloring-book style transformations).
+
+**Native apps** send requests to the hosted endpoint (`https://splotch.art/api/generate-image`)
+using the `__NATIVE_API_BASE__` compile-time constant. The BYO Key flow works on web and native,
+bypasses the managed-token allowlist, and consumes the parent's own Gemini quota. Because any
+non-empty key makes the endpoint a key-validity oracle, BYOK requests are rate-limited per IP with a
+deliberately generous limit (30/minute).
+
+## Consequences
+
+* **+** Gemini API key never exposed to clients.
+* **+** Token revocation is immediate (no app update needed).
+* **+** Usage audit trail without a managed database.
+* **-** Adds a server round-trip; generation latency is network-bound in addition to model latency
+  (the server aborts the model call with headroom below Netlify's measured 26-second
+  synchronous-function ceiling so Splotch, not the platform, owns the timeout — ADR-0063).
+* **-** In-memory rate limiting resets on Netlify cold starts and does not coordinate across
+  concurrent instances — it's a cost guardrail, not a hard boundary.
+* **-** Netlify Blobs is only available in the Netlify runtime; under local `vite dev` token edits
+  and usage fall back to a per-instance in-memory list, covered by ADR-0025. That ADR also records
+  the misdiagnosis this line once repeated: strong-consistency reads are *not* unsupported in the
+  SSR function — the V1-function era was, and `free-generation-grants` relies on strong reads today
+  (ADR-0105).

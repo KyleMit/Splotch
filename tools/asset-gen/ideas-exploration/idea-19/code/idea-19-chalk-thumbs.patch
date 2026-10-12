@@ -1,0 +1,309 @@
+diff --git a/tools/asset-gen/gen-coloring-thumbs.mjs b/tools/asset-gen/gen-coloring-thumbs.mjs
+index 9432f98..2d8adca 100644
+--- a/tools/asset-gen/gen-coloring-thumbs.mjs
++++ b/tools/asset-gen/gen-coloring-thumbs.mjs
+@@ -2,12 +2,13 @@
+ // web/static/coloring/. The Coloring Book Picker shows these images in a grid at
+ // ~140-300px, but the source art is 1024px+ (a cover is ~84KB, a page ~120KB) —
+ // 5-8x more pixels than the tile ever paints. Each thumbnail is written beside
+-// its source as `{name}.thumb.webp` (longest edge THUMB_EDGE, quality
++// its source as `{name}.thumb.webp` (pen outlines) or `{name}.chalk.thumb.webp`
++// (chalk outlines — the dark-mode picker tile) (longest edge THUMB_EDGE, quality
+ // THUMB_QUALITY), roughly a tenth of the bytes, so the picker renders fast; the
+ // full-res source stays for the full-screen canvas overlay.
+ //
+ // The catalog (web/src/lib/state/books.ts) derives every thumb path from its
+-// source via `thumbPath()`, and `bookAssetPaths()` lists both — so check-assets
++// source via `thumbPath()`/`chalkThumbPath()`, and `bookAssetPaths()` lists both — so check-assets
+ // validates the thumbs and strip-native-assets removes them alongside their
+ // source. This script is the producer for those paths; keep the naming in sync.
+ //
+@@ -23,15 +24,24 @@ import { COLORING_DIR, fail } from './lib/paths.mjs';
+ 
+ const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
+ const THUMB_QUALITY = 80;
+-const SOURCE_SUFFIX = '.outline.webp';
+-const THUMB_SUFFIX = '.thumb.webp';
+ 
+-// Every shipped source image: the `.outline.webp` line art (covers and both
+-// orientations of each page). The colored fills (.light.webp light + .night.webp
+-// dark) are magic-brush reveals, never shown in the picker — so they get no
+-// thumbnail.
++// Every shipped source image: the `.outline.webp` PEN line art (covers and both
++// orientations of each page) plus the `.chalk.webp` CHALK line art (dark-mode
++// pages; covers have no chalk yet). The chalk thumb keeps the chalk's
++// ink-on-white storage polarity — the picker tile's --lineart-filter invert
++// renders it as white chalk, the same treatment the canvas overlay gets. The
++// colored fills (.light.webp light + .night.webp dark) are magic-brush
++// reveals, never shown in the picker — so they get no thumbnail.
++const SOURCE_SUFFIXES = ['.outline.webp', '.chalk.webp'];
++const THUMB_SUFFIXES = { '.outline.webp': '.thumb.webp', '.chalk.webp': '.chalk.thumb.webp' };
++
+ function isSource(path) {
+-  return path.endsWith(SOURCE_SUFFIX);
++  return SOURCE_SUFFIXES.some((suffix) => path.endsWith(suffix));
++}
++
++function thumbTarget(src) {
++  const suffix = SOURCE_SUFFIXES.find((s) => src.endsWith(s));
++  return src.slice(0, -suffix.length) + THUMB_SUFFIXES[suffix];
+ }
+ 
+ const filter = process.argv.slice(2);
+@@ -51,7 +61,7 @@ if (sources.length === 0)
+ let savedTotal = 0;
+ await Promise.all(
+   sources.map(async (src) => {
+-    const out = src.replace(/\.outline\.webp$/, THUMB_SUFFIX);
++    const out = thumbTarget(src);
+     const before = (await stat(src)).size;
+     await sharp(src)
+       .resize(THUMB_EDGE, THUMB_EDGE, { fit: 'inside', withoutEnlargement: true })
+diff --git a/web/src/lib/components/ColoringBook.svelte b/web/src/lib/components/ColoringBook.svelte
+index af6c012..4568a52 100644
+--- a/web/src/lib/components/ColoringBook.svelte
++++ b/web/src/lib/components/ColoringBook.svelte
+@@ -8,7 +8,8 @@
+     clearOverlay,
+   } from '$lib/state/coloringBook.svelte';
+   import { isNative } from '$lib/platform';
+-  import { pageImage, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
++  import { pageImage, pageThumb, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
++  import { resolvedTheme } from '$lib/state/appearance.svelte';
+   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+   import { layout } from '$lib/state/layout.svelte';
+   import { canvasState } from '$lib/state/canvas.svelte';
+@@ -34,9 +35,10 @@
+ 
+   // Pressing/hovering a book tile warms that book's page thumbs before the
+   // sub-grid renders; hovering a page tile warms its full-res overlay so applying
+-  // it to the canvas is immediate.
++  // it to the canvas is immediate. Page thumbs are theme-aware (chalk in dark
++  // mode) — reading resolvedTheme() keeps the warmed set and the grid in sync.
+   function prefetchBookPages(book: Book) {
+-    prefetchImages(book.pages.map((page) => thumbPath(pageImage(page, orientation))));
++    prefetchImages(book.pages.map((page) => pageThumb(page, orientation, resolvedTheme())));
+   }
+   function prefetchPageOverlay(page: ColoringPage) {
+     prefetchImages([pageImage(page, orientation)]);
+@@ -167,7 +169,7 @@
+               onpointerenter={() => prefetchPageOverlay(page)}
+               onpointerdown={() => prefetchPageOverlay(page)}
+             >
+-              <img src={thumbPath(pageImage(page, orientation))} alt="" loading="lazy" />
++              <img src={pageThumb(page, orientation, resolvedTheme())} alt="" loading="lazy" />
+             </button>
+           {/each}
+         </div>
+diff --git a/web/src/lib/state/books.test.ts b/web/src/lib/state/books.test.ts
+index aa3d754..2a884c8 100644
+--- a/web/src/lib/state/books.test.ts
++++ b/web/src/lib/state/books.test.ts
+@@ -1,5 +1,13 @@
+ import { describe, expect, it } from 'vitest';
+-import { BOOKS, bookAssetPaths, pageColorImage, pageImage, thumbPath } from './books';
++import {
++  BOOKS,
++  bookAssetPaths,
++  chalkThumbPath,
++  pageColorImage,
++  pageImage,
++  pageThumb,
++  thumbPath,
++} from './books';
+ 
+ describe('thumbPath', () => {
+   it('swaps the .outline variant suffix for .thumb', () => {
+@@ -10,6 +18,32 @@ describe('thumbPath', () => {
+   });
+ });
+ 
++describe('chalkThumbPath', () => {
++  it('swaps the .chalk variant suffix for .chalk.thumb', () => {
++    expect(chalkThumbPath('/coloring/farm/cat-tall.chalk.webp')).toBe(
++      '/coloring/farm/cat-tall.chalk.thumb.webp'
++    );
++  });
++});
++
++describe('pageThumb', () => {
++  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
++
++  it('light mode shows the pen thumbnail', () => {
++    expect(pageThumb(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.thumb.webp');
++  });
++
++  it('dark mode shows the chalk thumbnail where the orientation has a chalk', () => {
++    expect(pageThumb(cat, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.chalk.thumb.webp');
++    expect(pageThumb(cat, 'landscape', 'dark')).toBe('/coloring/farm/cat-wide.chalk.thumb.webp');
++  });
++
++  it('dark mode falls back to the pen thumbnail for un-forked orientations', () => {
++    const unforked = { ...cat, chalkImages: {} };
++    expect(pageThumb(unforked, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.thumb.webp');
++  });
++});
++
+ describe('bookAssetPaths', () => {
+   const farm = BOOKS.find((book) => book.id === 'farm')!;
+ 
+@@ -35,14 +69,28 @@ describe('bookAssetPaths', () => {
+     }
+   });
+ 
++  it('gives every chalk outline a thumbnail sibling (the dark-mode picker tile)', () => {
++    const paths = bookAssetPaths(farm);
++    for (const page of farm.pages) {
++      for (const chalk of Object.values(page.chalkImages)) {
++        expect(paths).toContain(chalkThumbPath(chalk));
++      }
++    }
++  });
++
+   it('does not thumbnail the colored fills (they never appear in the grid)', () => {
+     const paths = bookAssetPaths(farm);
+     // thumbPath derives only from `.outline.webp` line art — a fill path is a no-op.
+     for (const page of farm.pages) {
+       expect(thumbPath(pageColorImage(page, 'portrait'))).toBe(pageColorImage(page, 'portrait'));
+     }
+-    // Exactly the line-art images (cover + 2 orientations/page) get a .thumb.
+-    const thumbs = paths.filter((p) => p.endsWith('.thumb.webp'));
+-    expect(thumbs.length).toBe(1 + farm.pages.length * 2);
++    // Exactly the line art gets a thumb: pen (cover + 2 orientations/page) and
++    // chalk (2 orientations/page — no cover chalk yet).
++    const penThumbs = paths.filter(
++      (p) => p.endsWith('.thumb.webp') && !p.endsWith('.chalk.thumb.webp')
++    );
++    const chalkThumbs = paths.filter((p) => p.endsWith('.chalk.thumb.webp'));
++    expect(penThumbs.length).toBe(1 + farm.pages.length * 2);
++    expect(chalkThumbs.length).toBe(farm.pages.length * 2);
+   });
+ });
+diff --git a/web/src/lib/state/books.ts b/web/src/lib/state/books.ts
+index 19dea9f..f95f280 100644
+--- a/web/src/lib/state/books.ts
++++ b/web/src/lib/state/books.ts
+@@ -9,7 +9,8 @@
+ //   static/coloring/{book}/{page}-wide.outline.webp   landscape PEN outline, 3:2
+ //   static/coloring/{book}/{page}-tall.chalk.webp     portrait CHALK outline (dark mode)
+ //   static/coloring/{book}/{page}-wide.chalk.webp     landscape CHALK outline (dark mode)
+-//   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the line art
++//   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the pen line art
++//   static/coloring/{book}/{name}.chalk.thumb.webp    grid thumbnail of the chalk (dark mode)
+ //   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
+ //   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
+ //   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
+@@ -23,10 +24,13 @@
+ // (--lineart-filter: invert(1) + screen) renders it unchanged; orientations
+ // without a chalk fall back to inverting the pen (tools/asset-gen/gen-coloring-chalk.mjs).
+ //
+-// Each picker-facing line-art image (cover + pages) has a `.thumb.webp` sibling
+-// (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
+-// full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
+-// the other. The colored `.light.webp` fill is a flat-colored, pixel-aligned
++// Each picker-facing line-art image (cover + pages, pen AND chalk) has a
++// thumbnail sibling (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid
++// shows the thumbnail, the full-screen canvas overlay uses the full-res source.
++// `thumbPath()` maps a pen outline to its `.thumb.webp`, `chalkThumbPath()` a
++// chalk to its `.chalk.thumb.webp`, and `pageThumb()` picks per theme — dark
++// mode shows the chalk thumb so the tile previews the same art the canvas
++// applies (covers have no chalk yet, so book tiles stay on the pen thumb). The colored `.light.webp` fill is a flat-colored, pixel-aligned
+ // version of the line-art page (tools/asset-gen/gen-coloring-fills.mjs) that the magic
+ // brush reveals where the child paints (ADR-0043); it never appears in the grid,
+ // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
+@@ -129,12 +133,42 @@ export const BOOKS: Book[] = [
+     pages: [
+       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+       // pen/chalk fork — see tools/asset-gen/pipeline.md).
+-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
++      page(
++        'dinosaur',
++        'brachiosaurus',
++        'Brachiosaurus',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
++      page(
++        'dinosaur',
++        'pterodactyl',
++        'Pterodactyl',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
++      page(
++        'dinosaur',
++        'stegosaurus',
++        'Stegosaurus',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
+       page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape'], ['portrait', 'landscape']),
++      page(
++        'dinosaur',
++        'triceratops',
++        'Triceratops',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
++      page(
++        'dinosaur',
++        'velociraptor',
++        'Velociraptor',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
+     ],
+   },
+   {
+@@ -298,6 +332,26 @@ export function thumbPath(src: string): string {
+   return src.replace(/\.outline\.webp$/, '.thumb.webp');
+ }
+ 
++/** Grid-thumbnail path for a chalk outline (`x.chalk.webp` -> `x.chalk.thumb.webp`). */
++export function chalkThumbPath(src: string): string {
++  return src.replace(/\.chalk\.webp$/, '.chalk.thumb.webp');
++}
++
++/** Picker-tile thumbnail for a page, theme-aware: dark mode shows the CHALK
++    thumbnail where the orientation has a chalk (stored ink-on-white like every
++    line-art asset — the tile's --lineart-filter invert + screen renders it as
++    white chalk, the same treatment the canvas overlay gets), falling back to
++    the inverted pen thumbnail for un-forked pages. Covers have no chalk yet,
++    so book tiles keep `thumbPath(book.cover)`. */
++export function pageThumb(
++  page: ColoringPage,
++  orientation: BookOrientation,
++  theme: 'light' | 'dark'
++): string {
++  const chalk = theme === 'dark' ? page.chalkImages[orientation] : undefined;
++  return chalk ? chalkThumbPath(chalk) : thumbPath(page.images[orientation]);
++}
++
+ export function bookAssetPaths(book: Book): string[] {
+   // Line art shown in the picker (cover + both orientations of each page) — the
+   // only images that get a grid thumbnail.
+@@ -319,11 +373,18 @@ export function bookAssetPaths(book: Book): string[] {
+       .filter((p): p is string => !!p)
+   );
+   // Chalk outlines exist only for forked orientations — the full-screen overlay
+-  // swaps to them in dark mode; the picker keeps inverting the pen thumbnail.
++  // and the picker tile (via its .chalk.thumb sibling) swap to them in dark mode.
+   const chalkOutlines = book.pages.flatMap((page) =>
+     (['portrait', 'landscape'] as BookOrientation[])
+       .map((o) => page.chalkImages[o])
+       .filter((p): p is string => !!p)
+   );
+-  return [...lineArt, ...lightFills, ...nightFills, ...chalkOutlines, ...lineArt.map(thumbPath)];
++  return [
++    ...lineArt,
++    ...lightFills,
++    ...nightFills,
++    ...chalkOutlines,
++    ...lineArt.map(thumbPath),
++    ...chalkOutlines.map(chalkThumbPath),
++  ];
+ }

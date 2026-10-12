@@ -1,0 +1,6 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+
+Observed PORTRAIT 360x780
+Fidelity: PASS (android-capacitor-webview) · {"trustedTouch":true,"cadence":true}
+  blank: lost 0.00% · paint max 8.1ms · PASS
+Wrote perf-profiles/bundled/units-2026-09-19/unit-a/a1-portrait-pen.json

@@ -1,0 +1,19 @@
+{
+  "inlineCssRaw": 82862,
+  "usedByRealLaunches": {
+    "raw": 45415,
+    "gz": 16008
+  },
+  "seenByOneStaticPass": {
+    "raw": 35669
+  },
+  "seenByStaticAcrossViewportsAndSchemes": {
+    "raw": 39907
+  },
+  "neededButMissedByOneStaticPass": {
+    "raw": 9746
+  },
+  "neededButMissedByStaticMatrix": {
+    "raw": 5508
+  }
+}

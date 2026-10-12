@@ -1,0 +1,313 @@
+{
+  "summary": {
+    "inlineCss": {
+      "raw": 82862,
+      "gz": 22222
+    },
+    "paperTextureDataUriRaw": 10468,
+    "perLaunch": {
+      "minRaw": 31747,
+      "maxRaw": 40122
+    },
+    "unionOfAllLaunches": {
+      "raw": 43698,
+      "gz": 15968,
+      "percent": 53
+    },
+    "neverUsedAtLaunch": {
+      "raw": 39164,
+      "gz": 8405,
+      "percent": 47
+    }
+  },
+  "rows": [
+    {
+      "viewport": "phone portrait",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 35994,
+      "used %": 43,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 35837,
+      "used %": 43,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 38370,
+      "used %": 46,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 38213,
+      "used %": 46,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 37746,
+      "used %": 46,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 37589,
+      "used %": 45,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 40122,
+      "used %": 48,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone portrait",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 39965,
+      "used %": 48,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 31747,
+      "used %": 38,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 32195,
+      "used %": 39,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 34201,
+      "used %": 41,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 34649,
+      "used %": 42,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 33499,
+      "used %": 40,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 33947,
+      "used %": 41,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 35953,
+      "used %": 43,
+      "other sheets": 16
+    },
+    {
+      "viewport": "phone landscape",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 36401,
+      "used %": 44,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 31875,
+      "used %": 38,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 32018,
+      "used %": 39,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 34075,
+      "used %": 41,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 34218,
+      "used %": 41,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 33627,
+      "used %": 41,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 33770,
+      "used %": 41,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 35827,
+      "used %": 43,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet landscape",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 35970,
+      "used %": 43,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 34854,
+      "used %": 42,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "light",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 34697,
+      "used %": 42,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 37230,
+      "used %": 45,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "light",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 37073,
+      "used %": 45,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "closed",
+      "used raw": 36606,
+      "used %": 44,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "dark",
+      "toolbar": "buttons",
+      "drawer": "open",
+      "used raw": 36449,
+      "used %": 44,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "closed",
+      "used raw": 38982,
+      "used %": 47,
+      "other sheets": 16
+    },
+    {
+      "viewport": "tablet portrait",
+      "scheme": "dark",
+      "toolbar": "bare",
+      "drawer": "open",
+      "used raw": 38825,
+      "used %": 47,
+      "other sheets": 16
+    }
+  ]
+}

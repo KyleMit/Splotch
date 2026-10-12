@@ -1,0 +1,16 @@
+{
+  "name": "stale-request-after-exit",
+  "control": false,
+  "title": "broker next hands out a pending request after the rival has exited",
+  "path": "tools/rival-agent/spool.mjs",
+  "lines": [188, 193],
+  "severity": "blocking",
+  "keywords": [
+    "stale",
+    "terminal",
+    "done.json",
+    "failed.json",
+    "already exited",
+    "nobody is waiting"
+  ]
+}

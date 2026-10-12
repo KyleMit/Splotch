@@ -1,0 +1,456 @@
+import { randomUUID } from 'node:crypto';
+import { existsSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { parseArgs } from 'node:util';
+import {
+  ledgerKey,
+  ledgerPath,
+  planRound,
+  readLedgerRecord,
+  recordRound,
+  removeLedgerRecord,
+} from './ledger.mjs';
+import { readPullRequest, REPOSITORY } from './post-review.mjs';
+import {
+  assertAuthorizationOptions,
+  assertAuthorizedResult,
+  claimRoundAuthorization,
+  planAuthorizedRound,
+  releaseUnstartedRoundAuthorization,
+  startRoundAuthorization,
+} from './round-authorization.mjs';
+import { buildRivalPrompt, readPromptFile } from './prompt.mjs';
+import {
+  createSessionDirectory,
+  SESSION_FILES,
+  sessionPath,
+  spoolActivityAt,
+  writeJsonAtomic,
+} from './spool.mjs';
+import { runStreaming } from './stream.mjs';
+import { parseFindings } from './validate-findings.mjs';
+import {
+  createDisposableWorktree,
+  git,
+  removeDisposableWorktree,
+  resolveScope,
+  writeReviewPacket,
+} from './worktree.mjs';
+
+const EFFORTS = new Set(['low', 'medium', 'high']);
+// GitHub can report a PR's previous headRefOid for a while after a push has already moved the branch
+// ref (PR 2303: a round launched right after a push reviewed the old head, and the poster then
+// refused the finished review). The launcher polls until the two agree, within this bound.
+export const PR_HEAD_SETTLE_TIMEOUT_MS = 60_000;
+export const PR_HEAD_POLL_INTERVAL_MS = 5_000;
+const OID_PATTERN = /^[0-9a-f]{40}$/;
+const SCP_GITHUB_REMOTE = /^git@github\.com:(.+)$/i;
+const GITHUB_URL_PROTOCOLS = new Set(['https:', 'ssh:']);
+const DEFAULT_BASE_REF = 'main';
+const USAGE =
+  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--round-authorization-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
+
+// The one argument vocabulary both launchers share; a vendor validates `model` itself because the
+// two CLIs name models differently.
+export function parseLaunchArgs(argv) {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    strict: true,
+    allowPositionals: false,
+    options: {
+      pr: { type: 'string' },
+      base: { type: 'string' },
+      commit: { type: 'string' },
+      uncommitted: { type: 'boolean', default: false },
+      'question-file': { type: 'string' },
+      'prompt-file': { type: 'string' },
+      'round-authorization-file': { type: 'string' },
+      cwd: { type: 'string' },
+      model: { type: 'string' },
+      effort: { type: 'string' },
+      fresh: { type: 'boolean', default: false },
+      'end-session': { type: 'boolean', default: false },
+    },
+  });
+  if (positionals.length > 0) throw new Error(USAGE);
+  const scopes = [
+    values.pr !== undefined && 'pr',
+    values.base !== undefined && 'base',
+    values.commit !== undefined && 'commit',
+    values.uncommitted && 'uncommitted',
+  ].filter(Boolean);
+  if (scopes.length > 1) throw new Error(`scopes are mutually exclusive: ${scopes.join(', ')}`);
+  if (values.pr !== undefined && !/^\d+$/.test(values.pr)) throw new Error('--pr must be a number');
+  const effort = values.effort ?? 'high';
+  if (!EFFORTS.has(effort)) throw new Error(`unsupported effort: ${effort}`);
+  const kind = scopes[0] ?? 'base';
+  const options = {
+    scope: {
+      kind,
+      base: kind === 'base' ? (values.base ?? DEFAULT_BASE_REF) : undefined,
+      commit: values.commit,
+      number: values.pr === undefined ? undefined : Number(values.pr),
+    },
+    questionFile: values['question-file'],
+    promptFile: values['prompt-file'],
+    roundAuthorizationFile: values['round-authorization-file'],
+    cwd: values.cwd ?? process.cwd(),
+    model: values.model,
+    effort,
+    fresh: values.fresh,
+    endSession: values['end-session'],
+  };
+  assertAuthorizationOptions(options);
+  return options;
+}
+
+const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
+
+// A commit scope is keyed by its full OID, never by the ref as typed: `HEAD` names a different
+// commit tomorrow, and a short hash typed one way and a full hash typed another must still find
+// the same reviewer. The rival's vendor is part of the key because a Codex thread id and a Claude
+// session id are not interchangeable — the first Claude smoke tried to resume a Codex thread.
+export function ledgerKeyFor({
+  repoRoot,
+  rival,
+  scope,
+  branch,
+  resolveCommit = defaultResolveCommit,
+}) {
+  const kindPrefix = `${rival}:`;
+  if (scope.kind === 'pr') {
+    return ledgerKey({ repoRoot, kind: `${kindPrefix}pr`, ref: String(scope.number) });
+  }
+  if (scope.kind === 'commit') {
+    return ledgerKey({
+      repoRoot,
+      kind: `${kindPrefix}commit`,
+      ref: resolveCommit(repoRoot, scope.commit),
+    });
+  }
+  return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
+}
+
+// The rival gets a TMPDIR of its own inside the session: Codex's workspace-write sandbox writes
+// anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session's spool
+// lives. Claude Code replaces its shell's TMPDIR with a directory of its own, so for that rival the
+// session tmp matters only as the dprint cache location, which the Claude launcher grants as a
+// working directory. `/tmp` itself stays writable to Codex's sandbox, which matters on a Linux
+// host whose os.tmpdir() is `/tmp`; NOTES.md records that as an accepted exposure.
+export function rivalEnvironment(env, { session }) {
+  const tmp = sessionPath(session, SESSION_FILES.tmp);
+  // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
+  // sandboxed round's `format:check` exited 12 there); its cache directory is pointed inside too.
+  return { ...env, TMPDIR: tmp, DPRINT_CACHE_DIR: join(tmp, 'dprint-cache') };
+}
+
+function resolveRepoRoot(cwd) {
+  const root = git(resolve(cwd), ['rev-parse', '--show-toplevel'], { allowFailure: true });
+  if (!root) throw new Error(`--cwd must name a directory inside a git worktree: ${cwd}`);
+  return root;
+}
+
+// The branch tip is evidence about the PR only when it comes from the repository `gh pr view` reads:
+// a local or mirror origin lagging behind GitHub would make an old head look settled.
+export function assertOriginIsPullRequestRepository(repoRoot) {
+  const url = git(repoRoot, ['remote', 'get-url', 'origin']);
+  if (githubRepositoryOf(url) !== REPOSITORY.toLowerCase()) {
+    throw new Error(
+      `--pr reads ${REPOSITORY} through gh, but this checkout's origin is ${redactUserInfo(url)}; launch from a checkout whose origin is ${REPOSITORY}`
+    );
+  }
+}
+
+// The scp-style `git@github.com:owner/repo` form, or any https/ssh URL on github.com with or
+// without user information; undefined for anything else.
+function githubRepositoryOf(url) {
+  const scp = SCP_GITHUB_REMOTE.exec(url);
+  let path = scp?.[1];
+  if (!scp) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return undefined;
+    }
+    if (!GITHUB_URL_PROTOCOLS.has(parsed.protocol) || parsed.hostname !== 'github.com') {
+      return undefined;
+    }
+    path = parsed.pathname.slice(1);
+  }
+  return path
+    .replace(/\/$/, '')
+    .replace(/\.git$/i, '')
+    .toLowerCase();
+}
+
+// An https origin can carry a token as its user information; the refusal is printed to a log.
+function redactUserInfo(url) {
+  return url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/@]*@/i, '$1[REDACTED]@');
+}
+
+export function readRemoteBranchHead(repoRoot, branch) {
+  const ref = `refs/heads/${branch}`;
+  // ls-remote matches a pattern against trailing path components rather than the whole ref name.
+  const oid = git(repoRoot, ['ls-remote', '--heads', 'origin', ref])
+    .split('\n')
+    .map((line) => line.split('\t'))
+    .find(([, name]) => name === ref)?.[0];
+  if (!OID_PATTERN.test(oid ?? '')) throw new Error(`origin has no branch named ${branch}`);
+  return oid;
+}
+
+// `readPr`, `wait` and `now` are seams kept for tests, which stand in for GitHub and the clock.
+export async function readSettledPullRequest(
+  number,
+  { readBranchHead, readPr = readPullRequest, wait = sleep, now = Date.now }
+) {
+  const deadline = now() + PR_HEAD_SETTLE_TIMEOUT_MS;
+  for (;;) {
+    const metadata = readPr(number);
+    const branchHead = readBranchHead(metadata.headRefName);
+    if (metadata.headRefOid === branchHead) return metadata;
+    if (now() >= deadline) {
+      throw new Error(
+        `pull request ${number} still reports head ${metadata.headRefOid} but origin/${metadata.headRefName} is at ${branchHead} after ${PR_HEAD_SETTLE_TIMEOUT_MS / 1000}s; nothing was launched. Relaunch once \`gh pr view ${number} --json headRefOid\` reports the pushed head.`
+      );
+    }
+    await wait(PR_HEAD_POLL_INTERVAL_MS);
+  }
+}
+
+async function resolveLaunchScope(repoRoot, scope) {
+  if (scope.kind !== 'pr') return resolveScope(repoRoot, scope);
+  assertOriginIsPullRequestRepository(repoRoot);
+  const metadata = await readSettledPullRequest(scope.number, {
+    readBranchHead: (branch) => readRemoteBranchHead(repoRoot, branch),
+  });
+  git(repoRoot, ['fetch', '--no-tags', 'origin', metadata.baseRefOid, metadata.headRefOid]);
+  return resolveScope(repoRoot, { ...scope, ...metadata });
+}
+
+function describeLandedCommits(repoRoot, previous, head) {
+  if (!previous) return undefined;
+  return git(repoRoot, ['log', '--oneline', '--no-decorate', `${previous.lastHead}..${head}`], {
+    allowFailure: true,
+  });
+}
+
+function finish(session, state, logPath, extra) {
+  const parsed = parseFindings(state.message ?? '');
+  writeFileSync(sessionPath(session, SESSION_FILES.rawResult), `${state.message ?? ''}\n`);
+  if (!parsed.ok) {
+    writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), {
+      reason: `the rival's final message is not a findings document: ${parsed.errors.join('; ')}`,
+      rawResultPath: sessionPath(session, SESSION_FILES.rawResult),
+      logPath,
+      ...extra,
+    });
+    throw new Error(`findings did not validate: ${parsed.errors.join('; ')}`);
+  }
+  const findingsPath = sessionPath(session, SESSION_FILES.findings);
+  writeJsonAtomic(findingsPath, parsed.findings);
+  const done = {
+    findingsPath,
+    findings: parsed.findings.findings.length,
+    unverified: parsed.findings.unverified.length,
+    rivalSessionId: state.sessionId,
+    usage: state.usage,
+    logPath,
+    ...extra,
+  };
+  writeJsonAtomic(sessionPath(session, SESSION_FILES.done), done);
+  return done;
+}
+
+function cleanLaunchResources({ authorizationClaim, repoRoot, worktree, failure, onProgress }) {
+  const errors = [];
+  for (const cleanup of [
+    () => releaseUnstartedRoundAuthorization(authorizationClaim),
+    () => removeDisposableWorktree(repoRoot, worktree),
+  ]) {
+    try {
+      cleanup();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (failure) {
+    for (const error of errors) onProgress(`review cleanup failed: ${error.message}`);
+  } else if (errors.length > 0) {
+    throw new AggregateError(errors, 'review resource cleanup failed');
+  }
+}
+
+// A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
+// (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
+// `reducer`, `toolBoundary` (what the rival's own sandboxed shell can and cannot do, in the
+// vendor's words), `newSessionId()` (a wrapper-issued id for CLIs that take one up front),
+// `endSession(record)`, and the optional pair `isLoginFailure(error)` / `describeLoginFailure(error)`
+// for a CLI whose stored login can die between runs in wording only that vendor knows. Everything
+// else in a round is the same on both sides.
+export async function launch(
+  options,
+  vendor,
+  { onProgress = (line) => process.stderr.write(`${line}\n`) } = {}
+) {
+  assertAuthorizationOptions(options);
+  const { env, notes = [] } = vendor.prepare();
+  const repoRoot = resolveRepoRoot(options.cwd);
+  const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
+  const recordPath = ledgerPath(
+    ledgerKeyFor({ repoRoot, rival: vendor.rival, scope: options.scope, branch }),
+    vendor.ledgerDirectory
+  );
+
+  if (options.endSession) {
+    const record = readLedgerRecord(recordPath);
+    if (record) vendor.endSession?.(record);
+    removeLedgerRecord(recordPath);
+    return { endedSession: record?.rivalSessionId ?? null };
+  }
+
+  const model = vendor.resolveModel(options.model);
+  const question = options.questionFile ? readPromptFile(options.questionFile) : undefined;
+  const extraInstructions = options.promptFile ? readPromptFile(options.promptFile) : undefined;
+  const record = readLedgerRecord(recordPath);
+  // A question is one turn, not a review that a later round would verify.
+  const plan =
+    options.roundAuthorizationFile !== undefined
+      ? planAuthorizedRound(options.roundAuthorizationFile, {
+          repoRoot,
+          scope: options.scope,
+          rival: vendor.rival,
+          recordPath,
+          record,
+        })
+      : question
+        ? planRound(undefined)
+        : planRound(record, { fresh: options.fresh, rival: vendor.rival });
+
+  const scope = await resolveLaunchScope(repoRoot, options.scope);
+  scope.range = `${scope.base}...${scope.head}`;
+  const id = randomUUID();
+  const session = createSessionDirectory(id);
+  const worktree = join(session, 'worktree');
+  const packetDir = sessionPath(session, SESSION_FILES.packet);
+  onProgress(`session: ${session}`);
+  for (const note of notes) onProgress(note);
+
+  // session.json lands before provisioning so a failure there is still observable through
+  // `broker next` rather than as "no session".
+  const writeSessionRecord = () =>
+    writeJsonAtomic(sessionPath(session, SESSION_FILES.session), {
+      id,
+      rival: vendor.rival,
+      scope,
+      question: Boolean(question),
+      worktree,
+      packetDir,
+      round: plan.round,
+      resumed: Boolean(plan.resume),
+      ...(plan.roundAuthorization ? { roundAuthorization: plan.roundAuthorization } : {}),
+      repoRoot,
+      branch,
+      createdAt: new Date().toISOString(),
+    });
+  writeSessionRecord();
+  const logPath = sessionPath(session, SESSION_FILES.log);
+  let rivalSession;
+  let authorizationClaim;
+  let failure;
+
+  try {
+    if (plan.roundAuthorization) {
+      authorizationClaim = claimRoundAuthorization(recordPath, plan.roundAuthorization, session);
+    }
+    createDisposableWorktree(repoRoot, scope.head, worktree);
+    writeReviewPacket(repoRoot, scope, packetDir);
+    const runRound = async () => {
+      writeSessionRecord();
+      rivalSession = plan.resume
+        ? { mode: 'resume', id: plan.resume }
+        : { mode: 'create', id: vendor.newSessionId?.() };
+      if (plan.resume) onProgress(`resuming reviewer ${plan.resume} for round ${plan.round}`);
+      onProgress(`stream log: ${logPath}`);
+      const prompt = buildRivalPrompt({
+        scope,
+        question,
+        worktree,
+        packetDir,
+        round: plan.round,
+        previous: plan.previous,
+        landedCommits: describeLandedCommits(repoRoot, plan.previous, scope.head),
+        extraInstructions,
+        toolBoundary: vendor.toolBoundary,
+        executionMode: vendor.executionMode,
+      });
+      const args = vendor.buildArgs({
+        worktree,
+        session,
+        packetDir,
+        model,
+        effort: options.effort,
+        rivalSession,
+      });
+      if (authorizationClaim) startRoundAuthorization(authorizationClaim, recordPath);
+      return runStreaming({
+        command: vendor.command,
+        args,
+        cwd: worktree,
+        env: rivalEnvironment(env, { session }),
+        stdin: prompt,
+        logPath,
+        onProgress,
+        reducer: vendor.reducer,
+        activityProbe: () => spoolActivityAt(session),
+      });
+    };
+
+    const state = await runRound();
+    if (authorizationClaim) assertAuthorizedResult(authorizationClaim, recordPath, state);
+    const done = finish(session, state, logPath, {
+      session,
+      round: plan.round,
+      scope,
+      ...(plan.roundAuthorization ? { roundAuthorization: plan.roundAuthorization } : {}),
+    });
+    if (!question) {
+      recordRound(recordPath, {
+        record: plan.previous,
+        rivalSessionId: state.sessionId ?? rivalSession.id,
+        base: scope.base,
+        head: scope.head,
+        rival: vendor.rival,
+        roundAuthorization: plan.roundAuthorization,
+      });
+    }
+    return done;
+  } catch (error) {
+    failure = error;
+    if (!existsSync(sessionPath(session, SESSION_FILES.failed))) {
+      writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), {
+        reason: error.message,
+        code: error.code,
+        session,
+        logPath,
+      });
+    }
+    throw error;
+  } finally {
+    cleanLaunchResources({ authorizationClaim, repoRoot, worktree, failure, onProgress });
+  }
+}
+
+export function runLaunchCli(argv, vendor) {
+  return launch(parseLaunchArgs(argv), vendor)
+    .then((result) => process.stdout.write(`${JSON.stringify(result, null, 2)}\n`))
+    .catch((error) => {
+      const message = vendor.isLoginFailure?.(error)
+        ? vendor.describeLoginFailure(error)
+        : error.message;
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 1;
+    });
+}

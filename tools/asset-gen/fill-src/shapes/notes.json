@@ -1,0 +1,50 @@
+{
+  "heart-tall": {
+    "light": {
+      "review": "Issue #1139 replacement reviewed in the Combined view: the heart and garden remain faithful with no invented details; the page stays explicitly eye-ungated and the strict 4px warp default applies.",
+      "why": "Issue #259's 8.06px baseline was replaced in Issue #1139 by an exact reviewed candidate scoring 100% global/worst-tile keep and 0px local warp; the obsolete 8.56px ceiling was removed."
+    },
+    "night": {
+      "flags": {
+        "halo-score-max": 3.2
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 3.175 / rawScore 7.949 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 3.2 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  },
+  "heart-wide": {
+    "chalk": {
+      "flags": {
+        "notes": "This page has NO eyes and NO faces anywhere - that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
+      },
+      "why": "idea-24 orphan-page completion (ideas-exploration/idea-24/report.md): the eye-flavored chalk instruction can refuse eyeless scenes (house-wide precedent); this preemptive note cleared the 2.5-era chalk in one attempt (keep 100%). Kept for future regens."
+    }
+  },
+  "circle-wide": {
+    "night": {
+      "flags": {
+        "notes": "THE CIRCLE IS THE STAR OF THIS PAGE. Fill the disc with a color that clearly stands out against the deep navy night sky — never navy, indigo, or anything close to the background color.",
+        "warp-max": 7.5
+      },
+      "review": "The canonical SVG raster measures the unchanged reviewed fill at 7.07px local warp; retain the dusty-rose treatment unless a visually stronger replacement clears the strict 4px default.",
+      "why": "3.1 wave: the disc rolled near-sky navy — no gate measures subject/background contrast (ISSUES) — and this contrast note landed the shipped dusty-rose take (gemini-3.1-migration.md per-page table). Canonical SVG rasterization shifts the local-warp measurement without changing the approved composite, so the ceiling adds a bounded decoder margin."
+    }
+  },
+  "rectangle-wide": {
+    "night": {
+      "flags": {
+        "notes": "The rectangle character's body must clearly stand out against the deep navy night sky — give it a color distinct from the background, never indigo, navy, or anything close to it."
+      },
+      "why": "2026-07-13 fresh pen (fresh-outline-regen.md): the first night take rolled an indigo-on-navy body; a contrast --notes retry landed the ship. Note text reconstructed. The 3.1 wave's soap-bubble note (gemini-3.1-migration.md) applied to the OLD pen only — the fresh drawing has no bubbles; do not resurrect it."
+    }
+  },
+  "rectangle-tall": {
+    "night": {
+      "flags": {
+        "halo-score-max": 4.3
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 4.269 / rawScore 28.397 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 4.3 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  }
+}

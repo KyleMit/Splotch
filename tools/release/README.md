@@ -1,0 +1,137 @@
+# Release tooling
+
+This capability turns an approved `releases/<version>.md` document into the application release
+notes and version changes, cuts the Git/GitHub release, and later verifies and attaches the native
+store artifacts. The committed release Markdown is the source of truth for every generated note.
+
+## Entry points
+
+| Entry point                     | Public command              | Purpose                                       |
+| ------------------------------- | --------------------------- | --------------------------------------------- |
+| `cut-release.mjs`               | `npm run release <version>` | Version, commit, tag, and optionally publish  |
+| `gen-release-notes.mjs`         | `npm run gen:releases`      | Regenerate app and store release notes        |
+| `publish-release-artifacts.mjs` | `npm run release:publish`   | Verify and attach built `.aab` / `.ipa` files |
+
+The public commands remain stable during the tools naming migration. The `cut-release`, `build`, and
+`publish-artifacts` skills own the human approval and signed-build workflow around these scripts.
+
+## Generate release notes
+
+`gen-release-notes.mjs` needs installed project dependencies and the committed `releases/*.md`
+files; it is deterministic and uses no network. It parses and sorts the release documents, then
+writes the in-app JSON/current/full-history components and Fastlane Android/iOS changelogs. It runs
+automatically before web and native builds.
+
+```sh
+npm run gen:releases
+```
+
+Do not hand-edit the generated application components or store changelogs. Edit the matching release
+Markdown and regenerate them so all targets retain one source of truth.
+
+## Cut a release
+
+`cut-release.mjs` requires a valid `releases/<version>.md` whose frontmatter `version` matches its
+filename. It updates the Android and iOS versions and `package.json`, regenerates release notes,
+commits the release set, and tags it. The release set is exact: the three version files, the release
+document, and the files `gen-release-notes.mjs` writes (`releaseNoteOutputPaths()`). A committing
+run refuses any other changed or untracked path before its first write and again before it commits,
+and refuses a version file that differs from `HEAD` by more than the version bump. The normal mode
+also needs authenticated Git and GitHub access because it pushes the commit/tag and creates the
+GitHub Release. `npm run release` additionally runs the `prerelease` hook first
+(`check:coloring-assets` + `check:assets:manifest`), so a stale asset manifest fails the release
+before any file is touched; invoking the script directly skips those checks.
+
+```sh
+npm run release 1.6.0 -- --dry-run
+npm run release 1.6.0 -- --no-publish
+npm run release 1.6.0
+```
+
+`--dry-run` updates release files without Git actions; everything it changes is in the release set,
+so the real cut of the same version can follow it. `--no-publish` commits and tags locally but does
+not push or create the GitHub Release. Unknown flags fail closed so a misspelled safety flag cannot
+fall through to publishing. This command deliberately never attaches native artifacts: the new
+version must be committed before a correctly versioned binary can be built.
+
+## Publish native artifacts
+
+`publish-release-artifacts.mjs` needs an existing GitHub Release, authenticated `gh`, and at least
+one built native artifact. It reads embedded versions from the Android bundle and iOS archive,
+compares them with `package.json` and the pinned Android version code in the release document, and
+refuses mismatches before uploading anything.
+
+```sh
+npm run release:publish -- --dry-run
+npm run release:publish -- --only=android --dry-run
+npm run release:publish
+```
+
+Pass an explicit semver to publish a version other than `package.json`; use `--only=android` or
+`--only=ios` for a deliberate single-platform upload. Uploads use GitHub's clobber behavior only
+after every selected artifact passes its embedded-version check.
+
+## Retain released coloring-pack files
+
+A native build bundles `coloring/manifest-<version>.json` and downloads every non-starter book from
+`https://splotch.art` by that manifest's `downloadPath`, rejecting any file whose SHA-256 differs.
+ADR-0103 therefore requires the web deploy to keep serving those exact bytes for as long as the
+release is installed. The manifest is generated at build time and never committed, so each release
+records what it addresses:
+
+```sh
+npm run gen:coloring-pack-snapshot -- --ref v1.7.0
+npm run check:coloring-pack-retention
+```
+
+`gen-coloring-pack-snapshot.mjs` extracts the tag's own generator and `web/static/coloring` into a
+temporary directory with `git archive`, runs that generator for the `mobile` platform, and writes
+`coloring-pack-snapshots/<version>.json` (download path → digest per book). Run it once after each
+release is tagged, add `'<version>': 0` to `RELEASED_PACK_BROKEN_FILES` in
+`lib/coloring-pack-retention.mjs`, and commit both. `check-coloring-pack-retention.mjs` hashes the
+current `web/static` against every snapshot; `tests/coloring-pack-retention.test.mjs` runs the same
+check in the CI tools tier and, where tags are present locally, fails on a pack-shipping tag with no
+snapshot.
+
+`RELEASED_PACK_BROKEN_FILES` is the committed release inventory. The check fails when a listed
+release has no snapshot or a snapshot has no entry, so a lost snapshot fails CI even though CI's
+checkout has no tags. Each entry holds the release's exact unserved-file count: 0 for a healthy
+release. A release already broken on the live origin keeps its nonzero count, so both a further
+deletion and a partial restore fail until the pin is updated. A nonzero pin is an open defect, not
+an exemption. Retiring or regenerating an addressed asset needs the old bytes to stay reachable at
+the old path; `check:coloring-assets` separately rejects unreferenced files under
+`web/static/coloring`, so that retention cannot be done by leaving stale files beside the current
+catalog.
+
+## Libraries and failure behavior
+
+`lib/release-frontmatter.mjs` owns frontmatter, the version-matches-filename rule, semver ordering,
+and deep writes; `lib/native-version.mjs` owns reading and editing the Android/iOS project versions;
+`lib/artifact-version.mjs` owns embedded native-artifact inspection (the aapt2 protobuf scan, the
+`plutil` plist read, and the `.aab`/`.ipa` version semantics); `lib/aab-r8-mapping.mjs` requires
+Android's embedded R8 compiler metadata and class mappings before publishing (including a dry run);
+and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing read-only `readEntry`. Keep
+version parsing and validation in these owned modules rather than duplicating it in entry points.
+
+The R8 mapping guard rejects unmapped bundles even when their version matches. It does not measure
+performance or prove all optimizer settings: the native release configuration tests pin code and
+resource shrinking, and a toolchain change also needs effective-configuration inspection and a
+Release APK runtime smoke.
+
+`lib/zip.mjs` is deliberately bounded to reading a trusted build artifact: no writing, no streaming,
+and no zip64 (an archive using the zip64 sentinel is rejected rather than misread). Widening that
+scope is the point at which a dependency would start to earn its place.
+
+Malformed release Markdown, invalid flags, missing files, dirty unrelated paths, failed Git/GitHub
+commands, missing artifacts, and version mismatches produce diagnostics and nonzero exits. Release
+cutting is intentionally not transactional across filesystem, Git, and GitHub state: when a command
+fails, inspect `git status`, the tag, and the GitHub Release before retrying. Artifact publishing
+verifies every selected binary before the first upload, preventing a partial set caused by a later
+version mismatch.
+
+Run focused verification with:
+
+```sh
+npm run test:tools -- tools/release/tests
+npm run gen:releases
+```

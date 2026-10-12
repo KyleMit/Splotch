@@ -1,0 +1,450 @@
+{
+  "settings": {
+    "target": "web",
+    "device": "tablet",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2
+    },
+    "throttle": 4,
+    "buildMode": "production-preview",
+    "captureMode": "cdp-trace",
+    "startedAt": "2026-07-22T16:18:35.893Z",
+    "durationMs": 206856
+  },
+  "breakdown": {
+    "mainThreadBusyMs": 185366.031,
+    "scriptingMs": 23709.616,
+    "renderingMs": 6792.458,
+    "paintingMs": 2604.516,
+    "longTasksFromTrace": {
+      "count": 68,
+      "longestMs": 447.946
+    }
+  },
+  "engineHotPaths": [
+    {
+      "name": "engine.draw",
+      "count": 3738,
+      "totalMs": 1882.375,
+      "avgMs": 0.5035781166399144,
+      "maxMs": 10.841
+    },
+    {
+      "name": "engine.commit",
+      "count": 12,
+      "totalMs": 293.936,
+      "avgMs": 24.494666666666667,
+      "maxMs": 97.295
+    },
+    {
+      "name": "engine.snapshot",
+      "count": 13,
+      "totalMs": 161.694,
+      "avgMs": 12.438,
+      "maxMs": 27.207
+    },
+    {
+      "name": "engine.undo",
+      "count": 12,
+      "totalMs": 129.664,
+      "avgMs": 10.805333333333333,
+      "maxMs": 23.447
+    },
+    {
+      "name": "engine.fold",
+      "count": 13,
+      "totalMs": 112.905,
+      "avgMs": 8.685,
+      "maxMs": 83.891
+    },
+    {
+      "name": "engine.scanEmpty",
+      "count": 1,
+      "totalMs": 11.108,
+      "avgMs": 11.108,
+      "maxMs": 11.108
+    }
+  ],
+  "phases": [
+    {
+      "label": "boot-settle",
+      "wallMs": 709.846,
+      "busyMs": 205.212,
+      "longTasks": 0,
+      "commitMs": 16.795,
+      "commitCount": 43,
+      "commitMaxMs": 1.582
+    },
+    {
+      "label": "draw-single",
+      "wallMs": 31659.646,
+      "busyMs": 34365.904,
+      "longTasks": 11,
+      "commitMs": 15133.107,
+      "commitCount": 1740,
+      "commitMaxMs": 220.367
+    },
+    {
+      "label": "multi-finger-draw",
+      "wallMs": 1522.869,
+      "busyMs": 2049.156,
+      "longTasks": 2,
+      "commitMs": 986.95,
+      "commitCount": 49,
+      "commitMaxMs": 73.089
+    },
+    {
+      "label": "change-colors",
+      "wallMs": 100510.674,
+      "busyMs": 112425.113,
+      "longTasks": 35,
+      "commitMs": 46402.915,
+      "commitCount": 5314,
+      "commitMaxMs": 195.371
+    },
+    {
+      "label": "stroke-size",
+      "wallMs": 16775.894,
+      "busyMs": 17706.03,
+      "longTasks": 4,
+      "commitMs": 7806.282,
+      "commitCount": 907,
+      "commitMaxMs": 201.311
+    },
+    {
+      "label": "erase",
+      "wallMs": 10363.014,
+      "busyMs": 11186.01,
+      "longTasks": 3,
+      "commitMs": 4916.852,
+      "commitCount": 561,
+      "commitMaxMs": 74.643
+    },
+    {
+      "label": "undo",
+      "wallMs": 3214.989,
+      "busyMs": 2419.436,
+      "longTasks": 2,
+      "commitMs": 319.951,
+      "commitCount": 158,
+      "commitMaxMs": 26.723
+    },
+    {
+      "label": "clear",
+      "wallMs": 2227.294,
+      "busyMs": 3433.273,
+      "longTasks": 8,
+      "commitMs": 866.932,
+      "commitCount": 63,
+      "commitMaxMs": 78.389
+    }
+  ],
+  "longTaskAttribution": [
+    {
+      "phase": "(outside phases)",
+      "durMs": 447.946,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 447.881
+        },
+        {
+          "name": "V8.StackGuard",
+          "ms": 439.937
+        },
+        {
+          "name": "V8.HandleInterrupts",
+          "ms": 439.934
+        }
+      ]
+    },
+    {
+      "phase": "draw-single",
+      "durMs": 258.477,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 220.367
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 22.462
+        },
+        {
+          "name": "FunctionCall (Cr)",
+          "ms": 7.364
+        }
+      ]
+    },
+    {
+      "phase": "stroke-size",
+      "durMs": 220.838,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 201.311
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 4.734
+        },
+        {
+          "name": "Layerize",
+          "ms": 4.156
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 208.19,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 181.138
+        },
+        {
+          "name": "EventDispatch (mousemove)",
+          "ms": 12.04
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 7.57
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 201.297,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 195.371
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 2.012
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "ms": 1.317
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 197.25,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 174.533
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 7.13
+        },
+        {
+          "name": "EventDispatch (mousemove)",
+          "ms": 5.235
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 156.626,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 124.39
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 15.154
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "ms": 12.3
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 138.284,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 130.257
+        },
+        {
+          "name": "Layerize",
+          "ms": 1.9
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 1.433
+        }
+      ]
+    },
+    {
+      "phase": "(outside phases)",
+      "durMs": 132.12,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 119.127
+        },
+        {
+          "name": "Paint",
+          "ms": 4.704
+        },
+        {
+          "name": "Paint",
+          "ms": 3.401
+        }
+      ]
+    },
+    {
+      "phase": "draw-single",
+      "durMs": 127.044,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 110.576
+        },
+        {
+          "name": "FireAnimationFrame",
+          "ms": 4.847
+        },
+        {
+          "name": "Layerize",
+          "ms": 3.862
+        }
+      ]
+    },
+    {
+      "phase": "(outside phases)",
+      "durMs": 119.911,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 115.83
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "ms": 1.94
+        }
+      ]
+    },
+    {
+      "phase": "draw-single",
+      "durMs": 113.715,
+      "top": [
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 105.083
+        },
+        {
+          "name": "FunctionCall (wr)",
+          "ms": 98.145
+        },
+        {
+          "name": "RunMicrotasks",
+          "ms": 4.389
+        }
+      ]
+    }
+  ],
+  "topSelfTime": [
+    {
+      "name": "_cached",
+      "location": "",
+      "selfMs": 132395.319
+    },
+    {
+      "name": "(anonymous)",
+      "location": "",
+      "selfMs": 2035.276
+    },
+    {
+      "name": "(garbage collector)",
+      "location": "",
+      "selfMs": 723.748
+    },
+    {
+      "name": "setProperty",
+      "location": "",
+      "selfMs": 371.663
+    },
+    {
+      "name": "_promiseAwareJsonValueNoThrow",
+      "location": "",
+      "selfMs": 322.685
+    },
+    {
+      "name": "drawImage",
+      "location": "",
+      "selfMs": 314.365
+    },
+    {
+      "name": "setupDragListeners",
+      "location": "",
+      "selfMs": 242.632
+    },
+    {
+      "name": "di",
+      "location": "BkewDlkn.js:1",
+      "selfMs": 236.565
+    },
+    {
+      "name": "querySelector",
+      "location": "",
+      "selfMs": 225.932
+    },
+    {
+      "name": "setTimeout",
+      "location": "",
+      "selfMs": 190.314
+    },
+    {
+      "name": "addEventListener",
+      "location": "",
+      "selfMs": 168.355
+    },
+    {
+      "name": "#_",
+      "location": "BkewDlkn.js:1",
+      "selfMs": 160.282
+    },
+    {
+      "name": "Ce",
+      "location": "CBbxnBRH.js:1",
+      "selfMs": 143.199
+    },
+    {
+      "name": "Cr",
+      "location": "Bqc5W-qY.js:2",
+      "selfMs": 141.194
+    },
+    {
+      "name": "(anonymous)",
+      "location": "2.SG0dKL_Z.js:2",
+      "selfMs": 102.525
+    }
+  ],
+  "frames": {
+    "count": 8873,
+    "durationMs": 168310,
+    "fps": 52.71225714455469,
+    "longFrames": 920
+  },
+  "longTasks": {
+    "count": 54,
+    "totalMs": 4875,
+    "longestMs": 258
+  },
+  "heap": {
+    "beforeBytes": 10000000,
+    "afterBytes": 10000000
+  }
+}

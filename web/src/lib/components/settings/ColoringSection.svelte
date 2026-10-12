@@ -1,0 +1,154 @@
+<script lang="ts">
+  import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
+  import ToggleRow from './ToggleRow.svelte';
+  import { BOOKS } from '$lib/state/books';
+  import { clearOverlay } from '$lib/state/coloringBook.svelte';
+  import { coloringPacksState } from '$lib/state/coloringPacks.svelte';
+  import {
+    settingsState,
+    setColoringBook,
+    setColoringPacksAllowMetered,
+  } from '$lib/state/settings.svelte';
+  import { notifyColoringPackPolicyChanged } from '$lib/coloringPacks/policy';
+  import { settingsModal } from '$lib/state/ui.svelte';
+  import '$lib/components/deferredIcons';
+
+  let removing = $state(false);
+  let removeError = $state(false);
+  const downloadedBookCount = $derived(coloringPacksState.downloadedBookCount);
+  const downloadableBookCount = $derived(coloringPacksState.downloadableBookCount);
+  const downloadingBookName = $derived(
+    BOOKS.find((book) => book.id === coloringPacksState.downloadingBookId)?.name ?? null
+  );
+
+  // The wide shell keeps this section mounted across a close, so each open
+  // clears a failure a finished removal left behind. A removal still running
+  // shows "Removing…" into the new visit, so that visit owns its outcome.
+  $effect(() => {
+    if (settingsModal.open) removeError = false;
+  });
+
+  function megabytes(bytes: number): string {
+    return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  }
+
+  function setAllowMetered(next: boolean) {
+    setColoringPacksAllowMetered(next);
+    notifyColoringPackPolicyChanged();
+  }
+
+  function setColoringBooksEnabled(next: boolean) {
+    setColoringBook(next);
+    if (!next) clearOverlay();
+    notifyColoringPackPolicyChanged();
+  }
+
+  async function removeDownloadedPictures() {
+    removing = true;
+    removeError = false;
+    try {
+      const { removeDownloadedColoringPacks } = await import('$lib/coloringPacks/manager');
+      await removeDownloadedColoringPacks();
+    } catch {
+      removeError = true;
+    } finally {
+      removing = false;
+    }
+  }
+</script>
+
+<section class="setting-group">
+  <div class="setting">
+    <ToggleRow
+      icon="shapes"
+      label="Coloring book"
+      id="coloringBookToggle"
+      checked={settingsState.coloringBookEnabled}
+      onToggle={setColoringBooksEnabled}
+      help="Show coloring pages and download new books automatically"
+    />
+  </div>
+
+  <div class="setting">
+    <ToggleRow
+      icon="download"
+      label="Download over mobile data"
+      id="coloringPacksMeteredToggle"
+      checked={settingsState.coloringPacksAllowMetered}
+      onToggle={setAllowMetered}
+      help="Allows automatic picture downloads when Wi-Fi isn't available"
+      disabled={!settingsState.coloringBookEnabled}
+    />
+  </div>
+
+  <div class="setting pack-storage">
+    <div class="pack-summary">
+      <Icon name="picture-stack" class="setting-icon" />
+      <div>
+        <span class="pack-title">Downloaded pictures</span>
+        {#if coloringPacksState.initialized}
+          <p>
+            {downloadedBookCount} of {downloadableBookCount} extra books · {megabytes(
+              coloringPacksState.downloadedBytes
+            )}
+          </p>
+          {#if downloadingBookName}
+            <p>Downloading {downloadingBookName} in the background</p>
+          {:else if downloadedBookCount === downloadableBookCount}
+            <p>Every coloring book is ready offline</p>
+          {/if}
+        {:else if !settingsState.coloringBookEnabled}
+          <p>Storage details are unavailable while coloring books are off</p>
+        {/if}
+      </div>
+    </div>
+    <Button
+      variant="danger"
+      size="sm"
+      disabled={removing || (coloringPacksState.initialized && downloadedBookCount === 0)}
+      onclick={removeDownloadedPictures}
+    >
+      {removing ? 'Removing…' : 'Remove downloaded pictures'}
+    </Button>
+    {#if removeError}
+      <p class="remove-error">Downloaded pictures could not be removed. Try again.</p>
+    {/if}
+  </div>
+</section>
+
+<style>
+  .pack-storage {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .pack-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--setting-icon-gap);
+  }
+
+  .pack-title {
+    display: block;
+    color: var(--text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .pack-summary p,
+  .remove-error {
+    margin: var(--space-1) 0 0;
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+  }
+
+  .pack-storage :global(.btn) {
+    justify-self: start;
+  }
+
+  .remove-error {
+    color: var(--danger-text);
+  }
+</style>

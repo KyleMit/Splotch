@@ -1,0 +1,11 @@
+/* The AI drill-in swaps a compact explainer for a longer setup form. Claiming
+   one stable phone height prevents the card jumping when its master switch
+   changes; the enabled content scrolls inside it. */
+.settings-modal.ai-section:not(.wide):not(.compact) {
+  --ai-section-card-height: 604px;
+  height: min(var(--card-height-cap), var(--ai-section-card-height));
+}
+
+.settings-modal.ai-section:not(.wide):not(.compact) .settings-content {
+  height: 100%;
+}

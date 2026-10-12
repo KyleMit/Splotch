@@ -1,0 +1,1020 @@
+// @vitest-environment happy-dom
+//
+// The generated bootstrap, EXECUTED. The previous tests asserted substrings of
+// the source, so disabling the whole theme branch with `if (false && ...)` left
+// eleven of them green — they proved the code was written, never that it runs.
+//
+// The fixture stands in for the product: clicking a theme control is what sets
+// `documentElement.dataset.theme`, exactly as the real Settings controls do, so
+// the bootstrap has to actually find and click one to make the assertion pass.
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+
+// The bootstrap polls on the same budgets it uses on a device, so executing it
+// costs seconds rather than milliseconds. That is the price of running the real
+// thing instead of grepping it.
+const BOOTSTRAP_TIMEOUT_MS = 22_000;
+import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
+import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { REDUCE_MOTION_STORAGE_KEY } from '../lib/reduce-motion.mjs';
+
+const CANVAS_RECT = { x: 0, y: 0, width: 800, height: 600 };
+// A lazy Settings dialog opens this long after its trigger is clicked: longer
+// than the bootstrap's poll, shorter than its Settings retry spacing.
+const LAZY_SETTINGS_OPEN_MS = 200;
+
+function paintShell({ compact, startingTheme, lazySettings = false }) {
+  document.documentElement.dataset.theme = startingTheme ?? '';
+  document.body.innerHTML = `
+    <canvas id="drawingCanvas"></canvas>
+    <div class="canvas-stack"></div>
+    <button aria-label="Expand controls"></button>
+    <button id="brushButton"></button>
+    <button id="penBrushButton" hidden></button>
+    <button aria-label="Settings"></button>
+  `;
+  const mountSettings = () => {
+    const existing = document.querySelector('#settingsModal');
+    if (existing) return existing;
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `
+      <dialog id="settingsModal">
+      ${compact ? '<div class="quick-toggles"><button id="quickNightToggle" aria-checked="false"></button></div>' : ''}
+      ${compact ? '' : '<button data-section="appearance"></button>'}
+      </dialog>
+    `
+    );
+    const modal = document.querySelector('#settingsModal');
+    if (compact) {
+      const toggle = document.querySelector('#quickNightToggle');
+      toggle.addEventListener('click', () => {
+        const next = toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
+        toggle.setAttribute('aria-checked', String(next === 'dark'));
+        document.documentElement.dataset.theme = next;
+      });
+    } else {
+      document.querySelector('button[data-section="appearance"]').addEventListener('click', () => {
+        for (const theme of ['light', 'dark']) {
+          const option = document.createElement('button');
+          option.id = `themeOption-${theme}`;
+          option.addEventListener('click', () => {
+            document.documentElement.dataset.theme = theme;
+          });
+          modal.append(option);
+        }
+      });
+    }
+    const close = document.createElement('button');
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => (modal.open = false));
+    modal.append(close);
+    return modal;
+  };
+  const canvas = document.querySelector('#drawingCanvas');
+  canvas.getBoundingClientRect = () => CANVAS_RECT;
+  document.elementFromPoint = () => document.querySelector('.canvas-stack');
+  window.__committedBrushMode = () => 'pen';
+
+  let settingsClicks = 0;
+  document.querySelector('button[aria-label="Settings"]').addEventListener('click', () => {
+    settingsClicks += 1;
+    setTimeout(() => (mountSettings().open = true), lazySettings ? LAZY_SETTINGS_OPEN_MS : 0);
+  });
+  if (!lazySettings) mountSettings();
+  return { settingsClicks: () => settingsClicks };
+}
+
+// The bootstrap now refuses to act for a page it was not opened for, so the
+// fixture has to give the page the identity the plan names — which is the
+// behaviour under test as much as the theme is.
+function openedFor(nonce, extraQuery = '') {
+  window.happyDOM?.setURL?.(
+    `http://probe-host.test/?probe=${encodeURIComponent(nonce)}${extraQuery}`
+  );
+}
+
+function runBootstrap(plan, { openedWithoutProbe, openedAs = plan.nonce, extraQuery = '' } = {}) {
+  if (openedWithoutProbe) window.happyDOM?.setURL?.('http://probe-host.test/');
+  else openedFor(openedAs, extraQuery);
+  const posted = [];
+  const currentPlan = plan;
+  const ready = Promise.withResolvers();
+  const error = Promise.withResolvers();
+  const stale = Promise.withResolvers();
+  const refill = Promise.withResolvers();
+  const report = Promise.withResolvers();
+  const eventRows = [];
+  const frameRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
+  const measureRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
+
+  global.fetch = vi.fn(async (path, init) => {
+    if (path === '/__probe/plan') return { json: async () => currentPlan };
+    const body = init?.body ? JSON.parse(init.body) : null;
+    posted.push({ path, body });
+    if (path === '/__probe/ready') ready.resolve(body);
+    if (path === '/__probe/log' && body?.kind === 'bootstrap') error.resolve(body);
+    if (path === '/__probe/log' && body?.kind === 'stale-page') stale.resolve(body);
+    if (path === '/__probe/refill') refill.resolve(body);
+    if (path === '/__probe/report') report.resolve(body);
+    return { json: async () => ({}) };
+  });
+
+  // The probe is a same-origin <script src> the fixture cannot fetch, so its
+  // arrival is simulated at the point the bootstrap waits for it.
+  const probeScriptSources = [];
+  const append = document.head.append.bind(document.head);
+  document.head.append = (element) => {
+    if (element.tagName === 'SCRIPT') {
+      probeScriptSources.push(element.src);
+      window.__probe = {
+        counts: () => ({
+          frames: frameRows.length,
+          events: eventRows.length,
+          measures: measureRows.length,
+        }),
+        frames: (from, count) => frameRows.slice(from, from + count),
+        events: (from, count) => eventRows.slice(from, from + count),
+        measures: (from, count) => measureRows.slice(from, from + count),
+        finish: vi.fn(() => ({
+          meta: {
+            counts: {
+              frames: frameRows.length,
+              events: eventRows.length,
+              measures: measureRows.length,
+            },
+          },
+        })),
+        addPostFinishRows() {
+          frameRows.push([frameRows.length]);
+          measureRows.push([measureRows.length]);
+        },
+        stop: () => {},
+      };
+      queueMicrotask(() => element.onload?.());
+      return;
+    }
+    return append(element);
+  };
+
+  new Function(pageBootstrapSource())();
+  return {
+    readyPosted: ready.promise,
+    errorPosted: error.promise,
+    stalePosted: stale.promise,
+    refillPosted: refill.promise,
+    reportPosted: report.promise,
+    posted,
+    probeScriptSources,
+    finish() {
+      currentPlan.finish = true;
+    },
+    recordTrustedCanvasPointerUp() {
+      eventRows.push([0, 0, 2, 1, 0, 0, 1, 0, 1]);
+    },
+  };
+}
+
+// A tile-shaped backing, the shape the rig phone's landscape tiles have. The
+// sampler's scratch resamples it the way a downscaling drawImage does — one
+// nearest source pixel per destination pixel — so a delta a downscale skips is
+// a delta this fixture really hides from a downscaling sampler (issue 2337).
+const UNDO_SURFACE_BACKING_PX = { width: 350, height: 110 };
+
+function resample(source, sourceWidth, sourceHeight, targetWidth, targetHeight) {
+  const target = new Uint8ClampedArray(targetWidth * targetHeight * 4);
+  for (let y = 0; y < targetHeight; y++) {
+    const sourceY = Math.floor(((y + 0.5) * sourceHeight) / targetHeight);
+    for (let x = 0; x < targetWidth; x++) {
+      const sourceX = Math.floor(((x + 0.5) * sourceWidth) / targetWidth);
+      const from = (sourceY * sourceWidth + sourceX) * 4;
+      target.set(source.subarray(from, from + 4), (y * targetWidth + x) * 4);
+    }
+  }
+  return target;
+}
+
+function repaint(canvas, value) {
+  canvas.pixels.fill(value);
+}
+
+function setPixel(canvas, [x, y], value) {
+  const offset = (y * canvas.width + x) * 4;
+  canvas.pixels.fill(value, offset, offset + 4);
+}
+
+// `undoPaints(click, canvas)` is what one undo click does to the pixels; the
+// default repaints the whole surface, which every sampler registers.
+function paintUndoShell({ undoPaints = (click, canvas) => repaint(canvas, 100 - click) } = {}) {
+  paintShell({ compact: true, startingTheme: 'light' });
+  const canvas = document.querySelector('#drawingCanvas');
+  canvas.width = UNDO_SURFACE_BACKING_PX.width;
+  canvas.height = UNDO_SURFACE_BACKING_PX.height;
+  canvas.pixels = new Uint8ClampedArray(canvas.width * canvas.height * 4);
+  repaint(canvas, 3);
+
+  const createElement = document.createElement.bind(document);
+  document.createElement = (tag) => {
+    const element = createElement(tag);
+    if (tag === 'canvas') {
+      let drawn = null;
+      element.getContext = () => ({
+        clearRect() {
+          drawn = null;
+        },
+        drawImage(source, x, y, width = source.width, height = source.height) {
+          drawn = resample(source.pixels, source.width, source.height, width, height);
+        },
+        getImageData(x, y, width, height) {
+          return { data: drawn ?? new Uint8ClampedArray(width * height * 4) };
+        },
+      });
+    }
+    return element;
+  };
+
+  let historyLength = 14;
+  let snapshots = 12;
+  let undoClicks = 0;
+  window.__drawingDebug = {
+    getUndoDebug: () => ({ historyLength, snapshots }),
+    getLiveSurfaceTopology: () => [],
+  };
+  const measures = [];
+  const probeFinishedAtUndo = [];
+  Object.defineProperty(window.performance, 'getEntriesByName', {
+    configurable: true,
+    value: () => measures,
+  });
+  const undo = document.createElement('button');
+  undo.id = 'undoButton';
+  undo.addEventListener('click', () => {
+    probeFinishedAtUndo.push(window.__probe.finish.mock.calls.length > 0);
+    window.__probe.addPostFinishRows();
+    undoClicks += 1;
+    historyLength -= undoClicks === 1 ? 3 : 1;
+    snapshots -= 1;
+    undoPaints(undoClicks, canvas);
+    measures.push({ duration: 2 });
+  });
+  document.body.append(undo);
+  return { canvas, probeFinishedAtUndo };
+}
+
+beforeEach(() => {
+  window.matchMedia = () => ({ matches: false, addEventListener() {} });
+  delete window.__probe;
+  delete window.__drawingDebug;
+});
+
+describe('the bootstrap actually capturing undo', () => {
+  it(
+    'records canonical timing plus history and pixel restoration evidence',
+    async () => {
+      const { canvas, probeFinishedAtUndo } = paintUndoShell();
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'undo-run',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      repaint(canvas, 4);
+      run.finish();
+      const payload = await run.reportPosted;
+
+      expect(payload.undoActions).toHaveLength(2);
+      expect(payload.report.frames).toHaveLength(5_001);
+      expect(payload.report.measures).toHaveLength(5_001);
+      expect(payload.historyBeforeUndo).toMatchObject({ historyLength: 14, snapshots: 12 });
+      expect(payload.historyAfterUndo.historyLength).toBe(10);
+      expect(payload.historyAfterUndo.snapshots).toBe(10);
+      expect(payload.undoVisual).toMatchObject({
+        changedEveryStep: true,
+        steps: [
+          { index: 0, changed: true },
+          { index: 1, changed: true },
+        ],
+      });
+      expect(payload.undoVisual.samples).toHaveLength(3);
+      expect(payload.report.paintedOutput).toMatchObject({ changed: true });
+      expect(probeFinishedAtUndo).toEqual([true, true]);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The rig phone's landscape undo 10 changed 12 fringe pixels, by at most 10
+  // levels, and the 64 px downscale reported no change (issue 2337). These
+  // pixels sit between the sample points a 64 px downscale of this backing reads.
+  it(
+    'registers an undo whose only change is a few pixels a downscale would skip',
+    async () => {
+      const fringePixels = [
+        [1, 1],
+        [3, 1],
+      ];
+      const { canvas } = paintUndoShell({
+        undoPaints: (click, surface) => setPixel(surface, fringePixels[click - 1], 13),
+      });
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'fringe-undo',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      repaint(canvas, 4);
+      run.finish();
+      const payload = await Promise.race([
+        run.reportPosted,
+        run.errorPosted.then((error) => ({ error })),
+      ]);
+
+      expect(payload.error).toBeUndefined();
+      expect(payload.undoVisual).toMatchObject({
+        changedEveryStep: true,
+        steps: [
+          { index: 0, changed: true },
+          { index: 1, changed: true },
+        ],
+      });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The negative control: sampling every pixel must not make an undo that
+  // restores nothing pass.
+  it(
+    'still refuses an undo that restores no pixels',
+    async () => {
+      const { canvas } = paintUndoShell({
+        undoPaints: (click, surface) => {
+          if (click === 1) setPixel(surface, [1, 1], 13);
+        },
+      });
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'noop-undo',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      repaint(canvas, 4);
+      run.finish();
+      const error = await run.errorPosted;
+
+      expect(error.message).toBe('undo action 2 did not restore different pixels');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+describe('the bootstrap actually setting the theme', () => {
+  // Landscape phones get CompactShell, which has one Night Mode toggle rather
+  // than a three-way picker. Both shells are exercised, because the control flow
+  // through them is different and only one was ever run on a device per session.
+  it(
+    'drives the CompactShell toggle until the page resolves to dark',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'compact-dark' });
+
+      expect((await readyPosted).resolvedTheme).toBe('dark');
+      expect(document.documentElement.dataset.theme).toBe('dark');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'navigates the sectioned shell to the Appearance options and picks light',
+    async () => {
+      paintShell({ compact: false, startingTheme: 'dark' });
+
+      const { readyPosted } = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'sectioned-light',
+      });
+
+      expect((await readyPosted).resolvedTheme).toBe('light');
+      expect(document.documentElement.dataset.theme).toBe('light');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // A second click before the dialog has opened is what the retry spacing prevents.
+  it(
+    'clicks the eager Settings trigger once and waits for the dialog to mount',
+    async () => {
+      const shell = paintShell({ compact: true, startingTheme: 'light', lazySettings: true });
+      expect(document.querySelector('#settingsModal')).toBeNull();
+
+      const { readyPosted, errorPosted } = runBootstrap({
+        brush: 'pen',
+        theme: 'dark',
+        nonce: 'lazy-settings-dark',
+      });
+
+      const outcome = await Promise.race([
+        readyPosted.then((ready) => ({ kind: 'ready', ready })),
+        errorPosted.then((error) => ({ kind: 'error', error })),
+      ]);
+      expect(outcome).toMatchObject({ kind: 'ready', ready: { resolvedTheme: 'dark' } });
+      expect(document.querySelector('#settingsModal')).not.toBeNull();
+      expect(shell.settingsClicks()).toBe(1);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'leaves a page already on the requested theme alone',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'dark' });
+
+      const { readyPosted, posted } = runBootstrap({
+        brush: 'pen',
+        theme: 'dark',
+        nonce: 'geometry-run',
+      });
+
+      expect((await readyPosted).resolvedTheme).toBe('dark');
+      expect(posted.some((call) => call.path === '/__probe/log')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // Readiness is what the runner refuses a mismatch on, so it must carry the
+  // observed value even when no theme was requested at all.
+  it(
+    'reports the resolved theme even when the plan asks for none',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'default-theme-run' });
+
+      expect((await readyPosted).resolvedTheme).toBe('light');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+// What the page did before the runner starts, observed from the outside: each
+// was once a substring check on the source, green whatever the code did.
+describe('the page the runner is handed', () => {
+  // The device rotates and the page does not always agree; without this the
+  // runner cannot tell a landscape capture filed as portrait.
+  it.each([
+    { width: 1024, height: 768, orientation: 'LANDSCAPE' },
+    { width: 768, height: 1024, orientation: 'PORTRAIT' },
+  ])(
+    'reports $orientation for the $width x $height viewport it rendered at',
+    async ({ width, height, orientation }) => {
+      const viewport = { width: innerWidth, height: innerHeight };
+      onTestFinished(() => window.happyDOM.setViewport(viewport));
+      window.happyDOM.setViewport({ width, height });
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: `${orientation}-run` });
+
+      expect((await readyPosted).geometry.orientation).toBe(orientation);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The guard's own branches are tested on its source in split-capture.test.mjs;
+  // this proves the bootstrap installs it and tells the runner it did.
+  it(
+    'blocks service-worker registration and reports that in readiness',
+    async () => {
+      const register = vi.fn();
+      onTestFinished(() => vi.unstubAllGlobals());
+      vi.stubGlobal('navigator', {
+        serviceWorker: { register, getRegistrations: async () => [], controller: null },
+      });
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'guarded-run' });
+
+      expect((await readyPosted).serviceWorkerRegistration).toBe('blocked');
+      await navigator.serviceWorker.register('/sw.js');
+      expect(register).not.toHaveBeenCalled();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The route's CSP allows script-src 'self' and forbids unsafe-eval.
+  it(
+    'loads the probe as a same-origin script',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted, probeScriptSources } = runBootstrap({ brush: 'pen', nonce: 'src-run' });
+      await readyPosted;
+
+      expect(probeScriptSources).toEqual([`${location.origin}/__probe/probe.js`]);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+// Issue 1309's second gap, the page half: the native WebView and the manual
+// hand capture open pages that cannot carry the run nonce, so their plans set
+// `requirePageIdentity: false` — and nothing ever EXECUTED that exemption.
+// Fault injection restored the unconditional identity check and the suite
+// stayed green, even though those transports would stand down forever.
+describe('the Reduce Motion seed, executed', () => {
+  const plan = (reduceMotion) => ({ nonce: 'rm-run', brush: 'pen', theme: 'light', reduceMotion });
+  const seedLog = (run) =>
+    run.posted.find(({ body }) => body?.kind === 'reduce-motion-seed')?.body ?? null;
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('data-reduce-motion');
+  });
+
+  it(
+    'writes the seed and reloads once before the product has booted under it',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('reduce'));
+      await vi.waitFor(() => expect(seedLog(run)).not.toBeNull(), { timeout: 5_000 });
+      expect(localStorage.getItem(REDUCE_MOTION_STORAGE_KEY)).toBe('reduce');
+      expect(new URL(seedLog(run).href).searchParams.get('motion')).toBe('reduce');
+      expect(run.posted.some(({ path }) => path === '/__probe/ready')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'reports the page-resolved reduced motion once the seed is in place',
+    async () => {
+      localStorage.setItem(REDUCE_MOTION_STORAGE_KEY, 'reduce');
+      document.documentElement.setAttribute('data-reduce-motion', '');
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('reduce'), { extraQuery: '&motion=reduce' });
+      const ready = await run.readyPosted;
+      expect(ready.reducedMotion).toBe(true);
+      expect(seedLog(run)).toBeNull();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'clears a leftover seed back to the product default for a system arm',
+    async () => {
+      localStorage.setItem(REDUCE_MOTION_STORAGE_KEY, 'reduce');
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('system'));
+      await vi.waitFor(() => expect(seedLog(run)).not.toBeNull(), { timeout: 5_000 });
+      expect(localStorage.getItem(REDUCE_MOTION_STORAGE_KEY)).toBeNull();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'refuses a page the seed did not survive a reload on, rather than reloading forever',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+      const run = runBootstrap(plan('reduce'), { extraQuery: '&motion=reduce' });
+      const error = await run.errorPosted;
+      expect(error.message).toMatch(/did not persist/);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+describe('the page-identity exemption, executed', () => {
+  it(
+    'proceeds to readiness without a probe param when the plan asks for no proof',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted, posted } = runBootstrap(
+        { brush: 'pen', theme: 'light', nonce: 'native-run', requirePageIdentity: false },
+        { openedWithoutProbe: true }
+      );
+
+      expect((await readyPosted).resolvedTheme).toBe('light');
+      expect(posted.some((call) => call.body?.kind === 'stale-page')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'still stands an unproven page down when the plan demands proof',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { stalePosted, posted } = runBootstrap(
+        { brush: 'pen', theme: 'light', nonce: 'browser-run' },
+        { openedWithoutProbe: true }
+      );
+
+      const stale = await stalePosted;
+      expect(stale).toMatchObject({ kind: 'stale-page', openedFor: null, nonce: 'browser-run' });
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+// The refusal both runners make before a device or a person spends the capture.
+// It was inlined and unexercised; either branch could have been inverted without
+// a test noticing.
+describe('refusing a readiness payload the theme cannot be trusted from', () => {
+  it('accepts a page reporting the theme that was asked for', () => {
+    expect(readinessThemeProblem({ resolvedTheme: 'dark' }, 'dark')).toBeNull();
+  });
+
+  it('refuses a mismatch, naming both sides', () => {
+    const problem = readinessThemeProblem({ resolvedTheme: 'light' }, 'dark');
+
+    expect(problem).toContain('light');
+    expect(problem).toContain('dark');
+  });
+
+  // Silence is refused as firmly as a mismatch. Treating it as consent is how the
+  // request-echo defect worked: nobody checked, so nobody disagreed.
+  it('refuses a page that reports no theme at all', () => {
+    expect(readinessThemeProblem({}, 'dark')).toContain('cannot prove');
+    expect(readinessThemeProblem(undefined, 'dark')).toContain('cannot prove');
+  });
+
+  it('still requires an answer when no theme was requested', () => {
+    expect(readinessThemeProblem({}, undefined)).toContain('cannot prove');
+    expect(readinessThemeProblem({ resolvedTheme: 'light' }, undefined)).toBeNull();
+  });
+});
+
+// The guard itself, through the same executed bootstrap: a page that was opened
+// for another run must do nothing at all — not report ready, not upload — and
+// must say why, so a run that produces no capture is diagnosable. It is the tab
+// Chrome restores across a launch's force-stop, which reads the CURRENT plan
+// and would otherwise pass for the page the run opened. Standing down is not a
+// failure: reporting a leftover as one would bury the current page's real error.
+describe('a page opened for a different run', () => {
+  it(
+    'stands down without reporting ready',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', nonce: 'this-cell' };
+      const { posted } = runBootstrap(plan, { openedAs: 'earlier-cell' });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
+      expect(posted.some((call) => call.path === '/__probe/report')).toBe(false);
+      const stood = posted.find((call) => call.body?.kind === 'stale-page');
+      expect(stood?.body).toMatchObject({ openedFor: 'earlier-cell', nonce: 'this-cell' });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+// Issue 1302: the eraser fill used to be fired and forgotten, so a fill that
+// silently did nothing left a capture that measured erasing blank paper and
+// looked completely normal. Executed here: the fill must be verified, its
+// evidence must travel with readiness, and a fill that did not take must fail
+// the capture through the error report rather than banking a plausible number.
+describe('the bootstrap verifying the eraser fill', () => {
+  function paintEraserShell(tiles) {
+    paintShell({ compact: true, startingTheme: 'light' });
+    const eraserButton = document.createElement('button');
+    eraserButton.id = 'eraserButton';
+    eraserButton.addEventListener('click', () => {
+      window.__committedBrushMode = () => 'eraser';
+    });
+    document.body.append(eraserButton);
+    // The fill verifies through a 1x1 willReadFrequently scratch it creates
+    // itself, so createElement hands out a scratch whose samples resolve from
+    // the drawn source tile at the sampled coordinates.
+    const createElement = document.createElement.bind(document);
+    document.createElement = (tag) => {
+      const element = createElement(tag);
+      if (tag === 'canvas') {
+        let sampled = null;
+        element.getContext = (kind, options) =>
+          options?.willReadFrequently === true
+            ? {
+                clearRect() {
+                  sampled = null;
+                },
+                drawImage(source, x, y) {
+                  sampled = source.alphaAt ? source.alphaAt(x, y) : 0;
+                },
+                getImageData() {
+                  return { data: [124, 77, 255, sampled ?? 0] };
+                },
+              }
+            : null;
+      }
+      return element;
+    };
+    return tiles.map((tile) => {
+      const canvas = createElement('canvas');
+      canvas.setAttribute('data-live-tile', '');
+      canvas.dataset.tileBacking = tile.backing;
+      canvas.width = tile.width;
+      canvas.height = tile.height;
+      const context = {
+        fillStyle: null,
+        fillRects: [],
+        globalAlpha: 0.5,
+        globalCompositeOperation: 'destination-out',
+        save() {},
+        restore() {},
+        setTransform() {},
+        fillRect(...args) {
+          this.fillRects.push(args);
+        },
+      };
+      canvas.getContext = () => context;
+      canvas.alphaAt = (x, y) => {
+        if (tile.alpha === 0) return 0;
+        if (context.fillRects.length <= (tile.transparentPaints ?? 0)) return 0;
+        const covered = context.fillRects.some(
+          ([rx, ry, rw, rh]) => x >= rx && y >= ry && x < rx + rw && y < ry + rh
+        );
+        return covered ? 255 : 0;
+      };
+      document.body.append(canvas);
+      return { canvas, context };
+    });
+  }
+
+  it(
+    'fills, refills between passes, and reports both kinds of evidence',
+    async () => {
+      const tiles = paintEraserShell([
+        { backing: '100x80', width: 100, height: 80 },
+        { backing: '90x70', width: 90, height: 70 },
+      ]);
+
+      const plan = {
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-fill-run',
+        finish: false,
+        eraserRefillRequest: null,
+      };
+      const run = runBootstrap(plan);
+      const ready = await run.readyPosted;
+
+      expect(ready.eraserFill).toEqual({
+        tiles: 2,
+        backings: ['100x80', '90x70'],
+        transparentTiles: [],
+      });
+      // One paint before readiness: the post-settle check verifies WITHOUT
+      // painting, and a stable fill records no repair.
+      expect(ready.eraserFill.repairedAfterSettle).toBeUndefined();
+      expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
+      expect(tiles[1].context.fillStyle).toBe('#7c4dff');
+
+      for (let pointerUp = 0; pointerUp < 16; pointerUp++) run.recordTrustedCanvasPointerUp();
+      plan.eraserRefillRequest = { sequence: 1, afterStroke: 2 };
+      expect(await run.refillPosted).toMatchObject({
+        nonce: 'eraser-fill-run',
+        request: { sequence: 1, afterStroke: 2 },
+        entry: {
+          afterStroke: 2,
+          pending: false,
+          transparentTiles: [],
+          trustedCanvasPointerUps: 16,
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(run.posted.filter((entry) => entry.path === '/__probe/refill')).toHaveLength(1);
+      plan.finish = true;
+      const report = await run.reportPosted;
+
+      expect(report.eraserRefills).toEqual([
+        {
+          afterStroke: 2,
+          pending: false,
+          transparentTiles: [],
+          trustedCanvasPointerUps: 16,
+        },
+      ]);
+      // The refill is the second paint; the final stroke deliberately adds none.
+      expect(tiles[0].context.fillRects).toHaveLength(2);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'retries a transient transparent fill before reporting readiness',
+    async () => {
+      const [tile] = paintEraserShell([
+        { backing: '100x80', width: 100, height: 80, transparentPaints: 1 },
+      ]);
+
+      const { readyPosted } = runBootstrap({
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-transient-fill',
+      });
+      const ready = await readyPosted;
+
+      expect(ready.eraserFill.transparentTiles).toEqual([]);
+      expect(tile.context.fillRects.length).toBeGreaterThan(1);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'records a refill anomaly when the requested pass produced no trusted canvas lift',
+    async () => {
+      paintEraserShell([{ backing: '100x80', width: 100, height: 80 }]);
+      const plan = {
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-missing-pass',
+        finish: false,
+        eraserRefillRequest: null,
+      };
+      const { readyPosted, refillPosted } = runBootstrap(plan);
+      await readyPosted;
+
+      plan.eraserRefillRequest = { sequence: 1, afterStroke: 10 };
+      const refill = await refillPosted;
+
+      expect(refill.entry.error).toContain('no new trusted canvas pointerup');
+      plan.finish = true;
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'fails the capture through the error report when the fill does not take',
+    async () => {
+      paintEraserShell([{ backing: '100x80', width: 100, height: 80, alpha: 0 }]);
+
+      const { posted, reportPosted } = runBootstrap({
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-bad-fill',
+      });
+
+      const report = await reportPosted;
+      expect(report.nonce).toBe('eraser-bad-fill');
+      expect(report.error).toContain('transparent');
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+// The drawing gates are purely temporal, so a renderer that painted NOTHING
+// passed them all (capture 7c37d255). The bootstrap now samples the drawing
+// surfaces before contact banking and after the probe stops, and the report
+// records whether the canvas changed — executed here end to end, with the
+// scratch canvas faked so happy-dom's contextless canvases can be read.
+describe('the painted-output record in the uploaded report', () => {
+  function fakeScratchFor() {
+    let drawn = null;
+    return {
+      width: 0,
+      height: 0,
+      getContext: (kind, options) =>
+        options?.willReadFrequently === true
+          ? {
+              clearRect() {
+                drawn = null;
+              },
+              drawImage(source) {
+                drawn = source.pixels;
+              },
+              getImageData() {
+                return { data: drawn ?? [] };
+              },
+            }
+          : null,
+    };
+  }
+
+  async function reportFor(mutateBetweenSamples) {
+    paintShell({ compact: true, startingTheme: 'light' });
+    const canvas = document.querySelector('#drawingCanvas');
+    canvas.pixels = [10, 20, 30, 255];
+    const createElement = document.createElement.bind(document);
+    document.createElement = (tag) => (tag === 'canvas' ? fakeScratchFor() : createElement(tag));
+    try {
+      const plan = { brush: 'pen', theme: 'light', nonce: 'painted-run', finish: false };
+      const { readyPosted, reportPosted } = runBootstrap(plan);
+      await readyPosted;
+      if (mutateBetweenSamples) canvas.pixels = [99, 20, 30, 255];
+      plan.finish = true;
+      return await reportPosted;
+    } finally {
+      document.createElement = createElement;
+    }
+  }
+
+  it(
+    'records blank output when no pixel changed between the samples',
+    async () => {
+      const payload = await reportFor(false);
+
+      expect(payload.report.paintedOutput).toMatchObject({ changed: false });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'records a changed canvas when any pixel differs after the pass',
+    async () => {
+      const payload = await reportFor(true);
+
+      expect(payload.report.paintedOutput).toMatchObject({ changed: true });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+describe('the pulse and the error report', () => {
+  // The wait loop pulses the live event count so the runner can tell "the
+  // injected touches are landing on another tab" (issue 1294) from "the report
+  // is still coming". The plan flips finish on the second poll so the loop runs
+  // exactly one pulsing pass.
+  it(
+    'pulses the live event count under the run nonce while waiting for finish',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'pulse-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+
+      const pulse = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/pulse');
+        if (!found) throw new Error('no pulse yet');
+        return found;
+      });
+      plan.finish = true;
+      expect(pulse.body).toEqual({ nonce: 'pulse-run', events: 0 });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // Issue 1300: a ready page that never uploads was indistinguishable between
+  // never-saw-finish, finish() threw, upload failed, and suspended. The two
+  // heartbeats split the space, so they must actually fire, in order, under the
+  // run nonce, before the report.
+  it(
+    'logs finish-observed and uploading around the report upload',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'heartbeat-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+      plan.finish = true;
+
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+      const heartbeats = posted.filter((entry) => entry.path === '/__probe/log');
+      expect(heartbeats.map((entry) => entry.body.kind)).toEqual(['finish-observed', 'uploading']);
+      expect(heartbeats.map((entry) => entry.body.nonce)).toEqual([
+        'heartbeat-run',
+        'heartbeat-run',
+      ]);
+      expect(report.body.nonce).toBe('heartbeat-run');
+      expect(posted.indexOf(heartbeats[1])).toBeLessThan(posted.indexOf(report));
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The catch posts the error report; nonce used to be try-scoped, so every
+  // page-side error threw ReferenceError there and the host heard nothing —
+  // a ready page going quiet with nothing saying why.
+  it(
+    'a failure after readiness still posts an error report under the run nonce',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'error-run', finish: false };
+      const { readyPosted, reportPosted } = runBootstrap(plan);
+      await readyPosted;
+      const workingFetch = global.fetch;
+      global.fetch = async (path, init) => {
+        if (path === '/__probe/plan') throw new Error('plan poll exploded');
+        return workingFetch(path, init);
+      };
+
+      const report = await reportPosted;
+      expect(report.nonce).toBe('error-run');
+      expect(report.error).toContain('plan poll exploded');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});

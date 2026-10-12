@@ -1,0 +1,129 @@
+// The RESOLVED theme ('light' | 'dark'), reactively: the parent's setting for
+// explicit choices, the live OS preference in system mode. CSS never needs
+// this (the tokens in app.css resolve themselves); it exists for the few JS
+// consumers of the resolved value — the colors store's Black-swatch ink, the
+// Notch Band's eraser/paper color, and the canvas export's paper fill.
+//
+// This module is the SINGLE owner of the prefers-color-scheme subscription and
+// the resolution rule: one media query feeds `systemDark`, and resolveTheme()
+// (from theme.ts) turns preference + systemDark into the concrete theme. The
+// colors store follows resolvedTheme() through the getter handed to it at
+// construction, and the effect install() roots repaints the theme-color meta,
+// so both an OS switch (systemDark) and an explicit setting change
+// (settingsState.theme) reach them from one reactive source.
+//
+// Reduced motion rides the same shape: one prefers-reduced-motion subscription
+// feeds `systemReduceMotion`, resolveReducedMotion() turns preference + OS into
+// the effective answer, and the effect stamps it on <html> for CSS and for
+// prefersReducedMotion() to read.
+import { settingsState, type SettingsState } from './settings.svelte';
+import { colorsState, type ColorsState } from './colors.svelte';
+import {
+  DARK_SCHEME_QUERY,
+  resolveTheme,
+  type ResolvedTheme,
+  updateThemeColorMeta,
+} from '../theme';
+import {
+  applyReducedMotion,
+  REDUCED_MOTION_QUERY,
+  resolveReducedMotion,
+} from '../platform/reducedMotion';
+
+export interface AppearanceState {
+  resolvedTheme(): ResolvedTheme;
+  setResolvedTheme(wanted: ResolvedTheme): void;
+  reducedMotion(): boolean;
+  setReducedMotion(wanted: boolean): void;
+  // Subscribes to the OS preferences and roots the effects that keep the
+  // theme-color meta on the resolved theme and the reduce-motion attribute on
+  // the effective answer.
+  install(): void;
+  dispose(): void;
+}
+
+export function createAppearance(settings: SettingsState, colors: ColorsState): AppearanceState {
+  const appearance = $state({ systemDark: false, systemReduceMotion: false });
+
+  let systemQuery: MediaQueryList | null = null;
+  let motionQuery: MediaQueryList | null = null;
+  let stopEffects: (() => void) | null = null;
+
+  const onSystemChange = (e: MediaQueryListEvent) => {
+    appearance.systemDark = e.matches;
+  };
+
+  const onSystemMotionChange = (e: MediaQueryListEvent) => {
+    appearance.systemReduceMotion = e.matches;
+  };
+
+  function resolvedTheme(): ResolvedTheme {
+    return resolveTheme(settings.theme, appearance.systemDark);
+  }
+
+  function reducedMotion(): boolean {
+    return resolveReducedMotion(settings.reduceMotion, appearance.systemReduceMotion);
+  }
+
+  colors.followTheme(() => resolvedTheme() === 'dark');
+
+  return {
+    resolvedTheme,
+    reducedMotion,
+    // A quick toggle (no three-way UI to name 'system' explicitly) can only
+    // request an appearance, not a preference — so it writes back the LOOSEST
+    // preference that still resolves to the requested appearance: 'system' when
+    // the OS already renders that appearance, otherwise an explicit pin. This is
+    // what keeps a parent who never touched theming (still on the 'system'
+    // default) from getting pinned by one tap. The same rule can also overwrite
+    // an explicit pin that happens to match the OS: e.g. a light-OS parent who
+    // pinned 'light' explicitly, then taps Night Mode on and back off, lands on
+    // 'system' rather than their original explicit pin — an accepted trade since
+    // a quick toggle has no way to tell "explicit light" from "system resolving
+    // to light" apart, and 'system' still renders the appearance they asked for.
+    setResolvedTheme(wanted) {
+      settings.setTheme(
+        resolveTheme('system', appearance.systemDark) === wanted ? 'system' : wanted
+      );
+    },
+    // The switch can only request an answer, not a preference, so it follows
+    // setResolvedTheme's rule: 'system' when the OS already gives that answer,
+    // otherwise an explicit pin — which is how a reduce-motion OS gets 'full'.
+    setReducedMotion(wanted) {
+      const explicit = wanted ? 'reduce' : 'full';
+      settings.setReduceMotion(appearance.systemReduceMotion === wanted ? 'system' : explicit);
+    },
+    install() {
+      if (systemQuery) return;
+      systemQuery = matchMedia(DARK_SCHEME_QUERY);
+      appearance.systemDark = systemQuery.matches;
+      systemQuery.addEventListener('change', onSystemChange);
+      motionQuery = matchMedia(REDUCED_MOTION_QUERY);
+      appearance.systemReduceMotion = motionQuery.matches;
+      motionQuery.addEventListener('change', onSystemMotionChange);
+      stopEffects = $effect.root(() => {
+        $effect(() => applyReducedMotion(reducedMotion()));
+        $effect(() => updateThemeColorMeta(resolvedTheme()));
+      });
+    },
+    dispose() {
+      systemQuery?.removeEventListener('change', onSystemChange);
+      systemQuery = null;
+      motionQuery?.removeEventListener('change', onSystemMotionChange);
+      motionQuery = null;
+      stopEffects?.();
+      stopEffects = null;
+    },
+  };
+}
+
+export const appearanceState = createAppearance(settingsState, colorsState);
+
+export const { resolvedTheme, setResolvedTheme, reducedMotion, setReducedMotion } = appearanceState;
+
+// Installed at module load (not from a component) so the resolved theme is live
+// before the first component renders. Client-only: matchMedia and the meta are
+// absent server-side, and effects never run during SSR anyway.
+if (typeof matchMedia !== 'undefined' && typeof document !== 'undefined') {
+  appearanceState.install();
+}

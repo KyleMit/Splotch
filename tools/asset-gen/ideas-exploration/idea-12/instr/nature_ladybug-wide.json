@@ -1,0 +1,48 @@
+[
+ {
+  "i": 0,
+  "L": {
+   "x": 574,
+   "y": 566,
+   "coreLuma": 254,
+   "bandDark": 12,
+   "bandLight": 248,
+   "contrast": 242,
+   "lively": true
+  },
+  "N": {
+   "x": 574,
+   "y": 566,
+   "coreLuma": 255,
+   "bandDark": 254,
+   "bandLight": 255,
+   "contrast": 1,
+   "lively": false
+  },
+  "isRef": true,
+  "fails": true
+ },
+ {
+  "i": 1,
+  "L": {
+   "x": 705,
+   "y": 588,
+   "coreLuma": 250.28799438476562,
+   "bandDark": 12,
+   "bandLight": 251.41299438476562,
+   "contrast": 238.28799438476562,
+   "lively": true
+  },
+  "N": {
+   "x": 705,
+   "y": 588,
+   "coreLuma": 255,
+   "bandDark": 254,
+   "bandLight": 255,
+   "contrast": 1,
+   "lively": false
+  },
+  "isRef": true,
+  "fails": true
+ }
+]

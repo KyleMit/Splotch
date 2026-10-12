@@ -1,0 +1,47 @@
+{
+  "house-wide": {
+    "chalk": {
+      "flags": {
+        "notes": "This scene has NO EYES — that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
+      },
+      "why": "The eye-flavored chalk instruction made the model REFUSE the eyeless scene ('there are no eyes in the image to edit') — a --notes saying the eyeless scene is expected fixed it in one pass (commits 46daba9 + 6f6e223; pipeline.md status-table lesson). Note text reconstructed from that prose."
+    }
+  },
+  "teddy-wide": {
+    "chalk": {
+      "flags": {
+        "temperature": 0.3,
+        "max-attempts": 6
+      },
+      "why": "First pass failed on local drift; 'passed at -t 0.3 with a bigger attempt budget' (commit 6f6e223)."
+    }
+  },
+  "teddy-tall": {
+    "normalize": {
+      "flags": {
+        "notes": "The scene includes a STAR above the teddy — keep it exactly where it is. Redraw only the solid eye pupils as thin outlined rings; change nothing else."
+      },
+      "why": "Idea-run #6: the first normalize attempt DELETED the star (worst-tile keep 0%) — the bee-wide deleted-cloud precedent; a motif-naming --notes fixed it on the retry."
+    }
+  },
+  "flower-tall": {
+    "chalk": {
+      "flags": {
+        "temperature": 0.3,
+        "max-attempts": 6
+      },
+      "review": "Expect a worst-tile keep FAIL (~75%) confined to the solid pen pupils the chalk deliberately whitens into sclera + outlined pupil — the keep-gate blind spot (commit 4fff334). Verify on the overlay that the miss is only the whitened eyes, then ship the generator's candidate byte-for-byte.",
+      "why": "commit 4fff334: best-of-6 at -t 0.3 failed only worst-tile keep 75.4% vs 80%, shipped after overlay review."
+    }
+  },
+  "apple-tall": {
+    "night": {
+      "flags": {
+        "temperature": 0.3,
+        "line-white-min": 175,
+        "max-attempts": 8
+      },
+      "why": "Needed the strict-gate retry: '--line-white-min 175 -t 0.3, lineW 94 -> 255' (commit dc20072); max-attempts from pipeline.md Stage 4 lever 1's pairing."
+    }
+  }
+}

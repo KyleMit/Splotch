@@ -1,0 +1,28 @@
+2026-09-28T21:37:11.963Z GET / dest=document mode=- cache=-
+2026-09-28T21:37:22.919Z GET / dest=document mode=navigate cache=-
+2026-09-28T21:37:23.533Z GET /version.json dest=empty mode=cors cache=no-cache
+2026-09-28T21:37:30.874Z GET / dest=document mode=navigate cache=max-age=0
+2026-09-28T21:37:30.985Z GET /version.json dest=empty mode=cors cache=no-cache
+--- tap 21:38:33
+2026-09-28T21:38:33.267Z GET / dest=document mode=navigate cache=-
+2026-09-28T21:38:34.001Z GET /version.json dest=empty mode=cors cache=no-cache
+2026-09-28T21:38:57.836Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+2026-09-28T21:39:04.395Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+--- tap 21:39:26
+2026-09-28T21:39:27.651Z GET / dest=document mode=navigate cache=no-cache
+2026-09-28T21:39:28.307Z GET /version.json dest=empty mode=cors cache=no-cache
+2026-09-28T21:39:28.470Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+--- tap 21:40:21
+2026-09-28T21:40:22.020Z GET / dest=document mode=navigate cache=-
+2026-09-28T21:40:22.768Z GET /version.json dest=empty mode=cors cache=no-cache
+2026-09-28T21:40:23.252Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+2026-09-28T21:40:24.568Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+2026-09-28T21:52:35.088Z GET / dest=document mode=navigate cache=-
+2026-09-28T21:52:56.216Z GET / dest=document mode=navigate cache=-
+2026-09-28T21:52:56.266Z GET /version.json dest=empty mode=cors cache=no-cache
+--- tap 21:54:10
+2026-09-28T21:54:11.143Z GET / dest=document mode=navigate cache=-
+2026-09-28T21:54:11.629Z GET /version.json dest=empty mode=cors cache=no-cache
+2026-09-28T21:54:11.823Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+2026-09-28T21:54:13.921Z GET /sw.js dest=serviceworker mode=same-origin cache=max-age=0
+2026-09-28T21:54:13.923Z GET /version.json dest=empty mode=cors cache=no-cache

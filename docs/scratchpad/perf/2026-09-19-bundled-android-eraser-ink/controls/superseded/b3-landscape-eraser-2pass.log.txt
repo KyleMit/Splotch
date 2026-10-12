@@ -1,0 +1,8 @@
+canvas {"x":33,"y":0,"width":747,"height":360} scale 3
+eraser pass 1: 16/16 strokes, erased 8673/81920 census samples
+eraser pass 2: 16/16 strokes, erased 8680/81920 census samples
+
+Observed LANDSCAPE 780x360 (app rotation lock released for the capture)
+Fidelity: PASS (android-capacitor-webview) · {"trustedTouch":true,"cadence":true}
+  blank: lost 0.00% · paint max 8.1ms · PASS
+Wrote perf-profiles/bundled/units-2026-09-19/unit-b/b3-landscape-eraser-2pass.json

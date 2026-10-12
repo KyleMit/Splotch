@@ -1,0 +1,36 @@
+# Keeps the repository's issue labels in sync with the declarative set in
+# .github/labels.yml — the single source of truth for the label taxonomy
+# (glossary in docs/ISSUE-WORKFLOW.md). Edit labels.yml, and this reconciles the
+# live labels to match: creating missing ones and updating colors/descriptions.
+#
+# Runs when labels.yml changes on main, and on demand from the Actions tab.
+# Deliberately NOT pruning by default (skip-delete) so a hand-made label isn't
+# wiped by accident — normal runs apply changes (dry-run: false) but do not prune hand-made labels (skip-delete: true); set skip-delete to false for a full reconciliation.
+name: Label Sync
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/labels.yml']
+  workflow_dispatch: # allow ad-hoc runs (e.g. seeding the labels on a branch)
+
+permissions:
+  issues: write
+
+# Serialize label reconciliations without cancelling an in-flight mutation.
+concurrency:
+  group: label-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Reconcile labels from .github/labels.yml
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: crazy-max/ghaction-github-labeler@548a7c3603594ec17c819e1239f281a3b801ab4d # v6.0.0
+        with:
+          yaml-file: .github/labels.yml
+          dry-run: false
+          skip-delete: true

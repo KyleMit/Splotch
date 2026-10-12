@@ -1,0 +1,669 @@
+{
+  "sourceSha256": "77aaf2a7bbfecd33a62bf350779c99a909fb4e18c1ead1c0e0e120ad25f9e350",
+  "device": {
+    "os": "16"
+  },
+  "transport": "native-capacitor-webview",
+  "captureRuntime": "android-capacitor-webview",
+  "uiActivation": "native-touch+webdriver-element-click",
+  "repeats": 4,
+  "orientation": "PORTRAIT",
+  "theme": "light",
+  "passed": true,
+  "actionPlan": {
+    "schemaVersion": 1,
+    "actionGroups": [
+      "coloring"
+    ],
+    "applicableLabels": [
+      "open coloring books",
+      "open coloring book",
+      "scroll coloring pages",
+      "select coloring page",
+      "clear coloring page"
+    ],
+    "notApplicable": [],
+    "blocked": [],
+    "context": {
+      "orientation": "PORTRAIT",
+      "settingsShell": null,
+      "listedColoringBooks": null
+    }
+  },
+  "actionGroups": [
+    "coloring"
+  ],
+  "summaries": [
+    {
+      "label": "open coloring books",
+      "passed": true,
+      "count": 3,
+      "totalCount": 4,
+      "activation": {
+        "captured": 4,
+        "valid": 4,
+        "passed": true
+      },
+      "frames": {
+        "p50": 8.3,
+        "p95": 8.4,
+        "p99": 16.7,
+        "max": 16.800000000000182,
+        "raw": {
+          "p50": 8.3,
+          "p95": 8.4,
+          "p99": 8.5,
+          "max": 16.800000000000182
+        },
+        "maxBreachSamples": 0,
+        "maxUnconfirmed": false
+      },
+      "firstFrame": {
+        "p50": 4.1,
+        "p95": 5.3,
+        "p99": 5.3,
+        "max": 5.29999998807898
+      },
+      "ready": {
+        "p50": 310.3,
+        "p95": 312.1,
+        "p99": 312.1,
+        "max": 312.0999999642372
+      }
+    },
+    {
+      "label": "open coloring book",
+      "passed": true,
+      "count": 3,
+      "totalCount": 4,
+      "activation": {
+        "captured": 4,
+        "valid": 4,
+        "passed": true
+      },
+      "frames": {
+        "p50": 8.3,
+        "p95": 16.6,
+        "p99": 16.7,
+        "max": 16.699999999999818,
+        "raw": {
+          "p50": 8.3,
+          "p95": 8.4,
+          "p99": 8.5,
+          "max": 16.699999999999818
+        },
+        "maxBreachSamples": 0,
+        "maxUnconfirmed": false
+      },
+      "firstFrame": {
+        "p50": 5.3,
+        "p95": 8.3,
+        "p99": 8.3,
+        "max": 8.299999976157778
+      },
+      "ready": {
+        "p50": 41.8,
+        "p95": 44.3,
+        "p99": 44.3,
+        "max": 44.30000001192093
+      }
+    },
+    {
+      "label": "scroll coloring pages",
+      "passed": true,
+      "count": 3,
+      "totalCount": 4,
+      "activation": {
+        "captured": 4,
+        "valid": 4,
+        "passed": true
+      },
+      "frames": {
+        "p50": 8.3,
+        "p95": 8.4,
+        "p99": 8.4,
+        "max": 8.400000000000546,
+        "raw": {
+          "p50": 8.3,
+          "p95": 8.4,
+          "p99": 8.4,
+          "max": 8.5
+        },
+        "maxBreachSamples": 0,
+        "maxUnconfirmed": false
+      },
+      "firstFrame": {
+        "p50": 0.6,
+        "p95": 6,
+        "p99": 6,
+        "max": 6.000000011920747
+      },
+      "ready": {
+        "p50": 739.5,
+        "p95": 757.5,
+        "p99": 757.5,
+        "max": 757.5
+      }
+    },
+    {
+      "label": "select coloring page",
+      "passed": true,
+      "count": 3,
+      "totalCount": 4,
+      "activation": {
+        "captured": 4,
+        "valid": 4,
+        "passed": true
+      },
+      "frames": {
+        "p50": 8.3,
+        "p95": 8.4,
+        "p99": 25,
+        "max": 25,
+        "raw": {
+          "p50": 8.3,
+          "p95": 8.4,
+          "p99": 8.4,
+          "max": 25
+        },
+        "maxBreachSamples": 0,
+        "maxUnconfirmed": false
+      },
+      "firstFrame": {
+        "p50": 2.9,
+        "p95": 7.3,
+        "p99": 7.3,
+        "max": 7.299999999999272
+      },
+      "ready": {
+        "p50": 78.6,
+        "p95": 85.5,
+        "p99": 85.5,
+        "max": 85.5
+      }
+    },
+    {
+      "label": "clear coloring page",
+      "passed": true,
+      "count": 3,
+      "totalCount": 4,
+      "activation": {
+        "captured": 4,
+        "valid": 4,
+        "passed": true
+      },
+      "frames": {
+        "p50": 8.3,
+        "p95": 8.4,
+        "p99": 8.7,
+        "max": 8.699999999998909,
+        "raw": {
+          "p50": 8.3,
+          "p95": 8.4,
+          "p99": 8.4,
+          "max": 8.699999999998909
+        },
+        "maxBreachSamples": 0,
+        "maxUnconfirmed": false
+      },
+      "firstFrame": {
+        "p50": 3.8,
+        "p95": 4.1,
+        "p99": 4.1,
+        "max": 4.100000023841858
+      },
+      "ready": {
+        "p50": 320.5,
+        "p95": 330.5,
+        "p99": 330.5,
+        "max": 330.5
+      }
+    }
+  ],
+  "samples": [
+    {
+      "label": "open coloring books",
+      "repeat": 1,
+      "warmup": true,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "DIV",
+          "x": 33,
+          "y": 623,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.699999999999818
+    },
+    {
+      "label": "open coloring book",
+      "repeat": 1,
+      "warmup": true,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.5
+    },
+    {
+      "label": "scroll coloring pages",
+      "repeat": 1,
+      "warmup": true,
+      "activation": "native-touch",
+      "eventType": "pointerdown",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerdown",
+          "hit": "DIV",
+          "x": 182.6666717529297,
+          "y": 555.6666870117188,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.599999999999454
+    },
+    {
+      "label": "select coloring page",
+      "repeat": 1,
+      "warmup": true,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 25
+    },
+    {
+      "label": "clear coloring page",
+      "repeat": 1,
+      "warmup": true,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117.66667175292969,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.5
+    },
+    {
+      "label": "open coloring books",
+      "repeat": 2,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "DIV",
+          "x": 33,
+          "y": 623,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.699999999999818
+    },
+    {
+      "label": "open coloring book",
+      "repeat": 2,
+      "warmup": false,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.599999999999454
+    },
+    {
+      "label": "scroll coloring pages",
+      "repeat": 2,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerdown",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerdown",
+          "hit": "DIV",
+          "x": 182.6666717529297,
+          "y": 555.6666870117188,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.5
+    },
+    {
+      "label": "select coloring page",
+      "repeat": 2,
+      "warmup": false,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.400000000001455
+    },
+    {
+      "label": "clear coloring page",
+      "repeat": 2,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117.66667175292969,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.400000000001455
+    },
+    {
+      "label": "open coloring books",
+      "repeat": 3,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "DIV",
+          "x": 33,
+          "y": 623,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.59999999999991
+    },
+    {
+      "label": "open coloring book",
+      "repeat": 3,
+      "warmup": false,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.699999999999818
+    },
+    {
+      "label": "scroll coloring pages",
+      "repeat": 3,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerdown",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerdown",
+          "hit": "DIV",
+          "x": 182.6666717529297,
+          "y": 555.6666870117188,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.5
+    },
+    {
+      "label": "select coloring page",
+      "repeat": 3,
+      "warmup": false,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 25
+    },
+    {
+      "label": "clear coloring page",
+      "repeat": 3,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117.66667175292969,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.5
+    },
+    {
+      "label": "open coloring books",
+      "repeat": 4,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "DIV",
+          "x": 33,
+          "y": 623,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.800000000000182
+    },
+    {
+      "label": "open coloring book",
+      "repeat": 4,
+      "warmup": false,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 234,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 16.699999999999818
+    },
+    {
+      "label": "scroll coloring pages",
+      "repeat": 4,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerdown",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerdown",
+          "hit": "DIV",
+          "x": 182.6666717529297,
+          "y": 555.6666870117188,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.400000000000546
+    },
+    {
+      "label": "select coloring page",
+      "repeat": 4,
+      "warmup": false,
+      "activation": "webdriver-element-click",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 101,
+          "y": 259,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 25
+    },
+    {
+      "label": "clear coloring page",
+      "repeat": 4,
+      "warmup": false,
+      "activation": "native-touch",
+      "eventType": "pointerup",
+      "trusted": true,
+      "armedEvents": [
+        {
+          "type": "pointerup",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117.66667175292969,
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "hit": "BUTTON",
+          "x": 245,
+          "y": 117,
+          "trusted": true
+        }
+      ],
+      "postActionGapMaxMs": 8.699999999998909
+    }
+  ]
+}

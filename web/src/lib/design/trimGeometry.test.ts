@@ -1,0 +1,340 @@
+import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { PALETTE_COLORS } from '../palette';
+import {
+  LANDSCAPE_COLORS,
+  LANDSCAPE_FIRST_TRIM_RANK,
+  landscapeTrimRank,
+} from '../landscapeToolbar';
+import {
+  COLOR_MENU_GEOMETRY,
+  HEX_GRID_GEOMETRY,
+  PALETTE_COLUMN_GEOMETRY,
+  PALETTE_ROW_GEOMETRY,
+  type TrimStep,
+  colorMenuTrimSteps,
+  hexGridColumnLadderPx,
+  hexGridRowLadderPx,
+  landscapeSingleColumnTrimSteps,
+  portraitTrimSteps,
+} from './trimGeometry';
+
+// The ladders are CSS, so the only thing that makes trimGeometry.ts a source of
+// truth rather than a second copy is this file reading the components back off
+// disk (precedent: src/app.html.test.ts). Both halves are parsed: the geometry
+// declarations the module restates — a swatch's width, the honeycomb's row
+// pitch, the 90vh cap — and every `@media` threshold derived from them. Bump
+// `width: 60px` without re-deriving the ladder and this goes red, which is the
+// drift the hand-computed thresholds could never catch.
+
+function sourceFile(path: string): string {
+  return readFileSync(new URL(path, import.meta.url), 'utf8');
+}
+
+function styleBlock(path: string): string {
+  const source = sourceFile(path);
+  const match = source.match(/<style>([\s\S]*)<\/style>/);
+  expect(match, `${path} has a <style> block`).not.toBeNull();
+  return match![1];
+}
+
+/** Body of the brace-matched block introduced by `header`, e.g. `.picker {`. */
+function blockAfter(css: string, header: string, from = 0): string {
+  const at = css.indexOf(header, from);
+  expect(at, `expected \`${header}\` in the style block`).toBeGreaterThan(-1);
+  const open = css.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < css.length; i++) {
+    if (css[i] === '{') depth += 1;
+    else if (css[i] === '}' && (depth -= 1) === 0) return css.slice(open + 1, i);
+  }
+  throw new Error(`unbalanced braces after \`${header}\``);
+}
+
+/** The leading term of a `calc(<n><unit> * …)` counts, so a value the component
+ *  scales for roomy viewports is still read at its unscaled size. */
+function declaration(body: string, property: string, unit: string): number {
+  const match = body.match(
+    new RegExp(`(?:^|[\\s;{])${property}:\\s*(?:calc\\(\\s*)?(-?\\d+(?:\\.\\d+)?)${unit}`)
+  );
+  expect(match, `expected a \`${property}\` declaration in ${unit}`).not.toBeNull();
+  return Number(match![1]);
+}
+
+// The inline (side) component of a `padding` shorthand: the second value when
+// the shorthand gives block and inline separately, else its only value.
+function inlinePaddingPx(body: string): number {
+  const match = body.match(/(?:^|[\s;{])padding:\s*([^;]+);/);
+  expect(match, 'expected a `padding` declaration').not.toBeNull();
+  const values = match![1].trim().split(/\s+/);
+  const inline = values.length >= 2 ? values[1] : values[0];
+  return declaration(`padding: ${inline};`, 'padding', 'px');
+}
+
+function px(body: string, property: string, variables = body): number {
+  const variable = body.match(
+    new RegExp(`(?:^|[\\s;{])${property}:\\s*(calc\\(\\s*-1\\s*\\*\\s*)?var\\((--[\\w-]+)\\)`)
+  );
+  if (!variable) return declaration(body, property, 'px');
+  const value = declaration(variables, variable[2], 'px');
+  return variable[1] ? -value : value;
+}
+
+function variable(body: string, property: string): string {
+  const match = body.match(new RegExp(`(?:^|[\\s;{])${property}:\\s*var\\((--[\\w-]+)\\)`));
+  expect(match, `expected a variable for ${property}`).not.toBeNull();
+  return match![1];
+}
+
+/** `max-height: 90vh` → 0.9, the fraction of the viewport the grid may use. */
+const viewportFraction = (body: string, property: string, unit: 'vw' | 'vh') =>
+  declaration(body, property, unit) / 100;
+
+interface MediaRule {
+  condition: string;
+  body: string;
+}
+
+function mediaRules(css: string): MediaRule[] {
+  return [...css.matchAll(/@media ([^{]+)\{/g)].map((match) => ({
+    condition: match[1].trim(),
+    body: blockAfter(css, match[0], match.index),
+  }));
+}
+
+/** `@container <name> (<feature>)` rules, read the same way as media rules. */
+function containerRules(css: string, name: string): MediaRule[] {
+  return [...css.matchAll(new RegExp(`@container ${name} ([^{]+)\\{`, 'g'))].map((match) => ({
+    condition: match[1].trim(),
+    body: blockAfter(css, match[0], match.index),
+  }));
+}
+
+function feature(rule: MediaRule, name: string): number | null {
+  const match = rule.condition.match(new RegExp(`\\(${name}:\\s*(\\d+(?:\\.\\d+)?)px\\)`));
+  return match ? Number(match[1]) : null;
+}
+
+const has = (rule: MediaRule, name: string) => feature(rule, name) !== null;
+
+/** Rules a ladder could own — the rest select a layout or a hover capability. */
+const thresholdRules = (rules: MediaRule[]) => rules.filter((rule) => /px\)/.test(rule.condition));
+
+const hiddenRanks = (rule: MediaRule) =>
+  [...rule.body.matchAll(/data-trim-rank='(\d+)'/g)].map((match) => Number(match[1]));
+
+/** A ladder rule read back as the step it implements. */
+function trimStep(rule: MediaRule, threshold: 'max-width' | 'max-height'): TrimStep {
+  return { thresholdPx: feature(rule, threshold)!, ranks: hiddenRanks(rule) };
+}
+
+describe('ColorPalette', () => {
+  const css = styleBlock('../components/ColorPalette.svelte');
+  const swatchCss = styleBlock('../components/ColorSwatch.svelte');
+  const rules = mediaRules(css);
+  const colorCount = PALETTE_COLORS.length;
+
+  const landscape = rules.filter((rule) => rule.condition.includes('orientation: landscape'));
+  const singleColumnTrim = landscape.filter(
+    (rule) => has(rule, 'min-height') && has(rule, 'max-height')
+  );
+  const layoutSwitch = landscape.filter((rule) => rule.body.includes('grid-template-columns'));
+  const twoColumnTrim = landscape.filter(
+    (rule) => !has(rule, 'min-height') && has(rule, 'max-height') && hiddenRanks(rule).length > 0
+  );
+  const phonePaletteHidden = landscape.filter(
+    (rule) => rule.body.includes('.color-palette {') && rule.body.includes('display: none')
+  );
+  const portraitTrim = rules.filter(
+    (rule) => rule.condition.includes('orientation: portrait') && has(rule, 'max-width')
+  );
+
+  it('classifies every @media rule, so no ladder is silently skipped', () => {
+    const classified = [
+      ...singleColumnTrim,
+      ...layoutSwitch,
+      ...twoColumnTrim,
+      ...portraitTrim,
+      ...phonePaletteHidden,
+    ];
+    expect(new Set(classified).size).toBe(classified.length);
+    expect(classified).toHaveLength(thresholdRules(rules).length);
+    expect(layoutSwitch).toHaveLength(0);
+    expect(phonePaletteHidden).toHaveLength(1);
+  });
+
+  it('restates the landscape column geometry', () => {
+    const palette = blockAfter(css, '.color-palette {');
+    const swatch = blockAfter(swatchCss, '.color-swatch {');
+    expect(PALETTE_COLUMN_GEOMETRY.swatchPx).toBe(px(swatch, 'width'));
+    expect(px(swatch, 'height')).toBe(px(swatch, 'width'));
+    expect(PALETTE_COLUMN_GEOMETRY.gapPx).toBe(px(palette, 'gap'));
+    expect(PALETTE_COLUMN_GEOMETRY.paddingPx).toBe(2 * inlinePaddingPx(palette));
+  });
+
+  it('restates the portrait row geometry', () => {
+    const palette = blockAfter(
+      blockAfter(css, '@media (orientation: portrait) {'),
+      '.color-palette {'
+    );
+    const swatch = blockAfter(
+      blockAfter(swatchCss, '@media (orientation: portrait) {'),
+      '.color-swatch {'
+    );
+    expect(PALETTE_ROW_GEOMETRY.swatchPx).toBe(px(swatch, 'width'));
+    expect(px(swatch, 'height')).toBe(px(swatch, 'width'));
+    expect(PALETTE_ROW_GEOMETRY.gapPx).toBe(px(palette, 'gap'));
+    expect(PALETTE_ROW_GEOMETRY.paddingPx).toBe(2 * inlinePaddingPx(palette));
+  });
+
+  it('keeps orientation-driven swatch geometry out of interaction transitions', () => {
+    const swatch = blockAfter(swatchCss, '.color-swatch {');
+    expect(swatch).not.toMatch(/transition:\s*all\b/);
+    expect(swatch).not.toMatch(/\b(?:width|height)\s+var\(--duration-/);
+    expect(swatch).toContain('transform var(--duration-base) ease');
+  });
+
+  it('trims the single column a swatch at a time, floored at that same height', () => {
+    expect(singleColumnTrim.map((rule) => trimStep(rule, 'max-height'))).toEqual(
+      landscapeSingleColumnTrimSteps(colorCount)
+    );
+    for (const rule of singleColumnTrim) {
+      expect(feature(rule, 'min-height')).toBe(TABLET_MIN_SIDE_PX);
+    }
+  });
+
+  it('has no two-column trim ladder behind the phone color flyout', () => {
+    expect(twoColumnTrim).toEqual([]);
+  });
+
+  it('drops a portrait swatch at a time', () => {
+    expect(portraitTrim.map((rule) => trimStep(rule, 'max-width'))).toEqual(
+      portraitTrimSteps(colorCount)
+    );
+  });
+
+  it('gives every swatch below the roomiest step a rank to be trimmed by', () => {
+    const trimmed = new Set(
+      [...singleColumnTrim, ...twoColumnTrim, ...portraitTrim, ...phonePaletteHidden].flatMap(
+        hiddenRanks
+      )
+    );
+    expect([...trimmed].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: colorCount }, (_, rank) => rank)
+    );
+  });
+});
+
+describe('ColorPicker', () => {
+  const css = styleBlock('../components/ColorPicker.svelte');
+  const tokens = sourceFile('../../tokens.css');
+  const rules = mediaRules(css);
+  const rowTrim = rules.filter((rule) => has(rule, 'max-height'));
+  const columnTrim = rules.filter((rule) => has(rule, 'max-width'));
+  const roomyScale = rules.filter((rule) => has(rule, 'min-width') && has(rule, 'min-height'));
+
+  it('classifies every @media rule, so no ladder is silently skipped', () => {
+    const classified = [...rowTrim, ...columnTrim, ...roomyScale];
+    expect(new Set(classified).size).toBe(classified.length);
+    expect(classified).toHaveLength(thresholdRules(rules).length);
+  });
+
+  // The ladders are derived from the unscaled geometry, so a scale step that
+  // reached down into one would silently invalidate every breakpoint below it.
+  // Its floor has to clear the widest rung — which the step is only free to
+  // ignore because it is above every one of them. dialogTabletScaling.test.ts
+  // owns the other half: that the floor is the shared large-tablet one.
+  it('keeps the roomy scale step clear of every trim rung', () => {
+    expect(roomyScale).toHaveLength(1);
+    const floor = Math.min(
+      feature(roomyScale[0], 'min-width')!,
+      feature(roomyScale[0], 'min-height')!
+    );
+    expect(floor).toBeGreaterThan(Math.max(...hexGridRowLadderPx(), ...hexGridColumnLadderPx()));
+  });
+
+  it('restates the honeycomb geometry', () => {
+    const dialog = blockAfter(css, '.color-picker {');
+    const picker = blockAfter(css, '.picker {');
+    const hexagon = blockAfter(css, '.hexagon {');
+    const firstRow = blockAfter(css, '.row {');
+    const laterRow = blockAfter(css, '.row:not(:first-child) {');
+    const offsetRow = blockAfter(css, '.r8 {');
+
+    expect(HEX_GRID_GEOMETRY.firstRowPx).toBe(px(hexagon, 'height'));
+    expect(HEX_GRID_GEOMETRY.columnPitchPx).toBe(px(hexagon, 'width'));
+    // Later rows overlap upward, so the pitch is the hexagon minus that pull.
+    expect(HEX_GRID_GEOMETRY.rowPitchPx).toBe(
+      px(hexagon, 'height') + px(laterRow, 'margin-top', picker)
+    );
+    expect(HEX_GRID_GEOMETRY.rowOffsetPx).toBe(px(offsetRow, 'margin-left', picker));
+    expect(HEX_GRID_GEOMETRY.paddingPx).toBe(2 * px(picker, 'padding', tokens));
+    expect(HEX_GRID_GEOMETRY.viewportHeightFraction).toBe(
+      viewportFraction(dialog, 'max-height', 'vh')
+    );
+    // The width cap is the shared dialog gutter, which app.css declares once
+    // and every dialog card consumes; the ladder adds its floor on each side.
+    expect(dialog).toContain('max-width: calc(100vw - 2 * var(--modal-gutter));');
+    const app = sourceFile('../../app.css');
+    const gutterMin = app.match(/--modal-gutter-min:\s*(\d+)px/);
+    expect(gutterMin, 'app.css declares --modal-gutter-min in px').not.toBeNull();
+    expect(HEX_GRID_GEOMETRY.widthGutterPx).toBe(Number(gutterMin![1]));
+    // firstRowPx counts the first hexagon whole, which only holds while the
+    // first row's negative margin is cancelled by the picker's own.
+    expect(px(picker, 'margin-top') + px(firstRow, 'margin-top', picker)).toBe(0);
+  });
+
+  it('drops a honeycomb row at a time', () => {
+    expect(rowTrim.map((rule) => feature(rule, 'max-height'))).toEqual(hexGridRowLadderPx());
+  });
+
+  it('drops a honeycomb column at a time', () => {
+    expect(columnTrim.map((rule) => feature(rule, 'max-width'))).toEqual(hexGridColumnLadderPx());
+  });
+});
+
+describe('ColorMenu', () => {
+  const css = styleBlock('../components/ColorMenu.svelte');
+  const rules = containerRules(css, 'color-menu');
+  const colorCount = LANDSCAPE_COLORS.length;
+
+  it('queries the sizing box it sits in, and nothing else', () => {
+    expect(css).toContain('container: color-menu / inline-size;');
+    expect(mediaRules(css)).toEqual([]);
+    expect(rules).toHaveLength((css.match(/@container /g) ?? []).length);
+  });
+
+  it('restates the row geometry', () => {
+    const menu = blockAfter(css, '.color-menu-space .color-menu {');
+    const option = blockAfter(css, '.color-option {');
+    expect(COLOR_MENU_GEOMETRY.swatchPx).toBe(px(option, 'width', menu));
+    expect(px(option, 'height', menu)).toBe(px(option, 'width', menu));
+    expect(COLOR_MENU_GEOMETRY.gapPx).toBe(px(menu, 'gap'));
+    expect(COLOR_MENU_GEOMETRY.paddingPx).toBe(2 * px(menu, 'padding'));
+  });
+
+  it('keeps bare toolbar spacing tied to the menu geometry', () => {
+    const menu = blockAfter(css, '.color-menu-space .color-menu {');
+    const bare = blockAfter(
+      sourceFile('../../app.css'),
+      "html[data-toolbar='bare'] .actions-panel .color-menu {"
+    );
+    for (const property of ['padding', 'gap']) {
+      expect(variable(bare, property)).toBe(variable(menu, property));
+    }
+  });
+
+  it('drops a swatch at a time as the room to the right of the Color Button narrows', () => {
+    expect(rules.map((rule) => trimStep(rule, 'max-width'))).toEqual(
+      colorMenuTrimSteps(colorCount, LANDSCAPE_FIRST_TRIM_RANK)
+    );
+  });
+
+  it('gives every swatch it carries a rank to be trimmed by', () => {
+    const trimmed = rules.flatMap(hiddenRanks).sort((a, b) => a - b);
+    expect(trimmed).toEqual(
+      LANDSCAPE_COLORS.map(({ hex }) => landscapeTrimRank(hex)).sort((a, b) => a - b)
+    );
+  });
+});

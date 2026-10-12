@@ -1,0 +1,16 @@
+--- a/lib/es/types/VarTypes.d.ts
++++ b/lib/es/types/VarTypes.d.ts
+@@ -93,11 +93,11 @@
+   | Color<T>
+   | Url<T>
+   | Image<T>
+-  | Integer<T>
++  | (T extends number ? Integer<T> : never)
+   | LengthPercentage<T>
+   | Length<T>
+   | Percentage<T>
+-  | Num<T>
++  | (T extends number ? Num<T> : never)
+   | Resolution<T>
+   | Time<T>
+   | TransformFunction<T>

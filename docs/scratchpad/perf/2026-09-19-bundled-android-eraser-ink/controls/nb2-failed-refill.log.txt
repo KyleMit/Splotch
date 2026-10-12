@@ -1,0 +1,5 @@
+canvas {"x":0,"y":108,"width":360,"height":672} scale 3
+Error: the eraser refill after pass 1 failed: {"tiles":20,"backings":["180x268","180x268","180x268","180x268","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269","180x269"],"transparentTiles":[4,10,11,14,15]}
+    at driveEraserPasses (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:515:13)
+    at async measure (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:700:16)
+    at async captureBundledFrames (file://<checkout>/tools/perf/android/capture-bundled-frames.mjs:598:16)

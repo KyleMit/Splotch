@@ -1,0 +1,19 @@
+
+> splotch@1.6.0 perf:ios:xcuitest:actions
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-actions.mjs --appium-url=http://127.0.0.1:4725 --native-app --native-webview-class=android.webkit.WebView --capabilities-file=~/.splotch-rig/evidence/1870/android-native/caps.json --device-id=<android-phone> --actions=coloring --output=perf-profiles/coloring-android-r1/p1/actions.json --label=coloring-android-r1-p1
+
+
+Action sweep 1/4
+Error: Timed out waiting for coloring pages to scroll
+Scroll state: {"dialog":{"clientHeight":663,"open":true,"overflowY":"auto","scrollHeight":803,"scrollTop":0},"openDialogs":["coloring-book-dialog"],"probe":{"armedEvents":[],"error":null,"eventType":"uncaptured","trusted":null},"touchGesture":{"x":540,"startY":1667,"endY":772}}
+    at measureColoringPageScroll (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:728:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async runActionSweep (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:1928:24)
+    at async runIpadActions (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:2484:21) {
+  [cause]: Error: Timed out waiting for coloring pages to scroll
+      at waitForReady (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:483:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async measureColoringPageScroll (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:721:15)
+      at async runActionSweep (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:1928:24)
+      at async runIpadActions (file://~/Code/Splotch/.claude/worktrees/bridge-cse_01AVuVKgtriZAaK11SgWXsuM/tools/perf/ios/capture-xcuitest-actions.mjs:2484:21)
+}

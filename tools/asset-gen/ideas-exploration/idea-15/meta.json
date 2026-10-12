@@ -1,0 +1,95 @@
+{
+  "idea": 15,
+  "title": "Punch-inpaint quality on dense line work",
+  "verdict": "WORKED",
+  "oneline": "No visible smearing in composites; nearest-bleed vindicated, per-region mean adds fringe risk without benefit",
+  "summary": "Ranked all 188 fills by punched % (top 18 are night fills; fire-tall.night 14.6% worst) and crop-audited 39 multi-color junction hotspots on the 13 densest pages at 3x. The shipped fills in isolation do show the predicted zipper-seam bleed, but the app composite (pen multiply / chalk screen) covers it completely at native and display scale — no wrong-color smear reaches a visible pixel. Per-region mean-color inpaint was implemented and compared same-spot: cleaner mid-stroke in isolation, but it introduces a flat-mean-vs-local-shading fringe on gradient fills, is visually identical in the composite (display-scale diffs confined to a 1px antialias band on every stroke, not junctions), and has mixed file-size impact (+38% on one page). Recommendation: keep nearest-bleed.",
+  "tried": [
+    "Recomputed punched-% ranking for all 188 raw fills from the exact punch mask math",
+    "Junction hotspot finder (>=3 distinct colors around a masked pixel, tile-aggregated) on the 13 densest pages",
+    "2-4x same-spot crops: raw vs shipped fill vs simulated app composite (multiply/screen per app.css) at 39 hotspots",
+    "Per-region mean-color inpaint (connected-component labeling + label-propagating ring peel) on 8 pages",
+    "Display-scale (390/844px) composite simulation, quantitative per-pixel diff and diff heatmaps between the two variants",
+    "Baseline offline gates (drift + eye audits) on the named pages; webp size comparison at shipped encode settings"
+  ],
+  "worked": [
+    "Hotspot finder reliably located wheels, grilles, rail junctions, and lattices",
+    "Per-region mean inpaint implemented end-to-end, 0.16-0.67s/page, encodes cleanly",
+    "Composite simulation reproduced the app's blend math well enough to judge visibility"
+  ],
+  "failed": [
+    "The idea's core hypothesis: no junction smearing is visible through the overlay at any audited hotspot, native or display scale",
+    "Per-region mean introduces a new native-zoom fringe defect on shaded regions (flat mean mismatches local color at the mask boundary)"
+  ],
+  "limitations": [
+    "Composites simulated in sharp, not browser-rendered (lanczos3 downscale, exact CSS blend math)",
+    "Hotspot sampling stride 3px, 3 tiles/page — a single-pixel pathological junction could be missed",
+    "Deep audit covered top-10 punched pages (all night) plus 3 extra variants; thinner light masks behaved the same",
+    "Standard gates score raw fills, so they cannot detect punch-inpaint changes either way; region-mean was validated visually/quantitatively, not by gates"
+  ],
+  "comparisons": [
+    {
+      "label": "train-wide light, rail/tie/grass junction — fill in isolation",
+      "before": "img/train-light-shipped-fill.png",
+      "after": "img/train-light-regionmean-fill.png",
+      "note": "Nearest-bleed zipper seam vs region-mean's flat strokes with pale-green fringe on the shaded grass"
+    },
+    {
+      "label": "train-wide light, same spot — app composite at native zoom",
+      "before": "img/train-light-shipped-composite.png",
+      "after": "img/train-light-regionmean-composite.png",
+      "note": "Indistinguishable — the overlay covers both inpaints completely"
+    },
+    {
+      "label": "train-wide light, same spot — simulated phone display (4x zoom)",
+      "before": "img/train-light-display-shipped.png",
+      "after": "img/train-light-display-regionmean.png",
+      "note": "Identical to the eye at display scale"
+    },
+    {
+      "label": "fire-tall night, wheel-arch 4-color junction — fill in isolation",
+      "before": "img/fire-night-shipped-fill.png",
+      "after": "img/fire-night-regionmean-fill.png",
+      "note": "Bright rim-contaminated bleed vs flat means with boundary halos"
+    },
+    {
+      "label": "fire-tall night, same spot — app composite",
+      "before": "img/fire-night-shipped-composite.png",
+      "after": "img/fire-night-regionmean-composite.png",
+      "note": "Both clean; screened chalk owns the strokes"
+    },
+    {
+      "label": "monster-tall night, suspension lattice — fill in isolation",
+      "before": "img/monster-night-shipped-fill.png",
+      "after": "img/monster-night-regionmean-fill.png",
+      "note": "Densest line work in the catalog; zipper vs flat"
+    }
+  ],
+  "images": [
+    { "file": "img/train-light-raw.png", "caption": "Raw fill (fill-src) at the train junction hotspot — ground-truth line copy intact" },
+    { "file": "img/train-light-shipped-fill.png", "caption": "Shipped nearest-bleed fill in isolation: zipper seam under every stroke" },
+    { "file": "img/train-light-regionmean-fill.png", "caption": "Region-mean fill: flat strokes, pale fringe where region mean mismatches shaded grass" },
+    { "file": "img/train-light-shipped-composite.png", "caption": "Shipped fill under multiplied pen — seam fully covered" },
+    { "file": "img/train-light-regionmean-composite.png", "caption": "Region-mean under multiplied pen — indistinguishable from shipped" },
+    { "file": "img/train-light-display-shipped.png", "caption": "Phone-scale composite, shipped punch (4x zoom)" },
+    { "file": "img/train-light-display-regionmean.png", "caption": "Phone-scale composite, region-mean punch (4x zoom) — identical" },
+    { "file": "img/fire-night-shipped-fill.png", "caption": "fire-tall night shipped fill: rim-contaminated bright bleed at wheel-arch junction" },
+    { "file": "img/fire-night-regionmean-fill.png", "caption": "fire-tall night region-mean fill: flat means, boundary halos" },
+    { "file": "img/fire-night-shipped-composite.png", "caption": "fire-tall night composite (screened chalk) — clean" },
+    { "file": "img/fire-night-regionmean-composite.png", "caption": "fire-tall night region-mean composite — no visible difference" },
+    { "file": "img/monster-night-shipped-fill.png", "caption": "monster-tall night shipped fill: zipper seams through the suspension lattice" },
+    { "file": "img/monster-night-regionmean-fill.png", "caption": "monster-tall night region-mean fill" },
+    { "file": "img/monster-night-shipped-composite.png", "caption": "monster-tall night composite — lattice junctions clean" },
+    { "file": "img/flower-night-shipped-composite.png", "caption": "flower-wide night composite at stem/leaf/sky junction — clean" },
+    { "file": "img/fire-night-diffmap.png", "caption": "Display-scale variant diff (magenta = delta>15): a 1px band on every stroke edge, not junction-specific" },
+    { "file": "img/train-light-diffmap.png", "caption": "Same diff map for train-wide light" }
+  ],
+  "code": [
+    { "title": "Punched-% ranking (mask math replica, no writes)", "file": "code/idea15-rank-punched.mjs" },
+    { "title": "Junction hotspot finder + native crop auditor", "file": "code/idea15-hotspots.mjs" },
+    { "title": "Per-region mean-color inpaint punch", "file": "code/idea15-region-punch.mjs" },
+    { "title": "Same-spot region-mean + display-scale crop generator", "file": "code/idea15-compare.mjs" },
+    { "title": "Display-scale quantitative diff", "file": "code/idea15-diff.mjs" },
+    { "title": "Variant diff heatmap generator", "file": "code/idea15-heatmap.mjs" }
+  ]
+}

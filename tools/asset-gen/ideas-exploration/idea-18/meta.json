@@ -1,0 +1,55 @@
+{
+  "idea": 18,
+  "title": "Deterministic fills: model picks palette, code paints",
+  "verdict": "WORKED",
+  "oneline": "End-to-end success: perfect registration, coherent themes, mermaid rivals shipped fill",
+  "summary": "Flood-fill segmentation of the pen outlines sealed every stroke-bounded region with ZERO gap-closing on all three pages (28/34/80 regions); the only enclosure failure was compositional (circle-tall's open grass-mound arc), fixed by a hierarchical background-only coarse split. One gemini-2.5-flash vision call per page labeled a numbered region map against a 31-name curated palette with matched light/night hexes, and programmatic painting + the punch's ring bleed produced shipped-form fills scoring 100% keep/localKeep. The hard page (mermaid) is visually competitive with the shipped model-painted fill; the simplest page (circle) looks flattest, where the model's soft gradients did the most work.",
+  "tried": [
+    "Flood-fill segmentation of pen outlines at native res with punch-threshold ink bar (luma<150)",
+    "Morphological close radius sweep (0/4/8/12) for gap sealing",
+    "Page-border-as-ink framing",
+    "Hierarchical refine: coarse close-12 partition splits the fine background region only",
+    "Numbered random-tint region map + per-region stats to gemini-2.5-flash, strict-JSON region->palette plan covering light+night in one call",
+    "Programmatic paint + punch-style ring bleed producing shipped fills-only form directly",
+    "outline-match gates and multiply/night-composite comparisons vs shipped fills"
+  ],
+  "worked": [
+    "Strokes seal at close radius 0 on all three pages — normalized outlines are watertight; segmentation never exploded (mermaid: 66 labeled regions, all correctly identified by the model)",
+    "100% keep / 100% localKeep on all six fills — registration perfect by construction",
+    "One theme-neutral palette name per region gives perfect light/night coherence for free",
+    "Vision labeling at 66 regions: hair/pupils/catchlights/shell bra/scales/rock all named right",
+    "Anti-bias prompt line fixed tint leakage (purple-tinted face had been colored lavender; became skin-peach)",
+    "Background-only coarse split sealed the open grass mound without harming interior detail"
+  ],
+  "failed": [
+    "Global morphological close (r=12) swallowed eye whites, catchlights, bubble highlights — unusable alone",
+    "Splitting ALL coarse-divided regions shredded the mermaid's hair into inconsistently-colored fragments",
+    "First mermaid plan colored the face lavender — random region tints bias the model without an explicit warning"
+  ],
+  "limitations": [
+    "Flat fills lose gradients/soft shading; simplest pages (circle) suffer most — hybrid one-pass shading would reintroduce the drift risk and need re-gating",
+    "Open compositions (not stroke gaps) are the real segmentation risk; background-only split covered the one case here",
+    "Color-plan variance across calls (same page: sky-blue vs tan background) — plans should be committed JSON artifacts",
+    "Hand-picked night palette runs darker than shipped night fills; needs one global calibration pass",
+    "Regions <80px are bled over; a meaningful tiny feature under the bar would be erased"
+  ],
+  "comparisons": [
+    {"label": "mermaid-tall light (hard case)", "before": "creatures-mermaid-tall-shipped-light.webp", "after": "creatures-mermaid-tall-det-light.webp", "note": "Deterministic is genuinely competitive; loses cheek blush/scale shading"},
+    {"label": "mermaid-tall night", "before": "creatures-mermaid-tall-shipped-night.webp", "after": "creatures-mermaid-tall-det-night.webp", "note": "Coherent and vivid; tan background a plan-variance miss vs shipped navy"},
+    {"label": "balloon-tall light", "before": "objects-balloon-tall-shipped-light.webp", "after": "objects-balloon-tall-det-light.webp", "note": "Acceptable but more candy-colored than shipped"},
+    {"label": "balloon-tall night", "before": "objects-balloon-tall-shipped-night.webp", "after": "objects-balloon-tall-det-night.webp", "note": "Chalk-only eyes flow through automatically via chalk punch"},
+    {"label": "circle-tall light (simplest)", "before": "shapes-circle-tall-shipped-light.webp", "after": "shapes-circle-tall-det-light.webp", "note": "Weakest result: flatness shows most on the simplest page"},
+    {"label": "circle-tall night", "before": "shapes-circle-tall-shipped-night.webp", "after": "shapes-circle-tall-det-night.webp", "note": "Night palette runs darker than shipped's luminous tones"}
+  ],
+  "images": [
+    {"file": "shapes-circle-tall-regions.webp", "caption": "circle-tall region map (28 regions, mound sealed by background-only coarse split)"},
+    {"file": "objects-balloon-tall-regions.webp", "caption": "balloon-tall region map (34 regions, sealed at close radius 0)"},
+    {"file": "creatures-mermaid-tall-regions.webp", "caption": "mermaid-tall region map (66 labeled regions — segmentation did not explode)"}
+  ],
+  "code": [
+    {"title": "Full pipeline: segment / plan / paint / compare", "file": "code/idea18-deterministic-fill.mjs"},
+    {"title": "Gemini region->color plan, circle-tall", "file": "code/shapes-circle-tall-plan.json"},
+    {"title": "Gemini region->color plan, balloon-tall", "file": "code/objects-balloon-tall-plan.json"},
+    {"title": "Gemini region->color plan, mermaid-tall", "file": "code/creatures-mermaid-tall-plan.json"}
+  ]
+}

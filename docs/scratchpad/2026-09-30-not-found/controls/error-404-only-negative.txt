@@ -1,0 +1,49 @@
+$ vitest run --config vitest.webSsr.config.ts src/routes/errorPage.webSsr.test.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./standalonePageEntries" without a file extension (vitest.webSsr.config.ts:3:39). Add the file extension
+  - import "./vitest.config" without a file extension (vitest.webSsr.config.ts:4:48). Add the file extension
+  - import "./standalonePageEntries" without a file extension (vitest.config.ts:3:39). Add the file extension
+  - import "./defines" without a file extension (vitest.config.ts:4:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /Users/kylemit/.codex/worktrees/ed28/Splotch/web
+
+ ❯ src/routes/errorPage.webSsr.test.ts (5 tests | 4 failed) 19ms
+   ❯ SvelteKit error page (5)
+     × keeps status 400 on the crash recovery screen 3ms
+     × keeps status 403 on the crash recovery screen 2ms
+     × keeps status 500 on the crash recovery screen 2ms
+     × keeps status 503 on the crash recovery screen 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/routes/errorPage.webSsr.test.ts > SvelteKit error page > keeps status 400 on the crash recovery screen
+ FAIL  src/routes/errorPage.webSsr.test.ts > SvelteKit error page > keeps status 403 on the crash recovery screen
+ FAIL  src/routes/errorPage.webSsr.test.ts > SvelteKit error page > keeps status 500 on the crash recovery screen
+ FAIL  src/routes/errorPage.webSsr.test.ts > SvelteKit error page > keeps status 503 on the crash recovery screen
+AssertionError: expected undefined to be 'Oops!' // Object.is equality
+
+- Expected:
+"Oops!"
+
++ Received:
+undefined
+
+ ❯ src/routes/ErrorPageTestHarness.ts:60:72
+     58|       document.body.innerHTML = body;
+     59|       document.head.innerHTML = head;
+     60|       expect(document.querySelector('[role="alert"] h1')?.textContent)…
+       |                                                                        ^
+     61|       expect(document.querySelector('.error-restart')?.textContent).to…
+     62|       expect(document.querySelector('.not-found')).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 1 passed (5)
+   Start at  21:40:57
+   Duration  495ms (transform 58%, import 37%, tests 4%)
+
+
+CONTROL_EXIT=1

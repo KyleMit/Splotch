@@ -1,0 +1,61 @@
+{
+  "idea": 14,
+  "title": "Local-warp registration check (shimmer suspect)",
+  "verdict": "WORKED",
+  "oneline": "Scorer works; found 4 genuinely warped shipped pages; big-nudge hypothesis refuted",
+  "summary": "Built a tile-wise cross-correlation displacement scorer (native res, gain-based confidence) and ran it over all 188 committed raws offline in ~3 min. The big-global-nudge pages (pig-wide, excavator-wide, stegosaurus-wide) are among the cleanest — the nudge/warp correlation hypothesis is refuted. But the scorer surfaced real local warp the gates missed: shapes/star-tall's night sparkle is drawn ~12px off its chalk and renders as a visible double sparkle in the simulated composite; pterodactyl-tall (night), umbrella-wide and duck-wide (light) also carry genuine 4-10px feature drift. Proposed gate: fail confident local warp >= 4px (gain 1.3-10), warn >= 3px.",
+  "tried": [
+    "Per-tile edge-map cross-correlation (128px tiles, +/-12px search, smallest-magnitude tie-break) between source line art (chalk for night, pen for light) and each committed raw fill",
+    "Gain (best/zero-offset score) and peak (best/mean) as per-tile confidence signals",
+    "Full-catalog scan: 94 night + 94 light raws, ranked by confident local warp",
+    "Hypothesis test: 3 known big-nudge pages vs the 91-page population",
+    "Reconstructing historical nudges from the extendWith:'copy' edge-smear band",
+    "Heatmap/quiver overlays, red-vs-cyan worst-tile crops, simulated night-composite reveal crops (lib/night-composite.mjs)"
+  ],
+  "worked": [
+    "The scorer: ~1s/page offline, clean separation (87/94 night and 82/94 light raws under 2px)",
+    "Gain filter separates plateau noise (~1.0), genuine displacement (1.3-10), and missing/whitened features (>10)",
+    "Found a shipped visible defect: star-tall's night sparkle doubled in the final composite",
+    "Hypothesis answered decisively: big global nudges do NOT correlate with local warp (big-nudge pages rank 27th-89th of 94, all warpMax <= 1px)"
+  ],
+  "failed": [
+    "Historical nudge reconstruction from the edge-replication band (lossy webp + flat margins erase it), so the correlation test used only the 3 known nudge values vs population",
+    "Live run-splotch reveal-edge inspection (impractical in sandbox; simulated composite used instead)"
+  ],
+  "limitations": [
+    "Aperture problem: straight-line-only tiles slide along the line direction (shapes/triangle-wide's 13.4px is inflated; true fringe ~1-2px) — needs an orientation-dispersion guard before gating",
+    "Chalk-whitened solids leak through as false positives (space/astronaut-tall); whitening pen solids out of the reference would fix it",
+    "Dark re-inked night pages (vehicles/train-wide) give noisy fields"
+  ],
+  "comparisons": [
+    {
+      "label": "star-tall night worst tile: source vs fill lines, then what ships",
+      "before": "viz/shapes-star-tall-night-worst-tile.webp",
+      "after": "viz/shapes-star-tall-night-worst-tile-composite.webp",
+      "note": "red=chalk sparkle, cyan=fill's sparkle ~12px up-left; the composite shows both — a double sparkle in shipped dark mode"
+    },
+    {
+      "label": "genuine warp (umbrella flower) vs clean big-nudge control (pig-wide)",
+      "before": "viz/objects-umbrella-wide-light-worst-tile.webp",
+      "after": "viz/farm-pig-wide-night-worst-tile.webp",
+      "note": "umbrella's corner flower self-drifted ~5-7px (the ant-wide failure mode, shipped); pig-wide (-11 global nudge) registers perfectly"
+    }
+  ],
+  "images": [
+    { "file": "viz/shapes-star-tall-night-worst-tile.webp", "caption": "star-tall night: fill's sparkle (cyan) drawn ~12px from the chalk's (red)" },
+    { "file": "viz/shapes-star-tall-night-worst-tile-composite.webp", "caption": "Simulated final dark-mode composite: visible double sparkle at the same spot" },
+    { "file": "viz/dinosaur-pterodactyl-tall-night-worst-confident-tile.webp", "caption": "pterodactyl-tall night: background star filled offset/shrunken inside its chalk outline" },
+    { "file": "viz/objects-umbrella-wide-light-worst-tile.webp", "caption": "umbrella-wide light: corner flower self-drifted ~5-7px (14 tiles >=3px)" },
+    { "file": "viz/farm-duck-wide-light-worst-tile.webp", "caption": "duck-wide light: systematic ~3-4px fringing across the wing (18 tiles >=3px)" },
+    { "file": "viz/shapes-triangle-wide-light-worst-tile.webp", "caption": "False positive: aperture problem on a straight diagonal — true fringe only 1-2px" },
+    { "file": "viz/space-astronaut-tall-night-worst-tile.webp", "caption": "False positive: chalk-whitened solid — fill has no edges there (gain 82)" },
+    { "file": "viz/space-astronaut-tall-night-worst-tile-composite.webp", "caption": "Astronaut composite proves that tile renders correctly" },
+    { "file": "viz/farm-pig-wide-night-worst-tile.webp", "caption": "Control: pig-wide (global nudge -11) registers cleanly; its 8px tile is plateau noise (gain 1.02)" },
+    { "file": "viz/vehicles-train-wide-night-heatmap.webp", "caption": "train-wide night displacement heatmap: warp concentrated in the re-inked track rows" }
+  ],
+  "code": [
+    { "title": "Per-tile displacement scorer + full-catalog batch runner", "file": "code/warp-scan.mjs" },
+    { "title": "Heatmap, worst-tile crops, night-composite crop for one page", "file": "code/warp-viz.mjs" },
+    { "title": "Ranking + nudge-correlation hypothesis test over the scan JSON", "file": "code/analyze-warp.mjs" }
+  ]
+}
