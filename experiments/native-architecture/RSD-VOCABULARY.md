@@ -16,14 +16,20 @@ style does not create a `ScrollView`. The recovery adapter therefore uses the ex
 layout owner's 25% feedback height bound and spacing. The native controls viewport reuses the
 drawing layout owner's 45% portrait height bound and finite landscape rail. Compact paint radios
 retain their full accessible names, checked state, visible selected treatment and actual paint
-colors. Their touch size imports the drawing control owner. Status messages have a separate 25%
-bounded viewport so long messages cannot consume the entire drawing workspace. `NativePaper`
-occupies the flex remainder outside the controls and status scroll containers. These allocations
-require native geometry and visual verification; source flex bounds alone do not establish usable
-paper space. The recovery viewport preserves individual actionable children, names itself “PNG
-recovery” with the `rsd-png-recovery-viewport` identity, and retains clipped child views. Recovery
-state and scrolling stay settled while contacts are drawing. An empty recovery state allocates no
-viewport. No new PNG writer, queue capacity, persistence policy or Dismiss owner is introduced.
+colors. Paint radios are round, text-free swatches whose selected state is a ring in the paint's
+color, matching the shipping Color Swatch. Toolbar actions are icon buttons drawn from the shipping
+icon set through `RsdIcon` (react-native-svg `SvgXml` on every platform, fed by the generated
+`icons.generated.ts`); each keeps its former text as its accessible name. Clear, Save picture,
+Coloring pages and Settings sit on the toolbar; the Drawing tools sheet keeps the brush and width
+choices and the less frequent actions. Their touch size imports the drawing control owner. Status
+messages have a separate 25% bounded viewport so long messages cannot consume the entire drawing
+workspace. `NativePaper` occupies the flex remainder outside the controls and status scroll
+containers. These allocations require native geometry and visual verification; source flex bounds
+alone do not establish usable paper space. The recovery viewport preserves individual actionable
+children, names itself “PNG recovery” with the `rsd-png-recovery-viewport` identity, and retains
+clipped child views. Recovery state and scrolling stay settled while contacts are drawing. An empty
+recovery state allocates no viewport. No new PNG writer, queue capacity, persistence policy or
+Dismiss owner is introduced.
 
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The
