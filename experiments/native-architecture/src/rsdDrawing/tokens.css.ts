@@ -147,6 +147,33 @@ export const fontSizeDisplayFluid = {
   offsetPx: 17,
 } as const;
 
+// The full elliptical shipping blobs, as percentages of the box, for shapes drawn as paths.
+export const blobShapes = {
+  radiusBlob1: {
+    horizontal: [58, 42, 55, 45],
+    vertical: [45, 58, 42, 55],
+  },
+  radiusBlob2: {
+    horizontal: [45, 55, 48, 52],
+    vertical: [55, 45, 58, 42],
+  },
+  radiusBlob3: {
+    horizontal: [52, 48, 55, 45],
+    vertical: [45, 55, 45, 55],
+  },
+} as const;
+
+export const stepNumberMix = {
+  light: {
+    washPercent: 9,
+    inkPercent: 45,
+  },
+  dark: {
+    washPercent: 24,
+    inkPercent: 0,
+  },
+} as const;
+
 export const brandColors = css.defineVars({
   brand: '#ab71e1',
   onBrand: '#fff',

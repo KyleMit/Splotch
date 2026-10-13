@@ -12,3 +12,5 @@ export const RSD_NATIVE_SETTINGS_SECTIONS_TEST =
   'migration/tests/rsd-native-settings-sections.test.mjs';
 export const RSD_NATIVE_BUTTON_SIZE_TEST = 'migration/tests/rsd-native-button-size.test.mjs';
 export const RSD_NATIVE_TOKEN_SPECIMEN_TEST = 'migration/tests/rsd-native-token-specimen.test.mjs';
+export const RSD_NATIVE_DESIGN_PRIMITIVES_TEST =
+  'migration/tests/rsd-native-design-primitives.test.mjs';
