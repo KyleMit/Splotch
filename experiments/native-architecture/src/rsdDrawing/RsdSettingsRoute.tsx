@@ -1,4 +1,5 @@
 import type { useDrawingProduct } from '../product/useDrawingProduct';
+import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { NativeSoundSettingsDialog } from './RsdSettingsDialog';
@@ -10,6 +11,16 @@ import { useModalPresence } from './useModalPresence';
 import type { ParentGateView } from '../parentCenter/useParentGateHold';
 import { soundSettingsActions } from './soundSettingsActions';
 import type { SliderDraft } from './useSliderDraft';
+import { openHostedPage, type HostedPage } from '../settings/hostedPages';
+
+// Every Settings link leaves the app, so each opens only through Parent Center's Viewing external
+// links check, as shipping's parentalGateLink does. The page opens inside the solving tap, which
+// keeps a web export's new tab within that tap's user activation; with no owner, nothing opens.
+function openOutside(owner: DrawingProductOwner | null, page: HostedPage) {
+  owner?.port.request('externalLinks', (proof) => {
+    if (proof.valid()) openHostedPage(page);
+  });
+}
 
 // Settings wired to the drawing screen's owners. Its own module so the wiring loads with the
 // dialog's chunk rather than on the startup path.
@@ -71,10 +82,8 @@ export function RsdSettingsRoute({
           />
         ) : null
       }
-      onFeedback={() => {
-        close();
-        product.feedback.owner?.open();
-      }}
+      feedback={product.feedback.owner}
+      onOpenHostedPage={(page) => openOutside(owner, page)}
       downloadedBooks={screen.library.state.installed.length}
       ai={product.ai.state}
     />

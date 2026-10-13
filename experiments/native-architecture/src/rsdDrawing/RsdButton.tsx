@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { useReduceMotion } from '../drawing/useReduceMotion';
@@ -218,6 +218,7 @@ export function RsdButton({
   busy = false,
   disabled = false,
   onPress,
+  icon,
   children,
 }: {
   variant?: ButtonVariant;
@@ -225,6 +226,8 @@ export function RsdButton({
   busy?: boolean;
   disabled?: boolean;
   onPress: () => void;
+  // A glyph before the label, in the label's ink, which the caller resolves for its variant.
+  icon?: ReactNode;
   children: string;
 }) {
   const parked = disabled && !busy;
@@ -249,6 +252,7 @@ export function RsdButton({
       onClick={onPress}
     >
       {busy ? <BusyRing variant={variant} /> : null}
+      {icon}
       <html.span>{children}</html.span>
     </RsdPressable>
   );

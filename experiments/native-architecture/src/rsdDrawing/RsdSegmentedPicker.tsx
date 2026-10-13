@@ -45,6 +45,12 @@ const UNDERLINE_RULE_OVERLAP_PX = -1;
 const UNDERLINE_LINE_HEIGHT = 1.25;
 const UNDERLINE_ICON_PX = 18;
 const CHIPS_PER_ROW = 2;
+// ReportFields.svelte's narrow-phone override for its two long kind labels: a tighter track and
+// smaller unbroken labels, rather than options that wrap or stack.
+const TIGHT_TRACK_GAP_PX = 4;
+const TIGHT_TRACK_PADDING_PX = 3;
+const TIGHT_OPTION_PADDING_BLOCK_PX = 9;
+const TIGHT_OPTION_PADDING_INLINE_PX = 6;
 // Parent Center's matrix (ParentCenterSection.svelte) names each mode once in a column heading, so
 // its options show a radio mark instead of their words: a ring, filled with a surface-ringed dot
 // when chosen.
@@ -80,6 +86,10 @@ export const PICKER_METRICS = {
   UNDERLINE_RULE_OVERLAP_PX,
   UNDERLINE_LINE_HEIGHT,
   UNDERLINE_ICON_PX,
+  TIGHT_TRACK_GAP_PX,
+  TIGHT_TRACK_PADDING_PX,
+  TIGHT_OPTION_PADDING_BLOCK_PX,
+  TIGHT_OPTION_PADDING_INLINE_PX,
 } as const;
 
 export type SegmentedPickerOption<T extends string> = {
@@ -107,6 +117,8 @@ type SharedProps<T extends string> = {
   // column: each segment option puts its icon above its label, for a track too narrow for both
   // side by side.
   optionDirection?: 'row' | 'column';
+  // true: the segment track tightens so long labels stay on one line on a narrow phone.
+  tight?: boolean;
 };
 
 // Choose one: a radiogroup of checked options with a roving tab stop. null selects nothing.
@@ -145,6 +157,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
     variant = 'segment',
     fill = true,
     optionDirection = 'row',
+    tight = false,
   } = props;
   const radio = props.mode !== 'toggle';
   const isSelected = (value: T) =>
@@ -202,6 +215,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
             optionFades[variant],
             variant === 'segment' && !fill && styles.hugOption,
             variant === 'segment' && optionDirection === 'column' && styles.columnOption,
+            variant === 'segment' && tight && styles.tightOption,
             active && (marks ? styles.markActive : ACTIVE_OPTION[variant]),
             option.disabled && styles.disabled,
           ]}
@@ -221,6 +235,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
       style={[
         TRACK[variant],
         variant === 'segment' && !fill && styles.hug,
+        variant === 'segment' && tight && styles.tightTrack,
         variant === 'underline' && phone && styles.underlinePhone,
       ]}
     >
@@ -323,6 +338,7 @@ const styles = css.create({
     borderRadius: dimensions.radiusMd,
   },
   hug: { alignSelf: 'flex-start' },
+  tightTrack: { gap: TIGHT_TRACK_GAP_PX, padding: TIGHT_TRACK_PADDING_PX },
   chipTrack: { display: 'flex', flexDirection: 'column', gap: CHIP_GAP_PX },
   chipRow: { display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: CHIP_GAP_PX },
   chipSpacer: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: dimensions.touchTargetMin },
@@ -371,6 +387,12 @@ const styles = css.create({
     lineHeight: SEGMENT_LINE_HEIGHT,
   },
   hugOption: { paddingInline: HUG_OPTION_PADDING_INLINE_PX },
+  tightOption: {
+    paddingBlock: TIGHT_OPTION_PADDING_BLOCK_PX,
+    paddingInline: TIGHT_OPTION_PADDING_INLINE_PX,
+    fontSize: dimensions.fontSizeXs,
+    whiteSpace: 'nowrap',
+  },
   segmentActive: { color: { default: brandColors.onBrand, ':hover': brandColors.onBrand } },
   chipOption: {
     gap: CHIP_GAP_PX,

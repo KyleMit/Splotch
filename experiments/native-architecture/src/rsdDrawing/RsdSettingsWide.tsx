@@ -220,15 +220,13 @@ function PaneSection({
 
 // The shipping tablet Settings (WideShell.svelte): a table of contents beside one continuously
 // scrolling pane that stacks every section. The table of contents marks where the reading
-// position is rather than a page, and a row jumps the pane to its section. Feedback opens its own
-// sheet from its row, as from the phone hub, so it holds no place in the pane.
+// position is rather than a page, and a row jumps the pane to its section.
 export function RsdSettingsWide({
   sections,
   keptSection,
   unseen,
   renderSection,
   onSeen,
-  onFeedback,
   locked,
   onUnlock,
   landing,
@@ -239,7 +237,6 @@ export function RsdSettingsWide({
   unseen: (id: NativeSettingsSectionId) => boolean;
   renderSection: (id: NativeSettingsSectionId) => ReactNode;
   onSeen: (id: NativeSettingsSectionId) => void;
-  onFeedback: () => void;
   // The section whose controls wait behind a grown-up check (Parent Center until it is solved): a
   // row naming it asks for the check, and the jump lands once the check is passed.
   locked: NativeSettingsSectionId | null;
@@ -251,7 +248,7 @@ export function RsdSettingsWide({
 }) {
   const reduced = useReduceMotion();
   const headingId = useId();
-  const paneIds = sections.map((section) => section.id).filter((id) => id !== 'feedback');
+  const paneIds = sections.map((section) => section.id);
   const [spied, setSpied] = useState<NativeSettingsSectionId>(paneIds[0]);
   const spiedNow = useRef(spied);
   const pane = useRef<ScrollView>(null);
@@ -303,8 +300,7 @@ export function RsdSettingsWide({
       return;
     }
     const stacked = offsets();
-    if (id === 'feedback') onFeedback();
-    if (id === 'feedback' || !stacked) return;
+    if (!stacked) return;
     onSeen(id);
     jumpTarget.current = reduced ? null : id;
     pane.current?.scrollTo({
