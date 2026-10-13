@@ -84,7 +84,13 @@ let choose;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   appearance.theme = 'light';
-  state = { ...owner.snapshot(), status: 'ready', installed: [pack], retainedBytes: 1024 * 1024 };
+  state = {
+    ...owner.snapshot(),
+    status: 'ready',
+    installed: [pack],
+    inventoried: true,
+    retainedBytes: 1024 * 1024,
+  };
   remove = vi.fn(async () => {});
   choose = vi.fn();
   host = document.createElement('div');
@@ -167,17 +173,36 @@ describe('complete downloaded books and parent controls in both real picker cons
       'Space coloring book',
     ],
   ])(
-    'lists what the launch inventory finds after %s opened, then holds it',
+    'lists what the first completed inventory finds after %s opened, then holds it',
     async (_name, Component, dinosaurs, space) => {
       state = { ...owner.snapshot(), status: 'loading', installed: [] };
       await renderPicker(Component);
       expect(button(dinosaurs)).toBeUndefined();
-      state = { ...state, status: 'ready', installed: [pack] };
+      state = { ...state, status: 'ready', installed: [pack], inventoried: true };
       await renderPicker(Component);
       expect(button(dinosaurs)).toBeDefined();
       state = { ...state, installed: [pack, catalogPack('space', 'full')] };
       await renderPicker(Component);
       expect(button(space)).toBeUndefined();
+    }
+  );
+  it.each([
+    ['ColoringPagePicker', ColoringPagePicker, 'T. Rex'],
+    ['RsdColoringBookPicker', RsdColoringBookPicker, 'Dinosaurs coloring book'],
+  ])(
+    'holds nothing from a failed inventory or Retry’s interim ready in %s, then lists the recovered one',
+    async (_name, Component, dinosaurs) => {
+      state = { ...owner.snapshot(), status: 'loading', installed: [] };
+      await renderPicker(Component);
+      state = { ...state, status: 'failed', fault: 'unavailable' };
+      await renderPicker(Component);
+      state = { ...state, status: 'ready', fault: null };
+      await renderPicker(Component);
+      expect(button(dinosaurs)).toBeUndefined();
+      state = { ...state, installed: [pack], inventoried: true };
+      await renderPicker(Component);
+      expect(button(dinosaurs)).toBeDefined();
+      expect(host.textContent).toContain('1 downloaded books');
     }
   );
   it.each([ColoringPagePicker, RsdColoringBookPicker])(

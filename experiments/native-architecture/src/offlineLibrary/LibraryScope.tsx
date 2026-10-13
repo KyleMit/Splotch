@@ -30,10 +30,11 @@ export function useLibraryControls() {
 }
 
 // The books a picker lists while it is open: the inventory as it stood when the picker opened, or,
-// if the picker opened before the launch inventory finished (on web it waits for first paint),
-// as it stood once it did. A book that finishes downloading later waits for the next open.
+// if the picker opened before an inventory had completed (on web the launch inventory waits for
+// first paint, and a failed one waits for Retry), as it stood once one did. A book that finishes
+// downloading later waits for the next open.
 export function useHeldBooks(library: LibraryContext | null): readonly Pack[] {
-  const inventoried = !!library && library.state.status !== 'loading';
+  const inventoried = library?.state.inventoried === true;
   const [held, setHeld] = useState<readonly Pack[] | null>(() =>
     library && inventoried ? library.state.installed : null
   );

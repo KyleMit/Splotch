@@ -194,21 +194,7 @@ describe('the offline library on web before its controller loads', () => {
 
   it('reads the saved policy and inventory through the real controller once the page has loaded', async () => {
     const policy = encodeLibraryText(JSON.stringify({ enabled: false, allowMetered: true }));
-    const refused = async () => {
-      throw new Error('Writes are outside this fixture.');
-    };
-    const platform = {
-      environment: async () => ({ online: false, metered: false, freeBytes: 0 }),
-      list: async () => [],
-      read: vi.fn(async (path) => (path === 'policy.json' ? policy : null)),
-      write: refused,
-      remove: refused,
-      move: refused,
-      uri: (path) => `memory:${path}`,
-      verify: async () => false,
-      download: refused,
-      dispose() {},
-    };
+    const platform = memoryPlatform(async (path) => (path === 'policy.json' ? policy : null));
     const idle = deferred();
     const library = createDeferredLibrary(
       async () => createOfflineLibrary(platform, 'full'),
@@ -224,8 +210,49 @@ describe('the offline library on web before its controller loads', () => {
     expect(platform.read).toHaveBeenCalledWith('policy.json', expect.any(Number));
     expect(library.snapshot()).toMatchObject({
       status: 'ready',
+      inventoried: true,
       enabled: false,
       allowMetered: true,
     });
   });
+
+  it('marks the inventory taken only when one completes, not on a failure or Retry’s interim ready', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const read = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('catalog aborted'))
+      .mockResolvedValue(null);
+    const library = createDeferredLibrary(
+      async () => createOfflineLibrary(memoryPlatform(read), 'full'),
+      async () => {}
+    );
+    library.setFeatureEnabled(true);
+
+    await library.initialize();
+    expect(library.snapshot()).toMatchObject({ status: 'failed', inventoried: false });
+
+    library.engage();
+    library.retry();
+    expect(library.snapshot()).toMatchObject({ status: 'ready', inventoried: false });
+    await vi.waitFor(() => expect(library.snapshot().inventoried).toBe(true));
+    error.mockRestore();
+  });
 });
+
+function memoryPlatform(read) {
+  const refused = async () => {
+    throw new Error('Writes are outside this fixture.');
+  };
+  return {
+    environment: async () => ({ online: false, metered: false, freeBytes: 0 }),
+    list: async () => [],
+    read: vi.fn(read),
+    write: refused,
+    remove: refused,
+    move: refused,
+    uri: (path) => `memory:${path}`,
+    verify: async () => false,
+    download: refused,
+    dispose() {},
+  };
+}

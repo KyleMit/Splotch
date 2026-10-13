@@ -152,6 +152,35 @@ describe('web launch invite capture', () => {
     expect(location.href).toBe(before);
   });
 
+  it('holds every settle() until an in-flight invite write lands', async () => {
+    history.replaceState({}, '', invitePath('held-code'));
+    let finishWrite;
+    const vault = {
+      write: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            finishWrite = resolve;
+          })
+      ),
+    };
+    const capture = createInviteCapture(async () => vault);
+
+    const launch = capture.settle();
+    await vi.waitFor(() => expect(vault.write).toHaveBeenCalledOnce());
+    let ownerSettled = false;
+    const owner = capture.settle().then(() => {
+      ownerSettled = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(ownerSettled).toBe(false);
+
+    finishWrite();
+    await owner;
+    await launch;
+    expect(location.search).toBe('');
+    expect(vault.write).toHaveBeenCalledOnce();
+  });
+
   it('retries a capture whose vault chunk failed to load, then saves and scrubs', async () => {
     history.replaceState({}, '', invitePath('offline-code'));
     const failure = new Error('chunk unavailable');

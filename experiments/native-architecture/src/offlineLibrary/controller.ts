@@ -106,7 +106,7 @@ class OfflineLibraryController {
       const { installed, retainedBytes } = await this.store.inventory(
         OFFLINE_BOOKS.map((book) => this.currentPack(book.id))
       );
-      this.publish({ status: 'ready', installed, retainedBytes, fault: null });
+      this.publish({ status: 'ready', installed, inventoried: true, retainedBytes, fault: null });
     } catch (error) {
       this.fail(error);
       this.initialization = null;

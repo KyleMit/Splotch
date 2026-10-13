@@ -129,7 +129,8 @@ native keeps its synchronous, offline-complete bundle unchanged.
     `tools/migration/tests/rsd-web-product-owners.test.mjs` drives it through the web loader.
   * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite. If that chunk
     request fails, the capture stays pending. The owners' loader settles it before it hands out the
-    AI owner, so a recovered chunk still saves and scrubs the invite before any credential read.
+    AI owner, and a settle during a capture waits for its write. So the invite is saved and scrubbed
+    before any credential read, even after a failed chunk request.
   * Expo's serializer moves every module that two lazy chunks share into `__common`, a chunk
     `index.html` loads before first paint. So the owners, the AI and feedback sheets, the waiting
     print and the invite's vault are one chunk, `productChunk.web.ts`. A second chunk for any of
@@ -144,8 +145,9 @@ native keeps its synchronous, offline-complete bundle unchanged.
       reads the saved policy and fetches the 210 KB coloring catalog.
   * Until then the snapshot is the controller's own loading snapshot. A failed chunk reports what a
     failed catalog reports, and Retry loads it afresh.
-  * A picker opened before the launch inventory finishes would hold an empty list of books.
-    `useHeldBooks` holds the books from the first finished inventory instead. A book that finishes
+  * A picker opened before an inventory completes would hold an empty list of books. `useHeldBooks`
+    holds the books from the first inventory that completes, which the snapshot's `inventoried` flag
+    records. A failed inventory and Retry's interim `ready` do not set it. A book that finishes
     downloading while the picker is open still waits for the next open.
   * Native's `runtime.ts` creates the controller at import, as before.
 

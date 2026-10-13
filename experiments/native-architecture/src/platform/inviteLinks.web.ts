@@ -40,8 +40,11 @@ export function createInviteCapture(loadVault: VaultLoader) {
   }
   return {
     settle(): Promise<void> {
+      // An attempt in flight has already marked itself settled before its write lands; a caller
+      // that must not read a credential ahead of the invite waits for that write.
+      if (attempt) return attempt;
       if (settled) return Promise.resolve();
-      attempt ??= capture().finally(() => {
+      attempt = capture().finally(() => {
         attempt = null;
       });
       return attempt;
