@@ -36,6 +36,7 @@ import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
+import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 
@@ -69,6 +70,7 @@ export function RsdDrawingScreen() {
   const dismissed = route.dismissed;
   const loading =
     sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading';
+  useDrawingPainted(!loading);
   return (
     <DrawingAppearanceProvider
       preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}

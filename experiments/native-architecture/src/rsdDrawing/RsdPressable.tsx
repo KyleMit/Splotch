@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
-import { Animated, Pressable, type PressableProps } from 'react-native';
+import { Pressable, type PressableProps } from 'react-native';
+import { Animated } from '../platform/animated';
 import { compat, type html } from 'react-strict-dom';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);

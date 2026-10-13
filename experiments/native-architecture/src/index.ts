@@ -3,10 +3,8 @@ import './strict.css';
 import { registerRootComponent } from 'expo';
 import { ProbeApp } from './ProbeApp';
 import { registerServiceWorker } from './platform/serviceWorker';
-import { aiVault } from './platform/ai';
-import { startInviteLinks } from './platform/inviteLinks';
+import { startLaunchInvites } from './platform/launchInvites';
 
-// Started before the first render so a launch invite is saved ahead of any AI credential read.
-void startInviteLinks(aiVault);
+void startLaunchInvites();
 registerRootComponent(ProbeApp);
 registerServiceWorker();

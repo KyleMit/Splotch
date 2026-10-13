@@ -1,5 +1,6 @@
 import { DrawingModal as Modal } from '../platform/DrawingModal';
-import { Animated, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Animated } from '../platform/animated';
 import { Text, TextInput } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
