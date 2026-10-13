@@ -1,4 +1,5 @@
-import { Animated, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Animated } from '../platform/animated';
 import { MODAL_SCRIM_PLAIN } from './modalGeometry';
 
 // Android and iOS have no backdrop blur without a native blur view, so the scrim takes the
