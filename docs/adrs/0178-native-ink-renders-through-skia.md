@@ -58,12 +58,20 @@ Alternatives considered:
 Native ink moves to `@shopify/react-native-skia` behind the existing `DrawingSurface` boundary
 (`DrawingSurfaceHandle`: capturePng, captureInk, lockInput, refreshGeometry).
 
-* **Committed strokes are flattened.** When a stroke ends, it is drawn once into an offscreen Skia
-  surface, and its snapshot becomes the only committed-ink layer on screen. Rendering cost per frame
-  then depends on the live stroke, not the drawing's size. Undo keeps its existing history. The
-  committed layer is rebuilt from history only on undo, reopen or a page change.
-* **The live stroke does not go through React state.** Moves update a Skia path through a shared
-  value, so React re-renders only at stroke boundaries, not on every move.
+* **Committed ink is flattened at the contact-cohort commit.** Simultaneous contacts already form
+  one cohort, which commits only when its last contact ends and is one undo unit
+  (`contactCohort.finish()`, `recordedContactCohort7.end()`). When a cohort commits, its strokes are
+  drawn once, in their existing order, into an offscreen Skia surface, and that snapshot becomes the
+  only committed-ink layer on screen. Flattening one stroke while an earlier overlapping contact is
+  still live would move it beneath that contact and flip the overlap. Rendering cost per frame then
+  depends on the live cohort, not the drawing's size. Undo keeps its existing history.
+* **The committed layer is rebuilt from history when the ink's inputs change**: undo, reopen, a page
+  change, and an appearance change such as the theme. Committed ink depends on appearance even when
+  history is unchanged: semantic Black becomes white in dark mode, and Magic takes the current
+  page's themed fill (`DrawingSurface.tsx` keys `RasterInk` by page and theme for this reason). An
+  appearance rebuild adds no undo entry.
+* **The live cohort does not go through React state.** Moves update Skia paths through shared
+  values, so React re-renders only at cohort boundaries, not on every move.
 * **Crayon uses Skia natively.** The grain tile becomes an image shader. Wax buildup uses the same
   binary-tooth deposit as ADR-0065, and mixing uses a real blend mode against the committed layer,
   in place of the SVG `BackgroundImage` filter.
