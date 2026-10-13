@@ -9,13 +9,17 @@ import {
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import {
-  NativeDrawingLayout,
-  paletteSlots,
-} from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
+  drawerOffsets,
+  EDGE_INSET_PX,
+} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import { swatchEdge } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
+import {
+  paletteSlots,
+  swatchEdge,
+} from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
   PALETTE_COLORS,
@@ -23,7 +27,10 @@ import {
   paletteHex,
   visiblePaints,
 } from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import { DRAWING_THEME } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import {
+  DRAWING_THEME,
+  TOUCH_TARGET,
+} from '../../../experiments/native-architecture/src/drawing/theme.ts';
 
 const PURPLE = paletteHex('Purple');
 
@@ -230,8 +237,9 @@ it('tucks the remaining tools into a drawer the chevron reveals and hides', asyn
   );
   await act(async () => toggle.click());
   expect(shown()).toEqual(tools);
-  const dock = host.querySelector('[data-testid="rsd-drawer-dock"]');
-  for (const label of tools) expect(dock.contains(button(label)), label).toBe(true);
+  for (const label of tools)
+    expect(button(label).closest('[data-testid="rsd-drawer-tool"]'), label).not.toBeNull();
+  expect(button('Collapse controls').closest('[data-testid="rsd-drawer-dock"]')).not.toBeNull();
   const collapse = button('Collapse controls');
   expect(expanded('Collapse controls')).toBe(true);
   await act(async () => collapse.click());
@@ -254,10 +262,11 @@ function layoutElement(seen) {
         return createElement('button', null, 'Colors');
       },
       clear: createElement('button', null, 'Clear'),
-      drawer: (axis) => {
+      drawerToggle: (axis) => {
         seen.drawer = axis;
         return createElement('button', null, 'Tools');
       },
+      drawerTools: [],
       settings: createElement('button', null, 'Settings'),
       status: createElement('output', { 'data-status': true }),
     },
@@ -308,4 +317,109 @@ it('frames the fixed paper the way the full-bleed area fits it in either orienta
   });
   expect(fittedPaper({ width: 2000, height: 1500 })).toMatchObject({ width: 1024, height: 768 });
   expect(fittedPaper({ width: 0, height: 0 })).toEqual({ left: 0, top: 0, width: 0, height: 0 });
+});
+
+function flat(style) {
+  return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
+}
+
+function resolved(predicate) {
+  const props = records.props.findLast(predicate);
+  expect(props).toBeDefined();
+  return flat(props.style);
+}
+
+function outerSize(style) {
+  expect(style.width).toBe(style.height);
+  return style.boxSizing === 'border-box'
+    ? style.width
+    : style.width + 2 * (style.borderWidth ?? 0) + 2 * (style.padding ?? 0);
+}
+
+it('counts palette slots from the outer size the renderer actually gives each swatch', async () => {
+  await mountToolbar(toolbarScreen());
+  const outer = [
+    outerSize(resolved((props) => props.accessibilityLabel === 'Purple paint')),
+    outerSize(resolved((props) => props.accessibilityLabel === 'More colors')),
+  ];
+  expect(outer).toEqual([TOUCH_TARGET, TOUCH_TARGET]);
+  const { gap } = resolved((props) => props.accessibilityLabel === 'Paint colors');
+  const bar = resolved(
+    (props) => flat(props.style)?.flexGrow === 1 && flat(props.style).padding !== undefined
+  );
+  expect(bar.gap).toBe(gap);
+  const span = (count) => count * outer[0] + (count - 1) * gap + 2 * bar.padding;
+  for (const length of [320, 390, 402, 568, 820, 1180]) {
+    const slots = paletteSlots(length);
+    expect(span(slots), `${length}`).toBeLessThanOrEqual(length);
+    expect(span(slots + 1), `${length}`).toBeGreaterThan(length);
+  }
+});
+
+function rect(left, top) {
+  return { left, top, right: left + TOUCH_TARGET, bottom: top + TOUCH_TARGET };
+}
+
+function overlaps(a, b) {
+  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+it.each([
+  [320, 568],
+  [568, 320],
+])('keeps every drawer tool and the chevron reachable at %ix%i', async (width, height) => {
+  records.dimensions = { width, height, scale: 1, fontScale: 1 };
+  await mountToolbar(toolbarScreen());
+  const portrait = height > width;
+  const status = flat(
+    records.viewports.findLast((props) => props.testID === 'rsd-drawing-status-viewport').style
+  );
+  const bar = TOUCH_TARGET + 2 * EDGE_INSET_PX;
+  const area = {
+    width: portrait ? width : width - bar,
+    height: (portrait ? height - bar : height) - status.height,
+  };
+  const canvas = records.props.findLast((props) => props.testID === 'rsd-canvas-area');
+  await act(async () => canvas.onLayout({ nativeEvent: { layout: { x: 0, y: 0, ...area } } }));
+  await expandControls();
+  const tools = records.props
+    .filter((props) => props.testID === 'rsd-drawer-tool')
+    .slice(-7)
+    .map((props) => flat(props.style))
+    .map((style) => rect(style.left, area.height - style.bottom - TOUCH_TARGET));
+  expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]')).toHaveLength(7);
+  const inset = EDGE_INSET_PX;
+  const toggle = rect(inset, area.height - inset - TOUCH_TARGET);
+  const settings = rect(area.width - inset - TOUCH_TARGET, area.height - inset - TOUCH_TARGET);
+  const clear = rect(area.width - inset - TOUCH_TARGET, inset);
+  expect(resolved((props) => props.testID === 'rsd-drawer-dock')).toMatchObject({
+    left: inset,
+    bottom: inset,
+  });
+  expect(resolved((props) => props.testID === 'rsd-settings-dock')).toMatchObject({
+    right: inset,
+    bottom: inset,
+  });
+  expect(resolved((props) => props.testID === 'rsd-clear-dock')).toMatchObject({
+    right: inset,
+    top: inset,
+  });
+  for (const [index, tool] of [toggle, ...tools].entries()) {
+    expect(tool.left, `${index}`).toBeGreaterThanOrEqual(0);
+    expect(tool.top, `${index}`).toBeGreaterThanOrEqual(0);
+    expect(tool.right, `${index}`).toBeLessThanOrEqual(area.width);
+    expect(tool.bottom, `${index}`).toBeLessThanOrEqual(area.height);
+    expect(overlaps(tool, settings), `${index}`).toBe(false);
+    expect(overlaps(tool, clear), `${index}`).toBe(false);
+  }
+  for (const [index, tool] of tools.entries()) {
+    expect(overlaps(tool, toggle), `${index}`).toBe(false);
+    for (const other of tools.slice(index + 1)) expect(overlaps(tool, other)).toBe(false);
+  }
+  expect(drawerOffsets(area, portrait ? 'column' : 'row', 7)).toEqual(
+    records.props
+      .filter((props) => props.testID === 'rsd-drawer-tool')
+      .slice(-7)
+      .map((props) => ({ left: flat(props.style).left, bottom: flat(props.style).bottom }))
+  );
 });

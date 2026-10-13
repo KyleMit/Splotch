@@ -6,6 +6,8 @@ import { DRAWING_THEMES, TOUCH_TARGET, type PaperTheme } from '../drawing/theme'
 import { RsdIcon } from './RsdIcon';
 import type { NativeIconName } from './icons.generated';
 
+// Icon buttons and swatches size their border box, so the touch target is their whole outer
+// size on every renderer (React Strict DOM defaults to content-box, as the web does).
 const SELECTION_BORDER_WIDTH_PX = 2;
 // The shipping Actions Panel pads its icon by a sixth of the face; this is that share of 52pt.
 const ICON_PADDING_PX = 8;
@@ -19,6 +21,13 @@ const SELECTED_SWATCH_DISC_PX = SWATCH_DISC_PX - 2 * SWATCH_RING_GAP_PX;
 // light bar) disappears, so it gains an outline and a text-colored selection ring.
 const SWATCH_MIN_CONTRAST = 1.5;
 const SWATCH_OUTLINE_PX = 1;
+// The palette bar pads each end by one gap and spaces its swatches a gap apart.
+const PALETTE_GAP_PX = 8;
+
+// How many swatches, More colors among them, fit along a bar of this length.
+export function paletteSlots(length: number) {
+  return Math.max(0, Math.floor((length - PALETTE_GAP_PX) / (TOUCH_TARGET + PALETTE_GAP_PX)));
+}
 
 function relativeLuminance(hex: string) {
   const channels = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
@@ -63,8 +72,8 @@ export const styles = css.create({
     flexDirection: 'row',
     flexGrow: 1,
     alignItems: 'center',
-    padding: dimensions.space2,
-    gap: dimensions.space2,
+    padding: PALETTE_GAP_PX,
+    gap: PALETTE_GAP_PX,
   },
   paletteSwatches: {
     display: 'flex',
@@ -72,16 +81,9 @@ export const styles = css.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: dimensions.space2,
+    gap: PALETTE_GAP_PX,
   },
   column: { flexDirection: 'column' },
-  drawer: {
-    display: 'flex',
-    flexDirection: 'column-reverse',
-    alignItems: 'center',
-    gap: dimensions.space2,
-  },
-  drawerRow: { flexDirection: 'row' },
   chevronUp: { transform: 'rotate(-90deg)' },
   chevronDown: { transform: 'rotate(90deg)' },
   chevronLeft: { transform: 'rotate(180deg)' },
@@ -98,6 +100,7 @@ export const styles = css.create({
     fontSize: dimensions.fontSizeMd,
   },
   iconAction: {
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -112,6 +115,7 @@ export const styles = css.create({
   },
   iconSelected: { backgroundColor: colors.brandWash, borderColor: colors.brandSolid },
   swatch: (ring: string, radius: number) => ({
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

@@ -29,9 +29,6 @@ const themedStyles = createDrawingStyles((palette) =>
     paletteBar: { flexGrow: 0, flexShrink: 0, backgroundColor: palette.surface },
     canvasColumn: { flex: 1, minWidth: 0, minHeight: 0 },
     canvasArea: { flex: 1, minWidth: 0, minHeight: 0, backgroundColor: palette.paperMargin },
-    clearDock: { position: 'absolute', top: CONTROL_GAP, right: CONTROL_GAP },
-    settingsDock: { position: 'absolute', bottom: CONTROL_GAP, right: CONTROL_GAP },
-    drawerDock: { position: 'absolute', bottom: CONTROL_GAP, left: CONTROL_GAP },
     workspace: {
       flex: 1,
       minWidth: 0,
