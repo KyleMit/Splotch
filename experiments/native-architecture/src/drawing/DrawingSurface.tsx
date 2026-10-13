@@ -21,7 +21,8 @@ import { createContactResponder, type ContactDrawingProps } from './contactRespo
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
 import { PageOutline } from './PageOutline';
-import { RasterInk, type RasterInkHandle } from './RasterInk';
+import type { RasterInkHandle } from './RasterInk';
+import { InkLayer } from './InkLayer';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
@@ -132,8 +133,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 onTouchEnd={(event) => input.endRaw(event)}
                 onTouchCancel={() => input.interrupt()}
               >
-                {/* Checkpoints contain Magic colors; appearance changes must replay semantic strokes. */}
-                <RasterInk
+                {/* Committed ink holds Magic colors; appearance changes must replay semantic strokes. */}
+                <InkLayer
                   key={`${appearance.pageId}:${appearance.theme}`}
                   ref={raster}
                   strokes={props.drawing.strokes}
