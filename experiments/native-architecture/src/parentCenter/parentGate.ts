@@ -7,7 +7,13 @@ import {
   gateLockoutDurationMs,
   gateLockoutMessage,
 } from '../feedback/gateLockout';
-import type { ParentFeature, ParentPolicies, ParentProof } from './parentPolicy';
+import {
+  isParentModeAvailable,
+  type ParentFeature,
+  type ParentPolicies,
+  type ParentProof,
+} from './parentPolicy';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 
 export const PARENT_GATE_SHAKE_MS = 400;
 // How long the "Unlocked!" card holds before the destination shows (shipping GATE_SUCCESS_HOLD_MS).
@@ -168,9 +174,14 @@ export function createParentGate(
     const proofEpoch = epoch;
     action({ valid: () => !disposed && proofEpoch === epoch });
   }
+  // A Never the platform forbids still asks: the store rule holds even against a policy record
+  // that reached the gate without passing the settings checks.
   function bypass(feature: ParentFeature) {
     const mode = policies()[feature];
-    return mode === 'never' || (mode === 'session' && sessions.has(feature));
+    return (
+      (mode === 'never' && isParentModeAvailable(feature, mode, PARENT_PLATFORM)) ||
+      (mode === 'session' && sessions.has(feature))
+    );
   }
   /** A digit past the answer's length counts as a wrong answer, as it does on the shipping card. */
   function input(value: string) {

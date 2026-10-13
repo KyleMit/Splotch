@@ -5,6 +5,10 @@ vi.mock(
   '../../experiments/native-architecture/src/platform/parentDefaults.ts',
   () => import('../../experiments/native-architecture/src/platform/parentDefaults.web.ts')
 );
+vi.mock(
+  '../../experiments/native-architecture/src/platform/parentPlatform.ts',
+  () => import('../../experiments/native-architecture/src/platform/parentPlatform.web.ts')
+);
 let storage;
 beforeEach(() => {
   const values = new Map();

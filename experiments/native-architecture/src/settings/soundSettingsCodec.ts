@@ -20,6 +20,7 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
@@ -35,6 +36,7 @@ import {
   readLegacyParentPreferences,
   isParentPolicies,
   isParentPoliciesBeforeExternalLinks,
+  availablePolicies,
   orderedParentPolicies,
   type ParentPreferences,
 } from '../parentCenter/parentPolicy';
@@ -213,11 +215,15 @@ function readStoredParentSettings(
     ...colors,
     appearance,
     ...parent,
-    parentPolicies: orderedParentPolicies({
-      externalLinks: DEFAULT_PARENT_PREFERENCES.parentPolicies.externalLinks,
-      imageReport: 'always',
-      ...parent.parentPolicies,
-    }),
+    parentPolicies: availablePolicies(
+      orderedParentPolicies({
+        externalLinks: DEFAULT_PARENT_PREFERENCES.parentPolicies.externalLinks,
+        imageReport: 'always',
+        ...parent.parentPolicies,
+      }),
+      PARENT_PLATFORM,
+      DEFAULT_PARENT_PREFERENCES.parentPolicies
+    ),
     coloringBookEnabled,
     soundLevel,
     ...controls,

@@ -32,6 +32,32 @@ export function isParentModeAvailable(
 ) {
   return !(feature === 'externalLinks' && mode === 'never' && platform === 'ios');
 }
+export function arePoliciesAvailable(policies: ParentPolicies, platform: ParentPlatform) {
+  return PARENT_FEATURES.every((feature) =>
+    isParentModeAvailable(feature, policies[feature], platform)
+  );
+}
+// A saved choice the platform forbids reads back as the build's default for it, or Every time where
+// that is forbidden too (shipping readFeatureMode), so no stored record can relax a store rule.
+export function availablePolicies(
+  policies: ParentPolicies,
+  platform: ParentPlatform,
+  defaults: ParentPolicies
+): ParentPolicies {
+  const pick = (feature: ParentFeature): ParentMode =>
+    isParentModeAvailable(feature, policies[feature], platform)
+      ? policies[feature]
+      : isParentModeAvailable(feature, defaults[feature], platform)
+        ? defaults[feature]
+        : 'always';
+  return {
+    ai: pick('ai'),
+    imageReport: pick('imageReport'),
+    externalLinks: pick('externalLinks'),
+    feedback: pick('feedback'),
+    parentCenter: pick('parentCenter'),
+  };
+}
 // Never on Parent Center is the one choice that waits for a confirmation: it leaves the checks
 // themselves unprotected.
 export function endsParentCenterProtection(feature: ParentFeature, mode: ParentMode) {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Platform, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { css, html } from 'react-strict-dom';
 import { ModalShell } from './ModalShell';
 import { RsdButton } from './RsdButton';
@@ -19,7 +20,6 @@ import {
   isParentModeAvailable,
   type ParentFeature,
   type ParentMode,
-  type ParentPlatform,
 } from '../parentCenter/parentPolicy';
 import {
   POLICY_COPY_MIN_PX,
@@ -44,10 +44,6 @@ const HELP_LINE_HEIGHT = 1.4;
 // The heading's 0.03em tracking at its --font-size-xs.
 const HEADER_LETTER_SPACING_PX = 0.36;
 const MODE_HEADING_LINE_HEIGHT = 1.25;
-
-function parentPlatform(): ParentPlatform {
-  return Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
-}
 
 // The shipping Settings › Parent Center section: when Splotch asks for a grown-up check, one card
 // per protected action. Wide enough, the cards line up as a matrix under one heading per mode.
@@ -130,7 +126,7 @@ function PolicyCard({
   onChoose: (feature: ParentFeature, mode: ParentMode) => void;
 }) {
   const helpId = `parental-gate-${feature}-help`;
-  const platform = parentPlatform();
+  const platform = PARENT_PLATFORM;
   const unavailable = !isParentModeAvailable(feature, 'never', platform);
   const unprotected = endsParentCenterProtection(feature, selected);
   const notes = [

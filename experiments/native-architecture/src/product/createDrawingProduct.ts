@@ -1,5 +1,6 @@
 import { createParentGate } from '../parentCenter/parentGate';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import {
   createSoundSettings,
   type SoundSettingsState,
@@ -8,6 +9,7 @@ import {
 import {
   PARENT_FEATURES,
   endsParentCenterProtection,
+  isParentModeAvailable,
   type ParentFeature,
   type ParentMode,
   type ParentOperationPort,
@@ -92,6 +94,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     },
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
       if (!editable()) return;
+      if (!isParentModeAvailable(feature, mode, PARENT_PLATFORM)) return;
       if (endsParentCenterProtection(feature, mode) && !confirmed) {
         confirmNever = true;
         notify();

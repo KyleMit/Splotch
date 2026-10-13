@@ -43,6 +43,14 @@ import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/se
 import { paletteHex } from '../../../web/src/lib/palette.ts';
 import { colorFamilyShade } from '../../../web/src/lib/hexPickerLayout.ts';
 
+// The store whose rules bound the policies, switched per test.
+const storePlatform = vi.hoisted(() => ({ os: 'ios' }));
+vi.mock('../../../experiments/native-architecture/src/platform/parentPlatform.ts', () => ({
+  get PARENT_PLATFORM() {
+    return storePlatform.os;
+  },
+}));
+
 const PHONE = { width: 390, height: 844, scale: 1, fontScale: 1 };
 const TABLET = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
 const SECTION = '[data-testid="parent-center-fixture"]';
@@ -137,7 +145,7 @@ async function openParentCenter(storage) {
 describe('RSD Parent Center section', () => {
   afterEach(() => {
     records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
-    records.os = 'ios';
+    storePlatform.os = 'ios';
   });
 
   it('lists the five shipping protections as stacked cards with their help lines on a phone', async () => {
@@ -206,7 +214,7 @@ describe('RSD Parent Center section', () => {
   });
 
   it('keeps Never on external links unavailable on iOS and says why', async () => {
-    records.os = 'ios';
+    storePlatform.os = 'ios';
     await openParentCenter();
     expect(policyOption('externalLinks', 'never').disabled).toBe(true);
     expect(policyOption('feedback', 'never').disabled).toBe(false);
@@ -216,7 +224,7 @@ describe('RSD Parent Center section', () => {
   });
 
   it('offers Never on external links on Android without the iOS note', async () => {
-    records.os = 'android';
+    storePlatform.os = 'android';
     await openParentCenter();
     expect(policyOption('externalLinks', 'never').disabled).toBe(false);
     expect(policyNote('externalLinks')).toBeNull();
