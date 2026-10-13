@@ -5,12 +5,12 @@ import type { Drawing, History } from './drawing/model';
 import { drawingPaperSize } from './drawing/paperSpace';
 
 // The eraser's idle blank-page check: it reads the ink back as Clear does, on its own observer so
-// it never holds Clear's. It takes the paper only when nothing else holds it, and gives the paper
-// up the moment a command or Undo wants it; a check that gave way or found the paper busy asks to
-// be tried after another idle wait.
+// it never holds Clear's, under the surface's background lease. Any foreground claim on the paper
+// (a contact, a command, Undo, a sheet, AI preparation) preempts that lease before it proceeds, so
+// the check never refuses or delays one; a check that was preempted, or found the paper busy,
+// asks to be tried after another idle wait.
 export function createEmptyScan({
   command,
-  scanning,
   mounted,
   observations,
   surface,
@@ -18,7 +18,6 @@ export function createEmptyScan({
   blocked,
 }: {
   command: RefObject<boolean>;
-  scanning: RefObject<(() => void) | null>;
   mounted: RefObject<boolean>;
   observations: RefObject<ReturnType<typeof createInkObservation> | null>;
   surface: RefObject<DrawingSurfaceHandle | null>;
@@ -27,34 +26,21 @@ export function createEmptyScan({
 }) {
   return async (snapshot: Drawing): Promise<boolean | 'busy'> => {
     const owner = surface.current;
-    if (
-      command.current ||
-      scanning.current ||
-      blocked() ||
-      !owner ||
-      historyRef.current.drawing !== snapshot
-    )
+    if (command.current || blocked() || !owner || historyRef.current.drawing !== snapshot)
       return 'busy';
+    let preempted = false;
+    let observation: ReturnType<NonNullable<typeof observations.current>['begin']> | undefined;
     let release: () => void;
     try {
-      release = owner.lockInput();
+      release = owner.lockBackground(() => {
+        preempted = true;
+        observation?.cancel();
+      });
     } catch {
       return 'busy';
     }
-    let yielded = false;
-    let observation: ReturnType<NonNullable<typeof observations.current>['begin']> | undefined;
-    function stop() {
-      observation?.cancel();
-      release();
-      if (scanning.current === yieldPaper) scanning.current = null;
-    }
-    function yieldPaper() {
-      yielded = true;
-      stop();
-    }
-    scanning.current = yieldPaper;
     const isCurrent = () =>
-      !yielded &&
+      !preempted &&
       mounted.current &&
       historyRef.current.drawing === snapshot &&
       surface.current === owner;
@@ -62,18 +48,19 @@ export function createEmptyScan({
       observation = observations.current?.begin(isCurrent, drawingPaperSize(snapshot));
       if (!observation) throw new Error('Picture observation is not ready.');
       const empty = await observation.observe(await owner.captureInk(snapshot));
-      return yielded ? 'busy' : empty;
+      return preempted ? 'busy' : empty;
     } catch (error) {
-      if (yielded) return 'busy';
+      if (preempted) return 'busy';
       throw error;
     } finally {
-      stop();
+      observation?.cancel();
+      release();
     }
   };
 }
 
 // Clear's ink observer and the idle blank-page check's own, live while the screen is mounted.
-export function useInkObservers(scanning: RefObject<(() => void) | null>) {
+export function useInkObservers() {
   const mounted = useRef(true);
   const observations = useRef<ReturnType<typeof createInkObservation> | null>(null);
   const scanObservations = useRef<ReturnType<typeof createInkObservation> | null>(null);
@@ -86,11 +73,10 @@ export function useInkObservers(scanning: RefObject<(() => void) | null>) {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      scanning.current?.();
       owners.forEach((owner) => owner.dispose());
       if (observations.current === owners[0]) observations.current = null;
       if (scanObservations.current === owners[1]) scanObservations.current = null;
     };
-  }, [scanning]);
+  }, []);
   return { mounted, observations, scanObservations };
 }

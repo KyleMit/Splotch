@@ -36,8 +36,14 @@ export type DrawingSurfaceHandle = {
   capturePng: (snapshot: Drawing) => Promise<string>;
   captureInk: (snapshot: Drawing) => Promise<string>;
   lockInput: () => () => void;
+  // A lease for work the child never asked for. Any foreground claim on the paper (a fresh
+  // contact, lockInput) ends it first, ending its capture and calling onPreempt; it is refused
+  // while anything else holds the paper.
+  lockBackground: (onPreempt: () => void) => () => void;
   refreshGeometry: () => void;
 };
+
+type Lease = Readonly<{ preempt: (() => void) | null }>;
 export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
   onPreparingChange: (busy: boolean) => void;
@@ -109,7 +115,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     }, [geometry]);
     const [presented, layoutPlane] = usePresentedPaper(paperReference, refreshGeometry);
     const [packet, setPacket] = useState<PictureRequest | null>(null);
-    const { captureLock, commandLock } = useSurfaceCapture(
+    const { captureLock, commandLock, preemptBackground } = useSurfaceCapture(
       input,
       ref,
       setPacket,
@@ -127,8 +133,14 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     }, [input, geometry, refreshGeometry]);
     const responder = useRef(
       PanResponder.create({
-        onStartShouldSetPanResponder: () => input.ready(),
-        onMoveShouldSetPanResponder: () => input.ready(),
+        onStartShouldSetPanResponder: () => {
+          preemptBackground();
+          return input.ready();
+        },
+        onMoveShouldSetPanResponder: () => {
+          preemptBackground();
+          return input.ready();
+        },
         onPanResponderGrant: (event) => input.grant(event),
         onPanResponderStart: (event) => input.start(event),
         onPanResponderMove: (event) => input.move(event),
@@ -219,7 +231,7 @@ function useSurfaceCapture(
 ) {
   const captures = useRef(createPngCapture()).current;
   const captureLock = useRef<PngCaptureRequest | null>(null);
-  const commandLock = useRef<object | null>(null);
+  const commandLock = useRef<Lease | null>(null);
 
   const currentAppearance = useRef(appearance);
   currentAppearance.current = appearance;
@@ -265,6 +277,34 @@ function useSurfaceCapture(
       request.cancel('The picture changed before capture finished.');
   }, [drawing, appearance]);
 
+  // A capture belongs to the lease it was taken under, so ending the lease ends its capture at
+  // once, rather than leaving it to block the next claim's.
+  function endLease(lease: Lease) {
+    if (commandLock.current !== lease) return;
+    commandLock.current = null;
+    const request = captureLock.current;
+    if (!request) return;
+    captureLock.current = null;
+    captureAppearance.current = null;
+    request.cancel('The picture changed before capture finished.');
+    if (mounted.current) setPacket(null);
+  }
+
+  function claim(preempt: Lease['preempt']) {
+    const lease: Lease = { preempt };
+    commandLock.current = lease;
+    return () => endLease(lease);
+  }
+
+  // Background work never refuses or delays the child: every foreground claim on the paper
+  // passes through here first, so no caller can forget to make it yield.
+  function preemptBackground() {
+    const lease = commandLock.current;
+    if (!lease?.preempt) return;
+    endLease(lease);
+    lease.preempt();
+  }
+
   useImperativeHandle(
     ref,
     () => ({
@@ -272,17 +312,15 @@ function useSurfaceCapture(
       captureInk: (snapshot) => capture(snapshot, 'ink'),
       refreshGeometry,
       lockInput() {
+        preemptBackground();
         if (input.hasActive() || commandLock.current)
           throw new Error('Finish drawing before using this control.');
-        const lease = {};
-        commandLock.current = lease;
-        // A capture belongs to the lease it was taken under, so giving the lease up mid-capture
-        // ends that capture rather than leaving it to block the next command's.
-        return () => {
-          if (commandLock.current !== lease) return;
-          commandLock.current = null;
-          captureLock.current?.cancel('The picture changed before capture finished.');
-        };
+        return claim(null);
+      },
+      lockBackground(onPreempt) {
+        if (input.hasActive() || commandLock.current || captureLock.current)
+          throw new Error('The drawing paper is in use.');
+        return claim(onPreempt);
       },
     }),
     []
@@ -296,7 +334,7 @@ function useSurfaceCapture(
     [input]
   );
 
-  return { captureLock, commandLock };
+  return { captureLock, commandLock, preemptBackground };
 }
 
 const themedStyles = createDrawingStyles((palette) =>

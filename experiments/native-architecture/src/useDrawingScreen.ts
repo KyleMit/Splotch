@@ -343,11 +343,9 @@ function useSurfaceCommands({
   afterClear: () => void;
 }) {
   const command = useRef(false);
-  const scanning = useRef<(() => void) | null>(null);
-  const { mounted, observations, scanObservations } = useInkObservers(scanning);
+  const { mounted, observations, scanObservations } = useInkObservers();
   async function runCommand(action: () => Promise<void>) {
     if (command.current || blocked()) return;
-    scanning.current?.();
     let release: (() => void) | undefined;
     try {
       if (!surface.current) throw new Error('The drawing paper is not ready.');
@@ -368,7 +366,6 @@ function useSurfaceCommands({
 
   function undo() {
     if (command.current || blocked()) return;
-    scanning.current?.();
     let release: (() => void) | undefined;
     try {
       release = surface.current?.lockInput();
@@ -429,7 +426,6 @@ function useSurfaceCommands({
     runCommand,
     scanEmpty: createEmptyScan({
       command,
-      scanning,
       mounted,
       observations: scanObservations,
       surface,
