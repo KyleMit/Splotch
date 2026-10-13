@@ -26,12 +26,13 @@ import {
 import { isButtonScale } from './buttonSize';
 import { isReduceMotionPreference, type ReduceMotionPreference } from './reduceMotion';
 import { WHATS_NEW_STAMP } from './whatsNew';
-import { DEFAULT_PENCIL_SETTINGS, type PencilSettings } from './pencilEraser';
+import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
 import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
   DEFAULT_WIDTH_SETTINGS,
   parseSoundSettings,
   snapshot,
+  type Choices,
   type SoundSettings,
   type SoundSettingsState,
   type SoundSettingsStorage,
@@ -116,19 +117,30 @@ type PreferenceActionContext = {
 const SETTINGS_SAVE_FAILED_MESSAGE =
   'Your settings work for this session, but could not be saved. Please retry.';
 
-// The What's New stamp is written on its own rather than through persist, so a failed Parent
-// Center save stays pending for its retry. Ordinary choices are already in the state it writes,
-// so once that write lands, an earlier ordinary failure is recovered.
-function createStampWriter(
+// What the app records about itself rather than a choice a parent makes.
+type SettingsMetadata = Partial<Pick<Choices, 'whatsNewSeen' | 'applePencilSeen'>>;
+
+function unrecorded(state: SoundSettingsState, metadata: SettingsMetadata): SettingsMetadata {
+  const { whatsNewSeen, applePencilSeen } = metadata;
+  return {
+    ...(whatsNewSeen !== undefined && whatsNewSeen !== state.whatsNewSeen ? { whatsNewSeen } : {}),
+    ...(applePencilSeen && !state.applePencilSeen ? { applePencilSeen } : {}),
+  };
+}
+
+// Metadata is written on its own rather than through persist, so a failed Parent Center save
+// stays pending for its retry. Ordinary choices are already in the state it writes, so once that
+// write lands, an earlier ordinary failure is recovered.
+function createMetadataWriter(
   storage: SoundSettingsStorage,
   { getState, publish }: PreferenceActionContext,
   hasPendingParent: () => boolean
 ) {
-  return async function persistStamp() {
+  return async function persistMetadata(metadata: SettingsMetadata) {
     const state = getState();
     if (state.status !== 'ready') return;
     const { status: _status, saved, message, ...current } = state;
-    const choices = { ...current, whatsNewSeen: WHATS_NEW_STAMP };
+    const choices = { ...current, ...metadata };
     publish({ status: 'saving', ...choices, message });
     try {
       await storage.write(JSON.stringify(snapshot(choices)));
@@ -141,17 +153,55 @@ function createStampWriter(
   };
 }
 
-// The owner awaits flushWhatsNewSeen after each write it finishes.
+// Opening What's New or the first Apple Pencil double-tap can happen while settings load or
+// another choice is still being written; the record then waits for that writer instead of being
+// dropped. The owner awaits flushMetadata after each write it finishes.
+function createMetadataActions({
+  getState,
+  isDisposed,
+  hasReadFailed,
+  publish,
+  persistMetadata,
+}: PreferenceActionContext & {
+  persistMetadata: (metadata: SettingsMetadata) => Promise<void>;
+}) {
+  let queued: SettingsMetadata = {};
+  async function record(metadata: SettingsMetadata) {
+    if (isDisposed()) return;
+    const state = getState();
+    const missing = unrecorded(state, { ...queued, ...metadata });
+    queued = state.status === 'ready' ? {} : missing;
+    if (state.status !== 'ready' || Object.keys(missing).length === 0) return;
+    if (hasReadFailed()) {
+      publish({ ...state, ...missing });
+      return;
+    }
+    await persistMetadata(missing);
+    await flushMetadata();
+  }
+  async function flushMetadata() {
+    if (isDisposed() || getState().status !== 'ready' || Object.keys(queued).length === 0) return;
+    const pending = queued;
+    queued = {};
+    await record(pending);
+  }
+  return {
+    actions: {
+      markWhatsNewSeen: () => record({ whatsNewSeen: WHATS_NEW_STAMP }),
+      markApplePencilSeen: () => record({ applePencilSeen: true }),
+    },
+    flushMetadata,
+  };
+}
+
 function createAccessibilityActions({
   getState,
   isDisposed,
   hasReadFailed,
   publish,
   persist,
-  persistStamp,
-}: PreferenceActionContext & { persistStamp: () => Promise<void> }) {
-  let whatsNewSeenQueued = false;
-  const actions = {
+}: PreferenceActionContext) {
+  return {
     async setButtonScale(buttonScale: number) {
       const state = getState();
       if (isDisposed() || state.status !== 'ready') return;
@@ -173,28 +223,7 @@ function createAccessibilityActions({
       }
       await persist({ ...snapshot(state), reduceMotion });
     },
-    // Opening What's New can happen while another choice is still being written; the stamp then
-    // waits for that writer instead of being dropped, so the dot clears once it finishes.
-    async markWhatsNewSeen() {
-      const state = getState();
-      if (isDisposed() || state.whatsNewSeen === WHATS_NEW_STAMP) return;
-      if (state.status !== 'ready') {
-        whatsNewSeenQueued = true;
-        return;
-      }
-      if (hasReadFailed()) {
-        publish({ ...state, whatsNewSeen: WHATS_NEW_STAMP });
-        return;
-      }
-      await persistStamp();
-    },
   };
-  async function flushWhatsNewSeen() {
-    if (!whatsNewSeenQueued || isDisposed() || getState().status !== 'ready') return;
-    whatsNewSeenQueued = false;
-    await actions.markWhatsNewSeen();
-  }
-  return { actions, flushWhatsNewSeen };
 }
 
 function createDrawingPreferenceActions({
@@ -317,7 +346,6 @@ function createDrawingPreferenceActions({
   };
 }
 
-// A double-tap landing while another choice is being written is recorded by the next double-tap.
 function createPencilActions({
   getState,
   isDisposed,
@@ -325,24 +353,26 @@ function createPencilActions({
   publish,
   persist,
 }: PreferenceActionContext) {
-  async function setPencil(choice: Partial<PencilSettings>) {
-    const state = getState();
-    if (isDisposed() || state.status !== 'ready') return;
-    if (hasReadFailed()) {
-      publish({ ...state, ...choice });
-      return;
-    }
-    await persist({ ...snapshot(state), ...choice });
-  }
   return {
     async setPencilEraserEnabled(pencilEraserEnabled: boolean) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
       if (typeof pencilEraserEnabled !== 'boolean')
         throw new Error('Apple Pencil choice is invalid.');
-      await setPencil({ pencilEraserEnabled });
+      if (hasReadFailed()) {
+        publish({ ...state, pencilEraserEnabled });
+        return;
+      }
+      await persist({ ...snapshot(state), pencilEraserEnabled });
     },
-    async markApplePencilSeen() {
-      if (!getState().applePencilSeen) await setPencil({ applePencilSeen: true });
-    },
+  };
+}
+
+function createPreferenceActions(context: PreferenceActionContext) {
+  return {
+    ...createDrawingPreferenceActions(context),
+    ...createPencilActions(context),
+    ...createAccessibilityActions(context),
   };
 }
 
@@ -378,7 +408,7 @@ export function createSoundSettings(
         message: SETTINGS_SAVE_FAILED_MESSAGE,
       });
     }
-    await accessibility.flushWhatsNewSeen();
+    await metadata.flushMetadata();
   }
   async function persistParent(settings: SoundSettings) {
     if (state.status !== 'ready' || readFailed) return;
@@ -394,7 +424,7 @@ export function createSoundSettings(
     } catch {
       publish({ status: 'ready', ...choices, saved: false, message: PARENT_SAVE_FAILED_MESSAGE });
     }
-    await accessibility.flushWhatsNewSeen();
+    await metadata.flushMetadata();
   }
   const actionContext: PreferenceActionContext = {
     getState: () => state,
@@ -403,9 +433,9 @@ export function createSoundSettings(
     publish,
     persist,
   };
-  const accessibility = createAccessibilityActions({
+  const metadata = createMetadataActions({
     ...actionContext,
-    persistStamp: createStampWriter(storage, actionContext, () => pendingParent !== null),
+    persistMetadata: createMetadataWriter(storage, actionContext, () => pendingParent !== null),
   });
   return {
     async load() {
@@ -419,11 +449,10 @@ export function createSoundSettings(
         readFailed = true;
         publish(unreadSoundSettingsState());
       }
-      await accessibility.flushWhatsNewSeen();
+      await metadata.flushMetadata();
     },
-    ...createDrawingPreferenceActions(actionContext),
-    ...createPencilActions(actionContext),
-    ...accessibility.actions,
+    ...createPreferenceActions(actionContext),
+    ...metadata.actions,
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;
       if (pendingParent) {
