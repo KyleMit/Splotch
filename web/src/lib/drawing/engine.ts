@@ -26,6 +26,7 @@ import {
   type StrokeSize,
 } from './strokeSettings';
 import {
+  appendSmoothSegments,
   calculateStrokeSpeed,
   COLOR_CHANGE_DEBOUNCE_MS,
   edgeSwipeIsOsGesture,
@@ -570,9 +571,7 @@ function renderStrokeStart(ps: PointerState) {
   callbacks.onDrawSound?.({ speed: 0, isStrokeStart: true });
 }
 
-// One quadratic segment per input point: the path runs midpoint-to-midpoint
-// with the raw point as the control, so consecutive segments share a tangent
-// and the stroke curves smoothly instead of showing straight-chord corners.
+// Midpoint-smoothed quadratics (appendSmoothSegments) from the pointer's pen.
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so live rendering, history replay, and export share the same
 // anti-aliasing behavior.
@@ -588,15 +587,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
     lineWidth: ps.lineWidth,
     ...strokeStyleOf(ps),
   };
-  for (const { x, y } of points) {
-    const midX = (ps.x + x) / 2;
-    const midY = (ps.y + y) / 2;
-    op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
-    ps.x = x;
-    ps.y = y;
-    ps.midX = midX;
-    ps.midY = midY;
-  }
+  appendSmoothSegments(ps, points, op.segs);
   renderTiledOp(op);
   recordTiledOp(op);
   crayonPasses.creditMoves(ps, moveCount);

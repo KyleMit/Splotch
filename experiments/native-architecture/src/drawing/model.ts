@@ -26,6 +26,7 @@ import {
   type PaperSize,
 } from './paperSpace';
 export { PAPER_WIDTH, PAPER_HEIGHT } from './paperSpace';
+import { appendSmoothSegments, type PathSeg } from '../../../../web/src/lib/drawing/strokeMath';
 import {
   defaultStoredStrokeWidth,
   isStoredStrokeWidth,
@@ -197,8 +198,26 @@ export function appendPoint(
   return [...points, point];
 }
 
-export function strokePath(points: readonly Point[]): string {
-  return points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${point.y}`).join(' ');
+type SmoothStroke = Readonly<{ start: Point; segments: readonly PathSeg[] }>;
+
+// Shipping's stroke geometry, from its own builder: midpoint quadratics that end at the last
+// midpoint. `lead`, the point drawn before `points[0]`, continues a stroke split into passes
+// from where the earlier pass stopped, as a shipping op continues from its pen.
+export function smoothStroke(points: readonly Point[], lead?: Point): SmoothStroke {
+  const first = points[0];
+  if (!first) throw new Error('A stroke needs a point.');
+  const start = lead ? { x: (lead.x + first.x) / 2, y: (lead.y + first.y) / 2 } : first;
+  const pen = { x: first.x, y: first.y, midX: start.x, midY: start.y };
+  const segments: PathSeg[] = [];
+  appendSmoothSegments(pen, points.slice(1), segments);
+  return { start, segments };
+}
+
+export function strokePath(points: readonly Point[], lead?: Point): string {
+  const { start, segments } = smoothStroke(points, lead);
+  let path = `M${start.x} ${start.y}`;
+  for (const segment of segments) path += ` Q${segment.cx} ${segment.cy} ${segment.x} ${segment.y}`;
+  return path;
 }
 
 function record(value: unknown): value is Record<string, unknown> {

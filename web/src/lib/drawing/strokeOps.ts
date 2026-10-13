@@ -9,15 +9,8 @@ import {
   renderCrayonOp,
   resetCrayonStateForClear,
 } from './crayonPassBuffer';
+import type { PathSeg } from './strokeMath';
 import type { RecordedPaperState } from './undoHistory';
-
-// One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
-interface PathSeg {
-  cx: number;
-  cy: number;
-  x: number;
-  y: number;
-}
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start), so folding the ops

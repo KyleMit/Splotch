@@ -337,10 +337,11 @@ describe('Magic covers the whole paper on a book page', () => {
     const bands = [placement.y / 2, placement.y + placement.height + placement.y / 2];
     const strokes = bands.map((y) => ({
       ...strokeStyle('magic', 'Blue', drawing, 'thick'),
-      points: [
-        { x: 40, y },
-        { x: PORTRAIT_SIZE.width - 40, y },
-      ],
+      // Strokes end at their last sample midpoint, so dense samples carry ink near the end.
+      points: Array.from({ length: 33 }, (_, index) => ({
+        x: 40 + ((PORTRAIT_SIZE.width - 80) * index) / 32,
+        y,
+      })),
     }));
     const scope = { pageId: trex, paper: PORTRAIT_PAPER, artwork: { [trex]: artwork } };
     const render = (ink) =>
