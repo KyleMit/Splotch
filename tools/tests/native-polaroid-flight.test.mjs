@@ -17,13 +17,17 @@ import { POLAROID_FLIGHT_MS } from '../../web/src/lib/drawing/screenshotTiming.t
 import { polaroidCssSize } from '../../web/src/lib/drawing/polaroidGeometry.ts';
 import { scale, zIndex } from '../../web/src/lib/design/tokens.ts';
 
-// A recording Animated: each timing and sequence is returned as data for the test to read.
+// A recording Animated: a timing is returned as data for the test to read, and each curve squares
+// its input and remembers the control points it was built from.
+const curves = vi.hoisted(() => []);
 vi.mock('react-native', () => ({
-  Animated: {
-    sequence: (steps) => ({ sequence: steps }),
-    timing: (value, config) => ({ value, ...config }),
+  Animated: { timing: (value, config) => ({ value, ...config }) },
+  Easing: {
+    bezier: (...points) => {
+      curves.push(points);
+      return (time) => time * time;
+    },
   },
-  Easing: { bezier: (...points) => ({ bezier: points }) },
 }));
 
 const MS_PER_SECOND = 1000;
@@ -206,19 +210,29 @@ describe('the native save polaroid against app.css', () => {
 });
 
 describe('the keyframe timeline', () => {
-  it('runs one timing per keyframe gap under that gap’s curve, together lasting the whole flight', () => {
+  it('runs the whole flight as one native-driven timing', () => {
     const progress = { interpolate: (config) => config };
-    const { sequence } = keyframeTimeline(progress, POLAROID_SHOW_KEYFRAMES, POLAROID_FLIGHT_MS);
-    expect(sequence).toHaveLength(POLAROID_SHOW_KEYFRAMES.length - 1);
-    sequence.forEach((step, index) => {
-      expect(step.value).toBe(progress);
-      expect(step.toValue).toBe(POLAROID_SHOW_KEYFRAMES[index + 1].at);
-      expect(step.easing).toEqual({ bezier: POLAROID_SHOW_KEYFRAMES[index].easing });
-      expect(step.useNativeDriver).toBe(true);
+    const timing = keyframeTimeline(progress, POLAROID_SHOW_KEYFRAMES, POLAROID_FLIGHT_MS);
+    expect(timing).toMatchObject({
+      value: progress,
+      toValue: 1,
+      duration: POLAROID_FLIGHT_MS,
+      useNativeDriver: true,
     });
-    const total = sequence.reduce((sum, step) => sum + step.duration, 0);
-    expect(total).toBeCloseTo(POLAROID_FLIGHT_MS);
-    expect(sequence[0].duration).toBeCloseTo(0.07 * POLAROID_FLIGHT_MS);
+  });
+
+  it('eases each keyframe gap under the curve its starting keyframe names', () => {
+    curves.length = 0;
+    const timing = keyframeTimeline({}, POLAROID_SHOW_KEYFRAMES, POLAROID_FLIGHT_MS);
+    expect(curves).toEqual(POLAROID_SHOW_KEYFRAMES.slice(0, -1).map((keyframe) => keyframe.easing));
+    for (const [index, keyframe] of POLAROID_SHOW_KEYFRAMES.slice(0, -1).entries()) {
+      const next = POLAROID_SHOW_KEYFRAMES[index + 1];
+      expect(timing.easing(keyframe.at)).toBeCloseTo(keyframe.at);
+      expect(timing.easing((keyframe.at + next.at) / 2)).toBeCloseTo(
+        keyframe.at + (next.at - keyframe.at) / 4
+      );
+    }
+    expect(timing.easing(1)).toBe(1);
   });
 
   it('interpolates each property linearly across the keyframe offsets', () => {
