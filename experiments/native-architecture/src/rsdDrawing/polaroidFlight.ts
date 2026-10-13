@@ -83,7 +83,7 @@ type Timed = Readonly<{ at: number; easing: Bezier }>;
 // interpolated linearly over the keyframe offsets traces the CSS animation exactly. One timing
 // rather than a sequence of them: a sequence starts each step a frame after the last one ends,
 // which would leave the flight a frame behind per keyframe.
-export function keyframeEasing(keyframes: readonly Timed[]) {
+function keyframeEasing(keyframes: readonly Timed[]) {
   const gaps = keyframes.slice(1).map((next, index) => {
     const from = keyframes[index];
     const [x1, y1, x2, y2] = from.easing;
