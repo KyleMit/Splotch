@@ -39,6 +39,10 @@ function lastFrame() {
   return records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
 }
 
+function lastSurface() {
+  return records.props.findLast((props) => props.testID === 'modal-surface');
+}
+
 it('hydrates before usable controls and persists appearance through the real RSD Settings caller, modal theme and retry', async () => {
   let stored = JSON.stringify({
     version: 3,
@@ -84,11 +88,12 @@ it('hydrates before usable controls and persists appearance through the real RSD
   });
   await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="System appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  // The drawing screen's frame wears the palette bar's surface in its safe-area strips.
+  expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   storage.write.mockRejectedValueOnce(new Error('disk full'));
   await click('Dark appearance');
   checkedRadio(host.querySelector('[aria-label="Dark appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(lastFrame().style.backgroundColor).toBe('#23232b');
   expect(
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
   ).toEqual(['light-content', 'light-content']);
@@ -137,16 +142,16 @@ it('hydrates before usable controls and persists appearance through the real RSD
   records.scheme = 'dark';
   await refresh();
   checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   expect(
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
   ).toEqual(['dark-content', 'dark-content']);
   await click('System appearance');
   checkedRadio(host.querySelector('[aria-label="System appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(lastFrame().style.backgroundColor).toBe('#23232b');
   records.scheme = 'light';
   await refresh();
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   expect(JSON.parse(stored).appearance).toBe('system');
 });
 
@@ -157,6 +162,8 @@ it('selects Book cover and page artwork from the same explicit preference as the
       { preference },
       createElement(RsdColoringBookPicker, {
         selected: FARM_PAGE_IDS[0],
+        visible: true,
+        onDismiss() {},
         onChoose() {},
         onClose() {},
       })
@@ -167,7 +174,7 @@ it('selects Book cover and page artwork from the same explicit preference as the
   expect(records.props.findLast((props) => props.source)?.source.uri).toBe(
     BUNDLED_FARM_COVERS.dark
   );
-  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(lastSurface().style.backgroundColor).toBe('#23232b');
   await click('Farm coloring book');
   const images = records.props.filter((props) => props.source?.uri);
   expect(
@@ -179,7 +186,7 @@ it('selects Book cover and page artwork from the same explicit preference as the
       (props) => props.source?.uri === BUNDLED_FARM_IMAGES[FARM_PAGE_IDS[0]].selector.light
     )
   ).toBeDefined();
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  expect(lastSurface().style.backgroundColor).toBe('#ffffff');
 });
 
 it.each(['light', 'dark'])(
@@ -273,7 +280,7 @@ it('uses real RSD sound-level radios independently of the sound switch, retries,
     soundEnabled: true,
     soundLevel: 'loud',
   });
-  await click('Keep drawing');
+  await click('Close');
   expect(coloringPaper()).toEqual(drawing);
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.feedbackSend).not.toHaveBeenCalled();
@@ -301,11 +308,11 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
   expect(host.textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);
   expect(host.textContent).not.toContain('In this beta');
-  await click('Back to Settings');
+  await click('Back');
   expect(host.querySelector('[role="list"] [aria-label="Appearance"]')).not.toBeNull();
   await openSettingsSection('About');
   await click('Help and about');
-  await click('Keep drawing');
+  await click('Close');
   expect(coloringPaper()).toEqual(drawing);
   await click('Undo');
   expect(coloringPaper().strokes).toHaveLength(0);
@@ -357,7 +364,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
     aiEnabled: false,
   });
   expect(coloringPaper()).toEqual({ ...original, pageId: 'blank' });
-  await click('Keep drawing');
+  await click('Close');
   await click('Undo');
   expect(coloringPaper().pageId).toBe('blank');
   expect(host.querySelector('[aria-label="Coloring pages"]')).toBeNull();
@@ -373,7 +380,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Settings');
   await openSettingsSection('Coloring');
   await click('Coloring book off');
-  await click('Keep drawing');
+  await click('Close');
   await click('Coloring pages');
   expect(host.querySelector('[aria-label="Farm coloring book"]')).not.toBeNull();
   expect(caller.aiSend).not.toHaveBeenCalled();
@@ -412,7 +419,7 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   await click('Coloring pages');
   await started;
   expect(platform.download).toHaveBeenCalledOnce();
-  await click('Keep drawing');
+  await click('Close');
   await click('Settings');
   await openSettingsSection('Coloring');
   await click('Coloring book on');

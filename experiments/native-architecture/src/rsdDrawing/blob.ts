@@ -29,21 +29,26 @@ function cornerRadii(shape: BlobShape, width: number, height: number) {
   }));
 }
 
-// The outline of a box with the shipping blob's corners, clockwise from the top edge.
-export function blobPath(shape: BlobShape, width: number, height: number): string {
-  const [topLeft, topRight, bottomRight, bottomLeft] = cornerRadii(shape, width, height);
+// The outline of a box with the shipping blob's corners, clockwise from the top edge. An inset
+// draws it that far inside the box with each radius shrunk to match, so a centered stroke of
+// twice the inset lands where a CSS border of that width would.
+export function blobPath(shape: BlobShape, width: number, height: number, inset = 0): string {
+  const [topLeft, topRight, bottomRight, bottomLeft] = cornerRadii(shape, width, height).map(
+    ({ x, y }) => ({ x: coordinate(Math.max(0, x - inset)), y: coordinate(Math.max(0, y - inset)) })
+  );
+  const [left, top, right, bottom] = [inset, inset, width - inset, height - inset];
   const arc = (radius: { x: number; y: number }, x: number, y: number) =>
     `A${radius.x} ${radius.y} 0 0 1 ${coordinate(x)} ${coordinate(y)}`;
   return [
-    `M${topLeft.x} 0`,
-    `H${coordinate(width - topRight.x)}`,
-    arc(topRight, width, topRight.y),
-    `V${coordinate(height - bottomRight.y)}`,
-    arc(bottomRight, width - bottomRight.x, height),
-    `H${bottomLeft.x}`,
-    arc(bottomLeft, 0, height - bottomLeft.y),
-    `V${topLeft.y}`,
-    arc(topLeft, topLeft.x, 0),
+    `M${coordinate(left + topLeft.x)} ${top}`,
+    `H${coordinate(right - topRight.x)}`,
+    arc(topRight, right, top + topRight.y),
+    `V${coordinate(bottom - bottomRight.y)}`,
+    arc(bottomRight, right - bottomRight.x, bottom),
+    `H${coordinate(left + bottomLeft.x)}`,
+    arc(bottomLeft, left, bottom - bottomLeft.y),
+    `V${coordinate(top + topLeft.y)}`,
+    arc(topLeft, left + topLeft.x, top),
     'Z',
   ].join(' ');
 }

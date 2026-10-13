@@ -387,7 +387,8 @@ const files = [
   'src/rsdDrawing/tokens.css.ts',
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
-  'src/rsdDrawing/NativeDialog.tsx',
+  'src/rsdDrawing/ModalShell.tsx',
+  'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdOrientationChoices.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
@@ -404,7 +405,8 @@ const nativeAdapters = new Set([
   'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
-  'src/rsdDrawing/NativeDialog.tsx',
+  'src/rsdDrawing/ModalShell.tsx',
+  'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
 ]);
 const rsdPackage = require.resolve('react-strict-dom/package.json');

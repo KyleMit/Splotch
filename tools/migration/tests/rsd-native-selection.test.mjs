@@ -15,19 +15,14 @@ import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { html } from 'react-strict-dom';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import {
   RsdAction,
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
 import { RsdPaintAction } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
-import { NativeDialog } from '../../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
-import {
-  DRAWING_SCALE,
-  TOUCH_TARGET,
-} from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 it('uses the released native renderer for checked radio state and selected treatment', async () => {
   await mount(
     createElement(RsdAction, {
@@ -205,9 +200,9 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
     await act(async () => host.querySelector('[aria-label="Drawing sound on"]').click());
     const modal = host.querySelector('[data-native-modal="Sound"]');
     expect(modal).not.toBeNull();
-    const close = modal.querySelector('[data-testid="rsd-dialog-footer"] button:last-child');
-    expect(close.getAttribute('aria-label')).toBe('Keep drawing');
-    expect(close.closest('section')).toBeNull();
+    const close = modal.querySelector('[aria-label="Close"]');
+    expect(close).not.toBeNull();
+    expect(close.closest('[data-testid="modal-body"]')).toBeNull();
     expect(modal.textContent).toContain('could not be saved');
     expect(modal.querySelector('[aria-live="polite"]').textContent).toBe(current.message);
     expect(write).toHaveBeenCalledOnce();
@@ -217,79 +212,6 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
   } finally {
     owner.dispose();
   }
-});
-
-it('keeps the caller close action outside the bounded options viewport with ordinary Modal lifecycle', async () => {
-  const onClose = vi.fn(),
-    onDismiss = vi.fn();
-  await mount(
-    createElement(
-      NativeDialog,
-      {
-        visible: true,
-        label: 'Drawing tools',
-        onClose,
-        onDismiss,
-        footer: createElement(RsdAction, {
-          label: 'Keep drawing',
-          disabled: false,
-          onClick: onClose,
-        }),
-      },
-      createElement(RsdAction, { label: 'Marker', onClick() {} })
-    )
-  );
-  const viewport = records.viewports.at(-1);
-  expect(viewport.testID).toBe('rsd-dialog-viewport');
-  expect(viewport.accessibilityLabel).toBe('Drawing tools options');
-  expect(viewport.style.flex).toBe(1);
-  expect(viewport.style.minHeight).toBe(0);
-  expect(viewport.removeClippedSubviews).toBe(false);
-  const modal = records.props.find((entry) => entry.onRequestClose === onClose);
-  expect(modal.onDismiss).toBe(onDismiss);
-  expect(modal.visible).toBe(true);
-  expect(modal.animationType).toBe('none');
-  const options = host.querySelector('[data-testid="rsd-dialog-viewport"]');
-  const footer = host.querySelector('[data-testid="rsd-dialog-footer"]');
-  const close = footer.querySelector('[aria-label="Keep drawing"]');
-  expect(options.querySelector('[aria-label="Marker"]')).not.toBeNull();
-  expect(options.querySelector('[aria-label="Keep drawing"]')).toBeNull();
-  expect(footer.closest('section')).toBeNull();
-  expect(host.querySelectorAll('[aria-label="Keep drawing"]')).toHaveLength(1);
-  const footerProps = records.props.find((entry) => entry.testID === 'rsd-dialog-footer');
-  expect(footerProps.style.flexShrink).toBe(0);
-  expect(footerProps.style.padding).toBe(DRAWING_SCALE.space4);
-  expect(footerProps.style.padding).toBeGreaterThan(0);
-  const closeProps = records.props.findLast((entry) => entry.accessibilityLabel === 'Keep drawing');
-  expect(closeProps.style.minWidth).toBe(TOUCH_TARGET);
-  expect(closeProps.style.minHeight).toBe(TOUCH_TARGET);
-  await act(async () => close.click());
-  expect(onClose).toHaveBeenCalledOnce();
-});
-
-it('retains the caller-owned pictures close guard in the fixed footer', async () => {
-  const onClose = vi.fn();
-  const element = (busy) =>
-    createElement(
-      NativeDialog,
-      {
-        visible: true,
-        label: 'Your pictures',
-        onClose,
-        footer: createElement(RsdAction, { label: 'Close', disabled: busy, onClick: onClose }),
-      },
-      createElement('span', null, 'Pictures')
-    );
-  await mount(element(true));
-  const close = host.querySelector('[data-testid="rsd-dialog-footer"] button');
-  expect(close.disabled).toBe(true);
-  await act(async () => close.click());
-  expect(onClose).not.toHaveBeenCalled();
-  await act(async () => root.render(element(false)));
-  expect(host.querySelector('[data-testid="rsd-dialog-footer"] button')).toBe(close);
-  expect(close.disabled).toBe(false);
-  await act(async () => close.click());
-  expect(onClose).toHaveBeenCalledOnce();
 });
 
 it('propagates paint availability both ways without losing its selected color or accessible name', async () => {
@@ -306,43 +228,6 @@ it('propagates paint availability both ways without losing its selected color or
     expect(node).toBe(mountedNode);
     expect(node.getAttribute('aria-label')).toBe('Blue paint');
   }
-});
-
-it('owns fresh root and modal inset frames with all system edges inside each window', async () => {
-  await mount(
-    createElement(
-      NativeFrame,
-      null,
-      createElement('span', { 'data-root-paper': true }, 'Paper'),
-      createElement(
-        NativeDialog,
-        {
-          visible: true,
-          label: 'Drawing tools',
-          onClose() {},
-          footer: createElement(RsdAction, { label: 'Keep drawing', onClick() {} }),
-        },
-        createElement(RsdAction, { label: 'Marker', onClick() {} })
-      )
-    )
-  );
-  const providers = host.querySelectorAll('[data-safe-area-kind="provider"]');
-  expect(providers).toHaveLength(2);
-  const frames = records.props.filter((entry) => entry.testID === 'rsd-safe-area-frame');
-  expect(frames).toHaveLength(2);
-  for (const frame of frames) {
-    expect(frame.mode).toBe('padding');
-    expect(frame.edges).toEqual(['top', 'right', 'bottom', 'left']);
-    expect(frame.style.flex).toBe(1);
-  }
-  const close = host.querySelector('[aria-label="Keep drawing"]');
-  const frame = close.closest('[data-testid="rsd-safe-area-frame"]');
-  expect(frame.parentElement.dataset.safeAreaKind).toBe('provider');
-  expect(frame.contains(host.querySelector('[data-root-paper]'))).toBe(false);
-  expect(close.closest('[data-testid="rsd-dialog-viewport"]')).toBeNull();
-  expect(
-    records.props.findLast((entry) => entry.testID === 'rsd-dialog-footer').style.padding
-  ).toBe(DRAWING_SCALE.space4);
 });
 
 it('mounts the shared color picker outside Paint colors and writes through the existing settings owner', async () => {

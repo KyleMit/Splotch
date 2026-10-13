@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { useDrawingScreen } from './useDrawingScreen';
+import type { ModalDismissal } from './product/useProductModalRoute';
 
-export function useDrawingMenu(screen: ReturnType<typeof useDrawingScreen>) {
+export function useDrawingMenu(
+  screen: ReturnType<typeof useDrawingScreen>,
+  dismissal: ModalDismissal
+) {
   const [phase, setPhase] = useState<'closed' | 'open' | 'closing'>('closed');
   const lease = useRef<(() => void) | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
@@ -23,8 +27,8 @@ export function useDrawingMenu(screen: ReturnType<typeof useDrawingScreen>) {
   );
   useEffect(() => {
     // Android Modal has no dismissal callback; its hidden render commits before the handoff.
-    if (phase === 'closing' && Platform.OS === 'android') dismissed();
-  }, [phase, dismissed]);
+    if (phase === 'closing' && dismissal === 'platform' && Platform.OS === 'android') dismissed();
+  }, [phase, dismissed, dismissal]);
   function close() {
     setPhase('closing');
   }
