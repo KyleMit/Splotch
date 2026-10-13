@@ -169,6 +169,19 @@ function RsdDrawingContent({
             menu={menu}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
+            paperOverlay={(drawerOpen) => (
+              <RsdInstallBanner
+                strokes={screen.committedStrokes}
+                controlSize={controlSize(sound.settings.buttonScale)}
+                hidden={
+                  drawerOpen ||
+                  paperBlocked ||
+                  screen.pictures !== null ||
+                  screen.pagePickerOpen ||
+                  screen.colorPickerOpen
+                }
+              />
+            )}
             status={
               <NativeDrawingStatus drawing={screen.drawing}>
                 <html.span aria-live="polite">{notice}</html.span>
@@ -185,16 +198,6 @@ function RsdDrawingContent({
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
-            <RsdInstallBanner
-              strokes={screen.committedStrokes}
-              controlSize={controlSize(sound.settings.buttonScale)}
-              hidden={
-                paperBlocked ||
-                screen.pictures !== null ||
-                screen.pagePickerOpen ||
-                screen.colorPickerOpen
-              }
-            />
           </RsdEdgeLayout>
           <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
           <RsdDrawingTools

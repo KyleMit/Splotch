@@ -1,5 +1,14 @@
 import { useInkPaper } from './InkPaper';
-import { paperKey, paperSize, paperView, type PaperReference } from './paperSpace';
+import {
+  artOrientation,
+  CANONICAL_PAPER_SIZE,
+  paperKey,
+  paperSize,
+  paperView,
+  presentedPaperSize,
+  type PaperReference,
+  type PaperSize,
+} from './paperSpace';
 import {
   forwardRef,
   useContext,
@@ -27,7 +36,7 @@ import type { CrayonTileResources } from './crayonTiles';
 import type { PaintColor } from './palette';
 import type { Brush } from './brushes';
 import { isFarmPageId } from './bundledBooks';
-import { BUNDLED_BOOK_ART } from './bundledBookAssets';
+import { bundledArt } from './bundledBookAssets';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import type { PageId } from './pages';
@@ -66,12 +75,19 @@ async function loadUriImage(uri: string): Promise<SkImage> {
   return image;
 }
 
-function useBookFill(pageId: PageId, theme: PaperTheme, onError: (error: unknown) => void) {
+// A blank picture shows as the paper its ink plane would adopt, so the fill a first Magic
+// contact needs is already decoded for that paper's art orientation.
+function useBookFill(
+  pageId: PageId,
+  theme: PaperTheme,
+  paper: PaperSize,
+  onError: (error: unknown) => void
+) {
   const offline = useContext(OfflineArtworkScope);
   const uri = isFarmPageId(pageId)
-    ? BUNDLED_BOOK_ART[pageId][theme].fill
+    ? bundledArt(pageId, theme, paper).fill
     : isOfflinePageId(pageId)
-      ? (offline[pageId]?.[theme]?.fill ?? null)
+      ? (offline[pageId]?.[artOrientation(paper)][theme].fill ?? null)
       : null;
   const [loaded, setLoaded] = useState<Readonly<{ uri: string; image: SkImage }> | null>(null);
   const reportError = useRef(onError);
@@ -222,7 +238,12 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
     theme,
     props.brush === 'crayon' ? props.color : undefined
   );
-  const bookFill = useBookFill(pageId, theme, props.onError);
+  const bookFill = useBookFill(
+    pageId,
+    theme,
+    presentedPaperSize(paper, size ?? CANONICAL_PAPER_SIZE),
+    props.onError
+  );
   const context = useInkContext(paper, tiles, bookFill);
   const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}`;
   const committed = useCommittedLayer(props.strokes, size, context, key);
