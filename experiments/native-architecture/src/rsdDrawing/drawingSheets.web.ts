@@ -9,8 +9,8 @@ export const AiWaitingPolaroid = lazySurface(() =>
 export const ColorPicker = lazySurface(() =>
   import('../drawing/ColorPicker').then((module) => module.ColorPicker)
 );
-export const NativeSoundSettingsDialog = lazySurface(() =>
-  import('./RsdSettingsDialog').then((module) => module.NativeSoundSettingsDialog)
+export const RsdSettingsRoute = lazySurface(() =>
+  import('./RsdSettingsRoute').then((module) => module.RsdSettingsRoute)
 );
 export const RsdAiSheet = lazySurface(() =>
   import('../product/productChunk.web').then((module) => module.RsdAiSheet)
