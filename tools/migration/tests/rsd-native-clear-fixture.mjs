@@ -105,8 +105,7 @@ export function responderEvent(changed, touches) {
   const [first] = changed;
   return { nativeEvent: { ...first, changedTouches: changed, touches } };
 }
-const at = (point) =>
-  responderEvent([touch(CLEAR_FINGER, point)], [touch(CLEAR_FINGER, point)]);
+const at = (point) => responderEvent([touch(CLEAR_FINGER, point)], [touch(CLEAR_FINGER, point)]);
 export const offset = (distance) => ({
   x: HOME.x - distance / Math.SQRT2,
   y: HOME.y + distance / Math.SQRT2,
