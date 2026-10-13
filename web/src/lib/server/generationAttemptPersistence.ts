@@ -22,7 +22,7 @@ export type AttemptLookup = Readonly<{ id: string; createdAt: number; credential
 export type AttemptVersion = Readonly<{ record: AttemptRecord; etag: string }>;
 export type AttemptBlobKind = 'record' | 'input' | 'raw' | 'delivery';
 export const attemptKey = (id: string, kind: AttemptBlobKind): string => `${id}/${kind}`;
-export function requireAttemptId(id: string): void {
+function requireAttemptId(id: string): void {
   if (!isRecoveryHex(id)) throw new RecoveryFault('RECOVERY_INVALID');
 }
 export function requireAttemptTime(now: number): void {

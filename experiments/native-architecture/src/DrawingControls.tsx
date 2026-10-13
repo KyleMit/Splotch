@@ -162,7 +162,7 @@ function DrawingActions({
   );
 }
 
-export function DrawingMenu({
+function DrawingMenu({
   screen,
   sound,
   run,

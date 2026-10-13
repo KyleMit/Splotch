@@ -14,7 +14,6 @@ import {
   CHECKPOINT_MOVES_7,
   MAX_CONTACTS_7,
   MAX_GEOMETRY_7,
-  MAX_RETAINED_INPUTS_7,
   MAX_RETAINED_OPS_7,
   type Point7,
   type Style7,
@@ -49,7 +48,7 @@ function createInputGate7(
     accept(value: unknown) {
       try {
         if (sealed) throw new Error('The v7 cohort is sealed.');
-        if (moves.length >= MAX_RETAINED_INPUTS_7)
+        if (moves.length >= MAX_GEOMETRY_7)
           throw new Error('The v7 cohort has too many retained inputs.');
         acceptValidated(input7(value, styles.length, remaining()));
       } catch (error) {

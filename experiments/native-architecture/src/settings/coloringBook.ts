@@ -2,7 +2,7 @@ import type { Drawing, History } from '../drawing/model';
 
 export const DEFAULT_COLORING_BOOK_ENABLED = true;
 
-export function coloringBookDrawing(drawing: Drawing, enabled: boolean): Drawing {
+function coloringBookDrawing(drawing: Drawing, enabled: boolean): Drawing {
   return enabled || drawing.pageId === 'blank' ? drawing : { ...drawing, pageId: 'blank' };
 }
 

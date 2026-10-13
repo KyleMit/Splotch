@@ -14,7 +14,6 @@ import { admitRecordedBounds7 } from './recordedBounds7';
 import {
   MAX_CONTACTS_7,
   MAX_GEOMETRY_7,
-  MAX_RETAINED_INPUTS_7,
   MAX_RETAINED_OPS_7,
   MAX_SAVED_BYTES_7,
   type Drawing7,
@@ -49,7 +48,7 @@ export function parseRecordedDrawing7(value: unknown): Drawing7 {
       !Array.isArray(item.styles) ||
       !item.styles.length ||
       !Array.isArray(item.moves) ||
-      item.moves.length > MAX_RETAINED_INPUTS_7 ||
+      item.moves.length > MAX_GEOMETRY_7 ||
       !Array.isArray(item.ops) ||
       item.ops.length > MAX_RETAINED_OPS_7 ||
       paper.kind !== 'adopted'

@@ -8,7 +8,7 @@ const DEFAULT_RETRY_AFTER_SECONDS = 60;
 export const FEEDBACK_UNKNOWN_DELIVERY_NOTICE =
   'Splotch may already have received it. Sending again could send it twice.';
 
-export type FeedbackResponse = {
+type FeedbackResponse = {
   status: number;
   headers: Pick<Headers, 'get'>;
   body: ReadableStream<Uint8Array> | null;

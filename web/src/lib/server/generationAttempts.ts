@@ -59,40 +59,34 @@ export {
   outcomeOf,
   RECOVERY_PROVISIONAL_TOMBSTONE_MS,
 } from './generationAttemptRecord';
-export type {
-  AttemptRecord,
-  AttemptFunding,
-  AttemptOutcome,
-  AttemptDelivery,
-  AttemptAdmission,
-} from './generationAttemptRecord';
+export type { AttemptRecord, AttemptFunding, AttemptOutcome } from './generationAttemptRecord';
 export type { AttemptLookup } from './generationAttemptPersistence';
 export type AttemptAdmissionRequest = Readonly<{
   identity: RecoveryAttemptIdentity;
   credentialBinding: string;
   input: RecoveryInputMetadata;
 }>;
-export type ClaimedAttempt = Readonly<{
+type ClaimedAttempt = Readonly<{
   id: string;
   claimId: string;
   admission: AttemptRecord['admission'];
   funding: AttemptFunding;
   bytes: Uint8Array;
 }>;
-export type DeliveryProposal = Readonly<{
+type DeliveryProposal = Readonly<{
   sourceOutcomeDigest: string;
   settlementReceiptDigest: string;
   mime: RecoveryMime;
   reportToken: string | null;
   remaining: number | null;
 }>;
-export type CollectedDelivery = Readonly<{
+type CollectedDelivery = Readonly<{
   admission: AttemptRecord['admission'];
   delivery: AttemptDelivery;
   bytes: Uint8Array;
 }>;
 const ATTEMPT_SECRET_BYTES = 32;
-export type AttemptStatusLookup =
+type AttemptStatusLookup =
   | Readonly<{ kind: 'live'; record: AttemptRecord }>
   | Readonly<{ kind: 'expired'; identity: RecoveryAttemptIdentity; expiresAt: number }>;
 export interface GenerationAttempts {

@@ -6,7 +6,7 @@ export type LibraryContext = Readonly<{
   owner: OfflineLibrary;
   remove: () => Promise<void>;
 }>;
-export const LibraryScope = createContext<LibraryContext | null>(null);
+const LibraryScope = createContext<LibraryContext | null>(null);
 export function LibraryProvider({
   state,
   owner,

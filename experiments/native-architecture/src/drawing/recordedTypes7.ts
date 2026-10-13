@@ -45,7 +45,6 @@ export type Drawing7 = Readonly<{
 }>;
 export const MAX_CONTACTS_7 = 1000;
 export const MAX_GEOMETRY_7 = 100_000;
-export const MAX_RETAINED_INPUTS_7 = MAX_GEOMETRY_7;
 export const MAX_RETAINED_OPS_7 = MAX_GEOMETRY_7 * 2;
 export const MAX_SAVED_BYTES_7 = 8 * 1024 * 1024;
 export const CHECKPOINT_MOVES_7 = 64;

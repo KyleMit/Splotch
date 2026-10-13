@@ -12,7 +12,7 @@ export type AiJournal = Readonly<{
   jobId: string | null;
   result: AiResult | null;
 }>;
-export type ReceiptCommon = Readonly<{
+type ReceiptCommon = Readonly<{
   journal: AiJournal;
   nonce: string;
   revision: number;
@@ -27,7 +27,7 @@ export type AiPreparedReceipt = ReceiptCommon &
     inputDigest: string;
     inputLength: number;
   }>;
-export type AiImportedReceipt = ReceiptCommon &
+type AiImportedReceipt = ReceiptCommon &
   Readonly<{
     kind: 'imported';
     inputDigest: null;
@@ -50,7 +50,7 @@ export type AiRecoveryHeldReceipt = ReceiptCommon &
       intent: 'prepared' | 'committed';
     }>;
   }>;
-export type AiRecoverySelector = Readonly<{ id: number; nonce: string; revision: number }>;
+type AiRecoverySelector = Readonly<{ id: number; nonce: string; revision: number }>;
 export type AiRecoveryDelivery = Readonly<{
   expiresAt: number;
   digest: string;
@@ -94,7 +94,7 @@ export type AiRecoveryAckConfirmation = Readonly<{
   status: 200;
   body: import('../../../../web/src/lib/ai/generationAttempt').RecoveryAckReply;
 }>;
-export type AiRecoveryRetainedResult = Readonly<{
+type AiRecoveryRetainedResult = Readonly<{
   picture: AiResult;
   receipt: AiRecoveryRequestReceipt;
 }>;
@@ -128,12 +128,12 @@ export interface AiRecoveryStorage {
   ): Promise<AiRecoveryRequestReceipt>;
   readRecoveryAttempt(id: number): Promise<AiRecoveryHeldReceipt | AiRecoveryRequestReceipt | null>;
 }
-export type AiStoredAttempt =
+type AiStoredAttempt =
   | Readonly<{ kind: 'recovery-held'; receipt: AiRecoveryHeldReceipt }>
   | Readonly<{ kind: 'recovery-request'; receipt: AiRecoveryRequestReceipt }>
   | Readonly<{ kind: 'native'; receipt: AiReceipt }>
   | Readonly<{ kind: 'legacy'; journal: AiJournal }>;
-export type AiRetainedResult = Readonly<{ picture: AiResult; receipt: AiReceipt }>;
+type AiRetainedResult = Readonly<{ picture: AiResult; receipt: AiReceipt }>;
 export interface AiStorage extends AiRecoveryStorage {
   read(): Promise<AiStoredAttempt | null>;
   prepare(value: AiJournal, originalModel: string, upload: Uint8Array): Promise<AiPreparedReceipt>;

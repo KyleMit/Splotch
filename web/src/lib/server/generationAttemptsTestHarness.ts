@@ -16,7 +16,7 @@ import {
 } from './generationAttemptStorage';
 
 export const ATTEMPT_TEST_TIME_MS = 2_000_000;
-export const ATTEMPT_TEST_BINDING = 'a'.repeat(64);
+const ATTEMPT_TEST_BINDING = 'a'.repeat(64);
 export const ATTEMPT_TEST_INPUT = new Uint8Array([1, 2, 3, 4]);
 export const ATTEMPT_TEST_OUTPUT = new Uint8Array([5, 6, 7, 8]);
 export const ATTEMPT_TEST_FUNDING = { kind: 'free', receiptDigest: 'f'.repeat(64) } as const;

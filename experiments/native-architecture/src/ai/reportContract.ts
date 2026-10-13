@@ -19,7 +19,7 @@ export const AI_REPORT_FIELDS = {
 } as const;
 export type AiReportTarget =
   { kind: 'picture'; uri: string } | { kind: 'false-positive-refusal'; id: number };
-export type AiReportEvidence =
+type AiReportEvidence =
   | { kind: 'picture'; bytes: Uint8Array; mime: AiMime; token: string | null; uris: Set<string> }
   | { kind: 'false-positive-refusal'; token: string };
 export type AiReportContext = {

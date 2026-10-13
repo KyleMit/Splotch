@@ -34,6 +34,7 @@ const HISTORY_PREFIXES = [
   'docs/handoff/',
   'docs/investigations/',
   'docs/audit-deferred/',
+  'docs/migration/',
   'scrapbook/',
   'perf-profiles/',
   'releases/',

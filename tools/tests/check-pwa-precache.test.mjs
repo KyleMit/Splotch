@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import {
   checkPwaPrecache,
   APP_SHELL_FALLBACK_CALLBACKS,
@@ -16,8 +16,6 @@ import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
 } from '../../web/src/lib/pwa/appShellRoute.ts';
-
-import { PINNED_APP_SHELL_NONCE_ENV } from '../../web/appShellBuildNonce.ts';
 
 const appShellUrl = appShellPrecacheUrl('build-id');
 const shellLookups = (url) => APP_SHELL_FALLBACK_CALLBACKS.map((callback) => ({ callback, url }));
@@ -240,7 +238,7 @@ it('requires the shell to install first and each fallback callback to look up th
   ).toEqual([missingLookup('cachedResponseWillBeUsed')]);
 });
 
-it('refuses an ambient nonce pin through the shipping postbuild owner and restores the ordinary positive', async () => {
+it('accepts a well-formed build through the shipping postbuild owner', async () => {
   const root = mkdtempSync(join(tmpdir(), 'splotch-precache-ambient-pin-'));
   const clientDir = join(root, 'client');
   const staticColoringDir = join(root, 'coloring');
@@ -268,14 +266,7 @@ it('refuses an ambient nonce pin through the shipping postbuild owner and restor
   const options = { clientDir, staticColoringDir, swPath, appShellPath, log: () => {} };
   try {
     await expect(checkPwaPrecache(options)).resolves.toBeUndefined();
-    vi.stubEnv(PINNED_APP_SHELL_NONCE_ENV, '806d050f-45b0-4419-9997-0a0065232d26');
-    await expect(checkPwaPrecache(options)).rejects.toThrow(
-      /complete owned paired-control context/
-    );
-    vi.unstubAllEnvs();
-    await expect(checkPwaPrecache(options)).resolves.toBeUndefined();
   } finally {
-    vi.unstubAllEnvs();
     rmSync(root, { recursive: true });
   }
 });

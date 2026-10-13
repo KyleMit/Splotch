@@ -17,8 +17,7 @@ normal merge. Color and width taps after a failed settings read change only sess
 retain the warning and unread storage. An explicit sound choice or Retry saving in Settings
 authorizes the full retained snapshot. A failed write following a known read remains distinct and
 allows later palette saves. The new color caller uses this same policy; the strict v3 parser and
-single writer are unchanged. Color-specific reproduction and recovery controls are retained in the
-[repair receipt](../../docs/migration/evidence/custom-colors-construction/READ-FAILURE-REPAIR.md).
+single writer are unchanged.
 
 “More colors” opens a continuous hue/tone field with a visible color preview. Dragging explores;
 lifting keeps a tentative color in the picker. “Use color” selects it for drawing and remembers it
@@ -66,12 +65,10 @@ paths. Failed writes retain all session choices and the exact retry snapshot; un
 reports failure and explicit defaults. Old sound-only and width snapshots normalize safely. No new
 dependency, installation, permission or native materializer was added.
 
-Validation failures and repairs are preserved under
-[construction controls](../../docs/migration/evidence/custom-colors-construction/README.md). Initial
-TypeScript rejected unsupported native `touchAction`; the responder uses event prevention and a
-scroll lock instead. Initial lint size failures were repaired by extracting the consumed palette
-component, picker gesture hook and sheet rendering, without cap waivers. Old fixture guards were
-updated for the explicit version normalization, keeping v4 fixture bodies and stroke JSON bytes
+Initial TypeScript rejected unsupported native `touchAction`; the responder uses event prevention
+and a scroll lock instead. Initial lint size failures were repaired by extracting the consumed
+palette component, picker gesture hook and sheet rendering, without cap waivers. Old fixture guards
+were updated for the explicit version normalization, keeping v4 fixture bodies and stroke JSON bytes
 unchanged. A mounted test consumer was repaired to read the same settings-owned paint as production;
 the Crayon oracle follows the safe pigment identifier. Root source inspection caught and removed a
 stray fragment space that native View cannot render outside Text. The click-control test's omitted

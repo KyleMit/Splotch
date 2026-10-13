@@ -27,7 +27,7 @@ import {
 } from '../parentCenter/parentPolicy';
 
 export type WidthSettings = Readonly<{ strokeWidth: StrokeWidth; eraserWidth: StrokeWidth }>;
-export type ColorSettings = Readonly<{
+type ColorSettings = Readonly<{
   selectedColor: PaintColor;
   customColors: readonly CustomColor[];
 }>;

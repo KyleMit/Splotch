@@ -4,7 +4,7 @@ import { FREE_GENERATION_DAILY_PROVIDER_START_LIMIT } from './freeGenerationLedg
 
 export const RECOVERY_GRANT_RECEIPT_LIMIT = 64;
 export const RECOVERY_DAILY_RECEIPT_LIMIT = 1024;
-export const RECOVERY_RECEIPT_RETENTION_MS = 24 * 60 * 60 * 1000;
+const RECOVERY_RECEIPT_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 export interface RecoveryFreeGenerationOperation {
   operationId: string;
@@ -44,7 +44,7 @@ export interface RecoveryGrantOperation {
   settlement: RecoveryFreeGenerationSettlementReceipt | null;
 }
 
-export function isRecoveryOperationId(value: unknown): value is string {
+function isRecoveryOperationId(value: unknown): value is string {
   return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 }
 

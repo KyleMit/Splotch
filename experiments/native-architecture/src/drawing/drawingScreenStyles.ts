@@ -110,8 +110,6 @@ const themedStyles = createDrawingStyles((palette) =>
   })
 );
 
-export const drawingScreenStyles = themedStyles.light;
-
 export function useDrawingScreenStyles() {
   return useDrawingStyles(themedStyles);
 }

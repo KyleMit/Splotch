@@ -44,7 +44,7 @@ export function mapArray7<T>(array: readonly unknown[], read: (value: unknown) =
   for (let i = 0; i < array.length; i++) result.push(read(arrayItem7(array, i)));
   return result;
 }
-export function integer7(value: unknown, min: number, max: number): value is number {
+function integer7(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max;
 }
 export function isAllocationCursor7(value: unknown): value is number {

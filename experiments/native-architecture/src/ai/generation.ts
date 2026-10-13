@@ -4,7 +4,7 @@ import { requestAi, type AiReply } from './transport';
 import type { AiJournal, AiResult } from './journal';
 import type { AiSession } from './session';
 import { AiRecoverySession } from './recoverySession';
-export type { AiState, PreparedAiDrawing } from './session';
+export type { AiState } from './session';
 import { bytesBase64 } from './base64';
 class NativeAiController extends AiRecoverySession {
   private collectImage = async (

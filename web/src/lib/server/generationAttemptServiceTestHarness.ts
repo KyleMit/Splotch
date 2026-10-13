@@ -45,9 +45,9 @@ import {
 import { sealRecoveryWork, signRecoveryWork, type RecoveryWork } from './generationAttemptWork';
 import { apiHandler } from './http';
 export const SERVICE_TEST_SECRET = 'fixture-report-secret';
-export const SERVICE_TEST_NONCE = 'b'.repeat(64);
+const SERVICE_TEST_NONCE = 'b'.repeat(64);
 export const SERVICE_TEST_TIME = Date.parse(ADMITTED_AT);
-export const SERVICE_TEST_CREDENTIAL: RecoveryCredential = { kind: 'free', identity: INSTALLATION };
+const SERVICE_TEST_CREDENTIAL: RecoveryCredential = { kind: 'free', identity: INSTALLATION };
 function credentialHeaders(credential: RecoveryCredential) {
   const names = {
     free: INSTALLATION_ID_HEADER,

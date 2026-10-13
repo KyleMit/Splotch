@@ -29,7 +29,7 @@ function isLegacyWriter(value: unknown): value is LegacyWriter {
   return isRecord(value) && LEGACY_METHODS.every((method) => typeof value[method] === 'function');
 }
 
-export function loadFrozenLegacyWriter(): LegacyWriter {
+function loadFrozenLegacyWriter(): LegacyWriter {
   const source = readFileSync(
     new URL('./fixtures/freeGenerationGrants.fe59955b.ts.txt', import.meta.url),
     'utf8'

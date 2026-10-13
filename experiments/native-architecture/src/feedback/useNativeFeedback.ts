@@ -1,37 +1,9 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import {
-  createNativeFeedback,
-  type NativeFeedbackOwner,
-  type NativeFeedbackState,
-} from './feedback';
-import {
-  feedbackDevice,
-  feedbackOffline,
-  feedbackPolicyStorage,
-  feedbackTransport,
-} from '../platform/feedback';
+import { useEffect, useSyncExternalStore } from 'react';
+import type { NativeFeedbackOwner, NativeFeedbackState } from './feedback';
 
 const FEEDBACK_GATE_TICK_MS = 1000;
 const noFeedbackState = () => null;
 const noFeedbackSubscription = () => () => {};
-
-export function useNativeFeedback() {
-  const [owner, setOwner] = useState<NativeFeedbackOwner | null>(null);
-  useEffect(() => {
-    const instance = createNativeFeedback({
-      transport: feedbackTransport,
-      device: feedbackDevice,
-      offline: feedbackOffline,
-      policyStorage: feedbackPolicyStorage,
-    });
-    setOwner(instance);
-    void instance.loadPolicy();
-    return () => {
-      instance.dispose();
-    };
-  }, []);
-  return { owner };
-}
 
 export function useNativeFeedbackState(
   owner: NativeFeedbackOwner | null

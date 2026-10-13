@@ -298,7 +298,7 @@ export const RECOVERY_TERMINAL_STATUS = Object.freeze({
   refusal: 422,
   error: 502,
 } as const);
-export type RecoveryTerminalBody = Readonly<{
+type RecoveryTerminalBody = Readonly<{
   ok: false;
   error: string;
   code: typeof RECOVERY_TERMINAL_CODE;

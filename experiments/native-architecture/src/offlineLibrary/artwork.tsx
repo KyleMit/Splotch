@@ -6,7 +6,7 @@ import type { PaperTheme } from '../drawing/theme';
 import { BundledFillLoadScope } from '../drawing/BundledBookArtwork';
 
 import { OfflineArtworkScope } from './artworkContext';
-export function useOfflineArtwork(id: OfflinePageId, theme: PaperTheme) {
+function useOfflineArtwork(id: OfflinePageId, theme: PaperTheme) {
   const artwork = useContext(OfflineArtworkScope)[id]?.[theme];
   if (!artwork) throw new Error('The coloring artwork is not ready.');
   return artwork;

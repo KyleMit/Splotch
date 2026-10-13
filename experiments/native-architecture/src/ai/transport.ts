@@ -5,11 +5,7 @@ import {
   type RecoveryAdmissionRequest,
   type RecoveryMutationRequest,
 } from './recoveryTransport';
-export type {
-  RecoveryReadRequest,
-  RecoveryAdmissionRequest,
-  RecoveryMutationRequest,
-} from './recoveryTransport';
+export type { RecoveryReadRequest, RecoveryMutationRequest } from './recoveryTransport';
 import { readAiBytes } from './responseBytes';
 export { readAiBytes } from './responseBytes';
 import {

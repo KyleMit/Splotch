@@ -21,7 +21,7 @@ export const PARENT_MODE_LABELS: Record<ParentMode, string> = {
   session: 'Per session',
   never: 'Never',
 };
-export function isParentMode(value: unknown): value is ParentMode {
+function isParentMode(value: unknown): value is ParentMode {
   return PARENT_MODES.some((mode) => mode === value);
 }
 export function isParentPolicies(value: unknown): value is ParentPolicies {

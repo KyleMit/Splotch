@@ -6,6 +6,7 @@
         "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}",
         "web/src/hooks*.ts",
         "web/svelte.config.js",
+        "web/src/lib/components/page/webPageParentCenter.ts",
         "web/vite.config.ts",
         "web/vitest.config.ts",
         "web/vitest.webSsr.config.ts",
@@ -15,9 +16,6 @@
         "web/playwright.webkit-scratch.config.ts",
         "web/tests/**/*.spec.ts",
         "web/tests/global-setup.ts",
-        "migration/probes/web-host/host/vite.config.ts",
-        "migration/probes/web-host/playwright.config.ts",
-        "migration/probes/web-host/tests/**/*.spec.ts",
         "web/src/**/*.test.ts",
         "web/*.test.ts",
         "netlify/**/*.ts",
@@ -43,7 +41,6 @@
         "web/src/**/*.{ts,svelte}",
         "web/tests/**/*.ts",
         "web/*.ts",
-        "migration/probes/web-host/**/*.ts",
         "netlify/**/*.ts",
         "tools/*.mjs",
         "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,ci-mirror,code-map,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,migration,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests,tokens}/**/*.mjs",
@@ -57,7 +54,8 @@
     },
     "experiments/native-architecture": {
       "entry": ["scripts/check-transform.cjs"],
-      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"]
+      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"],
+      "ignore": ["src/feedback/report.ts", "src/feedback/deviceReport.ts"]
     }
   }
 }

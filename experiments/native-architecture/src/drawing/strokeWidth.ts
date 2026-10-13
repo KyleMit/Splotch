@@ -3,7 +3,6 @@ import type { Brush } from './brushes';
 export const STROKE_WIDTHS = ['extraThin', 'thin', 'medium', 'thick', 'extraThick'] as const;
 export type StrokeWidth = (typeof STROKE_WIDTHS)[number];
 export const DEFAULT_STROKE_WIDTH: StrokeWidth = 'medium';
-export const ERASER_WIDTH_MULTIPLIER = 2;
 export const STROKE_WIDTH_LABELS: Record<StrokeWidth, string> = {
   extraThin: 'Extra thin',
   thin: 'Thin',

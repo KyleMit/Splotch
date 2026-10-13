@@ -2,7 +2,6 @@ import { exact7, record7, arrayItem7, isAllocationCursor7 } from './recordedGuar
 import {
   MAX_CONTACTS_7,
   MAX_GEOMETRY_7,
-  MAX_RETAINED_INPUTS_7,
   MAX_RETAINED_OPS_7,
   MAX_SAVED_BYTES_7,
 } from './recordedTypes7';
@@ -58,7 +57,7 @@ function countCommand7(value: unknown, counts: Counts7, highWater: number) {
   )
     throw new Error('Invalid v7 command shape.');
   charge7(counts, 'contacts', value.styles.length, MAX_CONTACTS_7);
-  charge7(counts, 'inputs', value.moves.length, MAX_RETAINED_INPUTS_7);
+  charge7(counts, 'inputs', value.moves.length, MAX_GEOMETRY_7);
   charge7(counts, 'ops', value.ops.length, MAX_RETAINED_OPS_7);
   for (let i = 0; i < value.moves.length; i++) countMove7(arrayItem7(value.moves, i), counts);
   for (let i = 0; i < value.ops.length; i++) countOp7(arrayItem7(value.ops, i), counts);

@@ -6,7 +6,7 @@ import type { PaperTheme } from './theme';
 import { PAPER_HEIGHT, PAPER_WIDTH } from './model';
 
 export const BundledFillLoadScope = createContext<(() => void) | null>(null);
-export const BUNDLED_ART_FIT = 'xMidYMid meet';
+const BUNDLED_ART_FIT = 'xMidYMid meet';
 
 export function BundledBookOutline({ pageId, theme }: { pageId: FarmPageId; theme: PaperTheme }) {
   const art: BundledPageArt = BUNDLED_BOOK_ART[pageId][theme];

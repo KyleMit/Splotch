@@ -3,7 +3,7 @@ import type { Command7, Drawing7, Op7, Style7 } from './recordedTypes7';
 
 export type PaintOp7 = Exclude<Op7, { kind: 'crayonFlush' }>;
 export type RecordedPaint7 = Readonly<{ op: PaintOp7; style: Style7 }>;
-export type RecordedPass7 = Readonly<{ kind: 'wax'; paints: readonly RecordedPaint7[] }>;
+type RecordedPass7 = Readonly<{ kind: 'wax'; paints: readonly RecordedPaint7[] }>;
 export type RecordedUnit7 = RecordedPass7 | Readonly<{ kind: 'paint'; paint: RecordedPaint7 }>;
 export type RecordedPaintPlan7 = Readonly<{
   units: readonly RecordedUnit7[];

@@ -18,7 +18,7 @@ export interface RecoveryLedger {
   settle: typeof settleRecoveryFreeGeneration;
 }
 export type RecoveryRawRecord = Extract<AttemptRecord, { phase: 'image' | 'refusal' | 'error' }>;
-export type RecoverySettlementOutcome =
+type RecoverySettlementOutcome =
   Readonly<{ kind: 'success' }> | Readonly<{ kind: 'failure'; failureKind: 'safety' | 'upstream' }>;
 export type RecoverySettlement = Readonly<{
   receiptDigest: string;

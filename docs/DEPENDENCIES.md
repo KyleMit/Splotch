@@ -854,8 +854,7 @@ transitive. Aggregate view (not per-package):
 
 The published dependency graph contains the high `braces` and `node-forge` advisories below.
 `pnpm audit --audit-level=high` skips those exact IDs under these active records; its configured
-result is not a clean unpatched graph. The `node-forge` record requires installed local-mitigation
-proof in `npm run check:migration:native-topology` before audit; failure blocks Quality.
+result is not a clean unpatched graph. The `node-forge` record relies on a local pnpm patch.
 
 An exception requires an exact GHSA entry in `pnpm-workspace.yaml`'s `auditConfig.ignoreGhsas` and a
 record in this subsection in the same change. Each record must name the affected locked package
@@ -908,10 +907,8 @@ in `tools/ci-mirror/tests/run-quality-checks.test.mjs` parses them.
   externally supplied certificates/CSRs, so development placement does not prove non-exploitability.
   The exact-version pnpm patch changes only `node-forge: lib/rsa.js`, rejecting the two observed
   malformed classes; it does not enforce strict DER. `dist/forge.min.js` and `dist/forge.all.min.js`
-  remain unpatched and must stay unreachable. `tools/migration/check-native-topology.mjs` requires
-  the exact source/patch/lock, every installed forge copy, candidate-only dependency paths, no
-  unsupported `node-forge/` subpath consumers, and actual malformed/Expo compatibility controls
-  before the unchanged audit command. Any unsupported version/path/consumer fails the guard.
+  remain unpatched and must stay unreachable. pnpm applies `patches/node-forge@1.4.0.patch` at
+  install and fails the install if the patch no longer applies.
 * **Approved:** Codex (delegated owner), Claude (independent review), 2026-10-06
 * **Review by:** 2026-11-05
 * **Removal trigger:** review an official published fix or changed publisher guidance immediately;

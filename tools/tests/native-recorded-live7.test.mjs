@@ -13,7 +13,7 @@ import {
 import { parseRecordedDrawing7 } from '../../experiments/native-architecture/src/drawing/recordedDrawing7.ts';
 import {
   MAX_CONTACTS_7,
-  MAX_RETAINED_INPUTS_7,
+  MAX_GEOMETRY_7,
 } from '../../experiments/native-architecture/src/drawing/recordedTypes7.ts';
 import { shippingRecorderOracle7 } from './native-recorded-crayon7-oracle.mjs';
 
@@ -175,7 +175,7 @@ describe('incremental v7 live recorder', () => {
     for (let contact = 0; contact < MAX_CONTACTS_7; contact++) contacts.start(PEN, point(100));
     expect(() => contacts.start(PEN, point(100))).toThrow('contact count');
     const inputs = createLiveCohortRecorder7(paper, 'per-frame', 1);
-    for (let input = 0; input < MAX_RETAINED_INPUTS_7; input++) inputs.accept(drain());
+    for (let input = 0; input < MAX_GEOMETRY_7; input++) inputs.accept(drain());
     expect(() => inputs.accept(drain())).toThrow('retained inputs');
     expect(() => inputs.snapshot()).toThrow('closed');
   });

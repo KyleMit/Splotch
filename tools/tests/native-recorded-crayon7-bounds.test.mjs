@@ -14,7 +14,6 @@ import { admitRecordedBounds7 } from '../../experiments/native-architecture/src/
 import {
   MAX_CONTACTS_7,
   MAX_GEOMETRY_7,
-  MAX_RETAINED_INPUTS_7,
   MAX_RETAINED_OPS_7,
   MAX_SAVED_BYTES_7,
 } from '../../experiments/native-architecture/src/drawing/recordedTypes7.ts';
@@ -100,7 +99,7 @@ describe('v7 admission bounds before normalization and replay', () => {
     'admits the exact retained input cap and poisons the next drain before inspecting it',
     () => {
       const recorder = createCohortRecorder7(adoptPaper(512, 384, 1), [style()], 'per-move', 1);
-      for (let i = 0; i < MAX_RETAINED_INPUTS_7; i++) recorder.accept(drain());
+      for (let i = 0; i < MAX_GEOMETRY_7; i++) recorder.accept(drain());
       let visits = 0;
       const overflow = {
         get kind() {
@@ -117,7 +116,7 @@ describe('v7 admission bounds before normalization and replay', () => {
   );
   it.each([
     ['styles', MAX_CONTACTS_7 + 1, 'contacts'],
-    ['moves', MAX_RETAINED_INPUTS_7 + 1, 'inputs'],
+    ['moves', MAX_GEOMETRY_7 + 1, 'inputs'],
     ['ops', MAX_RETAINED_OPS_7 + 1, 'ops'],
   ])('rejects oversized %s before visiting its first payload', (field, length, budget) => {
     const value = drawing();
@@ -208,10 +207,10 @@ describe('v7 admission bounds before normalization and replay', () => {
     () => {
       const recorder = createCohortRecorder7(adoptPaper(512, 384, 1), [style()], 'per-move', 1);
       recorder.accept(start());
-      for (let i = 0; i < MAX_RETAINED_INPUTS_7 - 2; i++) recorder.accept(drain());
+      for (let i = 0; i < MAX_GEOMETRY_7 - 2; i++) recorder.accept(drain());
       recorder.accept(end());
       const result = recorder.finish();
-      expect(result.command.moves).toHaveLength(MAX_RETAINED_INPUTS_7);
+      expect(result.command.moves).toHaveLength(MAX_GEOMETRY_7);
       expect(result.seedCursor).toBe(2);
     },
     CAP_CONTROL_TIMEOUT_MS

@@ -26,7 +26,7 @@ import {
 
 // Provisional proposal; activating a route requires the product/privacy retention decision.
 export const RECOVERY_PROVISIONAL_TOMBSTONE_MS = 24 * 60 * 60 * 1_000;
-export type AttemptAdmission = Readonly<{
+type AttemptAdmission = Readonly<{
   protocol: typeof RECOVERY_PROTOCOL;
   identity: RecoveryAttemptIdentity;
   credentialBinding: string;
@@ -38,7 +38,7 @@ export type AttemptFunding = Readonly<{
   kind: 'free' | 'managed' | 'byok';
   receiptDigest: string;
 }>;
-export type AttemptImage = Readonly<{ digest: string; byteLength: number; mime: RecoveryMime }>;
+type AttemptImage = Readonly<{ digest: string; byteLength: number; mime: RecoveryMime }>;
 export type AttemptOutcome =
   | Readonly<{ phase: 'image'; image: AttemptImage }>
   | Readonly<{ phase: 'refusal'; reason: string }>
@@ -113,7 +113,7 @@ export function parseAttemptFunding(value: unknown): AttemptFunding {
     recoveryInvalid();
   return Object.freeze({ kind: item.kind, receiptDigest: item.receiptDigest });
 }
-export function parseAttemptImage(value: unknown): AttemptImage {
+function parseAttemptImage(value: unknown): AttemptImage {
   const item = recoveryObject(value);
   recoveryExact(item, ['digest', 'byteLength', 'mime']);
   if (

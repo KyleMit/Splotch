@@ -32,7 +32,6 @@ export {
   DEFAULT_WIDTH_SETTINGS,
   MAX_SETTINGS_BYTES,
   parseSoundSettings,
-  type WidthSettings,
   type SoundSettings,
   type SoundSettingsState,
   type SoundSettingsStorage,
