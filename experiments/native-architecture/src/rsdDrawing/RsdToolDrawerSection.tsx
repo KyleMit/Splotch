@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import type { BrushPreferencesState, OptionalBrush } from '../settings/brushPreferences';
@@ -15,6 +15,7 @@ import {
   type DrawingToolId,
 } from '../settings/toolDrawerSection';
 import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
+import { focusedElementId, focusElementById } from './focusCarry';
 import { RsdButton } from './RsdButton';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { RsdSegmentedPicker } from './RsdSegmentedPicker';
@@ -124,6 +125,11 @@ export function RsdToolDrawerSection({
   );
 }
 
+function focusedTool(): DrawingToolId | null {
+  const id = focusedElementId();
+  return DRAWING_TOOLS.find((tool) => tool.id === id)?.id ?? null;
+}
+
 // The Drawing Tools block in the skin its own width earns: toggle rows on a narrow page, the
 // two-column chip grid from TWO_COLUMN_CHIP_WIDTH_PX up.
 function DrawingToolList({
@@ -136,6 +142,19 @@ function DrawingToolList({
   onChange: (tool: DrawingTool, next: boolean) => void;
 }) {
   const [blockWidth, setBlockWidth] = useState(0);
+  const chips = blockWidth >= TWO_COLUMN_CHIP_WIDTH_PX;
+  // A skin change unmounts the control a keyboard user was on; the tool's id names the same tool
+  // under either skin, so it carries focus across the swap, as shipping's ControlsSection does.
+  const refocus = useRef<DrawingToolId | null>(null);
+  const measure = (width: number) => {
+    if (width >= TWO_COLUMN_CHIP_WIDTH_PX !== chips) refocus.current = focusedTool();
+    setBlockWidth(width);
+  };
+  useEffect(() => {
+    const id = refocus.current;
+    refocus.current = null;
+    if (id) focusElementById(id);
+  }, [chips]);
   const toggle = (id: DrawingToolId) => {
     const tool = DRAWING_TOOLS.find((entry) => entry.id === id);
     if (tool) onChange(tool, !isOn(tool));
@@ -144,20 +163,21 @@ function DrawingToolList({
     <View
       testID="tool-drawer-tools"
       style={layout.tools}
-      onLayout={({ nativeEvent }) => setBlockWidth(nativeEvent.layout.width)}
+      onLayout={({ nativeEvent }) => measure(nativeEvent.layout.width)}
     >
       <html.div style={styles.heading}>
         <RsdRuleLabel as="h4" strong>
           {TOOL_DRAWER_COPY.tools}
         </RsdRuleLabel>
       </html.div>
-      {blockWidth >= TWO_COLUMN_CHIP_WIDTH_PX ? (
+      {chips ? (
         <RsdSegmentedPicker
           variant="chip"
           mode="toggle"
           label={TOOL_DRAWER_COPY.tools}
           options={DRAWING_TOOLS.map((tool) => ({
             value: tool.id,
+            id: tool.id,
             label: tool.label,
             icon: tool.icon,
             disabled: isBusy(tool),

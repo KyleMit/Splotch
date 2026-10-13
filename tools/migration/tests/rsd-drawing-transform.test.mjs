@@ -117,8 +117,8 @@ it('rejects a comment marker instead of actual canonical registration', () => {
 // Settings switches are section toggle rows; a selected action switch returning to the dialog fails.
 it.each([
   [
-    '<RsdAction label="Help and about" onClick={props.onHelp} />',
-    '<RsdAction label="Help and about" selection="switch" selected={settings.saveOnDeleteEnabled} onClick={props.onHelp} />',
+    '<RsdAction label="Try saving settings again" onClick={onRetry} />',
+    '<RsdAction label="Try saving settings again" selection="switch" selected={settings.saveOnDeleteEnabled} onClick={onRetry} />',
     'RSD switch state callers',
   ],
 ])('rejects the actual Settings switch mutation for %s', (before, after, reason) => {
