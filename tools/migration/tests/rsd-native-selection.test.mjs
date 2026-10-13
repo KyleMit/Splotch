@@ -179,25 +179,27 @@ it('rejects omitted false state from the old disabled-only path through the rele
   );
 });
 
-it('keeps compact paint identity, selected treatment, actual color and owned touch size', async () => {
+it('renders paint as a round swatch with its name, Selection Ring, actual color and owned touch size', async () => {
   const onClick = vi.fn();
+  const swatchProps = () =>
+    records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
   await mount(
     createElement(RsdPaintAction, { color: 'Blue', selected: true, disabled: false, onClick })
   );
-  const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
+  const props = swatchProps();
   assertDisabledBoundary(props, false);
   expect(props.accessibilityState.checked).toBe(true);
   expect(props.style.minWidth).toBe(TOUCH_TARGET);
   expect(props.style.minHeight).toBe(TOUCH_TARGET);
-  expect(props.style.padding).toBe(12);
-  expect(host.querySelector('button').getAttribute('role')).toBe('radio');
-  expect(host.querySelector('button').textContent).toBe('Blue');
-  expect(records.props.some((entry) => entry.style?.backgroundColor === '#62A2E9')).toBe(true);
-  await act(async () => host.querySelector('button').click());
-  expect(onClick).toHaveBeenCalledOnce();
+  expect(props.style.borderRadius).toBe(TOUCH_TARGET / 2);
+  expect(props.style.borderColor).toBe('#62A2E9');
   const selectedNode = host.querySelector('button');
-  visibleSelection(selectedNode);
-  const selectedBackground = selectedNode.dataset.nativeBackground;
+  expect(selectedNode.getAttribute('role')).toBe('radio');
+  expect(selectedNode.getAttribute('aria-label')).toBe('Blue paint');
+  expect(selectedNode.textContent).toBe('');
+  expect(records.props.some((entry) => entry.style?.backgroundColor === '#62A2E9')).toBe(true);
+  await act(async () => selectedNode.click());
+  expect(onClick).toHaveBeenCalledOnce();
   await act(async () =>
     root.render(
       createElement(RsdPaintAction, { color: 'Blue', selected: false, disabled: false, onClick })
@@ -206,13 +208,13 @@ it('keeps compact paint identity, selected treatment, actual color and owned tou
   const unselectedNode = host.querySelector('button');
   expect(unselectedNode).toBe(selectedNode);
   expect(unselectedNode.dataset.checked).toBe('false');
-  expect(unselectedNode.dataset.nativeBackground).not.toBe(selectedBackground);
+  expect(swatchProps().style.borderColor).toBe('transparent');
   await act(async () =>
     root.render(
       createElement(RsdPaintAction, { color: 'Blue', selected: true, disabled: false, onClick })
     )
   );
-  expect(host.querySelector('button').dataset.nativeBackground).toBe(selectedBackground);
+  expect(swatchProps().style.borderColor).toBe('#62A2E9');
 });
 
 it('keeps actual failed-write recovery copy live inside the Settings modal and clears it after retry', async () => {

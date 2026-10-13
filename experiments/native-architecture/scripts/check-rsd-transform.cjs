@@ -351,6 +351,8 @@ const files = [
   'src/rsdDrawing/RsdDraftNotice.tsx',
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
   'src/rsdDrawing/controls.tsx',
+  'src/rsdDrawing/RsdIcon.tsx',
+  'src/rsdDrawing/icons.generated.ts',
   'src/rsdDrawing/tokens.css.ts',
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',

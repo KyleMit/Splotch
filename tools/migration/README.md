@@ -8,6 +8,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
 
 * `gen-offline-catalog.mjs` generates the native offline coloring-book catalog
   (`experiments/native-architecture/src/offlineLibrary/books.generated.ts`).
+* `gen-native-icons.mjs` generates the drawing toolbar's icon module
+  (`experiments/native-architecture/src/rsdDrawing/icons.generated.ts`) from the shipping SVGs in
+  `web/src/lib/icons`, resolving themed icon parts per theme; `--check` verifies it and
+  `tools/tests/native-icons.test.mjs` runs that check. Add an icon to `NATIVE_ICON_SOURCES` and
+  rerun it with `node tools/migration/gen-native-icons.mjs`.
 * `check:migration:rsd-drawing-tokens` checks the react-strict-dom drawing screen's token projection
   against the shared design owner.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native

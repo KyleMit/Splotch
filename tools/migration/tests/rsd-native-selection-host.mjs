@@ -174,9 +174,8 @@ vi.mock('../../../experiments/native-architecture/src/rsdDrawing/RsdRecoveryNoti
   RsdRecoveryNotice: () => null,
 }));
 vi.mock('react-native-svg', async () => {
-  const React = await import('react');
-  const Svg = ({ children }) => React.createElement('div', null, children);
-  return { default: Svg, Defs: Svg, LinearGradient: Svg, Rect: Svg, Stop: Svg };
+  const { svgPort } = await import('./rsd-coloring-root-host.mjs');
+  return svgPort(await import('react'));
 });
 const records = vi.hoisted(() => ({
   scheme: 'light',

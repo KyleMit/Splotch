@@ -29,6 +29,7 @@ vi.mock('react-strict-dom', () => ({
   ),
   css: { create: (styles) => styles, defineVars: (values) => values, createTheme: () => ({}) },
 }));
+vi.mock('react-native-svg', () => ({ SvgXml: () => null }));
 vi.mock('../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx', () => ({
   NativeDialog: ({ label, children, footer, onClose }) =>
     createElement(

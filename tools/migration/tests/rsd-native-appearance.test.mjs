@@ -217,7 +217,7 @@ it.each(['light', 'dark'])(
   }
 );
 
-async function coloringMenu(label) {
+async function drawingToolsMenu(label) {
   await click('Drawing tools');
   await click(label);
 }
@@ -237,7 +237,7 @@ it('uses real RSD sound-level radios independently of the sound switch, retries,
   await mount(createElement(RsdDrawingScreen));
   await click('Draw RSD fixture stroke');
   const drawing = coloringPaper();
-  await coloringMenu('Settings');
+  await click('Settings');
   checkedRadio(host.querySelector('[aria-label="Medium drawing sound"]'));
   storage.write.mockRejectedValueOnce(new Error('disk full'));
   await click('Quiet drawing sound');
@@ -268,7 +268,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   await click('Draw RSD fixture stroke');
   const drawing = coloringPaper();
   expect(drawing.strokes).toHaveLength(1);
-  await coloringMenu('Settings');
+  await click('Settings');
   await click('Help and about');
   expect(host.textContent).toContain('Make a picture');
   expect(host.textContent).toContain('Splotch 1.6.0 · Beta');
@@ -296,7 +296,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
 it('guides an empty pictures gallery until a saved picture is available', async () => {
   rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
-  await coloringMenu('Pictures');
+  await drawingToolsMenu('Pictures');
   const empty = host.querySelector('[aria-label="Your pictures"]');
   expect(empty.textContent).toContain('Save a picture to find it here.');
   expect(empty.querySelector('[aria-label^="Open picture from "]')).toBeNull();
@@ -304,7 +304,7 @@ it('guides an empty pictures gallery until a saved picture is available', async 
   caller.drawingList.mockReturnValue([
     { id: 'picture-1-fixture', name: 'saved drawing', modifiedAt: 1 },
   ]);
-  await coloringMenu('Pictures');
+  await drawingToolsMenu('Pictures');
   const saved = host.querySelector('[aria-label="Your pictures"]');
   expect(saved.textContent).not.toContain('Save a picture to find it here.');
   expect(saved.querySelector('[aria-label="Open picture from saved drawing"]')).not.toBeNull();
@@ -312,14 +312,14 @@ it('guides an empty pictures gallery until a saved picture is available', async 
 it('hides Coloring through actual RSD Settings and clamps actual history Undo and saved reopen while retaining ink', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
-  await coloringMenu('Coloring pages');
+  await click('Coloring pages');
   await click('More pages');
   await click('Sunshine');
   await click('Draw RSD fixture stroke');
   const original = coloringPaper();
   expect(original.pageId).toBe('sunshine');
   expect(original.strokes).toHaveLength(1);
-  await coloringMenu('Settings');
+  await click('Settings');
   await click('Coloring book on');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
@@ -331,22 +331,20 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Keep drawing');
   await click('Undo');
   expect(coloringPaper().pageId).toBe('blank');
-  await click('Drawing tools');
   expect(host.querySelector('[aria-label="Coloring pages"]')).toBeNull();
-  await click('Keep drawing');
   caller.drawingList.mockReturnValue([
     { id: 'picture-1-fixture', name: 'saved coloring', modifiedAt: 1 },
   ]);
   caller.drawingOpen.mockResolvedValue(original);
-  await coloringMenu('Pictures');
+  await drawingToolsMenu('Pictures');
   await click('Open picture from saved coloring');
   expect(caller.drawingOpen).toHaveBeenCalledExactlyOnceWith('picture-1-fixture');
   expect(coloringPaper()).toEqual({ ...original, pageId: 'blank' });
   expect(original.pageId).toBe('sunshine');
-  await coloringMenu('Settings');
+  await click('Settings');
   await click('Coloring book off');
   await click('Keep drawing');
-  await coloringMenu('Coloring pages');
+  await click('Coloring pages');
   expect(host.querySelector('[aria-label="Farm coloring book"]')).not.toBeNull();
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.aiVaultWrite).not.toHaveBeenCalled();
@@ -380,11 +378,11 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   const owner = createOfflineLibrary(platform, 'full');
   caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove(async () => []) };
   await mount(createElement(RsdDrawingScreen));
-  await coloringMenu('Coloring pages');
+  await click('Coloring pages');
   await started;
   expect(platform.download).toHaveBeenCalledOnce();
   await click('Keep drawing');
-  await coloringMenu('Settings');
+  await click('Settings');
   await click('Coloring book on');
   expect(signal.aborted).toBe(true);
   expect(owner.snapshot()).toMatchObject({ enabled: true, allowMetered: false, installed: [] });

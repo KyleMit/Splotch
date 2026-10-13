@@ -8,18 +8,19 @@ import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
 import { DEFAULT_APPEARANCE } from '../settings/appearance';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingMenu } from '../useDrawingMenu';
-import { BRUSHES } from '../drawing/brushes';
-import { PALETTE_COLORS } from '../drawing/palette';
+import { BRUSHES, type Brush } from '../drawing/brushes';
+import { PALETTE_COLORS, paintAppearance } from '../drawing/palette';
 import { ColorPicker } from '../drawing/ColorPicker';
 import { RsdColoringBookPicker } from './RsdColoringBookPicker';
 import { NativePaper } from './NativePaper';
-import { NativeDialog, NativeSoundSettingsDialog } from './NativeDialog';
-import { RsdAction, RsdPaintAction, styles } from './controls';
+import { NativeSoundSettingsDialog } from './NativeDialog';
+import { RsdAction, RsdMoreColorsSwatch, RsdPaintAction, styles } from './controls';
+import type { NativeIconName } from './icons.generated';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDraftNotice } from './RsdDraftNotice';
@@ -27,7 +28,7 @@ import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
-import { RsdDrawingTools, RsdDrawingWidths } from './RsdDrawingTools';
+import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
 import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 
@@ -191,7 +192,7 @@ function RsdDrawingContent({
               screen.disabled || modalBlocked || screen.pictures !== null || screen.colorPickerOpen
             }
             renderMenu={(browserAction) => (
-              <DrawingMenu
+              <RsdDrawingMenu
                 screen={screen}
                 sound={sound}
                 menu={menu}
@@ -208,7 +209,7 @@ function RsdDrawingContent({
             />
           ) : null}
           {screen.pictures !== null ? (
-            <Pictures screen={screen} pictures={screen.pictures} />
+            <RsdPictures screen={screen} pictures={screen.pictures} />
           ) : null}
           {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
           {route.shown === 'settings' ? (
@@ -245,6 +246,13 @@ function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound })
   );
 }
 
+const BRUSH_ICONS = {
+  pen: 'brush-pen',
+  crayon: 'brush-crayon',
+  magic: 'brush-magic',
+  eraser: 'brush-eraser',
+} as const satisfies Record<Brush, NativeIconName>;
+
 function RsdPaintControls({
   screen,
   sound,
@@ -261,42 +269,11 @@ function RsdPaintControls({
   paintsDisabled: boolean;
 }) {
   const { ai } = product;
+  const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const paints = [...PALETTE_COLORS.map((color) => color.label), ...sound.settings.customColors];
   return (
     <html.div style={styles.stack}>
-      <html.div style={styles.row}>
-        <html.span>Splotch</html.span>
-        {sound.settings.aiEnabled ? <AiPictureAction ai={ai} disabled={disabled} /> : null}
-        <RsdAction
-          label="Parent Center"
-          disabled={disabled}
-          onClick={() => product.owner?.openParentCenter()}
-        />
-        {sound.settings.undoButtonEnabled ? (
-          <RsdAction
-            label="Undo"
-            disabled={disabled || screen.history.undo.length === 0}
-            onClick={screen.undo}
-          />
-        ) : null}
-        {screen.brushControl.kind === 'toggle' ? (
-          <RsdAction
-            label={BRUSHES[screen.brushControl.brush].label}
-            selection="switch"
-            selected={screen.brush === screen.brushControl.brush}
-            disabled={disabled}
-            onClick={screen.toggleBrush}
-          />
-        ) : screen.brushControl.kind === 'menu' ? (
-          <RsdAction
-            label={`Brush: ${BRUSHES[screen.brush].label}`}
-            disabled={disabled}
-            onClick={menu.show}
-          />
-        ) : null}
-        <RsdAction label="Drawing tools" disabled={disabled} onClick={menu.show} />
-      </html.div>
-      <html.div role="radiogroup" aria-label="Paint colors" style={styles.row}>
+      <html.div role="radiogroup" aria-label="Paint colors" style={styles.toolbar}>
         {paints.map((color) => (
           <RsdPaintAction
             key={color}
@@ -310,153 +287,75 @@ function RsdPaintControls({
           />
         ))}
       </html.div>
-      <RsdAction label="More colors" disabled={paintsDisabled} onClick={screen.openColorPicker} />
-    </html.div>
-  );
-}
-
-function DrawingMenu({
-  screen,
-  sound,
-  menu,
-  onFeedback,
-  browserAction,
-}: {
-  screen: Screen;
-  sound: Sound;
-  menu: ReturnType<typeof useDrawingMenu>;
-  onFeedback: () => void;
-  browserAction: ReactNode;
-}) {
-  return (
-    <NativeDialog
-      visible={menu.visible}
-      label="Drawing tools"
-      onClose={menu.close}
-      onDismiss={menu.dismissed}
-      footer={<RsdAction label="Keep drawing" disabled={!menu.visible} onClick={menu.close} />}
-    >
-      <html.div style={styles.dialogContent}>
-        <html.span>Drawing tools</html.span>
-        {browserAction}
-        {screen.brushControl.kind === 'menu' ? (
-          <html.div role="radiogroup" aria-label="Drawing brush" style={styles.row}>
-            {screen.availableBrushes.map((brush) => (
-              <RsdAction
-                key={brush}
-                label={BRUSHES[brush].label}
-                selection="radio"
-                selected={screen.brush === brush}
-                disabled={screen.disabled || !menu.visible}
-                onClick={() => screen.setBrush(brush)}
-              />
-            ))}
-          </html.div>
-        ) : null}
-        {sound.settings.strokeWidthControlEnabled ? (
-          <RsdDrawingWidths
-            screen={screen}
-            sound={sound}
-            disabled={screen.disabled || !menu.visible}
+      <html.div style={styles.toolbar}>
+        <RsdMoreColorsSwatch disabled={paintsDisabled} onClick={screen.openColorPicker} />
+        {screen.brushControl.kind === 'toggle' ? (
+          <RsdAction
+            label={BRUSHES[screen.brushControl.brush].label}
+            icon={BRUSH_ICONS[screen.brushControl.brush]}
+            ink={ink}
+            selection="switch"
+            selected={screen.brush === screen.brushControl.brush}
+            disabled={disabled}
+            onClick={screen.toggleBrush}
+          />
+        ) : screen.brushControl.kind === 'menu' ? (
+          <RsdAction
+            label={`Brush: ${BRUSHES[screen.brush].label}`}
+            icon={BRUSH_ICONS[screen.brush]}
+            ink={ink}
+            disabled={disabled}
+            onClick={menu.show}
           />
         ) : null}
         {sound.settings.coloringBookEnabled ? (
           <RsdAction
             label="Coloring pages"
-            disabled={!menu.visible}
-            onClick={() => menu.run(() => screen.setPagePickerOpen(true))}
+            icon="shapes"
+            disabled={disabled}
+            onClick={() => screen.setPagePickerOpen(true)}
+          />
+        ) : null}
+        <RsdAction
+          label="Save picture"
+          icon="camera"
+          disabled={disabled}
+          onClick={() => {
+            void screen.save();
+          }}
+        />
+        {sound.settings.aiEnabled ? <AiPictureAction ai={ai} disabled={disabled} /> : null}
+        {sound.settings.undoButtonEnabled ? (
+          <RsdAction
+            label="Undo"
+            icon="undo"
+            disabled={disabled || screen.history.undo.length === 0}
+            onClick={screen.undo}
           />
         ) : null}
         <RsdAction
           label="Clear"
-          disabled={!menu.visible}
-          onClick={() =>
-            menu.run(() => {
-              void screen.clear();
-            })
-          }
+          icon="trash-closed"
+          disabled={disabled}
+          onClick={() => {
+            void screen.clear();
+          }}
         />
-        <RsdAction
-          label="Save picture"
-          disabled={!menu.visible}
-          onClick={() =>
-            menu.run(() => {
-              void screen.save();
-            })
-          }
-        />
-        <RsdAction
-          label="Save and clear"
-          disabled={screen.disabled || !menu.visible}
-          onClick={() =>
-            menu.run(() => {
-              void screen.saveAndClear();
-            })
-          }
-        />
-        <RsdAction
-          label="Pictures"
-          disabled={!menu.visible}
-          onClick={() => menu.run(screen.showPictures)}
-        />
-        <RsdAction
-          label="Export PNG"
-          disabled={!menu.visible}
-          onClick={() =>
-            menu.run(() => {
-              void screen.exportPicture();
-            })
-          }
-        />
+        <RsdAction label="Drawing tools" icon="controls" disabled={disabled} onClick={menu.show} />
         <RsdAction
           label="Settings"
-          disabled={!menu.visible}
-          onClick={() => menu.run(screen.openSettings)}
+          icon="settings"
+          disabled={disabled}
+          onClick={screen.openSettings}
         />
         <RsdAction
-          label="Send Feedback"
-          disabled={!menu.visible}
-          onClick={() => menu.run(onFeedback)}
+          label="Parent Center"
+          icon="parent-center"
+          disabled={disabled}
+          onClick={() => product.owner?.openParentCenter()}
         />
       </html.div>
-    </NativeDialog>
-  );
-}
-
-function Pictures({
-  screen,
-  pictures,
-}: {
-  screen: Screen;
-  pictures: NonNullable<Screen['pictures']>;
-}) {
-  return (
-    <NativeDialog
-      visible
-      label="Your pictures"
-      onClose={() => {
-        if (!screen.busy) screen.setPictures(null);
-      }}
-      footer={
-        <RsdAction label="Close" disabled={screen.busy} onClick={() => screen.setPictures(null)} />
-      }
-    >
-      <html.div style={styles.dialogContent}>
-        <html.span>Your pictures</html.span>
-        {pictures.length === 0 ? <html.span>Save a picture to find it here.</html.span> : null}
-        {pictures.map((picture) => (
-          <RsdAction
-            key={picture.id}
-            label={`Open picture from ${picture.name}`}
-            disabled={screen.busy}
-            onClick={() => {
-              void screen.openPicture(picture);
-            }}
-          />
-        ))}
-        <html.span aria-live="polite">{screen.notice}</html.span>
-      </html.div>
-    </NativeDialog>
+    </html.div>
   );
 }
 
@@ -467,5 +366,12 @@ function AiPictureAction({
   ai: ReturnType<typeof useNativeAi>;
   disabled: boolean;
 }) {
-  return <RsdAction label="AI picture" disabled={disabled} onClick={() => ai.owner?.open()} />;
+  return (
+    <RsdAction
+      label="AI picture"
+      icon="wand-stars"
+      disabled={disabled}
+      onClick={() => ai.owner?.open()}
+    />
+  );
 }
