@@ -281,7 +281,7 @@ const files = [
   'src/platform/BrowserBack.web.tsx',
   'src/platform/DrawingModal.tsx',
   'src/product/browserBack.ts',
-  'src/drawing/ColorPicker.tsx',
+  'src/rsdDrawing/RsdColorPicker.tsx',
   'src/ColoringPagePicker.tsx',
   'src/feedback/FeedbackSheet.tsx',
   'src/parentCenter/ParentGateSheet.tsx',
@@ -406,6 +406,7 @@ const nativeAdapters = new Set([
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
   'src/rsdDrawing/ModalShell.tsx',
+  'src/rsdDrawing/RsdColorPicker.tsx',
   'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
 ]);
