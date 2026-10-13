@@ -197,7 +197,11 @@ vi.mock('react-native-safe-area-context', async () => {
       props.children
     );
   };
-  return { SafeAreaProvider: boundary('provider'), SafeAreaView: boundary('padding') };
+  return {
+    initialWindowMetrics: null,
+    SafeAreaProvider: boundary('provider'),
+    SafeAreaView: boundary('padding'),
+  };
 });
 vi.mock('react-native', async () => {
   const React = await import('react');

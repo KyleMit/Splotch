@@ -272,11 +272,9 @@
     "branches:prune": "node tools/git-housekeeping/prune-local-branches.mjs",
     "branches:gather": "node tools/git-housekeeping/gather-remote-branches.mjs",
     "gen:android:assets": "capacitor-assets generate --android && node tools/mobile/android/gen-monochrome-icon.mjs",
-    "check:migration:native-candidate": "node tools/migration/check-native-candidate.mjs",
     "check:migration:rsd-drawing-transform": "node experiments/native-architecture/scripts/check-rsd-transform.cjs",
     "test:migration:rsd-selection": "vitest run --config tools/migration/rsd-drawing-vitest.config.mjs",
-    "check:migration:rsd-drawing-tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/migration/check-rsd-drawing-tokens.mjs",
-    "gen:migration:native-candidate": "node tools/migration/materialize-native-candidate.mjs"
+    "check:migration:rsd-drawing-tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/migration/check-rsd-drawing-tokens.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -533,11 +531,9 @@
     "check:device-identifiers": "Fail when any tracked file contains a physical-device identifier (Apple hardware UDID or rig Android serial shapes), or any tracked file under perf-profiles/evidence/ carries a capture-host address (a private IPv4 or an mDNS .local name) — promoted evidence must carry [redacted] for a device and lan-host / rig-mac.local for a host, and tests the FAKE_* constants from tools/perf/lib/device-identifiers.mjs; output masks matched values (issues 1645 and 2221). Also run as a test by tools/perf/tests/device-identifier-guard.test.mjs in the CI tools tier",
     "perf:campaign:status": "How far along is a campaign, and what is left. Exists because both obvious ways to read this off ledger.tsv are wrong: it is an append-only log with skip and retry rows, so `wc -l` is not a cell count, and a resumed run records `already-valid` rather than `valid-json`, so grepping the latter undercounts a finished target. Completion is decided by the RUNNER'S OWN artifact inspection — matching runtime AND the fidelity verdict where the transport writes one — so status cannot call a structurally rejected measurement complete, and a ledger row cannot certify a cell whose artifact was deleted or replaced. Physical-device status includes the same drift-reference queue the runner executes. The ledger supplies attempts spent and is reported when it disagrees with disk. Flags: --target= (required), --modes=, --items=, --output-root=, --ledger=",
     "gen:android:assets": "Regenerate Android launcher icons and splash with Capacitor assets, then restore the app-designed monochrome drawable and both adaptive references from assets/icon-monochrome.xml",
-    "check:migration:native-candidate": "Verify maintained candidate native sources, template provenance and source contracts without compiling or executing native projects",
     "check:migration:rsd-drawing-transform": "Verify canonical RSD registration and transform actual drawing screen, adapters and released native renderer",
     "test:migration:rsd-selection": "Exercise RSD selection props and token treatment through the released native renderer with host seams",
-    "check:migration:rsd-drawing-tokens": "Verify the RSD drawing-screen token projection against the shared design owner",
-    "gen:migration:native-candidate": "Materialize candidate native sources from one explicit reviewed --archive=<template.tgz>; refuses maintained edits and executes no native tool"
+    "check:migration:rsd-drawing-tokens": "Verify the RSD drawing-screen token projection against the shared design owner"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -578,8 +574,7 @@
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.2",
     "web-features": "3.40.0",
-    "yaml": "2.9.1",
-    "tar": "7.5.22"
+    "yaml": "2.9.1"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.1",

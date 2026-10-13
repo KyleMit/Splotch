@@ -1,71 +1,46 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { assertFixture, fixture, replace } from './native-source-fixtures.mjs';
 
-describe('native manifest permission contract', () => {
-  it.each(['absent', 'duplicate', 'remove', 'sdk-grant'])(
-    'requires exactly the normal network state permission after %s mutation',
-    (mutation) => {
-      const value = fixture();
-      const marker = '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>';
-      const replacements = {
-        absent: '',
-        duplicate: marker + marker,
-        remove: marker.replace('/>', ' tools:node="remove"/>'),
-        'sdk-grant': marker.replace('/>', ' android:maxSdkVersion="32"/>'),
-      };
-      replace(value, 'android/app/src/main/AndroidManifest.xml', marker, replacements[mutation]);
-      expect(() => assertFixture(value)).toThrow('network state permission');
-    }
-  );
+const manifest = readFileSync(
+  new URL(
+    '../../../experiments/native-architecture/android/app/src/main/AndroidManifest.xml',
+    import.meta.url
+  ),
+  'utf8'
+);
 
-  it.each(
-    ['READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'].flatMap((permission) =>
-      ['absent', 'duplicate', 'merge', 'sdk-grant'].map((mutation) => [permission, mutation])
-    )
-  )('requires the exact %s removal after %s mutation', (permission, mutation) => {
-    const path = 'android/app/src/main/AndroidManifest.xml';
-    const marker = `<uses-permission android:name="android.permission.${permission}" tools:node="remove"/>`;
-    const replacements = {
-      absent: '',
-      duplicate: marker + marker,
-      merge: marker.replace('tools:node="remove"', 'tools:node="merge"'),
-      'sdk-grant': marker.replace('tools:node="remove"', 'android:maxSdkVersion="32"'),
-    };
-    const value = fixture();
-    replace(value, path, marker, replacements[mutation]);
-    expect(() => assertFixture(value)).toThrow('storage permission removal');
+function permissions(source) {
+  return [...source.matchAll(/<uses-permission\b([^>]*)\/>/g)].map(([, attributes]) => ({
+    name: attributes.match(/android:name="([^"]+)"/)?.[1],
+    removed: /tools:node="remove"/.test(attributes),
+    limited: /maxSdkVersion/.test(attributes),
+  }));
+}
+
+describe('Android manifest permissions', () => {
+  it('requests only network access and removes the legacy external storage grants', () => {
+    expect(manifest).toContain('xmlns:tools="http://schemas.android.com/tools"');
+    expect(permissions(manifest)).toEqual([
+      { name: 'android.permission.INTERNET', removed: false, limited: false },
+      { name: 'android.permission.ACCESS_NETWORK_STATE', removed: false, limited: false },
+      { name: 'android.permission.READ_EXTERNAL_STORAGE', removed: true, limited: false },
+      { name: 'android.permission.WRITE_EXTERNAL_STORAGE', removed: true, limited: false },
+    ]);
   });
 
-  it.each(['', 'xmlns:tools="https://foreign.invalid/tools"'])(
-    'rejects a changed Android tools namespace %s',
-    (replacement) => {
-      const value = fixture();
-      replace(
-        value,
-        'android/app/src/main/AndroidManifest.xml',
-        'xmlns:tools="http://schemas.android.com/tools"',
-        replacement
-      );
-      expect(() => assertFixture(value)).toThrow('Android manifest tools namespace');
-    }
-  );
+  it('allows no cleartext traffic or package visibility queries', () => {
+    expect(manifest).not.toMatch(/usesCleartextTraffic="true"|<queries\b/);
+  });
 
-  it('rejects extra removal markers and an INTERNET removal', () => {
-    const extra = fixture();
-    replace(
-      extra,
-      'android/app/src/main/AndroidManifest.xml',
-      '<application',
-      '<uses-permission android:name="android.permission.CAMERA" tools:node="remove"/><application'
+  it('detects a storage permission that is merged instead of removed', () => {
+    const merged = manifest.replace(
+      'READ_EXTERNAL_STORAGE" tools:node="remove"',
+      'READ_EXTERNAL_STORAGE" tools:node="merge"'
     );
-    expect(() => assertFixture(extra)).toThrow('Unreviewed Android permission');
-    const network = fixture();
-    replace(
-      network,
-      'android/app/src/main/AndroidManifest.xml',
-      '<uses-permission android:name="android.permission.INTERNET"/>',
-      '<uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>'
-    );
-    expect(() => assertFixture(network)).toThrow('network permission');
+    expect(permissions(merged)).toContainEqual({
+      name: 'android.permission.READ_EXTERNAL_STORAGE',
+      removed: false,
+      limited: false,
+    });
   });
 });

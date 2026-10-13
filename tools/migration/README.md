@@ -1,16 +1,11 @@
 # Migration tools
 
 Tooling for the React Native app in `experiments/native-architecture` while it migrates toward
-replacing the Capacitor shell (epic 2690). It changes no shipping web or Capacitor build.
+replacing the Capacitor shell (epic 2690). It changes no shipping web or Capacitor build. Building
+the native app itself is covered in `experiments/native-architecture/DEVELOPMENT.md`.
 
 ## Entry points
 
-* `check:migration:native-candidate` validates the maintained Android/iOS source set against the
-  Expo bare-minimum template provenance and the source contracts in `lib/`. It performs no native
-  build. Quality runs it. It also authenticates the manually maintained candidate `Gemfile` through
-  `lib/native-gemfile.mjs`.
-* `gen:migration:native-candidate -- --archive=<template.tgz>` derives candidate-only native sources
-  from one explicit template archive. It refuses maintained edits and never runs in CI.
 * `gen-offline-catalog.mjs` generates the native offline coloring-book catalog
   (`experiments/native-architecture/src/offlineLibrary/books.generated.ts`).
 * `check:migration:rsd-drawing-tokens` checks the react-strict-dom drawing screen's token projection
@@ -23,8 +18,6 @@ replacing the Capacitor shell (epic 2690). It changes no shipping web or Capacit
 
 ## Layout
 
-* `lib/` holds the source-contract, template and source-extension owners those entry points and the
-  native tests in `tools/tests/` import.
+* `lib/` holds the RSD drawing-test paths and token projection those entry points import.
 * `tests/` holds this capability's tests; the React Native product tests live in `tools/tests/`.
-* `inputs/` holds the template metadata and the reviewed source-extension manifests.
 * `probes/native-eraser/` is the browser checkpoint driver the eraser composition tests import.

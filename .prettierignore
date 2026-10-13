@@ -4,6 +4,10 @@ ios/
 !experiments/native-architecture/android/**
 !experiments/native-architecture/ios/
 !experiments/native-architecture/ios/**
+# In-tree pod install and Gradle builds write generated output inside those re-included trees.
+experiments/native-architecture/ios/Pods/
+experiments/native-architecture/android/.gradle/
+experiments/native-architecture/android/app/.cxx/
 **/.svelte-kit/
 **/build/
 **/.netlify/
