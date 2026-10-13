@@ -53,6 +53,8 @@ const SETTINGS_HEADER: Record<'narrow' | 'roomy', Box> = {
   narrow: { top: 24, inline: 20, bottom: 16 },
   roomy: { top: 28, inline: 24, bottom: 18 },
 };
+// CompactShell.svelte's own header: every vertical pixel counts on a landscape phone.
+const SETTINGS_COMPACT_HEADER: Box = { top: 14, inline: 24, bottom: 10 };
 const SETTINGS_SCROLL: Record<'narrow' | 'roomy', Box> = {
   narrow: { top: 0, inline: 20, bottom: 24 },
   roomy: { top: 0, inline: 24, bottom: 28 },
@@ -87,21 +89,20 @@ function gateClass({ width, height }: Window): keyof typeof GATE_MAX_WIDTH_PX {
   return 'phone';
 }
 
-function settingsMaxWidth(window: Window, size: 'settings' | 'sheet') {
-  if (size === 'sheet') return SETTINGS_MAX_WIDTH_PX;
-  if (isPhoneLandscape(window.width, window.height)) return SETTINGS_COMPACT_MAX_WIDTH_PX;
-  return window.width >= SETTINGS_WIDE_MIN_WIDTH_PX
-    ? SETTINGS_WIDE_MAX_WIDTH_PX
-    : SETTINGS_MAX_WIDTH_PX;
+// SettingsModal.svelte's shell choice (ADR-0061): a landscape phone gets the quick-toggle shell
+// even where it is wide enough for the sidebar, and a sheet is always the phone card.
+export type SettingsShell = 'phone' | 'wide' | 'compact';
+
+export function settingsShell({ width, height }: Window): SettingsShell {
+  if (isPhoneLandscape(width, height)) return 'compact';
+  return width >= SETTINGS_WIDE_MIN_WIDTH_PX ? 'wide' : 'phone';
 }
 
-function settingsWide(window: Window, size: ModalSize) {
-  return (
-    size === 'settings' &&
-    window.width >= SETTINGS_WIDE_MIN_WIDTH_PX &&
-    !isPhoneLandscape(window.width, window.height)
-  );
-}
+const SETTINGS_SHELL_MAX_WIDTH_PX: Record<SettingsShell, number> = {
+  phone: SETTINGS_MAX_WIDTH_PX,
+  wide: SETTINGS_WIDE_MAX_WIDTH_PX,
+  compact: SETTINGS_COMPACT_MAX_WIDTH_PX,
+};
 
 function fitWidth(window: Window, gutter: number, maxWidth: number) {
   return Math.min(maxWidth, window.width - 2 * gutter);
@@ -154,11 +155,12 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
       body: CONFIRM_CONTENT,
     };
   const step = window.width <= SETTINGS_NARROW_MAX_WIDTH_PX ? 'narrow' : 'roomy';
+  const shell = size === 'sheet' ? 'phone' : settingsShell(window);
   return {
-    width: fitWidth(window, gutter, settingsMaxWidth(window, size)),
+    width: fitWidth(window, gutter, SETTINGS_SHELL_MAX_WIDTH_PX[shell]),
     maxHeight: cap,
-    height: settingsWide(window, size) ? Math.min(cap, WIDE_CARD_HEIGHT_CEILING_PX) : null,
-    header: SETTINGS_HEADER[step],
+    height: shell === 'wide' ? Math.min(cap, WIDE_CARD_HEIGHT_CEILING_PX) : null,
+    header: shell === 'compact' ? SETTINGS_COMPACT_HEADER : SETTINGS_HEADER[step],
     body: SETTINGS_SCROLL[step],
   };
 }

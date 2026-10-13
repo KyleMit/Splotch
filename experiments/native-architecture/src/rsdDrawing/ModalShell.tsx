@@ -235,14 +235,25 @@ export function ModalStage({
   );
 }
 
-type ModalShellProps = Omit<ModalStageProps, 'labelledBy'> & { size: ModalSize; header: ReactNode };
+type ModalShellProps = Omit<ModalStageProps, 'labelledBy'> & {
+  size: ModalSize;
+  header: ReactNode;
+  // false: the body lays out its own scrollers, inset by useDialogBody, as Settings' shells do.
+  scrolls?: boolean;
+};
 
 // The shipping .modal-shell card: a header over a scrolling body, sized by the card it ports.
-export function ModalShell({ size, header, children, ...stage }: ModalShellProps) {
+export function ModalShell({ size, header, scrolls = true, children, ...stage }: ModalShellProps) {
   const titleId = useId();
   return (
     <ModalStage {...stage} labelledBy={titleId}>
-      <ModalCard size={size} titleId={titleId} active={stage.visible} header={header}>
+      <ModalCard
+        size={size}
+        titleId={titleId}
+        active={stage.visible}
+        header={header}
+        scrolls={scrolls}
+      >
         {children}
       </ModalCard>
     </ModalStage>
@@ -265,17 +276,20 @@ function ModalCard({
   titleId,
   active,
   header,
+  scrolls,
   children,
 }: {
   size: ModalSize;
   titleId: string;
   active: boolean;
   header: ReactNode;
+  scrolls: boolean;
   children: ReactNode;
 }) {
   const theme = useDrawingAppearance();
   const frame = useModalFrame(size);
   const { body } = frame;
+  const fit = frame.height === null ? layout.hug : layout.fill;
   return (
     <html.div
       data-testid="modal-surface"
@@ -288,20 +302,26 @@ function ModalCard({
       ]}
     >
       <html.div style={styles.clip}>
-        <DialogScope value={{ titleId, header: frame.header, active }}>
+        <DialogScope value={{ titleId, header: frame.header, body, active }}>
           {header}
-          <ScrollView
-            testID="modal-body"
-            style={frame.height === null ? layout.hug : layout.fill}
-            contentContainerStyle={{
-              paddingTop: body.top,
-              paddingBottom: body.bottom,
-              paddingHorizontal: body.inline,
-            }}
-            removeClippedSubviews={false}
-          >
-            {children}
-          </ScrollView>
+          {scrolls ? (
+            <ScrollView
+              testID="modal-body"
+              style={fit}
+              contentContainerStyle={{
+                paddingTop: body.top,
+                paddingBottom: body.bottom,
+                paddingHorizontal: body.inline,
+              }}
+              removeClippedSubviews={false}
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            <View testID="modal-body" style={fit}>
+              {children}
+            </View>
+          )}
         </DialogScope>
       </html.div>
     </html.div>
