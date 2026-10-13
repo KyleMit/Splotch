@@ -21,6 +21,9 @@ nodeLinker: hoisted
 
 # The sharp and tar entries moved verbatim from package.json's npm `overrides` block.
 overrides:
+  'react-strict-dom>@stylexjs/stylex': 0.15.4
+  'react-strict-dom>@stylexjs/babel-plugin': 0.15.4
+  'postcss-react-strict-dom>@stylexjs/babel-plugin': 0.15.4
   # @capacitor/assets pins sharp@0.32.6, whose install script downloads a libvips binary
   # from GitHub releases — flaky behind proxies and 403 through the cloud sessions'
   # egress proxy. Point it at the sharp package.json already declares, which ships
@@ -61,7 +64,11 @@ auditConfig:
     - GHSA-86w9-cpqp-85rv
 
 patchedDependencies:
+  react-strict-dom@0.0.54: patches/react-strict-dom@0.0.54.patch
+  '@stylexjs/stylex@0.15.4': patches/@stylexjs__stylex@0.15.4.patch
   node-forge@1.4.0: patches/node-forge@1.4.0.patch
+  expo-audio@57.0.5: patches/expo-audio@57.0.5.patch
+  react-native-svg@15.15.4: patches/react-native-svg@15.15.4.patch
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the

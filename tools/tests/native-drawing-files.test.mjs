@@ -1,5 +1,10 @@
+import { adoptedDrawing, legacyDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  emptyDrawing,
+  parseDrawing,
+  strokeStyle,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   listPictures,
   reopenPicture,
@@ -114,6 +119,36 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('native picture save commit', () => {
+  it('saves and reopens independent actual widths through the verified file commit', async () => {
+    const drawing = {
+      ...adoptedDrawing({ width: 342, height: 256.5, pixelRatio: 3 }, 3, 'flower'),
+      strokes: [
+        { ...strokeStyle('crayon', 'Blue', emptyDrawing(3), 'thin'), points: [{ x: 200, y: 300 }] },
+        { ...strokeStyle('magic', 'Blue', emptyDrawing(3), 'thick'), points: [{ x: 300, y: 300 }] },
+        {
+          ...strokeStyle('eraser', 'Blue', emptyDrawing(3), 'thick'),
+          points: [{ x: 200, y: 300 }],
+        },
+      ],
+    };
+    const saved = await savePicture(drawing);
+    const reopened = await reopenPicture(saved.id);
+    expect(reopened).toEqual(drawing);
+    expect(reopened.strokes.map(({ width }) => width)).toEqual([4, 14, 28]);
+    const stored = JSON.parse(
+      filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)
+    );
+    expect(stored.version).toBe(6);
+    expect(stored.paper).toEqual({
+      kind: 'adopted',
+      cssWidth: 342,
+      cssHeight: 256.5,
+      backingScale: 2,
+    });
+    expect(Buffer.byteLength(JSON.stringify(stored))).toBeLessThan(8 * 1024 * 1024);
+    expect(stored.strokes.map(({ width }) => width)).toEqual([4, 14, 28]);
+  });
+
   it('keeps save pending until the asynchronous move commits the reopened picture', async () => {
     const gate = deferred();
     const entered = deferred();
@@ -204,4 +239,35 @@ describe('native picture save commit', () => {
     expect(filesystem.contents.get(published)).toBe(JSON.stringify(emptyDrawing()));
     expect(filesystem.deleted).toEqual([]);
   });
+});
+
+it.each(['unadopted-ink', 'foreign-paper-key'])(
+  'refuses native save of malformed v6 %s before creating a pending file',
+  async (fault) => {
+    const drawing = adoptedDrawing({ width: 342, height: 256.5, pixelRatio: 1 });
+    drawing.strokes = [{ ...strokeStyle('pen', 'Red', drawing), points: [{ x: 200, y: 300 }] }];
+    drawing.paper =
+      fault === 'unadopted-ink' ? { kind: 'unadopted' } : { ...drawing.paper, extra: true };
+    await expect(savePicture(drawing)).rejects.toThrow();
+    expect(filesystem.created).toEqual([]);
+    expect(filesystem.contents.size).toBe(0);
+  }
+);
+
+it('reopens native legacy v5 without adding paper or rewriting its original canonical ink', async () => {
+  const drawing = {
+    ...legacyDrawing(3, 'flower'),
+    strokes: [
+      { brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [{ x: 200, y: 300 }] },
+    ],
+  };
+  const before = JSON.stringify(drawing);
+  const saved = await savePicture(drawing);
+  const reopened = await reopenPicture(saved.id);
+  expect(reopened).toEqual(drawing);
+  expect(Object.hasOwn(reopened, 'paper')).toBe(false);
+  expect(filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)).toBe(
+    JSON.stringify(parseDrawing(drawing))
+  );
+  expect(JSON.stringify(drawing)).toBe(before);
 });

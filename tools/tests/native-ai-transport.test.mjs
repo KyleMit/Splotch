@@ -1,0 +1,171 @@
+import { prepareAiPng } from '../../experiments/native-architecture/src/ai/prepare.ts';
+import { rgbaPng } from './native-png-fixtures.mjs';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  parseAiResponse,
+  readAiBytes,
+} from '../../experiments/native-architecture/src/ai/transport.ts';
+import {
+  AI_STYLES,
+  MAX_JSON_BYTES,
+  REQUEST_TIMEOUT_MS,
+  POLL_INTERVAL_MS,
+  JOB_TTL_MS,
+  FREE_LIMIT,
+} from '../../experiments/native-architecture/src/ai/contract.ts';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { replayProductSourceExtension } from '../migration/lib/native-product-source-extension.mjs';
+import {
+  readAiSourceExtension,
+  replayAiSourceExtension,
+} from '../migration/lib/native-ai-source-extension.mjs';
+const signal = () => new AbortController().signal;
+const start = { path: '/api/generate-image', method: 'POST', headers: {} };
+const poll = { ...start, path: '/api/generation-result', method: 'GET' };
+describe('strict native hosted AI contract', () => {
+  it('pins the canonical style order and timeout vocabulary across the isolated candidate boundary', () => {
+    const styles = readFileSync(new URL('../../web/src/lib/ai/styles.ts', import.meta.url), 'utf8');
+    const block = styles.split('export const STYLE_SUFFIXES = {')[1].split('} satisfies')[0];
+    expect(AI_STYLES).toEqual([...block.matchAll(/^ {2}(\w+):/gm)].map((match) => match[1]));
+    const limits = readFileSync(new URL('../../web/src/lib/ai/limits.ts', import.meta.url), 'utf8');
+    expect(limits).toContain(
+      `CLIENT_REQUEST_TIMEOUT_MS = ${REQUEST_TIMEOUT_MS.toLocaleString('en-US').replaceAll(',', '_')}`
+    );
+    expect(POLL_INTERVAL_MS).toBe(3000);
+    expect(JOB_TTL_MS).toBe(1200000);
+    expect(FREE_LIMIT).toBe(10);
+  });
+  it.each([
+    ['not-a-job', 3000],
+    ['a'.repeat(64), -1],
+    ['a'.repeat(64), Infinity],
+  ])('refuses a malformed start ticket %s', async (jobId, pollAfterMs) => {
+    await expect(
+      parseAiResponse(
+        new Response(JSON.stringify({ ok: true, jobId, pollAfterMs }), { status: 202 }),
+        start,
+        signal(),
+        0
+      )
+    ).rejects.toThrow();
+  });
+  it('distinguishes empty pending polls and unavailable job reads from malformed starts', async () => {
+    expect(await parseAiResponse(new Response(null, { status: 202 }), poll, signal(), 0)).toEqual({
+      kind: 'pending',
+      delayMs: 3000,
+    });
+    expect(
+      await parseAiResponse(
+        new Response('{"ok":false,"code":"GENERATION_UNAVAILABLE","error":"unavailable"}', {
+          status: 503,
+        }),
+        poll,
+        signal(),
+        0
+      )
+    ).toEqual({ kind: 'pending', delayMs: 3000 });
+    await expect(
+      parseAiResponse(new Response(null, { status: 202 }), start, signal(), 0)
+    ).rejects.toThrow();
+  });
+  it('cancels the stream at the first chunk over the cap without buffering its tail', async () => {
+    const cancel = vi.fn();
+    let chunks = 0;
+    const body = new ReadableStream({
+      pull(controller) {
+        chunks++;
+        controller.enqueue(new Uint8Array(MAX_JSON_BYTES));
+        if (chunks === 3) controller.close();
+      },
+      cancel,
+    });
+    await expect(
+      readAiBytes({ headers: new Headers(), body }, MAX_JSON_BYTES, signal())
+    ).rejects.toThrow('limit');
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(chunks).toBeLessThanOrEqual(3);
+  });
+  it('honors Retry-After for polling and keeps server failures separate from safety', async () => {
+    expect(
+      await parseAiResponse(
+        new Response('{"ok":false,"error":"slow"}', {
+          status: 429,
+          headers: { 'Retry-After': '12' },
+        }),
+        poll,
+        signal(),
+        0
+      )
+    ).toEqual({ kind: 'pending', delayMs: 12000 });
+    expect(
+      (
+        await parseAiResponse(
+          new Response('{"ok":false,"error":"private"}', { status: 422 }),
+          start,
+          signal(),
+          0
+        )
+      ).reason
+    ).toBe('safety');
+  });
+  it('replays a finite authenticated native extension and rejects a changed baseline', () => {
+    const entries = readAiSourceExtension().entries;
+    expect(entries.map((entry) => entry.target)).toEqual([
+      'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
+      'ios/HelloWorld.xcodeproj/project.pbxproj',
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      'ios/HelloWorld/SplotchAIEnvironment.swift',
+      'ios/HelloWorld/SplotchAIEnvironment.m',
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
+      'ios/HelloWorld/SplotchAIJournal.swift',
+    ]);
+    for (const entry of entries) {
+      const actual = readFileSync(
+        new URL(`../../experiments/native-architecture/${entry.target}`, import.meta.url)
+      );
+      const baseline = entry.baseline ? Buffer.from(entry.baseline.text) : undefined;
+      const standalone = replayAiSourceExtension(entry.target, baseline);
+      expect(createHash('sha256').update(standalone).digest('hex')).toBe(entry.sha256);
+      expect(replayProductSourceExtension(entry.target, baseline)).toEqual(actual);
+    }
+    expect(() => replayAiSourceExtension(entries[0].target, Buffer.from('changed'))).toThrow(
+      'baseline'
+    );
+    expect(() => replayProductSourceExtension(entries[0].target, Buffer.from('changed'))).toThrow(
+      'baseline'
+    );
+  });
+});
+
+it('bounds capture bytes and rejects a PNG with dimensions different from the fixed drawing paper', () => {
+  expect(() => prepareAiPng(rgbaPng(2, 2).toString('base64'))).toThrow('dimensions');
+  expect(prepareAiPng(rgbaPng(1024, 768).toString('base64')).length).toBeGreaterThan(33);
+  expect(() => prepareAiPng('iVBORw0KGgo=')).toThrow('header');
+});
+it('pins native secure owner semantics and the namespaced app pseudonym without exposing platform identifiers', () => {
+  const recipe = readAiSourceExtension();
+  const kotlin = recipe.entries.find((entry) =>
+    entry.target.endsWith('SplotchAIEnvironment.kt')
+  ).text;
+  const swift = recipe.entries.find((entry) =>
+    entry.target.endsWith('SplotchAIEnvironment.swift')
+  ).text;
+  const shipping = readFileSync(
+    new URL('../../web/src/lib/state/freeGenerations.svelte.ts', import.meta.url),
+    'utf8'
+  );
+  expect(shipping).toContain("INSTALLATION_NAMESPACE = 'splotch-free-generation-v1'");
+  expect(kotlin).toContain('splotch-free-generation-v1:');
+  expect(swift).toContain('splotch-free-generation-v1:');
+  expect(kotlin).toContain('context.noBackupFilesDir');
+  expect(kotlin).toContain('key(false)');
+  expect(kotlin).toContain('AES/GCM/NoPadding');
+  expect(swift).toContain('kSecAttrAccessibleWhenUnlockedThisDeviceOnly');
+  expect(swift).toContain('kSecAttrSynchronizable as String: false');
+});
+
+it('rejects reusing a baseline for an authenticated native source addition', () => {
+  const entry = readAiSourceExtension().entries.find((row) => !row.baseline);
+  expect(() => replayAiSourceExtension(entry.target, Buffer.from(entry.text))).toThrow('exists');
+});

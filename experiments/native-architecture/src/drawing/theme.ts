@@ -11,6 +11,31 @@ export const DRAWING_THEME = {
   paperMargin: '#f1efeb',
 } as const;
 
+export const DRAWING_ON_BRAND = '#fff';
+
+export type PaperTheme = 'light' | 'dark';
+export type DrawingTheme = { readonly [Key in keyof typeof DRAWING_THEME]: string };
+export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
+  light: DRAWING_THEME,
+  dark: {
+    surface: '#23232b',
+    borderWarm: '#3d3d49',
+    textStrong: '#eceaf2',
+    text: '#d3d1dc',
+    textSoft: '#bdbbc8',
+    brandWash: '#3b2f4f',
+    brandSolid: '#8058c0',
+    paper: '#211f29',
+    paperMargin: '#1a1922',
+  },
+};
+
+// Paper colors project the design tokens across the candidate source boundary.
+export const PAPER_THEMES = {
+  light: { paper: DRAWING_THEME.paper, outline: DRAWING_THEME.textStrong },
+  dark: { paper: DRAWING_THEMES.dark.paper, outline: DRAWING_THEMES.dark.textStrong },
+} as const satisfies Record<PaperTheme, { paper: string; outline: string }>;
+
 const scale = {
   space1: '4px',
   space2: '8px',
@@ -49,3 +74,12 @@ export const DRAWING_SCALE = {
   fontWeightSemibold: scale.fontWeightSemibold,
   fontWeightBold: scale.fontWeightBold,
 };
+
+// native-audio-projection.test.mjs pins these Settings metrics to the design scale.
+export const SETTINGS_METRICS = {
+  radius: 16,
+  padding: 24,
+  titleSize: 22,
+  textSize: 16,
+  gap: 8,
+} as const;

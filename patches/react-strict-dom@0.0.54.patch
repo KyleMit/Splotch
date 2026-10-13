@@ -1,0 +1,53 @@
+--- a/dist/types/styles.d.ts
++++ b/dist/types/styles.d.ts
+@@ -18,7 +18,7 @@
+ type TStyleX = typeof $$IMPORT_TYPEOF_1$$;
+ export type Style = InlineStyles;
+ export type Styles = StyleXArray<
+-  StyleXStyles | Theme<VarGroup<{ readonly [$$Key$$: string]: unknown }>>
++  StyleXStyles | Theme<VarGroup<{}>>
+ >;
+ export type IStyleX = Readonly<{
+   create: TStyleX['create'];
+--- a/dist/web/index.d.ts
++++ b/dist/web/index.d.ts
+@@ -16,9 +16,14 @@
+ } from '@stylexjs/stylex';
+ import * as html from './html';
+ import * as css from '@stylexjs/stylex';
+-type StyleTheme<V, T> = Theme<V, T>;
+-type StyleVars<T> = VarGroup<T>;
+-type Styles<T> = StyleXStyles<T>;
+-type StylesWithout<T> = StyleXStylesWithout<T>;
++type TStyleX = typeof css;
++type StyleObject = Exclude<
++  Parameters<TStyleX['create']>[0][string],
++  (...args: never[]) => unknown
++>;
++type StyleTheme<V extends VarGroup<{}>, T extends symbol> = Theme<V, T>;
++type StyleVars<T extends { [key: string]: unknown }> = VarGroup<T>;
++type Styles<T extends StyleObject> = StyleXStyles<T>;
++type StylesWithout<T extends StyleObject> = StyleXStylesWithout<T>;
+ export type { StaticStyles, StyleTheme, StyleVars, Styles, StylesWithout };
+ export { css, html };
+--- a/dist/native/index.d.ts
++++ b/dist/native/index.d.ts
+@@ -20,10 +20,14 @@
+ import * as compat from './compat';
+ import * as html from './html';
+ import { ProvideViewportScale } from './modules/ContextViewportScale';
+-type StyleTheme<V, T> = Theme<V, T>;
+-type StyleVars<T> = VarGroup<T>;
+-type Styles<T> = StyleXStyles<T>;
+-type StylesWithout<T> = StyleXStylesWithout<T>;
++type StyleObject = Exclude<
++  Parameters<TStyleX['create']>[0][string],
++  (...args: never[]) => unknown
++>;
++type StyleTheme<V extends VarGroup<{}>, T extends symbol> = Theme<V, T>;
++type StyleVars<T extends { [key: string]: unknown }> = VarGroup<T>;
++type Styles<T extends StyleObject> = StyleXStyles<T>;
++type StylesWithout<T extends StyleObject> = StyleXStylesWithout<T>;
+ type ProviderValue = Readonly<{ [$$Key$$: string]: string | number }>;
+ type ProviderProps = Readonly<{
+   children: React.ReactNode;

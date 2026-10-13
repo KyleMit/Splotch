@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathInside } from './web-host-ownership.mjs';
+import { qualifyJointNativeInputs } from './native-joint-graph.mjs';
 
 const GIT_OUTPUT_MAX_BYTES = 32 * 1024 * 1024;
 const SHA_PATTERN = /^[a-f0-9]{40}$/;
@@ -23,11 +24,12 @@ export function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+export function sourceGitBytes(root, args) {
+  return execFileSync('git', ['-C', root, ...args], { maxBuffer: GIT_OUTPUT_MAX_BYTES });
+}
+
 export function sourceGit(root, args) {
-  return execFileSync('git', ['-C', root, ...args], {
-    encoding: 'utf8',
-    maxBuffer: GIT_OUTPUT_MAX_BYTES,
-  });
+  return sourceGitBytes(root, args).toString('utf8');
 }
 
 function safeSourcePath(path) {
@@ -98,14 +100,31 @@ export function freezeSource({ root, topologySha, topologyLockSha256, provisiona
   const sha = sourceGit(root, ['rev-parse', '--verify', 'HEAD']).trim();
   if (!SHA_PATTERN.test(sha)) throw new Error(`Unsupported source commit format: ${sha}`);
   sourceGit(root, ['merge-base', '--is-ancestor', topologySha, sha]);
-  const topologyLock = execFileSync('git', ['-C', root, 'show', `${topologySha}:pnpm-lock.yaml`]);
+  const topologyLock = sourceGitBytes(root, ['show', `${topologySha}:pnpm-lock.yaml`]);
   if (sha256(topologyLock) !== topologyLockSha256)
     throw new Error('Reviewed topology commit/lock digest mismatch');
   const lockSha256 = sha256(readFileSync(join(root, 'pnpm-lock.yaml')));
-  if (lockSha256 !== topologyLockSha256)
-    throw new Error(
-      'Current lock differs from the reviewed topology lock; revalidate before building'
-    );
+  let nativeQualification = null;
+  if (lockSha256 !== topologyLockSha256) {
+    try {
+      const joint = qualifyJointNativeInputs(root);
+      if (joint.audio.baselineLockSha256 !== topologyLockSha256)
+        throw new Error('Joint native baseline differs from the reviewed topology lock');
+      if (
+        joint.qualification.actualLockSha256 !== lockSha256 ||
+        joint.audio.lockSha256 !== lockSha256 ||
+        joint.qualification.actualWorkspaceSha256 !==
+          sha256(readFileSync(join(root, 'pnpm-workspace.yaml')))
+      )
+        throw new Error('Joint native qualification differs from the actual source inputs');
+      nativeQualification = joint;
+    } catch (cause) {
+      throw new Error(
+        'Current lock differs from the reviewed topology lock; joint native qualification failed',
+        { cause }
+      );
+    }
+  }
   const status = sourceGit(root, ['status', '--porcelain=v1', '-z']);
   if (status && !provisional)
     throw new Error(
@@ -137,11 +156,10 @@ export function freezeSource({ root, topologySha, topologyLockSha256, provisiona
     topologySha,
     topologyLockSha256,
     lockSha256,
+    nativeQualification,
     provisional,
     statusSha256: sha256(status),
-    patchSha256: provisional
-      ? sha256(execFileSync('git', ['-C', root, 'diff', '--binary', 'HEAD']))
-      : null,
+    patchSha256: provisional ? sha256(sourceGitBytes(root, ['diff', '--binary', 'HEAD'])) : null,
     entries,
     excluded,
   };

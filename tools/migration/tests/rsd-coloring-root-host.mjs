@@ -1,0 +1,67 @@
+export function drawingScreenPort(actual, caller, projectHistory) {
+  return {
+    useDrawingScreen: () =>
+      caller.realScreen
+        ? actual.useDrawingScreen()
+        : {
+            ...caller.screen,
+            library: caller.library,
+            setColoringBookEnabled(enabled) {
+              caller.library.owner.setFeatureEnabled(enabled);
+              if (caller.screen?.history?.drawing)
+                caller.screen.history = projectHistory(caller.screen.history, enabled);
+              if (!enabled && caller.screen) caller.screen.pagePickerOpen = false;
+            },
+          },
+  };
+}
+export function offlineRuntimePort(caller) {
+  return {
+    snapshot: () => caller.library.owner.snapshot(),
+    subscribe: (...args) => caller.library.owner.subscribe(...args),
+    initialize: () => caller.library.owner.initialize(),
+    setActive: (active) => caller.library.owner.setActive(active),
+    setDrawing: (drawing) => caller.library.owner.setDrawing(drawing),
+    engage: () => caller.library.owner.engage(),
+    setFeatureEnabled: (enabled) => caller.library.owner.setFeatureEnabled(enabled),
+    openPage: (page) => caller.library.owner.openPage(page),
+    remove: (pages) => caller.library.owner.remove(pages),
+  };
+}
+export function paperPort(React, strokeStyle, caller) {
+  function PaperBoundary({ screen, sound, menuOpen }) {
+    React.useImperativeHandle(
+      screen.surface,
+      () => ({
+        lockInput: () => () => {},
+        refreshGeometry() {},
+      }),
+      []
+    );
+    caller.paper = screen.history.drawing;
+    return React.createElement('button', {
+      'aria-label': 'Draw RSD fixture stroke',
+      'data-testid': 'rsd-real-history-paper',
+      'data-drawing': JSON.stringify(screen.history.drawing),
+      disabled: screen.disabled || menuOpen || screen.pictures !== null,
+      onClick: () =>
+        screen.recovery.callbacks.onCohort([
+          {
+            ...strokeStyle(
+              screen.brush,
+              sound.settings.selectedColor,
+              screen.history.drawing,
+              sound.settings.strokeWidth
+            ),
+            points: [
+              { x: 20, y: 20 },
+              { x: 100, y: 100 },
+            ],
+          },
+        ]),
+    });
+  }
+  return {
+    NativePaper: (props) => (caller.realScreen ? React.createElement(PaperBoundary, props) : null),
+  };
+}

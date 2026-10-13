@@ -11,7 +11,7 @@ import {
   verifyInstalledForgeFiles,
 } from '../lib/forge-installed.mjs';
 import { readLockFile } from '../lib/lock-artifacts.mjs';
-import { readPolicyYaml } from '../lib/topology-policy.mjs';
+import { qualifyJointNativeInputs } from '../lib/native-joint-graph.mjs';
 import { assertForgeConsumerEntries } from '../lib/forge-controls.mjs';
 
 const root = join(import.meta.dirname, '../../..');
@@ -21,7 +21,7 @@ const mitigation = JSON.parse(
 const baselinePath = join(import.meta.dirname, 'fixtures/forge-baseline-195.yaml.txt');
 const baselineBytes = readFileSync(baselinePath);
 const lock = readLockFile(baselinePath);
-const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
+const workspace = qualifyJointNativeInputs(root).audio.inheritedWorkspace;
 const fixtures = [];
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 

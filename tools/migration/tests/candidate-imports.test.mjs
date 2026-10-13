@@ -1,3 +1,4 @@
+import { EXPECTED_CANDIDATE_IMPORT_FILES } from './candidate-import-inventory.mjs';
 import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -11,33 +12,32 @@ afterEach(cleanup);
 describe('candidate source import ownership', () => {
   it('accepts the actual candidate and exposes finite generated subpath exclusions', () => {
     const result = assertDeclaredCandidateImports(candidate, manifest);
-    expect(result.scannedCandidateFiles).toEqual([
-      'app.json',
-      'babel.config.cjs',
-      'metro.config.cjs',
-      'scripts/check-transform.cjs',
-      'src/ColoringPagePicker.tsx',
-      'src/DrawingScreen.tsx',
-      'src/ProbeApp.tsx',
-      'src/drawing/DrawingSurface.tsx',
-      'src/drawing/PageOutline.tsx',
-      'src/drawing/interactions.ts',
-      'src/drawing/model.ts',
-      'src/drawing/pages.ts',
-      'src/drawing/palette.ts',
-      'src/drawing/theme.ts',
-      'src/index.ts',
-      'src/platform/drawingFiles.ts',
-      'src/platform/drawingFiles.web.ts',
-      'src/useDrawingScreen.ts',
-      'tsconfig.json',
-    ]);
+    expect(result.scannedCandidateFiles).toEqual(EXPECTED_CANDIDATE_IMPORT_FILES);
     expect(result.generatedSubpathExclusions).toContain('android/app/build');
     expect(result.generatedSubpathExclusions).not.toContain('android');
     expect(result.generatedSubpathExclusions).not.toContain('ios');
     expect(result.nonCoverage).toContain('Podfile/Gradle provider-context');
     expect(result.nonCoverage).toContain('Metro string module references');
     expect(result.nonCoverage).toContain('alternate config lookup');
+  });
+
+  it.each([
+    'src/drawing/pngTask.ts',
+    'src/drawing/pngTask.web.ts',
+    'src/drawing/InkPaper.tsx',
+    'src/drawing/paperSpace.ts',
+  ])('keeps the maintained rendering helper %s inside candidate import ownership', (path) => {
+    const target = fixture();
+    const source = readFileSync(join(target, path), 'utf8');
+    expect(assertDeclaredCandidateImports(target, manifest).scannedCandidateFiles).toContain(path);
+    expectRejectedMutationAndRestore(
+      target,
+      path,
+      `${source}\nimport 'yaml';\n`,
+      `${path} imports undeclared yaml`
+    );
+    expect(readFileSync(join(target, path), 'utf8')).toBe(source);
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
   });
 
   it('accepts maintained platform, extension, dotfile, rename and Node-role positives', () => {
@@ -259,7 +259,7 @@ describe('candidate source import ownership', () => {
     expectRejectedMutationAndRestore(target, 'metro.config.cjs', source, reason);
   });
 
-  it('accepts owned local references and rejects lexical and canonical escapes', () => {
+  function localReferenceFixture() {
     const target = fixture();
     write(target, 'src/local/index.ts', "import 'expo';\n");
     write(target, 'src/local/types.d.ts', 'export interface Thing {}\n');
@@ -269,41 +269,43 @@ describe('candidate source import ownership', () => {
       'src/Local.ts',
       `/// <reference path='./local/types.d.ts' />\n${candidateImport('./local')} require('./local/asset.ttf');\n`
     );
+    return target;
+  }
+
+  it('accepts owned local references and internal directory aliases', () => {
+    const target = localReferenceFixture();
     expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
-    expectRejectedMutationAndRestore(
-      target,
-      'src/Local.ts',
-      candidateImport('../../web/src/x'),
-      'escapes candidate ownership'
-    );
-    for (const path of [
-      'node_modules/expo',
-      'android/app/build/helper',
-      'ios/Pods/helper',
-      'dist/helper',
-    ])
-      expectRejectedMutationAndRestore(
-        target,
-        'src/Local.ts',
-        candidateImport(`../${path}`),
-        'excluded candidate output'
-      );
-    const external = join(target, '../foreign');
-    mkdirSync(external);
-    writeFileSync(join(external, 'helper.ts'), "import 'expo';\n");
-    symlinkSync(external, join(target, 'src/foreign'));
-    expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
-      'escapes candidate ownership'
-    );
-    rmSync(join(target, 'src/foreign'));
-    symlinkSync(join(external, 'helper.ts'), join(target, 'src/symlink.ts'));
-    expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
-      'escapes candidate ownership'
-    );
-    rmSync(join(target, 'src/symlink.ts'));
     symlinkSync(join(target, 'src/local'), join(target, 'src/local-alias'));
     expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
   });
+
+  it.each([
+    ['../../web/src/x', 'escapes candidate ownership'],
+    ['../node_modules/expo', 'excluded candidate output'],
+    ['../android/app/build/helper', 'excluded candidate output'],
+    ['../ios/Pods/helper', 'excluded candidate output'],
+    ['../dist/helper', 'excluded candidate output'],
+  ])('rejects local ownership boundary %s and restores an owned source', (specifier, reason) => {
+    const target = localReferenceFixture();
+    expectRejectedMutationAndRestore(target, 'src/Local.ts', candidateImport(specifier), reason);
+  });
+
+  it.each(['directory', 'file'])(
+    'rejects a canonical external %s alias and restores ownership',
+    (kind) => {
+      const target = localReferenceFixture();
+      const external = join(target, '../foreign');
+      mkdirSync(external);
+      writeFileSync(join(external, 'helper.ts'), "import 'expo';\n");
+      const alias = join(target, 'src', kind === 'directory' ? 'foreign' : 'symlink.ts');
+      symlinkSync(kind === 'directory' ? external : join(external, 'helper.ts'), alias);
+      expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
+        'escapes candidate ownership'
+      );
+      rmSync(alias);
+      expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+    }
+  );
 
   it('excludes only generated outputs and refuses local edges back into them', () => {
     const target = fixture();

@@ -1,11 +1,10 @@
+import { isOfflinePageId } from '../offlineLibrary/identity';
+import { LibraryFault } from '../offlineLibrary/contract';
 import { Directory, File, Paths } from 'expo-file-system';
-import * as LegacyFiles from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { parseDrawing, type Drawing } from '../drawing/model';
 
 const DRAWING_DIRECTORY = 'splotch-pictures';
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
-const PNG_SIGNATURE_BASE64 = 'iVBORw0KGgo';
 
 export type SavedPicture = Readonly<{ id: string; name: string; modifiedAt: number }>;
 
@@ -37,24 +36,30 @@ export async function savePicture(drawing: Drawing): Promise<SavedPicture> {
   if (snapshot.length > MAX_SAVE_BYTES) throw new Error('This picture is too large to save.');
   const modifiedAt = Date.now();
   const id = `picture-${modifiedAt}-${Math.random().toString(36).slice(2, 10)}`;
-  const file = new File(directory(), `${id}.pending`);
-  const pendingUri = file.uri;
-  file.create();
-  try {
-    file.write(snapshot);
-    const readback = await file.text();
-    if (readback !== snapshot)
-      throw new Error('The picture could not be saved completely. Please try again.');
-    await file.move(pictureFile(id));
-  } catch (error) {
+  const write = async () => {
+    const file = new File(directory(), `${id}.pending`);
+    const pendingUri = file.uri;
+    file.create();
     try {
-      const pending = new File(pendingUri);
-      if (pending.exists) pending.delete();
-    } catch {
-      // Cleanup must preserve the save error; move can change the original File's URI.
+      file.write(snapshot);
+      const readback = await file.text();
+      if (readback !== snapshot)
+        throw new Error('The picture could not be saved completely. Please try again.');
+      await file.move(pictureFile(id));
+    } catch (error) {
+      try {
+        const pending = new File(pendingUri);
+        if (pending.exists) pending.delete();
+      } catch {
+        // Cleanup must preserve the save error; move can change the original File's URI.
+      }
+      throw error;
     }
-    throw error;
-  }
+  };
+  if (isOfflinePageId(drawing.pageId)) {
+    const { offlineLibrary } = await import('../offlineLibrary/runtime');
+    await offlineLibrary.withSavedArtwork(drawing.pageId, write);
+  } else await write();
   return { id, name: new Date(modifiedAt).toLocaleString(), modifiedAt };
 }
 
@@ -62,20 +67,27 @@ export async function reopenPicture(id: string): Promise<Drawing> {
   const file = pictureFile(id);
   if (!file.exists || file.size > MAX_SAVE_BYTES)
     throw new Error('This saved picture cannot be opened.');
-  return parseDrawing(JSON.parse(await file.text()));
+  const drawing = parseDrawing(JSON.parse(await file.text()));
+  if (isOfflinePageId(drawing.pageId)) {
+    const { offlineLibrary } = await import('../offlineLibrary/runtime');
+    await offlineLibrary.openPage(drawing.pageId);
+  }
+  return drawing;
 }
 
-export async function exportPng(base64: string): Promise<string> {
-  if (!base64.startsWith(PNG_SIGNATURE_BASE64))
-    throw new Error('The drawing could not be exported as a PNG.');
-  const uri = new File(Paths.cache, `splotch-${Date.now()}.png`).uri;
-  await LegacyFiles.writeAsStringAsync(uri, base64, { encoding: LegacyFiles.EncodingType.Base64 });
-  if (!(await Sharing.isAvailableAsync()))
-    throw new Error('PNG saved locally, but sharing is unavailable on this device.');
-  await Sharing.shareAsync(uri, {
-    mimeType: 'image/png',
-    UTI: 'public.png',
-    dialogTitle: 'Save your picture',
-  });
-  return uri;
+export async function savedColoringPageIds(): Promise<readonly string[]> {
+  const pages: string[] = [];
+  try {
+    for (const picture of listPictures()) {
+      const file = pictureFile(picture.id);
+      if (!file.exists || file.size > MAX_SAVE_BYTES) throw new Error('Invalid saved picture.');
+      pages.push(parseDrawing(JSON.parse(await file.text())).pageId);
+    }
+  } catch {
+    throw new LibraryFault(
+      'corrupt',
+      'A saved picture could not be checked. Your coloring books were kept.'
+    );
+  }
+  return pages;
 }

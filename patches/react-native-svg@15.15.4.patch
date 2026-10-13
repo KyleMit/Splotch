@@ -1,0 +1,42 @@
+diff --git a/android/src/main/java/com/horcrux/svg/SvgView.java b/android/src/main/java/com/horcrux/svg/SvgView.java
+--- a/android/src/main/java/com/horcrux/svg/SvgView.java
++++ b/android/src/main/java/com/horcrux/svg/SvgView.java
+@@ -278,9 +278,18 @@
+       return null;
+     }
+     Bitmap bitmap = Bitmap.createBitmap((int) width, (int) height, Bitmap.Config.ARGB_8888);
++    drawBitmap(bitmap);
++    return bitmap;
++  }
++
++  private synchronized void drawBitmap(Bitmap bitmap) {
++    Bitmap previousBitmap = mCurrentBitmap;
+     mCurrentBitmap = bitmap;
+-    drawChildren(new Canvas(bitmap));
+-    return bitmap;
++    try {
++      drawChildren(new Canvas(bitmap));
++    } finally {
++      mCurrentBitmap = previousBitmap;
++    }
+   }
+ 
+   Rect getCanvasBounds() {
+@@ -352,7 +361,7 @@
+     Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+ 
+     clearChildCache();
+-    drawChildren(new Canvas(bitmap));
++    drawBitmap(bitmap);
+     clearChildCache();
+     this.invalidate();
+     ByteArrayOutputStream stream = new ByteArrayOutputStream();
+@@ -366,7 +375,7 @@
+     Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+ 
+     clearChildCache();
+-    drawChildren(new Canvas(bitmap));
++    drawBitmap(bitmap);
+     clearChildCache();
+     this.invalidate();
+     ByteArrayOutputStream stream = new ByteArrayOutputStream();

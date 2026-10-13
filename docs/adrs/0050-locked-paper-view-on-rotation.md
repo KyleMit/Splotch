@@ -202,3 +202,44 @@ geometry of the ink immediately beneath it. Starting a new stroke on a rotated b
 consume this metadata, so the blank page still adopts the current orientation. The regression is
 pinned in `web/tests/engine-undo.spec.ts` ("undo restores the recorded paper after a blank
 rotation").
+
+## Native migration candidate amendment (2026-10, proposed)
+
+This amendment is scoped to the React Native architecture candidate. It does not change the shipping
+Canvas engine's adoption, transient-window, page-composition, or empty-raster policies. The
+candidate retains a fixed 1024 by 768 semantic artifact and needs an explicit reference to preserve
+the physical feel of ADR-0067's shared widths and ADR-0065's Crayon tooth.
+
+A new candidate drawing uses version 6 with an exact-key `paper` union: `{ kind: 'unadopted' }` or
+`{ kind: 'adopted', cssWidth, cssHeight, backingScale }`. The first admitted contact cohort reserves
+the measured ink plane and `min(PixelRatio.get(), 2)`. Live drafts use that reservation; the cohort
+commits the same immutable reference and its strokes in one history entry. An unadopted drawing with
+committed strokes is invalid. Resizing does not rewrite the reference, and later contacts on that
+picture retain it. Undo restores the complete prior drawing; Clear creates a fresh unadopted
+picture. This is a drawing-level reference, not a per-contact physical-width override that would
+change the established locked-paper behavior.
+
+The actual border-free inner View owns measurement, responder input, and the SVG viewport. A
+separate absolute border overlay has no pointer events or layout border. The view's contain scale is
+`s = min(cssWidth / 1024, cssHeight / 768)`; centered offsets inverse-map input through the same
+`xMidYMid meet` presentation. Metadata accepts finite positive dimensions bounded by the content
+owner's maximum width and aspect-ratio-derived height, and finite positive backing scale at most 2.
+Arithmetic that cannot produce finite canonical dimensions is rejected; there is no arbitrary
+minimum viewport or pixel-ratio readiness floor.
+
+Version 6 stores the canonical finite selected widths as CSS values. All semantic painters,
+including Magic and eraser masks, convert width to canonical units by dividing by the adopted `s`.
+Crayon tile texels, seeded phase, wrap offsets, and the physical direction-step floor use
+`1 / (s * backingScale)`. The two-band coverage, ordered dither, RGB shade, pigment bytes, glaze,
+pass seed/order rules, and mixing constants remain owned by ADR-0065/0148 and are unchanged.
+Checkpoints and capture plans retain the reference and reject reuse under another reference. Exports
+remain 1024 by 768, so they preserve artifact proportions rather than forcing a selected width to
+occupy 22 export pixels on a picture adopted from a smaller screen.
+
+Versions 1 through 5 keep their existing normalization into version 5, historic finite widths,
+canonical points, and unit texture scale. Loading does not infer missing physical geometry or
+rewrite a saved file. Candidate pages still use the existing fixed aspect-ratio compositions; full
+shipping adoption/windowing/page parity remains a separate qualification requirement. Tiny positive
+split-window frames, rotation/reopen presentation, native texture/filter sampling, same-contact
+buildup, both crossing orders, and runtime/performance behavior require actual qualification. The
+source proposal and authored controls do not establish fidelity acceptance.

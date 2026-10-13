@@ -1,0 +1,1202 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "73179b36eee307d6836382b135164139a3d1a3c4",
+  "identity": "expo-audio@57.0.5",
+  "lockSha256": "72a17493f6420ecb78fd914976aac577fa57eceb5124cb44985f97db9176dfce",
+  "workspaceSha256": "1b806c1bad7f198d3ebb4612897e24b3993223444d10d80317ecf613f2681e03",
+  "patch": {
+    "path": "patches/expo-audio@57.0.5.patch",
+    "sha256": "7a725f229561518a5baf54845bd055c7dd340717c4b17637303e181aae526af2",
+    "bytes": 1751
+  },
+  "baselineLock": {
+    "path": "docs/migration/evidence/native-audio-reset-20261009/before-pnpm-lock.yaml.txt",
+    "sha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15"
+  },
+  "baselineWorkspace": {
+    "path": "docs/migration/evidence/native-audio-reset-20261009/before-pnpm-workspace.yaml.txt",
+    "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+  },
+  "archive": {
+    "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.tar.gz",
+    "sha256": "5b26f87d644dfe05c7259d66078de98de7c9658c1e8a2041d2fe1fd51cf2f9b8",
+    "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ=="
+  },
+  "patchedSwiftSha256": "1866052c4d0bcc0474f8711aba1fd90d383ae9a31a8c7a51d63e0a0742f9c595",
+  "installedFiles": [
+    {
+      "path": ".eslintrc.js",
+      "bytes": 103,
+      "sha256": "fe55757d154f21bc2d929a503441b247d05191782a2e0c63349fc41560367fab",
+      "mode": 420
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 27514,
+      "sha256": "ebddbc533e31b38d5312991d5440ec1631d0b008ee761d3e9790f3463fa7df51",
+      "mode": 420
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1106,
+      "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "mode": 420
+    },
+    {
+      "path": "README.md",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": 420
+    },
+    {
+      "path": "android/build.gradle",
+      "bytes": 1124,
+      "sha256": "6ca1b2685c5cd6f8dc0554bee3c57b465b45e8a7d0950ef50e797f55e156ca16",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/AndroidManifest.xml",
+      "bytes": 160,
+      "sha256": "8695746b114013776f606a104ced00dfffa8eb212f744dc7466e2aaacb9c8ed2",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioExceptions.kt",
+      "bytes": 2787,
+      "sha256": "60629687f433c8a0c680b5ae38bbd72008123d65aba6770ac5fc244bbd5cbcb9",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioModule.kt",
+      "bytes": 27592,
+      "sha256": "637fe9bed875e47c3348a1f9623c4e049965efec2ebbe77cff6836c94544177a",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioPlayer.kt",
+      "bytes": 9509,
+      "sha256": "636f4ef70dac17d7490ec5e99aa60d71dc7ce6d7b4b913c501001079d6b8f33e",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioPlaylist.kt",
+      "bytes": 5860,
+      "sha256": "9bdfdbce6292de8198b1776c6058601a292e8bef38354a784742ad4dfe830015",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioPreloadManager.kt",
+      "bytes": 1716,
+      "sha256": "e64f53cd2f68c57b8b234bed52d05ca38ae5d8cbe8a8c7b73c7c30788ce9fff8",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioRecorder.kt",
+      "bytes": 14810,
+      "sha256": "a79fe7e4f89a929d910d26e8bc6031f1020ab68c9a89a1750e3c9f93fd4937fb",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioRecords.kt",
+      "bytes": 4591,
+      "sha256": "c954ccc8a29225c27fcd68ef91a9867e9498df3b44e64dcef9cd1510c9aed580",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioStream.kt",
+      "bytes": 6513,
+      "sha256": "ccb5eb8d7241933a68b6a33816e1d54bfac8e7acec49fe2146af2976ef0c3265",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/AudioUtils.kt",
+      "bytes": 1222,
+      "sha256": "7ff3d1c0df1982c756f34169f4c296b244dca2335f419459d654598a1b61cc88",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/BaseAudioPlayer.kt",
+      "bytes": 5181,
+      "sha256": "72048bf31c327cc05e469dc30362f4c1c7d7d61cd546eceada70b1ba49bd90a3",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/Playable.kt",
+      "bytes": 1367,
+      "sha256": "890f0a8b271ae6e0ad3614e8c69b18bfdfb65d2ed2361ee9c11381c1347731fd",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/RingerModeReceiver.kt",
+      "bytes": 508,
+      "sha256": "5679c2627a6cfd4ce064d41b3cd26d57bf1cef25aee6cbb47671889043fb070e",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/AudioControlsService.kt",
+      "bytes": 18517,
+      "sha256": "a39a43672602c9eda1c11b840fbe2984fd57f37dd7be2152d19271131c90fbb7",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/AudioMediaSessionCallback.kt",
+      "bytes": 2441,
+      "sha256": "ea488e034c20fd02053521a80d972e87f3cd8afc5bca762e5695498c66271073",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/AudioPlaybackServiceConnection.kt",
+      "bytes": 3287,
+      "sha256": "463ddeeb72337e58ca389dfeffcb789a5ec62ab00a9ae146180c8676313f30d8",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/AudioRecordingService.kt",
+      "bytes": 5939,
+      "sha256": "519ca27105582a3393d7354e472948f26626440571b2c4f9e42bb18be317cd2d",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/AudioRecordingServiceConnection.kt",
+      "bytes": 5354,
+      "sha256": "8305522c8311c1cf23db6146fd43fdb56ccfc2fa5642abbbc5ed0c9f5355f53a",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/BaseServiceConnection.kt",
+      "bytes": 4000,
+      "sha256": "a1d9f3515c84def07eb8771a4f33507580adea874a2a63864f7dc2547e3b5576",
+      "mode": 420
+    },
+    {
+      "path": "android/src/main/java/expo/modules/audio/service/MetadataInjectingPlayer.kt",
+      "bytes": 2932,
+      "sha256": "03cec884ac2c75ee8aedb06357eb280f0bcc0d56a56e9d89effce3f4001d9626",
+      "mode": 420
+    },
+    {
+      "path": "app.plugin.js",
+      "bytes": 54,
+      "sha256": "866df4b7f1f7793bc8dfd298bc15877d871994fc527629731a51bd9c66c74307",
+      "mode": 420
+    },
+    {
+      "path": "build/Audio.types.d.ts",
+      "bytes": 25692,
+      "sha256": "6897beb1ea651abe608d291a8c1c726d8b025459f6673d21fc965c48ce2bf174",
+      "mode": 420
+    },
+    {
+      "path": "build/Audio.types.d.ts.map",
+      "bytes": 6211,
+      "sha256": "6c232877a62b7f9f60c161f9153e453b6b8270196372f9c9582a0fd2b20fbde2",
+      "mode": 420
+    },
+    {
+      "path": "build/Audio.types.js",
+      "bytes": 50,
+      "sha256": "ec72c56293cc91edb6cf4a3f3176240572d0c0fc9d5b98aebfdfc3ae0d1e0838",
+      "mode": 420
+    },
+    {
+      "path": "build/Audio.types.js.map",
+      "bytes": 25747,
+      "sha256": "5ad2a6ca7ddde1916714faea8891c75f474b9921b1eaba3cc9609ceba4232a62",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioConstants.d.ts",
+      "bytes": 627,
+      "sha256": "2ff40aaa560f75f4d94d3b6c2fbd8b7e008dea4270c9c04e39dc38c8093d46f8",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioConstants.d.ts.map",
+      "bytes": 299,
+      "sha256": "d392b7632731c342e6889296bd6345e26f7b786bf69f9ebe56bf3c651ec51e01",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioConstants.js",
+      "bytes": 53,
+      "sha256": "fbad3dff9e8e3faeca216de1920d64c1876f64fc45f982fd91c721142a73855d",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioConstants.js.map",
+      "bytes": 733,
+      "sha256": "20c46c84ad29014f8f8f88e72df39c69d24f757a08787ebed3eab682fd94f403",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioEventKeys.d.ts",
+      "bytes": 501,
+      "sha256": "0833ec44d08d5e9a18d170511fb73c5812cc4809246b26ded15fb29279afc98e",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioEventKeys.d.ts.map",
+      "bytes": 363,
+      "sha256": "b8051fbc904272b2fde0c9c6306afd2003aca50a316c39fda89bc3c1d4323294",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioEventKeys.js",
+      "bytes": 443,
+      "sha256": "1e02da978c15dead8f14afb376b5f48ce9fb0dbe88d797f6e3f9c9e4673af751",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioEventKeys.js.map",
+      "bytes": 859,
+      "sha256": "94c07fd35974fa523977dd7c7e690567e2ef3b6be44d4ace8754a6c09580cd66",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.d.ts",
+      "bytes": 190,
+      "sha256": "1247c2efce0a2f2907b29e8662454b67cee92711393f2117cfe25188c3279306",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.d.ts.map",
+      "bytes": 189,
+      "sha256": "eea690057db0d78959fbb031a35f4e3b9cddf55885423bea1d0168e45ff08ac0",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.js",
+      "bytes": 164,
+      "sha256": "6e3e0b47f5a4e116be7e0dd1c304b0d7a42edd254c456de152f4811eb0c92730",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.js.map",
+      "bytes": 445,
+      "sha256": "4d2c0b23d545ba518ba151021133b6fadacd27a0b638ca59af64f0d9c41ffa0d",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.types.d.ts",
+      "bytes": 15294,
+      "sha256": "a9a11ff056e9577525f0663ccdc6a4155ecbd98b48a0dd666b2eea7768cf959c",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.types.d.ts.map",
+      "bytes": 5264,
+      "sha256": "47af6c9e371276654f954d157417bf37c14ab1ae9bb72e1ab8c790ccf7402fb6",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.types.js",
+      "bytes": 109,
+      "sha256": "4ad560ec3417d9f6a5e8f45ff0d5a469eba8ce79de5696d69c6031c8359f42b4",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.types.js.map",
+      "bytes": 15356,
+      "sha256": "1683fa22923156fadf300b80e85497c84bc4dbce55740434ec756832b305a461",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.web.d.ts",
+      "bytes": 1011,
+      "sha256": "2737d6eedb7c07b4e4a004cac77ff5524c1ddf8e5875776d8fda3c10e5227d38",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.web.d.ts.map",
+      "bytes": 842,
+      "sha256": "7b9a172c723b3af09cb93b7f8884ba1c08f3896fd4a825dd15d1b3a31e9af0c9",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.web.js",
+      "bytes": 3774,
+      "sha256": "46120856cf44d01f4de165d88d0507c1d2405f58e2c613015d9ba19c0e8058c4",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioModule.web.js.map",
+      "bytes": 7425,
+      "sha256": "940868dd494b204e3f65053963b70910673993286818ebc8186e995c45587048",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlayer.web.d.ts",
+      "bytes": 2038,
+      "sha256": "5d5f5a130d15fad01a060d14b62b8c26668a417acf8864c59c66b0b7cc4f668d",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlayer.web.d.ts.map",
+      "bytes": 1929,
+      "sha256": "a8c3e1c70216e1854010b2b710949d4ab422fb03bc18ee26fbcdaa57e8b0363e",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlayer.web.js",
+      "bytes": 10864,
+      "sha256": "390651badf3374124f08931dfeaaba4f2d413289655de6e87921f3d5636bd878",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlayer.web.js.map",
+      "bytes": 21258,
+      "sha256": "071669e2cf4964cce2dde75f5165311f88ff2c0838dd8f976fbb7877d1dd1d31",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlaylist.web.d.ts",
+      "bytes": 2016,
+      "sha256": "b313470d0d721e211c4cf4b2c9a18d8df5b65b3612d171be27a6aa178ba48bd4",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlaylist.web.d.ts.map",
+      "bytes": 2013,
+      "sha256": "bb57b375314a9c79ec21d01bdd2777e22586fbd46a849a680ab93a076b628245",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlaylist.web.js",
+      "bytes": 14298,
+      "sha256": "f4f753fe31439366abbe6678d79cd50cd22b954b7669eb88fd2befc46a701824",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioPlaylist.web.js.map",
+      "bytes": 28168,
+      "sha256": "ffb450c7be3d22902353e633fbc7389e8584c6b6e2685d57c1d5c13e379a3ab3",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioRecorder.web.d.ts",
+      "bytes": 1499,
+      "sha256": "05d234a8407dce91a1ef100bbd1b14f90f82ef0f52a93d6fbf071edef001c387",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioRecorder.web.d.ts.map",
+      "bytes": 1312,
+      "sha256": "59aafa52e7a4adc682aec819f64c3778f4f543f5e28709c6e971cd38fe988a76",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioRecorder.web.js",
+      "bytes": 9350,
+      "sha256": "968727d4d9fec588ef14ee2a7b5c74bce467d6e3968544d4f8264b28f7bcc5d7",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioRecorder.web.js.map",
+      "bytes": 18107,
+      "sha256": "e93a40e8e425a2e855945d44eade4e92fdcf027a0626666dd8a1eec462a348ae",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.d.ts",
+      "bytes": 439,
+      "sha256": "02af0d88b0b5c838c4bdd2f296140caac345b5715b44ec9e7239c91dc2dac1a2",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.d.ts.map",
+      "bytes": 250,
+      "sha256": "36f3efc4e3e17ac021f65cd932cce7cd9b1770ec9c42ffd61325558349ce7e98",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.js",
+      "bytes": 1406,
+      "sha256": "7a6001a4153b237bfc62b117301aa87b92748d5ffd9238ec7ab1a18baa5ac8dd",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.js.map",
+      "bytes": 2878,
+      "sha256": "445c849dd400bcf37d3cdae8f62087f18fa2926672084eb8140897a686bc5390",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.types.d.ts",
+      "bytes": 2427,
+      "sha256": "5ad2ec277ec34051fe14ceb02328988986c552d45146a2f2b688106de1eb78c8",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.types.d.ts.map",
+      "bytes": 1371,
+      "sha256": "70900886c1bab4835bdd0740ace09cd298e4fa4ccfb54d75e42fcd6fb9a5f11f",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.types.js",
+      "bytes": 56,
+      "sha256": "7ffb48a71961980576dfe6f44fbee855905d13fefadfebd69f3f74421c1cfd1a",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.types.js.map",
+      "bytes": 2500,
+      "sha256": "2413d465cd0a8bb546a288a10d53b12bf762ca57583f057cb2bff4fe951ad2e4",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.web.d.ts",
+      "bytes": 217,
+      "sha256": "225d2a884b42662d88659be6b48c8ed8182c3b5de8b4ca44a14d041581bf05b1",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.web.d.ts.map",
+      "bytes": 242,
+      "sha256": "e45430a1e480ea09a4983fc01e2af00af69394cb5e2ca1eb5e61f72f2c5e2f23",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.web.js",
+      "bytes": 142,
+      "sha256": "b562c0980775d9e91992521a765686fac16192a8d22344a6f64da408814e3c89",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioStream.web.js.map",
+      "bytes": 482,
+      "sha256": "fe13c8354b2abe1b0fc2bda3cc82630cc5eced48680debcc2f13348259c9f7a3",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioUtils.web.d.ts",
+      "bytes": 644,
+      "sha256": "ad766f3de04c554b8415979055b0486d121b63f9ff2706c36fc00e2d01c29355",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioUtils.web.d.ts.map",
+      "bytes": 559,
+      "sha256": "8a830a2ae8e04280e1cdc6456e4bd0ea0c66ee2e40d38afc4de0beb6e59a1823",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioUtils.web.js",
+      "bytes": 3014,
+      "sha256": "fc02551ee78f069cc1f36a7368c6319ac3cd6edf7f400eccd6d65e8d02102277",
+      "mode": 420
+    },
+    {
+      "path": "build/AudioUtils.web.js.map",
+      "bytes": 5791,
+      "sha256": "ff3912c0e17b202be2bb45e1cdaa988a0311a8b5793c2357a9aa7d980c1528d5",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.d.ts",
+      "bytes": 15412,
+      "sha256": "46f95ca28bc2ceebd2c07cd4f2b65312c9bda54f5d8cf7cac81df60ada182bab",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.d.ts.map",
+      "bytes": 2241,
+      "sha256": "979751df90253112ee699d91ace23833cd1ff7b8988953ef33ff83e152697d83",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.js",
+      "bytes": 21801,
+      "sha256": "c1a34ec57557819b4b60644a0cfdc6677dbed1656a59d386e917a22a9f288540",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.js.map",
+      "bytes": 31092,
+      "sha256": "5f645b979b013c67c9db4d1565d64d2f55e6b364863cb6a350553ddea6986614",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.web.d.ts",
+      "bytes": 2121,
+      "sha256": "30138974a0d2e72330c8a49c0ae8855972c6e5ce1a6cccb794fc68bcc5e0867e",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.web.d.ts.map",
+      "bytes": 1698,
+      "sha256": "6d86a2333624531fef5468bb32e0020fb57fe31f42541cc128f295ad063b4ac4",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.web.js",
+      "bytes": 5935,
+      "sha256": "f508f25707286ad61fb8d1d942885b1ffb9a433b5d981d27114de3606a8294de",
+      "mode": 420
+    },
+    {
+      "path": "build/ExpoAudio.web.js.map",
+      "bytes": 12264,
+      "sha256": "8e19015289b95f4288cfc86ebfade76b5ae6acc045bf646359ad3841db230b46",
+      "mode": 420
+    },
+    {
+      "path": "build/MediaSessionController.web.d.ts",
+      "bytes": 1254,
+      "sha256": "587e011e86965b9523ff5ad19f789c6d3575813276de17c67820fd90a64fcf47",
+      "mode": 420
+    },
+    {
+      "path": "build/MediaSessionController.web.d.ts.map",
+      "bytes": 1189,
+      "sha256": "5a5fc28c8e23de59945875672de184ff2dd3623cd022d9750d84bd81e117de5c",
+      "mode": 420
+    },
+    {
+      "path": "build/MediaSessionController.web.js",
+      "bytes": 5123,
+      "sha256": "e0ec687f8dd79cd14d60926c702bf43eb599468090c28dd0774d804cf26b18d5",
+      "mode": 420
+    },
+    {
+      "path": "build/MediaSessionController.web.js.map",
+      "bytes": 10475,
+      "sha256": "d104606df015fa8e1e978cf5d76d5ee05ab7819090451b8424cdb73ede288216",
+      "mode": 420
+    },
+    {
+      "path": "build/RecordingConstants.d.ts",
+      "bytes": 3400,
+      "sha256": "0171decf2583b55992d42fe2973073bd7738045a190e021cf38b029c7954061b",
+      "mode": 420
+    },
+    {
+      "path": "build/RecordingConstants.d.ts.map",
+      "bytes": 1031,
+      "sha256": "bfd672f59614317145e6985c7e56b3aba3e5a979bcd0ab5a0f7236369fa9a772",
+      "mode": 420
+    },
+    {
+      "path": "build/RecordingConstants.js",
+      "bytes": 5312,
+      "sha256": "97d5efaef6c34e738e14bd836c10c1c91b68c549ac6f98dba1e5fe7057c556ae",
+      "mode": 420
+    },
+    {
+      "path": "build/RecordingConstants.js.map",
+      "bytes": 6308,
+      "sha256": "65b3babc1240e5f739ced3a5482a8f5b70c5684ef7811d516c0004883c92cc4e",
+      "mode": 420
+    },
+    {
+      "path": "build/index.d.ts",
+      "bytes": 349,
+      "sha256": "690c528fa201e19e446985c7bd00950c68a07580ba586553b7d51d48afbbb22c",
+      "mode": 420
+    },
+    {
+      "path": "build/index.d.ts.map",
+      "bytes": 319,
+      "sha256": "c4c4ed344beac326fcf8a9a0e0539bc93e46ad8b64094fb74b3c918c7634de11",
+      "mode": 420
+    },
+    {
+      "path": "build/index.js",
+      "bytes": 220,
+      "sha256": "e9ce2595e2f219bc81a885315dfba7797426f3c300174821bba9b37f62201488",
+      "mode": 420
+    },
+    {
+      "path": "build/index.js.map",
+      "bytes": 617,
+      "sha256": "2820f81fd9deee5c707b754eb8c7671563ef57541588ce624872b06bc4165b88",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/options.d.ts",
+      "bytes": 643,
+      "sha256": "86585e34636f3a58de0850c8e5354ad6330a3e6bc54158fa078ce27cd25e77dd",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/options.d.ts.map",
+      "bytes": 609,
+      "sha256": "271039b9748d39076bd1e76613b75f496377156aa173f7c4467e7eea55b0203f",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/options.js",
+      "bytes": 845,
+      "sha256": "23c258a02075b6477868b4a305c3c027cea6af252dff02e0cf0d7d8dea530e9d",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/options.js.map",
+      "bytes": 2150,
+      "sha256": "8e17efa87ed5595a742b64b3009ffa1b072fc516d3348df18de16bed51dce9f1",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/resolveSource.d.ts",
+      "bytes": 598,
+      "sha256": "26952150ca899c845875d7c9caa9bca6b119e22d23a969de852b925fec765c8a",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/resolveSource.d.ts.map",
+      "bytes": 479,
+      "sha256": "267d701760dd46973432c5e0cf05413c02568d09c12f1520ef555bf6516a6000",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/resolveSource.js",
+      "bytes": 4250,
+      "sha256": "4f9c01c46dfe50fe134c209964764999717dedf886b4ebb6dd7cd6c87cccad80",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/resolveSource.js.map",
+      "bytes": 7877,
+      "sha256": "9099bd82f20cdfb05cd4ecab55ad4439fde04225c16878aee8847b0593677b9f",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/useAudioRecorderState.d.ts",
+      "bytes": 1351,
+      "sha256": "0d8f9b6c68c483e0bd0e194d7abc7a4b3a88a28932d0442976585fa2686de5d6",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/useAudioRecorderState.d.ts.map",
+      "bytes": 344,
+      "sha256": "1f775ebd8dac63f2809b87cf80c3a55c16ecdf68f12ca9f63fecb14bb985d8f7",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/useAudioRecorderState.js",
+      "bytes": 2387,
+      "sha256": "9fb9c4b3d0681cfdfae93ceb3184ec85c2a2e01c273ec39e24917003e04790ca",
+      "mode": 420
+    },
+    {
+      "path": "build/utils/useAudioRecorderState.js.map",
+      "bytes": 3725,
+      "sha256": "8fea0ecd8f2811c000864a1c15a99593cf65b4f7ecc59d2c7a3131e7aed52f1f",
+      "mode": 420
+    },
+    {
+      "path": "expo-module.config.json",
+      "bytes": 334,
+      "sha256": "171924558996d48558793eb68795fe969e10ecb691bc0960fb9825b16baa9b8b",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioComponentRegistry.swift",
+      "bytes": 3397,
+      "sha256": "45af89001f159d392b991cfd2111050e31ea3c9a23f94600e142f9974732621f",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioExceptions.swift",
+      "bytes": 1239,
+      "sha256": "9757bb617f20e3bee8828b7d818dcbd13e6a06e46921cbe1847990079be346cf",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioModule.swift",
+      "bytes": 24810,
+      "sha256": "988bad3ed7eadf2b79d0de2a02529862e7e04cf5d52c9e8ddb65b55acb133e52",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioPlayer.swift",
+      "bytes": 12780,
+      "sha256": "1866052c4d0bcc0474f8711aba1fd90d383ae9a31a8c7a51d63e0a0742f9c595",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioPlaylist.swift",
+      "bytes": 9585,
+      "sha256": "5c990cc4f73454ab1ec00b189beab2c3f32968b4bb75a7751fe8d438094af81f",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioRecorder.swift",
+      "bytes": 6806,
+      "sha256": "3733bd5cc2a8d90fb6e174f6fd1f95bc742aeee5ed66a2ba312e42fbe9c0c402",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioRecordingRequester.swift",
+      "bytes": 2368,
+      "sha256": "e98b161819a142f0262450d49e404d1084ebb61177000df0e55415255f109b34",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioRecords.swift",
+      "bytes": 2588,
+      "sha256": "83148eaa0ef6bdea91a3e2e28ea85fd08f92b16570a4dfafa7fe194fef1ce1e4",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioSource.swift",
+      "bytes": 221,
+      "sha256": "89ca837df77f1fabc2f5e5bbd657210ae856fa9f7b0ce9bab2cebdc9a279a70e",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioStream.swift",
+      "bytes": 6431,
+      "sha256": "0ba1c8e66ea47809cc0ebfc16215ecb22426c7c7ee797b5ef562a6e564846bbb",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioTapProcessor.h",
+      "bytes": 526,
+      "sha256": "b544aba8a2fe42eeaf7a05dcbf1a7d442fa6ef44904631718eb317146d8ab970",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioTapProcessor.m",
+      "bytes": 6005,
+      "sha256": "fce4f3f9c9e80ecdd7665c3b069dd4d41f5e24cff8e834a8f762a0108e555e89",
+      "mode": 420
+    },
+    {
+      "path": "ios/AudioUtils.swift",
+      "bytes": 6910,
+      "sha256": "80aae4033b3c5905e74b4122fd68c85828fffe276a3871f7ef0ad086a54d033b",
+      "mode": 420
+    },
+    {
+      "path": "ios/ExpoAudio.podspec",
+      "bytes": 1184,
+      "sha256": "8b88c4f2d65206464d825a8e702ae7294a87e95fcd54d98e6d1995bc1892396f",
+      "mode": 420
+    },
+    {
+      "path": "ios/MediaController.swift",
+      "bytes": 10581,
+      "sha256": "8a1d895f13afe02f291a7db1050c4e74b176963598ced7e83213c3fb7ba3d604",
+      "mode": 420
+    },
+    {
+      "path": "ios/Playable.swift",
+      "bytes": 222,
+      "sha256": "6da1518fa4203a23e5c855756885b61ae3cb9a8c07625ebe04160555249944d2",
+      "mode": 420
+    },
+    {
+      "path": "ios/RecordingDelegate.swift",
+      "bytes": 713,
+      "sha256": "8f082ab31410ea6a4f21de6ae2099518aacf06f40e8555fa015c76146493fc87",
+      "mode": 420
+    },
+    {
+      "path": "ios/StringConversions.swift",
+      "bytes": 922,
+      "sha256": "022b0a50f04744f5171175b8aa2056a9368e1fed9af6af4a721223cb29910e9f",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5-sources.jar",
+      "bytes": 37275,
+      "sha256": "7fd4e8f5d3f06fb442c2837c192b68d91237d6bd105740580f15aad1d5702e7f",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5-sources.jar.md5",
+      "bytes": 32,
+      "sha256": "dd75b44d777ec6d3c18a905d384c45421a99ce7c7609803dbf3f83df556d287a",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5-sources.jar.sha1",
+      "bytes": 40,
+      "sha256": "097153d4bed7e069bdc26bbd887a13ce746aafdd8979d5e7c1e7286890c9bcf4",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5-sources.jar.sha256",
+      "bytes": 64,
+      "sha256": "a3574f3a9a4fafd518ed393d6bc4cf54d01a3ebfb68f9fd4b6e372374a3bafb5",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5-sources.jar.sha512",
+      "bytes": 128,
+      "sha256": "dc328514d65c6a9e68004c6e625465268a2c2710b95973cf8c2c363d5d79618f",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.aar",
+      "bytes": 482660,
+      "sha256": "fc899874ee28bdab4db26511b6dc46ac64909e1feb5dfe133dedf5abda547b96",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.aar.md5",
+      "bytes": 32,
+      "sha256": "a5a1548bdfa8546c3c1a8de6efafbca51553e8c660b76d77abffb15044c02f15",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.aar.sha1",
+      "bytes": 40,
+      "sha256": "1637e872ccf96a46935c23b884dc365a7f62751951b2e1f4c038991e748a3662",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.aar.sha256",
+      "bytes": 64,
+      "sha256": "c6962fd01ba070fc302bd9c5ec0dfea183d04f28a4ea75150e4f72020b8c3324",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.aar.sha512",
+      "bytes": 128,
+      "sha256": "c361ac6ed7407ce732904059ece533a8e53b5c98e43c62e0356c0f907a664233",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.module",
+      "bytes": 4946,
+      "sha256": "84a6cf4d0bcd97d9bf4b6354c30307044dc59b49fc0834f133e312bcc8a68b21",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.module.md5",
+      "bytes": 32,
+      "sha256": "e693152257a7a03237c3843df134bfb24964c42c9557ceb34267335981a74aa9",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.module.sha1",
+      "bytes": 40,
+      "sha256": "2fba3c2cf78300f002ad93b7bf87d9721e6e14f370231f1885bafdcda3c09514",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.module.sha256",
+      "bytes": 64,
+      "sha256": "487717ee34e1bb26f45e247b754533492930001d1a34316890775ace4a17e5af",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.module.sha512",
+      "bytes": 128,
+      "sha256": "a715020098600848cf506e63e50f80f91c5ad78f43289d76354944be63907920",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.pom",
+      "bytes": 4065,
+      "sha256": "07a1ed94d880e8696a6267e4cd4b805c326ca9a5c137b7152ebfc6c616c6c49c",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.pom.md5",
+      "bytes": 32,
+      "sha256": "68f2f1a770d51b7a569b443983400f053b2d9f723e120e7a5892e029b1fca2f6",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.pom.sha1",
+      "bytes": 40,
+      "sha256": "96cdc252cfdee747ae2f0c854b43cbb881d1e6df1787a68579252200f9bff108",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.pom.sha256",
+      "bytes": 64,
+      "sha256": "d1fd71107230906cc0cc91e5bdd0be19c5943ba14b156ca9b134cc387744aa78",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/57.0.5/expo.modules.audio-57.0.5.pom.sha512",
+      "bytes": 128,
+      "sha256": "1de0d3000464d18a61e294a1cd19d2c5bf0d2774526df8739a54f0575e11e8d5",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/maven-metadata.xml",
+      "bytes": 346,
+      "sha256": "4130c6b37e09aea15a5d0132fb19f1e181a1cfa038f3af4680c26f06a5ca2141",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/maven-metadata.xml.md5",
+      "bytes": 32,
+      "sha256": "5c5941a1d00b8dad4aabd09f7851bfed9418f12e32b59ef74cb2d0dd99072dc8",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/maven-metadata.xml.sha1",
+      "bytes": 40,
+      "sha256": "20ccaaf4218babe885b1a18b6e76b976f0c5ccad908d3c2b0ff174cb6785a555",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/maven-metadata.xml.sha256",
+      "bytes": 64,
+      "sha256": "d8b1d036c7f89be31598a8e4232a610f6330a0b169e8aec02aa22e52982d0cdd",
+      "mode": 420
+    },
+    {
+      "path": "local-maven-repo/expo/modules/audio/expo.modules.audio/maven-metadata.xml.sha512",
+      "bytes": 128,
+      "sha256": "04f1dd1a4d2591d492909c3af163b0a97387b7d6587fa974aa08cf9299fd91a8",
+      "mode": 420
+    },
+    {
+      "path": "package.json",
+      "bytes": 1152,
+      "sha256": "414f4117da273107eb8617f99caa7e78769a490ff4ffc22412e86a8246fbd98c",
+      "mode": 420
+    },
+    {
+      "path": "plugin/build/index.d.ts",
+      "bytes": 122,
+      "sha256": "4740feeb0ed4e601e48b282f57ff8bf9f89f503d64bb1d1c3f1bb5808a25fa8a",
+      "mode": 420
+    },
+    {
+      "path": "plugin/build/index.js",
+      "bytes": 134,
+      "sha256": "d78d2e36c2bab945f350329b69e262478c35410217bc5167515f32e718a19590",
+      "mode": 420
+    },
+    {
+      "path": "plugin/build/withAudio.d.ts",
+      "bytes": 825,
+      "sha256": "57d96018aba7fe69a0d7775a4999aa6cb5ad82b280570a0289c0f8090219ad85",
+      "mode": 420
+    },
+    {
+      "path": "plugin/build/withAudio.js",
+      "bytes": 3982,
+      "sha256": "26379c49a618433e508e2c846d610096670d56c92e03153dfcfa2dfa38b72929",
+      "mode": 420
+    },
+    {
+      "path": "plugin/index.d.ts",
+      "bytes": 35,
+      "sha256": "4f1577365cc095fec3b9283ae10873c8807dcead476330b8ae817d59b2fa2e94",
+      "mode": 420
+    },
+    {
+      "path": "plugin/index.js",
+      "bytes": 37,
+      "sha256": "b6275f41c7508ff9f8eb4514da9638f193b771b6971d748b12ee50c3d038ceed",
+      "mode": 420
+    },
+    {
+      "path": "plugin/src/index.ts",
+      "bytes": 116,
+      "sha256": "a2608fd9b63a1755e96c57232db0fd00c0e42e919c908834677131926e8474fa",
+      "mode": 420
+    },
+    {
+      "path": "plugin/src/withAudio.ts",
+      "bytes": 4294,
+      "sha256": "76b4efe8e0e12673a3c775d26b75cb0fe5289e8230d4367e1927c414987e9c87",
+      "mode": 420
+    },
+    {
+      "path": "plugin/tsconfig.json",
+      "bytes": 229,
+      "sha256": "3141c61d3c0a723e5f6574d6561c166c041aa8b3f43ed22085f2ccd1100b01b8",
+      "mode": 420
+    },
+    {
+      "path": "plugin/tsconfig.tsbuildinfo",
+      "bytes": 49,
+      "sha256": "93687783068250e5b252eb45b3315f01d7bde83b62982c904c99f710a5ae5929",
+      "mode": 420
+    },
+    {
+      "path": "spm.config.json",
+      "bytes": 1408,
+      "sha256": "4613aaf65cd085e3c78d19d2ebb345a1a557c0ebef735fc1b3c0e701f2ef2482",
+      "mode": 420
+    },
+    {
+      "path": "src/Audio.types.ts",
+      "bytes": 24867,
+      "sha256": "d5782c755dcdf2164a15ee48b2ad250f42aa69198d5419555928e52295300dce",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioConstants.ts",
+      "bytes": 572,
+      "sha256": "4469ffa1af8995a71bdd45d8278f9aadb94e52c5e278006a7e5d8179a8ba97f4",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioEventKeys.ts",
+      "bytes": 401,
+      "sha256": "749f7db190d3950a3a67ce56fca56bb38a67e6011752997d9fc91db4c2ed13c1",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioModule.ts",
+      "bytes": 208,
+      "sha256": "c29fafe853816cda3ff7554a1599c93a249e680d3add1358ec45875cb94d5e58",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioModule.types.ts",
+      "bytes": 14619,
+      "sha256": "fc581e960ba8ab5f9085abd3119caa30f2b48c25334a898944ca25025af9bc13",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioModule.web.ts",
+      "bytes": 3693,
+      "sha256": "dce19133e8a001cf211715af53a7e5a09e8d2f46ab4e917336d9fc1b6f25b2cb",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioPlayer.web.ts",
+      "bytes": 10640,
+      "sha256": "a11f4540096648f6e6bb9ecea16609a1ebf995ff5c35cdd7c0e82f0be6a33bfa",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioPlaylist.web.ts",
+      "bytes": 13400,
+      "sha256": "3d9c4b20bae17b6861d0eea92d63d4a9387a6655adab902e35ea1428b949f424",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioRecorder.web.ts",
+      "bytes": 9465,
+      "sha256": "1164b2ad5fcaf9e8108db7ab35146e7a0bab65d4dde8313ae732b63338ad42a5",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioStream.ts",
+      "bytes": 1536,
+      "sha256": "f0d95697bec4883abac713e91882ad80f81bc019b56d8c8de32fb6474a9d7f42",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioStream.types.ts",
+      "bytes": 2262,
+      "sha256": "a6e94cf4b956670461ad73d8f400dcd00f4632a9327a5d866f339a9f5d17b85b",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioStream.web.ts",
+      "bytes": 226,
+      "sha256": "836b70fce8851fb43d6fadefc0bb63d95a95c55660d70178f8a4cc14a86dd538",
+      "mode": 420
+    },
+    {
+      "path": "src/AudioUtils.web.ts",
+      "bytes": 3082,
+      "sha256": "86bccf87ef0d54073b705c8ccfa3af2c4338c709f047c2551884b1b91d085c07",
+      "mode": 420
+    },
+    {
+      "path": "src/ExpoAudio.ts",
+      "bytes": 22608,
+      "sha256": "246e9b438c9bfc68c8b2235a3ee0fbdb51eca8ce62982bb9db37fd965e79b21a",
+      "mode": 420
+    },
+    {
+      "path": "src/ExpoAudio.web.ts",
+      "bytes": 6657,
+      "sha256": "e59bd8649b74e7b146d5ab7d2b6f28f23dfae1856d85d2c94dcc8443ce9e6209",
+      "mode": 420
+    },
+    {
+      "path": "src/MediaSessionController.web.ts",
+      "bytes": 5309,
+      "sha256": "c213894c0be2df148460e5bfa27d0b06d8346fbb119f8b1e6ec1b076ae02e31c",
+      "mode": 420
+    },
+    {
+      "path": "src/RecordingConstants.ts",
+      "bytes": 4128,
+      "sha256": "cea2eccd35460233dee5728839af6e592d06515d4a31bec9aa1ecca8c42adc91",
+      "mode": 420
+    },
+    {
+      "path": "src/index.ts",
+      "bytes": 361,
+      "sha256": "56bb4c8d3247b43432944539f5d8ac35fa0acb69b1a56d375560a775c316a279",
+      "mode": 420
+    },
+    {
+      "path": "src/ts-declarations/lib.dom.d.ts",
+      "bytes": 1337,
+      "sha256": "71bf0fbb521422d6311c37c758a5d34f2268b6ab1ba26919a4e88558321dcbb0",
+      "mode": 420
+    },
+    {
+      "path": "src/ts-declarations/react-native-assets.d.ts",
+      "bytes": 90,
+      "sha256": "6895875fcd215f80e3aace5d862d7a05a60c7e2c7ecf42286cda90dd055cc8fc",
+      "mode": 420
+    },
+    {
+      "path": "src/utils/options.ts",
+      "bytes": 1286,
+      "sha256": "9c98e331684509df28061c0dd790adaa83eceefce214a8e93d2f819abbe07952",
+      "mode": 420
+    },
+    {
+      "path": "src/utils/resolveSource.ts",
+      "bytes": 4287,
+      "sha256": "6124e665be259f3d5869d2aec3c404f7b0f12c8cbcde554f78ce613ec7f7f173",
+      "mode": 420
+    },
+    {
+      "path": "src/utils/useAudioRecorderState.ts",
+      "bytes": 2361,
+      "sha256": "cb0e613fe6f3d66c2d5b9cfce81621407e6a65fd8672a46ac741d2a83fc3445b",
+      "mode": 420
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 263,
+      "sha256": "c47e79bd86e360fc929d8bef85e0c111e005c324ff450109e8a821aa64096992",
+      "mode": 420
+    }
+  ],
+  "generatedBinLinks": [
+    {
+      "path": "node_modules/.bin/expo",
+      "literal": "../../../expo/bin/cli",
+      "target": "node_modules/expo/bin/cli",
+      "sha256": "644f576d9a0d2347142ae3dc0cad7f13a79171d012cf1a361e2af0880cbb85bd",
+      "bytes": 43,
+      "mode": 493
+    },
+    {
+      "path": "node_modules/.bin/expo-modules-autolinking",
+      "literal": "../../../expo/bin/autolinking",
+      "target": "node_modules/expo/bin/autolinking",
+      "sha256": "2aeab6810f07a0a97ca63d9c76b00c4778f10b2a5efb6ef65b06ed337c0c09eb",
+      "bytes": 380,
+      "mode": 493
+    },
+    {
+      "path": "node_modules/.bin/fingerprint",
+      "literal": "../../../expo/bin/fingerprint",
+      "target": "node_modules/expo/bin/fingerprint",
+      "sha256": "13ff3aade1ae0932dc901ea32ebebff7411c28e1df494ef4ee9f5b76a4f9a5b8",
+      "bytes": 59,
+      "mode": 493
+    },
+    {
+      "path": "node_modules/.bin/react-native",
+      "literal": "../../../react-native/cli.js",
+      "target": "node_modules/react-native/cli.js",
+      "sha256": "de42f71930201f67ad19696a5f819f50ae0da337207da179b28591db037d3863",
+      "bytes": 8488,
+      "mode": 493
+    }
+  ]
+}
