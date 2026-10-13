@@ -123,7 +123,10 @@ function assertRsdWeightsUseFontTokens(files) {
     for (const [tag] of code.matchAll(/<html\.(?:h[1-6]|strong|b)\b[^>]*>/g))
       if (!/\.boldText\b/.test(tag)) offenders.push(`${file}: ${tag}`);
     for (const [line] of code.matchAll(/^.*\bfontWeight:.*$/gm))
-      if (/react-strict-dom/.test(code) && !/fontWeight: fonts\.boldWeight\b/.test(line))
+      if (
+        /react-strict-dom/.test(code) &&
+        !/fontWeight: fonts\.(?:bold|semibold|medium)Weight\b/.test(line)
+      )
         offenders.push(`${file}: ${line.trim()}`);
   }
   assert.deepEqual(offenders, []);
@@ -213,14 +216,22 @@ describe('RSD font tokens', () => {
       family: scale.fontFamily,
       boldFamily: scale.fontFamily,
       boldWeight: scale.fontWeightBold,
+      semiboldFamily: scale.fontFamily,
+      semiboldWeight: scale.fontWeightSemibold,
+      mediumFamily: scale.fontFamily,
+      mediumWeight: scale.fontWeightMedium,
     });
   });
 
   it('are overridden on Android and iOS by one face per weight, every token included', () => {
     expect(NATIVE_RSD_FONTS).toEqual({
       family: NATIVE_FONT_FAMILIES.regular,
-      boldFamily: NATIVE_FONT_FAMILIES.bold,
+      boldFamily: NATIVE_FONT_FAMILIES[nativeFontFace(scale.fontWeightBold)],
       boldWeight: 'normal',
+      semiboldFamily: NATIVE_FONT_FAMILIES[nativeFontFace(scale.fontWeightSemibold)],
+      semiboldWeight: 'normal',
+      mediumFamily: NATIVE_FONT_FAMILIES[nativeFontFace(scale.fontWeightMedium)],
+      mediumWeight: 'normal',
     });
     expect(Object.keys(NATIVE_RSD_FONTS).sort()).toEqual(Object.keys(fontTokens(tokens)).sort());
     expect(read('src/rsdDrawing/fontTheme.native.ts')).toContain(

@@ -14,6 +14,7 @@ import {
   RSD_NATIVE_INSTALL_BANNER_TEST,
   RSD_NATIVE_SETTINGS_SECTIONS_TEST,
   RSD_NATIVE_BUTTON_SIZE_TEST,
+  RSD_NATIVE_TOKEN_SPECIMEN_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -40,6 +41,7 @@ export default defineConfig({
       RSD_NATIVE_INSTALL_BANNER_TEST,
       RSD_NATIVE_SETTINGS_SECTIONS_TEST,
       RSD_NATIVE_BUTTON_SIZE_TEST,
+      RSD_NATIVE_TOKEN_SPECIMEN_TEST,
     ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },
