@@ -97,7 +97,7 @@ function InstallCard({
   return (
     <html.div role="region" aria-label={copy.heading} style={styles.banner}>
       <html.div style={styles.copy}>
-        <html.strong>{copy.heading}</html.strong>
+        <html.strong style={controlStyles.boldText}>{copy.heading}</html.strong>
         <html.span>{copy.detail}</html.span>
       </html.div>
       <html.div style={controlStyles.row}>

@@ -1,4 +1,5 @@
-import { Switch, Text, View, StyleSheet } from 'react-native';
+import { Switch, View, StyleSheet } from 'react-native';
+import { Text } from '../drawing/Text';
 import {
   createDrawingStyles,
   useDrawingStyles,

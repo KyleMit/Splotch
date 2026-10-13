@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions } from './tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 import { RsdIcon } from './RsdIcon';
 import { PARENT_GATE_KEYPAD_KEYS, type ParentGateKey } from '../parentCenter/parentGate';
 
@@ -33,7 +33,8 @@ const styles = css.create({
     backgroundColor: colors.surface2,
     color: colors.textStrong,
     fontSize: dimensions.fontSizeLg,
-    fontWeight: dimensions.fontWeightBold,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
   },
   locked: { opacity: dimensions.disabledOpacity },
 });

@@ -3,7 +3,7 @@ import { Animated } from 'react-native';
 import { NativeDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
 import { RsdParentGateKeypad } from './RsdParentGateKeypad';
-import { colors, dimensions } from './tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { PARENT_LABELS } from '../parentCenter/parentPolicy';
 import type { ParentGateState } from '../parentCenter/parentGate';
@@ -24,7 +24,8 @@ const sheetStyles = css.create({
     justifyContent: 'center',
     gap: dimensions.space2,
     fontSize: dimensions.fontSizeLg,
-    fontWeight: dimensions.fontWeightBold,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
     color: colors.textStrong,
   },
   dab: (edge: string) => ({
@@ -71,7 +72,7 @@ export function RsdParentGateSheet({
     >
       <Animated.View style={{ transform: [{ translateX: offset }] }}>
         <html.div style={styles.dialogContent}>
-          <html.h1>Grown-ups only</html.h1>
+          <html.h1 style={styles.boldText}>Grown-ups only</html.h1>
           <html.span>{PARENT_LABELS[state.feature]}</html.span>
           <html.div style={sheetStyles.problem}>
             <html.span>

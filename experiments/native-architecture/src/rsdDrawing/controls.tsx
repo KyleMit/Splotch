@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, brandColors } from './tokens.css';
+import { colors, dimensions, brandColors, fonts } from './tokens.css';
 import { paintAppearance, paintLabel, type PaintColor } from '../drawing/palette';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES, TOUCH_TARGET, type PaperTheme } from '../drawing/theme';
@@ -62,6 +62,7 @@ export function swatchEdge(hex: string, theme: PaperTheme) {
 
 export const styles = css.create({
   themeRoot: {
+    fontFamily: fonts.family,
     display: 'flex',
     flexDirection: 'column',
     flexGrow: 1,
@@ -80,9 +81,12 @@ export const styles = css.create({
     gap: dimensions.space3,
     backgroundColor: colors.surface,
     color: colors.text,
+    fontFamily: fonts.family,
     fontSize: dimensions.fontSizeMd,
   },
   fullBleed: { padding: 0, gap: 0 },
+  // Headings and strong text: RSD's own bold would make Android swap in a system face.
+  boldText: { fontFamily: fonts.boldFamily, fontWeight: fonts.boldWeight },
   paletteBar: {
     display: 'flex',
     flexDirection: 'row',

@@ -1,7 +1,8 @@
 import { DrawingModal as Modal } from '../platform/DrawingModal';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';

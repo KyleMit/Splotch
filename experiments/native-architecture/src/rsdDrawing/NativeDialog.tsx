@@ -7,6 +7,7 @@ import {
 } from '../settings/brushPreferences';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
+import { fontTheme } from './fontTheme';
 import {
   APPEARANCE_PREFERENCES,
   APPEARANCE_LABELS,
@@ -117,7 +118,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
         <html.div style={controlStyles.dialogContent}>
           {page.kind === 'section' ? (
             <>
-              <html.h1>{sectionHeading(page.section)}</html.h1>
+              <html.h1 style={controlStyles.boldText}>{sectionHeading(page.section)}</html.h1>
               <SettingsSection
                 {...props}
                 section={page.section}
@@ -337,7 +338,7 @@ export function NativeDialog({
       onDismiss={onDismiss}
     >
       <NativeFrame>
-        <html.div style={[controlStyles.themeRoot, theme === 'dark' && darkTheme]}>
+        <html.div style={[controlStyles.themeRoot, fontTheme, theme === 'dark' && darkTheme]}>
           <ScrollView
             testID="rsd-dialog-viewport"
             accessibilityLabel={`${label} options`}

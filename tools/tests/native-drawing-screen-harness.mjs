@@ -271,7 +271,7 @@ vi.mock('react-native', () => {
         {
           role: accessibilityRole,
           'aria-live': accessibilityLiveRegion,
-          style: Object.assign({}, ...[style].flat().filter(Boolean)),
+          style: Object.assign({}, ...[style].flat(Infinity).filter(Boolean)),
         },
         children
       ),

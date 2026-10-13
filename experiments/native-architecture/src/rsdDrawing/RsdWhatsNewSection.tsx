@@ -42,11 +42,13 @@ export function RsdWhatsNewSection() {
     <html.div style={controlStyles.stack}>
       {RELEASE_NOTES.map((release) => (
         <html.div key={release.version} style={styles.release}>
-          <html.h2 style={styles.date}>{release.dateLabel}</html.h2>
+          <html.h2 style={[controlStyles.boldText, styles.date]}>{release.dateLabel}</html.h2>
           <html.span>{`Version ${release.version}`}</html.span>
           {release.sections.map((section, index) => (
             <html.div key={index} style={controlStyles.stack}>
-              {section.title ? <html.h3 style={styles.heading}>{section.title}</html.h3> : null}
+              {section.title ? (
+                <html.h3 style={[controlStyles.boldText, styles.heading]}>{section.title}</html.h3>
+              ) : null}
               {blockRuns(section.blocks).map((run, runIndex) =>
                 run.kind === 'item' ? (
                   <html.ul key={runIndex} style={styles.items}>

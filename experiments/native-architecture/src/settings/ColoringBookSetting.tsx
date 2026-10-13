@@ -1,4 +1,5 @@
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
+import { Text } from '../drawing/Text';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 
