@@ -16,11 +16,13 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
 import {
   isParentPolicies,
+  arePoliciesAvailable,
   PROTECTED_PARENT_POLICIES,
   type ParentPreferences,
 } from '../parentCenter/parentPolicy';
@@ -72,7 +74,7 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 12,
+    version: 13,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -359,25 +361,14 @@ function createSoundActions(choose: Choose) {
   };
 }
 
-function createPencilActions({
-  getState,
-  isDisposed,
-  hasReadFailed,
-  publish,
-  persist,
-}: PreferenceActionContext) {
+function createPencilActions(choose: Choose) {
   return {
-    async setPencilEraserEnabled(pencilEraserEnabled: boolean) {
-      const state = getState();
-      if (isDisposed() || state.status !== 'ready') return;
-      if (typeof pencilEraserEnabled !== 'boolean')
-        throw new Error('Apple Pencil choice is invalid.');
-      if (hasReadFailed()) {
-        publish({ ...state, pencilEraserEnabled });
-        return;
-      }
-      await persist({ ...snapshot(state), pencilEraserEnabled });
-    },
+    setPencilEraserEnabled: (pencilEraserEnabled: boolean) =>
+      choose(
+        { pencilEraserEnabled },
+        typeof pencilEraserEnabled === 'boolean',
+        'Apple Pencil choice is invalid.'
+      ),
   };
 }
 
@@ -386,7 +377,7 @@ function createPreferenceActions(context: PreferenceActionContext) {
   return {
     ...createDrawingPreferenceActions(context),
     ...createSoundActions(choose),
-    ...createPencilActions(context),
+    ...createPencilActions(choose),
     ...createAccessibilityActions(choose),
     setToolbarStyle: (toolbarStyle: ToolbarStyle) =>
       choose({ toolbarStyle }, isToolbarStyle(toolbarStyle), 'Button style choice is invalid.'),
@@ -395,6 +386,15 @@ function createPreferenceActions(context: PreferenceActionContext) {
 
 const PARENT_SAVE_FAILED_MESSAGE =
   'Parent Center choices were not saved. Previous protection is still active. Retry saving.';
+
+// A Parent Center choice the platform's store rules forbid never reaches storage.
+function isSavableParentPreferences(choices: ParentPreferences) {
+  return (
+    typeof choices.aiEnabled === 'boolean' &&
+    isParentPolicies(choices.parentPolicies) &&
+    arePoliciesAvailable(choices.parentPolicies, PARENT_PLATFORM)
+  );
+}
 
 export function createSoundSettings(
   storage: SoundSettingsStorage,
@@ -434,7 +434,8 @@ export function createSoundSettings(
     const { version: _version, ...choices } = previous;
     publish({ status: 'saving', ...choices, message: 'Saving Parent Center choices…' });
     try {
-      await storage.write(JSON.stringify(settings));
+      // Through snapshot, so the policies land in their saved order however the caller built them.
+      await storage.write(JSON.stringify(snapshot(settings)));
       const { version: _nextVersion, ...next } = settings;
       pendingParent = null;
       publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });
@@ -484,8 +485,7 @@ export function createSoundSettings(
     },
     async setParentPreferences(choices: ParentPreferences) {
       if (disposed || state.status !== 'ready' || readFailed) return;
-      if (typeof choices.aiEnabled !== 'boolean' || !isParentPolicies(choices.parentPolicies))
-        throw new Error('Parent Center choice is invalid.');
+      if (!isSavableParentPreferences(choices)) throw new Error('Parent Center choice is invalid.');
       await persistParent({ ...snapshot(state), ...choices });
     },
     async retryParentSave() {

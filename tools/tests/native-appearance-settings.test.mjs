@@ -10,6 +10,7 @@ const parentDefaults = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },
@@ -27,6 +28,8 @@ const currentDefaults = Object.fromEntries(
     key === 'soundLevel' ? Object.entries(SOUND_DEFAULTS) : [[key, value]]
   )
 );
+// A record saved before the external-links policy existed.
+const { externalLinks: _links, ...policiesBeforeLinks } = parentDefaults.parentPolicies;
 const ACCESSIBILITY_DEFAULTS = { buttonScale: 100, reduceMotion: 'system', whatsNewSeen: null };
 const choices = {
   soundEnabled: false,
@@ -59,7 +62,7 @@ describe('persisted candidate drawing appearance', () => {
     const parsed = parseSoundSettings(JSON.stringify(old));
     const { version: _version, ...retained } = old;
     expect(parsed).toMatchObject({
-      version: 12,
+      version: 13,
       appearance: 'system',
       ...retained,
       ...currentDefaults,
@@ -68,9 +71,15 @@ describe('persisted candidate drawing appearance', () => {
   it.each(['light', 'dark', 'system'])(
     'round trips the exact %s preference and other settings',
     async (appearance) => {
-      const snapshot = JSON.stringify({ version: 9, ...choices, appearance, ...parentDefaults });
+      const snapshot = JSON.stringify({
+        version: 9,
+        ...choices,
+        appearance,
+        ...parentDefaults,
+        parentPolicies: policiesBeforeLinks,
+      });
       expect(parseSoundSettings(snapshot)).toEqual({
-        version: 12,
+        version: 13,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -111,7 +120,7 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.changes.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
     const exact = JSON.stringify({
-      version: 12,
+      version: 13,
       ...choices,
       appearance: 'dark',
       ...currentDefaults,
@@ -151,7 +160,7 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.owner.setAppearance('dark');
     expect(JSON.parse(f.storage.write.mock.calls[0][0])).toEqual({
-      version: 12,
+      version: 13,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',

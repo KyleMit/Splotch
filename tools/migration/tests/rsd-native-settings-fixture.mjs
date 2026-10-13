@@ -7,7 +7,7 @@ import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/se
 
 // The stored settings, drawing screen and Settings queries the RSD Settings suites share.
 const CURRENT_SETTINGS = {
-  version: 12,
+  version: 13,
   soundEnabled: false,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -18,6 +18,7 @@ const CURRENT_SETTINGS = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },

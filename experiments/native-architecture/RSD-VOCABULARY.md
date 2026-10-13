@@ -238,12 +238,12 @@ contents and the other sections, and the drawer opens. React Strict DOM maps `vi
 zero opacity natively, so each hidden piece hides itself rather than an ancestor hiding everything
 below it.
 
-The Volume, its two sources and Button style persist in settings schema 12. A schema 11 or earlier
+The Volume, its two sources and Button style persist in settings schema 13. A schema 12 or earlier
 record's quiet, medium or loud level becomes the volume that plays at the same gain (25, 50, 100),
-with both sources on and Raised buttons. `audio/soundGates.ts` gates drawing sound on Sound and
-Drawing, and the clear page turn on Sound and Deleting, as shipping's `canPlayDrawingSound` and
-`canPlayDeleteSound` do. Button style is stored and chosen here; the flat toolbar's rendering is not
-ported yet.
+with both sources on and Raised buttons; a schema 11 record also takes the external-links default on
+the way. `audio/soundGates.ts` gates drawing sound on Sound and Drawing, and the clear page turn on
+Sound and Deleting, as shipping's `canPlayDrawingSound` and `canPlayDeleteSound` do. Button style is
+stored and chosen here; the flat toolbar's rendering is not ported yet.
 
 ## Design primitives
 

@@ -76,7 +76,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 12,
+  version: 13,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -87,6 +87,7 @@ const CURRENT = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },
@@ -106,11 +107,11 @@ const CURRENT = {
   toolbarStyle: 'buttons',
 };
 
-// CURRENT as schema 11 stored it: the medium level where the volume and sources sit, and no
+// CURRENT as schema 12 stored it: the medium level where the volume and sources sit, and no
 // Button style.
-const VERSION_11 = Object.fromEntries(
+const VERSION_12 = Object.fromEntries(
   Object.entries(CURRENT).flatMap(([key, value]) => {
-    if (key === 'version') return [[key, 11]];
+    if (key === 'version') return [[key, 12]];
     if (key === 'soundVolume') return [['soundLevel', 'medium']];
     if (['drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'].includes(key)) return [];
     return [[key, value]];
@@ -321,12 +322,86 @@ describe("What's New", () => {
   });
 });
 
+// A record from before version 12, which gave Viewing external links its own policy.
+function withoutLinksPolicy(record) {
+  const { externalLinks: _links, ...policies } = record.parentPolicies;
+  return { ...record, parentPolicies: policies };
+}
+
+describe('settings schema 13', () => {
+  it('migrates version 12 to the volume its level played at, both sources and Raised buttons', () => {
+    for (const [soundLevel, soundVolume] of [
+      ['quiet', 25],
+      ['medium', 50],
+      ['loud', 100],
+    ])
+      expect(parseSoundSettings(JSON.stringify({ ...VERSION_12, soundLevel }))).toEqual({
+        ...CURRENT,
+        soundVolume,
+      });
+  });
+  it('rejects a version 13 record still holding a level or missing a sound choice, and a version 12 record carrying one', () => {
+    expect(() =>
+      parseSoundSettings(JSON.stringify({ ...CURRENT, soundLevel: 'medium' }))
+    ).toThrow();
+    for (const key of ['soundVolume', 'drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'])
+      expect(
+        () => parseSoundSettings(JSON.stringify({ ...CURRENT, [key]: undefined })),
+        key
+      ).toThrow();
+    expect(() => parseSoundSettings(JSON.stringify({ ...VERSION_12, soundVolume: 50 }))).toThrow();
+    expect(() => parseSoundSettings(JSON.stringify({ ...CURRENT, version: 12 }))).toThrow();
+  });
+});
+
+describe('settings schema 12', () => {
+  const VERSION_11 = { ...withoutLinksPolicy(VERSION_12), version: 11 };
+
+  it('migrates version 11 through both steps to the links default and the shipping sound', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_11))).toEqual(CURRENT);
+  });
+  it('rejects a version 12 record without the external-links policy, and a version 11 record carrying one', () => {
+    expect(() =>
+      parseSoundSettings(JSON.stringify({ ...withoutLinksPolicy(VERSION_12), version: 12 }))
+    ).toThrow('Parent Center');
+    expect(() => parseSoundSettings(JSON.stringify({ ...VERSION_12, version: 11 }))).toThrow(
+      'Parent Center'
+    );
+  });
+  it('writes the policies in the shipping order whatever order they were set in', async () => {
+    let stored = JSON.stringify(CURRENT);
+    const settings = createSoundSettings(
+      {
+        read: async () => stored,
+        write: async (next) => {
+          stored = next;
+        },
+      },
+      () => {}
+    );
+    await settings.load();
+    const { parentCenter, ai: _ai, ...rest } = CURRENT.parentPolicies;
+    await settings.setParentPreferences({
+      aiEnabled: true,
+      parentPolicies: { parentCenter, ...rest, ai: 'session' },
+    });
+    expect(Object.keys(JSON.parse(stored).parentPolicies)).toEqual([
+      'ai',
+      'imageReport',
+      'externalLinks',
+      'feedback',
+      'parentCenter',
+    ]);
+    expect(parseSoundSettings(stored).parentPolicies.ai).toBe('session');
+  });
+});
+
 describe('settings schema 11', () => {
   const PENCIL_SEEN = { ...CURRENT, pencilEraserEnabled: false, applePencilSeen: true };
   const VERSION_10 = (({ pencilEraserEnabled: _e, applePencilSeen: _s, ...rest }) => ({
     ...rest,
     version: 10,
-  }))(VERSION_11);
+  }))(withoutLinksPolicy(VERSION_12));
 
   it('round trips the Apple Pencil choices exactly', () => {
     expect(parseSoundSettings(JSON.stringify(PENCIL_SEEN))).toEqual(PENCIL_SEEN);
@@ -369,9 +444,9 @@ describe('settings schema 10', () => {
           }) => ({
             ...rest,
             version: 9,
-          }))(VERSION_11);
+          }))(withoutLinksPolicy(VERSION_12));
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 12,
+      version: 13,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,

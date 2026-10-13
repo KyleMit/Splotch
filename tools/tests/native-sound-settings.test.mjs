@@ -29,14 +29,17 @@ async function currentSnapshot() {
   return f.storage.write.mock.calls.at(-1)[0];
 }
 
-// The schema 11 record a current one replaced: a level where the volume and sources sit, and no
-// Button style.
-function legacyRecord(current, soundLevel) {
+// The record a current one replaced: a level where the volume and sources sit, and no Button
+// style. Schema 11 also predates the external-links policy.
+function legacyRecord(current, soundLevel, version) {
   const legacy = {};
   for (const [key, value] of Object.entries(current)) {
-    if (key === 'version') legacy.version = 11;
+    if (key === 'version') legacy.version = version;
     else if (key === 'soundVolume') legacy.soundLevel = soundLevel;
-    else if (!['drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'].includes(key))
+    else if (key === 'parentPolicies' && version === 11) {
+      const { externalLinks: _links, ...policies } = value;
+      legacy.parentPolicies = policies;
+    } else if (!['drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'].includes(key))
       legacy[key] = value;
   }
   return legacy;
@@ -59,6 +62,7 @@ describe('candidate sound settings', () => {
         parentPolicies: {
           ai: 'always',
           imageReport: 'always',
+          externalLinks: 'always',
           feedback: 'always',
           parentCenter: 'always',
         },
@@ -118,7 +122,7 @@ describe('candidate sound settings', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":12,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}'
+      '{"version":13,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -135,10 +139,10 @@ describe('candidate sound settings', () => {
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
       [
-        '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}',
+        '{"version":13,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}',
       ],
       [
-        '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}',
+        '{"version":13,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}',
       ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
@@ -210,14 +214,16 @@ describe('candidate sound settings', () => {
     }
   );
   it.each([
-    ['quiet', 25],
-    ['medium', 50],
-    ['loud', 100],
+    ['quiet', 25, 12],
+    ['medium', 50, 12],
+    ['loud', 100, 12],
+    ['quiet', 25, 11],
+    ['loud', 100, 11],
   ])(
-    'migrates a stored %s level to the volume that plays at its gain, both sources on',
-    async (soundLevel, soundVolume) => {
+    'migrates a stored %s level to the volume that plays at its gain, both sources on (schema %i)',
+    async (soundLevel, soundVolume, version) => {
       const stored = JSON.parse(await currentSnapshot());
-      const legacy = legacyRecord(stored, soundLevel);
+      const legacy = legacyRecord(stored, soundLevel, version);
       const f = fixture(JSON.stringify(legacy));
       await f.settings.load();
       expect(f.changes.at(-1)).toMatchObject({
@@ -229,9 +235,9 @@ describe('candidate sound settings', () => {
       });
       expect(f.storage.write).not.toHaveBeenCalled();
       for (const invalid of ['LOUD', '', null, 2, {}, ['quiet']])
-        expect(() => parseSoundSettings(JSON.stringify(legacyRecord(stored, invalid)))).toThrow(
-          'Sound level'
-        );
+        expect(() =>
+          parseSoundSettings(JSON.stringify(legacyRecord(stored, invalid, version)))
+        ).toThrow('Sound level');
       const { soundLevel: _level, ...withoutLevel } = legacy;
       expect(() => parseSoundSettings(JSON.stringify(withoutLevel))).toThrow('Sound level');
     }
@@ -243,6 +249,7 @@ describe('candidate sound settings', () => {
     const parentPolicies = {
       ai: 'never',
       imageReport: 'session',
+      externalLinks: 'session',
       feedback: 'always',
       parentCenter: 'session',
     };
@@ -260,7 +267,7 @@ describe('candidate sound settings', () => {
       toolbarStyle: 'bare',
     };
     expect(parseSoundSettings(stored)).toMatchObject({
-      version: 12,
+      version: 13,
       ...chosen,
       aiEnabled: true,
       parentPolicies,
