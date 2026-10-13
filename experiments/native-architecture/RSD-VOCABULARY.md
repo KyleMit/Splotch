@@ -117,5 +117,6 @@ them yet; the screen units adopt them.
   insets, the busy ring, the corner opacities, tile and flyout geometry, the `color-mix()` brand
   shadows resolved to `rgba()`) are exported beside each component, because the StyleX web compile
   resolves only local constants and token files inside `css.create`.
-  `tools/migration/tests/rsd-native-buttons.test.mjs` reads `Button.svelte` and `app.css` and fails
-  when one diverges, and mounts every variant, size and state through the released native renderer.
+  `tools/migration/tests/rsd-native-button-chrome.test.mjs` reads `Button.svelte` and `app.css` and
+  fails when one diverges; `rsd-native-button.test.mjs` and `rsd-native-icon-button.test.mjs` mount
+  every variant, size and state through the released native renderer.

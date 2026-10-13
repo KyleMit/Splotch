@@ -155,7 +155,7 @@ function facePadding(skin: 'tile' | 'flyout', size: number) {
 }
 
 // The square a tile or option of this outer size leaves its icon.
-export function faceIconSize(skin: 'tile' | 'flyout', size: number) {
+function faceIconSize(skin: 'tile' | 'flyout', size: number) {
   return size - 2 * (facePadding(skin, size) + ACTION_TILE_BORDER_PX);
 }
 

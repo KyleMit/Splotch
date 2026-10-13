@@ -26,7 +26,7 @@ const styles = css.create({
   radius: (radius: number) => ({ borderRadius: radius }),
 });
 
-export function flyoutMenuRadius(optionSize: number) {
+function flyoutMenuRadius(optionSize: number) {
   return optionSize * ACTION_TILE_RADIUS_RATIO + FLYOUT_MENU_PADDING_PX;
 }
 
