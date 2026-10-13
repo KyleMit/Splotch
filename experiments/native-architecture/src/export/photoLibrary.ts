@@ -1,4 +1,4 @@
-export type PhotoLibraryOutcome = 'photos' | 'denied' | 'failed';
+export type PhotoLibraryOutcome = 'photos' | 'denied' | 'failed' | 'unavailable';
 export type PhotoLibrary = Readonly<{ save: (pngBase64: string) => Promise<PhotoLibraryOutcome> }>;
 export type PhotoLibraryOs = 'ios' | 'android';
 
@@ -17,8 +17,13 @@ const LIBRARY_NAME: Record<PhotoLibraryOs, string> = { ios: 'Photos', android: '
 export const IN_APP_SAVED_NOTICE = 'Picture saved on this device.';
 const IN_APP_KEPT = "A copy is kept in this app's Pictures.";
 
+// Only Android below 11 reports 'unavailable'. The shipping app has no wording for it: its
+// Android 7-9 saves fall back to app-specific media storage instead of failing.
+const UNAVAILABLE_NOTICE = `${IN_APP_SAVED_NOTICE} Saving to your gallery needs Android 11 or later.`;
+
 export function photoLibraryNotice(outcome: PhotoLibraryOutcome, os: PhotoLibraryOs): string {
   if (outcome === 'photos') return `Picture saved to ${LIBRARY_NAME[os]} and on this device.`;
+  if (outcome === 'unavailable') return UNAVAILABLE_NOTICE;
   const detail = outcome === 'denied' ? PERMISSION_DETAIL[os] : FAILED_DETAIL;
   return `${UNSAVED_HEADING} to ${LIBRARY_NAME[os]}. ${detail} ${IN_APP_KEPT}`;
 }

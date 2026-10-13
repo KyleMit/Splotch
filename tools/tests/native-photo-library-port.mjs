@@ -2,6 +2,8 @@
 // experiments/native-architecture/src/platform/photoLibrary.ts. A test mocks each module id
 // to the matching export and reads what the save did from `photos`.
 export const photos = {
+  os: 'ios',
+  androidApi: 33,
   permission: 'granted',
   permissionRequests: [],
   created: [],
@@ -10,6 +12,8 @@ export const photos = {
   files: new Map(),
   deleted: [],
   reset() {
+    this.os = 'ios';
+    this.androidApi = 33;
     this.permission = 'granted';
     this.permissionRequests.length = 0;
     this.created.length = 0;
@@ -20,6 +24,23 @@ export const photos = {
   },
 };
 
+export const reactNativeModule = {
+  Platform: {
+    get OS() {
+      return photos.os;
+    },
+    get Version() {
+      return photos.androidApi;
+    },
+  },
+};
+
+function record(entry) {
+  photos.created.push({ ...entry, base64: photos.files.get(entry.filePath) });
+  photos.onCreate?.();
+  if (photos.createError) throw photos.createError;
+}
+
 export const mediaLibraryModule = {
   async requestPermissionsAsync(...args) {
     photos.permissionRequests.push(args);
@@ -28,10 +49,16 @@ export const mediaLibraryModule = {
   },
   Asset: {
     async create(filePath, album) {
-      photos.created.push({ filePath, album, base64: photos.files.get(filePath) });
-      photos.onCreate?.();
-      if (photos.createError) throw photos.createError;
+      record({ via: 'Asset.create', filePath, album });
       return { id: `asset-${photos.created.length}` };
+    },
+  },
+  Album: {
+    async create(name, assetRefs, moveAssets) {
+      if (assetRefs.length !== 1 || moveAssets !== undefined)
+        throw new Error('Expected one file path and the default move choice');
+      record({ via: 'Album.create', filePath: assetRefs[0], album: name });
+      return { id: `album-${name}` };
     },
   },
 };

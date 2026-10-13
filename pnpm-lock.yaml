@@ -200,6 +200,9 @@ importers:
       web-features:
         specifier: 3.40.0
         version: 3.40.0
+      workbox-build:
+        specifier: ^7.4.1
+        version: 7.4.1(supports-color@10.2.2)
       yaml:
         specifier: 2.9.1
         version: 2.9.1

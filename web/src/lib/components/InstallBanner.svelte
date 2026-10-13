@@ -5,6 +5,7 @@
   import { calm } from '$lib/platform/calmTransition';
   import { CALM_FADE_MS } from '$lib/motionDurations';
   import { APP_HOME_SCREEN_NAME } from '$lib/appIdentity';
+  import { INSTALL_PROMPT_COPY } from '$lib/installPromptCopy';
   import { prefersReducedMotion } from '$lib/platform/reducedMotion';
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
@@ -37,21 +38,6 @@
   const HINT_FADE_MS = 160;
 
   const bannerEnter = calm(fly, { y: BANNER_FLY_PX, duration: BANNER_ENTER_MS, easing: backOut });
-
-  const INSTALL_PROMPT_COPY = {
-    initial: {
-      heading: 'Add Splotch to your home screen',
-      detail: 'Opens full-screen, just like a real app',
-    },
-    returning: {
-      heading: 'Welcome back! Add Splotch to your home screen',
-      detail: 'Opens full-screen, just like a real app',
-    },
-    final: {
-      heading: 'One last reminder — install Splotch',
-      detail: "We won't ask again — it's always in Settings",
-    },
-  } as const;
 
   // iOS / Android manual flows have no one-tap API, so the button expands an
   // inline how-to instead of firing a dialog.

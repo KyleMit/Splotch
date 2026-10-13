@@ -49,6 +49,7 @@ const files = vi.hoisted(() => ({
   cohort: null,
   cohortDrivers: false,
   platform: 'android',
+  androidApi: 33,
   scheme: 'light',
   retainClosingModal: false,
   dismissModal: null,
@@ -182,6 +183,9 @@ vi.mock('react-native', () => {
     Platform: {
       get OS() {
         return files.platform;
+      },
+      get Version() {
+        return files.androidApi;
       },
     },
     Image: ({ source, accessibilityLabel }) =>

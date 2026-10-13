@@ -15,6 +15,8 @@
 // disagree on the same device.
 export const TABLET_MIN_SIDE_PX = 600;
 
+export type Orientation = 'portrait' | 'landscape';
+
 // A `max-*` bound sits just below the threshold it excludes, so a fractional
 // viewport side between the two doesn't fall through both queries.
 export const BREAKPOINT_EPSILON_PX = 0.02;

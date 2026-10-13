@@ -78,6 +78,7 @@ beforeEach(() => {
   files.brushRead.mockReset().mockResolvedValue(null);
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
   files.platform = 'android';
+  files.androidApi = 33;
   files.scheme = 'light';
   files.retainClosingModal = false;
 });
@@ -100,7 +101,9 @@ describe('Save picture', () => {
       expect(files.save).toHaveBeenCalledWith(drawing);
       expect(files.capture).toHaveBeenCalledWith(drawing);
       expect(photos.permissionRequests).toEqual([[true]]);
-      expect(photos.created[0].base64).toBe(EXPORTED_PNG);
+      expect(photos.created).toEqual([
+        expect.objectContaining({ via: 'Album.create', album: 'Splotch', base64: EXPORTED_PNG }),
+      ]);
       expect(screen.container.textContent).toContain(
         'Picture saved to your gallery and on this device.'
       );
@@ -125,6 +128,25 @@ describe('Save picture', () => {
       expect(screen.container.textContent).toContain(`${shipping.heading} to Photos.`);
       expect(screen.container.textContent).toContain("A copy is kept in this app's Pictures.");
       expect(files.save).toHaveBeenCalledWith(drawing);
+      expect(photos.created).toEqual([]);
+    },
+    SAVE_TEST_TIMEOUT_MS
+  );
+  it(
+    'keeps the in-app copy and says the gallery needs Android 11 on older Android',
+    async () => {
+      files.androidApi = 29;
+      await mountWith(SETTINGS_V9(false));
+      await screen.click('Draw fixture stroke');
+      const drawing = JSON.parse(screen.paper());
+      await screen.menuClick('Save picture');
+      await settle(() =>
+        expect(screen.container.textContent).toContain(
+          'Picture saved on this device. Saving to your gallery needs Android 11 or later.'
+        )
+      );
+      expect(files.save).toHaveBeenCalledWith(drawing);
+      expect(photos.permissionRequests).toEqual([]);
       expect(photos.created).toEqual([]);
     },
     SAVE_TEST_TIMEOUT_MS

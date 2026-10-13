@@ -24,6 +24,7 @@ import { RsdAction, styles as controlStyles } from './controls';
 import { useState } from 'react';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
+import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdOrientationChoices } from './RsdOrientationChoices';
 import type { OrientationChoice } from '../settings/orientation';
 import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
@@ -129,14 +130,11 @@ export function NativeSoundSettingsDialog({
             disabled={busy}
             onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
           />
-          <RsdAction
-            label={SAVE_ON_DELETE_LABEL}
-            selection="switch"
-            selected={settings.saveOnDeleteEnabled}
-            disabled={busy}
-            onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
+          <SaveOnDeleteSwitch
+            settings={settings}
+            busy={busy}
+            onSaveOnDeleteChange={onSaveOnDeleteChange}
           />
-          <html.span>{SAVE_ON_DELETE_HELP}</html.span>
           <AppearanceChoices
             settings={settings}
             busy={busy}
@@ -164,6 +162,7 @@ export function NativeSoundSettingsDialog({
               />
             ))}
           </html.div>
+          <RsdInstallGuide />
           {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
           {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
           {settings.status === 'ready' && !settings.saved ? (
@@ -172,6 +171,25 @@ export function NativeSoundSettingsDialog({
         </html.div>
       )}
     </NativeDialog>
+  );
+}
+
+function SaveOnDeleteSwitch({
+  settings,
+  busy,
+  onSaveOnDeleteChange,
+}: Pick<NativeSoundSettingsDialogProps, 'settings' | 'onSaveOnDeleteChange'> & { busy: boolean }) {
+  return (
+    <>
+      <RsdAction
+        label={SAVE_ON_DELETE_LABEL}
+        selection="switch"
+        selected={settings.saveOnDeleteEnabled}
+        disabled={busy}
+        onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
+      />
+      <html.span>{SAVE_ON_DELETE_HELP}</html.span>
+    </>
   );
 }
 
