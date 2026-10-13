@@ -17,17 +17,6 @@ export function AiRecoveryActions({
   const request = state.recovery?.kind === 'recovery-request' ? state.recovery : null;
   return (
     <>
-      <Text style={styles.text}>
-        Save a request and its original on this device without uploading a drawing. Recovery sending
-        is unavailable.
-      </Text>
-      <Action
-        label="Save held recovery request"
-        disabled={state.busy || waiting || !!state.recovery || state.credential === 'unavailable'}
-        onPress={() => {
-          void owner.prepareRecovery();
-        }}
-      />
       {state.recovery?.kind === 'recovery-held' ? (
         <>
           <Text style={styles.text}>

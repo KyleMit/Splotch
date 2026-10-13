@@ -161,15 +161,16 @@ it('zooms within limits, resets, and starts each opened picture at its fitted si
   expect(files.aiSend).not.toHaveBeenCalled();
 });
 
+it('offers no way to hold a new recovery request while recovery sending is closed', () => {
+  expect(container.querySelector('button[aria-label="Save held recovery request"]')).toBeNull();
+});
+
 it('keeps held recovery actions available and disables service changes while recovery is held', async () => {
-  await click('Save held recovery request');
-  expect(owner.prepareRecovery).toHaveBeenCalledOnce();
   await render({
     ...state,
     recovery: { kind: 'recovery-held', recovery: { intent: 'committed' } },
   });
   for (const label of [
-    'Save held recovery request',
     'Send drawing for AI',
     'Use my OpenAI key',
     'Remove OpenAI key',
