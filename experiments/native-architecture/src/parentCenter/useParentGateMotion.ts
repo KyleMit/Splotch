@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated } from 'react-native';
-import { observeReduceMotion } from '../drawing/reduceMotion';
+import { useEffect, useRef } from 'react';
+import { Animated } from 'react-native';
+import { useReduceMotion } from '../drawing/useReduceMotion';
 import { PARENT_GATE_SHAKE_MS, type ParentGateState } from './parentGate';
 
 const SHAKE_OFFSET_PX = 8;
 const SHAKE_STEPS = 4;
 export function useParentGateMotion(state: ParentGateState) {
-  const [reduced, setReduced] = useState(true);
+  const reduced = useReduceMotion();
   const offset = useRef(new Animated.Value(0)).current;
-  useEffect(() => observeReduceMotion(AccessibilityInfo, setReduced), []);
   useEffect(() => {
     if (!state.shaking || reduced) return;
     const animation = Animated.sequence(

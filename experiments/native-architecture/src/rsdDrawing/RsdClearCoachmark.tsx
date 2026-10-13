@@ -6,7 +6,7 @@ import { TOUCH_TARGET } from '../drawing/theme';
 import { RsdClearRing, ringFrame, type RingInk } from './RsdClearRing';
 import { RsdIcon } from './RsdIcon';
 import { EDGE_INSET_PX } from './edgeLayout';
-import { styles } from './controls';
+import { iconFrame, styles } from './controls';
 
 // ClearCoachmark.svelte's container fade, in both directions and under reduced motion alike.
 const COACHMARK_FADE_MS = 400;
@@ -161,6 +161,7 @@ export function RsdClearCoachmark({
         <html.div
           style={[
             styles.iconAction,
+            iconFrame(TOUCH_TARGET),
             styles.touchTarget(TOUCH_TARGET),
             ghostStyles.lifted,
             ghostStyles.round(TOUCH_TARGET / 2),

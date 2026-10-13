@@ -80,6 +80,7 @@ const DRY_RUN_LISTING = listing(
   ' M web/src/lib/releases.json',
   ' M web/src/lib/components/settings/CurrentReleaseNotes.svelte',
   ' M web/src/lib/components/page/ReleaseHistory.svelte',
+  ' M experiments/native-architecture/src/information/releaseNotes.generated.json',
   '?? fastlane/metadata/android/en-US/changelogs/9.txt',
   ' M fastlane/metadata/en-US/release_notes.txt'
 );
@@ -243,6 +244,7 @@ describe('releaseSetPaths', () => {
       'web/src/lib/releases.json',
       'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
       'web/src/lib/components/page/ReleaseHistory.svelte',
+      'experiments/native-architecture/src/information/releaseNotes.generated.json',
       'fastlane/metadata/android/en-US/changelogs/9.txt',
       'fastlane/metadata/android/en-US/changelogs/8.txt',
       'fastlane/metadata/en-US/release_notes.txt',
@@ -511,6 +513,7 @@ describe('a release cut in a scratch checkout', () => {
 
       expect(git('show', '--name-only', '--format=', 'HEAD').trim().split('\n').sort()).toEqual([
         'android/app/build.gradle',
+        'experiments/native-architecture/src/information/releaseNotes.generated.json',
         'fastlane/metadata/android/en-US/changelogs/9.txt',
         'fastlane/metadata/en-US/release_notes.txt',
         'ios/App/App.xcodeproj/project.pbxproj',

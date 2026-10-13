@@ -15,6 +15,11 @@ import {
   TOUCH_TARGET,
 } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { STORAGE_KEYS } from '../../../web/src/lib/storageKeys.ts';
+import {
+  BUTTON_SCALE_MAX,
+  BUTTON_SCALE_MIN,
+  controlSize,
+} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 
 const install = vi.hoisted(() => ({ owner: null }));
 vi.mock('../../../experiments/native-architecture/src/platform/installPrompt.ts', () => ({
@@ -43,8 +48,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function show(strokes, hidden = false) {
-  const element = createElement(RsdInstallBanner, { strokes, hidden });
+async function show(strokes, hidden = false, controlSize = TOUCH_TARGET) {
+  const element = createElement(RsdInstallBanner, { strokes, hidden, controlSize });
   if (root) await act(async () => root.render(element));
   else host = await mount(element);
 }
@@ -113,16 +118,23 @@ it('opens the browser install dialog from the Install button', async () => {
   expect(stored.get(STORAGE_KEYS.installCompleted)).toBe('true');
 });
 
-it('floats over the paper area clear of its corner controls', async () => {
-  await show(3);
-  const reach = EDGE_INSET_PX + TOUCH_TARGET + CONTROL_GAP;
-  const overlay = records.props.findLast((props) => props.style?.position === 'absolute');
-  expect(overlay?.style).toMatchObject({
-    position: 'absolute',
-    top: reach,
-    left: reach,
-    right: reach,
-    bottom: EDGE_INSET_PX,
-  });
-  expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
-});
+it.each([
+  ['the normal', TOUCH_TARGET, TOUCH_TARGET],
+  ['the largest', controlSize(BUTTON_SCALE_MAX), controlSize(BUTTON_SCALE_MAX)],
+  ['the smallest', controlSize(BUTTON_SCALE_MIN), TOUCH_TARGET],
+])(
+  'floats over the paper area clear of its corner controls at %s Button Size',
+  async (_name, size, corner) => {
+    await show(3, false, size);
+    const reach = EDGE_INSET_PX + corner + CONTROL_GAP;
+    const overlay = records.props.findLast((props) => props.style?.position === 'absolute');
+    expect(overlay?.style).toMatchObject({
+      position: 'absolute',
+      top: reach,
+      left: reach,
+      right: reach,
+      bottom: EDGE_INSET_PX,
+    });
+    expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
+  }
+);

@@ -21,6 +21,10 @@ export function soundSettingsActions(sound: Sound) {
       void sound.owner?.settings.setOrientation(orientation),
     onColoringBookChange: (enabled: boolean) =>
       void sound.owner?.settings.setColoringBookEnabled(enabled),
+    onButtonScaleChange: (scale: number) => void sound.owner?.settings.setButtonScale(scale),
+    onReduceMotionChange: (preference: Parameters<SettingsOwner['setReduceMotion']>[0]) =>
+      void sound.owner?.settings.setReduceMotion(preference),
+    onWhatsNewSeen: () => void sound.owner?.settings.markWhatsNewSeen(),
     onRetry: () => void sound.owner?.settings.retrySave(),
   };
 }

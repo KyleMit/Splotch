@@ -14,6 +14,8 @@ import {
   RSD_NATIVE_TOOLBAR_TEST,
   RSD_NATIVE_CLEAR_TEST,
   RSD_NATIVE_INSTALL_BANNER_TEST,
+  RSD_NATIVE_SETTINGS_SECTIONS_TEST,
+  RSD_NATIVE_BUTTON_SIZE_TEST,
 } from '../migration/lib/rsd-drawing-checks.mjs';
 
 // A relative specifier that points nowhere is not always an error, so moving a
@@ -213,6 +215,8 @@ describe('repo-root walks under tools/', () => {
       RSD_NATIVE_TOOLBAR_TEST,
       RSD_NATIVE_CLEAR_TEST,
       RSD_NATIVE_INSTALL_BANNER_TEST,
+      RSD_NATIVE_SETTINGS_SECTIONS_TEST,
+      RSD_NATIVE_BUTTON_SIZE_TEST,
     ]);
   });
 

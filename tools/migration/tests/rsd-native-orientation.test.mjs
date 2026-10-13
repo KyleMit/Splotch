@@ -1,4 +1,11 @@
-import { caller, records, host, mount, checkedRadio } from './rsd-native-selection-host.mjs';
+import {
+  caller,
+  records,
+  host,
+  mount,
+  checkedRadio,
+  openSettingsSection,
+} from './rsd-native-selection-host.mjs';
 import { orientationCalls } from './rsd-orientation-port.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
@@ -72,13 +79,14 @@ async function choose(label) {
 it('locks an iPhone at startup and on each Settings choice, with Auto following the system', async () => {
   const settings = openSettings(VERSION_7);
   await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="Portrait orientation"]'));
   expect(host.textContent).toContain(AUTO_NOTE);
   expect(orientationCalls).toEqual([['lockAsync', PORTRAIT_UP]]);
   expect(settings.storage.write).not.toHaveBeenCalled();
   await choose('Landscape orientation');
   expect(orientationCalls.at(-1)).toEqual(['lockAsync', LANDSCAPE_RIGHT]);
-  expect(settings.stored()).toMatchObject({ version: 9, orientation: 'landscape' });
+  expect(settings.stored()).toMatchObject({ version: 10, orientation: 'landscape' });
   await choose('Auto orientation');
   expect(orientationCalls.at(-1)).toEqual(['unlockAsync']);
   expect(settings.stored().orientation).toBe('auto');
@@ -96,6 +104,7 @@ it('restores a saved Android Auto through the sensor request that beats the rota
   records.os = 'android';
   const settings = openSettings(version8('auto'));
   await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="Auto orientation"]'));
   expect(host.textContent).not.toContain(AUTO_NOTE);
   expect(orientationCalls).toEqual([
@@ -116,6 +125,7 @@ it('leaves a tablet to the OS: no picker and no lock request', async () => {
   records.dimensions = { width: 834, height: 1194, scale: 2, fontScale: 1 };
   openSettings(version8('landscape'));
   await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
   expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
   expect(host.textContent).not.toContain(AUTO_NOTE);
@@ -137,6 +147,7 @@ it('takes the saved lock when the screen crosses to phone size and releases it c
   records.dimensions = TABLET;
   openSettings(version8('landscape'));
   await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Appearance');
   expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
   expect(orientationCalls).toEqual([]);
   await resize(PHONE);

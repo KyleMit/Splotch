@@ -7,6 +7,7 @@ import {
   checkedRadio,
   createPickerCaller,
   expandControls,
+  openSettingsSection,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
@@ -20,6 +21,10 @@ import {
   BUNDLED_BOOK_COVERS,
 } from '../../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
 import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import {
+  RELEASE_NOTES,
+  WHATS_NEW_STAMP,
+} from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
 
 async function refresh() {
   await act(async () => root.render(createElement(RsdDrawingScreen)));
@@ -77,6 +82,7 @@ it('hydrates before usable controls and persists appearance through the real RSD
   await act(async () => {
     resolveRead(stored);
   });
+  await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="System appearance"]'));
   expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
   storage.write.mockRejectedValueOnce(new Error('disk full'));
@@ -87,7 +93,9 @@ it('hydrates before usable controls and persists appearance through the real RSD
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
   ).toEqual(['light-content', 'light-content']);
   expect(
-    records.props.filter((props) => props.accessibilityLabel === 'Drawing settings').at(-1)
+    records.props
+      .filter((props) => props.accessibilityLabel === 'Appearance' && 'onRequestClose' in props)
+      .at(-1)
   ).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
   expect(
     records.props.filter((props) => props.style?.backgroundColor === '#23232b').length
@@ -98,9 +106,12 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 9,
+    version: 10,
     orientation: 'portrait',
     saveOnDeleteEnabled: false,
+    buttonScale: 100,
+    reduceMotion: 'system',
+    whatsNewSeen: null,
     coloringBookEnabled: true,
     soundLevel: 'medium',
     undoButtonEnabled: true,
@@ -240,6 +251,7 @@ it('uses real RSD sound-level radios independently of the sound switch, retries,
   await click('Draw RSD fixture stroke');
   const drawing = coloringPaper();
   await click('Settings');
+  await openSettingsSection('Sound');
   checkedRadio(host.querySelector('[aria-label="Medium drawing sound"]'));
   storage.write.mockRejectedValueOnce(new Error('disk full'));
   await click('Quiet drawing sound');
@@ -272,6 +284,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   const drawing = coloringPaper();
   expect(drawing.strokes).toHaveLength(1);
   await click('Settings');
+  await openSettingsSection('About');
   await click('Help and about');
   expect(host.textContent).toContain('Make a picture');
   expect(host.textContent).toContain('Splotch 1.6.0 · Beta');
@@ -283,15 +296,21 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   );
   await click('Back to help and about');
   await click('What’s new');
-  expect(host.textContent).toContain('In this beta');
+  expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
+  expect(host.textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);
+  expect(host.textContent).not.toContain('In this beta');
   await click('Back to Settings');
-  expect(host.querySelector('[aria-label="System appearance"]')).not.toBeNull();
+  expect(host.querySelector('[role="list"] [aria-label="Appearance"]')).not.toBeNull();
+  await openSettingsSection('About');
   await click('Help and about');
   await click('Keep drawing');
   expect(coloringPaper()).toEqual(drawing);
   await click('Undo');
   expect(coloringPaper().strokes).toHaveLength(0);
-  expect(storage.write).not.toHaveBeenCalled();
+  expect(storage.write).toHaveBeenCalledOnce();
+  expect(JSON.parse(storage.write.mock.calls[0][0])).toMatchObject({
+    whatsNewSeen: WHATS_NEW_STAMP,
+  });
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.feedbackSend).not.toHaveBeenCalled();
   expect(caller.aiVaultRead).not.toHaveBeenCalled();
@@ -325,10 +344,11 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   expect(original.pageId).toBe('sunshine');
   expect(original.strokes).toHaveLength(1);
   await click('Settings');
+  await openSettingsSection('Coloring');
   await click('Coloring book on');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 9,
+    version: 10,
     coloringBookEnabled: false,
     aiEnabled: false,
   });
@@ -347,6 +367,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   expect(coloringPaper()).toEqual({ ...original, pageId: 'blank' });
   expect(original.pageId).toBe('sunshine');
   await click('Settings');
+  await openSettingsSection('Coloring');
   await click('Coloring book off');
   await click('Keep drawing');
   await click('Coloring pages');
@@ -389,6 +410,7 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   expect(platform.download).toHaveBeenCalledOnce();
   await click('Keep drawing');
   await click('Settings');
+  await openSettingsSection('Coloring');
   await click('Coloring book on');
   expect(signal.aborted).toBe(true);
   expect(owner.snapshot()).toMatchObject({ enabled: true, allowMetered: false, installed: [] });

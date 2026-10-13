@@ -28,6 +28,16 @@ import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdOrientationChoices } from './RsdOrientationChoices';
 import type { OrientationChoice } from '../settings/orientation';
 import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
+import type { ReduceMotionPreference } from '../settings/reduceMotion';
+import {
+  NATIVE_SETTINGS_SECTIONS,
+  sectionHeading,
+  type NativeSettingsSectionId,
+} from '../settings/settingsSections';
+import { installPrompt } from '../platform/installPrompt';
+import { RsdSettingsHub } from './RsdSettingsHub';
+import { RsdAccessibilitySection } from './RsdAccessibilitySection';
+import { RsdWhatsNewSection } from './RsdWhatsNewSection';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -43,6 +53,9 @@ type NativeSoundSettingsDialogProps = {
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onOrientationChange: (orientation: OrientationChoice) => void;
   onColoringBookChange: (enabled: boolean) => void;
+  onButtonScaleChange: (scale: number) => void;
+  onReduceMotionChange: (preference: ReduceMotionPreference) => void;
+  onWhatsNewSeen: () => void;
   onRetry: () => void;
   onClose: () => void;
   onParentCenter: () => void;
@@ -50,119 +63,76 @@ type NativeSoundSettingsDialogProps = {
   onDismiss?: () => void;
 };
 
-export function NativeSoundSettingsDialog({
-  settings,
-  brushState,
-  onBrushAvailabilityChange,
-  onRetryBrushSave,
-  notice,
-  onToggle,
-  onUndoButtonChange,
-  onStrokeWidthControlChange,
-  onSaveOnDeleteChange,
-  onSoundLevelChange,
-  onAppearanceChange,
-  onOrientationChange,
-  onColoringBookChange,
-  onRetry,
-  onClose,
-  onParentCenter,
-  visible = true,
-  onDismiss,
-}: NativeSoundSettingsDialogProps) {
+type SettingsPage =
+  | { kind: 'hub' }
+  | { kind: 'section'; section: NativeSettingsSectionId }
+  | { kind: 'information'; page: InformationPage };
+
+const HUB: SettingsPage = { kind: 'hub' };
+// Install has nothing to offer where the app is already installed.
+const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
+  (section) => section.id !== 'setup' || installPrompt !== null
+);
+
+function pageLabel(page: SettingsPage) {
+  if (page.kind === 'section') return sectionHeading(page.section);
+  if (page.kind === 'information') return INFORMATION_CONTENT[page.page].title;
+  return 'Drawing settings';
+}
+
+// The shipping phone Settings: a hub of sections that each drill into their own page, with
+// Back to Settings returning to the hub.
+export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
+  const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
-  const [informationPage, setInformationPage] = useState<InformationPage | null>(null);
+  const [page, setPage] = useState<SettingsPage>(HUB);
+  const openSection = (section: NativeSettingsSectionId) => {
+    if (section === 'whatsnew') onWhatsNewSeen();
+    setPage({ kind: 'section', section });
+  };
+  const back = () => setPage(HUB);
   return (
     <NativeDialog
       visible={visible}
       onDismiss={onDismiss}
-      label={informationPage ? INFORMATION_CONTENT[informationPage].title : 'Drawing settings'}
-      onClose={informationPage ? () => setInformationPage(null) : onClose}
+      label={pageLabel(page)}
+      onClose={page.kind === 'hub' ? onClose : back}
       footer={
         <html.div style={controlStyles.row}>
-          {informationPage ? (
-            <RsdAction label="Back to Settings" onClick={() => setInformationPage(null)} />
-          ) : null}
+          {page.kind === 'hub' ? null : <RsdAction label="Back to Settings" onClick={back} />}
           <RsdAction label="Keep drawing" onClick={onClose} />
         </html.div>
       }
     >
-      {informationPage ? (
-        <RsdInformationSection page={informationPage} onNavigate={setInformationPage} />
+      {page.kind === 'information' ? (
+        <RsdInformationSection
+          page={page.page}
+          onNavigate={(next) =>
+            next === 'whatsNew'
+              ? openSection('whatsnew')
+              : setPage({ kind: 'information', page: next })
+          }
+        />
       ) : (
         <html.div style={controlStyles.dialogContent}>
-          <RsdAction label="Manage Parent Center" onClick={onParentCenter} />
-          <RsdAction label="Help and about" onClick={() => setInformationPage('help')} />
-          {OPTIONAL_BRUSHES.map((brush) => (
-            <RsdAction
-              key={brush}
-              label={`Show ${BRUSHES[brush].label}`}
-              selection="switch"
-              selected={brushState.availability[brush]}
-              disabled={busy || brushState.status !== 'ready'}
-              onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
-            />
-          ))}
-          {brushState.message ? (
-            <html.span aria-live="polite">{brushState.message}</html.span>
-          ) : null}
-          {!brushState.saved ? (
-            <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
-          ) : null}
-          <RsdAction
-            label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
-            selection="switch"
-            selected={settings.coloringBookEnabled}
-            disabled={busy}
-            onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
-          />
-          <RsdAction
-            label="Show Undo button"
-            selection="switch"
-            selected={settings.undoButtonEnabled}
-            disabled={busy}
-            onClick={() => onUndoButtonChange(!settings.undoButtonEnabled)}
-          />
-          <RsdAction
-            label="Show drawing width controls"
-            selection="switch"
-            selected={settings.strokeWidthControlEnabled}
-            disabled={busy}
-            onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
-          />
-          <SaveOnDeleteSwitch
-            settings={settings}
-            busy={busy}
-            onSaveOnDeleteChange={onSaveOnDeleteChange}
-          />
-          <AppearanceChoices
-            settings={settings}
-            busy={busy}
-            onAppearanceChange={onAppearanceChange}
-            onOrientationChange={onOrientationChange}
-          />
-          <RsdAction
-            label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
-            selection="switch"
-            selected={settings.soundEnabled}
-            disabled={busy}
-            onClick={onToggle}
-          />
-          <html.span>Drawing sound level</html.span>
-          <html.div role="radiogroup" aria-label="Drawing sound level" style={controlStyles.row}>
-            {SOUND_LEVELS.map((level) => (
-              <RsdAction
-                key={level}
-                label={`${SOUND_LEVEL_LABELS[level]} drawing sound`}
-                text={SOUND_LEVEL_LABELS[level]}
-                selection="radio"
-                selected={settings.soundLevel === level}
-                disabled={busy}
-                onClick={() => onSoundLevelChange(level)}
+          {page.kind === 'section' ? (
+            <>
+              <html.h1>{sectionHeading(page.section)}</html.h1>
+              <SettingsSection
+                {...props}
+                section={page.section}
+                busy={busy}
+                onHelp={() => setPage({ kind: 'information', page: 'help' })}
               />
-            ))}
-          </html.div>
-          <RsdInstallGuide />
+            </>
+          ) : (
+            <RsdSettingsHub
+              sections={HUB_SECTIONS}
+              settings={settings}
+              brushState={props.brushState}
+              onOpen={openSection}
+            />
+          )}
           {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
           {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
           {settings.status === 'ready' && !settings.saved ? (
@@ -174,11 +144,125 @@ export function NativeSoundSettingsDialog({
   );
 }
 
-function SaveOnDeleteSwitch({
+type SectionProps = NativeSoundSettingsDialogProps & {
+  section: NativeSettingsSectionId;
+  busy: boolean;
+  onHelp: () => void;
+};
+
+function SettingsSection(props: SectionProps) {
+  const { settings, busy, onColoringBookChange } = props;
+  switch (props.section) {
+    case 'appearance':
+      return <AppearanceChoices {...props} />;
+    case 'sound':
+      return <SoundChoices {...props} />;
+    case 'controls':
+      return <ToolDrawerChoices {...props} />;
+    case 'accessibility':
+      return (
+        <RsdAccessibilitySection
+          buttonScale={settings.buttonScale}
+          busy={busy}
+          onButtonScaleChange={props.onButtonScaleChange}
+          onReduceMotionChange={props.onReduceMotionChange}
+        />
+      );
+    case 'coloring':
+      return (
+        <RsdAction
+          label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
+          selection="switch"
+          selected={settings.coloringBookEnabled}
+          disabled={busy}
+          onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
+        />
+      );
+    case 'saving':
+      return <SaveOnDeleteSwitch {...props} />;
+    case 'parentCenter':
+      return <RsdAction label="Manage Parent Center" onClick={props.onParentCenter} />;
+    case 'setup':
+      return <RsdInstallGuide />;
+    case 'whatsnew':
+      return <RsdWhatsNewSection />;
+    case 'about':
+      return <RsdAction label="Help and about" onClick={props.onHelp} />;
+  }
+}
+
+function ToolDrawerChoices({
   settings,
+  brushState,
   busy,
-  onSaveOnDeleteChange,
-}: Pick<NativeSoundSettingsDialogProps, 'settings' | 'onSaveOnDeleteChange'> & { busy: boolean }) {
+  onBrushAvailabilityChange,
+  onRetryBrushSave,
+  onUndoButtonChange,
+  onStrokeWidthControlChange,
+}: SectionProps) {
+  return (
+    <>
+      {OPTIONAL_BRUSHES.map((brush) => (
+        <RsdAction
+          key={brush}
+          label={`Show ${BRUSHES[brush].label}`}
+          selection="switch"
+          selected={brushState.availability[brush]}
+          disabled={busy || brushState.status !== 'ready'}
+          onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
+        />
+      ))}
+      {brushState.message ? <html.span aria-live="polite">{brushState.message}</html.span> : null}
+      {!brushState.saved ? (
+        <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
+      ) : null}
+      <RsdAction
+        label="Show Undo button"
+        selection="switch"
+        selected={settings.undoButtonEnabled}
+        disabled={busy}
+        onClick={() => onUndoButtonChange(!settings.undoButtonEnabled)}
+      />
+      <RsdAction
+        label="Show drawing width controls"
+        selection="switch"
+        selected={settings.strokeWidthControlEnabled}
+        disabled={busy}
+        onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
+      />
+    </>
+  );
+}
+
+function SoundChoices({ settings, busy, onToggle, onSoundLevelChange }: SectionProps) {
+  return (
+    <>
+      <RsdAction
+        label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
+        selection="switch"
+        selected={settings.soundEnabled}
+        disabled={busy}
+        onClick={onToggle}
+      />
+      <html.span>Drawing sound level</html.span>
+      <html.div role="radiogroup" aria-label="Drawing sound level" style={controlStyles.row}>
+        {SOUND_LEVELS.map((level) => (
+          <RsdAction
+            key={level}
+            label={`${SOUND_LEVEL_LABELS[level]} drawing sound`}
+            text={SOUND_LEVEL_LABELS[level]}
+            selection="radio"
+            selected={settings.soundLevel === level}
+            disabled={busy}
+            onClick={() => onSoundLevelChange(level)}
+          />
+        ))}
+      </html.div>
+    </>
+  );
+}
+
+function SaveOnDeleteSwitch({ settings, busy, onSaveOnDeleteChange }: SectionProps) {
   return (
     <>
       <RsdAction
@@ -198,12 +282,7 @@ function AppearanceChoices({
   busy,
   onAppearanceChange,
   onOrientationChange,
-}: Pick<
-  NativeSoundSettingsDialogProps,
-  'settings' | 'onAppearanceChange' | 'onOrientationChange'
-> & {
-  busy: boolean;
-}) {
+}: SectionProps) {
   return (
     <>
       <html.span>Appearance</html.span>
