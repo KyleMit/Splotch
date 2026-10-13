@@ -26,7 +26,7 @@ import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdD
 // The released RSD native renderer over a React Native stand-in that paints each host as a DOM
 // node carrying its resolved style and accessibility props, and a Reanimated stand-in that
 // records each UI-thread timing instead of running it.
-const native = vi.hoisted(() => ({ reduceMotion: false, timings: [] }));
+const native = vi.hoisted(() => ({ reduceMotion: false, rtl: false, timings: [] }));
 
 vi.mock('react-native', async () => {
   const React = await import('react');
@@ -64,6 +64,12 @@ vi.mock('react-native', async () => {
     AccessibilityInfo: {
       isReduceMotionEnabled: async () => native.reduceMotion,
       addEventListener: () => ({ remove() {} }),
+    },
+    I18nManager: {
+      get isRTL() {
+        return native.rtl;
+      },
+      doLeftAndRightSwapInRTL: true,
     },
     StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
     StatusBar: () => null,
@@ -116,6 +122,7 @@ let root, host;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   native.reduceMotion = false;
+  native.rtl = false;
   native.timings.length = 0;
   host = document.createElement('div');
   document.body.append(host);
@@ -226,6 +233,33 @@ describe('RsdToggleSwitch', () => {
     ]);
     await render(toggleSwitch({ checked: true }));
     expect(native.timings.at(-1)).toMatchObject({ toValue: SHIPPING.slide });
+  });
+
+  // React Native mirrors the slot's `left` inset to the trailing edge in a swapped RTL layout;
+  // the translation is physical. Where the thumb's box then lies inside the hit area:
+  async function thumbSpan(checked) {
+    await remount();
+    await render(toggleSwitch({ checked }));
+    const slot = style(byTestId('toggle-switch-slide').parentElement);
+    const [{ translateX }] = style(byTestId('toggle-switch-slide')).transform;
+    const origin = native.rtl ? SHIPPING.switchWidth - slot.left - SHIPPING.thumb : slot.left;
+    return [origin + translateX, origin + translateX + SHIPPING.thumb];
+  }
+
+  it('mirrors the thumb inside the track in a right-to-left layout', async () => {
+    const ltr = [await thumbSpan(false), await thumbSpan(true)];
+    native.rtl = true;
+    const rtl = [await thumbSpan(false), await thumbSpan(true)];
+    const mirror = ([start, end]) => [SHIPPING.switchWidth - end, SHIPPING.switchWidth - start];
+    expect(rtl).toEqual(ltr.map(mirror));
+    for (const [start, end] of [...ltr, ...rtl]) {
+      expect(start).toBeGreaterThanOrEqual(0);
+      expect(end).toBeLessThanOrEqual(SHIPPING.switchWidth);
+    }
+    native.timings.length = 0;
+    await render(toggleSwitch({ checked: false }));
+    await render(toggleSwitch({ checked: true }));
+    expect(native.timings.at(-1)).toMatchObject({ toValue: -SHIPPING.slide });
   });
 
   it('lands the thumb without sliding under reduced motion', async () => {

@@ -1,6 +1,7 @@
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, fonts, motion } from './tokens.css';
 import { RsdActivityDot } from './RsdActivityDot';
+import { LineClampBox } from './lineClampBox';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
 import { RsdToggleSwitch } from './RsdToggleSwitch';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
@@ -121,7 +122,7 @@ export function RsdHubRow({
         <html.div style={styles.text}>
           <html.span style={styles.title}>{title}</html.span>
           <html.span data-testid="hub-subtitle" style={styles.subtitle}>
-            {subtitle}
+            <LineClampBox lines={SUBTITLE_LINES}>{subtitle}</LineClampBox>
           </html.span>
         </html.div>
       </html.button>

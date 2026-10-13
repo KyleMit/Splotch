@@ -113,9 +113,15 @@ iOS (`RsdToggleSwitch.tsx`) a React Native `Pressable` carries the switch role, 
 disabled state, and the help line as its accessibility hint, which React Strict DOM cannot express;
 the thumb slides through a Reanimated shared value on the UI thread, so a toggle renders React once
 rather than per frame. Both read the app's Reduce Motion answer and land the thumb without sliding
-when it is on. The track, thumb face and glyph are shared RSD markup (`toggleSwitchFace.tsx`).
+when it is on. The track, thumb face and glyph are shared RSD markup (`toggleSwitchFace.tsx`). React
+Native mirrors the thumb's `left` inset to the trailing edge in an RTL layout while its translation
+stays physical, so the native slide is signed: leftward when the layout is swapped.
+
+The hub row's two-line subtitle is the other web difference. React Strict DOM compiles `lineClamp`
+to native `numberOfLines`, but on the web to a bare `line-clamp`, which browsers ignore outside a
+`-webkit-box`; `lineClampBox.web.tsx` wraps the text in shipping's clamp box there.
 
 `tools/migration/tests/rsd-native-settings-rows.test.mjs` mounts every primitive through the
 released native renderer, light and dark, and reads each geometry value from the shipping Svelte and
-CSS sources (`rsd-settings-rows-shipping.mjs`); `tools/tests/native-toggle-switch-web.test.mjs`
-covers the web switch.
+CSS sources (`rsd-settings-rows-shipping.mjs`); `tools/tests/native-settings-rows-web.test.mjs`
+covers the web switch and the hub subtitle's clamp.

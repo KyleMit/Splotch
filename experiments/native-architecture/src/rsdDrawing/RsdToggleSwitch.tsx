@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { I18nManager, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -23,19 +23,28 @@ const THUMB_SLIDE_MS = DRAWING_SCALE.durationBase * MS_PER_SECOND;
 // CSS's `ease` keyword, the shipping thumb's timing function.
 const CSS_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 
+// The thumb's origin follows React Native's RTL swap (its `left` inset lands on the trailing
+// edge), but a translation stays physical, so in a swapped RTL layout the slide runs leftward.
+function slideDestination(checked: boolean) {
+  if (!checked) return 0;
+  const mirrored = I18nManager.isRTL && I18nManager.doLeftAndRightSwapInRTL;
+  return mirrored ? -SWITCH_SLIDE_PX : SWITCH_SLIDE_PX;
+}
+
 // The thumb slides on the UI thread, so a toggle renders React once rather than per frame.
 // Reduced motion is the app's own answer (the parent's choice over the device's), so
 // Reanimated's system-setting shortcut must not decide it instead.
 function useThumbSlide(checked: boolean) {
   const reduced = useReduceMotion();
-  const offset = useSharedValue(checked ? SWITCH_SLIDE_PX : 0);
+  const destination = slideDestination(checked);
+  const offset = useSharedValue(destination);
   useEffect(() => {
-    offset.value = withTiming(checked ? SWITCH_SLIDE_PX : 0, {
+    offset.value = withTiming(destination, {
       duration: reduced ? 0 : THUMB_SLIDE_MS,
       easing: CSS_EASE,
       reduceMotion: ReduceMotion.Never,
     });
-  }, [checked, reduced, offset]);
+  }, [destination, reduced, offset]);
   return useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
 }
 
