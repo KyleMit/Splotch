@@ -8,11 +8,14 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import {
   APP_SHELL_FALLBACK_CALLBACKS,
+  MAX_PWA_PRECACHE_BYTES,
   appShellFallbackLookupsFromSource,
 } from '../check-pwa-precache.mjs';
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
 import { filesRecursively } from '../lib/filesystem.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import {
   APP_SHELL_FILE,
   NATIVE_APP_DIR,
@@ -23,10 +26,9 @@ import {
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 
-// Leaves room for app growth beside the bundled Farm book's tall and wide art while
-// rejecting a second bundled book or an accidental duplicate bundle; gen-bundled-farm.mjs
-// bundles compact fills to stay inside it.
-export const MAX_NATIVE_WEB_PRECACHE_BYTES = 6_000_000;
+// The RN web export makes the same offline promise as the shipping PWA it is meant to
+// replace, so it answers to the same budget.
+export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // Served by the export but never fetched by the page: the worker itself, and Expo's
 // build-identity file.
 const UNFETCHED_EXPORT_FILES = new Set([NATIVE_WEB_SERVICE_WORKER, 'metadata.json']);
@@ -37,6 +39,17 @@ const PRECACHE_ENTRY = new RegExp(
   'g'
 );
 const SHELL_ASSET_REFERENCE = /(?:src|href)="\/([^"?#]+)"/g;
+const PATH_DATA = / d="([^"]+)"/;
+// Shorter path data (a lone circle or square) could recur in a startup icon by coincidence.
+const MIN_LAZY_ICON_SAMPLE_CHARS = 40;
+
+// The first path of each lazily imported icon (iconRegistry.ts): the scripts the shell loads must
+// hold none, or the deferred set has fallen back onto the startup path.
+export function lazyIconSamples() {
+  return [NATIVE_SPLOTCHY, ...Object.values(NATIVE_DEFERRED_ICONS).map((icon) => icon.light)]
+    .map((markup) => PATH_DATA.exec(markup)?.[1])
+    .filter((pathData) => pathData !== undefined && pathData.length >= MIN_LAZY_ICON_SAMPLE_CHARS);
+}
 
 export function precacheEntriesFromSource(source) {
   return [...source.matchAll(PRECACHE_ENTRY)].map((match) => ({
@@ -87,7 +100,9 @@ export function nativeWebPrecacheProblems({
   shellReferences,
   exportedFiles,
   precachedScripts,
+  shellScripts,
   starterFills,
+  lazySamples,
   precacheBytes,
   maxPrecacheBytes = MAX_NATIVE_WEB_PRECACHE_BYTES,
 }) {
@@ -128,6 +143,11 @@ export function nativeWebPrecacheProblems({
     problems.push(
       `Starter coloring pages missing from precached chunks: ${missingPages.join(', ')}`
     );
+  const startupIcons = lazySamples.filter((sample) =>
+    shellScripts.some((script) => script.includes(sample))
+  );
+  if (startupIcons.length)
+    problems.push(`${startupIcons.length} lazily loaded icons are in the app shell's scripts`);
   if (precacheBytes > maxPrecacheBytes)
     problems.push(`Precache is ${precacheBytes} bytes, above the ${maxPrecacheBytes}-byte budget`);
   return problems;
@@ -136,6 +156,7 @@ export function nativeWebPrecacheProblems({
 export function checkNativeWebPrecache({
   exportDir = NATIVE_WEB_EXPORT_DIR,
   starterFills = starterBookFills(),
+  lazySamples = lazyIconSamples(),
   maxPrecacheBytes,
   log = console.log,
 } = {}) {
@@ -156,6 +177,7 @@ export function checkNativeWebPrecache({
   );
   const precacheBytes = present.reduce((total, url) => total + statSync(onDisk(url)).size, 0);
   const indexHtml = readFileSync(join(exportDir, APP_SHELL_FILE));
+  const shellReferences = shellAssetReferences(indexHtml.toString('utf8'));
   const problems = nativeWebPrecacheProblems({
     precacheEntries,
     appShellFallbackLookups: appShellFallbackLookupsFromSource(source),
@@ -163,12 +185,16 @@ export function checkNativeWebPrecache({
     integrityOnDisk: new Map(
       present.map((url) => [url, subresourceIntegrity(readFileSync(onDisk(url)))])
     ),
-    shellReferences: shellAssetReferences(indexHtml.toString('utf8')),
+    shellReferences,
     exportedFiles,
     precachedScripts: present
       .filter((url) => url.endsWith('.js'))
       .map((url) => readFileSync(onDisk(url), 'utf8')),
+    shellScripts: shellReferences
+      .filter((path) => path.endsWith('.js') && existsSync(join(exportDir, path)))
+      .map((path) => readFileSync(join(exportDir, path), 'utf8')),
     starterFills,
+    lazySamples,
     precacheBytes,
     maxPrecacheBytes,
   });

@@ -12,11 +12,16 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   (`experiments/native-architecture/src/drawing/bundledFarm/`) from the shipping Farm overlays, the
   compact-tier fills and the wide selectors in `web/static/coloring`; `--check` verifies them and
   `tools/tests/native-starter-book.test.mjs` runs that check.
-* `gen-native-icons.mjs` generates the drawing toolbar's icon module
-  (`experiments/native-architecture/src/rsdDrawing/icons.generated.ts`) from the shipping SVGs in
-  `web/src/lib/icons`, resolving themed icon parts per theme; `--check` verifies it and
-  `tools/tests/native-icons.test.mjs` runs that check. Add an icon to `NATIVE_ICON_SOURCES` and
-  rerun it with `node tools/migration/gen-native-icons.mjs`.
+* `gen-native-icons.mjs` generates the native icon registry from every shipping SVG in
+  `web/src/lib/icons` and its `deferred/` subdirectory, resolving themed parts and page tokens per
+  theme and re-inking through `currentColor` exactly the icons outside the shipping `COLOR_ICONS`.
+  `NATIVE_STARTUP_ICONS` (the toolbar and Parental Gate keypad) go in
+  `experiments/native-architecture/src/rsdDrawing/icons.generated.ts`; every other icon goes in
+  `icons.deferred.generated.ts` and Splotchy in `splotchy.generated.ts`, both lazily imported by
+  `iconRegistry.ts`. `--check` verifies all three and `tools/tests/native-icons.test.mjs` runs that
+  check, so adding, renaming or changing a shipping icon fails until you rerun
+  `node tools/migration/gen-native-icons.mjs`. Move a name into `NATIVE_STARTUP_ICONS` only when a
+  startup surface renders it.
 * `gen-native-branding.mjs` copies the shipping launcher icon, adaptive icon, splash, and launch
   screen (the `@capacitor/assets` output under `android/app/src/main/res` and `ios/App/App`) into
   the native Android and iOS projects, removing stale copies; `--check` verifies them and
