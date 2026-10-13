@@ -243,7 +243,7 @@ function DrawingMenu({
                 disabled={disabled}
                 onPress={() =>
                   run(() => {
-                    void screen.clear();
+                    void screen.clear(sound.settings.saveOnDeleteEnabled);
                   })
                 }
               />

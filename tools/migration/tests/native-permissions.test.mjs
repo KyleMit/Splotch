@@ -1,10 +1,20 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const manifest = readFileSync(
   new URL(
     '../../../experiments/native-architecture/android/app/src/main/AndroidManifest.xml',
     import.meta.url
+  ),
+  'utf8'
+);
+
+const mediaLibraryManifest = readFileSync(
+  join(
+    dirname(createRequire(import.meta.url).resolve('expo-media-library/package.json')),
+    'android/src/main/AndroidManifest.xml'
   ),
   'utf8'
 );
@@ -18,14 +28,26 @@ function permissions(source) {
 }
 
 describe('Android manifest permissions', () => {
-  it('requests only network access and removes the legacy external storage grants', () => {
+  it('requests only network access and removes the storage and media read grants', () => {
     expect(manifest).toContain('xmlns:tools="http://schemas.android.com/tools"');
     expect(permissions(manifest)).toEqual([
       { name: 'android.permission.INTERNET', removed: false, limited: false },
       { name: 'android.permission.ACCESS_NETWORK_STATE', removed: false, limited: false },
       { name: 'android.permission.READ_EXTERNAL_STORAGE', removed: true, limited: false },
       { name: 'android.permission.WRITE_EXTERNAL_STORAGE', removed: true, limited: false },
+      { name: 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED', removed: true, limited: false },
     ]);
+  });
+
+  // Saving to the photo library inserts into MediaStore, which needs no permission on API 30+,
+  // so every permission expo-media-library's own manifest would merge in is removed.
+  it('removes every permission expo-media-library declares', () => {
+    const declared = permissions(mediaLibraryManifest).map(({ name }) => name);
+    expect(declared).toContain('android.permission.READ_EXTERNAL_STORAGE');
+    const removed = permissions(manifest)
+      .filter((permission) => permission.removed)
+      .map(({ name }) => name);
+    expect(removed).toEqual(expect.arrayContaining(declared));
   });
 
   it('allows no cleartext traffic or package visibility queries', () => {

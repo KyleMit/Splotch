@@ -98,8 +98,9 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 8,
+    version: 9,
     orientation: 'portrait',
+    saveOnDeleteEnabled: false,
     coloringBookEnabled: true,
     soundLevel: 'medium',
     undoButtonEnabled: true,
@@ -327,7 +328,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Coloring book on');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 8,
+    version: 9,
     coloringBookEnabled: false,
     aiEnabled: false,
   });
