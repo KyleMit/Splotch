@@ -1,4 +1,4 @@
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { useState, type ComponentProps, type ReactElement } from 'react';
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, motion } from './tokens.css';
 import { useReduceMotion } from '../drawing/useReduceMotion';
@@ -46,15 +46,17 @@ const styles = css.create({
 // The shipping disclosure: a bordered panel whose summary row toggles it and announces whether it
 // is expanded, with a › that turns to point open. Like the shipping primitive, it owns only the
 // shell and the chevron; the caller styles the summary row and the panel through `summaryStyle`
-// and `style`, and the body it passes in.
+// and `style`, and the body it passes in. React Native draws text only inside a Text, and the
+// button wraps its children in one only when they are a single string, so the summary has a span
+// of its own and the body is an element rather than bare text.
 export function RsdDisclosure({
   summary,
   children,
   style,
   summaryStyle,
 }: {
-  summary: ReactNode;
-  children: ReactNode;
+  summary: string;
+  children: ReactElement;
   style?: BoxStyle;
   summaryStyle?: BoxStyle;
 }) {
@@ -67,7 +69,7 @@ export function RsdDisclosure({
         style={[styles.summary, summaryStyle]}
         onClick={() => setOpen((current) => !current)}
       >
-        {summary}
+        <html.span>{summary}</html.span>
         <html.div
           aria-hidden
           style={[styles.chevron, reduceMotion && styles.still, open && styles.open]}

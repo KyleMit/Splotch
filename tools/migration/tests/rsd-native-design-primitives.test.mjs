@@ -19,15 +19,29 @@ import {
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdTextField.tsx';
 
 // The released RSD native renderer over a React Native stand-in whose host views are DOM nodes
-// carrying the accessibility props and resolved style React Native would receive.
-const native = vi.hoisted(() => ({ announce: vi.fn(), os: 'ios', scroll: null }));
+// carrying the accessibility props and resolved style React Native would receive. Each view-like
+// host also records any string it receives as a direct child: React Native renders text only
+// inside Text, and a raw string under a View is an error on device that a DOM host would show.
+const native = vi.hoisted(() => ({
+  announce: vi.fn(),
+  announceQueued: vi.fn(),
+  os: 'ios',
+  scroll: null,
+  rawText: [],
+}));
 
 vi.mock('react-native', async () => {
   const React = await import('react');
   const { animatedPort, easingPort } = await import('./rsd-native-animated-host.mjs');
   const flat = (style) => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
+  const rawText = (name, children) => {
+    for (const child of React.Children.toArray(children))
+      if (typeof child === 'string' || typeof child === 'number')
+        native.rawText.push(`${name}: ${JSON.stringify(child)}`);
+  };
   const host = (tag) =>
     React.forwardRef((props, ref) => {
+      if (tag !== 'span') rawText(tag, props.children);
       const style = flat(props.style);
       const state = props.accessibilityState ?? {};
       return React.createElement(
@@ -53,6 +67,7 @@ vi.mock('react-native', async () => {
   const View = host('div');
   const Text = host('span');
   const ScrollView = (props) => {
+    rawText('ScrollView', props.children);
     native.scroll = props;
     return React.createElement('div', { 'data-scroll': true }, props.children);
   };
@@ -68,6 +83,7 @@ vi.mock('react-native', async () => {
       isReduceMotionEnabled: async () => false,
       addEventListener: () => ({ remove() {} }),
       announceForAccessibility: native.announce,
+      announceForAccessibilityWithOptions: native.announceQueued,
     },
     Animated: animatedPort(View, Text),
     Easing: easingPort,
@@ -100,12 +116,15 @@ let root, container;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   native.announce.mockClear();
+  native.announceQueued.mockClear();
+  native.rawText = [];
   native.os = 'ios';
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
 });
 afterEach(async () => {
+  expect(native.rawText, 'text rendered directly under a native View').toEqual([]);
   await act(async () => root.unmount());
   container.remove();
 });
@@ -158,15 +177,25 @@ it.each(['light', 'dark'])(
   }
 );
 
-it('announces a status message to iOS VoiceOver, words inside inline markup included', async () => {
-  await render(
-    h(RsdStatusMessage, { status: 'warning' }, h(html.strong, null, 'Heads up.'), ' Later.')
-  );
-  expect(native.announce).toHaveBeenCalledWith('Heads up. Later.');
+it.each([
+  ['success', 'queues'],
+  ['warning', 'queues'],
+])('%s message %s its announcement behind VoiceOver, inline markup included', async (status) => {
+  await render(h(RsdStatusMessage, { status }, h(html.strong, null, 'Heads up.'), ' Later.'));
+  expect(native.announceQueued).toHaveBeenCalledWith('Heads up. Later.', { queue: true });
+  expect(native.announce).not.toHaveBeenCalled();
+});
+
+it('interrupts VoiceOver with an error, and leaves Android to its live region', async () => {
+  await render(h(RsdStatusMessage, { status: 'error' }, 'Try again.'));
+  expect(native.announce).toHaveBeenCalledWith('Try again.');
+  expect(native.announceQueued).not.toHaveBeenCalled();
   native.os = 'android';
   native.announce.mockClear();
-  await render(h(RsdStatusMessage, { status: 'error' }, 'Try again.'));
+  await render(h(RsdStatusMessage, { status: 'error' }, 'Try again later.'));
+  await render(h(RsdStatusMessage, { status: 'success' }, 'Sent.'));
   expect(native.announce).not.toHaveBeenCalled();
+  expect(native.announceQueued).not.toHaveBeenCalled();
 });
 
 it('hides text from the eye but not the screen reader, and makes the live variant a status', async () => {
@@ -176,12 +205,14 @@ it('hides text from the eye but not the screen reader, and makes the live varian
   expect([hidden.role, hidden.live, hidden.hidden]).toEqual([undefined, undefined, undefined]);
   expect(hidden.style).toMatchObject({ width: 1, height: 1, overflow: 'hidden' });
   expect(native.announce).not.toHaveBeenCalled();
+  expect(native.announceQueued).not.toHaveBeenCalled();
   await render(h(RsdVisuallyHidden, { live: true }, 'Saved to Photos'));
   const [region, live] = withRole('status');
   expect(region.textContent).toBe('Saved to Photos');
   expect(live.live).toBe('polite');
   expect(live.style).toMatchObject({ position: 'absolute', width: 1, height: 1 });
-  expect(native.announce).toHaveBeenCalledWith('Saved to Photos');
+  expect(native.announceQueued).toHaveBeenCalledWith('Saved to Photos', { queue: true });
+  expect(native.announce).not.toHaveBeenCalled();
 });
 
 it('expands the disclosure on press, announcing the state and turning the chevron', async () => {
@@ -203,7 +234,7 @@ it('expands the disclosure on press, announcing the state and turning the chevro
 });
 
 it.each(['light', 'dark'])('draws the %s disclosure shell in the shipping border', async (mode) => {
-  await render(h(RsdDisclosure, { summary: 'More' }, null), mode);
+  await render(h(RsdDisclosure, { summary: 'More' }, h(html.p, null, 'Body')), mode);
   const [, shell] = find((props) => props.style.overflow === 'hidden');
   expect(shell.style.borderColor).toBe(themes[mode].border);
   expect(shell.style.borderRadius).toBe(Number.parseFloat(scale.radiusSm));

@@ -36,7 +36,7 @@ export function RsdVisuallyHidden({
 }
 
 function LiveRegion({ children }: { children: ReactNode }) {
-  useAnnouncement(spokenText(children));
+  useAnnouncement(spokenText(children), 'polite');
   return (
     <html.p role="status" aria-live="polite" style={styles.hidden}>
       {children}

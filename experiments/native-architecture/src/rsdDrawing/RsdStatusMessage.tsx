@@ -47,7 +47,7 @@ export function RsdStatusMessage({
   children: ReactNode;
 }) {
   const live = LIVE[status];
-  useAnnouncement(spokenText(children));
+  useAnnouncement(spokenText(children), live.politeness);
   return (
     <html.p role={live.role} aria-live={live.politeness} style={[styles.message, styles[status]]}>
       {children}

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, fonts } from './tokens.css';
 import { styles as controlStyles } from './controls';
@@ -60,7 +60,7 @@ export function RsdConfirmCard({
 }: {
   title: string;
   copy: string;
-  actions: readonly [ReactNode, ReactNode];
+  actions: readonly [ReactElement, ReactElement];
 }) {
   return (
     <html.div style={styles.card}>
