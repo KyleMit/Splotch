@@ -42,6 +42,9 @@ const SAMPLE_COLUMNS = [120, 330, 540, 750];
 const PHASE_SEEDS = [1, 17, 18, 19, 20, 21];
 const LEGACY_COVERAGE_CEILING = 0.85;
 const OVERFLOW_WIDTH_PX = 68;
+// Strokes end at their last sample midpoint (shipping's smoothing), so a straight run carries
+// samples this close together to reach within half a step of its end.
+const RUN_STEP_PX = 25;
 
 async function raster(children) {
   const svg = renderToStaticMarkup(
@@ -70,11 +73,16 @@ function crayon(seed, points) {
   return { brush: 'crayon', width: 34, color: 'Red', seed, points };
 }
 
+function run(y, from, to) {
+  const steps = Math.abs(to - from) / RUN_STEP_PX;
+  return Array.from({ length: steps + 1 }, (_, index) => ({
+    x: from + Math.sign(to - from) * index * RUN_STEP_PX,
+    y,
+  }));
+}
+
 function line(seed, y) {
-  return crayon(seed, [
-    { x: 100, y },
-    { x: 950, y },
-  ]);
+  return crayon(seed, run(y, 100, 950));
 }
 
 function artwork(strokes) {
@@ -104,8 +112,13 @@ async function shippingReference(
   const owner = createShippingCrayonOracle();
   const children = [];
   for (const [strokeIndex, stroke] of strokes.entries()) {
-    const [start, end] = stroke.points;
-    if (stroke.points.length !== 2 || start.y !== end.y || start.x >= end.x)
+    const start = stroke.points[0];
+    const end = stroke.points.at(-1);
+    if (
+      stroke.points.some(
+        (point, index) => point.y !== start.y || (index && point.x <= stroke.points[index - 1].x)
+      )
+    )
       throw new Error('Phase oracle requires a forward horizontal line');
     const passes = crayonPasses(stroke, stroke.width);
     if (passes.length !== 1) throw new Error('Phase oracle requires one deposition pass');
@@ -267,10 +280,7 @@ describe('crayon phase under native pattern clipping', () => {
 
   it('fills fresh pits on a repeated pass without losing untouched tiles', async () => {
     const first = line(20, 550);
-    const repeat = crayon(21, [
-      { x: 100, y: 550 },
-      { x: 450, y: 550 },
-    ]);
+    const repeat = crayon(21, run(550, 100, 450));
     const before = await artwork([first]);
     const after = await artwork([first, repeat]);
     expect(coverage(after, 200, 550)).toBeGreaterThan(coverage(before, 200, 550) + MIN_BUILDUP);
@@ -278,13 +288,9 @@ describe('crayon phase under native pattern clipping', () => {
   });
 
   it('builds wax when the same saved gesture backtracks through a clipped phase', async () => {
-    const points = [
-      { x: 100, y: 550 },
-      { x: 500, y: 550 },
-      { x: 950, y: 550 },
-    ];
+    const points = run(550, 100, 950);
     const before = await artwork([crayon(20, points)]);
-    const after = await artwork([crayon(20, [...points, { x: 500, y: 550 }, { x: 100, y: 550 }])]);
+    const after = await artwork([crayon(20, [...points, ...run(550, 950, 100).slice(1)])]);
     expect(coverage(after, 200, 550)).toBeGreaterThan(coverage(before, 200, 550) + MIN_BUILDUP);
   });
 

@@ -65,6 +65,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                 <StrokeShape
                   key={bandIndex}
                   points={pass.points}
+                  lead={pass.lead}
                   width={width * band.widthScale}
                   paint={`url(#${id}-${index}-${bandIndex})`}
                 />
