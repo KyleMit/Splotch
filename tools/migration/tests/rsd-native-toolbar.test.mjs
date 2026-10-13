@@ -3,6 +3,7 @@ import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { swatchEdge } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
   PALETTE_COLORS,
@@ -149,4 +150,10 @@ it('selects paint through text-free round swatches and keeps More colors outside
   expect(iconMarkup(more)).toBe(NATIVE_ICONS['more-colors'].light);
   await act(async () => more.click());
   expect(caller.screen.openColorPicker).toHaveBeenCalledOnce();
+});
+
+it('outlines a swatch whose paint blends into the bar and rings it in text color', () => {
+  expect(swatchEdge('#FFFFFF', 'light')).toEqual({ ring: '#474747', outline: '#474747' });
+  expect(swatchEdge('#23232B', 'dark')).toEqual({ ring: '#d3d1dc', outline: '#d3d1dc' });
+  expect(swatchEdge('#AB71E1', 'light')).toEqual({ ring: '#AB71E1', outline: null });
 });

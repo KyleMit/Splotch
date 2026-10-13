@@ -2,7 +2,7 @@ import { css, html } from 'react-strict-dom';
 import { colors, dimensions, brandColors } from './tokens.css';
 import { paintAppearance, paintLabel, type PaintColor } from '../drawing/palette';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { TOUCH_TARGET } from '../drawing/theme';
+import { DRAWING_THEMES, TOUCH_TARGET, type PaperTheme } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
 import type { NativeIconName } from './icons.generated';
 
@@ -15,6 +15,25 @@ const SWATCH_RING_WIDTH_PX = 4;
 const SWATCH_RING_GAP_PX = 3;
 const SWATCH_DISC_PX = TOUCH_TARGET - 2 * SWATCH_RING_WIDTH_PX;
 const SELECTED_SWATCH_DISC_PX = SWATCH_DISC_PX - 2 * SWATCH_RING_GAP_PX;
+// Below this contrast against the bar surface a text-free swatch (white custom paint on the
+// light bar) disappears, so it gains an outline and a text-colored selection ring.
+const SWATCH_MIN_CONTRAST = 1.5;
+const SWATCH_OUTLINE_PX = 1;
+
+function relativeLuminance(hex: string) {
+  const channels = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const [red, green, blue] = channels.map((value) =>
+    value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  );
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+export function swatchEdge(hex: string, theme: PaperTheme) {
+  const { surface, text } = DRAWING_THEMES[theme];
+  const [light, dark] = [relativeLuminance(hex), relativeLuminance(surface)].sort((a, b) => b - a);
+  const faint = (light + 0.05) / (dark + 0.05) < SWATCH_MIN_CONTRAST;
+  return { ring: faint ? text : hex, outline: faint ? text : null };
+}
 
 export const styles = css.create({
   themeRoot: {
@@ -82,6 +101,11 @@ export const styles = css.create({
     height: size,
     borderRadius: radius,
     backgroundColor,
+  }),
+  swatchOutline: (borderColor: string) => ({
+    borderWidth: SWATCH_OUTLINE_PX,
+    borderStyle: 'solid',
+    borderColor,
   }),
   recoveryCard: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
   touchTarget: (size: number) => ({ minWidth: size, minHeight: size }),
@@ -162,7 +186,9 @@ export function RsdPaintAction({
   disabled: boolean;
   onClick: () => void;
 }) {
-  const appearance = paintAppearance(color, useDrawingAppearance());
+  const theme = useDrawingAppearance();
+  const appearance = paintAppearance(color, theme);
+  const edge = swatchEdge(appearance.hex, theme);
   const disc = selected ? SELECTED_SWATCH_DISC_PX : SWATCH_DISC_PX;
   return (
     <html.button
@@ -172,13 +198,19 @@ export function RsdPaintAction({
       aria-disabled={disabled}
       disabled={disabled}
       style={[
-        styles.swatch(selected ? appearance.hex : 'transparent', TOUCH_TARGET / 2),
+        styles.swatch(selected ? edge.ring : 'transparent', TOUCH_TARGET / 2),
         styles.touchTarget(TOUCH_TARGET),
         disabled && styles.disabled,
       ]}
       onClick={onClick}
     >
-      <html.div aria-hidden style={styles.swatchDisc(appearance.hex, disc, disc / 2)} />
+      <html.div
+        aria-hidden
+        style={[
+          styles.swatchDisc(appearance.hex, disc, disc / 2),
+          edge.outline !== null && styles.swatchOutline(edge.outline),
+        ]}
+      />
     </html.button>
   );
 }
