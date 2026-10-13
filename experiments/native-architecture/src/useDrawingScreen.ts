@@ -11,6 +11,7 @@ import {
   hasDrawingInk,
   clearDrawing,
   undoDrawing,
+  type Drawing,
   type History,
   type Stroke,
 } from './drawing/model';
@@ -29,6 +30,7 @@ import { createInkObservation } from './drawing/inkCoverage';
 import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
+import { useVisibleInk } from './drawing/inkVisibility';
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
@@ -49,7 +51,7 @@ export function useDrawingScreen() {
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
 
-  const { command, runCommand, ...surfaceActions } = useSurfaceCommands({
+  const { command, runCommand, scanEmpty, ...surfaceActions } = useSurfaceCommands({
     historyRef,
     setHistory,
     surface,
@@ -117,6 +119,9 @@ export function useDrawingScreen() {
     setNotice,
   });
 
+  // Whether the page shows ink: the screenshot camera's blank state.
+  const inkVisible = useVisibleInk(history.drawing, !drawing, scanEmpty);
+
   return {
     library,
     recovery,
@@ -143,6 +148,7 @@ export function useDrawingScreen() {
     currentDrawing,
     finishCohort,
     committedStrokes,
+    inkVisible,
     ...pictureActions,
   };
 }
@@ -351,6 +357,32 @@ function useSurfaceCommands({
       if (observations.current === owner) observations.current = null;
     };
   }, []);
+  // The eraser's idle blank-page check: a short command that reads the ink back, as Clear does.
+  // It takes the paper only when nothing else holds it, and otherwise asks to be tried later.
+  async function scanEmpty(snapshot: Drawing): Promise<boolean | 'busy'> {
+    const owner = surface.current;
+    if (command.current || blocked() || !owner || historyRef.current.drawing !== snapshot)
+      return 'busy';
+    let release: () => void;
+    try {
+      release = owner.lockInput();
+    } catch {
+      return 'busy';
+    }
+    command.current = true;
+    const isCurrent = () =>
+      mounted.current && historyRef.current.drawing === snapshot && surface.current === owner;
+    const observation = observations.current?.begin(isCurrent, drawingPaperSize(snapshot));
+    try {
+      if (!observation) throw new Error('Picture observation is not ready.');
+      return await observation.observe(await owner.captureInk(snapshot));
+    } finally {
+      observation?.cancel();
+      command.current = false;
+      release();
+    }
+  }
+
   async function runCommand(action: () => Promise<void>) {
     if (command.current || blocked()) return;
     let release: (() => void) | undefined;
@@ -431,6 +463,7 @@ function useSurfaceCommands({
   return {
     command,
     runCommand,
+    scanEmpty,
     undo,
     clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };

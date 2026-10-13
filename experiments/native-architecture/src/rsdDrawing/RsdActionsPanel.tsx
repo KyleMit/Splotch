@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
-import { hasDrawingInk } from '../drawing/model';
+import { refocusFlyoutTrigger, useFlyoutEscape } from '../platform/flyoutFocus';
 import { RsdIconButton } from './RsdIconButton';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
 import { RsdBrushMenu, RsdStrokeWidthMenu } from './toolFlyouts';
@@ -20,7 +20,8 @@ import type { NativeIconName } from './icons.generated';
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
 type Product = ReturnType<typeof useDrawingProduct>;
-export type OpenFlyout = 'brush' | 'stroke' | null;
+type FlyoutName = 'brush' | 'stroke';
+export type OpenFlyout = FlyoutName | null;
 
 const PERCENT = 100;
 
@@ -34,16 +35,29 @@ const docks = StyleSheet.create({
 
 // Shipping closes an open menu on any press outside it, without swallowing that press: a stroke
 // on the paper still draws. The layout's root asks first and the menu's own boxes answer later
-// in the same capture pass, so the close waits until the pass has run.
+// in the same capture pass, so the close waits until the pass has run. Escape and a pick close it
+// through `close`, which hands keyboard focus back to the menu's button, as shipping's
+// closeFlyout({ restoreFocus: true }) does.
 export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const [flyout, setFlyout] = useState<OpenFlyout>(null);
   const inside = useRef(false);
   const shown = open && !disabled ? flyout : null;
   const live = useRef(shown);
   live.current = shown;
+  const menu = useRef<View>(null);
+  const triggers = useRef<Partial<Record<FlyoutName, View | null>>>({});
+  function close() {
+    const current = live.current;
+    if (current) refocusFlyoutTrigger(menu.current, triggers.current[current]);
+    setFlyout(null);
+  }
+  useFlyoutEscape(shown !== null, close);
   return {
     flyout: shown,
     setFlyout,
+    close,
+    menu,
+    triggers,
     capturePress() {
       inside.current = false;
       if (live.current)
@@ -64,6 +78,14 @@ type Tool = Readonly<{ key: 'brush' | 'stroke' | 'coloring' | 'camera' | 'ai' | 
 };
 // A tile's size and padding, and whether an open menu greys it out.
 type Face = Pick<ActionPanelLayout, 'size' | 'padding'> & { dimmed: boolean };
+
+// The Brush and Stroke Width slots are where a closing menu hands keyboard focus back.
+function triggerRef(triggers: ReturnType<typeof useFlyoutSlot>['triggers'], key: Tool['key']) {
+  if (key !== 'brush' && key !== 'stroke') return undefined;
+  return (node: View | null) => {
+    triggers.current[key] = node;
+  };
+}
 
 function strokeIcon(brush: Screen['brush']): NativeIconName {
   if (brush === 'eraser') return 'line-weight-eraser';
@@ -171,7 +193,7 @@ function panelTools(context: ToolContext): Tool[] {
         {...face}
         icon="camera"
         label="Save screenshot"
-        disabled={disabled || !hasDrawingInk(screen.history.drawing)}
+        disabled={disabled || !screen.inkVisible}
         onPress={() => {
           void screen.save();
         }}
@@ -234,7 +256,7 @@ export function RsdActionsPanel({
   onToggle: () => void;
   slot: ReturnType<typeof useFlyoutSlot>;
 }) {
-  const { flyout, setFlyout, markInside } = slot;
+  const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
   const scale = sound.settings.buttonScale / PERCENT;
   const layout = actionPanelLayout({
@@ -256,6 +278,7 @@ export function RsdActionsPanel({
         ? tools.map((item, index) => (
             <View
               key={item.key}
+              ref={triggerRef(triggers, item.key)}
               testID="rsd-drawer-tool"
               style={[docks.slot, layout.tools[index]]}
               onStartShouldSetResponderCapture={item.key === flyout ? markInside : undefined}
@@ -270,6 +293,7 @@ export function RsdActionsPanel({
         : null}
       {placement && menu ? (
         <View
+          ref={menuSlot}
           testID="rsd-tool-flyout"
           style={[docks.flyout, { left: placement.left, bottom: placement.bottom }]}
           onStartShouldSetResponderCapture={markInside}
@@ -283,7 +307,7 @@ export function RsdActionsPanel({
               disabled={disabled}
               onPick={(brush) => {
                 screen.setBrush(brush);
-                setFlyout(null);
+                close();
               }}
             />
           ) : (
@@ -295,7 +319,7 @@ export function RsdActionsPanel({
               disabled={disabled || sound.settings.status !== 'ready'}
               onPick={(width) => {
                 void sound.owner?.settings.setWidth(tool, width);
-                setFlyout(null);
+                close();
               }}
             />
           )}

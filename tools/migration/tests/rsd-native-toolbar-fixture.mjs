@@ -17,6 +17,7 @@ export function toolbarScreen(overrides = {}) {
     brushControl: { kind: 'menu', brushes: ['pen', 'crayon'] },
     availableBrushes: ['pen', 'crayon'],
     history: { undo: [emptyDrawing()], drawing: emptyDrawing() },
+    inkVisible: true,
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,
