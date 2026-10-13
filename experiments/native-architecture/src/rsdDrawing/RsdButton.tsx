@@ -1,12 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { RsdPressable } from './RsdPressable';
-import { RsdIcon } from './RsdIcon';
-import type { NativeIconName } from './icons.generated';
-import { useDrawingTheme } from '../drawing/DrawingAppearance';
-import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { brandColors, colors, dimensions, fonts, motion } from './tokens.css';
 
 // Button.svelte's values that no design token carries. They stay in this module because the
@@ -216,41 +212,22 @@ function BusyRing({ variant }: { variant: ButtonVariant }) {
   );
 }
 
-// The label's ink as a color the icon's markup can take: the brand fill's on-brand white, or the
-// themed ink of the washed variants.
-function ButtonIcon({
-  icon,
-  variant,
-}: {
-  icon: { name: NativeIconName; size: number };
-  variant: ButtonVariant;
-}) {
-  const palette = useDrawingTheme();
-  const ink: Record<ButtonVariant, string> = {
-    brand: DRAWING_ON_BRAND,
-    wash: palette.brandText,
-    outline: palette.brandText,
-    danger: palette.dangerText,
-  };
-  return <RsdIcon name={icon.name} size={icon.size} ink={ink[variant]} muted={false} />;
-}
-
 export function RsdButton({
   variant = 'wash',
   size = 'md',
   busy = false,
   disabled = false,
-  icon,
   onPress,
+  icon,
   children,
 }: {
   variant?: ButtonVariant;
   size?: ButtonSize;
   busy?: boolean;
   disabled?: boolean;
-  // A glyph before the label, drawn in the label's ink, as a shipping Button's leading <Icon>.
-  icon?: { name: NativeIconName; size: number };
   onPress: () => void;
+  // A glyph before the label, in the label's ink, which the caller resolves for its variant.
+  icon?: ReactNode;
   children: string;
 }) {
   const parked = disabled && !busy;
@@ -275,7 +252,7 @@ export function RsdButton({
       onClick={onPress}
     >
       {busy ? <BusyRing variant={variant} /> : null}
-      {icon ? <ButtonIcon icon={icon} variant={variant} /> : null}
+      {icon}
       <html.span>{children}</html.span>
     </RsdPressable>
   );

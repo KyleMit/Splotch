@@ -26,7 +26,35 @@ const MIGRATED_POLICIES = { ...CURRENT.parentPolicies, externalLinks: 'always' }
 const CONTROLS = [
   ['undoButtonEnabled', 'setUndoButtonEnabled'],
   ['strokeWidthControlEnabled', 'setStrokeWidthControlEnabled'],
+  ['toolDrawerEnabled', 'setToolDrawerEnabled'],
+  ['screenshotEnabled', 'setScreenshotEnabled'],
 ];
+// A record from before the Tool Drawer switch and the Camera button were stored, with the three-step
+// sound level version 13 replaced.
+const VERSION_11 = {
+  ...CURRENT,
+  version: 11,
+  soundLevel: 'medium',
+  undoButtonEnabled: false,
+  strokeWidthControlEnabled: true,
+  orientation: 'portrait',
+  saveOnDeleteEnabled: false,
+  buttonScale: 100,
+  reduceMotion: 'system',
+  whatsNewSeen: null,
+  pencilEraserEnabled: true,
+  applePencilSeen: false,
+};
+const DRAWER_FIELDS = ['toolDrawerEnabled', 'screenshotEnabled'];
+// The version 13 record the current owner would have written, in its saved key order.
+async function version13Record() {
+  const f = fixture();
+  await f.owner.load();
+  await f.owner.setUndoButtonEnabled(false);
+  const current = JSON.parse(f.stored());
+  for (const field of DRAWER_FIELDS) delete current[field];
+  return { ...current, version: 13 };
+}
 function fixture(snapshot = JSON.stringify(CURRENT)) {
   let stored = snapshot;
   const changes = [];
@@ -41,6 +69,45 @@ function fixture(snapshot = JSON.stringify(CURRENT)) {
 }
 
 describe('parent drawing control preferences', () => {
+  it('migrates a version 13 record to a shown drawer and camera, keeping its choices', async () => {
+    const version13 = await version13Record();
+    expect(parseSoundSettings(JSON.stringify(version13))).toEqual({
+      ...version13,
+      version: 14,
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
+    });
+  });
+  it('carries a version 11 record through every step to version 14', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_11))).toMatchObject({
+      version: 14,
+      undoButtonEnabled: false,
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
+      toolbarStyle: 'buttons',
+      parentPolicies: MIGRATED_POLICIES,
+    });
+  });
+  it.each(DRAWER_FIELDS)(
+    'rejects %s in a version 13 record and its absence from a version 14 one',
+    async (field) => {
+      const version13 = await version13Record();
+      expect(() => parseSoundSettings(JSON.stringify({ ...version13, [field]: false }))).toThrow(
+        'not in the saved format'
+      );
+      const current = {
+        ...version13,
+        version: 14,
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
+      };
+      expect(parseSoundSettings(JSON.stringify({ ...current, [field]: false }))).toMatchObject({
+        [field]: false,
+      });
+      const { [field]: _dropped, ...missing } = current;
+      expect(() => parseSoundSettings(JSON.stringify(missing))).toThrow('not in the saved format');
+    }
+  );
   it.each(Array.from({ length: 8 }, (_, mask) => mask))(
     'reads finite optional current extension set %s without rewriting it',
     async (mask) => {
@@ -91,7 +158,7 @@ describe('parent drawing control preferences', () => {
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
         parentPolicies: MIGRATED_POLICIES,
-        version: 13,
+        version: 14,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -99,6 +166,8 @@ describe('parent drawing control preferences', () => {
         pencilEraserEnabled: true,
         applePencilSeen: false,
         toolbarStyle: 'buttons',
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
         orientation: 'portrait',
         soundVolume: 50,
         drawingSoundEnabled: true,

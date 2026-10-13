@@ -131,6 +131,10 @@ vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts'
 vi.mock('../../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
+// The device lock answers what a case sets; a case that sets nothing sees no lock.
+vi.mock('../../../experiments/native-architecture/src/platform/deviceLock.ts', () => ({
+  isDeviceLocked: async () => caller.deviceLocked === true,
+}));
 vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.ts', () => ({
   subscribePencilDoubleTap(listener) {
     caller.pencilDoubleTap = listener;
@@ -198,6 +202,7 @@ const records = vi.hoisted(() => ({
   backListeners: new Set(),
   exits: 0,
   os: 'ios',
+  settingsOpened: 0,
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
@@ -254,6 +259,11 @@ vi.mock('react-native', async () => {
       return React.createElement('span', { 'data-status-bar': props.barStyle });
     },
     AppState: appStatePort(records),
+    Linking: {
+      openSettings: async () => {
+        records.settingsOpened += 1;
+      },
+    },
     BackHandler: backHandlerPort(records),
     ScrollView: React.forwardRef((props, ref) => {
       records.viewports.push(props);
@@ -414,6 +424,9 @@ afterEach(async () => {
   records.backListeners.clear();
   records.exits = 0;
   records.os = 'ios';
+  records.settingsOpened = 0;
+  caller.capturePng = null;
+  caller.deviceLocked = false;
   orientationCalls.length = 0;
 });
 

@@ -261,7 +261,7 @@ const WEB_STYLE_FILES = [
   'src/rsdDrawing/controls.tsx',
   'src/rsdDrawing/RsdAiStylePrompt.tsx',
   'src/rsdDrawing/RsdAiResult.tsx',
-  'src/rsdDrawing/RsdFeedbackSheet.tsx',
+  'src/rsdDrawing/RsdFeedbackSection.tsx',
   'src/rsdDrawing/RsdParentGateKeypad.tsx',
   'src/rsdDrawing/RsdParentGateSheet.tsx',
 ];
@@ -347,11 +347,11 @@ it.each([
     'plate: { minHeight: TOUCH_TARGET }',
   ],
   [
-    'src/rsdDrawing/RsdFeedbackSheet.tsx',
-    'TOUCH_TARGET',
-    '../drawing/theme',
-    'minHeight: dimensions.touchTarget',
-    'minHeight: TOUCH_TARGET',
+    'src/rsdDrawing/RsdFeedbackSection.tsx',
+    'TEXT_AREA_MIN_HEIGHT_PX',
+    './RsdTextField',
+    'minHeight: TEXTAREA_MIN_HEIGHT_PX',
+    'minHeight: TEXT_AREA_MIN_HEIGHT_PX',
   ],
   [
     'src/rsdDrawing/RsdAiResult.tsx',

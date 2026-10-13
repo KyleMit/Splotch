@@ -99,7 +99,7 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   expect(outerSize('Save screenshot')).toBe(size);
   await release();
   expect(settings.storage.write).toHaveBeenCalledOnce();
-  expect(settings.stored()).toMatchObject({ version: 13, buttonScale: BUTTON_SCALE_MAX });
+  expect(settings.stored()).toMatchObject({ version: 14, buttonScale: BUTTON_SCALE_MAX });
   expect(lastStyle('modal-surface').backgroundColor).not.toBe('transparent');
   expect(settingCards()[1].opacity).toBeUndefined();
   await rerender({ settingsOpen: false });
@@ -165,7 +165,7 @@ it('chooses Flat buttons from the Appearance section and keeps the choice on reo
   checkedRadio(option('Raised'));
   await act(async () => option('Flat').click());
   checkedRadio(option('Flat'));
-  expect(settings.stored()).toMatchObject({ version: 13, toolbarStyle: 'bare' });
+  expect(settings.stored()).toMatchObject({ version: 14, toolbarStyle: 'bare' });
   expect(host.textContent).not.toContain('System follows');
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Appearance');

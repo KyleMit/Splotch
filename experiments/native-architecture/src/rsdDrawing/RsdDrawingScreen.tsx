@@ -4,7 +4,6 @@ import {
   RsdAiStylePrompt,
   RsdColorPicker,
   RsdColoringBookPicker,
-  RsdFeedbackSheet,
   RsdParentGateSheet,
   RsdSettingsRoute,
 } from './drawingSheets';
@@ -27,6 +26,7 @@ import type { useDrawingSound } from '../useDrawingSound';
 import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdDrawingStatus } from './RsdDrawingStatus';
+import { RsdPolaroidFlight } from './polaroidFlightSurface';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
@@ -61,13 +61,11 @@ export function RsdDrawingScreen() {
       ? 'gate'
       : screen.settingsOpen
         ? 'settings'
-        : product.feedback.state?.open
-          ? 'feedback'
-          : product.ai.state && aiSheetShown(product.ai.state)
-            ? product.ai.state.view === 'prompt'
-              ? 'aiPrompt'
-              : 'aiResult'
-            : 'none';
+        : product.ai.state && aiSheetShown(product.ai.state)
+          ? product.ai.state.view === 'prompt'
+            ? 'aiPrompt'
+            : 'aiResult'
+          : 'none';
   useParentCenterSettings(screen, product, gate?.open === true);
   useAiAvailability(product.ai.owner, sound.settings);
   const route = useProductModalRoute('reported', target, (outgoing) => {
@@ -144,15 +142,6 @@ function RsdModalSheets({
           />
         </RsdSurfaceBoundary>
       ) : null}
-      {route.shown === 'feedback' ? (
-        <RsdSurfaceBoundary onClose={() => product.feedback.owner?.close()}>
-          <RsdFeedbackSheet
-            owner={product.feedback.owner}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        </RsdSurfaceBoundary>
-      ) : null}
       {product.ai.owner && route.shown === 'aiPrompt' ? (
         <RsdSurfaceBoundary onClose={product.ai.owner.close}>
           <RsdAiStylePrompt
@@ -171,7 +160,7 @@ function RsdModalSheets({
             progress={product.ai.progress}
             visible={route.visible}
             onDismiss={dismissed}
-            onKept={screen.recordKept}
+            onSaveFailed={screen.saveFailure.report}
           />
         </RsdSurfaceBoundary>
       ) : null}
@@ -263,11 +252,18 @@ function RsdDrawingContent({
                 notice={notice}
                 soundNotice={soundNotice}
                 blocked={disabled}
+                openAppSettings={product.owner ? product.openAppSettings : null}
+                aiMinimized={product.ai.state?.open === true && product.ai.state.minimized}
               />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
           </RsdEdgeLayout>
+          <RsdPolaroidFlight
+            flight={screen.flight}
+            cameraTile={screen.cameraTile}
+            onLanded={screen.landFlight}
+          />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>

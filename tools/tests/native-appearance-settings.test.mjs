@@ -62,7 +62,7 @@ describe('persisted candidate drawing appearance', () => {
     const parsed = parseSoundSettings(JSON.stringify(old));
     const { version: _version, ...retained } = old;
     expect(parsed).toMatchObject({
-      version: 13,
+      version: 14,
       appearance: 'system',
       ...retained,
       ...currentDefaults,
@@ -79,7 +79,7 @@ describe('persisted candidate drawing appearance', () => {
         parentPolicies: policiesBeforeLinks,
       });
       expect(parseSoundSettings(snapshot)).toEqual({
-        version: 13,
+        version: 14,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -87,6 +87,8 @@ describe('persisted candidate drawing appearance', () => {
         pencilEraserEnabled: true,
         applePencilSeen: false,
         toolbarStyle: 'buttons',
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
         ...choices,
         appearance,
         ...currentDefaults,
@@ -120,7 +122,7 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.changes.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
     const exact = JSON.stringify({
-      version: 13,
+      version: 14,
       ...choices,
       appearance: 'dark',
       ...currentDefaults,
@@ -128,6 +130,8 @@ describe('persisted candidate drawing appearance', () => {
       pencilEraserEnabled: true,
       applePencilSeen: false,
       toolbarStyle: 'buttons',
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
     });
     expect(f.storage.write.mock.calls).toEqual([[exact], [exact]]);
     expect(f.changes.at(-1)).toMatchObject({ appearance: 'dark', saved: true });
@@ -160,7 +164,7 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.owner.setAppearance('dark');
     expect(JSON.parse(f.storage.write.mock.calls[0][0])).toEqual({
-      version: 13,
+      version: 14,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -168,6 +172,8 @@ describe('persisted candidate drawing appearance', () => {
       pencilEraserEnabled: true,
       applePencilSeen: false,
       toolbarStyle: 'buttons',
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
       ...choices,
       appearance: 'dark',
       ...currentDefaults,

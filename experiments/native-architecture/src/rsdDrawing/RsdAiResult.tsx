@@ -19,7 +19,9 @@ import { aiResultPhase, aiRun, aiJournalWaiting } from '../ai/uiState';
 import { useAiProgress } from '../ai/useAiProgress';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
-import type { KeptPicture } from '../keepPicture';
+import { isUnsaved, type UnsavedOutcome } from '../export/pictureSave';
+import type { PictureFormat } from '../export/pictureFilename';
+import type { KeptAiPicture } from '../ai/keepAiPicture';
 import { DialogHeader } from './DialogHeader';
 import { fontTheme } from './fontTheme';
 import { ModalStage } from './ModalShell';
@@ -102,14 +104,15 @@ export function RsdAiResult({
   progress,
   visible,
   onDismiss,
-  onKept,
+  onSaveFailed,
 }: {
   owner: NativeAiOwner;
   state: AiState;
   progress: AiProgressOwner;
   visible: boolean;
   onDismiss: () => void;
-  onKept: (kept: KeptPicture) => void;
+  // A Download that did not land, for the Save Failure Banner and its Try again.
+  onSaveFailed: (outcome: UnsavedOutcome, base64: string | null, format: PictureFormat) => void;
 }) {
   const dial = useAiProgress(progress);
   const phase = aiResultPhase(state);
@@ -136,8 +139,10 @@ export function RsdAiResult({
           exiting={exiting}
           onLeave={leave}
           onKept={(kept) => {
-            onKept(kept);
-            if (!kept.failure) setExiting(true);
+            // A save that did not land keeps the picture on the card rather than sending it off
+            // as if it were kept; the banner tells the parent and offers the retry.
+            if (isUnsaved(kept.outcome)) onSaveFailed(kept.outcome, kept.base64, kept.format);
+            else setExiting(true);
           }}
         />
       </ModalStage>
@@ -161,7 +166,7 @@ function ResultCard({
   dial: AiProgress;
   exiting: boolean;
   onLeave: () => void;
-  onKept: (kept: KeptPicture) => void;
+  onKept: (kept: KeptAiPicture) => void;
 }) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -252,7 +257,7 @@ function ResultCard({
 }
 
 // One Download at a time per picture: a second tap while its save is in flight does nothing.
-function useDownload(exiting: boolean, onKept: (kept: KeptPicture) => void) {
+function useDownload(exiting: boolean, onKept: (kept: KeptAiPicture) => void) {
   const saving = useRef<string | null>(null);
   return async (picture: AiResult) => {
     if (exiting || saving.current === picture.uri) return;

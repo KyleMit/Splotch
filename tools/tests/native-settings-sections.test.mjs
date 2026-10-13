@@ -76,7 +76,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 13,
+  version: 14,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -105,6 +105,8 @@ const CURRENT = {
   pencilEraserEnabled: true,
   applePencilSeen: false,
   toolbarStyle: 'buttons',
+  toolDrawerEnabled: true,
+  screenshotEnabled: true,
 };
 
 // CURRENT as schema 12 stored it: the medium level where the volume and sources sit, and no
@@ -113,7 +115,8 @@ const VERSION_12 = Object.fromEntries(
   Object.entries(CURRENT).flatMap(([key, value]) => {
     if (key === 'version') return [[key, 12]];
     if (key === 'soundVolume') return [['soundLevel', 'medium']];
-    if (['drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'].includes(key)) return [];
+    // The sound sources, the Button style, the Tool Drawer switch and the Camera button came later.
+    if (/SoundEnabled$|^toolbarStyle$|^toolDrawer|^screenshot/.test(key)) return [];
     return [[key, value]];
   })
 );
@@ -446,7 +449,7 @@ describe('settings schema 10', () => {
             version: 9,
           }))(withoutLinksPolicy(VERSION_12));
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 13,
+      version: 14,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,

@@ -2,10 +2,14 @@ import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   INSTALL_BANNER_COPY,
-  INSTALL_GUIDE_COPY,
-  installGuideSteps,
   iosBannerSteps,
 } from '../../experiments/native-architecture/src/install/installCopy.ts';
+import {
+  INSTALL_GUIDE_COPY,
+  exitGuideSteps,
+  installGuideSteps,
+  lockGuideSteps,
+} from '../../experiments/native-architecture/src/install/installGuideCopy.ts';
 import {
   APP_LIKE_DISPLAY_MODE_QUERIES,
   INSTALL_REPROMPT_SESSION_MILESTONES,
@@ -31,7 +35,7 @@ function markupText(svelte) {
     .replace(/\{[#:/@][^}]*\}/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/ ([.,])/g, '$1');
+    .replace(/ ([.,)])/g, '$1');
 }
 
 const banner = markupText(source('components/InstallBanner.svelte'));
@@ -60,20 +64,34 @@ it('keeps the banner parting message, hint sentences and Safari steps', () => {
 });
 
 it('keeps the Settings install guide', () => {
+  const guideSource = source('components/settings/SetupInstructions.svelte');
   for (const os of ['ios', 'android', 'desktop']) {
-    for (const step of installGuideSteps(os, SHARE_LOCATION)) expect(guide).toContain(step);
-    expect(source('components/settings/SetupInstructions.svelte')).toContain(
-      `${os}: '${INSTALL_GUIDE_COPY.osLabel[os]}'`
-    );
+    for (const outsideSafari of [false, true])
+      for (const step of installGuideSteps(os, SHARE_LOCATION, outsideSafari))
+        expect(guide).toContain(step);
+    for (const step of lockGuideSteps(os)) expect(guide).toContain(step);
+    expect(guideSource).toContain(`${os}: '${INSTALL_GUIDE_COPY.osLabel[os]}'`);
+    expect(guideSource).toContain(`${os}: '${INSTALL_GUIDE_COPY.lockTitle[os]}'`);
   }
+  for (const os of ['ios', 'android']) {
+    for (const step of exitGuideSteps(os)) expect(guide).toContain(step);
+    expect(guideSource).toContain(`'${INSTALL_GUIDE_COPY.lockedTitle[os]}'`);
+  }
+  expect(installGuideSteps('ios', SHARE_LOCATION, true)).toHaveLength(
+    installGuideSteps('ios', SHARE_LOCATION, false).length + 1
+  );
   for (const copy of [
     INSTALL_GUIDE_COPY.title,
     INSTALL_GUIDE_COPY.oneTap,
     INSTALL_GUIDE_COPY.oneTapHint,
-    INSTALL_GUIDE_COPY.openInSafari,
     INSTALL_GUIDE_COPY.desktopNote,
+    INSTALL_GUIDE_COPY.desktopLockNote,
   ])
     expect(guide).toContain(copy);
+});
+
+it('detects a negative control: a reworded lock step is not found in the shipping markup', () => {
+  expect(guide).not.toContain(lockGuideSteps('android')[0].replace('Security', 'Safety'));
 });
 
 it('detects a negative control: changed copy is not found in the shipping markup', () => {

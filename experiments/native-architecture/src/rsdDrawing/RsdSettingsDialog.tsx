@@ -1,9 +1,4 @@
-import { BRUSHES } from '../drawing/brushes';
-import {
-  OPTIONAL_BRUSHES,
-  type OptionalBrush,
-  type BrushPreferencesState,
-} from '../settings/brushPreferences';
+import type { OptionalBrush, BrushPreferencesState } from '../settings/brushPreferences';
 import type { AppearancePreference } from '../settings/appearance';
 import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
@@ -11,12 +6,12 @@ import type { ToolbarStyle } from '../settings/toolbarStyle';
 import { RsdAction, styles as controlStyles } from './controls';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
-import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
+import { RsdAboutSection } from './RsdAboutSection';
+import { RsdFeedbackSection } from './RsdFeedbackSection';
+import type { NativeFeedbackOwner } from '../feedback/feedback';
+import type { HostedPage } from '../settings/hostedPages';
 import type { OrientationChoice } from '../settings/orientation';
-import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
-import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
 import type { ReduceMotionPreference } from '../settings/reduceMotion';
 import {
   NATIVE_SETTINGS_SECTIONS,
@@ -24,7 +19,6 @@ import {
   type NativeSettingsSectionId,
   type SectionSummaryContext,
 } from '../settings/settingsSections';
-import { installPrompt } from '../platform/installPrompt';
 import { RsdSettingsHub, useHubToggles, useSectionActivity } from './RsdSettingsHub';
 import { RsdSettingsWide } from './RsdSettingsWide';
 import { RsdSettingsCompact } from './RsdSettingsCompact';
@@ -38,6 +32,8 @@ import type { SliderDraft } from './useSliderDraft';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
 import { RsdParentCenterLock } from './RsdParentCenterLock';
 import { RsdColoringSection } from './RsdColoringSection';
+import { RsdToolDrawerSection } from './RsdToolDrawerSection';
+import { RsdSavingSection } from './RsdSavingSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
@@ -51,6 +47,8 @@ type NativeSoundSettingsDialogProps = {
   onToggle: () => void;
   onUndoButtonChange: (enabled: boolean) => void;
   onStrokeWidthControlChange: (enabled: boolean) => void;
+  onToolDrawerChange: (enabled: boolean) => void;
+  onScreenshotChange: (enabled: boolean) => void;
   onSaveOnDeleteChange: (enabled: boolean) => void;
   onPencilEraserChange: (enabled: boolean) => void;
   onDrawingSoundChange: (enabled: boolean) => void;
@@ -70,7 +68,9 @@ type NativeSoundSettingsDialogProps = {
   parentCenter: ParentCenterRoute;
   // The Grown-Ups Only card, held over Settings while a check raised from it is open.
   gate: ReactNode;
-  onFeedback: () => void;
+  feedback: NativeFeedbackOwner | null;
+  // Opens a page outside the app; the route holds it behind the external-links check.
+  onOpenHostedPage: (page: HostedPage) => void;
   downloadedBooks: number;
   ai: SectionSummaryContext['ai'];
   visible?: boolean;
@@ -91,20 +91,13 @@ type ParentCenterRoute = {
 
 type SettingsPage =
   | { kind: 'hub'; returnTo: NativeSettingsSectionId | null }
-  | { kind: 'section'; section: NativeSettingsSectionId }
-  | { kind: 'information'; page: InformationPage };
+  | { kind: 'section'; section: NativeSettingsSectionId };
 
 const HUB: SettingsPage = { kind: 'hub', returnTo: null };
 const PARENT_CENTER_PAGE: SettingsPage = { kind: 'section', section: 'parentCenter' };
-// Install has nothing to offer where the app is already installed.
-const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
-  (section) => section.id !== 'setup' || installPrompt !== null
-);
 
 function pageLabel(page: SettingsPage) {
-  if (page.kind === 'section') return sectionHeading(page.section);
-  if (page.kind === 'information') return INFORMATION_CONTENT[page.page].title;
-  return 'Settings';
+  return page.kind === 'section' ? sectionHeading(page.section) : 'Settings';
 }
 
 // The shipping Settings, in the shell the window selects (ADR-0061). The phone hub drills into one
@@ -132,10 +125,6 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   };
   const unseen = useSectionActivity(context);
   const openSection = (section: NativeSettingsSectionId) => {
-    if (section === 'feedback') {
-      props.onFeedback();
-      return;
-    }
     if (section === 'parentCenter' && !unlocked) {
       props.parentCenter.onUnlock();
       return;
@@ -147,10 +136,8 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     if (isParentCenter(page)) props.parentCenter.onLeave();
     setPage({ kind: 'hub', returnTo: page.kind === 'section' ? page.section : null });
   };
-  const onHelp = () => setPage({ kind: 'information', page: 'help' });
   // Only the phone shell drills in; the others show the same sections in place.
-  const subpage =
-    page.kind === 'information' || (shell === 'phone' && page.kind === 'section') ? page : null;
+  const subpage = shell === 'phone' && page.kind === 'section' ? page : null;
   const status = <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />;
   return (
     <ModalShell
@@ -160,13 +147,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       label={pageLabel(subpage ?? HUB)}
       size="settings"
       onClose={subpage ? back : onClose}
-      scrolls={subpage?.kind === 'information'}
+      scrolls={false}
       header={
         subpage ? (
           <DialogHeader
             title={pageLabel(subpage)}
             titleSize="lg"
-            titleRef={subpage.kind === 'section' ? sectionTitle : undefined}
+            titleRef={sectionTitle}
             onBack={back}
             onClose={onClose}
           />
@@ -179,32 +166,22 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
         )
       }
     >
-      {subpage?.kind === 'information' ? (
-        <RsdInformationSection
-          page={subpage.page}
-          onNavigate={(next) =>
-            next === 'whatsNew'
-              ? openSection('whatsnew')
-              : setPage({ kind: 'information', page: next })
-          }
-        />
-      ) : subpage?.kind === 'section' ? (
+      {subpage ? (
         <PhoneScroll>
-          <SettingsSection {...props} section={subpage.section} busy={busy} onHelp={onHelp} />
+          <SettingsSection {...props} section={subpage.section} busy={busy} wide={false} />
           {status}
         </PhoneScroll>
       ) : shell === 'wide' ? (
         <RsdSettingsWide
-          sections={HUB_SECTIONS}
+          sections={NATIVE_SETTINGS_SECTIONS}
           keptSection={props.buttonScale.active ? 'accessibility' : null}
           unseen={unseen}
           renderSection={(section) => (
-            <SettingsSection {...props} section={section} busy={busy} onHelp={onHelp} />
+            <SettingsSection {...props} section={section} busy={busy} wide />
           )}
           onSeen={(section) => {
             if (section === 'whatsnew') onWhatsNewSeen();
           }}
-          onFeedback={props.onFeedback}
           locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
           landing={unlocked ? 'parentCenter' : null}
           onUnlock={props.parentCenter.onUnlock}
@@ -212,19 +189,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           {status}
         </RsdSettingsWide>
       ) : shell === 'compact' ? (
-        <RsdSettingsCompact
-          sound={toggles.sound}
-          night={toggles.appearance}
-          orientation={settings.orientation}
-          busy={busy}
-          onOrientationChange={props.onOrientationChange}
-        >
+        <CompactSettings {...props} toggles={toggles} busy={busy}>
           {status}
-        </RsdSettingsCompact>
+        </CompactSettings>
       ) : (
         <PhoneScroll>
           <RsdSettingsHub
-            sections={HUB_SECTIONS}
+            sections={NATIVE_SETTINGS_SECTIONS}
             context={context}
             toggles={toggles}
             unseen={unseen}
@@ -236,6 +207,38 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       )}
       {props.gate}
     </ModalShell>
+  );
+}
+
+// The landscape-phone quick toggles: the hub's Sound and Night Mode switches, the Tool Drawer
+// switch and the orientation lock.
+function CompactSettings({
+  settings,
+  toggles,
+  busy,
+  onToolDrawerChange,
+  onOrientationChange,
+  children,
+}: NativeSoundSettingsDialogProps & {
+  toggles: ReturnType<typeof useHubToggles>;
+  busy: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <RsdSettingsCompact
+      sound={toggles.sound}
+      night={toggles.appearance}
+      toolDrawer={{
+        checked: settings.toolDrawerEnabled,
+        disabled: busy,
+        onToggle: onToolDrawerChange,
+      }}
+      orientation={settings.orientation}
+      busy={busy}
+      onOrientationChange={onOrientationChange}
+    >
+      {children}
+    </RsdSettingsCompact>
   );
 }
 
@@ -296,7 +299,8 @@ function PhoneScroll({ children }: { children: ReactNode }) {
 type SectionProps = NativeSoundSettingsDialogProps & {
   section: NativeSettingsSectionId;
   busy: boolean;
-  onHelp: () => void;
+  // The wide pane titles each section one heading level below the phone page's title.
+  wide: boolean;
 };
 
 function SettingsSection(props: SectionProps) {
@@ -328,7 +332,19 @@ function SettingsSection(props: SectionProps) {
         />
       );
     case 'controls':
-      return <ToolDrawerChoices {...props} />;
+      return (
+        <RsdToolDrawerSection
+          settings={settings}
+          brushState={props.brushState}
+          busy={busy}
+          onToolDrawerChange={props.onToolDrawerChange}
+          onBrushAvailabilityChange={props.onBrushAvailabilityChange}
+          onUndoButtonChange={props.onUndoButtonChange}
+          onStrokeWidthControlChange={props.onStrokeWidthControlChange}
+          onPencilEraserChange={props.onPencilEraserChange}
+          onRetryBrushSave={props.onRetryBrushSave}
+        />
+      );
     case 'accessibility':
       return (
         <RsdAccessibilitySection
@@ -345,12 +361,21 @@ function SettingsSection(props: SectionProps) {
           onColoringBookChange={onColoringBookChange}
         />
       );
-    // Feedback opens its own sheet from the hub, and AI Art has no native section body yet.
+    // AI Art has no native section body yet.
     case 'ai':
-    case 'feedback':
       return null;
+    case 'feedback':
+      return <RsdFeedbackSection owner={props.feedback} />;
     case 'saving':
-      return <SaveOnDeleteSwitch {...props} />;
+      return (
+        <RsdSavingSection
+          screenshotEnabled={settings.screenshotEnabled}
+          saveOnDeleteEnabled={settings.saveOnDeleteEnabled}
+          busy={busy}
+          onScreenshotChange={props.onScreenshotChange}
+          onSaveOnDeleteChange={props.onSaveOnDeleteChange}
+        />
+      );
     case 'parentCenter':
       return parentCenterRevealed(props.parentCenter) ? (
         props.parentCenter.section
@@ -360,79 +385,13 @@ function SettingsSection(props: SectionProps) {
     case 'setup':
       return <RsdInstallGuide />;
     case 'whatsnew':
-      return <RsdWhatsNewSection />;
-    case 'about':
-      return <RsdAction label="Help and about" onClick={props.onHelp} />;
-  }
-}
-
-function ToolDrawerChoices({
-  settings,
-  brushState,
-  busy,
-  onBrushAvailabilityChange,
-  onRetryBrushSave,
-  onUndoButtonChange,
-  onStrokeWidthControlChange,
-  onPencilEraserChange,
-}: SectionProps) {
-  return (
-    <>
-      {OPTIONAL_BRUSHES.map((brush) => (
-        <RsdAction
-          key={brush}
-          label={`Show ${BRUSHES[brush].label}`}
-          selection="switch"
-          selected={brushState.availability[brush]}
-          disabled={busy || brushState.status !== 'ready'}
-          onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
+      return (
+        <RsdWhatsNewSection
+          sectionHeadingLevel={props.wide ? 3 : 2}
+          onOpen={props.onOpenHostedPage}
         />
-      ))}
-      {brushState.message ? <html.span aria-live="polite">{brushState.message}</html.span> : null}
-      {!brushState.saved ? (
-        <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
-      ) : null}
-      <RsdAction
-        label="Show Undo button"
-        selection="switch"
-        selected={settings.undoButtonEnabled}
-        disabled={busy}
-        onClick={() => onUndoButtonChange(!settings.undoButtonEnabled)}
-      />
-      <RsdAction
-        label="Show drawing width controls"
-        selection="switch"
-        selected={settings.strokeWidthControlEnabled}
-        disabled={busy}
-        onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
-      />
-      {settings.applePencilSeen && brushState.availability.eraser ? (
-        <>
-          <RsdAction
-            label={PENCIL_ERASER_LABEL}
-            selection="switch"
-            selected={settings.pencilEraserEnabled}
-            disabled={busy}
-            onClick={() => onPencilEraserChange(!settings.pencilEraserEnabled)}
-          />
-          <html.span>{PENCIL_ERASER_HELP}</html.span>
-        </>
-      ) : null}
-    </>
-  );
-}
-
-function SaveOnDeleteSwitch({ settings, busy, onSaveOnDeleteChange }: SectionProps) {
-  return (
-    <>
-      <RsdAction
-        label={SAVE_ON_DELETE_LABEL}
-        selection="switch"
-        selected={settings.saveOnDeleteEnabled}
-        disabled={busy}
-        onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
-      />
-      <html.span>{SAVE_ON_DELETE_HELP}</html.span>
-    </>
-  );
+      );
+    case 'about':
+      return <RsdAboutSection onOpen={props.onOpenHostedPage} />;
+  }
 }

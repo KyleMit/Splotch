@@ -1,5 +1,4 @@
 import type { NativeIconName } from '../rsdDrawing/icons.generated';
-import type { InstallDeviceOs } from './installPolicy';
 
 export { INSTALL_PROMPT_COPY } from '../../../../web/src/lib/installPromptCopy';
 
@@ -12,12 +11,12 @@ export type InstallTextPart =
   | { kind: 'icon'; icon: NativeIconName }
   | { kind: 'term'; icon: NativeIconName; text: string; spoken?: string; textInk?: boolean };
 
-const text = (value: string): InstallTextPart => ({ kind: 'text', text: value });
-const strong = (value: string): InstallTextPart => ({ kind: 'strong', text: value });
+export const text = (value: string): InstallTextPart => ({ kind: 'text', text: value });
+export const strong = (value: string): InstallTextPart => ({ kind: 'strong', text: value });
 
 // What a sentence reads as: its words and spoken-only text without its icons, with the space a
 // term keeps between its icon and its word collapsed as HTML collapses it.
-function spokenInstallText(parts: readonly InstallTextPart[]) {
+export function spokenInstallText(parts: readonly InstallTextPart[]) {
   return parts
     .map((part) => {
       if (part.kind === 'icon') return '';
@@ -28,8 +27,7 @@ function spokenInstallText(parts: readonly InstallTextPart[]) {
     .replace(/\s+/g, ' ');
 }
 
-// The shipping Install Banner and Settings install guide author these sentences in Svelte
-// markup around inline icons; tools/tests/native-web-install-drift.test.mjs fails when the
+// The shipping Install Banner authors these sentences in Svelte markup around inline icons; tools/tests/native-web-install-drift.test.mjs fails when the
 // words, or the icon beside each term, diverge.
 export const INSTALL_BANNER_PARTS = {
   parting: [
@@ -76,41 +74,4 @@ export function iosBannerStepParts(shareLocation: string): readonly (readonly In
 
 export function iosBannerSteps(shareLocation: string) {
   return iosBannerStepParts(shareLocation).map(spokenInstallText);
-}
-export const INSTALL_GUIDE_COPY = {
-  title: 'Install as App',
-  oneTap: 'Install Splotch',
-  oneTapHint: 'One tap — your browser will do the rest.',
-  osLabel: { ios: 'iOS', android: 'Android', desktop: 'Desktop' } satisfies Record<
-    InstallDeviceOs,
-    string
-  >,
-  openInSafari: "Open this page in Safari — the steps below are Safari's",
-  desktopNote: 'Firefox has no install of its own, so it keeps Splotch in a tab — that works too.',
-} as const;
-
-export function installGuideSteps(os: InstallDeviceOs, shareLocation: string) {
-  switch (os) {
-    case 'ios':
-      return [
-        `Tap the Share button ${shareLocation}`,
-        'Scroll and tap "Add to Home Screen"',
-        'Tap "Add" in the top right',
-        'Launch from your home screen for fullscreen mode',
-      ];
-    case 'android':
-      return [
-        'Tap the menu (three dots)',
-        'Tap "Install app" or "Add to Home screen"',
-        'Follow the prompts',
-        'Launch from your home screen for fullscreen mode',
-      ];
-    case 'desktop':
-      return [
-        'In Chrome or Edge, click the install icon at the end of the address bar — or open the browser menu and choose "Install Splotch"',
-        'In Safari on macOS Sonoma or later, choose File → Add to Dock',
-        'Follow the prompts',
-        'Launch it from your dock, desktop, or taskbar for fullscreen mode',
-      ];
-  }
 }

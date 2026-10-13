@@ -47,8 +47,9 @@ and request status do not survive termination; both callers disclose this limita
 * `feedbackDelivery.ts` owns request identity, cancellation and throttle availability.
 * `feedbackTransport.ts` owns the HTTPS endpoint, deadline, bounded stream reading and exact reply
   validation from unknown. Provider and transport exception text never reaches the interface.
-* `FeedbackSheet.tsx` and `rsdDrawing/RsdFeedbackSheet.tsx` are the actual themed RN and RSD
-  callers. `useNativeFeedback.ts` retains their service owner while the form is closed.
+* `FeedbackSheet.tsx` is the legacy RN caller; the RSD caller is the Settings Feedback section,
+  `rsdDrawing/RsdFeedbackSection.tsx`, which sends through `submit()` with no review step.
+  `useNativeFeedback.ts` retains their service owner while the form is closed.
 * `platform/feedback.ts` uses the already-installed released `expo/fetch` streaming response and
   app-private Expo file storage. Its `.web.ts` counterpart uses browser fetch and local storage.
 

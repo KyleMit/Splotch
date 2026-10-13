@@ -7,6 +7,7 @@ import type { AiErrorReason } from '../ai/uiState';
 import { RsdAiReportStatus, aiReportSettled } from './RsdAiImageReport';
 import { RsdButton } from './RsdButton';
 import { RsdIcon } from './RsdIcon';
+import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { colors, dimensions, fonts } from './tokens.css';
 import { styles as controlStyles } from './controls';
 
@@ -108,9 +109,12 @@ function RsdAiErrorCard({
           variant="brand"
           size="hero"
           icon={
-            rest
-              ? { name: 'brush-pen', size: ERROR_PEN_ICON_PX }
-              : { name: 'refresh', size: ERROR_REFRESH_ICON_PX }
+            <RsdIcon
+              name={rest ? 'brush-pen' : 'refresh'}
+              size={rest ? ERROR_PEN_ICON_PX : ERROR_REFRESH_ICON_PX}
+              ink={DRAWING_ON_BRAND}
+              muted={false}
+            />
           }
           onPress={rest ? onKeepDrawing : onTryAgain}
         >

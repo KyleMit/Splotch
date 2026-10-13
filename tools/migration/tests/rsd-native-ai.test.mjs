@@ -93,7 +93,14 @@ function useCaller(drawing = emptyDrawing(), overrides = {}) {
     pagePickerOpen: false,
     settingsOpen: false,
     colorPickerOpen: false,
-    recordKept: vi.fn(),
+    saveFailure: {
+      outcome: null,
+      pictureCount: 0,
+      retrying: false,
+      retry: async () => {},
+      dismiss() {},
+      report: vi.fn(),
+    },
     ...overrides,
   };
   caller.sound = {
@@ -222,10 +229,7 @@ it(
         format: { baseName: 'splotch-ai', mime: 'image/png' },
       },
     ]);
-    expect(caller.screen.recordKept).toHaveBeenCalledWith({
-      notice: 'Picture saved to Photos.',
-      failure: null,
-    });
+    expect(caller.screen.saveFailure.report).not.toHaveBeenCalled();
     await settle(() => expect(modal('AI Result')).toBeNull());
   },
   GATED_FLOW_TIMEOUT_MS
@@ -237,8 +241,10 @@ it(
     await finishedPicture();
     save.outcome = 'denied';
     await press('Download');
-    expect(caller.screen.recordKept.mock.calls[0][0].failure?.heading).toBe(
-      "Your picture wasn't saved"
+    expect(caller.screen.saveFailure.report).toHaveBeenCalledWith(
+      'denied',
+      'bytes-of:file:///owned/rsd-ai.png',
+      { baseName: 'splotch-ai', mime: 'image/png' }
     );
     expect(modal('AI Result')).not.toBeNull();
   },

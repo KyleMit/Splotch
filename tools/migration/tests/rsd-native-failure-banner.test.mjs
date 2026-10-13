@@ -13,7 +13,6 @@ import {
   BANNER_MASCOT_PX,
   BANNER_MAX_WIDTH_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
-import { pictureSaveFailure } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
 import { useDrawingMessages } from '../../../experiments/native-architecture/src/drawingMessages.ts';
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 
@@ -145,25 +144,8 @@ describe('the Save Failure Banner on the drawing screen', () => {
       routineNotice: '',
       failure: { kind: 'error', detail: 'The paper is busy.' },
     });
-    const refused = pictureSaveFailure('denied', 'ios');
-    await step((owner) => {
-      owner.setNotice('Refused to Photos.');
-      owner.recordSave({ notice: 'Refused to Photos.', failure: refused });
-    });
-    expect(messages).toMatchObject({
-      notice: 'Refused to Photos.',
-      routineNotice: '',
-      failure: { kind: 'save', ...refused },
-    });
     await step((owner) => owner.setNotice('Picture opened.'));
-    expect(messages).toMatchObject({
-      routineNotice: 'Picture opened.',
-      failure: { kind: 'save', ...refused },
-    });
-    await step((owner) => owner.failSave());
-    expect(messages).toMatchObject({ notice: '', routineNotice: '', failure: { kind: 'save' } });
-    await step((owner) => owner.recordSave({ notice: 'Saved.', failure: null }));
-    expect(messages.failure).toBeNull();
+    expect(messages).toMatchObject({ routineNotice: 'Picture opened.', failure: null });
   });
 
   it('shows a denied photo save in the visible banner, with its explanation, until dismissed', async () => {
@@ -178,10 +160,8 @@ describe('the Save Failure Banner on the drawing screen', () => {
     await act(async () => host.querySelector('[aria-label="Expand controls"]').click());
     await act(async () => host.querySelector('[aria-label="Save screenshot"]').click());
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
-    const refused = pictureSaveFailure('denied', 'ios');
-    expect(banners()).toEqual([`${refused.heading}${refused.detail}`]);
-    // No copy stays inside the app, so the banner says exactly what the shipping banner says.
-    expect(refused).toEqual(saveFailureCopy('denied', 1, 'ios'));
+    const refused = saveFailureCopy('denied', 1, 'ios');
+    expect(banners()).toEqual([`${refused.heading}${refused.detail}Open SettingsTry again`]);
     expect(library.saves).toEqual(['cmVhbC1wbmc=']);
     const banner = flat(
       records.props.findLast((props) => props.testID === 'rsd-failure-banner')?.style
@@ -191,6 +171,6 @@ describe('the Save Failure Banner on the drawing screen', () => {
     // The refusal is the banner's to say; the save's own notice may not say it again.
     expect(spoken(refused.detail)).toEqual({ announced: 1, regions: 1 });
     await act(async () => host.querySelector('[aria-label="Dismiss"]').click());
-    expect(banners()).toEqual([]);
+    await vi.waitFor(() => expect(banners()).toEqual([]));
   });
 });

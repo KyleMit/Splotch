@@ -37,6 +37,7 @@ import {
 import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
 import {
   RELEASE_NOTES,
+  WHATS_NEW_COPY,
   WHATS_NEW_STAMP,
 } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
 import {
@@ -62,7 +63,7 @@ it('lists every shipping section in order with its icon tile and shipping status
   storedSettings();
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
-  const listed = NATIVE_SETTINGS_SECTIONS.filter(({ id }) => id !== 'setup');
+  const listed = NATIVE_SETTINGS_SECTIONS;
   expect(hubRows().map((row) => row.getAttribute('aria-label').split(', ')[0])).toEqual(
     listed.map(({ label }) => label)
   );
@@ -75,6 +76,7 @@ it('lists every shipping section in order with its icon tile and shipping status
     'AI Art, Turned off',
     `Saving, ${SECTION_SUBTITLES.saveOnDeleteOff}`,
     `Parent Center, ${SECTION_SUBTITLES.parentCenter}`,
+    `Install, ${SECTION_SUBTITLES.setup}`,
     `Feedback, ${SECTION_SUBTITLES.feedback}`,
     `${WHATS_NEW}, ${SECTION_SUBTITLES.whatsnew}`,
     `About, Version ${WHATS_NEW_STAMP}`,
@@ -143,20 +145,17 @@ it('words the Sound and Coloring rows from the volume and the downloaded books',
   }
 });
 
-it('opens Feedback from its hub row in place of Settings', async () => {
+it('drills into Feedback from its hub row, as into every other section', async () => {
   storedSettings();
-  drawingScreen({
-    closeSettings: vi.fn(() => {
-      caller.screen.settingsOpen = false;
-    }),
-  });
+  drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   await act(async () => hubRow('Feedback').click());
-  expect(caller.screen.closeSettings).toHaveBeenCalled();
-  expect(caller.product.feedback.state.open).toBe(true);
-  await rerender({});
-  expect(host.querySelector('[data-native-modal="Settings"]')).toBeNull();
-  expect(host.querySelector('[data-native-modal="Send Feedback"]')).not.toBeNull();
+  expect(caller.screen.closeSettings).not.toHaveBeenCalled();
+  expect(caller.product.feedback.state.open).toBe(false);
+  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Send Feedback"]')).toBeNull();
+  await click('Back');
+  expect(hubRow('Feedback')).toBeDefined();
 });
 
 it('drills into an AI Art page from its hub row', async () => {
@@ -214,10 +213,11 @@ it.each([
     expect(dottedRows()).toEqual([`${WHATS_NEW}, ${SECTION_SUBTITLES.whatsnew}, new`]);
     await act(async () => hubRow(WHATS_NEW).click());
     expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
-    for (const release of RELEASE_NOTES) {
-      expect(host.textContent).toContain(release.dateLabel);
-      expect(host.textContent).toContain(release.sections[0].blocks[0].text);
-    }
+    const [current, ...earlier] = RELEASE_NOTES;
+    expect(host.textContent).toContain(current.dateLabel);
+    expect(host.textContent).toContain(current.sections[0].blocks[0].text);
+    for (const release of earlier) expect(host.textContent).not.toContain(release.dateLabel);
+    expect(host.textContent).toContain(WHATS_NEW_COPY.allReleases);
     expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
     await click('Back');
     expect(dottedRows()).toEqual([]);
@@ -317,7 +317,7 @@ it('keeps the opt-out hidden while the Eraser is hidden from the Tool Drawer', a
   await pencilScreen({ applePencilSeen: true });
   await openToolDrawerSettings();
   button(PENCIL_ERASER_LABEL);
-  await click('Show Eraser');
+  await click('Eraser');
   expect(host.querySelector(`[aria-label="${PENCIL_ERASER_LABEL}"]`)).toBeNull();
   await pencilDoubleTap();
   expect(brushLabel()).toBe('Brush: Pen');

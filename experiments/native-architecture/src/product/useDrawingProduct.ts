@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
 import { productOwners } from './productOwnersLoader';
@@ -16,6 +16,7 @@ import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import { initialSoundSettingsState, type SoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
+import { openAppSettings } from '../platform/appSettings';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
@@ -134,6 +135,23 @@ function attachProductOwners(
   };
 }
 
+// The drawing screen's choices that follow saved settings: the coloring book's availability, and
+// the Pen fallback when the tool drawer is hidden.
+function useScreenFollowsSettings(
+  screenRef: RefObject<ReturnType<typeof useDrawingScreen>>,
+  brushesReady: boolean,
+  settings: SoundSettingsState
+) {
+  useEffect(() => {
+    if (settings.status !== 'loading')
+      screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);
+  }, [screenRef, settings.status, settings.coloringBookEnabled]);
+  const drawerHidden = settings.status !== 'loading' && !settings.toolDrawerEnabled;
+  useEffect(() => {
+    if (drawerHidden && brushesReady) screenRef.current.fallBackFromOptionalBrushes();
+  }, [screenRef, drawerHidden, brushesReady]);
+}
+
 export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const screenRef = useRef(screen);
   screenRef.current = screen;
@@ -194,7 +212,9 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     // Shipping handleDoubleTap: every tap records a Pencil, which reveals the parent's opt-out.
     const offPencil = subscribePencilDoubleTap(() => {
       void product.settings.markApplePencilSeen();
-      const enabled = product.getState().settings?.pencilEraserEnabled === true;
+      const settings = product.getState().settings;
+      // Shipping asks actionControlShown('eraserEnabled'): the Eraser hides with the drawer.
+      const enabled = settings?.pencilEraserEnabled === true && settings.toolDrawerEnabled;
       if (enabled && screenRef.current.toggleEraser()) impactThreshold();
     });
     setServices(services);
@@ -229,10 +249,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();
   }, [owners, settings.aiEnabled]);
-  useEffect(() => {
-    if (settings.status !== 'loading')
-      screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);
-  }, [settings.status, settings.coloringBookEnabled]);
+  useScreenFollowsSettings(screenRef, screen.brushPreferences.status === 'ready', settings);
   return {
     sound: {
       settings,
@@ -251,5 +268,11 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     ai: { owner: owners?.ai ?? null, state: aiState, progress: aiProgress },
     owner: services?.product ?? null,
     state: services?.product.getState() ?? null,
+    // Settings is outside the app, so it sits behind the same gate as every other way out.
+    openAppSettings() {
+      services?.product.port.request('externalLinks', (proof) => {
+        if (proof.valid()) openAppSettings();
+      });
+    },
   };
 }

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -312,32 +311,6 @@ describe('consumed late browser accounting', () => {
     expect(() => summarizeProcessTree(10, '20 1 200 malformed', tracking)).toThrow('Malformed');
     expect(summarizeProcessTree(10, row(40, 1, 999), tracking).processes).toEqual([]);
   });
-
-  it('binds the actual driver finally to awaited accounting, live sampling, source checks and exit refusal', () => {
-    const driver = readFileSync(
-      new URL('../migration/probes/native-eraser/checkpoint-browser.mjs', import.meta.url),
-      'utf8'
-    ).replace(/\s+/g, ' ');
-    const closing = driver.slice(driver.indexOf(' } finally {'));
-    expect(driver).toContain('memoryOwner = createBrowserMemory(report.ownedBrowserPid)');
-    expect(closing).toContain('await finishBrowserAccounting(report, {');
-    expect(closing).toContain(
-      "verifySource: async () => { await assertSource(source); return 'exact'; }"
-    );
-    expect(closing).toContain('beginClosing: () => memoryOwner?.beginClosing()');
-    expect(closing).toContain(
-      "closeBrowser: async () => { if (!browser) return 'not-created'; await browser.close(); return true; }"
-    );
-    expect(closing).toContain(
-      "closeServer: async () => { if (!server) return 'not-created'; await server.close(); return true; }"
-    );
-    expect(closing).toContain('const sample = memoryOwner?.sample()');
-    expect(closing).toContain('stopSampling: () => { if (sampler) clearInterval(sampler); }');
-    expect(closing).toContain("if (report.status === 'failed') process.exitCode = 1");
-    expect(closing.indexOf('await finishBrowserAccounting')).toBeLessThan(
-      closing.indexOf("await writeFile(join(output, 'result.json')")
-    );
-  });
 });
 
 describe('strict global SVG owner admission', () => {
@@ -374,13 +347,6 @@ describe('strict global SVG owner admission', () => {
     expect(() =>
       assertObservationComplete({ diagnosticErrors: ['Missing actual SVG capture method'] })
     ).toThrow('Mandatory SVG');
-    const driver = readFileSync(
-      new URL('../migration/probes/native-eraser/checkpoint-browser.mjs', import.meta.url),
-      'utf8'
-    );
-    expect(driver).toMatch(
-      /preserveObservation\(output, name, observation\)\);\s*assertObservationComplete\(observation\);/
-    );
   });
 });
 

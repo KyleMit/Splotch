@@ -8,5 +8,4 @@ export { RsdAiResult } from './RsdAiResult';
 export { RsdColorPicker } from './RsdColorPicker';
 export { RsdColoringBookPicker } from './RsdColoringBookPicker';
 export { RsdFailureBanner } from './RsdFailureBanner';
-export { RsdFeedbackSheet } from './RsdFeedbackSheet';
 export { RsdParentGateSheet } from './RsdParentGateSheet';

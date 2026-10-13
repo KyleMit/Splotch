@@ -28,6 +28,17 @@ export function drawingScreenPort(actual, caller, projectHistory) {
       draftState: { status: 'session', message: '' },
       retryDraft: async () => {},
       selectInkBrush() {},
+      saveFailure: {
+        outcome: null,
+        pictureCount: 0,
+        retrying: false,
+        retry: async () => {},
+        dismiss() {},
+      },
+      flight: null,
+      cameraTile: { current: null },
+      landFlight() {},
+      fallBackFromOptionalBrushes() {},
       ...caller.screen,
       library: caller.library,
       setColoringBookEnabled(enabled) {
@@ -60,7 +71,7 @@ export function paperPort(React, strokeStyle, caller) {
         lockInput: () => () => {},
         refreshGeometry() {},
         // A save's photo library copy; what the library does with it is the test's port.
-        capturePng: async () => 'cmVhbC1wbmc=',
+        capturePng: async () => caller.capturePng?.() ?? 'cmVhbC1wbmc=',
       }),
       []
     );
@@ -111,6 +122,8 @@ export function nativeSettingsProps(owner, state) {
     onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
     onUndoButtonChange: (enabled) => owner.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled) => owner.setStrokeWidthControlEnabled(enabled),
+    onToolDrawerChange: (enabled) => owner.setToolDrawerEnabled(enabled),
+    onScreenshotChange: (enabled) => owner.setScreenshotEnabled(enabled),
     onSaveOnDeleteChange: (enabled) => owner.setSaveOnDeleteEnabled(enabled),
     onDrawingSoundChange: (enabled) => owner.setDrawingSoundEnabled(enabled),
     onDeleteSoundChange: (enabled) => owner.setDeleteSoundEnabled(enabled),
@@ -135,7 +148,8 @@ export function nativeSettingsProps(owner, state) {
     onClose() {},
     parentCenter: { unlocked: false, checkDue: true, onUnlock() {}, onLeave() {}, section: null },
     gate: null,
-    onFeedback() {},
+    feedback: null,
+    onOpenHostedPage() {},
     downloadedBooks: 0,
     ai: null,
   };

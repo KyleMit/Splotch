@@ -197,7 +197,7 @@ describe('the pane scroll geometry', () => {
 });
 
 const CURRENT_SETTINGS = {
-  version: 13,
+  version: 14,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -226,6 +226,8 @@ const CURRENT_SETTINGS = {
   pencilEraserEnabled: true,
   applePencilSeen: false,
   toolbarStyle: 'buttons',
+  toolDrawerEnabled: true,
+  screenshotEnabled: true,
 };
 
 function openSettings(dimensions, overrides = {}) {
@@ -270,8 +272,9 @@ function holdNextWrite(storage) {
   return () => act(async () => finish());
 }
 
-const LISTED = NATIVE_SETTINGS_SECTIONS.filter(({ id }) => id !== 'setup');
-const PANE_SECTIONS = LISTED.filter(({ id }) => id !== 'feedback');
+const LISTED = NATIVE_SETTINGS_SECTIONS;
+// Every section, Feedback and Install among them, holds its place in the one pane.
+const PANE_SECTIONS = LISTED;
 
 const sidebarRows = () => [...host.querySelectorAll('[data-testid="sidebar-row"]')];
 const sidebarRow = (label) => {
@@ -336,7 +339,6 @@ describe('the wide shell', () => {
     const paneSection = (id) =>
       latest((props) => props.onLayout && props.children?.props?.['data-section'] === id);
     for (const { id } of PANE_SECTIONS) expect(paneSection(id), id).toBeDefined();
-    expect(paneSection('feedback')).toBeUndefined();
     for (const { id } of PANE_SECTIONS) expect(host.textContent).toContain(sectionHeading(id));
     expect(spiedRow()).toEqual(['Appearance']);
     expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
@@ -358,7 +360,7 @@ describe('the wide shell', () => {
     expect(sidebarRow("What's New").getAttribute('aria-label')).toBe("What's New");
   });
 
-  it('jumps the pane to a tapped section and opens Feedback in its own sheet', async () => {
+  it('jumps the pane to a tapped section, Feedback included, without leaving Settings', async () => {
     HTMLElement.prototype.scrollTo = scrollTo;
     openSettings(TABLET, { whatsNewSeen: null });
     await mount(createElement(RsdDrawingScreen));
@@ -371,9 +373,14 @@ describe('the wide shell', () => {
     });
     scrollTo.mockClear();
     await act(async () => sidebarRow('Feedback').click());
-    expect(scrollTo).not.toHaveBeenCalled();
-    expect(caller.screen.closeSettings).toHaveBeenCalled();
-    expect(caller.product.feedback.state.open).toBe(true);
+    const feedback = PANE_SECTIONS.findIndex(({ id }) => id === 'feedback');
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      y: WIDE_SHELL.pane.top + feedback * 360 - SECTION_JUMP_INSET_PX,
+      animated: true,
+    });
+    expect(caller.screen.closeSettings).not.toHaveBeenCalled();
+    expect(caller.product.feedback.state.open).toBe(false);
+    expect(host.querySelector('[data-native-modal="Send Feedback"]')).toBeNull();
   });
 
   it('keeps a smooth jump from marking the sections it passes', async () => {
@@ -411,6 +418,7 @@ describe('the wide shell', () => {
 
 describe('the compact shell', () => {
   const quick = (label) => host.querySelector(`[role="switch"][aria-label="${label}"]`);
+  const QUICK_SWITCHES = ['Sound', 'Night Mode', 'Tool drawer'];
 
   // The orientation cell's width on a landscape phone: half the card's content row, less the gap.
   const orientationCell = (window) =>
@@ -458,7 +466,11 @@ describe('the compact shell', () => {
     expect(host.querySelector('[aria-label="Settings sections"]')).toBeNull();
     checkedSwitch(quick('Sound'), true);
     checkedSwitch(quick('Night Mode'), false);
+    checkedSwitch(quick('Tool drawer'), true);
     expect(host.textContent).toContain('Switch to portrait for the full settings.');
+    await act(async () => quick('Tool drawer').click());
+    checkedSwitch(quick('Tool drawer'), false);
+    expect(settings.stored().toolDrawerEnabled).toBe(false);
     await act(async () => quick('Night Mode').click());
     checkedSwitch(quick('Night Mode'), true);
     expect(settings.stored().appearance).toBe('dark');
@@ -472,10 +484,10 @@ describe('the compact shell', () => {
     await mount(createElement(RsdDrawingScreen));
     await act(async () => quick('Sound').click());
     expect(caller.product.sound.settings.status).toBe('saving');
-    for (const label of ['Sound', 'Night Mode']) expect(quick(label).disabled, label).toBe(true);
+    for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(true);
     expect(host.querySelector('[role="radio"][aria-label="Auto"]').disabled).toBe(true);
     await finish();
-    for (const label of ['Sound', 'Night Mode']) expect(quick(label).disabled, label).toBe(false);
+    for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(false);
   });
 });
 describe('Parent Center in the wide shell', () => {
