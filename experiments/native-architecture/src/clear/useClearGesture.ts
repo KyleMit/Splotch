@@ -8,6 +8,7 @@ import { hasDrawingInk, type Drawing } from '../drawing/model';
 import type { ClearSound } from '../audio/pageTurnSound';
 import {
   ACCEPT_ZONE_HIDE_DELAY_MS,
+  CLEAR_SHEET_DURATION_MS,
   COACHMARK_AUTO_DISMISS_MS,
   FLOOD_COMMITTED_OPACITY,
   FLOOD_RELEASE_MS,
@@ -25,7 +26,9 @@ const EMPHASIS_MS = 200;
 const LIFT_OFF_MS = 180;
 const EASE_POP = Easing.bezier(0.34, 1.56, 0.64, 1);
 
-export type ClearSheet = Readonly<{ id: number; drawing: Drawing }>;
+// `startedAt` is the Date.now() of the commit, so a renderer that mounts after the flight began
+// can tell it missed the departure.
+export type ClearSheet = Readonly<{ id: number; drawing: Drawing; startedAt: number }>;
 
 type Owner = {
   disabled: boolean;
@@ -104,6 +107,7 @@ type Context = {
     coachmark: (value: boolean) => void;
     clearing: (value: boolean) => void;
     sheet: (value: ClearSheet) => void;
+    finishSheet: (id: number) => void;
     pending: (change: number) => void;
   };
 };
@@ -170,7 +174,11 @@ function clearEffects(context: Context): ClearGestureEffects {
       set.clearing(true);
       if (!reduced.current && hasDrawingInk(drawing)) {
         context.sheets.current += 1;
-        set.sheet({ id: context.sheets.current, drawing });
+        const id = context.sheets.current;
+        set.sheet({ id, drawing, startedAt: Date.now() });
+        // The flight's own deadline, so the sheet and the cover under it expire on time even when
+        // no renderer flies them (the web underlay's chunk can arrive after the clear).
+        context.later(() => set.finishSheet(id), CLEAR_SHEET_DURATION_MS);
       }
       set.pending(1);
       void onClear().finally(() => set.pending(-1));
@@ -270,6 +278,7 @@ export function useClearGesture(owner: Owner) {
       coachmark: setCoachmark,
       clearing: setClearing,
       sheet: setSheet,
+      finishSheet,
       pending: (change) => setPending((count) => count + change),
     },
   };

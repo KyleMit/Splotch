@@ -73,7 +73,10 @@ function DepartingSheet({
   area: AreaSize;
   offset: AreaOffset;
 }) {
-  const sheet = control.sheet;
+  // A sheet that left before this layer mounted has missed its departure; replaying the flight from
+  // the start would bring the cleared page back over newer ink. The gesture expires it on time.
+  const [mountedAt] = useState(Date.now);
+  const sheet = control.sheet && control.sheet.startedAt >= mountedAt ? control.sheet : null;
   const [flight] = useState(() => new Animated.Value(0));
   const { finishSheet } = control;
   useEffect(() => {

@@ -1,148 +1,74 @@
-import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
+import { caller, records, root, host } from './rsd-native-selection-host.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, createElement } from 'react';
+import { act, createElement, useSyncExternalStore } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+
+// The web export loads the clear underlay from its own chunk (clearSurfaces.web.ts). This gate
+// stands in for that chunk: held, the underlay is absent; released, it mounts as a late chunk would.
+const underlayChunk = vi.hoisted(() => {
+  const listeners = new Set();
+  const chunk = {
+    loaded: true,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    set(loaded) {
+      chunk.loaded = loaded;
+      for (const listener of listeners) listener();
+    },
+  };
+  return chunk;
+});
+vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/clearSurfaces.ts',
+  async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+      ...actual,
+      RsdClearUnderlay(props) {
+        const loaded = useSyncExternalStore(underlayChunk.subscribe, () => underlayChunk.loaded);
+        return loaded ? createElement(actual.RsdClearUnderlay, props) : null;
+      },
+    };
+  }
+);
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { drawingPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
-  emptyDrawing,
-  strokeStyle,
-} from '../../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  acceptRadius,
   clearSheetOrigin,
   CLEAR_SHEET_DURATION_MS,
   COACHMARK_AUTO_DISMISS_MS,
   HOLD_DURATION_MS,
   MOVEMENT_THRESHOLD_PX,
 } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
-import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-
-// The fixture window is 402 wide, so the shipping accept radius is 40% of that, and the docked
-// tab's centre is 20px in from its right edge and 120px down.
-const HOME = { x: 382, y: 120 };
-const radius = () => acceptRadius(records.dimensions.width, records.dimensions.height);
-
-function inkedDrawing() {
-  const drawing = emptyDrawing();
-  const stroke = {
-    ...strokeStyle('pen', 'Purple', drawing),
-    points: [
-      { x: 20, y: 20 },
-      { x: 100, y: 100 },
-    ],
-  };
-  return { ...drawing, paper: canonicalPaper(), strokes: [stroke] };
-}
-
-function clearScreen(overrides = {}) {
-  const drawing = overrides.drawing ?? inkedDrawing();
-  return {
-    notice: '',
-    drawing: false,
-    disabled: false,
-    brush: 'pen',
-    brushControl: { kind: 'none' },
-    availableBrushes: ['pen'],
-    history: { undo: [], drawing },
-    recovery: { failed: false },
-    pictures: null,
-    pagePickerOpen: false,
-    settingsOpen: false,
-    colorPickerOpen: false,
-    undo: vi.fn(),
-    clear: vi.fn(async () => {}),
-    save: vi.fn(async () => {}),
-    setPagePickerOpen: vi.fn(),
-    openSettings: vi.fn(),
-    openColorPicker: vi.fn(),
-    toggleBrush: vi.fn(),
-    selectInkBrush: vi.fn(),
-    ...overrides,
-  };
-}
-
-async function mountClear({
-  sound = true,
-  level,
-  saveOnDelete,
-  reduceMotion = false,
-  ...screen
-} = {}) {
-  records.reduceMotion = reduceMotion;
-  caller.screen = clearScreen(screen);
-  caller.menu = { open: false, visible: false, show: vi.fn() };
-  caller.sound = {
-    settings: {
-      status: 'ready',
-      soundEnabled: sound,
-      appearance: 'light',
-      selectedColor: 'Purple',
-      customColors: [],
-      strokeWidth: 'medium',
-      eraserWidth: 'medium',
-      aiEnabled: false,
-    },
-  };
-  if (level || saveOnDelete !== undefined) {
-    const stored = {
-      version: 9,
-      soundEnabled: sound,
-      soundLevel: level ?? 'medium',
-      coloringBookEnabled: true,
-      undoButtonEnabled: true,
-      strokeWidthControlEnabled: true,
-      orientation: 'portrait',
-      saveOnDeleteEnabled: saveOnDelete ?? false,
-    };
-    caller.settingsStorage = {
-      read: async () => JSON.stringify({ ...JSON.parse(caller.initialSettings), ...stored }),
-      write: async () => {},
-    };
-  }
-  await mount(createElement(RsdDrawingScreen));
-}
-
-const clearProps = () =>
-  records.props.findLast((props) => props.accessibilityLabel === 'Clear drawing');
-// React Native responder events: the changed touch at the top level, every touch in the lists.
-const CLEAR_FINGER = 1;
-const PAPER_FINGER = 2;
-const touch = (identifier, point) => ({ identifier, pageX: point.x, pageY: point.y });
-function responderEvent(changed, touches) {
-  const [first] = changed;
-  return { nativeEvent: { ...first, changedTouches: changed, touches } };
-}
-const at = (point) => responderEvent([touch(CLEAR_FINGER, point)], [touch(CLEAR_FINGER, point)]);
-const offset = (distance) => ({
-  x: HOME.x - distance / Math.SQRT2,
-  y: HOME.y + distance / Math.SQRT2,
-});
-
-async function press(point = HOME) {
-  await act(async () => {
-    if (clearProps().onStartShouldSetResponder()) clearProps().onResponderGrant(at(point));
-  });
-}
-async function drag(point) {
-  await act(async () => clearProps().onResponderMove(at(point)));
-}
-async function lift(point) {
-  await act(async () => clearProps().onResponderRelease(at(point)));
-}
-async function settle(ms) {
-  await act(async () => vi.advanceTimersByTimeAsync(ms));
-}
-
-const rendered = (testID) => host.querySelector(`[data-testid="${testID}"]`) !== null;
-const everRendered = (testID) => records.props.some((props) => props.testID === testID);
-const clearIcon = () =>
-  host.querySelector('[aria-label="Clear drawing"] svg[data-xml]').dataset.xml;
+import {
+  HOME,
+  CLEAR_FINGER,
+  PAPER_FINGER,
+  clearIcon,
+  clearProps,
+  clearScreen,
+  drag,
+  everRendered,
+  inkedDrawing,
+  lift,
+  mountClear,
+  offset,
+  press,
+  radius,
+  rendered,
+  responderEvent,
+  settle,
+  touch,
+} from './rsd-native-clear-fixture.mjs';
 
 afterEach(() => {
+  underlayChunk.loaded = true;
   vi.useRealTimers();
 });
 
@@ -298,6 +224,52 @@ it('does not fly an empty page', async () => {
   await act(async () => {});
   expect(caller.screen.clear).toHaveBeenCalledOnce();
   expect(everRendered('rsd-clear-sheet')).toBe(false);
+});
+
+// The PR 2849 review repro: the web underlay chunk arrives after a clear and the next stroke.
+it('never flies or covers an already cleared page when the underlay arrives late', async () => {
+  underlayChunk.loaded = false;
+  await mountClear();
+  vi.useFakeTimers();
+  expect(rendered('rsd-clear-underlay')).toBe(false);
+  await press();
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  await act(async () => {});
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+  await settle(800);
+  const nextStroke = inkedDrawing();
+  caller.screen = clearScreen({ drawing: nextStroke });
+  await act(async () => root.render(createElement(RsdDrawingScreen)));
+  const before = records.props.length;
+  await act(async () => underlayChunk.set(true));
+  await settle(CLEAR_SHEET_DURATION_MS);
+  const since = records.props.slice(before);
+  expect(since.some((props) => props.testID === 'rsd-clear-underlay')).toBe(true);
+  expect(since.some((props) => props.testID === 'rsd-clear-sheet')).toBe(false);
+  expect(since.some((props) => props.testID === 'rsd-clear-cover')).toBe(false);
+  expect(caller.screen.history.drawing).toBe(nextStroke);
+});
+
+it('expires a page that leaves before the underlay mounts at its own flight deadline', async () => {
+  underlayChunk.loaded = false;
+  await mountClear();
+  vi.useFakeTimers();
+  await press();
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  await act(async () => {});
+  await settle(CLEAR_SHEET_DURATION_MS / 2);
+  const before = records.props.length;
+  await act(async () => underlayChunk.set(true));
+  expect(rendered('rsd-clear-underlay')).toBe(true);
+  expect(records.props.slice(before).some((props) => props.testID === 'rsd-clear-sheet')).toBe(
+    false
+  );
+  // The cover stands in for the rest of the original flight, then goes with it.
+  expect(rendered('rsd-clear-cover')).toBe(true);
+  await settle(CLEAR_SHEET_DURATION_MS / 2);
+  expect(rendered('rsd-clear-cover')).toBe(false);
 });
 
 it('follows only the finger that pressed Clear while another finger draws', async () => {
