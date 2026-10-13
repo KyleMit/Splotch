@@ -1,32 +1,28 @@
-import { lazy } from 'react';
+import { lazySurface } from './lazySurface';
 
-// Each surface the drawing screen shows only on request is its own chunk, fetched on first use, so
-// first paint carries the drawing screen alone; the service worker precaches every chunk, so a
-// sheet still opens offline. A component suspends while its chunk loads, under the Suspense
-// boundary that renders it.
-export const AiWaitingPolaroid = lazy(() =>
-  import('../ai/AiWaitingPolaroid').then((module) => ({ default: module.AiWaitingPolaroid }))
+// Each surface the drawing screen shows only on request is its own chunk, fetched on first use
+// (lazySurface.ts), so first paint carries the drawing screen alone.
+export const AiWaitingPolaroid = lazySurface(() =>
+  import('../ai/AiWaitingPolaroid').then((module) => module.AiWaitingPolaroid)
 );
-export const ColorPicker = lazy(() =>
-  import('../drawing/ColorPicker').then((module) => ({ default: module.ColorPicker }))
+export const ColorPicker = lazySurface(() =>
+  import('../drawing/ColorPicker').then((module) => module.ColorPicker)
 );
-export const NativeSoundSettingsDialog = lazy(() =>
-  import('./RsdSettingsDialog').then((module) => ({ default: module.NativeSoundSettingsDialog }))
+export const NativeSoundSettingsDialog = lazySurface(() =>
+  import('./RsdSettingsDialog').then((module) => module.NativeSoundSettingsDialog)
 );
-export const RsdAiSheet = lazy(() =>
-  import('./RsdAiSheet').then((module) => ({ default: module.RsdAiSheet }))
+export const RsdAiSheet = lazySurface(() =>
+  import('./RsdAiSheet').then((module) => module.RsdAiSheet)
 );
-export const RsdColoringBookPicker = lazy(() =>
-  import('./RsdColoringBookPicker').then((module) => ({ default: module.RsdColoringBookPicker }))
+export const RsdColoringBookPicker = lazySurface(() =>
+  import('./RsdColoringBookPicker').then((module) => module.RsdColoringBookPicker)
 );
-export const RsdFeedbackSheet = lazy(() =>
-  import('./RsdFeedbackSheet').then((module) => ({ default: module.RsdFeedbackSheet }))
+export const RsdFeedbackSheet = lazySurface(() =>
+  import('./RsdFeedbackSheet').then((module) => module.RsdFeedbackSheet)
 );
-export const RsdParentCenterSection = lazy(() =>
-  import('./RsdParentCenterSection').then((module) => ({
-    default: module.RsdParentCenterSection,
-  }))
+export const RsdParentCenterSection = lazySurface(() =>
+  import('./RsdParentCenterSection').then((module) => module.RsdParentCenterSection)
 );
-export const RsdParentGateSheet = lazy(() =>
-  import('./RsdParentGateSheet').then((module) => ({ default: module.RsdParentGateSheet }))
+export const RsdParentGateSheet = lazySurface(() =>
+  import('./RsdParentGateSheet').then((module) => module.RsdParentGateSheet)
 );

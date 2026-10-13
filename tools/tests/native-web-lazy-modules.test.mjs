@@ -13,7 +13,8 @@ const read = (path) =>
   readFileSync(join(ROOT, 'experiments/native-architecture/src', path), 'utf8');
 const NATIVE_REEXPORT = /^export \{ (\w+) \} from '([^']+)';$/gm;
 const WEB_LAZY_EXPORT =
-  /export const (\w+) = lazy\(\(\) =>\s+import\('([^']+)'\)\.then\(\(module\) => \(\{\s+default: module\.(\w+),?\s+\}\)\)\s+\);/g;
+  /export const (\w+) = lazySurface\(\(\) =>\s+import\('([^']+)'\)\.then\(\(module\) => module\.(\w+)\)\s+\);/g;
+const SHEET_MOUNTERS = ['rsdDrawing/RsdDrawingScreen.tsx', 'rsdDrawing/RsdPaperSlot.tsx'];
 
 describe('drawing sheets the web export loads on first use', () => {
   it('lazily load, under each name, exactly the module the native apps import directly', () => {
@@ -25,6 +26,25 @@ describe('drawing sheets the web export loads on first use', () => {
     );
     expect(native.length).toBeGreaterThan(0);
     expect(web).toEqual(native);
+  });
+
+  it('mount each sheet inside its own surface boundary, so a failed load cannot blank the screen', () => {
+    const names = [...read('rsdDrawing/drawingSheets.ts').matchAll(NATIVE_REEXPORT)].map(
+      ([, name]) => name
+    );
+    const mounts = SHEET_MOUNTERS.flatMap((file) =>
+      names.flatMap((name) =>
+        [...read(file).matchAll(new RegExp(`<${name}\\b`, 'g'))].map((match) => ({
+          name,
+          before: read(file).slice(0, match.index),
+        }))
+      )
+    );
+    expect(new Set(mounts.map(({ name }) => name))).toEqual(new Set(names));
+    for (const { name, before } of mounts) {
+      const opened = before.lastIndexOf('<RsdSurfaceBoundary');
+      expect(opened, name).toBeGreaterThan(before.lastIndexOf('</RsdSurfaceBoundary>'));
+    }
   });
 });
 

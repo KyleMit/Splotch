@@ -8,15 +8,16 @@ import {
   RsdParentCenterSection,
   RsdParentGateSheet,
 } from './drawingSheets';
+import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
-import { aiSheetShown } from '../ai/uiState';
+import { aiJournalWaiting, aiSheetShown } from '../ai/uiState';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
 import { DEFAULT_APPEARANCE } from '../settings/appearance';
-import { Suspense, useState } from 'react';
+import { useState } from 'react';
 import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -82,16 +83,15 @@ export function RsdDrawingScreen() {
             onModalDismissed={dismissed}
           />
         )}
-        <Suspense fallback={null}>
-          <RsdModalSheets screen={screen} product={product} route={route} />
-        </Suspense>
+        <RsdModalSheets screen={screen} product={product} route={route} />
         <RsdLeaveConfirm />
       </ReduceMotionPreferenceProvider>
     </DrawingAppearanceProvider>
   );
 }
 
-// One route shows at a time (useProductModalRoute), so one boundary covers every sheet.
+// One route shows at a time (useProductModalRoute); each sheet's boundary closes the route it
+// would have shown.
 function RsdModalSheets({
   screen,
   product,
@@ -105,37 +105,49 @@ function RsdModalSheets({
   return (
     <>
       {product.owner && route.shown === 'parentCenter' ? (
-        <RsdParentCenterSection
-          owner={product.owner}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
+        <RsdSurfaceBoundary onClose={product.owner.closeParentCenter}>
+          <RsdParentCenterSection
+            owner={product.owner}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        </RsdSurfaceBoundary>
       ) : null}
       {product.owner && product.state && route.shown === 'gate' ? (
-        <RsdParentGateSheet
-          owner={product.owner}
-          state={product.state.gate}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
+        <RsdSurfaceBoundary onClose={product.owner.gate.dismiss}>
+          <RsdParentGateSheet
+            owner={product.owner}
+            state={product.state.gate}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        </RsdSurfaceBoundary>
       ) : null}
       {route.shown === 'feedback' ? (
-        <RsdFeedbackSheet
-          owner={product.feedback.owner}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
+        <RsdSurfaceBoundary onClose={() => product.feedback.owner?.close()}>
+          <RsdFeedbackSheet
+            owner={product.feedback.owner}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        </RsdSurfaceBoundary>
       ) : null}
       {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
-        <RsdAiSheet
-          owner={product.ai.owner}
-          state={product.ai.state}
-          drawing={screen.history.drawing}
-          artwork={screen.library.state.artwork}
-          progress={product.ai.progress}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
+        <RsdSurfaceBoundary
+          onClose={
+            aiJournalWaiting(product.ai.state) ? product.ai.owner.minimize : product.ai.owner.close
+          }
+        >
+          <RsdAiSheet
+            owner={product.ai.owner}
+            state={product.ai.state}
+            drawing={screen.history.drawing}
+            artwork={screen.library.state.artwork}
+            progress={product.ai.progress}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        </RsdSurfaceBoundary>
       ) : null}
     </>
   );
@@ -247,7 +259,7 @@ function RsdDrawingContent({
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}
         {route.shown === 'settings' ? (
-          <Suspense fallback={null}>
+          <RsdSurfaceBoundary onClose={screen.closeSettings}>
             <NativeSoundSettingsDialog
               settings={sound.settings}
               brushState={screen.brushPreferences}
@@ -260,7 +272,7 @@ function RsdDrawingContent({
               onDismiss={onModalDismissed}
               onParentCenter={() => product.owner?.openParentCenter()}
             />
-          </Suspense>
+          </RsdSurfaceBoundary>
         ) : null}
       </NativeFrame>
     </LibraryProvider>
@@ -269,19 +281,19 @@ function RsdDrawingContent({
 
 function DrawingPagePicker({ screen }: { screen: Screen }) {
   return (
-    <Suspense fallback={null}>
+    <RsdSurfaceBoundary onClose={() => screen.setPagePickerOpen(false)}>
       <RsdColoringBookPicker
         selected={screen.history.drawing.pageId}
         onChoose={screen.choosePage}
         onClose={() => screen.setPagePickerOpen(false)}
       />
-    </Suspense>
+    </RsdSurfaceBoundary>
   );
 }
 
 function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound }) {
   return (
-    <Suspense fallback={null}>
+    <RsdSurfaceBoundary onClose={screen.closeColorPicker}>
       <ColorPicker
         selected={sound.settings.selectedColor}
         onClose={screen.closeColorPicker}
@@ -291,6 +303,6 @@ function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound })
           screen.closeColorPicker();
         }}
       />
-    </Suspense>
+    </RsdSurfaceBoundary>
   );
 }

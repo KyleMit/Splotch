@@ -43,8 +43,19 @@ native keeps its synchronous, offline-complete bundle unchanged.
 
 * **Sheets and line art load lazily on web only.**
   * `src/rsdDrawing/drawingSheets.ts` re-exports each on-request surface for native.
-    `drawingSheets.web.ts` wraps the same modules in `React.lazy`. `RsdDrawingScreen.tsx` and
-    `RsdPaperSlot.tsx` render them under `Suspense` boundaries.
+    `drawingSheets.web.ts` loads the same modules through `lazySurface.ts`, which renders nothing
+    until its chunk arrives.
+  * A chunk can fail to load: offline before the service worker has installed, or on a deploy that
+    removed it. `RsdDrawingScreen.tsx` and `RsdPaperSlot.tsx` mount every lazy surface inside its
+    own `RsdSurfaceBoundary`, so a failure replaces only that surface with a dialog ("This did not
+    load. Check your connection and try again.", Try again / Keep drawing). The drawing screen
+    stays. Without a boundary, React unmounts the whole root.
+  * A failed load is forgotten, so Try again fetches the chunk afresh. `createLazyExport` (shared
+    with the icon registry) drops its rejected promise, as `web/src/lib/singleFlight.ts` does in the
+    shipping app, and Expo's async-require drops its own. `React.lazy` is not used because it keeps
+    a rejected load for the life of the page. The shipping app's equivalent closes the modal and
+    logs the error (`pageParentCenter.svelte.ts`). The RN app shows the dialog instead, because its
+    route already shows the sheet when the load fails.
   * The settings content lives in `RsdSettingsDialog.tsx`, so it can be its own chunk.
     `NativeDialog.tsx` keeps only the dialog frame that startup surfaces share.
   * `src/drawing/bundledOutlines.ts` imports all six pages' line art for native.
@@ -67,9 +78,13 @@ native keeps its synchronous, offline-complete bundle unchanged.
 * **Reanimated stays off web.** `src/index.ts` imports `platform/skiaRuntime`. On native that module
   imports Reanimated ahead of Skia, as ADR-0178 requires. The `.web.ts` split is empty.
 * **A measured byte cap guards the startup path.**
-  * `tools/migration/check-native-web-startup.mjs` runs in `postnative:web:build`. It sums every
-    script and stylesheet `index.html` loads plus its inline CSS, and rejects any base64 image run
-    in those scripts.
+  * `tools/migration/check-native-web-startup.mjs` runs in `postnative:web:build`. It sums
+    everything `index.html` makes the browser fetch or run before first paint, and rejects any
+    base64 image run in that code:
+    * external scripts, stylesheets, module preloads and script or style preloads, each URL counted
+      once;
+    * executable inline scripts;
+    * inline CSS.
   * `check-native-web-precache.mjs` requires every Farm image and page chunk to be precached for
     offline use. It rejects Farm line art or deferred icons found in a script the shell loads.
   * The target is `NATIVE_WEB_STARTUP_TARGET_BYTES` = `MAX_STARTUP_JS_CSS_BYTES` + the 323,984-byte

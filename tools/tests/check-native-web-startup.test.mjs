@@ -106,3 +106,64 @@ it('derives its target from the shipping startup budget plus the React Native We
   );
   expect(MAX_NATIVE_WEB_STARTUP_BYTES).toBeGreaterThan(NATIVE_WEB_STARTUP_TARGET_BYTES);
 });
+
+const HEAVY_BYTES = 1_300_000;
+function shellFixture(head, body, files = {}) {
+  return exportFixture({
+    ...FILES,
+    ...files,
+    'index.html': `<html><head>${head}</head><body>${body}<script src="/${RUNTIME}" defer></script></body></html>`,
+  });
+}
+
+it('counts the review fixture: inline JS and a module preload around a tiny external script', () => {
+  const HEAVY = '_expo/static/js/web/heavy-1.js';
+  const dir = shellFixture(
+    `<link rel="modulepreload" href="/${HEAVY}">`,
+    `<script>${'x'.repeat(HEAVY_BYTES)}</script>`,
+    { [HEAVY]: 'y'.repeat(HEAVY_BYTES) }
+  );
+  const measured = measureNativeWebStartup(dir);
+  expect(measured.inlineScriptBytes).toBe(HEAVY_BYTES);
+  expect(measured.files).toEqual([RUNTIME, HEAVY]);
+  expect(measured.startupBytes).toBe(2 * HEAVY_BYTES + FILES[RUNTIME].length);
+  expect(() => checkNativeWebStartup({ exportDir: dir, log: () => {} })).toThrow(
+    `above the ${MAX_NATIVE_WEB_STARTUP_BYTES}-byte budget`
+  );
+});
+
+it.each([
+  ['an executable inline script', '', '<script>var a=1;</script>', 'var a=1;'.length],
+  ['an inline module', '', '<script type="module">var b=2;</script>', 'var b=2;'.length],
+  ['a module preload', `<link rel="modulepreload" href="/${LAZY}">`, '', FILES[LAZY].length],
+  ['a script preload', `<link rel="preload" as="script" href="/${LAZY}">`, '', FILES[LAZY].length],
+])('counts %s before first paint', (_, head, body, bytes) => {
+  const plain = measureNativeWebStartup(shellFixture('', '')).startupBytes;
+  expect(measureNativeWebStartup(shellFixture(head, body)).startupBytes).toBe(plain + bytes);
+});
+
+it('counts a URL once however the shell names it, and leaves inert data scripts out', () => {
+  const plain = measureNativeWebStartup(shellFixture('', '')).startupBytes;
+  const measured = measureNativeWebStartup(
+    shellFixture(
+      `<link rel="preload" as="script" href="/${RUNTIME}"><link rel="modulepreload" href="${RUNTIME}?v=2">`,
+      `<script type="application/json">{"pad":"${'z'.repeat(5000)}"}</script>`
+    )
+  );
+  expect(measured.files).toEqual([RUNTIME]);
+  expect(measured.inlineScriptBytes).toBe(0);
+  expect(measured.startupBytes).toBe(plain);
+});
+
+it('rejects an image inlined into an executable inline script', () => {
+  const dir = shellFixture('', `<script>var cover="${INLINED_WEBP}";</script>`);
+  expect(() =>
+    checkNativeWebStartup({ exportDir: dir, maxStartupBytes: 1e9, log: () => {} })
+  ).toThrow('index.html inline scripts inlines 1 images as data URIs');
+});
+
+it('refuses a remote script it cannot measure', () => {
+  expect(() =>
+    measureNativeWebStartup(shellFixture('', '<script src="https://cdn.example/app.js"></script>'))
+  ).toThrow('The app shell loads a remote resource: https://cdn.example/app.js');
+});

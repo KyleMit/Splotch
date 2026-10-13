@@ -51,11 +51,13 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
   Its post hook runs `check-native-web-precache.mjs`, which verifies the service worker, then
-  `check-native-web-startup.mjs`, which holds the scripts and stylesheets the app shell loads before
-  first paint to `MAX_NATIVE_WEB_STARTUP_BYTES` and rejects an image inlined into them. That cap is
-  set from the measured export against the shipping `MAX_STARTUP_JS_CSS_BYTES` plus the measured
-  React Native Web floor; the constant's comment carries the numbers. A surface the drawing screen
-  shows only on request loads through `drawingSheets.web.ts`, so it stays off that path.
+  `check-native-web-startup.mjs`, which holds the scripts, stylesheets, preloads and inline code the
+  app shell loads before first paint to `MAX_NATIVE_WEB_STARTUP_BYTES` and rejects an image inlined
+  into them. That cap is set from the measured export against the shipping
+  `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor; the constant's comment
+  carries the numbers. A surface the drawing screen shows only on request loads through
+  `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
+  failed load cannot blank the drawing screen.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
   check.
 

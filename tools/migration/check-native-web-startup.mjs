@@ -1,6 +1,7 @@
 // Holds the React Native web export's startup path to a byte budget, the way
-// tools/check-bundle-budgets.mjs holds the shipping app's: every script and stylesheet the
-// app shell loads before first paint, plus its inline CSS, and no image inlined into them.
+// tools/check-bundle-budgets.mjs holds the shipping app's: every script, stylesheet and script or
+// style preload the app shell loads before first paint, each URL once, plus its executable inline
+// scripts and inline CSS, and no image inlined into any of them.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
@@ -30,15 +31,78 @@ const INLINED_IMAGE = new RegExp(
   `data:image/[a-z+.-]+;base64,[A-Za-z0-9+/]{${MIN_INLINED_IMAGE_CHARS},}`,
   'g'
 );
-const SHELL_SCRIPT = /<script\b[^>]*\bsrc="\/([^"?#]+)"/g;
-const SHELL_STYLESHEET = /<link\b(?=[^>]*\brel="stylesheet")[^>]*\bhref="\/([^"?#]+)"/g;
-const SHELL_INLINE_STYLE = /<style\b[^>]*>([\s\S]*?)<\/style>/g;
+const SCRIPT_ELEMENT = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+const LINK_ELEMENT = /<link\b([^>]*)>/gi;
+const INLINE_STYLE = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi;
+const ATTRIBUTE = /([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+// Script types a browser runs; any other type (application/json, importmap data, a template) is
+// inert data.
+const EXECUTABLE_SCRIPT_TYPES = new Set([
+  '',
+  'module',
+  'text/javascript',
+  'application/javascript',
+  'text/ecmascript',
+  'application/ecmascript',
+]);
+// Link relations that fetch a script or stylesheet before first paint.
+const STARTUP_LINK_RELATIONS = new Set(['stylesheet', 'modulepreload']);
+const STARTUP_PRELOAD_DESTINATIONS = new Set(['script', 'style']);
+const SHELL_ORIGIN = 'https://app-shell.invalid';
+
+function attributesOf(source) {
+  return Object.fromEntries(
+    [...source.matchAll(ATTRIBUTE)].map(([, name, double, single, bare]) => [
+      name.toLowerCase(),
+      double ?? single ?? bare ?? '',
+    ])
+  );
+}
+
+// One export path per URL, whatever query or fragment names it, so a file preloaded and then
+// loaded counts once; a remote URL is refused because its bytes are not in the export.
+function exportPath(href) {
+  const url = new URL(href, `${SHELL_ORIGIN}/`);
+  if (url.origin !== SHELL_ORIGIN)
+    throw new Error(`The app shell loads a remote resource: ${href}`);
+  return decodeURIComponent(url.pathname.slice(1));
+}
+
+function isStartupLink({ rel = '', as = '', href }) {
+  if (!href) return false;
+  const relations = rel.toLowerCase().split(/\s+/);
+  return (
+    relations.some((relation) => STARTUP_LINK_RELATIONS.has(relation)) ||
+    (relations.includes('preload') && STARTUP_PRELOAD_DESTINATIONS.has(as.toLowerCase()))
+  );
+}
 
 export function startupResources(indexHtml) {
-  const paths = (pattern) => [...indexHtml.matchAll(pattern)].map((match) => match[1]);
+  const scripts = [...indexHtml.matchAll(SCRIPT_ELEMENT)].map(([, attributes, body]) => ({
+    ...attributesOf(attributes),
+    body,
+  }));
+  const executable = scripts.filter(({ type = '' }) =>
+    EXECUTABLE_SCRIPT_TYPES.has(type.trim().toLowerCase())
+  );
+  const inlineScripts = executable
+    .filter((script) => script.src === undefined)
+    .map(({ body }) => body);
+  const links = [...indexHtml.matchAll(LINK_ELEMENT)].map(([, attributes]) =>
+    attributesOf(attributes)
+  );
   return {
-    files: [...new Set([...paths(SHELL_SCRIPT), ...paths(SHELL_STYLESHEET)])],
-    inlineStyleBytes: [...indexHtml.matchAll(SHELL_INLINE_STYLE)].reduce(
+    files: [
+      ...new Set(
+        [
+          ...executable.filter((script) => script.src).map((script) => script.src),
+          ...links.filter(isStartupLink).map((link) => link.href),
+        ].map(exportPath)
+      ),
+    ],
+    inlineScripts,
+    inlineScriptBytes: inlineScripts.reduce((total, body) => total + Buffer.byteLength(body), 0),
+    inlineStyleBytes: [...indexHtml.matchAll(INLINE_STYLE)].reduce(
       (total, match) => total + Buffer.byteLength(match[1]),
       0
     ),
@@ -69,24 +133,33 @@ export function nativeWebStartupProblems({
 export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR) {
   const indexPath = join(exportDir, APP_SHELL_FILE);
   if (!existsSync(indexPath)) throw new Error(`The export has no app shell: ${indexPath}`);
-  const { files, inlineStyleBytes } = startupResources(readFileSync(indexPath, 'utf8'));
-  if (!files.some((file) => file.endsWith('.js'))) throw new Error(`${indexPath} loads no script`);
+  const { files, inlineScripts, inlineScriptBytes, inlineStyleBytes } = startupResources(
+    readFileSync(indexPath, 'utf8')
+  );
+  if (!files.some((file) => file.endsWith('.js')) && inlineScripts.length === 0)
+    throw new Error(`${indexPath} loads no script`);
   for (const file of files)
     if (!existsSync(join(exportDir, file)))
       throw new Error(`The app shell loads a missing file: ${file}`);
+  const inlineImageCount = inlineScripts.reduce(
+    (total, body) => total + inlinedImageCount(body),
+    0
+  );
   return {
     files,
+    inlineScriptBytes,
     inlineStyleBytes,
     startupBytes: files.reduce(
       (total, file) => total + statSync(join(exportDir, file)).size,
-      inlineStyleBytes
+      inlineScriptBytes + inlineStyleBytes
     ),
-    inlinedImages: files
-      .map((file) => ({
+    inlinedImages: [
+      ...files.map((file) => ({
         file,
         count: inlinedImageCount(readFileSync(join(exportDir, file), 'utf8')),
-      }))
-      .filter(({ count }) => count > 0),
+      })),
+      { file: `${APP_SHELL_FILE} inline scripts`, count: inlineImageCount },
+    ].filter(({ count }) => count > 0),
   };
 }
 
@@ -99,7 +172,7 @@ export function checkNativeWebStartup({
   const problems = nativeWebStartupProblems({ ...measurement, maxStartupBytes });
   if (problems.length) throw new Error(problems.join('\n'));
   log(
-    `[native-web-startup] startup JS/CSS ${measurement.startupBytes}/${maxStartupBytes} bytes (${measurement.files.length} files plus ${measurement.inlineStyleBytes} inline CSS bytes; React Native Web floor ${REACT_NATIVE_WEB_FLOOR_BYTES}, floor plus shipping budget ${NATIVE_WEB_STARTUP_TARGET_BYTES}); no inlined images`
+    `[native-web-startup] startup JS/CSS ${measurement.startupBytes}/${maxStartupBytes} bytes (${measurement.files.length} files plus ${measurement.inlineScriptBytes} inline JS and ${measurement.inlineStyleBytes} inline CSS bytes; React Native Web floor ${REACT_NATIVE_WEB_FLOOR_BYTES}, floor plus shipping budget ${NATIVE_WEB_STARTUP_TARGET_BYTES}); no inlined images`
   );
 }
 
