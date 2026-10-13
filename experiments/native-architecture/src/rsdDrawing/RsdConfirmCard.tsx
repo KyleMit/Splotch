@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, fonts } from './tokens.css';
+import { styles as controlStyles } from './controls';
 
 // app.css .confirm-card and its heading, and the confirm dialogs' action row. Exported for
 // native-design-primitives-drift.test.mjs, which reads each from shipping. Title and copy are one
@@ -28,8 +29,6 @@ const styles = css.create({
     margin: 0,
     color: colors.textStrong,
     fontSize: dimensions.fontSizeXl,
-    fontFamily: fonts.boldFamily,
-    fontWeight: fonts.boldWeight,
     lineHeight: CONFIRM_TITLE_LINE_HEIGHT,
   },
   copy: {
@@ -66,7 +65,7 @@ export function RsdConfirmCard({
   return (
     <html.div style={styles.card}>
       <html.div style={styles.heading}>
-        <html.h2 style={styles.title}>{title}</html.h2>
+        <html.h2 style={[controlStyles.boldText, styles.title]}>{title}</html.h2>
         <html.p style={styles.copy}>{copy}</html.p>
       </html.div>
       <html.div style={styles.actions}>
