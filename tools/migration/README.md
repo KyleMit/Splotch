@@ -36,7 +36,8 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   specimen in `tools/migration/tests/rsd-token-specimen.mjs` through the released native renderer.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
-  the native `react-strict-dom` alias.
+  the native `react-strict-dom` alias. `tests/rsd-native-buttons.test.mjs` among them mounts the
+  button primitives and holds their untokened chrome values to `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build;
   `check-native-web-precache.mjs` verifies its service worker as the post hook.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
