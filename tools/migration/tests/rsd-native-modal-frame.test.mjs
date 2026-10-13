@@ -104,9 +104,11 @@ it('frames the dialog as a card over the scrim, named by its header title, with 
     navigationBarTranslucent: true,
     animationType: 'none',
   });
-  expect(
-    records.props.findLast((props) => props.testID === 'modal-scrim').style.backgroundColor
-  ).toBe(MODAL_SCRIM_PLAIN);
+  const scrim = records.props.findLast((props) => props.testID === 'modal-scrim');
+  expect(Object.assign({}, ...[scrim.style].flat())).toMatchObject({
+    backgroundColor: MODAL_SCRIM_PLAIN,
+  });
+  expect(scrim.pointerEvents).toBe('none');
   expect(host.querySelector('[data-testid="modal-body"] [aria-label="Marker"]')).not.toBeNull();
   expect(frameControls()).toEqual(['Close']);
   const backdrop = records.props.findLast((props) => props.testID === 'modal-backdrop');

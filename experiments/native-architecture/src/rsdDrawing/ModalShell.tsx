@@ -213,9 +213,7 @@ export function ModalShell({
           style={layout.fill}
           onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
         >
-          <Animated.View pointerEvents="none" style={[layout.cover, { opacity: motion.scrim }]}>
-            <ModalScrim />
-          </Animated.View>
+          <ModalScrim opacity={motion.scrim} />
           {/* A responder rather than a Pressable: React Native Web makes every enabled Pressable a
               tab stop, and its Modal focuses the first one, which would put an unnamed scrim
               ahead of the header and let Enter dismiss the dialog. */}
