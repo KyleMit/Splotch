@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { scale } from '../../web/src/lib/design/tokens.ts';
 import {
   SHIPPING_FONT_DISPLAY,
@@ -9,13 +12,38 @@ import {
   SHIPPING_FONT_SUBSETS,
   SHIPPING_FONT_WEIGHT_RANGE,
 } from '../../experiments/native-architecture/src/platform/shippingFontFaces.ts';
+import {
+  NATIVE_FONT_FAMILIES,
+  NATIVE_RSD_FONTS,
+  nativeFontFace,
+} from '../../experiments/native-architecture/src/platform/nativeFontFamilies.ts';
+import { Text } from '../../experiments/native-architecture/src/drawing/Text.tsx';
+import { ShippingFontGate } from '../../experiments/native-architecture/src/platform/shippingFont.tsx';
 
-const FONT_PACKAGE = '@fontsource-variable/quicksand';
+const fontLoad = vi.hoisted(() => ({ useFonts: vi.fn() }));
+vi.mock('expo-font', () => ({ useFonts: fontLoad.useFonts }));
+vi.mock('@expo-google-fonts/quicksand/400Regular', () => ({ Quicksand_400Regular: 400 }));
+vi.mock('@expo-google-fonts/quicksand/600SemiBold', () => ({ Quicksand_600SemiBold: 600 }));
+vi.mock('@expo-google-fonts/quicksand/700Bold', () => ({ Quicksand_700Bold: 700 }));
+vi.mock('react-native', async () => {
+  const { createElement: element } = await import('react');
+  const flat = (style) => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
+  const text = ({ style, children }) =>
+    element('span', { 'data-style': JSON.stringify(flat(style)) }, children);
+  return { Text: text, TextInput: text };
+});
+
+const WEB_FONT_PACKAGE = '@fontsource-variable/quicksand';
+const NATIVE_FONT_PACKAGE = '@expo-google-fonts/quicksand';
 const app = new URL('../../experiments/native-architecture/', import.meta.url);
+const source = fileURLToPath(new URL('src/', app));
 const read = (path) => readFileSync(new URL(path, app), 'utf8');
-const packageCss = readFileSync(
-  fileURLToPath(import.meta.resolve(`${FONT_PACKAGE}/index.css`)),
-  'utf8'
+const packageFile = (path) => readFileSync(fileURLToPath(import.meta.resolve(path)), 'utf8');
+const packageCss = packageFile(`${WEB_FONT_PACKAGE}/index.css`);
+const sources = new Map(
+  readdirSync(source, { recursive: true })
+    .filter((path) => /\.tsx?$/.test(path))
+    .map((path) => [relative(source, join(source, path)), readFileSync(join(source, path), 'utf8')])
 );
 
 function fontFaces(css) {
@@ -31,7 +59,7 @@ function fontFaces(css) {
   });
 }
 
-// Each subset's file as shippingFont.web.ts binds it: the import that names the
+// Each subset's file as shippingFont.web.tsx binds it: the import that names the
 // file, then the SUBSET_FILES entry that names that import.
 function registeredSubsetFiles(webSource) {
   const files = new Map(
@@ -49,7 +77,7 @@ function registeredSubsetFiles(webSource) {
       .map((entry) => {
         const [key, name = key] = entry.split(':').map((part) => part.trim());
         const path = files.get(name) ?? '';
-        const prefix = `${FONT_PACKAGE}/files/`;
+        const prefix = `${WEB_FONT_PACKAGE}/files/`;
         return [
           key.replace(/^'(.*)'$/, '$1'),
           path.startsWith(prefix) ? path.slice(prefix.length) : path,
@@ -72,12 +100,74 @@ function assertRegisteredFaces(css, webSource, subsets = SHIPPING_FONT_SUBSETS) 
   );
 }
 
-function styleBlock(source, name) {
-  return new RegExp(`^  ${name}: \\{\\n([\\s\\S]*?)^  \\},`, 'm').exec(source)?.[1] ?? '';
+function styleBlock(code, name) {
+  return new RegExp(`^  ${name}: \\{\\n([\\s\\S]*?)^  \\},`, 'm').exec(code)?.[1] ?? '';
 }
 
-describe('RN shipping font', () => {
-  const webSource = read('src/platform/shippingFont.web.ts');
+function fontTokens(tokens) {
+  const body = /export const fonts = css\.defineVars\(\{([\s\S]*?)\}\);/.exec(tokens)?.[1] ?? '';
+  return Object.fromEntries(
+    [...body.matchAll(/(\w+):\s*("[^"]*"|'[^']*')/g)].map(([, key, value]) => [
+      key,
+      value.slice(1, -1),
+    ])
+  );
+}
+
+// Android and iOS draw each weight from its own static face, so an RSD heading that kept
+// its default bold, or a style naming a weight outside the font tokens, would render in
+// a system face there.
+function assertRsdWeightsUseFontTokens(files) {
+  const offenders = [];
+  for (const [file, code] of files) {
+    for (const [tag] of code.matchAll(/<html\.(?:h[1-6]|strong|b)\b[^>]*>/g))
+      if (!/\.boldText\b/.test(tag)) offenders.push(`${file}: ${tag}`);
+    for (const [line] of code.matchAll(/^.*\bfontWeight:.*$/gm))
+      if (/react-strict-dom/.test(code) && !/fontWeight: fonts\.boldWeight\b/.test(line))
+        offenders.push(`${file}: ${line.trim()}`);
+  }
+  assert.deepEqual(offenders, []);
+}
+
+const rsdFiles = () =>
+  [...sources].filter(([file, code]) => file.startsWith('rsdDrawing/') && /html\./.test(code));
+
+// Every React Native text goes through drawing/Text.tsx, which picks the face.
+function assertTextThroughWrapper(files) {
+  const offenders = [];
+  for (const [file, code] of files) {
+    if (file === 'drawing/Text.tsx') continue;
+    for (const [, names] of code.matchAll(/import \{([^}]*)\} from 'react-native';/g))
+      for (const name of names.split(',').map((part) => part.trim()))
+        if (name === 'Text' || name === 'TextInput') offenders.push(`${file}: ${name}`);
+  }
+  assert.deepEqual(offenders, []);
+}
+
+function bundledNativeFaces(files) {
+  const imports = [...files.values()].flatMap((code) =>
+    [...code.matchAll(new RegExp(`from '${NATIVE_FONT_PACKAGE}(/[^']*)?'`, 'g'))].map(
+      ([, path]) => path ?? '(every weight)'
+    )
+  );
+  return [...new Set(imports)].sort();
+}
+
+// A face is the package's export of that name, in the directory its weight names.
+function assertPackageExportsFamilies(families) {
+  for (const family of Object.values(families)) {
+    const face = family.replace(/^Quicksand_/, '');
+    expect(packageFile(`${NATIVE_FONT_PACKAGE}/${face}/index.d.ts`)).toContain(
+      `export const ${family}: number;`
+    );
+  }
+}
+
+const textStyle = (element) =>
+  JSON.parse(/data-style="([^"]*)"/.exec(element)[1].replaceAll('&quot;', '"'));
+
+describe('RN shipping font on web', () => {
+  const webSource = read('src/platform/shippingFont.web.tsx');
 
   it('registers every face the shipping stylesheet declares, file for file', () => {
     expect(fontFaces(packageCss).length).toBeGreaterThan(0);
@@ -107,26 +197,144 @@ describe('RN shipping font', () => {
     expect(() => assertRegisteredFaces(packageCss, swapped)).toThrow();
   });
 
-  it('projects the shipping stack, led by the registered family, into the RSD tokens', () => {
-    expect(scale.fontFamily.startsWith(`'${SHIPPING_FONT_FAMILY}',`)).toBe(true);
-    const dimensions = /export const dimensions = css\.defineVars\(\{([\s\S]*?)\}\);/.exec(
-      read('src/rsdDrawing/tokens.css.ts')
-    )?.[1];
-    expect(dimensions).toContain(`fontFamily:\n    ${JSON.stringify(scale.fontFamily)},`);
-  });
-
-  it('sets the family on the screen and dialog roots that every RSD text inherits from', () => {
-    const controls = read('src/rsdDrawing/controls.tsx');
-    for (const root of ['screen', 'themeRoot'])
-      expect(styleBlock(controls, root)).toContain('fontFamily: dimensions.fontFamily,');
-  });
-
-  it('loads the font at startup and lets web form controls inherit it', () => {
-    const entry = read('src/index.ts');
-    expect(entry).toMatch(/^import \{ loadShippingFont \} from '\.\/platform\/shippingFont';$/m);
-    expect(entry).toMatch(/^loadShippingFont\(\);$/m);
+  it('lets web form controls inherit the font', () => {
     expect(read('src/strict.css')).toMatch(
       /button,\s*input,\s*select,\s*textarea\s*\{\s*font-family: inherit;\s*\}/
     );
+  });
+});
+
+describe('RSD font tokens', () => {
+  const tokens = read('src/rsdDrawing/tokens.css.ts');
+
+  it('project the shipping stack, led by the registered family, with the bold weight', () => {
+    expect(scale.fontFamily.startsWith(`'${SHIPPING_FONT_FAMILY}',`)).toBe(true);
+    expect(fontTokens(tokens)).toEqual({
+      family: scale.fontFamily,
+      boldFamily: scale.fontFamily,
+      boldWeight: scale.fontWeightBold,
+    });
+  });
+
+  it('are overridden on Android and iOS by one face per weight, every token included', () => {
+    expect(NATIVE_RSD_FONTS).toEqual({
+      family: NATIVE_FONT_FAMILIES.regular,
+      boldFamily: NATIVE_FONT_FAMILIES.bold,
+      boldWeight: 'normal',
+    });
+    expect(Object.keys(NATIVE_RSD_FONTS).sort()).toEqual(Object.keys(fontTokens(tokens)).sort());
+    expect(read('src/rsdDrawing/fontTheme.native.ts')).toContain(
+      'css.createTheme(fonts, NATIVE_RSD_FONTS)'
+    );
+    expect(read('src/rsdDrawing/fontTheme.ts')).toContain('export const fontTheme = null;');
+  });
+
+  it('set the family on the screen and dialog roots, under the platform font theme', () => {
+    const controls = read('src/rsdDrawing/controls.tsx');
+    for (const root of ['screen', 'themeRoot'])
+      expect(styleBlock(controls, root)).toContain('fontFamily: fonts.family,');
+    const themedRoots = (file) =>
+      read(file).match(/style=\{\[(?:styles\.screen|controlStyles\.themeRoot)[^\]]*\]\}/g);
+    for (const roots of [
+      themedRoots('src/rsdDrawing/RsdDrawingScreen.tsx'),
+      themedRoots('src/rsdDrawing/NativeDialog.tsx'),
+    ]) {
+      expect(roots.length).toBeGreaterThan(0);
+      for (const root of roots) expect(root).toContain('fontTheme');
+    }
+  });
+
+  it('carry every bold RSD text, and reject a heading or weight that bypasses them', () => {
+    expect(() => assertRsdWeightsUseFontTokens(rsdFiles())).not.toThrow();
+    const [file, code] = rsdFiles().find(([, text]) => text.includes('<html.h1 style='));
+    const bareHeading = code.replace(/<html\.h1 style=\{[^}]*\}>/, '<html.h1>');
+    expect(() => assertRsdWeightsUseFontTokens([[file, bareHeading]])).toThrow();
+    const literalWeight = read('src/rsdDrawing/RsdSettingsHub.tsx').replace(
+      'fontWeight: fonts.boldWeight',
+      "fontWeight: '700'"
+    );
+    expect(() =>
+      assertRsdWeightsUseFontTokens([['rsdDrawing/RsdSettingsHub.tsx', literalWeight]])
+    ).toThrow();
+  });
+});
+
+describe('RN shipping font on Android and iOS', () => {
+  beforeEach(() => fontLoad.useFonts.mockReset());
+
+  it('names each face by its export in the static font package', () => {
+    expect(() => assertPackageExportsFamilies(NATIVE_FONT_FAMILIES)).not.toThrow();
+    expect(() =>
+      assertPackageExportsFamilies({ ...NATIVE_FONT_FAMILIES, bold: 'Quicksand_700Black' })
+    ).toThrow();
+  });
+
+  it('bundles only the regular, semibold and bold faces', () => {
+    expect(bundledNativeFaces(sources)).toEqual(['/400Regular', '/600SemiBold', '/700Bold']);
+    const everyWeight = new Map(sources).set(
+      'fixture.ts',
+      `import { Quicksand_300Light } from '${NATIVE_FONT_PACKAGE}';`
+    );
+    expect(bundledNativeFaces(everyWeight)).toContain('(every weight)');
+  });
+
+  it.each([
+    [undefined, 'regular'],
+    ['normal', 'regular'],
+    ['light', 'regular'],
+    ['400', 'regular'],
+    [500, 'regular'],
+    ['medium', 'regular'],
+    ['600', 'semibold'],
+    ['semibold', 'semibold'],
+    [650, 'bold'],
+    ['700', 'bold'],
+    ['bold', 'bold'],
+    ['800', 'bold'],
+    ['black', 'bold'],
+  ])('draws weight %s from the %s face', (weight, face) => {
+    expect(nativeFontFace(weight)).toBe(face);
+  });
+
+  it('sets text in the face for its weight and leaves Android no weight to synthesize', () => {
+    const bold = renderToStaticMarkup(
+      createElement(Text, { style: [{ fontSize: 16 }, [{ fontWeight: '700' }]] }, 'Hi')
+    );
+    expect(textStyle(bold)).toEqual({
+      fontSize: 16,
+      fontFamily: NATIVE_FONT_FAMILIES.bold,
+      fontWeight: 'normal',
+    });
+    const plain = renderToStaticMarkup(createElement(Text, null, 'Hi'));
+    expect(textStyle(plain).fontFamily).toBe(NATIVE_FONT_FAMILIES.regular);
+    const overridden = renderToStaticMarkup(
+      createElement(Text, { style: [{ fontWeight: '700' }, { fontWeight: '600' }] }, 'Hi')
+    );
+    expect(textStyle(overridden).fontFamily).toBe(NATIVE_FONT_FAMILIES.semibold);
+  });
+
+  it('routes every React Native text through the font wrapper', () => {
+    expect(() => assertTextThroughWrapper(sources)).not.toThrow();
+    const direct = new Map(sources).set(
+      'fixture.tsx',
+      "import { Text, View } from 'react-native';"
+    );
+    expect(() => assertTextThroughWrapper(direct)).toThrow();
+  });
+
+  it('holds the first render until the bundled faces load, then renders', () => {
+    const gate = () => renderToStaticMarkup(createElement(ShippingFontGate, null, 'drawing'));
+    fontLoad.useFonts.mockReturnValue([false, null]);
+    expect(gate()).toBe('');
+    expect(Object.keys(fontLoad.useFonts.mock.calls[0][0]).sort()).toEqual(
+      Object.values(NATIVE_FONT_FAMILIES).sort()
+    );
+    fontLoad.useFonts.mockReturnValue([true, null]);
+    expect(gate()).toBe('drawing');
+  });
+
+  it('renders in the system font rather than nothing when the faces fail to load', () => {
+    fontLoad.useFonts.mockReturnValue([false, new Error('missing font')]);
+    expect(renderToStaticMarkup(createElement(ShippingFontGate, null, 'drawing'))).toBe('drawing');
   });
 });

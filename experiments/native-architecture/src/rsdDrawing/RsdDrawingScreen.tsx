@@ -8,6 +8,7 @@ import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
+import { fontTheme } from './fontTheme';
 import { DEFAULT_APPEARANCE } from '../settings/appearance';
 import { useState } from 'react';
 import { html } from 'react-strict-dom';
@@ -122,7 +123,7 @@ function RsdDrawingLoading() {
   const theme = useDrawingAppearance();
   return (
     <NativeFrame>
-      <html.div style={[styles.screen, theme === 'dark' && darkTheme]}>
+      <html.div style={[styles.screen, fontTheme, theme === 'dark' && darkTheme]}>
         <html.span>Loading drawing settings…</html.span>
       </html.div>
     </NativeFrame>
@@ -160,7 +161,7 @@ function RsdDrawingContent({
       <NativeFrame>
         <html.div
           data-layoutconformance="strict"
-          style={[styles.screen, styles.fullBleed, theme === 'dark' && darkTheme]}
+          style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}
         >
           <RsdEdgeLayout
             screen={screen}

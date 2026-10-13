@@ -17,7 +17,7 @@ export function RsdInstallGuide() {
   const os = owner.deviceOs;
   return (
     <html.div style={styles.stack}>
-      <html.h2>
+      <html.h2 style={styles.boldText}>
         {snapshot.installed ? `${INSTALL_GUIDE_COPY.title} ✓` : INSTALL_GUIDE_COPY.title}
       </html.h2>
       {snapshot.mode === 'oneTap' ? (

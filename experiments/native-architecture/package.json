@@ -4,6 +4,8 @@
   "main": "src/index.ts",
   "devDependencies": {
     "@babel/core": "7.29.7",
+    "@expo-google-fonts/quicksand": "0.4.1",
+    "@fontsource-variable/quicksand": "5.3.0",
     "@shopify/react-native-skia": "2.6.2",
     "@types/react": "19.2.2",
     "babel-preset-expo": "57.0.13",
@@ -11,6 +13,7 @@
     "expo-asset": "57.0.18",
     "expo-audio": "57.0.5",
     "expo-file-system": "57.0.7",
+    "expo-font": "57.0.4",
     "expo-haptics": "57.0.3",
     "expo-media-library": "57.0.5",
     "expo-screen-orientation": "57.0.2",

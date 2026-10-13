@@ -56,7 +56,9 @@ export function RsdFeedbackSheet({
       }
     >
       <html.div style={styles.dialogContent}>
-        <html.h1>{state.gate.open ? 'Grown-ups only' : 'Send Feedback'}</html.h1>
+        <html.h1 style={styles.boldText}>
+          {state.gate.open ? 'Grown-ups only' : 'Send Feedback'}
+        </html.h1>
         {state.gate.open ? (
           <RsdFeedbackChallenge owner={owner} state={state} />
         ) : (
@@ -65,7 +67,7 @@ export function RsdFeedbackSheet({
             <html.span>{FEEDBACK_DRAFT_NOTICE}</html.span>
             {state.preview ? (
               <>
-                <html.h2>Review your feedback</html.h2>
+                <html.h2 style={styles.boldText}>Review your feedback</html.h2>
                 <html.span>
                   Type:{' '}
                   {REPORT_KINDS.find((kind) => kind.value === state.preview?.body.kind)?.label}
@@ -113,7 +115,7 @@ export function RsdFeedbackSheet({
             ) : null}
             {!state.sharedParent ? (
               <>
-                <html.h2>Feedback protection</html.h2>
+                <html.h2 style={styles.boldText}>Feedback protection</html.h2>
                 <html.span>{FEEDBACK_POLICY_NOTICE}</html.span>
                 <html.div role="radiogroup" aria-label="Feedback protection" style={styles.row}>
                   {FEEDBACK_GATE_MODES.map((mode) => (

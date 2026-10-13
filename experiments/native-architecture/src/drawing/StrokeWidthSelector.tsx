@@ -1,5 +1,6 @@
 import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, TOUCH_TARGET } from './theme';
 import { STROKE_WIDTHS, STROKE_WIDTH_LABELS, type StrokeWidth } from './strokeWidth';
 

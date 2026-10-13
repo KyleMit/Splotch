@@ -1,6 +1,7 @@
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../drawing/Text';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
 import type { PngRecoveryState } from './pngRecovery';
 

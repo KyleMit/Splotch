@@ -31,7 +31,7 @@ export function RsdParentCenterSection({
       footer={<RsdAction label="Keep drawing" onClick={owner.closeParentCenter} />}
     >
       <html.div style={styles.dialogContent}>
-        <html.h1>Parent Center</html.h1>
+        <html.h1 style={styles.boldText}>Parent Center</html.h1>
         <html.span>
           AI picture creation sends a copy of a drawing to the hosted image service only when you
           choose Send. AI starts off. Turning it off keeps saved pictures and credentials.

@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { APP_VERSION, INFORMATION_CONTENT, type InformationPage } from './content';

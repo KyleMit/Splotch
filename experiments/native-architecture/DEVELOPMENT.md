@@ -66,13 +66,25 @@ drawing. The Install Banner and the Settings install guide (`src/install/`) foll
 policy and storage keys; their copy is drift-guarded against the Svelte components by
 `tools/tests/native-web-install-drift.test.mjs`.
 
-Text uses the shipping font stack, projected into `src/rsdDrawing/tokens.css.ts` and set on the
-screen and dialog roots. Metro's web CSS pipeline does not bundle a stylesheet's local `url()`
-sources, so the web entry registers the `@fontsource-variable/quicksand` faces itself
-(`src/platform/shippingFont.web.ts`), and the precache carries their WOFF2 files;
-`tools/tests/native-shipping-font.test.mjs` fails when those faces drift from the package's
-stylesheet. Android and iOS cannot register WOFF2 and no TTF is bundled, so native text falls back
-to the system font.
+Text uses the shipping font, Quicksand. RSD text inherits the `fonts` tokens in
+`src/rsdDrawing/tokens.css.ts` from the screen and dialog roots, and headings take `boldText`; React
+Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never from `react-native`.
+`ShippingFontGate` (`src/platform/shippingFont.tsx`) wraps the screen.
+
+* **Web** keeps the shipping stack and its variable face. Metro's web CSS pipeline does not bundle a
+  stylesheet's local `url()` sources, so the gate registers the `@fontsource-variable/quicksand`
+  faces itself (`shippingFont.web.tsx`) and renders at once, swapping the font in as the shipping
+  app does; the precache carries their WOFF2 files.
+* **Android and iOS** cannot register WOFF2, so the gate loads the 400, 600 and 700 static faces
+  from `@expo-google-fonts/quicksand` through `expo-font` and renders once they register (or, if
+  they fail, in the system font). Each face is its own family, so
+  `src/platform/nativeFontFamilies.ts` picks the family from the weight and sets the weight itself
+  back to normal: Android resolves a weight of 700 or more on a registered family to a system bold
+  face. `fontTheme.native.ts` applies the same faces to the RSD tokens.
+
+`tools/tests/native-shipping-font.test.mjs` fails when the web faces drift from the package
+stylesheet, a family stops matching the static package's exports, another weight is bundled, an RSD
+heading or weight bypasses the font tokens, or a component imports `Text` from `react-native`.
 
 ## Permissions
 

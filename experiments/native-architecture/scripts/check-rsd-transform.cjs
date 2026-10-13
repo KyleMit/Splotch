@@ -68,8 +68,12 @@ assert.equal(
   'DrawingSessionProvider',
   'Mounted drawing session'
 );
-const mountedScreens = returns[0].argument.children.filter((node) => node.type === 'JSXElement');
-assert.equal(mountedScreens.length, 1, 'Drawing session has one screen');
+const elementChildren = (node) => node.children.filter((child) => child.type === 'JSXElement');
+const fontGates = elementChildren(returns[0].argument);
+assert.equal(fontGates.length, 1, 'Drawing session has one font gate');
+assert.equal(fontGates[0].openingElement.name.name, 'ShippingFontGate', 'Font-gated screen');
+const mountedScreens = elementChildren(fontGates[0]);
+assert.equal(mountedScreens.length, 1, 'Font gate has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');

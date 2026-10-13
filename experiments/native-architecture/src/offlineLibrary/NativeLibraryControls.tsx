@@ -1,5 +1,6 @@
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../drawing/Text';
 import { DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
 import { useLibraryControls } from './LibraryScope';
 import { librarySummary, libraryActions } from './controls';

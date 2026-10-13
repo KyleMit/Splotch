@@ -30,16 +30,21 @@ export const dimensions = css.defineVars({
   radiusMd: '12px',
   fontSizeMd: '16px',
   fontSizeLg: '18px',
-  fontWeightBold: '700',
   disabledOpacity: '0.65',
-  fontFamily:
-    "'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   touchTarget: '52px',
   aiResultHeight: '256px',
 });
 
 export const brandColors = css.defineVars({
   onBrand: '#fff',
+});
+
+export const fonts = css.defineVars({
+  family:
+    "'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  boldFamily:
+    "'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  boldWeight: '700',
 });
 
 export const fixtureInk = '#0a0b10';

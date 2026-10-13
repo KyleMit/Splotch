@@ -1,4 +1,5 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE } from '../drawing/theme';

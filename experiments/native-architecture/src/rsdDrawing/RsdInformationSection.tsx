@@ -12,11 +12,11 @@ export function RsdInformationSection({
   const content = INFORMATION_CONTENT[page];
   return (
     <html.div style={styles.dialogContent}>
-      <html.h1>{content.title}</html.h1>
+      <html.h1 style={styles.boldText}>{content.title}</html.h1>
       <html.span>{`Splotch ${APP_VERSION} · Beta`}</html.span>
       {content.sections.map((section) => (
         <html.div key={section.title} style={styles.stack}>
-          <html.h2>{section.title}</html.h2>
+          <html.h2 style={styles.boldText}>{section.title}</html.h2>
           {section.paragraphs.map((paragraph) => (
             <html.p key={paragraph}>{paragraph}</html.p>
           ))}

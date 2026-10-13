@@ -1,4 +1,5 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { Text } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
