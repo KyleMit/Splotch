@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -14,6 +14,7 @@ import {
   actionPanelLayout,
   DRAWER_CHEVRON_TURN_DEG,
   flyoutPlacement,
+  isPhoneLandscapeViewport,
   type ActionPanelLayout,
   type AreaSize,
 } from './edgeLayout';
@@ -44,8 +45,15 @@ const docks = StyleSheet.create({
 export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const [flyout, setFlyout] = useState<OpenFlyout>(null);
   const inside = useRef(false);
-  // The landscape phone's Color Menu opens beside its own button, drawer open or not.
-  const shown = !disabled && (open || flyout === 'color') ? flyout : null;
+  // The landscape phone's Color Menu opens beside its own button, drawer open or not, and leaving
+  // that layout closes it, as shipping's panel does. The slot outlives every panel that renders
+  // the button, so a rotation back never finds the menu still open.
+  const colorButton = isPhoneLandscapeViewport(useWindowDimensions());
+  const staleColor = flyout === 'color' && !colorButton;
+  useEffect(() => {
+    if (staleColor) setFlyout(null);
+  }, [staleColor]);
+  const shown = !disabled && !staleColor && (open || flyout === 'color') ? flyout : null;
   const live = useRef(shown);
   live.current = shown;
   const menu = useRef<View>(null);
@@ -406,7 +414,7 @@ function DrawerChevron({
 }
 
 // The landscape phone's Color Button and the Color Menu it opens, which take the palette bar's place
-// there. Leaving that layout closes the menu, as shipping's panel does.
+// there. The flyout slot closes the menu when the layout goes.
 function RsdColorControl({
   screen,
   sound,
@@ -434,9 +442,6 @@ function RsdColorControl({
 }) {
   const { flyout, setFlyout, markInside, close, menu, triggers } = slot;
   const place = layout.color;
-  useEffect(() => {
-    if (!place && flyout === 'color') setFlyout(null);
-  }, [place, flyout, setFlyout]);
   if (!place) return null;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
   const expanded = flyout === 'color';

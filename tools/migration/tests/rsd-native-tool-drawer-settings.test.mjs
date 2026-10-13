@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import {
   caller,
   records,
+  root,
   host,
   mount,
   checkedSwitch,
@@ -272,5 +273,27 @@ describe('Settings › Saving', () => {
     expect(named('Expand controls')).toBeNull();
     expect(drawerTools()).toEqual([]);
     expect(host.querySelector('[aria-label="Colors"][role="button"]')).not.toBeNull();
+  });
+
+  // Negative control: a reset owned by the Color Button's own panel never runs once the drawer is
+  // empty, so turning back reopens the menu unpressed.
+  it('closes the Color Menu for good when the phone turns upright, even with an empty drawer', async () => {
+    const landscape = { width: 740, height: 360, scale: 1, fontScale: 1 };
+    records.dimensions = landscape;
+    await drawingScreen({
+      toolDrawerEnabled: false,
+      screenshotEnabled: false,
+      coloringBookEnabled: false,
+    });
+    const colorMenu = () => host.querySelector('[role="group"][aria-label="Colors"]');
+    await act(async () => host.querySelector('[aria-label="Colors"][role="button"]').click());
+    expect(colorMenu()).not.toBeNull();
+    for (const dimensions of [{ ...landscape, width: 360, height: 740 }, landscape]) {
+      records.dimensions = dimensions;
+      await act(async () => root.render(createElement(RsdDrawingScreen)));
+      await act(async () => {});
+    }
+    expect(host.querySelector('[aria-label="Colors"][role="button"]')).not.toBeNull();
+    expect(colorMenu()).toBeNull();
   });
 });
