@@ -88,16 +88,8 @@ export function haloMotionPending(shown: readonly ShownHalo[], now: number, redu
   return !reduced && haloMotionEnd(shown) > now;
 }
 
-export function haloPose(entry: ShownHalo, now: number, reduced: boolean) {
-  'worklet';
-  if (reduced) return { scale: 1, opacity: 1 };
-  const duration = entry.lifting ? HALO_OUT_MS : HALO_IN_MS;
-  const eased = glide(Math.min(Math.max((now - entry.since) / duration, 0), 1));
-  return entry.lifting
-    ? { scale: 1 + (HALO_OUT_TO_SCALE - 1) * eased, opacity: 1 - eased }
-    : { scale: HALO_IN_FROM_SCALE + (1 - HALO_IN_FROM_SCALE) * eased, opacity: eased };
-}
-
+// The worklets plugin turns each worklet into a value captured where it is declared, not a hoisted
+// function, so a worklet's callees must be declared above it (native-halo-worklets.test.mjs).
 function bezier(a: number, b: number, t: number) {
   'worklet';
   const u = 1 - t;
@@ -117,6 +109,16 @@ function glide(progress: number) {
     else high = middle;
   }
   return bezier(y1, y2, (low + high) / 2);
+}
+
+export function haloPose(entry: ShownHalo, now: number, reduced: boolean) {
+  'worklet';
+  if (reduced) return { scale: 1, opacity: 1 };
+  const duration = entry.lifting ? HALO_OUT_MS : HALO_IN_MS;
+  const eased = glide(Math.min(Math.max((now - entry.since) / duration, 0), 1));
+  return entry.lifting
+    ? { scale: 1 + (HALO_OUT_TO_SCALE - 1) * eased, opacity: 1 - eased }
+    : { scale: HALO_IN_FROM_SCALE + (1 - HALO_IN_FROM_SCALE) * eased, opacity: eased };
 }
 
 function channel(hex: string, offset: number) {
