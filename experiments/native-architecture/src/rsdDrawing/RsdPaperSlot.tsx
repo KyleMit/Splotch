@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import { css, html } from 'react-strict-dom';
 import { useState, type ComponentProps } from 'react';
 import { NativePaper } from './NativePaper';
 import { AiWaitingPolaroid } from './drawingSheets';
@@ -9,9 +10,24 @@ import { PaperTexture } from '../drawing/PaperTexture';
 import { fittedPaper, paperLifted } from '../drawing/paperGeometry';
 import { drawingPaper } from '../drawing/paperSpace';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
+import { colors } from './tokens.css';
 
 const paperSlot = { flex: 1, minWidth: 0, minHeight: 0 } as const;
 const paperCorner = { position: 'absolute', pointerEvents: 'box-none' } as const;
+
+// The themed float shadow, whose dark value carries the hairline that edges a lifted sheet
+// against the night margin, as shipping's .paper-lifted does. It sits under the opaque sheet.
+const styles = css.create({
+  lift: (left: number, top: number, width: number, height: number) => ({
+    position: 'absolute',
+    left,
+    top,
+    width,
+    height,
+    boxShadow: colors.floatShadow,
+    pointerEvents: 'none',
+  }),
+});
 
 // The paper, with the waiting print pinned over its corner while an AI picture
 // is minimized. The slot fills the screen around the fitted paper, so the print
@@ -38,7 +54,14 @@ export function RsdPaperSlot({
         );
       }}
     >
-      {lifted ? null : <PaperTexture />}
+      {lifted ? (
+        <html.div
+          data-testid="rsd-paper-lift"
+          style={styles.lift(frame.left, frame.top, frame.width, frame.height)}
+        />
+      ) : (
+        <PaperTexture />
+      )}
       <NativePaper {...paper} />
       {run && ai.owner ? (
         <View testID="rsd-paper-corner" style={[paperCorner, frame]}>

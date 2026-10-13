@@ -379,5 +379,12 @@ describe('the mounted drawing screen frame', () => {
     await act(async () => root.render(createElement(RsdDrawingScreen)));
     expect(texture()).toBeNull();
     expect(flat(slot().style).backgroundColor).toBe(DRAWING_THEMES.light.paperMargin);
+    // The sheet the contain fit centers in the slot lifts on the float shadow.
+    const lift = flat(records.props.findLast((props) => props.testID === 'rsd-paper-lift').style);
+    expect(lift.position).toBe('absolute');
+    expect(lift.top).toBeCloseTo(0);
+    expect(lift.height).toBeCloseTo(400);
+    expect(lift.width).toBeCloseTo((390 / 704) * 400);
+    expect(lift.boxShadow).toBeTruthy();
   });
 });

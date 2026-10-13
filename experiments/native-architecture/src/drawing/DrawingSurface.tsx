@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
   type ForwardedRef,
+  type ReactNode,
   type RefObject,
 } from 'react';
 import { PanResponder, PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -28,7 +29,6 @@ import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 import { PointerHalos } from './PointerHalos';
-import { PaperTexture } from './PaperTexture';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
 
@@ -42,6 +42,8 @@ export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
+  // Painted on the paper beneath the ink: the drawing screen's paper grain.
+  underlay?: ReactNode;
 };
 
 type LiveDraft = {
@@ -143,7 +145,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         <InkAppearanceScope.Provider value={appearance}>
           <View style={styles.container}>
             <View style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}>
-              <PaperTexture />
+              {props.underlay}
               <View
                 ref={paper}
                 accessibilityLabel="Drawing paper"
