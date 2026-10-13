@@ -78,11 +78,11 @@ function SkinnedField({
 
 // A one-line field in the shipping input skin, typed text in the strong ink over a soft
 // placeholder, its border taking the brand color and the focus ring while it has focus.
-export function TextField(props: FieldProps) {
+export function RsdTextField(props: FieldProps) {
   return <SkinnedField {...props} multiline={false} />;
 }
 
 // The same skin for prose: taller, with roomier padding and line height, wrapping from the top.
-export function TextArea(props: FieldProps) {
+export function RsdTextArea(props: FieldProps) {
   return <SkinnedField {...props} multiline />;
 }

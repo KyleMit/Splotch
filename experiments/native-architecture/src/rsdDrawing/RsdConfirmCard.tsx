@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, fonts } from '../rsdDrawing/tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 
 // app.css .confirm-card and its heading, and the confirm dialogs' action row. Exported for
 // native-design-primitives-drift.test.mjs, which reads each from shipping. Title and copy are one
@@ -54,7 +54,7 @@ const styles = css.create({
 // The shipping two-choice confirm card's content: a title and its consequence, then two actions
 // side by side. The caller supplies the actions, the safe choice first so a stray press stays,
 // and the dialog that hosts the card names itself from the same title.
-export function ConfirmCard({
+export function RsdConfirmCard({
   title,
   copy,
   actions,

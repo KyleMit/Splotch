@@ -1,4 +1,4 @@
-import { blobShapes } from '../rsdDrawing/tokens.css';
+import { blobShapes } from './tokens.css';
 
 // React Native corners take one radius each, so the shipping paint blobs (elliptical
 // `border-radius: h h h h / v v v v`) are drawn as SVG paths instead.

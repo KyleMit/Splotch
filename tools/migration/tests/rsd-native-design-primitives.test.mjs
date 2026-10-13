@@ -6,17 +6,17 @@ import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
-import { StatusMessage } from '../../../experiments/native-architecture/src/design/StatusMessage.tsx';
-import { VisuallyHidden } from '../../../experiments/native-architecture/src/design/VisuallyHidden.tsx';
-import { Disclosure } from '../../../experiments/native-architecture/src/design/Disclosure.tsx';
-import { ExternalMark } from '../../../experiments/native-architecture/src/design/ExternalMark.tsx';
-import { ConfirmCard } from '../../../experiments/native-architecture/src/design/ConfirmCard.tsx';
-import { StepNumber } from '../../../experiments/native-architecture/src/design/StepNumber.tsx';
-import { ScrollCue } from '../../../experiments/native-architecture/src/design/ScrollCue.tsx';
+import { RsdStatusMessage } from '../../../experiments/native-architecture/src/rsdDrawing/RsdStatusMessage.tsx';
+import { RsdVisuallyHidden } from '../../../experiments/native-architecture/src/rsdDrawing/RsdVisuallyHidden.tsx';
+import { RsdDisclosure } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDisclosure.tsx';
+import { RsdExternalMark } from '../../../experiments/native-architecture/src/rsdDrawing/RsdExternalMark.tsx';
+import { RsdConfirmCard } from '../../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
+import { RsdStepNumber } from '../../../experiments/native-architecture/src/rsdDrawing/RsdStepNumber.tsx';
+import { RsdScrollCue } from '../../../experiments/native-architecture/src/rsdDrawing/RsdScrollCue.tsx';
 import {
-  TextArea,
-  TextField,
-} from '../../../experiments/native-architecture/src/design/TextField.tsx';
+  RsdTextArea,
+  RsdTextField,
+} from '../../../experiments/native-architecture/src/rsdDrawing/RsdTextField.tsx';
 
 // The released RSD native renderer over a React Native stand-in whose host views are DOM nodes
 // carrying the accessibility props and resolved style React Native would receive.
@@ -147,7 +147,7 @@ it.each(['light', 'dark'])(
   'gives each %s status message its live region and shipping wash',
   async (mode) => {
     for (const [status, role, live, wash, ink] of STATUS_LIVE) {
-      await render(h(StatusMessage, { status }, `Saved ${status}.`), mode);
+      await render(h(RsdStatusMessage, { status }, `Saved ${status}.`), mode);
       const [node, props] = withRole(role);
       expect(node.textContent).toBe(`Saved ${status}.`);
       expect(props.live).toBe(live);
@@ -160,23 +160,23 @@ it.each(['light', 'dark'])(
 
 it('announces a status message to iOS VoiceOver, words inside inline markup included', async () => {
   await render(
-    h(StatusMessage, { status: 'warning' }, h(html.strong, null, 'Heads up.'), ' Later.')
+    h(RsdStatusMessage, { status: 'warning' }, h(html.strong, null, 'Heads up.'), ' Later.')
   );
   expect(native.announce).toHaveBeenCalledWith('Heads up. Later.');
   native.os = 'android';
   native.announce.mockClear();
-  await render(h(StatusMessage, { status: 'error' }, 'Try again.'));
+  await render(h(RsdStatusMessage, { status: 'error' }, 'Try again.'));
   expect(native.announce).not.toHaveBeenCalled();
 });
 
 it('hides text from the eye but not the screen reader, and makes the live variant a status', async () => {
-  await render(h(VisuallyHidden, null, 'three-dot'));
+  await render(h(RsdVisuallyHidden, null, 'three-dot'));
   const [plain, hidden] = find((props) => props.style.position === 'absolute');
   expect(plain.textContent).toBe('three-dot');
   expect([hidden.role, hidden.live, hidden.hidden]).toEqual([undefined, undefined, undefined]);
   expect(hidden.style).toMatchObject({ width: 1, height: 1, overflow: 'hidden' });
   expect(native.announce).not.toHaveBeenCalled();
-  await render(h(VisuallyHidden, { live: true }, 'Saved to Photos'));
+  await render(h(RsdVisuallyHidden, { live: true }, 'Saved to Photos'));
   const [region, live] = withRole('status');
   expect(region.textContent).toBe('Saved to Photos');
   expect(live.live).toBe('polite');
@@ -185,7 +185,7 @@ it('hides text from the eye but not the screen reader, and makes the live varian
 });
 
 it('expands the disclosure on press, announcing the state and turning the chevron', async () => {
-  await render(h(Disclosure, { summary: 'Device details' }, h(html.p, null, 'iPad, iOS 18')));
+  await render(h(RsdDisclosure, { summary: 'Device details' }, h(html.p, null, 'iPad, iOS 18')));
   const summary = () => withRole('button');
   const chevron = () =>
     nodes().find(([node, props]) => props.hidden === true && node.textContent === '›');
@@ -203,7 +203,7 @@ it('expands the disclosure on press, announcing the state and turning the chevro
 });
 
 it.each(['light', 'dark'])('draws the %s disclosure shell in the shipping border', async (mode) => {
-  await render(h(Disclosure, { summary: 'More' }, null), mode);
+  await render(h(RsdDisclosure, { summary: 'More' }, null), mode);
   const [, shell] = find((props) => props.style.overflow === 'hidden');
   expect(shell.style.borderColor).toBe(themes[mode].border);
   expect(shell.style.borderRadius).toBe(Number.parseFloat(scale.radiusSm));
@@ -217,7 +217,7 @@ it.each([
 ])(
   'names the %s %s external mark and inks its arrow on the shipping blob',
   async (mode, variant, wash, iconInk, ink) => {
-    await render(h(ExternalMark, { variant, ink }), mode);
+    await render(h(RsdExternalMark, { variant, ink }), mode);
     const [node, props] = withRole('img');
     expect(props.label).toBe('(opens outside Splotch)');
     const xml = () => node.querySelector('svg').dataset.xml;
@@ -232,7 +232,7 @@ it.each([
 
 it('lays out the confirm card with its title, copy and two caller-owned actions', async () => {
   await render(
-    h(ConfirmCard, {
+    h(RsdConfirmCard, {
       title: 'Leave Splotch?',
       copy: 'This drawing stays while Splotch is in the background.',
       actions: [
@@ -275,7 +275,7 @@ function shippingMix(mode, strengthKey, baseKey) {
 it.each(['light', 'dark'])(
   'mixes the %s step badge wash and digit ink the way the shipping rule does',
   async (mode) => {
-    await render(h(StepNumber, { number: 2, size: 'regular', shape: 'disc' }), mode);
+    await render(h(RsdStepNumber, { number: 2, size: 'regular', shape: 'disc' }), mode);
     const [badge, props] = find((candidate) => candidate.hidden === true);
     expect(props.style).toMatchObject({ width: 32, height: 32 });
     expect(props.style.backgroundColor).toBe(shippingMix(mode, 'stepWashStrength', 'surface'));
@@ -287,7 +287,7 @@ it.each(['light', 'dark'])(
 it('draws paint-blob steps as cycling blob paths at the compact size', async () => {
   const paths = [];
   for (const number of [1, 2, 3, 4]) {
-    await render(h(StepNumber, { number, size: 'compact', shape: 'blob' }));
+    await render(h(RsdStepNumber, { number, size: 'compact', shape: 'blob' }));
     const [badge, props] = find((candidate) => candidate.hidden === true);
     expect(props.style).toMatchObject({ width: 20, height: 20 });
     expect(props.style.backgroundColor).toBeUndefined();
@@ -302,8 +302,8 @@ it.each(['light', 'dark'])(
   async (mode) => {
     await render(
       h('div', null, [
-        h(TextField, { key: 'line', accessibilityLabel: 'Access code', placeholder: 'code' }),
-        h(TextArea, { key: 'prose', accessibilityLabel: 'Message' }),
+        h(RsdTextField, { key: 'line', accessibilityLabel: 'Access code', placeholder: 'code' }),
+        h(RsdTextArea, { key: 'prose', accessibilityLabel: 'Message' }),
       ]),
       mode
     );
@@ -338,7 +338,7 @@ it.each(['light', 'dark'])(
 it.each(['light', 'dark'])(
   'fades the %s scroll end in the surface until the content end is reached',
   async (mode) => {
-    await render(h(ScrollCue, null, h(html.p, null, 'Long help text')), mode);
+    await render(h(RsdScrollCue, null, h(html.p, null, 'Long help text')), mode);
     const cue = () =>
       read(container.querySelector('[data-native*="experimental_backgroundImage"]'));
     const surface = rgba(`rgb(${themes[mode].surfaceRgb} / 0%)`);

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { ScrollView, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
-import { motion } from '../rsdDrawing/tokens.css';
+import { motion } from './tokens.css';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { rgba } from './colorMix';
 
@@ -56,7 +56,7 @@ function reachedEnd({ viewport, content, offset }: Extent) {
 
 // A bounded scroller whose bottom edge fades while more content lies below, and clears once the
 // end is reached. The fade is decoration only: hidden from assistive technology and from touches.
-export function ScrollCue({ children }: { children: ReactNode }) {
+export function RsdScrollCue({ children }: { children: ReactNode }) {
   const surface = useDrawingTheme().surface;
   const [extent, setExtent] = useState<Extent>({ viewport: 0, content: 0, offset: 0 });
   const update = (next: Partial<Extent>) => setExtent((current) => ({ ...current, ...next }));

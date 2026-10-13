@@ -3,15 +3,15 @@ import { readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
 import { scale } from '../../web/src/lib/design/tokens.ts';
 import { DRAWING_SCALE } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { blobPath } from '../../experiments/native-architecture/src/design/blob.ts';
-import { mixSrgb, rgba } from '../../experiments/native-architecture/src/design/colorMix.ts';
-import * as confirmCard from '../../experiments/native-architecture/src/design/ConfirmCard.tsx';
-import * as disclosure from '../../experiments/native-architecture/src/design/Disclosure.tsx';
-import * as externalMark from '../../experiments/native-architecture/src/design/ExternalMark.tsx';
-import * as scrollCue from '../../experiments/native-architecture/src/design/ScrollCue.tsx';
-import * as statusMessage from '../../experiments/native-architecture/src/design/StatusMessage.tsx';
-import * as stepNumber from '../../experiments/native-architecture/src/design/StepNumber.tsx';
-import * as textField from '../../experiments/native-architecture/src/design/TextField.tsx';
+import { blobPath } from '../../experiments/native-architecture/src/rsdDrawing/blob.ts';
+import { mixSrgb, rgba } from '../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
+import * as confirmCard from '../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
+import * as disclosure from '../../experiments/native-architecture/src/rsdDrawing/RsdDisclosure.tsx';
+import * as externalMark from '../../experiments/native-architecture/src/rsdDrawing/RsdExternalMark.tsx';
+import * as scrollCue from '../../experiments/native-architecture/src/rsdDrawing/RsdScrollCue.tsx';
+import * as statusMessage from '../../experiments/native-architecture/src/rsdDrawing/RsdStatusMessage.tsx';
+import * as stepNumber from '../../experiments/native-architecture/src/rsdDrawing/RsdStepNumber.tsx';
+import * as textField from '../../experiments/native-architecture/src/rsdDrawing/RsdTextField.tsx';
 
 vi.mock('react-native', () => ({
   AccessibilityInfo: {},

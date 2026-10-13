@@ -21,7 +21,7 @@ const styles = css.create({
 
 // Text a screen reader announces but the eye never sees. `live` makes it a polite status region
 // whose changes are spoken, as the shipping `as="p" role="status"` variant is.
-export function VisuallyHidden({
+export function RsdVisuallyHidden({
   children,
   live = false,
 }: {

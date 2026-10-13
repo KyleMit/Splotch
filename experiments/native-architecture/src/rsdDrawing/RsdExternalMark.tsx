@@ -1,8 +1,8 @@
 import { css, html } from 'react-strict-dom';
 import { SvgXml } from 'react-native-svg';
-import { dimensions } from '../rsdDrawing/tokens.css';
+import { dimensions } from './tokens.css';
 import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppearance';
-import { useNativeIconMarkup } from '../rsdDrawing/iconRegistry';
+import { useNativeIconMarkup } from './iconRegistry';
 import { blobXml } from './blob';
 
 export const EXTERNAL_MARK_LABEL = '(opens outside Splotch)';
@@ -25,7 +25,7 @@ const styles = css.create({
 // named for assistive technology so the link's name says it leaves Splotch before the parental
 // gate asks. `standalone` sits beside an icon-led link in the muted icon ink; `inline` sits in
 // running prose on a brand wash and takes the link's own ink.
-export function ExternalMark(
+export function RsdExternalMark(
   props: { variant: 'standalone' } | { variant: 'inline'; ink: string }
 ) {
   const theme = useDrawingTheme();

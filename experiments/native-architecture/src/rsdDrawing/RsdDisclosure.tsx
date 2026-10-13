@@ -1,6 +1,6 @@
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, motion } from '../rsdDrawing/tokens.css';
+import { colors, dimensions, motion } from './tokens.css';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 
 // Disclosure.svelte turns its › a quarter turn to point at the open panel.
@@ -47,7 +47,7 @@ const styles = css.create({
 // is expanded, with a › that turns to point open. Like the shipping primitive, it owns only the
 // shell and the chevron; the caller styles the summary row and the panel through `summaryStyle`
 // and `style`, and the body it passes in.
-export function Disclosure({
+export function RsdDisclosure({
   summary,
   children,
   style,

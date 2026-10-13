@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, fonts } from '../rsdDrawing/tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 import { spokenText, useAnnouncement } from './useAnnouncement';
 
 export type MessageStatus = 'success' | 'error' | 'warning';
@@ -39,7 +39,7 @@ const LIVE = {
 
 // The shipping form-result banner, filled with its status wash. Render it only when there is a
 // message: an empty one would still announce itself. No outer margin; the host's gap places it.
-export function StatusMessage({
+export function RsdStatusMessage({
   status,
   children,
 }: {

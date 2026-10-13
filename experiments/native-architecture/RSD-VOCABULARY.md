@@ -87,8 +87,8 @@ runtime resolves the same variables on Android and iOS. Dark mode is the one `da
 | `motion`                                  | durations and `cubic-bezier()` curves    | RSD parses `s`/`ms` and turns `cubic-bezier()` into `Easing.bezier`                                                               |
 | `dimensions` spacing, radii, type, layout | `px` lengths                             | the same lengths                                                                                                                  |
 | `dimensions.radiusBlobN{Corner}`          | one percentage per corner                | React Native corners take one radius, so each elliptical shipping corner keeps the mean of its two radii                          |
-| `blobShapes`                              | the full elliptical radii                | the same numbers; `src/design/blob.ts` draws a blob as an SVG path from them                                                      |
-| `stepNumberMix`                           | the step badge's `color-mix()` strengths | the same numbers; `src/design/StepNumber.tsx` mixes the wash and digit ink itself                                                 |
+| `blobShapes`                              | the full elliptical radii                | the same numbers; `src/rsdDrawing/blob.ts` draws a blob as an SVG path from them                                                  |
+| `stepNumberMix`                           | the step badge's `color-mix()` strengths | the same numbers; `src/rsdDrawing/RsdStepNumber.tsx` mixes the wash and digit ink itself                                          |
 | `dimensions.fontSizeDisplayMin/Max`       | the `clamp()` bounds                     | no `calc()`/`clamp()`: `fontSizeDisplayFluid` carries the viewport term for a caller to evaluate against the window width         |
 | `dimensions.modalGutterMin`               | the gutter floor                         | the safe-area term is the caller's, from `react-native-safe-area-context`                                                         |
 | `fonts` weights                           | the variable face's 500/600/700          | `fontTheme.native.ts` swaps in one static face per weight; medium takes the regular face, since no 500 face is bundled            |
@@ -101,26 +101,27 @@ in React Native.
 
 ## Design primitives
 
-`src/design/` ports the small shipping primitives in `web/src/lib/components/design/` and the
-`app.css` confirm card and step badge: `Disclosure`, `StatusMessage`, `ScrollCue`, `VisuallyHidden`,
-`ExternalMark`, `ConfirmCard`, `StepNumber`, and the `TextField` / `TextArea` input skin. They take
-their values from the generated tokens or the drift-guarded `DRAWING_THEMES` projection;
-component-level literals (the confirm card's 336px, the cue's 72px, the textarea's 88px) are
-exported beside each component and read back from the shipping source by
+`src/rsdDrawing/` ports the small shipping primitives in `web/src/lib/components/design/` and the
+`app.css` confirm card and step badge: `RsdDisclosure`, `RsdStatusMessage`, `RsdScrollCue`,
+`RsdVisuallyHidden`, `RsdExternalMark`, `RsdConfirmCard`, `RsdStepNumber`, and the `RsdTextField` /
+`RsdTextArea` input skin. They take their values from the generated tokens or the drift-guarded
+`DRAWING_THEMES` projection; component-level literals (the confirm card's 336px, the cue's 72px, the
+textarea's 88px) are exported beside each component and read back from the shipping source by
 `tools/tests/native-design-primitives-drift.test.mjs`.
 `tools/migration/tests/rsd-native-design-primitives.test.mjs` mounts each one through the released
 RSD native renderer and checks its accessibility props and resolved light and dark styles.
 
 Where React Native differs:
 
-* Status messages and the live `VisuallyHidden` set `role` and `aria-live`, which Android reads as a
-  live region. iOS has none, so they also announce their text through
+* Status messages and the live `RsdVisuallyHidden` set `role` and `aria-live`, which Android reads
+  as a live region. iOS has none, so they also announce their text through
   `AccessibilityInfo.announceForAccessibility`.
-* React Native lays out a span nested in other text inline and ignores its box, so `VisuallyHidden`
-  belongs beside text, never inside a text run. `ExternalMark` carries its "(opens outside Splotch)"
-  name as the `aria-label` of a single `role="img"` drawing instead, so it works inline too.
+* React Native lays out a span nested in other text inline and ignores its box, so
+  `RsdVisuallyHidden` belongs beside text, never inside a text run. `RsdExternalMark` carries its
+  "(opens outside Splotch)" name as the `aria-label` of a single `role="img"` drawing instead, so it
+  works inline too.
 * Paint blobs are SVG paths, and the external arrow is drawn into the same SVG as its blob.
 * The text fields wrap React Native's `TextInput` from `src/drawing/Text.tsx`, so they take the
   Quicksand face, and draw the focus ring with React Native's `outline*` styles.
-* `ConfirmCard` lays out the title, copy and two actions; the caller passes the actions (the design
-  Button) and hosts the card in its dialog.
+* `RsdConfirmCard` lays out the title, copy and two actions; the caller passes the actions (the
+  design Button) and hosts the card in its dialog.

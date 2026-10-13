@@ -1,6 +1,6 @@
 import { css, html } from 'react-strict-dom';
 import { SvgXml } from 'react-native-svg';
-import { dimensions, fonts, stepNumberMix } from '../rsdDrawing/tokens.css';
+import { dimensions, fonts, stepNumberMix } from './tokens.css';
 import { DRAWING_BRAND } from '../drawing/theme';
 import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppearance';
 import { blobXml, type BlobShape } from './blob';
@@ -42,7 +42,7 @@ const styles = css.create({
 // The shipping numbered-step badge: the brand tinted into the surface behind a brand-tinted digit,
 // on a round disc or, for the paint-blob variant, one of the three blob shapes. Its list owns the
 // order, so the badge itself is hidden from assistive technology as the shipping one is.
-export function StepNumber({
+export function RsdStepNumber({
   number,
   size,
   shape,
