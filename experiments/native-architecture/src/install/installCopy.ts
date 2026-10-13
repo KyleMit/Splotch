@@ -17,7 +17,7 @@ const strong = (value: string): InstallTextPart => ({ kind: 'strong', text: valu
 
 // What a sentence reads as: its words and spoken-only text without its icons, with the space a
 // term keeps between its icon and its word collapsed as HTML collapses it.
-export function spokenInstallText(parts: readonly InstallTextPart[]) {
+function spokenInstallText(parts: readonly InstallTextPart[]) {
   return parts
     .map((part) => {
       if (part.kind === 'icon') return '';

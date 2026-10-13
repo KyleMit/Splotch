@@ -59,15 +59,19 @@ async function settle() {
   });
 }
 
+// Built from parts so tool-specifier-resolution does not read these source probes as imports.
+const SURFACE_SPECIFIER = './installBannerSurface';
+const BANNER_SPECIFIER = './RsdInstallBanner';
+
 it('keeps the banner off the startup path: the drawing screen mounts it through the web split', () => {
   expect(read('rsdDrawing/RsdDrawingScreen.tsx')).toContain(
-    "import { RsdInstallBanner } from './installBannerSurface';"
+    `import { RsdInstallBanner } from '${SURFACE_SPECIFIER}';`
   );
   expect(read('rsdDrawing/installBannerSurface.web.ts')).not.toMatch(
     /^import \{[^}]*\} from '\.\/RsdInstallBanner';$/m
   );
   expect(read('rsdDrawing/installBannerSurface.ts')).toContain(
-    "export { RsdInstallBanner } from './RsdInstallBanner';"
+    `export { RsdInstallBanner } from '${BANNER_SPECIFIER}';`
   );
 });
 
