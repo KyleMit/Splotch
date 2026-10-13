@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { displayFontSize } from './displayType';
@@ -54,15 +55,11 @@ const styles = css.create({
 });
 
 // The shipping Error Screen, shown when the drawing paper's renderer fails: stumped Dottie, the
-// apology and the hero Start over, which brings the paper back.
-export function RsdErrorScreen({
-  disabled,
-  onRestart,
-}: {
-  disabled: boolean;
-  onRestart: () => void;
-}) {
+// apology and the hero Start over, which restarts the app on a fresh drawing as shipping's does.
+export function RsdErrorScreen({ onRestart }: { onRestart: () => Promise<void> }) {
   const window = useWindowDimensions();
+  // One press restarts; a second while the fresh page is being stored would only repeat it.
+  const [restarting, setRestarting] = useState(false);
   return (
     <html.div role="alert" style={styles.screen}>
       <html.div aria-hidden style={styles.dottie}>
@@ -77,7 +74,15 @@ export function RsdErrorScreen({
         {ERROR_SCREEN_COPY.lines[1]}
       </html.p>
       <html.div style={styles.restart}>
-        <RsdButton variant="brand" size="hero" disabled={disabled} onPress={onRestart}>
+        <RsdButton
+          variant="brand"
+          size="hero"
+          disabled={restarting}
+          onPress={() => {
+            setRestarting(true);
+            void onRestart();
+          }}
+        >
           {ERROR_SCREEN_COPY.restart}
         </RsdButton>
       </html.div>

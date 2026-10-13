@@ -1,4 +1,5 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
+import { useStartOver } from '../product/DrawingSession';
 import {
   RsdAiSheet,
   RsdColorPicker,
@@ -192,6 +193,7 @@ function RsdDrawingContent({
   onModalDismissed: () => void;
 }) {
   const theme = useDrawingAppearance();
+  const startOver = useStartOver();
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
@@ -266,10 +268,7 @@ function RsdDrawingContent({
           <DrawingColorPicker screen={screen} sound={sound} />
           {screen.recovery.failed ? (
             <RsdSurfaceBoundary>
-              <RsdErrorScreen
-                disabled={screen.recovery.retryDisabled}
-                onRestart={screen.recovery.retry}
-              />
+              <RsdErrorScreen onRestart={startOver} />
             </RsdSurfaceBoundary>
           ) : null}
         </html.div>

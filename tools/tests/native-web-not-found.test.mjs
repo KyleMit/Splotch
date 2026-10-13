@@ -6,6 +6,7 @@ import {
 } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
 import { APP_SHELL_FILE, NOT_FOUND_FILE } from '../migration/build-native-web.mjs';
 import { nativeWebPrecacheProblems } from '../migration/check-native-web-precache.mjs';
+import { reloadApp } from '../../experiments/native-architecture/src/platform/appRestart.web.ts';
 
 const PATHS = ['/', '/index.html', '/does-not-exist', '/changelog', '/index.htm', '/a/'];
 
@@ -43,5 +44,14 @@ describe("the web export's unknown paths", () => {
     });
     const missing = problems.find((problem) => problem.startsWith('Exported files missing'));
     expect(missing).toBe('Exported files missing from the precache: stray.js');
+  });
+});
+
+describe("the web export's restart", () => {
+  it("reloads the app root, as shipping's Start over does", () => {
+    const assigned = [];
+    globalThis.location = { assign: (url) => assigned.push(url) };
+    expect(reloadApp()).toBe(true);
+    expect(assigned).toEqual(['/']);
   });
 });

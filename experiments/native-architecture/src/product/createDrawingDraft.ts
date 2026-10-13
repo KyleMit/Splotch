@@ -121,6 +121,13 @@ export function createDrawingDraft(
         await flush();
       }
     },
+    // Leaves a blank page as the stored draft, so a restart comes back to a fresh drawing as
+    // shipping's does. A write still in flight lands first, so it cannot overwrite the blank.
+    async discard() {
+      pending = null;
+      await writing;
+      await storage.write(encodeDrawingDraft(createHistory().drawing));
+    },
     dispose() {
       generation += 1;
       unsubscribe?.();

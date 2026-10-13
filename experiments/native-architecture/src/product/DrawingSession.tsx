@@ -12,6 +12,8 @@ import { createDrawingSession, type DrawingSession } from './createDrawingSessio
 import { createDrawingDraft, type DrawingDraftState } from './createDrawingDraft';
 import { drawingDraftStorage } from '../platform/drawingDraft';
 import { offlineLibrary } from '../offlineLibrary/runtime';
+import { createHistory } from '../drawing/model';
+import { useAppRestart } from './AppRestart';
 
 type SessionContext = { session: DrawingSession; draft: ReturnType<typeof createDrawingDraft> };
 const DrawingSessionScope = createContext<SessionContext | null>(null);
@@ -75,5 +77,21 @@ export function useDrawingHistory() {
     retryDraft: async () => {
       await shared?.draft.retry();
     },
+  };
+}
+
+// Shipping's Start over: the app restarts on a fresh drawing, since nothing of the picture outlives
+// a shipping restart. The blank page is stored before the restart reads it back; a draft that
+// cannot be written still restarts, as shipping's restart never waits on storage.
+export function useStartOver() {
+  const shared = useContext(DrawingSessionScope);
+  const restart = useAppRestart();
+  return async () => {
+    shared?.session.setHistory(createHistory());
+    try {
+      await shared?.draft.discard();
+    } finally {
+      restart();
+    }
   };
 }
