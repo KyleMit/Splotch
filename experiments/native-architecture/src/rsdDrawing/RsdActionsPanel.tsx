@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -6,7 +6,8 @@ import type { useDrawingSound } from '../useDrawingSound';
 import { refocusFlyoutTrigger, useFlyoutEscape } from '../platform/flyoutFocus';
 import { RsdIconButton } from './RsdIconButton';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
-import { RsdBrushMenu, RsdStrokeWidthMenu } from './toolFlyouts';
+import { RsdBrushMenu, RsdColorMenu, RsdStrokeWidthMenu } from './toolFlyouts';
+import { RsdColorButton } from './RsdColorButton';
 import { inkKeyline } from './inkKeyline';
 import {
   actionPanelLayout,
@@ -20,7 +21,7 @@ import type { NativeIconName } from './icons.generated';
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
 type Product = ReturnType<typeof useDrawingProduct>;
-type FlyoutName = 'brush' | 'stroke';
+type FlyoutName = 'brush' | 'stroke' | 'color';
 export type OpenFlyout = FlyoutName | null;
 
 const PERCENT = 100;
@@ -41,7 +42,8 @@ const docks = StyleSheet.create({
 export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const [flyout, setFlyout] = useState<OpenFlyout>(null);
   const inside = useRef(false);
-  const shown = open && !disabled ? flyout : null;
+  // The landscape phone's Color Menu opens beside its own button, drawer open or not.
+  const shown = !disabled && (open || flyout === 'color') ? flyout : null;
   const live = useRef(shown);
   live.current = shown;
   const menu = useRef<View>(null);
@@ -277,6 +279,19 @@ export function RsdActionsPanel({
   const tool = flyout === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
   return (
     <>
+      <RsdColorControl
+        screen={screen}
+        sound={sound}
+        disabled={disabled}
+        ink={ink}
+        area={area}
+        viewport={viewport}
+        layout={layout}
+        scale={scale}
+        open={open}
+        slot={slot}
+        onToggle={onToggle}
+      />
       {open
         ? tools.map((item, index) => (
             <View
@@ -342,6 +357,95 @@ export function RsdActionsPanel({
           }}
         />
       </View>
+    </>
+  );
+}
+
+// The landscape phone's Color Button and the Color Menu it opens, which take the palette bar's place
+// there. Leaving that layout closes the menu, as shipping's panel does.
+function RsdColorControl({
+  screen,
+  sound,
+  disabled,
+  ink,
+  area,
+  viewport,
+  layout,
+  scale,
+  open,
+  slot,
+  onToggle,
+}: {
+  screen: Screen;
+  sound: Sound;
+  disabled: boolean;
+  ink: string;
+  area: AreaSize;
+  viewport: AreaSize;
+  layout: ActionPanelLayout;
+  scale: number;
+  open: boolean;
+  slot: ReturnType<typeof useFlyoutSlot>;
+  onToggle: () => void;
+}) {
+  const { flyout, setFlyout, markInside, close, menu, triggers } = slot;
+  const place = layout.color;
+  useEffect(() => {
+    if (!place && flyout === 'color') setFlyout(null);
+  }, [place, flyout, setFlyout]);
+  if (!place) return null;
+  const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  const expanded = flyout === 'color';
+  const placement = expanded ? flyoutPlacement(layout.mode, place, layout.size, viewport) : null;
+  return (
+    <>
+      <RsdColorButton
+        place={place}
+        size={layout.size}
+        ink={ink}
+        expanded={expanded}
+        dimmed={flyout !== null && !expanded}
+        disabled={paintsDisabled}
+        drawerOpen={open}
+        foldable={layout.tools.length > 0}
+        slotRef={(node) => {
+          triggers.current.color = node;
+        }}
+        onCapture={expanded ? markInside : undefined}
+        onToggle={() => setFlyout(expanded ? null : 'color')}
+        onFold={() => {
+          setFlyout(null);
+          onToggle();
+        }}
+      />
+      {placement ? (
+        <View
+          ref={menu}
+          testID="rsd-tool-flyout"
+          style={[docks.flyout, { left: placement.left, bottom: placement.bottom }]}
+          onStartShouldSetResponderCapture={markInside}
+        >
+          <RsdColorMenu
+            base={layout.base}
+            scale={scale}
+            areaWidth={area.width}
+            buttonSize={layout.size}
+            selected={sound.settings.selectedColor}
+            erasing={screen.brush === 'eraser'}
+            disabled={paintsDisabled}
+            onPick={(color) => {
+              screen.selectInkBrush();
+              void sound.owner?.settings.setColor(color);
+              close();
+            }}
+            onCustom={() => {
+              screen.selectInkBrush();
+              close();
+              screen.openColorPicker();
+            }}
+          />
+        </View>
+      ) : null}
     </>
   );
 }

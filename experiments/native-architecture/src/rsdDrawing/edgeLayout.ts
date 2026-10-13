@@ -1,3 +1,4 @@
+import { isPhoneLandscape } from '../../../../web/src/lib/breakpoints';
 import { CONTROL_GAP } from '../drawing/theme';
 import { CORNER_BUTTON_SIZE_PX } from './RsdIconButton';
 
@@ -50,9 +51,15 @@ export type ActionPanelMode = LayoutAxis | 'phoneLandscape';
 type SizeClass = keyof typeof ACTION_BUTTON_BASE_PX;
 type Orientation = keyof (typeof ACTION_BUTTON_BASE_PX)[SizeClass];
 
+// Shipping's PHONE_LANDSCAPE_QUERY: the palette bar gives way to the Color Button, and the Actions
+// Panel takes its L.
+export function isPhoneLandscapeViewport(viewport: AreaSize) {
+  return isPhoneLandscape(viewport.width, viewport.height);
+}
+
 function actionPanelMode(viewport: AreaSize): ActionPanelMode {
   if (viewport.height >= viewport.width) return 'column';
-  return viewport.height < TABLET_MIN_SIDE_PX ? 'phoneLandscape' : 'row';
+  return isPhoneLandscapeViewport(viewport) ? 'phoneLandscape' : 'row';
 }
 
 function sizeClass(viewport: AreaSize): SizeClass {
@@ -77,6 +84,9 @@ export type ActionPanelLayout = Readonly<{
   base: number;
   tools: readonly EdgeOffset[];
   toggle: EdgeOffset;
+  // The landscape phone's Color Button, which stands in for the palette bar there: centred on the
+  // paper area's height while the drawer is closed, at the top of the L's leg while it is open.
+  color: EdgeOffset | null;
 }>;
 
 function lineSize(mode: ActionPanelMode, area: AreaSize, base: number, scale: number, n: number) {
@@ -132,6 +142,7 @@ export function actionPanelLayout({
         bottom: EDGE_INSET_PX + index * pitch,
       })),
       toggle: { left: toggleCross, bottom: EDGE_INSET_PX + (open && count > 0 ? run : 0) },
+      color: null,
     };
   }
   const phone = mode === 'phoneLandscape';
@@ -154,6 +165,12 @@ export function actionPanelLayout({
     base,
     tools,
     toggle: { left: EDGE_INSET_PX + (open ? run : 0), bottom: toggleCross },
+    color: phone
+      ? {
+          left: EDGE_INSET_PX,
+          bottom: open && count > 0 ? rowBottom + (climbing + 1) * pitch : (area.height - size) / 2,
+        }
+      : null,
   };
 }
 

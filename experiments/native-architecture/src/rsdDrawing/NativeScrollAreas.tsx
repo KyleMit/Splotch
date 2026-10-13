@@ -2,7 +2,13 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { paletteSlots } from './paletteGeometry';
-import { EDGE_INSET_PX, type AreaOffset, type AreaSize, type LayoutAxis } from './edgeLayout';
+import {
+  EDGE_INSET_PX,
+  isPhoneLandscapeViewport,
+  type AreaOffset,
+  type AreaSize,
+  type LayoutAxis,
+} from './edgeLayout';
 
 export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number; length: number }>;
 
@@ -45,7 +51,8 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
   };
 }
 
-// The shipping arrangement: colors along the top edge (the left edge in landscape), Clear docked to
+// The shipping arrangement: colors along the top edge (the left edge in landscape, and none on a
+// landscape phone, whose Actions Panel carries the Color Button instead), Clear docked to
 // the right screen edge, Settings in the bottom-right corner and the Actions Panel in the
 // bottom-left one, all floating over a paper area that takes the rest of the screen. The panel
 // places itself inside that area (edgeLayout.ts), sized against the area and the window. The
@@ -93,18 +100,22 @@ export function NativeDrawingLayout({
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
       ]}
     >
-      <View
-        testID="rsd-palette-bar"
-        style={[drawingScreenStyles.paletteBar, docks.palette]}
-        onLayout={({ nativeEvent }) => {
-          const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
-          setMeasured((previous) =>
-            previous?.axis === axis && previous.length === next ? previous : { axis, length: next }
-          );
-        }}
-      >
-        {palette({ axis, slots: paletteSlots(viewportLength, axis), length })}
-      </View>
+      {isPhoneLandscapeViewport(window) ? null : (
+        <View
+          testID="rsd-palette-bar"
+          style={[drawingScreenStyles.paletteBar, docks.palette]}
+          onLayout={({ nativeEvent }) => {
+            const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
+            setMeasured((previous) =>
+              previous?.axis === axis && previous.length === next
+                ? previous
+                : { axis, length: next }
+            );
+          }}
+        >
+          {palette({ axis, slots: paletteSlots(viewportLength, axis), length })}
+        </View>
+      )}
       <View
         testID="rsd-canvas-column"
         style={drawingScreenStyles.canvasColumn}

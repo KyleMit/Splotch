@@ -55,10 +55,20 @@ const styles = css.create({
   }),
   ringColor: (borderColor: string) => ({ borderColor }),
   seamColor: { borderColor: colors.surface },
+  floatSeamColor: { borderColor: colors.floatSurface },
   disabled: { opacity: dimensions.disabledOpacity },
 });
 
-function SelectionRing({ size, color }: { size: number; color: string }) {
+// The seam is the surface the swatch sits on: the palette bar's, or a flyout card's.
+export function SelectionRing({
+  size,
+  color,
+  surface = 'surface',
+}: {
+  size: number;
+  color: string;
+  surface?: 'surface' | 'floatSurface';
+}) {
   const ring = size + 2 * SELECTION_RING_WIDTH_PX;
   const seam = size + 2 * SELECTION_RING_SEAM_PX;
   return (
@@ -75,7 +85,7 @@ function SelectionRing({ size, color }: { size: number; color: string }) {
         aria-hidden
         style={[
           styles.ring(-SELECTION_RING_SEAM_PX, seam, SELECTION_RING_SEAM_PX),
-          styles.seamColor,
+          surface === 'surface' ? styles.seamColor : styles.floatSeamColor,
         ]}
       />
     </>

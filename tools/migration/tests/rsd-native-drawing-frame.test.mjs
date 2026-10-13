@@ -167,9 +167,10 @@ function viewport(width, height) {
   records.dimensions = { width, height, scale: 1, fontScale: 1 };
 }
 
+// A landscape phone shows no bar at all; rsd-native-color-control.test.mjs covers its Color Button.
 const LAYOUTS = [
   [390, 844, 'row'],
-  [844, 390, 'column'],
+  [1024, 768, 'column'],
   [1366, 1024, 'column'],
 ];
 

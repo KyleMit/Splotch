@@ -338,17 +338,24 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   // An inset shortens the bar, not the viewport the shipping ladder counts from.
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 300, height: 75 } } }));
   expect(seen.palette).toEqual({ axis: 'row', slots: 6, length: 300 });
-  records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
+  records.dimensions = { width: 1180, height: 820, scale: 1, fontScale: 2 };
   await act(async () => root.render(layoutElement(seen)));
   expect(seen).toMatchObject({
-    palette: { axis: 'column', slots: 5, length: 402 },
+    palette: { axis: 'column', slots: paletteSlots(820, 'column'), length: 820 },
     clearOffset: { top: 68, right: 2 },
-    panel: { viewport: { width: 874, height: 402 } },
+    panel: { viewport: { width: 1180, height: 820 } },
   });
-  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 380 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 380 });
-  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 260 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 260 });
+  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 780 } } }));
+  expect(seen.palette).toEqual({ axis: 'column', slots: 11, length: 780 });
+  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 660 } } }));
+  expect(seen.palette).toEqual({ axis: 'column', slots: 11, length: 660 });
+  // A landscape phone hands the bar's strip back to the paper, as shipping's palette does.
+  records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
+  seen.palette = null;
+  await act(async () => root.render(layoutElement(seen)));
+  expect(host.querySelector('[data-testid="rsd-palette-bar"]')).toBeNull();
+  expect(seen.palette).toBeNull();
+  expect(seen.panel.viewport).toEqual({ width: 874, height: 402 });
 });
 
 it('frames the paper the way the full-bleed area fits it in either orientation', () => {
