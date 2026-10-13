@@ -29,7 +29,7 @@ import { COLORING_FILLS, type PageId } from './pages';
 import { isFarmPageId } from './bundledBooks';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { paintAppearance, paletteHex } from './palette';
-import { strokePath, type Point, type Stroke } from './model';
+import { smoothStroke, type Point, type Stroke } from './model';
 
 export type InkPaintContext = Readonly<{
   paper: PaperReference;
@@ -93,7 +93,13 @@ function shapeBounds(points: readonly Point[], width: number) {
   );
 }
 
-function drawShape(canvas: SkCanvas, points: readonly Point[], width: number, paint: SkPaint) {
+function drawShape(
+  canvas: SkCanvas,
+  points: readonly Point[],
+  width: number,
+  paint: SkPaint,
+  lead?: Point
+) {
   const first = points[0];
   if (!first) return;
   if (points.length === 1) {
@@ -102,8 +108,10 @@ function drawShape(canvas: SkCanvas, points: readonly Point[], width: number, pa
     canvas.drawCircle(first.x, first.y, width / 2, dot);
     return;
   }
-  const path = Skia.Path.MakeFromSVGString(strokePath(points));
-  if (!path) throw new Error('A stroke path could not be built.');
+  const { start, segments } = smoothStroke(points, lead);
+  const path = Skia.Path.Make();
+  path.moveTo(start.x, start.y);
+  for (const segment of segments) path.quadTo(segment.cx, segment.cy, segment.x, segment.y);
   canvas.drawPath(path, paint);
 }
 
@@ -225,7 +233,8 @@ function paintCrayon(
       );
       return { width: width * band.widthScale, paint: bandPaint };
     });
-    const bounds = shapeBounds(pass.points, width);
+    // A continuing pass's curve starts between its lead and first point.
+    const bounds = shapeBounds(pass.lead ? [pass.lead, ...pass.points] : pass.points, width);
     for (const [blend, alpha] of [
       [BlendMode.Darken, 1],
       [BlendMode.SrcOver, 1 - CRAYON_COLOR_MIX],
@@ -234,7 +243,7 @@ function paintCrayon(
       layer.setBlendMode(blend);
       layer.setAlphaf(alpha);
       canvas.saveLayer(layer, bounds);
-      for (const band of bands) drawShape(canvas, pass.points, band.width, band.paint);
+      for (const band of bands) drawShape(canvas, pass.points, band.width, band.paint, pass.lead);
       canvas.restore();
     }
   }

@@ -11,6 +11,46 @@ export interface Point {
   y: number;
 }
 
+// One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
+export interface PathSeg {
+  cx: number;
+  cy: number;
+  x: number;
+  y: number;
+}
+
+// What smoothing carries from one batch of a stroke to the next: the latest
+// input point (x/y) and the midpoint the next segment starts from (midX/midY).
+// A fresh stroke starts with both at its first point.
+export interface SmoothingPen {
+  x: number;
+  y: number;
+  midX: number;
+  midY: number;
+}
+
+// One quadratic segment per input point: the path runs midpoint-to-midpoint
+// with the raw point as the control, so consecutive segments share a tangent
+// and the stroke curves smoothly instead of showing straight-chord corners.
+// Advances `pen`, so a stroke split across batches draws the same curve as one
+// unsplit batch. The curve ends at the last midpoint, short of the final point.
+// The React Native app builds its stroke paths from this same function.
+export function appendSmoothSegments(
+  pen: SmoothingPen,
+  points: readonly Point[],
+  segs: PathSeg[]
+): void {
+  for (const { x, y } of points) {
+    const midX = (pen.x + x) / 2;
+    const midY = (pen.y + y) / 2;
+    segs.push({ cx: pen.x, cy: pen.y, x: midX, y: midY });
+    pen.x = x;
+    pen.y = y;
+    pen.midX = midX;
+    pen.midY = midY;
+  }
+}
+
 export interface SpeedSample {
   t: number;
   distance: number;

@@ -15,7 +15,9 @@ const PASS_SEED_MULTIPLIER = 41;
 
 export { CRAYON_TILE_PX, canonicalCrayonPhase as crayonPhase } from './crayonGrain';
 
-export type CrayonPass = Readonly<{ seed: number; points: readonly Point[] }>;
+// `lead` is the stroke point before `points[0]`: a later pass continues the stroke's smoothed
+// curve from it (strokePath), so splitting a stroke into passes leaves its shape unchanged.
+export type CrayonPass = Readonly<{ seed: number; points: readonly Point[]; lead?: Point }>;
 
 export function crayonPasses(
   stroke: Extract<Stroke, { brush: 'crayon' }>,
@@ -33,6 +35,8 @@ export function crayonPasses(
   let anchor = first;
   let direction: Point | null = null;
   let previous = first;
+  let beforePrevious: Point | undefined;
+  let lead: Point | undefined;
   let arc = 0;
   let points = [first];
   let anchors = new Map<string, { point: Point; arc: number }[]>();
@@ -63,8 +67,9 @@ export function crayonPasses(
         Math.hypot(point.x - old.point.x, point.y - old.point.y) <= reentryDistance
     );
     if (reversal || reentry) {
-      passes.push({ seed: stroke.seed * PASS_SEED_MULTIPLIER + passes.length, points });
+      passes.push({ seed: stroke.seed * PASS_SEED_MULTIPLIER + passes.length, points, lead });
       points = [previous];
+      lead = beforePrevious;
       anchors = new Map([[key(previous), [{ point: previous, arc: 0 }]]]);
       arc = 0;
       anchor = previous;
@@ -82,8 +87,9 @@ export function crayonPasses(
       direction = { x: dx / distance, y: dy / distance };
       anchor = point;
     }
+    beforePrevious = previous;
     previous = point;
   }
-  passes.push({ seed: stroke.seed * PASS_SEED_MULTIPLIER + passes.length, points });
+  passes.push({ seed: stroke.seed * PASS_SEED_MULTIPLIER + passes.length, points, lead });
   return passes;
 }

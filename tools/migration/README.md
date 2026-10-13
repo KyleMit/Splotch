@@ -28,7 +28,12 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `tools/tests/native-branding.test.mjs` runs that check. Rerun it with
   `node tools/migration/gen-native-branding.mjs` after regenerating the shipping assets.
 * `check:migration:rsd-drawing-tokens` checks the react-strict-dom drawing screen's token projection
-  against the shared design owner.
+  against the shared design owner. `gen-rsd-drawing-tokens.mjs` rewrites that projection
+  (`experiments/native-architecture/src/rsdDrawing/tokens.css.ts`) after a shipping token changes:
+  `node --experimental-strip-types tools/migration/gen-rsd-drawing-tokens.mjs`.
+  `tools/migration/tests/rsd-drawing-tokens.test.mjs` holds every shipping token, light and dark, to
+  its projected value, and `tools/migration/tests/rsd-native-token-specimen.test.mjs` renders the
+  specimen in `tools/migration/tests/rsd-token-specimen.mjs` through the released native renderer.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
   the native `react-strict-dom` alias.

@@ -53,7 +53,9 @@ function mixedCohort() {
   const input = createContactCohort();
   const drawing = emptyDrawing();
   input.start('a', 'Blue', 'pen', { x: 100, y: 200 }, drawing, 'medium', canonicalPaper);
-  input.sample('a', { x: 900, y: 200 }, true);
+  // Strokes end at their last sample midpoint, so a sample past 900 carries Blue's ink there.
+  input.sample('a', { x: 900, y: 200 });
+  input.sample('a', { x: 1000, y: 200 }, true);
   input.start('b', 'Yellow', 'eraser', { x: 300, y: 100 }, drawing);
   input.sample('b', { x: 300, y: 300 }, true);
   input.start('c', 'Red', 'pen', { x: 200, y: 200 }, drawing);

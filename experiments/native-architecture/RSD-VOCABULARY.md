@@ -69,3 +69,30 @@ archive/source qualification, native autolinking and frozen install succeed. Exi
 receipts remain historical; their authenticated topology fences intentionally reject this new
 declaration until a separately reviewed additive graph projection exists. No native inset or footer
 visibility acceptance is inferred from source or mounted-host tests.
+
+## Design tokens
+
+`src/rsdDrawing/tokens.css.ts` is generated from the shipping design owner
+(`web/src/lib/design/tokens.ts`, plus the layout tokens `web/src/app.css` declares) by
+`tools/migration/lib/rsd-fixture-tokens.mjs`; never edit it by hand. Every group is a statically
+analyzable `css.defineVars`, so StyleX compiles it to custom properties on web and the RSD native
+runtime resolves the same variables on Android and iOS. Dark mode is the one `darkTheme` over
+`colors`, applied where the screen and dialog roots already apply it.
+
+| Group                                     | Web                                     | Android and iOS                                                                                                                   |
+| ----------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `colors` / `darkTheme`                    | every themed color, plus `floatShadow`  | the same strings; slash-alpha `rgb(r g b / n%)` is emitted as `rgba(r, g, b, a)`, the only alpha form React Native's parser reads |
+| `brandColors`, `fixedColors`              | unthemed colors and `clearGradientRest` | the gradient reaches React Native as `experimental_backgroundImage`                                                               |
+| `shadows`, `colors.floatShadow`           | `box-shadow` lists                      | React Native `boxShadow` strings, rgba colors                                                                                     |
+| `motion`                                  | durations and `cubic-bezier()` curves   | RSD parses `s`/`ms` and turns `cubic-bezier()` into `Easing.bezier`                                                               |
+| `dimensions` spacing, radii, type, layout | `px` lengths                            | the same lengths                                                                                                                  |
+| `dimensions.radiusBlobN{Corner}`          | one percentage per corner               | React Native corners take one radius, so each elliptical shipping corner keeps the mean of its two radii                          |
+| `dimensions.fontSizeDisplayMin/Max`       | the `clamp()` bounds                    | no `calc()`/`clamp()`: `fontSizeDisplayFluid` carries the viewport term for a caller to evaluate against the window width         |
+| `dimensions.modalGutterMin`               | the gutter floor                        | the safe-area term is the caller's, from `react-native-safe-area-context`                                                         |
+| `fonts` weights                           | the variable face's 500/600/700         | `fontTheme.native.ts` swaps in one static face per weight; medium takes the regular face, since no 500 face is bundled            |
+
+Shipping tokens with no projection — `color-mix()` strengths, bare RGB channels, the Skia-drawn
+paper effects, the iOS input-zoom floor and the mono stack — are listed with their reasons in
+`RSD_UNPROJECTED_TOKENS`. `tools/migration/tests/rsd-drawing-tokens.test.mjs` fails when a shipping
+token is added or changed without regenerating, or when a projected value stops parsing in React
+Native.
