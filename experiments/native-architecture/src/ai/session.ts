@@ -13,6 +13,7 @@ import type { ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
 import type { AiReportTarget } from './reportContract';
 import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
+import { aiJournalWaiting } from './uiState';
 export type { AiState, PreparedAiDrawing } from './sessionContract';
 export class AiSession {
   protected deps: AiSessionDependencies;
@@ -87,6 +88,7 @@ export class AiSession {
   );
   protected state: AiState = {
     open: false,
+    minimized: false,
     authorized: false,
     gate: this.gate.getState(),
     style: AI_STYLES[0],
@@ -101,6 +103,7 @@ export class AiSession {
     retryAt: 0,
     report: { phase: 'idle' },
     refusal: null,
+    submitted: null,
   };
   protected update = (next: Partial<AiState>) => {
     this.state = {
@@ -423,10 +426,19 @@ export class AiSession {
     this.gate.dismiss();
     this.update({
       open: false,
+      minimized: false,
       authorized: false,
     });
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+  };
+  minimize = () => {
+    if (!this.state.open || !aiJournalWaiting(this.state)) return;
+    this.reports.cancel();
+    this.update({ minimized: true });
+  };
+  restore = () => {
+    if (this.state.open && this.state.minimized) this.update({ minimized: false });
   };
   gateInput = this.gate.input;
   gateAnswer = this.gate.answer;

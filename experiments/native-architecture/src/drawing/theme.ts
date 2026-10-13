@@ -12,6 +12,10 @@ export const DRAWING_THEME = {
 } as const;
 
 export const DRAWING_ON_BRAND = '#fff';
+export const DRAWING_BRAND = '#ab71e1';
+
+// A photograph does not repaint at night, so the print and its ink are unthemed.
+export const DRAWING_POLAROID = { paper: '#fdfcf7', ink: '#7c50bb' } as const;
 
 export type PaperTheme = 'light' | 'dark';
 export type DrawingTheme = { readonly [Key in keyof typeof DRAWING_THEME]: string };
