@@ -21,6 +21,8 @@ export { thumbOrigin } from './segmentThumbFace';
 // lib/breakpoints.ts PHONE_MAX_WIDTH_PX: at or below it the underline cells split the row evenly.
 const PHONE_MAX_WIDTH_PX = 540;
 const SEGMENT_OPTION_GAP_PX = 6;
+const COLUMN_OPTION_GAP_PX = 2;
+const COLUMN_OPTION_PADDING_INLINE_PX = 2;
 const SEGMENT_LINE_HEIGHT = 1.2;
 const SEGMENT_ICON_PX = 16;
 // A hugging track's options carry their own horizontal room instead of flexing.
@@ -51,6 +53,8 @@ export const PICKER_METRICS = {
   EASE_GLIDE,
   PHONE_MAX_WIDTH_PX,
   SEGMENT_OPTION_GAP_PX,
+  COLUMN_OPTION_GAP_PX,
+  COLUMN_OPTION_PADDING_INLINE_PX,
   SEGMENT_LINE_HEIGHT,
   SEGMENT_ICON_PX,
   HUG_OPTION_PADDING_INLINE_PX,
@@ -90,6 +94,9 @@ type SharedProps<T extends string> = {
   fill?: boolean;
   // hidden: the caller has no room for the words; each option keeps its label as its name.
   labels?: 'shown' | 'hidden';
+  // column: each segment option puts its icon above its label, for a track too narrow for both
+  // side by side.
+  optionDirection?: 'row' | 'column';
 };
 
 // Choose one: a radiogroup of checked options with a roving tab stop. null selects nothing.
@@ -120,7 +127,15 @@ function useCells() {
 }
 
 export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | ToggleProps<T>) {
-  const { label, describedBy, options, onSelect, variant = 'segment', fill = true } = props;
+  const {
+    label,
+    describedBy,
+    options,
+    onSelect,
+    variant = 'segment',
+    fill = true,
+    optionDirection = 'row',
+  } = props;
   const radio = props.mode !== 'toggle';
   const isSelected = (value: T) =>
     props.mode === 'toggle' ? props.selected.includes(value) : props.selected === value;
@@ -175,6 +190,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
             VARIANT_OPTION[variant],
             optionFades[variant],
             variant === 'segment' && !fill && styles.hugOption,
+            variant === 'segment' && optionDirection === 'column' && styles.columnOption,
             active && ACTIVE_OPTION[variant],
             option.disabled && styles.disabled,
           ]}
@@ -317,6 +333,13 @@ const styles = css.create({
     fontFamily: fonts.semiboldFamily,
     fontWeight: fonts.semiboldWeight,
     cursor: 'pointer',
+  },
+  // OrientationPicker.svelte's narrow-track custom properties for the segment option.
+  columnOption: {
+    flexDirection: 'column',
+    gap: COLUMN_OPTION_GAP_PX,
+    paddingBlock: dimensions.space1,
+    paddingInline: COLUMN_OPTION_PADDING_INLINE_PX,
   },
   // A web flex item shrinks by default, which squeezed a wide glyph beside a long label.
   iconSlot: { display: 'flex', flexShrink: 0 },

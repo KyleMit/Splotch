@@ -245,6 +245,11 @@ export function RsdSettingsWide({
       <RsdScrollCue
         inset={WIDE_SHELL.pane}
         scrollRef={pane}
+        // Any hand on the pane ends a jump: from there the position is the parent's, and every
+        // section the reading line reaches is one they chose to visit.
+        onUserScroll={() => {
+          jumpTarget.current = null;
+        }}
         onExtent={(extent) => {
           paneExtent.current = extent;
           elect();

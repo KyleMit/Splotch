@@ -59,19 +59,23 @@ function reachedEnd({ viewport, content, offset }: ScrollExtent) {
 // Inert as well as `pointerEvents: 'none'`: inside a dialog, React Native Web's box-none stage turns
 // pointer events back on for every descendant, which would let a retired fade swallow taps.
 // The inset pads the scrolled content, so the fade covers it as shipping's covers the scrollport
-// padding; a shallower `cueHeight` suits a pane only a couple of rows tall.
+// padding; a shallower `cueHeight` suits a pane only a couple of rows tall. `onUserScroll` reports
+// a hand on the scroller — a drag natively, a pointer, wheel or key on the web — as distinct from
+// a scroll the caller started itself.
 export function RsdScrollCue({
   children,
   inset,
   cueHeight = SCROLL_CUE_HEIGHT_PX,
   scrollRef,
   onExtent,
+  onUserScroll,
 }: {
   children: ReactNode;
   inset?: Inset;
   cueHeight?: number;
   scrollRef?: Ref<ScrollView>;
   onExtent?: (extent: ScrollExtent) => void;
+  onUserScroll?: () => void;
 }) {
   const surface = useDrawingTheme().surface;
   const extent = useRef(AT_REST);
@@ -84,7 +88,12 @@ export function RsdScrollCue({
   const onScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) =>
     update({ offset: nativeEvent.contentOffset.y });
   return (
-    <html.div style={styles.frame}>
+    <html.div
+      style={styles.frame}
+      onPointerDown={onUserScroll}
+      onWheel={onUserScroll}
+      onKeyDown={onUserScroll}
+    >
       <ScrollView
         ref={scrollRef}
         scrollEventThrottle={SCROLL_REPORT_INTERVAL_MS}
@@ -97,6 +106,7 @@ export function RsdScrollCue({
           }
         }
         onScroll={onScroll}
+        onScrollBeginDrag={onUserScroll}
         onLayout={({ nativeEvent }) => update({ viewport: nativeEvent.layout.height })}
         onContentSizeChange={(_, height) => update({ content: height })}
       >

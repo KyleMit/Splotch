@@ -6,13 +6,18 @@ import { act, createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { DRAWING_BRAND } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import {
+  DRAWING_BRAND,
+  DRAWING_SCALE,
+} from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
   MODAL_GUTTER_MIN_PX,
   modalFrame,
   settingsShell,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import { WIDE_SHELL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsWide.tsx';
+import { PICKER_METRICS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
+import { ORIENTATION_COLUMN_MAX_WIDTH_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdOrientationPicker.tsx';
 import { COMPACT_SHELL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsCompact.tsx';
 import {
   NAV_ROW_CLEARANCE_PX,
@@ -132,6 +137,18 @@ describe("the shipping shells' geometry", () => {
     });
     expect(px(declaration(rule(COMPACT, ':global(.portrait-note-icon)'), 'width'))).toBe(
       COMPACT_SHELL.note.icon
+    );
+  });
+
+  it('stacks the orientation options below the track width OrientationPicker does', () => {
+    const picker = shipping('settings/OrientationPicker.svelte');
+    expect(picker).toContain(
+      `@container orientation-picker (max-width: ${ORIENTATION_COLUMN_MAX_WIDTH_PX}px)`
+    );
+    expect(picker).toContain('--segment-option-direction: column;');
+    expect(picker).toContain(`--segment-option-gap: ${PICKER_METRICS.COLUMN_OPTION_GAP_PX}px;`);
+    expect(picker).toContain(
+      `--segment-option-padding: var(--space-1) ${PICKER_METRICS.COLUMN_OPTION_PADDING_INLINE_PX}px;`
     );
   });
 
@@ -366,6 +383,19 @@ describe('the wide shell', () => {
     expect(settings.storage.write).not.toHaveBeenCalled();
   });
 
+  it('hands the pane back on a drag that interrupts a smooth jump, so what it reaches is seen', async () => {
+    HTMLElement.prototype.scrollTo = scrollTo;
+    const settings = openSettings(TABLET, { whatsNewSeen: null });
+    await mount(createElement(RsdDrawingScreen));
+    await layOutPane(300, 600);
+    await act(async () => sidebarRow('About').click());
+    await act(async () => paneScroll().onScrollBeginDrag({ nativeEvent: {} }));
+    const whatsNew = PANE_SECTIONS.findIndex(({ id }) => id === 'whatsnew');
+    await scrollPane(WIDE_SHELL.pane.top + whatsNew * 360 - SCROLLSPY_LINE_INSET_PX);
+    expect(spiedRow()).toEqual(["What's New"]);
+    expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
+  });
+
   it('dots only from the sixth session, as the hub does', async () => {
     hubSessions.count = SETTINGS_ACTIVITY_DOTS_START_SESSION - 1;
     openSettings(TABLET, { whatsNewSeen: null });
@@ -376,6 +406,45 @@ describe('the wide shell', () => {
 
 describe('the compact shell', () => {
   const quick = (label) => host.querySelector(`[role="switch"][aria-label="${label}"]`);
+
+  // The orientation cell's width on a landscape phone: half the card's content row, less the gap.
+  const orientationCell = (window) =>
+    (modalFrame('settings', window, MODAL_GUTTER_MIN_PX).width -
+      2 * COMPACT_SHELL.inline -
+      DRAWING_SCALE.space2) /
+    2;
+  const optionDirection = (label) =>
+    records.props.findLast(
+      (props) => props.accessibilityLabel === label && props.style?.flexDirection
+    )?.style.flexDirection;
+
+  it.each([
+    ['568x320', { width: 568, height: 320, scale: 2, fontScale: 1 }],
+    ['844x390', PHONE_LANDSCAPE],
+  ])(
+    'stacks each orientation glyph over its label in the %s cell, as shipping does below its threshold',
+    async (_name, window) => {
+      openSettings(window);
+      await mount(createElement(RsdDrawingScreen));
+      const width = orientationCell(window);
+      expect(width).toBeLessThanOrEqual(ORIENTATION_COLUMN_MAX_WIDTH_PX);
+      expect(optionDirection('Landscape')).toBe('row');
+      const track = latest((props) => props.testID === 'orientation-picker');
+      await act(async () =>
+        track.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width, height: 60 } } })
+      );
+      for (const label of ['Portrait', 'Landscape', 'Auto'])
+        expect(optionDirection(label), label).toBe('column');
+      await act(async () =>
+        track.onLayout({
+          nativeEvent: {
+            layout: { x: 0, y: 0, width: ORIENTATION_COLUMN_MAX_WIDTH_PX + 1, height: 60 },
+          },
+        })
+      );
+      expect(optionDirection('Landscape')).toBe('row');
+    }
+  );
 
   it('shows only the quick toggles, the orientation lock and the pointer to portrait', async () => {
     const settings = openSettings(PHONE_LANDSCAPE);
