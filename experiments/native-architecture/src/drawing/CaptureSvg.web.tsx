@@ -1,5 +1,5 @@
 import Svg from 'react-native-svg';
-import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
+import type { PaperSize } from './paperSpace';
 import type { SvgCaptureTarget } from './svgCapture';
 
 type RasterJob = {
@@ -25,31 +25,39 @@ function snapshotElement(value: unknown): SVGSVGElement {
   return ref.current;
 }
 
-function snapshotRoot(target: SVGSVGElement, options: unknown) {
+function captureSize(options: unknown): PaperSize {
   if (
     typeof options !== 'object' ||
     !options ||
     !('width' in options) ||
     !('height' in options) ||
-    options.width !== PAPER_WIDTH ||
-    options.height !== PAPER_HEIGHT
+    typeof options.width !== 'number' ||
+    typeof options.height !== 'number' ||
+    !Number.isSafeInteger(options.width) ||
+    !Number.isSafeInteger(options.height) ||
+    options.width <= 0 ||
+    options.height <= 0
   )
     throw new Error('The capture dimensions do not match the drawing paper.');
+  return { width: options.width, height: options.height };
+}
+
+function snapshotRoot(target: SVGSVGElement, size: PaperSize) {
   const rect = target.getBoundingClientRect();
-  const viewBox = `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`;
+  const viewBox = `0 0 ${size.width} ${size.height}`;
   // Browser layout can quantize fixed SVG dimensions to fractional CSS pixels.
   if (
-    Math.round(rect.width) !== PAPER_WIDTH ||
-    Math.round(rect.height) !== PAPER_HEIGHT ||
-    target.getAttribute('width') !== String(PAPER_WIDTH) ||
-    target.getAttribute('height') !== String(PAPER_HEIGHT) ||
+    Math.round(rect.width) !== size.width ||
+    Math.round(rect.height) !== size.height ||
+    target.getAttribute('width') !== String(size.width) ||
+    target.getAttribute('height') !== String(size.height) ||
     target.getAttribute('viewBox') !== viewBox
   )
     throw new Error('The fixed drawing paper is not ready to capture.');
   const root = document.createElementNS(SVG_NAMESPACE, 'svg');
   root.setAttribute('viewBox', viewBox);
-  root.setAttribute('width', String(PAPER_WIDTH));
-  root.setAttribute('height', String(PAPER_HEIGHT));
+  root.setAttribute('width', String(size.width));
+  root.setAttribute('height', String(size.height));
   root.appendChild(target.cloneNode(true));
   return root;
 }
@@ -102,7 +110,8 @@ export class CaptureSvg extends Svg {
     const job: RasterJob = { image: null, canvas: null, clone: null, released: false };
     this.active = job;
     try {
-      job.clone = snapshotRoot(snapshotElement(this), options);
+      const size = captureSize(options);
+      job.clone = snapshotRoot(snapshotElement(this), size);
       const image = new window.Image();
       job.image = image;
       image.onerror = () => this.complete(job, callback, '');
@@ -111,8 +120,8 @@ export class CaptureSvg extends Svg {
         try {
           const canvas = document.createElement('canvas');
           job.canvas = canvas;
-          canvas.width = PAPER_WIDTH;
-          canvas.height = PAPER_HEIGHT;
+          canvas.width = size.width;
+          canvas.height = size.height;
           const context = canvas.getContext('2d');
           if (!context) throw new Error('Pixel capture is unavailable.');
           context.drawImage(image, 0, 0);

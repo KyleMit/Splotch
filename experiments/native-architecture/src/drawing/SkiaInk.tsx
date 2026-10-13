@@ -1,5 +1,5 @@
 import { useInkPaper } from './InkPaper';
-import { paperKey, type PaperReference } from './paperSpace';
+import { paperKey, paperSize, paperView, type PaperReference } from './paperSpace';
 import {
   forwardRef,
   useContext,
@@ -15,6 +15,7 @@ import {
   Image as SkiaImage,
   Picture,
   Skia,
+  type SkCanvas,
   type SkImage,
   type SkPicture,
   type SkSurface,
@@ -32,7 +33,7 @@ import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import type { PageId } from './pages';
 import type { PaperTheme } from './theme';
 import { decodeDataUriImage, paintStroke, type InkPaintContext } from './skiaInkPainter';
-import { PAPER_WIDTH, type Stroke } from './model';
+import type { Stroke } from './model';
 import type { RasterInkHandle } from './RasterInk';
 
 type Props = {
@@ -95,15 +96,23 @@ function useBookFill(pageId: PageId, theme: PaperTheme, onError: (error: unknown
   return { needed, image, ready: !needed || image !== null };
 }
 
+// Paper units onto a canvas of the given pixel size, contain-fitted and centered exactly as
+// contacts are mapped back (paperView).
+function presentPaper(canvas: SkCanvas, pixels: Size, context: InkPaintContext) {
+  const view = paperView(pixels.width, pixels.height, paperSize(context.paper));
+  canvas.translate(view.left, view.top);
+  canvas.scale(view.scale, view.scale);
+}
+
 function paintAll(
   surface: SkSurface,
   strokes: readonly Stroke[],
-  scale: number,
+  pixels: Size,
   context: InkPaintContext
 ) {
   const canvas = surface.getCanvas();
   canvas.save();
-  canvas.scale(scale, scale);
+  presentPaper(canvas, pixels, context);
   for (const stroke of strokes) paintStroke(canvas, stroke, context);
   canvas.restore();
   surface.flush();
@@ -140,7 +149,7 @@ function commitLayer(
   {
     const pixelWidth = Math.max(1, Math.round(size.width * PixelRatio.get()));
     const pixelHeight = Math.max(1, Math.round(size.height * PixelRatio.get()));
-    const scale = pixelWidth / PAPER_WIDTH;
+    const pixels = { width: pixelWidth, height: pixelHeight };
     const layerKey = `${key}:${pixelWidth}x${pixelHeight}`;
     const current = layer.current;
     if (current && current.key === layerKey && extendsStrokes(current.strokes, strokes)) {
@@ -148,7 +157,7 @@ function commitLayer(
       current.image = paintAll(
         current.surface,
         strokes.slice(current.strokes.length),
-        scale,
+        pixels,
         context
       );
       current.strokes = strokes;
@@ -156,7 +165,7 @@ function commitLayer(
     }
     const surface = Skia.Surface.Make(pixelWidth, pixelHeight);
     if (!surface) throw new Error('The drawing paper could not be prepared.');
-    const image = paintAll(surface, strokes, scale, context);
+    const image = paintAll(surface, strokes, pixels, context);
     layer.current = { key: layerKey, surface, strokes, image };
     return image;
   }
@@ -181,8 +190,7 @@ function recordDrafts(drafts: readonly Stroke[], size: Size, context: InkPaintCo
   {
     const recorder = Skia.PictureRecorder();
     const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
-    const scale = size.width / PAPER_WIDTH;
-    canvas.scale(scale, scale);
+    presentPaper(canvas, size, context);
     for (const stroke of drafts) paintStroke(canvas, stroke, context);
     return recorder.finishRecordingAsPicture();
   }

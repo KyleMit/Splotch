@@ -9,8 +9,8 @@ import {
 import { InkAppearanceScope } from '../drawing/InkAppearance';
 import { InkPaperScope } from '../drawing/InkPaper';
 import { InkScene } from '../drawing/InkScene';
-import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing } from '../drawing/model';
-import { drawingPaper } from '../drawing/paperSpace';
+import type { Drawing } from '../drawing/model';
+import { drawingPaper, paperSize } from '../drawing/paperSpace';
 import { PageOutline } from '../drawing/PageOutline';
 import { DRAWING_SCALE, PAPER_THEMES } from '../drawing/theme';
 import { OfflineArtworkScope, type ArtworkMap } from '../offlineLibrary/artworkContext';
@@ -28,6 +28,7 @@ export const CurrentDrawingPreview = memo(function CurrentDrawingPreview({
 }) {
   const theme = useDrawingAppearance();
   const styles = useDrawingStyles(themedStyles);
+  const size = paperSize(drawingPaper(drawing));
   if (isOfflinePageId(drawing.pageId) && !artwork[drawing.pageId]?.[theme])
     return (
       <Text style={styles.notice}>
@@ -42,14 +43,14 @@ export const CurrentDrawingPreview = memo(function CurrentDrawingPreview({
             <Svg
               width="100%"
               height="100%"
-              viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+              viewBox={`0 0 ${size.width} ${size.height}`}
               preserveAspectRatio="xMidYMid meet"
               accessibilityRole="image"
               accessibilityLabel="Current drawing preview"
             >
-              <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={PAPER_THEMES[theme].paper} />
+              <Rect width={size.width} height={size.height} fill={PAPER_THEMES[theme].paper} />
               <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={imageLoaded} />
-              <PageOutline pageId={drawing.pageId} />
+              <PageOutline pageId={drawing.pageId} size={size} />
             </Svg>
           </View>
         </InkPaperScope.Provider>

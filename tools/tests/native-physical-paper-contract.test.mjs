@@ -9,6 +9,8 @@ import {
   paperContactPoint,
   containsPaperPoint,
   samePaper,
+  CANONICAL_PAPER_SIZE,
+  MAX_PAPER_CSS_PX,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import {
   addStrokes,
@@ -70,7 +72,7 @@ describe('drawing-level physical paper reference', () => {
     expect(owner.finish('a')).toBeNull();
     expect(drawing).toEqual(emptyDrawing());
     const history = addStrokes(createHistory(drawing), owner.finish('b'), owner.paper());
-    expect(history.drawing.version).toBe(6);
+    expect(history.drawing.version).toBe(7);
     expect(history.drawing.paper).toBe(previewPaper);
     expect(history.undo).toEqual([drawing]);
     expect(history.drawing.strokes.map(({ width }) => width)).toEqual([22, 4]);
@@ -109,13 +111,13 @@ describe('drawing-level physical paper reference', () => {
     { kind: 'unadopted', cssWidth: 342 },
     { kind: 'legacy' },
     { kind: 'adopted', cssWidth: 342, cssHeight: 256.5, backingScale: 1, extra: 1 },
-    ...[0, -1, NaN, Infinity, 1025, '342'].map((cssWidth) => ({
+    ...[0, -1, NaN, Infinity, MAX_PAPER_CSS_PX + 1, '342'].map((cssWidth) => ({
       kind: 'adopted',
       cssWidth,
       cssHeight: 256.5,
       backingScale: 1,
     })),
-    ...[0, -1, NaN, Infinity, 769].map((cssHeight) => ({
+    ...[0, -1, NaN, Infinity, MAX_PAPER_CSS_PX + 1].map((cssHeight) => ({
       kind: 'adopted',
       cssWidth: 342,
       cssHeight,
@@ -131,7 +133,7 @@ describe('drawing-level physical paper reference', () => {
     expect(() => readDrawingPaper(value)).toThrow();
   });
 
-  it('enforces exact v6 wire keys, canonical new widths and adopted nonempty records', () => {
+  it('enforces exact v7 wire keys, canonical new widths and adopted nonempty records', () => {
     const drawing = { ...emptyDrawing(), paper: adoptPaper(342, 256.5, 1), strokes: [pen, crayon] };
     expect(parseDrawing(JSON.parse(JSON.stringify(drawing)))).toEqual(drawing);
     for (const bad of [
@@ -172,12 +174,13 @@ describe('drawing-level physical paper reference', () => {
   });
 
   it('maps actual SVG meet geometry without border subtraction or independent axis stretching', () => {
-    expect(paperContactPoint(171, 128.25, 342, 256.5)).toEqual({ x: 512, y: 384 });
-    expect(containsPaperPoint(171, 0, 342, 300)).toBe(false);
-    expect(containsPaperPoint(171, 150, 342, 300)).toBe(true);
-    expect(paperContactPoint(0, 21.75, 342, 300)).toEqual({ x: 0, y: 0 });
-    expect(paperContactPoint(342, 278.25, 342, 300)).toEqual({ x: 1024, y: 768 });
-    expect(paperContactPoint(0, 0, 342, 256.5)).toEqual({ x: 0, y: 0 });
+    const sheet = CANONICAL_PAPER_SIZE;
+    expect(paperContactPoint(171, 128.25, 342, 256.5, sheet)).toEqual({ x: 512, y: 384 });
+    expect(containsPaperPoint(171, 0, 342, 300, sheet)).toBe(false);
+    expect(containsPaperPoint(171, 150, 342, 300, sheet)).toBe(true);
+    expect(paperContactPoint(0, 21.75, 342, 300, sheet)).toEqual({ x: 0, y: 0 });
+    expect(paperContactPoint(342, 278.25, 342, 300, sheet)).toEqual({ x: 1024, y: 768 });
+    expect(paperContactPoint(0, 0, 342, 256.5, sheet)).toEqual({ x: 0, y: 0 });
   });
 
   it('refuses a pixel checkpoint from another reference despite identical semantic strokes', () => {
@@ -209,7 +212,9 @@ describe('drawing-level physical paper reference', () => {
   });
   it('rejects unsafe derived geometry and accidental ink in the unadopted branch', () => {
     expect(() => adoptPaper(Number.MIN_VALUE, Number.MIN_VALUE, 1)).toThrow();
-    expect(() => paperContactPoint(0, 0, Number.MIN_VALUE, Number.MIN_VALUE)).toThrow();
+    expect(() =>
+      paperContactPoint(0, 0, Number.MIN_VALUE, Number.MIN_VALUE, CANONICAL_PAPER_SIZE)
+    ).toThrow();
     expect(() => semanticWidth(22, { kind: 'unadopted' })).toThrow('adopted');
     expect(() => textureScale({ kind: 'unadopted' })).toThrow('adopted');
     for (const ratio of [0, -1, NaN, Infinity])

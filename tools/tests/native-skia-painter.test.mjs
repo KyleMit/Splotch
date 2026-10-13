@@ -4,7 +4,13 @@ import {
   decodeDataUriImage,
   paintStroke,
 } from '../../experiments/native-architecture/src/drawing/skiaInkPainter.ts';
-import { LEGACY_PAPER } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import {
+  adoptPaper,
+  paperSize,
+  LEGACY_PAPER,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { COLORING_FILLS } from '../../experiments/native-architecture/src/drawing/pages.ts';
+import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 
 const runtime = vi.hoisted(async () => {
   const { createRequire } = await import('node:module');
@@ -82,4 +88,33 @@ it('lays pen ink and lets the eraser clear it on the ink layer', () => {
   paintStroke(canvas, { brush: 'eraser', width: 16, points: down }, context);
   expect(alphaAt(surface, 32, 32)).toBe(0);
   expect(alphaAt(surface, 8, 32)).toBe(255);
+});
+
+function colorAt(surface, x, y) {
+  const [red, green, blue] = surface.makeImageSnapshot().readPixels(x, y, {
+    width: 1,
+    height: 1,
+    colorType: 4,
+    alphaType: 2,
+  });
+  return '#' + [red, green, blue].map((value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+it('reveals a sample page Magic fill fitted and centered on a portrait paper', () => {
+  // A 390x704 paper area adopts a 567x1024 semantic paper; the sun sits at its middle.
+  const paper = adoptPaper(390, 704, 1);
+  const { width, height } = paperSize(paper);
+  const surface = skia.Surface.Make(width, height);
+  const down = Array.from({ length: 11 }, (_, index) => ({ x: width / 2, y: index * 100 }));
+  paintStroke(
+    surface.getCanvas(),
+    { brush: 'magic', rainbow: 0, width: 44, points: down },
+    { ...context, paper, pageId: 'sunshine' }
+  );
+  const fill = COLORING_FILLS.sunshine;
+  const sun = paletteHex(fill.regions[0].colors.light).toLowerCase();
+  const sky = paletteHex(fill.background.light).toLowerCase();
+  expect(colorAt(surface, Math.floor(width / 2), height / 2)).toBe(sun);
+  expect(colorAt(surface, Math.floor(width / 2), 100)).toBe(sky);
+  expect(colorAt(surface, Math.floor(width / 2), height - 100)).toBe(sky);
 });

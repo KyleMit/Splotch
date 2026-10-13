@@ -18,6 +18,7 @@ import { ColorPicker } from './drawing/ColorPicker';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { DrawingSurface } from './drawing/DrawingSurface';
 import { PaperWorkspace } from './drawing/PaperWorkspace';
+import { drawingPaper } from './drawing/paperSpace';
 import { useDrawingScreen } from './useDrawingScreen';
 import { useDrawingMenu } from './useDrawingMenu';
 import { BRUSHES } from './drawing/brushes';
@@ -340,7 +341,7 @@ function DrawingPaper({
   } = screen;
   const color = sound.settings.selectedColor;
   return (
-    <PaperWorkspace surface={surface}>
+    <PaperWorkspace surface={surface} paper={drawingPaper(history.drawing)}>
       <DrawingSurface
         key={recovery.generation}
         ref={surface}

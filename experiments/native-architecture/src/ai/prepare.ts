@@ -1,11 +1,11 @@
-import { PAPER_WIDTH, PAPER_HEIGHT } from '../drawing/model';
+import type { PaperSize } from '../drawing/paperSpace';
 import { MAX_UPLOAD_BYTES } from './contract';
 const PNG_HEADER_BYTES = 33;
 const PNG_IHDR_LENGTH = 13;
 const PNG_WIDTH_OFFSET = 16;
 const PNG_HEIGHT_OFFSET = 20;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
-export function prepareAiPng(base64: string): Uint8Array {
+export function prepareAiPng(base64: string, size: PaperSize): Uint8Array {
   if (
     !base64 ||
     base64.length > Math.ceil(MAX_UPLOAD_BYTES / 3) * 4 ||
@@ -25,8 +25,8 @@ export function prepareAiPng(base64: string): Uint8Array {
   if (
     header.getUint32(8) !== PNG_IHDR_LENGTH ||
     String.fromCharCode(...bytes.slice(12, 16)) !== 'IHDR' ||
-    header.getUint32(PNG_WIDTH_OFFSET) !== PAPER_WIDTH ||
-    header.getUint32(PNG_HEIGHT_OFFSET) !== PAPER_HEIGHT
+    header.getUint32(PNG_WIDTH_OFFSET) !== size.width ||
+    header.getUint32(PNG_HEIGHT_OFFSET) !== size.height
   )
     throw new Error('Drawing capture has unsupported dimensions.');
   return bytes;

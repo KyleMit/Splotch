@@ -314,21 +314,43 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(seen.palette).toEqual({ axis: 'column', slots: 4 });
 });
 
-it('frames the fixed paper the way the full-bleed area fits it in either orientation', () => {
-  expect(fittedPaper({ width: 390, height: 704 })).toEqual({
+it('frames the paper the way the full-bleed area fits it in either orientation', () => {
+  const blank = { kind: 'unadopted' };
+  const portrait = { kind: 'adopted', cssWidth: 390, cssHeight: 704, backingScale: 2 };
+  expect(fittedPaper({ width: 390, height: 704 }, blank)).toEqual({
+    left: 0,
+    top: 0,
+    width: 390,
+    height: 704,
+  });
+  expect(fittedPaper({ width: 2000, height: 1500 }, blank)).toMatchObject({
+    width: 2000,
+    height: 1500,
+  });
+  expect(fittedPaper({ width: 390, height: 704 }, portrait)).toEqual({
+    left: 0,
+    top: 0,
+    width: 390,
+    height: 704,
+  });
+  expect(fittedPaper({ width: 1100, height: 352 }, portrait)).toEqual({
+    left: 452.5,
+    top: 0,
+    width: 195,
+    height: 352,
+  });
+  expect(fittedPaper({ width: 390, height: 704 }, { kind: 'legacy' })).toEqual({
     left: 0,
     top: 205.75,
     width: 390,
     height: 292.5,
   });
-  expect(fittedPaper({ width: 1100, height: 600 })).toEqual({
-    left: 150,
+  expect(fittedPaper({ width: 0, height: 0 }, portrait)).toEqual({
+    left: 0,
     top: 0,
-    width: 800,
-    height: 600,
+    width: 0,
+    height: 0,
   });
-  expect(fittedPaper({ width: 2000, height: 1500 })).toMatchObject({ width: 1024, height: 768 });
-  expect(fittedPaper({ width: 0, height: 0 })).toEqual({ left: 0, top: 0, width: 0, height: 0 });
 });
 
 function flat(style) {

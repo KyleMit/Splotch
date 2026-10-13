@@ -114,8 +114,8 @@ afterEach(() => {
 });
 
 describe('current draft recovery', () => {
-  it('starts a fresh session on a schema 6 drawing', () => {
-    expect(createDrawingSession().currentDrawing().version).toBe(6);
+  it('starts a fresh session on a schema 7 drawing', () => {
+    expect(createDrawingSession().currentDrawing().version).toBe(7);
   });
 
   it('recovers the validated current drawing into a fresh app without restoring Undo', async () => {

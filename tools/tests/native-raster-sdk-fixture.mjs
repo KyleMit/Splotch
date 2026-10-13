@@ -35,6 +35,7 @@ export function svgRasterSdk(state) {
       return createElement('div', { 'data-svg-width': width }, children);
     }),
     G: ({ children, opacity }) => createElement('div', { 'data-opacity': opacity }, children),
+    Rect: () => null,
     Image: (props) => {
       state.svgTiles.push(props);
       useEffect(() => {

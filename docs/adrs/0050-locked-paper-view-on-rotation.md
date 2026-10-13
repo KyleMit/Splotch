@@ -243,3 +243,40 @@ shipping adoption/windowing/page parity remains a separate qualification require
 split-window frames, rotation/reopen presentation, native texture/filter sampling, same-contact
 buildup, both crossing orders, and runtime/performance behavior require actual qualification. The
 source proposal and authored controls do not establish fidelity acceptance.
+
+## Native migration amendment: the paper takes the screen's shape (2026-10, issue 2775)
+
+This supersedes the proposed candidate amendment's fixed artifact. A native picture no longer lives
+on a fixed 1024 by 768 sheet that fills only a third of an upright phone. It adopts the shape of the
+paper area it is first drawn in, as the shipping engine adopts its viewport.
+
+* **Adoption.** A blank picture's paper fills the whole paper area beside the swatch bar
+  (`fittedPaper` returns the area for an unadopted picture). The first contact cohort reserves the
+  measured ink plane's CSS size and backing scale exactly as before. Drawing format version 7
+  replaces version 6; the `paper` union is unchanged, but its dimensions now define the picture's
+  shape, bounded by `MAX_PAPER_CSS_PX` instead of the canonical sheet and from below by
+  `MIN_PAPER_CSS_PX` (smaller than a fingertip) and `MIN_BACKING_SCALE` (a browser's 25% zoom floor,
+  which adoption clamps up to), so the derived units per CSS pixel and per texel stay finite and
+  within `MAX_UNITS_PER_CSS_PX`. The JS codec, AI original admission, Kotlin and Swift apply the
+  same rule. Version 6 is not read: the beta started fresh. Versions 1 to 5 still normalize to the
+  canonical sheet.
+* **Semantic size.** `paperSize` turns the adopted shape into whole semantic units contain-fitted to
+  the canonical sheet turned to the shape's orientation, so a portrait 390 by 704 area becomes 567
+  by 1024 and a 4:3 landscape area is exactly 1024 by 768. Saved points are bounded by that size.
+  Stroke widths and crayon texels convert through the same CSS-per-unit scale. Rendering (Skia on
+  native, SVG on web), checkpoints, PNG export, AI capture, ink observation, and the drawing
+  previews all use the picture's own size; exports are that many pixels, never more than the
+  canonical count.
+* **Presentation and rotation.** An adopted picture is contain-fitted and centered in the paper area
+  by its adopted CSS shape, so an unrotated picture keeps exactly the frame it adopted and a rotated
+  one presents upright and smaller, with non-drawable letterbox margins (as ADR-0089). Contacts map
+  through the same contain-fit (`paperView`), so a stroke after rotation lands under the finger.
+  Clear returns to an unadopted picture that fills the new area; Undo restores the prior picture
+  with its own paper.
+* **Coloring pages.** Each page's art frame is contain-fitted and centered on the paper, the way the
+  shipping overlay is `object-fit: contain`: the sample pages and their Magic fills through
+  `pageArtTransform` from the canonical frame, bundled and downloaded art through their own
+  `viewBox` with `xMidYMid meet` over the whole paper. Magic reveals the page background across the
+  whole paper. The native app still ships only the wide art variants, so an upright phone shows the
+  wide page centered on a tall sheet; choosing the tall variant by paper orientation (as
+  `ColoringBook.svelte` does) remains open.

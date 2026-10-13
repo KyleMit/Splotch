@@ -1,4 +1,4 @@
-import { PAPER_HEIGHT, PAPER_WIDTH } from './paperSpace';
+import { paperSize, type PaperReference } from './paperSpace';
 
 export type PaperFrame = { width: number; height: number; pageX: number; pageY: number };
 export type MeasurePaper = (complete: (frame: PaperFrame | null) => void) => void;
@@ -71,13 +71,20 @@ export function createPaperScroll(refresh: () => void) {
   };
 }
 
-// The fixed paper contain-fitted and centered in the space it is given, never above its own size.
-export function fittedPaper(space: { width: number; height: number }) {
-  const width = Math.max(
-    0,
-    Math.min(space.width, (space.height * PAPER_WIDTH) / PAPER_HEIGHT, PAPER_WIDTH)
-  );
-  const height = (width * PAPER_HEIGHT) / PAPER_WIDTH;
+// A blank picture fills the space it is given, so its first contact adopts that shape. A
+// picture with a shape is contain-fitted and centered: after rotation it keeps its shape and
+// presents upright inside the new space (ADR-0050). The fit follows the adopted CSS shape, not
+// its whole-unit semantic size, so an unrotated picture keeps exactly the frame it adopted.
+export function fittedPaper(space: { width: number; height: number }, paper: PaperReference) {
+  if (paper.kind === 'unadopted')
+    return { left: 0, top: 0, width: Math.max(0, space.width), height: Math.max(0, space.height) };
+  const size =
+    paper.kind === 'adopted'
+      ? { width: paper.cssWidth, height: paper.cssHeight }
+      : paperSize(paper);
+  const scale = Math.max(0, Math.min(space.width / size.width, space.height / size.height));
+  const width = size.width * scale;
+  const height = size.height * scale;
   return {
     left: (space.width - width) / 2,
     top: (space.height - height) / 2,

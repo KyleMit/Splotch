@@ -1,4 +1,4 @@
-import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
+import type { PaperSize } from './paperSpace';
 
 export const PNG_TIMEOUT_MS = 10_000;
 export type SvgCaptureJob = Readonly<{ promise: Promise<string>; cancel: () => void }>;
@@ -37,7 +37,12 @@ export function createSvgCapture() {
     request.reject(release(request) ?? new Error(message));
   }
 
-  function start(request: CaptureRequest, svg: SvgCaptureTarget, resolve: (value: string) => void) {
+  function start(
+    request: CaptureRequest,
+    svg: SvgCaptureTarget,
+    size: PaperSize,
+    resolve: (value: string) => void
+  ) {
     let starting = true;
     let synchronous: string | undefined;
     function accept(base64: string) {
@@ -57,7 +62,7 @@ export function createSvgCapture() {
       else resolve(base64);
     }
     try {
-      const dispose = svg.toDataURL(accept, { width: PAPER_WIDTH, height: PAPER_HEIGHT });
+      const dispose = svg.toDataURL(accept, { width: size.width, height: size.height });
       if (typeof dispose === 'function') {
         if (active === request) request.release = dispose;
         else dispose();
@@ -70,7 +75,7 @@ export function createSvgCapture() {
     }
   }
 
-  function capture(svg: SvgCaptureTarget | null): SvgCaptureJob {
+  function capture(svg: SvgCaptureTarget | null, size: PaperSize): SvgCaptureJob {
     const unavailable = disposed || failed;
     if (unavailable || !svg || active)
       return {
@@ -94,7 +99,7 @@ export function createSvgCapture() {
       }, PNG_TIMEOUT_MS);
       request.frame = requestAnimationFrame(() => {
         request.frame = requestAnimationFrame(() => {
-          if (active === request) start(request, svg, resolve);
+          if (active === request) start(request, svg, size, resolve);
         });
       });
     });

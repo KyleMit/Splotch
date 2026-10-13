@@ -1,8 +1,12 @@
 import {
   adoptPaper,
   containsPaperPoint,
+  drawingPaper,
   paperContactPoint,
+  presentedPaperSize,
+  type AdoptedPaper,
   type PaperReference,
+  type PaperSize,
 } from './paperSpace';
 import type { GestureResponderEvent, NativeTouchEvent } from 'react-native';
 import type { ContactSound, SoundContact } from '../audio/contactSound';
@@ -35,14 +39,18 @@ type Contact = {
 type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'pageX' | 'pageY' | 'timestamp'>;
 const INTERRUPTED_TOUCH_MESSAGE = 'That touch was interrupted. Lift and try again.';
 
-function insidePaper(touch: NativeTouchEvent, frame: PaperFrame | null, legacy: boolean): boolean {
+function insidePaper(
+  touch: NativeTouchEvent,
+  frame: PaperFrame | null,
+  size: PaperSize | null
+): boolean {
   const point = paperLocation(touch, frame);
   return (
     frame !== null &&
     point !== null &&
-    (legacy
+    (size === null
       ? point.x >= 0 && point.x <= frame.width && point.y >= 0 && point.y <= frame.height
-      : containsPaperPoint(point.x, point.y, frame.width, frame.height))
+      : containsPaperPoint(point.x, point.y, frame.width, frame.height, size))
   );
 }
 
@@ -96,6 +104,39 @@ class ContactResponder {
     return !this.current().disabled && this.frame() !== null;
   }
 
+  // The paper a new contact draws on: the live cohort's, or the picture's own. A blank picture
+  // has none yet; it takes the shape of the measured ink plane.
+  private contactPaper(): PaperReference {
+    return this.input.hasActive()
+      ? this.input.paper()
+      : drawingPaper(this.current().currentDrawing());
+  }
+
+  private contactSize(): PaperSize | null {
+    const frame = this.frame();
+    const paper = this.contactPaper();
+    return !frame || paper.kind === 'legacy' ? null : presentedPaperSize(paper, frame);
+  }
+
+  private adoption(frame: PaperFrame): AdoptedPaper | null {
+    if (this.input.hasActive()) return null;
+    return drawingPaper(this.current().currentDrawing()).kind === 'unadopted'
+      ? adoptPaper(frame.width, frame.height, this.pixelRatio())
+      : null;
+  }
+
+  private paperSample(point: { x: number; y: number }, frame: PaperFrame, paper: PaperReference) {
+    return paper.kind === 'legacy'
+      ? paperPoint(point.x, point.y, frame.width, frame.height)
+      : paperContactPoint(
+          point.x,
+          point.y,
+          frame.width,
+          frame.height,
+          presentedPaperSize(paper, frame)
+        );
+  }
+
   private reconcile(event: GestureResponderEvent) {
     const present = new Map(event.nativeEvent.touches.map((touch) => [touch.identifier, touch]));
     for (const [identifier, contact] of this.contacts) {
@@ -119,9 +160,7 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
-      const coordinate =
-        this.current().currentDrawing().version === 5 ? paperPoint : paperContactPoint;
-      const sample = coordinate(point.x, point.y, frame.width, frame.height);
+      const sample = this.paperSample(point, frame, this.input.paper());
       this.input.sample(touch.identifier, sample, endpoint);
       this.contacts.get(touch.identifier)?.sound?.sample(sample, touch.timestamp);
     } catch (error) {
@@ -189,7 +228,7 @@ class ContactResponder {
         !lifetime.starting ||
         this.paperTarget === null ||
         touch.target !== this.paperTarget ||
-        !insidePaper(touch, this.frame(), this.current().currentDrawing().version === 5)
+        !insidePaper(touch, this.frame(), this.contactSize())
       )
         continue;
       if (!starting.has(touch.identifier)) {
@@ -207,9 +246,8 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
-      const coordinate =
-        this.current().currentDrawing().version === 5 ? paperPoint : paperContactPoint;
-      const sample = coordinate(point.x, point.y, frame.width, frame.height);
+      const adoption = this.adoption(frame);
+      const sample = this.paperSample(point, frame, adoption ?? this.contactPaper());
       this.input.start(
         touch.identifier,
         current.color,
@@ -217,7 +255,7 @@ class ContactResponder {
         sample,
         current.currentDrawing(),
         current.brush === 'eraser' ? current.eraserWidth : current.strokeWidth,
-        () => adoptPaper(frame.width, frame.height, this.pixelRatio())
+        adoption ? () => adoption : undefined
       );
       contact.state = 'accepted';
       contact.sound = current.sound?.begin(sample, touch.timestamp) ?? null;

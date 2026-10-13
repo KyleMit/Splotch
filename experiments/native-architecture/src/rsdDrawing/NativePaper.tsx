@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { DrawingSurface } from '../drawing/DrawingSurface';
 import { fittedPaper } from '../drawing/paperGeometry';
+import { drawingPaper } from '../drawing/paperSpace';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -17,7 +18,7 @@ export function NativePaper({
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const [space, setSpace] = useState({ width: 0, height: 0 });
-  const { width } = fittedPaper(space);
+  const { width, height } = fittedPaper(space, drawingPaper(screen.history.drawing));
   return (
     <View
       style={drawingScreenStyles.workspace}
@@ -29,7 +30,7 @@ export function NativePaper({
         screen.surface.current?.refreshGeometry();
       }}
     >
-      <View style={{ width }}>
+      <View style={{ width, height }}>
         <DrawingSurface
           key={screen.recovery.generation}
           ref={screen.surface}

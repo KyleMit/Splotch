@@ -16,13 +16,16 @@ class SplotchAIJournal(private val context: Context) {
   private val executor = Executors.newSingleThreadExecutor()
   private val root get() = File(context.noBackupFilesDir, "splotch-ai-journal-v1")
   private val maxModel = 8 * 1024 * 1024
-  private val currentOriginalVersions = setOf(5L, 6L)
-  private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 6L)
+  private val currentOriginalVersions = setOf(5L, 7L)
+  private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 7L)
   private val maxDrawingContacts = 1000
   private val maxDrawingSamples = 100000
   private val drawingRainbowCount = 10L
   private val drawingPaperWidth = 1024.0
   private val drawingPaperHeight = 768.0
+  private val maximumPaperCssPx = 8192.0
+  private val minimumPaperCssPx = 16.0
+  private val minimumBackingScale = 0.25
   private val maximumBackingScale = 2.0
   private val maxUpload = 15 * 1024 * 1024
   private val maxResult = 16 * 1024 * 1024
@@ -354,7 +357,7 @@ class SplotchAIJournal(private val context: Context) {
       1L -> setOf("version", "strokes")
       2L -> if (value.has("pageId")) setOf("version", "pageId", "strokes") else setOf("version", "rainbow", "strokes")
       3L, 4L, 5L -> setOf("version", "pageId", "rainbow", "strokes")
-      6L -> setOf("version", "paper", "pageId", "rainbow", "strokes")
+      7L -> setOf("version", "paper", "pageId", "rainbow", "strokes")
       else -> error("Original drawing version unavailable")
     }
     check(value.keys().asSequence().toSet() == expected)
@@ -371,18 +374,22 @@ class SplotchAIJournal(private val context: Context) {
       for (entry in 0 until samples.length()) samples.getJSONObject(entry)
     }
     val count = strokes.length()
-    if (version >= 6L) {
+    if (version >= 7L) {
       val paper = value.getJSONObject("paper")
       if (paper.get("kind") == "unadopted") { keys(paper, "kind"); check(count == 0) }
       else {
         keys(paper, "kind", "cssWidth", "cssHeight", "backingScale")
         check(paper.get("kind") == "adopted")
-        for ((name, maximum) in listOf("cssWidth" to drawingPaperWidth, "cssHeight" to drawingPaperHeight, "backingScale" to maximumBackingScale)) {
+        for ((name, bounds) in listOf("cssWidth" to (minimumPaperCssPx to maximumPaperCssPx), "cssHeight" to (minimumPaperCssPx to maximumPaperCssPx), "backingScale" to (minimumBackingScale to maximumBackingScale))) {
           val raw = paper.get(name)
-          check(raw is Number && raw.toDouble().isFinite() && raw.toDouble() > 0 && raw.toDouble() <= maximum)
+          check(raw is Number && raw.toDouble().isFinite() && raw.toDouble() >= bounds.first && raw.toDouble() <= bounds.second)
         }
-        val scale = minOf(paper.getDouble("cssWidth") / drawingPaperWidth, paper.getDouble("cssHeight") / drawingPaperHeight)
-        check((drawingPaperWidth / scale / paper.getDouble("backingScale")).isFinite())
+        val width = paper.getDouble("cssWidth"); val height = paper.getDouble("cssHeight")
+        val portrait = height > width
+        val scale = maxOf(width / (if (portrait) drawingPaperHeight else drawingPaperWidth), height / (if (portrait) drawingPaperWidth else drawingPaperHeight))
+        val unitsPerCss = 1.0 / scale; val unitsPerTexel = unitsPerCss / paper.getDouble("backingScale")
+        val maximumUnitsPerCss = drawingPaperWidth / minimumPaperCssPx
+        check(unitsPerTexel.isFinite() && unitsPerCss <= maximumUnitsPerCss && unitsPerTexel <= maximumUnitsPerCss / minimumBackingScale)
       }
     }
   }

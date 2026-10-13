@@ -6,13 +6,16 @@ import Darwin
 final class SplotchAIJournal {
   private let queue = DispatchQueue(label: "art.splotch.ai-journal")
   private let maxModel = 8 * 1024 * 1024
-  private let currentOriginalVersions: Set<Int64> = [5, 6]
-  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 6]
+  private let currentOriginalVersions: Set<Int64> = [5, 7]
+  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 7]
   private let maxDrawingContacts = 1000
   private let maxDrawingSamples = 100000
   private let drawingRainbowCount: Int64 = 10
   private let drawingPaperWidth = 1024.0
   private let drawingPaperHeight = 768.0
+  private let maximumPaperCssPx = 8192.0
+  private let minimumPaperCssPx = 16.0
+  private let minimumBackingScale = 0.25
   private let maximumBackingScale = 2.0
   private let maxUpload = 15 * 1024 * 1024
   private let maxResult = 16 * 1024 * 1024
@@ -363,7 +366,7 @@ final class SplotchAIJournal {
     case 1: expected = ["version", "strokes"]
     case 2: expected = value["pageId"] == nil ? ["version", "rainbow", "strokes"] : ["version", "pageId", "strokes"]
     case 3, 4, 5: expected = ["version", "pageId", "rainbow", "strokes"]
-    case 6: expected = ["version", "paper", "pageId", "rainbow", "strokes"]
+    case 7: expected = ["version", "paper", "pageId", "rainbow", "strokes"]
     default: throw failure()
     }
     try keys(value, expected)
@@ -379,18 +382,22 @@ final class SplotchAIJournal {
       for item in samples { _ = try object(item) }
     }
     let count = strokes.count
-    if version >= 6 {
+    if version >= 7 {
       let paper = try object(value["paper"])
       if try string(paper, "kind") == "unadopted" { try keys(paper, ["kind"]); try checked(count == 0) }
       else {
         try keys(paper, ["kind", "cssWidth", "cssHeight", "backingScale"])
         try checked(string(paper, "kind") == "adopted")
-        for (name, maximum) in [("cssWidth", drawingPaperWidth), ("cssHeight", drawingPaperHeight), ("backingScale", maximumBackingScale)] {
+        for (name, minimum, maximum) in [("cssWidth", minimumPaperCssPx, maximumPaperCssPx), ("cssHeight", minimumPaperCssPx, maximumPaperCssPx), ("backingScale", minimumBackingScale, maximumBackingScale)] {
           guard let raw = paper[name] as? NSNumber else { throw failure() }
-          try checked(CFGetTypeID(raw) != CFBooleanGetTypeID() && raw.doubleValue.isFinite && raw.doubleValue > 0 && raw.doubleValue <= maximum)
+          try checked(CFGetTypeID(raw) != CFBooleanGetTypeID() && raw.doubleValue.isFinite && raw.doubleValue >= minimum && raw.doubleValue <= maximum)
         }
         guard let width = paper["cssWidth"] as? NSNumber, let height = paper["cssHeight"] as? NSNumber, let backing = paper["backingScale"] as? NSNumber else { throw failure() }
-        try checked((drawingPaperWidth / min(width.doubleValue / drawingPaperWidth, height.doubleValue / drawingPaperHeight) / backing.doubleValue).isFinite)
+        let portrait = height.doubleValue > width.doubleValue
+        let scale = max(width.doubleValue / (portrait ? drawingPaperHeight : drawingPaperWidth), height.doubleValue / (portrait ? drawingPaperWidth : drawingPaperHeight))
+        let unitsPerCss = 1.0 / scale, unitsPerTexel = unitsPerCss / backing.doubleValue
+        let maximumUnitsPerCss = drawingPaperWidth / minimumPaperCssPx
+        try checked(unitsPerTexel.isFinite && unitsPerCss <= maximumUnitsPerCss && unitsPerTexel <= maximumUnitsPerCss / minimumBackingScale)
       }
     }
   }

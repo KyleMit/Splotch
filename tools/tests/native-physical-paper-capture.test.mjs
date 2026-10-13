@@ -3,6 +3,9 @@ import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FixedInkCapture } from '../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx';
+import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
+import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
+import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
 import {
   InkPaperScope,
@@ -145,5 +148,39 @@ describe('snapshot paper ownership through asynchronous capture', () => {
     ).toBe(true);
     expect(host.querySelector('[data-checkpoint="stale-paper-pixels"]')).toBeNull();
     expect(error).not.toHaveBeenCalled();
+  });
+
+  it('exports a portrait picture at its own shape, through both capture passes', async () => {
+    const portrait = adoptPaper(390, 704, 3);
+    const drawing = { ...emptyDrawing(), paper: portrait, strokes: [pen] };
+    const request = createPngCapture().begin(drawing);
+    const plan = {
+      paper: portrait,
+      checkpoint: null,
+      strokes: [pen],
+      prefix: [pen],
+      needsCheckpoint: false,
+    };
+    const packet = {
+      id: 1,
+      request,
+      kind: 'picture',
+      plan,
+      appearance: { pageId: 'blank', theme: 'light' },
+      isCurrent: () => true,
+    };
+    await act(async () => root.render(fixture(createElement(PictureCapture, { packet }))));
+    await flush();
+    const grid = { width: 567, height: 1024 };
+    expect(state.captures).toHaveLength(1);
+    expect(state.captures[0].options).toEqual(grid);
+    expect(state.captures[0]).toMatchObject({ ...grid, viewBox: '0 0 567 1024' });
+    await act(async () => state.captures[0].callback('portrait-ink'));
+    await flush();
+    expect(state.captures).toHaveLength(2);
+    expect(state.captures[1].options).toEqual(grid);
+    expect(state.captures[1]).toMatchObject({ ...grid, viewBox: '0 0 567 1024' });
+    await act(async () => state.captures[1].callback('portrait-picture'));
+    await expect(request.promise).resolves.toBe('portrait-picture');
   });
 });

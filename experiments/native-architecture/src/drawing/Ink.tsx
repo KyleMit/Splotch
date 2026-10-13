@@ -1,5 +1,5 @@
 import { useInkPaper } from './InkPaper';
-import { semanticWidth, textureScale } from './paperSpace';
+import { pageArtTransform, paperSize, semanticWidth, textureScale } from './paperSpace';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineMagicFill } from '../offlineLibrary/artwork';
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
@@ -14,7 +14,7 @@ import { CRAYON_BANDS, CRAYON_TILE_PX, crayonPasses, crayonPhase } from './crayo
 import { crayonResourceUri } from './crayonTiles';
 import { useCrayonTileResources } from './useCrayonTileReadiness';
 import { CrayonGlaze } from './CrayonGlaze';
-import { PAPER_HEIGHT, PAPER_WIDTH, type PaintStroke, type Stroke } from './model';
+import type { PaintStroke, Stroke } from './model';
 import { StrokeShape } from './StrokeShape';
 
 const CrayonDefinitionScope = createContext<string | null>(null);
@@ -86,7 +86,9 @@ function MagicPaint({
 }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const { pageId, theme } = useInkAppearance();
-  const width = semanticWidth(stroke.width, useInkPaper());
+  const paper = useInkPaper();
+  const width = semanticWidth(stroke.width, paper);
+  const size = paperSize(paper);
   const bundledPattern = useContext(BundledMagicPatternScope);
   const fill =
     pageId === 'blank' || isFarmPageId(pageId) || isOfflinePageId(pageId)
@@ -103,30 +105,32 @@ function MagicPaint({
             id={id}
             x={0}
             y={0}
-            width={PAPER_WIDTH}
-            height={PAPER_HEIGHT}
+            width={size.width}
+            height={size.height}
             patternUnits="userSpaceOnUse"
             patternContentUnits="userSpaceOnUse"
           >
             <Rect
-              width={PAPER_WIDTH}
-              height={PAPER_HEIGHT}
+              width={size.width}
+              height={size.height}
               fill={paletteHex(fill.background[theme])}
             />
-            {fill.regions.map((region, index) => (
-              <Path
-                key={index}
-                d={region.path}
-                fill={paletteHex(region.colors[theme])}
-                stroke="none"
-              />
-            ))}
+            <G transform={pageArtTransform(size)}>
+              {fill.regions.map((region, index) => (
+                <Path
+                  key={index}
+                  d={region.path}
+                  fill={paletteHex(region.colors[theme])}
+                  stroke="none"
+                />
+              ))}
+            </G>
           </Pattern>
         ) : (
           <LinearGradient
             id={id}
             gradientUnits="userSpaceOnUse"
-            {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
+            {...rainbowLine(stroke.rainbow, size.width, size.height)}
           >
             {rainbow(stroke.rainbow).stops.map((stop) => (
               <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
@@ -157,6 +161,7 @@ export function InkArtwork({
 }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const appearance = useContext(InkAppearanceScope);
+  const size = paperSize(useInkPaper());
   const tileResources = useCrayonTileResources(strokes, appearance?.theme ?? 'light');
   const bookPage =
     appearance && (isFarmPageId(appearance.pageId) || isOfflinePageId(appearance.pageId))
@@ -179,15 +184,15 @@ export function InkArtwork({
               id={bookPattern}
               x={0}
               y={0}
-              width={PAPER_WIDTH}
-              height={PAPER_HEIGHT}
+              width={size.width}
+              height={size.height}
               patternUnits="userSpaceOnUse"
               patternContentUnits="userSpaceOnUse"
             >
               {isOfflinePageId(bookPage) ? (
-                <OfflineMagicFill pageId={bookPage} theme={appearance.theme} />
+                <OfflineMagicFill pageId={bookPage} theme={appearance.theme} size={size} />
               ) : (
-                <BundledMagicFill pageId={bookPage} theme={appearance.theme} />
+                <BundledMagicFill pageId={bookPage} theme={appearance.theme} size={size} />
               )}
             </Pattern>
           ) : null}

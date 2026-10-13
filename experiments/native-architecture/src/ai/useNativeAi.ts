@@ -5,6 +5,7 @@ import { aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from './prepare';
 import { parseDrawing } from '../drawing/model';
+import { drawingPaperSize } from '../drawing/paperSpace';
 import type { useDrawingScreen } from '../useDrawingScreen';
 const GATE_TICK_MS = 1000;
 export function useNativeAi(screen: ReturnType<typeof useDrawingScreen>) {
@@ -29,7 +30,7 @@ export function useNativeAi(screen: ReturnType<typeof useDrawingScreen>) {
           const base64 = await surface.capturePng(drawing);
           if (current.currentDrawing() !== drawing)
             throw new Error('The drawing changed before preparation finished.');
-          const bytes = prepareAiPng(base64);
+          const bytes = prepareAiPng(base64, drawingPaperSize(drawing));
           const original = await savePicture(drawing);
           return {
             bytes,

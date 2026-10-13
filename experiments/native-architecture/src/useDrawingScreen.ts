@@ -1,4 +1,4 @@
-import type { PaperReference } from './drawing/paperSpace';
+import { drawingPaperSize, type PaperReference } from './drawing/paperSpace';
 import { useDrawingHistory } from './product/DrawingSession';
 import { protectedDraftPageIds } from './platform/drawingDraft';
 import { offlineLibrary } from './offlineLibrary/runtime';
@@ -449,7 +449,7 @@ function useSurfaceCommands({
         historyRef.current === snapshot &&
         surface.current === owner;
       const observation = hasDrawingInk(snapshot.drawing)
-        ? observations.current?.begin(isCurrent)
+        ? observations.current?.begin(isCurrent, drawingPaperSize(snapshot.drawing))
         : null;
       try {
         const pixels = hasDrawingInk(snapshot.drawing)
