@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { useReduceMotion } from '../drawing/useReduceMotion';
+import { RsdPressable } from './RsdPressable';
 import { brandColors, colors, dimensions, fonts, motion } from './tokens.css';
 
 // Button.svelte's values that no design token carries. They stay in this module because the
@@ -28,15 +29,18 @@ export const BUSY_RING_TURN_MS = 800;
 // resolved against the unthemed brand hue.
 export const BRAND_HERO_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.4)';
 
-export type ButtonVariant = 'brand' | 'wash' | 'outline' | 'danger';
+// tools/migration/tests/rsd-native-button-chrome.test.mjs holds this list and each variant's
+// tokens to Button.svelte.
+export const BUTTON_VARIANTS = ['brand', 'wash', 'outline', 'danger'] as const;
+export type ButtonVariant = (typeof BUTTON_VARIANTS)[number];
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'hero';
 
 // The shipping design Button (web/src/lib/components/design/Button.svelte). Hover is web-only:
 // it sits under (hover: hover), which React Native never matches, as a touch WebView never does.
-// The press scale is an RSD :active transition. The native renderer animates only the listed
-// properties named by their camelCase style key, so the kebab-case color names reach the web's
-// CSS transition alone and transform runs on the native driver: one render as the press starts
-// and one as it ends, none per frame.
+// The press scale is an RSD :active transition, driven natively by RsdPressable. The native
+// renderer animates only the listed properties named by their camelCase style key, so the
+// kebab-case color names reach the web's CSS transition alone and transform runs on the native
+// driver: one render as the press starts and one as it ends, none per frame.
 const styles = css.create({
   button: {
     boxSizing: 'border-box',
@@ -226,8 +230,9 @@ export function RsdButton({
   const parked = disabled && !busy;
   const outline = BUTTON_OUTLINE_PADDING_PX[size];
   return (
-    <html.button
+    <RsdPressable
       type="button"
+      role="button"
       disabled={disabled || busy}
       aria-disabled={disabled || busy}
       aria-busy={busy}
@@ -245,6 +250,6 @@ export function RsdButton({
     >
       {busy ? <BusyRing variant={variant} /> : null}
       <html.span>{children}</html.span>
-    </html.button>
+    </RsdPressable>
   );
 }

@@ -7,7 +7,8 @@ import {
   markup,
   MODES,
   mount,
-  pointer,
+  pressIn,
+  slideOffAndRelease,
   px,
   rgba,
   view,
@@ -43,7 +44,7 @@ describe('RsdIconButton', () => {
     expect(markup()).toBe(
       NATIVE_ICONS.settings.light.replaceAll('currentColor', themes.light.iconInk)
     );
-    await pointer('onPointerDown', 'Settings');
+    await pressIn('Settings');
     expect(control('Settings').style.opacity).toBe(1);
     expect(host.timings.at(-1)).toMatchObject({ useNativeDriver: true });
   });
@@ -72,7 +73,7 @@ describe('RsdIconButton', () => {
       opacity: 1,
     });
     expect(view().querySelector('svg').getAttribute('width')).toBe(String(TILE_PX - 24));
-    await pointer('onPointerDown', 'Coloring books');
+    await pressIn('Coloring books');
     expect(control('Coloring books').style).toMatchObject({
       transform: [{ scale: 0.95 }],
       backgroundColor: theme.brandWash,
@@ -129,7 +130,7 @@ describe('RsdIconButton', () => {
         NATIVE_ICONS.settings[mode].replaceAll('currentColor', themes[mode].iconMuted)
       );
       expect(tile.style.transform).toEqual([{ scale: 1 }]);
-      expect(tile.onPointerDown).toBeUndefined();
+      expect(tile.onPressIn).toBeUndefined();
     }
   );
 
@@ -139,7 +140,8 @@ describe('RsdIconButton', () => {
         skin: 'flyout',
         icon: 'settings',
         label: 'Option',
-        size: TILE_PX,
+        base: TILE_PX,
+        scale: 1,
         selection: 'radio',
         selected: true,
         onPress: vi.fn(),
@@ -157,7 +159,7 @@ describe('RsdIconButton', () => {
       boxShadow: '0 0 0 2px rgba(171, 113, 225, 0.35)',
     });
     expect(markup()).toBe(NATIVE_ICONS.settings.light.replaceAll('currentColor', brand.brand));
-    await pointer('onPointerDown', 'Option');
+    await pressIn('Option');
     expect(control('Option').style.transform).toEqual([{ scale: 0.92 }]);
   });
 
@@ -167,7 +169,8 @@ describe('RsdIconButton', () => {
         skin: 'flyout',
         icon: 'brush-pen',
         label: 'Pen',
-        size: TILE_PX,
+        base: TILE_PX,
+        scale: 1,
         ink: '#1e88e5',
         selection: 'radio',
         selected: false,
@@ -182,6 +185,50 @@ describe('RsdIconButton', () => {
     });
     expect(control('Pen').style.boxShadow).toBeUndefined();
   });
+
+  it.each([
+    [55, 1, 60, 7],
+    [60, 1, 60, 7],
+    [62, 1, 62, 7],
+    [68, 1, 68, 7],
+    [68, 1.3, 68 * 1.3, 7 * 1.3],
+    [55, 0.7, 60 * 0.7, 7 * 0.7],
+  ])(
+    'sizes a flyout option from a %ipx base at %f× Button Size and pads it by the scale alone',
+    async (base, buttonScale, size, padding) => {
+      await mount(
+        h(RsdIconButton, {
+          skin: 'flyout',
+          icon: 'settings',
+          label: 'Option',
+          base,
+          scale: buttonScale,
+          onPress: vi.fn(),
+        })
+      );
+      const { style } = control('Option');
+      expect(style.width).toBeCloseTo(size);
+      expect(style.borderRadius).toBeCloseTo(size * 0.3);
+      expect(style.padding).toBeCloseTo(padding);
+    }
+  );
+
+  const RELEASES = [
+    [{ skin: 'corner', icon: 'settings' }, 'opacity', 0.5],
+    [{ skin: 'tile', icon: 'shapes', size: TILE_PX }, 'transform', [{ scale: 1 }]],
+    [{ skin: 'flyout', icon: 'settings', base: TILE_PX, scale: 1 }, 'transform', [{ scale: 1 }]],
+  ];
+
+  it.each(RELEASES)(
+    'releases the %o skin when a touch slides off and lifts elsewhere',
+    async (props, property, rest) => {
+      const onPress = vi.fn();
+      await mount(h(RsdIconButton, { ...props, label: 'Control', onPress }));
+      await slideOffAndRelease('Control');
+      expect(control('Control').style[property]).toEqual(rest);
+      expect(onPress).not.toHaveBeenCalled();
+    }
+  );
 
   const keylinedPen = (keyline, mode) =>
     mount(
@@ -224,12 +271,13 @@ describe('RsdFlyoutMenu', () => {
       await mount(
         h(
           RsdFlyoutMenu,
-          { label: 'Brushes', direction: 'column', optionSize: 60 },
+          { label: 'Brushes', direction: 'column', base: 55, scale: 1 },
           h(RsdIconButton, {
             skin: 'flyout',
             icon: 'brush-pen',
             label: 'Pen',
-            size: 60,
+            base: 55,
+            scale: 1,
             onPress: vi.fn(),
           })
         ),

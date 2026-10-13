@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { brand, scale } from '../../../web/src/lib/design/tokens.ts';
-import { px } from './rsd-native-button-host.mjs';
+import { createElement as h } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { control, label, mount, px } from './rsd-native-button-host.mjs';
 import {
+  BUTTON_VARIANTS,
+  RsdButton,
   BRAND_HERO_SHADOW,
   BUSY_RING_BORDER_PX,
   BUSY_RING_OPACITY,
@@ -47,10 +50,22 @@ const SHIPPING_SOURCES = {
       'utf8'
     )
   )[1],
+  script: /<script lang="ts">([\s\S]*?)<\/script>/.exec(
+    readFileSync(
+      join(import.meta.dirname, '../../../web/src/lib/components/design/Button.svelte'),
+      'utf8'
+    )
+  )[1],
   app: readFileSync(join(import.meta.dirname, '../../../web/src/app.css'), 'utf8'),
 };
 
 function declarations(css, selector) {
+  const found = ruleDeclarations(css, selector);
+  if (found === undefined) throw new Error(`No shipping rule for ${selector}`);
+  return found;
+}
+
+function ruleDeclarations(css, selector) {
   const wanted = selector.replace(/\s+/g, ' ').trim();
   for (const [, selectors, body] of css
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -73,7 +88,7 @@ function declarations(css, selector) {
         })
     );
   }
-  throw new Error(`No shipping rule for ${selector}`);
+  return undefined;
 }
 
 const number = (value, pattern) => {
@@ -260,5 +275,167 @@ describe('shipping chrome drift', () => {
       [source]: SHIPPING_SOURCES[source].replace(from, to),
     });
     expect(drifted[constant]).not.toEqual(NATIVE_CHROME[constant]);
+  });
+});
+
+const NATIVE_BUTTON_SOURCE = readFileSync(
+  join(
+    import.meta.dirname,
+    '../../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx'
+  ),
+  'utf8'
+);
+const MODES = ['light', 'dark'];
+
+// A shipping colour value — var(--token), a border shorthand ending in one, or a keyword — in
+// each theme.
+function colour(value, mode) {
+  const token = /var\(--([a-z0-9-]+)\)$/.exec(value)?.[1];
+  if (token === undefined) return value;
+  const key = token.replace(/-([a-z0-9])/g, (_, next) => next.toUpperCase());
+  return themes[mode][key] ?? brand[key] ?? `unknown --${token}`;
+}
+
+// Every variant Button.svelte declares, with the tokens its fill, label, border and hover take,
+// and the disabled treatment, resolved in both themes.
+function shippingPalette({ button, script }) {
+  const rules = [...button.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(
+    ([, selector]) => selector.trim()
+  );
+  const variants = rules
+    .filter((selector) => /^\.[a-z]+$/.test(selector))
+    .map((selector) => selector.slice(1))
+    .filter((name) => declarations(button, `.${name}`).color !== undefined);
+  const union = /variant\?: ([^;]+);/
+    .exec(script)[1]
+    .split('|')
+    .map((name) => name.trim().replaceAll("'", ''));
+  const parked = declarations(button, ".btn:disabled:not([aria-busy='true'])");
+  const parkedOutline = declarations(button, ".btn.outline:disabled:not([aria-busy='true'])");
+  return {
+    variants: [...variants].sort(),
+    union: [...union].sort(),
+    ...Object.fromEntries(
+      MODES.map((mode) => [
+        mode,
+        Object.fromEntries(
+          variants.map((name) => {
+            const rule = declarations(button, `.${name}`);
+            return [
+              name,
+              {
+                fill: colour(rule.background, mode),
+                ink: colour(rule.color, mode),
+                border: rule.border === undefined ? null : colour(rule.border, mode),
+                hover: colour(
+                  ruleDeclarations(button, `.${name}:hover:not(:disabled)`)?.background ?? 'none',
+                  mode
+                ),
+                parked: {
+                  fill: colour((name === 'outline' ? parkedOutline : parked).background, mode),
+                  ink: colour(parked.color, mode),
+                  border: name === 'outline' ? colour(parkedOutline['border-color'], mode) : null,
+                },
+              },
+            ];
+          })
+        ),
+      ])
+    ),
+  };
+}
+
+// The native side: the variants RsdButton declares, each rendered through the released native
+// renderer for its resting and disabled colours, plus the hover token its style names (hover never
+// renders natively).
+async function nativePalette() {
+  const palette = { variants: [...BUTTON_VARIANTS].sort(), union: [...BUTTON_VARIANTS].sort() };
+  for (const mode of MODES) {
+    palette[mode] = {};
+    for (const variant of BUTTON_VARIANTS) {
+      const render = async (disabled) => {
+        await mount(h(RsdButton, { variant, disabled, onPress: vi.fn() }, variant), { mode });
+        const { style } = control();
+        return {
+          fill: style.backgroundColor,
+          ink: label().color,
+          border: variant === 'outline' ? style.borderColor : null,
+        };
+      };
+      const block = new RegExp(`\n  ${variant}: \\{([\\s\\S]*?)\n  \\},`).exec(
+        NATIVE_BUTTON_SOURCE
+      )[1];
+      const hover = /':hover': colors\.(\w+)/.exec(block)[1];
+      palette[mode][variant] = {
+        ...(await render(false)),
+        hover: themes[mode][hover],
+        parked: await render(true),
+      };
+    }
+  }
+  return palette;
+}
+
+describe('shipping variant palette drift', () => {
+  it('renders every shipping variant in its shipping tokens, resting, hovered and disabled', async () => {
+    expect(await nativePalette()).toEqual(shippingPalette(SHIPPING_SOURCES));
+  });
+
+  it.each([
+    [
+      'an added variant',
+      (sources) => ({
+        ...sources,
+        button: `${sources.button}\n  .ghost {\n    background: transparent;\n    color: var(--text);\n  }\n`,
+      }),
+    ],
+    [
+      'an added variant name',
+      (sources) => ({
+        ...sources,
+        script: sources.script.replace("'danger'", "'danger' | 'ghost'"),
+      }),
+    ],
+    [
+      'a swapped variant fill token',
+      (sources) => ({
+        ...sources,
+        button: sources.button.replace(
+          'background: var(--brand-wash);\n    color: var(--brand-text);',
+          'background: var(--danger-wash);\n    color: var(--brand-text);'
+        ),
+      }),
+    ],
+    [
+      'a swapped label token',
+      (sources) => ({
+        ...sources,
+        button: sources.button.replace('color: var(--danger-text);', 'color: var(--text);'),
+      }),
+    ],
+    [
+      'a swapped hover token',
+      (sources) => ({
+        ...sources,
+        button: sources.button.replace(
+          'background: var(--brand-solid-hover);',
+          'background: var(--brand-wash-hover);'
+        ),
+      }),
+    ],
+    [
+      'a swapped disabled token',
+      (sources) => ({
+        ...sources,
+        button: sources.button.replace(
+          'background: var(--control-track);',
+          'background: var(--border);'
+        ),
+      }),
+    ],
+  ])('fails on %s in Button.svelte', async (_, mutate) => {
+    const drifted = mutate(SHIPPING_SOURCES);
+    expect(drifted).not.toEqual(SHIPPING_SOURCES);
+    expect(await nativePalette()).not.toEqual(shippingPalette(drifted));
   });
 });

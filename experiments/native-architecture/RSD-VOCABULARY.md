@@ -107,10 +107,16 @@ them yet; the screen units adopt them.
 
 * **Hover** sits under `@media (hover: hover)`. The web matches it; React Native never does, so a
   touch device shows no sticky hover, as the shipping touch WebView shows none.
-* **Press** is an RSD `:active` transition. The native renderer animates only the transition
+* **Press** is an RSD `:active` transition. On the web it is CSS `:active`. On Android and iOS the
+  renderer's own `:active` follows raw pointer down and up, and a touch that slides off and lifts
+  elsewhere never sends the control its pointer up, so `RsdPressable` drives that state from
+  Pressable's press-in and press-out instead: released on sliding off, on cancellation and on
+  release, pressed again on sliding back. The native renderer animates only the transition
   properties named by their camelCase style key, so `transform` and `opacity` run on the native
   driver (one render as the press starts, one as it ends) and the kebab-case color names reach the
   web's CSS transition alone.
+* **Flyout options** take the tile's size-class `base` and the Button Size `scale` separately, as
+  shipping does: the option is `max(base, 60) × scale` and its padding `7 × scale`.
 * **Selected** uses `aria-checked` with a `radio` or `switch` role. Shipping's `aria-pressed` has no
   native mapping in the released renderer.
 * Values shipping writes as literals rather than tokens (press scales, the hero size, outline
@@ -118,5 +124,6 @@ them yet; the screen units adopt them.
   shadows resolved to `rgba()`) are exported beside each component, because the StyleX web compile
   resolves only local constants and token files inside `css.create`.
   `tools/migration/tests/rsd-native-button-chrome.test.mjs` reads `Button.svelte` and `app.css` and
-  fails when one diverges; `rsd-native-button.test.mjs` and `rsd-native-icon-button.test.mjs` mount
+  fails when one diverges, including the variant list and each variant's fill, label, border, hover
+  and disabled tokens; `rsd-native-button.test.mjs` and `rsd-native-icon-button.test.mjs` mount
   every variant, size and state through the released native renderer.

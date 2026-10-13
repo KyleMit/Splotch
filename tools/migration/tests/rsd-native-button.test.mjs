@@ -7,7 +7,9 @@ import {
   label,
   MODES,
   mount,
-  pointer,
+  pressIn,
+  pressOut,
+  slideOffAndRelease,
   px,
   view,
 } from './rsd-native-button-host.mjs';
@@ -90,7 +92,7 @@ describe('RsdButton', () => {
     const onPress = vi.fn();
     await mount(h(RsdButton, { variant: 'brand', onPress }, 'Send report'));
     const before = host.pressables.length;
-    await pointer('onPointerDown');
+    await pressIn();
     expect(control().style.transform).toEqual([{ scale: 0.96 }]);
     expect(host.timings.at(-1)).toMatchObject({
       useNativeDriver: true,
@@ -98,10 +100,22 @@ describe('RsdButton', () => {
     });
     // One state change per press edge, not one render per animation frame.
     expect(host.pressables.length - before).toBeLessThanOrEqual(3);
-    await pointer('onPointerUp');
+    await pressOut();
     expect(control().style.transform).toEqual([{ scale: 1 }]);
     await act(async () => control().onPress({ nativeEvent: {} }));
     expect(onPress).toHaveBeenCalledOnce();
+  });
+
+  it('releases the press when a touch slides off and lifts elsewhere, and presses again on return', async () => {
+    const onPress = vi.fn();
+    await mount(h(RsdButton, { variant: 'brand', onPress }, 'Send report'));
+    await slideOffAndRelease();
+    expect(control().style.transform).toEqual([{ scale: 1 }]);
+    expect(onPress).not.toHaveBeenCalled();
+    await pressIn();
+    await pressOut();
+    await pressIn();
+    expect(control().style.transform).toEqual([{ scale: 0.96 }]);
   });
 
   it('registers no hover state natively, as a touch WebView matches no (hover: hover)', async () => {
@@ -131,7 +145,7 @@ describe('RsdButton', () => {
         transform: [{ scale: 1 }],
       });
       expect(label().color).toBe(themes[mode].text);
-      expect(button.onPointerDown).toBeUndefined();
+      expect(button.onPressIn).toBeUndefined();
     }
   );
 

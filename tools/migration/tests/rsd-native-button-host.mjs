@@ -148,8 +148,23 @@ export const control = (label) =>
 export const label = () => host.texts.at(-1).style;
 export const markup = () => container.querySelector('svg[data-xml]').dataset.xml;
 
-export async function pointer(event, label) {
-  await act(async () => control(label)[event]());
+// Pressability's lifecycle as React Native drives it: press-in on touch-down and on sliding back
+// within reach, press-out on sliding off, on cancellation and on release.
+export async function pressIn(label) {
+  await act(async () => control(label).onPressIn?.({ nativeEvent: {} }));
+}
+
+export async function pressOut(label) {
+  await act(async () => control(label).onPressOut?.({ nativeEvent: {} }));
+}
+
+// A touch that lands on the control, slides off and lifts elsewhere. The control's host gets the
+// pointer-down and press-in, then press-out as the finger leaves; React Native sends the
+// pointer-up to whatever is under the finger at release, so the control never receives it.
+export async function slideOffAndRelease(label) {
+  await act(async () => control(label).onPointerDown?.({ nativeEvent: {} }));
+  await pressIn(label);
+  await pressOut(label);
 }
 // The mounted DOM, for reading rendered text and icon markup.
 export const view = () => container;

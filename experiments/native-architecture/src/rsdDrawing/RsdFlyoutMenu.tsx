@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
-import { ACTION_TILE_RADIUS_RATIO } from './RsdIconButton';
+import { ACTION_TILE_RADIUS_RATIO, flyoutOptionSize, type FlyoutScale } from './RsdIconButton';
 import { colors } from './tokens.css';
 
 // The app.css .flyout-menu values that no design token carries, kept local for the StyleX web
@@ -26,26 +26,26 @@ const styles = css.create({
   radius: (radius: number) => ({ borderRadius: radius }),
 });
 
-function flyoutMenuRadius(optionSize: number) {
-  return optionSize * ACTION_TILE_RADIUS_RATIO + FLYOUT_MENU_PADDING_PX;
+function flyoutMenuRadius(scale: FlyoutScale) {
+  return flyoutOptionSize(scale) * ACTION_TILE_RADIUS_RATIO + FLYOUT_MENU_PADDING_PX;
 }
 
 export function RsdFlyoutMenu({
   label,
   direction,
-  optionSize,
+  base,
+  scale,
   children,
-}: {
+}: FlyoutScale & {
   label: string;
   direction: 'row' | 'column';
-  optionSize: number;
   children: ReactNode;
 }) {
   return (
     <html.div
       role="group"
       aria-label={label}
-      style={[styles.menu, styles[direction], styles.radius(flyoutMenuRadius(optionSize))]}
+      style={[styles.menu, styles[direction], styles.radius(flyoutMenuRadius({ base, scale }))]}
     >
       {children}
     </html.div>

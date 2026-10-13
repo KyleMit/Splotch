@@ -1,7 +1,8 @@
-import { css, html } from 'react-strict-dom';
+import { css } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
+import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
 
@@ -24,8 +25,7 @@ export const ACTION_TILE_DISABLED_OPACITY = 0.3;
 // resolved against the unthemed brand hue.
 export const ACTION_TILE_HOVER_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.3)';
 export const BRAND_SELECTION_RING = '0 0 0 2px rgba(171, 113, 225, 0.35)';
-// An option squares with the tile that opened its menu, never below this base, and its padding
-// scales from its value at that base.
+// An option's base never drops below this; its padding is the second value times Button Size.
 export const FLYOUT_OPTION_MIN_BASE_PX = 60;
 export const FLYOUT_OPTION_PADDING_PX = 7;
 export const FLYOUT_OPTION_PRESS_SCALE = 0.92;
@@ -34,10 +34,10 @@ export const WHITE_INK_KEYLINE = '#000';
 
 // The shipping icon-button skins: .corner-button, the Actions Panel's .action-button tile and
 // .flyout-option. Hover is web-only, under (hover: hover), which React Native never matches. Every
-// press is an RSD :active transition. The native renderer animates only the listed properties
-// named by their camelCase style key, so the kebab-case color and shadow names reach the web's
-// CSS transition alone and transform and opacity run on the native driver: one render as the
-// press starts and one as it ends, none per frame.
+// press is an RSD :active transition, driven natively by RsdPressable. The native renderer
+// animates only the listed properties named by their camelCase style key, so the kebab-case
+// color and shadow names reach the web's CSS transition alone and transform and opacity run on
+// the native driver: one render as the press starts and one as it ends, none per frame.
 const styles = css.create({
   base: {
     boxSizing: 'border-box',
@@ -147,16 +147,19 @@ const styles = css.create({
 
 const CORNER_ICON_PX = CORNER_BUTTON_SIZE_PX - 2 * DRAWING_SCALE.space2;
 
-// The option's padding scales with it, from its value at the minimum base.
-function facePadding(skin: 'tile' | 'flyout', size: number) {
-  return skin === 'tile'
-    ? size / ACTION_TILE_PADDING_SHARE
-    : (FLYOUT_OPTION_PADDING_PX * size) / FLYOUT_OPTION_MIN_BASE_PX;
+// A flyout option squares with the tile that opened its menu: the viewport's size-class base,
+// floored, times the Button Size multiplier (1 at 100%). Its padding follows the multiplier
+// alone, so a large-screen base grows the option without growing its padding.
+export type FlyoutScale = { base: number; scale: number };
+
+export function flyoutOptionSize({ base, scale }: FlyoutScale) {
+  return Math.max(base, FLYOUT_OPTION_MIN_BASE_PX) * scale;
 }
 
-// The square a tile or option of this outer size leaves its icon.
-function faceIconSize(skin: 'tile' | 'flyout', size: number) {
-  return size - 2 * (facePadding(skin, size) + ACTION_TILE_BORDER_PX);
+function faceGeometry(props: { skin: 'tile'; size: number } | ({ skin: 'flyout' } & FlyoutScale)) {
+  if (props.skin === 'tile')
+    return { size: props.size, padding: props.size / ACTION_TILE_PADDING_SHARE };
+  return { size: flyoutOptionSize(props), padding: FLYOUT_OPTION_PADDING_PX * props.scale };
 }
 
 // .white-stroke rings white ink in black; .dark-stroke rings near-black ink in the themed
@@ -173,7 +176,6 @@ type Common = {
 };
 
 type FaceInk = {
-  size: number;
   // Resolves the icon's currentColor: a brush face's ink parts take the active paint.
   ink?: string;
   keyline?: InkKeyline;
@@ -182,8 +184,8 @@ type FaceInk = {
 export type IconButtonProps = Common &
   (
     | { skin: 'corner'; expanded?: boolean }
-    | ({ skin: 'tile'; disabled?: boolean; expanded?: boolean } & FaceInk & Selection)
-    | ({ skin: 'flyout' } & FaceInk & Selection)
+    | ({ skin: 'tile'; size: number; disabled?: boolean; expanded?: boolean } & FaceInk & Selection)
+    | ({ skin: 'flyout' } & FlyoutScale & FaceInk & Selection)
   );
 
 function useKeylineColor(keyline: InkKeyline | undefined) {
@@ -199,23 +201,25 @@ export function RsdIconButton(props: IconButtonProps) {
   const { icon, label, onPress } = props;
   if (props.skin === 'corner') {
     return (
-      <html.button
+      <RsdPressable
         type="button"
+        role="button"
         aria-label={label}
         aria-expanded={props.expanded}
         style={[styles.base, styles.corner]}
         onClick={onPress}
       >
         <RsdIcon name={icon} size={CORNER_ICON_PX} ink={undefined} muted={false} />
-      </html.button>
+      </RsdPressable>
     );
   }
-  const { skin, size, ink, selection, selected = false } = props;
+  const { skin, ink, selection, selected = false } = props;
+  const { size, padding } = faceGeometry(props);
   const disabled = skin === 'tile' && props.disabled === true;
   const expanded = skin === 'tile' ? props.expanded : undefined;
   const brandInk = skin === 'flyout' && selected ? DRAWING_BRAND : undefined;
   return (
-    <html.button
+    <RsdPressable
       type="button"
       role={selection ?? 'button'}
       aria-label={label}
@@ -226,7 +230,7 @@ export function RsdIconButton(props: IconButtonProps) {
       style={[
         styles.base,
         styles[skin],
-        styles.face(size, facePadding(skin, size)),
+        styles.face(size, padding),
         skin === 'tile' && selected && styles.tileSelected,
         skin === 'flyout' && selected && styles.flyoutSelected,
         disabled && styles.tileDisabled,
@@ -235,11 +239,11 @@ export function RsdIconButton(props: IconButtonProps) {
     >
       <RsdIcon
         name={icon}
-        size={faceIconSize(skin, size)}
+        size={size - 2 * (padding + ACTION_TILE_BORDER_PX)}
         ink={ink ?? brandInk}
         muted={disabled}
         keyline={keyline}
       />
-    </html.button>
+    </RsdPressable>
   );
 }
