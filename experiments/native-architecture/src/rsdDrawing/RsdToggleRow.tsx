@@ -6,7 +6,7 @@ import type { NativeIconName } from './icons.generated';
 
 // The settings rows' icon column (--setting-icon-size), and the gap from a row to its help line.
 // rsd-native-settings-rows.test.mjs reads both from the shipping source.
-const SETTING_ICON_PX = 20;
+export const SETTING_ICON_PX = 20;
 const HELP_GAP_PX = 6;
 const HELP_LINE_HEIGHT = 1.4;
 

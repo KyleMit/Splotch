@@ -53,7 +53,7 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
     optionalBrushSwitches: 3,
     optionalBrushLabels: ['Show Crayon', 'Show Magic Brush', 'Show Eraser'],
     adaptiveToolbarSwitch: true,
-    preservedSettingsSwitches: 6,
+    preservedSettingsSwitches: 5,
   });
 });
 it.each([
@@ -116,18 +116,13 @@ it('rejects a comment marker instead of actual canonical registration', () => {
 
 it.each([
   [
-    'selected={settings.coloringBookEnabled}',
+    'selected={settings.undoButtonEnabled}',
     'selected={settings.soundEnabled}',
     'RSD switch state callers',
   ],
   ['selected={settings.soundEnabled}', 'selected={settings.saved}', 'RSD switch state owner'],
   ['onClick={onToggle}', 'onClick={onClose}', 'RSD sound switch callback'],
-  [
-    'onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}',
-    'onClick={() => onColoringBookChange(settings.coloringBookEnabled)}',
-    'RSD coloring switch callback',
-  ],
-  ["'Drawing sound on'", "'Coloring book on'", 'RSD soundEnabled switch labels'],
+  ["'Drawing sound on'", "'Drawing sound off'", 'RSD soundEnabled switch labels'],
 ])('rejects the actual Settings switch mutation for %s', (before, after, reason) => {
   const path = fixture();
   const target = join(path, 'src/rsdDrawing/RsdSettingsDialog.tsx');

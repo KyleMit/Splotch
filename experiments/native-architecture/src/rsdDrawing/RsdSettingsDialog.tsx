@@ -13,7 +13,8 @@ import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
 import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from '../settings/soundLevel';
 import { RsdAction, styles as controlStyles } from './controls';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
@@ -29,9 +30,15 @@ import {
   type SectionSummaryContext,
 } from '../settings/settingsSections';
 import { installPrompt } from '../platform/installPrompt';
-import { RsdSettingsHub, useHubToggles } from './RsdSettingsHub';
+import { RsdSettingsHub, useHubToggles, useSectionActivity } from './RsdSettingsHub';
+import { RsdSettingsWide } from './RsdSettingsWide';
+import { RsdSettingsCompact } from './RsdSettingsCompact';
+import { RsdScrollCue } from './RsdScrollCue';
+import { useDialogBody } from './dialogScope';
+import { settingsShell } from './modalGeometry';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
+import { RsdColoringSection } from './RsdColoringSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
@@ -81,12 +88,15 @@ function pageLabel(page: SettingsPage) {
   return 'Settings';
 }
 
-// The shipping phone Settings: a hub of sections that each drill into their own page, with the
-// header's Back returning to the hub. Each move unmounts the control that held focus, so focus
-// lands on what replaced it: the section's heading, or the hub row Back returned to.
+// The shipping Settings, in the shell the window selects (ADR-0061). The phone hub drills into one
+// section per page, with the header's Back returning to the hub; each move unmounts the control
+// that held focus, so focus lands on what replaced it: the section's heading, or the hub row Back
+// returned to. A tablet shows the sections beside a table of contents, and a landscape phone the
+// quick toggles only. A rotation re-picks the shell live.
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
   const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
+  const shell = settingsShell(useWindowDimensions());
   const [page, setPage] = useState<SettingsPage>(HUB);
   const sectionTitle = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -98,6 +108,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     onSoundToggle: props.onToggle,
     onAppearanceChange: props.onAppearanceChange,
   });
+  const context: SectionSummaryContext = {
+    settings,
+    brushes: props.brushState,
+    downloadedBooks: props.downloadedBooks,
+    ai: props.ai,
+  };
+  const unseen = useSectionActivity(context);
   const openSection = (section: NativeSettingsSectionId) => {
     if (section === 'feedback') {
       props.onFeedback();
@@ -108,67 +125,110 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   };
   const back = () =>
     setPage({ kind: 'hub', returnTo: page.kind === 'section' ? page.section : null });
+  const onHelp = () => setPage({ kind: 'information', page: 'help' });
+  // Only the phone shell drills in; the others show the same sections in place.
+  const subpage =
+    page.kind === 'information' || (shell === 'phone' && page.kind === 'section') ? page : null;
+  const status = (
+    <>
+      {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
+      {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
+      {settings.status === 'ready' && !settings.saved ? (
+        <RsdAction label="Try saving settings again" onClick={onRetry} />
+      ) : null}
+    </>
+  );
   return (
     <ModalShell
       visible={visible}
       onDismiss={onDismiss}
-      label={pageLabel(page)}
+      label={pageLabel(subpage ?? HUB)}
       size="settings"
-      onClose={page.kind === 'hub' ? onClose : back}
+      onClose={subpage ? back : onClose}
+      scrolls={subpage?.kind === 'information'}
       header={
-        page.kind === 'hub' ? (
-          <DialogHeader title={pageLabel(page)} titleSize="xl" onClose={onClose} />
+        subpage ? (
+          <DialogHeader
+            title={pageLabel(subpage)}
+            titleSize="lg"
+            titleRef={subpage.kind === 'section' ? sectionTitle : undefined}
+            onBack={back}
+            onClose={onClose}
+          />
         ) : (
           <DialogHeader
-            title={pageLabel(page)}
-            titleSize="lg"
-            titleRef={page.kind === 'section' ? sectionTitle : undefined}
-            onBack={back}
+            title={pageLabel(HUB)}
+            titleSize={shell === 'compact' ? 'lg' : 'xl'}
             onClose={onClose}
           />
         )
       }
     >
-      {page.kind === 'information' ? (
+      {subpage?.kind === 'information' ? (
         <RsdInformationSection
-          page={page.page}
+          page={subpage.page}
           onNavigate={(next) =>
             next === 'whatsNew'
               ? openSection('whatsnew')
               : setPage({ kind: 'information', page: next })
           }
         />
-      ) : (
-        <html.div style={controlStyles.dialogContent}>
-          {page.kind === 'section' ? (
-            <SettingsSection
-              {...props}
-              section={page.section}
-              busy={busy}
-              onHelp={() => setPage({ kind: 'information', page: 'help' })}
-            />
-          ) : (
-            <RsdSettingsHub
-              sections={HUB_SECTIONS}
-              context={{
-                settings,
-                brushes: props.brushState,
-                downloadedBooks: props.downloadedBooks,
-                ai: props.ai,
-              }}
-              toggles={toggles}
-              returnTo={page.returnTo}
-              onOpen={openSection}
-            />
+      ) : subpage?.kind === 'section' ? (
+        <PhoneScroll>
+          <SettingsSection {...props} section={subpage.section} busy={busy} onHelp={onHelp} />
+          {status}
+        </PhoneScroll>
+      ) : shell === 'wide' ? (
+        <RsdSettingsWide
+          sections={HUB_SECTIONS}
+          unseen={unseen}
+          renderSection={(section) => (
+            <SettingsSection {...props} section={section} busy={busy} onHelp={onHelp} />
           )}
-          {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
-          {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-          {settings.status === 'ready' && !settings.saved ? (
-            <RsdAction label="Try saving settings again" onClick={onRetry} />
-          ) : null}
-        </html.div>
+          onSeen={(section) => {
+            if (section === 'whatsnew') onWhatsNewSeen();
+          }}
+          onFeedback={props.onFeedback}
+        >
+          {status}
+        </RsdSettingsWide>
+      ) : shell === 'compact' ? (
+        <RsdSettingsCompact
+          sound={toggles.sound}
+          night={toggles.appearance}
+          orientation={settings.orientation}
+          busy={busy}
+          onOrientationChange={props.onOrientationChange}
+        >
+          {status}
+        </RsdSettingsCompact>
+      ) : (
+        <PhoneScroll>
+          <RsdSettingsHub
+            sections={HUB_SECTIONS}
+            context={context}
+            toggles={toggles}
+            unseen={unseen}
+            returnTo={page.kind === 'hub' ? page.returnTo : null}
+            onOpen={openSection}
+          />
+          {status}
+        </PhoneScroll>
       )}
     </ModalShell>
+  );
+}
+
+// The phone shell's one scroller, inset by the card's body padding, with its bottom edge fading
+// while more lies below.
+function PhoneScroll({ children }: { children: ReactNode }) {
+  const body = useDialogBody();
+  return (
+    <RsdScrollCue
+      inset={body && { top: body.top, right: body.inline, bottom: body.bottom, left: body.inline }}
+    >
+      <html.div style={controlStyles.dialogContent}>{children}</html.div>
+    </RsdScrollCue>
   );
 }
 
@@ -198,12 +258,10 @@ function SettingsSection(props: SectionProps) {
       );
     case 'coloring':
       return (
-        <RsdAction
-          label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
-          selection="switch"
-          selected={settings.coloringBookEnabled}
-          disabled={busy}
-          onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
+        <RsdColoringSection
+          enabled={settings.coloringBookEnabled}
+          busy={busy}
+          onColoringBookChange={onColoringBookChange}
         />
       );
     // Feedback opens its own sheet from the hub, and AI Art has no native section body yet.

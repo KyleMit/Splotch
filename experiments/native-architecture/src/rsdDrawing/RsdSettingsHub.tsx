@@ -37,7 +37,7 @@ export function useHubToggles({
   soundEnabled: boolean;
   onSoundToggle: () => void;
   onAppearanceChange: (appearance: 'light' | 'dark') => void;
-}): HubToggles {
+}): { appearance: HubToggle; sound: HubToggle } {
   const night = useDrawingAppearance() === 'dark';
   return {
     appearance: {
@@ -64,6 +64,14 @@ function sectionUnseen(id: NativeSettingsSectionId, context: SectionSummaryConte
   return id === 'whatsnew' && whatsNewUnseen(context.settings.whatsNewSeen);
 }
 
+// Whether a section carries its activity dot: content changed since the parent last opened it,
+// from the sixth session on. The hub rows and the wide sidebar rows both ask this.
+export function useSectionActivity(context: SectionSummaryContext) {
+  const sessions = useLazyValue(settingsSessions, (count) => count, SESSION_COUNT_DESCRIPTION);
+  const dots = activityDotsShown(sessions);
+  return (id: NativeSettingsSectionId) => dots && sectionUnseen(id, context);
+}
+
 // The shipping phone hub (HubList.svelte): one tile per section with its icon and live status, a
 // trailing switch on the rows a parent flips mid-session, and the activity dot on a section whose
 // content changed since the parent last opened it, from the sixth session on.
@@ -71,17 +79,17 @@ export function RsdSettingsHub({
   sections,
   context,
   toggles,
+  unseen,
   returnTo,
   onOpen,
 }: {
   sections: readonly NativeSettingsSection[];
   context: SectionSummaryContext;
   toggles: HubToggles;
+  unseen: (id: NativeSettingsSectionId) => boolean;
   returnTo: NativeSettingsSectionId | null;
   onOpen: (id: NativeSettingsSectionId) => void;
 }) {
-  const sessions = useLazyValue(settingsSessions, (count) => count, SESSION_COUNT_DESCRIPTION);
-  const dots = activityDotsShown(sessions);
   const firstDrillIn = sections.findIndex((section) => !toggles[section.id]);
   return (
     <html.div role="list" style={styles.list}>
@@ -97,7 +105,7 @@ export function RsdSettingsHub({
               icon={section.icon}
               title={section.label}
               subtitle={sectionSubtitle(section.id, context)}
-              unseen={dots && sectionUnseen(section.id, context)}
+              unseen={unseen(section.id)}
               focusOnMount={section.id === returnTo}
               onOpen={() => onOpen(section.id)}
               toggle={toggle}

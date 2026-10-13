@@ -7,7 +7,7 @@ import {
 
 // The shipping modal frame: app.css .modal-dialog / .modal-shell / .modal-close-btn /
 // .dialog-header-control, DialogHeader.svelte, and each card's own width rules in
-// SettingsModal.svelte, ParentalGate.svelte and app.css .confirm-card.
+// SettingsModal.svelte, ColoringBook.svelte, ParentalGate.svelte and app.css .confirm-card.
 // modal-geometry.test.mjs reads those sources and fails when a value here drifts.
 
 export const MODAL_SCRIM_FROSTED = 'rgba(0, 0, 0, 0.6)';
@@ -25,7 +25,7 @@ export const DIALOG_BACK_PADDING_PX = 12;
 export const MODAL_CONTROL_ICON_PX = MODAL_CONTROL_SIZE_PX - 2 * DIALOG_BACK_PADDING_PX;
 export const MODAL_CONTROL_PRESSED_SCALE = 0.92;
 
-const CARD_HEIGHT_CAP_FRACTION = 0.85;
+export const CARD_HEIGHT_CAP_FRACTION = 0.85;
 const WIDE_CARD_HEIGHT_CEILING_PX = 760;
 const SETTINGS_MAX_WIDTH_PX = 500;
 const SETTINGS_WIDE_MAX_WIDTH_PX = 860;
@@ -33,6 +33,13 @@ const SETTINGS_COMPACT_MAX_WIDTH_PX = 640;
 // SettingsModal.svelte's narrow-phone step for its header and scroll padding.
 const SETTINGS_NARROW_MAX_WIDTH_PX = 480;
 const CONFIRM_MAX_WIDTH_PX = 336;
+export const COLORING_MAX_WIDTH_PX = 920;
+// ColoringBook.svelte's content padding steps down on a phone and again on a narrow one; the
+// header row stands its own gap above the grid.
+export const COLORING_PHONE_MAX_WIDTH_PX = 520;
+export const COLORING_NARROW_MAX_WIDTH_PX = 400;
+export const COLORING_PADDING_PX = { roomy: 32, phoneBlock: 24, phoneInline: 16, narrowInline: 8 };
+export const COLORING_HEADER_GAP_PX = 20;
 const GATE_MAX_WIDTH_PX = {
   phone: 336,
   phoneLandscape: 560,
@@ -46,6 +53,8 @@ const SETTINGS_HEADER: Record<'narrow' | 'roomy', Box> = {
   narrow: { top: 24, inline: 20, bottom: 16 },
   roomy: { top: 28, inline: 24, bottom: 18 },
 };
+// CompactShell.svelte's own header: every vertical pixel counts on a landscape phone.
+const SETTINGS_COMPACT_HEADER: Box = { top: 14, inline: 24, bottom: 10 };
 const SETTINGS_SCROLL: Record<'narrow' | 'roomy', Box> = {
   narrow: { top: 0, inline: 20, bottom: 24 },
   roomy: { top: 0, inline: 24, bottom: 28 },
@@ -59,9 +68,9 @@ const GATE_CONTENT: Record<keyof typeof GATE_MAX_WIDTH_PX, Box> = {
 };
 
 // Settings is the shipping Settings card; a sheet is that card's phone shell, which every RN
-// sheet without a shipping card of its own wears; the gate and confirm cards are the narrow
-// boundary cards.
-export type ModalSize = 'settings' | 'sheet' | 'gate' | 'confirm';
+// sheet without a shipping card of its own wears; the coloring card is the Coloring Book
+// Picker's; the gate and confirm cards are the narrow boundary cards.
+export type ModalSize = 'settings' | 'sheet' | 'coloring' | 'gate' | 'confirm';
 
 export type ModalFrame = {
   width: number;
@@ -80,24 +89,35 @@ function gateClass({ width, height }: Window): keyof typeof GATE_MAX_WIDTH_PX {
   return 'phone';
 }
 
-function settingsMaxWidth(window: Window, size: 'settings' | 'sheet') {
-  if (size === 'sheet') return SETTINGS_MAX_WIDTH_PX;
-  if (isPhoneLandscape(window.width, window.height)) return SETTINGS_COMPACT_MAX_WIDTH_PX;
-  return window.width >= SETTINGS_WIDE_MIN_WIDTH_PX
-    ? SETTINGS_WIDE_MAX_WIDTH_PX
-    : SETTINGS_MAX_WIDTH_PX;
+// SettingsModal.svelte's shell choice (ADR-0061): a landscape phone gets the quick-toggle shell
+// even where it is wide enough for the sidebar, and a sheet is always the phone card.
+export type SettingsShell = 'phone' | 'wide' | 'compact';
+
+export function settingsShell({ width, height }: Window): SettingsShell {
+  if (isPhoneLandscape(width, height)) return 'compact';
+  return width >= SETTINGS_WIDE_MIN_WIDTH_PX ? 'wide' : 'phone';
 }
 
-function settingsWide(window: Window, size: ModalSize) {
-  return (
-    size === 'settings' &&
-    window.width >= SETTINGS_WIDE_MIN_WIDTH_PX &&
-    !isPhoneLandscape(window.width, window.height)
-  );
-}
+const SETTINGS_SHELL_MAX_WIDTH_PX: Record<SettingsShell, number> = {
+  phone: SETTINGS_MAX_WIDTH_PX,
+  wide: SETTINGS_WIDE_MAX_WIDTH_PX,
+  compact: SETTINGS_COMPACT_MAX_WIDTH_PX,
+};
 
 function fitWidth(window: Window, gutter: number, maxWidth: number) {
   return Math.min(maxWidth, window.width - 2 * gutter);
+}
+
+function coloringPadding(width: number) {
+  if (width > COLORING_PHONE_MAX_WIDTH_PX)
+    return { block: COLORING_PADDING_PX.roomy, inline: COLORING_PADDING_PX.roomy };
+  return {
+    block: COLORING_PADDING_PX.phoneBlock,
+    inline:
+      width > COLORING_NARROW_MAX_WIDTH_PX
+        ? COLORING_PADDING_PX.phoneInline
+        : COLORING_PADDING_PX.narrowInline,
+  };
 }
 
 // The card's box for a window: the viewport width less the gutter each side, under the card's
@@ -116,6 +136,16 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
       body: content,
     };
   }
+  if (size === 'coloring') {
+    const padding = coloringPadding(window.width);
+    return {
+      width: fitWidth(window, gutter, COLORING_MAX_WIDTH_PX),
+      maxHeight: cap,
+      height: null,
+      header: { top: padding.block, inline: padding.inline, bottom: COLORING_HEADER_GAP_PX },
+      body: { top: 0, inline: padding.inline, bottom: padding.block },
+    };
+  }
   if (size === 'confirm')
     return {
       width: fitWidth(window, gutter, CONFIRM_MAX_WIDTH_PX),
@@ -125,11 +155,12 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
       body: CONFIRM_CONTENT,
     };
   const step = window.width <= SETTINGS_NARROW_MAX_WIDTH_PX ? 'narrow' : 'roomy';
+  const shell = size === 'sheet' ? 'phone' : settingsShell(window);
   return {
-    width: fitWidth(window, gutter, settingsMaxWidth(window, size)),
+    width: fitWidth(window, gutter, SETTINGS_SHELL_MAX_WIDTH_PX[shell]),
     maxHeight: cap,
-    height: settingsWide(window, size) ? Math.min(cap, WIDE_CARD_HEIGHT_CEILING_PX) : null,
-    header: SETTINGS_HEADER[step],
+    height: shell === 'wide' ? Math.min(cap, WIDE_CARD_HEIGHT_CEILING_PX) : null,
+    header: shell === 'compact' ? SETTINGS_COMPACT_HEADER : SETTINGS_HEADER[step],
     body: SETTINGS_SCROLL[step],
   };
 }

@@ -17,6 +17,10 @@ export const BUNDLED_FARM_FILL_DIR = `${root}web/static/coloring/max-1152px/farm
 // of the startup script (images.web.ts).
 export const NATIVE_IMAGES_FILE = 'images.ts';
 export const WEB_IMAGES_FILE = 'images.web.ts';
+// The picker's covers and page thumbnails ship in their own module, which only the picker's lazy
+// chunk imports, so their asset entries stay off the web startup path the paper's fills are on.
+export const NATIVE_PICKER_IMAGES_FILE = 'pickerImages.ts';
+export const WEB_PICKER_IMAGES_FILE = 'pickerImages.web.ts';
 // Resolved from the generated modules in bundledFarm/, not from this script.
 const GENERATED_ART_TYPES_SPECIFIER = '../bundledBookAssets';
 const GENERATED_HEADER =
@@ -99,27 +103,31 @@ export function bundledPageOutlines(slug) {
 }
 
 // Every bundled image as the absolute path of the shipping file it carries, in the shape of the
-// generated images modules.
+// generated images modules: the paper's fills, and the picker's page thumbnails and covers.
 export function bundledFarmImageFiles() {
+  const perPage = (build) =>
+    Object.fromEntries(FARM_PAGE_IDS.map((pageId) => [pageId, build(slugOf(pageId))]));
   return {
-    pages: Object.fromEntries(
-      FARM_PAGE_IDS.map((pageId) => {
-        const slug = slugOf(pageId);
-        return [
-          pageId,
-          {
-            ...oriented(
-              (orientationSlug, theme) =>
-                `${BUNDLED_FARM_FILL_DIR}${slug}-${orientationSlug}.${THEMES[theme].fill}`
-            ),
-            // The picker keeps the wide thumbnails on every paper.
-            selector: themed((theme) => `${SOURCE_DIR}${slug}-wide.${THEMES[theme].selector}`),
-          },
-        ];
-      })
+    pages: perPage((slug) =>
+      oriented(
+        (orientationSlug, theme) =>
+          `${BUNDLED_FARM_FILL_DIR}${slug}-${orientationSlug}.${THEMES[theme].fill}`
+      )
+    ),
+    // The picker shows the thumbnails cut to the paper's own orientation, as shipping does.
+    selectors: perPage((slug) =>
+      oriented(
+        (orientationSlug, theme) =>
+          `${SOURCE_DIR}${slug}-${orientationSlug}.${THEMES[theme].selector}`
+      )
     ),
     covers: themed((theme) => `${SOURCE_DIR}${THEMES[theme].cover}`),
   };
+}
+
+// Every file path in a bundledFarmImageFiles() entry, however deeply its slots nest.
+export function imageFilePaths(files) {
+  return typeof files === 'string' ? [files] : Object.values(files).flatMap(imageFilePaths);
 }
 
 function outlineModuleSource(slug) {
@@ -141,26 +149,40 @@ function imagesBody(files, image) {
   return placeholders.replace(IMAGE_PLACEHOLDER, (_, path) => image(path));
 }
 
-function imagesExports(body) {
-  const { pages, covers } = bundledFarmImageFiles();
-  return [
-    `export const BUNDLED_FARM_IMAGES = ${body(pages)} satisfies BundledBookImages;`,
-    '',
-    `export const BUNDLED_FARM_COVERS = ${body(covers)} satisfies BundledThemeImages;`,
-    '',
-  ];
+const IMAGE_MODULES = {
+  fills: {
+    types: ['BundledBookImages'],
+    exports: ({ pages }) => [['BUNDLED_FARM_IMAGES', pages, 'BundledBookImages']],
+  },
+  picker: {
+    types: ['BundledBookImages', 'BundledThemeImages'],
+    exports: ({ selectors, covers }) => [
+      ['BUNDLED_FARM_SELECTORS', selectors, 'BundledBookImages'],
+      ['BUNDLED_FARM_COVERS', covers, 'BundledThemeImages'],
+    ],
+  },
+};
+
+function imagesExports(module, body) {
+  return IMAGE_MODULES[module]
+    .exports(bundledFarmImageFiles())
+    .flatMap(([name, files, type]) => [
+      `export const ${name} = ${body(files)} satisfies ${type};`,
+      '',
+    ]);
 }
 
-const IMAGE_TYPES_IMPORT = `import type { BundledBookImages, BundledThemeImages } from '${GENERATED_ART_TYPES_SPECIFIER}';`;
+const imageTypesImport = (module) =>
+  `import type { ${IMAGE_MODULES[module].types.join(', ')} } from '${GENERATED_ART_TYPES_SPECIFIER}';`;
 
-function nativeImagesSource() {
+function nativeImagesSource(module) {
   const dataUri = (path) =>
     JSON.stringify(`data:image/webp;base64,${readFileSync(path).toString('base64')}`);
   return [
     GENERATED_HEADER,
-    IMAGE_TYPES_IMPORT,
+    imageTypesImport(module),
     '',
-    ...imagesExports((files) => imagesBody(files, dataUri)),
+    ...imagesExports(module, (files) => imagesBody(files, dataUri)),
   ].join('\n');
 }
 
@@ -171,18 +193,14 @@ export function webImageIdentifier(path) {
     .join('');
 }
 
-function webImagesSource() {
-  const { pages, covers } = bundledFarmImageFiles();
-  const paths = [
-    ...Object.values(pages).flatMap((page) =>
-      Object.values(page).flatMap((variants) => Object.values(variants))
-    ),
-    ...Object.values(covers),
-  ];
+function webImagesSource(module) {
+  const paths = IMAGE_MODULES[module]
+    .exports(bundledFarmImageFiles())
+    .flatMap(([, files]) => imageFilePaths(files));
   return [
     GENERATED_HEADER,
     "import { Asset } from 'expo-asset';",
-    IMAGE_TYPES_IMPORT,
+    imageTypesImport(module),
     ...paths.map(
       (path) =>
         `import ${webImageIdentifier(path)} from '${relative(BUNDLED_FARM_DIR, path).split('\\').join('/')}';`
@@ -190,15 +208,19 @@ function webImagesSource() {
     '',
     'const uri = (source: Parameters<typeof Asset.fromModule>[0]) => Asset.fromModule(source).uri;',
     '',
-    ...imagesExports((files) => imagesBody(files, (path) => `uri(${webImageIdentifier(path)})`)),
+    ...imagesExports(module, (files) =>
+      imagesBody(files, (path) => `uri(${webImageIdentifier(path)})`)
+    ),
   ].join('\n');
 }
 
 function generatedModules() {
   return [
     ...FARM_PAGE_IDS.map(slugOf).map((slug) => [`${slug}.ts`, () => outlineModuleSource(slug)]),
-    [NATIVE_IMAGES_FILE, nativeImagesSource],
-    [WEB_IMAGES_FILE, webImagesSource],
+    [NATIVE_IMAGES_FILE, () => nativeImagesSource('fills')],
+    [WEB_IMAGES_FILE, () => webImagesSource('fills')],
+    [NATIVE_PICKER_IMAGES_FILE, () => nativeImagesSource('picker')],
+    [WEB_PICKER_IMAGES_FILE, () => webImagesSource('picker')],
   ];
 }
 

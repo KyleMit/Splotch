@@ -144,13 +144,13 @@ for (const component of [
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 5, 'RSD radio group count');
+assert.equal(groups.length, 4, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  ['Appearance', 'Coloring page', 'Drawing sound level', 'Orientation', 'Paint colors'],
+  ['Appearance', 'Drawing sound level', 'Orientation', 'Paint colors'],
   'RSD radio group names'
 );
-assert.equal(radios, 5, 'RSD selection callers');
+assert.equal(radios, 4, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -163,7 +163,6 @@ assert.ok(
   switches.every((node) =>
     [
       'soundEnabled',
-      'coloringBookEnabled',
       'undoButtonEnabled',
       'strokeWidthControlEnabled',
       'saveOnDeleteEnabled',
@@ -175,7 +174,6 @@ assert.ok(
 assert.deepEqual(
   switches.map((node) => selectedValue(node).property.name).sort(),
   [
-    'coloringBookEnabled',
     'pencilEraserEnabled',
     'saveOnDeleteEnabled',
     'soundEnabled',
@@ -202,24 +200,6 @@ const soundToggle = switchCallback('soundEnabled', 'Drawing sound on', 'Drawing 
 assert.ok(
   soundToggle?.type === 'Identifier' && soundToggle.name === 'onToggle',
   'RSD sound switch callback'
-);
-const coloringToggle = switchCallback(
-  'coloringBookEnabled',
-  'Coloring book on',
-  'Coloring book off'
-);
-assert.ok(
-  coloringToggle?.type === 'ArrowFunctionExpression' &&
-    !coloringToggle.async &&
-    coloringToggle.params.length === 0 &&
-    coloringToggle.body.type === 'CallExpression' &&
-    coloringToggle.body.callee.type === 'Identifier' &&
-    coloringToggle.body.callee.name === 'onColoringBookChange' &&
-    coloringToggle.body.arguments.length === 1 &&
-    coloringToggle.body.arguments[0].type === 'UnaryExpression' &&
-    coloringToggle.body.arguments[0].operator === '!' &&
-    settingsValue(coloringToggle.body.arguments[0].argument, 'coloringBookEnabled'),
-  'RSD coloring switch callback'
 );
 const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
   parse,

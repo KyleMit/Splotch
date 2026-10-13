@@ -2,6 +2,7 @@
 export const DRAWING_THEME = {
   surface: '#ffffff',
   surfaceHover: '#f5f5f5',
+  border: '#e0e0e0',
   borderWarm: '#ddd6cc',
   borderWarmStrong: '#c4bbad',
   textStrong: '#333',
@@ -11,6 +12,7 @@ export const DRAWING_THEME = {
   brandWashHover: '#ede1ff',
   brandSolid: '#7c50bb',
   brandText: '#7c50bb',
+  dangerText: '#b04a4a',
   paper: '#fcfbf8',
   paperMargin: '#f1efeb',
   externalMarkWash: '#f1efeb',
@@ -32,6 +34,7 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
   dark: {
     surface: '#23232b',
     surfaceHover: '#33333e',
+    border: '#3d3d49',
     borderWarm: '#3d3d49',
     borderWarmStrong: '#4d4d5b',
     textStrong: '#eceaf2',
@@ -41,6 +44,7 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
     brandWashHover: '#46395c',
     brandSolid: '#8058c0',
     brandText: '#c9a9f0',
+    dangerText: '#e09393',
     paper: '#211f29',
     paperMargin: '#1a1922',
     externalMarkWash: '#33333e',
