@@ -1,5 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import { css, html } from 'react-strict-dom';
 import { PHONE_MAX_WIDTH_PX } from '../../../../web/src/lib/breakpoints';
@@ -89,11 +94,11 @@ const styles = css.create({
   },
   ground: { backgroundColor: colors.appBg },
   plain: { backgroundColor: colors.surface },
-  pagePadding: (top: number, side: number, bottom: number) => ({
+  pagePadding: (top: number, right: number, bottom: number, left: number) => ({
     paddingTop: top,
+    paddingRight: right,
     paddingBottom: bottom,
-    paddingLeft: side,
-    paddingRight: side,
+    paddingLeft: left,
   }),
   sheet: {
     boxSizing: 'border-box',
@@ -239,6 +244,9 @@ function BrandMark({ phone }: { phone: boolean }) {
 function NotFoundSheet() {
   const theme = useDrawingAppearance();
   const window = useWindowDimensions();
+  // PageShell runs under the status bar, notch and home indicator, and pads every breakpoint's
+  // spacing by the safe area.
+  const insets = useSafeAreaInsets();
   const frame = pageFrame(window.width);
   const phone = frame === 'phone';
   const side = gutter(window.width);
@@ -259,7 +267,12 @@ function NotFoundSheet() {
         style={[
           styles.page,
           phone ? styles.plain : styles.ground,
-          styles.pagePadding(page.top, page.side, page.bottom),
+          styles.pagePadding(
+            page.top + insets.top,
+            page.side + insets.right,
+            page.bottom + insets.bottom,
+            page.side + insets.left
+          ),
           fontTheme,
           theme === 'dark' && darkTheme,
         ]}
@@ -303,7 +316,9 @@ export function RsdNotFoundPage() {
   useEffect(() => setDocumentTitle(NOT_FOUND_COPY.documentTitle), []);
   return (
     <DrawingAppearanceProvider preference={bootAppearance()}>
-      <NotFoundSheet />
+      <SafeAreaProvider initialMetrics={initialWindowMetrics} style={scroll.fill}>
+        <NotFoundSheet />
+      </SafeAreaProvider>
     </DrawingAppearanceProvider>
   );
 }

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
-import { host, mount } from './rsd-native-selection-host.mjs';
+import { host, mount, records } from './rsd-native-selection-host.mjs';
 import {
   BACK_BLOB_PX,
   BACK_ICON_PX,
@@ -46,6 +46,31 @@ describe("the web export's not-found page", () => {
     expect(strip).toContain(
       `const CRAYON_LABELS: PaletteLabel[] = [ ${CRAYON_LABELS.map((label) => `'${label}',`).join(' ')} ];`
     );
+  });
+
+  // Negative control: a page padded by its breakpoint spacing alone puts the masthead under the
+  // status bar.
+  it('pads every breakpoint by the safe area, as PageShell does', async () => {
+    const insets = { top: 47, right: 0, bottom: 34, left: 0 };
+    const flat = (style) =>
+      Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
+    const padding = () => {
+      const page = records.props
+        .map((props) => flat(props.style))
+        .findLast(
+          (style) => style?.flexGrow === 1 && style.alignItems === 'center' && 'paddingTop' in style
+        );
+      return [page.paddingTop, page.paddingRight, page.paddingBottom, page.paddingLeft];
+    };
+    records.insets = insets;
+    records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
+    await mount(createElement(RsdNotFoundPage));
+    expect(padding()).toEqual([47, 0, 34, 0]);
+    records.dimensions = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
+    records.insets = { top: 24, right: 0, bottom: 20, left: 0 };
+    records.props.length = 0;
+    await mount(createElement(RsdNotFoundPage));
+    expect(padding()).toEqual([32 + 24, 16, 72 + 20, 16]);
   });
 
   it('offers the way back to drawing under the shipping title', async () => {
