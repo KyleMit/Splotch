@@ -119,6 +119,9 @@ const paletteStyles = css.create({
     paddingLeft: column ? flow.crossStartPaddingPx : flow.endPaddingPx,
     paddingRight: column ? flow.crossEndPaddingPx : flow.endPaddingPx,
     boxShadow: flow.shadow,
+    // A safe-area inset shortens the bar but not the viewport the trim counts from, so the
+    // flow can overrun its far end; shipping clips it there.
+    overflow: 'hidden',
   }),
   surface: { backgroundColor: colors.surface },
   flow: (column: boolean, gap: number) => ({

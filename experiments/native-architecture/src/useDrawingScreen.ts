@@ -21,7 +21,8 @@ import {
   savedColoringPageIds,
   type SavedPicture,
 } from './platform/drawingFiles';
-import { keepPicture } from './keepPicture';
+import { keepPicture, type KeptPicture } from './keepPicture';
+import { useDrawingMessages } from './drawingMessages';
 import { useBrushPreferences } from './useBrushPreferences';
 import {
   availableBrushes,
@@ -47,7 +48,8 @@ export function useDrawingScreen() {
   const [drawing, setDrawing] = useBackAwareDrawingState();
   const [commandBusy, setBusy] = useState(false);
   const busy = commandBusy || historyOwner.draftState.status === 'loading';
-  const [notice, setNotice] = useState('Pick a color and draw.');
+  const messages = useDrawingMessages();
+  const { notice, setNotice, report } = messages;
   const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
   const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
@@ -55,15 +57,13 @@ export function useDrawingScreen() {
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
   const pngRecovery = usePngRecovery();
-  const report = (error: unknown) => setNotice(drawingErrorMessage(error));
 
   const { command, runCommand, ...surfaceActions } = useSurfaceCommands({
     historyRef,
     setHistory,
     surface,
     setBusy,
-    setNotice,
-    report,
+    ...messages,
     afterClear: () => brushes.owner.current?.resetAfterClear(),
     blocked: () =>
       busy || rendererFault.current || preparing || drawing || settingsLease.current !== null,
@@ -118,11 +118,10 @@ export function useDrawingScreen() {
     setHistory,
     surface,
     runCommand,
-    setNotice,
+    ...messages,
     setPictures,
     pngRecovery,
     commandsBlocked,
-    report,
     replacementGuard,
   });
 
@@ -153,6 +152,8 @@ export function useDrawingScreen() {
     setPreparing,
     ...surfaceActions,
     notice: brushes.state.message || notice,
+    failure: messages.failure,
+    dismissFailure: messages.dismissFailure,
     pictures,
     setPictures,
     surface,
@@ -251,12 +252,6 @@ function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pi
   };
 }
 
-function drawingErrorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : 'That did not finish. Your picture is still here.';
-}
-
 function useHistoryReplacementGuard() {
   const lifetime = useRef({ active: true, revision: 0 });
   useEffect(() => {
@@ -317,6 +312,8 @@ function usePictureActions({
   surface,
   runCommand,
   setNotice,
+  recordSave,
+  failSave,
   setPictures,
   pngRecovery,
   commandsBlocked,
@@ -328,6 +325,8 @@ function usePictureActions({
   surface: RefObject<DrawingSurfaceHandle | null>;
   runCommand: (action: () => Promise<void>) => Promise<void>;
   setNotice: (notice: string) => void;
+  recordSave: (kept: KeptPicture) => void;
+  failSave: () => void;
   setPictures: (pictures: SavedPicture[] | null) => void;
   pngRecovery: ReturnType<typeof usePngRecovery>;
   commandsBlocked: () => boolean;
@@ -346,7 +345,15 @@ function usePictureActions({
 
   async function save() {
     await runCommand(async () => {
-      setNotice(await keepPicture(historyRef.current.drawing, surface.current));
+      let kept: KeptPicture;
+      try {
+        kept = await keepPicture(historyRef.current.drawing, surface.current);
+      } catch {
+        failSave();
+        return;
+      }
+      setNotice(kept.notice);
+      recordSave(kept);
     });
   }
 
@@ -383,6 +390,7 @@ function useSurfaceCommands({
   surface,
   setBusy,
   setNotice,
+  recordSave,
   report,
   blocked,
   afterClear,
@@ -392,6 +400,7 @@ function useSurfaceCommands({
   surface: RefObject<DrawingSurfaceHandle | null>;
   setBusy: (busy: boolean) => void;
   setNotice: (notice: string) => void;
+  recordSave: (kept: KeptPicture) => void;
   report: (error: unknown) => void;
   blocked: () => boolean;
   afterClear: () => void;
@@ -474,7 +483,10 @@ function useSurfaceCommands({
           throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
         setHistory(clearDrawing(snapshot, empty));
         afterClear();
-        setNotice(saved === null ? 'Pick a color and draw.' : `${saved} Pick a color and draw.`);
+        setNotice(
+          saved === null ? 'Pick a color and draw.' : `${saved.notice} Pick a color and draw.`
+        );
+        if (saved !== null) recordSave(saved);
       } finally {
         observation?.cancel();
       }

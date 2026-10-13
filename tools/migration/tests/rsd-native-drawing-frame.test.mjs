@@ -3,6 +3,27 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
+import { FAILURE_HEADING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingStatus.tsx';
+import {
+  BANNER_CLEAR_RESERVE_PX,
+  BANNER_DISMISS_OVERHANG_PX,
+  BANNER_LINE_HEIGHT,
+  BANNER_MASCOT_PX,
+  BANNER_MAX_WIDTH_PX,
+} from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
+import { photoLibraryFailure } from '../../../experiments/native-architecture/src/export/photoLibrary.ts';
+import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
+
+// The photo library's answer to a save, and the PNGs it was handed.
+const library = vi.hoisted(() => ({ outcome: 'photos', saves: [] }));
+vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
+  photoLibrary: {
+    save: async (png) => {
+      library.saves.push(png);
+      return library.outcome;
+    },
+  },
+}));
 import {
   flat,
   mountToolbar,
@@ -150,6 +171,21 @@ describe('the shipping palette geometry', () => {
       }
   });
 
+  it('keeps the Save Failure Banner literals SaveFailureBanner.svelte writes', () => {
+    const banner = styleBlock('web/src/lib/components/SaveFailureBanner.svelte');
+    expect(declaration(banner, 'max-width')).toEqual([`${BANNER_MAX_WIDTH_PX}px`]);
+    expect(declaration(banner, 'width')).toContain(`${BANNER_MASCOT_PX}px`);
+    expect(declaration(banner, 'line-height')).toEqual([`${BANNER_LINE_HEIGHT}`]);
+    expect(declaration(banner, '--save-failure-clear-button-reserve')).toEqual([
+      `${BANNER_CLEAR_RESERVE_PX}px`,
+    ]);
+    expect(APP_CSS).toMatch(
+      new RegExp(
+        `\\.banner-dismiss \\{[^}]*margin: ${BANNER_DISMISS_OVERHANG_PX}px ${BANNER_DISMISS_OVERHANG_PX}px 0 0;`
+      )
+    );
+  });
+
   it('bundles the shipping handmade-paper grain byte for byte', () => {
     const bundled = readFileSync(
       join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
@@ -162,6 +198,15 @@ describe('the shipping palette geometry', () => {
     ).toBe(true);
   });
 });
+
+// Each banner is one card in the dock the banner stack pins over the paper.
+function bannerNodes() {
+  return [...(host.querySelector('[data-testid="rsd-failure-banners"]')?.children ?? [])];
+}
+
+function banners() {
+  return bannerNodes().map((node) => node.textContent);
+}
 
 function viewport(width, height) {
   records.dimensions = { width, height, scale: 1, fontScale: 1 };
@@ -269,6 +314,22 @@ describe('the mounted drawing screen frame', () => {
     }
   );
 
+  it('trims by the viewport, not a bar an inset shortened, and clips the overrun', async () => {
+    const [width, height, insetTop, insetBottom] = [1180, 820, 24, 20];
+    viewport(width, height);
+    await mountToolbar(toolbarScreen());
+    const bar = records.props.findLast((props) => props.testID === 'rsd-palette-bar');
+    const shortened = height - insetTop - insetBottom;
+    await act(async () =>
+      bar.onLayout({ nativeEvent: { layout: { width: 84, height: shortened } } })
+    );
+    expect(paintLabels()).toHaveLength(shippingPaintCount(shippingLadder('max-height'), height));
+    expect(paintLabels()).toContain('Brown paint');
+    expect(resolved((props) => props.testID === 'rsd-palette-plate')).toMatchObject({
+      overflow: 'hidden',
+    });
+  });
+
   it('sits More colors on a raised disc of the bar surface, its honeycomb inside the ring band', async () => {
     await mountToolbar(toolbarScreen());
     const more = resolved((props) => props.accessibilityLabel === 'More colors');
@@ -321,7 +382,7 @@ describe('the mounted drawing screen frame', () => {
     expect(caller.screen.openSettings).toHaveBeenCalledOnce();
   });
 
-  it('speaks the drawing status from a hidden live region instead of a visible strip', async () => {
+  it('speaks routine notices from a hidden live region instead of a visible strip', async () => {
     await mountToolbar(toolbarScreen({ notice: PICK_A_COLOR }));
     expect(records.viewports.some((props) => props.testID === 'rsd-drawing-status-viewport')).toBe(
       false
@@ -330,8 +391,7 @@ describe('the mounted drawing screen frame', () => {
       (node) => node.textContent === PICK_A_COLOR && node.children.length === 0
     );
     expect(holders).toHaveLength(1);
-    const region = holders[0].closest('[role="status"]') ?? holders[0];
-    expect(region.getAttribute('role')).toBe('status');
+    expect(holders[0].closest('[role="status"]')).not.toBeNull();
     expect(flat(records.props.findLast((props) => props.role === 'status')?.style)).toMatchObject({
       position: 'absolute',
       width: 1,
@@ -339,16 +399,55 @@ describe('the mounted drawing screen frame', () => {
       overflow: 'hidden',
     });
     expect(records.announcements).toContain(PICK_A_COLOR);
-    expect(host.querySelector('[data-testid="rsd-drawing-retries"]')).toBeNull();
+    expect(banners()).toEqual([]);
   });
 
-  it('keeps a visible retry over the paper when the drawing fails to load', async () => {
+  it('shows a renderer fault in the banner with the Retry that clears it', async () => {
     const retry = vi.fn();
-    await mountToolbar(toolbarScreen({ recovery: { failed: true, retryDisabled: false, retry } }));
-    const dock = host.querySelector('[data-testid="rsd-drawing-retries"]');
-    expect(dock.closest('[data-testid="rsd-canvas-area"]')).not.toBeNull();
-    await act(async () => dock.querySelector('[aria-label="Retry drawing"]').click());
+    const detail = 'The drawing paper stopped drawing.';
+    await mountToolbar(
+      toolbarScreen({
+        notice: detail,
+        failure: { kind: 'error', detail },
+        recovery: { failed: true, retryDisabled: false, retry },
+      })
+    );
+    expect(banners()).toEqual([`${FAILURE_HEADING}${detail}Retry drawing`]);
+    const [banner] = bannerNodes();
+    expect(banner.closest('[data-testid="rsd-canvas-area"]')).not.toBeNull();
+    expect(banner.querySelector('[aria-label="Dismiss"]')).toBeNull();
+    const retryButton = [...banner.querySelectorAll('*')].find(
+      (node) => node.textContent === 'Retry drawing' && node.getAttribute('role') === 'button'
+    );
+    await act(async () => retryButton.click());
     expect(retry).toHaveBeenCalledOnce();
+    expect(records.announcements).toContain(`${FAILURE_HEADING}. ${detail}`);
+    expect(records.announcements).not.toContain(detail);
+  });
+
+  it('shows a denied photo save in the visible banner, with its explanation, until dismissed', async () => {
+    library.outcome = 'denied';
+    caller.realScreen = true;
+    caller.settingsStorage = {
+      read: vi.fn(async () => '{"version":1,"soundEnabled":false}'),
+      write: vi.fn(async () => {}),
+    };
+    await mount(createElement(RsdDrawingScreen));
+    await act(async () => host.querySelector('[aria-label="Draw RSD fixture stroke"]').click());
+    await act(async () => host.querySelector('[aria-label="Expand controls"]').click());
+    await act(async () => host.querySelector('[aria-label="Save picture"]').click());
+    await vi.waitFor(() => expect(banners()).toHaveLength(1));
+    const refused = photoLibraryFailure('denied', 'ios');
+    expect(banners()).toEqual([`${refused.heading}${refused.detail}`]);
+    expect(refused.detail).toContain(saveFailureCopy('denied', 1, 'ios').detail);
+    expect(library.saves).toEqual(['cmVhbC1wbmc=']);
+    const banner = flat(
+      records.props.findLast((props) => props.testID === 'rsd-failure-banner')?.style
+    );
+    expect(banner).toMatchObject({ maxWidth: BANNER_MAX_WIDTH_PX, borderStyle: 'solid' });
+    expect(records.announcements).toContain(`${refused.heading}. ${refused.detail}`);
+    await act(async () => host.querySelector('[aria-label="Dismiss"]').click());
+    expect(banners()).toEqual([]);
   });
 
   it('textures the full-bleed paper area, and gives a rotated sheet a flat margin instead', async () => {

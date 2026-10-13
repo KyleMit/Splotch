@@ -223,7 +223,8 @@ function RsdDrawingContent({
             status={
               <RsdDrawingStatus
                 screen={screen}
-                messages={[notice, soundNotice]}
+                notice={notice}
+                soundNotice={soundNotice}
                 blocked={disabled || screen.pictures !== null}
               />
             }

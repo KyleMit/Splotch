@@ -34,19 +34,21 @@ actions are icon buttons drawn from the shipping icon set through `RsdIcon` (rea
 `SvgXml` on every platform, fed by the generated `icons.generated.ts`); each keeps its former text
 as its accessible name. The Drawing tools sheet in the drawer keeps the brush and width choices and
 the less frequent actions. Their touch size imports the drawing control owner. Status messages have
-no visible strip: `RsdDrawingStatus` speaks them from an `RsdVisuallyHidden` live region over the
-paper, and shows only the retry controls a failure needs. The paper area and sheet wear the shipping
-handmade-paper grain (`PaperTexture`, a memoized tile that ink never re-renders) with no border, and
-a sheet presented smaller than its area sits lifted on a flat `paperMargin` with the float shadow.
-`NativePaper` fills the paper area behind the floating edge controls and contain-fits the fixed
-logical paper into it, centered, the way the shipping app presents a rotation-locked paper
-(ADR-0050); the paper keeps its fixed aspect, so a portrait phone shows it full width with margins
-above and below. These allocations require native geometry and visual verification; source flex
-bounds alone do not establish usable paper space. The recovery viewport preserves individual
-actionable children, names itself “PNG recovery” with the `rsd-png-recovery-viewport` identity, and
-retains clipped child views. Recovery state and scrolling stay settled while contacts are drawing.
-An empty recovery state allocates no viewport. No new PNG writer, queue capacity, persistence policy
-or Dismiss owner is introduced.
+no visible strip: `RsdDrawingStatus` speaks routine notices from an `RsdVisuallyHidden` live region
+over the paper. Failures, told apart by type rather than wording (a save the photo library refused,
+an action's error, a renderer fault, a failed draft), show in `RsdFailureBanner`: the shipping Save
+Failure Banner's card, placement, copy and Dismiss, plus the Retry a fault needs, loaded on first
+use on web. The paper area and sheet wear the shipping handmade-paper grain (`PaperTexture`, a
+memoized tile that ink never re-renders) with no border, and a sheet presented smaller than its area
+sits lifted on a flat `paperMargin` with the float shadow. `NativePaper` fills the paper area behind
+the floating edge controls and contain-fits the fixed logical paper into it, centered, the way the
+shipping app presents a rotation-locked paper (ADR-0050); the paper keeps its fixed aspect, so a
+portrait phone shows it full width with margins above and below. These allocations require native
+geometry and visual verification; source flex bounds alone do not establish usable paper space. The
+recovery viewport preserves individual actionable children, names itself “PNG recovery” with the
+`rsd-png-recovery-viewport` identity, and retains clipped child views. Recovery state and scrolling
+stay settled while contacts are drawing. An empty recovery state allocates no viewport. No new PNG
+writer, queue capacity, persistence policy or Dismiss owner is introduced.
 
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The

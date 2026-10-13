@@ -50,8 +50,10 @@ export function NativeDrawingLayout({
   const axis = window.width > window.height ? 'column' : 'row';
   const drawerAxis = axis === 'row' ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
-  const length =
-    measured?.axis === axis ? measured.length : axis === 'row' ? window.width : window.height;
+  // Shipping trims by the viewport's own length, insets included, and clips what an inset
+  // shortens the bar by; only the spacing follows the bar's measured length.
+  const viewportLength = axis === 'row' ? window.width : window.height;
+  const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
   const [area, setArea] = useState<AreaSize>();
   const offsets = drawerOffsets(area ?? window, drawerAxis, drawerTools.length, controlSize);
@@ -73,7 +75,7 @@ export function NativeDrawingLayout({
           );
         }}
       >
-        {palette({ axis, slots: paletteSlots(length, axis), length })}
+        {palette({ axis, slots: paletteSlots(viewportLength, axis), length })}
       </View>
       <View style={drawingScreenStyles.canvasColumn}>
         <View

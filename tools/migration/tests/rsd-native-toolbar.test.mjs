@@ -249,8 +249,9 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(area.querySelector('[data-status]')).not.toBeNull();
   expect(records.props.findLast((props) => props.testID === 'rsd-canvas-area').style.flex).toBe(1);
   const bar = () => records.props.findLast((props) => props.testID === 'rsd-palette-bar');
+  // An inset shortens the bar, not the viewport the shipping ladder counts from.
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 300, height: 75 } } }));
-  expect(seen.palette).toEqual({ axis: 'row', slots: 4, length: 300 });
+  expect(seen.palette).toEqual({ axis: 'row', slots: 6, length: 300 });
   records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
   await act(async () => root.render(layoutElement(seen)));
   expect(seen).toEqual({
@@ -260,7 +261,7 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 380 } } }));
   expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 380 });
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 260 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 3, length: 260 });
+  expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 260 });
 });
 
 it('frames the paper the way the full-bleed area fits it in either orientation', () => {

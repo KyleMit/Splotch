@@ -14,7 +14,11 @@ const read = (path) =>
 const NATIVE_REEXPORT = /^export \{ (\w+) \} from '([^']+)';$/gm;
 const WEB_LAZY_EXPORT =
   /export const (\w+) = lazySurface\(\(\) =>\s+import\('([^']+)'\)\.then\(\(module\) => module\.(\w+)\)\s+\);/g;
-const SHEET_MOUNTERS = ['rsdDrawing/RsdDrawingScreen.tsx', 'rsdDrawing/RsdPaperSlot.tsx'];
+const SHEET_MOUNTERS = [
+  'rsdDrawing/RsdDrawingScreen.tsx',
+  'rsdDrawing/RsdPaperSlot.tsx',
+  'rsdDrawing/RsdDrawingStatus.tsx',
+];
 
 describe('drawing sheets the web export loads on first use', () => {
   it('lazily load, under each name, exactly the module the native apps import directly', () => {
