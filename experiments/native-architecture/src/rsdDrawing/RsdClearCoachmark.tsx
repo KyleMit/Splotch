@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import type { ClearDock } from '../clear/clearDock';
 import { COACHMARK_LOOP_MS, GHOST_TRAVEL_OVERSHOOT } from '../clear/dragToClear';
 import { RsdClearFace } from './RsdClearFace';

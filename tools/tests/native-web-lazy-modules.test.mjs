@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, posix } from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -19,23 +19,38 @@ const SHEET_MOUNTERS = [
   'rsdDrawing/RsdPaperSlot.tsx',
   'rsdDrawing/RsdDrawingStatus.tsx',
 ];
+const SHEETS = 'rsdDrawing/drawingSheets.ts';
+// The one chunk the AI and feedback surfaces share with their owners (ADR-0179).
+const PRODUCT_CHUNK = 'product/productChunk.web.ts';
+
+// A sheet's module as a path under src, whether imported directly or through the product chunk,
+// which must re-export the member under its own name from that module.
+function sheetModule(from, path, member) {
+  const target = posix.join(dirname(from), path);
+  if (`${target}.ts` !== PRODUCT_CHUNK) return target;
+  const [reexport] = [...read(PRODUCT_CHUNK).matchAll(NATIVE_REEXPORT)].filter(
+    ([, name]) => name === member
+  );
+  expect(reexport, `${PRODUCT_CHUNK} re-exports ${member}`).toBeDefined();
+  return posix.join(dirname(PRODUCT_CHUNK), reexport[2]);
+}
 
 describe('drawing sheets the web export loads on first use', () => {
   it('lazily load, under each name, exactly the module the native apps import directly', () => {
-    const native = [...read('rsdDrawing/drawingSheets.ts').matchAll(NATIVE_REEXPORT)].map(
-      ([, name, path]) => ({ name, path, member: name })
-    );
+    const native = [...read(SHEETS).matchAll(NATIVE_REEXPORT)].map(([, name, path]) => ({
+      name,
+      module: sheetModule(SHEETS, path, name),
+      member: name,
+    }));
     const web = [...read('rsdDrawing/drawingSheets.web.ts').matchAll(WEB_LAZY_EXPORT)].map(
-      ([, name, path, member]) => ({ name, path, member })
+      ([, name, path, member]) => ({ name, module: sheetModule(SHEETS, path, member), member })
     );
     expect(native.length).toBeGreaterThan(0);
     expect(web).toEqual(native);
   });
 
   it('mount each sheet inside its own surface boundary, so a failed load cannot blank the screen', () => {
-    const names = [...read('rsdDrawing/drawingSheets.ts').matchAll(NATIVE_REEXPORT)].map(
-      ([, name]) => name
-    );
+    const names = [...read(SHEETS).matchAll(NATIVE_REEXPORT)].map(([, name]) => name);
     const mounts = SHEET_MOUNTERS.flatMap((file) =>
       names.flatMap((name) =>
         [...read(file).matchAll(new RegExp(`<${name}\\b`, 'g'))].map((match) => ({

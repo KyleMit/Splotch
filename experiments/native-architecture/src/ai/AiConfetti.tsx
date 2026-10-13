@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import { CONFETTI_PIECES } from '../../../../web/src/lib/ai/confettiField';
 
 const MS_PER_SECOND = 1000;

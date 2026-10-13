@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { Animated } from 'react-native';
+import { Animated } from '../platform/animated';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { useDialogTitleId } from './dialogScope';

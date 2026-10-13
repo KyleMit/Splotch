@@ -6,15 +6,48 @@ import {
 } from '../ai/inviteLink';
 import type { AiVault } from '../ai/credentials';
 
-// The parameter stays when the save fails or is superseded, so reopening the link retries it.
-export async function startInviteLinks(vault: Pick<AiVault, 'write'>) {
-  const code = inviteAccessCode(new URL(location.href).searchParams);
-  if (!code) return;
-  try {
-    await saveInviteAccessCode(vault, code);
-  } catch (error) {
-    console.warn(INVITE_SAVE_FAILED_WARNING, error);
-    return;
+type VaultLoader = () => Promise<Pick<AiVault, 'write'>>;
+
+// Captures a launch invite once. The vault loads only for a launch that carries an invite, so an
+// ordinary launch never fetches it. A vault that fails to load (its chunk, offline) leaves the
+// capture pending, so the next settle() retries it; the AI owner settles it before it reads a
+// credential (productOwnersLoader.web.ts). A save that fails or is superseded keeps the parameter,
+// so reopening the link retries it.
+export function createInviteCapture(loadVault: VaultLoader) {
+  let settled = false;
+  let attempt: Promise<void> | null = null;
+  async function capture() {
+    const code = inviteAccessCode(new URL(location.href).searchParams);
+    if (!code) {
+      settled = true;
+      return;
+    }
+    let vault: Pick<AiVault, 'write'>;
+    try {
+      vault = await loadVault();
+    } catch (error) {
+      console.warn(INVITE_SAVE_FAILED_WARNING, error);
+      return;
+    }
+    settled = true;
+    try {
+      await saveInviteAccessCode(vault, code);
+    } catch (error) {
+      console.warn(INVITE_SAVE_FAILED_WARNING, error);
+      return;
+    }
+    history.replaceState(history.state, '', withoutInviteParam(location.href));
   }
-  history.replaceState(history.state, '', withoutInviteParam(location.href));
+  return {
+    settle(): Promise<void> {
+      // An attempt in flight has already marked itself settled before its write lands; a caller
+      // that must not read a credential ahead of the invite waits for that write.
+      if (attempt) return attempt;
+      if (settled) return Promise.resolve();
+      attempt = capture().finally(() => {
+        attempt = null;
+      });
+      return attempt;
+    },
+  };
 }

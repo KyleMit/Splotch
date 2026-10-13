@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import {
   DIAL_MAX_SIZE_PX,
