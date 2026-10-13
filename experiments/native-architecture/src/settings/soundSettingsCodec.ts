@@ -61,7 +61,7 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 11 }>;
+export type SoundSettings = Choices & Readonly<{ version: 12 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
@@ -145,8 +145,9 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const current = value.version === 11;
-  const accessible = current || value.version === 10;
+  const current = value.version === 12;
+  const pencilled = current || value.version === 11;
+  const accessible = pencilled || value.version === 10;
   const savesOnDelete = accessible || value.version === 9;
   const complete = savesOnDelete || value.version === 8;
   const kept = (key: string) => complete || (value.version === 7 && key in value);
@@ -177,7 +178,7 @@ function readStoredParentSettings(
   const accessibility = accessible
     ? readAccessibilitySettings(value)
     : DEFAULT_ACCESSIBILITY_SETTINGS;
-  const pencil = current ? readPencilSettings(value) : DEFAULT_PENCIL_SETTINGS;
+  const pencil = pencilled ? readPencilSettings(value) : DEFAULT_PENCIL_SETTINGS;
   canonical(
     {
       version: value.version,
@@ -194,12 +195,18 @@ function readStoredParentSettings(
       ...(complete ? { orientation } : {}),
       ...(savesOnDelete ? { saveOnDeleteEnabled } : {}),
       ...(accessible ? accessibility : {}),
-      ...(current ? pencil : {}),
+      ...(pencilled ? pencil : {}),
+      ...(current
+        ? {
+            toolDrawerEnabled: controls.toolDrawerEnabled,
+            screenshotEnabled: controls.screenshotEnabled,
+          }
+        : {}),
     },
     snapshot
   );
   return {
-    version: 11,
+    version: 12,
     ...widths,
     ...colors,
     appearance,
@@ -227,7 +234,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 11,
+    version: 12,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -261,7 +268,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 8 &&
       value.version !== 9 &&
       value.version !== 10 &&
-      value.version !== 11) ||
+      value.version !== 11 &&
+      value.version !== 12) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -295,7 +303,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 8 &&
       value.version !== 9 &&
       value.version !== 10 &&
-      value.version !== 11) ||
+      value.version !== 11 &&
+      value.version !== 12) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -322,7 +331,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 11,
+    version: 12,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -342,5 +351,7 @@ export function snapshot(state: Choices): SoundSettings {
     whatsNewSeen: state.whatsNewSeen,
     pencilEraserEnabled: state.pencilEraserEnabled,
     applePencilSeen: state.applePencilSeen,
+    toolDrawerEnabled: state.toolDrawerEnabled,
+    screenshotEnabled: state.screenshotEnabled,
   };
 }

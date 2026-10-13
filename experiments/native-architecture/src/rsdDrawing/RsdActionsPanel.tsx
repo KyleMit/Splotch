@@ -16,6 +16,7 @@ import {
   type AreaSize,
 } from './edgeLayout';
 import type { NativeIconName } from './icons.generated';
+import { drawerControlShown } from '../settings/drawingControlPreferences';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -103,9 +104,12 @@ type ToolContext = {
 };
 
 // The Brush Button: a menu of every shown brush, or with one optional brush a switch for it.
-function brushTool({ screen, disabled, ink, flyout, setFlyout }: ToolContext): Tool | null {
+function brushTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolContext): Tool | null {
   const keyline = inkKeyline(ink);
-  const control = screen.brushControl;
+  // The Tool Drawer switch hides every optional brush, and with them the Brush Button.
+  const control: Screen['brushControl'] = sound.settings.toolDrawerEnabled
+    ? screen.brushControl
+    : { kind: 'none' };
   if (control.kind === 'toggle')
     return {
       key: 'brush',
@@ -165,12 +169,14 @@ function strokeTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolCon
 }
 
 // The shipping Actions Panel, in its order: Brush, Stroke Width, Coloring Book, Screenshot, AI
-// Image and Undo, each switched off where Settings hides it.
+// Image and Undo, each switched off where Settings hides it. The Tool Drawer switch hides the
+// drawer's own tools; Coloring, the camera and AI belong to their own sections and stay.
 function panelTools(context: ToolContext): Tool[] {
   const { screen, sound, product, disabled } = context;
   const brush = brushTool(context);
   const tools: Tool[] = brush ? [brush] : [];
-  if (sound.settings.strokeWidthControlEnabled) tools.push(strokeTool(context));
+  if (drawerControlShown(sound.settings, 'strokeWidthControlEnabled'))
+    tools.push(strokeTool(context));
   if (sound.settings.coloringBookEnabled)
     tools.push({
       key: 'coloring',
@@ -185,21 +191,22 @@ function panelTools(context: ToolContext): Tool[] {
         />
       ),
     });
-  tools.push({
-    key: 'camera',
-    render: (face) => (
-      <RsdIconButton
-        skin="tile"
-        {...face}
-        icon="camera"
-        label="Save screenshot"
-        disabled={disabled || !screen.inkVisible}
-        onPress={() => {
-          void screen.save();
-        }}
-      />
-    ),
-  });
+  if (sound.settings.screenshotEnabled)
+    tools.push({
+      key: 'camera',
+      render: (face) => (
+        <RsdIconButton
+          skin="tile"
+          {...face}
+          icon="camera"
+          label="Save screenshot"
+          disabled={disabled || !screen.inkVisible}
+          onPress={() => {
+            void screen.save();
+          }}
+        />
+      ),
+    });
   if (sound.settings.aiEnabled)
     tools.push({
       key: 'ai',
@@ -214,7 +221,7 @@ function panelTools(context: ToolContext): Tool[] {
         />
       ),
     });
-  if (sound.settings.undoButtonEnabled)
+  if (drawerControlShown(sound.settings, 'undoButtonEnabled'))
     tools.push({
       key: 'undo',
       render: (face) => (
@@ -258,6 +265,8 @@ export function RsdActionsPanel({
 }) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
+  // Shipping's data-no-actions: with no control left to show, the chevron goes too.
+  if (tools.length === 0) return null;
   const scale = sound.settings.buttonScale / PERCENT;
   const layout = actionPanelLayout({
     area,

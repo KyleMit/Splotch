@@ -24,7 +24,24 @@ const CURRENT = {
 const CONTROLS = [
   ['undoButtonEnabled', 'setUndoButtonEnabled'],
   ['strokeWidthControlEnabled', 'setStrokeWidthControlEnabled'],
+  ['toolDrawerEnabled', 'setToolDrawerEnabled'],
+  ['screenshotEnabled', 'setScreenshotEnabled'],
 ];
+// The last schema before the Tool Drawer switch and the Camera button were stored.
+const VERSION_11 = {
+  ...CURRENT,
+  version: 11,
+  soundLevel: 'medium',
+  undoButtonEnabled: false,
+  strokeWidthControlEnabled: true,
+  orientation: 'portrait',
+  saveOnDeleteEnabled: false,
+  buttonScale: 100,
+  reduceMotion: 'system',
+  whatsNewSeen: null,
+  pencilEraserEnabled: true,
+  applePencilSeen: false,
+};
 function fixture(snapshot = JSON.stringify(CURRENT)) {
   let stored = snapshot;
   const changes = [];
@@ -39,6 +56,33 @@ function fixture(snapshot = JSON.stringify(CURRENT)) {
 }
 
 describe('parent drawing control preferences', () => {
+  it('migrates a version 11 snapshot to a shown drawer and camera, keeping its choices', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_11))).toEqual({
+      ...VERSION_11,
+      version: 12,
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
+    });
+  });
+  it.each(['toolDrawerEnabled', 'screenshotEnabled'])(
+    'rejects %s in a version 11 snapshot and its absence from a version 12 one',
+    (field) => {
+      expect(() => parseSoundSettings(JSON.stringify({ ...VERSION_11, [field]: false }))).toThrow(
+        'not in the saved format'
+      );
+      const current = {
+        ...VERSION_11,
+        version: 12,
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
+      };
+      expect(parseSoundSettings(JSON.stringify({ ...current, [field]: false }))).toMatchObject({
+        [field]: false,
+      });
+      const { [field]: _dropped, ...missing } = current;
+      expect(() => parseSoundSettings(JSON.stringify(missing))).toThrow('not in the saved format');
+    }
+  );
   it.each(Array.from({ length: 8 }, (_, mask) => mask))(
     'reads finite optional current extension set %s without rewriting it',
     async (mask) => {
@@ -87,13 +131,15 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
-        version: 11,
+        version: 12,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
         whatsNewSeen: null,
         pencilEraserEnabled: true,
         applePencilSeen: false,
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
         orientation: 'portrait',
         soundLevel: 'medium',
         undoButtonEnabled: true,

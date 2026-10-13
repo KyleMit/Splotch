@@ -122,7 +122,7 @@ it.each([
     const writes = (kind === 'paint' ? 1 : 2) + (recovery === 'Drawing sound' ? 1 : 0);
     expect(files.settingsWrite).toHaveBeenCalledTimes(writes);
     expect(JSON.parse(stored)).toEqual({
-      version: 11,
+      version: 12,
       ...UNTOUCHED_SETTINGS,
       coloringBookEnabled: true,
       aiEnabled: false,
@@ -141,6 +141,8 @@ it.each([
       soundLevel: 'medium',
       undoButtonEnabled: true,
       strokeWidthControlEnabled: true,
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
       orientation: 'portrait',
     });
     expect(screen.dialog().textContent).not.toContain(UNREAD_SETTINGS_WARNING);
@@ -158,7 +160,7 @@ describe('custom paints wired to the drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({
-      version: 11,
+      version: 12,
       coloringBookEnabled: true,
       aiEnabled: false,
       parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
@@ -205,7 +207,7 @@ describe('drawing width controls', () => {
     await openTools();
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":11,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
+      '{"version":12,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolDrawerEnabled":true,"screenshotEnabled":true}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();

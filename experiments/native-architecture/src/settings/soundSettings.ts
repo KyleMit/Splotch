@@ -1,4 +1,7 @@
-import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from './drawingControlPreferences';
+import {
+  DEFAULT_DRAWING_CONTROL_PREFERENCES,
+  type DrawingControlPreferences,
+} from './drawingControlPreferences';
 import { DEFAULT_COLORING_BOOK_ENABLED } from './coloringBook';
 import { DEFAULT_SOUND_LEVEL, isSoundLevel, type SoundLevel } from './soundLevel';
 import {
@@ -68,7 +71,7 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 11,
+    version: 12,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -233,10 +236,7 @@ function createDrawingPreferenceActions({
   publish,
   persist,
 }: PreferenceActionContext) {
-  async function setControl(
-    key: 'undoButtonEnabled' | 'strokeWidthControlEnabled',
-    enabled: boolean
-  ) {
+  async function setControl(key: keyof DrawingControlPreferences, enabled: boolean) {
     const state = getState();
     if (isDisposed() || state.status !== 'ready') return;
     if (typeof enabled !== 'boolean') throw new Error('Drawing control choice is invalid.');
@@ -250,6 +250,8 @@ function createDrawingPreferenceActions({
     setUndoButtonEnabled: (enabled: boolean) => setControl('undoButtonEnabled', enabled),
     setStrokeWidthControlEnabled: (enabled: boolean) =>
       setControl('strokeWidthControlEnabled', enabled),
+    setToolDrawerEnabled: (enabled: boolean) => setControl('toolDrawerEnabled', enabled),
+    setScreenshotEnabled: (enabled: boolean) => setControl('screenshotEnabled', enabled),
     async setSoundLevel(soundLevel: SoundLevel) {
       const state = getState();
       if (isDisposed() || state.status !== 'ready') return;

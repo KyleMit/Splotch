@@ -80,7 +80,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 11,
+  version: 12,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -105,6 +105,8 @@ const CURRENT = {
   whatsNewSeen: '1.5.0',
   pencilEraserEnabled: true,
   applePencilSeen: false,
+  toolDrawerEnabled: true,
+  screenshotEnabled: true,
 };
 
 describe('Button Size', () => {
@@ -313,7 +315,13 @@ describe("What's New", () => {
 
 describe('settings schema 11', () => {
   const PENCIL_SEEN = { ...CURRENT, pencilEraserEnabled: false, applePencilSeen: true };
-  const VERSION_10 = (({ pencilEraserEnabled: _e, applePencilSeen: _s, ...rest }) => ({
+  const VERSION_10 = (({
+    pencilEraserEnabled: _e,
+    applePencilSeen: _s,
+    toolDrawerEnabled: _t,
+    screenshotEnabled: _c,
+    ...rest
+  }) => ({
     ...rest,
     version: 10,
   }))(CURRENT);
@@ -355,18 +363,22 @@ describe('settings schema 10', () => {
             whatsNewSeen: _w,
             pencilEraserEnabled: _e,
             applePencilSeen: _s,
+            toolDrawerEnabled: _t,
+            screenshotEnabled: _c,
             ...rest
           }) => ({
             ...rest,
             version: 9,
           }))(CURRENT);
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 11,
+      version: 12,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,
       pencilEraserEnabled: true,
       applePencilSeen: false,
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
     });
   });
 
