@@ -1,5 +1,7 @@
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions } from './tokens.css';
+import { EDGE_INSET_PX } from './edgeLayout';
+import { CONTROL_GAP, TOUCH_TARGET } from '../drawing/theme';
 import { RsdAction, styles as controlStyles } from './controls';
 import { installPrompt } from '../platform/installPrompt';
 import { INSTALL_BANNER_COPY, INSTALL_PROMPT_COPY, iosBannerSteps } from '../install/installCopy';
@@ -9,26 +11,31 @@ import { useShareButtonLocation } from '../install/shareLocation';
 const BANNER_BORDER_PX = 2;
 // The shipping Install Banner's width cap, so the card reads the same on a tablet.
 const BANNER_MAX_WIDTH_PX = 420;
-// The tallest share of the screen the card may cover; longer instructions scroll.
-const BANNER_MAX_HEIGHT = '60%';
+// How far an edge layout corner control reaches into the paper area: Clear (top right),
+// Settings (bottom right) and the drawer chevron (bottom left) each sit one inset from
+// their corner, and the card keeps one more gap from them.
+const CORNER_CONTROL_REACH_PX = EDGE_INSET_PX + TOUCH_TARGET + CONTROL_GAP;
 
-// The banner floats over the bottom of the drawing screen, as the shipping one does,
-// so showing it or expanding its steps never takes space from the paper. Only the
-// card itself takes touches; the rest of the strip passes them to the paper.
+// The banner floats over the paper area, as the shipping one floats in its bottom dock,
+// so showing it or expanding its steps never takes space from the paper. Rendered inside
+// that area, it sits beside the swatch bar rather than over it, and its insets keep it
+// between the bottom corner controls and below Clear; longer steps scroll inside the
+// card. Only the card takes touches; the rest of the strip passes them to the paper.
 const styles = css.create({
-  overlay: {
+  // A dynamic style: StyleX compiles static styles at build time and cannot read the
+  // edge layout's constants from another module, so they arrive as arguments.
+  overlay: (reach: number, inset: number) => ({
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    maxHeight: BANNER_MAX_HEIGHT,
+    top: reach,
+    left: reach,
+    right: reach,
+    bottom: inset,
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    boxSizing: 'border-box',
-    padding: dimensions.space4,
     pointerEvents: 'none',
-  },
+  }),
   banner: {
     pointerEvents: 'auto',
     boxSizing: 'border-box',
@@ -56,7 +63,7 @@ export function RsdInstallBanner({ strokes, hidden }: { strokes: number; hidden:
   const shareLocation = useShareButtonLocation();
   if (!banner.shown) return null;
   return (
-    <html.div style={styles.overlay}>
+    <html.div style={styles.overlay(CORNER_CONTROL_REACH_PX, EDGE_INSET_PX)}>
       {banner.parting ? (
         <html.div role="status" style={styles.banner}>
           <html.p>{INSTALL_BANNER_COPY.parting}</html.p>

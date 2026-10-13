@@ -6,6 +6,7 @@ import {
   mount,
   checkedRadio,
   createPickerCaller,
+  expandControls,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
@@ -97,7 +98,8 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 7,
+    version: 8,
+    orientation: 'portrait',
     coloringBookEnabled: true,
     soundLevel: 'medium',
     undoButtonEnabled: true,
@@ -264,6 +266,7 @@ it('uses real RSD sound-level radios independently of the sound switch, retries,
 it('reads bundled help, privacy and beta notes through Settings without changing ink or sending requests', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
+  await expandControls();
   await click('Draw RSD fixture stroke');
   const drawing = coloringPaper();
   expect(drawing.strokes).toHaveLength(1);
@@ -295,6 +298,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
 it('guides an empty pictures gallery until a saved picture is available', async () => {
   rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
+  await expandControls();
   await drawingToolsMenu('Pictures');
   const empty = host.querySelector('[aria-label="Your pictures"]');
   expect(empty.textContent).toContain('Save a picture to find it here.');
@@ -311,6 +315,7 @@ it('guides an empty pictures gallery until a saved picture is available', async 
 it('hides Coloring through actual RSD Settings and clamps actual history Undo and saved reopen while retaining ink', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
+  await expandControls();
   await click('Coloring pages');
   await click('More pages');
   await click('Sunshine');
@@ -322,7 +327,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Coloring book on');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 7,
+    version: 8,
     coloringBookEnabled: false,
     aiEnabled: false,
   });
@@ -377,6 +382,7 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   const owner = createOfflineLibrary(platform, 'full');
   caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove(async () => []) };
   await mount(createElement(RsdDrawingScreen));
+  await expandControls();
   await click('Coloring pages');
   await started;
   expect(platform.download).toHaveBeenCalledOnce();

@@ -9,6 +9,11 @@ import {
   INSTALL_PROMPT_COPY,
   iosBannerSteps,
 } from '../../../experiments/native-architecture/src/install/installCopy.ts';
+import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import {
+  CONTROL_GAP,
+  TOUCH_TARGET,
+} from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { STORAGE_KEYS } from '../../../web/src/lib/storageKeys.ts';
 
 const install = vi.hoisted(() => ({ owner: null }));
@@ -108,9 +113,16 @@ it('opens the browser install dialog from the Install button', async () => {
   expect(stored.get(STORAGE_KEYS.installCompleted)).toBe('true');
 });
 
-it('floats over the screen instead of taking space from the paper', async () => {
+it('floats over the paper area clear of its corner controls', async () => {
   await show(3);
+  const reach = EDGE_INSET_PX + TOUCH_TARGET + CONTROL_GAP;
   const overlay = records.props.findLast((props) => props.style?.position === 'absolute');
-  expect(overlay?.style).toMatchObject({ position: 'absolute', left: 0, right: 0, bottom: 0 });
+  expect(overlay?.style).toMatchObject({
+    position: 'absolute',
+    top: reach,
+    left: reach,
+    right: reach,
+    bottom: EDGE_INSET_PX,
+  });
   expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
 });

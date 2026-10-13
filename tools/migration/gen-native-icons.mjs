@@ -22,6 +22,7 @@ export const NATIVE_ICON_SOURCES = {
   'more-colors': 'more-colors.svg',
   'parent-center': 'deferred/parent-center.svg',
   controls: 'deferred/controls.svg',
+  'chevron-right': 'chevron-right.svg',
 };
 
 const THEMES = ['light', 'dark'];

@@ -6,6 +6,8 @@ import { DRAWING_THEMES, TOUCH_TARGET, type PaperTheme } from '../drawing/theme'
 import { RsdIcon } from './RsdIcon';
 import type { NativeIconName } from './icons.generated';
 
+// Icon buttons and swatches size their border box, so the touch target is their whole outer
+// size on every renderer (React Strict DOM defaults to content-box, as the web does).
 const SELECTION_BORDER_WIDTH_PX = 2;
 // The shipping Actions Panel pads its icon by a sixth of the face; this is that share of 52pt.
 const ICON_PADDING_PX = 8;
@@ -19,6 +21,13 @@ const SELECTED_SWATCH_DISC_PX = SWATCH_DISC_PX - 2 * SWATCH_RING_GAP_PX;
 // light bar) disappears, so it gains an outline and a text-colored selection ring.
 const SWATCH_MIN_CONTRAST = 1.5;
 const SWATCH_OUTLINE_PX = 1;
+// The palette bar pads each end by one gap and spaces its swatches a gap apart.
+const PALETTE_GAP_PX = 8;
+
+// How many swatches, More colors among them, fit along a bar of this length.
+export function paletteSlots(length: number) {
+  return Math.max(0, Math.floor((length - PALETTE_GAP_PX) / (TOUCH_TARGET + PALETTE_GAP_PX)));
+}
 
 function relativeLuminance(hex: string) {
   const channels = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
@@ -57,6 +66,27 @@ export const styles = css.create({
     color: colors.text,
     fontSize: dimensions.fontSizeMd,
   },
+  fullBleed: { padding: 0, gap: 0 },
+  paletteBar: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexGrow: 1,
+    alignItems: 'center',
+    padding: PALETTE_GAP_PX,
+    gap: PALETTE_GAP_PX,
+  },
+  paletteSwatches: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: PALETTE_GAP_PX,
+  },
+  column: { flexDirection: 'column' },
+  chevronUp: { transform: 'rotate(-90deg)' },
+  chevronDown: { transform: 'rotate(90deg)' },
+  chevronLeft: { transform: 'rotate(180deg)' },
   row: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space3 },
   stack: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
   toolbar: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space2 },
@@ -70,6 +100,7 @@ export const styles = css.create({
     fontSize: dimensions.fontSizeMd,
   },
   iconAction: {
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -84,6 +115,7 @@ export const styles = css.create({
   },
   iconSelected: { backgroundColor: colors.brandWash, borderColor: colors.brandSolid },
   swatch: (ring: string, radius: number) => ({
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -235,6 +267,36 @@ export function RsdMoreColorsSwatch({
       onClick={onClick}
     >
       <RsdIcon name="more-colors" size={SWATCH_DISC_PX} ink={undefined} muted={disabled} />
+    </html.button>
+  );
+}
+
+// The shipping chevron points where the drawer will move: out along its axis while closed, back
+// toward the corner while open.
+const CHEVRON_TURNS = {
+  row: { closed: null, open: styles.chevronLeft },
+  column: { closed: styles.chevronUp, open: styles.chevronDown },
+} as const;
+
+export function RsdDrawerToggle({
+  axis,
+  open,
+  onClick,
+}: {
+  axis: 'row' | 'column';
+  open: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <html.button
+      aria-label={open ? 'Collapse controls' : 'Expand controls'}
+      aria-expanded={open}
+      style={[styles.iconAction, styles.touchTarget(TOUCH_TARGET)]}
+      onClick={onClick}
+    >
+      <html.div style={CHEVRON_TURNS[axis][open ? 'open' : 'closed']}>
+        <RsdIcon name="chevron-right" size={ICON_SIZE_PX} ink={undefined} muted={false} />
+      </html.div>
     </html.button>
   );
 }

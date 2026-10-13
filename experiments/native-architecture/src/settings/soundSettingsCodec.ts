@@ -20,6 +20,8 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { defaultOrientation } from '../platform/orientationDefault';
+import { isOrientationChoice, type OrientationChoice } from './orientation';
 import {
   readLegacyParentPreferences,
   isParentPolicies,
@@ -40,8 +42,9 @@ export type Choices = WidthSettings &
     soundLevel: SoundLevel;
     appearance: AppearancePreference;
     coloringBookEnabled: boolean;
+    orientation: OrientationChoice;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 7 }>;
+export type SoundSettings = Choices & Readonly<{ version: 8 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
@@ -52,6 +55,7 @@ export type SoundSettingsState =
         soundLevel: SoundLevel;
         appearance: AppearancePreference;
         coloringBookEnabled: boolean;
+        orientation: OrientationChoice;
         message: string;
       })
   | (Choices & { status: 'saving'; message: string })
@@ -104,8 +108,12 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
+  const current = value.version === 8;
+  const kept = (key: string) => current || (value.version === 7 && key in value);
   const parent =
-    value.version === 7 ? readParentPreferences(value) : readLegacyParentPreferences(value);
+    current || value.version === 7
+      ? readParentPreferences(value)
+      : readLegacyParentPreferences(value);
   const coloringBookEnabled =
     value.version === 5
       ? DEFAULT_COLORING_BOOK_ENABLED
@@ -113,11 +121,13 @@ function readStoredParentSettings(
         ? value.coloringBookEnabled
         : null;
   if (coloringBookEnabled === null) throw new Error('Coloring book choice is invalid.');
-  const hasSoundLevel = value.version === 7 && 'soundLevel' in value;
+  const hasSoundLevel = kept('soundLevel');
   const soundLevel =
     hasSoundLevel && 'soundLevel' in value ? value.soundLevel : DEFAULT_SOUND_LEVEL;
   if (!isSoundLevel(soundLevel)) throw new Error('Sound level is invalid.');
   const controls = readDrawingControlPreferences(value);
+  const orientation = current && 'orientation' in value ? value.orientation : defaultOrientation();
+  if (!isOrientationChoice(orientation)) throw new Error('Orientation choice is invalid.');
   canonical(
     {
       version: value.version,
@@ -127,17 +137,16 @@ function readStoredParentSettings(
       ...parent,
       ...(value.version === 5 ? {} : { coloringBookEnabled }),
       ...(hasSoundLevel ? { soundLevel } : {}),
-      ...(value.version === 7 && 'undoButtonEnabled' in value
-        ? { undoButtonEnabled: controls.undoButtonEnabled }
-        : {}),
-      ...(value.version === 7 && 'strokeWidthControlEnabled' in value
+      ...(kept('undoButtonEnabled') ? { undoButtonEnabled: controls.undoButtonEnabled } : {}),
+      ...(kept('strokeWidthControlEnabled')
         ? { strokeWidthControlEnabled: controls.strokeWidthControlEnabled }
         : {}),
+      ...(current ? { orientation } : {}),
     },
     snapshot
   );
   return {
-    version: 7,
+    version: 8,
     ...widths,
     ...colors,
     appearance,
@@ -152,6 +161,7 @@ function readStoredParentSettings(
     coloringBookEnabled,
     soundLevel,
     ...controls,
+    orientation,
   };
 }
 
@@ -161,7 +171,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 7,
+    version: 8,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -169,6 +179,7 @@ function migrateLegacyChoices(
     appearance: DEFAULT_APPEARANCE,
     soundLevel: DEFAULT_SOUND_LEVEL,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
+    orientation: defaultOrientation(),
     ...choices,
   };
 }
@@ -187,7 +198,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 4 &&
       value.version !== 5 &&
       value.version !== 6 &&
-      value.version !== 7) ||
+      value.version !== 7 &&
+      value.version !== 8) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -217,7 +229,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 4 &&
       value.version !== 5 &&
       value.version !== 6 &&
-      value.version !== 7) ||
+      value.version !== 7 &&
+      value.version !== 8) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -244,7 +257,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 7,
+    version: 8,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -257,5 +270,6 @@ export function snapshot(state: Choices): SoundSettings {
     soundLevel: state.soundLevel,
     undoButtonEnabled: state.undoButtonEnabled,
     strokeWidthControlEnabled: state.strokeWidthControlEnabled,
+    orientation: state.orientation,
   };
 }

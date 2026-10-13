@@ -1,9 +1,3 @@
-import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from './settings/drawingControlPreferences';
-import { DEFAULT_COLORING_BOOK_ENABLED } from './settings/coloringBook';
-import { DEFAULT_SOUND_LEVEL } from './settings/soundLevel';
-import { DEFAULT_APPEARANCE } from './settings/appearance';
-import { DEFAULT_PARENT_PREFERENCES } from './platform/parentDefaults';
-import { DEFAULT_COLOR_SETTINGS } from './drawing/palette';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingAudio } from './audio/drawingAudio';
@@ -12,23 +6,12 @@ import { loadDrawingLoop } from './platform/drawingAudio';
 import { soundSettingsStorage } from './platform/soundSettings';
 import {
   createSoundSettings,
-  DEFAULT_WIDTH_SETTINGS,
+  initialSoundSettingsState,
   type SoundSettingsState,
 } from './settings/soundSettings';
 
 export function useDrawingSound() {
-  const [settings, setSettings] = useState<SoundSettingsState>({
-    status: 'loading',
-    soundEnabled: false,
-    soundLevel: DEFAULT_SOUND_LEVEL,
-    ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
-    coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-    ...DEFAULT_WIDTH_SETTINGS,
-    ...DEFAULT_COLOR_SETTINGS,
-    ...DEFAULT_PARENT_PREFERENCES,
-    appearance: DEFAULT_APPEARANCE,
-    message: '',
-  });
+  const [settings, setSettings] = useState<SoundSettingsState>(initialSoundSettingsState);
   const [audioMessage, setAudioMessage] = useState('');
   const [owner, setOwner] = useState<{
     audio: ReturnType<typeof createDrawingAudio>;

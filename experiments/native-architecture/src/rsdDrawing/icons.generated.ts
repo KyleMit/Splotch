@@ -36,6 +36,8 @@ const controlsLight =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><rect width="891.11" height="201.59" x="54.4" y="241.63" rx="100.8" fill="#3d2570"/><rect width="891.19" height="201.83" x="54.37" y="556.68" fill="#f87791" rx="100.91"/><circle cx="327.21" cy="339.63" r="143.03" fill="#f9c915"/><circle cx="668.3" cy="660.48" r="143.02" fill="#f9c915"/></svg>';
 const controlsDark =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><rect width="891.11" height="201.59" x="54.4" y="241.63" rx="100.8" fill="#8fbdea"/><rect width="891.19" height="201.83" x="54.37" y="556.68" fill="#f87791" rx="100.91"/><circle cx="327.21" cy="339.63" r="143.03" fill="#f9c915"/><circle cx="668.3" cy="660.48" r="143.02" fill="#f9c915"/></svg>';
+const chevronRight =
+  '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 1000 1000"><path d="M525 500 362.5 337.5q-11.46-11.46-11.46-29.17t11.46-29.17 29.17-11.46 29.17 11.46l191.67 191.67q6.25 6.25 8.85 13.54t2.6 15.63-2.6 15.63-8.85 13.54L420.83 720.83q-11.46 11.46-29.17 11.46t-29.17-11.46-11.46-29.17 11.46-29.17z"/></svg>';
 
 export const NATIVE_ICONS = {
   undo: { light: undo, dark: undo },
@@ -51,6 +53,7 @@ export const NATIVE_ICONS = {
   'more-colors': { light: moreColors, dark: moreColors },
   'parent-center': { light: parentCenter, dark: parentCenter },
   controls: { light: controlsLight, dark: controlsDark },
+  'chevron-right': { light: chevronRight, dark: chevronRight },
 } as const satisfies Record<string, Record<'light' | 'dark', string>>;
 
 export type NativeIconName = keyof typeof NATIVE_ICONS;
