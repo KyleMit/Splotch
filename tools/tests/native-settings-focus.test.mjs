@@ -22,6 +22,10 @@ vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
   () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
 );
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/segmentThumb.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/segmentThumb.web.tsx')
+);
 vi.mock('../../experiments/native-architecture/src/platform/settingsSessions.ts', () => ({
   settingsSessions: { current: () => 0, subscribe: () => () => {}, load: async () => 0 },
 }));
@@ -107,7 +111,13 @@ async function openSettings() {
     gate: null,
   };
   const noop = () => {};
-  props.parentCenter = { unlocked: false, onUnlock: noop, onLeave: noop, section: null };
+  props.parentCenter = {
+    unlocked: false,
+    checkDue: true,
+    onUnlock: noop,
+    onLeave: noop,
+    section: null,
+  };
   const handlers = new Proxy({}, { get: () => noop });
   await act(async () =>
     root.render(createElement(NativeSoundSettingsDialog, { ...handlers, ...props }))
@@ -145,4 +155,15 @@ it('leaves the hub title out of the tab order and initial focus on Close', async
   await openSettings();
   expect(document.activeElement.getAttribute('aria-label')).toBe('Close');
   expect(document.querySelector('[role="dialog"] h2').hasAttribute('tabindex')).toBe(false);
+});
+
+// React Native Web's box-none dialog stage sets `pointer-events: auto` on every descendant from
+// an unlayered rule, which outranks the fade's own `pointer-events: none`; inert keeps it out of
+// hit testing, so the rows under a fade, retired or not, still take the tap.
+it('keeps the scroll fade out of hit testing over the rows under it', async () => {
+  await openSettings();
+  const cue = document.querySelector('[role="dialog"] [data-testid="scroll-cue"]');
+  expect(cue).not.toBeNull();
+  expect(cue.hasAttribute('inert')).toBe(true);
+  expect(cue.getAttribute('aria-hidden')).toBe('true');
 });

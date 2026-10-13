@@ -1,7 +1,12 @@
 import { createContext, useContext } from 'react';
 import type { ModalFrame } from './modalGeometry';
 
-type DialogScopeValue = { titleId: string; header: ModalFrame['header']; active: boolean };
+type DialogScopeValue = {
+  titleId: string;
+  header: ModalFrame['header'];
+  body: ModalFrame['body'];
+  active: boolean;
+};
 
 export const DialogScope = createContext<DialogScopeValue | null>(null);
 
@@ -15,4 +20,9 @@ export function useDialogTitleId() {
 // Outside a dialog every control is active.
 export function useDialogActive() {
   return useContext(DialogScope)?.active ?? true;
+}
+
+// The card's body inset, for a dialog that lays out its own scrollers instead of the card's.
+export function useDialogBody() {
+  return useContext(DialogScope)?.body;
 }

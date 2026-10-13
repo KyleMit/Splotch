@@ -120,7 +120,7 @@ export function nativeSettingsProps(owner, state) {
     onWhatsNewSeen: () => owner.markWhatsNewSeen(),
     onRetry: () => owner.retrySave(),
     onClose() {},
-    parentCenter: { unlocked: false, onUnlock() {}, onLeave() {}, section: null },
+    parentCenter: { unlocked: false, checkDue: true, onUnlock() {}, onLeave() {}, section: null },
     gate: null,
     onFeedback() {},
     downloadedBooks: 0,
@@ -134,6 +134,7 @@ export function svgPort(React) {
     React.createElement('svg', { 'data-xml': xml, width, height });
   const Path = ({ d, fill, stroke, strokeWidth }) =>
     React.createElement('path', { d, fill, stroke, 'stroke-width': strokeWidth });
+  const Polygon = ({ points, fill }) => React.createElement('polygon', { points, fill });
   // Gradients keep the geometry and stops a wash is drawn from, for tests that read it.
   const RadialGradient = ({ children, id, r }) =>
     React.createElement('div', { 'data-gradient': id, 'data-r': r }, children);
@@ -141,6 +142,7 @@ export function svgPort(React) {
     React.createElement('i', { 'data-offset': offset, 'data-stop-opacity': stopOpacity });
   return {
     default: Svg,
+    Polygon,
     Circle: Svg,
     ClipPath: Svg,
     Defs: Svg,

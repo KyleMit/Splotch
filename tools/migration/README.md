@@ -44,14 +44,17 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   before it ships.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
-  the native `react-strict-dom` alias. Among them, `rsd-native-segmented-picker.test.mjs` and
-  `rsd-native-slider.test.mjs` mount the shared `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow`
-  controls over the stand-in in `rsd-native-control-host.mjs` and hold each literal those ports
-  carry, and the colour token each painted part takes, to the shipping Svelte sources. The picker's
-  RTL thumb origin is laid out by React Native's own Yoga, which `rsd-yoga-host.mjs` compiles from
-  the installed `react-native`'s `ReactCommon` sources with the system `c++`.
-  `tools/migration/tests/rsd-native-button.test.mjs` and
-  `tools/migration/tests/rsd-native-icon-button.test.mjs` mount the button primitives, and
+  the native `react-strict-dom` alias. Both tiers select them by name: a test file named
+  `tools/migration/tests/rsd-native-*.test.mjs` (`RSD_NATIVE_RENDERER_TESTS` in
+  `lib/rsd-drawing-checks.mjs`) joins this suite with no list to edit, and
+  `tests/rsd-test-tiers.test.mjs` fails when one runs in neither tier or in both. Among them,
+  `rsd-native-segmented-picker.test.mjs` and `rsd-native-slider.test.mjs` mount the shared
+  `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow` controls over the stand-in in
+  `rsd-native-control-host.mjs` and hold each literal those ports carry, and the colour token each
+  painted part takes, to the shipping Svelte sources. The picker's RTL thumb origin is laid out by
+  React Native's own Yoga, which `rsd-yoga-host.mjs` compiles from the installed `react-native`'s
+  `ReactCommon` sources with the system `c++`. `tools/migration/tests/rsd-native-button.test.mjs`
+  and `tools/migration/tests/rsd-native-icon-button.test.mjs` mount the button primitives, and
   `tools/migration/tests/rsd-native-button-chrome.test.mjs` holds their untokened chrome values to
   `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
@@ -62,7 +65,9 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor; the constant's comment
   carries the numbers. A surface the drawing screen shows only on request loads through
   `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
-  failed load cannot blank the drawing screen.
+  failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
+  drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
+  load only leaves the banner out.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
   check.
 

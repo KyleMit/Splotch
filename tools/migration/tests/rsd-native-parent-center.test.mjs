@@ -264,7 +264,8 @@ describe('RSD Parent Center section', () => {
 });
 
 describe('Parent Center in Settings', () => {
-  async function mountSettings() {
+  async function mountSettings({ dimensions = PHONE, checkDue = true } = {}) {
+    records.dimensions = dimensions;
     let current;
     const owner = createSoundSettings(
       { read: async () => null, write: async () => {} },
@@ -281,6 +282,7 @@ describe('Parent Center in Settings', () => {
         ...nativeSettingsProps(owner, current),
         parentCenter: {
           unlocked,
+          checkDue,
           onUnlock,
           onLeave,
           section: createElement('p', { 'data-testid': 'unlocked-controls' }, 'controls'),
@@ -303,6 +305,27 @@ describe('Parent Center in Settings', () => {
     expect(host.querySelector('[aria-label="Manage Parent Center"]')).toBeNull();
     await click('Back');
     expect(settings.onLeave).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the wide pane's Parent Center behind the lock card until its check is solved", async () => {
+    const settings = await mountSettings({ dimensions: TABLET });
+    expect(host.querySelector('[data-testid="unlocked-controls"]')).toBeNull();
+    expect(host.textContent).toContain(PARENT_CENTER_COPY.lock);
+    const tocRow = [...host.querySelectorAll('[data-testid="sidebar-row"]')].find((node) =>
+      node.getAttribute('aria-label').startsWith('Parent Center')
+    );
+    await act(async () => tocRow.click());
+    expect(settings.onUnlock).toHaveBeenCalledOnce();
+    await settings.unlock(true);
+    expect(host.querySelector('[data-testid="unlocked-controls"]')).not.toBeNull();
+    expect(host.textContent).not.toContain(PARENT_CENTER_COPY.lock);
+  });
+
+  it("shows the wide pane's Parent Center outright when its policy asks for no check", async () => {
+    const settings = await mountSettings({ dimensions: TABLET, checkDue: false });
+    expect(host.querySelector('[data-testid="unlocked-controls"]')).not.toBeNull();
+    expect(host.textContent).not.toContain(PARENT_CENTER_COPY.lock);
+    expect(settings.onUnlock).not.toHaveBeenCalled();
   });
 
   it('stands the lock in for the controls when the section loses its check', async () => {

@@ -228,6 +228,8 @@ export function createParentGate(
         execute(action);
       }
     },
+    /** Whether the feature would ask for a check now, rather than run at once. */
+    requires: (feature: ParentFeature) => !bypass(feature),
     input,
     answer,
     /** One keypad tap: a digit appends, delete removes the last digit, check answers. */

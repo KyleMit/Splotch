@@ -62,11 +62,9 @@ const UNREAD_SETTINGS_WARNING =
   'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
 
 async function chooseUnreadPaint(draw) {
-  await screen.click('More colors');
-  const choice = screen.dialog().querySelector('[aria-label^="Explore "]');
-  const chosen = choice.getAttribute('aria-label').slice('Explore '.length);
-  await screen.click(`Explore ${chosen}`);
-  await screen.click('Use color');
+  const chosen = '#2196F3';
+  await screen.openColors();
+  await screen.click(chosen);
   if (draw) {
     await menuClick('Pen');
     await drawStroke();
@@ -159,15 +157,13 @@ it.each([
 );
 
 describe('custom paints wired to the drawing screen', () => {
-  it('locks input for exploration, persists only the chosen color and carries it through drawing and remount', async () => {
+  it('locks input while the Color Picker is open, persists only the picked color and carries it through drawing and remount', async () => {
     await act(async () => {});
-    await screen.click('More colors');
+    await screen.openColors();
     expect(files.lock).toHaveBeenCalledTimes(1);
-    const tile = screen.dialog().querySelector('[aria-label^="Explore "]');
-    const chosen = tile.getAttribute('aria-label').slice('Explore '.length);
-    await screen.click(`Explore ${chosen}`);
     expect(files.settingsWrite).not.toHaveBeenCalled();
-    await screen.click('Use color');
+    const chosen = '#2196F3';
+    await screen.click(chosen);
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({

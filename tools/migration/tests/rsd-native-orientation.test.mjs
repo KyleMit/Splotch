@@ -125,7 +125,7 @@ it('leaves a tablet to the OS: no picker and no lock request', async () => {
   records.dimensions = { width: 834, height: 1194, scale: 2, fontScale: 1 };
   openSettings(version8('landscape'));
   await mount(createElement(RsdDrawingScreen));
-  await openSettingsSection('Appearance');
+  // The tablet's wide shell lays Appearance out in its pane rather than behind a hub row.
   checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
   expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
   expect(host.textContent).not.toContain(AUTO_NOTE);
@@ -147,10 +147,10 @@ it('takes the saved lock when the screen crosses to phone size and releases it c
   records.dimensions = TABLET;
   openSettings(version8('landscape'));
   await mount(createElement(RsdDrawingScreen));
-  await openSettingsSection('Appearance');
   expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
   expect(orientationCalls).toEqual([]);
   await resize(PHONE);
+  await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="Landscape orientation"]'));
   expect(orientationCalls).toEqual([['lockAsync', LANDSCAPE_RIGHT]]);
   await resize(TABLET);

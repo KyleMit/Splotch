@@ -48,6 +48,7 @@ export function RsdSettingsRoute({
       onDismiss={onDismiss}
       parentCenter={{
         unlocked: product.state?.parentCenterOpen === true,
+        checkDue: product.state?.parentCenterCheckDue !== false,
         onUnlock: () => owner?.openParentCenter(),
         onLeave: () => owner?.closeParentCenter(),
         section: owner ? <RsdParentCenterSection owner={owner} /> : null,
