@@ -45,7 +45,6 @@ export function NativePaper({
           eraserWidth={sound.settings.eraserWidth}
           disabled={
             screen.busy ||
-            screen.pictures !== null ||
             screen.pagePickerOpen ||
             screen.settingsOpen ||
             screen.colorPickerOpen ||

@@ -13,14 +13,15 @@ import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+import { drawerTileSize as tileSize } from './rsd-native-toolbar-fixture.mjs';
+import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
+import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   BUTTON_SIZE_HELP,
-  controlSize,
 } from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 import {
   REDUCE_MOTION_HELP,
@@ -282,10 +283,10 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   expect(settings.stored()).toMatchObject({ version: 11, buttonScale: BUTTON_SCALE_MAX });
   await rerender({ settingsOpen: false });
   await click('Expand controls');
-  const size = controlSize(BUTTON_SCALE_MAX);
-  expect(size).toBeGreaterThan(TOUCH_TARGET);
-  for (const label of ['Save picture', 'Collapse controls'])
-    expect(outerSize(label), label).toBe(size);
+  const size = tileSize(BUTTON_SCALE_MAX);
+  expect(size).toBeGreaterThan(tileSize(100));
+  expect(outerSize('Save screenshot')).toBe(size);
+  expect(outerSize('Collapse controls')).toBe(CORNER_BUTTON_SIZE_PX);
   // Shipping sizes its swatches and the corner Settings Button apart from Button Size.
   for (const label of ['Purple paint', 'More colors'])
     expect(outerSize(label), label).toBe(PALETTE_FLOWS.row.swatchPx);
@@ -297,7 +298,8 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   expect(button('Smaller buttons').disabled).toBe(true);
   expect(settings.stored().buttonScale).toBe(BUTTON_SCALE_MIN);
   await rerender({ settingsOpen: false });
-  expect(outerSize('Save picture')).toBe(controlSize(BUTTON_SCALE_MIN));
+  expect(outerSize('Save screenshot')).toBe(tileSize(BUTTON_SCALE_MIN));
+  expect(tileSize(BUTTON_SCALE_MIN)).toBeLessThan(tileSize(100));
   expect(outerSize('Purple paint')).toBe(PALETTE_FLOWS.row.swatchPx);
 });
 
@@ -416,8 +418,14 @@ async function pencilDoubleTap() {
   await act(async () => caller.pencilDoubleTap());
 }
 
+// The Brushes button wears the held brush's face; its label stays "Brushes", as shipping's does.
 function brushLabel() {
-  return host.querySelector('[aria-label^="Brush: "]')?.getAttribute('aria-label');
+  const xml = host.querySelector('[aria-label="Brushes"] svg[data-xml]')?.dataset.xml;
+  const path = (markup) => markup.match(/\bd="([^"]+)"/)?.[1];
+  const held = Object.values(BRUSH_MENU_OPTIONS).find(
+    ({ icon }) => xml && xml.includes(path(NATIVE_ICONS[icon].light))
+  );
+  return held && `Brush: ${held.label}`;
 }
 
 async function pencilScreen(overrides) {

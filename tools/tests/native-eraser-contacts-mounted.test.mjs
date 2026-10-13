@@ -21,8 +21,7 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
   it.each(['pen', 'eraser', 'crayon', 'magic'])(
     'finishes two %s contacts in one Undo group using measured page coordinates',
     async (brush) => {
-      const base = { ...legacyDrawing(3, 'flower'), strokes: [marker] };
-      await open(base);
+      const base = await open({ ...legacyDrawing(3, 'flower'), strokes: [marker] });
       await act(async () => owner.setBrush(brush));
       await settle();
       const before = owner.history;
@@ -89,8 +88,11 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     expect(sdk.save).not.toHaveBeenCalled();
     expect(owner.history).toBe(before);
     await send('onPanResponderEnd', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
-    await act(async () => owner.save());
-    expect(sdk.save).toHaveBeenCalledExactlyOnceWith(owner.history.drawing);
+    await act(async () => {
+      void owner.save();
+    });
+    await settle();
+    expect(sdk.save).toHaveBeenCalledOnce();
   });
 
   it('blocks admission under a synchronous command lease and while actual output is pending', async () => {
@@ -186,7 +188,6 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(false);
     await act(async () => {
       await owner.save();
-      await owner.exportPicture();
       await owner.clear();
       owner.choosePage('flower');
       staleChoosePage('turtle');

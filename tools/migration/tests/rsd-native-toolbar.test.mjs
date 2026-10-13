@@ -9,6 +9,10 @@ import {
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
+import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import { ACTION_TILE_DISABLED_OPACITY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
@@ -28,8 +32,17 @@ import {
   mountToolbar,
   paintGroup,
   paintLabels,
+  resolved,
   toolbarScreen,
 } from './rsd-native-toolbar-fixture.mjs';
+
+// A page with one stroke on it, so the screenshot camera has something to keep.
+function inked() {
+  return {
+    ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }),
+    strokes: [{ brush: 'pen', width: 8, color: 'Purple', points: [{ x: 1, y: 1 }] }],
+  };
+}
 
 const PURPLE = paletteHex('Purple');
 
@@ -55,31 +68,32 @@ function iconMarkup(node) {
 }
 
 it('renders every toolbar action as a named icon button that calls its owner', async () => {
-  await mountToolbar(toolbarScreen());
+  await mountToolbar(toolbarScreen({ history: { undo: [emptyDrawing()], drawing: inked() } }));
   await expandControls();
-  const openParentCenter = vi.spyOn(caller.product.owner, 'openParentCenter');
   const openAi = vi.spyOn(caller.product.ai.owner, 'open').mockImplementation(() => {});
   const actions = [
-    ['Brush: Crayon', 'brush-crayon', () => caller.menu.show],
-    ['Coloring pages', 'shapes', () => caller.screen.setPagePickerOpen],
-    ['Save picture', 'camera', () => caller.screen.save],
+    ['Coloring books', 'shapes', () => caller.screen.setPagePickerOpen],
+    ['Save screenshot', 'camera', () => caller.screen.save],
     ['AI picture', 'wand-stars', () => openAi],
     ['Undo', 'undo', () => caller.screen.undo],
     ['Clear drawing', 'trash-closed', () => caller.screen.clear],
-    ['Drawing tools', 'controls', () => caller.menu.show],
     ['Settings', 'settings', () => caller.screen.openSettings],
-    ['Parent Center', 'parent-center', () => openParentCenter],
   ];
   for (const [label, icon, handler] of actions) {
     const node = button(label);
     expect(node.textContent, label).toBe('');
-    const ink = icon === 'brush-crayon' ? PURPLE : DRAWING_THEME.iconInk;
-    expect(iconMarkup(node), label).toBe(NATIVE_ICONS[icon].light.replaceAll('currentColor', ink));
+    expect(iconMarkup(node), label).toBe(
+      NATIVE_ICONS[icon].light.replaceAll('currentColor', DRAWING_THEME.iconInk)
+    );
     const before = handler().mock.calls.length;
     await act(async () => (label === 'Clear drawing' ? activateClear() : node.click()));
     expect(handler().mock.calls.length, label).toBe(before + 1);
   }
   expect(caller.screen.setPagePickerOpen).toHaveBeenCalledWith(true);
+  const brushes = button('Brushes');
+  expect(iconMarkup(brushes)).toBe(
+    NATIVE_ICONS['brush-crayon'].light.replaceAll('currentColor', PURPLE)
+  );
   expect(NATIVE_ICONS['brush-crayon'].light).toContain('currentColor');
   expect(NATIVE_ICONS.settings.light).toContain('currentColor');
 });
@@ -90,6 +104,7 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
       disabled: true,
       brush: 'pen',
       brushControl: { kind: 'toggle', brush: 'eraser' },
+      history: { undo: [emptyDrawing()], drawing: inked() },
     })
   );
   await expandControls();
@@ -100,7 +115,7 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
   expect(button('Clear drawing')).not.toBeNull();
   expect(clearProps().accessibilityState.disabled).toBe(true);
   await act(async () => activateClear());
-  for (const label of ['Eraser', 'Save picture', 'Undo', 'Drawing tools']) {
+  for (const label of ['Eraser', 'Save screenshot', 'Undo', 'Stroke width', 'Coloring books']) {
     const node = button(label);
     expect(node.disabled, label).toBe(true);
     await act(async () => node.click());
@@ -112,7 +127,7 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
   expect(caller.screen.save).not.toHaveBeenCalled();
   expect(caller.screen.openSettings).not.toHaveBeenCalled();
   expect(caller.screen.undo).not.toHaveBeenCalled();
-  expect(caller.menu.show).not.toHaveBeenCalled();
+  expect(caller.screen.setPagePickerOpen).not.toHaveBeenCalled();
   caller.screen.disabled = false;
   await act(async () => root.render(createElement(RsdDrawingScreen)));
   await act(async () => button('Eraser').click());
@@ -174,37 +189,71 @@ it('keeps the loaded paint on the bar when the room runs out', () => {
   expect(visiblePaints([], 'Black', 0)).toEqual([]);
 });
 
-it('tucks the remaining tools into a drawer the chevron reveals and hides', async () => {
+it('tucks the shipping tools, in order, into a drawer the chevron after them reveals and hides', async () => {
   await mountToolbar(toolbarScreen());
   const tools = [
-    'Brush: Crayon',
-    'Coloring pages',
-    'Save picture',
+    'Brushes',
+    'Stroke width',
+    'Coloring books',
+    'Save screenshot',
     'AI picture',
     'Undo',
-    'Drawing tools',
-    'Parent Center',
   ];
-  const shown = () => tools.filter((label) => host.querySelector(`[aria-label="${label}"]`));
+  const shown = () =>
+    [...host.querySelectorAll('[data-testid="rsd-drawer-tool"] [aria-label]')]
+      .map((node) => node.getAttribute('aria-label'))
+      .filter((label) => tools.includes(label));
   expect(shown()).toEqual([]);
   expect(button('Clear drawing').closest('[data-testid="rsd-clear-dock"]')).not.toBeNull();
   expect(button('Settings').closest('[data-testid="rsd-settings-dock"]')).not.toBeNull();
   const toggle = button('Expand controls');
   expect(toggle.closest('[data-testid="rsd-drawer-dock"]')).not.toBeNull();
   expect(expanded('Expand controls')).toBe(false);
+  // The shipping chevron is the muted corner glyph, not a raised tile.
   expect(iconMarkup(toggle)).toBe(
     NATIVE_ICONS['chevron-right'].light.replaceAll('currentColor', DRAWING_THEME.iconInk)
   );
+  const chevron = resolved((props) => props.accessibilityLabel === 'Expand controls');
+  expect(chevron).toMatchObject({ backgroundColor: 'transparent', borderWidth: 0 });
+  expect(chevron.boxShadow).toBeUndefined();
   await act(async () => toggle.click());
   expect(shown()).toEqual(tools);
-  for (const label of tools)
-    expect(button(label).closest('[data-testid="rsd-drawer-tool"]'), label).not.toBeNull();
-  expect(button('Collapse controls').closest('[data-testid="rsd-drawer-dock"]')).not.toBeNull();
+  // Every RN-only drawer control is gone: tools sheet, Parent Center and the gallery.
+  for (const removed of ['Drawing tools', 'Parent Center', 'Pictures', 'Export PNG'])
+    expect(host.querySelector(`[aria-label="${removed}"]`), removed).toBeNull();
+  // The chevron follows the last tool up the portrait column.
+  const lastTool = flat(
+    records.props.filter((props) => props.testID === 'rsd-drawer-tool').at(-1).style
+  );
+  const dock = resolved((props) => props.testID === 'rsd-drawer-dock');
+  expect(dock.bottom).toBeGreaterThan(lastTool.bottom);
   const collapse = button('Collapse controls');
+  expect(collapse.closest('[data-testid="rsd-drawer-dock"]')).not.toBeNull();
   expect(expanded('Collapse controls')).toBe(true);
   await act(async () => collapse.click());
   expect(shown()).toEqual([]);
   expect(button('Expand controls')).not.toBeNull();
+  expect(resolved((props) => props.testID === 'rsd-drawer-dock').bottom).toBe(EDGE_INSET_PX);
+});
+
+it('fades Undo and the screenshot camera on a blank page and wakes them once it has ink', async () => {
+  await mountToolbar(toolbarScreen({ history: { undo: [], drawing: emptyDrawing() } }));
+  await expandControls();
+  for (const label of ['Save screenshot', 'Undo']) {
+    expect(button(label).disabled, label).toBe(true);
+    expect(resolved((props) => props.accessibilityLabel === label).opacity, label).toBe(
+      ACTION_TILE_DISABLED_OPACITY
+    );
+  }
+  expect(button('Coloring books').disabled).toBe(false);
+  caller.screen.history = { undo: [emptyDrawing()], drawing: inked() };
+  await act(async () => root.render(createElement(RsdDrawingScreen)));
+  for (const label of ['Save screenshot', 'Undo']) {
+    expect(button(label).disabled, label).toBe(false);
+    expect(resolved((props) => props.accessibilityLabel === label).opacity, label).not.toBe(
+      ACTION_TILE_DISABLED_OPACITY
+    );
+  }
 });
 
 function layoutElement(seen) {
@@ -221,11 +270,11 @@ function layoutElement(seen) {
         return createElement('div', { 'data-clear-underlay': true });
       },
       clearOverlay: createElement('button', null, 'Clear drawing'),
-      drawerToggle: (axis) => {
-        seen.drawer = axis;
+      actionsPanel: (area, viewport) => {
+        seen.panel = { area, viewport: { width: viewport.width, height: viewport.height } };
         return createElement('button', null, 'Tools');
       },
-      drawerTools: [],
+      capturePress: () => false,
       settings: createElement('button', null, 'Settings'),
       status: createElement('output', { 'data-status': true }),
     },
@@ -239,13 +288,16 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(seen).toEqual({
     palette: { axis: 'row', slots: paletteSlots(402, 'row'), length: 402 },
     clearOffset: { top: 0, right: 0 },
-    drawer: 'column',
+    panel: {
+      area: expect.objectContaining({ width: 402, height: 874 }),
+      viewport: { width: 402, height: 874 },
+    },
   });
   expect(paletteSlots(402, 'row')).toBe(6);
   const area = host.querySelector('[data-testid="rsd-canvas-area"]');
   expect(area.firstElementChild.dataset.paper).toBe('true');
   expect(area.children[1].dataset.clearUnderlay).toBe('true');
-  for (const dock of ['rsd-drawer-dock', 'rsd-settings-dock']) {
+  for (const dock of ['rsd-settings-dock']) {
     expect(area.querySelector(`[data-testid="${dock}"]`), dock).not.toBeNull();
     expect(records.props.findLast((props) => props.testID === dock).style.position).toBe(
       'absolute'
@@ -270,6 +322,11 @@ it('floats the edge controls over a paper area that fills the rest of the screen
     props('rsd-canvas-area').onLayout(box(0, 0, 400, 760));
   });
   expect(seen.clearOffset).toEqual({ top: 68, right: 2 });
+  // The panel sizes itself against the measured paper area and the whole window.
+  expect(seen.panel).toEqual({
+    area: { x: 0, y: 0, width: 400, height: 760 },
+    viewport: { width: 402, height: 874 },
+  });
   expect(host.querySelector('[data-testid="rsd-palette-bar"] [data-paper]')).toBeNull();
   // The status lies over the paper rather than claiming a strip of the screen.
   expect(area.querySelector('[data-status]')).not.toBeNull();
@@ -280,10 +337,10 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(seen.palette).toEqual({ axis: 'row', slots: 6, length: 300 });
   records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
   await act(async () => root.render(layoutElement(seen)));
-  expect(seen).toEqual({
+  expect(seen).toMatchObject({
     palette: { axis: 'column', slots: 5, length: 402 },
     clearOffset: { top: 68, right: 2 },
-    drawer: 'row',
+    panel: { viewport: { width: 874, height: 402 } },
   });
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 380 } } }));
   expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 380 });

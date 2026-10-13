@@ -19,6 +19,12 @@ import {
   LEGACY_PAPER,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
+import {
+  decodeDrawingDraft,
+  encodeDrawingDraft,
+} from '../../experiments/native-architecture/src/product/drawingDraft.ts';
+import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { FAILED_DETAIL } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 
 const capturePngFixture = readFileSync(
   new NodeURL('./fixtures/native-png-android-rgba-sbit.png', import.meta.url)
@@ -33,8 +39,10 @@ const sdk = vi.hoisted(() => ({
   imageLoads: [],
   responders: [],
   save: vi.fn(),
-  open: vi.fn(),
   export: vi.fn(),
+  // The draft the screen restores on load, and every draft it writes after.
+  draft: null,
+  drafts: [],
 }));
 vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
   pngRecoveryPlatform: {
@@ -46,22 +54,26 @@ vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () 
   },
 }));
 
-// Save picture is this suite's probe of the current drawing; the photo library copy it also
-// makes is covered by native-save-to-photos-mounted.test.mjs.
+// A photo library that refuses every picture; native-save-to-photos-mounted.test.mjs covers saves.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
-  photoLibrary: null,
+  photoLibrary: { save: async () => 'failed' },
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  listPictures: () => [{ id: 'picture-1-recovery', name: 'Recovery fixture', modifiedAt: 1 }],
-  reopenPicture: sdk.open,
   savePicture: sdk.save,
+  savedColoringPageIds: async () => [],
   exportPng: sdk.export,
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(),
 }));
+// The current-picture draft is this suite's probe of the drawing the screen holds.
 vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
-  drawingDraftStorage: { read: async () => null, write: async () => {} },
+  drawingDraftStorage: {
+    read: async () => sdk.draft,
+    write: async (snapshot) => {
+      sdk.drafts.push(snapshot);
+    },
+  },
   protectedDraftPageIds: async () => [],
 }));
 vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
@@ -86,6 +98,7 @@ vi.mock('react-native', () => {
   return {
     PixelRatio: { get: () => 1 },
     AccessibilityInfo: createAccessibilityInfoFixture(),
+    BackHandler: { addEventListener: () => ({ remove() {} }), exitApp() {} },
     useColorScheme: () => 'light',
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
@@ -176,7 +189,8 @@ beforeEach(() => {
   sdk.fail = false;
   sdk.load = true;
   sdk.imageLoads.length = 0;
-  sdk.open.mockResolvedValue(fixture);
+  sdk.draft = null;
+  sdk.drafts.length = 0;
   sdk.save.mockResolvedValue(undefined);
   sdk.export.mockResolvedValue(undefined);
   vi.stubGlobal('requestAnimationFrame', (callback) => {
@@ -220,6 +234,19 @@ async function click(label) {
   expect(target.disabled, label).toBe(false);
   await act(async () => target.click());
 }
+// The fixture comes back as the restored current-picture draft, read once as the screen loads.
+async function opened() {
+  sdk.draft = encodeDrawingDraft(fixture);
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(DrawingScreen)))
+  );
+  await frames();
+  sdk.draft = null;
+}
+async function saved() {
+  await frames();
+  return decodeDrawingDraft(sdk.drafts.at(-1) ?? encodeDrawingDraft(fixture));
+}
 async function frames() {
   for (let count = 0; count < 10; count += 1)
     await act(async () => {
@@ -231,11 +258,8 @@ async function frames() {
 
 describe('visible terminal renderer recovery', () => {
   it('retries the actual DrawingSurface/RasterInk failure through the real button and retains canonical page/rainbow/history', async () => {
-    await act(async () => root.render(createElement(DrawingScreen)));
-    await click('Pictures');
     sdk.fail = true;
-    await click('Open picture from Recovery fixture');
-    await frames();
+    await opened();
     expect(host.textContent).toContain('PNG capture failed. Your picture is still here.');
     expect(button('Save picture')).toBeUndefined();
     expect(toolsButton().disabled).toBe(true);
@@ -248,9 +272,7 @@ describe('visible terminal renderer recovery', () => {
     expect(button('Retry drawing')).toBeUndefined();
     expect(sdk.captures.length).toBeGreaterThan(before);
     await act(async () => late('old-generation-png'));
-    await click('Save picture');
-    expect(sdk.save).toHaveBeenLastCalledWith(fixture);
-    expect(sdk.save.mock.calls.at(-1)[0]).toBe(fixture);
+    expect(await saved()).toEqual(fixture);
     await act(async () => toolsButton().click());
     expect(button('Save picture').disabled).toBe(false);
     expect(host.textContent).toContain('Garden flower');
@@ -289,26 +311,15 @@ describe('visible terminal renderer recovery', () => {
       input.onPanResponderEnd(end);
       input.onPanResponderRelease(end);
     });
-    await click('Save picture');
-    expect(sdk.save.mock.calls.at(-1)[0].strokes).toHaveLength(3);
+    expect((await saved()).strokes).toHaveLength(3);
     await click('Undo');
-    await click('Save picture');
-    expect(sdk.save).toHaveBeenLastCalledWith(fixture);
-    expect(sdk.save.mock.calls.at(-1)[0]).toBe(fixture);
-    await click('Undo');
-    await click('Save picture');
-    expect(sdk.save.mock.calls.at(-1)[0]).toMatchObject({
-      pageId: 'blank',
-      rainbow: 0,
-      strokes: [],
-    });
+    expect(await saved()).toEqual(fixture);
+    // The restored picture opened this history, so there is nothing before it to Undo to.
+    expect(button('Undo').disabled).toBe(true);
   });
   it('keeps Retry visible after another real terminal failure without an automatic remount loop', async () => {
-    await act(async () => root.render(createElement(DrawingScreen)));
-    await click('Pictures');
     sdk.fail = true;
-    await click('Open picture from Recovery fixture');
-    await frames();
+    await opened();
     expect(sdk.captures).toHaveLength(1);
     await click('Retry drawing');
     await frames();
@@ -318,11 +329,8 @@ describe('visible terminal renderer recovery', () => {
     expect(sdk.captures).toHaveLength(2);
   });
   it('keeps the recovered renderer locked until its own image load and ignores an old image callback', async () => {
-    await act(async () => root.render(createElement(DrawingScreen)));
     sdk.load = false;
-    await click('Pictures');
-    await click('Open picture from Recovery fixture');
-    await frames();
+    await opened();
     const oldImage = sdk.imageLoads.at(-1);
     await act(async () => vi.advanceTimersByTime(PNG_TIMEOUT_MS));
     expect(button('Retry drawing').disabled).toBe(false);
@@ -337,16 +345,14 @@ describe('visible terminal renderer recovery', () => {
     await frames();
     expect(toolsButton().disabled).toBe(false);
     expect(host.textContent).toContain('Your picture is ready.');
-    await click('Save picture');
-    expect(sdk.save.mock.calls.at(-1)[0]).toBe(fixture);
+    expect(await saved()).toEqual(fixture);
   });
-  it('does not offer renderer Retry for an ordinary export failure', async () => {
-    sdk.export.mockRejectedValue(new Error('Sharing was declined'));
-    await act(async () => root.render(createElement(DrawingScreen)));
-    await click('Export PNG');
+  it('does not offer renderer Retry for an ordinary save failure', async () => {
+    await opened();
+    await click('Save picture');
     await frames();
     await act(async () => vi.runAllTimersAsync());
-    expect(host.textContent).toContain('Sharing was declined');
+    expect(host.textContent).toContain(FAILED_DETAIL);
     expect(button('Retry drawing')).toBeUndefined();
   });
 });

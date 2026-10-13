@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createScreen, files, pictures } from './native-drawing-screen-harness.mjs';
+import { createScreen, files } from './native-drawing-screen-harness.mjs';
 let screen;
 function pending() {
   let resolve;
@@ -17,7 +17,7 @@ async function change(enabled) {
 }
 async function open(kind) {
   if (kind === 'colors') await screen.click('More colors');
-  else await screen.menuClick(kind === 'pages' ? 'Coloring pages' : 'Pictures');
+  else await screen.menuClick('Coloring pages');
 }
 function modal() {
   return screen.container.querySelector('[data-animation-type]');
@@ -34,7 +34,7 @@ beforeEach(() => {
   files.motionRemoves.length = 0;
   files.motionListenError = null;
   files.save.mockReset().mockResolvedValue(undefined);
-  files.list.mockReturnValue(pictures);
+  files.capture.mockReset().mockResolvedValue('cG5n');
   files.lock.mockReset().mockReturnValue(() => {});
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
@@ -45,7 +45,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 describe('mounted native drawing modal motion', () => {
-  it.each(['colors', 'pages', 'pictures'])(
+  it.each(['colors', 'pages'])(
     'keeps %s reduced during initial loading then follows both device states without replacing the dialog',
     async (kind) => {
       const read = pending();
@@ -66,18 +66,18 @@ describe('mounted native drawing modal motion', () => {
       expect(modal()).toBeNull();
     }
   );
-  it.each(['colors', 'pages', 'pictures'])(
+  it.each(['colors', 'pages'])(
     'honors an initially enabled preference for %s and preserves close behavior',
     async (kind) => {
       files.motionRead.mockResolvedValue(true);
       await act(async () => screen.mount());
       await open(kind);
       expect(modal().dataset.animationType).toBe('none');
-      await screen.click(kind === 'pictures' ? 'Close' : 'Keep drawing');
+      await screen.click('Keep drawing');
       expect(modal()).toBeNull();
     }
   );
-  it.each(['colors', 'pages', 'pictures'])(
+  it.each(['colors', 'pages'])(
     'contains read failure while %s closes and drawing remains usable',
     async (kind) => {
       files.motionRead.mockRejectedValue(new Error('unavailable'));
@@ -93,8 +93,8 @@ describe('mounted native drawing modal motion', () => {
       await screen.click(opener.getAttribute('aria-label'));
       expect(screen.button('Save picture').disabled).toBe(false);
       await screen.click('Save picture');
-      expect(files.save).toHaveBeenCalledOnce();
-      expect(files.save.mock.calls[0][0].strokes).toHaveLength(1);
+      expect(files.capture).toHaveBeenCalledOnce();
+      expect(files.capture.mock.calls[0][0].strokes).toHaveLength(1);
     }
   );
   it('ignores a delayed read after a live event through the actual adapter and restores color opener focus', async () => {
@@ -122,7 +122,7 @@ describe('mounted native drawing modal motion', () => {
     );
     await screen.click(opener.getAttribute('aria-label'));
     await screen.click('Save picture');
-    expect(files.save).toHaveBeenCalledOnce();
+    expect(files.capture).toHaveBeenCalledOnce();
     expect(files.motionRead).not.toHaveBeenCalled();
     expect(files.motionListeners.size).toBe(0);
   });

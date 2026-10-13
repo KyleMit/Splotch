@@ -28,7 +28,6 @@ async function mount(platform, options) {
 }
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  files.list.mockReturnValue([]);
   files.lock.mockReturnValue(() => {});
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);

@@ -12,7 +12,6 @@ beforeEach(async () => {
   files.dismissModal = null;
   release = vi.fn();
   files.lock.mockReset().mockReturnValue(release);
-  files.list.mockReset().mockReturnValue([]);
   files.pngRead.mockReset().mockResolvedValue(null);
   files.pngWrite.mockReset().mockResolvedValue(undefined);
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
@@ -57,11 +56,9 @@ it('retains the menu input lease and disables every closing control until dismis
 
 it('releases the pending menu lease on unmount without running its successor', async () => {
   await screen.click('Drawing tools');
-  await screen.click('Pictures');
-  expect(files.list).not.toHaveBeenCalled();
+  await screen.click('Coloring pages');
   screen.close();
   expect(release).toHaveBeenCalledOnce();
-  expect(files.list).not.toHaveBeenCalled();
 });
 
 it('carries brush and width choices through menu dismissal into real history and Undo', async () => {

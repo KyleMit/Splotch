@@ -7,17 +7,24 @@ import {
   PAPER_HEIGHT,
   PAPER_WIDTH,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  heldPngFilename,
+  serializeHeldPngs,
+} from '../../experiments/native-architecture/src/export/heldPng.ts';
 
 const CAPTURED_PNG = rgbaPng(2, 2, 255).toString('base64');
 const CLEAR_OBSERVATION_WAIT_MS = 10_000;
 const RECOVERY_TEST_TIMEOUT_MS = 15_000;
+// A PNG an earlier export held for retry. Nothing in the app makes new ones; a held record from
+// before still restores, retries and dismisses.
+const HELD_ID = 'png-1-held';
+const HELD_FILENAME = heldPngFilename(HELD_ID);
 let screen;
 let stored;
 
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  stored = null;
-  files.list.mockReset().mockReturnValue([]);
+  stored = serializeHeldPngs([{ id: HELD_ID, filename: HELD_FILENAME, base64: CAPTURED_PNG }]);
   files.capture.mockReset().mockResolvedValue(CAPTURED_PNG);
   files.ink.mockReset();
   files.export.mockReset().mockRejectedValue(new Error('Sharing unavailable'));
@@ -34,17 +41,13 @@ beforeEach(async () => {
 
 afterEach(() => screen.close());
 
-describe('mounted failed PNG recovery', () => {
+describe('mounted held PNG recovery', () => {
   it(
-    'retries the exact captured PNG after later ink and a real Clear instead of capturing the current canvas',
+    'retries the exact held PNG after later ink and a real Clear instead of capturing the current canvas',
     async () => {
-      await screen.click('Draw fixture stroke');
-      await screen.menuClick('Export PNG');
-      const exported = files.export.mock.calls[0];
-      expect(exported[0]).toBe(CAPTURED_PNG);
       expect(screen.container.textContent).toContain('PNG held on this device for retry.');
       const retry = screen.button('Try PNG export again');
-      const dismiss = screen.button(`Dismiss held PNG ${exported[1]}`);
+      const dismiss = screen.button(`Dismiss held PNG ${HELD_FILENAME}`);
       expect(parseFloat(retry.style.minHeight)).toBeGreaterThanOrEqual(48);
       expect(parseFloat(dismiss.style.minWidth)).toBeGreaterThanOrEqual(48);
       await screen.click('Draw fixture stroke');
@@ -60,55 +63,38 @@ describe('mounted failed PNG recovery', () => {
       expect(files.ink).toHaveBeenCalledOnce();
       files.export.mockResolvedValue(undefined);
       await screen.click('Try PNG export again');
-      expect(files.export.mock.calls[1]).toEqual(exported);
-      expect(files.capture).toHaveBeenCalledOnce();
+      expect(files.export.mock.calls[0]).toEqual([CAPTURED_PNG, HELD_FILENAME]);
+      expect(files.capture).not.toHaveBeenCalled();
       expect(JSON.parse(stored).pictures[0].base64).toBe(CAPTURED_PNG);
       expect(screen.button('Try PNG export again')).toBeDefined();
       expect(screen.container.textContent).toContain(
         'Share sheet closed. This PNG is kept until you dismiss it.'
       );
-      await screen.click(`Dismiss held PNG ${exported[1]}`);
+      await screen.click(`Dismiss held PNG ${HELD_FILENAME}`);
       expect(JSON.parse(stored).pictures).toEqual([]);
     },
     RECOVERY_TEST_TIMEOUT_MS
   );
 
   it('restores held records on remount without sharing and dismisses them durably', async () => {
-    await screen.menuClick('Export PNG');
     const original = stored;
     screen.close();
     screen = createScreen();
     await act(async () => screen.mount());
     expect(stored).toBe(original);
-    expect(files.export).toHaveBeenCalledOnce();
-    expect(files.capture).toHaveBeenCalledOnce();
+    expect(files.export).not.toHaveBeenCalled();
+    expect(files.capture).not.toHaveBeenCalled();
     expect(screen.container.textContent).toContain('PNG held on this device for retry.');
-    await screen.click(`Dismiss held PNG ${JSON.parse(stored).pictures[0].filename}`);
+    await screen.click(`Dismiss held PNG ${HELD_FILENAME}`);
     expect(JSON.parse(stored).pictures).toEqual([]);
     screen.close();
     screen = createScreen();
     await act(async () => screen.mount());
     expect(screen.button('Try PNG export again')).toBeUndefined();
-    expect(files.export).toHaveBeenCalledOnce();
-  });
-
-  it('shows session-only durability and keeps capture failure out of recovery', async () => {
-    files.capture.mockRejectedValueOnce(new Error('PNG capture failed'));
-    await screen.menuClick('Export PNG');
-    expect(screen.container.textContent).toContain('PNG capture failed');
-    expect(screen.button('Try PNG export again')).toBeUndefined();
-    expect(files.recoveryWrite).not.toHaveBeenCalled();
     expect(files.export).not.toHaveBeenCalled();
-    files.recoveryWrite.mockRejectedValue(new Error('Disk full'));
-    await screen.menuClick('Export PNG');
-    expect(screen.container.textContent).toContain('PNG held only while this screen stays open.');
-    expect(screen.container.textContent).not.toContain('PNG held on this device for retry.');
-    expect(screen.button('Try PNG export again')).toBeDefined();
-    expect(stored).toBeNull();
   });
 
   it('defers asynchronously restored record layout until an active drawing cohort finishes', async () => {
-    await screen.menuClick('Export PNG');
     screen.close();
     let restore;
     files.recoveryRead.mockImplementationOnce(
@@ -124,6 +110,12 @@ describe('mounted failed PNG recovery', () => {
     expect(screen.container.textContent).not.toContain('PNG held on this device for retry.');
     await screen.click('Finish cohort');
     expect(screen.container.textContent).toContain('PNG held on this device for retry.');
-    expect(files.export).toHaveBeenCalledOnce();
+    expect(files.export).not.toHaveBeenCalled();
+  });
+
+  it('offers no way to export a new PNG: the screenshot camera is the one save', async () => {
+    await screen.click('Drawing tools');
+    expect(screen.button('Export PNG')).toBeUndefined();
+    expect(screen.button('Save picture')).toBeDefined();
   });
 });

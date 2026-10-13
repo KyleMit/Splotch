@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
+import { createScreen, files, STROKE } from './native-drawing-screen-harness.mjs';
 import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
 import { offlineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/runtime.ts';
 import {
@@ -15,9 +15,7 @@ let screen;
 
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  files.list.mockReset().mockReturnValue(pictures);
   files.save.mockReset().mockResolvedValue({ id: 'picture-1-fixture' });
-  files.open.mockReset();
   files.capture.mockReset();
   files.ink.mockReset();
   files.export.mockReset();
@@ -113,26 +111,6 @@ describe('current drawing app session', () => {
     expect(screen.paper()).toBe(original);
     await screen.click('Undo');
     expect(JSON.parse(screen.paper()).pageId).toBe('blank');
-  });
-
-  it('ignores a saved-picture replacement that finishes after its screen unmounts', async () => {
-    await screen.click('Draw fixture stroke');
-    let finish;
-    files.open.mockReturnValueOnce(
-      new Promise((resolve) => {
-        finish = resolve;
-      })
-    );
-    await screen.menuClick('Pictures');
-    await screen.click('Open picture from Good picture');
-    expect(files.open).toHaveBeenCalledOnce();
-    await screen.remount();
-    await screen.click('Draw fixture stroke');
-    const current = screen.paper();
-    await act(async () => finish(emptyDrawing()));
-    expect(screen.paper()).toBe(current);
-    await screen.click('Undo');
-    expect(JSON.parse(screen.paper()).strokes).toHaveLength(1);
   });
 
   it('ignores a coloring-page replacement that finishes after its screen unmounts', async () => {

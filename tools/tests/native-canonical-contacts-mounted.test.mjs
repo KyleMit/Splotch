@@ -16,8 +16,7 @@ import {
 describe('canonical raster contact admission and mixed chronology', () => {
   it('does not prepare a nonempty prefix or silence accepted contacts when a later contact changes mode', async () => {
     const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
-    const initial = { ...legacyDrawing(), strokes: [marker] };
-    await open(initial);
+    const initial = await open({ ...legacyDrawing(), strokes: [marker] });
     const before = owner.history;
     sdk.soundStop.mockClear();
     await send('onPanResponderGrant', event([touch(0, 10, 20)]));

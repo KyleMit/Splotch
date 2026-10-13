@@ -26,7 +26,6 @@ beforeEach(async () => {
   files.aiVaultRead.mockClear();
   files.feedbackRead.mockClear();
   files.feedbackWrite.mockClear();
-  files.list.mockReturnValue([]);
   files.lock.mockReturnValue(() => {});
   files.platform = 'android';
   files.retainClosingModal = false;

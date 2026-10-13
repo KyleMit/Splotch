@@ -3,6 +3,9 @@ import { LibraryFault } from '../offlineLibrary/contract';
 import { Directory, File, Paths } from 'expo-file-system';
 import { parseDrawing, type Drawing } from '../drawing/model';
 
+// The original drawing an AI attempt was made from (useNativeAi / productOwners), filed by the id
+// its journal records; nothing in the app reopens one. The coloring pages these reference stay
+// downloaded while they exist (savedColoringPageIds).
 const DRAWING_DIRECTORY = 'splotch-pictures';
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
 
@@ -61,18 +64,6 @@ export async function savePicture(drawing: Drawing): Promise<SavedPicture> {
     await offlineLibrary.withSavedArtwork(drawing.pageId, write);
   } else await write();
   return { id, name: new Date(modifiedAt).toLocaleString(), modifiedAt };
-}
-
-export async function reopenPicture(id: string): Promise<Drawing> {
-  const file = pictureFile(id);
-  if (!file.exists || file.size > MAX_SAVE_BYTES)
-    throw new Error('This saved picture cannot be opened.');
-  const drawing = parseDrawing(JSON.parse(await file.text()));
-  if (isOfflinePageId(drawing.pageId)) {
-    const { offlineLibrary } = await import('../offlineLibrary/runtime');
-    await offlineLibrary.openPage(drawing.pageId);
-  }
-  return drawing;
 }
 
 export async function savedColoringPageIds(): Promise<readonly string[]> {

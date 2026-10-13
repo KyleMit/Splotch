@@ -6,6 +6,8 @@ import { afterEach, beforeEach, expect, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
+import { encodeDrawingDraft } from '../../experiments/native-architecture/src/product/drawingDraft.ts';
+import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 
 const sdk = vi.hoisted(() => ({
   handlers: null,
@@ -17,7 +19,7 @@ const sdk = vi.hoisted(() => ({
   captures: [],
   hold: false,
   fail: false,
-  opened: null,
+  draft: null,
   save: vi.fn(),
   export: vi.fn(),
   soundStart: vi.fn(),
@@ -43,7 +45,7 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => {
-  const storage = { read: async () => null, write: async () => {} };
+  const storage = { read: async () => sdk.draft, write: async () => {} };
   return {
     drawingDraftStorage: storage,
     protectedDraftPageIds: async () => [],
@@ -52,6 +54,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', ()
 vi.mock('react-native', () => ({
   PixelRatio: { get: () => 1 },
   AccessibilityInfo: createAccessibilityInfoFixture(),
+  BackHandler: { addEventListener: () => ({ remove() {} }), exitApp() {} },
   useColorScheme: () => 'light',
   AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
   findNodeHandle: (owner) => owner,
@@ -125,16 +128,15 @@ vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () 
   },
 }));
 
-// Save picture is this suite's probe of the current drawing; the photo library copy it also
-// makes is covered by native-save-to-photos-mounted.test.mjs.
+// The photo library receives each saved picture's PNG; native-save-to-photos-mounted.test.mjs
+// covers what it does with it.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
-  photoLibrary: null,
+  photoLibrary: { save: sdk.save },
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: sdk.save,
+  savePicture: vi.fn(),
+  savedColoringPageIds: async () => [],
   exportPng: sdk.export,
-  listPictures: () => [],
-  reopenPicture: async () => sdk.opened,
 }));
 
 const PAPER_TARGET = 101;
@@ -200,10 +202,17 @@ async function settle() {
       for (const frame of frames) frame(0);
     });
 }
+// A screen opens on a picture it did not draw by restoring it as the current-picture draft, so the
+// fixture remounts the screen in an app session that restores this drawing, and hands back the
+// restored copy the history now holds.
 async function open(drawing) {
-  sdk.opened = drawing;
-  await act(async () => owner.openPicture({ id: 'fixture', name: 'Fixture', modifiedAt: 1 }));
+  sdk.draft = encodeDrawingDraft(drawing);
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
   await settle();
+  sdk.draft = null;
+  return owner.history.drawing;
 }
 async function twoContacts() {
   await send('onPanResponderGrant', event([touch(0, 10, 20)]));

@@ -17,8 +17,6 @@ const files = vi.hoisted(() => ({
   motionRemoves: [],
   motionListenError: null,
   save: vi.fn().mockResolvedValue({ id: 'picture-1-fixture' }),
-  list: vi.fn(),
-  open: vi.fn(),
   lock: vi.fn(),
   capture: vi.fn(),
   ink: vi.fn(),
@@ -91,8 +89,6 @@ vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () 
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  listPictures: files.list,
-  reopenPicture: files.open,
   savePicture: files.save,
   savedColoringPageIds: vi.fn().mockResolvedValue([]),
   exportPng: files.export,
@@ -455,10 +451,6 @@ export const UNTOUCHED_SETTINGS = {
   pencilEraserEnabled: true,
   applePencilSeen: false,
 };
-export const pictures = [
-  { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
-  { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },
-];
 
 export { files };
 

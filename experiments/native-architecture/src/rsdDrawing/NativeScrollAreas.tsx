@@ -2,16 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { paletteSlots } from './paletteGeometry';
-import {
-  drawerOffsets,
-  EDGE_INSET_PX,
-  type AreaOffset,
-  type AreaSize,
-  type LayoutAxis,
-} from './edgeLayout';
+import { EDGE_INSET_PX, type AreaOffset, type AreaSize, type LayoutAxis } from './edgeLayout';
 
 export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number; length: number }>;
-export type DrawerTool = Readonly<{ label: string; node: ReactNode }>;
 
 // The shipping palette (--z-palette) stacks over the paper, so its plate's shadow falls on it,
 // and over the Clear Button, its accept ring and coachmark.
@@ -22,8 +15,6 @@ const docks = StyleSheet.create({
   // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
   clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
-  toggle: { position: 'absolute', bottom: EDGE_INSET_PX, left: EDGE_INSET_PX },
-  tool: { position: 'absolute' },
 });
 
 type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -55,36 +46,34 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
 }
 
 // The shipping arrangement: colors along the top edge (the left edge in landscape), Clear docked to
-// the right screen edge, Settings in the bottom-right corner and the tool drawer's chevron in the
-// bottom-left one, all floating over a paper area that takes the rest of the screen. The open
-// drawer's tools are placed by drawerOffsets so they stay inside that area and clear of Clear and
-// Settings. The clear underlay paints over the paper in the area's coordinates; the clear overlay
-// spans the whole layout, as the shipping Clear Button docks to the screen rather than the paper.
+// the right screen edge, Settings in the bottom-right corner and the Actions Panel in the
+// bottom-left one, all floating over a paper area that takes the rest of the screen. The panel
+// places itself inside that area (edgeLayout.ts), sized against the area and the window. The
+// clear underlay paints over the paper in the area's coordinates; the clear overlay spans the whole
+// layout, as the shipping Clear Button docks to the screen rather than the paper. Every press
+// anywhere in the layout passes through capturePress first, without being claimed.
 export function NativeDrawingLayout({
-  controlSize,
   palette,
   clearUnderlay,
   clearOverlay,
-  drawerToggle,
-  drawerTools,
+  actionsPanel,
   settings,
   status,
+  capturePress,
   children,
 }: {
-  controlSize: number;
   palette: (layout: PaletteLayout) => ReactNode;
   clearUnderlay: (offset: AreaOffset) => ReactNode;
   clearOverlay: ReactNode;
-  drawerToggle: (axis: LayoutAxis) => ReactNode;
-  drawerTools: readonly DrawerTool[];
+  actionsPanel: (area: AreaSize, viewport: AreaSize) => ReactNode;
   settings: ReactNode;
   status: ReactNode;
+  capturePress: () => boolean;
   children: ReactNode;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const window = useWindowDimensions();
   const axis = window.width > window.height ? 'column' : 'row';
-  const drawerAxis = axis === 'row' ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
   // Shipping trims by the viewport's own length, insets included, and clips what an inset
   // shortens the bar by; only the spacing follows the bar's measured length.
@@ -94,11 +83,11 @@ export function NativeDrawingLayout({
   const [area, setArea] = useState<Box>();
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
-  const offsets = drawerOffsets(area ?? window, drawerAxis, drawerTools.length, controlSize);
   return (
     <View
       testID="rsd-drawing-layout"
       onLayout={boxSetter(setRoot)}
+      onStartShouldSetResponderCapture={capturePress}
       style={[
         drawingScreenStyles.fullBleed,
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
@@ -131,14 +120,7 @@ export function NativeDrawingLayout({
           <View testID="rsd-settings-dock" style={docks.settings}>
             {settings}
           </View>
-          {drawerTools.map((tool, index) => (
-            <View key={tool.label} testID="rsd-drawer-tool" style={[docks.tool, offsets[index]]}>
-              {tool.node}
-            </View>
-          ))}
-          <View testID="rsd-drawer-dock" style={docks.toggle}>
-            {drawerToggle(drawerAxis)}
-          </View>
+          {actionsPanel(area ?? window, window)}
           {status}
         </View>
       </View>

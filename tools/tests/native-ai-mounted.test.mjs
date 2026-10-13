@@ -123,7 +123,6 @@ beforeEach(async () => {
   );
   files.lock.mockReturnValue(() => {});
   files.capture.mockResolvedValue(rgbaPng(1024, 768, 255).toString('base64'));
-  files.list.mockReturnValue([]);
   screen = createScreen();
   await act(async () => screen.mount());
 });

@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useUndoShortcut } from '../../experiments/native-architecture/src/platform/useUndoShortcut.web.ts';
-import { createScreen, files, pictures } from './native-drawing-screen-harness.mjs';
+import { createScreen, files } from './native-drawing-screen-harness.mjs';
 
 vi.mock(
   '../../experiments/native-architecture/src/platform/useUndoShortcut.ts',
@@ -110,7 +110,6 @@ describe('drawing screen web Undo admission', () => {
     files.retainClosingModal = false;
     files.platform = 'android';
     files.dismissModal = null;
-    files.list.mockReturnValue(pictures);
     files.lock.mockReset().mockReturnValue(() => {});
     files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
     files.settingsWrite.mockReset().mockResolvedValue(undefined);
@@ -205,21 +204,17 @@ describe('drawing screen web Undo admission', () => {
     expect(JSON.parse(screen.paper()).strokes).toHaveLength(0);
     expect(key().defaultPrevented).toBe(false);
   });
-  it.each([
-    'Drawing tools',
-    'More colors',
-    'Pictures',
-    'Coloring pages',
-    'Settings',
-    'Parent Center',
-  ])('keeps history unchanged while %s is open', async (label) => {
-    await screen.click('Draw fixture stroke');
-    const drawing = screen.paper();
-    if (['Pictures', 'Coloring pages', 'Settings'].includes(label)) await screen.menuClick(label);
-    else await screen.click(label);
-    expect(key().defaultPrevented).toBe(false);
-    expect(screen.paper()).toBe(drawing);
-  });
+  it.each(['Drawing tools', 'More colors', 'Coloring pages', 'Settings', 'Parent Center'])(
+    'keeps history unchanged while %s is open',
+    async (label) => {
+      await screen.click('Draw fixture stroke');
+      const drawing = screen.paper();
+      if (['Coloring pages', 'Settings'].includes(label)) await screen.menuClick(label);
+      else await screen.click(label);
+      expect(key().defaultPrevented).toBe(false);
+      expect(screen.paper()).toBe(drawing);
+    }
+  );
   it('does not undo through a live contact cohort', async () => {
     await screen.click('Draw fixture stroke');
     const drawing = screen.paper();
@@ -229,7 +224,7 @@ describe('drawing screen web Undo admission', () => {
   });
   it('does not undo while the command owner is saving a picture', async () => {
     let finish;
-    files.save.mockReturnValueOnce(
+    files.capture.mockReturnValueOnce(
       new Promise((resolve) => {
         finish = resolve;
       })
@@ -237,9 +232,9 @@ describe('drawing screen web Undo admission', () => {
     await screen.click('Draw fixture stroke');
     const drawing = screen.paper();
     await screen.menuClick('Save picture');
-    expect(files.save).toHaveBeenCalled();
+    expect(files.capture).toHaveBeenCalled();
     expect(key().defaultPrevented).toBe(false);
     expect(screen.paper()).toBe(drawing);
-    await act(async () => finish({ id: 'picture-1-shortcut' }));
+    await act(async () => finish(null));
   });
 });

@@ -9,18 +9,12 @@ import {
   changePage,
   addStrokes,
   hasDrawingInk,
-  commitDrawing,
   clearDrawing,
   undoDrawing,
   type History,
   type Stroke,
 } from './drawing/model';
-import {
-  listPictures,
-  reopenPicture,
-  savedColoringPageIds,
-  type SavedPicture,
-} from './platform/drawingFiles';
+import { savedColoringPageIds } from './platform/drawingFiles';
 import { keepPicture, type KeptPicture } from './keepPicture';
 import { useDrawingMessages } from './drawingMessages';
 import { useBrushPreferences } from './useBrushPreferences';
@@ -50,7 +44,6 @@ export function useDrawingScreen() {
   const busy = commandBusy || historyOwner.draftState.status === 'loading';
   const messages = useDrawingMessages();
   const { notice, setNotice, report } = messages;
-  const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
   const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
   const settingsLease = useRef<(() => void) | null>(null);
@@ -79,13 +72,7 @@ export function useDrawingScreen() {
     surface,
     settingsLease,
     blocked: () =>
-      drawing ||
-      busy ||
-      preparing ||
-      pagePickerOpen ||
-      pictures !== null ||
-      command.current ||
-      rendererFault.current,
+      drawing || busy || preparing || pagePickerOpen || command.current || rendererFault.current,
     report,
   });
   const disabled =
@@ -115,21 +102,16 @@ export function useDrawingScreen() {
 
   const pictureActions = usePictureActions({
     historyRef,
-    setHistory,
     surface,
     runCommand,
     ...messages,
-    setPictures,
-    pngRecovery,
-    commandsBlocked,
-    replacementGuard,
   });
 
   const recovery = useRendererRecovery({
     surface,
     rendererFault,
     command,
-    blocked: drawing || busy || pagePickerOpen || settings.sheetOpen || pictures !== null,
+    blocked: drawing || busy || pagePickerOpen || settings.sheetOpen,
     setPreparing,
     setDrawing,
     finishCohort,
@@ -155,8 +137,6 @@ export function useDrawingScreen() {
     routineNotice: brushes.state.message || messages.routineNotice,
     failure: messages.failure,
     dismissFailure: messages.dismissFailure,
-    pictures,
-    setPictures,
     surface,
     pagePickerOpen,
     ...coloring,
@@ -309,41 +289,19 @@ function useDrawingSettings({
 
 function usePictureActions({
   historyRef,
-  setHistory,
   surface,
   runCommand,
   setNotice,
   recordSave,
   failSave,
-  setPictures,
-  pngRecovery,
-  commandsBlocked,
-  report,
-  replacementGuard,
 }: {
   historyRef: RefObject<History>;
-  setHistory: (next: History | ((current: History) => History)) => void;
   surface: RefObject<DrawingSurfaceHandle | null>;
   runCommand: (action: () => Promise<void>) => Promise<void>;
   setNotice: (notice: string) => void;
   recordSave: (kept: KeptPicture) => void;
   failSave: () => void;
-  setPictures: (pictures: SavedPicture[] | null) => void;
-  pngRecovery: ReturnType<typeof usePngRecovery>;
-  commandsBlocked: () => boolean;
-  report: (error: unknown) => void;
-  replacementGuard: () => () => boolean;
 }) {
-  function showPictures() {
-    if (commandsBlocked()) return;
-    try {
-      setPictures(listPictures());
-      setNotice('');
-    } catch (error) {
-      report(error);
-    }
-  }
-
   async function save() {
     await runCommand(async () => {
       let kept: KeptPicture;
@@ -358,31 +316,7 @@ function usePictureActions({
     });
   }
 
-  async function exportPicture() {
-    await runCommand(async () => {
-      const snapshot = historyRef.current.drawing;
-      const base64 = await surface.current?.capturePng(snapshot);
-      if (!base64) throw new Error('The drawing paper is not ready to export.');
-      if (historyRef.current.drawing !== snapshot)
-        throw new Error('The picture changed before export finished. Please try again.');
-      await pngRecovery.submit(base64);
-      setNotice('');
-    });
-  }
-
-  async function openPicture(picture: SavedPicture) {
-    await runCommand(async () => {
-      const isCurrent = replacementGuard();
-      setNotice('');
-      const saved = await reopenPicture(picture.id);
-      if (!isCurrent()) return;
-      setHistory((current) => commitDrawing(current, saved));
-      setPictures(null);
-      setNotice('Picture opened. Undo returns to your previous picture.');
-    });
-  }
-
-  return { save, exportPicture, openPicture, showPictures };
+  return { save };
 }
 
 function useSurfaceCommands({
@@ -454,7 +388,7 @@ function useSurfaceCommands({
     }
   }
 
-  async function clearCurrentPicture(keep: 'never' | 'whenInked' | 'always') {
+  async function clearCurrentPicture(keepInked: boolean) {
     await runCommand(async () => {
       const snapshot = historyRef.current;
       const owner = surface.current;
@@ -476,10 +410,13 @@ function useSurfaceCommands({
         const empty = pixels && observation ? await observation.observe(pixels) : true;
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
-        const saved =
-          keep === 'always' || (keep === 'whenInked' && !empty)
-            ? await keepPicture(snapshot.drawing, owner)
-            : null;
+        const saved = keepInked && !empty ? await keepPicture(snapshot.drawing, owner) : null;
+        // No copy stays inside the app, so a picture Auto-Save could not keep stays on the paper.
+        if (saved?.failure) {
+          setNotice(saved.notice);
+          recordSave(saved);
+          return;
+        }
         if (saved !== null && !isCurrent())
           throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
         setHistory(clearDrawing(snapshot, empty));
@@ -498,7 +435,6 @@ function useSurfaceCommands({
     command,
     runCommand,
     undo,
-    clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete ? 'whenInked' : 'never'),
-    saveAndClear: () => clearCurrentPicture('always'),
+    clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
 }

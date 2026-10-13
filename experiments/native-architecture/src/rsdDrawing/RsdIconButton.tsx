@@ -1,4 +1,4 @@
-import { css } from 'react-strict-dom';
+import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
@@ -21,6 +21,11 @@ export const ACTION_TILE_PADDING_SHARE = 6;
 export const ACTION_TILE_PRESS_SCALE = 0.95;
 // Deeper than the shared disabled opacity: a parked canvas control must not read as live.
 export const ACTION_TILE_DISABLED_OPACITY = 0.3;
+// While a Brush or Stroke Width menu is open, the panel's other tiles grey out and its chevron
+// fades further, so the open menu and the button it grew from read as the one live thing.
+export const FLYOUT_OPEN_TILE_OPACITY = 0.35;
+export const FLYOUT_OPEN_TILE_FILTER = 'grayscale(1)';
+export const FLYOUT_OPEN_CORNER_OPACITY = 0.2;
 // Shipping mixes --brand into transparent; React Native has no color-mix(), so the mixes are
 // resolved against the unthemed brand hue.
 export const ACTION_TILE_HOVER_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.3)';
@@ -110,6 +115,10 @@ const styles = css.create({
       },
     },
   },
+  tileDimmed: { opacity: FLYOUT_OPEN_TILE_OPACITY, filter: FLYOUT_OPEN_TILE_FILTER },
+  // Both fades at once: shipping's filter opacity multiplies the disabled opacity.
+  tileDimmedDisabled: { opacity: ACTION_TILE_DISABLED_OPACITY * FLYOUT_OPEN_TILE_OPACITY },
+  cornerDimmed: { opacity: FLYOUT_OPEN_CORNER_OPACITY },
   tileDisabled: {
     backgroundColor: colors.floatSurfaceHover,
     borderColor: colors.floatBorder,
@@ -143,6 +152,7 @@ const styles = css.create({
     padding,
     borderRadius: size * ACTION_TILE_RADIUS_RATIO,
   }),
+  turn: (degrees: number) => ({ transform: `rotate(${degrees}deg)` }),
 });
 
 const CORNER_ICON_PX = CORNER_BUTTON_SIZE_PX - 2 * DRAWING_SCALE.space2;
@@ -156,10 +166,29 @@ export function flyoutOptionSize({ base, scale }: FlyoutScale) {
   return Math.max(base, FLYOUT_OPTION_MIN_BASE_PX) * scale;
 }
 
-function faceGeometry(props: { skin: 'tile'; size: number } | ({ skin: 'flyout' } & FlyoutScale)) {
+function faceGeometry(
+  props:
+    | { skin: 'tile'; size: number; padding?: number }
+    | ({ skin: 'flyout'; pinnedIconPx?: number } & FlyoutScale)
+) {
   if (props.skin === 'tile')
-    return { size: props.size, padding: props.size / ACTION_TILE_PADDING_SHARE };
-  return { size: flyoutOptionSize(props), padding: FLYOUT_OPTION_PADDING_PX * props.scale };
+    return { size: props.size, padding: props.padding ?? props.size / ACTION_TILE_PADDING_SHARE };
+  const size = flyoutOptionSize(props);
+  if (props.pinnedIconPx === undefined)
+    return { size, padding: FLYOUT_OPTION_PADDING_PX * props.scale };
+  return { size, padding: 0 };
+}
+
+// The icon fills the face inside its padding and border; a pinned preview keeps its true size
+// while the option has room for it and is contained once Button Size shrinks the option.
+function iconSize(
+  props: { skin: 'tile' } | { skin: 'flyout'; pinnedIconPx?: number },
+  { size, padding }: { size: number; padding: number }
+) {
+  const room = size - 2 * (padding + ACTION_TILE_BORDER_PX);
+  return props.skin === 'flyout' && props.pinnedIconPx !== undefined
+    ? Math.min(props.pinnedIconPx, room)
+    : room;
 }
 
 // .white-stroke rings white ink in black; .dark-stroke rings near-black ink in the themed
@@ -183,9 +212,25 @@ type FaceInk = {
 
 export type IconButtonProps = Common &
   (
-    | { skin: 'corner'; expanded?: boolean }
-    | ({ skin: 'tile'; size: number; disabled?: boolean; expanded?: boolean } & FaceInk & Selection)
-    | ({ skin: 'flyout' } & FlyoutScale & FaceInk & Selection)
+    | { skin: 'corner'; expanded?: boolean; turn?: number; dimmed?: boolean }
+    | ({
+        skin: 'tile';
+        size: number;
+        // The face's padding when it is not a sixth of the face: shipping pads by a sixth of the
+        // size-class step, which the panel caps the face below, and a landscape phone by 6px.
+        padding?: number;
+        disabled?: boolean;
+        expanded?: boolean;
+        dimmed?: boolean;
+      } & FaceInk &
+        Selection)
+    | ({
+        skin: 'flyout';
+        // An eraser size preview drawn at the eraser's true pixel size, with no padding.
+        pinnedIconPx?: number;
+      } & FlyoutScale &
+        FaceInk &
+        Selection)
   );
 
 function useKeylineColor(keyline: InkKeyline | undefined) {
@@ -206,17 +251,25 @@ export function RsdIconButton(props: IconButtonProps) {
         role="button"
         aria-label={label}
         aria-expanded={props.expanded}
-        style={[styles.base, styles.corner]}
+        style={[styles.base, styles.corner, props.dimmed && styles.cornerDimmed]}
         onClick={onPress}
       >
-        <RsdIcon name={icon} size={CORNER_ICON_PX} ink={undefined} muted={false} />
+        {props.turn === undefined ? (
+          <RsdIcon name={icon} size={CORNER_ICON_PX} ink={undefined} muted={false} />
+        ) : (
+          <html.div style={styles.turn(props.turn)}>
+            <RsdIcon name={icon} size={CORNER_ICON_PX} ink={undefined} muted={false} />
+          </html.div>
+        )}
       </RsdPressable>
     );
   }
   const { skin, ink, selection, selected = false } = props;
-  const { size, padding } = faceGeometry(props);
+  const face = faceGeometry(props);
+  const { size, padding } = face;
   const disabled = skin === 'tile' && props.disabled === true;
   const expanded = skin === 'tile' ? props.expanded : undefined;
+  const dimmed = skin === 'tile' && props.dimmed === true;
   const brandInk = skin === 'flyout' && selected ? DRAWING_BRAND : undefined;
   return (
     <RsdPressable
@@ -234,12 +287,14 @@ export function RsdIconButton(props: IconButtonProps) {
         skin === 'tile' && selected && styles.tileSelected,
         skin === 'flyout' && selected && styles.flyoutSelected,
         disabled && styles.tileDisabled,
+        dimmed && styles.tileDimmed,
+        dimmed && disabled && styles.tileDimmedDisabled,
       ]}
       onClick={onPress}
     >
       <RsdIcon
         name={icon}
-        size={size - 2 * (padding + ACTION_TILE_BORDER_PX)}
+        size={iconSize(props, face)}
         ink={ink ?? brandInk}
         muted={disabled}
         keyline={keyline}

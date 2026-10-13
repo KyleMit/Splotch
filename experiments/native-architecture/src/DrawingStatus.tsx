@@ -59,9 +59,7 @@ export function DrawingStatus({
       <PngRecoveryNotice
         state={screen.pngRecovery.state}
         drawing={screen.drawing}
-        blocked={
-          blocked || screen.pictures !== null || screen.pagePickerOpen || screen.settingsOpen
-        }
+        blocked={blocked || screen.pagePickerOpen || screen.settingsOpen}
         retry={() => {
           void screen.pngRecovery.retry();
         }}

@@ -77,7 +77,7 @@ assert.equal(mountedScreens.length, 1, 'Font gate has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');
-const drawingTools = parse('src/rsdDrawing/RsdDrawingTools.tsx');
+const actionsPanel = parse('src/rsdDrawing/RsdActionsPanel.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
 const switches = [];
@@ -93,7 +93,7 @@ const orientationChoices = parse('src/rsdDrawing/RsdOrientationChoices.tsx');
 for (const component of [
   drawing,
   edgeControls,
-  drawingTools,
+  actionsPanel,
   coloringPicker,
   settingsDialog,
   orientationChoices,
@@ -105,17 +105,18 @@ for (const component of [
         groups.push(attribute(node, 'aria-label'));
       if (
         node.name.type !== 'JSXIdentifier' ||
-        !['RsdAction', 'RsdPaintAction'].includes(node.name.name) ||
+        !['RsdAction', 'RsdPaintAction', 'RsdIconButton'].includes(node.name.name) ||
         !attribute(node, 'selected')
       )
         return;
       const selection =
         node.name.name === 'RsdPaintAction' ? 'radio' : literal(attribute(node, 'selection'));
       if (selection === 'switch') {
-        if (component === edgeControls) {
+        if (component === actionsPanel) {
           toolbarSwitches.push(node);
           toolbarConditions.push(
-            path.findParent((parent) => parent.isConditionalExpression())?.node.test
+            path.findParent((parent) => parent.isConditionalExpression() || parent.isIfStatement())
+              ?.node.test
           );
         } else {
           const map = path.findParent(
@@ -143,28 +144,13 @@ for (const component of [
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 7, 'RSD radio group count');
+assert.equal(groups.length, 5, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  [
-    'Appearance',
-    'Coloring page',
-    'Drawing brush',
-    'Drawing sound level',
-    'Orientation',
-    'Paint colors',
-  ],
+  ['Appearance', 'Coloring page', 'Drawing sound level', 'Orientation', 'Paint colors'],
   'RSD radio group names'
 );
-const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
-assert.equal(dynamicLabel?.value.expression.type, 'TemplateLiteral', 'RSD width group label');
-assert.deepEqual(
-  dynamicLabel.value.expression.quasis.map((item) => item.value.cooked),
-  ['', ' width'],
-  'RSD width group label'
-);
-assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 7, 'RSD selection callers');
+assert.equal(radios, 5, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -286,11 +272,9 @@ const files = [
   'src/feedback/FeedbackSheet.tsx',
   'src/parentCenter/ParentGateSheet.tsx',
   'src/parentCenter/ParentCenterSection.tsx',
-  'src/drawing/SavedPictures.tsx',
   'src/ai/AiSheet.tsx',
   'src/platform/useFullscreen.ts',
   'src/platform/useFullscreen.web.ts',
-  'src/rsdDrawing/RsdDrawingTools.tsx',
   'src/DrawingControls.tsx',
   'src/DrawingScreen.tsx',
   'src/platform/offlineLibrary.web.ts',
@@ -365,6 +349,9 @@ const files = [
   'src/rsdDrawing/RsdInformationSection.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
   'src/rsdDrawing/RsdEdgeControls.tsx',
+  'src/rsdDrawing/RsdActionsPanel.tsx',
+  'src/rsdDrawing/RsdToolFlyouts.tsx',
+  'src/rsdDrawing/RsdFullscreenToggle.tsx',
   'src/rsdDrawing/RsdAiSheet.tsx',
   'src/ai/useAiPictureViewer.ts',
   'src/ai/AiPictureViewport.tsx',

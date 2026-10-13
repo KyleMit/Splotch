@@ -1,3 +1,4 @@
+import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
 import { legacyDrawing, canonicalPaper, adoptedDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -15,10 +16,7 @@ import {
   PAGE_IDS,
 } from '../../experiments/native-architecture/src/drawing/pages.ts';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import {
-  reopenPicture,
-  savePicture,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
+import { savePicture } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 
 function legacyStroke() {
   return { color: 'Green', brush: 'marker', points: [{ x: 512, y: 384 }] };
@@ -170,17 +168,17 @@ describe('native coloring-page composition', () => {
       'splotch-picture:picture-1-first',
       JSON.stringify({ version: 1, strokes: [legacyStroke()] })
     );
-    await expect(reopenPicture('picture-1-first')).resolves.toEqual({
+    await expect(readSavedWebPicture('picture-1-first')).resolves.toEqual({
       ...legacyDrawing(),
       strokes: [{ ...legacyStroke(), width: 22 }],
     });
     const original = picture().drawing;
     const saved = await savePicture(original);
-    const opened = await reopenPicture(saved.id);
+    const opened = await readSavedWebPicture(saved.id);
     expect(opened).toEqual(original);
     values.set(`splotch-picture:${saved.id}`, JSON.stringify({ ...original, pageId: 'unknown' }));
     const refused = values.get(`splotch-picture:${saved.id}`);
-    await expect(reopenPicture(saved.id)).rejects.toThrow(
+    await expect(readSavedWebPicture(saved.id)).rejects.toThrow(
       'This saved picture contains an invalid coloring page.'
     );
     expect(values.get(`splotch-picture:${saved.id}`)).toBe(refused);
