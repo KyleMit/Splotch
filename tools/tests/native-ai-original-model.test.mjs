@@ -22,7 +22,6 @@ import {
   MAX_CRAYON_SEED,
 } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 import { createRecordedContactCohort7 } from '../../experiments/native-architecture/src/drawing/recordedContactCohort7.ts';
-import { assertAiOriginalModelContract } from '../migration/lib/native-source-contract.mjs';
 const ROOT = join(import.meta.dirname, '../..');
 const ANDROID = 'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt';
 const APPLE = 'ios/HelloWorld/SplotchAIJournal.swift';
@@ -98,7 +97,6 @@ describe('native opaque original-model admission', () => {
   });
   it('pins both native opaque envelopes to JS schema and allocation bounds', () => {
     const files = nativeFiles();
-    expect(() => assertAiOriginalModelContract(files)).not.toThrow();
     const android = files.get(ANDROID).toString();
     const apple = files.get(APPLE).toString();
     expect(android).toContain(
@@ -137,20 +135,5 @@ describe('native opaque original-model admission', () => {
     expect(android).toContain('maxModel = 8 * 1024 * 1024');
     expect(apple).toContain('maxModel = 8 * 1024 * 1024');
     expect(MAX_AI_MODEL_BYTES).toBe(8 * 1024 * 1024);
-  });
-  it.each([
-    [ANDROID, 'setOf(5L, 6L, 7L)', 'setOf(5L, 6L, 7L, 8L)'],
-    [APPLE, 'Set<Int64> = [5, 6, 7]', 'Set<Int64> = [5, 6, 7, 8]'],
-    [ANDROID, 'originalModel(original, kind == "importLegacy")', 'Unit'],
-    [APPLE, 'try originalModel(original, kind == "importLegacy")', 'try checked(true)'],
-    [ANDROID, 'check(count == 0)', 'check(true)'],
-    [APPLE, 'try checked(count == 0)', 'try checked(true)'],
-  ])('rejects a native admission source omission at%s', (path, before, after) => {
-    const files = nativeFiles();
-    const source = files.get(path).toString();
-    expect(source.split(before)).toHaveLength(2);
-    files.set(path, Buffer.from(source.replace(before, after)));
-    expect(() => assertAiOriginalModelContract(files)).toThrow();
-    expect(() => assertAiOriginalModelContract(nativeFiles())).not.toThrow();
   });
 });

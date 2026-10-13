@@ -1,2 +1,9 @@
 .expo/
 dist/
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+ios/HelloWorld.xcworkspace/xcuserdata/
+android/.gradle/
+android/app/.cxx/
+android/local.properties

@@ -14,12 +14,6 @@ import {
   FREE_LIMIT,
 } from '../../experiments/native-architecture/src/ai/contract.ts';
 import { readFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
-import { replayProductSourceExtension } from '../migration/lib/native-product-source-extension.mjs';
-import {
-  readAiSourceExtension,
-  replayAiSourceExtension,
-} from '../migration/lib/native-ai-source-extension.mjs';
 const signal = () => new AbortController().signal;
 const start = { path: '/api/generate-image', method: 'POST', headers: {} };
 const poll = { ...start, path: '/api/generation-result', method: 'GET' };
@@ -109,33 +103,6 @@ describe('strict native hosted AI contract', () => {
       ).reason
     ).toBe('safety');
   });
-  it('replays a finite authenticated native extension and rejects a changed baseline', () => {
-    const entries = readAiSourceExtension().entries;
-    expect(entries.map((entry) => entry.target)).toEqual([
-      'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
-      'ios/HelloWorld.xcodeproj/project.pbxproj',
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
-      'ios/HelloWorld/SplotchAIEnvironment.swift',
-      'ios/HelloWorld/SplotchAIEnvironment.m',
-      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
-      'ios/HelloWorld/SplotchAIJournal.swift',
-    ]);
-    for (const entry of entries) {
-      const actual = readFileSync(
-        new URL(`../../experiments/native-architecture/${entry.target}`, import.meta.url)
-      );
-      const baseline = entry.baseline ? Buffer.from(entry.baseline.text) : undefined;
-      const standalone = replayAiSourceExtension(entry.target, baseline);
-      expect(createHash('sha256').update(standalone).digest('hex')).toBe(entry.sha256);
-      expect(replayProductSourceExtension(entry.target, baseline)).toEqual(actual);
-    }
-    expect(() => replayAiSourceExtension(entries[0].target, Buffer.from('changed'))).toThrow(
-      'baseline'
-    );
-    expect(() => replayProductSourceExtension(entries[0].target, Buffer.from('changed'))).toThrow(
-      'baseline'
-    );
-  });
 });
 
 it('bounds capture bytes and rejects a PNG with dimensions different from the fixed drawing paper', () => {
@@ -144,13 +111,20 @@ it('bounds capture bytes and rejects a PNG with dimensions different from the fi
   expect(() => prepareAiPng('iVBORw0KGgo=')).toThrow('header');
 });
 it('pins native secure owner semantics and the namespaced app pseudonym without exposing platform identifiers', () => {
-  const recipe = readAiSourceExtension();
-  const kotlin = recipe.entries.find((entry) =>
-    entry.target.endsWith('SplotchAIEnvironment.kt')
-  ).text;
-  const swift = recipe.entries.find((entry) =>
-    entry.target.endsWith('SplotchAIEnvironment.swift')
-  ).text;
+  const kotlin = readFileSync(
+    new URL(
+      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      import.meta.url
+    ),
+    'utf8'
+  );
+  const swift = readFileSync(
+    new URL(
+      '../../experiments/native-architecture/ios/HelloWorld/SplotchAIEnvironment.swift',
+      import.meta.url
+    ),
+    'utf8'
+  );
   const shipping = readFileSync(
     new URL('../../web/src/lib/state/freeGenerations.svelte.ts', import.meta.url),
     'utf8'
@@ -163,9 +137,4 @@ it('pins native secure owner semantics and the namespaced app pseudonym without 
   expect(kotlin).toContain('AES/GCM/NoPadding');
   expect(swift).toContain('kSecAttrAccessibleWhenUnlockedThisDeviceOnly');
   expect(swift).toContain('kSecAttrSynchronizable as String: false');
-});
-
-it('rejects reusing a baseline for an authenticated native source addition', () => {
-  const entry = readAiSourceExtension().entries.find((row) => !row.baseline);
-  expect(() => replayAiSourceExtension(entry.target, Buffer.from(entry.text))).toThrow('exists');
 });

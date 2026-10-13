@@ -11,13 +11,7 @@ its checked-in output. The root package manifest remains the exact authenticated
 adding a script would invalidate its existing evidence boundary. The direct CLI avoids changing the
 script catalog or any dependency, lockfile, patch or build policy (ADR-0019).
 
-`tools/migration/inputs/offline-library-source-extension.json` retains the original maintained
-native and N1 adapter bytes, their original digests, and the finite exact source edits. Its
-authenticated reader replays these edits on the original template transformations. Three owned
-native bridge sources are explicit additions to the provenance receipt. The upstream template
-archive, metadata, manifest and original transformation recipes remain inputs to that replay. The N1
-adapter guard verifies the retained original Git blobs before replaying the feature extension;
-existing save and reopen behavior is also exercised through the production file adapters.
+Existing save and reopen behavior is exercised through the production file adapters.
 
 Download failures and network-policy waits remain visible until a parent explicitly retries or
 changes the download policy. Drawing and foreground transitions cannot erase or retry those

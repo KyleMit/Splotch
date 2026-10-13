@@ -644,7 +644,7 @@ final class SplotchAIJournal {
       _ = try publishRequest(root, dir, value, pinned)
       value = try confirm(dir, latest(dir)); r = try recoveryRequest(value)
     }
-    if ["retained", "acknowledged"].contains(string(r, "state")) {
+    if try ["retained", "acknowledged"].contains(string(r, "state")) {
       try checked(read(dir.appendingPathComponent("result.bin"), maxResult) == bytes)
       return ["receipt": try receipt(confirm(dir, value))]
     }
