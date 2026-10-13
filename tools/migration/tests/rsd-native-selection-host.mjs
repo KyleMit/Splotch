@@ -4,6 +4,7 @@ import { act } from 'react';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
+import { orientationCalls } from './rsd-orientation-port.mjs';
 
 const caller = vi.hoisted(() => {
   let journal = null;
@@ -183,7 +184,9 @@ const records = vi.hoisted(() => ({
   props: [],
   viewports: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
+  os: 'ios',
 }));
+vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
   const React = await import('react');
   const boundary = (kind) => (props) => {
@@ -251,7 +254,9 @@ vi.mock('react-native', async () => {
       );
     }),
     Platform: {
-      OS: 'ios',
+      get OS() {
+        return records.os;
+      },
       constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
       select: (values) => values.ios ?? values.native ?? values.default,
     },
@@ -290,6 +295,7 @@ vi.mock('react-native', async () => {
     },
     Easing: {},
     useWindowDimensions: () => records.dimensions,
+    Dimensions: { get: () => records.dimensions },
     useColorScheme: () => records.scheme,
     Text,
     Pressable,
@@ -412,43 +418,9 @@ afterEach(async () => {
   records.props.length = 0;
   records.viewports.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
+  records.os = 'ios';
+  orientationCalls.length = 0;
 });
-
-function checkedRadio(node) {
-  if (!node || node.getAttribute('role') !== 'radio' || node.dataset.checked !== 'true')
-    throw new Error('Missing native checked radio');
-}
-
-function checkedSwitch(node, checked) {
-  if (!node || node.getAttribute('role') !== 'switch' || node.dataset.checked !== String(checked))
-    throw new Error('Missing native checked switch');
-}
-
-function visibleSelection(node) {
-  const color = node?.querySelector('span')?.dataset.nativeColor;
-  if (
-    !node?.dataset.nativeBackground ||
-    node.dataset.nativeBackground === 'transparent' ||
-    !color ||
-    node.dataset.nativeBackground === color
-  )
-    throw new Error('Missing contrasting native selected treatment');
-}
-
-function assertDisabledBoundary(props, disabled) {
-  if (props?.accessibilityState?.disabled !== disabled)
-    throw new Error('Missing explicit native disabled boolean');
-}
-
-function assertPortraitControls(props) {
-  if (
-    props?.testID !== 'rsd-paint-controls-viewport' ||
-    props.style?.maxHeight !== '45%' ||
-    props.style.flexGrow !== 0 ||
-    props.accessible !== false
-  )
-    throw new Error('Missing bounded native controls owner');
-}
 
 function createPickerCaller(refresh) {
   const owner = createSoundSettings(
@@ -494,15 +466,10 @@ function createPickerCaller(refresh) {
 }
 
 export {
-  caller,
-  records,
-  root,
-  host,
-  mount,
   checkedRadio,
   checkedSwitch,
   visibleSelection,
   assertDisabledBoundary,
   assertPortraitControls,
-  createPickerCaller,
-};
+} from './rsd-native-assertions.mjs';
+export { caller, records, root, host, mount, createPickerCaller };

@@ -15,6 +15,8 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { defaultOrientation } from '../platform/orientationDefault';
+import { isOrientationChoice, type OrientationChoice } from './orientation';
 import {
   isParentPolicies,
   PROTECTED_PARENT_POLICIES,
@@ -29,7 +31,6 @@ import {
   type SoundSettingsStorage,
 } from './soundSettingsCodec';
 export {
-  DEFAULT_WIDTH_SETTINGS,
   MAX_SETTINGS_BYTES,
   parseSoundSettings,
   type SoundSettings,
@@ -39,7 +40,7 @@ export {
 
 const DEFAULT_SOUND_ENABLED = true;
 
-function initialSoundSettingsState(): SoundSettingsState {
+export function initialSoundSettingsState(): SoundSettingsState {
   return {
     status: 'loading',
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
@@ -50,13 +51,14 @@ function initialSoundSettingsState(): SoundSettingsState {
     ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
+    orientation: defaultOrientation(),
     message: '',
   };
 }
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 7,
+    version: 8,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -65,6 +67,7 @@ function defaultSoundSettings(): SoundSettings {
     ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
+    orientation: defaultOrientation(),
   };
 }
 
@@ -80,6 +83,7 @@ function unreadSoundSettingsState(): SoundSettingsState {
     aiEnabled: false,
     parentPolicies: PROTECTED_PARENT_POLICIES,
     appearance: DEFAULT_APPEARANCE,
+    orientation: defaultOrientation(),
     saved: false,
     message:
       'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
@@ -187,6 +191,16 @@ function createDrawingPreferenceActions({
         return;
       }
       await persist({ ...snapshot(state), appearance });
+    },
+    async setOrientation(orientation: OrientationChoice) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (!isOrientationChoice(orientation)) throw new Error('Orientation choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, orientation });
+        return;
+      }
+      await persist({ ...snapshot(state), orientation });
     },
   };
 }

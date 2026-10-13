@@ -493,7 +493,7 @@ it.each([
       await act(async () => on.click());
       expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
       expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-        version: 7,
+        version: 8,
         [property]: false,
         aiEnabled: false,
       });

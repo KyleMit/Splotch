@@ -179,11 +179,12 @@ describe('canonical shared stroke widths', () => {
 describe('one persisted candidate settings owner', () => {
   it('defaults drawing levels while preserving historic geometry only in saved pictures', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
-      version: 7,
+      version: 8,
       coloringBookEnabled: true,
       soundLevel: 'medium',
       undoButtonEnabled: true,
       strokeWidthControlEnabled: true,
+      orientation: 'portrait',
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
@@ -234,7 +235,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":7,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}'
+      '{"version":8,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait"}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -246,11 +247,12 @@ describe('one persisted candidate settings owner', () => {
     });
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
-      version: 7,
+      version: 8,
       coloringBookEnabled: true,
       soundLevel: 'medium',
       undoButtonEnabled: true,
       strokeWidthControlEnabled: true,
+      orientation: 'portrait',
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
@@ -294,6 +296,7 @@ describe('one persisted candidate settings owner', () => {
         soundLevel: 'medium',
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
+        orientation: 'portrait',
         soundEnabled: false,
         strokeWidth: 'thin',
         eraserWidth: 'thick',
@@ -329,11 +332,12 @@ describe('one persisted candidate settings owner', () => {
       const writes = recovery === 'sound choice' ? 3 : 2;
       expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(JSON.parse(saved)).toEqual({
-        version: 7,
+        version: 8,
         coloringBookEnabled: true,
         soundLevel: 'medium',
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
+        orientation: 'portrait',
         aiEnabled: false,
         parentPolicies: {
           ai: 'always',
@@ -380,11 +384,12 @@ describe('one persisted candidate settings owner', () => {
     await owner.setWidth('eraser', 'thick');
     expect(storage.write).toHaveBeenCalledTimes(2);
     expect(JSON.parse(saved)).toEqual({
-      version: 7,
+      version: 8,
       coloringBookEnabled: true,
       soundLevel: 'medium',
       undoButtonEnabled: true,
       strokeWidthControlEnabled: true,
+      orientation: 'portrait',
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
