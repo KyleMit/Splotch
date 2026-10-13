@@ -154,7 +154,8 @@ them yet; the screen units adopt them.
 sliding brand thumb, the two-column toggle `chip` grid and the `underline` tabs, in radio mode (a
 radiogroup with one roving tab stop and arrow-key selection, `rovingRadio.ts`) or toggle mode.
 `RsdSlider` and `RsdSliderRow` port the shipping relative-drag `Slider` and its labelled settings
-row (`sliderModel.ts` holds the drag, detent and key rules). Neither is adopted by a screen yet.
+row (`sliderModel.ts` holds the drag, detent and key rules). The Settings section bodies below adopt
+both.
 
 Each picker option sits in a React Native view whose `onLayout` frame places the thumb, so the same
 measurement serves web and native. The thumb is a Reanimated view: a selection change starts a
@@ -184,10 +185,10 @@ react-native-web's key events; a hardware keyboard on Android or iOS is unverifi
 
 ## Settings rows
 
-The Settings building blocks port the shipping components one to one, for the Settings screens to
-adopt: `RsdToggleSwitch` and `RsdToggleRow` (`settings/ToggleSwitch.svelte`, `ToggleRow.svelte`),
-`RsdSettingCard`, `RsdSettingGroup` and `RsdSettingSectionBody` (`SettingsModal.svelte`'s `.setting`
-and `.setting-group`), `RsdRuleLabel` (`design/RuleLabel.svelte`), `RsdHubRow`
+The Settings building blocks port the shipping components one to one: `RsdToggleSwitch` and
+`RsdToggleRow` (`settings/ToggleSwitch.svelte`, `ToggleRow.svelte`), `RsdSettingCard`,
+`RsdSettingGroup` and `RsdSettingSectionBody` (`SettingsModal.svelte`'s `.setting` and
+`.setting-group`), `RsdRuleLabel` (`design/RuleLabel.svelte`), `RsdHubRow`
 (`settings/HubList.svelte`) and `RsdSidebarRow` (`nav/SidebarToc.svelte`'s Settings rows), with the
 shared `RsdActivityDot`.
 
@@ -210,6 +211,32 @@ to native `numberOfLines`, but on the web to a bare `line-clamp`, which browsers
 released native renderer, light and dark, and reads each geometry value from the shipping Svelte and
 CSS sources (`rsd-settings-rows-shipping.mjs`); `tools/tests/native-settings-rows-web.test.mjs`
 covers the web switch and the hub subtitle's clamp.
+
+## Settings section bodies
+
+`RsdAppearanceSection`, `RsdSoundSection` and `RsdAccessibilitySection` port
+`AppearanceSection.svelte`, `SoundSection.svelte` and `AccessibilitySection.svelte` from the rows
+above, and the phone drill-in and the wide pane render the same bodies. Theme and Button style are
+icon segment tracks, the orientation lock reuses `RsdOrientationPicker`, Sound is a switch over a
+Volume slider and the "What makes sound" Drawing and Deleting switches, and Button Size is a slider
+with its default notch beside the Reduce Motion switch.
+
+A slider drags through many values, while the settings owner writes each choice and drops one made
+during a pending write. `useSliderDraft` therefore moves a draft that previews live and writes the
+settled value once, when the drag or key press ends. The Button Size draft lives on the drawing
+screen, so its edge controls resize under the finger. While it is dragged, Settings turns
+see-through as shipping's `.resizing` modal does: `ModalShell`'s `seeThrough` clears the scrim and
+card surface, `useDialogSeeThrough` hides the header, scroll fade and every `RsdSettingCard` except
+the one marked `keptSeeThrough`, the wide shell hides its table of contents and the other sections,
+and the drawer opens. React Strict DOM maps `visibility: hidden` to zero opacity natively, so each
+hidden piece hides itself rather than an ancestor hiding everything below it.
+
+The Volume, its two sources and Button style persist in settings schema 12. A schema 11 or earlier
+record's quiet, medium or loud level becomes the volume that plays at the same gain (25, 50, 100),
+with both sources on and Raised buttons. `audio/soundGates.ts` gates drawing sound on Sound and
+Drawing, and the clear page turn on Sound and Deleting, as shipping's `canPlayDrawingSound` and
+`canPlayDeleteSound` do. Button style is stored and chosen here; the flat toolbar's rendering is not
+ported yet.
 
 ## Design primitives
 
