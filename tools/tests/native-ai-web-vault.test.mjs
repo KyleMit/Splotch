@@ -18,7 +18,7 @@ const disk = vi.hoisted(() => ({
   beforeCommit: null,
 }));
 
-vi.mock('../../web/src/lib/idbDatabase', () => ({
+vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
   openDatabase: async (name, store) => {
     disk.databases.push([name, store]);
     let closed = false;

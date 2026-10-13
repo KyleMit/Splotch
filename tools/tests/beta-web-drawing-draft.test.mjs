@@ -38,7 +38,7 @@ const artwork = vi.hoisted(() => ({ admit: vi.fn() }));
 vi.mock('../../experiments/native-architecture/src/offlineLibrary/runtime.ts', () => ({
   offlineLibrary: { withSavedArtwork: (...args) => artwork.admit(...args) },
 }));
-vi.mock('../../web/src/lib/idbDatabase', () => ({
+vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
   openDatabase: async (name, store) => {
     disk.opens.push([name, store]);
     if (disk.failOpen) throw new Error('Storage unavailable');

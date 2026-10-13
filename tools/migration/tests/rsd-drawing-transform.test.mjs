@@ -42,7 +42,7 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
     optionalBrushSwitches: 3,
     optionalBrushLabels: ['Show Crayon', 'Show Magic Brush', 'Show Eraser'],
     adaptiveToolbarSwitch: true,
-    preservedSettingsSwitches: 2,
+    preservedSettingsSwitches: 4,
   });
 });
 it.each([
@@ -210,8 +210,8 @@ it.each([
   ],
   [
     'src/rsdDrawing/NativeDialog.tsx',
-    "disabled={brushState.status !== 'ready'}",
-    "disabled={settings.status !== 'ready'}",
+    "disabled={busy || brushState.status !== 'ready'}",
+    "disabled={busy || settings.status !== 'ready'}",
     'RSD optional brush switch disabled owner',
   ],
   [

@@ -42,7 +42,8 @@ function shippedServerSourcePaths() {
   );
   return [
     ...filesUnder('web/src/lib/server').filter(
-      (path) => path.endsWith('.ts') && !path.endsWith('.test.ts')
+      (path) =>
+        path.endsWith('.ts') && !path.endsWith('.test.ts') && !path.endsWith('TestHarness.ts')
     ),
     ...serverRoutes,
     ...filesUnder('netlify/functions').filter((path) => path.endsWith('.ts')),

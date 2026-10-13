@@ -6,7 +6,7 @@ import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawin
 import { pngChunk, pngFromZlib } from './native-png-fixtures.mjs';
 
 vi.mock(
-  '../../experiments/native-architecture/src/drawing/pngTask',
+  '../../experiments/native-architecture/src/drawing/pngTask.ts',
   async () => import('../../experiments/native-architecture/src/drawing/pngTask.web.ts')
 );
 
@@ -18,7 +18,7 @@ const TIMER_NESTING_THRESHOLD = 5;
 const MAX_MODEL_TASKS = 20000;
 const SYNC_WORK_LIMIT = 8192;
 const TIMEOUT_NOTICE = 'Picture observation did not finish. Your drawing is still here.';
-const PNG_TASK = '../../experiments/native-architecture/src/drawing/pngTask';
+const PNG_TASK = '../../experiments/native-architecture/src/drawing/pngTask.ts';
 
 function browserTasks({ registrationFailure, deliveryFailure, starveMessages = false } = {}) {
   let now = 0;

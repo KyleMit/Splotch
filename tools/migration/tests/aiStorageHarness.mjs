@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model';
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 
 const disk = vi.hoisted(() => ({
   raw: undefined,
@@ -12,7 +12,7 @@ const disk = vi.hoisted(() => ({
   opened: [],
 }));
 export { disk };
-vi.mock('../../../web/src/lib/idbDatabase', () => ({
+vi.mock('../../../web/src/lib/idbDatabase.ts', () => ({
   openDatabase: async (name, store) => {
     disk.opened.push([name, store]);
     return {
@@ -66,9 +66,9 @@ vi.mock('../../../web/src/lib/idbDatabase', () => ({
     };
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/aiImage.web', async () => {
+vi.mock('../../../experiments/native-architecture/src/platform/aiImage.web.ts', async () => {
   const { resultImageGrid } =
-    await import('../../../experiments/native-architecture/src/ai/imageAdmission');
+    await import('../../../experiments/native-architecture/src/ai/imageAdmission.ts');
   return {
     admitAiImage: async (bytes, mime) => {
       await resultImageGrid(bytes, mime, () => true);

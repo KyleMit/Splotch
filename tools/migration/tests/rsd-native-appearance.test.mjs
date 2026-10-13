@@ -275,7 +275,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   expect(host.textContent).toContain('Drawing stays on your device');
   expect(host.textContent).toContain('AI pictures are optional');
   expect(host.textContent).toContain(
-    'We review them within 24 hours and delete them after 30 days.'
+    'We review reports within 24 hours and schedule deletion after 30 days by a daily cleanup.'
   );
   await click('Back to help and about');
   await click('What’s new');

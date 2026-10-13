@@ -44,6 +44,14 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
   }),
 }));
 
+vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => {
+  const storage = { read: async () => null, write: async () => {} };
+  return {
+    drawingDraftStorage: storage,
+    drawingDraftStorageFor: () => storage,
+    protectedDraftPageIds: async () => [],
+  };
+});
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
 vi.mock('../../experiments/native-architecture/src/drawing/measurePaper.ts', () => ({
