@@ -58,13 +58,11 @@ function extendsStrokes(base: readonly Stroke[], next: readonly Stroke[]) {
   return base.length <= next.length && base.every((stroke, index) => next[index] === stroke);
 }
 
-function loadUriImage(uri: string): Promise<SkImage> {
-  if (uri.startsWith('data:')) return Promise.resolve(decodeDataUriImage(uri));
-  return Skia.Data.fromURI(uri).then((data) => {
-    const image = Skia.Image.MakeImageFromEncoded(data);
-    if (!image) throw new Error('The coloring page fill could not be decoded.');
-    return image;
-  });
+async function loadUriImage(uri: string): Promise<SkImage> {
+  if (uri.startsWith('data:')) return decodeDataUriImage(uri);
+  const image = Skia.Image.MakeImageFromEncoded(await Skia.Data.fromURI(uri));
+  if (!image) throw new Error('The coloring page fill could not be decoded.');
+  return image;
 }
 
 function useBookFill(pageId: PageId, theme: PaperTheme, onError: (error: unknown) => void) {

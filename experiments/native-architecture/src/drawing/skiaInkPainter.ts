@@ -32,17 +32,28 @@ export type InkPaintContext = Readonly<{
 
 const GLAZE_BLEND = { darken: BlendMode.Darken, lighten: BlendMode.Lighten } as const;
 
+// Crayon tiles per color and band plus one coloring-book fill; enough for a scene's working
+// set while repeated custom colors cannot grow it without bound.
+export const DECODED_IMAGE_LIMIT = 48;
 const decodedImages = new Map<string, SkImage>();
 
 export function decodeDataUriImage(uri: string): SkImage {
   const cached = decodedImages.get(uri);
-  if (cached) return cached;
+  if (cached) {
+    decodedImages.delete(uri);
+    decodedImages.set(uri, cached);
+    return cached;
+  }
   const comma = uri.indexOf(',');
   if (!uri.startsWith('data:') || comma < 0 || !uri.slice(0, comma).endsWith(';base64'))
     throw new Error('Ink textures must be base64 data URIs.');
   const image = Skia.Image.MakeImageFromEncoded(Skia.Data.fromBase64(uri.slice(comma + 1)));
   if (!image) throw new Error('An ink texture could not be decoded.');
   decodedImages.set(uri, image);
+  if (decodedImages.size > DECODED_IMAGE_LIMIT) {
+    const oldest = decodedImages.keys().next().value;
+    if (oldest !== undefined) decodedImages.delete(oldest);
+  }
   return image;
 }
 
