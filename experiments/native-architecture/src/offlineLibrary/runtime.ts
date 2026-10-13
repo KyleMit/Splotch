@@ -1,5 +1,4 @@
-import { createLibraryPlatform } from '../platform/offlineLibrary';
-import { createOfflineLibrary } from './controller';
+import { createFullLibrary } from './fullLibrary';
 
-// The candidate paper uses canonical fills; choosing a smaller tier needs its own presentation proof.
-export const offlineLibrary = createOfflineLibrary(createLibraryPlatform(), 'full');
+// The native apps carry the controller in their one bundle; runtime.web.ts defers it.
+export const offlineLibrary = createFullLibrary();
