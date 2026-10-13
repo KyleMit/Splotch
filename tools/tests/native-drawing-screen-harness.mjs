@@ -12,6 +12,8 @@ const files = vi.hoisted(() => ({
   motionRead: vi.fn().mockResolvedValue(false),
   motionListeners: new Set(),
   appStateListeners: new Set(),
+  backListeners: new Set(),
+  exitApp: vi.fn(),
   motionRemoves: [],
   motionListenError: null,
   save: vi.fn().mockResolvedValue({ id: 'picture-1-fixture' }),
@@ -162,6 +164,14 @@ vi.mock('react-native', () => {
         files.appStateListeners.add(listener);
         return { remove: () => files.appStateListeners.delete(listener) };
       },
+    },
+    BackHandler: {
+      addEventListener(event, listener) {
+        if (event !== 'hardwareBackPress') throw new Error('Unexpected back event');
+        files.backListeners.add(listener);
+        return { remove: () => files.backListeners.delete(listener) };
+      },
+      exitApp: files.exitApp,
     },
     Dimensions: {
       get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),

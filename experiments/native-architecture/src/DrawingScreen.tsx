@@ -6,6 +6,7 @@ import { useProductModalRoute, isProductModalBlocked } from './product/useProduc
 import { NativeAiSheet } from './ai/AiSheet';
 import { LibraryProvider } from './offlineLibrary/LibraryScope';
 import { SavedPictures } from './drawing/SavedPictures';
+import { LeaveConfirm } from './drawing/LeaveConfirm';
 import { DrawingAppearanceProvider } from './drawing/DrawingAppearance';
 import { DEFAULT_APPEARANCE } from './settings/appearance';
 import { NativeFrame } from './rsdDrawing/NativeFrame';
@@ -99,6 +100,7 @@ export function DrawingScreen() {
           onDismiss={dismissed}
         />
       ) : null}
+      <LeaveConfirm />
     </DrawingAppearanceProvider>
   );
 }
