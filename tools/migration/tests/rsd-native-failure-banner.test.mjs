@@ -13,7 +13,7 @@ import {
   BANNER_MASCOT_PX,
   BANNER_MAX_WIDTH_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
-import { photoLibraryFailure } from '../../../experiments/native-architecture/src/export/photoLibrary.ts';
+import { pictureSaveFailure } from '../../../experiments/native-architecture/src/export/pictureSave.ts';
 import { useDrawingMessages } from '../../../experiments/native-architecture/src/drawingMessages.ts';
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 
@@ -145,13 +145,13 @@ describe('the Save Failure Banner on the drawing screen', () => {
       routineNotice: '',
       failure: { kind: 'error', detail: 'The paper is busy.' },
     });
-    const refused = photoLibraryFailure('denied', 'ios');
+    const refused = pictureSaveFailure('denied', 'ios');
     await step((owner) => {
-      owner.setNotice('Refused to Photos, kept here.');
-      owner.recordSave({ notice: 'Refused to Photos, kept here.', failure: refused });
+      owner.setNotice('Refused to Photos.');
+      owner.recordSave({ notice: 'Refused to Photos.', failure: refused });
     });
     expect(messages).toMatchObject({
-      notice: 'Refused to Photos, kept here.',
+      notice: 'Refused to Photos.',
       routineNotice: '',
       failure: { kind: 'save', ...refused },
     });
@@ -176,11 +176,12 @@ describe('the Save Failure Banner on the drawing screen', () => {
     await mount(createElement(RsdDrawingScreen));
     await act(async () => host.querySelector('[aria-label="Draw RSD fixture stroke"]').click());
     await act(async () => host.querySelector('[aria-label="Expand controls"]').click());
-    await act(async () => host.querySelector('[aria-label="Save picture"]').click());
+    await act(async () => host.querySelector('[aria-label="Save screenshot"]').click());
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
-    const refused = photoLibraryFailure('denied', 'ios');
+    const refused = pictureSaveFailure('denied', 'ios');
     expect(banners()).toEqual([`${refused.heading}${refused.detail}`]);
-    expect(refused.detail).toContain(saveFailureCopy('denied', 1, 'ios').detail);
+    // No copy stays inside the app, so the banner says exactly what the shipping banner says.
+    expect(refused).toEqual(saveFailureCopy('denied', 1, 'ios'));
     expect(library.saves).toEqual(['cmVhbC1wbmc=']);
     const banner = flat(
       records.props.findLast((props) => props.testID === 'rsd-failure-banner')?.style

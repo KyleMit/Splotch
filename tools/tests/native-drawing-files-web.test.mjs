@@ -1,8 +1,8 @@
+import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   listPictures,
-  reopenPicture,
   savedColoringPageIds,
   savePicture,
 } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
@@ -37,7 +37,7 @@ describe('browser editable picture ownership', () => {
   it('round trips an editable picture and leaves unrelated browser data alone', async () => {
     storage.unrelated = 'preserved';
     const picture = await savePicture(emptyDrawing());
-    expect(await reopenPicture(picture.id)).toEqual(emptyDrawing());
+    expect(await readSavedWebPicture(picture.id)).toEqual(emptyDrawing());
     expect(listPictures()).toEqual([picture]);
     expect(storage.unrelated).toBe('preserved');
     expect(library.withSavedArtwork).not.toHaveBeenCalled();
@@ -65,22 +65,7 @@ describe('browser editable picture ownership', () => {
     library.withSavedArtwork.mockRejectedValue(new Error('artwork damaged'));
     await expect(savePicture(emptyDrawing(0, PAGE))).rejects.toThrow('artwork damaged');
     expect(listPictures()).toEqual([existing]);
-    expect(await reopenPicture(existing.id)).toEqual(emptyDrawing());
-  });
-
-  it('prepares saved offline artwork before returning a reopened drawing', async () => {
-    const picture = await savePicture(emptyDrawing(0, PAGE));
-    const gate = deferred();
-    library.openPage.mockReturnValue(gate.promise);
-    let settled = false;
-    const opening = reopenPicture(picture.id).then((drawing) => {
-      settled = true;
-      return drawing;
-    });
-    await vi.waitFor(() => expect(library.openPage).toHaveBeenCalledWith(PAGE));
-    expect(settled).toBe(false);
-    gate.resolve();
-    expect(await opening).toEqual(emptyDrawing(0, PAGE));
+    expect(await readSavedWebPicture(existing.id)).toEqual(emptyDrawing());
   });
 
   it('enumerates protected pages without reopening artwork inside the removal lease', async () => {

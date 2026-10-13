@@ -3,6 +3,9 @@ import { expect, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { actionPanelLayout } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
+import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 
 // The edge-control screen the toolbar and Button Size suites mount.
 export function toolbarScreen(overrides = {}) {
@@ -14,6 +17,7 @@ export function toolbarScreen(overrides = {}) {
     brushControl: { kind: 'menu', brushes: ['pen', 'crayon'] },
     availableBrushes: ['pen', 'crayon'],
     history: { undo: [emptyDrawing()], drawing: emptyDrawing() },
+    inkVisible: true,
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,
@@ -74,4 +78,26 @@ export function outerSize(style) {
   return style.boxSizing === 'border-box'
     ? style.width
     : style.width + 2 * (style.borderWidth ?? 0) + 2 * (style.padding ?? 0);
+}
+
+// The drawer's tile size for the panel the screen lays out at the recorded window.
+export function drawerTileSize(scale) {
+  return actionPanelLayout({
+    area: records.dimensions,
+    viewport: records.dimensions,
+    scale: scale / 100,
+    count: host.querySelectorAll('[data-testid="rsd-drawer-tool"]').length,
+    leg: 2,
+    open: true,
+  }).size;
+}
+
+// The Brushes button wears the held brush's face; its label stays "Brushes", as shipping's does.
+export function heldBrushLabel() {
+  const xml = host.querySelector('[aria-label="Brushes"] svg[data-xml]')?.dataset.xml;
+  const path = (markup) => markup.match(/\bd="([^"]+)"/)?.[1];
+  const held = Object.values(BRUSH_MENU_OPTIONS).find(
+    ({ icon }) => xml && xml.includes(path(NATIVE_ICONS[icon].light))
+  );
+  return held && `Brush: ${held.label}`;
 }

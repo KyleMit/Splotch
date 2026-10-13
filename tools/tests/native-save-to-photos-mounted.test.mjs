@@ -5,7 +5,7 @@ import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawin
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { saveFailureCopy } from '../../web/src/lib/drawing/saveFailureCopy.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
-import { createScreen, files, pictures } from './native-drawing-screen-harness.mjs';
+import { createScreen, files } from './native-drawing-screen-harness.mjs';
 import { photos } from './native-photo-library-port.mjs';
 
 vi.mock('expo-media-library', () =>
@@ -70,7 +70,6 @@ const strokesOnPaper = () => JSON.parse(screen.paper()).strokes.length;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   photos.reset();
-  files.list.mockReset().mockReturnValue(pictures);
   files.save.mockReset().mockResolvedValue({ id: 'picture-1-fixture' });
   files.capture.mockReset().mockResolvedValue(EXPORTED_PNG);
   files.ink.mockReset().mockResolvedValue(INKED_PAPER);
@@ -91,28 +90,26 @@ afterEach(() => {
 
 describe('Save picture', () => {
   it(
-    'keeps the in-app copy and adds the exported PNG to the photo library',
+    'adds the exported PNG to the photo library and keeps no copy inside the app',
     async () => {
       await mountWith(SETTINGS_V9(false));
       await screen.click('Draw fixture stroke');
       const drawing = JSON.parse(screen.paper());
       await screen.menuClick('Save picture');
       await settle(() => expect(photos.created).toHaveLength(1));
-      expect(files.save).toHaveBeenCalledWith(drawing);
+      expect(files.save).not.toHaveBeenCalled();
       expect(files.capture).toHaveBeenCalledWith(drawing);
       expect(photos.permissionRequests).toEqual([[true]]);
       expect(photos.created).toEqual([
         expect.objectContaining({ via: 'Album.create', album: 'Splotch', base64: EXPORTED_PNG }),
       ]);
-      expect(screen.container.textContent).toContain(
-        'Picture saved to your gallery and on this device.'
-      );
+      expect(screen.container.textContent).toContain('Picture saved to your gallery.');
     },
     SAVE_TEST_TIMEOUT_MS
   );
 
   it(
-    'keeps the in-app copy and words a refused permission as the shipping banner does',
+    'words a refused permission exactly as the shipping banner does',
     async () => {
       files.platform = 'ios';
       files.retainClosingModal = true;
@@ -125,27 +122,27 @@ describe('Save picture', () => {
       await act(async () => files.dismissModal());
       const shipping = saveFailureCopy('denied', 1, 'ios');
       await settle(() => expect(screen.container.textContent).toContain(shipping.detail));
-      expect(screen.container.textContent).toContain(`${shipping.heading} to Photos.`);
-      expect(screen.container.textContent).toContain("A copy is kept in this app's Pictures.");
-      expect(files.save).toHaveBeenCalledWith(drawing);
+      expect(screen.container.textContent).toContain(`${shipping.heading}. ${shipping.detail}`);
+      expect(screen.container.textContent).not.toContain('Pictures');
+      expect(files.save).not.toHaveBeenCalled();
+      expect(files.capture).toHaveBeenCalledWith(drawing);
       expect(photos.created).toEqual([]);
     },
     SAVE_TEST_TIMEOUT_MS
   );
   it(
-    'keeps the in-app copy and says the gallery needs Android 11 on older Android',
+    'says the picture was not saved because the gallery needs Android 11 on older Android',
     async () => {
       files.androidApi = 29;
       await mountWith(SETTINGS_V9(false));
       await screen.click('Draw fixture stroke');
-      const drawing = JSON.parse(screen.paper());
       await screen.menuClick('Save picture');
       await settle(() =>
         expect(screen.container.textContent).toContain(
-          'Picture saved on this device. Saving to your gallery needs Android 11 or later.'
+          "Your picture wasn't saved. Saving to your gallery needs Android 11 or later."
         )
       );
-      expect(files.save).toHaveBeenCalledWith(drawing);
+      expect(files.save).not.toHaveBeenCalled();
       expect(photos.permissionRequests).toEqual([]);
       expect(photos.created).toEqual([]);
     },
@@ -168,10 +165,26 @@ describe('Auto-Save on Delete', () => {
       await settle(() => expect(strokesOnPaper()).toBe(0));
       expect(strokesWhenSaved).toBe(1);
       expect(photos.created.map(({ base64 }) => base64)).toEqual([EXPORTED_PNG]);
-      expect(files.save).toHaveBeenCalledWith(drawing);
+      expect(files.capture).toHaveBeenCalledWith(drawing);
+      expect(files.save).not.toHaveBeenCalled();
       expect(screen.container.textContent).toContain(
-        'Picture saved to your gallery and on this device. Pick a color and draw.'
+        'Picture saved to your gallery. Pick a color and draw.'
       );
+    },
+    SAVE_TEST_TIMEOUT_MS
+  );
+
+  it(
+    'keeps the picture on the paper when the photo library refuses it',
+    async () => {
+      photos.permission = 'denied';
+      await mountWith(SETTINGS_V9(true));
+      await screen.click('Draw fixture stroke');
+      await screen.menuClick('Clear');
+      const shipping = saveFailureCopy('denied', 1, 'android');
+      await settle(() => expect(screen.container.textContent).toContain(shipping.detail));
+      expect(strokesOnPaper()).toBe(1);
+      expect(photos.created).toEqual([]);
     },
     SAVE_TEST_TIMEOUT_MS
   );

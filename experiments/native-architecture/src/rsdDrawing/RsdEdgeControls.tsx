@@ -1,44 +1,36 @@
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
-import type { useNativeAi } from '../ai/useNativeAi';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
-import type { useDrawingMenu } from '../useDrawingMenu';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { BRUSHES, type Brush } from '../drawing/brushes';
 import { paintAppearance, visiblePaints } from '../drawing/palette';
-import { RsdAction, RsdDrawerToggle } from './controls';
 import { RsdIconButton } from './RsdIconButton';
 import { RsdMoreColorsSwatch, RsdPaintAction } from './RsdSwatch';
 import { PALETTE_FLOWS, paletteSpacing, type PaletteFlow } from './paletteGeometry';
 import { colors } from './tokens.css';
-import type { NativeIconName } from './icons.generated';
 import { useClearGesture } from '../clear/useClearGesture';
 import { RsdClearOverlay } from './RsdClearControl';
 import { RsdClearUnderlay } from './clearSurfaces';
-import { NativeDrawingLayout, type DrawerTool, type PaletteLayout } from './NativeScrollAreas';
-import { controlSize } from '../settings/buttonSize';
+import { NativeDrawingLayout, type PaletteLayout } from './NativeScrollAreas';
+import { RsdActionsPanel, useFlyoutSlot } from './RsdActionsPanel';
+import { RsdFullscreenToggle } from './RsdFullscreenToggle';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
 type Product = ReturnType<typeof useDrawingProduct>;
-type Menu = ReturnType<typeof useDrawingMenu>;
 type Controls = {
   screen: Screen;
   sound: Sound;
   product: Product;
-  menu: Menu;
   disabled: boolean;
 };
-type SizedControls = Controls & { size: number };
 
-const BRUSH_ICONS = {
-  pen: 'brush-pen',
-  crayon: 'brush-crayon',
-  magic: 'brush-magic',
-  eraser: 'brush-eraser',
-} as const satisfies Record<Brush, NativeIconName>;
+// The Fullscreen Toggle sits under the rest of the chrome, in the paper area's own layer.
+const paperLayer = StyleSheet.create({
+  fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+});
 
 // The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
 // and the overlay that reads the drawer state, never the strokes on the paper.
@@ -55,8 +47,8 @@ export function RsdEdgeLayout({
   paperOverlay: (drawerOpen: boolean) => ReactNode;
 }) {
   const { screen, sound, disabled } = controls;
-  const size = controlSize(sound.settings.buttonScale);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const slot = useFlyoutSlot(drawerOpen, disabled);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
     disabled,
@@ -67,7 +59,6 @@ export function RsdEdgeLayout({
   });
   return (
     <NativeDrawingLayout
-      controlSize={size}
       palette={(layout) => (
         <RsdPalette screen={screen} sound={sound} layout={layout} disabled={paintsDisabled} />
       )}
@@ -75,15 +66,18 @@ export function RsdEdgeLayout({
         <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
       )}
       clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
-      drawerToggle={(axis) => (
-        <RsdDrawerToggle
-          axis={axis}
-          size={size}
+      actionsPanel={(area, viewport) => (
+        <RsdActionsPanel
+          {...controls}
+          ink={ink}
+          area={area}
+          viewport={viewport}
           open={drawerOpen}
-          onClick={() => setDrawerOpen(!drawerOpen)}
+          onToggle={() => setDrawerOpen(!drawerOpen)}
+          slot={slot}
         />
       )}
-      drawerTools={drawerOpen ? drawerTools({ ...controls, size }, ink) : []}
+      capturePress={slot.capturePress}
       settings={
         <RsdIconButton
           skin="corner"
@@ -97,6 +91,9 @@ export function RsdEdgeLayout({
       status={status}
     >
       {children}
+      <View pointerEvents="box-none" style={paperLayer.fill}>
+        <RsdFullscreenToggle blocked={disabled} />
+      </View>
       {paperOverlay(drawerOpen)}
     </NativeDrawingLayout>
   );
@@ -177,108 +174,5 @@ function RsdPalette({
         onClick={screen.openColorPicker}
       />
     </html.div>
-  );
-}
-
-function drawerTools({ screen, sound, product, menu, disabled, size }: SizedControls, ink: string) {
-  const tools: DrawerTool[] = [];
-  const add = (node: ReactElement<{ label: string }>) =>
-    tools.push({ label: node.props.label, node });
-  const brush =
-    screen.brushControl.kind === 'toggle' ? (
-      <RsdAction
-        label={BRUSHES[screen.brushControl.brush].label}
-        icon={BRUSH_ICONS[screen.brushControl.brush]}
-        size={size}
-        ink={ink}
-        selection="switch"
-        selected={screen.brush === screen.brushControl.brush}
-        disabled={disabled}
-        onClick={screen.toggleBrush}
-      />
-    ) : screen.brushControl.kind === 'menu' ? (
-      <RsdAction
-        label={`Brush: ${BRUSHES[screen.brush].label}`}
-        icon={BRUSH_ICONS[screen.brush]}
-        size={size}
-        ink={ink}
-        disabled={disabled}
-        onClick={menu.show}
-      />
-    ) : null;
-  if (brush) add(brush);
-  if (sound.settings.coloringBookEnabled)
-    add(
-      <RsdAction
-        label="Coloring pages"
-        icon="shapes"
-        size={size}
-        disabled={disabled}
-        onClick={() => screen.setPagePickerOpen(true)}
-      />
-    );
-  add(
-    <RsdAction
-      label="Save picture"
-      icon="camera"
-      size={size}
-      disabled={disabled}
-      onClick={() => {
-        void screen.save();
-      }}
-    />
-  );
-  if (sound.settings.aiEnabled)
-    add(<AiPictureAction label="AI picture" ai={product.ai} size={size} disabled={disabled} />);
-  if (sound.settings.undoButtonEnabled)
-    add(
-      <RsdAction
-        label="Undo"
-        icon="undo"
-        size={size}
-        disabled={disabled || screen.history.undo.length === 0}
-        onClick={screen.undo}
-      />
-    );
-  add(
-    <RsdAction
-      label="Drawing tools"
-      icon="controls"
-      size={size}
-      disabled={disabled}
-      onClick={menu.show}
-    />
-  );
-  add(
-    <RsdAction
-      label="Parent Center"
-      icon="parent-center"
-      size={size}
-      disabled={disabled}
-      onClick={() => product.owner?.openParentCenter()}
-    />
-  );
-  return tools;
-}
-
-function AiPictureAction({
-  label,
-  ai,
-  size,
-  disabled,
-}: {
-  label: string;
-  ai: ReturnType<typeof useNativeAi>;
-  size: number;
-  disabled: boolean;
-}) {
-  return (
-    <RsdAction
-      label={label}
-      icon="wand-stars"
-      size={size}
-      disabled={disabled}
-      onClick={() => ai.owner?.open()}
-    />
   );
 }

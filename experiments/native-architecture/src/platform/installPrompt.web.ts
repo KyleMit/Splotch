@@ -33,7 +33,8 @@ function isInstallPromptEvent(event: Event): event is InstallPromptEvent {
   return 'prompt' in event && typeof event.prompt === 'function' && 'userChoice' in event;
 }
 
-function launchedAsApp() {
+// Any app-like display mode, or iOS Safari's own flag: the browser chrome is already gone.
+export function launchedAsApp() {
   return (
     APP_LIKE_DISPLAY_MODE_QUERIES.some((query) => window.matchMedia?.(query).matches === true) ||
     ('standalone' in navigator && navigator.standalone === true)

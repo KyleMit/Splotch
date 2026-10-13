@@ -1,3 +1,4 @@
+import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addStrokes,
@@ -7,10 +8,7 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  savePicture,
-  reopenPicture,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
+import { savePicture } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 import { legacyDrawing } from './native-paper-fixtures.mjs';
 
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
@@ -51,7 +49,7 @@ describe('web actual adapter physical paper storage', () => {
       const drawing = contactedDrawing(frame);
       const before = JSON.stringify(drawing);
       const saved = await savePicture(drawing);
-      const reopened = await reopenPicture(saved.id);
+      const reopened = await readSavedWebPicture(saved.id);
       expect(reopened).toEqual(drawing);
       expect(reopened.version).toBe(7);
       expect(reopened.paper).toEqual({
@@ -99,7 +97,7 @@ describe('web actual adapter physical paper storage', () => {
       ],
     };
     const saved = await savePicture(drawing);
-    expect(await reopenPicture(saved.id)).toEqual(drawing);
+    expect(await readSavedWebPicture(saved.id)).toEqual(drawing);
     expect(Object.hasOwn(parseDrawing(drawing), 'paper')).toBe(false);
     expect([...values.values()]).toEqual([JSON.stringify(parseDrawing(drawing))]);
   });

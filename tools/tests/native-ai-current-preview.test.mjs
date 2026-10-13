@@ -42,7 +42,6 @@ function expectReadOnly() {
     files.save,
     files.capture,
     files.ink,
-    files.export,
     files.aiPrepare,
     files.aiSend,
     files.aiVaultRead,

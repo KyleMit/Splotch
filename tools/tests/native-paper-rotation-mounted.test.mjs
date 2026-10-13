@@ -39,17 +39,9 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
     write: async () => {},
   },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: async () => null, write: async () => {} },
-    deliver: async () => 'sharing-closed',
-  },
-}));
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   savePicture: vi.fn(),
-  exportPng: vi.fn(),
   listPictures: async () => [],
-  reopenPicture: vi.fn(),
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
   drawingDraftStorage: { read: async () => null, write: async () => {} },

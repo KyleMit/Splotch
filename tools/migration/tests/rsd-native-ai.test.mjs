@@ -83,7 +83,8 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     useCaller(drawing);
     await mount(createElement(RsdDrawingScreen));
     await expandControls();
-    expect(host.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
+    // Parent Center opens from Settings alone; the kid-facing drawer carries no button for it.
+    expect(host.querySelector('[aria-label="Parent Center"]')).toBeNull();
     expect(host.querySelector('[aria-label="AI picture"]')).toBeNull();
     await sendDrawing();
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
@@ -156,10 +157,10 @@ function useCaller(drawing) {
     owner: null,
     audioMessage: '',
   };
-  caller.menu = { open: false };
 }
+// Settings' Parent Center section opens it through this owner method.
 async function sendDrawing() {
-  await click('Parent Center');
+  await act(async () => caller.product.owner.openParentCenter());
   expect(caller.aiSend).not.toHaveBeenCalled();
   await solve();
   await click('Create AI Images');
@@ -269,7 +270,7 @@ it(
     expect(host.querySelector('[data-native-modal]')).toBeNull();
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     expect(labelled(WAITING_LABEL).closest('[data-testid="rsd-paper-corner"]')).not.toBeNull();
-    expect(labelled('Parent Center').disabled).toBe(false);
+    expect(labelled('AI picture').disabled).toBe(false);
     await click('AI picture');
     expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
     expect(labelled(WAITING_LABEL)).toBeNull();

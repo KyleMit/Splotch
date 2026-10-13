@@ -69,7 +69,7 @@ export function paperPort(React, strokeStyle, caller) {
       'aria-label': 'Draw RSD fixture stroke',
       'data-testid': 'rsd-real-history-paper',
       'data-drawing': JSON.stringify(screen.history.drawing),
-      disabled: screen.disabled || menuOpen || screen.pictures !== null,
+      disabled: screen.disabled || menuOpen,
       onClick: () =>
         screen.recovery.callbacks.onCohort(
           [

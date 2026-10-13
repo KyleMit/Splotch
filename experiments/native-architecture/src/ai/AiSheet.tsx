@@ -171,7 +171,7 @@ function AiFooter({ onClose, onBack }: { onClose: () => void; onBack: (() => voi
   const styles = useDrawingStyles(themedStyles);
   return (
     <View style={styles.footer}>
-      {onBack ? <Action label="Back to AI pictures" onPress={onBack} /> : null}
+      {onBack ? <Action label="Back" onPress={onBack} /> : null}
       <Action label="Keep drawing" onPress={onClose} />
     </View>
   );
@@ -214,20 +214,6 @@ function AiPictures({
           ) : null}
         </>
       ) : null}
-      {state.pictures.map((picture, index) => (
-        <View key={picture.uri}>
-          <Image
-            accessibilityLabel={`Saved AI picture ${index + 1}`}
-            source={{ uri: picture.uri }}
-            resizeMode="contain"
-            style={styles.image}
-          />
-          <Action
-            label={`Open saved AI picture ${index + 1}`}
-            onPress={() => onOpen(picture.uri)}
-          />
-        </View>
-      ))}
     </>
   );
 }
