@@ -57,6 +57,34 @@ export const styles = css.create({
     color: colors.text,
     fontSize: dimensions.fontSizeMd,
   },
+  fullBleed: { padding: 0, gap: 0 },
+  paletteBar: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexGrow: 1,
+    alignItems: 'center',
+    padding: dimensions.space2,
+    gap: dimensions.space2,
+  },
+  paletteSwatches: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: dimensions.space2,
+  },
+  column: { flexDirection: 'column' },
+  drawer: {
+    display: 'flex',
+    flexDirection: 'column-reverse',
+    alignItems: 'center',
+    gap: dimensions.space2,
+  },
+  drawerRow: { flexDirection: 'row' },
+  chevronUp: { transform: 'rotate(-90deg)' },
+  chevronDown: { transform: 'rotate(90deg)' },
+  chevronLeft: { transform: 'rotate(180deg)' },
   row: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space3 },
   stack: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
   toolbar: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space2 },
@@ -235,6 +263,36 @@ export function RsdMoreColorsSwatch({
       onClick={onClick}
     >
       <RsdIcon name="more-colors" size={SWATCH_DISC_PX} ink={undefined} muted={disabled} />
+    </html.button>
+  );
+}
+
+// The shipping chevron points where the drawer will move: out along its axis while closed, back
+// toward the corner while open.
+const CHEVRON_TURNS = {
+  row: { closed: null, open: styles.chevronLeft },
+  column: { closed: styles.chevronUp, open: styles.chevronDown },
+} as const;
+
+export function RsdDrawerToggle({
+  axis,
+  open,
+  onClick,
+}: {
+  axis: 'row' | 'column';
+  open: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <html.button
+      aria-label={open ? 'Collapse controls' : 'Expand controls'}
+      aria-expanded={open}
+      style={[styles.iconAction, styles.touchTarget(TOUCH_TARGET)]}
+      onClick={onClick}
+    >
+      <html.div style={CHEVRON_TURNS[axis][open ? 'open' : 'closed']}>
+        <RsdIcon name="chevron-right" size={ICON_SIZE_PX} ink={undefined} muted={false} />
+      </html.div>
     </html.button>
   );
 }

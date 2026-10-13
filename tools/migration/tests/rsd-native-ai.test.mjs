@@ -1,5 +1,5 @@
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
+import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -121,6 +121,8 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     };
     caller.menu = { open: false };
     await mount(createElement(RsdDrawingScreen));
+    await expandControls();
+    expect(host.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="AI picture"]')).toBeNull();
     await click('Parent Center');
     expect(caller.aiSend).not.toHaveBeenCalled();

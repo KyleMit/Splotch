@@ -4,10 +4,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { afterEach, describe, expect, it } from 'vitest';
-import { PALETTE_COLORS as shippingPalette } from '../../web/src/lib/palette.ts';
+import {
+  PALETTE_COLORS as shippingPalette,
+  TRIM_ORDER as shippingTrimOrder,
+} from '../../web/src/lib/palette.ts';
 import { brand, scale, themes } from '../../web/src/lib/design/tokens.ts';
 import {
   PALETTE_COLORS,
+  PALETTE_TRIM_ORDER,
   paletteHex,
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import {
@@ -73,6 +77,16 @@ describe('native drawing token projection', () => {
     assertPaletteProjection(PALETTE_COLORS);
     for (const color of shippingPalette) expect(paletteHex(color.label)).toBe(color.hex);
     expect(() => paletteHex('unrecognized')).toThrow('No palette color');
+  });
+
+  it('pins the bar trim order to the shipping palette owner and rejects drift', async () => {
+    expect(PALETTE_TRIM_ORDER.map(paletteHex)).toEqual(shippingTrimOrder);
+    const module = await fixtureModule(
+      'palette.ts',
+      "  'Grey',\n  'Lime',",
+      "  'Lime',\n  'Grey',"
+    );
+    expect(module.PALETTE_TRIM_ORDER.map(module.paletteHex)).not.toEqual(shippingTrimOrder);
   });
 
   it('keeps text on purple controls invariant across themes', () => {

@@ -439,14 +439,10 @@ function assertDisabledBoundary(props, disabled) {
     throw new Error('Missing explicit native disabled boolean');
 }
 
-function assertPortraitControls(props) {
-  if (
-    props?.testID !== 'rsd-paint-controls-viewport' ||
-    props.style?.maxHeight !== '45%' ||
-    props.style.flexGrow !== 0 ||
-    props.accessible !== false
-  )
-    throw new Error('Missing bounded native controls owner');
+async function expandControls() {
+  const toggle = host.querySelector('[aria-label="Expand controls"]');
+  if (!toggle) throw new Error('The tool drawer is not collapsed.');
+  await act(async () => toggle.click());
 }
 
 function createPickerCaller(refresh) {
@@ -502,6 +498,6 @@ export {
   checkedSwitch,
   visibleSelection,
   assertDisabledBoundary,
-  assertPortraitControls,
+  expandControls,
   createPickerCaller,
 };
