@@ -5,7 +5,11 @@ import {
 } from '../drawing/DrawingAppearance';
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
@@ -24,7 +28,11 @@ export function NativeFrame({
   const styles = useDrawingStyles(themedStyles);
   const frame = variant === 'overlay' ? styles.overlay : styles.frame;
   return (
-    <SafeAreaProvider testID="rsd-window-insets" style={frame}>
+    <SafeAreaProvider
+      testID="rsd-window-insets"
+      initialMetrics={initialWindowMetrics}
+      style={frame}
+    >
       <DrawingStatusBar />
       <SafeAreaView
         testID="rsd-safe-area-frame"
