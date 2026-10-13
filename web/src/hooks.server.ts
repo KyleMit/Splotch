@@ -9,6 +9,16 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
+import {
+  RECOVERY_VERSION_HEADER,
+  RECOVERY_NONCE_HEADER,
+  RECOVERY_CREATED_HEADER,
+  RECOVERY_INPUT_DIGEST_HEADER,
+  RECOVERY_TERMINAL_HEADER,
+  RECOVERY_EXPIRES_HEADER,
+  RECOVERY_DIGEST_HEADER,
+  RECOVERY_RECEIPT_HEADER,
+} from '$lib/ai/generationAttempt';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { devHarnessEnabled } from '$lib/server/devHarness';
 import { loggableFailure } from '$lib/server/logRedaction';
@@ -32,8 +42,8 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
   // generate-image credentials (secrets kept out of the query string).
-  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${ASYNC_GENERATION_HEADER}, ${INSTALLATION_ID_HEADER}, ${REPORT_TOKEN_HEADER}`,
-  'Access-Control-Expose-Headers': `${FREE_GENERATIONS_REMAINING_HEADER}, ${REPORT_TOKEN_HEADER}`,
+  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${ASYNC_GENERATION_HEADER}, ${INSTALLATION_ID_HEADER}, ${REPORT_TOKEN_HEADER}, ${RECOVERY_VERSION_HEADER}, ${RECOVERY_NONCE_HEADER}, ${RECOVERY_CREATED_HEADER}, ${RECOVERY_INPUT_DIGEST_HEADER}, ${RECOVERY_TERMINAL_HEADER}`,
+  'Access-Control-Expose-Headers': `${FREE_GENERATIONS_REMAINING_HEADER}, ${REPORT_TOKEN_HEADER}, ${RECOVERY_VERSION_HEADER}, ${RECOVERY_EXPIRES_HEADER}, ${RECOVERY_DIGEST_HEADER}, ${RECOVERY_RECEIPT_HEADER}`,
   // Let native clients cache the preflight for a day instead of paying an
   // extra OPTIONS round trip on every cross-origin JSON request.
   'Access-Control-Max-Age': '86400',

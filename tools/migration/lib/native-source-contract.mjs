@@ -1,3 +1,7 @@
+import { assertAiRecoverySourceContract } from './native-ai-recovery-contract.mjs';
+import { assertAiOriginalModelContract } from './native-ai-original-contract.mjs';
+export { assertAiOriginalModelContract } from './native-ai-original-contract.mjs';
+import { assertAiVaultContract } from './native-ai-vault-contract.mjs';
 import { createHash } from 'node:crypto';
 import { assertAppleSceneContract } from './native-apple-scene.mjs';
 
@@ -196,6 +200,12 @@ function assertAndroidManifest(files) {
     1,
     'network permission'
   );
+  requireCount(
+    manifest,
+    /<uses-permission\s+android:name="android.permission.ACCESS_NETWORK_STATE"\s*\/>/g,
+    1,
+    'network state permission'
+  );
   for (const permission of ANDROID_STORAGE_PERMISSION_REMOVALS) {
     requireCount(
       manifest,
@@ -209,7 +219,7 @@ function assertAndroidManifest(files) {
   }
   if (
     (manifest.match(/<uses-permission\b/g) ?? []).length !==
-      1 + ANDROID_STORAGE_PERMISSION_REMOVALS.length ||
+      2 + ANDROID_STORAGE_PERMISSION_REMOVALS.length ||
     /<queries\b|usesCleartextTraffic="true"/.test(manifest)
   ) {
     throw new Error('Unreviewed Android permission, query or cleartext policy');
@@ -306,6 +316,133 @@ function assertAppleProject(files) {
   }
 }
 
+function assertAiJournalContract(files) {
+  const android = text(files, `${KOTLIN_DIRECTORY}/SplotchAIJournal.kt`);
+  const apple = text(files, 'ios/HelloWorld/SplotchAIJournal.swift');
+  requireMatch(
+    android,
+    /old\.forEach \{\s*val stat = Os\.lstat\(it\.path\)\s*check\(OsConstants\.S_ISREG\(stat\.st_mode\) && stat\.st_nlink == 1L\)\s*Os\.remove\(it\.path\)\s*\}\s*fence\(dir\)\s*return JSONObject\(\)\.put\("receipt", receipt\(confirm\(dir, latest\(dir\)\)\)\)/,
+    'journal contract: public Android prune, directory fence and confirmed receipt'
+  );
+  for (const [source, tokens] of [
+    [
+      android,
+      [
+        'Executors.newSingleThreadExecutor()',
+        'stream.channel.lock()',
+        'stream.fd.sync()',
+        'Os.fsync(fd)',
+        'OsConstants.O_NOFOLLOW',
+        'OsConstants.O_EXCL',
+        'SecureRandom().nextBytes(it)',
+        'maxQuota = 128L * 1024 * 1024',
+        'maxAttempts = 32',
+        'maxLegacy = 256',
+        'val pinned = confirm(dir, latest(dir))',
+        'input.getString("nonce") == pinned.getString("nonce")',
+        'integer(input, "revision") == pinned.getLong("revision")',
+        'meta.getString("sha256") == digest(bytes)',
+        'integer(meta, "bytes") == bytes.size.toLong()',
+        'maxUploadReply = ((maxUpload + 2) / 3) * 4 + maxJournal',
+        'if (kind in setOf("readPreparedUpload", "readRecoveryUpload")) maxUploadReply else maxJournal',
+        'recoveryProgress(value, first)',
+        'r.getString("id") == digest(envelope)',
+        'integer(older, "schema") == integer(newer, "schema")',
+        'a.getString("intent") != "committed" || b.getString("intent") == "committed"',
+        'expiry.getString("kind") != "known" || same(expiry, b.getJSONObject("expiry"))',
+        'minimumRecoveryExpiryDeltaMs = 1170000L',
+        'maximumRecoveryExpiryDeltaMs = 1260000L',
+        '"prepare", "importLegacy", "prepareRecovery"',
+        '"commitRecoveryIntent", "recordRecoveryStatus"',
+        'input.getString("nonce") == value.getString("nonce") && integer(input, "revision") == integer(value, "revision")',
+        'recovery(value); recoveryProgress(before, value)',
+        'status.getString("headerExpiresAt") == expiry.toString()',
+        'expiry.getString("provenance") == "admitted-status-202"',
+        'integer(value, "schema") == 1L',
+        'integer(pinned, "schema") == 1L',
+      ],
+    ],
+    [
+      apple,
+      [
+        'DispatchQueue(label: "art.splotch.ai-journal")',
+        'flock(descriptor, LOCK_EX)',
+        'fsync(descriptor)',
+        'fcntl(descriptor, F_FULLFSYNC)',
+        'O_NOFOLLOW',
+        'O_EXCL',
+        'RENAME_EXCL',
+        'SecRandomCopyBytes',
+        'maxQuota = 128 * 1024 * 1024',
+        'maxAttempts = 32',
+        'maxLegacy = 256',
+        'let pinned = try confirm(dir, latest(dir))',
+        'string(input, "nonce") == string(pinned, "nonce")',
+        'integer(input, "revision") == integer(pinned, "revision")',
+        'string(meta, "sha256") == hash(bytes)',
+        'integer(meta, "bytes") == bytes.count',
+        'maxUploadReply: Int { ((maxUpload + 2) / 3) * 4 + maxJournal }',
+        '["readPreparedUpload", "readRecoveryUpload"].contains(kind) ? self.maxUploadReply : self.maxJournal',
+        'try recoveryProgress(value, first)',
+        'string(r, "id") == hash(envelope)',
+        'integer(older, "schema") == integer(newer, "schema")',
+        'string(a, "intent") != "committed" || string(b, "intent") == "committed"',
+        'string(expiry, "kind") != "known" || same(expiry, object(b["expiry"]))',
+        'minimumRecoveryExpiryDeltaMs: Int64 = 1170000',
+        'maximumRecoveryExpiryDeltaMs: Int64 = 1260000',
+        'case "prepare", "importLegacy", "prepareRecovery"',
+        'case "commitRecoveryIntent", "recordRecoveryStatus"',
+        'string(input, "nonce") == string(value, "nonce") && integer(input, "revision") == integer(value, "revision")',
+        '_ = try recovery(value); try recoveryProgress(before, value)',
+        'string(status, "headerExpiresAt") == String(expiry)',
+        'string(expiry, "provenance") == "admitted-status-202"',
+        'integer(value, "schema") == 1',
+        'integer(pinned, "schema") == 1',
+      ],
+    ],
+  ]) {
+    for (const token of tokens)
+      if (!source.includes(token)) throw new Error(`Native journal contract mismatch: ${token}`);
+    if (
+      source.includes('AtomicFile') ||
+      source.includes('readCredential') ||
+      source.includes('writeCredential')
+    )
+      throw new Error('Native journal storage boundary changed');
+  }
+  if (
+    android.split('confirm(it, latest(it))').length !== 2 ||
+    apple.split('confirm($0, latest($0))').length !== 2 ||
+    android.split('receipt(confirm(dir, value))').length !== 5 ||
+    apple.split('receipt(confirm(dir, value))').length !== 5 ||
+    android.split('receipt(confirm(dir, latest(dir)))').length !== 2 ||
+    apple.split('receipt(confirm(dir, latest(dir)))').length !== 2
+  )
+    throw new Error(
+      'Native journal contract mismatch: confirmed publication, idempotent receipt, read and gallery admission'
+    );
+  requireMatch(
+    text(files, `${KOTLIN_DIRECTORY}/SplotchAIEnvironment.kt`),
+    /journal\.execute\(kind, payload/,
+    'Android native journal caller'
+  );
+  requireMatch(
+    text(files, 'ios/HelloWorld/SplotchAIEnvironment.swift'),
+    /journal\.execute\(kind, payload/,
+    'Apple native journal caller'
+  );
+  requireMatch(
+    text(files, 'ios/HelloWorld/SplotchAIEnvironment.m'),
+    /RCT_EXTERN_METHOD\(aiStorage:/,
+    'Apple native journal registration'
+  );
+  requireMatch(
+    text(files, 'ios/HelloWorld.xcodeproj/project.pbxproj'),
+    /SplotchAIJournal\.swift in Sources/,
+    'Apple journal build membership'
+  );
+}
+
 export function assertNativeSourceContract(files, packageManifest, indexSource) {
   if (packageManifest.main !== NATIVE_CONTRACT.entry)
     throw new Error('Candidate JavaScript entry changed');
@@ -330,6 +467,10 @@ export function assertNativeSourceContract(files, packageManifest, indexSource) 
       throw new Error(`Shipping identity in candidate source: ${path}`);
     }
   }
+  assertAiOriginalModelContract(files);
+  assertAiJournalContract(files);
+  assertAiRecoverySourceContract(files);
+  assertAiVaultContract(files, KOTLIN_DIRECTORY);
   assertAndroidProperties(files);
   assertAndroidApplication(files);
   assertAndroidManifest(files);

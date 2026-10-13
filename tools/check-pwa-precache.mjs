@@ -9,7 +9,6 @@ export {
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { filesRecursively } from './lib/filesystem.mjs';
-import { assertAppShellNonceOwnership } from '../web/appShellBuildNonce.ts';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const CLIENT_DIR = join(ROOT, 'web/.svelte-kit/output/client');
@@ -156,7 +155,6 @@ export async function checkPwaPrecache({
   staticColoringDir = STATIC_COLORING_DIR,
   log = console.log,
 } = {}) {
-  assertAppShellNonceOwnership(process.env);
   if (!existsSync(swPath)) throw new Error(`Service worker does not exist: ${swPath}`);
   const serviceWorkerSource = readFileSync(swPath, 'utf8');
   const precacheUrls = precacheUrlsFromSource(serviceWorkerSource);

@@ -1,3 +1,4 @@
+import { replayProductSourceExtension } from './native-product-source-extension.mjs';
 import {
   ANDROID_STORAGE_PERMISSION_REMOVALS,
   APPLE_BUNDLE_OVERRIDES,
@@ -7,6 +8,8 @@ import {
   RELEASE_SIGNING_PROPERTIES,
 } from './native-source-contract.mjs';
 import { transformAppleSceneDelegate, transformAppleScenePlist } from './native-apple-scene.mjs';
+
+export const BETA_APP_NAME = 'Splotch';
 
 const OMITTED_NATIVE_MEMBERS = new Set([
   'package/android/gitignore',
@@ -32,6 +35,7 @@ const TRANSFORMATION_NAMES = new Map([
     'reviewed-network-and-private-storage-policy',
   ],
   ['package/android/app/proguard-rules.pro', 'candidate-turbomodule-rules'],
+  ['package/android/app/src/main/res/values/strings.xml', 'product-launcher-name'],
   ['package/ios/Podfile', 'explicit-pod-contract'],
   ['package/ios/Podfile.properties.json', 'explicit-apple-contract'],
   ['package/ios/HelloWorld.xcodeproj/project.pbxproj', 'candidate-apple-identity-and-bundling'],
@@ -292,6 +296,13 @@ export function transformTemplateMember(path, bytes) {
     source = androidManifest(source);
   else if (path === 'package/android/app/proguard-rules.pro')
     source = '-keep class com.facebook.react.turbomodule.** { *; }\n';
+  else if (path === 'package/android/app/src/main/res/values/strings.xml')
+    source = replaceExactly(
+      source,
+      '<string name="app_name">Hello App Display Name</string>',
+      `<string name="app_name">${BETA_APP_NAME}</string>`,
+      'Android launcher name'
+    );
   else if (path === 'package/ios/Podfile') source = applePodfile(source);
   else if (path === 'package/ios/Podfile.properties.json')
     source =
@@ -308,7 +319,15 @@ export function transformTemplateMember(path, bytes) {
     source = appleProject(source);
   else if (path === 'package/ios/HelloWorld/AppDelegate.swift')
     source = transformAppleSceneDelegate(source);
-  else if (path === 'package/ios/HelloWorld/Info.plist')
+  else if (path === 'package/ios/HelloWorld/Info.plist') {
+    if (source.includes('<key>CFBundleDisplayName</key>'))
+      throw new Error('Template display name already exists');
+    source = replaceExactly(
+      source,
+      '\t<key>CFBundleExecutable</key>',
+      `\t<key>CFBundleDisplayName</key>\n\t<string>${BETA_APP_NAME}</string>\n\t<key>CFBundleExecutable</key>`,
+      'Apple launcher name'
+    );
     source = transformAppleScenePlist(
       replaceExactly(
         source,
@@ -317,7 +336,13 @@ export function transformTemplateMember(path, bytes) {
         'Apple local network'
       )
     );
-  else if (change === 'formatted-template-resource')
+  } else if (change === 'formatted-template-resource')
     source = JSON.stringify(JSON.parse(source), null, 2) + '\n';
-  return { bytes: change === 'unchanged' ? bytes : Buffer.from(source), change };
+  return {
+    bytes: replayProductSourceExtension(
+      candidateTemplateTarget(path),
+      change === 'unchanged' ? bytes : Buffer.from(source)
+    ),
+    change,
+  };
 }

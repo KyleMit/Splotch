@@ -5,15 +5,18 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PALETTE_COLORS as shippingPalette } from '../../web/src/lib/palette.ts';
-import { scale, themes } from '../../web/src/lib/design/tokens.ts';
+import { brand, scale, themes } from '../../web/src/lib/design/tokens.ts';
 import {
   PALETTE_COLORS,
   paletteHex,
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import {
+  DRAWING_ON_BRAND,
   DRAWING_SCALE,
   DRAWING_SCRIM,
   DRAWING_THEME,
+  DRAWING_THEMES,
+  PAPER_THEMES,
 } from '../../experiments/native-architecture/src/drawing/theme.ts';
 
 const sourceDirectory = join(
@@ -72,8 +75,33 @@ describe('native drawing token projection', () => {
     expect(() => paletteHex('unrecognized')).toThrow('No palette color');
   });
 
+  it('keeps text on purple controls invariant across themes', () => {
+    expect(DRAWING_ON_BRAND).toBe(brand.onBrand);
+  });
+
+  it('pins the complete dark chrome palette to the design owner', () => {
+    expect(DRAWING_THEMES.dark).toEqual(
+      Object.fromEntries(Object.keys(DRAWING_THEME).map((key) => [key, themes.dark[key]]))
+    );
+  });
+
   it('pins exactly the light-theme values consumed by drawing controls', () => {
     expect(() => assertThemeProjection(DRAWING_THEME)).not.toThrow();
+  });
+
+  it('pins live paper and outline colors to both design themes and rejects drift', async () => {
+    const expected = Object.fromEntries(
+      ['light', 'dark'].map((theme) => [
+        theme,
+        {
+          paper: themes[theme].paper,
+          outline: themes[theme].textStrong,
+        },
+      ])
+    );
+    expect(PAPER_THEMES).toEqual(expected);
+    const changed = await fixtureModule('theme.ts', "paper: '#211f29'", "paper: '#000000'");
+    expect(changed.PAPER_THEMES).not.toEqual(expected);
   });
 
   it('pins the picker scale and compatible scrim to the design token owner', () => {

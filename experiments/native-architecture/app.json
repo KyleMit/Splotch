@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Splotch Native Architecture",
+    "name": "Splotch",
     "slug": "splotch-native-architecture",
     "platforms": ["android", "ios", "web"]
   }

@@ -220,6 +220,7 @@ describe('reviewed native template boundary', () => {
     expect(source).toContain('xmlns:tools="http://schemas.android.com/tools"');
     expect(source.match(/<uses-permission\b[^>]*\/>/g)).toEqual([
       '<uses-permission android:name="android.permission.INTERNET"/>',
+      '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>',
       '<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>',
       '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>',
     ]);
@@ -364,6 +365,10 @@ describe('reviewed native template boundary', () => {
     const receipt = JSON.parse(
       readFileSync(join(actual, 'native-template-provenance.json'), 'utf8')
     );
+    const expectedTargets = receipt.records
+      .filter((record) => record.target)
+      .map((record) => record.target)
+      .sort();
     for (const record of receipt.records.filter((entry) => entry.target)) {
       write(
         repository,
@@ -414,13 +419,17 @@ describe('reviewed native template boundary', () => {
     const wrapper = join(checked, 'android/gradlew');
     expect(lstatSync(wrapper).mode & 0o777).toBe(0o750);
     expect(lstatSync(join(checked, 'TEMPLATE-LICENSE')).mode & 0o777).toBe(0o640);
-    expect(readMaintainedNativeFiles(checked, manifest).size).toBe(45);
+    expect([...readMaintainedNativeFiles(checked, manifest).keys()].sort()).toEqual(
+      expectedTargets
+    );
     chmodSync(wrapper, 0o650);
     expect(() => readMaintainedNativeFiles(checked, manifest)).toThrow(
       'Maintained native source changed: android/gradlew'
     );
     chmodSync(wrapper, 0o750);
-    expect(readMaintainedNativeFiles(checked, manifest).size).toBe(45);
+    expect([...readMaintainedNativeFiles(checked, manifest).keys()].sort()).toEqual(
+      expectedTargets
+    );
   });
 
   it('rejects generated native paths instead of hiding a build writer', () => {
@@ -429,6 +438,10 @@ describe('reviewed native template boundary', () => {
     const receipt = JSON.parse(
       readFileSync(join(actual, 'native-template-provenance.json'), 'utf8')
     );
+    const expectedTargets = receipt.records
+      .filter((record) => record.target)
+      .map((record) => record.target)
+      .sort();
     for (const record of receipt.records.filter((entry) => entry.target)) {
       write(
         candidate,
@@ -461,7 +474,9 @@ describe('reviewed native template boundary', () => {
         }
         parent = join(parent, '..');
       }
-      expect(readMaintainedNativeFiles(candidate, manifest).size).toBe(45);
+      expect([...readMaintainedNativeFiles(candidate, manifest).keys()].sort()).toEqual(
+        expectedTargets
+      );
     }
   });
 });

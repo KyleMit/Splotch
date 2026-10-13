@@ -321,7 +321,5 @@ not build, upload, or deploy release artifacts.
 ## Native architecture candidate
 
 `experiments/native-architecture` is a private development-only member under the root pnpm lock and
-hoisted linker. Run `npm run check:migration:native-topology` after the reviewed full install. Its
-exact SDK/template dependencies change together through migration review; script provenance must be
-complete before installing a changed graph. Root still owns production web and Capacitor builds.
-Native generation and device checks are separate units.
+hoisted linker; the root `pnpm install` installs it. Root still owns production web and Capacitor
+builds.

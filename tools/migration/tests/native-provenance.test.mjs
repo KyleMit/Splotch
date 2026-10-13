@@ -14,9 +14,16 @@ const manifest = readTemplateManifest(root);
 const fixtureDirectories = [];
 const REPLAY_FAILURE = 'Native provenance replay mismatch';
 const JOINT_TRANSFORM_MUTATIONS = [
+  [
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt',
+    '// joint source drift\n',
+  ],
+  ['ios/HelloWorld/SplotchLibraryEnvironment.swift', '// joint source drift\n'],
+  ['ios/HelloWorld/SplotchLibraryEnvironment.m', '// joint source drift\n'],
   ['android/app/build.gradle', 'println("joint source drift")\n'],
   ['android/app/proguard-rules.pro', '# joint source drift\n'],
   ['android/app/src/main/AndroidManifest.xml', '<!-- joint source drift -->\n'],
+  ['android/app/src/main/res/values/strings.xml', '<!-- joint source drift -->\n'],
   [
     'android/app/src/main/java/art/splotch/migration/probe/MainActivity.kt',
     '// joint source drift\n',
@@ -25,6 +32,15 @@ const JOINT_TRANSFORM_MUTATIONS = [
     'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
     '// joint source drift\n',
   ],
+  [
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+    '// joint source drift\n',
+  ],
+  [
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
+    '// joint source drift\n',
+  ],
+  ['ios/HelloWorld/SplotchAIJournal.swift', '// joint source drift\n'],
   ['android/gradle.properties', '# joint source drift\n'],
   ['android/gradle/wrapper/gradle-wrapper.properties', '# joint source drift\n'],
   ['ios/HelloWorld.xcodeproj/project.pbxproj', '// joint source drift\n'],
@@ -32,6 +48,8 @@ const JOINT_TRANSFORM_MUTATIONS = [
   ['ios/HelloWorld/Images.xcassets/AppIcon.appiconset/Contents.json', ' \n'],
   ['ios/HelloWorld/Images.xcassets/Contents.json', ' \n'],
   ['ios/HelloWorld/Info.plist', '<!-- joint source drift -->\n'],
+  ['ios/HelloWorld/SplotchAIEnvironment.m', '// joint source drift\n'],
+  ['ios/HelloWorld/SplotchAIEnvironment.swift', '// joint source drift\n'],
   ['ios/Podfile', '# joint source drift\n'],
   ['ios/Podfile.properties.json', ' \n'],
 ];
@@ -105,6 +123,10 @@ async function invertedReceiptReader() {
   templateSource = templateSource.replace(guard, 'isDeepStrictEqual(provenance, provenance)');
   for (const [specifier, url] of [
     ['tar', import.meta.resolve('tar')],
+    [
+      './native-product-source-extension.mjs',
+      pathToFileURL(join(root, 'tools/migration/lib/native-product-source-extension.mjs')).href,
+    ],
     [
       '../../lib/native-candidate.mjs',
       pathToFileURL(join(root, 'tools/lib/native-candidate.mjs')).href,

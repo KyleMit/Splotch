@@ -2,6 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { assertFixture, fixture, replace } from './native-source-fixtures.mjs';
 
 describe('native manifest permission contract', () => {
+  it.each(['absent', 'duplicate', 'remove', 'sdk-grant'])(
+    'requires exactly the normal network state permission after %s mutation',
+    (mutation) => {
+      const value = fixture();
+      const marker = '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>';
+      const replacements = {
+        absent: '',
+        duplicate: marker + marker,
+        remove: marker.replace('/>', ' tools:node="remove"/>'),
+        'sdk-grant': marker.replace('/>', ' android:maxSdkVersion="32"/>'),
+      };
+      replace(value, 'android/app/src/main/AndroidManifest.xml', marker, replacements[mutation]);
+      expect(() => assertFixture(value)).toThrow('network state permission');
+    }
+  );
+
   it.each(
     ['READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'].flatMap((permission) =>
       ['absent', 'duplicate', 'merge', 'sdk-grant'].map((mutation) => [permission, mutation])

@@ -10,7 +10,9 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 `X-Access-Token` / `X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token`
 headers allowed, plus `X-Free-Generations-Remaining` and `X-Report-Token` exposed and
 `Access-Control-Max-Age: 86400` so native clients can read the updated allowance and cache the
-preflight instead of paying an OPTIONS round trip per request. The wildcard is safe because every
+preflight instead of paying an OPTIONS round trip per request. Recovery admission metadata headers
+are also allowed, and the recovery version, expiry, digest and receipt response headers are exposed;
+their exact names are listed in the recovery v1 section below. The wildcard is safe because every
 endpoint is either gated by a credential the caller must already hold (access token, OpenAI key, or
 admin session) or rate-limited and bounded. The credential-less `report` endpoint creates a
 sanitized private support issue; `csp-report` is size-capped and bounded to log lines. Nothing under
@@ -236,6 +238,127 @@ for waiting rather than guessing.
 Settling the free-generation reservation and minting the report token both happen **here**, not in
 the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why
 no credential is ever written into the job record.
+
+### `GET` / `POST /api/generation-attempt/v1` (closed source proposal)
+
+Recovery v1 is a separate protocol. The source qualification latch is **closed**, and
+`AI_RECOVERY_V1_ENABLED=true` alone cannot enable either its route or worker. The legacy generation
+routes and existing clients keep their contracts. This source is not rollout approval.
+
+Every request sends `X-AI-Recovery-Version: splotch-ai-recovery-v1`. Credentials remain in exactly
+one original `X-Api-Key`, `X-Access-Token`, or `X-Installation-Id` header. Retrieval authenticates
+possession using a domain-separated HMAC over that original credential; it does not verify a
+provider key, recheck the current managed allowlist, require the current project key, or reserve
+quota. No credential, nonce, attempt ID, or work ticket is placed in a query string. Rotating the
+existing report-token signing secret also invalidates in-flight recovery bindings and work tickets.
+
+Raw-image POST uses exactly one `style` query parameter and the headers `X-AI-Attempt-Nonce` (64
+lowercase hex), `X-AI-Attempt-Created-At` (canonical integer milliseconds), and `X-AI-Input-Digest`
+(SHA-256 of the exact bytes). PNG, JPEG and WebP bodies are capped while streaming at 15 MiB,
+decoded completely, matched to their declared MIME and restricted to one image with a bounded
+decoded pixel count. Those bounds require workload qualification before activation. The server owns
+the prompt, prompt policy and request fingerprint. The first admission fixes server time and the
+20-minute retrieval expiry; repeated uploads must match its original input and credential. Only
+fresh admission performs start authorization. A duplicate just replays its existing immutable
+admission, including after its freshness window or a managed-code revocation.
+
+Free funding uses stable receipts in the existing shared installation grant and UTC daily
+provider-start ledger. It introduces no separate free allowance or counter. Both receipts are
+confirmed before the attempt can become pending. A cross-key failure may leave a charged operation
+without confirmed funding; replay uses that same operation. A daily provider-start charge is never
+refunded. Managed and BYOK funding/settlement facts bind the immutable admission and raw outcome;
+the existing usage tally remains best-effort metrics, not settlement authority. Only the permanent
+winning worker claim attempts one usage recording; a crash may lose that tally, and GET/reconcile
+never repeats it.
+
+A signed, short-lived, bounded envelope goes to the fixed background-function path under the same
+HTTPS origin (HTTP is permitted only for local development). Redirects are refused and handoff is
+time-bounded. An unknown handoff leaves the original attempt pending; there is no synchronous
+fallback. Its transient credential is encrypted with AES-256-GCM using a fresh random nonce and a
+domain-separated key derived from the existing report secret. Authenticated data binds the protocol,
+worker domain, immutable attempt identity, fingerprint, expiry, ticket time and credential kind. The
+whole bounded envelope is also HMAC-authenticated. This prevents plaintext credentials in our
+invocation body; Netlify invocation retention/access and environment secrecy remain unqualified. The
+worker validates the exact envelope, credential binding, fingerprint, time and funding before taking
+a permanent claim. Only that claim can make one application provider call through the existing
+adapter, whose SDK retries remain disabled. A claim is never timed out or taken over. A worker crash
+after claim can lose availability until expiry; this is not a guarantee of exactly-once provider
+billing. Same-claim raw outcome persistence can be retried without another provider invocation. New
+worker failure logs contain no request, credential, ticket or attempt ID.
+
+GET has no query or body. Version-only GET returns `{ok:true,protocol,jobTtlMs}` capability when
+qualified. Collection adds the original credential and nonce/created-at headers, and returns a 202
+status `{ok:true,protocol,id,expiresAt,phase,pollAfterMs:4000}` or exact immutable delivery bytes.
+Every 202 includes the version and original `X-AI-Attempt-Expires-At` headers. GET performs no
+funding, dispatch, settlement, conversion, token minting, ACK or deletion, including at expiry. Raw
+image/refusal/error outcomes remain 202 statuses until explicit POST reconciliation.
+
+Schema 3 collect, raw admission and reconcile can additionally send the exact request header
+`X-AI-Checked-Terminal: 1`. This negotiates a strict wire shape; it cannot enable the closed route
+or worker, grant send permission, or authorize a new attempt. Capability and ACK requests reject
+this selector. Missing selectors retain legacy responses, including legacy absent/expired errors.
+CORS permits this selector alongside the original admission headers.
+
+A selected expired collect authenticates the original credential and reads retained original
+metadata without reading output bytes. Its HTTP 410 body is exactly
+`{ok:false,error,code:'RECOVERY_TERMINAL',protocol,id,createdAt,expiresAt,outcome:'expired'}`. It
+includes the protocol and original expiry response headers. Deleted metadata yields absence;
+authentication conflict, store failure, generic 404/410, local time and an unconfirmed callback
+provide no terminal proof. This GET performs no writes, cleanup, authorization, funding, settlement,
+conversion, report-token minting, dispatch or provider call, and never refreshes the original
+expiry.
+
+Selected explicit reconciliation of a refusal or error returns that same exact body vocabulary with
+`outcome:'refusal'` at HTTP 422 or `outcome:'error'` at HTTP 502. The stable settlement owner must
+confirm the corresponding failure outcome and receipt, followed by an exact original-record reread.
+Explicit duplicate raw admission propagates the selected shape when resuming that same outcome. The
+shared parser checks status, finite outcome, exact keys and immutable identity/creation/expiry. An
+advisory 202 refusal/error status does not establish settlement or durable local completion. The
+existing refusal reason and report-token issuance stay on the explicit POST path; native recovery
+refusal-report provenance is still unfinished.
+
+JSON POST is capped at 8192 bytes, has no query or repeated admission headers, and accepts exactly:
+
+```ts
+{ operation: 'reconcile', id: string, createdAt: number }
+{ operation: 'ack', id: string, createdAt: number, digest: string, receipt: string }
+```
+
+Explicit reconcile can finish funding/dispatch for the same original preparing/funded/pending
+attempt. It never creates another identity, restarts expiry, reserves a second operation, takes over
+a claim or calls the provider itself. For a raw outcome it performs only idempotent settlement and
+image staging. An earlier failed/abandoned free settlement prevents free image delivery. A refused
+outcome produces the existing 422 failure shape with its authenticated reason/report token only on
+explicit POST; GET remains a pure status read.
+
+An immutable image delivery owns one byte sequence, MIME, digest, report token, allowance value,
+stable settlement digest and delivery receipt. An already-published delivery wins a reconciliation
+race. Later reads and reconciles return it without transforming or reminting. Image responses
+include `X-AI-Recovery-Version`, original `X-AI-Attempt-Expires-At`, `X-AI-Delivery-Digest`, and
+`X-AI-Delivery-Receipt`, plus the stored report/allowance headers when present. All recovery
+admission headers are allowed by CORS and all delivery headers are exposed. The route has a shared
+per-IP 120/minute request budget; fresh starts also use the existing credential-specific limits. All
+responses retain the API no-store default. Bounded failures use `{ok:false,error}` with a finite
+`RECOVERY_*` code where applicable, including 404 absent/expired, 409 conflict and 503 unavailable.
+A failed store read never grants permission to create another attempt.
+
+ACK is image-only and confirms the exact digest/receipt before best-effort byte deletion. Its HTTP
+200 body is exactly
+`{ok:true,protocol,id,phase:'acknowledged',expiresAt,deliveryDigest,deliveryReceipt}`. A 202 GET
+status is not ACK confirmation. Repeated exact ACK can confirm the tombstone after retrieval expiry,
+within the proposed retention horizon. Retrieval stops at the original 20-minute expiry;
+identity/ACK metadata has a **provisional** 24-hour horizon after expiry, pending product/privacy
+approval. An isolated hourly `purge-generation-attempts` runs alongside legacy cleanup. Physical
+byte deletion happens on ACK or a later successful sweep, can be delayed by outages or failed
+writes/deletes, and is not promised at exactly 20 minutes. Sweep traversal/allocation grows with
+store size and requires capacity/error-monitoring qualification.
+
+Activation additionally requires every reachable historical deployment URL, running handler,
+background worker and rollback version that writes the shared free ledger to preserve recovery
+receipts. Draining running old handlers alone is insufficient; gate-off cannot protect receipts
+already written from an older normalizer. Real Blobs strong/CAS/lost-reply checks, integrated fault
+and CORS tests, independent review, retention approval and both native durability/security/lifecycle
+qualifications remain required. Both native activation guards stay closed.
 
 ### `POST /api/verify-access-code`
 
