@@ -17,6 +17,7 @@ import {
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
+import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
 import {
   isParentPolicies,
   PROTECTED_PARENT_POLICIES,
@@ -52,13 +53,14 @@ export function initialSoundSettingsState(): SoundSettingsState {
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
     orientation: defaultOrientation(),
+    saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     message: '',
   };
 }
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 8,
+    version: 9,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -68,6 +70,7 @@ function defaultSoundSettings(): SoundSettings {
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
     orientation: defaultOrientation(),
+    saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
   };
 }
 
@@ -84,6 +87,7 @@ function unreadSoundSettingsState(): SoundSettingsState {
     parentPolicies: PROTECTED_PARENT_POLICIES,
     appearance: DEFAULT_APPEARANCE,
     orientation: defaultOrientation(),
+    saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     saved: false,
     message:
       'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
@@ -140,6 +144,17 @@ function createDrawingPreferenceActions({
         return;
       }
       await persist({ ...snapshot(state), coloringBookEnabled });
+    },
+    async setSaveOnDeleteEnabled(saveOnDeleteEnabled: boolean) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (typeof saveOnDeleteEnabled !== 'boolean')
+        throw new Error('Auto-Save on Delete choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, saveOnDeleteEnabled });
+        return;
+      }
+      await persist({ ...snapshot(state), saveOnDeleteEnabled });
     },
     async setEnabled(soundEnabled: boolean) {
       const state = getState();

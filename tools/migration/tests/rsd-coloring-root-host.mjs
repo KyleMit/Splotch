@@ -99,6 +99,7 @@ export function nativeSettingsProps(owner, state) {
     onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
     onUndoButtonChange: (enabled) => owner.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled) => owner.setStrokeWidthControlEnabled(enabled),
+    onSaveOnDeleteChange: (enabled) => owner.setSaveOnDeleteEnabled(enabled),
     onSoundLevelChange: (level) => owner.setSoundLevel(level),
     onAppearanceChange: (appearance) => owner.setAppearance(appearance),
     onRetry: () => owner.retrySave(),

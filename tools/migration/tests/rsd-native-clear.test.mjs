@@ -59,7 +59,13 @@ function clearScreen(overrides = {}) {
   };
 }
 
-async function mountClear({ sound = true, level, reduceMotion = false, ...screen } = {}) {
+async function mountClear({
+  sound = true,
+  level,
+  saveOnDelete,
+  reduceMotion = false,
+  ...screen
+} = {}) {
   records.reduceMotion = reduceMotion;
   caller.screen = clearScreen(screen);
   caller.menu = { open: false, visible: false, show: vi.fn() };
@@ -75,12 +81,16 @@ async function mountClear({ sound = true, level, reduceMotion = false, ...screen
       aiEnabled: false,
     },
   };
-  if (level) {
+  if (level || saveOnDelete !== undefined) {
     const stored = {
-      version: 7,
+      version: 9,
       soundEnabled: sound,
-      soundLevel: level,
+      soundLevel: level ?? 'medium',
       coloringBookEnabled: true,
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
+      orientation: 'portrait',
+      saveOnDeleteEnabled: saveOnDelete ?? false,
     };
     caller.settingsStorage = {
       read: async () => JSON.stringify({ ...JSON.parse(caller.initialSettings), ...stored }),
@@ -349,3 +359,21 @@ it("clears through VoiceOver's default activation once, however many paths repor
   await act(async () => clearProps().onAccessibilityTap());
   expect(caller.screen.clear).toHaveBeenCalledTimes(2);
 });
+
+// screen.clear(true) keeps the picture before it wipes the paper; native-save-to-photos-mounted
+// pins that order on the real screen. Here the drag and the activation must take that path.
+it.each([true, false])(
+  'commits a drag-clear through the Auto-Save on Delete clear path when the setting is %s',
+  async (saveOnDelete) => {
+    await mountClear({ saveOnDelete });
+    vi.useFakeTimers();
+    await press();
+    await drag(offset(radius() + 10));
+    await lift(offset(radius() + 10));
+    await act(async () => {});
+    expect(caller.screen.clear).toHaveBeenCalledExactlyOnceWith(saveOnDelete);
+    await settle(CLEAR_SHEET_DURATION_MS);
+    await act(async () => clearProps().onAccessibilityTap());
+    expect(caller.screen.clear.mock.calls).toEqual([[saveOnDelete], [saveOnDelete]]);
+  }
+);

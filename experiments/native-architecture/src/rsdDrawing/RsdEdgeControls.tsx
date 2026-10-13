@@ -52,7 +52,8 @@ export function RsdEdgeLayout({
   const clear = useClearGesture({
     disabled,
     drawing: screen.history.drawing,
-    onClear: screen.clear,
+    // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
+    onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),
     sound: sound.owner?.clear ?? null,
   });
   return (

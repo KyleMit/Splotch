@@ -5,9 +5,21 @@ import * as drawingModel from '../../experiments/native-architecture/src/drawing
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
+import { photos } from './native-photo-library-port.mjs';
+
+vi.mock('expo-media-library', () =>
+  import('./native-photo-library-port.mjs').then((port) => port.mediaLibraryModule)
+);
+vi.mock('expo-file-system', () =>
+  import('./native-photo-library-port.mjs').then((port) => port.fileSystemModule)
+);
+vi.mock('expo-file-system/legacy', () =>
+  import('./native-photo-library-port.mjs').then((port) => port.legacyFilesModule)
+);
 
 const SCREEN_SETUP_BUDGET_MS = 2000;
 const SAVE_CLEAR_TEST_TIMEOUT_MS = PNG_TIMEOUT_MS + SCREEN_SETUP_BUDGET_MS;
+const EXPORTED_PNG = rgbaPng(4, 4, 255).toString('base64');
 let screen;
 let clear;
 
@@ -16,7 +28,8 @@ beforeEach(async () => {
   files.list.mockReset().mockReturnValue(pictures);
   files.save.mockReset().mockResolvedValue({ id: 'picture-1-fixture' });
   files.open.mockReset();
-  files.capture.mockReset();
+  files.capture.mockReset().mockResolvedValue(EXPORTED_PNG);
+  photos.reset();
   files.ink.mockReset().mockResolvedValue(rgbaPng(1024, 768, 255).toString('base64'));
   files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
@@ -79,7 +92,10 @@ describe('Save and clear through Drawing tools', () => {
       expect(clear).toHaveBeenCalledOnce();
       expect(JSON.parse(screen.paper())).toEqual(drawingModel.emptyDrawing(1));
       expect(screen.button('Draw fixture stroke').disabled).toBe(false);
-      expect(screen.container.textContent).toContain('Picture saved on this device.');
+      expect(photos.created.map(({ base64 }) => base64)).toEqual([EXPORTED_PNG]);
+      expect(screen.container.textContent).toContain(
+        'Picture saved to your gallery and on this device. Pick a color and draw.'
+      );
       await screen.click('Undo');
       expect(screen.paper()).toBe(original);
     },
