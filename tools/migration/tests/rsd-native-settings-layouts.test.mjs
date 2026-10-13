@@ -197,7 +197,7 @@ describe('the pane scroll geometry', () => {
 });
 
 const CURRENT_SETTINGS = {
-  version: 14,
+  version: 15,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -228,6 +228,8 @@ const CURRENT_SETTINGS = {
   toolbarStyle: 'buttons',
   toolDrawerEnabled: true,
   screenshotEnabled: true,
+  aiCustomizationEnabled: true,
+  autoSaveAiEnabled: false,
 };
 
 function openSettings(dimensions, overrides = {}) {

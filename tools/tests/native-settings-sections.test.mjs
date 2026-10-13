@@ -76,7 +76,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 14,
+  version: 15,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -107,6 +107,8 @@ const CURRENT = {
   toolbarStyle: 'buttons',
   toolDrawerEnabled: true,
   screenshotEnabled: true,
+  aiCustomizationEnabled: true,
+  autoSaveAiEnabled: false,
 };
 
 // CURRENT as schema 12 stored it: the medium level where the volume and sources sit, and no
@@ -115,8 +117,9 @@ const VERSION_12 = Object.fromEntries(
   Object.entries(CURRENT).flatMap(([key, value]) => {
     if (key === 'version') return [[key, 12]];
     if (key === 'soundVolume') return [['soundLevel', 'medium']];
-    // The sound sources, the Button style, the Tool Drawer switch and the Camera button came later.
-    if (/SoundEnabled$|^toolbarStyle$|^toolDrawer|^screenshot/.test(key)) return [];
+    // The sound sources, Button style, drawer and camera switches, and AI Art's came later.
+    if (/SoundEnabled$|^toolbarStyle$|^toolDrawer|^screenshot|^ai[CS]|^autoSave/.test(key))
+      return [];
     return [[key, value]];
   })
 );
@@ -388,13 +391,8 @@ describe('settings schema 12', () => {
       aiEnabled: true,
       parentPolicies: { parentCenter, ...rest, ai: 'session' },
     });
-    expect(Object.keys(JSON.parse(stored).parentPolicies)).toEqual([
-      'ai',
-      'imageReport',
-      'externalLinks',
-      'feedback',
-      'parentCenter',
-    ]);
+    const order = ['ai', 'imageReport', 'externalLinks', 'feedback', 'parentCenter'];
+    expect(Object.keys(JSON.parse(stored).parentPolicies)).toEqual(order);
     expect(parseSoundSettings(stored).parentPolicies.ai).toBe('session');
   });
 });
@@ -449,7 +447,7 @@ describe('settings schema 10', () => {
             version: 9,
           }))(withoutLinksPolicy(VERSION_12));
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 14,
+      version: 15,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,

@@ -65,7 +65,7 @@ describe('persisted orientation choice', () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_7))).toEqual({
       ...MIGRATED_7,
       parentPolicies: MIGRATED_POLICIES,
-      version: 14,
+      version: 15,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -75,6 +75,8 @@ describe('persisted orientation choice', () => {
       toolbarStyle: 'buttons',
       toolDrawerEnabled: true,
       screenshotEnabled: true,
+      aiCustomizationEnabled: true,
+      autoSaveAiEnabled: false,
       orientation: 'portrait',
     });
     const f = fixture(JSON.stringify(VERSION_7));
@@ -95,7 +97,7 @@ describe('persisted orientation choice', () => {
       });
     if (version >= 6) Object.assign(old, { coloringBookEnabled: true });
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 14,
+      version: 15,
       orientation: 'portrait',
     });
   });
@@ -109,7 +111,7 @@ describe('persisted orientation choice', () => {
       expect(JSON.parse(f.stored())).toEqual({
         ...MIGRATED_7,
         parentPolicies: MIGRATED_POLICIES,
-        version: 14,
+        version: 15,
         orientation: choice,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
@@ -120,6 +122,8 @@ describe('persisted orientation choice', () => {
         toolbarStyle: 'buttons',
         toolDrawerEnabled: true,
         screenshotEnabled: true,
+        aiCustomizationEnabled: true,
+        autoSaveAiEnabled: false,
       });
       const reopened = fixture(f.stored());
       await reopened.owner.load();

@@ -33,6 +33,7 @@ import { isButtonScale } from './buttonSize';
 import { isReduceMotionPreference, type ReduceMotionPreference } from './reduceMotion';
 import { WHATS_NEW_STAMP } from './whatsNew';
 import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
+import { DEFAULT_AI_PREFERENCES, createAiActions } from './aiPreferences';
 import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
   DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -71,13 +72,14 @@ export function initialSoundSettingsState(): SoundSettingsState {
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
     message: '',
   };
 }
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 14,
+    version: 15,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -91,6 +93,7 @@ function defaultSoundSettings(): SoundSettings {
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
   };
 }
 
@@ -111,6 +114,7 @@ function unreadSoundSettingsState(): SoundSettingsState {
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
     saved: false,
     message:
       'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
@@ -380,6 +384,7 @@ function createPreferenceActions(context: PreferenceActionContext) {
     ...createDrawingPreferenceActions(context),
     ...createSoundActions(choose),
     ...createPencilActions(choose),
+    ...createAiActions(choose),
     ...createAccessibilityActions(choose),
     setToolbarStyle: (toolbarStyle: ToolbarStyle) =>
       choose({ toolbarStyle }, isToolbarStyle(toolbarStyle), 'Button style choice is invalid.'),
