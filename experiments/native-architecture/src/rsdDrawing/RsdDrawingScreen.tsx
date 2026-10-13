@@ -191,10 +191,20 @@ function RsdDrawingContent({
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
-  const buttonScale = useSliderDraft(
-    sound.settings.buttonScale,
-    (scale) => void sound.owner?.settings.setButtonScale(scale)
-  );
+  const ready = sound.settings.status === 'ready';
+  const buttonScale = useSliderDraft({
+    saved: sound.settings.buttonScale,
+    ready,
+    save: (scale) => void sound.owner?.settings.setButtonScale(scale),
+  });
+  // Held here rather than in the Sound section, so a choice still waiting on a pending write
+  // survives Settings closing.
+  const soundVolume = useSliderDraft({
+    saved: sound.settings.soundVolume,
+    ready,
+    save: (volume) => void sound.owner?.settings.setSoundVolume(volume),
+    preview: product.sound.owner?.preview,
+  });
   const modalBlocked = isProductModalBlocked(route.shown, product);
   // A see-through Settings shows the controls it resizes as they look in use, not dimmed behind
   // a dialog; the dragged slider keeps every touch meanwhile.
@@ -272,6 +282,7 @@ function RsdDrawingContent({
               product={product}
               notice={soundNotice}
               buttonScale={buttonScale}
+              soundVolume={soundVolume}
               visible={route.visible}
               onDismiss={onModalDismissed}
             />

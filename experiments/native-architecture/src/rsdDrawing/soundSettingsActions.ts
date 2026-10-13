@@ -15,7 +15,6 @@ export function soundSettingsActions(sound: Sound) {
       void sound.owner?.settings.setSaveOnDeleteEnabled(enabled),
     onPencilEraserChange: (enabled: boolean) =>
       void sound.owner?.settings.setPencilEraserEnabled(enabled),
-    onSoundVolumeChange: (volume: number) => void sound.owner?.settings.setSoundVolume(volume),
     onDrawingSoundChange: (enabled: boolean) =>
       void sound.owner?.settings.setDrawingSoundEnabled(enabled),
     onDeleteSoundChange: (enabled: boolean) =>

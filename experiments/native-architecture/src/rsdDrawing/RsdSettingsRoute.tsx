@@ -13,6 +13,7 @@ export function RsdSettingsRoute({
   product,
   notice,
   buttonScale,
+  soundVolume,
   visible,
   onDismiss,
 }: {
@@ -21,6 +22,7 @@ export function RsdSettingsRoute({
   product: ReturnType<typeof useDrawingProduct>;
   notice: string;
   buttonScale: SliderDraft;
+  soundVolume: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
 }) {
@@ -33,6 +35,7 @@ export function RsdSettingsRoute({
       notice={notice}
       {...soundSettingsActions(sound)}
       buttonScale={buttonScale}
+      soundVolume={soundVolume}
       onClose={screen.closeSettings}
       visible={visible}
       onDismiss={onDismiss}

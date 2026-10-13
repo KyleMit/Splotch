@@ -52,7 +52,6 @@ type NativeSoundSettingsDialogProps = {
   onStrokeWidthControlChange: (enabled: boolean) => void;
   onSaveOnDeleteChange: (enabled: boolean) => void;
   onPencilEraserChange: (enabled: boolean) => void;
-  onSoundVolumeChange: (volume: number) => void;
   onDrawingSoundChange: (enabled: boolean) => void;
   onDeleteSoundChange: (enabled: boolean) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
@@ -61,6 +60,8 @@ type NativeSoundSettingsDialogProps = {
   onColoringBookChange: (enabled: boolean) => void;
   // Lifted to the drawing screen, whose edge controls preview the size while it is dragged.
   buttonScale: SliderDraft;
+  // Lifted to the drawing screen with the audio owner it previews through.
+  soundVolume: SliderDraft;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
   onWhatsNewSeen: () => void;
   onRetry: () => void;
@@ -278,12 +279,11 @@ function SettingsSection(props: SectionProps) {
       return (
         <RsdSoundSection
           soundEnabled={settings.soundEnabled}
-          soundVolume={settings.soundVolume}
+          volume={props.soundVolume}
           drawingSoundEnabled={settings.drawingSoundEnabled}
           deleteSoundEnabled={settings.deleteSoundEnabled}
           busy={busy}
           onToggle={props.onToggle}
-          onVolumeChange={props.onSoundVolumeChange}
           onDrawingSoundChange={props.onDrawingSoundChange}
           onDeleteSoundChange={props.onDeleteSoundChange}
         />

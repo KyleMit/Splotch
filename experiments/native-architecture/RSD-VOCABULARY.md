@@ -222,14 +222,20 @@ Volume slider and the "What makes sound" Drawing and Deleting switches, and Butt
 with its default notch beside the Reduce Motion switch.
 
 A slider drags through many values, while the settings owner writes each choice and drops one made
-during a pending write. `useSliderDraft` therefore moves a draft that previews live and writes the
-settled value once, when the drag or key press ends. The Button Size draft lives on the drawing
-screen, so its edge controls resize under the finger. While it is dragged, Settings turns
-see-through as shipping's `.resizing` modal does: `ModalShell`'s `seeThrough` clears the scrim and
-card surface, `useDialogSeeThrough` hides the header, scroll fade and every `RsdSettingCard` except
-the one marked `keptSeeThrough`, the wide shell hides its table of contents and the other sections,
-and the drawer opens. React Strict DOM maps `visibility: hidden` to zero opacity natively, so each
-hidden piece hides itself rather than an ancestor hiding everything below it.
+during a pending write. `useSliderDraft` therefore moves a draft that previews live, and holds the
+value the drag or key press settles on until the owner is ready, then writes it once; a second nudge
+during the first one's write is kept, and the slider never locks. Both drafts live on the drawing
+screen, so a held choice survives Settings closing and the Button Size edge controls resize under
+the finger. While Volume is held, `audio/volumePreview.ts` loops the pencil at the scratch gain of
+the value under the finger, as shipping's `playVolumePreview` does: it answers to the Sound switch
+alone, loads the loop on the first drag through the drawing sound's own loader, and stops on
+release, on the slider unmounting and on the app leaving the foreground. While Button Size is
+dragged, Settings turns see-through as shipping's `.resizing` modal does: `ModalShell`'s
+`seeThrough` clears the scrim and card surface, `useDialogSeeThrough` hides the header, scroll fade
+and every `RsdSettingCard` except the one marked `keptSeeThrough`, the wide shell hides its table of
+contents and the other sections, and the drawer opens. React Strict DOM maps `visibility: hidden` to
+zero opacity natively, so each hidden piece hides itself rather than an ancestor hiding everything
+below it.
 
 The Volume, its two sources and Button style persist in settings schema 12. A schema 11 or earlier
 record's quiet, medium or loud level becomes the volume that plays at the same gain (25, 50, 100),

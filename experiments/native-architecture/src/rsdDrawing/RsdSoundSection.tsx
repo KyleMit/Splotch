@@ -1,12 +1,11 @@
 import { css, html } from 'react-strict-dom';
-import type { SoundSourceSettings } from '../settings/soundSettingsCodec';
 import { SOUND_VOLUME_DEFAULT, SOUND_VOLUME_MAX, SOUND_VOLUME_MIN } from '../settings/soundVolume';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { RsdSettingCard } from './RsdSettingCard';
 import { RsdSliderRow } from './RsdSlider';
 import { RsdToggleRow } from './RsdToggleRow';
 import { dimensions } from './tokens.css';
-import { useSliderDraft } from './useSliderDraft';
+import type { SliderDraft } from './useSliderDraft';
 
 // SoundSection.svelte's spacing around the Volume row and above "What makes sound";
 // native-settings-sections.test.mjs reads each from that source.
@@ -28,11 +27,13 @@ const styles = css.create({
   rows: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
 });
 
-type SoundSectionProps = SoundSourceSettings & {
+type SoundSectionProps = {
   soundEnabled: boolean;
+  volume: SliderDraft;
+  drawingSoundEnabled: boolean;
+  deleteSoundEnabled: boolean;
   busy: boolean;
   onToggle: () => void;
-  onVolumeChange: (volume: number) => void;
   onDrawingSoundChange: (enabled: boolean) => void;
   onDeleteSoundChange: (enabled: boolean) => void;
 };
@@ -40,8 +41,7 @@ type SoundSectionProps = SoundSourceSettings & {
 // The shipping SoundSection.svelte: the Sound switch with its Volume slider, then which sources
 // make sound. Volume and the sources show only while sound is on.
 export function RsdSoundSection(props: SoundSectionProps) {
-  const { soundEnabled, busy } = props;
-  const volume = useSliderDraft(props.soundVolume, props.onVolumeChange);
+  const { soundEnabled, volume, busy } = props;
   return (
     <html.section style={styles.group}>
       <RsdSettingCard>

@@ -125,6 +125,7 @@ async function openSettings() {
     ai: null,
     visible: true,
     buttonScale: { value: 100, active: false, onInput: () => {}, onActiveChange: () => {} },
+    soundVolume: { value: 50, active: false, onInput: () => {}, onActiveChange: () => {} },
   };
   const noop = () => {};
   const handlers = new Proxy({}, { get: () => noop });

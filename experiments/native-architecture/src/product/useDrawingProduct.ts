@@ -7,6 +7,7 @@ import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
 import { createClearSound } from '../audio/pageTurnSound';
 import { applySoundChoices } from '../audio/soundGates';
+import { createVolumePreview } from '../audio/volumePreview';
 import { loadClearPageTurn } from '../platform/clearSound';
 import { useAiProgressOwner } from '../ai/useAiProgress';
 import { loadDrawingLoop } from '../platform/drawingAudio';
@@ -29,7 +30,8 @@ function createProductServices(publish: () => void, setAudioMessage: (message: s
   );
   const contacts = createContactSound(audio);
   const clear = createClearSound(loadClearPageTurn);
-  return { product, audio, contacts, clear };
+  const preview = createVolumePreview(loadDrawingLoop);
+  return { product, audio, contacts, clear, preview };
 }
 
 function createProductTicker(
@@ -128,7 +130,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       }
     };
     const services = createProductServices(publish, setAudioMessage);
-    const { product, audio, contacts, clear } = services;
+    const { product, audio, contacts, clear, preview } = services;
     let attached: ProductOwners | null = null;
     let detachOwners: (() => void) | null = null;
     const ticker = createProductTicker(product, () => attached?.feedback ?? null, foreground);
@@ -161,10 +163,12 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       }
       audio.setForeground(foreground);
       clear.setForeground(foreground);
+      preview.setForeground(foreground);
       reconcileTimer?.();
     });
     audio.setForeground(foreground);
     clear.setForeground(foreground);
+    preview.setForeground(foreground);
     // Shipping handleDoubleTap: every tap records a Pencil, which reveals the parent's opt-out.
     const offPencil = subscribePencilDoubleTap(() => {
       void product.settings.markApplePencilSeen();
@@ -185,6 +189,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       product.dispose();
       contacts.dispose();
       clear.dispose();
+      preview.dispose();
       audio.dispose();
     };
   }, []);
@@ -199,6 +204,9 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     }
   }, [owners, parentCenterOpen]);
   const { soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled } = settings;
+  useEffect(() => {
+    services?.preview.setAllowed(soundEnabled);
+  }, [services, soundEnabled]);
   useEffect(() => {
     if (services)
       applySoundChoices(services, {
@@ -224,6 +232,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
             audio: services.audio,
             contacts: services.contacts,
             clear: services.clear,
+            preview: services.preview,
             settings: services.product.settings,
           }
         : null,

@@ -102,7 +102,6 @@ export function nativeSettingsProps(owner, state) {
     onUndoButtonChange: (enabled) => owner.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled) => owner.setStrokeWidthControlEnabled(enabled),
     onSaveOnDeleteChange: (enabled) => owner.setSaveOnDeleteEnabled(enabled),
-    onSoundVolumeChange: (volume) => owner.setSoundVolume(volume),
     onDrawingSoundChange: (enabled) => owner.setDrawingSoundEnabled(enabled),
     onDeleteSoundChange: (enabled) => owner.setDeleteSoundEnabled(enabled),
     onAppearanceChange: (appearance) => owner.setAppearance(appearance),
@@ -110,6 +109,12 @@ export function nativeSettingsProps(owner, state) {
     onOrientationChange: (orientation) => owner.setOrientation(orientation),
     buttonScale: {
       value: state.buttonScale,
+      active: false,
+      onInput() {},
+      onActiveChange() {},
+    },
+    soundVolume: {
+      value: state.soundVolume,
       active: false,
       onInput() {},
       onActiveChange() {},

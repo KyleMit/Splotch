@@ -117,11 +117,10 @@ vi.mock('../../../experiments/native-architecture/src/platform/pngRecovery.ts', 
     deliver: async () => 'sharing-closed',
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
-  loadDrawingLoop: async () => {
-    throw new Error('Audio playback is outside this native caller fixture.');
-  },
-}));
+vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', async () => {
+  const { drawingAudioPort } = await import('./rsd-native-animated-host.mjs');
+  return drawingAudioPort(caller);
+});
 vi.mock('../../../experiments/native-architecture/src/platform/clearHaptics.ts', () => ({
   impactThreshold: caller.haptic,
 }));
@@ -224,7 +223,7 @@ function press(props) {
 }
 vi.mock('react-native', async () => {
   const React = await import('react');
-  const { animatedPort, backHandlerPort, easingPort } =
+  const { animatedPort, appStatePort, backHandlerPort, easingPort } =
     await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
@@ -266,7 +265,7 @@ vi.mock('react-native', async () => {
       records.props.push(props);
       return React.createElement('span', { 'data-status-bar': props.barStyle });
     },
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    AppState: appStatePort(records),
     BackHandler: backHandlerPort(records),
     ScrollView: React.forwardRef((props, ref) => {
       records.viewports.push(props);

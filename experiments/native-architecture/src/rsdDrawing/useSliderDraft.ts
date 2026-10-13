@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type SliderDraft = {
   value: number;
@@ -7,27 +7,62 @@ export type SliderDraft = {
   onActiveChange: (active: boolean) => void;
 };
 
+// What a slider plays while it is held, as shipping's Volume loops the pencil at the level being
+// set: begun when a drag or key press starts, updated with each value, ended when it lets go.
+export type SliderPreview = {
+  begin: (value: number) => void;
+  update: (value: number) => void;
+  end: () => void;
+};
+
 // A drag passes through many values, and the settings owner writes each choice and drops any made
 // while a write is pending. So the drag moves a draft that previews live, and the value the hand
-// settles on is written once, when the drag or key press ends.
-export function useSliderDraft(saved: number, save: (value: number) => void): SliderDraft {
+// settles on is held until the owner is ready to write it, then written once. A second nudge
+// during the first one's write is therefore kept rather than dropped, and the slider never locks.
+export function useSliderDraft({
+  saved,
+  ready,
+  save,
+  preview,
+}: {
+  saved: number;
+  ready: boolean;
+  save: (value: number) => void;
+  preview?: SliderPreview;
+}): SliderDraft {
   const [draft, setDraft] = useState<number | null>(null);
+  const [settled, setSettled] = useState<number | null>(null);
   const [active, setActive] = useState(false);
   const latest = useRef<number | null>(null);
+  const saveLatest = useRef(save);
+  useEffect(() => {
+    saveLatest.current = save;
+  }, [save]);
+  useEffect(() => {
+    if (settled === null) return;
+    if (settled === saved) setSettled(null);
+    else if (ready) saveLatest.current(settled);
+  }, [settled, saved, ready]);
+  const value = draft ?? settled ?? saved;
   return {
-    value: draft ?? saved,
+    value,
     active,
-    onInput: (value) => {
-      latest.current = value;
-      setDraft(value);
+    onInput: (next) => {
+      latest.current = next;
+      setDraft(next);
+      preview?.update(next);
     },
     onActiveChange: (next) => {
       setActive(next);
-      if (next) return;
-      const settled = latest.current;
+      if (next) {
+        preview?.begin(value);
+        return;
+      }
+      preview?.end();
+      const chosen = latest.current;
       latest.current = null;
       setDraft(null);
-      if (settled !== null && settled !== saved) save(settled);
+      if (chosen !== null) setSettled(chosen);
     },
   };
 }
