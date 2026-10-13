@@ -1,4 +1,11 @@
-import { mount, records, root } from './rsd-native-selection-host.mjs';
+import {
+  expandControls,
+  host as screenHost,
+  mount,
+  records,
+  root,
+} from './rsd-native-selection-host.mjs';
+import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { act, createElement } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { RsdInstallBanner } from '../../../experiments/native-architecture/src/rsdDrawing/RsdInstallBanner.tsx';
@@ -138,3 +145,19 @@ it.each([
     expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
   }
 );
+
+it('steps aside while the landscape tool drawer is open and returns when it closes', async () => {
+  records.dimensions = { width: 844, height: 390, scale: 1, fontScale: 1 };
+  await mountToolbar(toolbarScreen({ committedStrokes: 3 }));
+  const heading = INSTALL_PROMPT_COPY.initial.heading;
+  expect(screenHost.textContent).toContain(heading);
+  await act(async () =>
+    screenHost.querySelector(`[aria-label="${INSTALL_BANNER_COPY.showHint}"]`).click()
+  );
+  await expandControls();
+  expect(screenHost.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
+  expect(screenHost.textContent).not.toContain(heading);
+  await act(async () => screenHost.querySelector('[aria-label="Collapse controls"]').click());
+  expect(screenHost.textContent).toContain(heading);
+  expect(screenHost.querySelector(`[aria-label="${INSTALL_BANNER_COPY.hideHint}"]`)).not.toBeNull();
+});

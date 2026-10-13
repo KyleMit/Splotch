@@ -153,6 +153,7 @@ function RsdDrawingContent({
   const disabled = screen.disabled || menu.open || modalBlocked;
   const paperBlocked = menu.open || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
   useDeviceOrientation(sound.settings.orientation);
   return (
@@ -169,6 +170,8 @@ function RsdDrawingContent({
             menu={menu}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
+            drawerOpen={drawerOpen}
+            onDrawerOpenChange={setDrawerOpen}
             status={
               <NativeDrawingStatus drawing={screen.drawing}>
                 <html.span aria-live="polite">{notice}</html.span>
@@ -189,6 +192,7 @@ function RsdDrawingContent({
               strokes={screen.committedStrokes}
               controlSize={controlSize(sound.settings.buttonScale)}
               hidden={
+                drawerOpen ||
                 paperBlocked ||
                 screen.pictures !== null ||
                 screen.pagePickerOpen ||

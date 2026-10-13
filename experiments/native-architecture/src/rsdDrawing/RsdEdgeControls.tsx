@@ -1,4 +1,4 @@
-import { useState, type ReactElement, type ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { html } from 'react-strict-dom';
 import type { useNativeAi } from '../ai/useNativeAi';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
@@ -44,13 +44,20 @@ const BRUSH_ICONS = {
 
 export function RsdEdgeLayout({
   paintsDisabled,
+  drawerOpen,
+  onDrawerOpenChange,
   status,
   children,
   ...controls
-}: Controls & { paintsDisabled: boolean; status: ReactNode; children: ReactNode }) {
+}: Controls & {
+  paintsDisabled: boolean;
+  drawerOpen: boolean;
+  onDrawerOpenChange: (open: boolean) => void;
+  status: ReactNode;
+  children: ReactNode;
+}) {
   const { screen, sound, disabled } = controls;
   const size = controlSize(sound.settings.buttonScale);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
     disabled,
@@ -85,7 +92,7 @@ export function RsdEdgeLayout({
           axis={axis}
           size={size}
           open={drawerOpen}
-          onClick={() => setDrawerOpen(!drawerOpen)}
+          onClick={() => onDrawerOpenChange(!drawerOpen)}
         />
       )}
       drawerTools={drawerOpen ? drawerTools({ ...controls, size }, ink) : []}
