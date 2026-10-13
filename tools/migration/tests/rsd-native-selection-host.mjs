@@ -203,6 +203,7 @@ const records = vi.hoisted(() => ({
   props: [],
   viewports: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
+  insets: { top: 0, right: 0, bottom: 0, left: 0 },
   dimensionListeners: new Set(),
   os: 'ios',
 }));
@@ -224,6 +225,7 @@ vi.mock('react-native-safe-area-context', async () => {
     initialWindowMetrics: null,
     SafeAreaProvider: boundary('provider'),
     SafeAreaView: boundary('padding'),
+    useSafeAreaInsets: () => records.insets,
   };
 });
 vi.mock('react-native', async () => {
@@ -422,6 +424,7 @@ afterEach(async () => {
   records.viewports.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
   records.os = 'ios';
+  records.insets = { top: 0, right: 0, bottom: 0, left: 0 };
   orientationCalls.length = 0;
 });
 

@@ -22,6 +22,14 @@ import {
   RETURN_HOME_MS,
   WASH_REACH_DIAGONAL_FRACTION,
 } from '../../experiments/native-architecture/src/clear/dragToClear.ts';
+import {
+  CLEAR_DOCK_LANDSCAPE_TOP_FLOOR_PX,
+  CLEAR_DOCK_LANDSCAPE_TOP_MARGIN_PX,
+  CLEAR_DOCK_OVERHANG_PX,
+  CLEAR_DOCK_PORTRAIT_TOP_PX,
+  CLEAR_DOCK_SIZE_PX,
+  CLEAR_ICON_SIZE_PX,
+} from '../../experiments/native-architecture/src/clear/clearDock.ts';
 import { CLEAR_PAGE_TURN_GAIN } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
 import { WEB_IMPACT_MS } from '../../experiments/native-architecture/src/platform/clearHaptics.web.ts';
 
@@ -179,5 +187,304 @@ describe('native drag-to-clear projections of the shipping gesture', () => {
     const changed = Buffer.from(nativeClip);
     changed[0] ^= 1;
     expect(digest(changed)).not.toBe(digest(shippingClip));
+  });
+});
+
+// The docked tab, its finish per state and the accept ring's inks. The face and ring keep their
+// values inside RSD styles and object literals, so those are read back from the native source.
+const PORTRAIT_MEDIA = '@media (orientation: portrait)';
+const nativeSource = {
+  face: read('experiments/native-architecture/src/rsdDrawing/RsdClearFace.tsx'),
+  ring: read('experiments/native-architecture/src/rsdDrawing/RsdClearRing.tsx'),
+  control: read('experiments/native-architecture/src/rsdDrawing/RsdClearControl.tsx'),
+};
+const dockShipping = { ...shipping, ring: read('web/src/lib/components/ClearRing.svelte') };
+
+function sectionOf(source, section) {
+  if (!section) return source;
+  const cut = source.indexOf(PORTRAIT_MEDIA);
+  assert.ok(cut > 0, 'Missing the shipping portrait media block');
+  return section === 'main' ? source.slice(0, cut) : source.slice(cut);
+}
+
+function nativeSourceValue(owner, pattern) {
+  const match = pattern.exec(nativeSource[owner]);
+  assert.ok(match, `Missing native ${pattern}`);
+  return match[1];
+}
+
+// Shipping CSS colors in React Native's notation: the alarm channels substituted and slash-alpha
+// rgb() turned into the rgba() form the native parser reads.
+function nativeCss(value, alarm) {
+  return value
+    .replace(/var\(--alarm-rgb\)/g, alarm)
+    .replace(
+      /rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)%\)/g,
+      (_, red, green, blue, alpha) => `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`
+    )
+    .replace(/rgb\((\d+) (\d+) (\d+)\)/g, 'rgb($1, $2, $3)');
+}
+
+const percent = (match, group) => Number(match[group]) / 100;
+const ACCEPT_ZONE =
+  /\.clear-accept-zone \{\s*position: fixed;[^}]*color: rgb\(var\(--alarm-rgb\) \/ (\d+)%\);\s*background: radial-gradient\(\s*circle,\s*rgb\(var\(--alarm-rgb\) \/ 0%\) (\d+)%,\s*rgb\(var\(--alarm-rgb\) \/ (\d+)%\) 100%/;
+const THRESHOLD_ZONE =
+  /\.clear-accept-zone:global\(\.threshold-reached\) \{\s*color: rgb\(var\(--alarm-rgb\) \/ (\d+)%\);[^}]*?background: radial-gradient\(\s*circle,\s*rgb\(var\(--alarm-rgb\) \/ 0%\) (\d+)%,\s*rgb\(var\(--alarm-rgb\) \/ (\d+)%\) 100%/;
+const ringInk = (key) =>
+  new RegExp(
+    `${key}: \\{ rgb: ALARM_RGB, strokeOpacity: ([\\d.]+), washOpacity: ([\\d.]+), washFrom: ([\\d.]+),`
+  );
+const native3 = (owner, pattern) => {
+  const match = pattern.exec(nativeSource[owner]);
+  assert.ok(match, `Missing native ${pattern}`);
+  return match.slice(1, 4).map(Number);
+};
+
+// [name, shipping owner, section, shipping pattern, shipping value from its match, native value]
+const DOCK_PROJECTIONS = [
+  [
+    'overhang',
+    'button',
+    'main',
+    /\.clear-container \{[^}]*right: calc\(-(\d+)px \+ var\(--safe-area-right\)\);/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_OVERHANG_PX,
+  ],
+  [
+    'lid margin',
+    'button',
+    'main',
+    /:global\(\.clear-icon\) \{[^}]*margin-right: (\d+)px;/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_OVERHANG_PX,
+  ],
+  [
+    'landscape top floor',
+    'button',
+    'main',
+    /top: max\((\d+)px, calc\(\d+px \+ var\(--safe-area-top\)\)\);/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_LANDSCAPE_TOP_FLOOR_PX,
+  ],
+  [
+    'landscape top margin',
+    'button',
+    'main',
+    /top: max\(\d+px, calc\((\d+)px \+ var\(--safe-area-top\)\)\);/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_LANDSCAPE_TOP_MARGIN_PX,
+  ],
+  [
+    'landscape size',
+    'button',
+    'main',
+    /\.clear-button \{\s*position: relative;\s*width: (\d+)px;\s*height: \1px;/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_SIZE_PX.landscape,
+  ],
+  [
+    'landscape icon',
+    'button',
+    'main',
+    /:global\(\.clear-icon\) \{\s*width: (\d+)px;\s*height: \1px;/,
+    (match) => Number(match[1]),
+    () => CLEAR_ICON_SIZE_PX.landscape,
+  ],
+  [
+    'portrait top',
+    'button',
+    'portrait',
+    /\.clear-container \{\s*top: calc\((\d+)px \+ var\(--safe-area-top\)\);/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_PORTRAIT_TOP_PX,
+  ],
+  [
+    'portrait size',
+    'button',
+    'portrait',
+    /\.clear-button \{\s*width: (\d+)px;\s*height: \1px;/,
+    (match) => Number(match[1]),
+    () => CLEAR_DOCK_SIZE_PX.portrait,
+  ],
+  [
+    'portrait icon',
+    'button',
+    'portrait',
+    /:global\(\.clear-icon\) \{\s*width: (\d+)px;\s*height: \1px;/,
+    (match) => Number(match[1]),
+    () => CLEAR_ICON_SIZE_PX.portrait,
+  ],
+  [
+    'delete-ready scale',
+    'button',
+    'main',
+    /\.clear-button:global\(\.delete-ready\) \{[^}]*transform: scale\(([\d.]+)\);/,
+    (match) => Number(match[1]),
+    () => Number(nativeSourceValue('control', /const DELETE_READY_SCALE = ([\d.]+);/)),
+  ],
+  [
+    'lift-off squash',
+    'button',
+    'main',
+    /@keyframes clear-lift-off \{\s*50% \{\s*transform: scale\(([\d.]+), [\d.]+\);/,
+    (match) => Math.round((Number(match[1]) - 1) * 1000) / 1000,
+    () => Number(nativeSourceValue('control', /const LIFT_SQUASH = ([\d.]+);/)),
+  ],
+  [
+    'docked shadow',
+    'button',
+    'main',
+    /\.clear-button \{\s*position: relative;[^}]*box-shadow: ([^;]+);/,
+    (match, alarm) => nativeCss(match[1], alarm),
+    () => nativeSourceValue('face', /dockedFinish: \{[^}]*boxShadow: '([^']+)'/),
+  ],
+  [
+    'lifted shadow',
+    'button',
+    'main',
+    /\.clear-button:global\(\.dragging\) \{[^}]*box-shadow: ([^;]+);/,
+    (match, alarm) => nativeCss(match[1], alarm),
+    () => nativeSourceValue('face', /liftedFinish: \{[^}]*boxShadow: '([^']+)'/),
+  ],
+  [
+    'delete-ready gradient',
+    'button',
+    'main',
+    /\.clear-button:global\(\.delete-ready\) \{[^}]*background: ([^;]+);/,
+    (match, alarm) => nativeCss(match[1], alarm),
+    () => nativeSourceValue('face', /deleteReadyFinish: \{[^}]*backgroundImage: '([^']+)'/),
+  ],
+  [
+    'delete-ready glow',
+    'button',
+    'main',
+    /\.clear-button:global\(\.delete-ready\) \{[^}]*box-shadow: ([^;]+);/,
+    (match, alarm) => nativeCss(match[1], alarm),
+    () => nativeSourceValue('face', /deleteReadyFinish: \{[^}]*boxShadow: '([^']+)'/),
+  ],
+  [
+    'coachmark ghost shadow',
+    'coachmark',
+    null,
+    /\.coachmark-button \{[^}]*box-shadow: ([^;]+);/,
+    (match, alarm) => nativeCss(match[1], alarm),
+    () => nativeSourceValue('face', /ghostFinish: \{[^}]*boxShadow: '([^']+)'/),
+  ],
+  [
+    'ring stroke width',
+    'ring',
+    null,
+    /--ring-stroke-width: (\d+)px;/,
+    (match) => Number(match[1]),
+    () => Number(nativeSourceValue('ring', /const RING_STROKE_WIDTH_PX = (\d+);/)),
+  ],
+  [
+    'alarm red',
+    'button',
+    null,
+    /--alarm-rgb: (\d+ \d+ \d+);/,
+    (match) => nativeCss(`rgb(${match[1]})`, ''),
+    () => nativeSourceValue('ring', /const ALARM_RGB = '([^']+)';/),
+  ],
+  [
+    'accept ring ink short of the threshold',
+    'button',
+    'main',
+    ACCEPT_ZONE,
+    (match) => [percent(match, 1), percent(match, 3), percent(match, 2)],
+    () => native3('ring', ringInk('short')),
+  ],
+  [
+    'accept ring ink past the threshold',
+    'button',
+    'main',
+    THRESHOLD_ZONE,
+    (match) => [percent(match, 1), percent(match, 3), percent(match, 2)],
+    () => native3('ring', ringInk('reached')),
+  ],
+];
+
+function assertDockProjection(sources) {
+  const alarm = /--alarm-rgb: (\d+ \d+ \d+);/.exec(sources.button)?.[1];
+  assert.ok(alarm, 'Missing shipping --alarm-rgb');
+  for (const [name, owner, section, pattern, shippingValue, nativeValue] of DOCK_PROJECTIONS) {
+    const match = pattern.exec(sectionOf(sources[owner], section));
+    assert.ok(match, `Missing shipping ${name}`);
+    assert.deepEqual(nativeValue(), shippingValue(match, alarm), name);
+  }
+  // CSS radial-gradient(circle, …) with no size keyword reaches 100% at the box's farthest corner,
+  // which is the half-diagonal extent the native ring wash draws.
+  assert.match(
+    sources.button,
+    /\.clear-accept-zone \{\s*position: fixed;[^}]*radial-gradient\(\s*circle,/
+  );
+  assert.match(nativeSource.ring, /const WASH_EXTENT_PERCENT = 50 \* Math\.SQRT2;/);
+  for (const finish of ['dockedFinish', 'liftedFinish', 'ghostFinish'])
+    assert.match(
+      nativeSource.face,
+      new RegExp(`${finish}: \\{\\s*backgroundImage: fixedColors\\.clearGradientRest,`),
+      finish
+    );
+  assert.match(
+    block(sources.button, '.clear-button {'),
+    /background: var\(--clear-gradient-rest\);/
+  );
+  assert.match(
+    block(sources.coachmark, '.coachmark-button {'),
+    /background: var\(--clear-gradient-rest\);/
+  );
+}
+
+function block(source, opener) {
+  const start = source.indexOf(opener);
+  assert.ok(start >= 0, `Missing shipping ${opener}`);
+  return source.slice(start, source.indexOf('}', start));
+}
+
+// Rewrites the first capture of a shipping pattern inside its section, leaving the rest intact.
+function changeShipping(sources, owner, section, pattern) {
+  const source = sources[owner];
+  const cut = section ? source.indexOf(PORTRAIT_MEDIA) : 0;
+  const [from, to] =
+    section === 'portrait' ? [cut, source.length] : [0, section ? cut : source.length];
+  const match = new RegExp(pattern.source, 'd').exec(source.slice(from, to));
+  const [start, end] = match.indices[1];
+  const value = match[1];
+  const changed = /^[\d.]+$/.test(value)
+    ? String(Number(value) + 1)
+    : value.replace(/\d/, (d) => String((Number(d) + 1) % 10));
+  return {
+    ...sources,
+    [owner]: source.slice(0, from + start) + changed + source.slice(from + end),
+  };
+}
+
+describe('native Clear Button dock, finish and accept ring projections of the shipping styles', () => {
+  it('pins the docked tab geometry, every finish and both accept ring inks', () => {
+    expect(() => assertDockProjection(dockShipping)).not.toThrow();
+  });
+
+  it.each(
+    DOCK_PROJECTIONS.map(([name, owner, section, pattern]) => [name, owner, section, pattern])
+  )('rejects a changed shipping %s', (_name, owner, section, pattern) => {
+    const changed = changeShipping(dockShipping, owner, section, pattern);
+    expect(changed[owner]).not.toBe(dockShipping[owner]);
+    expect(() => assertDockProjection(changed)).toThrow();
+  });
+
+  it('rejects a shipping ring wash sized to the ring or a rest gradient no longer the token', () => {
+    for (const [owner, from, to] of [
+      [
+        'button',
+        'radial-gradient(\n      circle,\n      rgb(var(--alarm-rgb) / 0%) 55%',
+        'radial-gradient(\n      circle closest-side,\n      rgb(var(--alarm-rgb) / 0%) 55%',
+      ],
+      ['button', 'background: var(--clear-gradient-rest);', 'background: #f00;'],
+      ['coachmark', 'background: var(--clear-gradient-rest);', 'background: #f00;'],
+    ]) {
+      const changed = dockShipping[owner].replace(from, to);
+      expect(changed, to).not.toBe(dockShipping[owner]);
+      expect(() => assertDockProjection({ ...dockShipping, [owner]: changed }), to).toThrow();
+    }
   });
 });

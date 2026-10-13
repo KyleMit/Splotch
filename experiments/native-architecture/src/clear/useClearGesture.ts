@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Animated, Easing, useWindowDimensions, type GestureResponderEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { impactThreshold } from '../platform/clearHaptics';
+import { clearDock } from './clearDock';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { hasDrawingInk, type Drawing } from '../drawing/model';
 import type { ClearSound } from '../audio/pageTurnSound';
@@ -220,6 +222,7 @@ function clearResponder(
 export function useClearGesture(owner: Owner) {
   const latest = useLatest(owner);
   const window = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const radius = useLatest(acceptRadius(window.width, window.height));
   const reduced = useReduceMotion();
   const motion = useLatest(reduced);
@@ -318,6 +321,7 @@ export function useClearGesture(owner: Owner) {
     // The clean page stands under the departing one until the clear has landed.
     covered: pending > 0 || sheet !== null,
     radius: radius.current,
+    dock: clearDock(window, insets.top),
     finishSheet,
     responder: clearResponder(gesture, owner.disabled, finger),
     activate: () => {

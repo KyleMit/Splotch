@@ -27,6 +27,7 @@ import {
   TOUCH_TARGET,
 } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
+  flat,
   mountToolbar,
   paintGroup,
   paintLabels,
@@ -221,7 +222,11 @@ function layoutElement(seen) {
         seen.palette = layout;
         return createElement('button', null, 'Colors');
       },
-      clear: createElement('button', null, 'Clear'),
+      clearUnderlay: (offset) => {
+        seen.clearOffset = offset;
+        return createElement('div', { 'data-clear-underlay': true });
+      },
+      clearOverlay: createElement('button', null, 'Clear'),
       drawerToggle: (axis) => {
         seen.drawer = axis;
         return createElement('button', null, 'Tools');
@@ -239,17 +244,38 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   await mount(layoutElement(seen));
   expect(seen).toEqual({
     palette: { axis: 'row', slots: paletteSlots(402, TOUCH_TARGET) },
+    clearOffset: { top: 0, right: 0 },
     drawer: 'column',
   });
   expect(paletteSlots(402, TOUCH_TARGET)).toBe(6);
   const area = host.querySelector('[data-testid="rsd-canvas-area"]');
   expect(area.firstElementChild.dataset.paper).toBe('true');
-  for (const dock of ['rsd-clear-dock', 'rsd-drawer-dock', 'rsd-settings-dock']) {
+  expect(area.children[1].dataset.clearUnderlay).toBe('true');
+  for (const dock of ['rsd-drawer-dock', 'rsd-settings-dock']) {
     expect(area.querySelector(`[data-testid="${dock}"]`), dock).not.toBeNull();
     expect(records.props.findLast((props) => props.testID === dock).style.position).toBe(
       'absolute'
     );
   }
+  // Clear docks to the screen, not the paper: its overlay spans the whole layout, after the
+  // paper column, and the palette stacks above it as the shipping --z-palette does.
+  const layout = host.querySelector('[data-testid="rsd-drawing-layout"]');
+  const overlay = host.querySelector('[data-testid="rsd-clear-overlay"]');
+  expect(overlay.parentElement).toBe(layout);
+  expect(layout.lastElementChild).toBe(overlay);
+  expect(area.contains(overlay)).toBe(false);
+  expect(overlay.textContent).toBe('Clear');
+  const props = (testID) => records.props.findLast((candidate) => candidate.testID === testID);
+  expect(props('rsd-clear-overlay').style).toMatchObject({ position: 'absolute', top: 0, left: 0 });
+  expect(props('rsd-clear-overlay').pointerEvents).toBe('box-none');
+  expect(flat(props('rsd-palette-bar').style).zIndex).toBeGreaterThan(0);
+  const box = (x, y, width, height) => ({ nativeEvent: { layout: { x, y, width, height } } });
+  await act(async () => {
+    props('rsd-drawing-layout').onLayout(box(0, 0, 402, 874));
+    props('rsd-canvas-column').onLayout(box(0, 68, 402, 806));
+    props('rsd-canvas-area').onLayout(box(0, 0, 400, 760));
+  });
+  expect(seen.clearOffset).toEqual({ top: 68, right: 2 });
   expect(host.querySelector('[data-testid="rsd-palette-bar"] [data-paper]')).toBeNull();
   expect(area.querySelector('[data-status]')).toBeNull();
   expect(records.props.findLast((props) => props.testID === 'rsd-canvas-area').style.flex).toBe(1);
@@ -260,6 +286,7 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   await act(async () => root.render(layoutElement(seen)));
   expect(seen).toEqual({
     palette: { axis: 'column', slots: 6 },
+    clearOffset: { top: 68, right: 2 },
     drawer: 'row',
   });
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 68, height: 380 } } }));

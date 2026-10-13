@@ -1,6 +1,10 @@
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
+import { drawingPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import {
   emptyDrawing,
@@ -8,6 +12,7 @@ import {
 } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
   acceptRadius,
+  clearSheetOrigin,
   CLEAR_SHEET_DURATION_MS,
   COACHMARK_AUTO_DISMISS_MS,
   HOLD_DURATION_MS,
@@ -16,8 +21,9 @@ import {
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 
-// The fixture window is 402 wide, so the shipping accept radius is 40% of that.
-const HOME = { x: 360, y: 40 };
+// The fixture window is 402 wide, so the shipping accept radius is 40% of that, and the docked
+// tab's centre is 20px in from its right edge and 120px down.
+const HOME = { x: 382, y: 120 };
 const radius = () => acceptRadius(records.dimensions.width, records.dimensions.height);
 
 function inkedDrawing() {
@@ -377,3 +383,141 @@ it.each([true, false])(
     expect(caller.screen.clear.mock.calls).toEqual([[saveOnDelete], [saveOnDelete]]);
   }
 );
+
+// The shipping dock (ClearButton.svelte) at rest: a red half-disc tab whose square edge runs 10px
+// off the right screen edge, 90px down and 60px tall in portrait, 48px down and 70px tall in
+// landscape, unless a taller safe-area top pushes it to 20px below that inset.
+const SHIPPING_REST_GRADIENT = /--clear-gradient-rest: ([^;]+);/.exec(
+  readFileSync(join(import.meta.dirname, '../../../web/src/tokens.css'), 'utf8')
+)[1];
+const byTestID = (testID) => flat(records.props.findLast((props) => props.testID === testID).style);
+const face = () => byTestID('rsd-clear-face');
+const lid = () => byTestID('rsd-clear-lid');
+const clearIconSize = () =>
+  Number(host.querySelector('[aria-label="Clear"] svg[data-xml]').getAttribute('width'));
+
+function flat(style) {
+  return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
+}
+
+function corners(style) {
+  return [
+    style.borderTopLeftRadius,
+    style.borderTopRightRadius,
+    style.borderBottomRightRadius,
+    style.borderBottomLeftRadius,
+  ];
+}
+
+it.each([
+  ['portrait', { width: 402, height: 874 }, 0, { top: 90, size: 60, icon: 38 }],
+  ['portrait under a notch', { width: 402, height: 874 }, 47, { top: 90, size: 60, icon: 38 }],
+  ['landscape', { width: 874, height: 402 }, 0, { top: 48, size: 70, icon: 40 }],
+  [
+    'landscape under a status bar',
+    { width: 1180, height: 820 },
+    24,
+    { top: 24, size: 70, icon: 40 },
+  ],
+  [
+    'landscape under a tall inset',
+    { width: 874, height: 402 },
+    40,
+    { top: 20, size: 70, icon: 40 },
+  ],
+])('docks the red tab against the right screen edge in %s', async (_name, window, top, dock) => {
+  records.dimensions = { ...window, scale: 1, fontScale: 1 };
+  records.insets = { top, right: 0, bottom: 0, left: 0 };
+  await mountClear();
+  const overlay = host.querySelector('[data-testid="rsd-clear-overlay"]');
+  expect(overlay.querySelector('[aria-label="Clear"]')).not.toBeNull();
+  expect(host.querySelector('[data-testid="rsd-canvas-area"] [aria-label="Clear"]')).toBeNull();
+  expect(byTestID('rsd-clear-dock')).toEqual({ position: 'absolute', top: dock.top, right: -10 });
+  expect(clearProps().style).toMatchObject({ width: dock.size, height: dock.size });
+  expect(face()).toMatchObject({
+    width: dock.size,
+    height: dock.size,
+    experimental_backgroundImage: SHIPPING_REST_GRADIENT,
+    boxShadow: '-4px 4px 20px rgba(0, 0, 0, 0.3)',
+  });
+  expect(corners(face())).toEqual([dock.size / 2, 0, 0, dock.size / 2]);
+  expect(lid().marginRight).toBe(10);
+  expect(clearIcon()).toContain(NATIVE_ICONS['trash-closed'].light.slice(0, 80));
+  expect(clearIconSize()).toBe(dock.icon);
+});
+
+it('lifts into a round puck, turns alarm red past the ring and docks again on release', async () => {
+  await mountClear();
+  await press();
+  expect(corners(face())).toEqual([30, 30, 30, 30]);
+  expect(face()).toMatchObject({
+    experimental_backgroundImage: SHIPPING_REST_GRADIENT,
+    boxShadow: '-6px 6px 30px rgba(0, 0, 0, 0.4)',
+  });
+  expect(lid().marginRight).toBe(0);
+  expect(clearIcon()).toContain(NATIVE_ICONS['trash-open'].light.slice(0, 80));
+  await drag(offset(radius() + 10));
+  expect(face()).toMatchObject({
+    experimental_backgroundImage: 'linear-gradient(135deg, rgb(255, 56, 56), #d63031)',
+    boxShadow: '0 6px 40px rgba(255, 56, 56, 0.6)',
+  });
+  expect(corners(face())).toEqual([30, 30, 30, 30]);
+  await drag(offset(radius() - 10));
+  expect(face().boxShadow).toBe('-6px 6px 30px rgba(0, 0, 0, 0.4)');
+  await lift(offset(radius() - 10));
+  expect(corners(face())).toEqual([30, 0, 0, 30]);
+  expect(face().boxShadow).toBe('-4px 4px 20px rgba(0, 0, 0, 0.3)');
+  expect(lid().marginRight).toBe(10);
+});
+
+it('centres the accept ring on the docked tab and spreads its wash to the box corner', async () => {
+  await mountClear();
+  await press();
+  expect(byTestID('rsd-clear-accept-ring')).toMatchObject({
+    position: 'absolute',
+    top: 90 + 30 - radius(),
+    right: -10 + 30 - radius(),
+    width: radius() * 2,
+    height: radius() * 2,
+  });
+  // CSS radial-gradient(circle, …) reaches 100% at the farthest corner of the ring's square box.
+  const wash = host.querySelector('[data-gradient="rsd-clear-accept"]');
+  expect(Number.parseFloat(wash.dataset.r)).toBeCloseTo(50 * Math.SQRT2);
+  const stops = [...wash.querySelectorAll('[data-offset]')].map((stop) => [
+    Number(stop.dataset.offset),
+    Number(stop.dataset.stopOpacity),
+  ]);
+  expect(stops).toEqual([
+    [0.55, 0],
+    [1, 0.06],
+  ]);
+});
+
+it('flies the departing page into the docked tab from the paper area it sits in', async () => {
+  await mountClear();
+  const layout = (testID, box) =>
+    act(async () =>
+      records.props
+        .findLast((props) => props.testID === testID)
+        .onLayout({ nativeEvent: { layout: box } })
+    );
+  const area = { width: 402, height: 760 };
+  await layout('rsd-drawing-layout', { x: 0, y: 0, width: 402, height: 874 });
+  await layout('rsd-canvas-column', { x: 0, y: 68, width: 402, height: 806 });
+  await layout('rsd-canvas-area', { x: 0, y: 0, ...area });
+  await layout('rsd-clear-underlay', { x: 0, y: 0, ...area });
+  await press();
+  await drag(offset(radius() / 2));
+  expect(byTestID('rsd-clear-wash')).toMatchObject({ top: -68 });
+  expect(byTestID('rsd-clear-wash').right + 0).toBe(0);
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  await act(async () => {});
+  // The tab's centre sits 20px in from the screen edge and 120px down: 52px into the paper area
+  // below the 68px palette bar.
+  const origin = clearSheetOrigin({ x: 402 - 20, y: 120 - 68 }, area);
+  const frame = fittedPaper(area, drawingPaper(inkedDrawing()));
+  expect(byTestID('rsd-clear-sheet').transformOrigin).toBe(
+    `${origin.x - frame.left}px ${origin.y - frame.top}px`
+  );
+});
