@@ -11,6 +11,8 @@ const source: ImageSourcePropType =
 
 const styles = StyleSheet.create({
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  // React Native Web otherwise sizes an image to its source, one tile.
+  grain: { width: '100%', height: '100%' },
 });
 
 // Takes no props, so ink landing on the paper never re-renders the grain; only an appearance
@@ -23,7 +25,7 @@ export const PaperTexture = memo(function PaperTexture() {
       pointerEvents="none"
       style={[styles.fill, { backgroundColor: paper }]}
     >
-      <Image source={source} resizeMode="repeat" style={styles.fill} />
+      <Image source={source} resizeMode="repeat" style={[styles.fill, styles.grain]} />
     </View>
   );
 });

@@ -42,6 +42,7 @@ const styles = css.create({
   fill: (backgroundColor: string) => ({ backgroundColor }),
   surface: { backgroundColor: colors.surface },
   ring: (inset: number, size: number, borderWidth: number) => ({
+    boxSizing: 'border-box',
     position: 'absolute',
     top: inset,
     left: inset,
