@@ -10,7 +10,7 @@ import {
   toolbarScreen,
 } from './rsd-native-toolbar-fixture.mjs';
 import {
-  drawerOffsets,
+  actionPanelLayout,
   EDGE_INSET_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import {
@@ -24,13 +24,11 @@ import {
 } from '../../../experiments/native-architecture/src/clear/clearDock.ts';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   BUTTON_SCALE_STEP,
   DEFAULT_BUTTON_SCALE,
-  controlSize,
 } from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 
 // Button Size goes through the real settings owner, as the Settings stepper sends it.
@@ -65,22 +63,46 @@ it.each(BUTTON_SCALES)(
   }
 );
 
-it('sizes the chevron and every drawer tool from Button Size, and keeps Clear and Settings apart from it', async () => {
+const DRAWER_TOOLS = [
+  'Brushes',
+  'Stroke width',
+  'Coloring books',
+  'Save screenshot',
+  'AI picture',
+  'Undo',
+];
+
+function panelLayout(area, scale, open = true) {
+  return actionPanelLayout({
+    area,
+    viewport: records.dimensions,
+    scale: scale / 100,
+    count: DRAWER_TOOLS.length,
+    leg: 2,
+    open,
+  });
+}
+
+it('sizes every drawer tool from Button Size, and keeps the chevron, Clear and Settings apart from it', async () => {
   await mountToolbar(toolbarScreen());
   await expandControls();
-  const drawerLabels = ['Brush: Crayon', 'Save picture', 'Undo', 'Collapse controls'];
   const sizes = () =>
-    drawerLabels.map((label) => outerSize(resolved((props) => props.accessibilityLabel === label)));
-  expect(sizes()).toEqual(drawerLabels.map(() => TOUCH_TARGET));
-  await chooseButtonScale(BUTTON_SCALE_MAX);
-  expect(sizes()).toEqual(drawerLabels.map(() => controlSize(BUTTON_SCALE_MAX)));
-  expect(outerSize(resolved((props) => props.accessibilityLabel === 'Settings'))).toBe(
-    CORNER_BUTTON_SIZE_PX
-  );
-  await chooseButtonScale(BUTTON_SCALE_MIN);
-  expect(sizes()).toEqual(drawerLabels.map(() => controlSize(BUTTON_SCALE_MIN)));
-  expect(controlSize(BUTTON_SCALE_MIN)).toBeLessThan(TOUCH_TARGET);
-  expect(controlSize(BUTTON_SCALE_MAX)).toBeGreaterThan(TOUCH_TARGET);
+    DRAWER_TOOLS.map((label) => outerSize(resolved((props) => props.accessibilityLabel === label)));
+  const chevron = () =>
+    outerSize(resolved((props) => props.accessibilityLabel === 'Collapse controls'));
+  for (const scale of [DEFAULT_BUTTON_SCALE, BUTTON_SCALE_MAX, BUTTON_SCALE_MIN]) {
+    await chooseButtonScale(scale);
+    const { size } = panelLayout(records.dimensions, scale);
+    expect(sizes(), `${scale}%`).toEqual(DRAWER_TOOLS.map(() => size));
+    expect(chevron(), `${scale}%`).toBe(CORNER_BUTTON_SIZE_PX);
+    expect(outerSize(resolved((props) => props.accessibilityLabel === 'Settings'))).toBe(
+      CORNER_BUTTON_SIZE_PX
+    );
+  }
+  // A 402px-wide phone takes the shipping phone step: 50px in portrait at 100%.
+  expect(panelLayout(records.dimensions, DEFAULT_BUTTON_SCALE).size).toBe(50);
+  expect(panelLayout(records.dimensions, BUTTON_SCALE_MIN).size).toBe(35);
+  expect(panelLayout(records.dimensions, BUTTON_SCALE_MAX).size).toBe(65);
 });
 
 function rect(left, top, side) {
@@ -95,6 +117,8 @@ it.each(
   [
     [320, 568],
     [568, 320],
+    [1366, 1024],
+    [1024, 1366],
   ].flatMap(([width, height]) => BUTTON_SCALES.map((scale) => [width, height, scale]))
 )(
   'keeps every drawer tool and the chevron reachable at %ix%i and %i%% Button Size',
@@ -102,7 +126,6 @@ it.each(
     records.dimensions = { width, height, scale: 1, fontScale: 1 };
     await mountToolbar(toolbarScreen());
     await chooseButtonScale(scale);
-    const size = controlSize(scale);
     const portrait = height > width;
     const bar = PALETTE_FLOWS[portrait ? 'row' : 'column'].extentPx;
     const area = {
@@ -115,14 +138,26 @@ it.each(
     // below is also a placement on the paper.
     expect(fittedPaper(area, UNADOPTED_PAPER)).toEqual({ left: 0, top: 0, ...area });
     await expandControls();
-    const tools = records.props
+    const layout = panelLayout(area, scale);
+    const placed = records.props
       .filter((props) => props.testID === 'rsd-drawer-tool')
-      .slice(-7)
-      .map((props) => flat(props.style))
-      .map((style) => rect(style.left, area.height - style.bottom - size, size));
-    expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]')).toHaveLength(7);
+      .slice(-DRAWER_TOOLS.length)
+      .map((props) => flat(props.style));
+    expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]')).toHaveLength(
+      DRAWER_TOOLS.length
+    );
+    expect(placed.map(({ left, bottom }) => ({ left, bottom }))).toEqual(layout.tools);
+    const tools = placed.map((style) =>
+      rect(style.left, area.height - style.bottom - layout.size, layout.size)
+    );
+    const dock = resolved((props) => props.testID === 'rsd-drawer-dock');
+    expect(dock).toMatchObject(layout.toggle);
+    const toggle = rect(
+      dock.left,
+      area.height - dock.bottom - CORNER_BUTTON_SIZE_PX,
+      CORNER_BUTTON_SIZE_PX
+    );
     const inset = EDGE_INSET_PX;
-    const toggle = rect(inset, area.height - inset - size, size);
     const settings = rect(
       area.width - inset - CORNER_BUTTON_SIZE_PX,
       area.height - inset - CORNER_BUTTON_SIZE_PX,
@@ -130,23 +165,19 @@ it.each(
     );
     // Clear docks to the layout, not the paper area: the palette bar sits above the area in
     // portrait and beside it in landscape.
-    const dock = clearDock(records.dimensions, 0);
+    const clearAt = clearDock(records.dimensions, 0);
     const clear = rect(
-      area.width + CLEAR_DOCK_OVERHANG_PX - dock.size,
-      dock.top - (portrait ? bar : 0),
-      dock.size
+      area.width + CLEAR_DOCK_OVERHANG_PX - clearAt.size,
+      clearAt.top - (portrait ? bar : 0),
+      clearAt.size
     );
-    expect(resolved((props) => props.testID === 'rsd-drawer-dock')).toMatchObject({
-      left: inset,
-      bottom: inset,
-    });
     expect(resolved((props) => props.testID === 'rsd-settings-dock')).toMatchObject({
       right: inset,
       bottom: inset,
     });
     expect(resolved((props) => props.testID === 'rsd-clear-dock')).toMatchObject({
       right: -CLEAR_DOCK_OVERHANG_PX,
-      top: dock.top,
+      top: clearAt.top,
     });
     for (const [index, tool] of [toggle, ...tools].entries()) {
       expect(tool.left, `${index}`).toBeGreaterThanOrEqual(0);
@@ -160,28 +191,26 @@ it.each(
       expect(overlaps(tool, toggle), `${index}`).toBe(false);
       for (const other of tools.slice(index + 1)) expect(overlaps(tool, other)).toBe(false);
     }
-    expect(drawerOffsets(area, portrait ? 'column' : 'row', 7, size)).toEqual(
-      records.props
-        .filter((props) => props.testID === 'rsd-drawer-tool')
-        .slice(-7)
-        .map((props) => ({
-          left: flat(props.style).left,
-          bottom: flat(props.style).bottom,
-        }))
-    );
   }
 );
 
-it('stops landscape drawer rows short of the normal-size Settings at every Button Size', () => {
+it('stops a landscape row, chevron included, short of Settings at every Button Size', () => {
   const overreaches = [];
-  for (let width = 320; width <= 1366; width++) {
-    const settingsLeft = width - EDGE_INSET_PX - TOUCH_TARGET;
+  for (let width = 800; width <= 1366; width++) {
+    const viewport = { width, height: 600 };
+    const area = { width: width - PALETTE_FLOWS.column.extentPx, height: 600 };
+    const settingsLeft = area.width - EDGE_INSET_PX - CORNER_BUTTON_SIZE_PX;
     for (let scale = BUTTON_SCALE_MIN; scale <= BUTTON_SCALE_MAX; scale += BUTTON_SCALE_STEP) {
-      const size = controlSize(scale);
-      const rightmost = Math.max(
-        ...drawerOffsets({ width, height: 300 }, 'row', 20, size).map(({ left }) => left)
-      );
-      if (rightmost + size > settingsLeft - EDGE_INSET_PX)
+      const { mode, toggle } = actionPanelLayout({
+        area,
+        viewport,
+        scale: scale / 100,
+        count: DRAWER_TOOLS.length,
+        leg: 2,
+        open: true,
+      });
+      expect(mode).toBe('row');
+      if (toggle.left + CORNER_BUTTON_SIZE_PX > settingsLeft - EDGE_INSET_PX)
         overreaches.push(`${scale}% at ${width}px`);
     }
   }

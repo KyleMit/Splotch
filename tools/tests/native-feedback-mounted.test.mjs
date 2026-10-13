@@ -34,7 +34,6 @@ async function solve() {
 }
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  files.list.mockReturnValue([]);
   files.lock.mockReturnValue(() => {});
   files.settingsRead.mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.feedbackRead.mockReset().mockResolvedValue(null);

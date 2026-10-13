@@ -18,15 +18,15 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
       {
         title: 'Make a picture',
         paragraphs: [
-          'Pick a color and draw on the paper. Open Drawing tools to choose a brush or change its width. Undo takes back your last change.',
-          'Choose Coloring pages in Drawing tools to start with an outline. You can turn coloring books and extra brushes on or off in Settings.',
+          'Pick a color and draw on the paper. Open the tool drawer to choose a brush or change its width. Undo takes back your last change.',
+          'Choose Coloring books in the tool drawer to start with an outline. You can turn coloring books and extra brushes on or off in Settings.',
         ],
       },
       {
         title: 'Keep your pictures',
         paragraphs: [
-          'Save picture keeps an editable copy in this app. Find it again in Pictures. Export PNG makes an image you can download or share using your device.',
-          'Save and clear keeps an editable copy, then starts a fresh picture. Undo can bring the cleared picture back. If an export fails, keep the app open and use the recovery notice to try again.',
+          'The camera in the tool drawer saves your picture to Photos on a phone or tablet, or downloads it in a browser.',
+          'Clear starts a fresh picture, and Undo can bring the cleared picture back. Turn on Auto-Save on Delete in Settings to save each picture before it clears.',
         ],
       },
       {

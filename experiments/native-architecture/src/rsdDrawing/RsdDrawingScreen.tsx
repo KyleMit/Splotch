@@ -23,16 +23,13 @@ import { html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
-import { useDrawingMenu } from '../useDrawingMenu';
 import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
-import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
-import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
@@ -185,7 +182,6 @@ function RsdDrawingContent({
   onModalDismissed: () => void;
 }) {
   const theme = useDrawingAppearance();
-  const menu = useDrawingMenu(screen, 'reported');
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
@@ -208,10 +204,10 @@ function RsdDrawingContent({
   const modalBlocked = isProductModalBlocked(route.shown, product);
   // A see-through Settings shows the controls it resizes as they look in use, not dimmed behind
   // a dialog; the dragged slider keeps every touch meanwhile.
-  const disabled = !buttonScale.active && (screen.disabled || menu.open || modalBlocked);
-  const paperBlocked = menu.open || modalBlocked;
+  const disabled = !buttonScale.active && (screen.disabled || modalBlocked);
+  const paperBlocked = modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  useDrawingUndoShortcut(screen, paintsDisabled || menu.open || buttonScale.active);
+  useDrawingUndoShortcut(screen, paintsDisabled || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
@@ -224,7 +220,6 @@ function RsdDrawingContent({
             screen={screen}
             sound={sound}
             product={product}
-            menu={menu}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
             buttonScale={buttonScale.value}
@@ -234,11 +229,7 @@ function RsdDrawingContent({
                 strokes={screen.committedStrokes}
                 controlSize={controlSize(buttonScale.value)}
                 hidden={
-                  drawerOpen ||
-                  paperBlocked ||
-                  screen.pictures !== null ||
-                  screen.pagePickerOpen ||
-                  screen.colorPickerOpen
+                  drawerOpen || paperBlocked || screen.pagePickerOpen || screen.colorPickerOpen
                 }
               />
             )}
@@ -247,28 +238,12 @@ function RsdDrawingContent({
                 screen={screen}
                 notice={notice}
                 soundNotice={soundNotice}
-                blocked={disabled || screen.pictures !== null}
+                blocked={disabled}
               />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
           </RsdEdgeLayout>
-          <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-          <RsdDrawingTools
-            menu={menu}
-            blocked={
-              screen.disabled || modalBlocked || screen.pictures !== null || screen.colorPickerOpen
-            }
-            renderMenu={(browserAction) => (
-              <RsdDrawingMenu
-                screen={screen}
-                sound={sound}
-                menu={menu}
-                onFeedback={() => product.feedback.owner?.open()}
-                browserAction={browserAction}
-              />
-            )}
-          />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>
@@ -293,10 +268,9 @@ function RsdDrawingContent({
   );
 }
 
-// The page picker and pictures stay mounted through their exit, after the screen has cleared them.
+// The page picker stays mounted through its exit, after the screen has closed it.
 function RsdScreenSheets({ screen }: { screen: Screen }) {
   const pagePicker = useModalPresence(screen.pagePickerOpen || null);
-  const pictures = useModalPresence(screen.pictures);
   const window = useWindowDimensions();
   return (
     <>
@@ -313,14 +287,6 @@ function RsdScreenSheets({ screen }: { screen: Screen }) {
             onClose={() => screen.setPagePickerOpen(false)}
           />
         </RsdSurfaceBoundary>
-      ) : null}
-      {pictures.shown ? (
-        <RsdPictures
-          screen={screen}
-          pictures={pictures.shown}
-          visible={pictures.visible}
-          onDismiss={pictures.dismissed}
-        />
       ) : null}
     </>
   );

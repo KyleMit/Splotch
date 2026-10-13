@@ -17,12 +17,9 @@ const files = vi.hoisted(() => ({
   motionRemoves: [],
   motionListenError: null,
   save: vi.fn().mockResolvedValue({ id: 'picture-1-fixture' }),
-  list: vi.fn(),
-  open: vi.fn(),
   lock: vi.fn(),
   capture: vi.fn(),
   ink: vi.fn(),
-  export: vi.fn(),
   aiAdmit: vi.fn().mockResolvedValue(undefined),
   aiPrepare: vi.fn().mockResolvedValue(undefined),
   aiRead: vi.fn().mockResolvedValue(null),
@@ -37,8 +34,6 @@ const files = vi.hoisted(() => ({
   feedbackWrite: vi.fn().mockResolvedValue(undefined),
   feedbackSend: vi.fn(),
   surfaceRender: vi.fn(),
-  pngRead: vi.fn().mockResolvedValue(null),
-  pngWrite: vi.fn().mockResolvedValue(undefined),
   brushRead: vi.fn().mockResolvedValue(null),
   brushWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
@@ -80,22 +75,9 @@ vi.mock('../../experiments/native-architecture/src/platform/feedback.ts', () => 
   feedbackPolicyStorage: { read: files.feedbackRead, write: files.feedbackWrite },
 }));
 
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: files.pngRead, write: files.pngWrite },
-    deliver: async (picture) => {
-      await files.export(picture.base64, picture.filename);
-      return 'sharing-closed';
-    },
-  },
-}));
-
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  listPictures: files.list,
-  reopenPicture: files.open,
   savePicture: files.save,
   savedColoringPageIds: vi.fn().mockResolvedValue([]),
-  exportPng: files.export,
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
@@ -490,10 +472,6 @@ export const UNTOUCHED_SETTINGS = {
   applePencilSeen: false,
   toolbarStyle: 'buttons',
 };
-export const pictures = [
-  { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
-  { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },
-];
 
 export { files };
 

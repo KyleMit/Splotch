@@ -18,12 +18,12 @@ import {
   rerender,
   storedSettings,
 } from './rsd-native-settings-fixture.mjs';
+import { drawerTileSize as tileSize } from './rsd-native-toolbar-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import {
@@ -36,7 +36,6 @@ import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   BUTTON_SIZE_HELP,
-  controlSize,
 } from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 import { SECTION_SUBTITLES } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
 
@@ -84,7 +83,7 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   expect(host.textContent).toContain(BUTTON_SIZE_HELP);
   expect(sliderProps('Button Size')['aria-valuenow']).toBe(100);
   expect(lastStyle('modal-surface').backgroundColor).not.toBe('transparent');
-  expect(host.querySelector('[aria-label="Save picture"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Save screenshot"]')).toBeNull();
   const release = await holdDrag('Button Size', SLIDER_WIDTH_PX);
   expect(sliderProps('Button Size')['aria-valuenow']).toBe(BUTTON_SCALE_MAX);
   expect(settings.storage.write).not.toHaveBeenCalled();
@@ -95,10 +94,9 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   expect(sizeCard.boxShadow).toBeDefined();
   expect(motionCard.opacity).toBe(0);
   // The drawer opens and its controls take the dragged size before anything is written.
-  const size = controlSize(BUTTON_SCALE_MAX);
-  expect(size).toBeGreaterThan(TOUCH_TARGET);
-  for (const label of ['Save picture', 'Collapse controls'])
-    expect(outerSize(label), label).toBe(size);
+  const size = tileSize(BUTTON_SCALE_MAX);
+  expect(size).toBeGreaterThan(tileSize(100));
+  expect(outerSize('Save screenshot')).toBe(size);
   await release();
   expect(settings.storage.write).toHaveBeenCalledOnce();
   expect(settings.stored()).toMatchObject({ version: 12, buttonScale: BUTTON_SCALE_MAX });
@@ -106,8 +104,8 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   expect(settingCards()[1].opacity).toBeUndefined();
   await rerender({ settingsOpen: false });
   await click('Expand controls');
-  for (const label of ['Save picture', 'Collapse controls'])
-    expect(outerSize(label), label).toBe(size);
+  expect(outerSize('Save screenshot')).toBe(size);
+  expect(outerSize('Collapse controls')).toBe(CORNER_BUTTON_SIZE_PX);
   // Shipping sizes its swatches and the corner Settings Button apart from Button Size.
   for (const label of ['Purple paint', 'More colors'])
     expect(outerSize(label), label).toBe(PALETTE_FLOWS.row.swatchPx);
@@ -119,7 +117,8 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   expect(settings.stored().buttonScale).toBe(BUTTON_SCALE_MIN);
   expect(settings.storage.write).toHaveBeenCalledTimes(2);
   await rerender({ settingsOpen: false });
-  expect(outerSize('Save picture')).toBe(controlSize(BUTTON_SCALE_MIN));
+  expect(outerSize('Save screenshot')).toBe(tileSize(BUTTON_SCALE_MIN));
+  expect(tileSize(BUTTON_SCALE_MIN)).toBeLessThan(tileSize(100));
   expect(outerSize('Purple paint')).toBe(PALETTE_FLOWS.row.swatchPx);
 });
 

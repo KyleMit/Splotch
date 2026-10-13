@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { FAILED_DETAIL, UNSAVED_HEADING } from './export/photoLibrary';
+import { FAILED_DETAIL, UNSAVED_HEADING } from './export/pictureSave';
 import type { KeptPicture } from './keepPicture';
 
-// What went wrong, apart from what the screen announces: a save the photo library refused, or an
-// action that failed with an error. The drawing screen shows it in the Save Failure Banner. An
-// error gives way to the next notice, as the notice it was written beside does; a refused save
-// stays until it is dismissed or a later save settles.
+// What went wrong, apart from what the screen announces: a save that did not land (the photo
+// library refused it, or the download failed), or an action that failed with an error. The
+// drawing screen shows it in the Save Failure Banner. An error gives way to the next notice, as
+// the notice it was written beside does; a failed save stays until it is dismissed or a later
+// save settles.
 type DrawingFailure =
   | Readonly<{ kind: 'save'; heading: string; detail: string }>
   | Readonly<{ kind: 'error'; detail: string }>;

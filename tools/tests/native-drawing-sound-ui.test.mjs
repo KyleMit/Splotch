@@ -23,20 +23,9 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: sound.load,
 }));
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: async () => null, write: async () => {} },
-    deliver: async () => {
-      return 'sharing-closed';
-    },
-  },
-}));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  listPictures: () => [],
-  reopenPicture: vi.fn(),
   savePicture: vi.fn(),
-  exportPng: vi.fn(),
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
   drawingDraftStorage: { read: async () => null, write: async () => {} },
@@ -328,18 +317,13 @@ describe('live drawing sound owner and Settings screen', () => {
   });
 
   it.each(['Light', 'Dark'])(
-    'keeps the actual Settings and Pictures overlays transparent over the %s drawing',
+    'keeps the actual Settings overlay transparent over the %s drawing',
     async (appearance) => {
       await mount();
       await ui.settings();
       await ui.click(`${appearance} appearance`);
       const theme = appearance.toLowerCase();
-      for (const kind of ['Settings', 'Pictures']) {
-        if (kind === 'Pictures') {
-          await ui.click('Close Settings');
-          await ui.click('Drawing tools');
-          await ui.click('Pictures');
-        }
+      {
         expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe(theme);
         expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(2);
         expect(ui.dialog().querySelector('[data-background="#1a1922"]')).toBeNull();

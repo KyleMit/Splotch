@@ -20,6 +20,7 @@ import {
   rerender,
   storedSettings,
 } from './rsd-native-settings-fixture.mjs';
+import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 import { act, createElement } from 'react';
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
@@ -281,10 +282,6 @@ it("keeps the What's New stamp when the section opens while another choice is st
 async function pencilDoubleTap() {
   expect(caller.pencilDoubleTap, 'Pencil double-tap listener').toBeTypeOf('function');
   await act(async () => caller.pencilDoubleTap());
-}
-
-function brushLabel() {
-  return host.querySelector('[aria-label^="Brush: "]')?.getAttribute('aria-label');
 }
 
 async function pencilScreen(overrides) {

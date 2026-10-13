@@ -14,7 +14,7 @@ import { loadDrawingLoop } from '../platform/drawingAudio';
 import { subscribePencilDoubleTap } from '../platform/pencilDoubleTap';
 import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
-import { initialSoundSettingsState } from '../settings/soundSettings';
+import { initialSoundSettingsState, type SoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -32,6 +32,28 @@ function createProductServices(publish: () => void, setAudioMessage: (message: s
   const clear = createClearSound(loadClearPageTurn);
   const preview = createVolumePreview(loadDrawingLoop);
   return { product, audio, contacts, clear, preview };
+}
+
+type ProductServices = ReturnType<typeof createProductServices>;
+
+// The Settings sound choices applied to the sound owners as they change: the Sound switch and its
+// sources gate playback, and the Volume preview answers to the Sound switch alone.
+function useSoundChoices(
+  services: ProductServices | null,
+  { soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled }: SoundSettingsState
+) {
+  useEffect(() => {
+    services?.preview.setAllowed(soundEnabled);
+  }, [services, soundEnabled]);
+  useEffect(() => {
+    if (services)
+      applySoundChoices(services, {
+        soundEnabled,
+        soundVolume,
+        drawingSoundEnabled,
+        deleteSoundEnabled,
+      });
+  }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
 }
 
 function createProductTicker(
@@ -117,7 +139,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   screenRef.current = screen;
   const [, update] = useState(0);
   const [audioMessage, setAudioMessage] = useState('');
-  const [services, setServices] = useState<ReturnType<typeof createProductServices> | null>(null);
+  const [services, setServices] = useState<ProductServices | null>(null);
   const [owners, setOwners] = useState<ProductOwners | null>(null);
   useEffect(() => {
     let alive = true;
@@ -203,19 +225,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       owners?.feedback.close();
     }
   }, [owners, parentCenterOpen]);
-  const { soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled } = settings;
-  useEffect(() => {
-    services?.preview.setAllowed(soundEnabled);
-  }, [services, soundEnabled]);
-  useEffect(() => {
-    if (services)
-      applySoundChoices(services, {
-        soundEnabled,
-        soundVolume,
-        drawingSoundEnabled,
-        deleteSoundEnabled,
-      });
-  }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
+  useSoundChoices(services, settings);
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();
   }, [owners, settings.aiEnabled]);

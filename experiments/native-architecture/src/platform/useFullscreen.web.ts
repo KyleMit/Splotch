@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
+import { launchedAsApp } from './installPrompt.web';
 
 const FULLSCREEN_FAILURE = 'Fullscreen could not be changed. Try again.';
+const ANDROID_USER_AGENT = /android/i;
 
-function fullscreenSupported() {
+// Shipping's fullscreen.svelte.ts: only an Android browser tab has a URL bar worth reclaiming and
+// an element fullscreen that removes it. iOS Safari has none, a desktop has the browser's own,
+// and an installed app has no browser chrome left. Read once, as the screen opens: fullscreen
+// itself is an app-like display mode.
+function offeredHere() {
+  return ANDROID_USER_AGENT.test(navigator.userAgent || '') && !launchedAsApp();
+}
+
+function fullscreenApi() {
   return (
     document.fullscreenEnabled === true &&
     typeof document.documentElement.requestFullscreen === 'function' &&
@@ -22,11 +32,12 @@ export function useFullscreen(enabled: boolean) {
   const mounted = useRef(false);
   const pending = useRef(false);
   const epoch = useRef(0);
+  const offered = useRef(false);
 
   function settle(message: string) {
     pending.current = false;
     setState({
-      supported: fullscreenSupported(),
+      supported: offered.current && fullscreenApi(),
       active: !!document.fullscreenElement,
       pending: false,
       message,
@@ -35,6 +46,7 @@ export function useFullscreen(enabled: boolean) {
 
   useEffect(() => {
     mounted.current = true;
+    offered.current = offeredHere();
     settle('');
     function changed() {
       epoch.current += 1;
@@ -56,7 +68,13 @@ export function useFullscreen(enabled: boolean) {
   }, []);
 
   function toggle() {
-    if (!mounted.current || !allowed.current || pending.current || !fullscreenSupported())
+    if (
+      !mounted.current ||
+      !allowed.current ||
+      pending.current ||
+      !offered.current ||
+      !fullscreenApi()
+    )
       return false;
     const requestEpoch = ++epoch.current;
     pending.current = true;

@@ -3,6 +3,7 @@ import type { SavedPicture } from './drawingFiles';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { LibraryFault } from '../offlineLibrary/contract';
 
+// The web copy of drawingFiles.ts: AI originals, which nothing in the app reopens.
 const STORAGE_PREFIX = 'splotch-picture:';
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
 
@@ -38,18 +39,6 @@ export async function savePicture(drawing: Drawing): Promise<SavedPicture> {
     await offlineLibrary.withSavedArtwork(drawing.pageId, write);
   } else await write();
   return { id, modifiedAt, name: new Date(modifiedAt).toLocaleString() };
-}
-
-export async function reopenPicture(id: string): Promise<Drawing> {
-  const snapshot = localStorage.getItem(storageKey(id));
-  if (!snapshot || snapshot.length > MAX_SAVE_BYTES)
-    throw new Error('This saved picture cannot be opened.');
-  const drawing = parseDrawing(JSON.parse(snapshot));
-  if (isOfflinePageId(drawing.pageId)) {
-    const { offlineLibrary } = await import('../offlineLibrary/runtime');
-    await offlineLibrary.openPage(drawing.pageId);
-  }
-  return drawing;
 }
 
 export async function savedColoringPageIds(): Promise<readonly string[]> {

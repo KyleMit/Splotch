@@ -47,8 +47,7 @@ export function createDrawingDraft(
           if (isCurrent(owner))
             publish({
               status: 'failed',
-              message:
-                'Your current picture could not be saved. Keep this app open and retry, or save it in Pictures.',
+              message: 'Your current picture could not be saved. Keep this app open and retry.',
             });
           return;
         }
@@ -87,7 +86,7 @@ export function createDrawingDraft(
         publish({
           status: 'failed',
           message:
-            'Your current picture could not be recovered. The stored draft has not been changed. Keep this app open and retry, or save your new drawing in Pictures.',
+            'Your current picture could not be recovered. The stored draft has not been changed. Keep this app open and retry.',
         });
     }
   }

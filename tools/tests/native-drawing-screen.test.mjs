@@ -4,16 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import {
-  emptyDrawing,
-  parseDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   createScreen,
   expectSavedSettingsReread,
   files,
-  pictures,
-  STROKE,
   UNTOUCHED_SETTINGS,
 } from './native-drawing-screen-harness.mjs';
 
@@ -38,11 +33,8 @@ async function drawStroke() {
 
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  files.list.mockReturnValue(pictures);
-  files.open.mockReset();
   files.capture.mockReset();
   files.ink.mockReset();
-  files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
   files.brushRead.mockReset().mockResolvedValue(null);
   files.brushWrite.mockReset().mockResolvedValue(undefined);
@@ -242,141 +234,22 @@ describe('drawing width controls', () => {
   });
 });
 
-describe('saved-picture failure feedback', () => {
-  it('retains artwork and refuses file access when active input cannot be locked', async () => {
+describe('Clear observation refusal', () => {
+  it.each(['Clear'])('retains history and rainbow when %s observation fails', async (action) => {
     await drawStroke();
     const original = screen.paper();
-    await menuClick('Pictures');
-    files.lock.mockImplementationOnce(() => {
-      throw new Error('Finish drawing before using this control.');
-    });
-    await screen.click('Open picture from Good picture');
-    expect(files.open).not.toHaveBeenCalled();
+    files.ink.mockResolvedValueOnce('ink-observation-input');
+    await menuClick(action);
+    expect(files.ink).toHaveBeenCalledOnce();
+    expect(files.save).not.toHaveBeenCalled();
     expect(screen.paper()).toBe(original);
-    expect(screen.dialog().querySelector('[role="alert"]').textContent).toBe(
-      'Finish drawing before using this control.'
+    expect(screen.container.textContent).toContain(
+      'Picture capture returned an invalid or unsupported PNG.'
     );
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+    expect(JSON.parse(screen.paper()).rainbow).toBe(0);
   });
-
-  it.each(['corrupt', 'missing'])(
-    'shows %s refusal inside the open dialog and preserves history',
-    async (failure) => {
-      await drawStroke();
-      const original = screen.paper();
-      files.open.mockImplementation(async (id) => {
-        if (id === pictures[0].id) {
-          if (failure === 'corrupt') return parseDrawing({ version: 99 });
-          throw new Error('This saved picture cannot be opened.');
-        }
-        return emptyDrawing();
-      });
-      await menuClick('Pictures');
-      expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
-      await screen.click('Open picture from Broken picture');
-      const alert = screen.dialog().querySelector('[role="alert"]');
-      expect(alert).not.toBeNull();
-      expect(alert.textContent).toBe(
-        failure === 'corrupt'
-          ? 'This saved picture is not a supported drawing.'
-          : 'This saved picture cannot be opened.'
-      );
-      expect(alert.getAttribute('aria-live')).toBe('polite');
-      expect(screen.paper()).toBe(original);
-      await screen.click('Close');
-      await menuClick('Pictures');
-      expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
-      await screen.click('Open picture from Broken picture');
-      expect(screen.dialog().querySelector('[role="alert"]')).not.toBeNull();
-      await screen.click('Open picture from Good picture');
-      expect(screen.dialog()).toBeNull();
-      expect(JSON.parse(screen.paper()).strokes).toEqual([]);
-      const openedNotice = 'Picture opened. Undo returns to your previous picture.';
-      expect(screen.container.textContent).toContain(openedNotice);
-      await screen.click('Undo');
-      expect(screen.paper()).toBe(original);
-      expect(screen.container.textContent).not.toContain(openedNotice);
-      await menuClick('Pictures');
-      expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
-    }
-  );
-
-  it('retains the complete long refusal in a nonshrinking modal notice', async () => {
-    const message = 'This saved picture is not a supported drawing. '.repeat(4).trim();
-    files.open.mockRejectedValueOnce(new Error(message));
-    await menuClick('Pictures');
-    await screen.click('Open picture from Broken picture');
-    const alert = screen.dialog().querySelector('[role="alert"]');
-    expect(alert.textContent).toBe(message);
-    expect(alert.style.flexShrink).toBe('0');
-    expect(alert.style.alignSelf).toBe('stretch');
-    const status = [...screen.container.querySelectorAll('[aria-live="polite"]')].find(
-      (element) => !screen.dialog().contains(element)
-    );
-    expect(status.style.flexShrink).toBe('1');
-    expect(alert.style.maxHeight).toBe('');
-    expect(alert.style.overflow).toBe('');
-    await screen.click('Close');
-    expect(screen.dialog()).toBeNull();
-  });
-
-  it('clears the previous refusal immediately when retrying an asynchronous open', async () => {
-    files.open.mockRejectedValueOnce(new Error('This saved picture cannot be opened.'));
-    await menuClick('Pictures');
-    await screen.click('Open picture from Broken picture');
-    expect(screen.dialog().querySelector('[role="alert"]')).not.toBeNull();
-    let finish;
-    files.open.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finish = resolve;
-        })
-    );
-    await screen.click('Open picture from Good picture');
-    expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
-    await act(async () => finish(emptyDrawing()));
-    expect(screen.dialog()).toBeNull();
-  });
-});
-
-describe('controller output snapshot ownership', () => {
-  it('refuses a captured PNG if the canonical history ref changed before output', async () => {
-    await drawStroke();
-    let finish;
-    files.capture.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finish = resolve;
-        })
-    );
-    await menuClick('Export PNG');
-    expect(screen.button('Draw fixture stroke').disabled).toBe(true);
-    act(() => files.cohort([STROKE]));
-    await act(async () => finish('old-picture-png'));
-    expect(files.export).not.toHaveBeenCalled();
-    expect(JSON.parse(screen.paper()).strokes).toHaveLength(2);
-    expect(screen.container.textContent).toContain('The picture changed before export finished.');
-  });
-});
-
-describe('Clear observation refusal', () => {
-  it.each(['Clear', 'Save and clear'])(
-    'retains history and rainbow when %s observation fails',
-    async (action) => {
-      await drawStroke();
-      const original = screen.paper();
-      files.ink.mockResolvedValueOnce('ink-observation-input');
-      await menuClick(action);
-      expect(files.ink).toHaveBeenCalledOnce();
-      expect(files.save).not.toHaveBeenCalled();
-      expect(screen.paper()).toBe(original);
-      expect(screen.container.textContent).toContain(
-        'Picture capture returned an invalid or unsupported PNG.'
-      );
-      await screen.click('Undo');
-      expect(JSON.parse(screen.paper()).strokes).toEqual([]);
-      expect(JSON.parse(screen.paper()).rainbow).toBe(0);
-    }
-  );
 });
 
 describe('coloring-page controls through the real drawing screen', () => {

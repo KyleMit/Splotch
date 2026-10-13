@@ -1,3 +1,4 @@
+import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename } from 'node:fs/promises';
 import * as fs from 'node:fs';
@@ -12,7 +13,6 @@ import { LibraryFault } from '../../experiments/native-architecture/src/offlineL
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   savePicture,
-  reopenPicture,
   savedColoringPageIds,
 } from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
@@ -245,7 +245,7 @@ describe('R1 real controller and disk regression controls', () => {
     const id = offlinePageId(dinosaur, 'trex');
     await owner.openPage(id);
     const picture = await savePicture(emptyDrawing(0, id));
-    await reopenPicture(picture.id);
+    await readSavedNativePicture(picture.id);
     expect(owner.snapshot()).toMatchObject({
       status: failed.status,
       fault: failed.fault,
@@ -281,7 +281,8 @@ describe('R1 real controller and disk regression controls', () => {
       installed: [],
       retainedBytes: dinosaur.bytes,
     });
-    expect(await reopenPicture(picture.id)).toEqual(drawing);
+    expect(await readSavedNativePicture(picture.id)).toEqual(drawing);
+    await fresh.openPage(drawing.pageId);
     expect(fresh.snapshot().artwork[drawing.pageId]).toEqual(artwork);
     await fresh.setPolicy(true, false);
     await fresh.settled();

@@ -77,7 +77,7 @@ assert.equal(mountedScreens.length, 1, 'Font gate has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');
-const drawingTools = parse('src/rsdDrawing/RsdDrawingTools.tsx');
+const actionsPanel = parse('src/rsdDrawing/RsdActionsPanel.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
 const switches = [];
@@ -89,7 +89,7 @@ const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
 const settingsDialog = parse('src/rsdDrawing/RsdSettingsDialog.tsx');
-for (const component of [drawing, edgeControls, drawingTools, coloringPicker, settingsDialog])
+for (const component of [drawing, edgeControls, actionsPanel, coloringPicker, settingsDialog])
   babel.traverse(component, {
     JSXOpeningElement(path) {
       const node = path.node;
@@ -97,17 +97,18 @@ for (const component of [drawing, edgeControls, drawingTools, coloringPicker, se
         groups.push(attribute(node, 'aria-label'));
       if (
         node.name.type !== 'JSXIdentifier' ||
-        !['RsdAction', 'RsdPaintAction'].includes(node.name.name) ||
+        !['RsdAction', 'RsdPaintAction', 'RsdIconButton'].includes(node.name.name) ||
         !attribute(node, 'selected')
       )
         return;
       const selection =
         node.name.name === 'RsdPaintAction' ? 'radio' : literal(attribute(node, 'selection'));
       if (selection === 'switch') {
-        if (component === edgeControls) {
+        if (component === actionsPanel) {
           toolbarSwitches.push(node);
           toolbarConditions.push(
-            path.findParent((parent) => parent.isConditionalExpression())?.node.test
+            path.findParent((parent) => parent.isConditionalExpression() || parent.isIfStatement())
+              ?.node.test
           );
         } else {
           const map = path.findParent(
@@ -135,21 +136,9 @@ for (const component of [drawing, edgeControls, drawingTools, coloringPicker, se
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 3, 'RSD radio group count');
-assert.deepEqual(
-  groups.map(literal).filter(Boolean).sort(),
-  ['Drawing brush', 'Paint colors'],
-  'RSD radio group names'
-);
-const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
-assert.equal(dynamicLabel?.value.expression.type, 'TemplateLiteral', 'RSD width group label');
-assert.deepEqual(
-  dynamicLabel.value.expression.quasis.map((item) => item.value.cooked),
-  ['', ' width'],
-  'RSD width group label'
-);
-assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 3, 'RSD selection callers');
+assert.equal(groups.length, 1, 'RSD radio group count');
+assert.deepEqual(groups.map(literal), ['Paint colors'], 'RSD radio group names');
+assert.equal(radios, 1, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -225,18 +214,15 @@ const files = [
   'src/feedback/FeedbackSheet.tsx',
   'src/parentCenter/ParentGateSheet.tsx',
   'src/parentCenter/ParentCenterSection.tsx',
-  'src/drawing/SavedPictures.tsx',
   'src/ai/AiSheet.tsx',
   'src/platform/useFullscreen.ts',
   'src/platform/useFullscreen.web.ts',
-  'src/rsdDrawing/RsdDrawingTools.tsx',
   'src/DrawingControls.tsx',
   'src/DrawingScreen.tsx',
   'src/platform/offlineLibrary.web.ts',
   'src/platform/offlineLibraryStorage.web.ts',
   'src/platform/offlineLibraryTransfer.web.ts',
   'src/platform/drawingFiles.web.ts',
-  'src/platform/pngRecovery.web.ts',
   'src/drawing/crayon.ts',
   'src/drawing/crayonGrain.ts',
   'src/platform/useUndoShortcut.ts',
@@ -308,6 +294,9 @@ const files = [
   'src/rsdDrawing/RsdInformationSection.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
   'src/rsdDrawing/RsdEdgeControls.tsx',
+  'src/rsdDrawing/RsdActionsPanel.tsx',
+  'src/rsdDrawing/RsdToolFlyouts.tsx',
+  'src/rsdDrawing/RsdFullscreenToggle.tsx',
   'src/rsdDrawing/RsdAiSheet.tsx',
   'src/ai/useAiPictureViewer.ts',
   'src/ai/AiPictureViewport.tsx',
@@ -334,7 +323,6 @@ const files = [
   'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdSettingsRoute.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
-  'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/useDrawingMenu.ts',
   'src/drawing/brushes.ts',
   'src/settings/brushPreferences.ts',
@@ -344,7 +332,6 @@ const files = [
 ];
 const nativeAdapters = new Set([
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
-  'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
   'src/rsdDrawing/ModalShell.tsx',

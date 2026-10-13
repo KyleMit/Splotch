@@ -262,19 +262,6 @@ function AiPictures({
           <RetryRetention owner={owner} state={state} />
         </>
       ) : null}
-      {state.pictures.map((picture, index) => (
-        <html.div key={picture.uri}>
-          <html.img
-            alt={`Saved AI picture ${index + 1}`}
-            src={picture.uri}
-            style={aiStyles.image}
-          />
-          <RsdAction
-            label={`Open saved AI picture ${index + 1}`}
-            onClick={() => onOpen(picture.uri)}
-          />
-        </html.div>
-      ))}
     </>
   );
 }

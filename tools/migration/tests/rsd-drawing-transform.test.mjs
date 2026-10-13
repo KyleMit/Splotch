@@ -114,25 +114,6 @@ it('rejects a comment marker instead of actual canonical registration', () => {
   expect(result.stderr).toContain('Canonical registration');
 });
 
-it('rejects a recovery viewport losing its actual native import', () => {
-  const path = fixture();
-  const target = join(path, 'src/rsdDrawing/RsdRecoveryNotice.tsx');
-  const original = readFileSync(target, 'utf8');
-  expect(original).toContain("import { ScrollView } from 'react-native'");
-  writeFileSync(
-    target,
-    original.replace(
-      "import { ScrollView } from 'react-native'",
-      "import { ScrollView } from 'foreign-native'"
-    )
-  );
-  const result = run(path);
-  expect(result.status).toBe(1);
-  expect(result.stderr).toContain(
-    'Native adapter import removed: src/rsdDrawing/RsdRecoveryNotice.tsx'
-  );
-});
-
 it.each([
   [
     'selected={settings.undoButtonEnabled}',
@@ -237,27 +218,27 @@ it.each([
     'RSD optional brush switch callback',
   ],
   [
-    'src/rsdDrawing/RsdEdgeControls.tsx',
-    "screen.brushControl.kind === 'toggle'",
-    "screen.brushControl.kind === 'menu'",
+    'src/rsdDrawing/RsdActionsPanel.tsx',
+    "control.kind === 'toggle'",
+    "control.kind === 'menu'",
     'RSD optional toolbar switch branch',
   ],
   [
-    'src/rsdDrawing/RsdEdgeControls.tsx',
-    'selected={screen.brush === screen.brushControl.brush}',
-    'selected={screen.brushControl.brush === screen.brushControl.brush}',
+    'src/rsdDrawing/RsdActionsPanel.tsx',
+    'selected={screen.brush === control.brush}',
+    'selected={control.brush === control.brush}',
     'RSD optional toolbar switch state owner',
   ],
   [
-    'src/rsdDrawing/RsdEdgeControls.tsx',
-    'label={BRUSHES[screen.brushControl.brush].label}',
-    'label={BRUSHES[screen.brush].label}',
+    'src/rsdDrawing/RsdActionsPanel.tsx',
+    'label={BRUSH_MENU_OPTIONS[control.brush].label}',
+    'label={BRUSH_MENU_OPTIONS[screen.brush].label}',
     'RSD optional toolbar switch labels',
   ],
   [
-    'src/rsdDrawing/RsdEdgeControls.tsx',
-    'onClick={screen.toggleBrush}',
-    'onClick={screen.undo}',
+    'src/rsdDrawing/RsdActionsPanel.tsx',
+    'onPress={screen.toggleBrush}',
+    'onPress={screen.undo}',
     'RSD optional toolbar switch callback',
   ],
   [

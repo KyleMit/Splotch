@@ -40,23 +40,26 @@ function validateBrushSources({
     node.computed &&
     namedMember(node.object, 'brushState', 'availability') &&
     identifier(node.property, 'brush');
+  // The toolbar reads the brush control through a local alias, as RsdActionsPanel does.
+  const brushControl = (node) =>
+    namedMember(node, 'screen', 'brushControl') || identifier(node, 'control');
   const controlBrush = (node) =>
     node?.type === 'MemberExpression' &&
     !node.computed &&
-    namedMember(node.object, 'screen', 'brushControl') &&
+    brushControl(node.object) &&
     identifier(node.property, 'brush');
   const toolbarSelected = (node) =>
     node?.type === 'BinaryExpression' &&
     node.operator === '===' &&
     namedMember(node.left, 'screen', 'brush') &&
     controlBrush(node.right);
-  const brushLabel = (node, expectedBrush) =>
+  const brushLabel = (node, expectedBrush, table = 'BRUSHES') =>
     node?.type === 'MemberExpression' &&
     !node.computed &&
     identifier(node.property, 'label') &&
     node.object.type === 'MemberExpression' &&
     node.object.computed &&
-    identifier(node.object.object, 'BRUSHES') &&
+    identifier(node.object.object, table) &&
     expectedBrush(node.object.property);
   function assertOptionalSwitch(node, prefix) {
     assert.ok(availabilityValue(expressionValue(node, 'selected')), prefix + ' state owner');
@@ -99,9 +102,12 @@ function validateBrushSources({
   }
   function assertToolbarSwitch(node, prefix) {
     assert.ok(toolbarSelected(expressionValue(node, 'selected')), prefix + ' state owner');
-    assert.ok(brushLabel(expressionValue(node, 'label'), controlBrush), prefix + ' labels');
     assert.ok(
-      namedMember(expressionValue(node, 'onClick'), 'screen', 'toggleBrush'),
+      brushLabel(expressionValue(node, 'label'), controlBrush, 'BRUSH_MENU_OPTIONS'),
+      prefix + ' labels'
+    );
+    assert.ok(
+      namedMember(expressionValue(node, 'onPress'), 'screen', 'toggleBrush'),
       prefix + ' callback'
     );
     assert.ok(
@@ -267,7 +273,7 @@ function validateBrushSources({
       toolbarCondition.operator === '===' &&
       toolbarCondition.left.type === 'MemberExpression' &&
       !toolbarCondition.left.computed &&
-      namedMember(toolbarCondition.left.object, 'screen', 'brushControl') &&
+      brushControl(toolbarCondition.left.object) &&
       identifier(toolbarCondition.left.property, 'kind') &&
       toolbarCondition.right.type === 'StringLiteral' &&
       toolbarCondition.right.value === 'toggle',
@@ -295,7 +301,7 @@ function validateBrushSources({
   function assertTransformedBrushSwitches(ast, file) {
     if (
       file === 'src/rsdDrawing/RsdSettingsDialog.tsx' ||
-      file === 'src/rsdDrawing/RsdEdgeControls.tsx'
+      file === 'src/rsdDrawing/RsdActionsPanel.tsx'
     ) {
       const transformedSwitches = [];
       babel.traverse(ast, {
