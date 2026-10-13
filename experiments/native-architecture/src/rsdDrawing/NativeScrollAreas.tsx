@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { paletteSlots } from './controls';
+import { paletteSlots } from './paletteGeometry';
 import {
   drawerOffsets,
   EDGE_INSET_PX,
@@ -10,10 +10,11 @@ import {
   type LayoutAxis,
 } from './edgeLayout';
 
-export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number }>;
+export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number; length: number }>;
 export type DrawerTool = Readonly<{ label: string; node: ReactNode }>;
 
-// The shipping palette (--z-palette) stacks over the Clear Button, its accept ring and coachmark.
+// The shipping palette (--z-palette) stacks over the paper, so its plate's shadow falls on it,
+// and over the Clear Button, its accept ring and coachmark.
 const PALETTE_OVER_CLEAR_Z_INDEX = 1;
 
 const docks = StyleSheet.create({
@@ -85,8 +86,10 @@ export function NativeDrawingLayout({
   const axis = window.width > window.height ? 'column' : 'row';
   const drawerAxis = axis === 'row' ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
-  const length =
-    measured?.axis === axis ? measured.length : axis === 'row' ? window.width : window.height;
+  // Shipping trims by the viewport's own length, insets included, and clips what an inset
+  // shortens the bar by; only the spacing follows the bar's measured length.
+  const viewportLength = axis === 'row' ? window.width : window.height;
+  const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
   const [area, setArea] = useState<Box>();
   const [root, setRoot] = useState<Box>();
@@ -111,7 +114,7 @@ export function NativeDrawingLayout({
           );
         }}
       >
-        {palette({ axis, slots: paletteSlots(length, controlSize) })}
+        {palette({ axis, slots: paletteSlots(viewportLength, axis), length })}
       </View>
       <View
         testID="rsd-canvas-column"
@@ -136,35 +139,12 @@ export function NativeDrawingLayout({
           <View testID="rsd-drawer-dock" style={docks.toggle}>
             {drawerToggle(drawerAxis)}
           </View>
+          {status}
         </View>
-        {status}
       </View>
       <View testID="rsd-clear-overlay" pointerEvents="box-none" style={docks.clearOverlay}>
         {clearOverlay}
       </View>
     </View>
-  );
-}
-
-export function NativeDrawingStatus({
-  drawing,
-  children,
-}: {
-  drawing: boolean;
-  children: ReactNode;
-}) {
-  const drawingScreenStyles = useDrawingScreenStyles();
-  return (
-    <ScrollView
-      testID="rsd-drawing-status-viewport"
-      accessibilityLabel="Drawing status"
-      accessible={false}
-      style={drawingScreenStyles.feedback}
-      contentContainerStyle={drawingScreenStyles.feedbackContent}
-      removeClippedSubviews={false}
-      scrollEnabled={!drawing}
-    >
-      {children}
-    </ScrollView>
   );
 }

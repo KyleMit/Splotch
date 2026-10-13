@@ -22,12 +22,11 @@ import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingMenu } from '../useDrawingMenu';
-import { RsdAction, styles } from './controls';
+import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
-import { RsdDraftNotice } from './RsdDraftNotice';
+import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './RsdInstallBanner';
-import { NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
@@ -185,7 +184,7 @@ function RsdDrawingContent({
 }) {
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen, 'reported');
-  const notice = useSettledMessage(screen.notice, screen.drawing);
+  const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
     screen.drawing
@@ -198,7 +197,7 @@ function RsdDrawingContent({
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
-      <NativeFrame>
+      <NativeFrame variant="drawing">
         <html.div
           data-layoutconformance="strict"
           style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}
@@ -224,18 +223,12 @@ function RsdDrawingContent({
               />
             )}
             status={
-              <NativeDrawingStatus drawing={screen.drawing}>
-                <html.span aria-live="polite">{notice}</html.span>
-                {soundNotice ? <html.span aria-live="polite">{soundNotice}</html.span> : null}
-                <RsdDraftNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-                {screen.recovery.failed ? (
-                  <RsdAction
-                    label="Retry drawing"
-                    disabled={screen.recovery.retryDisabled}
-                    onClick={screen.recovery.retry}
-                  />
-                ) : null}
-              </NativeDrawingStatus>
+              <RsdDrawingStatus
+                screen={screen}
+                notice={notice}
+                soundNotice={soundNotice}
+                blocked={disabled || screen.pictures !== null}
+              />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />

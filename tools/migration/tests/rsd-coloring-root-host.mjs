@@ -49,6 +49,8 @@ export function paperPort(React, strokeStyle, caller) {
       () => ({
         lockInput: () => () => {},
         refreshGeometry() {},
+        // A save's photo library copy; what the library does with it is the test's port.
+        capturePng: async () => 'cmVhbC1wbmc=',
       }),
       []
     );

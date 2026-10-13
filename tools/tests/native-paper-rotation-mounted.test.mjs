@@ -81,13 +81,13 @@ vi.mock('react-native', () => ({
   AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
   useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
   Platform: { OS: 'ios' },
-  Image: () => null,
+  Image: ({ resizeMode }) => createElement('img', { 'data-resize-mode': resizeMode }),
   Dimensions: {
     get: () => ({ width: 390, height: 844, scale: 1 }),
     addEventListener: () => ({ remove() {} }),
   },
   findNodeHandle: (value) => value,
-  View: forwardRef(({ children, onLayout, style }, ref) => {
+  View: forwardRef(({ children, onLayout, style, testID }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(...sdk.frame) }));
     // The paper host is the one View styled with only its fitted size.
     if (
@@ -102,7 +102,7 @@ vi.mock('react-native', () => ({
       sdk.layouts.add(onLayout);
       return () => sdk.layouts.delete(onLayout);
     }, [onLayout]);
-    return createElement('div', null, children);
+    return createElement('div', { 'data-testid': testID }, children);
   }),
   PanResponder: {
     create: (handlers) => {
@@ -258,3 +258,31 @@ it.each([
     expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
   }
 );
+
+// The sheet's grain: the shipping paper texture beneath the ink, on the sheet itself, so a
+// rotated sheet lifted off its margin keeps it.
+function grainUnderInk() {
+  const ink = host.querySelector('[data-testid="drawing-paper"]');
+  expect(ink).not.toBeNull();
+  const grain = ink.parentElement.querySelector(':scope > [data-testid="paper-texture"]');
+  expect(grain, 'grain on the sheet').not.toBeNull();
+  expect(grain.compareDocumentPosition(ink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(grain.querySelector('img').dataset.resizeMode).toBe('repeat');
+}
+
+it('lays the RSD sheet grain under the ink and keeps it through a rotation', async () => {
+  await act(async () => root.render(createElement(RsdPaper)));
+  await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
+  grainUnderInk();
+  await stroke(
+    PORTRAIT_FRAME,
+    [
+      [39, 70.4],
+      [195, 352],
+    ],
+    100
+  );
+  await rotate(LANDSCAPE_SLOT, LANDSCAPE_FRAME);
+  expect(sdk.sized.at(-1).width).toBeCloseTo(FITTED_WIDTH, 9);
+  grainUnderInk();
+});

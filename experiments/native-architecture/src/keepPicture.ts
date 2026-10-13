@@ -5,10 +5,16 @@ import { savePicture } from './platform/drawingFiles';
 import { photoLibrary } from './platform/photoLibrary';
 import {
   IN_APP_SAVED_NOTICE,
+  photoLibraryFailure,
   photoLibraryNotice,
   type PhotoLibrary,
   type PhotoLibraryOutcome,
+  type SaveFailure,
 } from './export/photoLibrary';
+
+// What a save tells the child: the notice always, and the failure the banner shows when the
+// photo library refused its copy.
+export type KeptPicture = Readonly<{ notice: string; failure: SaveFailure | null }>;
 
 async function saveToPhotoLibrary(
   library: PhotoLibrary,
@@ -29,9 +35,10 @@ async function saveToPhotoLibrary(
 export async function keepPicture(
   drawing: Drawing,
   surface: DrawingSurfaceHandle | null
-): Promise<string> {
+): Promise<KeptPicture> {
   await savePicture(drawing);
-  if (!photoLibrary) return IN_APP_SAVED_NOTICE;
+  if (!photoLibrary) return { notice: IN_APP_SAVED_NOTICE, failure: null };
   const outcome = await saveToPhotoLibrary(photoLibrary, drawing, surface);
-  return photoLibraryNotice(outcome, Platform.OS === 'android' ? 'android' : 'ios');
+  const os = Platform.OS === 'android' ? 'android' : 'ios';
+  return { notice: photoLibraryNotice(outcome, os), failure: photoLibraryFailure(outcome, os) };
 }
