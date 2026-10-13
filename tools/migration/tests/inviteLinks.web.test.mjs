@@ -95,7 +95,7 @@ describe('web launch invite capture', () => {
     history.replaceState(ROUTER_STATE, '', invitePath('invitation-code', '&other=1'));
     const vault = recordingVault();
 
-    await startInviteLinks(vault);
+    await startInviteLinks(async () => vault);
 
     expect(vault.writes).toEqual([['managed', 'invitation-code']]);
     expect(location.search).toBe('?other=1');
@@ -107,7 +107,7 @@ describe('web launch invite capture', () => {
     const failure = new Error('secure storage unavailable');
     const vault = { write: vi.fn().mockRejectedValue(failure) };
 
-    await startInviteLinks(vault);
+    await startInviteLinks(async () => vault);
 
     expect(location.search).toContain(`${AI_ACCESS_TOKEN_PARAM}=retry-code`);
     expect(warn).toHaveBeenCalledWith(INVITE_SAVE_FAILED_WARNING, failure);
@@ -124,7 +124,9 @@ describe('web launch invite capture', () => {
     });
     history.replaceState({}, '', invitePath('invitation-code'));
 
-    const capturing = startInviteLinks(vault);
+    const capturing = startInviteLinks(async () => vault);
+    // The vault arrives in a chunk; the invite's write starts once it has.
+    await new Promise((resolve) => setTimeout(resolve));
     const newer = vault.write('managed', 'newer-code');
     finishInvite();
     await capturing;
@@ -137,15 +139,25 @@ describe('web launch invite capture', () => {
   it.each([
     ['absent', '/?other=1'],
     ['invalid', invitePath('a b')],
-  ])('leaves the URL and vault alone when the code is %s', async (_name, path) => {
+  ])('leaves the URL alone and never loads the vault when the code is %s', async (_name, path) => {
     history.replaceState({}, '', path);
     const before = location.href;
-    const vault = recordingVault();
+    const loadVault = vi.fn(async () => recordingVault());
 
-    await startInviteLinks(vault);
+    await startInviteLinks(loadVault);
 
-    expect(vault.write).not.toHaveBeenCalled();
+    expect(loadVault).not.toHaveBeenCalled();
     expect(location.href).toBe(before);
+  });
+
+  it('keeps the parameter when the vault chunk fails to load', async () => {
+    history.replaceState({}, '', invitePath('offline-code'));
+    const failure = new Error('chunk unavailable');
+
+    await startInviteLinks(() => Promise.reject(failure));
+
+    expect(location.search).toContain(`${AI_ACCESS_TOKEN_PARAM}=offline-code`);
+    expect(warn).toHaveBeenCalledWith(INVITE_SAVE_FAILED_WARNING, failure);
   });
 
   it('keeps browser Back attached across the scrub', async () => {
@@ -154,7 +166,7 @@ describe('web launch invite capture', () => {
     const back = createBrowserBack(browserHistoryPort(), options);
     back.start();
 
-    await startInviteLinks(recordingVault());
+    await startInviteLinks(async () => recordingVault());
     back.setDrawingInk(true);
 
     expect(location.search).toBe('');
@@ -169,7 +181,7 @@ describe('web launch invite capture', () => {
     const back = createBrowserBack(rawPort, options);
     back.start();
 
-    await startInviteLinks(recordingVault());
+    await startInviteLinks(async () => recordingVault());
     back.setDrawingInk(true);
 
     expect(history.state[BROWSER_BACK_STATE_KEY].layers).toEqual([]);

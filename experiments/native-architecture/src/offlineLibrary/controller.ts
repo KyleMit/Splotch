@@ -12,38 +12,16 @@ import {
   encodeLibraryText,
   decodeLibraryText,
   requireDownloadNetwork,
-  type LibraryFaultCode,
   type LibraryPlatform,
 } from './contract';
 import { createLibraryStore } from './store';
-import type { ArtworkMap } from './artworkContext';
+import {
+  initialLibrarySnapshot,
+  LIBRARY_UNAVAILABLE_MESSAGE,
+  type LibrarySnapshot,
+} from './snapshot';
+export type { LibrarySnapshot } from './snapshot';
 
-export type LibrarySnapshot = Readonly<{
-  status: 'loading' | 'ready' | 'downloading' | 'waiting' | 'failed' | 'removing';
-  installed: readonly Pack[];
-  artwork: ArtworkMap;
-  enabled: boolean;
-  allowMetered: boolean;
-  activeBook: OfflineBookId | null;
-  completedBytes: number;
-  totalBytes: number;
-  retainedBytes: number;
-  fault: LibraryFaultCode | null;
-  message: string;
-}>;
-const initialSnapshot: LibrarySnapshot = {
-  status: 'loading',
-  installed: [],
-  artwork: {},
-  enabled: true,
-  allowMetered: false,
-  activeBook: null,
-  completedBytes: 0,
-  totalBytes: 0,
-  retainedBytes: 0,
-  fault: null,
-  message: '',
-};
 function faultFrom(error: unknown): LibraryFault {
   if (error instanceof LibraryFault) return error;
   const message = error instanceof Error ? error.message : '';
@@ -52,16 +30,13 @@ function faultFrom(error: unknown): LibraryFault {
       'storage-full',
       'There is not enough free space for this coloring book.'
     );
-  return new LibraryFault(
-    'unavailable',
-    'The coloring download did not finish. Your installed books are safe.'
-  );
+  return new LibraryFault('unavailable', LIBRARY_UNAVAILABLE_MESSAGE);
 }
 class OfflineLibraryController {
   private readonly store;
   private catalog: typeof import('./catalog') | null = null;
   private readonly listeners = new Set<() => void>();
-  private state = initialSnapshot;
+  private state = initialLibrarySnapshot;
   private epoch = 0;
   private transfer: AbortController | null = null;
   private initialization: Promise<void> | null = null;
@@ -339,4 +314,23 @@ class OfflineLibraryController {
 export function createOfflineLibrary(platform: LibraryPlatform, resolution: PackResolution) {
   return new OfflineLibraryController(platform, resolution);
 }
-export type OfflineLibrary = ReturnType<typeof createOfflineLibrary>;
+// What the app reaches through offlineLibrary/runtime.ts, and so what deferredLibrary.ts stands in
+// for on web until the controller's chunk loads.
+export type OfflineLibrary = Pick<
+  OfflineLibraryController,
+  | 'snapshot'
+  | 'subscribe'
+  | 'initialize'
+  | 'setFeatureEnabled'
+  | 'engage'
+  | 'setActive'
+  | 'setDrawing'
+  | 'cancel'
+  | 'retry'
+  | 'setPolicy'
+  | 'openPage'
+  | 'cover'
+  | 'selector'
+  | 'withSavedArtwork'
+  | 'remove'
+>;

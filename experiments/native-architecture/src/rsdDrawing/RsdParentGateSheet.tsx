@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { Animated } from 'react-native';
+import { Animated } from '../platform/animated';
 import { NativeDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
 import { RsdParentGateKeypad } from './RsdParentGateKeypad';

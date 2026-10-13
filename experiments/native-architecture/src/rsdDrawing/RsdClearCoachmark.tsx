@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { COACHMARK_LOOP_MS, GHOST_TRAVEL_OVERSHOOT } from '../clear/dragToClear';
 import { TOUCH_TARGET } from '../drawing/theme';

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { Animated, Easing, useWindowDimensions, type GestureResponderEvent } from 'react-native';
+import { useWindowDimensions, type GestureResponderEvent } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import { impactThreshold } from '../platform/clearHaptics';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { hasDrawingInk, type Drawing } from '../drawing/model';
