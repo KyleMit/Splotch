@@ -50,8 +50,8 @@ export function BundledBookOutline({
   );
 }
 
-// The fill contain-fitted like its line art, then each letterbox band painted with the fill's
-// stretched edge strip (bookFillPlacement).
+// Each letterbox band painted with the fill's stretched edge strip, then the fill contain-fitted
+// like its line art over the bands' underlap (bookFillPlacement).
 export function BookMagicFill({
   href,
   frame,
@@ -66,15 +66,6 @@ export function BookMagicFill({
   const placement = bookFillPlacement(size, frame);
   return (
     <G>
-      <Image
-        href={href}
-        x={placement.x}
-        y={placement.y}
-        width={placement.width}
-        height={placement.height}
-        preserveAspectRatio="none"
-        onLoad={() => onLoad?.()}
-      />
       {placement.edges.length > 0 ? (
         <Defs>
           {placement.edges.map((edge, index) => (
@@ -100,6 +91,15 @@ export function BookMagicFill({
           </G>
         );
       })}
+      <Image
+        href={href}
+        x={placement.x}
+        y={placement.y}
+        width={placement.width}
+        height={placement.height}
+        preserveAspectRatio="none"
+        onLoad={() => onLoad?.()}
+      />
     </G>
   );
 }

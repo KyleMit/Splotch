@@ -135,12 +135,12 @@ function bookFillShader(image: SkImage, size: PaperSize) {
       FilterMode.Linear,
       MipmapMode.None
     );
+  for (const edge of placement.edges)
+    draw([edge.sx, edge.sy, edge.sw, edge.sh], [edge.dx, edge.dy, edge.dw, edge.dh]);
   draw(
     [0, 0, pixels.width, pixels.height],
     [placement.x, placement.y, placement.width, placement.height]
   );
-  for (const edge of placement.edges)
-    draw([edge.sx, edge.sy, edge.sw, edge.sh], [edge.dx, edge.dy, edge.dw, edge.dh]);
   return recorder
     .finishRecordingAsPicture()
     .makeShader(TileMode.Decal, TileMode.Decal, FilterMode.Linear, undefined, bounds);

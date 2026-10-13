@@ -62,8 +62,9 @@ const TALL_FRAME = { width: 1024, height: 1536 };
 const WIDE_FRAME = { width: 1536, height: 1024 };
 // The flat sky and grass of a lossless fill, compared after SVG resampling.
 const COLOR_TOLERANCE = 12;
-// The widest seam a band may leave beside the fill's fractional edge (bookFill.ts).
-const MAX_SEAM_UNITS = 1 / 8;
+// A band must lie under the fill's antialiased edge for at least one paper unit, a whole pixel
+// at the 1:1 render below and more on any device (bookFill.ts BAND_UNDERLAP_UNITS).
+const MIN_UNDERLAP_UNITS = 1;
 
 const pack = catalogPack('dinosaur', 'full');
 const trex = offlinePageId(pack, 'trex');
@@ -216,19 +217,14 @@ describe('Magic covers the whole paper on a book page', () => {
     ['tall art on a wide paper', paperSize(adoptPaper(844, 300, 3)), TALL_FRAME],
     ['tall art on a near-square tablet paper', paperSize(adoptPaper(768, 950, 2)), TALL_FRAME],
     ['wide art on a narrow phone paper', paperSize(adoptPaper(393, 700, 3)), WIDE_FRAME],
-  ])('lays the fill and its edge bands over every point of %s', (_label, size, frame) => {
+  ])('lays the fill over every point of %s, its bands reaching under it', (_label, size, frame) => {
     const placement = bookFillPlacement(size, frame);
-    const rects = [
-      { dx: placement.x, dy: placement.y, dw: placement.width, dh: placement.height },
-      ...placement.edges,
-    ].map((rect) => ({
-      left: rect.dx - MAX_SEAM_UNITS,
-      top: rect.dy - MAX_SEAM_UNITS,
-      right: rect.dx + rect.dw + MAX_SEAM_UNITS,
-      bottom: rect.dy + rect.dh + MAX_SEAM_UNITS,
-    }));
+    const box = { dx: placement.x, dy: placement.y, dw: placement.width, dh: placement.height };
+    const rects = [box, ...placement.edges];
     const covered = (x, y) =>
-      rects.some((rect) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+      rects.some(
+        (rect) => x >= rect.dx && x <= rect.dx + rect.dw && y >= rect.dy && y <= rect.dy + rect.dh
+      );
     const seams = (start, extent) =>
       [start, start + extent].flatMap((edge) =>
         Array.from({ length: 65 }, (_, index) => edge - 1 + index / 32)
@@ -245,6 +241,15 @@ describe('Magic covers the whole paper on a book page', () => {
     );
     for (const y of rows)
       for (const x of columns) expect(covered(x, y), `(${x}, ${y}) is outside the fill`).toBe(true);
+    const overlap = (start, extent, boxStart, boxExtent) =>
+      Math.min(start + extent, boxStart + boxExtent) - Math.max(start, boxStart);
+    for (const edge of placement.edges)
+      expect(
+        Math.min(
+          overlap(edge.dx, edge.dw, box.dx, box.dw),
+          overlap(edge.dy, edge.dh, box.dy, box.dh)
+        )
+      ).toBeGreaterThanOrEqual(MIN_UNDERLAP_UNITS);
     for (const edge of placement.edges) {
       expect(edge.sx).toBeGreaterThanOrEqual(0);
       expect(edge.sy).toBeGreaterThanOrEqual(0);
@@ -252,6 +257,33 @@ describe('Magic covers the whole paper on a book page', () => {
       expect(edge.sy + edge.sh).toBeLessThanOrEqual(frame.height);
     }
   });
+
+  it.each([
+    ['tall art on portrait paper', PORTRAIT_SIZE, 'portrait'],
+    ['wide art on a narrow phone paper', paperSize(adoptPaper(393, 700, 3)), 'landscape'],
+    ['tall art on a near-square tablet paper', paperSize(adoptPaper(768, 950, 2)), 'portrait'],
+  ])(
+    'renders an opaque Magic sheet with no seam where a band meets the fill: %s',
+    async (_label, size) => {
+      const artwork = await offlineArtwork();
+      const scope = { pageId: trex, paper: PORTRAIT_PAPER, artwork: { [trex]: artwork } };
+      const sheet = await pixels(
+        picture(
+          size,
+          createElement(OfflineMagicFill, { pageId: trex, theme: 'light', size }),
+          scope
+        )
+      );
+      expect(sheet.info).toMatchObject({ width: size.width, height: size.height });
+      const translucent = [];
+      for (let y = 0; y < size.height; y += 1)
+        for (let x = 0; x < size.width; x += 1) {
+          const alpha = pixelAt(sheet, x, y)[3];
+          if (alpha !== 255 && translucent.length < 4) translucent.push({ x, y, alpha });
+        }
+      expect(translucent).toEqual([]);
+    }
+  );
 
   it('reveals the tall fill’s edge colour in both letterbox bands of a portrait picture', async () => {
     const artwork = await offlineArtwork();
