@@ -37,7 +37,7 @@ export function SegmentThumb({ cell, index }: SegmentThumbProps) {
   const reduced = useReduceMotion();
   const [placed, setPlaced] = useState<Placement>({ index, cell, travels: false });
   if (placed.index !== index || placed.cell !== cell)
-    setPlaced({ index, cell, travels: placed.index !== index && !reduced });
+    setPlaced({ index, cell, travels: placed.index !== index });
   return (
     <html.div
       aria-hidden
@@ -45,7 +45,8 @@ export function SegmentThumb({ cell, index }: SegmentThumbProps) {
       style={[
         styles.frame,
         styles.place(cell.x, cell.width),
-        placed.travels && styles.travels(`${THUMB_TRAVEL_MS}ms`),
+        // Read live: reduced motion switched on mid-glide stops the glide it is in.
+        placed.travels && !reduced && styles.travels(`${THUMB_TRAVEL_MS}ms`),
       ]}
     >
       <html.div style={thumbStyles.face} />
