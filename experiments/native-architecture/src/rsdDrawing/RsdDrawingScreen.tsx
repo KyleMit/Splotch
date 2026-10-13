@@ -26,7 +26,7 @@ import { RsdAction, styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDraftNotice } from './RsdDraftNotice';
-import { RsdInstallBanner } from './RsdInstallBanner';
+import { RsdInstallBanner } from './installBannerSurface';
 import { NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
