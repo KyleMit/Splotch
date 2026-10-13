@@ -20,6 +20,7 @@ import {
   PARENT_GATE_KEY_LABELS,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateKeypad.tsx';
 import { gateKey, gateProblem, solveParentGate, tapGateKeys } from './rsd-parent-gate-keypad.mjs';
+import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
 
 const read = (path) => readFileSync(join(import.meta.dirname, '../../..', path), 'utf8');
 async function click(label) {
@@ -95,6 +96,47 @@ it('mounts actual RSD shared gate, policy radio state, confirmation and persiste
   await click('Keep drawing');
   await click('Parent Center fixture entry');
   expect(host.textContent).not.toContain('Grown-ups only');
+});
+
+it("keeps a failed AI-disable save pending and retryable after the queued What's New stamp writes", async () => {
+  let stored = null;
+  let rejectDisable;
+  const storage = {
+    read: vi.fn(async () => stored),
+    write: vi.fn(async (next) => {
+      stored = next;
+    }),
+  };
+  const owner = await mountProduct(storage);
+  await click('Parent Center fixture entry');
+  await solveParentGate();
+  await click('AI picture creation');
+  expect(JSON.parse(stored)).toMatchObject({ aiEnabled: true, whatsNewSeen: null });
+  storage.write.mockImplementationOnce(
+    () =>
+      new Promise((_resolve, reject) => {
+        rejectDisable = reject;
+      })
+  );
+  await click('AI picture creation');
+  expect(owner.getState().settings.status).toBe('saving');
+  await act(async () => owner.settings.markWhatsNewSeen());
+  expect(storage.write).toHaveBeenCalledTimes(2);
+  await act(async () => rejectDisable(new Error('disk full')));
+  expect(storage.write).toHaveBeenCalledTimes(3);
+  expect(JSON.parse(stored)).toMatchObject({ aiEnabled: true, whatsNewSeen: WHATS_NEW_STAMP });
+  expect(owner.getState().settings).toMatchObject({
+    status: 'ready',
+    aiEnabled: true,
+    saved: false,
+    whatsNewSeen: WHATS_NEW_STAMP,
+  });
+  checkedSwitch(host.querySelector('[aria-label="AI picture creation"]'), true);
+  expect(host.textContent).toContain('Parent Center choices were not saved');
+  await click('Retry saving Parent Center choices');
+  expect(JSON.parse(stored)).toMatchObject({ aiEnabled: false, whatsNewSeen: WHATS_NEW_STAMP });
+  expect(owner.getState().settings).toMatchObject({ aiEnabled: false, saved: true });
+  checkedSwitch(host.querySelector('[aria-label="AI picture creation"]'), false);
 });
 
 it('rejects missing and incorrect native switch checked mappings', () => {
