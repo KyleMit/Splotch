@@ -24,6 +24,8 @@ import { RsdAction, styles as controlStyles } from './controls';
 import { useState } from 'react';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
+import { RsdOrientationChoices } from './RsdOrientationChoices';
+import type { OrientationChoice } from '../settings/orientation';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -36,6 +38,7 @@ type NativeSoundSettingsDialogProps = {
   onStrokeWidthControlChange: (enabled: boolean) => void;
   onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
+  onOrientationChange: (orientation: OrientationChoice) => void;
   onColoringBookChange: (enabled: boolean) => void;
   onRetry: () => void;
   onClose: () => void;
@@ -55,6 +58,7 @@ export function NativeSoundSettingsDialog({
   onStrokeWidthControlChange,
   onSoundLevelChange,
   onAppearanceChange,
+  onOrientationChange,
   onColoringBookChange,
   onRetry,
   onClose,
@@ -122,21 +126,12 @@ export function NativeSoundSettingsDialog({
             disabled={busy}
             onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
           />
-          <html.span>Appearance</html.span>
-          <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
-            {APPEARANCE_PREFERENCES.map((appearance) => (
-              <RsdAction
-                key={appearance}
-                label={`${APPEARANCE_LABELS[appearance]} appearance`}
-                text={APPEARANCE_LABELS[appearance]}
-                selection="radio"
-                selected={settings.appearance === appearance}
-                disabled={busy}
-                onClick={() => onAppearanceChange(appearance)}
-              />
-            ))}
-          </html.div>
-          <html.span>System follows your device.</html.span>
+          <AppearanceChoices
+            settings={settings}
+            busy={busy}
+            onAppearanceChange={onAppearanceChange}
+            onOrientationChange={onOrientationChange}
+          />
           <RsdAction
             label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
             selection="switch"
@@ -166,6 +161,43 @@ export function NativeSoundSettingsDialog({
         </html.div>
       )}
     </NativeDialog>
+  );
+}
+
+function AppearanceChoices({
+  settings,
+  busy,
+  onAppearanceChange,
+  onOrientationChange,
+}: Pick<
+  NativeSoundSettingsDialogProps,
+  'settings' | 'onAppearanceChange' | 'onOrientationChange'
+> & {
+  busy: boolean;
+}) {
+  return (
+    <>
+      <html.span>Appearance</html.span>
+      <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
+        {APPEARANCE_PREFERENCES.map((appearance) => (
+          <RsdAction
+            key={appearance}
+            label={`${APPEARANCE_LABELS[appearance]} appearance`}
+            text={APPEARANCE_LABELS[appearance]}
+            selection="radio"
+            selected={settings.appearance === appearance}
+            disabled={busy}
+            onClick={() => onAppearanceChange(appearance)}
+          />
+        ))}
+      </html.div>
+      <html.span>System follows your device.</html.span>
+      <RsdOrientationChoices
+        selected={settings.orientation}
+        busy={busy}
+        onChange={onOrientationChange}
+      />
+    </>
   );
 }
 

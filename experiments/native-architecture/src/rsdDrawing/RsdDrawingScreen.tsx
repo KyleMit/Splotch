@@ -30,6 +30,8 @@ import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
+import { soundSettingsActions } from './soundSettingsActions';
+import { useDeviceOrientation } from '../platform/deviceOrientation';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -150,6 +152,7 @@ function RsdDrawingContent({
   const paperBlocked = menu.open || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
   useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
+  useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
       <NativeFrame>
@@ -218,27 +221,7 @@ function RsdDrawingContent({
               onBrushAvailabilityChange={screen.setBrushAvailable}
               onRetryBrushSave={screen.retryBrushSave}
               notice={soundNotice}
-              onToggle={() => {
-                void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
-              }}
-              onUndoButtonChange={(enabled) => {
-                void sound.owner?.settings.setUndoButtonEnabled(enabled);
-              }}
-              onStrokeWidthControlChange={(enabled) => {
-                void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
-              }}
-              onSoundLevelChange={(level) => {
-                void sound.owner?.settings.setSoundLevel(level);
-              }}
-              onAppearanceChange={(appearance) => {
-                void sound.owner?.settings.setAppearance(appearance);
-              }}
-              onColoringBookChange={(enabled) => {
-                void sound.owner?.settings.setColoringBookEnabled(enabled);
-              }}
-              onRetry={() => {
-                void sound.owner?.settings.retrySave();
-              }}
+              {...soundSettingsActions(sound)}
               onClose={screen.closeSettings}
               visible={route.visible}
               onDismiss={onModalDismissed}
