@@ -63,8 +63,16 @@ const WIDE_FRAME = { width: 1536, height: 1024 };
 // The flat sky and grass of a lossless fill, compared after SVG resampling.
 const COLOR_TOLERANCE = 12;
 // A band must lie under the fill's antialiased edge for at least one paper unit, a whole pixel
-// at the 1:1 render below and more on any device (bookFill.ts BAND_UNDERLAP_UNITS).
+// at the 1:1 render below; bookFill.ts underlap carries each band to the picture's middle.
 const MIN_UNDERLAP_UNITS = 1;
+// The tall Cat sheet the seam was measured on, and presentations far smaller than its semantic
+// size: a thumbnail, a small window, and one between them.
+const SMALL_SHEET_PAPER = { width: 567, height: 1024 };
+const SMALL_PRESENTATIONS = [
+  { width: 42, height: 75 },
+  { width: 100, height: 180 },
+  { width: 189, height: 341 },
+];
 
 const pack = catalogPack('dinosaur', 'full');
 const trex = offlinePageId(pack, 'trex');
@@ -102,14 +110,38 @@ function scoped(content, { pageId, paper, artwork = {} }) {
   );
 }
 
-function picture(size, content, scope) {
+function picture(size, content, scope, presented = size) {
   return renderToStaticMarkup(
     createElement(
       Svg,
-      { width: size.width, height: size.height, viewBox: `0 0 ${size.width} ${size.height}` },
+      {
+        width: presented.width,
+        height: presented.height,
+        viewBox: `0 0 ${size.width} ${size.height}`,
+      },
       scoped(content, scope)
     )
   );
+}
+
+// The device pixels lying wholly on the paper when it is contain-fitted into the presentation.
+function sheetPixels(size, presented) {
+  const scale = Math.min(presented.width / size.width, presented.height / size.height);
+  const span = (outer, extent) => {
+    const start = (outer - extent * scale) / 2;
+    return [Math.ceil(start), Math.floor(start + extent * scale)];
+  };
+  return { columns: span(presented.width, size.width), rows: span(presented.height, size.height) };
+}
+
+function translucentPixels(sheet, { columns, rows }) {
+  const found = [];
+  for (let y = rows[0]; y < rows[1]; y += 1)
+    for (let x = columns[0]; x < columns[1]; x += 1) {
+      const alpha = pixelAt(sheet, x, y)[3];
+      if (alpha !== 255 && found.length < 4) found.push({ x, y, alpha });
+    }
+  return found;
 }
 
 async function pixels(markup) {
@@ -275,13 +307,26 @@ describe('Magic covers the whole paper on a book page', () => {
         )
       );
       expect(sheet.info).toMatchObject({ width: size.width, height: size.height });
-      const translucent = [];
-      for (let y = 0; y < size.height; y += 1)
-        for (let x = 0; x < size.width; x += 1) {
-          const alpha = pixelAt(sheet, x, y)[3];
-          if (alpha !== 255 && translucent.length < 4) translucent.push({ x, y, alpha });
-        }
-      expect(translucent).toEqual([]);
+      expect(translucentPixels(sheet, sheetPixels(size, size))).toEqual([]);
+    }
+  );
+
+  it.each(SMALL_PRESENTATIONS)(
+    'keeps every join opaque when the tall sheet is presented at %j',
+    async (presented) => {
+      const artwork = await offlineArtwork();
+      const scope = { pageId: trex, paper: PORTRAIT_PAPER, artwork: { [trex]: artwork } };
+      const size = SMALL_SHEET_PAPER;
+      const sheet = await pixels(
+        picture(
+          size,
+          createElement(OfflineMagicFill, { pageId: trex, theme: 'light', size }),
+          scope,
+          presented
+        )
+      );
+      expect(sheet.info).toMatchObject(presented);
+      expect(translucentPixels(sheet, sheetPixels(size, presented))).toEqual([]);
     }
   );
 
