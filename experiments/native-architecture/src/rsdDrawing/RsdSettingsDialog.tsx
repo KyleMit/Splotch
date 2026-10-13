@@ -39,6 +39,7 @@ import { useDialogBody } from './dialogScope';
 import { settingsShell } from './modalGeometry';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
+import { RsdColoringSection } from './RsdColoringSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
@@ -238,12 +239,10 @@ function SettingsSection(props: SectionProps) {
       );
     case 'coloring':
       return (
-        <RsdAction
-          label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
-          selection="switch"
-          selected={settings.coloringBookEnabled}
-          disabled={busy}
-          onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
+        <RsdColoringSection
+          enabled={settings.coloringBookEnabled}
+          busy={busy}
+          onColoringBookChange={onColoringBookChange}
         />
       );
     // AI Art has no native section body yet.
