@@ -121,7 +121,7 @@ function assertRsdWeightsUseFontTokens(files) {
   const offenders = [];
   for (const [file, code] of files) {
     for (const [tag] of code.matchAll(/<html\.(?:h[1-6]|strong|b)\b[^>]*>/g))
-      if (!/\.boldText\b/.test(tag)) offenders.push(`${file}: ${tag}`);
+      if (!/\.(?:bold|semibold)Text\b/.test(tag)) offenders.push(`${file}: ${tag}`);
     for (const [line] of code.matchAll(/^.*\bfontWeight:.*$/gm))
       if (
         /react-strict-dom/.test(code) &&
@@ -244,21 +244,21 @@ describe('RSD font tokens', () => {
     const controls = read('src/rsdDrawing/controls.tsx');
     for (const root of ['screen', 'themeRoot'])
       expect(styleBlock(controls, root)).toContain('fontFamily: fonts.family,');
-    const themedRoots = (file) =>
-      read(file).match(/style=\{\[(?:styles\.screen|controlStyles\.themeRoot)[^\]]*\]\}/g);
-    for (const roots of [
-      themedRoots('src/rsdDrawing/RsdDrawingScreen.tsx'),
-      themedRoots('src/rsdDrawing/NativeDialog.tsx'),
-    ]) {
-      expect(roots.length).toBeGreaterThan(0);
-      for (const root of roots) expect(root).toContain('fontTheme');
-    }
+    const screenRoots = read('src/rsdDrawing/RsdDrawingScreen.tsx').match(
+      /style=\{\[(?:styles\.screen|controlStyles\.themeRoot)[^\]]*\]\}/g
+    );
+    expect(screenRoots.length).toBeGreaterThan(0);
+    for (const root of screenRoots) expect(root).toContain('fontTheme');
+    const shell = read('src/rsdDrawing/ModalShell.tsx');
+    expect(shell.match(/style=\{\[\s*fontTheme,[^\]]*styles\.card\(/g)).toHaveLength(1);
+    expect(shell.slice(shell.indexOf('  card: ('))).toMatch(/^[^}]*fontFamily: fonts\.family,/);
   });
 
   it('carry every bold RSD text, and reject a heading or weight that bypasses them', () => {
     expect(() => assertRsdWeightsUseFontTokens(rsdFiles())).not.toThrow();
-    const [file, code] = rsdFiles().find(([, text]) => text.includes('<html.h1 style='));
-    const bareHeading = code.replace(/<html\.h1 style=\{[^}]*\}>/, '<html.h1>');
+    const heading = /<html\.h1\b[^>]*>/;
+    const [file, code] = rsdFiles().find(([, text]) => heading.test(text));
+    const bareHeading = code.replace(heading, '<html.h1>');
     expect(() => assertRsdWeightsUseFontTokens([[file, bareHeading]])).toThrow();
     const literalWeight = read('src/rsdDrawing/RsdSettingsHub.tsx').replace(
       'fontWeight: fonts.boldWeight',

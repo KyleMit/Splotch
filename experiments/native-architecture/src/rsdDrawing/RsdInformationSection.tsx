@@ -12,7 +12,6 @@ export function RsdInformationSection({
   const content = INFORMATION_CONTENT[page];
   return (
     <html.div style={styles.dialogContent}>
-      <html.h1 style={styles.boldText}>{content.title}</html.h1>
       <html.span>{`Splotch ${APP_VERSION} · Beta`}</html.span>
       {content.sections.map((section) => (
         <html.div key={section.title} style={styles.stack}>

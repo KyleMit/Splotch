@@ -5,6 +5,7 @@ import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES, TOUCH_TARGET, type PaperTheme } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
 import type { NativeIconName } from './icons.generated';
+import { useDialogActive } from './dialogScope';
 
 // Icon buttons and swatches size their border box, so the touch target is their whole outer
 // size on every renderer (React Strict DOM defaults to content-box, as the web does). Edge
@@ -87,6 +88,7 @@ export const styles = css.create({
   fullBleed: { padding: 0, gap: 0 },
   // Headings and strong text: RSD's own bold would make Android swap in a system face.
   boldText: { fontFamily: fonts.boldFamily, fontWeight: fonts.boldWeight },
+  semiboldText: { fontFamily: fonts.semiboldFamily, fontWeight: fonts.semiboldWeight },
   paletteBar: {
     display: 'flex',
     flexDirection: 'row',
@@ -110,12 +112,11 @@ export const styles = css.create({
   row: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space3 },
   stack: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
   toolbar: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space2 },
+  // ModalShell's card owns the surface and the inset; a dialog body only stacks its content.
   dialogContent: {
     display: 'flex',
     flexDirection: 'column',
-    padding: dimensions.space4,
     gap: dimensions.space3,
-    backgroundColor: colors.surface,
     color: colors.text,
     fontSize: dimensions.fontSizeMd,
   },
@@ -197,9 +198,10 @@ export function RsdAction({
   selected,
   onClick,
 }: ActionProps) {
+  const active = useDialogActive();
   return (
     <html.button
-      disabled={disabled}
+      disabled={disabled || !active}
       aria-disabled={disabled}
       aria-label={label}
       role={selection ?? 'button'}

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
@@ -19,9 +19,25 @@ vi.mock('../../experiments/native-architecture/src/rsdDrawing/controls.tsx', () 
   RsdAction: ({ label, onClick }) =>
     createElement('button', { 'aria-label': label, onClick }, label),
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx', () => ({
-  NativeDialog: ({ label, children, footer }) =>
-    createElement('section', { role: 'dialog', 'aria-label': label }, children, footer),
+// The frame as the boundary drives it: shown while visible, reporting its dismissal once hidden.
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx', () => ({
+  ModalShell: function ModalShell({ visible, label, header, children, onDismiss }) {
+    useEffect(() => {
+      if (!visible) onDismiss?.();
+    }, [visible, onDismiss]);
+    return visible
+      ? createElement('section', { role: 'dialog', 'aria-label': label }, header, children)
+      : null;
+  },
+}));
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx', () => ({
+  DialogHeader: ({ title, onClose }) =>
+    createElement(
+      'header',
+      null,
+      createElement('h2', null, title),
+      createElement('button', { 'aria-label': 'Close', onClick: onClose })
+    ),
 }));
 
 const CHUNK_FAILURE = new Error(
@@ -86,7 +102,8 @@ it('closes a failed surface through its owner and leaves the drawing in place', 
   const Surface = lazySurface(vi.fn().mockRejectedValue(CHUNK_FAILURE));
   await act(async () => root.render(screen(Surface, onClose)));
   await settle();
-  await act(async () => button('Keep drawing').click());
+  expect(button('Keep drawing')).toBeNull();
+  await act(async () => button('Close').click());
   expect(onClose).toHaveBeenCalledOnce();
   expect(dialog(SURFACE_FAILURE_LABEL)).toBeNull();
   expect(host.querySelector('[data-testid="paper"]').textContent).toBe('drawing');

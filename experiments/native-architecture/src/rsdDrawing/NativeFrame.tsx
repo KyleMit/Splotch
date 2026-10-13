@@ -10,6 +10,7 @@ import {
   SafeAreaProvider,
   SafeAreaView,
 } from 'react-native-safe-area-context';
+import { useModalOrigin } from './modalOrigin';
 
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
@@ -27,6 +28,7 @@ export function NativeFrame({
 }) {
   const styles = useDrawingStyles(themedStyles);
   const frame = variant === 'overlay' ? styles.overlay : styles.frame;
+  const origin = useModalOrigin();
   return (
     <SafeAreaProvider
       testID="rsd-window-insets"
@@ -39,6 +41,7 @@ export function NativeFrame({
         mode="padding"
         edges={['top', 'right', 'bottom', 'left']}
         style={frame}
+        onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
       >
         {children}
       </SafeAreaView>
