@@ -66,6 +66,7 @@ const scale = {
   fontSizeXl: '22px',
   fontWeightSemibold: '600',
   fontWeightBold: '700',
+  durationBase: '0.2s',
   scrimPill: 'rgb(23 23 29 / 72%)',
 } as const;
 
@@ -95,6 +96,8 @@ export const DRAWING_SCALE = {
   fontSizeXl: Number.parseFloat(scale.fontSizeXl),
   fontWeightSemibold: scale.fontWeightSemibold,
   fontWeightBold: scale.fontWeightBold,
+  // Seconds, as the shipping token states it; Reanimated takes milliseconds.
+  durationBase: Number.parseFloat(scale.durationBase),
 };
 
 // native-audio-projection.test.mjs pins these Settings metrics to the design scale.
