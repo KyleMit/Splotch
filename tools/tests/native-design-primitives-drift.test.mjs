@@ -39,6 +39,7 @@ const SHIPPING = {
   externalMark: web('lib/components/design/ExternalMark.svelte'),
   aiKeyManager: web('lib/components/settings/AiKeyManager.svelte'),
   reportFields: web('lib/components/report/ReportFields.svelte'),
+  setupInstructions: web('lib/components/settings/SetupInstructions.svelte'),
 };
 
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -85,6 +86,10 @@ function primitiveParity(shipping) {
     [
       declaration(shipping.installBanner, '.step-number', '--step-number-size'),
       px(stepNumber.STEP_NUMBER_SIZE_PX.compact),
+    ],
+    [
+      declaration(shipping.setupInstructions, '.section-number', '--step-number-size'),
+      px(stepNumber.STEP_NUMBER_SIZE_PX.summary),
     ],
     [
       declaration(shipping.appCss, ':nth-child(3n + 2) > .step-number--blob', 'border-radius'),

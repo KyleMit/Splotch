@@ -6,9 +6,10 @@ import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppeara
 import { blobXml, type BlobShape } from './blob';
 import { mixSrgb } from './colorMix';
 
-// app.css .step-number's default --step-number-size and the Install Banner's compact override.
+// app.css .step-number's default --step-number-size, the Install Banner's compact override and the
+// Settings install guide's summary badge (SetupInstructions.svelte .section-number).
 // Exported for native-design-primitives-drift.test.mjs, which reads both from shipping.
-export const STEP_NUMBER_SIZE_PX = { regular: 32, compact: 20 } as const;
+export const STEP_NUMBER_SIZE_PX = { regular: 32, summary: 26, compact: 20 } as const;
 export type StepNumberSize = keyof typeof STEP_NUMBER_SIZE_PX;
 
 // app.css cycles the three blobs down a list, :nth-child(3n + 1) through (3n), so neighbors differ.
@@ -36,6 +37,7 @@ const styles = css.create({
   },
   ink: (color: string) => ({ color }),
   regular: { fontSize: dimensions.fontSizeSm },
+  summary: { fontSize: dimensions.fontSizeSm },
   compact: { fontSize: dimensions.fontSizeXs },
 });
 

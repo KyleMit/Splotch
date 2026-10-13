@@ -17,6 +17,7 @@ import {
   type AreaSize,
 } from './edgeLayout';
 import type { NativeIconName } from './icons.generated';
+import { drawerControlShown } from '../settings/drawingControlPreferences';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -105,9 +106,12 @@ type ToolContext = {
 };
 
 // The Brush Button: a menu of every shown brush, or with one optional brush a switch for it.
-function brushTool({ screen, disabled, ink, flyout, setFlyout }: ToolContext): Tool | null {
+function brushTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolContext): Tool | null {
   const keyline = inkKeyline(ink);
-  const control = screen.brushControl;
+  // The Tool Drawer switch hides every optional brush, and with them the Brush Button.
+  const control: Screen['brushControl'] = sound.settings.toolDrawerEnabled
+    ? screen.brushControl
+    : { kind: 'none' };
   if (control.kind === 'toggle')
     return {
       key: 'brush',
@@ -167,12 +171,14 @@ function strokeTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolCon
 }
 
 // The shipping Actions Panel, in its order: Brush, Stroke Width, Coloring Book, Screenshot, AI
-// Image and Undo, each switched off where Settings hides it.
+// Image and Undo, each switched off where Settings hides it. The Tool Drawer switch hides the
+// drawer's own tools; Coloring, the camera and AI belong to their own sections and stay.
 function panelTools(context: ToolContext): Tool[] {
   const { screen, sound, product, disabled } = context;
   const brush = brushTool(context);
   const tools: Tool[] = brush ? [brush] : [];
-  if (sound.settings.strokeWidthControlEnabled) tools.push(strokeTool(context));
+  if (drawerControlShown(sound.settings, 'strokeWidthControlEnabled'))
+    tools.push(strokeTool(context));
   if (sound.settings.coloringBookEnabled)
     tools.push({
       key: 'coloring',
@@ -187,21 +193,22 @@ function panelTools(context: ToolContext): Tool[] {
         />
       ),
     });
-  tools.push({
-    key: 'camera',
-    render: (face) => (
-      <RsdIconButton
-        skin="tile"
-        {...face}
-        icon="camera"
-        label="Save screenshot"
-        disabled={disabled || !screen.inkVisible}
-        onPress={() => {
-          void screen.save();
-        }}
-      />
-    ),
-  });
+  if (sound.settings.screenshotEnabled)
+    tools.push({
+      key: 'camera',
+      render: (face) => (
+        <RsdIconButton
+          skin="tile"
+          {...face}
+          icon="camera"
+          label="Save screenshot"
+          disabled={disabled || !screen.inkVisible}
+          onPress={() => {
+            void screen.save();
+          }}
+        />
+      ),
+    });
   if (sound.settings.aiEnabled)
     tools.push({
       key: 'ai',
@@ -216,7 +223,7 @@ function panelTools(context: ToolContext): Tool[] {
         />
       ),
     });
-  if (sound.settings.undoButtonEnabled)
+  if (drawerControlShown(sound.settings, 'undoButtonEnabled'))
     tools.push({
       key: 'undo',
       render: (face) => (
@@ -263,6 +270,9 @@ export function RsdActionsPanel({
 }) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
+  // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
+  // landscape phone keeps its Color Button, which no Settings section owns.
+  const noActions = tools.length === 0;
   const scale = buttonScale / PERCENT;
   const layout = actionPanelLayout({
     area,
@@ -277,6 +287,7 @@ export function RsdActionsPanel({
     trigger < 0 ? null : flyoutPlacement(layout.mode, layout.tools[trigger], layout.size, viewport);
   const menu = placement ? { base: layout.base, scale, direction: placement.direction } : null;
   const tool = flyout === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
+  if (noActions && !layout.color) return null;
   return (
     <>
       <RsdColorControl
@@ -343,20 +354,22 @@ export function RsdActionsPanel({
           )}
         </View>
       ) : null}
-      <View testID="rsd-drawer-dock" style={[docks.slot, layout.toggle]}>
-        <RsdIconButton
-          skin="corner"
-          icon="chevron-right"
-          label={open ? 'Collapse controls' : 'Expand controls'}
-          expanded={open}
-          dimmed={flyout !== null}
-          turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
-          onPress={() => {
-            setFlyout(null);
-            onToggle();
-          }}
-        />
-      </View>
+      {noActions ? null : (
+        <View testID="rsd-drawer-dock" style={[docks.slot, layout.toggle]}>
+          <RsdIconButton
+            skin="corner"
+            icon="chevron-right"
+            label={open ? 'Collapse controls' : 'Expand controls'}
+            expanded={open}
+            dimmed={flyout !== null}
+            turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
+            onPress={() => {
+              setFlyout(null);
+              onToggle();
+            }}
+          />
+        </View>
+      )}
     </>
   );
 }

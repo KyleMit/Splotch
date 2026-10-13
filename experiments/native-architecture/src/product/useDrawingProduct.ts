@@ -194,7 +194,9 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     // Shipping handleDoubleTap: every tap records a Pencil, which reveals the parent's opt-out.
     const offPencil = subscribePencilDoubleTap(() => {
       void product.settings.markApplePencilSeen();
-      const enabled = product.getState().settings?.pencilEraserEnabled === true;
+      const settings = product.getState().settings;
+      // Shipping asks actionControlShown('eraserEnabled'): the Eraser hides with the drawer.
+      const enabled = settings?.pencilEraserEnabled === true && settings.toolDrawerEnabled;
       if (enabled && screenRef.current.toggleEraser()) impactThreshold();
     });
     setServices(services);
@@ -233,6 +235,11 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     if (settings.status !== 'loading')
       screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);
   }, [settings.status, settings.coloringBookEnabled]);
+  const brushesReady = screen.brushPreferences.status === 'ready';
+  const drawerHidden = settings.status !== 'loading' && !settings.toolDrawerEnabled;
+  useEffect(() => {
+    if (drawerHidden && brushesReady) screenRef.current.fallBackFromOptionalBrushes();
+  }, [drawerHidden, brushesReady]);
   return {
     sound: {
       settings,

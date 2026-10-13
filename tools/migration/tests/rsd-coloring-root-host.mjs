@@ -28,6 +28,7 @@ export function drawingScreenPort(actual, caller, projectHistory) {
       draftState: { status: 'session', message: '' },
       retryDraft: async () => {},
       selectInkBrush() {},
+      fallBackFromOptionalBrushes() {},
       ...caller.screen,
       library: caller.library,
       setColoringBookEnabled(enabled) {
@@ -111,6 +112,8 @@ export function nativeSettingsProps(owner, state) {
     onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
     onUndoButtonChange: (enabled) => owner.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled) => owner.setStrokeWidthControlEnabled(enabled),
+    onToolDrawerChange: (enabled) => owner.setToolDrawerEnabled(enabled),
+    onScreenshotChange: (enabled) => owner.setScreenshotEnabled(enabled),
     onSaveOnDeleteChange: (enabled) => owner.setSaveOnDeleteEnabled(enabled),
     onDrawingSoundChange: (enabled) => owner.setDrawingSoundEnabled(enabled),
     onDeleteSoundChange: (enabled) => owner.setDeleteSoundEnabled(enabled),
@@ -135,7 +138,8 @@ export function nativeSettingsProps(owner, state) {
     onClose() {},
     parentCenter: { unlocked: false, checkDue: true, onUnlock() {}, onLeave() {}, section: null },
     gate: null,
-    onFeedback() {},
+    feedback: null,
+    onOpenHostedPage() {},
     downloadedBooks: 0,
     ai: null,
   };

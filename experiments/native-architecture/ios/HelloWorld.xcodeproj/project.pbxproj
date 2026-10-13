@@ -12,6 +12,8 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		276400000000000000000003 /* SplotchPencil.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276400000000000000000001 /* SplotchPencil.swift */; };
 		276400000000000000000004 /* SplotchPencil.m in Sources */ = {isa = PBXBuildFile; fileRef = 276400000000000000000002 /* SplotchPencil.m */; };
+		282900000000000000000003 /* SplotchDeviceLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 282900000000000000000001 /* SplotchDeviceLock.swift */; };
+		282900000000000000000004 /* SplotchDeviceLock.m in Sources */ = {isa = PBXBuildFile; fileRef = 282900000000000000000002 /* SplotchDeviceLock.m */; };
 		285700000000000000000003 /* SplotchLibraryEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285700000000000000000001 /* SplotchLibraryEnvironment.swift */; };
 		285700000000000000000004 /* SplotchLibraryEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = 285700000000000000000002 /* SplotchLibraryEnvironment.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
@@ -29,6 +31,8 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HelloWorld/Info.plist; sourceTree = "<group>"; };
 		276400000000000000000001 /* SplotchPencil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchPencil.swift; path = HelloWorld/SplotchPencil.swift; sourceTree = "<group>"; };
 		276400000000000000000002 /* SplotchPencil.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchPencil.m; path = HelloWorld/SplotchPencil.m; sourceTree = "<group>"; };
+		282900000000000000000001 /* SplotchDeviceLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchDeviceLock.swift; path = HelloWorld/SplotchDeviceLock.swift; sourceTree = "<group>"; };
+		282900000000000000000002 /* SplotchDeviceLock.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchDeviceLock.m; path = HelloWorld/SplotchDeviceLock.m; sourceTree = "<group>"; };
 		285700000000000000000001 /* SplotchLibraryEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryEnvironment.swift; path = HelloWorld/SplotchLibraryEnvironment.swift; sourceTree = "<group>"; };
 		285700000000000000000002 /* SplotchLibraryEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchLibraryEnvironment.m; path = HelloWorld/SplotchLibraryEnvironment.m; sourceTree = "<group>"; };
 		5904545F09537900898C5C07 /* Pods-HelloWorld.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HelloWorld.release.xcconfig"; path = "Target Support Files/Pods-HelloWorld/Pods-HelloWorld.release.xcconfig"; sourceTree = "<group>"; };
@@ -69,6 +73,8 @@
 				285700000000000000000001 /* SplotchLibraryEnvironment.swift */,
 				276400000000000000000002 /* SplotchPencil.m */,
 				276400000000000000000001 /* SplotchPencil.swift */,
+				282900000000000000000002 /* SplotchDeviceLock.m */,
+				282900000000000000000001 /* SplotchDeviceLock.swift */,
 				F11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -367,6 +373,8 @@
 				285700000000000000000003 /* SplotchLibraryEnvironment.swift in Sources */,
 				276400000000000000000004 /* SplotchPencil.m in Sources */,
 				276400000000000000000003 /* SplotchPencil.swift in Sources */,
+				282900000000000000000004 /* SplotchDeviceLock.m in Sources */,
+				282900000000000000000003 /* SplotchDeviceLock.swift in Sources */,
 				0891EFB09A93FC2D659F4701 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

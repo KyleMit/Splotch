@@ -83,7 +83,6 @@ const groups = [];
 const switches = [];
 const toolbarSwitches = [];
 const toolbarConditions = [];
-const optionalSwitches = [];
 let radios = 0;
 const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
@@ -111,18 +110,7 @@ for (const component of [drawing, edgeControls, actionsPanel, coloringPicker, se
               ?.node.test
           );
         } else {
-          const map = path.findParent(
-            (parent) =>
-              parent.isCallExpression() &&
-              parent.node.arguments.some(
-                (argument) =>
-                  argument.type === 'ArrowFunctionExpression' &&
-                  argument.body.type === 'JSXElement' &&
-                  argument.body.openingElement === node
-              )
-          );
-          if (component === settingsDialog && map) optionalSwitches.push({ node, map: map.node });
-          else switches.push(node);
+          switches.push(node);
         }
         return;
       }
@@ -139,71 +127,15 @@ for (const component of [drawing, edgeControls, actionsPanel, coloringPicker, se
 assert.equal(groups.length, 1, 'RSD radio group count');
 assert.deepEqual(groups.map(literal), ['Paint colors'], 'RSD radio group names');
 assert.equal(radios, 1, 'RSD selection callers');
-const settingsValue = (expression, property) =>
-  expression?.type === 'MemberExpression' &&
-  !expression.computed &&
-  expression.object.type === 'Identifier' &&
-  expression.object.name === 'settings' &&
-  expression.property.type === 'Identifier' &&
-  expression.property.name === property;
-const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
-assert.ok(
-  switches.every((node) =>
-    [
-      'undoButtonEnabled',
-      'strokeWidthControlEnabled',
-      'saveOnDeleteEnabled',
-      'pencilEraserEnabled',
-    ].some((property) => settingsValue(selectedValue(node), property))
-  ),
-  'RSD switch state owner'
-);
-assert.deepEqual(
-  switches.map((node) => selectedValue(node).property.name).sort(),
-  ['pencilEraserEnabled', 'saveOnDeleteEnabled', 'strokeWidthControlEnabled', 'undoButtonEnabled'],
-  'RSD switch state callers'
-);
+// Every Settings switch is a toggle row in its own section module; none is a selected action.
+assert.equal(switches.length, 0, 'RSD switch state callers');
 const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
   parse,
-  imported,
   babel,
-  settingsDialog,
-  optionalSwitches,
   toolbarSwitches,
   toolbarConditions,
   attribute,
-  settingsValue,
 });
-const labelText = (node) =>
-  literal(attribute(node, 'label')) ?? attribute(node, 'label')?.value?.expression?.name;
-for (const [property, label, callback] of [
-  ['undoButtonEnabled', 'Show Undo button', 'onUndoButtonChange'],
-  ['strokeWidthControlEnabled', 'Show drawing width controls', 'onStrokeWidthControlChange'],
-  ['saveOnDeleteEnabled', 'SAVE_ON_DELETE_LABEL', 'onSaveOnDeleteChange'],
-  ['pencilEraserEnabled', 'PENCIL_ERASER_LABEL', 'onPencilEraserChange'],
-]) {
-  const node = switches.find((item) => settingsValue(selectedValue(item), property));
-  assert.equal(labelText(node), label, 'RSD control switch label');
-  assert.equal(
-    attribute(node, 'disabled')?.value?.expression.name,
-    'busy',
-    'RSD control switch guard'
-  );
-  const handler = attribute(node, 'onClick')?.value?.expression;
-  assert.ok(
-    handler?.type === 'ArrowFunctionExpression' &&
-      !handler.async &&
-      handler.params.length === 0 &&
-      handler.body.type === 'CallExpression' &&
-      handler.body.callee.type === 'Identifier' &&
-      handler.body.callee.name === callback &&
-      handler.body.arguments.length === 1 &&
-      handler.body.arguments[0].type === 'UnaryExpression' &&
-      handler.body.arguments[0].operator === '!' &&
-      settingsValue(handler.body.arguments[0].argument, property),
-    'RSD control switch owner'
-  );
-}
 const files = [
   'src/platform/BrowserBack.tsx',
   'src/platform/BrowserBack.web.tsx',
@@ -291,7 +223,9 @@ const files = [
   'src/platform/drawingDraftRecords.web.ts',
   'src/information/content.ts',
   'src/information/InformationSection.tsx',
-  'src/rsdDrawing/RsdInformationSection.tsx',
+  'src/rsdDrawing/RsdAboutSection.tsx',
+  'src/rsdDrawing/RsdWhatsNewSection.tsx',
+  'src/rsdDrawing/RsdFeedbackSection.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
   'src/rsdDrawing/RsdEdgeControls.tsx',
   'src/rsdDrawing/RsdActionsPanel.tsx',
@@ -383,7 +317,7 @@ process.stdout.write(
     canonicalEntry: true,
     mountedRsdSource: true,
     optionalBrushSwitches: optionalBrushes.elements.length,
-    optionalBrushLabels: optionalLabels.map((label) => `Show ${label}`),
+    optionalBrushLabels: optionalLabels,
     adaptiveToolbarSwitch: true,
     preservedSettingsSwitches: switches.length,
     releasedNative,
