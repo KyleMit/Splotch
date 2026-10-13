@@ -92,7 +92,7 @@ export async function webpResultGrid(bytes: Uint8Array, work: PngWork): Promise<
     seen.add(type);
     offset = end + (length & 1);
     work.charge();
-    if (work.due()) await work.pause();
+    if (work.due() && work.endSlice()) await work.pause();
   }
   if (
     !picture ||

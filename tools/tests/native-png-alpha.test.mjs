@@ -76,6 +76,14 @@ function fixture({
     chunk('IEND'),
   ]);
 }
+// Enough raw bytes that the decoder must pause at least once even when the clock is frozen.
+const STRETCH_GRID = { width: 256, height: 512 };
+function stretchFixture() {
+  const rows = Array.from({ length: STRETCH_GRID.height }, () =>
+    new Array(STRETCH_GRID.width * 4).fill(0)
+  );
+  return fixture({ rows, compression: { level: 0 } });
+}
 function decode(bytes, expected = grid, current = () => true) {
   return createPngAlphaDecoder().decode(bytes.toString('base64'), expected, current);
 }
@@ -278,19 +286,16 @@ describe('bounded production PNG alpha observation', () => {
   });
   it('keeps one underlying decoder until cancellation actually settles', async () => {
     vi.useFakeTimers();
-    const rows = Array.from({ length: 64 }, () => new Array(256).fill(0));
-    const png = fixture({ rows, compression: { level: 0 } }).toString('base64');
+    const png = stretchFixture().toString('base64');
     const decoder = createPngAlphaDecoder();
     let current = true;
-    const first = decoder.decode(png, { width: 64, height: 64 }, () => current);
+    const first = decoder.decode(png, STRETCH_GRID, () => current);
     const rejected = (async () => {
       await expect(first).rejects.toThrow('cancelled');
     })();
     await Promise.resolve();
     await Promise.resolve();
-    await expect(decoder.decode(png, { width: 64, height: 64 }, () => true)).rejects.toThrow(
-      'still settling'
-    );
+    await expect(decoder.decode(png, STRETCH_GRID, () => true)).rejects.toThrow('still settling');
     current = false;
     await vi.runAllTimersAsync();
     await rejected;
@@ -302,8 +307,7 @@ describe('bounded production PNG alpha observation', () => {
     vi.useFakeTimers();
     let now = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => now);
-    const rows = Array.from({ length: 64 }, () => new Array(256).fill(0));
-    const pending = decode(fixture({ rows, compression: { level: 0 } }), { width: 64, height: 64 });
+    const pending = decode(stretchFixture(), STRETCH_GRID);
     const rejected = (async () => {
       await expect(pending).rejects.toThrow('did not finish');
     })();

@@ -29,7 +29,7 @@ async function chunks(bytes: Uint8Array, work: PngWork) {
     for (let index = offset + 4; index < end - 4; index++) {
       crc = CRC_TABLE[(crc ^ bytes[index]) & 255] ^ (crc >>> 8);
       work.charge();
-      if (work.due()) await work.pause();
+      if (work.due() && work.endSlice()) await work.pause();
     }
     if ((crc ^ 0xffffffff) >>> 0 !== view.getUint32(end - 4)) invalidImage();
     result.push({ type, data: bytes.subarray(offset + 8, end - 4) });
