@@ -42,12 +42,20 @@ const BRUSH_ICONS = {
   eraser: 'brush-eraser',
 } as const satisfies Record<Brush, NativeIconName>;
 
+// The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
+// and the overlay that reads the drawer state, never the strokes on the paper.
 export function RsdEdgeLayout({
   paintsDisabled,
   status,
   children,
+  paperOverlay,
   ...controls
-}: Controls & { paintsDisabled: boolean; status: ReactNode; children: ReactNode }) {
+}: Controls & {
+  paintsDisabled: boolean;
+  status: ReactNode;
+  children: ReactNode;
+  paperOverlay: (drawerOpen: boolean) => ReactNode;
+}) {
   const { screen, sound, disabled } = controls;
   const size = controlSize(sound.settings.buttonScale);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -100,6 +108,7 @@ export function RsdEdgeLayout({
       status={status}
     >
       {children}
+      {paperOverlay(drawerOpen)}
     </NativeDrawingLayout>
   );
 }
