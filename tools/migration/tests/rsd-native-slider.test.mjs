@@ -130,7 +130,7 @@ describe('semantics', () => {
   it('indents an icon-less row under its toggle and leads an icon row with the icon', async () => {
     await mount({ initial: 60 });
     expect(style(slider().parentElement).marginLeft).toBe(30);
-    await mount({ initial: 60, icon: 'settings' });
+    await mount({ initial: 60, icon: 'photo-size-select-small' });
     expect(style(slider().parentElement).marginLeft).toBeUndefined();
     expect(container.querySelector('#size svg').getAttribute('width')).toBe(
       String(SLIDER_METRICS.SETTING_ICON_PX)

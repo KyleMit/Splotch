@@ -30,9 +30,13 @@ const SHIPPING_PICKER = readFileSync(
 const CELL_WIDTH_PX = 100;
 const TRACK_INSET_PX = Number.parseFloat(scale.space1);
 const THEME_OPTIONS = [
-  { value: 'light', label: 'Light', icon: 'settings' },
-  { value: 'dark', label: 'Dark', icon: 'backspace' },
-  { value: 'system', label: 'System', icon: 'chevron-right', disabled: true },
+  { value: 'light', label: 'Light', icon: 'theme-light' },
+  { value: 'dark', label: 'Dark', icon: 'theme-dark' },
+  { value: 'system', label: 'System', icon: 'theme-auto', disabled: true },
+];
+const VIEW_OPTIONS = [
+  { value: 'android', label: 'First view', icon: 'android' },
+  { value: 'ios', label: 'Second view', icon: 'phone-tablet' },
 ];
 const CHIP_OPTIONS = [
   { value: 'eraser', label: 'Eraser', icon: 'brush-eraser' },
@@ -112,6 +116,13 @@ const options = () => [...container.querySelectorAll('button')];
 const option = (label) => container.querySelector(`button[aria-label="${label}"]`);
 // React Strict DOM hands an option's text styles to the label it wraps.
 const ink = (label) => native(option(label).querySelector('span')).style.color;
+// The specimen icons are deferred: their markup arrives once the lazy icon chunk resolves.
+const iconXml = async (label) => {
+  await vi.waitFor(() =>
+    expect(option(label).querySelector('svg').getAttribute('data-xml')).toContain('<path')
+  );
+  return option(label).querySelector('svg').getAttribute('data-xml');
+};
 const thumb = () => container.querySelector('[data-testid="reanimated-view"]');
 const travel = (to) => ({
   to,
@@ -229,8 +240,8 @@ describe('segment thumb', () => {
     expect([light.minWidth, light.minHeight]).toEqual([48, 48]);
     const icons = options().map((button) => button.querySelector('svg'));
     expect(icons.map((icon) => icon.getAttribute('width'))).toEqual(['16', '16', '16']);
-    expect(icons[0].getAttribute('data-xml')).toContain('fill="#fff"');
-    expect(icons[1].getAttribute('data-xml')).toContain(`fill="${themes.light.iconInk}"`);
+    expect(await iconXml('Light')).toContain('fill="#fff"');
+    expect(await iconXml('Dark')).toContain(`fill="${themes.light.iconInk}"`);
   });
 
   it('hugs its options when it does not fill and keeps names when labels are hidden', async () => {
@@ -306,10 +317,19 @@ describe('underline tabs', () => {
       expect(native(option('Light')).style.borderBottomColor, theme).toBe(brand.brand);
       expect(ink('Light'), theme).toBe(themes[theme].brandText);
       expect(ink('Dark'), theme).toBe(themes[theme].textSoft);
-      expect(option('Light').querySelector('svg').getAttribute('data-xml')).toContain(
-        `fill="${themes[theme].brandText}"`
-      );
+      expect(await iconXml('Light')).toContain(`fill="${themes[theme].brandText}"`);
       expect(thumb()).toBeNull();
+    }
+  });
+
+  it('inks the unfilled android and phone-tablet glyphs with the tab ink once their chunk loads', async () => {
+    for (const theme of ['light', 'dark']) {
+      await mount({ initial: 'android', variant: 'underline', options: VIEW_OPTIONS }, { theme });
+      const live = await iconXml('First view');
+      const idle = await iconXml('Second view');
+      expect(live, theme).toMatch(new RegExp(`^<svg [^>]*fill="${themes[theme].brandText}"`));
+      expect(idle, theme).toMatch(new RegExp(`^<svg [^>]*fill="${themes[theme].textSoft}"`));
+      expect(live + idle).not.toContain('currentColor');
     }
   });
 
