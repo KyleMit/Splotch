@@ -144,7 +144,7 @@ it.each([
   ["'Drawing sound on'", "'Coloring book on'", 'RSD soundEnabled switch labels'],
 ])('rejects the actual Settings switch mutation for %s', (before, after, reason) => {
   const path = fixture();
-  const target = join(path, 'src/rsdDrawing/NativeDialog.tsx');
+  const target = join(path, 'src/rsdDrawing/RsdSettingsDialog.tsx');
   const original = readFileSync(target, 'utf8');
   expect(original.split(before)).toHaveLength(2);
   writeFileSync(target, original.replace(before, after));
@@ -191,49 +191,49 @@ it.each([
     'RSD optional brush labels',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'OPTIONAL_BRUSHES.map((brush)',
     'APPEARANCE_PREFERENCES.map((brush)',
     'RSD optional brush map owner',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'selected={brushState.availability[brush]}',
     'selected={settings.availability[brush]}',
     'RSD optional brush switch state owner',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'selected={brushState.availability[brush]}',
     "selected={brushState.availability['crayon']}",
     'RSD optional brush switch state owner',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'label={`Show ${BRUSHES[brush].label}`}',
     'label={`Hide ${BRUSHES[brush].label}`}',
     'RSD optional brush switch labels',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'label={`Show ${BRUSHES[brush].label}`}',
     "label={`Show ${BRUSHES['crayon'].label}`}",
     'RSD optional brush switch labels',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     "disabled={busy || brushState.status !== 'ready'}",
     "disabled={busy || settings.status !== 'ready'}",
     'RSD optional brush switch disabled owner',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}',
     'onClick={() => onBrushAvailabilityChange(brush, brushState.availability[brush])}',
     'RSD optional brush switch callback',
   ],
   [
-    'src/rsdDrawing/NativeDialog.tsx',
+    'src/rsdDrawing/RsdSettingsDialog.tsx',
     'onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}',
     "onClick={() => onBrushAvailabilityChange('crayon', !brushState.availability[brush])}",
     'RSD optional brush switch callback',

@@ -243,6 +243,74 @@ describe('owned web fixed-grid SVG snapshot lifecycle', () => {
     expect(() => ref.current.toDataURL(vi.fn(), DIMENSIONS)).toThrow('not ready');
   });
 
+  async function renderFill(href) {
+    await act(async () =>
+      root.render(
+        createElement(
+          CaptureSvg,
+          { ref, ...DIMENSIONS, viewBox: '0 0 1024 768' },
+          createElement('image', { href, width: 10, height: 10 })
+        )
+      )
+    );
+  }
+
+  it('copies a fill served as a file into the snapshot before rasterizing it', async () => {
+    const WEBP = new Uint8Array([82, 73, 70, 70]);
+    const fetched = vi.fn(async () => new Response(WEBP, { status: 200 }));
+    vi.stubGlobal('fetch', fetched);
+    await renderFill('/assets/farm/cat-wide.light.1.webp');
+    const serialized = vi.spyOn(XMLSerializer.prototype, 'serializeToString');
+    const callback = vi.fn();
+    ref.current.toDataURL(callback, DIMENSIONS);
+    expect(images).toHaveLength(0);
+    await vi.waitFor(() => expect(images).toHaveLength(1));
+    expect(fetched).toHaveBeenCalledExactlyOnceWith('/assets/farm/cat-wide.light.1.webp');
+    const source = serialized.mock.results[0].value;
+    expect(source).toContain(`href="data:`);
+    expect(source).toContain(`;base64,${Buffer.from(WEBP).toString('base64')}"`);
+    expect(source).not.toContain('/assets/farm/');
+    images[0].onload();
+    expect(callback).toHaveBeenCalledExactlyOnceWith('aW5r');
+  });
+
+  it('keeps a data-URI fill without fetching and rasterizes in the same call', async () => {
+    const fetched = vi.fn();
+    vi.stubGlobal('fetch', fetched);
+    await renderFill('data:image/webp;base64,UklGRg==');
+    capture();
+    expect(images).toHaveLength(1);
+    expect(fetched).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when a fill served as a file does not load', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 404 }))
+    );
+    await renderFill('/assets/farm/gone.webp');
+    const callback = vi.fn();
+    ref.current.toDataURL(callback, DIMENSIONS);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledExactlyOnceWith(''));
+    expect(images).toHaveLength(0);
+  });
+
+  it('drops a fetched fill whose capture was released before it arrived', async () => {
+    let respond;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise((resolve) => (respond = resolve)))
+    );
+    await renderFill('/assets/farm/slow.webp');
+    const callback = vi.fn();
+    const release = ref.current.toDataURL(callback, DIMENSIONS);
+    release();
+    respond(new Response(new Uint8Array([1]), { status: 200 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(images).toHaveLength(0);
+    expect(callback).not.toHaveBeenCalled();
+  });
+
   it('disposes the canvas and refuses a failed draw without claiming a PNG', () => {
     draw.mockImplementation(() => {
       throw new Error('Lost raster context');

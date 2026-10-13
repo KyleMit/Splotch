@@ -16,9 +16,11 @@ import {
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { bookFillPlacement } from '../../experiments/native-architecture/src/drawing/bookFill.ts';
 import {
-  BUNDLED_BOOK_ART,
-  bundledArt,
+  bundledFill,
+  bundledOutline,
 } from '../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
+import { BUNDLED_FARM_IMAGES } from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
+import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
@@ -171,8 +173,13 @@ describe('coloring art follows the paper orientation (ADR-0050 native amendment)
     ],
   ])('uses the %s art for %j', (_label, size, orientation) => {
     expect(artOrientation(size)).toBe(orientation);
-    for (const pageId of FARM_PAGE_IDS)
-      expect(bundledArt(pageId, 'light', size)).toBe(BUNDLED_BOOK_ART[pageId][orientation].light);
+    for (const pageId of FARM_PAGE_IDS) {
+      const outlines = BUNDLED_BOOK_OUTLINES[pageId];
+      expect(bundledOutline(outlines, 'light', size)).toBe(outlines[orientation].light);
+      expect(bundledFill(pageId, 'light', size)).toBe(
+        BUNDLED_FARM_IMAGES[pageId][orientation].light
+      );
+    }
   });
 
   it.each([
@@ -191,8 +198,8 @@ describe('coloring art follows the paper orientation (ADR-0050 native amendment)
         scope
       );
       const other = orientation === 'portrait' ? 'landscape' : 'portrait';
-      expect(fill).toContain(BUNDLED_BOOK_ART['farm/horse'][orientation].light.fill);
-      expect(fill).not.toContain(BUNDLED_BOOK_ART['farm/horse'][other].light.fill);
+      expect(fill).toContain(BUNDLED_FARM_IMAGES['farm/horse'][orientation].light);
+      expect(fill).not.toContain(BUNDLED_FARM_IMAGES['farm/horse'][other].light);
     }
   );
 

@@ -276,7 +276,7 @@
     "test:migration:rsd-selection": "vitest run --config tools/migration/rsd-drawing-vitest.config.mjs",
     "check:migration:rsd-drawing-tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/migration/check-rsd-drawing-tokens.mjs",
     "native:web:build": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/build-native-web.mjs",
-    "postnative:web:build": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-precache.mjs"
+    "postnative:web:build": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/migration/check-native-web-startup.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -537,7 +537,7 @@
     "test:migration:rsd-selection": "Exercise RSD selection props and token treatment through the released native renderer with host seams",
     "check:migration:rsd-drawing-tokens": "Verify the RSD drawing-screen token projection against the shared design owner",
     "native:web:build": "Production web export of the React Native app (expo export --platform web) into experiments/native-architecture/dist/web (gitignored), made installable and offline: the shipping web manifest, icons and install head tags plus a Workbox service worker that precaches this build's index.html first under a content-addressed URL, every exported chunk and asset, and the bundled starter coloring book, each entry pinned by subresource integrity so an install racing a deploy fails instead of pairing one build's document with another's chunks",
-    "postnative:web:build": "Verify the native:web:build service worker: one app shell first, at index.html's content address and used as the offline navigation answer, every entry's integrity equal to the exported bytes, every exported file and every file the shell names precached and present, every bundled Farm page inside a precached chunk, no lazily loaded icon in a script the shell loads, and the precache under its byte budget"
+    "postnative:web:build": "Verify the native:web:build service worker: one app shell first, at index.html's content address and used as the offline navigation answer, every entry's integrity equal to the exported bytes, every exported file and every file the shell names precached and present, every bundled Farm page's line art and images precached, no lazily loaded icon or page line art in a script the shell loads, and the precache under its byte budget; then hold the scripts, stylesheets, script and style preloads and executable inline scripts the app shell loads before first paint (each URL once) to MAX_NATIVE_WEB_STARTUP_BYTES with no image inlined into them"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

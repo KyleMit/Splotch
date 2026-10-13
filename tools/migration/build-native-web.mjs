@@ -27,10 +27,6 @@ const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 const EXPORT_METADATA_FILE = 'metadata.json';
 export const APP_SHELL_FILE = 'index.html';
 
-// The bundled starter coloring book makes the entry bundle the largest file, well
-// above Workbox's 2 MiB default, and it must be precached for offline launch.
-// tools/migration/check-native-web-precache.mjs owns the total budget.
-const MAX_PRECACHED_FILE_BYTES = 8 * 1024 * 1024;
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish (the shipping value).
 const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;
@@ -126,7 +122,6 @@ export function nativeWebServiceWorkerConfig(outputDir, shell) {
     swDest: join(outputDir, NATIVE_WEB_SERVICE_WORKER),
     inlineWorkboxRuntime: true,
     sourcemap: false,
-    maximumFileSizeToCacheInBytes: MAX_PRECACHED_FILE_BYTES,
     manifestTransforms: [pinPrecacheToExport(outputDir, shell)],
     // A new worker waits instead of taking over an open drawing; it activates
     // once every window of the old one has closed.

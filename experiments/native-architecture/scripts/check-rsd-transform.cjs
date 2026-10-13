@@ -88,7 +88,7 @@ let radios = 0;
 const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
-const settingsDialog = parse('src/rsdDrawing/NativeDialog.tsx');
+const settingsDialog = parse('src/rsdDrawing/RsdSettingsDialog.tsx');
 const orientationChoices = parse('src/rsdDrawing/RsdOrientationChoices.tsx');
 for (const component of [
   drawing,
@@ -388,6 +388,7 @@ const files = [
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
   'src/rsdDrawing/NativeDialog.tsx',
+  'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdOrientationChoices.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
   'src/rsdDrawing/RsdRecoveryNotice.tsx',

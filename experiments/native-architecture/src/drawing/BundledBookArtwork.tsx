@@ -1,6 +1,7 @@
 import { createContext, useContext, useId } from 'react';
 import Svg, { Circle, ClipPath, Defs, Ellipse, G, Image, Path, Rect } from 'react-native-svg';
-import { bundledArt, type BundledArtVariant } from './bundledBookAssets';
+import { bundledFill, bundledOutline } from './bundledBookAssets';
+import { useBundledPageOutlines } from './bundledOutlines';
 import { bookFillPlacement, viewBoxFrame } from './bookFill';
 import type { FarmPageId } from './bundledBooks';
 import type { PaperTheme } from './theme';
@@ -18,7 +19,9 @@ export function BundledBookOutline({
   theme: PaperTheme;
   size: PaperSize;
 }) {
-  const art: BundledArtVariant = bundledArt(pageId, theme, size);
+  const outlines = useBundledPageOutlines(pageId);
+  if (!outlines) return null;
+  const art = bundledOutline(outlines, theme, size);
   return (
     <Svg
       width={size.width}
@@ -113,6 +116,13 @@ export function BundledMagicFill({
   theme: PaperTheme;
   size: PaperSize;
 }) {
-  const art = bundledArt(pageId, theme, size);
-  return <BookMagicFill href={art.fill} frame={viewBoxFrame(art.viewBox)} size={size} />;
+  const outlines = useBundledPageOutlines(pageId);
+  if (!outlines) return null;
+  return (
+    <BookMagicFill
+      href={bundledFill(pageId, theme, size)}
+      frame={viewBoxFrame(bundledOutline(outlines, theme, size).viewBox)}
+      size={size}
+    />
+  );
 }

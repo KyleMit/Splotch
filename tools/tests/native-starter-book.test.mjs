@@ -1,7 +1,14 @@
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { BUNDLED_FARM_FILL_DIR, generateBundledFarm } from '../migration/gen-bundled-farm.mjs';
+import { relative } from 'node:path';
+import {
+  BUNDLED_FARM_DIR,
+  BUNDLED_FARM_FILL_DIR,
+  WEB_IMAGES_FILE,
+  bundledFarmImageFiles,
+  generateBundledFarm,
+} from '../migration/gen-bundled-farm.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BUNDLED_BOOKS,
@@ -27,9 +34,10 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
 import {
-  BUNDLED_BOOK_ART,
-  BUNDLED_BOOK_COVERS,
-} from '../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
+  BUNDLED_FARM_COVERS,
+  BUNDLED_FARM_IMAGES,
+} from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
+import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
 import {
   reopenPicture,
   savePicture,
@@ -428,22 +436,48 @@ const ART_VARIANTS = FARM_PAGE_IDS.flatMap((pageId) =>
 
 describe('bundled art preserves shipped Farm provenance', () => {
   it('provides distinct real art for every catalog page, both orientations and both themes', () => {
-    expect(Object.keys(BUNDLED_BOOK_ART)).toEqual([...FARM_PAGE_IDS]);
+    expect(Object.keys(BUNDLED_BOOK_OUTLINES)).toEqual([...FARM_PAGE_IDS]);
+    expect(Object.keys(BUNDLED_FARM_IMAGES)).toEqual([...FARM_PAGE_IDS]);
     expect(SHIPPED_ART_EXPECTATIONS).toHaveLength(FARM_PAGE_IDS.length * 2);
     const fills = ART_VARIANTS.map(
-      ({ pageId, orientation, theme }) => BUNDLED_BOOK_ART[pageId][orientation][theme].fill
+      ({ pageId, orientation, theme }) => BUNDLED_FARM_IMAGES[pageId][orientation][theme]
     );
     expect(new Set(fills).size).toBe(FARM_PAGE_IDS.length * 4);
   });
 
   it('pins the committed modules to the current shipping overlays, fills and selectors', async () => {
-    expect(await generateBundledFarm(['--check'])).toEqual({ pages: FARM_PAGE_IDS.length });
+    expect(await generateBundledFarm(['--check'])).toEqual({
+      pages: FARM_PAGE_IDS.length,
+      modules: FARM_PAGE_IDS.length + 2,
+    });
+  });
+
+  it('serves the web export the same shipped files the native apps carry as data URIs', () => {
+    const web = readFileSync(`${BUNDLED_FARM_DIR}${WEB_IMAGES_FILE}`, 'utf8');
+    expect(web).not.toContain('data:image/');
+    const { pages, covers } = bundledFarmImageFiles();
+    const slots = [
+      ...FARM_PAGE_IDS.flatMap((pageId) =>
+        ['landscape', 'portrait', 'selector'].flatMap((slot) =>
+          ['light', 'dark'].map((theme) => [
+            pages[pageId][slot][theme],
+            BUNDLED_FARM_IMAGES[pageId][slot][theme],
+          ])
+        )
+      ),
+      ...['light', 'dark'].map((theme) => [covers[theme], BUNDLED_FARM_COVERS[theme]]),
+    ];
+    expect(slots).toHaveLength(FARM_PAGE_IDS.length * 6 + 2);
+    for (const [path, native] of slots) {
+      expect(web).toContain(` from '${relative(BUNDLED_FARM_DIR, path)}';`);
+      expect(webpBytes(native).equals(readFileSync(path))).toBe(true);
+    }
   });
 
   it.each(SHIPPED_ART_EXPECTATIONS)(
     'preserves $pageId $theme canonical wide geometry and exact shipped selector bytes',
     (source) => {
-      const art = BUNDLED_BOOK_ART[source.pageId].landscape[source.theme];
+      const art = BUNDLED_BOOK_OUTLINES[source.pageId].landscape[source.theme];
       expect(art.viewBox).toBe(source.viewBox);
       expect(art.ink).toBe(source.ink);
       expect(sha256(JSON.stringify(art.outline))).toBe(source.nodeGeometrySha256);
@@ -453,7 +487,7 @@ describe('bundled art preserves shipped Farm provenance', () => {
         .map(({ d }) => d)
         .join('\n');
       expect(sha256(paths)).toBe(source.pathSha256);
-      expect(sha256(webpBytes(BUNDLED_BOOK_ART[source.pageId].selector[source.theme]))).toBe(
+      expect(sha256(webpBytes(BUNDLED_FARM_IMAGES[source.pageId].selector[source.theme]))).toBe(
         source.selector
       );
     }
@@ -462,20 +496,20 @@ describe('bundled art preserves shipped Farm provenance', () => {
   it.each(ART_VARIANTS)(
     'bundles $pageId $orientation $theme on its own frame with the compact shipped fill bytes',
     ({ pageId, orientation, slug, viewBox, theme, fill }) => {
-      const art = BUNDLED_BOOK_ART[pageId][orientation][theme];
+      const art = BUNDLED_BOOK_OUTLINES[pageId][orientation][theme];
       expect(art.viewBox).toBe(viewBox);
       expect(art.ink).toBe(theme === 'dark' ? '#fff' : '#000');
       const shipped = readFileSync(
         `${BUNDLED_FARM_FILL_DIR}${pageId.split('/')[1]}-${slug}.${fill}.webp`
       );
-      expect(webpBytes(art.fill).equals(shipped)).toBe(true);
+      expect(webpBytes(BUNDLED_FARM_IMAGES[pageId][orientation][theme]).equals(shipped)).toBe(true);
     }
   );
 
   it.each(SHIPPED_COVER_EXPECTATIONS)(
     'preserves the original $theme Farm cover bytes',
     (source) => {
-      expect(sha256(webpBytes(BUNDLED_BOOK_COVERS[source.theme]))).toBe(source.sha256);
+      expect(sha256(webpBytes(BUNDLED_FARM_COVERS[source.theme]))).toBe(source.sha256);
     }
   );
 });

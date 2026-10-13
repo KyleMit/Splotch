@@ -21,10 +21,8 @@ import {
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
 import { RsdPaintAction } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
-import {
-  NativeDialog,
-  NativeSoundSettingsDialog,
-} from '../../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx';
+import { NativeDialog } from '../../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx';
+import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import {
   DRAWING_SCALE,
