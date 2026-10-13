@@ -82,7 +82,7 @@ it('uses the actual RSD native input bridge, preview, gate and transport caller 
     hp: '',
     device: { platform: 'iOS' },
   });
-  await click('Close feedback');
+  await click('Close');
   expect(host.textContent).not.toContain('private support issue');
   await act(async () => {
     finish(new Response('{"ok":true}'));

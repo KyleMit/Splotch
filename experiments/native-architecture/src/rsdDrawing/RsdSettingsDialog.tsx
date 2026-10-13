@@ -1,4 +1,3 @@
-import { NativeDialog } from './NativeDialog';
 import { BRUSHES } from '../drawing/brushes';
 import {
   OPTIONAL_BRUSHES,
@@ -32,6 +31,8 @@ import { installPrompt } from '../platform/installPrompt';
 import { RsdSettingsHub } from './RsdSettingsHub';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -72,11 +73,11 @@ const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
 function pageLabel(page: SettingsPage) {
   if (page.kind === 'section') return sectionHeading(page.section);
   if (page.kind === 'information') return INFORMATION_CONTENT[page.page].title;
-  return 'Drawing settings';
+  return 'Settings';
 }
 
-// The shipping phone Settings: a hub of sections that each drill into their own page, with
-// Back to Settings returning to the hub.
+// The shipping phone Settings: a hub of sections that each drill into their own page, with the
+// header's Back returning to the hub.
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
   const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
@@ -87,16 +88,18 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   };
   const back = () => setPage(HUB);
   return (
-    <NativeDialog
+    <ModalShell
       visible={visible}
       onDismiss={onDismiss}
       label={pageLabel(page)}
+      size="settings"
       onClose={page.kind === 'hub' ? onClose : back}
-      footer={
-        <html.div style={controlStyles.row}>
-          {page.kind === 'hub' ? null : <RsdAction label="Back to Settings" onClick={back} />}
-          <RsdAction label="Keep drawing" onClick={onClose} />
-        </html.div>
+      header={
+        page.kind === 'hub' ? (
+          <DialogHeader title={pageLabel(page)} titleSize="xl" onClose={onClose} />
+        ) : (
+          <DialogHeader title={pageLabel(page)} titleSize="lg" onBack={back} onClose={onClose} />
+        )
       }
     >
       {page.kind === 'information' ? (
@@ -111,15 +114,12 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       ) : (
         <html.div style={controlStyles.dialogContent}>
           {page.kind === 'section' ? (
-            <>
-              <html.h1 style={controlStyles.boldText}>{sectionHeading(page.section)}</html.h1>
-              <SettingsSection
-                {...props}
-                section={page.section}
-                busy={busy}
-                onHelp={() => setPage({ kind: 'information', page: 'help' })}
-              />
-            </>
+            <SettingsSection
+              {...props}
+              section={page.section}
+              busy={busy}
+              onHelp={() => setPage({ kind: 'information', page: 'help' })}
+            />
           ) : (
             <RsdSettingsHub
               sections={HUB_SECTIONS}
@@ -135,7 +135,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           ) : null}
         </html.div>
       )}
-    </NativeDialog>
+    </ModalShell>
   );
 }
 

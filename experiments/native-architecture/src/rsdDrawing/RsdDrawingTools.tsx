@@ -6,8 +6,12 @@ import type { useDrawingSound } from '../useDrawingSound';
 import { useFullscreen } from '../platform/useFullscreen';
 import { STROKE_WIDTHS, STROKE_WIDTH_LABELS } from '../drawing/strokeWidth';
 import { BRUSHES } from '../drawing/brushes';
-import { NativeDialog } from './NativeDialog';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
 import { RsdAction, styles } from './controls';
+
+const MENU_TITLE = 'Drawing tools';
+const PICTURES_TITLE = 'Your pictures';
 
 export function RsdDrawingTools({
   menu,
@@ -82,15 +86,22 @@ export function RsdDrawingMenu({
   browserAction: ReactNode;
 }) {
   return (
-    <NativeDialog
+    <ModalShell
       visible={menu.visible}
-      label="Drawing tools"
+      label={MENU_TITLE}
+      size="sheet"
       onClose={menu.close}
       onDismiss={menu.dismissed}
-      footer={<RsdAction label="Keep drawing" disabled={!menu.visible} onClick={menu.close} />}
+      header={
+        <DialogHeader
+          title={MENU_TITLE}
+          titleSize="xl"
+          closeDisabled={!menu.visible}
+          onClose={menu.close}
+        />
+      }
     >
       <html.div style={styles.dialogContent}>
-        <html.span>Drawing tools</html.span>
         {browserAction}
         {screen.brushControl.kind === 'menu' ? (
           <html.div role="radiogroup" aria-label="Drawing brush" style={styles.row}>
@@ -142,30 +153,41 @@ export function RsdDrawingMenu({
           onClick={() => menu.run(onFeedback)}
         />
       </html.div>
-    </NativeDialog>
+    </ModalShell>
   );
 }
 
 export function RsdPictures({
   screen,
   pictures,
+  visible,
+  onDismiss,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   pictures: NonNullable<ReturnType<typeof useDrawingScreen>['pictures']>;
+  visible: boolean;
+  onDismiss: () => void;
 }) {
+  const close = () => {
+    if (!screen.busy) screen.setPictures(null);
+  };
   return (
-    <NativeDialog
-      visible
-      label="Your pictures"
-      onClose={() => {
-        if (!screen.busy) screen.setPictures(null);
-      }}
-      footer={
-        <RsdAction label="Close" disabled={screen.busy} onClick={() => screen.setPictures(null)} />
+    <ModalShell
+      visible={visible}
+      onDismiss={onDismiss}
+      label={PICTURES_TITLE}
+      size="sheet"
+      onClose={close}
+      header={
+        <DialogHeader
+          title={PICTURES_TITLE}
+          titleSize="xl"
+          closeDisabled={screen.busy}
+          onClose={close}
+        />
       }
     >
       <html.div style={styles.dialogContent}>
-        <html.span>Your pictures</html.span>
         {pictures.length === 0 ? <html.span>Save a picture to find it here.</html.span> : null}
         {pictures.map((picture) => (
           <RsdAction
@@ -179,6 +201,6 @@ export function RsdPictures({
         ))}
         <html.span aria-live="polite">{screen.notice}</html.span>
       </html.div>
-    </NativeDialog>
+    </ModalShell>
   );
 }

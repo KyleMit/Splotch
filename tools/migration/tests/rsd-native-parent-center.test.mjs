@@ -93,7 +93,7 @@ it('mounts actual RSD shared gate, policy radio state, confirmation and persiste
   expect(host.textContent).toContain('without a check on this device');
   await click('Confirm Parent Center Never');
   expect(owner.getState().settings.parentPolicies.parentCenter).toBe('never');
-  await click('Keep drawing');
+  await click('Close');
   await click('Parent Center fixture entry');
   expect(host.textContent).not.toContain('Grown-ups only');
 });
