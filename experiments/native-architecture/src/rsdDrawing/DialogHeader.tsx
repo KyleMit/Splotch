@@ -5,7 +5,7 @@ import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { RsdIcon } from './RsdIcon';
 import { styles as controlStyles } from './controls';
-import { blobShapes, colors, dimensions, fonts, motion } from './tokens.css';
+import { blobShapes, colors, dimensions, motion } from './tokens.css';
 import {
   blobPath,
   MODAL_CLOSE_BORDER_PX,
@@ -125,7 +125,11 @@ export function DialogHeader({
       {onBack ? <HeaderControl kind="back" disabled={false} onClick={onBack} /> : null}
       <html.h2
         id={scope?.titleId}
-        style={[styles.title, titleSize === 'lg' ? styles.titleLg : styles.titleXl]}
+        style={[
+          controlStyles.semiboldText,
+          styles.title,
+          titleSize === 'lg' ? styles.titleLg : styles.titleXl,
+        ]}
       >
         {title}
       </html.h2>
@@ -159,8 +163,6 @@ const styles = css.create({
     minWidth: 0,
     margin: 0,
     color: colors.textStrong,
-    fontFamily: fonts.semiboldFamily,
-    fontWeight: fonts.semiboldWeight,
   },
   titleXl: { fontSize: dimensions.fontSizeXl },
   titleLg: { fontSize: dimensions.fontSizeLg },

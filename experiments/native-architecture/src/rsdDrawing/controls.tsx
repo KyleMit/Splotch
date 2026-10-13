@@ -87,6 +87,7 @@ export const styles = css.create({
   fullBleed: { padding: 0, gap: 0 },
   // Headings and strong text: RSD's own bold would make Android swap in a system face.
   boldText: { fontFamily: fonts.boldFamily, fontWeight: fonts.boldWeight },
+  semiboldText: { fontFamily: fonts.semiboldFamily, fontWeight: fonts.semiboldWeight },
   paletteBar: {
     display: 'flex',
     flexDirection: 'row',
