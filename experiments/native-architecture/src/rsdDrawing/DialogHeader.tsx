@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { RsdIcon } from './RsdIcon';
+import { RsdPressable } from './RsdPressable';
 import { styles as controlStyles } from './controls';
 import { blobShapes, colors, dimensions, motion } from './tokens.css';
 import {
@@ -59,7 +60,7 @@ function HeaderControl({
         }
       : { fill: lit ? palette.brandWashHover : palette.brandWash };
   return (
-    <html.button
+    <RsdPressable
       type="button"
       aria-label={label}
       aria-disabled={disabled}
@@ -88,7 +89,7 @@ function HeaderControl({
       <html.div style={styles.glyph}>
         <RsdIcon name={icon} size={MODAL_CONTROL_ICON_PX} ink={undefined} muted={disabled} />
       </html.div>
-    </html.button>
+    </RsdPressable>
   );
 }
 

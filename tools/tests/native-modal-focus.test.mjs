@@ -8,6 +8,11 @@ import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawi
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
 // only React Strict DOM is reduced to the plain elements its web build emits.
 vi.mock('react-native', async () => import('react-native-web'));
+// The web build resolves RsdPressable to its web file; Vitest resolves the native one.
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+);
 vi.mock('react-native-safe-area-context', () => ({
   initialWindowMetrics: null,
   SafeAreaProvider: ({ children }) => children,
