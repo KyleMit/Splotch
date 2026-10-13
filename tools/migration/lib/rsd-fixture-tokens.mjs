@@ -14,8 +14,6 @@ const APP_CSS_URL = new URL('../../../web/src/app.css', import.meta.url);
 export const RSD_UNPROJECTED_TOKENS = {
   surfaceRgb: 'Bare channels for rgb(var() / alpha); React Native cannot compose a color.',
   glassTintRgb: 'Bare channels for rgb(var() / alpha); React Native cannot compose a color.',
-  stepWashStrength: 'A color-mix() strength; React Native has no color-mix().',
-  stepInkStrength: 'A color-mix() strength; React Native has no color-mix().',
   tapeStrength: 'A color-mix() strength; React Native has no color-mix().',
   squiggleStrength: 'A color-mix() strength; React Native has no color-mix().',
   glassRail: 'A color-mix() strength; React Native has no color-mix().',
@@ -31,6 +29,9 @@ export const RSD_UNPROJECTED_TOKENS = {
 };
 
 const THEMED_EFFECT_KEYS = new Set(['floatShadow']);
+// The Step Number's color-mix() strengths, carried as plain numbers so the native badge can mix
+// its wash and digit ink the way the shipping .step-number rule does.
+const STEP_NUMBER_MIX_KEYS = { stepWashStrength: 'washPercent', stepInkStrength: 'inkPercent' };
 const FIXED_COLOR_KEYS = new Set([
   'clearGradientRest',
   'polaroidPaper',
@@ -77,10 +78,13 @@ function expandRadii(list) {
 
 // React Native takes one radius per corner, so each elliptical blob corner keeps
 // the mean of its horizontal and vertical radii.
-function blobCorners(shorthand) {
+function blobRadii(shorthand) {
   const [horizontal, vertical = horizontal] = shorthand.split('/');
-  const across = expandRadii(horizontal);
-  const down = expandRadii(vertical);
+  return { horizontal: expandRadii(horizontal), vertical: expandRadii(vertical) };
+}
+
+function blobCorners(shorthand) {
+  const { horizontal: across, vertical: down } = blobRadii(shorthand);
   return Object.fromEntries(
     CORNERS.map((corner, index) => [
       corner,
@@ -148,6 +152,7 @@ function scaleGroups() {
   const groups = {
     dimensions: {},
     blobs: {},
+    blobShapes: {},
     fixedColors: {},
     shadows: {},
     motion: {},
@@ -157,10 +162,11 @@ function scaleGroups() {
   for (const [key, value] of Object.entries(scale)) {
     if (Object.hasOwn(RSD_UNPROJECTED_TOKENS, key) || key === 'fontFamily') continue;
     if (DIMENSION_KEY.test(key) || DIMENSION_KEYS.has(key)) groups.dimensions[key] = value;
-    else if (BLOB_KEY.test(key))
+    else if (BLOB_KEY.test(key)) {
       for (const [corner, radius] of Object.entries(blobCorners(value)))
         groups.blobs[`${key}${corner}`] = radius;
-    else if (key === 'fontSizeDisplay') groups.display = displayFontSize(value);
+      groups.blobShapes[key] = blobRadii(value);
+    } else if (key === 'fontSizeDisplay') groups.display = displayFontSize(value);
     else if (FIXED_COLOR_KEYS.has(key)) groups.fixedColors[key] = portableColor(value);
     else if (SHADOW_KEY.test(key)) groups.shadows[key] = portableColor(value);
     else if (MOTION_KEY.test(key)) groups.motion[key] = value;
@@ -172,7 +178,21 @@ function scaleGroups() {
 
 function unprojectedThemeKeys() {
   return Object.keys(themes.light).filter(
-    (key) => !isColorToken[key] && !THEMED_EFFECT_KEYS.has(key)
+    (key) =>
+      !isColorToken[key] &&
+      !THEMED_EFFECT_KEYS.has(key) &&
+      !Object.hasOwn(STEP_NUMBER_MIX_KEYS, key)
+  );
+}
+
+function percent(value) {
+  const match = /^(\d+(?:\.\d+)?)%$/.exec(value) ?? raise(`Not a percentage: ${value}`);
+  return Number(match[1]);
+}
+
+function stepNumberMix(theme) {
+  return Object.fromEntries(
+    Object.entries(STEP_NUMBER_MIX_KEYS).map(([key, name]) => [name, percent(theme[key])])
   );
 }
 
@@ -221,6 +241,11 @@ function tokenSource() {
     vars('dimensions', dimensions),
     '',
     `export const fontSizeDisplayFluid = ${JSON.stringify(groups.display.fluid, null, 2)} as const;`,
+    '',
+    '// The full elliptical shipping blobs, as percentages of the box, for shapes drawn as paths.',
+    `export const blobShapes = ${JSON.stringify(groups.blobShapes, null, 2)} as const;`,
+    '',
+    `export const stepNumberMix = ${JSON.stringify({ light: stepNumberMix(themes.light), dark: stepNumberMix(themes.dark) }, null, 2)} as const;`,
     '',
     vars('brandColors', brand),
     '',

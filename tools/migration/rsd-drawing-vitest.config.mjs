@@ -21,6 +21,7 @@ import {
   RSD_NATIVE_SEGMENTED_PICKER_TEST,
   RSD_NATIVE_SLIDER_TEST,
   RSD_NATIVE_SETTINGS_ROWS_TEST,
+  RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -54,6 +55,7 @@ export default defineConfig({
       RSD_NATIVE_SEGMENTED_PICKER_TEST,
       RSD_NATIVE_SLIDER_TEST,
       RSD_NATIVE_SETTINGS_ROWS_TEST,
+      RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
     ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },

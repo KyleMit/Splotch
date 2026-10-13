@@ -72,6 +72,13 @@ function radii(list) {
   return [a, b, c, d];
 }
 
+function blobShape(shorthand) {
+  const [horizontal, vertical = horizontal] = shorthand.split('/').map(radii);
+  return JSON.stringify({ horizontal, vertical });
+}
+
+const STEP_NUMBER_MIX = { stepWashStrength: 'washPercent', stepInkStrength: 'inkPercent' };
+
 function blobMeans(shorthand) {
   const [across, down = across] = shorthand.split('/').map(radii);
   return across.map((value, index) => `${(value + down[index]) / 2}%`).join(' ');
@@ -91,7 +98,10 @@ function scaleProjection(rsd, key, value) {
     return [`clamp(${min}, ${viewportWidthPercent}vw + ${offsetPx}px, ${max})`, value];
   }
   if (/^radiusBlob\d$/.test(key))
-    return [CORNERS.map((corner) => rsd.dimensions[`${key}${corner}`]).join(' '), blobMeans(value)];
+    return [
+      `${CORNERS.map((corner) => rsd.dimensions[`${key}${corner}`]).join(' ')} ${JSON.stringify(rsd.blobShapes[key])}`,
+      `${blobMeans(value)} ${blobShape(value)}`,
+    ];
   const owners = SCALE_GROUPS.filter((group) => Object.hasOwn(rsd[group], key));
   if (owners.length !== 1) return [`${key} in ${owners.length} groups`, value];
   return [canonical(rsd[owners[0]][key]), canonical(value)];
@@ -109,7 +119,9 @@ function assertShippingParity(rsd, shipping) {
     ['dark', rsd.darkTheme],
   ])
     for (const [key, value] of Object.entries(shipping.themes[mode])) {
-      if (!Object.hasOwn(RSD_UNPROJECTED_TOKENS, key))
+      if (Object.hasOwn(STEP_NUMBER_MIX, key))
+        check(`${mode} ${key}`, [`${rsd.stepNumberMix[mode][STEP_NUMBER_MIX[key]]}%`, value]);
+      else if (!Object.hasOwn(RSD_UNPROJECTED_TOKENS, key))
         check(`${mode} ${key}`, [canonical(group[key]), canonical(value)]);
       else if (Object.hasOwn(group, key)) problems.push(`${mode} ${key} is listed and projected`);
     }
@@ -190,6 +202,12 @@ it.each([
   ['a changed shadow alpha', (s) => (s.scale.shadowPop = '0 8px 32px rgb(0 0 0 / 31%)')],
   ['a changed easing', (s) => (s.scale.easeGlide = 'cubic-bezier(0.22, 1, 0.36, 0.9)')],
   ['a changed blob radius', (s) => (s.scale.radiusBlob2 = '45% 55% 48% 52% / 55% 45% 58% 40%')],
+  [
+    'a blob shape whose corner means still agree',
+    (s) => (s.scale.radiusBlob1 = '57% 42% 55% 45% / 46% 58% 42% 55%'),
+  ],
+  ['a changed dark step wash', (s) => (s.themes.dark.stepWashStrength = '20%')],
+  ['a changed light step ink', (s) => (s.themes.light.stepInkStrength = '50%')],
   [
     'a changed fluid display term',
     (s) => (s.scale.fontSizeDisplay = 'clamp(34px, 3vw + 17px, 46px)'),
