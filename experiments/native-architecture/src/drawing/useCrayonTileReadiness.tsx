@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import Svg, { Image as SvgImage } from 'react-native-svg';
 import { CRAYON_TILE_PX } from './crayon';
 import { PNG_TIMEOUT_MS } from './svgCapture';
@@ -33,7 +33,9 @@ export function useCrayonTileReadiness(uris: readonly string[], onError: (error:
   const current = useRef({ tiles, onError, active: true });
   current.current.tiles = tiles;
   current.current.onError = onError;
-  const ready = tiles.every((uri) => native.has(uri) && svg.has(uri));
+  const ready = tiles.every(
+    (uri) => native.has(uri) && (Platform.OS === 'android' || svg.has(uri))
+  );
   useEffect(() => {
     current.current.active = true;
     return () => {
