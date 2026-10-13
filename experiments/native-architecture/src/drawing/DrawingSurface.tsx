@@ -1,5 +1,5 @@
 import { InkPaperScope } from './InkPaper';
-import { drawingPaper, type PaperReference } from './paperSpace';
+import { drawingPaper, presentedPaperSize, type PaperReference } from './paperSpace';
 import { useDrawingAppearance } from './DrawingAppearance';
 import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import {
@@ -14,9 +14,9 @@ import {
   type ForwardedRef,
   type RefObject,
 } from 'react';
-import { PanResponder, PixelRatio, StyleSheet, View } from 'react-native';
+import { PanResponder, PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Svg from 'react-native-svg';
-import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type Stroke } from './model';
+import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
@@ -85,6 +85,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const refreshGeometry = useCallback(() => {
       geometry.refresh((complete) => measurePaper(paper.current, complete));
     }, [geometry]);
+    const [presented, layoutPlane] = usePresentedPaper(paperReference, refreshGeometry);
     const [packet, setPacket] = useState<PictureRequest | null>(null);
     const { captureLock, commandLock } = useSurfaceCapture(
       input,
@@ -128,7 +129,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 testID="drawing-paper"
                 style={styles.inkPlane}
                 pointerEvents="box-only"
-                onLayout={refreshGeometry}
+                onLayout={layoutPlane}
                 {...responder.panHandlers}
                 onTouchEnd={(event) => input.endRaw(event)}
                 onTouchCancel={() => input.interrupt()}
@@ -150,12 +151,12 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 <Svg
                   width="100%"
                   height="100%"
-                  viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+                  viewBox={`0 0 ${presented.width} ${presented.height}`}
                   preserveAspectRatio="xMidYMid meet"
                   pointerEvents="none"
                   style={StyleSheet.absoluteFill}
                 >
-                  <PageOutline pageId={props.drawing.pageId} />
+                  <PageOutline pageId={props.drawing.pageId} size={presented} />
                 </Svg>
               </View>
               <View pointerEvents="none" style={styles.paperBorder} />
@@ -167,6 +168,22 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     );
   }
 );
+
+// A blank picture shows as the paper it would adopt from the ink plane's live size.
+function usePresentedPaper(paper: PaperReference, refreshGeometry: () => void) {
+  const [plane, setPlane] = useState({ width: 0, height: 0 });
+  const layout = useCallback(
+    ({ nativeEvent }: LayoutChangeEvent) => {
+      const { width, height } = nativeEvent.layout;
+      setPlane((previous) =>
+        previous.width === width && previous.height === height ? previous : { width, height }
+      );
+      refreshGeometry();
+    },
+    [refreshGeometry]
+  );
+  return [presentedPaperSize(paper, plane), layout] as const;
+}
 
 function useSurfaceCapture(
   input: ReturnType<typeof createContactResponder>,
@@ -257,7 +274,7 @@ function useSurfaceCapture(
 
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
-    container: { width: '100%', maxWidth: PAPER_WIDTH, alignSelf: 'center' },
+    container: { width: '100%', height: '100%' },
     inkPlane: { width: '100%', height: '100%' },
     paperBorder: {
       position: 'absolute',
@@ -271,7 +288,7 @@ const themedStyles = createDrawingStyles((palette) =>
     },
     paper: {
       width: '100%',
-      aspectRatio: PAPER_WIDTH / PAPER_HEIGHT,
+      height: '100%',
       overflow: 'hidden',
       borderRadius: 16,
       backgroundColor: palette.paper,

@@ -15,10 +15,10 @@ import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { InkAppearanceScope } from '../drawing/InkAppearance';
 import { InkPaperScope } from '../drawing/InkPaper';
 import { InkScene } from '../drawing/InkScene';
-import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing } from '../drawing/model';
+import type { Drawing } from '../drawing/model';
 import { PageOutline } from '../drawing/PageOutline';
 import { fittedPaper } from '../drawing/paperGeometry';
-import { drawingPaper } from '../drawing/paperSpace';
+import { drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { PAPER_THEMES, TOUCH_TARGET } from '../drawing/theme';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import { isOfflinePageId } from '../offlineLibrary/identity';
@@ -118,8 +118,9 @@ export function RsdClearButton({
   );
 }
 
-function PaperArt({ drawing, ink }: { drawing: Drawing; ink: boolean }) {
+function PaperArt({ drawing, ink, frame }: { drawing: Drawing; ink: boolean; frame: AreaSize }) {
   const theme = useDrawingAppearance();
+  const size = presentedPaperSize(drawingPaper(drawing), frame);
   const artwork = useContext(OfflineArtworkScope);
   const outline = !isOfflinePageId(drawing.pageId) || Boolean(artwork[drawing.pageId]?.[theme]);
   return (
@@ -128,14 +129,14 @@ function PaperArt({ drawing, ink }: { drawing: Drawing; ink: boolean }) {
         <Svg
           width="100%"
           height="100%"
-          viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+          viewBox={`0 0 ${size.width} ${size.height}`}
           preserveAspectRatio="none"
         >
-          <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={PAPER_THEMES[theme].paper} />
+          <Rect width={size.width} height={size.height} fill={PAPER_THEMES[theme].paper} />
           {ink ? (
             <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={() => {}} />
           ) : null}
-          {outline ? <PageOutline pageId={drawing.pageId} /> : null}
+          {outline ? <PageOutline pageId={drawing.pageId} size={size} /> : null}
         </Svg>
       </InkPaperScope.Provider>
     </InkAppearanceScope.Provider>
@@ -163,7 +164,7 @@ function DepartingSheet({ control, area }: { control: ClearControl; area: AreaSi
     return () => animation.stop();
   }, [flight, sheet, finishSheet]);
   if (!sheet) return null;
-  const frame = fittedPaper(area);
+  const frame = fittedPaper(area, drawingPaper(sheet.drawing));
   const bin = {
     x: area.width - EDGE_INSET_PX - TOUCH_TARGET / 2,
     y: EDGE_INSET_PX + TOUCH_TARGET / 2,
@@ -193,7 +194,7 @@ function DepartingSheet({ control, area }: { control: ClearControl; area: AreaSi
         ],
       }}
     >
-      <PaperArt drawing={sheet.drawing} ink />
+      <PaperArt drawing={sheet.drawing} ink frame={frame} />
     </Animated.View>
   );
 }
@@ -233,6 +234,15 @@ function PaperGradient({
   );
 }
 
+function ClearCover({ drawing, area }: { drawing: Drawing; area: AreaSize }) {
+  const frame = fittedPaper(area, drawingPaper(drawing));
+  return (
+    <View testID="rsd-clear-cover" style={[{ position: 'absolute' }, frame]}>
+      <PaperArt drawing={drawing} ink={false} frame={frame} />
+    </View>
+  );
+}
+
 // Everything the gesture paints between the paper and the controls: the clean page standing in
 // while the clear lands, the radial wash that grows with the drag, the flood past the threshold,
 // the departing page and the accept ring.
@@ -258,11 +268,7 @@ export function RsdClearUnderlay({
         );
       }}
     >
-      {control.covered ? (
-        <View testID="rsd-clear-cover" style={[{ position: 'absolute' }, fittedPaper(area)]}>
-          <PaperArt drawing={drawing} ink={false} />
-        </View>
-      ) : null}
+      {control.covered ? <ClearCover drawing={drawing} area={area} /> : null}
       <Animated.View
         style={[
           layer.wash,

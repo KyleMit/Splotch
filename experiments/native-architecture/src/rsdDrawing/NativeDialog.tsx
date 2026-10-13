@@ -33,7 +33,7 @@ import {
   NATIVE_SETTINGS_SECTIONS,
   sectionHeading,
   type NativeSettingsSectionId,
-} from '../settings/sections';
+} from '../settings/settingsSections';
 import { installPrompt } from '../platform/installPrompt';
 import { RsdSettingsHub } from './RsdSettingsHub';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';

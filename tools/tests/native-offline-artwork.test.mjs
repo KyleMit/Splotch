@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { CANONICAL_PAPER_SIZE } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFile } from 'node:fs/promises';
@@ -76,7 +77,9 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
     'renders the canonical %s outline with the released SvgXml parser',
     async (theme) => {
       const art = await artwork();
-      const actual = await pixels(render(art, theme, createElement(PageOutline, { pageId })));
+      const actual = await pixels(
+        render(art, theme, createElement(PageOutline, { pageId, size: CANONICAL_PAPER_SIZE }))
+      );
       const expected = await pixels(
         art[theme].outline.replace(
           'width="1536" height="1024"',
@@ -94,9 +97,15 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
         },
       };
       expect(
-        (await pixels(render(missing, theme, createElement(PageOutline, { pageId })))).data.equals(
-          expected.data
-        )
+        (
+          await pixels(
+            render(
+              missing,
+              theme,
+              createElement(PageOutline, { pageId, size: CANONICAL_PAPER_SIZE })
+            )
+          )
+        ).data.equals(expected.data)
       ).toBe(false);
     }
   );
@@ -110,7 +119,11 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
       },
     };
     expect(
-      render(privateArt, 'light', createElement(OfflineMagicFill, { pageId, theme: 'light' }))
+      render(
+        privateArt,
+        'light',
+        createElement(OfflineMagicFill, { pageId, theme: 'light', size: CANONICAL_PAPER_SIZE })
+      )
     ).toContain(privateArt.light.fill);
     const stroke = {
       ...strokeStyle('magic', 'Blue', emptyDrawing()),
@@ -128,7 +141,7 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
           fill: 'white',
         }),
         createElement(InkScene, { key: 'ink', strokes, checkpoint: null, onImageLoad() {} }),
-        createElement(PageOutline, { key: 'outline', pageId }),
+        createElement(PageOutline, { key: 'outline', pageId, size: CANONICAL_PAPER_SIZE }),
       ]);
     const before = await pixels(picture([]));
     const painted = await pixels(picture([stroke]));
@@ -151,7 +164,7 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
               checkpoint: null,
               onImageLoad() {},
             }),
-            createElement(PageOutline, { key: 'outline', pageId }),
+            createElement(PageOutline, { key: 'outline', pageId, size: CANONICAL_PAPER_SIZE }),
           ])
         )
       ).data.equals(painted.data)

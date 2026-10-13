@@ -18,7 +18,7 @@ function slotsAlong(length: number, size: number) {
 // The drawer opens away from its chevron, which keeps the bottom-left corner. Clear and Settings
 // own the right edge, so in landscape the drawer's rows stop short of Settings, and in portrait its
 // columns climb the left edge. A line that runs out of room wraps to the next one, further from
-// the edge the chevron sits on; rsd-native-toolbar.test.mjs pins that the smallest phones hold
+// the edge the chevron sits on; rsd-native-button-size.test.mjs pins that the smallest phones hold
 // every tool in both orientations at every Button Size.
 export function drawerOffsets(
   area: AreaSize,

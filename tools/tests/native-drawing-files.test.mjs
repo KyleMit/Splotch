@@ -138,7 +138,7 @@ describe('native picture save commit', () => {
     const stored = JSON.parse(
       filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)
     );
-    expect(stored.version).toBe(6);
+    expect(stored.version).toBe(7);
     expect(stored.paper).toEqual({
       kind: 'adopted',
       cssWidth: 342,
@@ -242,7 +242,7 @@ describe('native picture save commit', () => {
 });
 
 it.each(['unadopted-ink', 'foreign-paper-key'])(
-  'refuses native save of malformed v6 %s before creating a pending file',
+  'refuses native save of malformed v7 %s before creating a pending file',
   async (fault) => {
     const drawing = adoptedDrawing({ width: 342, height: 256.5, pixelRatio: 1 });
     drawing.strokes = [{ ...strokeStyle('pen', 'Red', drawing), points: [{ x: 200, y: 300 }] }];

@@ -10,7 +10,7 @@ import { useLibraryControls } from './offlineLibrary/LibraryScope';
 import { offlinePageId } from './offlineLibrary/identity';
 import { OFFLINE_BOOKS } from './offlineLibrary/books.generated';
 import Svg, { Rect } from 'react-native-svg';
-import { PAPER_HEIGHT, PAPER_WIDTH } from './drawing/model';
+import { CANONICAL_PAPER_SIZE, PAPER_HEIGHT, PAPER_WIDTH } from './drawing/paperSpace';
 import { InkAppearanceScope } from './drawing/InkAppearance';
 import { PageOutline } from './drawing/PageOutline';
 import { COLORING_PAGES, PAGE_IDS, type PageId } from './drawing/pages';
@@ -70,7 +70,7 @@ export function ColoringPagePicker({
                         height={PAPER_HEIGHT}
                         fill={PAPER_THEMES[theme].paper}
                       />
-                      <PageOutline pageId={pageId} />
+                      <PageOutline pageId={pageId} size={CANONICAL_PAPER_SIZE} />
                     </Svg>
                   </InkAppearanceScope.Provider>
                 </View>

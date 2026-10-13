@@ -1,4 +1,5 @@
 import { legacyDrawing } from './native-paper-fixtures.mjs';
+import { CANONICAL_PAPER_SIZE } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -47,7 +48,9 @@ async function pixels(
           { strokes },
           ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
         ),
-        includeOutline ? createElement(PageOutline, { pageId: appearance.pageId }) : null
+        includeOutline
+          ? createElement(PageOutline, { pageId: appearance.pageId, size: CANONICAL_PAPER_SIZE })
+          : null
       )
     )
   );

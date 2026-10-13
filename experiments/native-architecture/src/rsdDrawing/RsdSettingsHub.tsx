@@ -3,7 +3,7 @@ import { colors, dimensions } from './tokens.css';
 import { DRAWING_SCALE } from '../drawing/theme';
 import type { BrushPreferencesState } from '../settings/brushPreferences';
 import type { SoundSettingsState } from '../settings/soundSettingsCodec';
-import { sectionSubtitle, type NativeSettingsSectionId } from '../settings/sections';
+import { sectionSubtitle, type NativeSettingsSectionId } from '../settings/settingsSections';
 import { whatsNewUnseen } from '../settings/whatsNew';
 
 // The shipping hub row's activity dot.

@@ -1,10 +1,10 @@
 import { useInkPaper } from './InkPaper';
-import { semanticWidth } from './paperSpace';
+import { paperSize, semanticWidth } from './paperSpace';
 import { useId, type ReactNode } from 'react';
 import { Defs, G, Image, Mask, Rect } from 'react-native-svg';
 import type { InkCheckpoint } from './checkpoints';
 import { Ink, InkArtwork } from './Ink';
-import { PAPER_WIDTH, PAPER_HEIGHT, type Stroke } from './model';
+import type { Stroke } from './model';
 import { StrokeShape } from './StrokeShape';
 
 type Props = {
@@ -16,14 +16,15 @@ type Props = {
 export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
   const id = useId();
   const paper = useInkPaper();
+  const { width, height } = paperSize(paper);
   const masks: ReactNode[] = [];
   let scene: ReactNode = checkpoint ? (
     <Image
       href={`data:image/png;base64,${checkpoint.base64}`}
       x={0}
       y={0}
-      width={PAPER_WIDTH}
-      height={PAPER_HEIGHT}
+      width={width}
+      height={height}
       preserveAspectRatio="none"
       onLoad={onImageLoad}
     />
@@ -43,10 +44,10 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
           maskUnits="userSpaceOnUse"
           x={0}
           y={0}
-          width={PAPER_WIDTH}
-          height={PAPER_HEIGHT}
+          width={width}
+          height={height}
         >
-          <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill="white" />
+          <Rect width={width} height={height} fill="white" />
           {run.map((stroke, offset) => (
             <StrokeShape
               key={start + offset}

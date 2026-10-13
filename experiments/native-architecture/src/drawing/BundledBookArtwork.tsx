@@ -3,17 +3,25 @@ import Svg, { Ellipse, Image, Path, Rect } from 'react-native-svg';
 import { BUNDLED_BOOK_ART, type BundledPageArt } from './bundledBookAssets';
 import type { FarmPageId } from './bundledBooks';
 import type { PaperTheme } from './theme';
-import { PAPER_HEIGHT, PAPER_WIDTH } from './model';
+import type { PaperSize } from './paperSpace';
 
 export const BundledFillLoadScope = createContext<(() => void) | null>(null);
 const BUNDLED_ART_FIT = 'xMidYMid meet';
 
-export function BundledBookOutline({ pageId, theme }: { pageId: FarmPageId; theme: PaperTheme }) {
+export function BundledBookOutline({
+  pageId,
+  theme,
+  size,
+}: {
+  pageId: FarmPageId;
+  theme: PaperTheme;
+  size: PaperSize;
+}) {
   const art: BundledPageArt = BUNDLED_BOOK_ART[pageId][theme];
   return (
     <Svg
-      width={PAPER_WIDTH}
-      height={PAPER_HEIGHT}
+      width={size.width}
+      height={size.height}
       viewBox={art.viewBox}
       preserveAspectRatio={BUNDLED_ART_FIT}
       fill={art.ink}
@@ -39,15 +47,23 @@ export function BundledBookOutline({ pageId, theme }: { pageId: FarmPageId; them
   );
 }
 
-export function BundledMagicFill({ pageId, theme }: { pageId: FarmPageId; theme: PaperTheme }) {
+export function BundledMagicFill({
+  pageId,
+  theme,
+  size,
+}: {
+  pageId: FarmPageId;
+  theme: PaperTheme;
+  size: PaperSize;
+}) {
   const onLoad = useContext(BundledFillLoadScope);
   return (
     <Image
       href={BUNDLED_BOOK_ART[pageId][theme].fill}
       x={0}
       y={0}
-      width={PAPER_WIDTH}
-      height={PAPER_HEIGHT}
+      width={size.width}
+      height={size.height}
       preserveAspectRatio={BUNDLED_ART_FIT}
       onLoad={() => onLoad?.()}
     />

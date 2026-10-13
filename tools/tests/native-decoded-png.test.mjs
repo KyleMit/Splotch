@@ -13,6 +13,8 @@ vi.mock('react-native', () => ({
   Platform: sdk.platform,
   StyleSheet: { create: (styles) => styles },
 }));
+// A portrait phone's paper: the decoded grid follows the picture, not the canonical sheet.
+const SIZE = { width: 567, height: 1024 };
 let root, host, loaded, failed;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -25,14 +27,16 @@ beforeEach(() => {
 });
 afterEach(() => act(() => root.unmount()));
 function render(base64 = 'actual-capture-payload') {
-  act(() => root.render(createElement(DecodedPng, { base64, onLoad: loaded, onError: failed })));
+  act(() =>
+    root.render(createElement(DecodedPng, { base64, size: SIZE, onLoad: loaded, onError: failed }))
+  );
 }
 function event(image, changes = {}) {
   return {
-    nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768, ...changes } },
+    nativeEvent: { source: { uri: image.source.uri, ...SIZE, ...changes } },
   };
 }
-it.each([{ uri: 'another-image' }, { width: 1023 }, { height: 769 }])(
+it.each([{ uri: 'another-image' }, { width: 566 }, { height: 1025 }, { width: 1024, height: 768 }])(
   'refuses decoded callbacks from an unexpected URI or sampling grid: %j',
   (changes) => {
     render();

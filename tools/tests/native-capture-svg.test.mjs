@@ -215,10 +215,32 @@ describe('owned web fixed-grid SVG snapshot lifecycle', () => {
   );
 
   it('refuses missing or mismatched target/options instead of capturing another surface', () => {
-    expect(() => ref.current.toDataURL(vi.fn(), { width: 1, height: 1 })).toThrow('dimensions');
+    expect(() => ref.current.toDataURL(vi.fn(), { width: 1 })).toThrow('dimensions');
+    expect(() => ref.current.toDataURL(vi.fn(), { width: 1024.5, height: 768 })).toThrow(
+      'dimensions'
+    );
+    expect(() => ref.current.toDataURL(vi.fn(), { width: 768, height: 1024 })).toThrow('not ready');
     ref.current.elementRef = { current: document.createElement('div') };
     expect(() => ref.current.toDataURL(vi.fn(), DIMENSIONS)).toThrow('unavailable');
     expect(images).toHaveLength(0);
+  });
+
+  it('rasterizes a portrait paper at its own grid', async () => {
+    const portrait = { width: 567, height: 1024 };
+    vi.mocked(SVGSVGElement.prototype.getBoundingClientRect).mockReturnValue(portrait);
+    await act(async () =>
+      root.render(createElement(CaptureSvg, { ref, ...portrait, viewBox: '0 0 567 1024' }))
+    );
+    const serialized = vi.spyOn(XMLSerializer.prototype, 'serializeToString');
+    const callback = vi.fn();
+    const grids = [];
+    draw.mockImplementation(() => grids.push([canvases.at(-1).width, canvases.at(-1).height]));
+    ref.current.toDataURL(callback, portrait);
+    expect(serialized.mock.results[0].value).toContain('viewBox="0 0 567 1024"');
+    images.at(-1).onload();
+    expect(grids).toEqual([[567, 1024]]);
+    expect(callback).toHaveBeenCalledExactlyOnceWith('aW5r');
+    expect(() => ref.current.toDataURL(vi.fn(), DIMENSIONS)).toThrow('not ready');
   });
 
   it('disposes the canvas and refuses a failed draw without claiming a PNG', () => {

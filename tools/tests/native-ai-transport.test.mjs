@@ -105,10 +105,14 @@ describe('strict native hosted AI contract', () => {
   });
 });
 
-it('bounds capture bytes and rejects a PNG with dimensions different from the fixed drawing paper', () => {
-  expect(() => prepareAiPng(rgbaPng(2, 2).toString('base64'))).toThrow('dimensions');
-  expect(prepareAiPng(rgbaPng(1024, 768).toString('base64')).length).toBeGreaterThan(33);
-  expect(() => prepareAiPng('iVBORw0KGgo=')).toThrow('header');
+it('bounds capture bytes and rejects a PNG with dimensions different from the drawing paper', () => {
+  const canonical = { width: 1024, height: 768 };
+  const portrait = { width: 567, height: 1024 };
+  expect(() => prepareAiPng(rgbaPng(2, 2).toString('base64'), canonical)).toThrow('dimensions');
+  expect(prepareAiPng(rgbaPng(1024, 768).toString('base64'), canonical).length).toBeGreaterThan(33);
+  expect(prepareAiPng(rgbaPng(567, 1024).toString('base64'), portrait).length).toBeGreaterThan(33);
+  expect(() => prepareAiPng(rgbaPng(1024, 768).toString('base64'), portrait)).toThrow('dimensions');
+  expect(() => prepareAiPng('iVBORw0KGgo=', canonical)).toThrow('header');
 });
 it('pins native secure owner semantics and the namespaced app pseudonym without exposing platform identifiers', () => {
   const kotlin = readFileSync(

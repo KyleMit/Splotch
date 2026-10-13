@@ -10,17 +10,12 @@ import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
-import {
-  drawerOffsets,
-  EDGE_INSET_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 import {
   paletteSlots,
   swatchEdge,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
   PALETTE_COLORS,
   PALETTE_TRIM_ORDER,
@@ -32,58 +27,13 @@ import {
   TOUCH_TARGET,
 } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
-  BUTTON_SCALE_MAX,
-  BUTTON_SCALE_MIN,
-  BUTTON_SCALE_STEP,
-  DEFAULT_BUTTON_SCALE,
-  controlSize,
-} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
+  mountToolbar,
+  paintGroup,
+  paintLabels,
+  toolbarScreen,
+} from './rsd-native-toolbar-fixture.mjs';
 
 const PURPLE = paletteHex('Purple');
-
-function toolbarScreen(overrides = {}) {
-  return {
-    notice: '',
-    drawing: false,
-    disabled: false,
-    brush: 'crayon',
-    brushControl: { kind: 'menu', brushes: ['pen', 'crayon'] },
-    availableBrushes: ['pen', 'crayon'],
-    history: { undo: [emptyDrawing()], drawing: emptyDrawing() },
-    recovery: { failed: false },
-    pictures: null,
-    pagePickerOpen: false,
-    settingsOpen: false,
-    colorPickerOpen: false,
-    undo: vi.fn(),
-    clear: vi.fn(async () => {}),
-    save: vi.fn(async () => {}),
-    setPagePickerOpen: vi.fn(),
-    openSettings: vi.fn(),
-    openColorPicker: vi.fn(),
-    toggleBrush: vi.fn(),
-    selectInkBrush: vi.fn(),
-    ...overrides,
-  };
-}
-
-async function mountToolbar(screen) {
-  caller.screen = screen;
-  caller.menu = { open: false, visible: false, show: vi.fn() };
-  caller.sound = {
-    settings: {
-      status: 'ready',
-      soundEnabled: false,
-      appearance: 'light',
-      selectedColor: 'Purple',
-      customColors: [],
-      strokeWidth: 'medium',
-      eraserWidth: 'medium',
-      aiEnabled: true,
-    },
-  };
-  await mount(createElement(RsdDrawingScreen));
-}
 
 function button(label) {
   const node = host.querySelector(`[aria-label="${label}"]`);
@@ -172,16 +122,6 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
 function expanded(label) {
   return records.props.findLast((props) => props.accessibilityLabel === label).accessibilityState
     .expanded;
-}
-
-function paintGroup() {
-  return host.querySelector('[role="radiogroup"][aria-label="Paint colors"]');
-}
-
-function paintLabels() {
-  return [...paintGroup().querySelectorAll('[role="radio"]')].map((node) =>
-    node.getAttribute('aria-label')
-  );
 }
 
 it('selects paint through text-free round swatches and keeps More colors outside the group', async () => {
@@ -328,197 +268,41 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(seen.palette).toEqual({ axis: 'column', slots: 4 });
 });
 
-it('frames the fixed paper the way the full-bleed area fits it in either orientation', () => {
-  expect(fittedPaper({ width: 390, height: 704 })).toEqual({
+it('frames the paper the way the full-bleed area fits it in either orientation', () => {
+  const blank = { kind: 'unadopted' };
+  const portrait = { kind: 'adopted', cssWidth: 390, cssHeight: 704, backingScale: 2 };
+  expect(fittedPaper({ width: 390, height: 704 }, blank)).toEqual({
+    left: 0,
+    top: 0,
+    width: 390,
+    height: 704,
+  });
+  expect(fittedPaper({ width: 2000, height: 1500 }, blank)).toMatchObject({
+    width: 2000,
+    height: 1500,
+  });
+  expect(fittedPaper({ width: 390, height: 704 }, portrait)).toEqual({
+    left: 0,
+    top: 0,
+    width: 390,
+    height: 704,
+  });
+  expect(fittedPaper({ width: 1100, height: 352 }, portrait)).toEqual({
+    left: 452.5,
+    top: 0,
+    width: 195,
+    height: 352,
+  });
+  expect(fittedPaper({ width: 390, height: 704 }, { kind: 'legacy' })).toEqual({
     left: 0,
     top: 205.75,
     width: 390,
     height: 292.5,
   });
-  expect(fittedPaper({ width: 1100, height: 600 })).toEqual({
-    left: 150,
-    top: 0,
-    width: 800,
-    height: 600,
-  });
-  expect(fittedPaper({ width: 2000, height: 1500 })).toMatchObject({
-    width: 1024,
-    height: 768,
-  });
-  expect(fittedPaper({ width: 0, height: 0 })).toEqual({
+  expect(fittedPaper({ width: 0, height: 0 }, portrait)).toEqual({
     left: 0,
     top: 0,
     width: 0,
     height: 0,
   });
-});
-
-function flat(style) {
-  return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
-}
-
-function resolved(predicate) {
-  const props = records.props.findLast(predicate);
-  expect(props).toBeDefined();
-  return flat(props.style);
-}
-
-function outerSize(style) {
-  expect(style.width).toBe(style.height);
-  return style.boxSizing === 'border-box'
-    ? style.width
-    : style.width + 2 * (style.borderWidth ?? 0) + 2 * (style.padding ?? 0);
-}
-
-// Button Size goes through the real settings owner, as the Settings stepper sends it.
-async function chooseButtonScale(scale) {
-  await act(async () => caller.product.sound.owner.settings.setButtonScale(scale));
-  expect(caller.product.sound.settings).toMatchObject({
-    status: 'ready',
-    buttonScale: scale,
-  });
-}
-
-const BUTTON_SCALES = [BUTTON_SCALE_MIN, DEFAULT_BUTTON_SCALE, BUTTON_SCALE_MAX];
-
-it.each(BUTTON_SCALES)(
-  'counts palette slots from the outer size the renderer gives each swatch at %i%% Button Size',
-  async (scale) => {
-    await mountToolbar(toolbarScreen());
-    await chooseButtonScale(scale);
-    const size = controlSize(scale);
-    const outer = [
-      outerSize(resolved((props) => props.accessibilityLabel === 'Purple paint')),
-      outerSize(resolved((props) => props.accessibilityLabel === 'More colors')),
-    ];
-    expect(outer).toEqual([size, size]);
-    const { gap } = resolved((props) => props.accessibilityLabel === 'Paint colors');
-    const bar = resolved(
-      (props) => flat(props.style)?.flexGrow === 1 && flat(props.style).padding !== undefined
-    );
-    expect(bar.gap).toBe(gap);
-    const span = (count) => count * outer[0] + (count - 1) * gap + 2 * bar.padding;
-    for (const length of [320, 390, 402, 568, 820, 1180]) {
-      const slots = paletteSlots(length, size);
-      expect(span(slots), `${length}`).toBeLessThanOrEqual(length);
-      expect(span(slots + 1), `${length}`).toBeGreaterThan(length);
-    }
-    expect(paintLabels()).toHaveLength(paletteSlots(402, size) - 1);
-  }
-);
-
-it('sizes the chevron and every drawer tool from Button Size, and keeps Clear and Settings normal', async () => {
-  await mountToolbar(toolbarScreen());
-  await expandControls();
-  const drawerLabels = ['Brush: Crayon', 'Save picture', 'Undo', 'Collapse controls'];
-  const sizes = () =>
-    drawerLabels.map((label) => outerSize(resolved((props) => props.accessibilityLabel === label)));
-  expect(sizes()).toEqual(drawerLabels.map(() => TOUCH_TARGET));
-  await chooseButtonScale(BUTTON_SCALE_MAX);
-  expect(sizes()).toEqual(drawerLabels.map(() => controlSize(BUTTON_SCALE_MAX)));
-  expect(outerSize(resolved((props) => props.accessibilityLabel === 'Settings'))).toBe(
-    TOUCH_TARGET
-  );
-  await chooseButtonScale(BUTTON_SCALE_MIN);
-  expect(sizes()).toEqual(drawerLabels.map(() => controlSize(BUTTON_SCALE_MIN)));
-  expect(controlSize(BUTTON_SCALE_MIN)).toBeLessThan(TOUCH_TARGET);
-  expect(controlSize(BUTTON_SCALE_MAX)).toBeGreaterThan(TOUCH_TARGET);
-});
-
-function rect(left, top, side) {
-  return { left, top, right: left + side, bottom: top + side };
-}
-
-function overlaps(a, b) {
-  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-}
-
-it.each(
-  [
-    [320, 568],
-    [568, 320],
-  ].flatMap(([width, height]) => BUTTON_SCALES.map((scale) => [width, height, scale]))
-)(
-  'keeps every drawer tool and the chevron reachable at %ix%i and %i%% Button Size',
-  async (width, height, scale) => {
-    records.dimensions = { width, height, scale: 1, fontScale: 1 };
-    await mountToolbar(toolbarScreen());
-    await chooseButtonScale(scale);
-    const size = controlSize(scale);
-    const portrait = height > width;
-    const status = flat(
-      records.viewports.findLast((props) => props.testID === 'rsd-drawing-status-viewport').style
-    );
-    const bar = size + 2 * EDGE_INSET_PX;
-    const area = {
-      width: portrait ? width : width - bar,
-      height: (portrait ? height - bar : height) - status.height,
-    };
-    const canvas = records.props.findLast((props) => props.testID === 'rsd-canvas-area');
-    await act(async () => canvas.onLayout({ nativeEvent: { layout: { x: 0, y: 0, ...area } } }));
-    await expandControls();
-    const tools = records.props
-      .filter((props) => props.testID === 'rsd-drawer-tool')
-      .slice(-7)
-      .map((props) => flat(props.style))
-      .map((style) => rect(style.left, area.height - style.bottom - size, size));
-    expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]')).toHaveLength(7);
-    const inset = EDGE_INSET_PX;
-    const toggle = rect(inset, area.height - inset - size, size);
-    const settings = rect(
-      area.width - inset - TOUCH_TARGET,
-      area.height - inset - TOUCH_TARGET,
-      TOUCH_TARGET
-    );
-    const clear = rect(area.width - inset - TOUCH_TARGET, inset, TOUCH_TARGET);
-    expect(resolved((props) => props.testID === 'rsd-drawer-dock')).toMatchObject({
-      left: inset,
-      bottom: inset,
-    });
-    expect(resolved((props) => props.testID === 'rsd-settings-dock')).toMatchObject({
-      right: inset,
-      bottom: inset,
-    });
-    expect(resolved((props) => props.testID === 'rsd-clear-dock')).toMatchObject({
-      right: inset,
-      top: inset,
-    });
-    for (const [index, tool] of [toggle, ...tools].entries()) {
-      expect(tool.left, `${index}`).toBeGreaterThanOrEqual(0);
-      expect(tool.top, `${index}`).toBeGreaterThanOrEqual(0);
-      expect(tool.right, `${index}`).toBeLessThanOrEqual(area.width);
-      expect(tool.bottom, `${index}`).toBeLessThanOrEqual(area.height);
-      expect(overlaps(tool, settings), `${index}`).toBe(false);
-      expect(overlaps(tool, clear), `${index}`).toBe(false);
-    }
-    for (const [index, tool] of tools.entries()) {
-      expect(overlaps(tool, toggle), `${index}`).toBe(false);
-      for (const other of tools.slice(index + 1)) expect(overlaps(tool, other)).toBe(false);
-    }
-    expect(drawerOffsets(area, portrait ? 'column' : 'row', 7, size)).toEqual(
-      records.props
-        .filter((props) => props.testID === 'rsd-drawer-tool')
-        .slice(-7)
-        .map((props) => ({
-          left: flat(props.style).left,
-          bottom: flat(props.style).bottom,
-        }))
-    );
-  }
-);
-
-it('stops landscape drawer rows short of the normal-size Settings at every Button Size', () => {
-  const overreaches = [];
-  for (let width = 320; width <= 1366; width++) {
-    const settingsLeft = width - EDGE_INSET_PX - TOUCH_TARGET;
-    for (let scale = BUTTON_SCALE_MIN; scale <= BUTTON_SCALE_MAX; scale += BUTTON_SCALE_STEP) {
-      const size = controlSize(scale);
-      const rightmost = Math.max(
-        ...drawerOffsets({ width, height: 300 }, 'row', 20, size).map(({ left }) => left)
-      );
-      if (rightmost + size > settingsLeft - EDGE_INSET_PX)
-        overreaches.push(`${scale}% at ${width}px`);
-    }
-  }
-  expect(overreaches).toEqual([]);
 });

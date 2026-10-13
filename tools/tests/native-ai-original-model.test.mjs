@@ -15,6 +15,9 @@ import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
   MAX_BACKING_SCALE,
+  MAX_PAPER_CSS_PX,
+  MIN_PAPER_CSS_PX,
+  MIN_BACKING_SCALE,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { MAGIC_RAINBOW_COUNT } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 const ROOT = join(import.meta.dirname, '../..');
@@ -35,7 +38,7 @@ const IMPORTS = [
   { version: 3, pageId: 'blank', rainbow: 0, strokes: [] },
   { version: 4, pageId: 'blank', rainbow: 0, strokes: [] },
   { version: 5, pageId: 'blank', rainbow: 0, strokes: [] },
-  { version: 6, pageId: 'blank', rainbow: 0, paper: { kind: 'unadopted' }, strokes: [] },
+  { version: 7, pageId: 'blank', rainbow: 0, paper: { kind: 'unadopted' }, strokes: [] },
 ];
 describe('native opaque original-model admission', () => {
   it.each(IMPORTS)('preserves the existing imported decode format$version', (value) => {
@@ -51,8 +54,9 @@ describe('native opaque original-model admission', () => {
     { version: true, strokes: [] },
     { version: 2, strokes: [] },
     { version: 7, commands: [] },
+    { version: 6, pageId: 'blank', rainbow: 0, paper: { kind: 'unadopted' }, strokes: [] },
     {
-      version: 6,
+      version: 7,
       paper: { kind: 'unadopted', cssWidth: 1 },
       pageId: 'blank',
       rainbow: 0,
@@ -98,6 +102,12 @@ describe('native opaque original-model admission', () => {
     expect(apple).toContain('drawingPaperWidth = ' + PAPER_WIDTH + '.0');
     expect(android).toContain('drawingPaperHeight = ' + PAPER_HEIGHT + '.0');
     expect(apple).toContain('drawingPaperHeight = ' + PAPER_HEIGHT + '.0');
+    expect(android).toContain('maximumPaperCssPx = ' + MAX_PAPER_CSS_PX + '.0');
+    expect(apple).toContain('minimumPaperCssPx = ' + MIN_PAPER_CSS_PX + '.0');
+    expect(android).toContain('minimumPaperCssPx = ' + MIN_PAPER_CSS_PX + '.0');
+    expect(apple).toContain('minimumBackingScale = ' + MIN_BACKING_SCALE);
+    expect(android).toContain('minimumBackingScale = ' + MIN_BACKING_SCALE);
+    expect(apple).toContain('maximumPaperCssPx = ' + MAX_PAPER_CSS_PX + '.0');
     expect(android).toContain('maximumBackingScale = ' + MAX_BACKING_SCALE + '.0');
     expect(apple).toContain('maximumBackingScale = ' + MAX_BACKING_SCALE + '.0');
     expect(android).toContain('maxModel = 8 * 1024 * 1024');

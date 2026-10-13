@@ -4,6 +4,7 @@ import { NativePaper } from './NativePaper';
 import { AiWaitingPolaroid } from '../ai/AiWaitingPolaroid';
 import { aiRun } from '../ai/uiState';
 import { fittedPaper } from '../drawing/paperGeometry';
+import { drawingPaper } from '../drawing/paperSpace';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 
 const paperSlot = { flex: 1, minWidth: 0, minHeight: 0 } as const;
@@ -30,7 +31,10 @@ export function RsdPaperSlot({
     >
       <NativePaper {...paper} />
       {run && ai.owner ? (
-        <View testID="rsd-paper-corner" style={[paperCorner, fittedPaper(space)]}>
+        <View
+          testID="rsd-paper-corner"
+          style={[paperCorner, fittedPaper(space, drawingPaper(paper.screen.history.drawing))]}
+        >
           <AiWaitingPolaroid run={run} progress={ai.progress} onRestore={ai.owner.restore} />
         </View>
       ) : null}

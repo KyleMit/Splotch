@@ -25,7 +25,7 @@ import {
 import {
   NATIVE_SETTINGS_SECTIONS,
   SECTION_SUBTITLES,
-} from '../../../experiments/native-architecture/src/settings/sections.ts';
+} from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
 import {
   RELEASE_NOTES,
   WHATS_NEW_STAMP,
