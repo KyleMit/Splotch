@@ -198,6 +198,7 @@ const records = vi.hoisted(() => ({
   backListeners: new Set(),
   exits: 0,
   os: 'ios',
+  settingsOpened: 0,
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
@@ -254,6 +255,11 @@ vi.mock('react-native', async () => {
       return React.createElement('span', { 'data-status-bar': props.barStyle });
     },
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    Linking: {
+      openSettings: async () => {
+        records.settingsOpened += 1;
+      },
+    },
     BackHandler: backHandlerPort(records),
     ScrollView: React.forwardRef((props, ref) => {
       records.viewports.push(props);
@@ -416,6 +422,8 @@ afterEach(async () => {
   records.backListeners.clear();
   records.exits = 0;
   records.os = 'ios';
+  records.settingsOpened = 0;
+  caller.capturePng = null;
   orientationCalls.length = 0;
 });
 

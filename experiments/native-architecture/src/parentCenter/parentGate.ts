@@ -7,7 +7,7 @@ import {
   gateLockoutDurationMs,
   gateLockoutMessage,
 } from '../feedback/gateLockout';
-import type { ParentFeature, ParentPolicies, ParentProof } from './parentPolicy';
+import { gateMode, type GateFeature, type ParentPolicies, type ParentProof } from './parentPolicy';
 
 export const PARENT_GATE_SHAKE_MS = 400;
 // The shipping keypad's keys in reading order; rsd-native-parent-center.test.mjs pins them to
@@ -30,7 +30,7 @@ export const PARENT_GATE_KEYPAD_KEYS = [
 export type ParentGateKey = (typeof PARENT_GATE_KEYPAD_KEYS)[number];
 export type ParentGateState = Readonly<{
   open: boolean;
-  feature: ParentFeature;
+  feature: GateFeature;
   x: number;
   y: number;
   input: string;
@@ -130,7 +130,7 @@ export function createParentGate(
     announcementId: 0,
   };
   let pending: ((proof: ParentProof) => void) | null = null;
-  const sessions = new Set<ParentFeature>();
+  const sessions = new Set<GateFeature>();
   let epoch = 0;
   let disposed = false;
   function update(next: Partial<ParentGateState>) {
@@ -159,8 +159,8 @@ export function createParentGate(
     const proofEpoch = epoch;
     action({ valid: () => !disposed && proofEpoch === epoch });
   }
-  function bypass(feature: ParentFeature) {
-    const mode = policies()[feature];
+  function bypass(feature: GateFeature) {
+    const mode = gateMode(policies(), feature);
     return mode === 'never' || (mode === 'session' && sessions.has(feature));
   }
   /** A digit past the answer's length counts as a wrong answer, as it does on the shipping card. */
@@ -187,7 +187,7 @@ export function createParentGate(
   }
   return {
     getState: () => state,
-    request(feature: ParentFeature, action: (proof: ParentProof) => void) {
+    request(feature: GateFeature, action: (proof: ParentProof) => void) {
       if (disposed || state.open) return false;
       epoch += 1;
       if (bypass(feature)) {
@@ -220,7 +220,7 @@ export function createParentGate(
       else if (key === PARENT_GATE_CHECK_KEY) answer();
       else input(state.input + String(key));
     },
-    cancel(feature: ParentFeature) {
+    cancel(feature: GateFeature) {
       if (state.feature === feature && state.open) dismiss();
     },
     invalidate: dismiss,

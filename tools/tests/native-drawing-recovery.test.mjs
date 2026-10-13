@@ -24,7 +24,7 @@ import {
   encodeDrawingDraft,
 } from '../../experiments/native-architecture/src/product/drawingDraft.ts';
 import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { FAILED_DETAIL } from '../../experiments/native-architecture/src/export/pictureSave.ts';
+import { saveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 
 const capturePngFixture = readFileSync(
   new NodeURL('./fixtures/native-png-android-rgba-sbit.png', import.meta.url)
@@ -340,7 +340,7 @@ describe('visible terminal renderer recovery', () => {
     await click('Save picture');
     await frames();
     await act(async () => vi.runAllTimersAsync());
-    expect(host.textContent).toContain(FAILED_DETAIL);
+    expect(host.textContent).toContain(saveFailureCopy('failed', 0, 'ios').heading);
     expect(button('Retry drawing')).toBeUndefined();
   });
 });

@@ -1,6 +1,15 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
+import {
+  BANNER_ENTER_MS,
+  BANNER_EXIT_MS,
+  BANNER_FLY_PX,
+} from '../../../../web/src/lib/components/bannerMotion';
+import { CALM_FADE_MS } from '../../../../web/src/lib/motionDurations';
 import { DRAWING_SCALE } from '../drawing/theme';
+import { useReduceMotion } from '../drawing/useReduceMotion';
+import { Animated, Easing } from '../platform/animated';
 import { HeaderControl } from './DialogHeader';
 import { RsdButton } from './RsdButton';
 import { RsdIcon } from './RsdIcon';
@@ -18,23 +27,28 @@ export const BANNER_CLEAR_RESERVE_PX = 78;
 // The dismiss blob's outline sits flush with the card's padding corner.
 export const BANNER_DISMISS_OVERHANG_PX = -2;
 
+// svelte/easing's backOut, which the shipping enter uses, and cubicOut, svelte fly's default,
+// which its exit uses.
+const BACK_OUT = Easing.out(Easing.back(1.70158));
+const CUBIC_OUT = Easing.out(Easing.cubic);
+
 export type FailureBannerAction = Readonly<{
   label: string;
+  variant: 'brand' | 'wash';
+  busy: boolean;
   disabled: boolean;
   onPress: () => void;
 }>;
 
-// One failure the banner shows: a refused save the child may dismiss, or a failure only its
-// action can clear.
+// One failure the banner shows: its words, the Dismiss a failure the parent may set aside offers,
+// and the actions that fix it.
 export type FailureBannerModel = Readonly<{
   key: string;
   heading: string;
   detail: string;
-}> &
-  (
-    | Readonly<{ onDismiss: () => void; action?: never }>
-    | Readonly<{ action: FailureBannerAction; onDismiss?: never }>
-  );
+  onDismiss: (() => void) | null;
+  actions: readonly FailureBannerAction[];
+}>;
 
 // The dock passes touches between and around the banners through to the paper.
 const dock = StyleSheet.create({
@@ -46,6 +60,7 @@ const dock = StyleSheet.create({
     alignItems: 'center',
     gap: DRAWING_SCALE.space3,
   },
+  card: { width: '100%', alignItems: 'center' },
 });
 
 const styles = css.create({
@@ -103,48 +118,140 @@ const styles = css.create({
   },
 });
 
-// The shipping Save Failure Banner: a raised card pinned to the top of the paper, Dottie with
-// the hiccup beside the heading and detail, the outlined Dismiss, and the action that fixes it.
-// The announcement is RsdDrawingStatus's, which stays mounted while this one comes and goes.
-export function RsdFailureBanner({ failures }: { failures: readonly FailureBannerModel[] }) {
+type Shown = Readonly<{ model: FailureBannerModel; present: boolean }>;
+
+// Each failure that leaves keeps its last words on screen until its exit has played, as Svelte
+// freezes an outroing block; one that comes back before then is present again.
+function useBannerPresence(failures: readonly FailureBannerModel[]) {
+  const [leaving, setLeaving] = useState<readonly FailureBannerModel[]>([]);
+  const previous = useRef(failures);
+  useLayoutEffect(() => {
+    const departed = previous.current.filter(
+      (old) => !failures.some((failure) => failure.key === old.key)
+    );
+    previous.current = failures;
+    if (departed.length === 0) return;
+    setLeaving((current) => [
+      ...current.filter((old) => !departed.some((gone) => gone.key === old.key)),
+      ...departed,
+    ]);
+  }, [failures]);
+  const stillLeaving = leaving.filter(
+    (old) => !failures.some((failure) => failure.key === old.key)
+  );
+  const shown: Shown[] = [
+    ...failures.map((model) => ({ model, present: true })),
+    ...stillLeaving.map((model) => ({ model, present: false })),
+  ];
+  return {
+    shown,
+    gone: (key: string) => setLeaving((current) => current.filter((old) => old.key !== key)),
+  };
+}
+
+// SaveFailureBanner.svelte's fly: down from above the top edge with a slight overshoot as it
+// comes, back up as it goes, and under Reduce Motion a short fade both ways.
+function useBannerMotion(present: boolean, gone: () => void) {
+  const calm = useReduceMotion();
+  const progress = useRef(new Animated.Value(0)).current;
+  const goneRef = useRef(gone);
+  goneRef.current = gone;
+  useEffect(() => {
+    const timing = present
+      ? { duration: calm ? CALM_FADE_MS : BANNER_ENTER_MS, easing: calm ? Easing.linear : BACK_OUT }
+      : {
+          duration: calm ? CALM_FADE_MS : BANNER_EXIT_MS,
+          easing: calm ? Easing.linear : CUBIC_OUT,
+        };
+    const motion = Animated.timing(progress, {
+      toValue: present ? 1 : 0,
+      ...timing,
+      useNativeDriver: true,
+    });
+    motion.start(({ finished }) => {
+      if (finished && !present) goneRef.current();
+    });
+    return () => motion.stop();
+  }, [present, calm, progress]);
+  const opacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  if (calm) return { opacity };
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [-BANNER_FLY_PX, 0] });
+  return { opacity, transform: [{ translateY }] };
+}
+
+function BannerCard({
+  failure,
+  present,
+  onGone,
+}: {
+  failure: FailureBannerModel;
+  present: boolean;
+  onGone: () => void;
+}) {
+  const motion = useBannerMotion(present, onGone);
   return (
-    <View testID="rsd-failure-banners" pointerEvents="box-none" style={dock.stack}>
-      {failures.map((failure) => (
-        <html.div key={failure.key} data-testid="rsd-failure-banner" style={styles.banner}>
-          <html.div style={styles.main}>
-            <html.div aria-hidden style={styles.mascot}>
-              <RsdIcon name="dottie-hiccup" size={BANNER_MASCOT_PX} ink={undefined} muted={false} />
-            </html.div>
-            <html.div style={styles.copy}>
-              <html.strong style={[controlStyles.boldText, styles.heading]}>
-                {failure.heading}
-              </html.strong>
-              <html.span style={styles.detail}>{failure.detail}</html.span>
-            </html.div>
-            {failure.onDismiss ? (
-              <html.div style={styles.dismiss}>
-                <HeaderControl
-                  kind="close"
-                  label="Dismiss"
-                  disabled={false}
-                  onClick={failure.onDismiss}
-                />
-              </html.div>
-            ) : null}
+    <Animated.View pointerEvents={present ? 'box-none' : 'none'} style={[dock.card, motion]}>
+      <html.div data-testid="rsd-failure-banner" style={styles.banner}>
+        <html.div style={styles.main}>
+          <html.div aria-hidden style={styles.mascot}>
+            <RsdIcon name="dottie-hiccup" size={BANNER_MASCOT_PX} ink={undefined} muted={false} />
           </html.div>
-          {failure.action ? (
-            <html.div style={styles.actions}>
-              <RsdButton
-                variant="brand"
-                size="md"
-                disabled={failure.action.disabled}
-                onPress={failure.action.onPress}
-              >
-                {failure.action.label}
-              </RsdButton>
+          <html.div style={styles.copy}>
+            <html.strong style={[controlStyles.boldText, styles.heading]}>
+              {failure.heading}
+            </html.strong>
+            <html.span style={styles.detail}>{failure.detail}</html.span>
+          </html.div>
+          {failure.onDismiss ? (
+            <html.div style={styles.dismiss}>
+              <HeaderControl
+                kind="close"
+                label="Dismiss"
+                disabled={false}
+                onClick={failure.onDismiss}
+              />
             </html.div>
           ) : null}
         </html.div>
+        {failure.actions.length > 0 ? (
+          <html.div style={styles.actions}>
+            {failure.actions.map((action) => (
+              <RsdButton
+                key={action.label}
+                variant={action.variant}
+                size="md"
+                busy={action.busy}
+                disabled={action.disabled}
+                onPress={action.onPress}
+              >
+                {action.label}
+              </RsdButton>
+            ))}
+          </html.div>
+        ) : null}
+      </html.div>
+    </Animated.View>
+  );
+}
+
+// The shipping Save Failure Banner: a raised card pinned to the top of the paper, Dottie with
+// the hiccup beside the heading and detail, the outlined Dismiss, and the actions that fix it.
+// The announcement is RsdDrawingStatus's, which stays mounted while this one comes and goes.
+export function RsdFailureBanner({ failures }: { failures: readonly FailureBannerModel[] }) {
+  const { shown, gone } = useBannerPresence(failures);
+  return (
+    <View testID="rsd-failure-banners" pointerEvents="box-none" style={dock.stack}>
+      {shown.map(({ model, present }) => (
+        <BannerCard
+          key={model.key}
+          failure={model}
+          present={present}
+          onGone={() => gone(model.key)}
+        />
       ))}
     </View>
   );

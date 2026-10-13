@@ -14,6 +14,7 @@ import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import { initialSoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
+import { openAppSettings } from '../platform/appSettings';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
@@ -228,5 +229,11 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     ai: { owner: owners?.ai ?? null, state: aiState, progress: aiProgress },
     owner: services?.product ?? null,
     state: services?.product.getState() ?? null,
+    // Settings is outside the app, so it sits behind the same gate as every other way out.
+    openAppSettings() {
+      services?.product.port.request('externalLinks', (proof) => {
+        if (proof.valid()) openAppSettings();
+      });
+    },
   };
 }

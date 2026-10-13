@@ -18,6 +18,16 @@ export function drawingScreenPort(actual, caller, projectHistory) {
             draftState: { status: 'session', message: '' },
             retryDraft: async () => {},
             selectInkBrush() {},
+            saveFailure: {
+              outcome: null,
+              pictureCount: 0,
+              retrying: false,
+              retry: async () => {},
+              dismiss() {},
+            },
+            flight: null,
+            cameraTile: { current: null },
+            landFlight() {},
             ...caller.screen,
             library: caller.library,
             setColoringBookEnabled(enabled) {
@@ -50,7 +60,7 @@ export function paperPort(React, strokeStyle, caller) {
         lockInput: () => () => {},
         refreshGeometry() {},
         // A save's photo library copy; what the library does with it is the test's port.
-        capturePng: async () => 'cmVhbC1wbmc=',
+        capturePng: async () => caller.capturePng?.() ?? 'cmVhbC1wbmc=',
       }),
       []
     );

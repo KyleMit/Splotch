@@ -7,7 +7,7 @@ import { RsdAction, styles } from './controls';
 import { RsdParentGateKeypad } from './RsdParentGateKeypad';
 import { colors, dimensions, fonts } from './tokens.css';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
-import { PARENT_LABELS } from '../parentCenter/parentPolicy';
+import { GATE_LABELS } from '../parentCenter/parentPolicy';
 import type { ParentGateState } from '../parentCenter/parentGate';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import { useParentGateMotion } from '../parentCenter/useParentGateMotion';
@@ -77,7 +77,7 @@ export function RsdParentGateSheet({
       <Animated.View style={{ transform: [{ translateX: offset }] }}>
         <html.div style={styles.dialogContent}>
           <GateTitle />
-          <html.span>{PARENT_LABELS[state.feature]}</html.span>
+          <html.span>{GATE_LABELS[state.feature]}</html.span>
           <html.div style={sheetStyles.problem}>
             <html.span>
               {state.x} × {state.y} =

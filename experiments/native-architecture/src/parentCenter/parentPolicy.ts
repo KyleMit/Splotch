@@ -16,6 +16,17 @@ export const PARENT_LABELS: Record<ParentFeature, string> = {
   feedback: 'Sending feedback',
   parentCenter: 'Opening Parent Center',
 };
+// Every gated operation: the ones Parent Center lists, and opening the device's Settings from the
+// Save Failure Banner, which shipping gates as `externalLinks`. Parent Center does not list that
+// one yet, so its check runs every time, the shipping native default.
+export type GateFeature = ParentFeature | 'externalLinks';
+export const GATE_LABELS: Record<GateFeature, string> = {
+  ...PARENT_LABELS,
+  externalLinks: 'Viewing external links',
+};
+export function gateMode(policies: ParentPolicies, feature: GateFeature): ParentMode {
+  return feature === 'externalLinks' ? 'always' : policies[feature];
+}
 export const PARENT_MODE_LABELS: Record<ParentMode, string> = {
   always: 'Every time',
   session: 'Per session',
@@ -37,8 +48,8 @@ export function isParentPolicies(value: unknown): value is ParentPolicies {
 }
 export type ParentProof = Readonly<{ valid: () => boolean }>;
 export type ParentOperationPort = {
-  request: (feature: ParentFeature, action: (proof: ParentProof) => void) => boolean;
-  cancel: (feature: ParentFeature) => void;
+  request: (feature: GateFeature, action: (proof: ParentProof) => void) => boolean;
+  cancel: (feature: GateFeature) => void;
   consent: () => Readonly<{ enabled: boolean; epoch: number }>;
 };
 
