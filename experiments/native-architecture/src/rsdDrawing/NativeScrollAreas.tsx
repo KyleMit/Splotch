@@ -2,32 +2,68 @@ import { useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { paletteSlots } from './controls';
-import { drawerOffsets, EDGE_INSET_PX, type AreaSize, type LayoutAxis } from './edgeLayout';
+import {
+  drawerOffsets,
+  EDGE_INSET_PX,
+  type AreaOffset,
+  type AreaSize,
+  type LayoutAxis,
+} from './edgeLayout';
 
 export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number }>;
 export type DrawerTool = Readonly<{ label: string; node: ReactNode }>;
 
+// The shipping palette (--z-palette) stacks over the Clear Button, its accept ring and coachmark.
+const PALETTE_OVER_CLEAR_Z_INDEX = 1;
+
 const docks = StyleSheet.create({
-  clear: { position: 'absolute', top: EDGE_INSET_PX, right: EDGE_INSET_PX },
+  palette: { zIndex: PALETTE_OVER_CLEAR_Z_INDEX },
+  // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
+  clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
   toggle: { position: 'absolute', bottom: EDGE_INSET_PX, left: EDGE_INSET_PX },
   tool: { position: 'absolute' },
 });
 
+type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
+
 function sameSize(previous: AreaSize | undefined, next: AreaSize) {
   return previous?.width === next.width && previous.height === next.height;
 }
 
-// The shipping arrangement: colors along the top edge (the left edge in landscape), Clear on the
-// right edge, Settings in the bottom-right corner and the tool drawer's chevron in the bottom-left
-// one, all floating over a paper area that takes the rest of the screen. The open drawer's tools
-// are placed by drawerOffsets so they stay inside that area and clear of Clear and Settings.
+function sameBox(previous: Box | undefined, next: Box) {
+  return sameSize(previous, next) && previous?.x === next.x && previous.y === next.y;
+}
+
+// The paper area's distance from the layout's top and right edges, from the area's box inside its
+// column and the column's box inside the layout.
+function areaOffset(root: Box | undefined, column: Box | undefined, area: Box | undefined) {
+  if (!root || !column || !area) return { top: 0, right: 0 };
+  return {
+    top: column.y + area.y,
+    right: root.width - (column.x + area.x + area.width),
+  };
+}
+
+function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined) => void) {
+  return ({ nativeEvent }: { nativeEvent: { layout: Box } }) => {
+    const { x, y, width, height } = nativeEvent.layout;
+    const next = { x, y, width, height };
+    set((previous) => (sameBox(previous, next) ? previous : next));
+  };
+}
+
+// The shipping arrangement: colors along the top edge (the left edge in landscape), Clear docked to
+// the right screen edge, Settings in the bottom-right corner and the tool drawer's chevron in the
+// bottom-left one, all floating over a paper area that takes the rest of the screen. The open
+// drawer's tools are placed by drawerOffsets so they stay inside that area and clear of Clear and
+// Settings. The clear underlay paints over the paper in the area's coordinates; the clear overlay
+// spans the whole layout, as the shipping Clear Button docks to the screen rather than the paper.
 export function NativeDrawingLayout({
   controlSize,
   palette,
-  clear,
   clearUnderlay,
-  clearCoachmark,
+  clearOverlay,
   drawerToggle,
   drawerTools,
   settings,
@@ -36,9 +72,8 @@ export function NativeDrawingLayout({
 }: {
   controlSize: number;
   palette: (layout: PaletteLayout) => ReactNode;
-  clear: ReactNode;
-  clearUnderlay: ReactNode;
-  clearCoachmark: ReactNode;
+  clearUnderlay: (offset: AreaOffset) => ReactNode;
+  clearOverlay: ReactNode;
   drawerToggle: (axis: LayoutAxis) => ReactNode;
   drawerTools: readonly DrawerTool[];
   settings: ReactNode;
@@ -53,11 +88,14 @@ export function NativeDrawingLayout({
   const length =
     measured?.axis === axis ? measured.length : axis === 'row' ? window.width : window.height;
   // Until the paper area reports its size, the window bounds it from above.
-  const [area, setArea] = useState<AreaSize>();
+  const [area, setArea] = useState<Box>();
+  const [root, setRoot] = useState<Box>();
+  const [column, setColumn] = useState<Box>();
   const offsets = drawerOffsets(area ?? window, drawerAxis, drawerTools.length, controlSize);
   return (
     <View
       testID="rsd-drawing-layout"
+      onLayout={boxSetter(setRoot)}
       style={[
         drawingScreenStyles.fullBleed,
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
@@ -65,7 +103,7 @@ export function NativeDrawingLayout({
     >
       <View
         testID="rsd-palette-bar"
-        style={drawingScreenStyles.paletteBar}
+        style={[drawingScreenStyles.paletteBar, docks.palette]}
         onLayout={({ nativeEvent }) => {
           const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
           setMeasured((previous) =>
@@ -75,19 +113,18 @@ export function NativeDrawingLayout({
       >
         {palette({ axis, slots: paletteSlots(length, controlSize) })}
       </View>
-      <View style={drawingScreenStyles.canvasColumn}>
+      <View
+        testID="rsd-canvas-column"
+        style={drawingScreenStyles.canvasColumn}
+        onLayout={boxSetter(setColumn)}
+      >
         <View
           testID="rsd-canvas-area"
           style={drawingScreenStyles.canvasArea}
-          onLayout={({ nativeEvent }) => {
-            const { width, height } = nativeEvent.layout;
-            setArea((previous) =>
-              sameSize(previous, { width, height }) ? previous : { width, height }
-            );
-          }}
+          onLayout={boxSetter(setArea)}
         >
           {children}
-          {clearUnderlay}
+          {clearUnderlay(areaOffset(root, column, area))}
           <View testID="rsd-settings-dock" style={docks.settings}>
             {settings}
           </View>
@@ -99,12 +136,11 @@ export function NativeDrawingLayout({
           <View testID="rsd-drawer-dock" style={docks.toggle}>
             {drawerToggle(drawerAxis)}
           </View>
-          <View testID="rsd-clear-dock" style={docks.clear}>
-            {clear}
-          </View>
-          {clearCoachmark}
         </View>
         {status}
+      </View>
+      <View testID="rsd-clear-overlay" pointerEvents="box-none" style={docks.clearOverlay}>
+        {clearOverlay}
       </View>
     </View>
   );

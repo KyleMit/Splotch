@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { css, html } from 'react-strict-dom';
+import type { ClearDock } from '../clear/clearDock';
 import { COACHMARK_LOOP_MS, GHOST_TRAVEL_OVERSHOOT } from '../clear/dragToClear';
-import { TOUCH_TARGET } from '../drawing/theme';
+import { RsdClearFace } from './RsdClearFace';
 import { RsdClearRing, ringFrame, type RingInk } from './RsdClearRing';
 import { RsdIcon } from './RsdIcon';
-import { EDGE_INSET_PX } from './edgeLayout';
-import { iconFrame, styles } from './controls';
 
 // ClearCoachmark.svelte's container fade, in both directions and under reduced motion alike.
 const COACHMARK_FADE_MS = 400;
-const ICON_SIZE_PX = 32;
 const HAND_SIZE_PX = 52;
 const REDUCED_GHOST_OPACITY = 0.95;
 // The coachmark's friendlier coral while inviting, settling to the rose "ready" ring as the ghost
@@ -41,22 +38,21 @@ const RING_SCALE = [0.9, 0.9, 1, 1, 1, 1, 1.015, 1.015, 1.015, 1.015];
 const HINT_OPACITY = [0, 0, 1, 1, 1, 0, 0, 0, 0, 0];
 const READY_OPACITY = [0, 0, 0, 0, 0, 1, 1, 1, 0, 0];
 
-const ghostStyles = css.create({
-  lifted: { boxShadow: '-6px 6px 24px rgba(0, 0, 0, 0.35)' },
-  round: (radius: number) => ({ borderRadius: radius }),
-});
-
 const coach = StyleSheet.create({
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
-  ghost: {
-    position: 'absolute',
-    top: EDGE_INSET_PX,
-    right: EDGE_INSET_PX,
-    width: TOUCH_TARGET,
-    height: TOUCH_TARGET,
-  },
   hand: { position: 'absolute', left: '58%', top: '52%' },
 });
+
+// The ghost starts exactly over the docked Clear Button.
+function ghostFrame(dock: ClearDock) {
+  return {
+    position: 'absolute',
+    top: dock.top,
+    right: dock.right,
+    width: dock.size,
+    height: dock.size,
+  } as const;
+}
 
 function track(clock: Animated.Value, stops: number[], values: number[]) {
   return clock.interpolate({ inputRange: stops, outputRange: values, easing: SEGMENT });
@@ -89,10 +85,12 @@ export function RsdClearCoachmark({
   visible,
   radius,
   reduced,
+  dock,
 }: {
   visible: boolean;
   radius: number;
   reduced: boolean;
+  dock: ClearDock;
 }) {
   const { opacity, mounted } = useFadedPresence(visible);
   const [clock] = useState(() => new Animated.Value(0));
@@ -126,7 +124,7 @@ export function RsdClearCoachmark({
       {reduced ? null : (
         <Animated.View
           style={[
-            ringFrame(radius),
+            ringFrame(radius, dock),
             { opacity: track(clock, RING_STOPS, HINT_OPACITY), transform: [{ scale: ringScale }] },
           ]}
         >
@@ -135,7 +133,7 @@ export function RsdClearCoachmark({
       )}
       <Animated.View
         style={[
-          ringFrame(radius),
+          ringFrame(radius, dock),
           {
             opacity: reduced ? 1 : track(clock, RING_STOPS, READY_OPACITY),
             transform: [{ scale: ringScale }],
@@ -147,7 +145,7 @@ export function RsdClearCoachmark({
       <Animated.View
         testID="rsd-clear-coachmark-ghost"
         style={[
-          coach.ghost,
+          ghostFrame(dock),
           {
             opacity: reduced ? REDUCED_GHOST_OPACITY : track(clock, GHOST_STOPS, GHOST_OPACITY),
             transform: [
@@ -158,17 +156,7 @@ export function RsdClearCoachmark({
           },
         ]}
       >
-        <html.div
-          style={[
-            styles.iconAction,
-            iconFrame(TOUCH_TARGET),
-            styles.touchTarget(TOUCH_TARGET),
-            ghostStyles.lifted,
-            ghostStyles.round(TOUCH_TARGET / 2),
-          ]}
-        >
-          <RsdIcon name="trash-open" size={ICON_SIZE_PX} ink={undefined} muted={false} />
-        </html.div>
+        <RsdClearFace dock={dock} state="ghost" disabled={false} />
         <View style={coach.hand}>
           <RsdIcon name="swipe-down" size={HAND_SIZE_PX} ink={undefined} muted={false} />
         </View>

@@ -17,8 +17,8 @@ import {
 } from './controls';
 import type { NativeIconName } from './icons.generated';
 import { useClearGesture } from '../clear/useClearGesture';
-import { RsdClearButton, RsdClearUnderlay } from './RsdClearControl';
-import { RsdClearCoachmark } from './RsdClearCoachmark';
+import { RsdClearOverlay } from './RsdClearControl';
+import { RsdClearUnderlay } from './clearSurfaces';
 import { NativeDrawingLayout, type DrawerTool, type PaletteLayout } from './NativeScrollAreas';
 import { controlSize } from '../settings/buttonSize';
 
@@ -79,15 +79,10 @@ export function RsdEdgeLayout({
           disabled={paintsDisabled}
         />
       )}
-      clear={<RsdClearButton control={clear} disabled={disabled} />}
-      clearUnderlay={<RsdClearUnderlay control={clear} drawing={screen.history.drawing} />}
-      clearCoachmark={
-        <RsdClearCoachmark
-          visible={clear.coachmark}
-          radius={clear.radius}
-          reduced={clear.reduced}
-        />
-      }
+      clearUnderlay={(offset) => (
+        <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
+      )}
+      clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
       drawerToggle={(axis) => (
         <RsdDrawerToggle
           axis={axis}
