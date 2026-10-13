@@ -32,6 +32,8 @@ export const dimensions = css.defineVars({
   fontSizeLg: '18px',
   fontWeightBold: '700',
   disabledOpacity: '0.65',
+  fontFamily:
+    "'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   touchTarget: '52px',
   aiResultHeight: '256px',
 });

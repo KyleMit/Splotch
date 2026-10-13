@@ -62,6 +62,7 @@ export function swatchEdge(hex: string, theme: PaperTheme) {
 
 export const styles = css.create({
   themeRoot: {
+    fontFamily: dimensions.fontFamily,
     display: 'flex',
     flexDirection: 'column',
     flexGrow: 1,
@@ -80,6 +81,7 @@ export const styles = css.create({
     gap: dimensions.space3,
     backgroundColor: colors.surface,
     color: colors.text,
+    fontFamily: dimensions.fontFamily,
     fontSize: dimensions.fontSizeMd,
   },
   fullBleed: { padding: 0, gap: 0 },

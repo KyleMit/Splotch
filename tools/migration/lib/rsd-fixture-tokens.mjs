@@ -25,6 +25,7 @@ const SCALE_KEYS = [
   'fontSizeLg',
   'fontWeightBold',
   'disabledOpacity',
+  'fontFamily',
 ];
 
 function tokenSource() {

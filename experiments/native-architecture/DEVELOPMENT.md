@@ -66,6 +66,14 @@ drawing. The Install Banner and the Settings install guide (`src/install/`) foll
 policy and storage keys; their copy is drift-guarded against the Svelte components by
 `tools/tests/native-web-install-drift.test.mjs`.
 
+Text uses the shipping font stack, projected into `src/rsdDrawing/tokens.css.ts` and set on the
+screen and dialog roots. Metro's web CSS pipeline does not bundle a stylesheet's local `url()`
+sources, so the web entry registers the `@fontsource-variable/quicksand` faces itself
+(`src/platform/shippingFont.web.ts`), and the precache carries their WOFF2 files;
+`tools/tests/native-shipping-font.test.mjs` fails when those faces drift from the package's
+stylesheet. Android and iOS cannot register WOFF2 and no TTF is bundled, so native text falls back
+to the system font.
+
 ## Permissions
 
 The Android manifest removes the `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, and

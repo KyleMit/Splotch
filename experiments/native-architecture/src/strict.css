@@ -1,1 +1,10 @@
 @react-strict-dom;
+
+/* The UA stylesheet gives form controls the system font; they inherit the app's
+   font instead, as the shipping design Button does. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

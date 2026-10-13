@@ -7,8 +7,10 @@ import { ProbeApp } from './ProbeApp';
 import { registerServiceWorker } from './platform/serviceWorker';
 import { aiVault } from './platform/ai';
 import { startInviteLinks } from './platform/inviteLinks';
+import { loadShippingFont } from './platform/shippingFont';
 
 // Started before the first render so a launch invite is saved ahead of any AI credential read.
 void startInviteLinks(aiVault);
+loadShippingFont();
 registerRootComponent(ProbeApp);
 registerServiceWorker();
