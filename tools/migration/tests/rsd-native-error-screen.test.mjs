@@ -7,6 +7,7 @@ import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.
 import {
   ERROR_COPY_MAX_WIDTH_PX,
   ERROR_DOTTIE_PX,
+  ERROR_RESTART_MIN_WIDTH_PX,
   ERROR_SCREEN_COPY,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
 import { displayFontSize } from '../../../experiments/native-architecture/src/rsdDrawing/displayType.ts';
@@ -43,6 +44,7 @@ describe("the drawing screen's Error Screen", () => {
     expect(markup).toContain(`const DOTTIE_SIZE_PX = ${ERROR_DOTTIE_PX};`);
     expect(markup).toContain(`max-width: ${ERROR_COPY_MAX_WIDTH_PX}px;`);
     expect(markup).toContain('dottie-stumped.svg');
+    expect(markup).toContain(`min-width: ${ERROR_RESTART_MIN_WIDTH_PX}px;`);
   });
 
   it('shows a renderer fault on the Error Screen, whose Start over brings the paper back', async () => {

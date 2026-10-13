@@ -28,11 +28,17 @@ const styles = css.create({
     height,
     backgroundColor,
   }),
-  side: (side: 'left' | 'right', width: number, backgroundColor: string) => ({
+  left: (width: number, backgroundColor: string) => ({
     top: 0,
     bottom: 0,
-    left: side === 'left' ? 0 : undefined,
-    right: side === 'right' ? 0 : undefined,
+    left: 0,
+    width,
+    backgroundColor,
+  }),
+  right: (width: number, backgroundColor: string) => ({
+    top: 0,
+    bottom: 0,
+    right: 0,
     width,
     backgroundColor,
   }),
@@ -84,11 +90,8 @@ export function RsdNotchBand({ ink, eraser }: { ink: string; eraser: boolean }) 
   return (
     <>
       <html.div aria-hidden style={[styles.edge, styles.top(insets.top, fills.top)]} />
-      <html.div aria-hidden style={[styles.edge, styles.side('left', insets.left, fills.left)]} />
-      <html.div
-        aria-hidden
-        style={[styles.edge, styles.side('right', insets.right, fills.right)]}
-      />
+      <html.div aria-hidden style={[styles.edge, styles.left(insets.left, fills.left)]} />
+      <html.div aria-hidden style={[styles.edge, styles.right(insets.right, fills.right)]} />
       <BandStatusBar band={band} />
     </>
   );

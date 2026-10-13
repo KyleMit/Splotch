@@ -16,6 +16,8 @@ export const ERROR_SCREEN_COPY = {
 } as const;
 export const ERROR_DOTTIE_PX = 128;
 export const ERROR_COPY_MAX_WIDTH_PX = 320;
+// The restart is the hero Button held to a wider floor than its label needs.
+export const ERROR_RESTART_MIN_WIDTH_PX = 240;
 
 const styles = css.create({
   screen: {
@@ -43,7 +45,12 @@ const styles = css.create({
     color: colors.textSoft,
     textAlign: 'center',
   },
-  restart: { marginTop: dimensions.space2 },
+  restart: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: ERROR_RESTART_MIN_WIDTH_PX,
+    marginTop: dimensions.space2,
+  },
 });
 
 // The shipping Error Screen, shown when the drawing paper's renderer fails: stumped Dottie, the
