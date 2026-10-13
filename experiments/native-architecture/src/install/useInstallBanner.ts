@@ -4,6 +4,8 @@ import { SETTLED_IN_STROKES, type InstallPromptOwner, type InstallSnapshot } fro
 // Continued drawing hands the install steps off to Settings with a short parting message.
 export const PARTING_MESSAGE_MS = 4000;
 
+export type InstallBanner = ReturnType<typeof useInstallBanner>;
+
 const NO_INSTALL: InstallSnapshot = { mode: 'none', installed: false, stage: null };
 const subscribeToNothing = () => () => {};
 
@@ -31,6 +33,9 @@ export function useInstallBanner(
     snapshot.stage !== null &&
     snapshot.mode !== 'none' &&
     strokes >= SETTLED_IN_STROKES;
+  // A card still on screen for its exit, or behind the parting message, takes no action, as
+  // Svelte leaves an outroing block inert.
+  const actionable = eligible && !parting;
 
   useEffect(() => {
     owner?.recordSession(strokes);
@@ -56,7 +61,7 @@ export function useInstallBanner(
   }, [parting]);
 
   async function primary() {
-    if (!owner) return;
+    if (!owner || !actionable) return;
     if (snapshot.mode !== 'oneTap') {
       setHintOpen((open) => !open);
       return;
@@ -70,14 +75,19 @@ export function useInstallBanner(
     }
   }
 
+  // Present spans the parting message; stepping aside under other controls only hides it, as
+  // shipping's `hidden` attribute does, so neither side of that plays the enter or exit motion.
   return {
-    shown: !hidden && (eligible || parting),
+    present: eligible || parting,
     parting,
     mode: snapshot.mode,
     stage: snapshot.stage ?? 'initial',
     hintOpen,
     busy,
+    actionable,
     primary,
-    dismiss: () => owner?.dismiss(),
+    dismiss: () => {
+      if (actionable) owner?.dismiss();
+    },
   };
 }

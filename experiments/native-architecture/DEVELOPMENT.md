@@ -65,7 +65,8 @@ makes every install fail its integrity check. The entry registers `/sw.js` only 
 A new worker waits until every window of the old one closes, so an update never interrupts a
 drawing. The Install Banner and the Settings install guide (`src/install/`) follow the shipping
 policy and storage keys; their copy is drift-guarded against the Svelte components by
-`tools/tests/native-web-install-drift.test.mjs`.
+`tools/tests/native-web-install-drift.test.mjs`, and the banner's layout, inline icons and motion by
+`tools/tests/native-install-banner-drift.test.mjs`.
 
 Text uses the shipping font, Quicksand. RSD text inherits the `fonts` tokens in
 `src/rsdDrawing/tokens.css.ts` from the screen and dialog roots, and headings take `boldText`; React

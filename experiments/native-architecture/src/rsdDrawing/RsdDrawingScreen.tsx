@@ -26,7 +26,7 @@ import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDrawingStatus } from './RsdDrawingStatus';
-import { RsdInstallBanner } from './RsdInstallBanner';
+import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';

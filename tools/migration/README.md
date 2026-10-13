@@ -65,7 +65,9 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor; the constant's comment
   carries the numbers. A surface the drawing screen shows only on request loads through
   `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
-  failed load cannot blank the drawing screen.
+  failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
+  drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
+  load only leaves the banner out.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
   check.
 
