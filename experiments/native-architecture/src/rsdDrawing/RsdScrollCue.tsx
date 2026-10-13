@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactNode, type Ref } from 'react';
 import { ScrollView, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { motion } from './tokens.css';
@@ -23,7 +23,6 @@ const styles = css.create({
     flexDirection: 'column',
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: 0,
     minWidth: 0,
     minHeight: 0,
   },
@@ -32,13 +31,12 @@ const styles = css.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: SCROLL_CUE_HEIGHT_PX,
     pointerEvents: 'none',
     transitionProperty: 'opacity',
     transitionDuration: motion.durationBase,
     transitionTimingFunction: motion.easeGlide,
   },
-  fade: (backgroundImage: string) => ({ backgroundImage }),
+  fade: (backgroundImage: string, height: number) => ({ backgroundImage, height }),
   retired: { opacity: 0 },
 });
 
@@ -48,24 +46,54 @@ function fadeOver(surface: string) {
   return `linear-gradient(to bottom, ${rgba(surface, 0)}, ${rgba(surface, 1)} ${SCROLL_CUE_OPAQUE_FROM_PERCENT}%)`;
 }
 
-type Extent = { viewport: number; content: number; offset: number };
+export type ScrollExtent = { viewport: number; content: number; offset: number };
+type Inset = { top: number; right: number; bottom: number; left: number };
+const AT_REST: ScrollExtent = { viewport: 0, content: 0, offset: 0 };
 
-function reachedEnd({ viewport, content, offset }: Extent) {
+function reachedEnd({ viewport, content, offset }: ScrollExtent) {
   return offset + viewport >= content - SCROLL_CUE_END_SLACK_PX;
 }
 
 // A bounded scroller whose bottom edge fades while more content lies below, and clears once the
 // end is reached. The fade is decoration only: hidden from assistive technology and from touches.
-export function RsdScrollCue({ children }: { children: ReactElement }) {
+// The inset pads the scrolled content, so the fade covers it as shipping's covers the scrollport
+// padding; a shallower `cueHeight` suits a pane only a couple of rows tall.
+export function RsdScrollCue({
+  children,
+  inset,
+  cueHeight = SCROLL_CUE_HEIGHT_PX,
+  scrollRef,
+  onExtent,
+}: {
+  children: ReactNode;
+  inset?: Inset;
+  cueHeight?: number;
+  scrollRef?: Ref<ScrollView>;
+  onExtent?: (extent: ScrollExtent) => void;
+}) {
   const surface = useDrawingTheme().surface;
-  const [extent, setExtent] = useState<Extent>({ viewport: 0, content: 0, offset: 0 });
-  const update = (next: Partial<Extent>) => setExtent((current) => ({ ...current, ...next }));
+  const extent = useRef(AT_REST);
+  const [atEnd, setAtEnd] = useState(true);
+  const update = (next: Partial<ScrollExtent>) => {
+    extent.current = { ...extent.current, ...next };
+    setAtEnd(reachedEnd(extent.current));
+    onExtent?.(extent.current);
+  };
   const onScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) =>
     update({ offset: nativeEvent.contentOffset.y });
   return (
     <html.div style={styles.frame}>
       <ScrollView
+        ref={scrollRef}
         scrollEventThrottle={SCROLL_REPORT_INTERVAL_MS}
+        contentContainerStyle={
+          inset && {
+            paddingTop: inset.top,
+            paddingRight: inset.right,
+            paddingBottom: inset.bottom,
+            paddingLeft: inset.left,
+          }
+        }
         onScroll={onScroll}
         onLayout={({ nativeEvent }) => update({ viewport: nativeEvent.layout.height })}
         onContentSizeChange={(_, height) => update({ content: height })}
@@ -75,7 +103,7 @@ export function RsdScrollCue({ children }: { children: ReactElement }) {
       <html.div
         aria-hidden
         data-testid="scroll-cue"
-        style={[styles.cue, styles.fade(fadeOver(surface)), reachedEnd(extent) && styles.retired]}
+        style={[styles.cue, styles.fade(fadeOver(surface), cueHeight), atEnd && styles.retired]}
       />
     </html.div>
   );
