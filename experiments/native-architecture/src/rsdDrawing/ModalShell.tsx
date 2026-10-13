@@ -4,7 +4,6 @@ import {
   Easing,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -19,7 +18,7 @@ import { css, html } from 'react-strict-dom';
 import { DrawingStatusBar, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useDialogBack } from '../platform/BrowserBack';
-import { DialogScope } from './DialogHeader';
+import { DialogScope } from './dialogScope';
 import { fontTheme } from './fontTheme';
 import { ModalScrim } from './ModalScrim';
 import { useModalOrigin } from './modalOrigin';
@@ -217,13 +216,17 @@ export function ModalShell({
           <Animated.View pointerEvents="none" style={[layout.cover, { opacity: motion.scrim }]}>
             <ModalScrim />
           </Animated.View>
-          <Pressable
+          {/* A responder rather than a Pressable: React Native Web makes every enabled Pressable a
+              tab stop, and its Modal focuses the first one, which would put an unnamed scrim
+              ahead of the header and let Enter dismiss the dialog. */}
+          <View
             testID="modal-backdrop"
-            accessible={false}
+            aria-hidden
             style={layout.cover}
-            onPress={visible ? onClose : undefined}
+            onStartShouldSetResponder={() => visible}
+            onResponderRelease={onClose}
           />
-          <ModalCard size={size} motion={motion} titleId={titleId} header={header}>
+          <ModalCard size={size} motion={motion} titleId={titleId} active={visible} header={header}>
             {children}
           </ModalCard>
         </View>
@@ -247,12 +250,14 @@ function ModalCard({
   size,
   motion,
   titleId,
+  active,
   header,
   children,
 }: {
   size: ModalSize;
   motion: Motion;
   titleId: string;
+  active: boolean;
   header: ReactNode;
   children: ReactNode;
 }) {
@@ -263,6 +268,7 @@ function ModalCard({
     <View pointerEvents="box-none" style={layout.center}>
       <Animated.View
         testID="modal-card"
+        pointerEvents={active ? 'auto' : 'none'}
         style={{
           opacity: motion.opacity,
           transform: [{ translateX: motion.x }, { translateY: motion.y }, { scale: motion.scale }],
@@ -270,6 +276,7 @@ function ModalCard({
       >
         <html.div
           data-testid="modal-surface"
+          inert={!active}
           style={[
             fontTheme,
             theme === 'dark' && darkTheme,
@@ -278,7 +285,7 @@ function ModalCard({
           ]}
         >
           <html.div style={styles.clip}>
-            <DialogScope value={{ titleId, header: frame.header }}>
+            <DialogScope value={{ titleId, header: frame.header, active }}>
               {header}
               <ScrollView
                 testID="modal-body"

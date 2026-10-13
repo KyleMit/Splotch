@@ -2,7 +2,7 @@ import { html } from 'react-strict-dom';
 import { useLeaveConfirm } from '../platform/BrowserBack';
 import { LEAVE_CONFIRM_COPY } from '../product/systemBack';
 import { ModalShell } from './ModalShell';
-import { useDialogTitleId } from './DialogHeader';
+import { useDialogTitleId } from './dialogScope';
 import { useModalPresence } from './useModalPresence';
 import { RsdAction, styles } from './controls';
 
@@ -10,6 +10,10 @@ export function RsdLeaveConfirm() {
   const { open, stay, leave } = useLeaveConfirm();
   const presence = useModalPresence(open || null);
   if (!presence.shown) return null;
+  const closing = !presence.visible;
+  const choose = (choice: () => void) => () => {
+    if (!closing) choice();
+  };
   // The shipping confirmation card has no close control: its two choices are the way out, and
   // Keep drawing comes first so a stray press or switch-access activation stays.
   return (
@@ -25,8 +29,8 @@ export function RsdLeaveConfirm() {
         <LeaveTitle />
         <html.p>{LEAVE_CONFIRM_COPY.body}</html.p>
         <html.div style={styles.row}>
-          <RsdAction label={LEAVE_CONFIRM_COPY.stay} onClick={stay} />
-          <RsdAction label={LEAVE_CONFIRM_COPY.leave} onClick={leave} />
+          <RsdAction label={LEAVE_CONFIRM_COPY.stay} disabled={closing} onClick={choose(stay)} />
+          <RsdAction label={LEAVE_CONFIRM_COPY.leave} disabled={closing} onClick={choose(leave)} />
         </html.div>
       </html.div>
     </ModalShell>

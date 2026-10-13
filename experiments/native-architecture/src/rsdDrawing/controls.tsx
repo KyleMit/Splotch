@@ -5,6 +5,7 @@ import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES, TOUCH_TARGET, type PaperTheme } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
 import type { NativeIconName } from './icons.generated';
+import { useDialogActive } from './dialogScope';
 
 // Icon buttons and swatches size their border box, so the touch target is their whole outer
 // size on every renderer (React Strict DOM defaults to content-box, as the web does). Edge
@@ -197,9 +198,10 @@ export function RsdAction({
   selected,
   onClick,
 }: ActionProps) {
+  const active = useDialogActive();
   return (
     <html.button
-      disabled={disabled}
+      disabled={disabled || !active}
       aria-disabled={disabled}
       aria-label={label}
       role={selection ?? 'button'}

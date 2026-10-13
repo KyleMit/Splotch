@@ -1,7 +1,8 @@
 import { css, html } from 'react-strict-dom';
 import { Animated } from 'react-native';
 import { ModalShell } from './ModalShell';
-import { DialogHeader, useDialogTitleId } from './DialogHeader';
+import { DialogHeader } from './DialogHeader';
+import { useDialogTitleId } from './dialogScope';
 import { RsdAction, styles } from './controls';
 import { RsdParentGateKeypad } from './RsdParentGateKeypad';
 import { colors, dimensions, fonts } from './tokens.css';

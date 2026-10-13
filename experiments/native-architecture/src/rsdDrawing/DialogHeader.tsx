@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { css, html } from 'react-strict-dom';
@@ -15,18 +15,8 @@ import {
   MODAL_CONTROL_PRESSED_SCALE,
   MODAL_CONTROL_SIZE_PX,
   DIALOG_BACK_PADDING_PX,
-  type ModalFrame,
 } from './modalGeometry';
-
-type DialogScopeValue = { titleId: string; header: ModalFrame['header'] };
-
-export const DialogScope = createContext<DialogScopeValue | null>(null);
-
-// The id ModalShell labels its dialog by: the header title takes it, and a dialog whose title
-// sits in its body gives it to that heading.
-export function useDialogTitleId() {
-  return useContext(DialogScope)?.titleId;
-}
+import { DialogScope, useDialogActive } from './dialogScope';
 
 // React Native corner radii are circular, so the shipping blob outlines are drawn as paths. The
 // close blob's 2px border is a stroke centered half its width inside the box.
@@ -52,6 +42,7 @@ function HeaderControl({
   onClick: () => void;
 }) {
   const palette = useDrawingTheme();
+  const active = useDialogActive();
   const [hovered, setHovered] = useState(false);
   const { icon, label, shape, inset } = CONTROLS[kind];
   const path = useMemo(
@@ -72,7 +63,7 @@ function HeaderControl({
       type="button"
       aria-label={label}
       aria-disabled={disabled}
-      disabled={disabled}
+      disabled={disabled || !active}
       style={[
         styles.control(MODAL_CONTROL_SIZE_PX, `scale(${MODAL_CONTROL_PRESSED_SCALE})`),
         kind === 'back'

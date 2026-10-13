@@ -61,7 +61,7 @@ const modalProps = () => records.props.findLast((props) => 'onRequestClose' in p
 function frameControls() {
   const body = host.querySelector('[data-testid="modal-body"]');
   return [...dialog().querySelectorAll('button')]
-    .filter((button) => !body.contains(button) && button.dataset.testid !== 'modal-backdrop')
+    .filter((button) => !body.contains(button))
     .map((button) => button.getAttribute('aria-label'));
 }
 
@@ -112,9 +112,9 @@ it('frames the dialog as a card over the scrim, named by its header title, with 
   ).toBe(MODAL_SCRIM_PLAIN);
   expect(host.querySelector('[data-testid="modal-body"] [aria-label="Marker"]')).not.toBeNull();
   expect(frameControls()).toEqual(['Close']);
-  expect(records.props.findLast((props) => props.testID === 'modal-backdrop').accessible).toBe(
-    false
-  );
+  const backdrop = records.props.findLast((props) => props.testID === 'modal-backdrop');
+  expect(backdrop['aria-hidden']).toBe(true);
+  expect(backdrop.onPress).toBeUndefined();
   expectNoFooter();
 });
 
@@ -364,4 +364,76 @@ it('asks Leave Splotch? on a confirm card whose two choices are its only way out
   await click(LEAVE_CONFIRM_COPY.stay);
   expect(dialog()).toBeNull();
   expect(records.exits).toBe(0);
+});
+
+// The next Animated.parallel, the exit, holds its completion until the test releases it.
+function holdNextExit() {
+  const parallel = vi.spyOn(Animated, 'parallel');
+  const held = {};
+  parallel.mockImplementationOnce((animations) => ({
+    start(done) {
+      animations.forEach((animation) => animation.start());
+      held.finish = () => done({ finished: true });
+    },
+    stop() {},
+  }));
+  return held;
+}
+
+it('takes no action from a card that is leaving', async () => {
+  const onAction = vi.fn();
+  const onClose = vi.fn();
+  const leaving = (visible) =>
+    createElement(
+      ModalShell,
+      {
+        visible,
+        label: TITLE,
+        size: 'sheet',
+        onClose,
+        header: createElement(DialogHeader, { title: TITLE, titleSize: 'xl', onClose }),
+      },
+      createElement(RsdAction, { label: 'Marker', onClick: onAction })
+    );
+  await mount(leaving(true));
+  const held = holdNextExit();
+  try {
+    await act(async () => root.render(leaving(false)));
+    expect(dialog()).not.toBeNull();
+    expect(records.props.findLast((props) => props.testID === 'modal-card').pointerEvents).toBe(
+      'none'
+    );
+    for (const label of ['Marker', 'Close']) {
+      const control = host.querySelector(`[aria-label="${label}"]`);
+      expect(control.disabled, label).toBe(true);
+      await act(async () => control.click());
+    }
+    expect(onAction).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    await act(async () => held.finish());
+    expect(dialog()).toBeNull();
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
+
+it('cannot leave the app from the Leave Splotch? card once Keep drawing has closed it', async () => {
+  records.os = 'android';
+  const session = { currentDrawing: () => ({ ...emptyDrawing(), strokes: [{}] }) };
+  await mount(createElement(BrowserBackProvider, { session }, createElement(RsdLeaveConfirm)));
+  await act(async () => [...records.backListeners].forEach((listener) => listener()));
+  const held = holdNextExit();
+  try {
+    await click(LEAVE_CONFIRM_COPY.stay);
+    expect(dialog()).not.toBeNull();
+    const leave = host.querySelector(`[aria-label="${LEAVE_CONFIRM_COPY.leave}"]`);
+    expect(leave.disabled).toBe(true);
+    await act(async () => leave.click());
+    expect(records.exits).toBe(0);
+    await act(async () => held.finish());
+    expect(dialog()).toBeNull();
+    expect(records.exits).toBe(0);
+  } finally {
+    vi.restoreAllMocks();
+  }
 });

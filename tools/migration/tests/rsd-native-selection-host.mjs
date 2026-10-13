@@ -214,6 +214,11 @@ vi.mock('react-native-safe-area-context', async () => {
   const { safeAreaPort } = await import('./rsd-coloring-root-host.mjs');
   return safeAreaPort(await import('react'), records);
 });
+// A click is a press: a Pressable's onPress, or a responder's release once it would be granted.
+function press(props) {
+  props.onPress?.({ nativeEvent: {} });
+  if (props.onStartShouldSetResponder?.()) props.onResponderRelease?.({ nativeEvent: {} });
+}
 vi.mock('react-native', async () => {
   const React = await import('react');
   const { animatedPort, backHandlerPort, easingPort } =
@@ -243,7 +248,7 @@ vi.mock('react-native', async () => {
             : props.onChangeText
               ? (event) => props.onChangeText(event.target.value)
               : undefined,
-          onClick: props.disabled ? undefined : () => props.onPress?.({ nativeEvent: {} }),
+          onClick: props.disabled ? undefined : () => press(props),
         },
         props.children
       );
