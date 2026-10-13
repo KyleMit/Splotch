@@ -39,8 +39,6 @@ export type InkPaintContext = Readonly<{
   bookFill: SkImage | null;
 }>;
 
-const GLAZE_BLEND = { darken: BlendMode.Darken, lighten: BlendMode.Lighten } as const;
-
 // Crayon tiles per color and band plus one coloring-book fill; enough for a scene's working
 // set while repeated custom colors cannot grow it without bound.
 export const DECODED_IMAGE_LIMIT = 48;
@@ -199,9 +197,13 @@ function tileShader(tile: SkImage, texel: number, phase: Point): SkShader {
   );
 }
 
-// The SVG renderer's CrayonGlaze composites each pass's bands as a group: once blended against
-// the ink beneath, then once unblended at 1 - CRAYON_COLOR_MIX. A bounded layer per pass keeps
-// that grouping, so overlapping bands are not counted twice.
+// Each pass's bands composite as one group, as the shipping crayon stamps its pass buffer
+// (ADR-0065): once darkened against the ink beneath, then once unblended at 1 - CRAYON_COLOR_MIX.
+// A bounded layer per pass keeps that grouping, so overlapping bands are not counted twice.
+//
+// The blend is Darken for every paint, dark-paper white included, as on the web. The backdrop
+// here is the transparent ink layer, never the paper, so white over bare paper is still the wax
+// itself and white over ink mixes with it; paintAppearance's lighten glaze is not used.
 function paintCrayon(
   canvas: SkCanvas,
   stroke: Extract<Stroke, { brush: 'crayon' }>,
@@ -225,7 +227,7 @@ function paintCrayon(
     });
     const bounds = shapeBounds(pass.points, width);
     for (const [blend, alpha] of [
-      [GLAZE_BLEND[paint.glaze], 1],
+      [BlendMode.Darken, 1],
       [BlendMode.SrcOver, 1 - CRAYON_COLOR_MIX],
     ] as const) {
       const layer = Skia.Paint();
