@@ -17,9 +17,9 @@ import { RsdColoringBookPicker } from '../../../experiments/native-architecture/
 import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
-  BUNDLED_BOOK_ART,
-  BUNDLED_BOOK_COVERS,
-} from '../../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
+  BUNDLED_FARM_COVERS,
+  BUNDLED_FARM_IMAGES,
+} from '../../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
 import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import {
   RELEASE_NOTES,
@@ -171,18 +171,18 @@ it('selects Book cover and page artwork from the same explicit preference as the
   records.scheme = 'light';
   await mount(picker('dark'));
   expect(records.props.findLast((props) => props.source)?.source.uri).toBe(
-    BUNDLED_BOOK_COVERS.dark
+    BUNDLED_FARM_COVERS.dark
   );
   expect(lastSurface().style.backgroundColor).toBe('#23232b');
   await click('Farm coloring book');
   const images = records.props.filter((props) => props.source?.uri);
   expect(
-    images.some((props) => props.source.uri === BUNDLED_BOOK_ART[FARM_PAGE_IDS[0]].selector.dark)
+    images.some((props) => props.source.uri === BUNDLED_FARM_IMAGES[FARM_PAGE_IDS[0]].selector.dark)
   ).toBe(true);
   await act(async () => root.render(picker('light')));
   expect(
     records.props.findLast(
-      (props) => props.source?.uri === BUNDLED_BOOK_ART[FARM_PAGE_IDS[0]].selector.light
+      (props) => props.source?.uri === BUNDLED_FARM_IMAGES[FARM_PAGE_IDS[0]].selector.light
     )
   ).toBeDefined();
   expect(lastSurface().style.backgroundColor).toBe('#ffffff');

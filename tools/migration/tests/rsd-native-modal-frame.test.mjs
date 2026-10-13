@@ -7,15 +7,12 @@ import { ModalShell } from '../../../experiments/native-architecture/src/rsdDraw
 import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
 import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx';
+import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { RsdLeaveConfirm } from '../../../experiments/native-architecture/src/rsdDrawing/RsdLeaveConfirm.tsx';
 import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
 import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { blobShapes } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
-import {
-  blobPath,
-  MODAL_SCRIM_PLAIN,
-} from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+import { blobPath } from '../../../experiments/native-architecture/src/rsdDrawing/blob.ts';
+import { MODAL_SCRIM_PLAIN } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
@@ -271,12 +268,12 @@ it.each(['light', 'dark'])(
     );
     const palette = DRAWING_THEMES[theme];
     const back = host.querySelector('[aria-label="Back"] path');
-    expect(back.getAttribute('d')).toBe(blobPath(blobShapes.radiusBlob1, 48, 48));
+    expect(back.getAttribute('d')).toBe(blobPath('radiusBlob1', 48, 48));
     expect(back.getAttribute('d')).toContain('A27.84 21.6 ');
     expect(back.getAttribute('fill')).toBe(palette.brandWash);
     expect(back.getAttribute('stroke')).toBeNull();
     const close = host.querySelector('[aria-label="Close"] path');
-    expect(close.getAttribute('d')).toBe(blobPath(blobShapes.radiusBlob2, 48, 48, 1));
+    expect(close.getAttribute('d')).toBe(blobPath('radiusBlob2', 48, 48, 1));
     expect(close.getAttribute('fill')).toBe(palette.surface);
     expect(close.getAttribute('stroke')).toBe(palette.borderWarm);
     expect(close.getAttribute('stroke-width')).toBe('2');

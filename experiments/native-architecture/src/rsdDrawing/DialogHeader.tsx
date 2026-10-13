@@ -6,9 +6,9 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import { styles as controlStyles } from './controls';
-import { blobShapes, colors, dimensions, motion } from './tokens.css';
+import { colors, dimensions, motion } from './tokens.css';
+import { blobPath } from './blob';
 import {
-  blobPath,
   MODAL_CLOSE_BORDER_PX,
   MODAL_CLOSE_INSET_PX,
   MODAL_CLOSE_PADDING_PX,
@@ -22,11 +22,11 @@ import { DialogScope, useDialogActive } from './dialogScope';
 // React Native corner radii are circular, so the shipping blob outlines are drawn as paths. The
 // close blob's 2px border is a stroke centered half its width inside the box.
 const CONTROLS = {
-  back: { icon: 'chevron-left', label: 'Back', shape: blobShapes.radiusBlob1, inset: 0 },
+  back: { icon: 'chevron-left', label: 'Back', shape: 'radiusBlob1', inset: 0 },
   close: {
     icon: 'close',
     label: 'Close',
-    shape: blobShapes.radiusBlob2,
+    shape: 'radiusBlob2',
     inset: MODAL_CLOSE_BORDER_PX / 2,
   },
 } as const;

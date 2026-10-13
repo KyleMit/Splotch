@@ -5,7 +5,7 @@ import { Image, Rect, type Svg } from 'react-native-svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
 import type { InkPlan } from './checkpoints';
-import { PageOutline } from './PageOutline';
+import { PageOutline, usePageOutlineReady } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
 import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
 import { PAPER_THEMES } from './theme';
@@ -27,6 +27,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const [ready, setReady] = useState(false);
   const [base64, setBase64] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const outlineReady = usePageOutlineReady(packet.request.drawing.pageId);
   const captures = useRef(createSvgCapture()).current;
   const current = useRef(true);
   const request = packet.request;
@@ -61,7 +62,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   }, [ready, base64, captures]);
 
   useEffect(() => {
-    if (!imageLoaded) return;
+    if (!imageLoaded || !outlineReady) return;
     if (!packet.isCurrent()) {
       fail(new Error('The picture changed before capture finished.'));
       return;
@@ -69,7 +70,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
     const job = captures.capture(output.current, size);
     void job.promise.then((pixels) => accept(pixels, 'picture')).catch(fail);
     return () => job.cancel();
-  }, [imageLoaded, captures]);
+  }, [imageLoaded, outlineReady, captures]);
 
   useEffect(() => {
     const timeout = setTimeout(

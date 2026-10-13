@@ -10,9 +10,9 @@ import {
   SAMPLE_PAGE_IDS,
 } from '../../experiments/native-architecture/src/drawing/pages.ts';
 import {
-  BUNDLED_BOOK_ART,
-  BUNDLED_BOOK_COVERS,
-} from '../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
+  BUNDLED_FARM_COVERS,
+  BUNDLED_FARM_IMAGES,
+} from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
 
 const appearance = vi.hoisted(() => ({ theme: 'light' }));
 vi.mock('react-native', () => ({
@@ -96,7 +96,7 @@ describe('bundled book navigation through real picker state', () => {
       expect(button('Coloring books')).not.toBeNull();
       expect(button('Farm coloring book').textContent).toBe('Farm');
       expect(button('Farm coloring book').querySelector('img').getAttribute('src')).toBe(
-        BUNDLED_BOOK_COVERS[theme]
+        BUNDLED_FARM_COVERS[theme]
       );
       expect(document.querySelectorAll('[role="radio"]')).toHaveLength(0);
       await act(async () => button('Farm coloring book').click());
@@ -110,7 +110,7 @@ describe('bundled book navigation through real picker state', () => {
       for (const pageId of FARM_PAGE_IDS) {
         const page = button(COLORING_PAGES[pageId].label);
         expect(page.querySelector('img').getAttribute('src')).toBe(
-          BUNDLED_BOOK_ART[pageId].selector[theme]
+          BUNDLED_FARM_IMAGES[pageId].selector[theme]
         );
         await act(async () => page.click());
         expect(mounted.onChoose).toHaveBeenLastCalledWith(pageId);

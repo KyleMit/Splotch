@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { scale } from '../../../web/src/lib/design/tokens.ts';
 import {
-  blobPath,
   CSS_EASE,
   CSS_EASE_REVERSED,
   DIALOG_BACK_PADDING_PX,
@@ -25,6 +24,11 @@ import {
   MODAL_SCRIM_PLAIN,
   modalFrame,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+import { blobPath } from '../../../experiments/native-architecture/src/rsdDrawing/blob.ts';
+
+vi.mock('react-strict-dom', () => ({
+  css: { defineVars: (vars) => vars, createTheme: (_vars, overrides) => overrides },
+}));
 
 const read = (path) => readFileSync(new URL(`../../../web/src/${path}`, import.meta.url), 'utf8');
 const APP_CSS = read('app.css');
@@ -202,31 +206,23 @@ describe('the shipping modal frame', () => {
   });
 });
 
-describe('blobPath', () => {
-  it('draws a circle for an even 50% radius', () => {
-    expect(blobPath('50%', 48, 48)).toBe(
-      'M24 0 H24 A24 24 0 0 1 48 24 V24 A24 24 0 0 1 24 48 H24 A24 24 0 0 1 0 24 V24 A24 24 0 0 1 24 0 Z'
-    );
+describe('blobPath inset for the outlined close blob', () => {
+  it('draws the outline unchanged with no inset', () => {
+    expect(blobPath('radiusBlob2', 48, 48, 0)).toBe(blobPath('radiusBlob2', 48, 48));
   });
 
-  it('shrinks overlapping corners together, as CSS does', () => {
-    expect(blobPath('100%', 48, 48)).toBe(blobPath('50%', 48, 48));
-  });
-
-  it('keeps each corner elliptical from the horizontal and vertical radii', () => {
-    const path = blobPath(scale.radiusBlob1, 48, 48);
+  it('keeps each corner elliptical from the shipping horizontal and vertical radii', () => {
+    const path = blobPath('radiusBlob1', 48, 48);
     expect(path).toMatch(/^M27\.84 0 /);
     expect(path).toContain('A20.16 27.84 0 0 1 48 27.84');
     expect(path).toContain('A27.84 21.6 0 0 1 27.84 0');
   });
 
-  it('insets the outline by half a centered stroke', () => {
-    expect(blobPath('50%', 48, 48, 1)).toBe(
-      'M24 1 H24 A23 23 0 0 1 47 24 V24 A23 23 0 0 1 24 47 H24 A23 23 0 0 1 1 24 V24 A23 23 0 0 1 24 1 Z'
-    );
-  });
-
-  it('rejects a radius list it cannot read', () => {
-    expect(() => blobPath('1px 2px 3px 4px 5px', 48, 48)).toThrow('Unexpected radius list');
+  it('moves the outline in by the inset and shrinks every radius by it', () => {
+    const path = blobPath('radiusBlob2', 48, 48, 1);
+    // The right side's vertical radii (45% + 58%) overrun the height, so every radius first
+    // shrinks by 48 / 49.44, as CSS does, then by the 1px inset.
+    expect(path).toMatch(/^M20\.971 1 H22\.369 A24\.631 19\.971 0 0 1 47 20\.971 /);
+    expect(path).toMatch(/Z$/);
   });
 });

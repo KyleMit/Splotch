@@ -20,7 +20,7 @@ import {
   RsdPaintAction,
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx';
+import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 it('uses the released native renderer for checked radio state and selected treatment', async () => {

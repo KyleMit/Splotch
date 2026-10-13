@@ -79,23 +79,25 @@ analyzable `css.defineVars`, so StyleX compiles it to custom properties on web a
 runtime resolves the same variables on Android and iOS. Dark mode is the one `darkTheme` over
 `colors`, applied where the screen and dialog roots already apply it.
 
-| Group                                     | Web                                     | Android and iOS                                                                                                                   |
-| ----------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `colors` / `darkTheme`                    | every themed color, plus `floatShadow`  | the same strings; slash-alpha `rgb(r g b / n%)` is emitted as `rgba(r, g, b, a)`, the only alpha form React Native's parser reads |
-| `brandColors`, `fixedColors`              | unthemed colors and `clearGradientRest` | the gradient reaches React Native as `experimental_backgroundImage`                                                               |
-| `shadows`, `colors.floatShadow`           | `box-shadow` lists                      | React Native `boxShadow` strings, rgba colors                                                                                     |
-| `motion`                                  | durations and `cubic-bezier()` curves   | RSD parses `s`/`ms` and turns `cubic-bezier()` into `Easing.bezier`                                                               |
-| `dimensions` spacing, radii, type, layout | `px` lengths                            | the same lengths                                                                                                                  |
-| `dimensions.radiusBlobN{Corner}`          | one percentage per corner               | React Native corners take one radius, so each elliptical shipping corner keeps the mean of its two radii                          |
-| `dimensions.fontSizeDisplayMin/Max`       | the `clamp()` bounds                    | no `calc()`/`clamp()`: `fontSizeDisplayFluid` carries the viewport term for a caller to evaluate against the window width         |
-| `dimensions.modalGutterMin`               | the gutter floor                        | the safe-area term is the caller's, from `react-native-safe-area-context`                                                         |
-| `fonts` weights                           | the variable face's 500/600/700         | `fontTheme.native.ts` swaps in one static face per weight; medium takes the regular face, since no 500 face is bundled            |
+| Group                                     | Web                                      | Android and iOS                                                                                                                   |
+| ----------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `colors` / `darkTheme`                    | every themed color, plus `floatShadow`   | the same strings; slash-alpha `rgb(r g b / n%)` is emitted as `rgba(r, g, b, a)`, the only alpha form React Native's parser reads |
+| `brandColors`, `fixedColors`              | unthemed colors and `clearGradientRest`  | the gradient reaches React Native as `experimental_backgroundImage`                                                               |
+| `shadows`, `colors.floatShadow`           | `box-shadow` lists                       | React Native `boxShadow` strings, rgba colors                                                                                     |
+| `motion`                                  | durations and `cubic-bezier()` curves    | RSD parses `s`/`ms` and turns `cubic-bezier()` into `Easing.bezier`                                                               |
+| `dimensions` spacing, radii, type, layout | `px` lengths                             | the same lengths                                                                                                                  |
+| `dimensions.radiusBlobN{Corner}`          | one percentage per corner                | React Native corners take one radius, so each elliptical shipping corner keeps the mean of its two radii                          |
+| `blobShapes`                              | the full elliptical radii                | the same numbers; `src/rsdDrawing/blob.ts` draws a blob as an SVG path from them                                                  |
+| `stepNumberMix`                           | the step badge's `color-mix()` strengths | the same numbers; `src/rsdDrawing/RsdStepNumber.tsx` mixes the wash and digit ink itself                                          |
+| `dimensions.fontSizeDisplayMin/Max`       | the `clamp()` bounds                     | no `calc()`/`clamp()`: `fontSizeDisplayFluid` carries the viewport term for a caller to evaluate against the window width         |
+| `dimensions.modalGutterMin`               | the gutter floor                         | the safe-area term is the caller's, from `react-native-safe-area-context`                                                         |
+| `fonts` weights                           | the variable face's 500/600/700          | `fontTheme.native.ts` swaps in one static face per weight; medium takes the regular face, since no 500 face is bundled            |
 
-Shipping tokens with no projection — `color-mix()` strengths, bare RGB channels, the Skia-drawn
-paper effects, the iOS input-zoom floor and the mono stack — are listed with their reasons in
-`RSD_UNPROJECTED_TOKENS`. `tools/migration/tests/rsd-drawing-tokens.test.mjs` fails when a shipping
-token is added or changed without regenerating, or when a projected value stops parsing in React
-Native.
+Shipping tokens with no projection — the other `color-mix()` strengths, bare RGB channels, the
+Skia-drawn paper effects, the iOS input-zoom floor and the mono stack — are listed with their
+reasons in `RSD_UNPROJECTED_TOKENS`. `tools/migration/tests/rsd-drawing-tokens.test.mjs` fails when
+a shipping token is added or changed without regenerating, or when a projected value stops parsing
+in React Native.
 
 ## Buttons
 
@@ -115,6 +117,11 @@ them yet; the screen units adopt them.
   properties named by their camelCase style key, so `transform` and `opacity` run on the native
   driver (one render as the press starts, one as it ends) and the kebab-case color names reach the
   web's CSS transition alone.
+* **Style reaches an `html.*` element by name.** React Strict DOM's web Babel transform merges only
+  a `style` prop it can see, so a wrapper that spreads its props onto an `html.*` element ships an
+  uncompiled style array to the DOM. `RsdPressable.web.tsx` destructures `style` and passes it
+  explicitly; `tools/migration/tests/rsd-web-buttons.test.mjs` compiles the buttons with the
+  production web transform and fails on the spread form.
 * **Flyout options** take the tile's size-class `base` and the Button Size `scale` separately, as
   shipping does: the option is `max(base, 60) × scale` and its padding `7 × scale`.
 * **Selected** uses `aria-checked` with a `radio` or `switch` role. Shipping's `aria-pressed` has no
@@ -190,3 +197,30 @@ to native `numberOfLines`, but on the web to a bare `line-clamp`, which browsers
 released native renderer, light and dark, and reads each geometry value from the shipping Svelte and
 CSS sources (`rsd-settings-rows-shipping.mjs`); `tools/tests/native-settings-rows-web.test.mjs`
 covers the web switch and the hub subtitle's clamp.
+
+## Design primitives
+
+`src/rsdDrawing/` ports the small shipping primitives in `web/src/lib/components/design/` and the
+`app.css` confirm card and step badge: `RsdDisclosure`, `RsdStatusMessage`, `RsdScrollCue`,
+`RsdVisuallyHidden`, `RsdExternalMark`, `RsdConfirmCard`, `RsdStepNumber`, and the `RsdTextField` /
+`RsdTextArea` input skin. They take their values from the generated tokens or the drift-guarded
+`DRAWING_THEMES` projection; component-level literals (the confirm card's 336px, the cue's 72px, the
+textarea's 88px) are exported beside each component and read back from the shipping source by
+`tools/tests/native-design-primitives-drift.test.mjs`.
+`tools/migration/tests/rsd-native-design-primitives.test.mjs` mounts each one through the released
+RSD native renderer and checks its accessibility props and resolved light and dark styles.
+
+Where React Native differs:
+
+* Status messages and the live `RsdVisuallyHidden` set `role` and `aria-live`, which Android reads
+  as a live region. iOS has none, so they also announce their text through
+  `AccessibilityInfo.announceForAccessibility`.
+* React Native lays out a span nested in other text inline and ignores its box, so
+  `RsdVisuallyHidden` belongs beside text, never inside a text run. `RsdExternalMark` carries its
+  "(opens outside Splotch)" name as the `aria-label` of a single `role="img"` drawing instead, so it
+  works inline too.
+* Paint blobs are SVG paths, and the external arrow is drawn into the same SVG as its blob.
+* The text fields wrap React Native's `TextInput` from `src/drawing/Text.tsx`, so they take the
+  Quicksand face, and draw the focus ring with React Native's `outline*` styles.
+* `RsdConfirmCard` lays out the title, copy and two actions; the caller passes the actions (the
+  design Button) and hosts the card in its dialog.
