@@ -66,7 +66,7 @@ export const SECTION_SUBTITLES = {
 // (drawingSound.ts), so a native level reads as the shipping percentage with the same gain.
 export const SHIPPING_SOUND_VOLUME_DEFAULT = 50;
 
-export function soundLevelVolume(level: SoundLevel) {
+function soundLevelVolume(level: SoundLevel) {
   return soundLevelGain(level) * SHIPPING_SOUND_VOLUME_DEFAULT;
 }
 
