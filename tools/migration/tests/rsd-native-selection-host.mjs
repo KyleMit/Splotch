@@ -58,6 +58,8 @@ const caller = vi.hoisted(() => {
     feedbackWrite: vi.fn().mockResolvedValue(undefined),
     feedbackSend: vi.fn(),
     paperRender: vi.fn(),
+    haptic: vi.fn(),
+    clearSound: { load: vi.fn(), play: vi.fn() },
   };
 });
 vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
@@ -116,6 +118,15 @@ vi.mock('../../../experiments/native-architecture/src/platform/pngRecovery.ts', 
 vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: async () => {
     throw new Error('Audio playback is outside this native caller fixture.');
+  },
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/clearHaptics.ts', () => ({
+  impactThreshold: caller.haptic,
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/clearSound.ts', () => ({
+  loadClearPageTurn: async (signal) => {
+    caller.clearSound.load(signal);
+    return { play: caller.clearSound.play, dispose() {} };
   },
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
@@ -325,6 +336,9 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   caller.product = null;
   caller.paperRender.mockClear();
+  caller.haptic.mockClear();
+  caller.clearSound.load.mockClear();
+  caller.clearSound.play.mockClear();
   caller.realScreen = false;
   caller.paper = null;
   caller.drawingList.mockReset().mockReturnValue([]);

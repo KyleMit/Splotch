@@ -15,6 +15,8 @@ export const NATIVE_ICON_SOURCES = {
   'brush-magic': 'brush-magic.svg',
   'brush-eraser': 'brush-eraser.svg',
   'trash-closed': 'trash-closed.svg',
+  'trash-open': 'trash-open.svg',
+  'swipe-down': 'swipe-down.svg',
   settings: 'settings.svg',
   camera: 'camera.svg',
   shapes: 'shapes.svg',

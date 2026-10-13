@@ -3,6 +3,8 @@ import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
 import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
+import { createClearSound } from '../audio/pageTurnSound';
+import { loadClearPageTurn } from '../platform/clearSound';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
 import { useAiProgressOwner } from '../ai/useAiProgress';
@@ -36,6 +38,7 @@ function createProductServices(
     () => setAudioMessage('')
   );
   const contacts = createContactSound(audio);
+  const clear = createClearSound(loadClearPageTurn);
   const feedback = createNativeFeedback({
     transport: feedbackTransport,
     device: feedbackDevice,
@@ -72,7 +75,7 @@ function createProductServices(
       }
     },
   });
-  return { product, audio, contacts, feedback, ai };
+  return { product, audio, contacts, clear, feedback, ai };
 }
 
 function createProductTicker(
@@ -136,6 +139,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     product: DrawingProductOwner;
     audio: ReturnType<typeof createDrawingAudio>;
     contacts: ReturnType<typeof createContactSound>;
+    clear: ReturnType<typeof createClearSound>;
     feedback: ReturnType<typeof createNativeFeedback>;
     ai: ReturnType<typeof createNativeAi>;
   } | null>(null);
@@ -150,7 +154,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       }
     };
     const services = createProductServices(screenRef, publish, setAudioMessage);
-    const { product, audio, contacts, feedback, ai } = services;
+    const { product, audio, contacts, clear, feedback, ai } = services;
     const ticker = createProductTicker(product, feedback, foreground);
     reconcileTimer = ticker.reconcile;
     let feedbackOpen = feedback.getState().open;
@@ -172,9 +176,11 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
         contacts.interrupt();
       }
       audio.setForeground(foreground);
+      clear.setForeground(foreground);
       reconcileTimer?.();
     });
     audio.setForeground(foreground);
+    clear.setForeground(foreground);
     setServices(services);
     void product.settings.load();
     void feedback.loadPolicy();
@@ -188,6 +194,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       feedback.dispose();
       ai.dispose();
       contacts.dispose();
+      clear.dispose();
       audio.dispose();
     };
   }, []);
@@ -204,6 +211,8 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   useEffect(() => {
     services?.audio.setLevel(settings.soundLevel);
     services?.audio.setEnabled(settings.soundEnabled);
+    services?.clear.setLevel(settings.soundLevel);
+    services?.clear.setEnabled(settings.soundEnabled);
     if (!settings.soundEnabled) services?.contacts.interrupt();
     if (!settings.aiEnabled) services?.ai.close();
   }, [services, settings.soundEnabled, settings.soundLevel, settings.aiEnabled]);
@@ -219,6 +228,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
         ? {
             audio: services.audio,
             contacts: services.contacts,
+            clear: services.clear,
             settings: services.product.settings,
           }
         : null,

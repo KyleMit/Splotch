@@ -1,5 +1,6 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import pencilSound from '../audio/pencil-1.mp3';
+import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
 import { AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, type DrawingLoopLoader } from '../audio/drawingAudio';
 
 const GAIN_FRAME_MS = 16;
@@ -46,14 +47,7 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
 }
 
 export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
-  await setAudioModeAsync({
-    allowsRecording: false,
-    playsInSilentMode: true,
-    interruptionMode: 'mixWithOthers',
-    shouldPlayInBackground: false,
-    shouldRouteThroughEarpiece: false,
-    allowsBackgroundRecording: false,
-  });
+  await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
   if (signal.aborted) throw new Error('Drawing sound was cancelled.');
   const player = createAudioPlayer(null, { keepAudioSessionActive: false });
   let disposed = false;

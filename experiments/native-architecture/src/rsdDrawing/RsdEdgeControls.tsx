@@ -16,6 +16,9 @@ import {
   styles,
 } from './controls';
 import type { NativeIconName } from './icons.generated';
+import { useClearGesture } from '../clear/useClearGesture';
+import { RsdClearButton, RsdClearUnderlay } from './RsdClearControl';
+import { RsdClearCoachmark } from './RsdClearCoachmark';
 import { NativeDrawingLayout, type DrawerTool, type PaletteLayout } from './NativeScrollAreas';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
@@ -46,19 +49,25 @@ export function RsdEdgeLayout({
   const { screen, sound, disabled } = controls;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
+  const clear = useClearGesture({
+    disabled,
+    drawing: screen.history.drawing,
+    // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
+    onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),
+    sound: sound.owner?.clear ?? null,
+  });
   return (
     <NativeDrawingLayout
       palette={(layout) => (
         <RsdPalette screen={screen} sound={sound} layout={layout} disabled={paintsDisabled} />
       )}
-      clear={
-        <RsdAction
-          label="Clear"
-          icon="trash-closed"
-          disabled={disabled}
-          onClick={() => {
-            void screen.clear(sound.settings.saveOnDeleteEnabled);
-          }}
+      clear={<RsdClearButton control={clear} disabled={disabled} />}
+      clearUnderlay={<RsdClearUnderlay control={clear} drawing={screen.history.drawing} />}
+      clearCoachmark={
+        <RsdClearCoachmark
+          visible={clear.coachmark}
+          radius={clear.radius}
+          reduced={clear.reduced}
         />
       }
       drawerToggle={(axis) => (

@@ -7,16 +7,29 @@ class Value {
   setValue(value) {
     this.value = value;
   }
+  stopAnimation() {}
   interpolate() {
     return new Value(0);
   }
+}
+
+class ValueXY {
+  constructor({ x, y }) {
+    this.x = new Value(x);
+    this.y = new Value(y);
+  }
+  setValue({ x, y }) {
+    this.x.setValue(x);
+    this.y.setValue(y);
+  }
+  stopAnimation() {}
 }
 
 function group(animations, finish) {
   return {
     start(done) {
       for (const animation of animations) animation.start();
-      if (finish) done?.();
+      if (finish) done?.({ finished: true });
     },
     stop() {
       for (const animation of animations) animation.stop();
@@ -31,7 +44,9 @@ export function animatedPort(View, Text) {
     Text,
     Image: View,
     Value,
+    ValueXY,
     add: () => new Value(0),
+    multiply: () => new Value(0),
     modulo: () => new Value(0),
     delay: () => group([], true),
     loop: () => group([], false),
@@ -40,7 +55,7 @@ export function animatedPort(View, Text) {
     timing: (value, config) => ({
       start(done) {
         value.setValue(config.toValue);
-        done?.();
+        done?.({ finished: true });
       },
       stop() {},
     }),

@@ -25,6 +25,8 @@ function sameSize(previous: AreaSize | undefined, next: AreaSize) {
 export function NativeDrawingLayout({
   palette,
   clear,
+  clearUnderlay,
+  clearCoachmark,
   drawerToggle,
   drawerTools,
   settings,
@@ -33,6 +35,8 @@ export function NativeDrawingLayout({
 }: {
   palette: (layout: PaletteLayout) => ReactNode;
   clear: ReactNode;
+  clearUnderlay: ReactNode;
+  clearCoachmark: ReactNode;
   drawerToggle: (axis: LayoutAxis) => ReactNode;
   drawerTools: readonly DrawerTool[];
   settings: ReactNode;
@@ -81,9 +85,7 @@ export function NativeDrawingLayout({
           }}
         >
           {children}
-          <View testID="rsd-clear-dock" style={docks.clear}>
-            {clear}
-          </View>
+          {clearUnderlay}
           <View testID="rsd-settings-dock" style={docks.settings}>
             {settings}
           </View>
@@ -95,6 +97,10 @@ export function NativeDrawingLayout({
           <View testID="rsd-drawer-dock" style={docks.toggle}>
             {drawerToggle(drawerAxis)}
           </View>
+          <View testID="rsd-clear-dock" style={docks.clear}>
+            {clear}
+          </View>
+          {clearCoachmark}
         </View>
         {status}
       </View>

@@ -79,4 +79,6 @@ deliberately not registered in `app.json`: it would add the read permissions and
 `requestLegacyExternalStorage`. `tools/migration/tests/native-permissions.test.mjs` guards the
 manifest, including every permission expo-media-library declares. Check a built APK's merged
 permissions when a dependency changes; without a keystore, `:app:processReleaseMainManifest` writes
-the merged manifest under `android/app/build/intermediates/merged_manifest/release/`.
+the merged manifest under `android/app/build/intermediates/merged_manifest/release/`. `expo-haptics`
+merges the normal-level `VIBRATE` permission for the drag-to-clear threshold haptic, as the shipping
+app's `@capacitor/haptics` does.
