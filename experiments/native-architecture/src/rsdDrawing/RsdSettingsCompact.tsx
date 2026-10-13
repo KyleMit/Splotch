@@ -4,7 +4,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useOrientationLockApplies } from '../platform/deviceOrientation';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { OrientationChoice } from '../settings/orientation';
-import { RsdOrientationPicker } from './orientationPicker';
+import { RsdOrientationPicker } from './RsdOrientationPicker';
 import type { HubToggle } from './RsdHubRow';
 import { RsdIcon } from './RsdIcon';
 import { RsdScrollCue } from './RsdScrollCue';
@@ -41,7 +41,13 @@ const styles = css.create({
     backgroundColor: colors.surface2,
   },
   // The orientation track replaces the cell's card, so the options get all of the cell's room.
-  bare: { padding: 0, backgroundColor: 'transparent' },
+  bare: {
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    backgroundColor: 'transparent',
+  },
   spacer: { flexGrow: 1, flexShrink: 1, flexBasis: 0 },
   about: {
     display: 'flex',

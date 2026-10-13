@@ -23,8 +23,8 @@ vi.mock(
   () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
 );
 vi.mock(
-  '../../experiments/native-architecture/src/rsdDrawing/orientationPicker.ts',
-  () => import('../../experiments/native-architecture/src/rsdDrawing/orientationPicker.web.ts')
+  '../../experiments/native-architecture/src/rsdDrawing/segmentThumb.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/segmentThumb.web.tsx')
 );
 vi.mock('../../experiments/native-architecture/src/platform/settingsSessions.ts', () => ({
   settingsSessions: { current: () => 0, subscribe: () => () => {}, load: async () => 0 },

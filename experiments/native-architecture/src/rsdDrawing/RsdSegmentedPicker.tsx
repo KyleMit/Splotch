@@ -1,35 +1,23 @@
-import { useLayoutEffect, useRef, useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import {
-  I18nManager,
   StyleSheet,
   View,
   useWindowDimensions,
   type LayoutChangeEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import Animated, {
-  Easing,
-  ReduceMotion,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
-import { useReduceMotion } from '../drawing/useReduceMotion';
 import type { NativeIconName } from './icons.generated';
 import { optionFades, pressedState } from './pickerPlatform';
 import { RsdIcon } from './RsdIcon';
 import { arrowDelta, nextEnabledIndex, rovingTabIndex } from './rovingRadio';
-import { brandColors, colors, dimensions, fonts, shadows } from './tokens.css';
+import { brandColors, colors, dimensions, fonts } from './tokens.css';
+import { SegmentThumb } from './segmentThumb';
+import { EASE_GLIDE, THUMB_TRAVEL_MS, type Cell } from './segmentThumbFace';
 
-// Past --duration-base so the travel reads as a glide between cells rather than a jump, and inside
-// a toddler's second tap.
-const THUMB_TRAVEL_MS = 220;
-// --ease-glide: the thumb travels in Reanimated, which cannot read a style token.
-const EASE_GLIDE = [0.22, 1, 0.36, 1] as const;
+export { thumbOrigin } from './segmentThumbFace';
 // lib/breakpoints.ts PHONE_MAX_WIDTH_PX: at or below it the underline cells split the row evenly.
 const PHONE_MAX_WIDTH_PX = 540;
 const SEGMENT_OPTION_GAP_PX = 6;
@@ -109,48 +97,10 @@ type RadioProps<T extends string> = SharedProps<T> & { mode?: 'radio'; selected:
 // Independent pressable options; the caller decides what a press does to the set.
 type ToggleProps<T extends string> = SharedProps<T> & { mode: 'toggle'; selected: readonly T[] };
 
-type Cell = { readonly x: number; readonly width: number };
-
 // React Native's View types omit the key events react-native-web forwards from the focused option.
 type KeyHandlers = {
   onKeyDown: (event: NativeSyntheticEvent<{ key: string }>) => void;
 };
-
-function travelTo(value: SharedValue<number>, target: number, travel: boolean) {
-  value.value = travel
-    ? withTiming(target, {
-        duration: THUMB_TRAVEL_MS,
-        easing: Easing.bezier(...EASE_GLIDE),
-        reduceMotion: ReduceMotion.Never,
-      })
-    : target;
-}
-
-// The segment skin's one raised thumb travels between cells instead of each cell painting its own
-// fill. It is measured rather than computed from the index because cells are equal-width only
-// under `fill`. It glides on the UI thread when the selection moves and snaps on first placement,
-// on a resize and under reduced motion, so a travel never renders React.
-function SegmentThumb({ cell, index }: { cell: Cell; index: number }) {
-  const reduced = useReduceMotion();
-  const x = useSharedValue(cell.x);
-  const width = useSharedValue(cell.width);
-  const placed = useRef(index);
-  useLayoutEffect(() => {
-    const travel = placed.current !== index && !reduced;
-    placed.current = index;
-    travelTo(x, cell.x, travel);
-    travelTo(width, cell.width, travel);
-  }, [cell.x, cell.width, index, reduced, x, width]);
-  const frame = useAnimatedStyle(() => ({
-    width: width.value,
-    transform: [{ translateX: x.value }],
-  }));
-  return (
-    <Animated.View aria-hidden style={[thumbLayout.frame, thumbOrigin(I18nManager), frame]}>
-      <html.div style={styles.thumbFace} />
-    </Animated.View>
-  );
-}
 
 function useCells() {
   const [cells, setCells] = useState<readonly (Cell | undefined)[]>([]);
@@ -292,7 +242,9 @@ function OptionBody<T extends string>({
   return (
     <>
       {option.icon ? (
-        <RsdIcon name={option.icon} size={ICON_PX[variant]} ink={ink} muted={false} />
+        <html.span style={styles.iconSlot}>
+          <RsdIcon name={option.icon} size={ICON_PX[variant]} ink={ink} muted={false} />
+        </html.span>
       ) : null}
       {labels === 'shown' ? (
         <html.span style={variant === 'chip' && styles.chipLabel}>{option.label}</html.span>
@@ -324,21 +276,6 @@ function cellLayout(variant: Variant, fill: boolean, phone: boolean) {
   if (variant === 'segment') return fill ? cellLayouts.flex : cellLayouts.hug;
   if (variant === 'chip') return cellLayouts.flex;
   return phone ? cellLayouts.flex : cellLayouts.hug;
-}
-
-const thumbLayout = StyleSheet.create({
-  frame: { position: 'absolute', top: 0, bottom: 0, pointerEvents: 'none' },
-  physicalLeftLtr: { left: 0 },
-  physicalLeftSwapped: { right: 0 },
-});
-
-// onLayout reports a cell's physical frame and translateX moves physically, so the thumb starts at
-// the track's physical left. Where React Native swaps left and right in RTL, `left` is the start
-// edge, so the physical left is `right`. react-native-web reports no swap and keeps `left`.
-export function thumbOrigin(i18n: { isRTL: boolean; doLeftAndRightSwapInRTL?: boolean }) {
-  return i18n.isRTL && i18n.doLeftAndRightSwapInRTL === true
-    ? thumbLayout.physicalLeftSwapped
-    : thumbLayout.physicalLeftLtr;
 }
 
 const styles = css.create({
@@ -381,6 +318,8 @@ const styles = css.create({
     fontWeight: fonts.semiboldWeight,
     cursor: 'pointer',
   },
+  // A web flex item shrinks by default, which squeezed a wide glyph beside a long label.
+  iconSlot: { display: 'flex', flexShrink: 0 },
   segmentOption: {
     justifyContent: 'center',
     gap: SEGMENT_OPTION_GAP_PX,
@@ -430,13 +369,6 @@ const styles = css.create({
   underlineActive: {
     color: { default: colors.brandText, ':hover': colors.brandText },
     borderBottomColor: brandColors.brand,
-  },
-  thumbFace: {
-    flexGrow: 1,
-    marginBlock: dimensions.space1,
-    borderRadius: dimensions.radiusSm,
-    backgroundColor: colors.brandSolid,
-    boxShadow: shadows.shadowControl,
   },
   disabled: { opacity: dimensions.disabledOpacity, cursor: 'not-allowed' },
 });
