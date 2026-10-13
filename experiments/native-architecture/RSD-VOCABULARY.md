@@ -246,6 +246,48 @@ Where React Native differs:
 * `RsdConfirmCard` lays out the title, copy and two actions; the caller passes the actions (the
   design Button) and hosts the card in its dialog.
 
+## Color Picker
+
+`RsdColorPicker` ports the shipping `ColorPicker.svelte`: a wordless honeycomb of fixed hexagons in
+a card over the frosted scrim, opened by More colors. The colors, both grid arrangements and the
+trim geometry are imported from shipping (`hexPickerLayout.ts`, `design/trimGeometry.ts`,
+`breakpoints.ts`). `hexPicker.ts` turns them into the layout the shipping media queries produce for
+a window: the orientation picks the portrait or landscape grid, the short axis drops shade levels
+and the long axis drops families in the shipping order, every second visible row takes the
+half-hexagon indent, and a window at least `LARGE_TABLET_MIN_SIDE_PX` on both sides grows every
+hexagon by the roomy factor. The few literals no shipping module exports (the trim order, the hover
+scale and brightness, the keyline and selected-ring insets, the dim keyline, the selected shade, the
+snap slop) are read back out of `ColorPicker.svelte` and `hexSnapGesture.ts` by
+`tools/migration/tests/rsd-native-color-picker.test.mjs`.
+
+The card sits in `ModalStage`, the scrim, fly-in and close half of `ModalShell` without its header
+and scrolling body. The picker flies in from More colors, flies back as it closes, and closes on the
+scrim, Escape, Android Back and the browser Back. Each hexagon is the shipping clip polygon drawn by
+react-native-svg, its ring (the white swatch: icon ink; the near-black swatch: the dim keyline; the
+last custom paint: its own color shaded) behind an inset fill.
+
+The gesture is shipping's hex snap on React Native's responder. A press on or between hexagons
+highlights the nearest center within half a hexagon's height plus the slop, a drag moves the
+highlight, and lifting picks what is under the finger, or the swatch still highlighted when the
+finger lifts beyond every hexagon. The responder refuses termination, as shipping's pointer capture
+keeps the drag. One finger explores: a second contact, a release that does not carry the tracked
+finger, or a new viewport (shipping re-measures its centers on resize) cancels the drag without a
+pick. A pick selects the paint, remembers it and closes the picker. Mouse hover on the web hit-tests
+the hexagon shape, as the shipping `:hover` does; touch shows no hover.
+
+Each hexagon is a button named by its color; `RsdPressable` gives its native host the button role
+when a caller names none, since that host renders as a div. Its pointer events are off so every
+press reaches the grid, and a keyboard or screen-reader activation presses the button directly.
+React Native Web's `box-none` layer above the card turns pointer events back on for the web, so a
+web pointer's trailing click (`detail` of 1 or more) is dropped, as shipping's `handleHexClick`
+drops it.
+
+On the web the picker is its own lazily loaded chunk (`drawingSheets.web.ts`). The legacy
+`DrawingScreen` also loads it on first open, so its react-native-web suites need the React Strict
+DOM stand-in (`tools/tests/native-rsd-web-stub.mjs`) only when they open the picker. Not ported: the
+100 ms hover ease (the hover state switches at once). Native screen-reader activation and iPad
+trackpad hover are unverified.
+
 ## Clear Button
 
 The shipping Clear Button (`ClearButton.svelte`) docks to the screen, not the paper.

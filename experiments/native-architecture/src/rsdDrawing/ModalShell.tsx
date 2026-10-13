@@ -161,29 +161,26 @@ function useModalMotion(visible: boolean, onDismiss: (() => void) | undefined) {
   return { presented: phase !== 'gone', motion };
 }
 
-type ModalShellProps = {
+type ModalStageProps = {
   visible: boolean;
   label: string;
-  size: ModalSize;
+  labelledBy?: string;
   onClose: () => void;
   onDismiss?: () => void;
-  header: ReactNode;
   children: ReactNode;
 };
 
-// The shipping modal frame (app.css .modal-dialog, .modal-shell): a centered card on a dimmed scrim
-// that flies in from the press that opened it and flies back as it closes. Escape, Android Back,
-// the browser Back and a press on the scrim all ask the caller to close.
-export function ModalShell({
+// The shipping modal frame (app.css .modal-dialog): a card centered on a dimmed scrim that flies
+// in from the press that opened it and flies back as it closes. Escape, Android Back, the browser
+// Back and a press on the scrim all ask the caller to close.
+export function ModalStage({
   visible,
   label,
-  size,
+  labelledBy,
   onClose,
   onDismiss,
-  header,
   children,
-}: ModalShellProps) {
-  const titleId = useId();
+}: ModalStageProps) {
   const { presented, motion } = useModalMotion(visible, onDismiss);
   const origin = useModalOrigin();
   useDialogBack(visible, onClose);
@@ -195,7 +192,7 @@ export function ModalShell({
       visible={presented}
       animationType="none"
       accessibilityLabel={label}
-      aria-labelledby={titleId}
+      aria-labelledby={labelledBy}
       onRequestClose={visible ? onClose : ignore}
       onDismiss={Platform.OS === 'ios' ? onDismiss : undefined}
     >
@@ -216,12 +213,39 @@ export function ModalShell({
             onStartShouldSetResponder={() => visible}
             onResponderRelease={onClose}
           />
-          <ModalCard size={size} motion={motion} titleId={titleId} active={visible} header={header}>
-            {children}
-          </ModalCard>
+          <View pointerEvents="box-none" style={layout.center}>
+            <Animated.View
+              testID="modal-card"
+              pointerEvents={visible ? 'auto' : 'none'}
+              style={{
+                opacity: motion.opacity,
+                transform: [
+                  { translateX: motion.x },
+                  { translateY: motion.y },
+                  { scale: motion.scale },
+                ],
+              }}
+            >
+              {children}
+            </Animated.View>
+          </View>
         </View>
       </SafeAreaProvider>
     </Modal>
+  );
+}
+
+type ModalShellProps = Omit<ModalStageProps, 'labelledBy'> & { size: ModalSize; header: ReactNode };
+
+// The shipping .modal-shell card: a header over a scrolling body, sized by the card it ports.
+export function ModalShell({ size, header, children, ...stage }: ModalShellProps) {
+  const titleId = useId();
+  return (
+    <ModalStage {...stage} labelledBy={titleId}>
+      <ModalCard size={size} titleId={titleId} active={stage.visible} header={header}>
+        {children}
+      </ModalCard>
+    </ModalStage>
   );
 }
 
@@ -238,14 +262,12 @@ function useModalFrame(size: ModalSize): ModalFrame {
 
 function ModalCard({
   size,
-  motion,
   titleId,
   active,
   header,
   children,
 }: {
   size: ModalSize;
-  motion: Motion;
   titleId: string;
   active: boolean;
   header: ReactNode;
@@ -255,45 +277,34 @@ function ModalCard({
   const frame = useModalFrame(size);
   const { body } = frame;
   return (
-    <View pointerEvents="box-none" style={layout.center}>
-      <Animated.View
-        testID="modal-card"
-        pointerEvents={active ? 'auto' : 'none'}
-        style={{
-          opacity: motion.opacity,
-          transform: [{ translateX: motion.x }, { translateY: motion.y }, { scale: motion.scale }],
-        }}
-      >
-        <html.div
-          data-testid="modal-surface"
-          inert={!active}
-          style={[
-            fontTheme,
-            theme === 'dark' && darkTheme,
-            styles.card(frame.width, frame.maxHeight),
-            frame.height !== null && styles.height(frame.height),
-          ]}
-        >
-          <html.div style={styles.clip}>
-            <DialogScope value={{ titleId, header: frame.header, active }}>
-              {header}
-              <ScrollView
-                testID="modal-body"
-                style={frame.height === null ? layout.hug : layout.fill}
-                contentContainerStyle={{
-                  paddingTop: body.top,
-                  paddingBottom: body.bottom,
-                  paddingHorizontal: body.inline,
-                }}
-                removeClippedSubviews={false}
-              >
-                {children}
-              </ScrollView>
-            </DialogScope>
-          </html.div>
-        </html.div>
-      </Animated.View>
-    </View>
+    <html.div
+      data-testid="modal-surface"
+      inert={!active}
+      style={[
+        fontTheme,
+        theme === 'dark' && darkTheme,
+        styles.card(frame.width, frame.maxHeight),
+        frame.height !== null && styles.height(frame.height),
+      ]}
+    >
+      <html.div style={styles.clip}>
+        <DialogScope value={{ titleId, header: frame.header, active }}>
+          {header}
+          <ScrollView
+            testID="modal-body"
+            style={frame.height === null ? layout.hug : layout.fill}
+            contentContainerStyle={{
+              paddingTop: body.top,
+              paddingBottom: body.bottom,
+              paddingHorizontal: body.inline,
+            }}
+            removeClippedSubviews={false}
+          >
+            {children}
+          </ScrollView>
+        </DialogScope>
+      </html.div>
+    </html.div>
   );
 }
 

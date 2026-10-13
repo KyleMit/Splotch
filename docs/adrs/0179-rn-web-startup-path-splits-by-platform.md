@@ -126,7 +126,7 @@ native keeps its synchronous, offline-complete bundle unchanged.
     returns to the foreground.
   * Nothing AI runs at launch except a launch invite. The AI owner reads its stored journal and
     resumes a pending generation when a parent opens the AI sheet. That path is unchanged, and
-    `tools/migration/tests/rsd-web-product-owners.test.mjs` drives it through the web loader.
+    `tools/migration/tests/rsd-native-web-product-owners.test.mjs` drives it through the web loader.
   * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite. If that chunk
     request fails, the capture stays pending. The owners' loader settles it before it hands out the
     AI owner, and a settle during a capture waits for its write. So the invite is saved and scrubbed

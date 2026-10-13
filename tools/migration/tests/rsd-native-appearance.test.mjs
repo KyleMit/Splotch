@@ -12,6 +12,8 @@ import {
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { HEX_DIM_KEYLINE } from '../../../experiments/native-architecture/src/rsdDrawing/hexPicker.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { RsdColoringBookPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
 import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
@@ -190,7 +192,7 @@ it('selects Book cover and page artwork from the same explicit preference as the
 });
 
 it.each(['light', 'dark'])(
-  'keeps semantic Black and transparent ColorPicker backing through the RSD caller in %s',
+  'themes the Color Picker card and swatch keylines through the RSD caller in %s',
   async (appearance) => {
     let update = () => {};
     const { owner } = createPickerCaller(() => update());
@@ -203,36 +205,37 @@ it.each(['light', 'dark'])(
       update = () => rerender((value) => value + 1);
       return createElement(RsdDrawingScreen);
     }
+    const other = appearance === 'dark' ? 'light' : 'dark';
+    const keyline = (hex) =>
+      host
+        .querySelector('[aria-label="Color Picker"]')
+        .querySelector(`[aria-label="${hex}"] polygon`)
+        .getAttribute('fill');
+    const card = () =>
+      records.props.findLast((props) => props.testID === 'color-picker-card').style;
     try {
       await mount(createElement(Screen));
       const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
       await click('More colors');
-      let picker = host.querySelector('[aria-label="Color picker"]');
-      expect(picker.textContent).toContain(appearance === 'dark' ? '#FFFFFF' : '#0A0B10');
-      const frame = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
-      expect(frame.style.backgroundColor).toBe('transparent');
-      expect(frame.edges).toEqual(['top', 'right', 'bottom', 'left']);
       expect(
-        records.props.findLast((props) => props.accessibilityLabel === 'Color picker')
+        records.props.findLast((props) => props.accessibilityLabel === 'Color Picker')
       ).toMatchObject({
         statusBarTranslucent: true,
         navigationBarTranslucent: true,
         transparent: true,
       });
-      await click('Use color');
-      expect(setColor).toHaveBeenCalledExactlyOnceWith('Black');
+      expect(card().backgroundColor).toBe(DRAWING_THEMES[appearance].surface);
+      expect(keyline('#FFFFFF')).toBe(DRAWING_THEMES[appearance].iconInk);
+      expect(keyline('#1A1F24')).toBe(HEX_DIM_KEYLINE);
+      await act(async () => owner.setAppearance(other));
+      expect(card().backgroundColor).toBe(DRAWING_THEMES[other].surface);
+      expect(keyline('#FFFFFF')).toBe(DRAWING_THEMES[other].iconInk);
+      expect(setColor).not.toHaveBeenCalled();
       expect(caller.sound.settings.selectedColor).toBe('Black');
-      expect(caller.sound.settings.customColors).toEqual([]);
-      await click('More colors');
-      await act(async () => owner.setAppearance(appearance === 'dark' ? 'light' : 'dark'));
-      picker = host.querySelector('[aria-label="Color picker"]');
-      expect(picker.textContent).toContain(appearance === 'dark' ? '#0A0B10' : '#FFFFFF');
-      const tile = picker.querySelector('[aria-label^="Explore "]');
-      const literal = tile.getAttribute('aria-label').slice('Explore '.length);
-      await act(async () => tile.click());
-      await click('Use color');
-      expect(caller.sound.settings.selectedColor).toBe(literal);
-      expect(caller.sound.settings.customColors).toEqual([literal]);
+      await click('#FFFFFF');
+      expect(setColor).toHaveBeenCalledExactlyOnceWith('#FFFFFF');
+      expect(caller.sound.settings.selectedColor).toBe('#FFFFFF');
+      expect(caller.sound.settings.customColors).toEqual(['#FFFFFF']);
     } finally {
       owner.dispose();
     }
