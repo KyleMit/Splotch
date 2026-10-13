@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { html } from 'react-strict-dom';
-import { brand, themes } from '../../../web/src/lib/design/tokens.ts';
+import { brand, themes, toCssVarName } from '../../../web/src/lib/design/tokens.ts';
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import {
@@ -27,6 +27,15 @@ const TRACK_WIDTH_PX = 400;
 const MIN = 40;
 const MAX = 100;
 const SNAP = 70;
+
+// Each painted part's colour token, held both to the colour the port resolves and to the token the
+// shipping selector assigns it.
+const PAINT = {
+  track: { selector: '.slider-track', property: 'background', token: 'controlTrack' },
+  fill: { selector: '.slider-fill', property: 'background', token: 'brand' },
+  notch: { selector: '.slider-notch', property: 'background', token: 'sliderNotch' },
+};
+const paint = (part, theme) => ({ ...themes[theme], ...brand })[PAINT[part].token];
 
 const rgba = (value) =>
   value.replace(
@@ -108,6 +117,7 @@ describe('semantics', () => {
     expect(slider().getAttribute('aria-valuenow')).toBe('60');
     expect(slider().getAttribute('aria-valuetext')).toBe('60%');
     expect(props().tabIndex).toBe(0);
+    expect(props().accessible).toBe(true);
     expect(props()['aria-describedby']).toBe('size-help');
     expect(container.querySelector('#size-help').textContent).toBe(
       'Bigger buttons are easier to tap'
@@ -174,6 +184,11 @@ describe('dragging', () => {
     await mount({ initial: 50 });
     expect(props().onResponderTerminationRequest()).toBe(false);
     expect(props().onStartShouldSetResponder()).toBe(true);
+    let granted;
+    await act(async () => {
+      granted = props().onResponderGrant(touch(1, 100));
+    });
+    expect(granted).toBe(true);
   });
 });
 
@@ -220,12 +235,12 @@ describe('painting', () => {
     for (const theme of ['light', 'dark']) {
       await mount({ initial: 60, snap: SNAP }, theme);
       const { track, thumb, fill, notch } = parts();
-      expect(style(track).backgroundColor, theme).toBe(themes[theme].controlTrack);
+      expect(style(track).backgroundColor, theme).toBe(paint('track', theme));
       expect(style(track).boxShadow, theme).toBe(SLIDER_METRICS.TRACK_SHADOW);
-      expect(style(fill).backgroundColor, theme).toBe(brand.brand);
+      expect(style(fill).backgroundColor, theme).toBe(paint('fill', theme));
       expect(style(thumb).backgroundColor, theme).toBe(SLIDER_METRICS.THUMB_FILL);
       expect(style(thumb).borderColor, theme).toBe(themes[theme].borderWarm);
-      expect(style(notch).backgroundColor, theme).toBe(rgba(themes[theme].sliderNotch));
+      expect(style(notch).backgroundColor, theme).toBe(rgba(paint('notch', theme)));
     }
   });
 });
@@ -246,6 +261,13 @@ describe('drift from the shipping slider', () => {
   };
   const px = (value) => Number.parseFloat(value);
   const NAMED_COLORS = { white: '#fff' };
+
+  it('assigns each painted part the colour token the shipping selector assigns it', () => {
+    for (const [part, { selector, property, token }] of Object.entries(PAINT))
+      expect(declaration(SHIPPING_SLIDER, selector, property), part).toBe(
+        `var(${toCssVarName(token)})`
+      );
+  });
 
   it('holds every literal the port carries to the Svelte sources', () => {
     expect(constant(SHIPPING_SLIDER, 'SNAP_BAND_FRACTION')).toBe(SNAP_BAND_FRACTION);

@@ -111,12 +111,16 @@ measurement serves web and native. The thumb is a Reanimated view: a selection c
 and reduced motion snap; no frame renders React. The options' ink fades are CSS transitions on web
 only (`pickerPlatform.ts`); React Strict DOM would run them natively through the JS-driven
 `Animated`. React Strict DOM also drops `aria-pressed` natively, so a pressed toggle chip reports
-`selected` there (`pickerPlatform.native.ts`).
+`selected` there (`pickerPlatform.native.ts`). `onLayout` frames and `translateX` are physical, so
+the thumb starts at the track's physical left: `right: 0` where React Native swaps left and right in
+RTL (`thumbOrigin`), `left: 0` everywhere else.
 
 The slider's host is a React Native view, because the responder system carries the relative drag on
 every renderer and only a React Native view takes the increment and decrement accessibility actions
-VoiceOver and TalkBack adjust a slider with. Its track, fill, detent notch and thumb are React
-Strict DOM children painted from the tokens.
+VoiceOver and TalkBack adjust a slider with. It is `accessible`, so VoiceOver focuses it as one
+element, and its responder grant returns `true`, which blocks the native responder so an enclosing
+`ScrollView` cannot cancel a drag that drifts vertically. Its track, fill, detent notch and thumb
+are React Strict DOM children painted from the tokens.
 
 The literals these ports carry that no token holds (the thumb's travel and its `--ease-glide` curve
 for Reanimated, option and icon sizes, the slider's disc, track, shadows and notch, the phone

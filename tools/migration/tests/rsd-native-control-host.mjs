@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 export const host = {
   windowWidth: 402,
   reduceMotion: false,
+  rtl: false,
   layoutOf: () => ({ x: 0, y: 0, width: 0, height: 0 }),
   writes: [],
 };
@@ -66,6 +67,12 @@ vi.mock('react-native', async () => {
       OS: 'ios',
       constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
       select: (values) => values.ios ?? values.native ?? values.default,
+    },
+    I18nManager: {
+      get isRTL() {
+        return host.rtl;
+      },
+      doLeftAndRightSwapInRTL: true,
     },
     AccessibilityInfo: {
       isReduceMotionEnabled: async () => host.reduceMotion,
@@ -130,6 +137,7 @@ vi.mock('react-native-reanimated', async () => {
 export function resetHost() {
   host.windowWidth = 402;
   host.reduceMotion = false;
+  host.rtl = false;
   host.layoutOf = () => ({ x: 0, y: 0, width: 0, height: 0 });
   host.writes.length = 0;
 }

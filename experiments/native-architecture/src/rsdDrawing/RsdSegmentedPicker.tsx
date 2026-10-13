@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactElement } from 'react';
 import {
+  I18nManager,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -145,7 +146,7 @@ function SegmentThumb({ cell, index }: { cell: Cell; index: number }) {
     transform: [{ translateX: x.value }],
   }));
   return (
-    <Animated.View aria-hidden style={[thumbLayout.frame, frame]}>
+    <Animated.View aria-hidden style={[thumbLayout.frame, thumbOrigin(I18nManager), frame]}>
       <html.div style={styles.thumbFace} />
     </Animated.View>
   );
@@ -326,8 +327,19 @@ function cellLayout(variant: Variant, fill: boolean, phone: boolean) {
 }
 
 const thumbLayout = StyleSheet.create({
-  frame: { position: 'absolute', top: 0, bottom: 0, left: 0, pointerEvents: 'none' },
+  frame: { position: 'absolute', top: 0, bottom: 0, pointerEvents: 'none' },
+  physicalLeftLtr: { left: 0 },
+  physicalLeftSwapped: { right: 0 },
 });
+
+// onLayout reports a cell's physical frame and translateX moves physically, so the thumb starts at
+// the track's physical left. Where React Native swaps left and right in RTL, `left` is the start
+// edge, so the physical left is `right`. react-native-web reports no swap and keeps `left`.
+export function thumbOrigin(i18n: { isRTL: boolean; doLeftAndRightSwapInRTL?: boolean }) {
+  return i18n.isRTL && i18n.doLeftAndRightSwapInRTL === true
+    ? thumbLayout.physicalLeftSwapped
+    : thumbLayout.physicalLeftLtr;
+}
 
 const styles = css.create({
   segmentTrack: {

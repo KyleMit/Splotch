@@ -162,6 +162,7 @@ function RsdSlider({
   return (
     <View
       style={[layout.host, HOST_POINTER]}
+      accessible
       role="slider"
       tabIndex={0}
       aria-label={label}
@@ -188,6 +189,8 @@ function RsdSlider({
           startValue: value,
         };
         setActive(true);
+        // Literal true blocks the native responder, so an enclosing ScrollView cannot take the drag.
+        return true;
       }}
       onResponderMove={(event) => {
         const current = drag.current;

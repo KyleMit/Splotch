@@ -4,10 +4,11 @@ import { act, createElement as h, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { host, native, resetHost } from './rsd-native-control-host.mjs';
+import { yogaTrackLayout } from './rsd-yoga-host.mjs';
 import { html } from 'react-strict-dom';
 import * as shippingRoving from '../../../web/src/lib/components/design/rovingRadio.ts';
 import { PHONE_MAX_WIDTH_PX } from '../../../web/src/lib/breakpoints.ts';
-import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
+import { brand, scale, themes, toCssVarName } from '../../../web/src/lib/design/tokens.ts';
 import * as nativeRoving from '../../../experiments/native-architecture/src/rsdDrawing/rovingRadio.ts';
 import { darkTheme } from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
@@ -15,6 +16,7 @@ import { ReduceMotionPreferenceProvider } from '../../../experiments/native-arch
 import {
   PICKER_METRICS,
   RsdSegmentedPicker,
+  thumbOrigin,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
 
 const WEB_PLATFORM = '../../../experiments/native-architecture/src/rsdDrawing/pickerPlatform.ts';
@@ -28,6 +30,8 @@ const SHIPPING_PICKER = readFileSync(
   'utf8'
 );
 const CELL_WIDTH_PX = 100;
+// The first Yoga case compiles React Native's Yoga sources before it lays anything out.
+const YOGA_COMPILE_TIMEOUT_MS = 180_000;
 const TRACK_INSET_PX = Number.parseFloat(scale.space1);
 const THEME_OPTIONS = [
   { value: 'light', label: 'Light', icon: 'theme-light' },
@@ -43,6 +47,30 @@ const CHIP_OPTIONS = [
   { value: 'camera', label: 'Screenshot', icon: 'camera' },
   { value: 'shapes', label: 'Shapes', icon: 'shapes' },
 ];
+
+// Each painted part's colour token, held both to the colour the port resolves and to the token the
+// shipping selector assigns it.
+const PAINT = {
+  segmentTrack: { selector: '.segment', property: 'background', token: 'controlTrack' },
+  segmentThumb: { selector: '.segment .thumb', property: 'background', token: 'brandSolid' },
+  segmentInk: { selector: '.segment .option', property: 'color', token: 'text' },
+  segmentActiveInk: { selector: '.segment .option.active', property: 'color', token: 'onBrand' },
+  optionInk: { selector: '.option', property: 'color', token: 'textSoft' },
+  chipFill: { selector: '.chip .option', property: 'background', token: 'controlTrack' },
+  chipActiveFill: { selector: '.chip .option.active', property: 'background', token: 'brandSolid' },
+  chipActiveInk: { selector: '.chip .option.active', property: 'color', token: 'onBrand' },
+  underlineActiveInk: {
+    selector: '.underline .option.active',
+    property: 'color',
+    token: 'brandText',
+  },
+  underlineSegment: {
+    selector: '.underline .option.active',
+    property: 'border-bottom-color',
+    token: 'brand',
+  },
+};
+const paint = (part, theme) => ({ ...themes[theme], ...brand })[PAINT[part].token];
 
 const rgba = (value) =>
   value.replace(
@@ -215,6 +243,16 @@ describe('segment thumb', () => {
     ]);
   });
 
+  it('pins the thumb to the physical left, which a swapped RTL layout calls right', async () => {
+    await mount({ initial: 'dark' });
+    expect(native(thumb()).style).toMatchObject({ left: 0 });
+    expect(native(thumb()).style.right).toBeUndefined();
+    host.rtl = true;
+    await mount({ initial: 'light' });
+    expect(native(thumb()).style).toMatchObject({ right: 0 });
+    expect(native(thumb()).style.left).toBeUndefined();
+  });
+
   it('snaps instead of gliding under reduced motion', async () => {
     await mount({ initial: 'light' }, { motion: 'reduce' });
     host.writes.length = 0;
@@ -226,11 +264,11 @@ describe('segment thumb', () => {
     for (const theme of ['light', 'dark']) {
       await mount({ initial: 'light' }, { theme });
       const face = native(thumb().firstElementChild).style;
-      expect(face.backgroundColor, theme).toBe(themes[theme].brandSolid);
+      expect(face.backgroundColor, theme).toBe(paint('segmentThumb', theme));
       expect(face.boxShadow, theme).toBe(rgba(scale.shadowControl));
-      expect(native(group()).style.backgroundColor, theme).toBe(themes[theme].controlTrack);
-      expect(ink('Light'), theme).toBe(brand.onBrand);
-      expect(ink('Dark'), theme).toBe(themes[theme].text);
+      expect(native(group()).style.backgroundColor, theme).toBe(paint('segmentTrack', theme));
+      expect(ink('Light'), theme).toBe(paint('segmentActiveInk', theme));
+      expect(ink('Dark'), theme).toBe(paint('segmentInk', theme));
     }
   });
 
@@ -300,11 +338,14 @@ describe('toggle chips', () => {
       );
       const rows = [...group().children];
       expect(rows.map((row) => row.querySelectorAll('button').length)).toEqual([2, 1]);
-      expect(native(option('Eraser')).style.backgroundColor, theme).toBe(themes[theme].brandSolid);
-      expect(native(option('Screenshot')).style.backgroundColor, theme).toBe(
-        themes[theme].controlTrack
+      expect(native(option('Eraser')).style.backgroundColor, theme).toBe(
+        paint('chipActiveFill', theme)
       );
-      expect(ink('Screenshot'), theme).toBe(themes[theme].textSoft);
+      expect(ink('Eraser'), theme).toBe(paint('chipActiveInk', theme));
+      expect(native(option('Screenshot')).style.backgroundColor, theme).toBe(
+        paint('chipFill', theme)
+      );
+      expect(ink('Screenshot'), theme).toBe(paint('optionInk', theme));
       expect(option('Eraser').querySelector('svg').getAttribute('width')).toBe('26');
     }
   });
@@ -314,9 +355,11 @@ describe('underline tabs', () => {
   it('marks the live tab with the brand segment and its accessible ink', async () => {
     for (const theme of ['light', 'dark']) {
       await mount({ initial: 'light', variant: 'underline' }, { theme });
-      expect(native(option('Light')).style.borderBottomColor, theme).toBe(brand.brand);
-      expect(ink('Light'), theme).toBe(themes[theme].brandText);
-      expect(ink('Dark'), theme).toBe(themes[theme].textSoft);
+      expect(native(option('Light')).style.borderBottomColor, theme).toBe(
+        paint('underlineSegment', theme)
+      );
+      expect(ink('Light'), theme).toBe(paint('underlineActiveInk', theme));
+      expect(ink('Dark'), theme).toBe(paint('optionInk', theme));
       expect(await iconXml('Light')).toContain(`fill="${themes[theme].brandText}"`);
       expect(thumb()).toBeNull();
     }
@@ -343,6 +386,36 @@ describe('underline tabs', () => {
     expect(native(group()).style.gap).toBe(PICKER_METRICS.UNDERLINE_GAP_PX);
     expect(native(option('Light').parentElement).style.flexGrow).toBeUndefined();
   });
+});
+
+describe('thumb origin in React Native Yoga', () => {
+  const TRACK_PX = 320;
+  const CELLS = 3;
+  // React Native's style processing: with the RTL swap on, left and right name the start and end.
+  const yogaEdge = (origin, swap) => {
+    const [key] = Object.keys(origin);
+    return swap ? { left: 'start', right: 'end' }[key] : key;
+  };
+
+  it.each([
+    ['LTR', { isRTL: false, doLeftAndRightSwapInRTL: true }, 'ltr'],
+    ['RTL with the left/right swap', { isRTL: true, doLeftAndRightSwapInRTL: true }, 'rtl'],
+    ['RTL without the swap', { isRTL: true, doLeftAndRightSwapInRTL: false }, 'rtl'],
+  ])(
+    'lands the thumb on every measured cell in %s',
+    (_, i18n, direction) => {
+      const layout = yogaTrackLayout({
+        width: TRACK_PX,
+        cells: CELLS,
+        inset: TRACK_INSET_PX,
+        direction,
+        edge: yogaEdge(thumbOrigin(i18n), i18n.isRTL && i18n.doLeftAndRightSwapInRTL),
+      });
+      expect(layout.cells).toHaveLength(CELLS);
+      for (const cellLeft of layout.cells) expect(layout.thumb + cellLeft).toBe(cellLeft);
+    },
+    YOGA_COMPILE_TIMEOUT_MS
+  );
 });
 
 describe('drift from the shipping picker', () => {
@@ -412,6 +485,12 @@ describe('drift from the shipping picker', () => {
     expect(`cubic-bezier(${PICKER_METRICS.EASE_GLIDE.join(', ')})`).toBe(scale.easeGlide);
     expect(SHIPPING_PICKER).toContain(`@media (max-width: ${PHONE_MAX_WIDTH_PX}px)`);
     expect(PICKER_METRICS.PHONE_MAX_WIDTH_PX).toBe(PHONE_MAX_WIDTH_PX);
+  });
+
+  it('assigns each painted part the colour token the shipping selector assigns it', () => {
+    for (const [part, { selector, property, token }] of Object.entries(PAINT))
+      expect(declaration(selector, property), part).toBe(`var(${toCssVarName(token)})`);
+    expect(declaration('.segment .thumb', 'box-shadow')).toBe('var(--shadow-control)');
   });
 
   it('ports the roving-radio rules case for case', () => {
