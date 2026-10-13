@@ -3,7 +3,6 @@ import {
   RsdAiSheet,
   RsdColorPicker,
   RsdColoringBookPicker,
-  RsdFeedbackSheet,
   RsdParentGateSheet,
   RsdSettingsRoute,
 } from './drawingSheets';
@@ -60,11 +59,9 @@ export function RsdDrawingScreen() {
       ? 'gate'
       : screen.settingsOpen
         ? 'settings'
-        : product.feedback.state?.open
-          ? 'feedback'
-          : product.ai.state && aiSheetShown(product.ai.state)
-            ? 'ai'
-            : 'none';
+        : product.ai.state && aiSheetShown(product.ai.state)
+          ? 'ai'
+          : 'none';
   useParentCenterSettings(screen, product, gate?.open === true);
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
@@ -135,15 +132,6 @@ function RsdModalSheets({
             owner={product.owner}
             state={gate.state}
             unlocked={gate.unlocked}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        </RsdSurfaceBoundary>
-      ) : null}
-      {route.shown === 'feedback' ? (
-        <RsdSurfaceBoundary onClose={() => product.feedback.owner?.close()}>
-          <RsdFeedbackSheet
-            owner={product.feedback.owner}
             visible={route.visible}
             onDismiss={dismissed}
           />

@@ -41,6 +41,12 @@ export function createFeedbackDelivery(
       if (result.status === 'success') succeeded(snapshot);
       publish(result);
     },
+    // Lets a request finish on its own without reporting back: the network call is not aborted,
+    // since the report may already have arrived, but its outcome never reaches the state, and a new
+    // request may start at once. Shipping's ReportForm detaches the same way on each visit.
+    detach() {
+      active = null;
+    },
     cancel(requestId: number) {
       const old = active;
       if (!old || old.id !== requestId) return;

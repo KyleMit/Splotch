@@ -260,7 +260,7 @@ const WEB_STYLE_FILES = [
   'src/rsdDrawing/tokens.css.ts',
   'src/rsdDrawing/controls.tsx',
   'src/rsdDrawing/RsdAiSheet.tsx',
-  'src/rsdDrawing/RsdFeedbackSheet.tsx',
+  'src/rsdDrawing/RsdFeedbackSection.tsx',
   'src/rsdDrawing/RsdParentGateKeypad.tsx',
   'src/rsdDrawing/RsdParentGateSheet.tsx',
 ];
@@ -346,11 +346,11 @@ it.each([
     'minHeight: TOUCH_TARGET',
   ],
   [
-    'src/rsdDrawing/RsdFeedbackSheet.tsx',
-    'TOUCH_TARGET',
-    '../drawing/theme',
-    'minHeight: dimensions.touchTarget',
-    'minHeight: TOUCH_TARGET',
+    'src/rsdDrawing/RsdFeedbackSection.tsx',
+    'TEXT_AREA_MIN_HEIGHT_PX',
+    './RsdTextField',
+    'minHeight: TEXTAREA_MIN_HEIGHT_PX',
+    'minHeight: TEXT_AREA_MIN_HEIGHT_PX',
   ],
   [
     'src/rsdDrawing/RsdAiSheet.tsx',

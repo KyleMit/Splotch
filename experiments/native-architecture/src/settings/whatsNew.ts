@@ -1,6 +1,7 @@
 import releases from '../../../../web/src/lib/releases.json';
 import notes from '../information/releaseNotes.generated.json';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import type { NativeIconName } from '../rsdDrawing/icons.generated';
 
 export type ReleaseBlock = Readonly<{ kind: 'item' | 'paragraph'; text: string }>;
 type ReleaseSection = Readonly<{ title: string; blocks: readonly ReleaseBlock[] }>;
@@ -33,6 +34,20 @@ export const RELEASE_NOTES: readonly ReleaseNotes[] = releases.map(({ version, d
     sections: sections.map(({ title, blocks }) => ({ title, blocks: blocks.map(releaseBlock) })),
   };
 });
+
+// The shipping RELEASE_SECTION_ICONS (lib/releaseSections.ts), whose module imports the shipping
+// icon registry; native-settings-info-drift.test.mjs pins the two maps together.
+const RELEASE_SECTION_ICONS = {
+  New: 'release-new',
+  Improved: 'release-improved',
+  Fixed: 'release-fixed',
+} as const satisfies Record<string, NativeIconName>;
+
+export function releaseSectionIcon(title: string): NativeIconName | null {
+  return Object.entries(RELEASE_SECTION_ICONS).find(([section]) => section === title)?.[1] ?? null;
+}
+
+export const WHATS_NEW_COPY = { allReleases: 'See all releases' } as const;
 
 // The shipping What's New section's content stamp is the app version, so its dot returns with
 // each release until the section is opened.
