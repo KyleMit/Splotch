@@ -106,3 +106,20 @@ export function nativeSettingsProps(owner, state) {
     onParentCenter() {},
   };
 }
+
+export function svgPort(React) {
+  const Svg = ({ children }) => React.createElement('div', null, children);
+  const SvgXml = ({ xml, width, height }) =>
+    React.createElement('svg', { 'data-xml': xml, width, height });
+  return {
+    default: Svg,
+    Circle: Svg,
+    Defs: Svg,
+    LinearGradient: Svg,
+    Path: Svg,
+    RadialGradient: Svg,
+    Rect: Svg,
+    Stop: Svg,
+    SvgXml,
+  };
+}

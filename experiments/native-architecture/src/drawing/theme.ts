@@ -9,6 +9,8 @@ export const DRAWING_THEME = {
   brandSolid: '#7c50bb',
   paper: '#fcfbf8',
   paperMargin: '#f1efeb',
+  iconInk: '#1f1f1f',
+  iconMuted: '#737373',
 } as const;
 
 export const DRAWING_ON_BRAND = '#fff';
@@ -31,6 +33,8 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
     brandSolid: '#8058c0',
     paper: '#211f29',
     paperMargin: '#1a1922',
+    iconInk: '#dedce8',
+    iconMuted: '#a8a6b3',
   },
 };
 

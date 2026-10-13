@@ -262,6 +262,11 @@ it(
     expect(host.querySelector('[data-native-modal]')).toBeNull();
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     expect(labelled('Parent Center').disabled).toBe(false);
+    await click('AI picture');
+    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+    expect(labelled(WAITING_LABEL)).toBeNull();
+    await click('Keep drawing');
+    expect(labelled(WAITING_LABEL)).not.toBeNull();
     await elapse(POLL_WAIT_MS);
     expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/generation-result');
     expect(labelled(WAITING_LABEL)).toBeNull();

@@ -6,6 +6,7 @@ import { styles } from '../../../experiments/native-architecture/src/rsdDrawing/
 import { RsdRecoveryNotice } from '../../../experiments/native-architecture/src/rsdDrawing/RsdRecoveryNotice.tsx';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 const records = vi.hoisted(() => ({ props: [], viewports: [] }));
+vi.mock('react-native-svg', () => ({ SvgXml: () => null }));
 vi.mock('react-native', async () => {
   const React = await import('react');
   const host = (tag) =>
