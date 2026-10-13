@@ -281,7 +281,7 @@ function useSurfaceCapture(
         return () => {
           if (commandLock.current !== lease) return;
           commandLock.current = null;
-          captureLock.current?.cancel('Picture capture was cancelled.');
+          captureLock.current?.cancel('The picture changed before capture finished.');
         };
       },
     }),
