@@ -10,8 +10,10 @@ import {
 import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement } from 'react';
+import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { FLY_IN_TRANSFORM } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
@@ -153,9 +155,17 @@ function outerSize(label) {
   return style.width;
 }
 
-function colorPickerAnimation() {
-  return records.props.findLast((props) => props.accessibilityLabel === 'Color picker')
-    .animationType;
+// The Color Picker flies in through the shipping overshoot keyframe, or fades under Reduce Motion.
+async function openColorPicker() {
+  const timing = vi.spyOn(Animated, 'timing');
+  try {
+    await rerender({ settingsOpen: false, colorPickerOpen: true });
+    expect(host.querySelector('[aria-label="Color Picker"]')).not.toBeNull();
+    const overshoot = FLY_IN_TRANSFORM.find((frame) => frame.scale > 1).scale;
+    return timing.mock.calls.some(([, config]) => config.toValue === overshoot) ? 'fly' : 'fade';
+  } finally {
+    timing.mockRestore();
+  }
 }
 
 it('lists every shipping section in order with its icon tile and shipping status line', async () => {
@@ -312,15 +322,13 @@ it('overrides the device with the in-app Reduce Motion switch and follows it aga
   await click(REDUCE_MOTION_LABEL);
   checkedSwitch(button(REDUCE_MOTION_LABEL), true);
   expect(settings.stored().reduceMotion).toBe('reduce');
-  await rerender({ settingsOpen: false, colorPickerOpen: true });
-  expect(colorPickerAnimation()).toBe('none');
+  expect(await openColorPicker()).toBe('fade');
   await rerender({ settingsOpen: true, colorPickerOpen: false });
   await openSettingsSection('Accessibility');
   await click(REDUCE_MOTION_LABEL);
   checkedSwitch(button(REDUCE_MOTION_LABEL), false);
   expect(settings.stored().reduceMotion).toBe('system');
-  await rerender({ settingsOpen: false, colorPickerOpen: true });
-  expect(colorPickerAnimation()).toBe('fade');
+  expect(await openColorPicker()).toBe('fly');
 });
 
 it('shows a device Reduce Motion as on, and keeps motion when the parent turns it off', async () => {
@@ -333,8 +341,7 @@ it('shows a device Reduce Motion as on, and keeps motion when the parent turns i
   await click(REDUCE_MOTION_LABEL);
   checkedSwitch(button(REDUCE_MOTION_LABEL), false);
   expect(settings.stored().reduceMotion).toBe('full');
-  await rerender({ settingsOpen: false, colorPickerOpen: true });
-  expect(colorPickerAnimation()).toBe('fade');
+  expect(await openColorPicker()).toBe('fly');
 });
 
 it.each([

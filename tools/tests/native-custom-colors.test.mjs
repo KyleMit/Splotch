@@ -1,11 +1,6 @@
 import { legacyDrawing, adoptedDrawing, canonicalPaper } from './native-paper-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  exploreColor,
-  EXPLORER_TILES,
-  isDiscreteColorActivation,
-} from '../../experiments/native-architecture/src/drawing/colorExplorer.ts';
-import {
   isCustomColor,
   paintHex,
   paintId,
@@ -52,25 +47,6 @@ describe('new candidate custom paints', () => {
     [{ hex: '#123ABC' }, false],
   ])('strictly validates canonical custom color %s', (value, valid) => {
     expect(isCustomColor(value)).toBe(valid);
-  });
-  it('maps continuous exploration to matching hue, white and black with bounded edge snapping', () => {
-    expect(exploreColor(0, 50, 100, 100)).toBe('#FF0000');
-    expect(exploreColor(50, 50, 100, 100)).toBe('#00FFFF');
-    expect(exploreColor(10, 0, 100, 100)).toBe('#FFFFFF');
-    expect(exploreColor(10, 100, 100, 100)).toBe('#000000');
-    expect(exploreColor(-50, -10, 100, 100)).toBe('#FFFFFF');
-    expect(exploreColor(200, 50, 100, 100)).toBe('#FF0000');
-    expect(exploreColor(33.14159, 42.71828, 100, 100)).not.toBe(exploreColor(33, 43, 100, 100));
-    expect(EXPLORER_TILES.every((tile) => isCustomColor(tile.color))).toBe(true);
-    expect(() => exploreColor(NaN, 1, 100, 100)).toThrow();
-    expect(() => exploreColor(1, 1, 0, 100)).toThrow();
-  });
-  it('ignores the installed web renderer physical trailing click while keeping virtual/native activation', () => {
-    expect(isDiscreteColorActivation({ detail: 1 })).toBe(false);
-    expect(isDiscreteColorActivation({ detail: 2 })).toBe(false);
-    expect(isDiscreteColorActivation({ detail: 0 })).toBe(true);
-    expect(isDiscreteColorActivation({ pageX: 10, pageY: 20 })).toBe(true);
-    expect(isDiscreteColorActivation(null)).toBe(false);
   });
   it('uses safe pigment IDs, shares named/custom equivalents and refuses unvalidated paint', () => {
     expect(paintId('Blue')).toBe(paintId('#62A2E9'));

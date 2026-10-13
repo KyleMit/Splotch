@@ -16,7 +16,7 @@ async function change(enabled) {
   });
 }
 async function open(kind) {
-  if (kind === 'colors') await screen.click('More colors');
+  if (kind === 'colors') await screen.openColors();
   else await screen.menuClick(kind === 'pages' ? 'Coloring pages' : 'Pictures');
 }
 function modal() {
@@ -45,7 +45,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 describe('mounted native drawing modal motion', () => {
-  it.each(['colors', 'pages', 'pictures'])(
+  // The Color Picker flies or fades through ModalStage's own motion rather than the Modal's
+  // animationType; rsd-native-settings-sections.test.mjs follows it through Reduce Motion.
+  it.each(['pages', 'pictures'])(
     'keeps %s reduced during initial loading then follows both device states without replacing the dialog',
     async (kind) => {
       const read = pending();
@@ -66,7 +68,7 @@ describe('mounted native drawing modal motion', () => {
       expect(modal()).toBeNull();
     }
   );
-  it.each(['colors', 'pages', 'pictures'])(
+  it.each(['pages', 'pictures'])(
     'honors an initially enabled preference for %s and preserves close behavior',
     async (kind) => {
       files.motionRead.mockResolvedValue(true);
