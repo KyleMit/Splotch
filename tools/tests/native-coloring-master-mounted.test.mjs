@@ -28,7 +28,7 @@ it('drives ungated RN Settings to hide coloring, clear the page and clamp actual
   await screen.click('Coloring book');
   expect(screen.container.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(files.settingsWrite.mock.calls.at(-1)[0])).toMatchObject({
-    version: 10,
+    version: 11,
     coloringBookEnabled: false,
     aiEnabled: false,
   });

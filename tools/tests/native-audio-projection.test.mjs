@@ -10,6 +10,7 @@ import {
   STOP_DECLICK_S,
   TEARDOWN_SLACK_MS,
 } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
+import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
 import { SETTINGS_METRICS } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import { scale } from '../../web/src/lib/design/tokens.ts';
 const root = join(import.meta.dirname, '../..');
@@ -32,6 +33,14 @@ function assertScratchProjection(source) {
   assert.deepEqual(mapping, projected);
 }
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const shippingSoundUrls = JSON.parse(
+  /const SOUND_URLS = (\[[^\]]*\]);/.exec(shippingAudio)[1].replaceAll("'", '"')
+);
+const takeNames = shippingSoundUrls.map((url) => url.split('/').at(-1));
+const candidateTakes = readFileSync(
+  join(root, 'experiments/native-architecture/src/audio/pencilSounds.ts'),
+  'utf8'
+);
 const shippingAsset = readFileSync(join(root, 'web/static/sounds/pencil-1.mp3'));
 const candidateAsset = readFileSync(
   join(root, 'experiments/native-architecture/src/audio/pencil-1.mp3')
@@ -50,6 +59,16 @@ describe('candidate-owned audio and Settings projections', () => {
   });
   it('pins the bundled native clip to the reused portable MP3 bytes', () => {
     expect(digest(candidateAsset)).toBe(digest(shippingAsset));
+  });
+  it('bundles every shipping pencil take byte for byte', () => {
+    expect(takeNames).toEqual(['pencil-1.mp3', 'pencil-2.mp3', 'pencil-3.mp3']);
+    for (const name of takeNames) {
+      expect(candidateTakes).toContain(`'./` + name);
+      expect(
+        digest(readFileSync(join(root, 'experiments/native-architecture/src/audio', name)))
+      ).toBe(digest(readFileSync(join(root, 'web/static/sounds', name))));
+    }
+    expect(PENCIL_SOUNDS).toHaveLength(takeNames.length);
   });
   it('rejects changed MP3 bytes', () => {
     const changed = Buffer.from(candidateAsset);

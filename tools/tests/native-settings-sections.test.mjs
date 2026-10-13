@@ -64,7 +64,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 10,
+  version: 11,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -87,6 +87,8 @@ const CURRENT = {
   buttonScale: 120,
   reduceMotion: 'reduce',
   whatsNewSeen: '1.5.0',
+  pencilEraserEnabled: true,
+  applePencilSeen: false,
 };
 
 describe('Button Size', () => {
@@ -185,6 +187,34 @@ describe("What's New", () => {
   });
 });
 
+describe('settings schema 11', () => {
+  const PENCIL_SEEN = { ...CURRENT, pencilEraserEnabled: false, applePencilSeen: true };
+  const VERSION_10 = (({ pencilEraserEnabled: _e, applePencilSeen: _s, ...rest }) => ({
+    ...rest,
+    version: 10,
+  }))(CURRENT);
+
+  it('round trips the Apple Pencil choices exactly', () => {
+    expect(parseSoundSettings(JSON.stringify(PENCIL_SEEN))).toEqual(PENCIL_SEEN);
+  });
+  it('migrates version 10 to the shipping Apple Pencil defaults', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_10))).toEqual(CURRENT);
+  });
+  it('rejects a version 11 record with a missing or invalid Apple Pencil choice, and a version 10 record carrying one', () => {
+    for (const [key, invalid] of [
+      ['pencilEraserEnabled', 'yes'],
+      ['pencilEraserEnabled', undefined],
+      ['applePencilSeen', 1],
+      ['applePencilSeen', undefined],
+    ])
+      expect(
+        () => parseSoundSettings(JSON.stringify({ ...CURRENT, [key]: invalid })),
+        `${key} ${invalid}`
+      ).toThrow();
+    expect(() => parseSoundSettings(JSON.stringify({ ...CURRENT, version: 10 }))).toThrow();
+  });
+});
+
 describe('settings schema 10', () => {
   it('round trips the accessibility choices and the What’s New stamp exactly', () => {
     const snapshot = JSON.stringify(CURRENT);
@@ -195,15 +225,24 @@ describe('settings schema 10', () => {
     const old =
       version === 1
         ? { version: 1, soundEnabled: true }
-        : (({ buttonScale: _b, reduceMotion: _r, whatsNewSeen: _w, ...rest }) => ({
+        : (({
+            buttonScale: _b,
+            reduceMotion: _r,
+            whatsNewSeen: _w,
+            pencilEraserEnabled: _e,
+            applePencilSeen: _s,
+            ...rest
+          }) => ({
             ...rest,
             version: 9,
           }))(CURRENT);
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 10,
+      version: 11,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,
+      pencilEraserEnabled: true,
+      applePencilSeen: false,
     });
   });
 
@@ -244,11 +283,15 @@ describe('settings schema 10', () => {
     expect(JSON.parse(stored)).toMatchObject({
       soundEnabled: false,
       whatsNewSeen: WHATS_NEW_STAMP,
+      pencilEraserEnabled: true,
+      applePencilSeen: false,
     });
     expect(states.at(-1)).toMatchObject({
       status: 'ready',
       soundEnabled: false,
       whatsNewSeen: WHATS_NEW_STAMP,
+      pencilEraserEnabled: true,
+      applePencilSeen: false,
       saved: true,
       message: '',
     });
@@ -268,6 +311,8 @@ describe('settings schema 10', () => {
       buttonScale: BUTTON_SCALE_MAX,
       reduceMotion: 'full',
       whatsNewSeen: WHATS_NEW_STAMP,
+      pencilEraserEnabled: true,
+      applePencilSeen: false,
     });
     await expect(owner.setButtonScale(BUTTON_SCALE_MAX + 1)).rejects.toThrow('Button Size');
     await expect(owner.setReduceMotion('sometimes')).rejects.toThrow('Reduce Motion');

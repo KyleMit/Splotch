@@ -63,6 +63,17 @@ export default defineConfig({
                 )
               ),
             },
+            // The iOS Pencil emitter is a bridge module mounted screens never reach in Node;
+            // native-pencil-double-tap.test.mjs imports the iOS adapter by its full path.
+            {
+              find: /^\.\.\/platform\/pencilDoubleTap$/,
+              replacement: fileURLToPath(
+                new URL(
+                  '../experiments/native-architecture/src/platform/pencilDoubleTap.web.ts',
+                  import.meta.url
+                )
+              ),
+            },
           ],
         },
         test: {

@@ -1,7 +1,7 @@
 import type { Point } from '../drawing/model';
 import { DEFAULT_SOUND_LEVEL, isSoundLevel, type SoundLevel } from '../settings/soundLevel';
 
-type DrawingLoop = {
+export type DrawingLoop = {
   start: () => void;
   setVolume: (volume: number) => void;
   stop: () => void;

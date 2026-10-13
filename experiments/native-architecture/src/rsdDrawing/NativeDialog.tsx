@@ -29,6 +29,7 @@ import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdOrientationChoices } from './RsdOrientationChoices';
 import type { OrientationChoice } from '../settings/orientation';
 import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
+import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
 import type { ReduceMotionPreference } from '../settings/reduceMotion';
 import {
   NATIVE_SETTINGS_SECTIONS,
@@ -50,6 +51,7 @@ type NativeSoundSettingsDialogProps = {
   onUndoButtonChange: (enabled: boolean) => void;
   onStrokeWidthControlChange: (enabled: boolean) => void;
   onSaveOnDeleteChange: (enabled: boolean) => void;
+  onPencilEraserChange: (enabled: boolean) => void;
   onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onOrientationChange: (orientation: OrientationChoice) => void;
@@ -200,6 +202,7 @@ function ToolDrawerChoices({
   onRetryBrushSave,
   onUndoButtonChange,
   onStrokeWidthControlChange,
+  onPencilEraserChange,
 }: SectionProps) {
   return (
     <>
@@ -231,6 +234,18 @@ function ToolDrawerChoices({
         disabled={busy}
         onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
       />
+      {settings.applePencilSeen && brushState.availability.eraser ? (
+        <>
+          <RsdAction
+            label={PENCIL_ERASER_LABEL}
+            selection="switch"
+            selected={settings.pencilEraserEnabled}
+            disabled={busy}
+            onClick={() => onPencilEraserChange(!settings.pencilEraserEnabled)}
+          />
+          <html.span>{PENCIL_ERASER_HELP}</html.span>
+        </>
+      ) : null}
     </>
   );
 }

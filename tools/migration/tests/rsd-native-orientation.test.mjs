@@ -86,7 +86,7 @@ it('locks an iPhone at startup and on each Settings choice, with Auto following 
   expect(settings.storage.write).not.toHaveBeenCalled();
   await choose('Landscape orientation');
   expect(orientationCalls.at(-1)).toEqual(['lockAsync', LANDSCAPE_RIGHT]);
-  expect(settings.stored()).toMatchObject({ version: 10, orientation: 'landscape' });
+  expect(settings.stored()).toMatchObject({ version: 11, orientation: 'landscape' });
   await choose('Auto orientation');
   expect(orientationCalls.at(-1)).toEqual(['unlockAsync']);
   expect(settings.stored().orientation).toBe('auto');

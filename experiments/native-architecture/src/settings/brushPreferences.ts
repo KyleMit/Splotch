@@ -213,3 +213,12 @@ export function createBrushPreferences(
     },
   };
 }
+
+// The Apple Pencil double-tap: it never selects an Eraser the child cannot see.
+export function toggleEraser(owner: ReturnType<typeof createBrushPreferences>): boolean {
+  const { status, brush, availability } = owner.getState();
+  if (status !== 'ready' || !availability.eraser) return false;
+  if (brush === 'eraser') owner.selectInkBrush();
+  else owner.selectBrush('eraser');
+  return true;
+}

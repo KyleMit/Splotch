@@ -1,7 +1,12 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
-import pencilSound from '../audio/pencil-1.mp3';
+import { PENCIL_SOUNDS, pickPencilTake, usableTakes } from '../audio/pencilSounds';
 import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
-import { AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, type DrawingLoopLoader } from '../audio/drawingAudio';
+import {
+  AUDIO_LOAD_TIMEOUT_MS,
+  GAIN_RAMP_S,
+  type DrawingLoop,
+  type DrawingLoopLoader,
+} from '../audio/drawingAudio';
 
 const GAIN_FRAME_MS = 16;
 
@@ -46,7 +51,15 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
   };
 }
 
-export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
+type PencilSound = (typeof PENCIL_SOUNDS)[number];
+type PencilClip = Omit<DrawingLoop, 'start'> & { start: (at: number) => void };
+
+// Exported only so native-audio-adapter.test.mjs can drive one take's player lifecycle.
+export async function loadPencilClip(
+  sound: PencilSound,
+  signal: AbortSignal,
+  onFailure: () => void
+): Promise<PencilClip> {
   await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
   if (signal.aborted) throw new Error('Drawing sound was cancelled.');
   const player = createAudioPlayer(null, { keepAudioSessionActive: false });
@@ -117,11 +130,12 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
           settled = true;
           if (timeout !== null) clearTimeout(timeout);
           resolve({
-            start() {
-              if (!disposed) {
-                active = true;
-                player.play();
-              }
+            start(at) {
+              if (disposed) return;
+              active = true;
+              const offset = at * player.duration;
+              if (Number.isFinite(offset) && offset > 0) void player.seekTo(offset).catch(failed);
+              player.play();
             },
             setVolume: gain.setVolume,
             stop() {
@@ -148,10 +162,37 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
       try {
         player.loop = true;
         gain.mute();
-        player.replace(pencilSound);
+        player.replace(sound);
       } catch {
         failed();
       }
     }
   });
+}
+
+// Every take is held loaded so a stroke starts its scratch without waiting on a reload.
+export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
+  const loads = await Promise.allSettled(
+    PENCIL_SOUNDS.map((sound) => loadPencilClip(sound, signal, onFailure))
+  );
+  const clips = usableTakes(loads);
+  let playing: PencilClip | null = null;
+  return {
+    start() {
+      playing?.stop();
+      const { take, at } = pickPencilTake(clips);
+      playing = take;
+      take.start(at);
+    },
+    setVolume(volume) {
+      playing?.setVolume(volume);
+    },
+    stop() {
+      playing?.stop();
+    },
+    dispose() {
+      playing = null;
+      for (const clip of clips) clip.dispose();
+    },
+  };
 };

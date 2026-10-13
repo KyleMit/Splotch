@@ -139,6 +139,14 @@ vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts'
 vi.mock('../../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
+vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.ts', () => ({
+  subscribePencilDoubleTap(listener) {
+    caller.pencilDoubleTap = listener;
+    return () => {
+      if (caller.pencilDoubleTap === listener) caller.pencilDoubleTap = null;
+    };
+  },
+}));
 vi.mock('../../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
   drawingDraftStorage: { read: async () => null, write: async () => {} },
   protectedDraftPageIds: async () => [],

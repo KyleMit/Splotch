@@ -30,10 +30,14 @@ import {
   RELEASE_NOTES,
   WHATS_NEW_STAMP,
 } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import {
+  PENCIL_ERASER_HELP,
+  PENCIL_ERASER_LABEL,
+} from '../../../experiments/native-architecture/src/settings/pencilEraser.ts';
 
 const WHATS_NEW = "What's New";
 const CURRENT_SETTINGS = {
-  version: 10,
+  version: 11,
   soundEnabled: false,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -56,6 +60,8 @@ const CURRENT_SETTINGS = {
   buttonScale: 100,
   reduceMotion: 'system',
   whatsNewSeen: WHATS_NEW_STAMP,
+  pencilEraserEnabled: true,
+  applePencilSeen: false,
 };
 
 function storedSettings(overrides = {}) {
@@ -161,7 +167,7 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   for (let step = 0; step < 3; step++) await click('Bigger buttons');
   expect(host.textContent).toContain(`Button Size ${BUTTON_SCALE_MAX}%`);
   expect(button('Bigger buttons').disabled).toBe(true);
-  expect(settings.stored()).toMatchObject({ version: 10, buttonScale: BUTTON_SCALE_MAX });
+  expect(settings.stored()).toMatchObject({ version: 11, buttonScale: BUTTON_SCALE_MAX });
   await rerender({ settingsOpen: false });
   await click('Expand controls');
   const size = controlSize(BUTTON_SCALE_MAX);
@@ -275,4 +281,70 @@ it("keeps the What's New stamp when the section opens while another choice is st
   expect(settings.stored()).toMatchObject({ buttonScale: 110, whatsNewSeen: WHATS_NEW_STAMP });
   await click('Back to Settings');
   expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
+});
+
+async function pencilDoubleTap() {
+  expect(caller.pencilDoubleTap, 'Pencil double-tap listener').toBeTypeOf('function');
+  await act(async () => caller.pencilDoubleTap());
+}
+
+function brushLabel() {
+  return host.querySelector('[aria-label^="Brush: "]')?.getAttribute('aria-label');
+}
+
+async function pencilScreen(overrides) {
+  caller.realScreen = true;
+  const settings = storedSettings(overrides);
+  await mount(createElement(RsdDrawingScreen));
+  if (!brushLabel()) await act(async () => button('Expand controls').click());
+  expect(brushLabel()).toBe('Brush: Pen');
+  return settings;
+}
+
+async function openToolDrawerSettings() {
+  await click('Settings');
+  await openSettingsSection('Tool Drawer');
+}
+
+it('records the first Apple Pencil double-tap, erases with a haptic, then reveals the opt-out', async () => {
+  const settings = await pencilScreen();
+  await openToolDrawerSettings();
+  expect(host.querySelector(`[aria-label="${PENCIL_ERASER_LABEL}"]`)).toBeNull();
+  await pencilDoubleTap();
+  expect(brushLabel()).toBe('Brush: Eraser');
+  expect(caller.haptic).toHaveBeenCalledOnce();
+  expect(settings.stored()).toMatchObject({ applePencilSeen: true, pencilEraserEnabled: true });
+  checkedSwitch(button(PENCIL_ERASER_LABEL), true);
+  expect(host.textContent).toContain(PENCIL_ERASER_HELP);
+  await pencilDoubleTap();
+  expect(brushLabel()).toBe('Brush: Pen');
+  expect(caller.haptic).toHaveBeenCalledTimes(2);
+});
+
+it('keeps the opt-out hidden while the Eraser is hidden from the Tool Drawer', async () => {
+  await pencilScreen({ applePencilSeen: true });
+  await openToolDrawerSettings();
+  button(PENCIL_ERASER_LABEL);
+  await click('Show Eraser');
+  expect(host.querySelector(`[aria-label="${PENCIL_ERASER_LABEL}"]`)).toBeNull();
+  await pencilDoubleTap();
+  expect(brushLabel()).toBe('Brush: Pen');
+  expect(caller.haptic).not.toHaveBeenCalled();
+});
+
+it('turns the double-tap off without a toggle or haptic, and keeps that choice on reopen', async () => {
+  const settings = await pencilScreen({ applePencilSeen: true });
+  await openToolDrawerSettings();
+  await click(PENCIL_ERASER_LABEL);
+  checkedSwitch(button(PENCIL_ERASER_LABEL), false);
+  expect(settings.stored()).toMatchObject({ applePencilSeen: true, pencilEraserEnabled: false });
+  await pencilDoubleTap();
+  expect(brushLabel()).toBe('Brush: Pen');
+  expect(caller.haptic).not.toHaveBeenCalled();
+  await act(async () => root.unmount());
+  const reopened = JSON.stringify(settings.stored());
+  caller.settingsStorage = { read: async () => reopened, write: vi.fn(async () => {}) };
+  await mount(createElement(RsdDrawingScreen));
+  await openToolDrawerSettings();
+  checkedSwitch(button(PENCIL_ERASER_LABEL), false);
 });

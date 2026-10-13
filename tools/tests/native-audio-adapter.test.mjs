@@ -14,10 +14,18 @@ const { AbortController: NativeAbortController } = reactNativeRequire(
 );
 const native = vi.hoisted(() => ({ players: [], mode: vi.fn(async () => {}), create: vi.fn() }));
 vi.mock('expo-audio', () => ({ setAudioModeAsync: native.mode, createAudioPlayer: native.create }));
-import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
+import {
+  loadDrawingLoop,
+  loadPencilClip,
+} from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
+import {
+  PENCIL_SOUNDS,
+  pickPencilTake,
+} from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
 import { PLAYBACK_AUDIO_MODE } from '../../experiments/native-architecture/src/audio/playbackMode.ts';
 
-function fixture(loader = loadDrawingLoop) {
+const loadFirstClip = (signal, failure) => loadPencilClip(PENCIL_SOUNDS[0], signal, failure);
+function nativePlayer() {
   const player = {
     volume: 0,
     loop: false,
@@ -35,6 +43,10 @@ function fixture(loader = loadDrawingLoop) {
   });
   native.players.push(player);
   native.create.mockReturnValueOnce(player);
+  return player;
+}
+function fixture(loader = loadFirstClip) {
+  const player = nativePlayer();
   const controller = new NativeAbortController();
   const failure = vi.fn();
   const promise = loader(controller.signal, failure);
@@ -65,7 +77,8 @@ async function resetRefusalMutation() {
   });
   const body = outputText.replace(/^import .*;$/gm, '').replace(/^export /gm, '');
   const fixtureSource = `export function createLoader({createAudioPlayer, setAudioModeAsync,
-    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, PLAYBACK_AUDIO_MODE, pencilSound}) { ${body}; return loadDrawingLoop; }`;
+    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, PLAYBACK_AUDIO_MODE, PENCIL_SOUNDS, pickPencilTake}) {
+    ${body}; return (signal, failure) => loadPencilClip(PENCIL_SOUNDS[0], signal, failure); }`;
   const module = await import(
     `data:text/javascript;base64,${Buffer.from(fixtureSource).toString('base64')}`
   );
@@ -75,7 +88,8 @@ async function resetRefusalMutation() {
     AUDIO_LOAD_TIMEOUT_MS,
     GAIN_RAMP_S,
     PLAYBACK_AUDIO_MODE,
-    pencilSound: 1,
+    PENCIL_SOUNDS,
+    pickPencilTake,
   });
 }
 async function stationaryActive(f) {
@@ -327,5 +341,83 @@ describe('supported Expo native audio binding', () => {
     });
     assertResetReleased(restored);
     restoredLoop.dispose();
+  });
+});
+
+describe('pencil take variety', () => {
+  function takes() {
+    const players = PENCIL_SOUNDS.map(() => {
+      const player = nativePlayer();
+      player.duration = 4;
+      player.seekTo = vi.fn(async () => {});
+      return player;
+    });
+    const failure = vi.fn();
+    const promise = loadDrawingLoop(new NativeAbortController().signal, failure);
+    return { players, failure, promise };
+  }
+  async function ready(f) {
+    await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+    for (const player of f.players)
+      player.listener({ isLoaded: true, playing: false, error: null });
+    return f.promise;
+  }
+  afterEach(() => vi.restoreAllMocks());
+
+  it('holds one loaded player per shipping take', async () => {
+    const f = takes();
+    const loop = await ready(f);
+    expect(f.players.map((player) => player.replace.mock.calls[0][0])).toEqual([...PENCIL_SOUNDS]);
+    loop.dispose();
+    for (const player of f.players) expect(player.release).toHaveBeenCalledOnce();
+  });
+  it('starts each stroke on a random take from a random point', async () => {
+    const f = takes();
+    const loop = await ready(f);
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5).mockReturnValueOnce(0.25);
+    loop.start();
+    const [first, second, third] = f.players;
+    expect(second.seekTo).toHaveBeenCalledWith(1);
+    expect(second.play).toHaveBeenCalledOnce();
+    expect(first.play).not.toHaveBeenCalled();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0);
+    loop.start();
+    expect(second.pause).toHaveBeenCalled();
+    expect(third.play).toHaveBeenCalledOnce();
+    expect(third.seekTo).not.toHaveBeenCalled();
+    loop.dispose();
+  });
+  it('keeps playing the takes that loaded when one take fails', async () => {
+    const f = takes();
+    await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+    f.players[0].listener({ isLoaded: true, playing: false, error: null });
+    f.players[1].listener({ isLoaded: false, playing: false, error: 'decoder error' });
+    f.players[2].listener({ isLoaded: true, playing: false, error: null });
+    const loop = await f.promise;
+    expect(f.players[1].release).toHaveBeenCalledOnce();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0);
+    loop.start();
+    expect(f.players[2].play).toHaveBeenCalledOnce();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0);
+    loop.start();
+    expect(f.players[0].play).toHaveBeenCalledOnce();
+    expect(f.players[1].play).not.toHaveBeenCalled();
+    expect(f.failure).not.toHaveBeenCalled();
+    loop.dispose();
+    for (const player of f.players) expect(player.release).toHaveBeenCalledOnce();
+  });
+  it('refuses the loop only when no take loads', async () => {
+    const f = takes();
+    const refused = f.promise.catch((error) => error.message);
+    await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+    for (const player of f.players)
+      player.listener({ isLoaded: false, playing: false, error: 'decoder error' });
+    expect(await refused).toContain('unavailable');
+    for (const player of f.players) expect(player.release).toHaveBeenCalledOnce();
+    expect(f.failure).not.toHaveBeenCalled();
+  });
+  it('draws the take before the offset, as the shipping scratch does', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.7).mockReturnValueOnce(0.1);
+    expect(pickPencilTake(['a', 'b', 'c'])).toEqual({ take: 'c', at: 0.1 });
   });
 });

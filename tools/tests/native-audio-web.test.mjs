@@ -8,6 +8,9 @@ import {
 const asset = vi.hoisted(() => ({ fromModule: vi.fn() }));
 vi.mock('expo-asset', () => ({ Asset: asset }));
 import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.web.ts';
+import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
+
+const TAKE_SECONDS = 2;
 
 function pending() {
   let resolve;
@@ -38,7 +41,8 @@ class FakeAudioContext {
     this.close = vi.fn(async () => {
       this.state = 'closed';
     });
-    this.decodeAudioData = vi.fn(async () => ({ decoded: true }));
+    let decoded = 0;
+    this.decodeAudioData = vi.fn(async () => ({ take: decoded++, duration: TAKE_SECONDS }));
     this.createGain = vi.fn(() => {
       const gain = {
         ...node(),
@@ -78,6 +82,7 @@ beforeEach(() => {
   vi.stubGlobal('AudioContext', FakeAudioContext);
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -85,14 +90,16 @@ describe('explicit drawing web audio adapter', () => {
   it('loads the owned asset and connects a muted looping source with bounded gain and de-click teardown', async () => {
     const f = fixture();
     const loop = await f.promise;
-    expect(asset.fromModule).toHaveBeenCalledOnce();
+    expect(asset.fromModule.mock.calls.map(([sound]) => sound)).toEqual([...PENCIL_SOUNDS]);
+    expect(fetchSound).toHaveBeenCalledTimes(PENCIL_SOUNDS.length);
     expect(fetchSound).toHaveBeenCalledWith('file:owned-pencil', { signal: f.abort.signal });
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0);
     loop.start();
     const source = f.context.sources[0];
     const gain = f.context.gains[0];
-    expect(source.buffer).toEqual({ decoded: true });
+    expect(source.buffer).toEqual({ take: 0, duration: TAKE_SECONDS });
     expect(source.loop).toBe(true);
-    expect(source.start).toHaveBeenCalledOnce();
+    expect(source.start).toHaveBeenCalledExactlyOnceWith(0, 0);
     expect(gain.gain.value).toBe(0);
     expect(source.connect).toHaveBeenCalledWith(gain);
     expect(gain.connect).toHaveBeenCalledWith(f.context.destination);
@@ -133,9 +140,9 @@ describe('explicit drawing web audio adapter', () => {
         })
     );
     const f = fixture();
-    const refused = f.promise.catch((error) => error.message);
+    const refused = f.promise.catch((error) => error.name);
     f.abort.abort();
-    expect(await refused).toBe('fetch aborted');
+    expect(await refused).toBe('AbortError');
     expect(f.context.close).toHaveBeenCalledOnce();
     expect(f.context.createBufferSource).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
@@ -147,7 +154,7 @@ describe('explicit drawing web audio adapter', () => {
     const refused = f.promise.catch((error) => error.name);
     await Promise.resolve();
     await Promise.resolve();
-    expect(f.context.decodeAudioData).toHaveBeenCalledOnce();
+    expect(f.context.decodeAudioData).toHaveBeenCalledTimes(PENCIL_SOUNDS.length);
     f.abort.abort();
     expect(f.context.close).toHaveBeenCalledOnce();
     decode.resolve({ late: true });
@@ -199,11 +206,38 @@ describe('explicit drawing web audio adapter', () => {
     expect(f.context.resume).toHaveBeenCalledTimes(3);
     loop.dispose();
   });
-  it('retains a real fetch failure and releases the context', async () => {
+  it('plays from the takes that decoded when one take fails to load', async () => {
     fetchSound.mockResolvedValueOnce({ ok: false });
+    const f = fixture();
+    const loop = await f.promise;
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0);
+    loop.start();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0);
+    loop.start();
+    expect(f.context.decodeAudioData).toHaveBeenCalledTimes(PENCIL_SOUNDS.length - 1);
+    expect(f.context.sources.map(({ buffer }) => buffer.take)).toEqual([1, 0]);
+    expect(f.failure).not.toHaveBeenCalled();
+    loop.dispose();
+  });
+  it('retains a real fetch failure and releases the context when no take loads', async () => {
+    fetchSound.mockResolvedValue({ ok: false });
     const f = fixture();
     await expect(f.promise).rejects.toThrow('could not be loaded');
     expect(f.context.close).toHaveBeenCalledOnce();
     expect(vi.getTimerCount()).toBe(0);
+  });
+  it('starts each stroke on a random decoded take from a random point', async () => {
+    const f = fixture();
+    const loop = await f.promise;
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5).mockReturnValueOnce(0.25);
+    loop.start();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0.5);
+    loop.start();
+    const [first, second] = f.context.sources;
+    expect(first.buffer).toEqual({ take: 1, duration: TAKE_SECONDS });
+    expect(first.start).toHaveBeenCalledWith(0, 0.25 * TAKE_SECONDS);
+    expect(second.buffer).toEqual({ take: 2, duration: TAKE_SECONDS });
+    expect(second.start).toHaveBeenCalledWith(0, 0.5 * TAKE_SECONDS);
+    loop.dispose();
   });
 });

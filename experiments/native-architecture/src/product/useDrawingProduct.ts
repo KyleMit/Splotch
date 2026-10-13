@@ -9,6 +9,8 @@ import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
 import { useAiProgressOwner } from '../ai/useAiProgress';
 import { loadDrawingLoop } from '../platform/drawingAudio';
+import { subscribePencilDoubleTap } from '../platform/pencilDoubleTap';
+import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import {
   feedbackDevice,
@@ -182,12 +184,19 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     });
     audio.setForeground(foreground);
     clear.setForeground(foreground);
+    // Shipping handleDoubleTap: every tap records a Pencil, which reveals the parent's opt-out.
+    const offPencil = subscribePencilDoubleTap(() => {
+      void product.settings.markApplePencilSeen();
+      const enabled = product.getState().settings?.pencilEraserEnabled === true;
+      if (enabled && screenRef.current.toggleEraser()) impactThreshold();
+    });
     setServices(services);
     void product.settings.load();
     void feedback.loadPolicy();
     return () => {
       alive = false;
       ticker.dispose();
+      offPencil();
       subscription.remove();
       offFeedback();
       offAi();

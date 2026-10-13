@@ -230,11 +230,13 @@ describe('custom palettes in the one serialized settings owner', () => {
       const writes = recovery === 'sound choice' ? 2 : 1;
       expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(parseSoundSettings(stored)).toEqual({
-        version: 10,
+        version: 11,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
         whatsNewSeen: null,
+        pencilEraserEnabled: true,
+        applePencilSeen: false,
         coloringBookEnabled: true,
         soundLevel: 'medium',
         undoButtonEnabled: true,
@@ -280,11 +282,13 @@ describe('custom palettes in the one serialized settings owner', () => {
     await f.owner.setColor('#ABCDEF');
     expect(f.storage.write).toHaveBeenCalledTimes(3);
     expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
-      version: 10,
+      version: 11,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
       whatsNewSeen: null,
+      pencilEraserEnabled: true,
+      applePencilSeen: false,
       coloringBookEnabled: true,
       soundLevel: 'medium',
       undoButtonEnabled: true,
@@ -346,11 +350,13 @@ describe('custom palettes in the one serialized settings owner', () => {
     };
     expect(parseSoundSettings(JSON.stringify(valid))).toEqual({
       ...valid,
-      version: 10,
+      version: 11,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
       whatsNewSeen: null,
+      pencilEraserEnabled: true,
+      applePencilSeen: false,
       coloringBookEnabled: true,
       soundLevel: 'medium',
       undoButtonEnabled: true,

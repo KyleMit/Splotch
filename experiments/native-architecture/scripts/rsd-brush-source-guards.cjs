@@ -307,7 +307,7 @@ function validateBrushSources({
         },
       });
       if (file === 'src/rsdDrawing/NativeDialog.tsx') {
-        assert.equal(transformedSwitches.length, 6, 'RSD transformed settings switch templates');
+        assert.equal(transformedSwitches.length, 7, 'RSD transformed settings switch templates');
         const optional = transformedSwitches.filter((node) =>
           availabilityValue(expressionValue(node, 'selected'))
         );
@@ -324,11 +324,13 @@ function validateBrushSources({
                 'undoButtonEnabled',
                 'strokeWidthControlEnabled',
                 'saveOnDeleteEnabled',
+                'pencilEraserEnabled',
               ].find((property) => settingsValue(node, property))
             )
             .sort(),
           [
             'coloringBookEnabled',
+            'pencilEraserEnabled',
             'saveOnDeleteEnabled',
             'soundEnabled',
             'strokeWidthControlEnabled',

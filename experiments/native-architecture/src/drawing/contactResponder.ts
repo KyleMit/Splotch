@@ -16,7 +16,8 @@ import type { Brush } from './brushes';
 import type { PaintColor } from './palette';
 import { contactLifetime, readStartBatch, responderTarget } from './touchBoundary';
 import { paperLocation, type PaperFrame } from './paperGeometry';
-import type { StrokeWidth } from './strokeWidth';
+import { strokeWidthPx, type StrokeWidth } from './strokeWidth';
+import { haloKind, haloSize, type Halo } from './haloModel';
 
 export type ContactDrawingProps = {
   currentDrawing: () => Drawing;
@@ -31,10 +32,12 @@ export type ContactDrawingProps = {
   sound?: ContactSound | null;
 };
 
+type ContactHalo = { id: number; brush: Brush; width: number; x: number; y: number };
 type Contact = {
   startedAt: number | null;
   state: 'accepted' | 'awaiting-start' | 'ignored';
   sound: SoundContact | null;
+  halo?: ContactHalo;
 };
 type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'pageX' | 'pageY' | 'timestamp'>;
 const INTERRUPTED_TOUCH_MESSAGE = 'That touch was interrupted. Lift and try again.';
@@ -59,6 +62,7 @@ class ContactResponder {
   private readonly contacts = new Map<string, Contact>();
   private paperTarget: unknown = null;
   private responderHeld = false;
+  private nextHalo = 1;
   private lastStartEvent: GestureResponderEvent['nativeEvent'] | null = null;
   private startBatch: {
     fingerprint: string;
@@ -74,18 +78,48 @@ class ContactResponder {
   constructor(
     private readonly current: () => ContactDrawingProps,
     private readonly frame: () => PaperFrame | null,
-    private readonly showDrafts: (drafts: readonly Stroke[], paper: PaperReference | null) => void,
+    private readonly showDrafts: (
+      drafts: readonly Stroke[],
+      paper: PaperReference | null,
+      halos: readonly Halo[]
+    ) => void,
     private readonly pixelRatio: () => number
   ) {}
 
   private publish(completed: readonly Stroke[] | null = null) {
     if (completed) this.current().onCohort(completed, this.input.paper());
-    this.showDrafts(this.input.drafts(), this.input.hasActive() ? this.input.paper() : null);
+    this.showDrafts(
+      this.input.drafts(),
+      this.input.hasActive() ? this.input.paper() : null,
+      this.halos()
+    );
     this.current().onDrawingChange(this.input.hasActive());
   }
 
+  private halos(): readonly Halo[] {
+    const frame = this.frame();
+    if (!frame || !this.input.hasActive()) return [];
+    const paper = this.input.paper();
+    return [...this.contacts.values()].flatMap(({ state, halo }) =>
+      state === 'accepted' && halo
+        ? [
+            {
+              id: halo.id,
+              kind: haloKind(halo.brush),
+              x: halo.x,
+              y: halo.y,
+              size: haloSize(halo.width, paper, frame),
+            },
+          ]
+        : []
+    );
+  }
+
   private finish(identifier: string) {
-    this.contacts.get(identifier)?.sound?.end();
+    const contact = this.contacts.get(identifier);
+    contact?.sound?.end();
+    // Callers drop the contact only after this publish, and a raw end publishes nothing later.
+    if (contact) delete contact.halo;
     this.publish(this.input.finish(identifier));
   }
 
@@ -162,7 +196,9 @@ class ContactResponder {
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
       const sample = this.paperSample(point, frame, this.input.paper());
       this.input.sample(touch.identifier, sample, endpoint);
-      this.contacts.get(touch.identifier)?.sound?.sample(sample, touch.timestamp);
+      const contact = this.contacts.get(touch.identifier);
+      contact?.sound?.sample(sample, touch.timestamp);
+      if (contact?.halo) Object.assign(contact.halo, point);
     } catch (error) {
       this.current().onError(error);
     }
@@ -248,16 +284,23 @@ class ContactResponder {
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
       const adoption = this.adoption(frame);
       const sample = this.paperSample(point, frame, adoption ?? this.contactPaper());
+      const width = current.brush === 'eraser' ? current.eraserWidth : current.strokeWidth;
       this.input.start(
         touch.identifier,
         current.color,
         current.brush,
         sample,
         current.currentDrawing(),
-        current.brush === 'eraser' ? current.eraserWidth : current.strokeWidth,
+        width,
         adoption ? () => adoption : undefined
       );
       contact.state = 'accepted';
+      contact.halo = {
+        id: this.nextHalo++,
+        brush: current.brush,
+        width: strokeWidthPx(current.brush, width),
+        ...point,
+      };
       contact.sound = current.sound?.begin(sample, touch.timestamp) ?? null;
     } catch (error) {
       this.current().onError(error);
@@ -443,7 +486,11 @@ class ContactResponder {
 export function createContactResponder(
   current: () => ContactDrawingProps,
   frame: () => PaperFrame | null,
-  showDrafts: (drafts: readonly Stroke[], paper: PaperReference | null) => void,
+  showDrafts: (
+    drafts: readonly Stroke[],
+    paper: PaperReference | null,
+    halos: readonly Halo[]
+  ) => void,
   pixelRatio: () => number
 ) {
   return new ContactResponder(current, frame, showDrafts, pixelRatio);
