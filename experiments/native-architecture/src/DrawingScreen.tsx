@@ -15,7 +15,7 @@ import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { Text } from './drawing/Text';
 import { PaintColors } from './drawing/PaintColors';
 import { usePaintSelectionFocus } from './drawing/usePaintSelectionFocus';
-import { ColorPicker } from './drawing/ColorPicker';
+import { RsdColorPicker } from './legacyColorPicker';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { DrawingSurface } from './drawing/DrawingSurface';
 import { PaperWorkspace } from './drawing/PaperWorkspace';
@@ -431,12 +431,12 @@ function DrawingSheets({
     openPicture,
     setPictures,
   } = screen;
-  const color = sound.settings.selectedColor;
   return (
     <>
       {colorPickerOpen ? (
-        <ColorPicker
-          selected={color}
+        <RsdColorPicker
+          visible
+          customColor={sound.settings.customColors[0]}
           onClose={onCloseColors}
           onChoose={(next) => {
             screen.selectInkBrush();

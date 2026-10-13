@@ -22,3 +22,4 @@ export const RSD_NATIVE_SLIDER_TEST = 'migration/tests/rsd-native-slider.test.mj
 export const RSD_NATIVE_SETTINGS_ROWS_TEST = 'migration/tests/rsd-native-settings-rows.test.mjs';
 export const RSD_NATIVE_DESIGN_PRIMITIVES_TEST =
   'migration/tests/rsd-native-design-primitives.test.mjs';
+export const RSD_NATIVE_COLOR_PICKER_TEST = 'migration/tests/rsd-native-color-picker.test.mjs';

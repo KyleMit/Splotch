@@ -5,14 +5,14 @@ import { lazySurface } from './lazySurface';
 export const AiWaitingPolaroid = lazySurface(() =>
   import('../ai/AiWaitingPolaroid').then((module) => module.AiWaitingPolaroid)
 );
-export const ColorPicker = lazySurface(() =>
-  import('../drawing/ColorPicker').then((module) => module.ColorPicker)
-);
 export const NativeSoundSettingsDialog = lazySurface(() =>
   import('./RsdSettingsDialog').then((module) => module.NativeSoundSettingsDialog)
 );
 export const RsdAiSheet = lazySurface(() =>
   import('./RsdAiSheet').then((module) => module.RsdAiSheet)
+);
+export const RsdColorPicker = lazySurface(() =>
+  import('./RsdColorPicker').then((module) => module.RsdColorPicker)
 );
 export const RsdColoringBookPicker = lazySurface(() =>
   import('./RsdColoringBookPicker').then((module) => module.RsdColoringBookPicker)

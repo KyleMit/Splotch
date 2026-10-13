@@ -282,25 +282,21 @@ it('mounts the shared color picker outside Paint colors and writes through the e
     expect(more.disabled).toBe(false);
     await act(async () => more.click());
     expect(open).toHaveBeenCalledOnce();
-    const picker = host.querySelector('[aria-label="Color picker"]');
+    const picker = host.querySelector('[aria-label="Color Picker"]');
     expect(picker).not.toBeNull();
     expect(host.querySelector('[aria-label="More colors"]').disabled).toBe(true);
-    await act(async () => picker.querySelector('[aria-label="Use color"]').click());
-    expect(setColor).toHaveBeenCalledExactlyOnceWith('#123456');
-    expect(caller.sound.settings.selectedColor).toBe('#123456');
+    await act(async () => picker.querySelector('[aria-label="#E63946"]').click());
+    expect(setColor).toHaveBeenCalledExactlyOnceWith('#E63946');
+    expect(caller.sound.settings.selectedColor).toBe('#E63946');
     expect(close).toHaveBeenCalledOnce();
     expect(setColor.mock.invocationCallOrder[0]).toBeLessThan(close.mock.invocationCallOrder[0]);
-    expect(host.querySelector('[aria-label="Color picker"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Color Picker"]')).toBeNull();
     await act(async () => host.querySelector('[aria-label="More colors"]').click());
-    await act(async () => {
-      const keep = [...host.querySelectorAll('button')].find(
-        (button) => button.textContent === 'Keep drawing'
-      );
-      keep.click();
-    });
+    await act(async () => host.querySelector('[data-testid="modal-backdrop"]').click());
     expect(close).toHaveBeenCalledTimes(2);
-    expect(setColor).toHaveBeenCalledExactlyOnceWith('#123456');
-    expect(caller.sound.settings.selectedColor).toBe('#123456');
+    expect(setColor).toHaveBeenCalledExactlyOnceWith('#E63946');
+    expect(caller.sound.settings.selectedColor).toBe('#E63946');
+    expect(host.querySelector('[aria-label="Color Picker"]')).toBeNull();
   } finally {
     owner.dispose();
   }
