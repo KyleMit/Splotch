@@ -1,5 +1,6 @@
 import { html } from 'react-strict-dom';
-import { NativeDialog } from './NativeDialog';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
 import { RsdAction, styles } from './controls';
 import {
   PARENT_FEATURES,
@@ -8,6 +9,8 @@ import {
   PARENT_MODE_LABELS,
 } from '../parentCenter/parentPolicy';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
+
+const PARENT_CENTER_TITLE = 'Parent Center';
 
 export function RsdParentCenterSection({
   owner,
@@ -23,15 +26,21 @@ export function RsdParentCenterSection({
   if (!settings) return null;
   const disabled = !owner.settings.canEditParent();
   return (
-    <NativeDialog
+    <ModalShell
       visible={visible ?? state.parentCenterOpen}
       onDismiss={onDismiss}
-      label="Parent Center"
+      label={PARENT_CENTER_TITLE}
+      size="sheet"
       onClose={owner.closeParentCenter}
-      footer={<RsdAction label="Keep drawing" onClick={owner.closeParentCenter} />}
+      header={
+        <DialogHeader
+          title={PARENT_CENTER_TITLE}
+          titleSize="xl"
+          onClose={owner.closeParentCenter}
+        />
+      }
     >
       <html.div style={styles.dialogContent}>
-        <html.h1 style={styles.boldText}>Parent Center</html.h1>
         <html.span>
           AI picture creation sends a copy of a drawing to the hosted image service only when you
           choose Send. AI starts off. Turning it off keeps saved pictures and credentials.
@@ -104,6 +113,6 @@ export function RsdParentCenterSection({
           </>
         ) : null}
       </html.div>
-    </NativeDialog>
+    </ModalShell>
   );
 }

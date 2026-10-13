@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { css, html } from 'react-strict-dom';
-import { NativeDialog } from './NativeDialog';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
 import { RsdAction, styles } from './controls';
 import { colors, dimensions } from './tokens.css';
 import {
@@ -61,28 +62,29 @@ export function RsdAiSheet({
   // instead of closing the sheet: the run keeps going and the corner print is the
   // way back to it.
   const keepDrawing = waiting ? owner.minimize : owner.close;
+  const back = reporting ? owner.cancelPictureReport : viewer.picture ? viewer.back : null;
+  const title = state.gate.open
+    ? 'Grown-ups only'
+    : viewer.picture
+      ? 'AI picture view'
+      : 'AI picture';
   return (
-    <NativeDialog
+    <ModalShell
       visible={visible}
       onDismiss={onDismiss}
-      label="AI picture"
-      onClose={reporting ? owner.cancelPictureReport : viewer.picture ? viewer.back : keepDrawing}
-      footer={
-        <html.div style={styles.row}>
-          {reporting || viewer.picture ? (
-            <RsdAction
-              label="Back to AI pictures"
-              onClick={reporting ? owner.cancelPictureReport : viewer.back}
-            />
-          ) : null}
-          <RsdAction label="Keep drawing" onClick={keepDrawing} />
-        </html.div>
+      label={title}
+      size="sheet"
+      onClose={back ?? keepDrawing}
+      header={
+        <DialogHeader
+          title={title}
+          titleSize="xl"
+          onBack={back ?? undefined}
+          onClose={keepDrawing}
+        />
       }
     >
       <html.div style={styles.dialogContent}>
-        <html.h1 style={styles.boldText}>
-          {state.gate.open ? 'Grown-ups only' : viewer.picture ? 'AI picture view' : 'AI picture'}
-        </html.h1>
         {state.gate.open ? (
           <RsdAiParentalGate owner={owner} state={state} />
         ) : reporting ? (
@@ -148,7 +150,7 @@ export function RsdAiSheet({
           </>
         ) : null}
       </html.div>
-    </NativeDialog>
+    </ModalShell>
   );
 }
 function AiWaitingActions({ owner, state }: { owner: NativeAiOwner; state: AiState }) {

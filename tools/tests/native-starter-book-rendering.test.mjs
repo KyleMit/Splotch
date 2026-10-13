@@ -30,14 +30,24 @@ vi.mock('react-strict-dom', () => ({
   css: { create: (styles) => styles, defineVars: (values) => values, createTheme: () => ({}) },
 }));
 vi.mock('react-native-svg', () => ({ SvgXml: () => null }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx', () => ({
-  NativeDialog: ({ label, children, footer, onClose }) =>
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx', () => ({
+  ModalShell: ({ label, header, children, onClose }) =>
     createElement(
       'section',
       { role: 'dialog', 'aria-label': label },
+      header,
       children,
-      footer,
       createElement('button', { 'aria-label': 'Request close', onClick: onClose }, 'Close')
+    ),
+}));
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx', () => ({
+  DialogHeader: ({ title, onBack, onClose }) =>
+    createElement(
+      'header',
+      {},
+      onBack ? createElement('button', { 'aria-label': 'Back', onClick: onBack }) : null,
+      createElement('h2', {}, title),
+      createElement('button', { 'aria-label': 'Close', onClick: onClose })
     ),
 }));
 let root;
@@ -61,7 +71,13 @@ async function mountPicker(selected = 'farm/dog') {
       createElement(
         DrawingAppearanceProvider,
         { preference: 'system' },
-        createElement(RsdColoringBookPicker, { selected, onChoose, onClose })
+        createElement(RsdColoringBookPicker, {
+          selected,
+          visible: true,
+          onDismiss() {},
+          onChoose,
+          onClose,
+        })
       )
     )
   );
@@ -106,7 +122,7 @@ describe('bundled book navigation through real picker state', () => {
   it('returns from pages without choosing and keeps all sample pages reachable', async () => {
     const mounted = await mountPicker();
     await act(async () => button('Farm coloring book').click());
-    await act(async () => button('Back to coloring books').click());
+    await act(async () => button('Back').click());
     expect(button('Coloring books')).not.toBeNull();
     expect(mounted.onChoose).not.toHaveBeenCalled();
     await act(async () => button('More pages').click());
@@ -121,7 +137,7 @@ describe('bundled book navigation through real picker state', () => {
     await act(async () => button('Request close').click());
     expect(button('Coloring books')).not.toBeNull();
     expect(mounted.onClose).not.toHaveBeenCalled();
-    await act(async () => button('Keep drawing').click());
+    await act(async () => button('Close').click());
     expect(mounted.onClose).toHaveBeenCalledOnce();
   });
 });

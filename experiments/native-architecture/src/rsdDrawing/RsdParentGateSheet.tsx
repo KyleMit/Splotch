@@ -1,6 +1,8 @@
 import { css, html } from 'react-strict-dom';
 import { Animated } from '../platform/animated';
-import { NativeDialog } from './NativeDialog';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
+import { useDialogTitleId } from './dialogScope';
 import { RsdAction, styles } from './controls';
 import { RsdParentGateKeypad } from './RsdParentGateKeypad';
 import { colors, dimensions, fonts } from './tokens.css';
@@ -15,6 +17,7 @@ import { useParentGateMotion } from '../parentCenter/useParentGateMotion';
 const DAB_WIDTH_PX = 48;
 const DAB_HEIGHT_PX = 54;
 const DAB_EDGE_PX = 2;
+const GATE_TITLE = 'Grown-ups only';
 
 const sheetStyles = css.create({
   problem: {
@@ -63,16 +66,17 @@ export function RsdParentGateSheet({
   const offset = useParentGateMotion(state);
   const { iconMuted } = useDrawingTheme();
   return (
-    <NativeDialog
+    <ModalShell
       visible={visible}
       onDismiss={onDismiss}
-      label="Grown-ups only"
+      label={GATE_TITLE}
+      size="gate"
       onClose={owner.gate.dismiss}
-      footer={<RsdAction label="Cancel challenge" onClick={owner.gate.dismiss} />}
+      header={<DialogHeader onClose={owner.gate.dismiss} />}
     >
       <Animated.View style={{ transform: [{ translateX: offset }] }}>
         <html.div style={styles.dialogContent}>
-          <html.h1 style={styles.boldText}>Grown-ups only</html.h1>
+          <GateTitle />
           <html.span>{PARENT_LABELS[state.feature]}</html.span>
           <html.div style={sheetStyles.problem}>
             <html.span>
@@ -101,6 +105,14 @@ export function RsdParentGateSheet({
           ) : null}
         </html.div>
       </Animated.View>
-    </NativeDialog>
+    </ModalShell>
+  );
+}
+
+function GateTitle() {
+  return (
+    <html.h1 id={useDialogTitleId()} style={styles.boldText}>
+      {GATE_TITLE}
+    </html.h1>
   );
 }

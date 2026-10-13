@@ -60,9 +60,19 @@ vi.mock('react-strict-dom', () => ({
   ),
   css: { create: (styles) => styles, defineVars: (values) => values, createTheme: () => ({}) },
 }));
-vi.mock('../../experiments/native-architecture/src/rsdDrawing/NativeDialog.tsx', () => ({
-  NativeDialog: ({ label, children, footer }) =>
-    createElement('section', { 'aria-label': label }, children, footer),
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx', () => ({
+  ModalShell: ({ label, header, children }) =>
+    createElement('section', { 'aria-label': label }, header, children),
+}));
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx', () => ({
+  DialogHeader: ({ title, onBack, onClose }) =>
+    createElement(
+      'header',
+      {},
+      onBack ? createElement('button', { 'aria-label': 'Back', onClick: onBack }) : null,
+      createElement('h2', {}, title),
+      createElement('button', { 'aria-label': 'Close', onClick: onClose })
+    ),
 }));
 const pack = catalogPack('dinosaur', 'full');
 const owner = createOfflineLibrary({ uri: (path) => `file:///private/library/${path}` }, 'full');
@@ -100,6 +110,8 @@ async function renderPicker(Component, preference = 'system') {
           { preference },
           createElement(Component, {
             selected: offlinePageId(pack, 'trex'),
+            visible: true,
+            onDismiss() {},
             onChoose: choose,
             onClose() {},
           })
