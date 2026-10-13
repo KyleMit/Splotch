@@ -1,5 +1,5 @@
 import { Asset } from 'expo-asset';
-import pencilSound from '../audio/pencil-1.mp3';
+import { PENCIL_SOUNDS, pickPencilTake } from '../audio/pencilSounds';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
   GAIN_RAMP_S,
@@ -70,13 +70,15 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
   try {
     signal.throwIfAborted();
     resume();
-    const asset = Asset.fromModule(pencilSound);
-    const buffer = await Promise.race([
-      (async () => {
-        const response = await fetch(asset.localUri ?? asset.uri, { signal });
-        if (!response.ok) throw new Error('Drawing sound could not be loaded.');
-        return context.decodeAudioData(await response.arrayBuffer());
-      })(),
+    const buffers = await Promise.race([
+      Promise.all(
+        PENCIL_SOUNDS.map(async (sound) => {
+          const asset = Asset.fromModule(sound);
+          const response = await fetch(asset.localUri ?? asset.uri, { signal });
+          if (!response.ok) throw new Error('Drawing sound could not be loaded.');
+          return context.decodeAudioData(await response.arrayBuffer());
+        })
+      ),
       deadline,
     ]);
     signal.throwIfAborted();
@@ -90,11 +92,12 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
         const gain = context.createGain();
         gain.gain.value = 0;
         gain.connect(context.destination);
+        const { take, at } = pickPencilTake(buffers);
         const source = context.createBufferSource();
-        source.buffer = buffer;
+        source.buffer = take;
         source.loop = true;
         source.connect(gain);
-        source.start();
+        source.start(0, at * take.duration);
         playback = { source, gain };
       },
       setVolume(volume) {

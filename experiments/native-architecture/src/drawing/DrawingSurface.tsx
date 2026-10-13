@@ -27,6 +27,8 @@ import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
+import { PointerHalos } from './PointerHalos';
+import type { Halo } from './haloModel';
 
 export type DrawingSurfaceHandle = {
   capturePng: (snapshot: Drawing) => Promise<string>;
@@ -38,6 +40,12 @@ export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
+};
+
+type LiveDraft = {
+  strokes: readonly Stroke[];
+  paper: PaperReference | null;
+  halos: readonly Halo[];
 };
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
@@ -53,10 +61,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const paper = useRef<View>(null);
     const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
     const geometry = useRef(createPaperGeometry(() => inputRef.current?.resize())).current;
-    const [draft, setDraft] = useState<{
-      strokes: readonly Stroke[];
-      paper: PaperReference | null;
-    }>({ strokes: [], paper: null });
+    const [draft, setDraft] = useState<LiveDraft>({ strokes: [], paper: null, halos: [] });
     const paperReference = draft.paper ?? drawingPaper(props.drawing);
     const raster = useRef<RasterInkHandle>(null);
     const input = useRef(
@@ -74,7 +79,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
             ) !== true,
         }),
         geometry.current,
-        (strokes, paper) => setDraft({ strokes, paper }),
+        (strokes, paper, halos) => setDraft({ strokes, paper, halos }),
         () => PixelRatio.get()
       )
     ).current;
@@ -158,6 +163,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 >
                   <PageOutline pageId={props.drawing.pageId} size={presented} />
                 </Svg>
+                <PointerHalos halos={draft.halos} />
               </View>
               <View pointerEvents="none" style={styles.paperBorder} />
             </View>

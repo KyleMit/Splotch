@@ -1,3 +1,4 @@
+import { createAccessibilityInfoFixture } from './native-accessibility-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 
 export function nativeCaptureSdk(state, crayonTilePx) {
@@ -5,6 +6,7 @@ export function nativeCaptureSdk(state, crayonTilePx) {
     useColorScheme: () => state.scheme,
     Platform: state.platform,
     PixelRatio: { get: () => state.pixelRatio ?? 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
     Image: (props) => {
       state.nativeImages.push(props);
       useEffect(() => {
@@ -53,6 +55,8 @@ export function svgCaptureSdk(state, crayonTilePx) {
     }),
     G: ({ children, opacity }) => createElement('div', { 'data-opacity': opacity }, children),
     Rect: ({ fill }) => createElement('div', { 'data-paper-fill': fill }),
+    Circle: () => null,
+    Path: () => null,
     Image: ({ onLoad, href, width }) => {
       useEffect(() => {
         if (width === crayonTilePx) onLoad?.();

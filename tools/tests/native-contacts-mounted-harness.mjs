@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
@@ -50,6 +51,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', ()
 });
 vi.mock('react-native', () => ({
   PixelRatio: { get: () => 1 },
+  AccessibilityInfo: createAccessibilityInfoFixture(),
   useColorScheme: () => 'light',
   AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
   findNodeHandle: (owner) => owner,

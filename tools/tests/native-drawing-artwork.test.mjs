@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { legacyDrawing, adoptedDrawing } from './native-paper-fixtures.mjs';
 import {
   act,
@@ -30,6 +31,7 @@ const responder = vi.hoisted(() => ({ current: null, scheme: 'light', busy: true
 
 vi.mock('react-native', () => ({
   PixelRatio: { get: () => 1 },
+  AccessibilityInfo: createAccessibilityInfoFixture(),
   useColorScheme: () => responder.scheme,
   PanResponder: {
     create: (handlers) => {
