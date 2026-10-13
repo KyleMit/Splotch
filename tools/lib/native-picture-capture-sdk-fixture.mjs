@@ -1,11 +1,24 @@
-import { act, createElement, forwardRef, useImperativeHandle } from 'react';
+import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 
-export function nativeCaptureSdk(state) {
+export function nativeCaptureSdk(state, crayonTilePx) {
   return {
     useColorScheme: () => state.scheme,
     Platform: state.platform,
+    PixelRatio: { get: () => state.pixelRatio ?? 1 },
     Image: (props) => {
       state.nativeImages.push(props);
+      useEffect(() => {
+        if (props.style?.width === crayonTilePx)
+          props.onLoad?.({
+            nativeEvent: {
+              source: {
+                uri: props.source.uri,
+                width: crayonTilePx,
+                height: crayonTilePx,
+              },
+            },
+          });
+      }, [props.source.uri]);
       return null;
     },
     findNodeHandle: (target) => target,
@@ -14,7 +27,11 @@ export function nativeCaptureSdk(state) {
       if (onLayout) state.layouts.push(onLayout);
       return createElement('div', { style }, children);
     }),
-    StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
+    StyleSheet: {
+      create: (styles) => styles,
+      absoluteFill: { position: 'absolute' },
+      absoluteFillObject: { position: 'absolute' },
+    },
     PanResponder: {
       create: (responder) => {
         state.responders.push(responder);
@@ -24,7 +41,7 @@ export function nativeCaptureSdk(state) {
   };
 }
 
-export function svgCaptureSdk(state) {
+export function svgCaptureSdk(state, crayonTilePx) {
   return {
     default: forwardRef(({ children, width, height, viewBox }, ref) => {
       useImperativeHandle(ref, () => ({
@@ -36,8 +53,14 @@ export function svgCaptureSdk(state) {
     }),
     G: ({ children, opacity }) => createElement('div', { 'data-opacity': opacity }, children),
     Rect: ({ fill }) => createElement('div', { 'data-paper-fill': fill }),
-    Image: ({ onLoad, href }) =>
-      createElement('button', { 'data-output-image': href, onClick: onLoad }),
+    Image: ({ onLoad, href, width }) => {
+      useEffect(() => {
+        if (width === crayonTilePx) onLoad?.();
+      }, [href]);
+      return width === crayonTilePx
+        ? null
+        : createElement('button', { 'data-output-image': href, onClick: onLoad });
+    },
   };
 }
 

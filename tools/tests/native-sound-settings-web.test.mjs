@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { soundSettingsStorage } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
 import { createSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+vi.mock(
+  '../../experiments/native-architecture/src/platform/parentDefaults.ts',
+  () => import('../../experiments/native-architecture/src/platform/parentDefaults.web.ts')
+);
 let storage;
 beforeEach(() => {
   const values = new Map();
@@ -19,7 +23,7 @@ describe('web sound settings persistence', () => {
     await owner.setEnabled(false);
     expect(storage.setItem).toHaveBeenCalledWith(
       'splotch-candidate:sound-v1',
-      '{"version":4,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true}'
     );
     const reopened = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
     await reopened.load();

@@ -38,3 +38,7 @@ export async function reopenPicture(id: string): Promise<Drawing> {
     throw new Error('This saved picture cannot be opened.');
   return parseDrawing(JSON.parse(snapshot));
 }
+
+export async function savedColoringPageIds(): Promise<readonly string[]> {
+  return Promise.all(listPictures().map(async ({ id }) => (await reopenPicture(id)).pageId));
+}

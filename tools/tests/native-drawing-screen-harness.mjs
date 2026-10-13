@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { drawingPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, vi } from 'vitest';
@@ -8,17 +10,34 @@ import { strokeStyle } from '../../experiments/native-architecture/src/drawing/m
 const files = vi.hoisted(() => ({
   motionRead: vi.fn().mockResolvedValue(false),
   motionListeners: new Set(),
+  appStateListeners: new Set(),
   motionRemoves: [],
   motionListenError: null,
-  save: vi.fn().mockResolvedValue(undefined),
+  save: vi.fn().mockResolvedValue({ id: 'picture-1-fixture' }),
   list: vi.fn(),
   open: vi.fn(),
   lock: vi.fn(),
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  aiAdmit: vi.fn().mockResolvedValue(undefined),
+  aiPrepare: vi.fn().mockResolvedValue(undefined),
+  aiRead: vi.fn().mockResolvedValue(null),
+  aiReadPreparedUpload: vi.fn(),
+  aiWrite: vi.fn().mockResolvedValue(undefined),
+  aiPictures: vi.fn().mockResolvedValue([]),
+  aiRetain: vi.fn().mockResolvedValue({ uri: 'file:///owned/ai.png', mime: 'image/png' }),
+  aiSend: vi.fn(),
+  aiVaultRead: vi.fn().mockResolvedValue(null),
+  aiVaultWrite: vi.fn().mockResolvedValue(undefined),
+  feedbackRead: vi.fn().mockResolvedValue(null),
+  feedbackWrite: vi.fn().mockResolvedValue(undefined),
+  feedbackSend: vi.fn(),
+  surfaceRender: vi.fn(),
   pngRead: vi.fn().mockResolvedValue(null),
   pngWrite: vi.fn().mockResolvedValue(undefined),
+  brushRead: vi.fn().mockResolvedValue(null),
+  brushWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
   settingsWrite: vi.fn().mockResolvedValue(undefined),
   cohort: null,
@@ -27,6 +46,31 @@ const files = vi.hoisted(() => ({
   scheme: 'light',
   retainClosingModal: false,
   dismissModal: null,
+}));
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', () => ({
+  aiTransport: files.aiSend,
+  admitAiImage: files.aiAdmit,
+  aiVault: {
+    installationId: async () => 'a'.repeat(64),
+    read: files.aiVaultRead,
+    write: files.aiVaultWrite,
+    remove: async () => {},
+  },
+  aiStorage: {
+    prepare: files.aiPrepare,
+    readPreparedUpload: files.aiReadPreparedUpload,
+    read: files.aiRead,
+    write: files.aiWrite,
+    retain: files.aiRetain,
+    pictures: files.aiPictures,
+  },
+}));
+vi.mock('../../experiments/native-architecture/src/platform/feedback.ts', () => ({
+  feedbackTransport: files.feedbackSend,
+  feedbackDevice: () => ({ platform: 'iOS', screen: '400 × 800' }),
+  feedbackOffline: () => false,
+  feedbackPolicyStorage: { read: files.feedbackRead, write: files.feedbackWrite },
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
@@ -49,6 +93,9 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(),
 }));
+vi.mock('../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
+  brushPreferencesStorage: { read: files.brushRead, write: files.brushWrite },
+}));
 vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: files.settingsRead,
@@ -61,6 +108,32 @@ vi.mock('react-native', () => {
     return createElement('div', null, children);
   }
   return {
+    Animated: {
+      Value: class {
+        constructor(value) {
+          this.value = value;
+        }
+        setValue(value) {
+          this.value = value;
+        }
+      },
+      View: container,
+      timing: (value, config) => ({
+        start(done) {
+          value.setValue(config.toValue);
+          done?.();
+        },
+        stop() {},
+      }),
+      sequence: (animations) => ({
+        start() {
+          for (const animation of animations) animation.start();
+        },
+        stop() {
+          for (const animation of animations) animation.stop();
+        },
+      }),
+    },
     AccessibilityInfo: {
       isReduceMotionEnabled: files.motionRead,
       addEventListener(event, listener) {
@@ -72,7 +145,14 @@ vi.mock('react-native', () => {
         return { remove };
       },
     },
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    AppState: {
+      currentState: 'active',
+      addEventListener(event, listener) {
+        if (event !== 'change') throw new Error('Unexpected app state event');
+        files.appStateListeners.add(listener);
+        return { remove: () => files.appStateListeners.delete(listener) };
+      },
+    },
     Dimensions: {
       get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
       addEventListener: () => ({ remove: vi.fn() }),
@@ -84,6 +164,8 @@ vi.mock('react-native', () => {
         return files.platform;
       },
     },
+    Image: ({ source, accessibilityLabel }) =>
+      createElement('img', { src: source?.uri, alt: accessibilityLabel }),
     ActivityIndicator: () => null,
     Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
       createElement('button', {
@@ -170,6 +252,17 @@ vi.mock('react-native', () => {
         children
       ),
     StatusBar: () => null,
+    TextInput: forwardRef(
+      ({ value, onChangeText, accessibilityLabel, maxLength, editable, multiline }, ref) =>
+        createElement(multiline ? 'textarea' : 'input', {
+          ref,
+          value,
+          'aria-label': accessibilityLabel,
+          maxLength,
+          disabled: editable === false,
+          onInput: (event) => onChangeText?.(event.target.value),
+        })
+    ),
     StyleSheet: { create: (styles) => styles },
   };
 });
@@ -186,7 +279,7 @@ vi.mock('react-native-svg', () => ({
 
 export const STROKE = {
   color: 'Purple',
-  brush: 'marker',
+  brush: 'pen',
   width: 22,
   points: [
     { x: 10, y: 20 },
@@ -200,6 +293,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
       { drawing, onCohort, onDrawingChange, color, brush, strokeWidth, eraserWidth, disabled },
       ref
     ) => {
+      files.surfaceRender();
       useImperativeHandle(
         ref,
         () => ({
@@ -210,10 +304,14 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
         }),
         []
       );
-      files.cohort = onCohort;
+      const commit = (strokes) => {
+        const reference = drawingPaper(drawing);
+        onCohort(strokes, reference.kind === 'unadopted' ? canonicalPaper() : reference);
+      };
+      files.cohort = commit;
       const cohort = () => [
         { ...strokeStyle(brush, color, drawing, strokeWidth), points: STROKE.points },
-        { ...strokeStyle('pencil', 'Blue', drawing, strokeWidth), points: STROKE.points },
+        { ...strokeStyle('pen', 'Blue', drawing, strokeWidth), points: STROKE.points },
       ];
       return createElement(
         'div',
@@ -225,7 +323,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
             disabled,
             'data-drawing': JSON.stringify(drawing),
             onClick: () =>
-              onCohort([
+              commit([
                 {
                   ...strokeStyle(
                     brush,
@@ -245,7 +343,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
               { 'data-fixture-cohort-drivers': true },
               createElement(
                 'button',
-                { onClick: () => onCohort(cohort()) },
+                { onClick: () => commit(cohort()) },
                 'Draw two-contact cohort'
               ),
               createElement('button', { onClick: () => onDrawingChange(true) }, 'Begin cohort'),
@@ -254,7 +352,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
                 'button',
                 {
                   onClick: () => {
-                    onCohort(cohort());
+                    commit(cohort());
                     onDrawingChange(false);
                   },
                 },
@@ -294,8 +392,8 @@ export function createScreen({ cohortDrivers = false } = {}) {
       await act(async () => button.click());
     },
     async menuClick(label) {
-      const opener = [...container.querySelectorAll('button')].find((element) =>
-        element.getAttribute('aria-label')?.startsWith('Drawing tools.')
+      const opener = [...container.querySelectorAll('button')].find(
+        (element) => element.getAttribute('aria-label') === 'Drawing tools'
       );
       expect(opener, 'Drawing tools opener').toBeDefined();
       await this.click(opener.getAttribute('aria-label'));

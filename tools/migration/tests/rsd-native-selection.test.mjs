@@ -230,13 +230,14 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
       settings: current,
       notice: current.message,
       onToggle: () => owner.setEnabled(!current.soundEnabled),
+      onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
       onRetry: () => owner.retrySave(),
       onClose() {},
     });
   }
   try {
     await mount(createElement(Settings));
-    await act(async () => host.querySelector('[role="switch"]').click());
+    await act(async () => host.querySelector('[aria-label="Drawing sound on"]').click());
     const modal = host.querySelector('[aria-label="Drawing settings"]');
     expect(modal).not.toBeNull();
     const close = modal.querySelector('[data-testid="rsd-dialog-footer"] button');
@@ -426,7 +427,6 @@ it('mounts the shared color picker outside Paint colors and writes through the e
   let refresh = () => {};
   const { owner, open, close } = createPickerCaller(() => refresh());
   await owner.load();
-  const setColor = vi.spyOn(owner, 'setColor');
   function Screen() {
     const [, update] = useState(0);
     refresh = () => update((value) => value + 1);
@@ -434,6 +434,7 @@ it('mounts the shared color picker outside Paint colors and writes through the e
   }
   try {
     await mount(createElement(Screen));
+    const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
     let more = host.querySelector('[aria-label="More colors"]');
     expect(more.disabled).toBe(true);
     expect(more.closest('[role="radiogroup"]')).toBeNull();
@@ -465,6 +466,47 @@ it('mounts the shared color picker outside Paint colors and writes through the e
     expect(close).toHaveBeenCalledTimes(2);
     expect(setColor).toHaveBeenCalledExactlyOnceWith('#123456');
     expect(caller.sound.settings.selectedColor).toBe('#123456');
+  } finally {
+    owner.dispose();
+  }
+});
+
+it('persists Coloring Book through the released native switch without a parent challenge', async () => {
+  let current;
+  let refresh = () => {};
+  const write = vi.fn(async () => {});
+  const owner = createSoundSettings({ read: async () => null, write }, (state) => {
+    current = state;
+    refresh();
+  });
+  await owner.load();
+  function Settings() {
+    const [, update] = useState(0);
+    refresh = () => update((value) => value + 1);
+    return createElement(NativeSoundSettingsDialog, {
+      settings: current,
+      notice: current.message,
+      onToggle: () => owner.setEnabled(!current.soundEnabled),
+      onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
+      onAppearanceChange: (appearance) => owner.setAppearance(appearance),
+      onRetry: () => owner.retrySave(),
+      onClose() {},
+      onParentCenter() {},
+    });
+  }
+  try {
+    await mount(createElement(Settings));
+    const on = host.querySelector('[aria-label="Coloring book on"]');
+    expect(on.getAttribute('role')).toBe('switch');
+    expect(on.dataset.checked).toBe('true');
+    await act(async () => on.click());
+    expect(host.querySelector('[aria-label="Coloring book off"]').dataset.checked).toBe('false');
+    expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
+      version: 6,
+      coloringBookEnabled: false,
+      aiEnabled: false,
+    });
+    expect(host.textContent).not.toContain('Grown-ups only');
   } finally {
     owner.dispose();
   }

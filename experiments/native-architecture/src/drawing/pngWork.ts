@@ -1,43 +1,10 @@
+import { resumePngTask } from './pngTask';
 import { PNG_TIMEOUT_MS } from './svgCapture';
 import { MAX_PNG_BASE64_CHARACTERS, MAX_PNG_PIXELS } from './pngLimits';
 
 const WORK_SLICE_UNITS = 4096;
 const MAX_SYNCHRONOUS_WORK_UNITS = WORK_SLICE_UNITS * 2;
 const MAX_WORK_UNITS = MAX_PNG_BASE64_CHARACTERS * 12 + MAX_PNG_PIXELS * 32;
-
-function resumeTask(check: () => void) {
-  return new Promise<void>((resolve, reject) => {
-    const request = globalThis.requestIdleCallback;
-    const cancel = globalThis.cancelIdleCallback;
-    let idle: ReturnType<typeof requestIdleCallback> | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let settled = false;
-    function settle(failure?: { error: unknown }) {
-      if (settled) return;
-      settled = true;
-      try {
-        if (timer !== undefined) clearTimeout(timer);
-        if (idle !== undefined) cancel(idle);
-        if (failure) {
-          reject(failure.error);
-          return;
-        }
-        check();
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    }
-    try {
-      // Native zero timers wait for a frame; idle callbacks yield to another runtime task.
-      if (typeof request === 'function' && typeof cancel === 'function')
-        idle = request(() => settle());
-      timer = setTimeout(() => settle(), 0);
-    } catch (error) {
-      settle({ error });
-    }
-  });
-}
 
 export function createPngWork(isCurrent: () => boolean) {
   const deadline = performance.now() + PNG_TIMEOUT_MS;
@@ -63,7 +30,7 @@ export function createPngWork(isCurrent: () => boolean) {
     async pause() {
       check();
       slice = 0;
-      await resumeTask(check);
+      await resumePngTask(check, deadline);
       check();
     },
   };

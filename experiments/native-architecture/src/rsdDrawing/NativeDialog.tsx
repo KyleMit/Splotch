@@ -1,3 +1,9 @@
+import { BRUSHES } from '../drawing/brushes';
+import {
+  OPTIONAL_BRUSHES,
+  type OptionalBrush,
+  type BrushPreferencesState,
+} from '../settings/brushPreferences';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
 import {
@@ -16,27 +22,64 @@ import { RsdAction, styles as controlStyles } from './controls';
 
 export function NativeSoundSettingsDialog({
   settings,
+  brushState,
+  onBrushAvailabilityChange,
+  onRetryBrushSave,
   notice,
   onToggle,
   onAppearanceChange,
+  onColoringBookChange,
   onRetry,
   onClose,
+  onParentCenter,
+  visible = true,
+  onDismiss,
 }: {
   settings: SoundSettingsState;
+  brushState: BrushPreferencesState;
+  onBrushAvailabilityChange: (brush: OptionalBrush, enabled: boolean) => void;
+  onRetryBrushSave: () => void;
   notice: string;
   onToggle: () => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
+  onColoringBookChange: (enabled: boolean) => void;
   onRetry: () => void;
   onClose: () => void;
+  onParentCenter: () => void;
+  visible?: boolean;
+  onDismiss?: () => void;
 }) {
   return (
     <NativeDialog
-      visible
+      visible={visible}
+      onDismiss={onDismiss}
       label="Drawing settings"
       onClose={onClose}
       footer={<RsdAction label="Keep drawing" onClick={onClose} />}
     >
       <html.div style={controlStyles.dialogContent}>
+        <RsdAction label="Manage Parent Center" onClick={onParentCenter} />
+        {OPTIONAL_BRUSHES.map((brush) => (
+          <RsdAction
+            key={brush}
+            label={`Show ${BRUSHES[brush].label}`}
+            selection="switch"
+            selected={brushState.availability[brush]}
+            disabled={brushState.status !== 'ready'}
+            onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
+          />
+        ))}
+        {brushState.message ? <html.span aria-live="polite">{brushState.message}</html.span> : null}
+        {!brushState.saved ? (
+          <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
+        ) : null}
+        <RsdAction
+          label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
+          selection="switch"
+          selected={settings.coloringBookEnabled}
+          disabled={settings.status !== 'ready'}
+          onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
+        />
         <html.span>Appearance</html.span>
         <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
           {APPEARANCE_PREFERENCES.map((appearance) => (

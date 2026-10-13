@@ -1,3 +1,4 @@
+import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -38,12 +39,16 @@ function paintedPage(pageId) {
     { x: 200.5, y: 300.25 },
     { x: 400, y: 500 },
   ];
-  return addStrokes(selected, [
-    { ...strokeStyle('marker', '#123ABC', selected.drawing, 'thin'), points },
-    { ...strokeStyle('crayon', '#FEDCBA', selected.drawing, 'thick'), points },
-    { ...strokeStyle('magic', 'Purple', selected.drawing), points },
-    { ...strokeStyle('eraser', 'Green', selected.drawing), points },
-  ]);
+  return addStrokes(
+    selected,
+    [
+      { ...strokeStyle('pen', '#123ABC', selected.drawing, 'thin'), points },
+      { ...strokeStyle('crayon', '#FEDCBA', selected.drawing, 'thick'), points },
+      { ...strokeStyle('magic', 'Purple', selected.drawing), points },
+      { ...strokeStyle('eraser', 'Green', selected.drawing), points },
+    ],
+    canonicalPaper()
+  );
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -89,15 +94,16 @@ describe('bundled Farm book and saved page identity', () => {
   );
 
   it.each(PAGE_IDS)(
-    'round-trips %s with custom paint, Magic, eraser and exact widths in v5',
+    'round-trips %s with custom paint, Magic, eraser and exact widths and adopted paper in v6',
     (pageId) => {
       const original = paintedPage(pageId).drawing;
       const restored = parseDrawing(JSON.parse(JSON.stringify(original)));
       expect(restored).toEqual(original);
-      expect(restored.version).toBe(5);
+      expect(restored.version).toBe(6);
+      expect(restored.paper).toEqual(canonicalPaper());
       expect(restored.pageId).toBe(pageId);
-      expect(restored.strokes[0]).toMatchObject({ brush: 'marker', color: '#123ABC', width: 11 });
-      expect(restored.strokes[1]).toMatchObject({ brush: 'crayon', color: '#FEDCBA', width: 68 });
+      expect(restored.strokes[0]).toMatchObject({ brush: 'pen', color: '#123ABC', width: 4 });
+      expect(restored.strokes[1]).toMatchObject({ brush: 'crayon', color: '#FEDCBA', width: 14 });
       expect(restored.strokes[2]).toMatchObject({ brush: 'magic', rainbow: 3 });
       expect(restored.strokes[3].brush).toBe('eraser');
     }

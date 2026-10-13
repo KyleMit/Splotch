@@ -13,6 +13,8 @@ const LANDSCAPE_CONTROLS_WIDTH_PX = TOUCH_TARGET * 4;
 // Enlarged controls and notices scroll independently instead of displacing the whole paper.
 const PORTRAIT_CONTROLS_MAX_HEIGHT_PERCENT = '45%';
 const STATUS_MAX_HEIGHT_PERCENT = '25%';
+// A feedback action and its bottom padding retain their space when a notice clears.
+const STATUS_VIEWPORT_HEIGHT_PX = TOUCH_TARGET + DRAWING_SCALE.space2;
 
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
@@ -67,7 +69,12 @@ const themedStyles = createDrawingStyles((palette) =>
       alignItems: 'center',
       maxWidth: 1024,
     },
-    feedback: { flexGrow: 0, maxHeight: STATUS_MAX_HEIGHT_PERCENT },
+    feedback: {
+      height: STATUS_VIEWPORT_HEIGHT_PX,
+      flexGrow: 0,
+      flexShrink: 0,
+      maxHeight: STATUS_MAX_HEIGHT_PERCENT,
+    },
     feedbackContent: {
       paddingHorizontal: DRAWING_SCALE.space3,
       paddingBottom: DRAWING_SCALE.space2,

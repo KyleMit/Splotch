@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, createRef, forwardRef, useImperativeHandle } from 'react';
+import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
@@ -7,36 +7,30 @@ import {
   InkAppearanceScope,
   useInkAppearance,
 } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { CRAYON_TILE_PX } from '../../experiments/native-architecture/src/drawing/crayon.ts';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 
 const state = vi.hoisted(() => ({
   captures: [],
   imageLoads: [],
   nativeImages: [],
+  svgTiles: [],
+  autoNativeTiles: true,
+  autoSvgTiles: true,
   platform: { OS: 'web' },
   frames: new Map(),
   nextFrame: 0,
 }));
-vi.mock('react-native', () => ({
-  Platform: state.platform,
-  Image: (props) => {
-    state.nativeImages.push(props);
-    return null;
-  },
-  View: ({ children, style }) => createElement('div', { style }, children),
-  StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
-}));
-vi.mock('react-native-svg', () => ({
-  default: forwardRef(({ children, width, height, viewBox }, ref) => {
-    useImperativeHandle(ref, () => ({
-      toDataURL(callback, options) {
-        state.captures.push({ callback, options, width, height, viewBox, children });
-      },
-    }));
-    return createElement('div', { 'data-svg-width': width }, children);
-  }),
-  G: ({ children, opacity }) => createElement('div', { 'data-opacity': opacity }, children),
-}));
+vi.mock('react-native', async () => {
+  const { nativeRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
+  const { CRAYON_TILE_PX } =
+    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  return nativeRasterSdk(state, CRAYON_TILE_PX);
+});
+vi.mock('react-native-svg', async () => {
+  const { svgRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
+  return svgRasterSdk(state);
+});
 vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes, onImageLoad }) => {
     const appearance = useInkAppearance();
@@ -58,7 +52,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => 
 
 const crayon = { brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [{ x: 40, y: 40 }] };
 const magic = { brush: 'magic', width: 30, rainbow: 3, points: [{ x: 60, y: 60 }] };
-const marker = { brush: 'marker', width: 22, color: 'Yellow', points: [{ x: 80, y: 80 }] };
+const marker = { brush: 'pen', width: 22, color: 'Yellow', points: [{ x: 80, y: 80 }] };
 const erase = { brush: 'eraser', width: 44, points: [{ x: 960, y: 740 }] };
 let root, host, ref, error, busy;
 
@@ -67,6 +61,9 @@ beforeEach(() => {
   vi.useFakeTimers();
   state.captures.length = 0;
   state.nativeImages.length = 0;
+  state.svgTiles.length = 0;
+  state.autoNativeTiles = true;
+  state.autoSvgTiles = true;
   state.platform.OS = 'web';
   state.imageLoads.length = 0;
   state.frames.clear();
@@ -93,7 +90,7 @@ function rasterFixture(props) {
   return createElement(
     InkAppearanceScope.Provider,
     { value: { pageId: 'blank', theme: 'light' } },
-    createElement(RasterInk, props)
+    createElement(RasterInk, { color: 'Blue', ...props })
   );
 }
 async function render(strokes, prepareEraser = false, draft = null) {
@@ -103,8 +100,7 @@ async function render(strokes, prepareEraser = false, draft = null) {
         ref,
         strokes,
         drafts: draft ? [draft] : [],
-        brush:
-          typeof prepareEraser === 'string' ? prepareEraser : prepareEraser ? 'eraser' : 'marker',
+        brush: typeof prepareEraser === 'string' ? prepareEraser : prepareEraser ? 'eraser' : 'pen',
         onError: error,
         onBusy: busy,
       })
@@ -322,7 +318,7 @@ describe('visible replay and Android cached image readiness', () => {
     await render([crayon, erase]);
     await frames();
     await png(0, 'cached-native-prefix');
-    const image = state.nativeImages.at(-1);
+    const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
     expect(image.resizeMethod).toBe('none');
     await load();
     expect(ref.current.isReady()).toBe(false);
@@ -337,7 +333,7 @@ describe('visible replay and Android cached image readiness', () => {
     await render([crayon, erase]);
     await frames();
     await png(0);
-    const image = state.nativeImages.at(-1);
+    const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
     await act(async () => image.onError({ nativeEvent: { error: 'decode failed' } }));
     await act(async () =>
       image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
@@ -367,7 +363,7 @@ it('keeps a wrong-grid decoded callback terminal after SVG loads first', async (
   await frames();
   await png(0);
   await load();
-  const image = state.nativeImages.at(-1);
+  const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
   await act(async () =>
     image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1023, height: 768 } } })
   );
@@ -387,9 +383,9 @@ describe('provisional selection versus canonical committed pixels', () => {
     expect(ref.current.canStart(prefix, 'eraser', false)).toBe(false);
     expect(ref.current.readyPlan(prefix).checkpoint).toBeNull();
     expect(ref.current.readyPlan(prefix).strokes).toEqual(prefix);
-    await render(prefix, 'marker');
+    await render(prefix, 'pen');
     const extended = [...prefix, { ...marker, color: 'Red' }];
-    await render(extended, 'marker');
+    await render(extended, 'pen');
     expect(ref.current.readyPlan(extended).checkpoint).toBeNull();
     expect(state.captures).toHaveLength(1);
     await render(extended, 'crayon');
@@ -427,7 +423,7 @@ describe('provisional selection versus canonical committed pixels', () => {
     await render(committed, 'crayon');
     expect(ref.current.readyPlan(committed).checkpoint.base64).toBe('canonical-marker-prefix');
     expect(ref.current.readyPlan(committed).strokes).toEqual([crayon]);
-    await render(prefix, 'marker');
+    await render(prefix, 'pen');
     expect(ref.current.readyPlan(prefix).checkpoint).toBeNull();
     expect(ref.current.readyPlan(prefix).strokes).toEqual(prefix);
     await render(prefix, 'crayon');
@@ -448,10 +444,10 @@ describe('provisional selection versus canonical committed pixels', () => {
     await frames();
     await png(0, 'late-selection');
     const late = state.imageLoads.at(-1).onImageLoad;
-    await render([marker], 'marker');
+    await render([marker], 'pen');
     await act(async () => late());
     expect(ref.current.readyPlan([marker]).checkpoint).toBeNull();
-    expect(ref.current.canStart([marker], 'marker', false)).toBe(true);
+    expect(ref.current.canStart([marker], 'pen', false)).toBe(true);
     await render([marker], 'crayon');
     expect(ref.current.canStart([marker], 'crayon', false)).toBe(false);
     await frames();
@@ -475,9 +471,40 @@ describe('provisional selection versus canonical committed pixels', () => {
     await frames();
     expect(state.captures).toHaveLength(0);
     expect(
-      host.querySelector('[data-opacity="1"] [data-strokes="marker,eraser,marker,eraser"]')
+      host.querySelector('[data-opacity="1"] [data-strokes="pen,eraser,pen,eraser"]')
     ).not.toBeNull();
     expect(ref.current.canStart([], 'crayon', true)).toBe(true);
     expect(() => ref.current.readyPlan(drafts)).toThrow('still being prepared');
   });
 });
+
+it.each(['native', 'svg'])(
+  'holds selected Crayon readiness until the %s texture decoder completes',
+  async (decoder) => {
+    if (decoder === 'native') state.autoNativeTiles = false;
+    else state.autoSvgTiles = false;
+    await render([], 'crayon');
+    expect(ref.current.isReady()).toBe(false);
+    expect(ref.current.canStart([], 'crayon', false)).toBe(false);
+    expect(() => ref.current.readyPlan([])).toThrow('still being prepared');
+    await act(async () => {
+      if (decoder === 'native') {
+        for (const image of state.nativeImages.filter(
+          (image) => image.style?.width === CRAYON_TILE_PX
+        ))
+          image.onLoad({
+            nativeEvent: {
+              source: {
+                uri: image.source.uri,
+                width: CRAYON_TILE_PX,
+                height: CRAYON_TILE_PX,
+              },
+            },
+          });
+      } else for (const image of state.svgTiles) image.onLoad();
+    });
+    expect(ref.current.isReady()).toBe(true);
+    expect(ref.current.canStart([], 'crayon', false)).toBe(true);
+    expect(error).not.toHaveBeenCalled();
+  }
+);

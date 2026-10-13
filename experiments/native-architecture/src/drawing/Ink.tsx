@@ -1,28 +1,22 @@
+import { useInkPaper } from './InkPaper';
+import { semanticWidth, textureScale } from './paperSpace';
+import { isOfflinePageId } from '../offlineLibrary/identity';
+import { OfflineMagicFill } from '../offlineLibrary/artwork';
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
-import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
+import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use, Image } from 'react-native-svg';
 import { paintAppearance, paletteHex } from './palette';
 import { BundledMagicFill } from './BundledBookArtwork';
 import { isFarmPageId } from './bundledBooks';
 import { COLORING_FILLS } from './pages';
 import { InkAppearanceScope, useInkAppearance } from './InkAppearance';
 import { rainbow, rainbowLine } from './brushes';
-import {
-  CRAYON_BANDS,
-  CRAYON_TILE_PX,
-  crayonPasses,
-  crayonPhase,
-  crayonTexture,
-  waxColor,
-} from './crayon';
+import { CRAYON_BANDS, CRAYON_TILE_PX, crayonPasses, crayonPhase } from './crayon';
+import { crayonResourceUri } from './crayonTiles';
+import { useCrayonTileResources } from './useCrayonTileReadiness';
 import { CrayonGlaze } from './CrayonGlaze';
 import { PAPER_HEIGHT, PAPER_WIDTH, type PaintStroke, type Stroke } from './model';
 import { StrokeShape } from './StrokeShape';
 
-const CRAYON_TEXTURES = CRAYON_BANDS.map((band) =>
-  crayonTexture(band.coverage)
-    .map((path, shade) => ({ path, shade }))
-    .filter(({ path }) => path.length > 0)
-);
 const CrayonDefinitionScope = createContext<string | null>(null);
 const BundledMagicPatternScope = createContext<string | null>(null);
 // Native painters clip translated content to a fixed tile; wrapping preserves the seeded phase.
@@ -32,8 +26,10 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
   const theme = useContext(InkAppearanceScope)?.theme ?? 'light';
   const paint = paintAppearance(stroke.color, theme);
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
-  const width = stroke.width;
-  const passes = useMemo(() => crayonPasses(stroke, width), [stroke, width]);
+  const paper = useInkPaper();
+  const width = semanticWidth(stroke.width, paper);
+  const texel = textureScale(paper);
+  const passes = useMemo(() => crayonPasses(stroke, width, texel), [stroke, width, texel]);
   const textureId = useContext(CrayonDefinitionScope);
   if (textureId === null) throw new Error('Crayon Ink requires an InkArtwork definition scope');
   return (
@@ -48,22 +44,19 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                   key={bandIndex}
                   id={`${id}-${index}-${bandIndex}`}
                   patternUnits="userSpaceOnUse"
-                  width={CRAYON_TILE_PX}
-                  height={CRAYON_TILE_PX}
+                  width={CRAYON_TILE_PX * texel}
+                  height={CRAYON_TILE_PX * texel}
                   patternContentUnits="userSpaceOnUse"
                 >
-                  {CRAYON_TILE_OFFSETS.flatMap((x) =>
-                    CRAYON_TILE_OFFSETS.map((y) => (
-                      <G key={`${x},${y}`} transform={`translate(${phase.x + x} ${phase.y + y})`}>
-                        {CRAYON_TEXTURES[bandIndex].map(({ shade }) => (
-                          <Use
-                            key={shade}
-                            href={`#${textureId}-wax-${paint.definitionId}-${bandIndex}-${shade}`}
-                          />
-                        ))}
-                      </G>
-                    ))
-                  )}
+                  <G transform={`scale(${texel})`}>
+                    {CRAYON_TILE_OFFSETS.flatMap((x) =>
+                      CRAYON_TILE_OFFSETS.map((y) => (
+                        <G key={`${x},${y}`} transform={`translate(${phase.x + x} ${phase.y + y})`}>
+                          <Use href={`#${textureId}-wax-${paint.definitionId}-${bandIndex}`} />
+                        </G>
+                      ))
+                    )}
+                  </G>
                 </Pattern>
               ))}
             </Defs>
@@ -84,15 +77,20 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
   );
 }
 
-function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
+export function MagicPaint({ stroke, shape }: {
+  stroke: Extract<Stroke, { brush: 'magic' }>;
+  shape: (width: number, paint: string) => ReactNode;
+}) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const { pageId, theme } = useInkAppearance();
+  const width = semanticWidth(stroke.width, useInkPaper());
   const bundledPattern = useContext(BundledMagicPatternScope);
-  const fill = pageId === 'blank' || isFarmPageId(pageId) ? null : COLORING_FILLS[pageId];
+  const fill =
+    pageId === 'blank' || isFarmPageId(pageId) || isOfflinePageId(pageId)
+      ? null
+      : COLORING_FILLS[pageId];
   if (bundledPattern) {
-    return (
-      <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${bundledPattern})`} />
-    );
+    return <>{shape(width, `url(#${bundledPattern})`)}</>;
   }
   return (
     <G>
@@ -133,9 +131,19 @@ function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
           </LinearGradient>
         )}
       </Defs>
-      <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${id})`} />
+      {shape(width, `url(#${id})`)}
     </G>
   );
+}
+
+function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
+  return <MagicPaint stroke={stroke} shape={(width, paint) => <StrokeShape points={stroke.points} width={width} paint={paint} />} />;
+}
+
+export function useCrayonDefinition() {
+  const value = useContext(CrayonDefinitionScope);
+  if (value === null) throw new Error('Crayon Ink requires an InkArtwork definition scope');
+  return value;
 }
 
 export function InkArtwork({
@@ -147,7 +155,11 @@ export function InkArtwork({
 }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const appearance = useContext(InkAppearanceScope);
-  const bookPage = appearance && isFarmPageId(appearance.pageId) ? appearance.pageId : null;
+  const tileResources = useCrayonTileResources(strokes, appearance?.theme ?? 'light');
+  const bookPage =
+    appearance && (isFarmPageId(appearance.pageId) || isOfflinePageId(appearance.pageId))
+      ? appearance.pageId
+      : null;
   const bookPattern =
     bookPage && strokes.some((stroke) => stroke.brush === 'magic') ? `${id}-book-fill` : null;
   const colors = new Map<string, string>();
@@ -170,20 +182,24 @@ export function InkArtwork({
               patternUnits="userSpaceOnUse"
               patternContentUnits="userSpaceOnUse"
             >
-              <BundledMagicFill pageId={bookPage} theme={appearance.theme} />
+              {isOfflinePageId(bookPage) ? (
+                <OfflineMagicFill pageId={bookPage} theme={appearance.theme} />
+              ) : (
+                <BundledMagicFill pageId={bookPage} theme={appearance.theme} />
+              )}
             </Pattern>
           ) : null}
           {Array.from(colors).flatMap(([colorId, hex]) =>
-            CRAYON_TEXTURES.flatMap((paths, bandIndex) =>
-              paths.map(({ path, shade }) => (
-                <Path
-                  key={`${colorId}-${bandIndex}-${shade}`}
-                  id={`${id}-wax-${colorId}-${bandIndex}-${shade}`}
-                  d={path}
-                  fill={waxColor(hex, shade)}
-                />
-              ))
-            )
+            CRAYON_BANDS.map((_, bandIndex) => (
+              <Image
+                key={`${colorId}-${bandIndex}`}
+                id={`${id}-wax-${colorId}-${bandIndex}`}
+                href={crayonResourceUri(tileResources, hex, bandIndex)}
+                width={CRAYON_TILE_PX}
+                height={CRAYON_TILE_PX}
+                preserveAspectRatio="none"
+              />
+            ))
           )}
         </Defs>
         {children}
@@ -193,13 +209,14 @@ export function InkArtwork({
 }
 
 export function Ink({ stroke }: { stroke: PaintStroke }) {
+  const width = semanticWidth(stroke.width, useInkPaper());
   const theme = useContext(InkAppearanceScope)?.theme ?? 'light';
   if (stroke.brush === 'crayon') return <CrayonInk stroke={stroke} />;
   if (stroke.brush === 'magic') return <MagicInk stroke={stroke} />;
   return (
     <StrokeShape
       points={stroke.points}
-      width={stroke.width}
+      width={width}
       paint={paintAppearance(stroke.color, theme).hex}
     />
   );

@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, onBrand } from './tokens.css';
+import { colors, dimensions, brandColors } from './tokens.css';
 import { paintAppearance, paintLabel, type PaintColor } from '../drawing/palette';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { TOUCH_TARGET } from '../drawing/theme';
@@ -66,7 +66,7 @@ export const styles = css.create({
   },
   selected: {
     backgroundColor: colors.brandSolid,
-    color: onBrand,
+    color: brandColors.onBrand,
     borderColor: colors.brandSolid,
   },
   disabled: { opacity: dimensions.disabledOpacity },

@@ -1,3 +1,6 @@
+import type { Drawing7 } from './drawing/recordedTypes7';
+import type { CompletedCohort7 } from './drawing/recordedContactCohort7';
+import type { PaperReference } from './drawing/paperSpace';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import type { Stroke } from './drawing/model';
@@ -9,7 +12,9 @@ type RecoveryOptions = {
   blocked: boolean;
   setPreparing: (busy: boolean) => void;
   setDrawing: (drawing: boolean) => void;
-  finishCohort: (strokes: readonly Stroke[]) => void;
+  finishCohort: (strokes: readonly Stroke[], paper: PaperReference) => void;
+  finishRecordedCohort: (base: Drawing7, cohort: CompletedCohort7) => Drawing7;
+  retainAllocation: (base: Drawing7, cursor: number) => void;
   report: (error: unknown) => void;
   setNotice: (notice: string) => void;
 };
@@ -68,8 +73,15 @@ export function useRendererRecovery(options: RecoveryOptions) {
     retry,
     retryDisabled: options.blocked,
     callbacks: {
-      onCohort(strokes: readonly Stroke[]) {
-        if (valid()) current.current.finishCohort(strokes);
+      onCohort(strokes: readonly Stroke[], paper: PaperReference) {
+        if (valid()) current.current.finishCohort(strokes, paper);
+      },
+      onRecordedCohort(base: Drawing7, cohort: CompletedCohort7) {
+        if (!valid()) throw new Error('The recorded drawing renderer changed.');
+        return current.current.finishRecordedCohort(base, cohort);
+      },
+      onAbandonAllocation(base: Drawing7, cursor: number) {
+        current.current.retainAllocation(base, cursor);
       },
       onDrawingChange(drawing: boolean) {
         if (valid()) current.current.setDrawing(drawing);

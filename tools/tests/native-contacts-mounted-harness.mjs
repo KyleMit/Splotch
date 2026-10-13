@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, expect, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
@@ -32,6 +32,9 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', ()
     dispose: sdk.soundDispose,
   })),
 }));
+vi.mock('../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
+  brushPreferencesStorage: { read: async () => null, write: async () => {} },
+}));
 vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
     read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":true}'),
@@ -39,6 +42,7 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 vi.mock('react-native', () => ({
+  PixelRatio: { get: () => 1 },
   useColorScheme: () => 'light',
   AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
   findNodeHandle: (owner) => owner,
@@ -226,6 +230,7 @@ beforeEach(async () => {
   document.body.append(host);
   root = createRoot(host);
   await act(async () => root.render(createElement(Consumer)));
+  expect(owner.brushPreferences.status).toBe('ready');
 });
 afterEach(async () => {
   await act(async () => root.unmount());

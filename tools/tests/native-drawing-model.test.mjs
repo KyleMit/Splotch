@@ -1,3 +1,4 @@
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   addStroke,
@@ -28,7 +29,7 @@ describe('native development drawing model', () => {
   });
 
   it('undoes clear and reopening without mutating an earlier save snapshot', () => {
-    const original = addStroke(createHistory(), { ...firstStroke, width: 22 });
+    const original = addStroke(createHistory(legacyDrawing()), { ...firstStroke, width: 22 });
     const snapshot = JSON.stringify(original.drawing);
     const cleared = clearDrawing(original, false);
     expect(cleared.drawing.strokes).toEqual([]);

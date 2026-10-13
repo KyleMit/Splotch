@@ -1,4 +1,6 @@
+import { DEFAULT_COLORING_BOOK_ENABLED } from './settings/coloringBook';
 import { DEFAULT_APPEARANCE } from './settings/appearance';
+import { DEFAULT_PARENT_PREFERENCES } from './platform/parentDefaults';
 import { DEFAULT_COLOR_SETTINGS } from './drawing/palette';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
@@ -16,8 +18,10 @@ export function useDrawingSound() {
   const [settings, setSettings] = useState<SoundSettingsState>({
     status: 'loading',
     soundEnabled: false,
+    coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
+    ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
     message: '',
   });

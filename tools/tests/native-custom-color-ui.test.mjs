@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, StrictMode, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -203,7 +204,7 @@ describe('custom color controls through installed React Native Web', () => {
         };
       });
       const pending = await chooseWithPendingWrite();
-      const tools = pending.host.querySelector('[aria-label^="Drawing tools."]');
+      const tools = pending.host.querySelector('[aria-label="Drawing tools"]');
       expect(tools).not.toBeNull();
       const interrupt = {
         focus: async () => act(async () => tools.focus()),
@@ -219,7 +220,8 @@ describe('custom color controls through installed React Native Web', () => {
             settings.dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
           );
           expect(document.querySelector('[aria-label="Close Settings"]')).not.toBeNull();
-          expect(document.querySelector('[aria-label="Drawing tools"]')).toBeNull();
+          expect(tools.disabled).toBe(true);
+          expect(tools.tabIndex).toBe(-1);
         },
         background: async () =>
           act(async () => listeners.forEach((listener) => listener('background'))),
@@ -437,4 +439,8 @@ it.each(['light', 'dark'])(
       host.querySelector(`[aria-label="Custom paint ${literal}"]`).getAttribute('aria-pressed')
     ).toBe('true');
   }
+);
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

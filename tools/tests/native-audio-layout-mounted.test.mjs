@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
+import './native-feedback-drawing-fixture.mjs';
 import {
   act,
   createElement,
@@ -55,6 +56,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   reopenPicture: vi.fn(),
 }));
 vi.mock('react-native', () => ({
+  PixelRatio: { get: () => 1 },
   AccessibilityInfo: createAccessibilityInfoFixture(),
   useColorScheme: () => 'light',
   ActivityIndicator: () => null,
@@ -216,4 +218,8 @@ it('continues to settle a cohort on a genuine paper-frame invalidation', async (
 vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')
+);
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

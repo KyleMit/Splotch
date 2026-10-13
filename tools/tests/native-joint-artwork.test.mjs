@@ -5,6 +5,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import {
+  CRAYON_BANDS,
+  CRAYON_TILE_PX,
+} from '../../experiments/native-architecture/src/drawing/crayon.ts';
+import { crayonTileUri } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import {
   PAPER_WIDTH,
@@ -129,7 +134,7 @@ describe('joint artwork definitions and chronological mask composition', () => {
   });
   it('erases earlier ink with black luminance while preserving white-mask ink and later paint', async () => {
     const earlier = {
-      ...strokeStyle('marker', 'Blue', emptyDrawing()),
+      ...strokeStyle('pen', 'Blue', emptyDrawing()),
       points: [
         { x: 100, y: 200 },
         { x: 700, y: 200 },
@@ -143,7 +148,7 @@ describe('joint artwork definitions and chronological mask composition', () => {
       ],
     };
     const later = {
-      ...strokeStyle('marker', 'Yellow', emptyDrawing()),
+      ...strokeStyle('pen', 'Yellow', emptyDrawing()),
       points: [{ x: 400, y: 200 }],
     };
     const before = await raw(scene([earlier]));
@@ -187,13 +192,31 @@ describe('joint artwork definitions and chronological mask composition', () => {
     const rendered = scene([eraser, yellow, blue], { id: 1, strokes: prefix, base64 });
     const patterns = tags(rendered, 'pattern');
     const uses = tags(rendered, 'use');
-    const definitions = tags(rendered, 'path').filter((tag) => tag.includes(' id='));
+    const images = tags(rendered, 'image');
+    const definitions = images.filter((tag) => /\bid="[^"]+-wax-/.test(tag));
+    const ids = new Set(definitions.map((tag) => /\bid="([^"]+)"/.exec(tag)[1]));
+    const href = (tag) => /(?:xlink:)?href="([^"]+)"/.exec(tag)[1];
     expect(patterns.length).toBeGreaterThan(0);
+    expect(definitions).toHaveLength(2 * CRAYON_BANDS.length);
+    expect(ids.size).toBe(definitions.length);
     expect(uses.length).toBeGreaterThan(definitions.length);
-    expect(definitions.every((tag) => / fill="rgb\([0-9,]+\)"/.test(tag))).toBe(true);
-    expect(definitions.every((tag) => !tag.includes(' d=""'))).toBe(true);
+    expect(uses.every((tag) => ids.has(href(tag).slice(1)))).toBe(true);
+    expect(
+      definitions.every(
+        (tag) =>
+          tag.includes(`width="${CRAYON_TILE_PX}"`) && tag.includes(`height="${CRAYON_TILE_PX}"`)
+      )
+    ).toBe(true);
+    expect(new Set(definitions.map(href))).toEqual(
+      new Set(
+        ['Blue', 'Yellow'].flatMap((color) =>
+          CRAYON_BANDS.map((_, index) => crayonTileUri(paletteHex(color), index))
+        )
+      )
+    );
+    expect(images.filter((tag) => !definitions.includes(tag))).toHaveLength(1);
+    expect(images.some((tag) => href(tag) === `data:image/png;base64,${base64}`)).toBe(true);
     expect(tags(rendered, 'mask')).toHaveLength(1);
-    expect(tags(rendered, 'image')).toHaveLength(1);
     expect(rendered.indexOf('<defs>')).toBeLessThan(rendered.indexOf('<mask'));
     expect(rendered.indexOf('<image')).toBeLessThan(rendered.lastIndexOf('<pattern'));
   });

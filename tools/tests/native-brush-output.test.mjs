@@ -1,3 +1,4 @@
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -13,7 +14,6 @@ import {
   clearDrawing,
   changePage,
   createHistory,
-  emptyDrawing,
   parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -167,7 +167,7 @@ describe('native brush artwork output', () => {
         { x: 924, y: 384 },
       ],
     };
-    const original = createHistory({ ...emptyDrawing(3, 'sunshine'), strokes: [stroke] });
+    const original = createHistory({ ...legacyDrawing(3, 'sunshine'), strokes: [stroke] });
     const render = (drawing) => pixels(drawing.strokes, { pageId: drawing.pageId, theme: 'light' });
     const first = await render(original.drawing);
     const changed = changePage(original, 'flower');
@@ -296,7 +296,7 @@ describe('native brush artwork output', () => {
       { x: 350, y: 400 },
       { x: 100, y: 400 },
     ]);
-    let history = addStroke(createHistory(), stroke);
+    let history = addStroke(createHistory(legacyDrawing()), stroke);
     history = addStroke(history, {
       brush: 'magic',
       width: 30,

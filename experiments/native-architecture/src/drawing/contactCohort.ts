@@ -1,10 +1,11 @@
+import { drawingPaper, type AdoptedPaper, type PaperReference } from './paperSpace';
 import type { PaintColor } from './palette';
 import {
   appendPoint,
   strokeStyle,
   drawingCapacity,
   DRAWING_FULL_MESSAGE,
-  type Drawing,
+  type LegacyDrawing,
   type Point,
   type Stroke,
 } from './model';
@@ -16,6 +17,7 @@ export function createContactCohort() {
   let strokes: readonly Stroke[] = [];
   let capacity = { strokes: 0, points: 0 };
   let acceptedPoints = 0;
+  let paper: PaperReference | null = null;
 
   function drain(): readonly Stroke[] | null {
     if (active.size > 0 || strokes.length === 0) return null;
@@ -31,11 +33,17 @@ export function createContactCohort() {
       color: PaintColor,
       brush: Brush,
       point: Point,
-      drawing: Drawing,
-      width: StrokeWidth = DEFAULT_STROKE_WIDTH
+      drawing: LegacyDrawing,
+      width: StrokeWidth = DEFAULT_STROKE_WIDTH,
+      adoption?: () => AdoptedPaper
     ) {
       if (active.has(identifier)) return;
-      if (active.size === 0) capacity = drawingCapacity(drawing);
+      if (active.size === 0) {
+        capacity = drawingCapacity(drawing);
+        const reference = drawingPaper(drawing);
+        paper = reference.kind === 'unadopted' ? (adoption?.() ?? null) : reference;
+        if (!paper) throw new Error('The drawing paper is not ready.');
+      }
       if (strokes.length >= capacity.strokes || acceptedPoints >= capacity.points) {
         throw new Error(DRAWING_FULL_MESSAGE);
       }
@@ -73,6 +81,10 @@ export function createContactCohort() {
     },
     hasActive(): boolean {
       return active.size > 0;
+    },
+    paper(): PaperReference {
+      if (!paper) throw new Error('The drawing paper is not ready.');
+      return paper;
     },
     drafts(): readonly Stroke[] {
       return strokes;

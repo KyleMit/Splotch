@@ -1,3 +1,4 @@
+import { LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   checkpointMatches,
@@ -28,7 +29,12 @@ describe('canonical boundaries and provisional selection ownership', () => {
     const first = planInk(strokes, null);
     expect(first.prefix).toEqual([marker]);
     expect(first.needsCheckpoint).toBe(true);
-    const checkpoint = { id: 1, strokes: first.prefix, base64: 'model-only fixture' };
+    const checkpoint = {
+      id: 1,
+      strokes: first.prefix,
+      paper: LEGACY_PAPER,
+      base64: 'model-only fixture',
+    };
     const ready = planInk(strokes, checkpoint);
     expect(ready.strokes).toEqual([crayon, second]);
     expect(ready.needsCheckpoint).toBe(false);
@@ -37,7 +43,12 @@ describe('canonical boundaries and provisional selection ownership', () => {
   it('rejects an identity-matching cache inside a contiguous Crayon run and after witness-removing Undo', () => {
     const { marker, crayon } = fixture();
     const second = { ...crayon, seed: 21 };
-    const cache = { id: 1, strokes: [marker, crayon], base64: 'noncanonical fixture' };
+    const cache = {
+      id: 1,
+      strokes: [marker, crayon],
+      paper: LEGACY_PAPER,
+      base64: 'noncanonical fixture',
+    };
     expect(checkpointMatches([marker, crayon, second], cache)).toBe(false);
     expect(planInk([marker, crayon, second], cache).checkpoint).toBeNull();
     const valid = { ...cache, strokes: [marker] };
@@ -47,9 +58,14 @@ describe('canonical boundaries and provisional selection ownership', () => {
 
   it('requires the exact canonical predecessor as well as actual next-boundary witness', () => {
     const { marker, crayon, erase } = fixture();
-    const predecessor = { id: 1, strokes: [marker], base64: 'canonical predecessor' };
+    const predecessor = {
+      id: 1,
+      strokes: [marker],
+      paper: LEGACY_PAPER,
+      base64: 'canonical predecessor',
+    };
     const preparation = {
-      checkpoint: { id: 2, strokes: [marker, crayon], base64: 'prepared' },
+      checkpoint: { id: 2, strokes: [marker, crayon], paper: LEGACY_PAPER, base64: 'prepared' },
       predecessor,
       brush: 'eraser',
     };
@@ -67,9 +83,19 @@ describe('canonical boundaries and provisional selection ownership', () => {
   it('makes selection-only excursions irrelevant to the committed replay route', () => {
     const { marker, crayon, erase } = fixture();
     expect(needsPreparation([crayon], 'eraser')).toBe(true);
-    const speculative = { id: 1, strokes: [crayon], base64: 'unused eraser selection' };
+    const speculative = {
+      id: 1,
+      strokes: [crayon],
+      paper: LEGACY_PAPER,
+      base64: 'unused eraser selection',
+    };
     expect(planInk([crayon, { ...crayon, seed: 21 }], speculative).checkpoint).toBeNull();
-    const unusedCrayon = { id: 2, strokes: [marker], base64: 'unused crayon selection' };
+    const unusedCrayon = {
+      id: 2,
+      strokes: [marker],
+      paper: LEGACY_PAPER,
+      base64: 'unused crayon selection',
+    };
     const secondMarker = { ...marker, color: 'Blue' };
     const replay = planInk([marker, secondMarker, crayon, erase], unusedCrayon);
     expect(replay.checkpoint).toBeNull();
@@ -85,7 +111,12 @@ describe('canonical boundaries and provisional selection ownership', () => {
       const plan = planInk(strokes, cached);
       if (!plan.needsCheckpoint) break;
       captured.push(plan.prefix.length);
-      cached = { id: index + 1, strokes: plan.prefix, base64: 'planner fixture' };
+      cached = {
+        id: index + 1,
+        strokes: plan.prefix,
+        paper: LEGACY_PAPER,
+        base64: 'planner fixture',
+      };
     }
     expect(captured).toEqual([1, 2, 4, 5]);
     expect(planInk(strokes, cached).strokes).toEqual([crayon]);

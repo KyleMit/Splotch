@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 it('retains the menu input lease and disables every closing control until dismissal', async () => {
-  await screen.click('Drawing tools. Marker selected.');
+  await screen.click('Drawing tools');
   expect(files.lock).toHaveBeenCalledOnce();
   await screen.click('Settings');
   expect(release).not.toHaveBeenCalled();
@@ -50,13 +50,13 @@ it('retains the menu input lease and disables every closing control until dismis
   expect(release).toHaveBeenCalledOnce();
   await act(async () => files.dismissModal());
   expect(screen.dialog()).toBeNull();
-  expect(globalThis.document.activeElement).toBe(screen.button('Drawing tools. Marker selected.'));
+  expect(globalThis.document.activeElement).toBe(screen.button('Drawing tools'));
   await screen.click('Draw fixture stroke');
   expect(JSON.parse(screen.paper()).strokes).toHaveLength(1);
 });
 
 it('releases the pending menu lease on unmount without running its successor', async () => {
-  await screen.click('Drawing tools. Marker selected.');
+  await screen.click('Drawing tools');
   await screen.click('Pictures');
   expect(files.list).not.toHaveBeenCalled();
   screen.close();
@@ -65,7 +65,7 @@ it('releases the pending menu lease on unmount without running its successor', a
 });
 
 it('carries brush and width choices through menu dismissal into real history and Undo', async () => {
-  await screen.click('Drawing tools. Marker selected.');
+  await screen.click('Drawing tools');
   await screen.click('Eraser');
   await screen.click('Eraser width: Thick');
   expect(JSON.parse(files.settingsWrite.mock.calls.at(-1)[0]).eraserWidth).toBe('thick');
@@ -74,7 +74,7 @@ it('carries brush and width choices through menu dismissal into real history and
   await act(async () => files.dismissModal());
   expect(release).toHaveBeenCalledOnce();
   await screen.click('Draw fixture stroke');
-  expect(JSON.parse(screen.paper()).strokes).toMatchObject([{ brush: 'eraser', width: 88 }]);
+  expect(JSON.parse(screen.paper()).strokes).toMatchObject([{ brush: 'eraser', width: 28 }]);
   await screen.click('Undo');
   expect(JSON.parse(screen.paper()).strokes).toHaveLength(0);
 });
@@ -90,7 +90,7 @@ it('retains the public PNG recovery owner and blocks retry behind Tools and colo
     'Held PNGs could not be read. Existing recovery data has not been replaced.'
   );
   expect(retry().disabled).toBe(false);
-  await screen.click('Drawing tools. Marker selected.');
+  await screen.click('Drawing tools');
   expect(retry().disabled).toBe(true);
   const reads = files.pngRead.mock.calls.length;
   retry().click();

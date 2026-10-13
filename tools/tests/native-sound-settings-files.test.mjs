@@ -139,9 +139,20 @@ describe('native committed sound settings journal', () => {
     await owner.load();
     expect(changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: false });
     await owner.setEnabled(true);
+    expect(changes.at(-1)).toMatchObject({ soundEnabled: true, saved: false });
+    await owner.retrySave();
+    await owner.retryRead();
+    expect(changes.at(-1)).toMatchObject({ saved: false });
+    expect(memory.files.get('documents/splotch-sound-settings-v1/sound-2.json')).toBe(
+      '{"version":1,"soundEnabled":"true"}'
+    );
+    memory.files.set('documents/splotch-sound-settings-v1/sound-2.json', off);
+    await owner.retryRead();
+    expect(changes.at(-1)).toMatchObject({ soundEnabled: false, saved: true });
+    await owner.setEnabled(true);
     expect(changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
     expect(await soundSettingsStorage.read()).toBe(
-      '{"version":4,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
     );
   });
 });

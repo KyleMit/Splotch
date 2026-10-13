@@ -1,3 +1,4 @@
+import { legacyDrawing, canonicalPaper, adoptedDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addStroke,
@@ -24,11 +25,11 @@ function legacyStroke() {
 }
 
 function stroke() {
-  return { ...strokeStyle('marker', 'Green', emptyDrawing()), points: legacyStroke().points };
+  return { ...strokeStyle('pen', 'Green', emptyDrawing()), points: legacyStroke().points };
 }
 
 function picture() {
-  return addStroke(changePage(createHistory(), 'flower'), stroke());
+  return addStroke(changePage(createHistory(), 'flower'), stroke(), canonicalPaper());
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -51,7 +52,7 @@ describe('native coloring-page composition', () => {
       { brush: 'eraser', width: 44, points: [{ x: 400, y: 384 }] },
       stroke(),
     ];
-    const original = createHistory({ ...emptyDrawing(3, 'flower'), strokes });
+    const original = createHistory({ ...legacyDrawing(3, 'flower'), strokes });
     const changed = changePage(original, 'sunshine');
     const removed = changePage(changed, 'blank');
     expect(changed.drawing.strokes).toBe(strokes);
@@ -92,7 +93,11 @@ describe('native coloring-page composition', () => {
   it.each(PAGE_IDS)(
     'round-trips the %s composition through the supported saved format',
     (pageId) => {
-      const drawing = addStroke(changePage(createHistory(), pageId), stroke()).drawing;
+      const drawing = addStroke(
+        changePage(createHistory(), pageId),
+        stroke(),
+        canonicalPaper()
+      ).drawing;
       expect(parseDrawing(JSON.parse(JSON.stringify(drawing)))).toEqual(drawing);
       expect(COLORING_PAGES[pageId].label).toBeTruthy();
     }
@@ -128,15 +133,15 @@ describe('native coloring-page composition', () => {
   it('refuses a missing current-format stroke width while accepting the complete record', () => {
     const drawing = picture().drawing;
     expect(parseDrawing(drawing)).toEqual(drawing);
-    expect(() => parseDrawing({ ...drawing, strokes: [legacyStroke()] })).toThrow(
-      'This saved picture contains an invalid stroke width.'
-    );
+    expect(() =>
+      parseDrawing({ ...drawing, strokes: [{ ...legacyStroke(), brush: 'pen' }] })
+    ).toThrow('This saved picture contains an invalid stroke width.');
   });
 
   it('opens the first native slice’s saved pictures as blank paper', () => {
     expect(parseDrawing({ version: 1, strokes: [legacyStroke()] })).toEqual({
-      ...emptyDrawing(),
-      strokes: [stroke()],
+      ...legacyDrawing(),
+      strokes: [{ ...legacyStroke(), width: 22 }],
     });
   });
 
@@ -146,7 +151,10 @@ describe('native coloring-page composition', () => {
     const request = captures.begin(original.drawing);
     const next = changePage(original, 'sunshine');
     expect(request.drawing).toBe(original.drawing);
-    expect(request.drawing).toEqual({ ...emptyDrawing(0, 'flower'), strokes: [stroke()] });
+    expect(request.drawing).toEqual({
+      ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }, 0, 'flower'),
+      strokes: [stroke()],
+    });
     expect(next.drawing.pageId).toBe('sunshine');
     expect(request.complete('snapshot PNG')).toBe(true);
     await expect(request.promise).resolves.toBe('snapshot PNG');
@@ -163,8 +171,8 @@ describe('native coloring-page composition', () => {
       JSON.stringify({ version: 1, strokes: [legacyStroke()] })
     );
     await expect(reopenPicture('picture-1-first')).resolves.toEqual({
-      ...emptyDrawing(),
-      strokes: [stroke()],
+      ...legacyDrawing(),
+      strokes: [{ ...legacyStroke(), width: 22 }],
     });
     const original = picture().drawing;
     const saved = await savePicture(original);

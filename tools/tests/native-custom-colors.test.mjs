@@ -1,3 +1,4 @@
+import { legacyDrawing, adoptedDrawing, canonicalPaper } from './native-paper-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   exploreColor,
@@ -76,15 +77,35 @@ describe('new candidate custom paints', () => {
     expect(paintId('#123ABC')).toBe('ink-123abc');
     expect(paintHex('Black')).toBe('#0a0b10');
     expect(() => paintHex('url(#injected)')).toThrow();
-    expect(() => strokeStyle('marker', 'red', emptyDrawing())).toThrow();
+    expect(() => strokeStyle('pen', 'red', emptyDrawing())).toThrow();
   });
-  it.each(['pencil', 'marker', 'crayon'])(
-    'round-trips exact %s custom strokes and rejects them in new-app formats before v5',
-    (brush) => {
-      const stroke = { ...strokeStyle(brush, '#123ABC', emptyDrawing(), 'thin'), points: [point] };
-      const drawing = { ...emptyDrawing(), strokes: [stroke] };
+  it.each([
+    { brush: 'pen', kind: 'live' },
+    { brush: 'crayon', kind: 'live' },
+    { brush: 'pencil', kind: 'stored', width: 3.5 },
+    { brush: 'marker', kind: 'stored', width: 11 },
+  ])(
+    'round-trips exact $kind $brush custom strokes and rejects them in new-app formats before v5',
+    ({ brush, kind, width }) => {
+      const style =
+        kind === 'live'
+          ? strokeStyle(brush, '#123ABC', emptyDrawing(), 'thin')
+          : { brush, width, color: '#123ABC' };
+      const stroke = { ...style, points: [point] };
+      const base =
+        kind === 'live'
+          ? adoptedDrawing({ width: 342, height: 256.5, pixelRatio: 1 })
+          : legacyDrawing();
+      const drawing = { ...base, strokes: [stroke] };
       expect(parseDrawing(JSON.parse(JSON.stringify(drawing)))).toEqual(drawing);
-      expect(() => parseDrawing({ ...drawing, version: 4 })).toThrow();
+      expect(() =>
+        parseDrawing({
+          version: 4,
+          pageId: drawing.pageId,
+          rainbow: drawing.rainbow,
+          strokes: drawing.strokes,
+        })
+      ).toThrow();
       for (const color of ['#123abc', '#123ABC00', 'Red ', 'rgb(1 2 3)', 'url(#x)', null]) {
         expect(() => parseDrawing({ ...drawing, strokes: [{ ...stroke, color }] })).toThrow();
       }
@@ -108,15 +129,17 @@ describe('new candidate custom paints', () => {
   it('snapshots custom colors and widths per contact, shares Undo and survives Clear/reopen', () => {
     const input = createContactCohort();
     const original = emptyDrawing();
-    expect(() => input.start('invalid', 'invalid', 'marker', point, original)).toThrow();
-    input.start('a', '#123ABC', 'marker', point, original, 'thin');
+    expect(() =>
+      input.start('invalid', 'invalid', 'pen', point, original, 'medium', canonicalPaper)
+    ).toThrow();
+    input.start('a', '#123ABC', 'pen', point, original, 'thin', canonicalPaper);
     input.start('b', '#FEDCBA', 'crayon', point, original, 'thick');
     input.sample('a', { x: 400, y: 300 });
     expect(input.finish('a')).toBeNull();
-    const history = addStrokes(createHistory(original), input.finish('b'));
+    const history = addStrokes(createHistory(original), input.finish('b'), input.paper());
     expect(history.drawing.strokes.map(({ color, width }) => ({ color, width }))).toEqual([
-      { color: '#123ABC', width: 11 },
-      { color: '#FEDCBA', width: 68 },
+      { color: '#123ABC', width: 4 },
+      { color: '#FEDCBA', width: 14 },
     ]);
     expect(history.undo).toEqual([original]);
     expect(undoDrawing(clearDrawing(history, false)).drawing).toBe(history.drawing);
@@ -140,7 +163,7 @@ describe('new candidate custom paints', () => {
 
 describe('custom palettes in the one serialized settings owner', () => {
   it.each(['retry', 'sound choice'])(
-    'preserves unread stored preferences and the warning through session paint changes until explicit %s',
+    'preserves unread stored preferences and the warning through session paint changes through explicit %s until successful reread and a new choice',
     async (recovery) => {
       const original = JSON.stringify({
         version: 3,
@@ -190,28 +213,46 @@ describe('custom palettes in the one serialized settings owner', () => {
       });
       if (recovery === 'retry') await owner.retrySave();
       else await owner.setEnabled(true);
-      expect(storage.write).toHaveBeenCalledOnce();
+      expect(storage.write).not.toHaveBeenCalled();
+      expect(stored).toBe(original);
+      const reads = storage.read.mock.calls.length;
+      await owner.retryRead();
+      expect(storage.read).toHaveBeenCalledTimes(reads + 1);
+      expect(states.at(-1)).toMatchObject({
+        saved: true,
+        selectedColor: '#FEDCBA',
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+      });
+      expect(storage.write).not.toHaveBeenCalled();
+      await owner.setColor('#123ABC');
+      if (recovery === 'sound choice') await owner.setEnabled(false);
+      const writes = recovery === 'sound choice' ? 2 : 1;
+      expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(parseSoundSettings(stored)).toEqual({
-        version: 4,
+        version: 6,
+        coloringBookEnabled: true,
+        aiEnabled: false,
+        parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
         appearance: 'system',
-        soundEnabled: recovery === 'sound choice',
-        strokeWidth: 'thin',
-        eraserWidth: 'medium',
+        soundEnabled: recovery === 'retry',
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
         selectedColor: '#123ABC',
-        customColors: ['#123ABC', '#000077'],
+        customColors: ['#123ABC', '#FEDCBA', '#000000'],
       });
       expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
       await owner.setColor('#ABCDEF');
-      expect(storage.write).toHaveBeenCalledTimes(2);
+      expect(storage.write).toHaveBeenCalledTimes(writes + 1);
       const reopened = [];
       await createSoundSettings(storage, (state) => reopened.push(state)).load();
       expect(reopened.at(-1)).toMatchObject({
         saved: true,
         selectedColor: '#ABCDEF',
-        customColors: ['#ABCDEF', '#123ABC', '#000077'],
-        soundEnabled: recovery === 'sound choice',
-        strokeWidth: 'thin',
-        eraserWidth: 'medium',
+        customColors: ['#ABCDEF', '#123ABC', '#FEDCBA', '#000000'],
+        soundEnabled: recovery === 'retry',
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
       });
     }
   );
@@ -226,7 +267,10 @@ describe('custom palettes in the one serialized settings owner', () => {
     await f.owner.setColor('#ABCDEF');
     expect(f.storage.write).toHaveBeenCalledTimes(3);
     expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
-      version: 4,
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
       appearance: 'system',
       soundEnabled: true,
       strokeWidth: 'medium',
@@ -276,7 +320,10 @@ describe('custom palettes in the one serialized settings owner', () => {
     };
     expect(parseSoundSettings(JSON.stringify(valid))).toEqual({
       ...valid,
-      version: 4,
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
       appearance: 'system',
     });
     for (const customColors of [

@@ -33,6 +33,9 @@ describe('candidate sound settings', () => {
         selectedColor: 'Purple',
         customColors: [],
         appearance: 'system',
+        aiEnabled: false,
+        parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+        coloringBookEnabled: true,
         saved: true,
         message: '',
       },
@@ -66,8 +69,16 @@ describe('candidate sound settings', () => {
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: false, saved: false });
     expect(f.changes.at(-1).message).toContain('could not be read');
     await f.settings.setEnabled(true);
+    expect(f.storage.write).not.toHaveBeenCalled();
+    await f.settings.retrySave();
+    expect(f.storage.write).not.toHaveBeenCalled();
+    f.storage.read.mockResolvedValueOnce('{"version":1,"soundEnabled":false}');
+    await f.settings.retryRead();
+    expect(f.changes.at(-1)).toMatchObject({ soundEnabled: false, saved: true });
+    expect(f.storage.write).not.toHaveBeenCalled();
+    await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":4,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -84,10 +95,10 @@ describe('candidate sound settings', () => {
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
       [
-        '{"version":4,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}',
+        '{"version":6,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}',
       ],
       [
-        '{"version":4,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}',
+        '{"version":6,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}',
       ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });

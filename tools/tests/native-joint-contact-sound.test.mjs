@@ -30,7 +30,7 @@ function event(touches, changedTouches = touches, starts = {}) {
     },
   };
 }
-async function fixture(brush = 'marker') {
+async function fixture(brush = 'pen') {
   vi.useFakeTimers();
   const loop = { start: vi.fn(), setVolume: vi.fn(), stop: vi.fn(), dispose: vi.fn() };
   const failure = vi.fn();
@@ -39,13 +39,15 @@ async function fixture(brush = 'marker') {
   const sound = createContactSound(audio);
   let history = createHistory(emptyDrawing(3, 'flower'));
   let disabled = false;
-  const cohort = vi.fn((strokes) => {
-    history = addStrokes(history, strokes);
+  const cohort = vi.fn((strokes, paper) => {
+    history = addStrokes(history, strokes, paper);
   });
   const input = createContactResponder(
     () => ({
       currentDrawing: () => history.drawing,
       brush,
+      strokeWidth: 'medium',
+      eraserWidth: 'medium',
       color: 'Blue',
       disabled,
       onCohort: cohort,
@@ -54,7 +56,8 @@ async function fixture(brush = 'marker') {
       sound,
     }),
     () => ({ width: 1024, height: 768, pageX: 0, pageY: 0 }),
-    vi.fn()
+    vi.fn(),
+    () => 1
   );
   function start(touches, changed = touches, starts = {}) {
     const next = event(touches, changed, starts);
@@ -83,7 +86,7 @@ async function fixture(brush = 'marker') {
 afterEach(() => vi.useRealTimers());
 
 describe('joint admitted contact sound lifecycle', () => {
-  it.each(['marker', 'eraser', 'crayon', 'magic'])(
+  it.each(['pen', 'eraser', 'crayon', 'magic'])(
     'keeps two %s contacts in one audio lifetime and one history group',
     async (brush) => {
       const f = await fixture(brush);
@@ -104,7 +107,12 @@ describe('joint admitted contact sound lifecycle', () => {
       f.input.end(event([], [touch(1, 909, 700, 500)], { 1: 200 }));
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
-      expect(f.history().drawing).toMatchObject({ version: 5, pageId: 'flower', rainbow: 3 });
+      expect(f.history().drawing).toMatchObject({
+        version: 6,
+        paper: { kind: 'adopted', cssWidth: 1024, cssHeight: 768, backingScale: 1 },
+        pageId: 'flower',
+        rainbow: 3,
+      });
       expect(f.history().drawing.strokes).toHaveLength(2);
       expect(undoDrawing(f.history()).drawing).toBe(original);
       f.finish();

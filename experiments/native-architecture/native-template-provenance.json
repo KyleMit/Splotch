@@ -176,16 +176,24 @@
       "sourceSha256": "48d80b82ca5ff0072a94178634ebf7f8fe6ef7d5991d480fbe0f4140ff1df707",
       "target": "android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt",
       "change": "candidate-kotlin-identity",
-      "targetSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c",
-      "mode": "0o644"
+      "targetSha256": "3ec8533524630987b2712882d18cb24dc4436add267e97686c666187b4b6b9a6",
+      "mode": "0o644",
+      "extension": {
+        "identity": "native-product-composition-v1",
+        "baselineSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c"
+      }
     },
     {
       "source": "package/ios/HelloWorld.xcodeproj/project.pbxproj",
       "sourceSha256": "7b7cfc31b77069762f4ef9ed4c6f86dd57dd491cfbfdd710168c578ab2e25f8f",
       "target": "ios/HelloWorld.xcodeproj/project.pbxproj",
       "change": "candidate-apple-identity-and-bundling",
-      "targetSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065",
-      "mode": "0o644"
+      "targetSha256": "402df4a74d79fe70061eb220494889611a1e017d7724264015e41ef1eea1e77e",
+      "mode": "0o644",
+      "extension": {
+        "identity": "native-product-composition-v1",
+        "baselineSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065"
+      }
     },
     {
       "source": "package/ios/HelloWorld/Supporting/Expo.plist",
@@ -404,8 +412,12 @@
       "sourceSha256": "2bb28f4f3e9f37feeaff9e4d3fb63d1cbff962924a91c712b55c6c5fdd114c7c",
       "target": "android/app/src/main/AndroidManifest.xml",
       "change": "reviewed-network-and-private-storage-policy",
-      "targetSha256": "6058f5853e9315f090c0ceb6d9138b7349500137c0fabed5b1943f1fe2ff8b90",
-      "mode": "0o644"
+      "targetSha256": "daca655948f2e12b34b9ab4158c13050a4da880d61c3e90f4e2f091cdd4e85b9",
+      "mode": "0o644",
+      "extension": {
+        "identity": "native-product-composition-v1",
+        "baselineSha256": "6058f5853e9315f090c0ceb6d9138b7349500137c0fabed5b1943f1fe2ff8b90"
+      }
     },
     {
       "source": "package/android/app/src/main/res/values/colors.xml",
@@ -453,6 +465,70 @@
       "target": "TEMPLATE-LICENSE",
       "change": "unchanged",
       "targetSha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "mode": "0o644"
+    },
+    {
+      "source": "offline-library-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt",
+      "sourceSha256": "c8197fcea8a16e631046d151bad06a0949e3f567ac765c74ec992e46f8e2bed1",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt",
+      "change": "owned-offline-library-v1",
+      "targetSha256": "c8197fcea8a16e631046d151bad06a0949e3f567ac765c74ec992e46f8e2bed1",
+      "mode": "0o644"
+    },
+    {
+      "source": "offline-library-v1/ios/HelloWorld/SplotchLibraryEnvironment.m",
+      "sourceSha256": "30f99876f05d7f812e8bc863774808d5bc379a26672dd4a08fa7c02c85567d43",
+      "target": "ios/HelloWorld/SplotchLibraryEnvironment.m",
+      "change": "owned-offline-library-v1",
+      "targetSha256": "30f99876f05d7f812e8bc863774808d5bc379a26672dd4a08fa7c02c85567d43",
+      "mode": "0o644"
+    },
+    {
+      "source": "offline-library-v1/ios/HelloWorld/SplotchLibraryEnvironment.swift",
+      "sourceSha256": "6d1ddd7941d8ced34d192ddafd4d16b427ca0a82bb9a737ab930fed321e0b7d0",
+      "target": "ios/HelloWorld/SplotchLibraryEnvironment.swift",
+      "change": "owned-offline-library-v1",
+      "targetSha256": "6d1ddd7941d8ced34d192ddafd4d16b427ca0a82bb9a737ab930fed321e0b7d0",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt",
+      "sourceSha256": "aa95288f43caae2e582647cdeb5ec8568b169b8cc8a7aa372ea1f37ec5eb74f2",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "aa95288f43caae2e582647cdeb5ec8568b169b8cc8a7aa372ea1f37ec5eb74f2",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/ios/HelloWorld/SplotchAIEnvironment.swift",
+      "sourceSha256": "99eee10893a7a4a75636747971abd524bd0a4ed75d32bb6d6b5e6f321eb90ce2",
+      "target": "ios/HelloWorld/SplotchAIEnvironment.swift",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "99eee10893a7a4a75636747971abd524bd0a4ed75d32bb6d6b5e6f321eb90ce2",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/ios/HelloWorld/SplotchAIEnvironment.m",
+      "sourceSha256": "3e0f08107125f2b0de202e8d8418eb6baffa07c52411f9ab99dec2734163ff59",
+      "target": "ios/HelloWorld/SplotchAIEnvironment.m",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "3e0f08107125f2b0de202e8d8418eb6baffa07c52411f9ab99dec2734163ff59",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt",
+      "sourceSha256": "488480dc26e56beb95defa5eacfd547808390e7473598394ee369d6a58ca43fc",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "488480dc26e56beb95defa5eacfd547808390e7473598394ee369d6a58ca43fc",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/ios/HelloWorld/SplotchAIJournal.swift",
+      "sourceSha256": "ce4ab0dbe8c93b3d28529bc29bde06fcc60dbaca16e7290def691a3c694e5abe",
+      "target": "ios/HelloWorld/SplotchAIJournal.swift",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "ce4ab0dbe8c93b3d28529bc29bde06fcc60dbaca16e7290def691a3c694e5abe",
       "mode": "0o644"
     }
   ]

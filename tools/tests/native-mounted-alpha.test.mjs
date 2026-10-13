@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
+import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -194,8 +195,8 @@ function button(label) {
   );
 }
 function toolsButton() {
-  return [...host.querySelectorAll('button')].find((node) =>
-    node.getAttribute('aria-label')?.startsWith('Drawing tools.')
+  return [...host.querySelectorAll('button')].find(
+    (node) => node.getAttribute('aria-label') === 'Drawing tools'
   );
 }
 async function openTools() {
@@ -481,4 +482,8 @@ describe('mounted actual native Clear and decoder ownership', () => {
 vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')
+);
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

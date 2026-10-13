@@ -1,3 +1,8 @@
+import { RecordedDrawingSurface7 } from './RecordedDrawingSurface7';
+import type { CompletedCohort7 } from './recordedContactCohort7';
+import type { Drawing7 } from './recordedTypes7';
+import { InkPaperScope } from './InkPaper';
+import { drawingPaper, type PaperReference } from './paperSpace';
 import { useDrawingAppearance } from './DrawingAppearance';
 import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import {
@@ -12,9 +17,9 @@ import {
   type ForwardedRef,
   type RefObject,
 } from 'react';
-import { PanResponder, StyleSheet, View } from 'react-native';
+import { PanResponder, PixelRatio, StyleSheet, View } from 'react-native';
 import Svg from 'react-native-svg';
-import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type Stroke } from './model';
+import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type LegacyDrawing, type Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
@@ -31,13 +36,17 @@ export type DrawingSurfaceHandle = {
   lockInput: () => () => void;
   refreshGeometry: () => void;
 };
-type Props = ContactDrawingProps & {
+export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
+  onRecordedCohort: (base: Drawing7, cohort: CompletedCohort7) => Drawing7;
+  onAbandonAllocation: (base: Drawing7, cursor: number) => void;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
 };
 
-export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
+type LegacyProps = Omit<DrawingSurfaceProps, 'drawing' | 'currentDrawing'> & { drawing: LegacyDrawing; currentDrawing: () => LegacyDrawing };
+
+const LegacyDrawingSurface = forwardRef<DrawingSurfaceHandle, LegacyProps>(
   function DrawingSurface(props, ref) {
     const styles = useDrawingStyles(themedStyles);
     const theme = useDrawingAppearance();
@@ -50,7 +59,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
     const paper = useRef<View>(null);
     const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
     const geometry = useRef(createPaperGeometry(() => inputRef.current?.resize())).current;
-    const [drafts, setDrafts] = useState<readonly Stroke[]>([]);
+    const [draft, setDraft] = useState<{
+      strokes: readonly Stroke[];
+      paper: PaperReference | null;
+    }>({ strokes: [], paper: null });
+    const paperReference = draft.paper ?? drawingPaper(props.drawing);
     const raster = useRef<RasterInkHandle>(null);
     const input = useRef(
       createContactResponder(
@@ -67,7 +80,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
             ) !== true,
         }),
         geometry.current,
-        setDrafts
+        (strokes, paper) => setDraft({ strokes, paper }),
+        () => PixelRatio.get()
       )
     ).current;
     inputRef.current = input;
@@ -110,45 +124,52 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
     ).current;
 
     return (
-      <InkAppearanceScope.Provider value={appearance}>
-        <View style={styles.container}>
-          <View
-            ref={paper}
-            accessibilityLabel="Drawing paper"
-            testID="drawing-paper"
-            style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}
-            pointerEvents="box-only"
-            onLayout={refreshGeometry}
-            {...responder.panHandlers}
-            onTouchEnd={(event) => input.endRaw(event)}
-            onTouchCancel={() => input.interrupt()}
-          >
-            {/* Checkpoints contain Magic colors; appearance changes must replay semantic strokes. */}
-            <RasterInk
-              key={`${appearance.pageId}:${appearance.theme}`}
-              ref={raster}
-              strokes={props.drawing.strokes}
-              drafts={drafts}
-              brush={props.brush}
-              onBusy={props.onPreparingChange}
-              onError={(error) => {
-                input.silence();
-                props.onRendererFault(error);
-              }}
-            />
-            <Svg
-              width="100%"
-              height="100%"
-              viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-              pointerEvents="none"
-              style={StyleSheet.absoluteFill}
-            >
-              <PageOutline pageId={props.drawing.pageId} />
-            </Svg>
+      <InkPaperScope.Provider value={paperReference}>
+        <InkAppearanceScope.Provider value={appearance}>
+          <View style={styles.container}>
+            <View style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}>
+              <View
+                ref={paper}
+                accessibilityLabel="Drawing paper"
+                testID="drawing-paper"
+                style={styles.inkPlane}
+                pointerEvents="box-only"
+                onLayout={refreshGeometry}
+                {...responder.panHandlers}
+                onTouchEnd={(event) => input.endRaw(event)}
+                onTouchCancel={() => input.interrupt()}
+              >
+                {/* Checkpoints contain Magic colors; appearance changes must replay semantic strokes. */}
+                <RasterInk
+                  key={`${appearance.pageId}:${appearance.theme}`}
+                  ref={raster}
+                  strokes={props.drawing.strokes}
+                  drafts={draft.strokes}
+                  brush={props.brush}
+                  color={props.color}
+                  onBusy={props.onPreparingChange}
+                  onError={(error) => {
+                    input.silence();
+                    props.onRendererFault(error);
+                  }}
+                />
+                <Svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  pointerEvents="none"
+                  style={StyleSheet.absoluteFill}
+                >
+                  <PageOutline pageId={props.drawing.pageId} />
+                </Svg>
+              </View>
+              <View pointerEvents="none" style={styles.paperBorder} />
+            </View>
+            {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
           </View>
-          {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
-        </View>
-      </InkAppearanceScope.Provider>
+        </InkAppearanceScope.Provider>
+      </InkPaperScope.Provider>
     );
   }
 );
@@ -158,7 +179,7 @@ function useSurfaceCapture(
   ref: ForwardedRef<DrawingSurfaceHandle>,
   setPacket: (packet: PictureRequest | null) => void,
   raster: RefObject<RasterInkHandle | null>,
-  drawing: Drawing,
+  drawing: LegacyDrawing,
   appearance: InkAppearance,
   refreshGeometry: () => void
 ) {
@@ -175,6 +196,7 @@ function useSurfaceCapture(
   const nextId = useRef(1);
 
   async function capture(snapshot: Drawing, kind: PictureRequest['kind']) {
+    if (snapshot.version === 7) throw new Error('The drawing capture mode changed.');
     if (input.hasActive()) throw new Error('Lift your finger before capturing the picture.');
     const lease = commandLock.current;
     if (!lease || currentDrawing.current !== snapshot || !raster.current)
@@ -243,14 +265,29 @@ function useSurfaceCapture(
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     container: { width: '100%', maxWidth: PAPER_WIDTH, alignSelf: 'center' },
+    inkPlane: { width: '100%', height: '100%' },
+    paperBorder: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderWidth: 1,
+      borderColor: palette.borderWarm,
+      borderRadius: 16,
+    },
     paper: {
       width: '100%',
       aspectRatio: PAPER_WIDTH / PAPER_HEIGHT,
       overflow: 'hidden',
       borderRadius: 16,
-      borderWidth: 1,
-      borderColor: palette.borderWarm,
       backgroundColor: palette.paper,
     },
   })
 );
+
+export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(function DrawingSurface(props, ref) {
+  if (props.drawing.version === 7) return <RecordedDrawingSurface7 {...props} drawing={props.drawing} ref={ref} />;
+  const currentDrawing = () => { const drawing = props.currentDrawing(); if (drawing.version === 7) throw new Error('The drawing input mode changed.'); return drawing; };
+  return <LegacyDrawingSurface {...props} drawing={props.drawing} currentDrawing={currentDrawing} ref={ref} />;
+});

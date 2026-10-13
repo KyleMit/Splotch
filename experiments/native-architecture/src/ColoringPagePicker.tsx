@@ -2,6 +2,12 @@ import { useModalAnimation } from './drawing/useModalAnimation';
 import { useDrawingAppearance } from './drawing/DrawingAppearance';
 import { createDrawingStyles, useDrawingStyles } from './drawing/DrawingAppearance';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image } from 'react-native';
+import { NativeLibraryControls } from './offlineLibrary/NativeLibraryControls';
+import { useLibraryControls } from './offlineLibrary/LibraryScope';
+import { offlinePageId } from './offlineLibrary/identity';
+import { OFFLINE_BOOKS } from './offlineLibrary/books.generated';
 import Svg, { Rect } from 'react-native-svg';
 import { PAPER_HEIGHT, PAPER_WIDTH } from './drawing/model';
 import { InkAppearanceScope } from './drawing/InkAppearance';
@@ -25,6 +31,8 @@ export function ColoringPagePicker({
   const animationType = useModalAnimation();
   const styles = useDrawingStyles(themedStyles);
   const theme = useDrawingAppearance();
+  const library = useLibraryControls();
+  const [heldBooks] = useState(() => library?.state.installed ?? []);
   return (
     <Modal visible transparent animationType={animationType} onRequestClose={onClose}>
       <View style={styles.backdrop}>
@@ -69,6 +77,38 @@ export function ColoringPagePicker({
                 <Text style={styles.selection}>{pageId === selected ? 'Selected' : 'Choose'}</Text>
               </Pressable>
             ))}
+            {heldBooks
+              .filter((pack) =>
+                library?.state.installed.some((current) => current.revision === pack.revision)
+              )
+              .flatMap((pack) => {
+                const book = OFFLINE_BOOKS.find((book) => book.id === pack.id);
+                return (
+                  book?.pages.map((page) => {
+                    const pageId = offlinePageId(pack, page.slug);
+                    return (
+                      <Pressable
+                        key={pageId}
+                        accessibilityRole="radio"
+                        accessibilityLabel={page.label}
+                        accessibilityState={{ checked: pageId === selected }}
+                        aria-checked={pageId === selected}
+                        onPress={() => onChoose(pageId)}
+                        style={styles.tile}
+                      >
+                        <Image
+                          source={{
+                            uri: library?.owner.selector(pack, page.slug, theme === 'dark'),
+                          }}
+                          style={styles.preview}
+                        />
+                        <Text style={styles.label}>{page.label}</Text>
+                      </Pressable>
+                    );
+                  }) ?? []
+                );
+              })}
+            <NativeLibraryControls />
           </ScrollView>
           <Pressable
             accessibilityRole="button"

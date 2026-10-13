@@ -24,11 +24,12 @@ export function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
+export function sourceGitBytes(root, args) {
+  return execFileSync('git', ['-C', root, ...args], { maxBuffer: GIT_OUTPUT_MAX_BYTES });
+}
+
 export function sourceGit(root, args) {
-  return execFileSync('git', ['-C', root, ...args], {
-    encoding: 'utf8',
-    maxBuffer: GIT_OUTPUT_MAX_BYTES,
-  });
+  return sourceGitBytes(root, args).toString('utf8');
 }
 
 function safeSourcePath(path) {
@@ -99,7 +100,7 @@ export function freezeSource({ root, topologySha, topologyLockSha256, provisiona
   const sha = sourceGit(root, ['rev-parse', '--verify', 'HEAD']).trim();
   if (!SHA_PATTERN.test(sha)) throw new Error(`Unsupported source commit format: ${sha}`);
   sourceGit(root, ['merge-base', '--is-ancestor', topologySha, sha]);
-  const topologyLock = execFileSync('git', ['-C', root, 'show', `${topologySha}:pnpm-lock.yaml`]);
+  const topologyLock = sourceGitBytes(root, ['show', `${topologySha}:pnpm-lock.yaml`]);
   if (sha256(topologyLock) !== topologyLockSha256)
     throw new Error('Reviewed topology commit/lock digest mismatch');
   const lockSha256 = sha256(readFileSync(join(root, 'pnpm-lock.yaml')));
@@ -158,9 +159,7 @@ export function freezeSource({ root, topologySha, topologyLockSha256, provisiona
     nativeQualification,
     provisional,
     statusSha256: sha256(status),
-    patchSha256: provisional
-      ? sha256(execFileSync('git', ['-C', root, 'diff', '--binary', 'HEAD']))
-      : null,
+    patchSha256: provisional ? sha256(sourceGitBytes(root, ['diff', '--binary', 'HEAD'])) : null,
     entries,
     excluded,
   };

@@ -1,3 +1,10 @@
+import { legacyDrawing, canonicalPaper, adoptedDrawing } from './native-paper-fixtures.mjs';
+import { STROKE_WIDTHS } from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
+import {
+  STROKE_SIZES,
+  getStrokeWidthPx,
+  getEraserWidthPx,
+} from '../../web/src/lib/drawing/strokeSettings.ts';
 import { describe, expect, it, vi } from 'vitest';
 import {
   addStrokes,
@@ -19,22 +26,30 @@ import {
 vi.mock('react-native', () => ({ findNodeHandle: (owner) => owner }));
 const point = { x: 200, y: 300 };
 const defaults = [
-  ['pencil', 7],
-  ['marker', 22],
-  ['crayon', 34],
-  ['magic', 30],
-  ['eraser', 44],
+  ['pen', 8],
+  ['crayon', 8],
+  ['magic', 8],
+  ['eraser', 16],
 ];
 
-describe('candidate stroke widths', () => {
-  it.each(defaults)(
-    'preserves the exact %s default %s and scales both alternatives',
-    (brush, width) => {
-      expect(strokeStyle(brush, 'Blue', emptyDrawing(), 'medium').width).toBe(width);
-      expect(strokeStyle(brush, 'Blue', emptyDrawing(), 'thin').width).toBe(width / 2);
-      expect(strokeStyle(brush, 'Blue', emptyDrawing(), 'thick').width).toBe(width * 2);
+describe('canonical shared stroke widths', () => {
+  it.each(defaults)('uses the canonical %s default %s', (brush, width) => {
+    expect(strokeStyle(brush, 'Blue', emptyDrawing(), 'medium').width).toBe(width);
+  });
+  it('matches the shipping five-level width owner for every live brush', () => {
+    expect(STROKE_WIDTHS).toEqual(['extraThin', 'thin', 'medium', 'thick', 'extraThick']);
+    for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
+      expect(
+        STROKE_WIDTHS.map((width) => strokeStyle(brush, 'Blue', emptyDrawing(), width).width)
+      ).toEqual(
+        STROKE_SIZES.map((level) =>
+          brush === 'eraser' ? getEraserWidthPx(level) : getStrokeWidthPx(level)
+        )
+      );
     }
-  );
+    expect(STROKE_SIZES.map(getStrokeWidthPx)).toEqual([2, 4, 8, 14, 22]);
+    expect(STROKE_SIZES.map(getEraserWidthPx)).toEqual([4, 8, 16, 28, 44]);
+  });
 
   it.each([
     { version: 1, strokes: [{ brush: 'pencil', color: 'Blue', points: [point] }] },
@@ -65,7 +80,7 @@ describe('candidate stroke widths', () => {
     'rejects missing, nonnumeric or unsupported persisted marker width %s',
     (width) => {
       const stroke = { brush: 'marker', color: 'Blue', points: [point], width };
-      expect(() => parseDrawing({ ...emptyDrawing(), strokes: [stroke] })).toThrow('width');
+      expect(() => parseDrawing({ ...legacyDrawing(), strokes: [stroke] })).toThrow('width');
     }
   );
 
@@ -75,26 +90,29 @@ describe('candidate stroke widths', () => {
       parseDrawing({ version: 3, pageId: 'blank', rainbow: 0, strokes: [stroke] })
     ).toThrow();
     expect(() =>
-      parseDrawing({ ...emptyDrawing(), strokes: [{ ...stroke, pressure: 0.5 }] })
+      parseDrawing({
+        ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }),
+        strokes: [{ ...stroke, brush: 'pen', pressure: 0.5 }],
+      })
     ).toThrow();
   });
 
   it('preserves mixed actual widths through a cohort, clear, undo, save and reopen', () => {
     const input = createContactCohort();
     const original = emptyDrawing(2, 'flower');
-    input.start('a', 'Blue', 'marker', point, original, 'thin');
+    input.start('a', 'Blue', 'pen', point, original, 'thin', canonicalPaper);
     input.start('b', 'Blue', 'eraser', point, original, 'thick');
     input.sample('a', { x: 300, y: 300 });
     expect(input.finish('a')).toBeNull();
-    const history = addStrokes(createHistory(original), input.finish('b'));
-    expect(history.drawing.strokes.map(({ width }) => width)).toEqual([11, 88]);
+    const history = addStrokes(createHistory(original), input.finish('b'), input.paper());
+    expect(history.drawing.strokes.map(({ width }) => width)).toEqual([4, 28]);
     const snapshot = JSON.stringify(history.drawing);
     const cleared = clearDrawing(history, false);
     expect(undoDrawing(cleared).drawing).toBe(history.drawing);
     const reopened = parseDrawing(JSON.parse(snapshot));
     expect(reopened).toEqual(history.drawing);
     expect(commitDrawing(cleared, reopened).drawing.strokes.map(({ width }) => width)).toEqual([
-      11, 88,
+      4, 28,
     ]);
     expect(JSON.stringify(history.drawing)).toBe(snapshot);
   });
@@ -103,7 +121,7 @@ describe('candidate stroke widths', () => {
     const target = {};
     let strokeWidth = 'thin';
     let eraserWidth = 'thick';
-    let brush = 'marker';
+    let brush = 'pen';
     const cohorts = [];
     const errors = [];
     const input = createContactResponder(
@@ -119,7 +137,8 @@ describe('candidate stroke widths', () => {
         onError: (error) => errors.push(error),
       }),
       () => ({ width: 1024, height: 768, pageX: 0, pageY: 0 }),
-      () => {}
+      () => {},
+      () => 1
     );
     const touch = (identifier, timestamp) => ({
       identifier,
@@ -153,14 +172,17 @@ describe('candidate stroke widths', () => {
     input.interrupt();
     expect(errors).toEqual([]);
     expect(cohorts).toHaveLength(1);
-    expect(cohorts[0].map(({ width }) => width)).toEqual([11, 44, 22]);
+    expect(cohorts[0].map(({ width }) => width)).toEqual([4, 14, 8]);
   });
 });
 
 describe('one persisted candidate settings owner', () => {
-  it('defaults old candidate sound settings without changing either prior brush geometry', () => {
+  it('defaults drawing levels while preserving historic geometry only in saved pictures', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
-      version: 4,
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
       appearance: 'system',
       selectedColor: 'Purple',
       customColors: [],
@@ -204,7 +226,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":4,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -216,7 +238,10 @@ describe('one persisted candidate settings owner', () => {
     });
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
-      version: 4,
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
       appearance: 'system',
       selectedColor: 'Purple',
       customColors: [],
@@ -227,7 +252,7 @@ describe('one persisted candidate settings owner', () => {
   });
 
   it.each(['retry', 'sound choice'])(
-    'keeps width taps session-only after a transient read failure until explicit %s',
+    'keeps width taps session-only after a transient read failure through explicit %s until successful reread and new choices',
     async (recovery) => {
       const original =
         '{"version":2,"soundEnabled":true,"strokeWidth":"thick","eraserWidth":"thin"}';
@@ -249,22 +274,43 @@ describe('one persisted candidate settings owner', () => {
       expect(saved).toBe(original);
       expect(states.at(-1)).toEqual({
         status: 'ready',
+        coloringBookEnabled: false,
         soundEnabled: false,
         strokeWidth: 'thin',
         eraserWidth: 'thick',
         selectedColor: 'Purple',
         customColors: [],
         appearance: 'system',
+        aiEnabled: false,
+        parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
         saved: false,
         message: warning,
       });
       if (recovery === 'retry') await owner.retrySave();
       else await owner.setEnabled(true);
-      expect(storage.write).toHaveBeenCalledOnce();
+      expect(storage.write).not.toHaveBeenCalled();
+      expect(saved).toBe(original);
+      await owner.retryRead();
+      expect(storage.read).toHaveBeenCalledTimes(2);
+      expect(states.at(-1)).toMatchObject({
+        saved: true,
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+        soundEnabled: true,
+      });
+      expect(storage.write).not.toHaveBeenCalled();
+      await owner.setWidth('drawing', 'thin');
+      await owner.setWidth('eraser', 'thick');
+      if (recovery === 'sound choice') await owner.setEnabled(false);
+      const writes = recovery === 'sound choice' ? 3 : 2;
+      expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(JSON.parse(saved)).toEqual({
-        version: 4,
+        version: 6,
+        coloringBookEnabled: true,
+        aiEnabled: false,
+        parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
         appearance: 'system',
-        soundEnabled: recovery === 'sound choice',
+        soundEnabled: recovery === 'retry',
         strokeWidth: 'thin',
         eraserWidth: 'thick',
         selectedColor: 'Purple',
@@ -272,11 +318,11 @@ describe('one persisted candidate settings owner', () => {
       });
       expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
       await owner.setWidth('drawing', 'medium');
-      expect(storage.write).toHaveBeenCalledTimes(2);
+      expect(storage.write).toHaveBeenCalledTimes(writes + 1);
       const reopened = createSoundSettings(storage, (state) => states.push(state));
       await reopened.load();
       expect(states.at(-1)).toMatchObject({
-        soundEnabled: recovery === 'sound choice',
+        soundEnabled: recovery === 'retry',
         strokeWidth: 'medium',
         eraserWidth: 'thick',
         saved: true,
@@ -302,7 +348,10 @@ describe('one persisted candidate settings owner', () => {
     await owner.setWidth('eraser', 'thick');
     expect(storage.write).toHaveBeenCalledTimes(2);
     expect(JSON.parse(saved)).toEqual({
-      version: 4,
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
       appearance: 'system',
       soundEnabled: true,
       strokeWidth: 'thin',

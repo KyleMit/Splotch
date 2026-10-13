@@ -1,3 +1,10 @@
+import { BRUSHES } from '../drawing/brushes';
+import {
+  OPTIONAL_BRUSHES,
+  type OptionalBrush,
+  type BrushPreferencesState,
+} from './brushPreferences';
+import { ColoringBookSetting } from './ColoringBookSetting';
 import { APPEARANCE_PREFERENCES, APPEARANCE_LABELS, type AppearancePreference } from './appearance';
 import {
   createDrawingStyles,
@@ -12,25 +19,37 @@ import type { SoundSettingsState } from './soundSettings';
 
 const SETTINGS_MAX_WIDTH = 480;
 
-export function SoundSettings({
-  state,
-  audioMessage,
-  onChange,
-  onAppearanceChange,
-  onRetrySave,
-  onClose,
-  visible,
-  onDismiss,
-}: {
+type SoundSettingsProps = {
   state: SoundSettingsState;
+  brushState: BrushPreferencesState;
+  onBrushAvailabilityChange: (brush: OptionalBrush, enabled: boolean) => void;
+  onRetryBrushSave: () => void;
   audioMessage: string;
   onChange: (enabled: boolean) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
+  onColoringBookChange: (enabled: boolean) => void;
   onRetrySave: () => void;
+  onParentCenter: () => void;
   onClose: () => void;
   visible: boolean;
   onDismiss: () => void;
-}) {
+};
+
+export function SoundSettings({
+  state,
+  brushState,
+  onBrushAvailabilityChange,
+  onRetryBrushSave,
+  audioMessage,
+  onChange,
+  onAppearanceChange,
+  onColoringBookChange,
+  onRetrySave,
+  onParentCenter,
+  onClose,
+  visible,
+  onDismiss,
+}: SoundSettingsProps) {
   const styles = useDrawingStyles(themedStyles);
   const theme = useDrawingTheme();
   const busy = state.status !== 'ready' || !visible;
@@ -53,6 +72,25 @@ export function SoundSettings({
             <Text accessibilityRole="header" style={styles.title}>
               Settings
             </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Manage Parent Center"
+              onPress={onParentCenter}
+              style={styles.button}
+            >
+              <Text style={styles.labelText}>Parent Center</Text>
+            </Pressable>
+            <BrushChoices
+              state={brushState}
+              busy={busy}
+              onChange={onBrushAvailabilityChange}
+              onRetry={onRetryBrushSave}
+            />
+            <ColoringBookSetting
+              enabled={state.coloringBookEnabled}
+              disabled={busy}
+              onChange={onColoringBookChange}
+            />
             <Text style={styles.labelText}>Appearance</Text>
             <View
               accessibilityRole="radiogroup"
@@ -118,6 +156,49 @@ export function SoundSettings({
     </Modal>
   );
 }
+function BrushChoices({
+  state,
+  busy,
+  onChange,
+  onRetry,
+}: {
+  state: BrushPreferencesState;
+  busy: boolean;
+  onChange: SoundSettingsProps['onBrushAvailabilityChange'];
+  onRetry: () => void;
+}) {
+  const styles = useDrawingStyles(themedStyles);
+  const theme = useDrawingTheme();
+  return (
+    <>
+      {OPTIONAL_BRUSHES.map((brush) => (
+        <View key={brush} style={styles.row}>
+          <Text style={styles.labelText}>{BRUSHES[brush].label}</Text>
+          <Switch
+            accessibilityLabel={`Show ${BRUSHES[brush].label}`}
+            value={state.availability[brush]}
+            disabled={busy || state.status !== 'ready'}
+            onValueChange={(enabled) => onChange(brush, enabled)}
+            style={styles.switch}
+            trackColor={{ true: theme.brandSolid, false: theme.textSoft }}
+          />
+        </View>
+      ))}
+      {state.message ? <Text style={styles.help}>{state.message}</Text> : null}
+      {!state.saved ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Retry saving brush choices"
+          onPress={onRetry}
+          style={styles.button}
+        >
+          <Text style={styles.labelText}>Retry saving brush choices</Text>
+        </Pressable>
+      ) : null}
+    </>
+  );
+}
+
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     backdrop: {

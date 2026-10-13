@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { legacyDrawing, adoptedDrawing } from './native-paper-fixtures.mjs';
 import {
   act,
   createElement,
@@ -28,6 +29,7 @@ import { DRAWING_THEME } from '../../experiments/native-architecture/src/drawing
 const responder = vi.hoisted(() => ({ current: null, scheme: 'light', busy: true, errors: [] }));
 
 vi.mock('react-native', () => ({
+  PixelRatio: { get: () => 1 },
   useColorScheme: () => responder.scheme,
   PanResponder: {
     create: (handlers) => {
@@ -38,12 +40,22 @@ vi.mock('react-native', () => ({
   Platform: { OS: 'ios' },
   findNodeHandle: (owner) => owner,
   StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
-  View: forwardRef(({ children, onLayout, testID }, ref) => {
+  Image: ({ source, onLoad }) => {
+    useEffect(() => onLoad?.(), [source.uri]);
+    return null;
+  },
+  View: forwardRef(({ children, onLayout, testID, style }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
     }, [onLayout]);
-    return createElement('div', { 'data-testid': testID }, children);
+    const layers = Array.isArray(style) ? style : [style];
+    const hidden = layers.some((layer) => layer?.left < 0 || layer?.opacity === 0);
+    return createElement(
+      'div',
+      { 'data-testid': testID, 'data-hidden-artwork': hidden ? 'true' : undefined },
+      children
+    );
   }),
 }));
 
@@ -56,7 +68,7 @@ vi.mock('react-native-svg', () => ({
     const svg = useRef(null);
     useImperativeHandle(ref, () => ({
       toDataURL(callback) {
-        if (svg.current.querySelector('image')) capturedOutputs.push(svg.current.cloneNode(true));
+        if (hasCheckpointImage(svg.current)) capturedOutputs.push(svg.current.cloneNode(true));
         void sharp(Buffer.from(svg.current.outerHTML))
           .png()
           .toBuffer()
@@ -90,10 +102,10 @@ vi.mock('react-native-svg', () => ({
 }));
 
 const drawing = {
-  ...emptyDrawing(0, 'sunshine'),
+  ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }, 0, 'sunshine'),
   strokes: [
     {
-      ...strokeStyle('marker', 'Green', emptyDrawing()),
+      ...strokeStyle('pen', 'Green', emptyDrawing()),
       points: [
         { x: 100, y: 384 },
         { x: 900, y: 384 },
@@ -157,7 +169,9 @@ function mount(snapshot = drawing) {
             responder.errors.push(error);
           },
           color: 'Green',
-          brush: 'marker',
+          brush: 'pen',
+          strokeWidth: 'medium',
+          eraserWidth: 'medium',
           disabled: false,
           onCohort: vi.fn(),
           onDrawingChange: vi.fn(),
@@ -189,8 +203,14 @@ function touch(x, y, timestamp = 100) {
     },
   };
 }
+function hasCheckpointImage(svg) {
+  return [...svg.querySelectorAll('image')].some((image) => !image.closest('defs'));
+}
+
 function liveArtwork() {
-  const trees = [...container.querySelectorAll('[data-testid="drawing-paper"] svg')];
+  const trees = [...container.querySelectorAll('[data-testid="drawing-paper"] svg')].filter(
+    (tree) => !tree.closest('[data-hidden-artwork="true"]')
+  );
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 1024 768');
   svg.setAttribute('width', '1024');
@@ -223,7 +243,7 @@ afterEach(() => {
 describe('coloring outlines over live and exported paint', () => {
   it('recodes real live Magic through the system-theme hook without replacing its Drawing', async () => {
     const snapshot = {
-      ...emptyDrawing(3, 'sunshine'),
+      ...legacyDrawing(3, 'sunshine'),
       strokes: [
         {
           brush: 'magic',
@@ -235,7 +255,7 @@ describe('coloring outlines over live and exported paint', () => {
           ],
         },
         {
-          ...strokeStyle('marker', 'Black', emptyDrawing(), 'thick'),
+          ...strokeStyle('pen', 'Black', emptyDrawing(), 'thick'),
           points: [
             { x: 200, y: 100 },
             { x: 200, y: 650 },
@@ -369,7 +389,7 @@ describe('coloring outlines over live and exported paint', () => {
 });
 
 function mixedCrayonDrawing(reverse) {
-  const base = emptyDrawing();
+  const base = adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 });
   const colors = ['Black', '#0A0B10'].map((color, index) => ({
     ...strokeStyle('crayon', color, base, 'thick'),
     points: [
@@ -426,7 +446,7 @@ it.each([false, true])(
         expect(responder.busy).toBe(false);
         expect(container.querySelector('[data-testid="drawing-paper"] image')).not.toBeNull();
       });
-      const prefix = capturedBuffers.slice(start).find(({ svg }) => !svg.querySelector('image'));
+      const prefix = capturedBuffers.slice(start).find(({ svg }) => !hasCheckpointImage(svg));
       expect(prefix).toBeDefined();
       await expectMixedPixels(prefix.png, theme);
       const live = await sharp(Buffer.from(liveArtwork().outerHTML)).png().toBuffer();

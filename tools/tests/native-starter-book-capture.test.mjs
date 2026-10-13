@@ -26,6 +26,10 @@ vi.mock('react-native', () => ({
     return null;
   },
 }));
+vi.mock('react-native-svg', () => ({
+  default: ({ children }) => createElement('div', null, children),
+  Image: () => null,
+}));
 vi.mock('../../experiments/native-architecture/src/drawing/InkAppearance.tsx', () => ({
   useInkAppearance: () => capture,
 }));

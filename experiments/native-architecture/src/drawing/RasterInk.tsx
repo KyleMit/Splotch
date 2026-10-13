@@ -1,3 +1,5 @@
+import { InkPaperScope, useInkPaper } from './InkPaper';
+import { samePaper, type PaperReference } from './paperSpace';
 import {
   Fragment,
   forwardRef,
@@ -21,6 +23,13 @@ import {
   type InkPlan,
   type InkPreparation,
 } from './checkpoints';
+import { useInkAppearance } from './InkAppearance';
+import {
+  CrayonTileResourceScope,
+  useCrayonTileResources,
+  useCrayonTileReadiness,
+} from './useCrayonTileReadiness';
+import type { PaintColor } from './palette';
 import type { Brush } from './brushes';
 import { InkScene } from './InkScene';
 import { FixedInkCapture } from './FixedInkCapture';
@@ -37,6 +46,7 @@ type Props = {
   strokes: readonly Stroke[];
   drafts?: readonly Stroke[];
   brush: Brush;
+  color: PaintColor;
   onBusy: (busy: boolean) => void;
   onError: (error: unknown) => void;
 };
@@ -50,21 +60,24 @@ type Incoming = Readonly<{
 export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(props, ref) {
   const state = useRasterCheckpoint(props, ref);
   return (
-    <View style={styles.scene} pointerEvents="none">
-      {state.capturePlan ? (
-        <FixedInkCapture
-          plan={state.capturePlan}
-          svgRef={state.fixedSvg}
-          onReady={state.captureReady}
-          onError={state.captureError}
+    <CrayonTileResourceScope.Provider value={state.tileResources}>
+      <View style={styles.scene} pointerEvents="none">
+        {state.tileDecode}
+        {state.capturePlan ? (
+          <FixedInkCapture
+            plan={state.capturePlan}
+            svgRef={state.fixedSvg}
+            onReady={state.captureReady}
+            onError={state.captureError}
+          />
+        ) : null}
+        <RasterFrames
+          frames={state.frames}
+          onImageLoad={state.imageLoaded}
+          onImageError={state.failImage}
         />
-      ) : null}
-      <RasterFrames
-        frames={state.frames}
-        onImageLoad={state.imageLoaded}
-        onImageError={state.failImage}
-      />
-    </View>
+      </View>
+    </CrayonTileResourceScope.Provider>
   );
 });
 
@@ -73,6 +86,18 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   propsRef.current = props;
   const drafts = props.drafts ?? [];
   const { plan, available, capturePlan, commitFrame } = useInkPlan(props);
+  const checkpoint = (drafts.length ? available?.checkpoint : null) ?? plan.checkpoint;
+  const displayStrokes = useMemo(
+    () => [...props.strokes.slice(checkpoint?.strokes.length ?? 0), ...drafts],
+    [props.strokes, checkpoint, props.drafts]
+  );
+  const { theme } = useInkAppearance();
+  const tileResources = useCrayonTileResources(
+    displayStrokes,
+    theme,
+    props.brush === 'crayon' ? props.color : undefined
+  );
+  const tiles = useCrayonTileReadiness(tileResources.uris, props.onError);
   const [pending, setPending] = useState<Incoming | null>(null);
   const [fault, setFault] = useState<unknown>(null);
   const nextId = useRef(1);
@@ -81,7 +106,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   incomingRef.current = incoming;
   const fixedSvg = useRef<Svg>(null);
   const [fixedReady, setFixedReady] = useState<InkPlan | null>(null);
-  const canonicalReady = !fault && !plan.needsCheckpoint;
+  const canonicalReady = !fault && !plan.needsCheckpoint && tiles.ready;
   const inputReady =
     canonicalReady &&
     !incoming &&
@@ -89,11 +114,21 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   const working = useCheckpointJob({
     plan: capturePlan ?? plan,
     ready:
-      !drafts.length && !fault && !incoming && capturePlan !== null && fixedReady === capturePlan,
+      !drafts.length &&
+      !fault &&
+      tiles.ready &&
+      !incoming &&
+      capturePlan !== null &&
+      fixedReady === capturePlan,
     svg: fixedSvg,
     onCheckpoint(base64, capturedPlan) {
       setPending({
-        frame: { id: nextId.current++, strokes: capturedPlan.prefix, base64 },
+        frame: {
+          id: nextId.current++,
+          strokes: capturedPlan.prefix,
+          base64,
+          paper: capturedPlan.paper,
+        },
         plan: capturedPlan,
         brush: propsRef.current.brush,
         provisional: !plan.needsCheckpoint,
@@ -156,12 +191,9 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
     setFault(error);
     propsRef.current.onError(error);
   }
-  const displayCheckpoint = (drafts.length ? available?.checkpoint : null) ?? plan.checkpoint;
-  const displayStrokes = useMemo(
-    () => [...props.strokes.slice(displayCheckpoint?.strokes.length ?? 0), ...drafts],
-    [props.strokes, displayCheckpoint, props.drafts]
-  );
   return {
+    tileResources,
+    tileDecode: tiles.decode,
     capturePlan: capturePlan && !drafts.length && !incoming && !fault ? capturePlan : null,
     captureReady: () => setFixedReady(capturePlan),
     captureError(error: unknown) {
@@ -169,7 +201,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
       propsRef.current.onError(error);
     },
     fixedSvg,
-    frames: createRasterFrames(displayCheckpoint, displayStrokes, props.strokes, incoming),
+    frames: createRasterFrames(checkpoint, displayStrokes, props.strokes, incoming, plan.paper),
     imageLoaded,
     failImage,
   };
@@ -179,9 +211,11 @@ function createRasterFrames(
   checkpoint: InkCheckpoint | null,
   strokes: readonly Stroke[],
   prefix: readonly Stroke[],
-  incoming: Incoming | null
+  incoming: Incoming | null,
+  paper: PaperReference
 ) {
   const displayPlan: InkPlan = {
+    paper,
     checkpoint,
     strokes,
     prefix,
@@ -194,6 +228,7 @@ function createRasterFrames(
           {
             id: incoming.frame.id,
             plan: {
+              paper: incoming.frame.paper,
               checkpoint: incoming.frame,
               strokes: [],
               prefix: incoming.frame.strokes,
@@ -208,23 +243,27 @@ function createRasterFrames(
 }
 
 function useInkPlan(props: Pick<Props, 'strokes' | 'drafts' | 'brush'>) {
+  const paper = useInkPaper();
   const drafts = props.drafts ?? [];
   const [checkpoint, setCheckpoint] = useState<InkCheckpoint | null>(null);
   const [prepared, setPrepared] = useState<InkPreparation | null>(null);
   const predecessor = useMemo(
-    () => planInk(props.strokes, checkpoint),
-    [props.strokes, checkpoint]
+    () => planInk(props.strokes, checkpoint, paper),
+    [props.strokes, checkpoint, paper]
   );
   const promoted =
-    prepared && preparationWitnessed(props.strokes, prepared, predecessor.checkpoint)
+    prepared &&
+    samePaper(prepared.checkpoint.paper, paper) &&
+    preparationWitnessed(props.strokes, prepared, predecessor.checkpoint)
       ? prepared
       : null;
   const plan = useMemo(
-    () => planInk(props.strokes, promoted?.checkpoint ?? checkpoint),
-    [props.strokes, promoted, checkpoint]
+    () => planInk(props.strokes, promoted?.checkpoint ?? checkpoint, paper),
+    [props.strokes, promoted, checkpoint, paper]
   );
   const available =
     prepared &&
+    samePaper(prepared.checkpoint.paper, paper) &&
     sameStrokes(props.strokes, prepared.checkpoint.strokes) &&
     preparationMatches(props.strokes, prepared, plan.checkpoint) &&
     (drafts.length ? drafts[0].brush === prepared.brush : props.brush === prepared.brush)
@@ -334,24 +373,27 @@ function RasterFrames({
               }}
             />
           ) : null}
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          >
-            <G opacity={frame.hidden ? 0 : 1}>
-              <InkScene
-                checkpoint={frame.plan.checkpoint}
-                strokes={frame.plan.strokes}
-                onImageLoad={() => {
-                  if (Platform.OS !== 'android' && frame.plan.checkpoint)
-                    onImageLoad(frame.plan.checkpoint);
-                }}
-              />
-            </G>
-          </Svg>
+          <InkPaperScope.Provider value={frame.plan.paper}>
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+              preserveAspectRatio="xMidYMid meet"
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            >
+              <G opacity={frame.hidden ? 0 : 1}>
+                <InkScene
+                  checkpoint={frame.plan.checkpoint}
+                  strokes={frame.plan.strokes}
+                  onImageLoad={() => {
+                    if (Platform.OS !== 'android' && frame.plan.checkpoint)
+                      onImageLoad(frame.plan.checkpoint);
+                  }}
+                />
+              </G>
+            </Svg>
+          </InkPaperScope.Provider>
         </Fragment>
       ))}
     </>

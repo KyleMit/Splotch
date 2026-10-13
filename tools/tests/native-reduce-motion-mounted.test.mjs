@@ -87,8 +87,8 @@ describe('mounted native drawing modal motion', () => {
       await escape();
       await screen.click('Draw fixture stroke');
       expect(JSON.parse(screen.paper()).strokes).toHaveLength(1);
-      const opener = [...screen.container.querySelectorAll('button')].find((button) =>
-        button.getAttribute('aria-label')?.startsWith('Drawing tools.')
+      const opener = [...screen.container.querySelectorAll('button')].find(
+        (button) => button.getAttribute('aria-label') === 'Drawing tools'
       );
       await screen.click(opener.getAttribute('aria-label'));
       expect(screen.button('Save picture').disabled).toBe(false);
@@ -117,8 +117,8 @@ describe('mounted native drawing modal motion', () => {
     expect(modal().dataset.animationType).toBe('none');
     await escape();
     await screen.click('Draw fixture stroke');
-    const opener = [...screen.container.querySelectorAll('button')].find((button) =>
-      button.getAttribute('aria-label')?.startsWith('Drawing tools.')
+    const opener = [...screen.container.querySelectorAll('button')].find(
+      (button) => button.getAttribute('aria-label') === 'Drawing tools'
     );
     await screen.click(opener.getAttribute('aria-label'));
     await screen.click('Save picture');

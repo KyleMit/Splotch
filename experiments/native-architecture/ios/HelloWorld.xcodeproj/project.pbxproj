@@ -11,6 +11,11 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		285700000000000000000003 /* SplotchLibraryEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285700000000000000000001 /* SplotchLibraryEnvironment.swift */; };
+		285700000000000000000004 /* SplotchLibraryEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = 285700000000000000000002 /* SplotchLibraryEnvironment.m */; };
+		A12863000000000000000001 /* SplotchAIEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12863000000000000000003; };
+		A12863000000000000000002 /* SplotchAIEnvironment.m in Sources */ = {isa = PBXBuildFile; fileRef = A12863000000000000000004; };
+		A12870000000000000000001 /* SplotchAIJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12870000000000000000002; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +27,11 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HelloWorld/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "HelloWorld-Bridging-Header.h"; path = "HelloWorld/HelloWorld-Bridging-Header.h"; sourceTree = "<group>"; };
+		285700000000000000000001 /* SplotchLibraryEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplotchLibraryEnvironment.swift; path = HelloWorld/SplotchLibraryEnvironment.swift; sourceTree = "<group>"; };
+		285700000000000000000002 /* SplotchLibraryEnvironment.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SplotchLibraryEnvironment.m; path = HelloWorld/SplotchLibraryEnvironment.m; sourceTree = "<group>"; };
+		A12863000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchAIEnvironment.swift; sourceTree = "<group>"; };
+		A12863000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchAIEnvironment.m; sourceTree = "<group>"; };
+		A12870000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchAIJournal.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +49,11 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				A12863000000000000000003,
+				A12870000000000000000002,
+				A12863000000000000000004,
+				285700000000000000000002 /* SplotchLibraryEnvironment.m */,
+				285700000000000000000001 /* SplotchLibraryEnvironment.swift */,
 				F11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -230,6 +245,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				A12863000000000000000001,
+				A12870000000000000000001,
+				A12863000000000000000002,
+				285700000000000000000004 /* SplotchLibraryEnvironment.m in Sources */,
+				285700000000000000000003 /* SplotchLibraryEnvironment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

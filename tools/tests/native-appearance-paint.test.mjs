@@ -1,3 +1,4 @@
+import { adoptedDrawing } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -10,7 +11,6 @@ import {
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import {
-  emptyDrawing,
   parseDrawing,
   strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -33,7 +33,7 @@ const WIDTH = 1024,
   HEIGHT = 768;
 const SAMPLE = { x: 480, y: 378, width: 64, height: 12 };
 function drawing(brush) {
-  const base = emptyDrawing();
+  const base = adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 });
   return {
     ...base,
     strokes: [
@@ -107,9 +107,7 @@ describe('semantic Black through resolved paint appearance', () => {
     }
   );
   it.each(
-    ['pencil', 'marker', 'crayon'].flatMap((brush) =>
-      ['light', 'dark'].map((theme) => ({ brush, theme }))
-    )
+    ['pen', 'crayon'].flatMap((brush) => ['light', 'dark'].map((theme) => ({ brush, theme })))
   )(
     'paints real $brush SVG and PNG visibly on $theme paper without rewriting Black',
     async ({ brush, theme }) => {

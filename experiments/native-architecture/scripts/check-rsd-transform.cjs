@@ -3,6 +3,7 @@ const { createHash } = require('node:crypto');
 const { readFileSync, realpathSync } = require('node:fs');
 const { dirname, join } = require('node:path');
 const babel = require('@babel/core');
+const { validateBrushSources } = require('./rsd-brush-source-guards.cjs');
 
 const projectRoot = realpathSync(join(__dirname, '..'));
 const source = (path) => readFileSync(join(projectRoot, path), 'utf8');
@@ -66,8 +67,11 @@ assert.equal(
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
-let radios = 0,
-  switches = 0;
+const switches = [];
+const toolbarSwitches = [];
+const toolbarConditions = [];
+const optionalSwitches = [];
+let radios = 0;
 const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
@@ -87,7 +91,25 @@ for (const component of [drawing, coloringPicker, settingsDialog])
       const selection =
         node.name.name === 'RsdPaintAction' ? 'radio' : literal(attribute(node, 'selection'));
       if (selection === 'switch') {
-        switches++;
+        if (component === drawing) {
+          toolbarSwitches.push(node);
+          toolbarConditions.push(
+            path.findParent((parent) => parent.isConditionalExpression())?.node.test
+          );
+        } else {
+          const map = path.findParent(
+            (parent) =>
+              parent.isCallExpression() &&
+              parent.node.arguments.some(
+                (argument) =>
+                  argument.type === 'ArrowFunctionExpression' &&
+                  argument.body.type === 'JSXElement' &&
+                  argument.body.openingElement === node
+              )
+          );
+          if (component === settingsDialog && map) optionalSwitches.push({ node, map: map.node });
+          else switches.push(node);
+        }
         return;
       }
       assert.equal(selection, 'radio', 'RSD selected action mode');
@@ -115,11 +137,81 @@ assert.deepEqual(
 );
 assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
 assert.equal(radios, 5, 'RSD selection callers');
-assert.equal(switches, 1, 'RSD sound switch caller');
+const settingsValue = (expression, property) =>
+  expression?.type === 'MemberExpression' &&
+  !expression.computed &&
+  expression.object.type === 'Identifier' &&
+  expression.object.name === 'settings' &&
+  expression.property.type === 'Identifier' &&
+  expression.property.name === property;
+const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
+assert.ok(
+  switches.every((node) =>
+    ['soundEnabled', 'coloringBookEnabled'].some((property) =>
+      settingsValue(selectedValue(node), property)
+    )
+  ),
+  'RSD switch state owner'
+);
+assert.deepEqual(
+  switches.map((node) => selectedValue(node).property.name).sort(),
+  ['coloringBookEnabled', 'soundEnabled'],
+  'RSD switch state callers'
+);
+function switchCallback(property, enabledLabel, disabledLabel) {
+  const node = switches.find((item) => settingsValue(selectedValue(item), property));
+  const label = attribute(node, 'label')?.value?.expression;
+  assert.ok(
+    label?.type === 'ConditionalExpression' &&
+      settingsValue(label.test, property) &&
+      label.consequent.type === 'StringLiteral' &&
+      label.consequent.value === enabledLabel &&
+      label.alternate.type === 'StringLiteral' &&
+      label.alternate.value === disabledLabel,
+    'RSD ' + property + ' switch labels'
+  );
+  return attribute(node, 'onClick')?.value?.expression;
+}
+const soundToggle = switchCallback('soundEnabled', 'Drawing sound on', 'Drawing sound off');
+assert.ok(
+  soundToggle?.type === 'Identifier' && soundToggle.name === 'onToggle',
+  'RSD sound switch callback'
+);
+const coloringToggle = switchCallback(
+  'coloringBookEnabled',
+  'Coloring book on',
+  'Coloring book off'
+);
+assert.ok(
+  coloringToggle?.type === 'ArrowFunctionExpression' &&
+    !coloringToggle.async &&
+    coloringToggle.params.length === 0 &&
+    coloringToggle.body.type === 'CallExpression' &&
+    coloringToggle.body.callee.type === 'Identifier' &&
+    coloringToggle.body.callee.name === 'onColoringBookChange' &&
+    coloringToggle.body.arguments.length === 1 &&
+    coloringToggle.body.arguments[0].type === 'UnaryExpression' &&
+    coloringToggle.body.arguments[0].operator === '!' &&
+    settingsValue(coloringToggle.body.arguments[0].argument, 'coloringBookEnabled'),
+  'RSD coloring switch callback'
+);
+const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
+  parse,
+  imported,
+  babel,
+  drawing,
+  settingsDialog,
+  optionalSwitches,
+  toolbarSwitches,
+  toolbarConditions,
+  attribute,
+  settingsValue,
+});
 const files = [
   'src/index.ts',
   'src/ProbeApp.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
+  'src/rsdDrawing/RsdAiSheet.tsx',
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
   'src/rsdDrawing/controls.tsx',
   'src/rsdDrawing/tokens.css.ts',
@@ -129,6 +221,11 @@ const files = [
   'src/rsdDrawing/NativeScrollAreas.tsx',
   'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/useDrawingMenu.ts',
+  'src/drawing/brushes.ts',
+  'src/settings/brushPreferences.ts',
+  'src/useBrushPreferences.ts',
+  'src/platform/brushPreferences.ts',
+  'src/platform/brushPreferences.web.ts',
 ];
 const nativeAdapters = new Set([
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
@@ -169,6 +266,7 @@ for (const file of [...files, releasedNative]) {
       throw new Error('RSD Babel left JSX');
     },
   });
+  assertTransformedBrushSwitches(result.ast, file);
   if (nativeAdapters.has(file)) assert.ok(nativeImport, `Native adapter import removed: ${file}`);
   rows.push({
     file,
@@ -180,6 +278,10 @@ process.stdout.write(
   `${JSON.stringify({
     canonicalEntry: true,
     mountedRsdSource: true,
+    optionalBrushSwitches: optionalBrushes.elements.length,
+    optionalBrushLabels: optionalLabels.map((label) => `Show ${label}`),
+    adaptiveToolbarSwitch: true,
+    preservedSettingsSwitches: switches.length,
     releasedNative,
     rows,
     scope: 'Babel and canonical source only; no native mount or drawing result',

@@ -1,13 +1,23 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
+import './native-feedback-drawing-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { URL as NodeURL } from 'node:url';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  parseDrawing,
+  addStrokes,
+  createHistory,
+  emptyDrawing,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import {
+  adoptPaper,
+  LEGACY_PAPER,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
 
 const capturePngFixture = readFileSync(
@@ -65,6 +75,7 @@ vi.mock('react-native', () => {
     );
   });
   return {
+    PixelRatio: { get: () => 1 },
     AccessibilityInfo: createAccessibilityInfoFixture(),
     useColorScheme: () => 'light',
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
@@ -182,8 +193,8 @@ function button(label) {
   );
 }
 function toolsButton() {
-  return [...host.querySelectorAll('button')].find((node) =>
-    node.getAttribute('aria-label')?.startsWith('Drawing tools.')
+  return [...host.querySelectorAll('button')].find(
+    (node) => node.getAttribute('aria-label') === 'Drawing tools'
   );
 }
 async function openTools() {
@@ -379,7 +390,7 @@ describe('generation and real input/command admission', () => {
       old.callbacks.onPreparingChange(false);
       old.callbacks.onRendererFault(new Error('late'));
       old.callbacks.onDrawingChange(true);
-      old.callbacks.onCohort([fixture.strokes[0]]);
+      old.callbacks.onCohort([fixture.strokes[0]], LEGACY_PAPER);
       old.callbacks.onError(new Error('late ordinary'));
     });
     expect(h.options.setPreparing).toHaveBeenCalledTimes(counts[0]);
@@ -388,6 +399,38 @@ describe('generation and real input/command admission', () => {
     expect(h.options.finishCohort).not.toHaveBeenCalled();
     act(() => h.get().callbacks.onPreparingChange(false));
     expect(h.options.setPreparing).toHaveBeenLastCalledWith(false);
+  });
+  it('forwards the identical adopted paper atomically and refuses its stale generation and unmounted callbacks', () => {
+    const h = harness();
+    const paper = adoptPaper(342, 256.5, 1);
+    const strokes = [{ brush: 'pen', color: 'Red', width: 22, points: [{ x: 200, y: 300 }] }];
+    const initial = createHistory(emptyDrawing());
+    let history = initial;
+    h.options.finishCohort.mockImplementation((ink, reference) => {
+      history = addStrokes(history, ink, reference);
+    });
+    const old = h.get();
+    act(() => old.callbacks.onCohort(strokes, paper));
+    expect(h.options.finishCohort).toHaveBeenLastCalledWith(strokes, paper);
+    expect(h.options.finishCohort.mock.calls[0][0]).toBe(strokes);
+    expect(h.options.finishCohort.mock.calls[0][1]).toBe(paper);
+    expect(history.drawing.paper).toBe(paper);
+    expect(history.undo).toEqual([initial.drawing]);
+    const committed = history;
+    act(() => old.callbacks.onRendererFault(new Error('fault')));
+    act(() => h.get().retry());
+    act(() => old.callbacks.onCohort(strokes, paper));
+    expect(history).toBe(committed);
+    expect(h.options.finishCohort).toHaveBeenCalledOnce();
+    const current = h.get();
+    act(() => current.callbacks.onCohort(strokes, paper));
+    expect(h.options.finishCohort).toHaveBeenCalledTimes(2);
+    expect(history.drawing.paper).toBe(paper);
+    const afterRetry = history;
+    act(() => root.render(null));
+    act(() => current.callbacks.onCohort(strokes, paper));
+    expect(history).toBe(afterRetry);
+    expect(h.options.finishCohort).toHaveBeenCalledTimes(2);
   });
   it('refuses command/modal admission and an actual active-contact lock failure without losing the fault', () => {
     const h = harness();
@@ -418,4 +461,8 @@ describe('generation and real input/command admission', () => {
 vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')
+);
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

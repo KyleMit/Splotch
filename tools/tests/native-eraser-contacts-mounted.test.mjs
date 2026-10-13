@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -12,16 +13,15 @@ import {
   open,
   twoContacts,
 } from './native-contacts-mounted-harness.mjs';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createPaperScroll } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { measurePaper as measureWebPaper } from '../../experiments/native-architecture/src/drawing/measurePaper.web.ts';
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
 
 describe('mounted joint cohort, canonical history and capture ownership', () => {
-  it.each(['marker', 'eraser', 'crayon', 'magic'])(
+  it.each(['pen', 'eraser', 'crayon', 'magic'])(
     'finishes two %s contacts in one Undo group using measured page coordinates',
     async (brush) => {
-      const base = { ...emptyDrawing(3, 'flower'), strokes: [marker] };
+      const base = { ...legacyDrawing(3, 'flower'), strokes: [marker] };
       await open(base);
       await act(async () => owner.setBrush(brush));
       await settle();
@@ -52,21 +52,21 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
         ],
       ]);
       const expectedStyles = {
-        marker: [
-          { brush: 'marker', width: 22, color: 'Purple' },
-          { brush: 'marker', width: 22, color: 'Purple' },
+        pen: [
+          { brush: 'pen', width: 8, color: 'Purple' },
+          { brush: 'pen', width: 8, color: 'Purple' },
         ],
         crayon: [
-          { brush: 'crayon', width: 34, color: 'Purple', seed: 1 },
-          { brush: 'crayon', width: 34, color: 'Purple', seed: 2 },
+          { brush: 'crayon', width: 8, color: 'Purple', seed: 1 },
+          { brush: 'crayon', width: 8, color: 'Purple', seed: 2 },
         ],
         magic: [
-          { brush: 'magic', width: 30, rainbow: 3 },
-          { brush: 'magic', width: 30, rainbow: 3 },
+          { brush: 'magic', width: 8, rainbow: 3 },
+          { brush: 'magic', width: 8, rainbow: 3 },
         ],
         eraser: [
-          { brush: 'eraser', width: 44 },
-          { brush: 'eraser', width: 44 },
+          { brush: 'eraser', width: 16 },
+          { brush: 'eraser', width: 16 },
         ],
       };
       expect(added.map(({ points: _points, ...style }) => style)).toEqual(expectedStyles[brush]);

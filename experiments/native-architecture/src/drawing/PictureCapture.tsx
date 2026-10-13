@@ -1,9 +1,10 @@
+import { drawingPaper, samePaper } from './paperSpace';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from 'react-native-svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
-import type { InkPlan } from './checkpoints';
+import type { CaptureInkPlan } from './captureInkPlan';
 import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
 import { PageOutline } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
@@ -16,7 +17,7 @@ export type PictureRequest = Readonly<{
   id: number;
   request: PngCaptureRequest;
   kind: 'ink' | 'picture';
-  plan: InkPlan;
+  plan: CaptureInkPlan;
   appearance: InkAppearance;
   isCurrent: () => boolean;
 }>;
@@ -30,6 +31,8 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const captures = useRef(createSvgCapture()).current;
   const current = useRef(true);
   const request = packet.request;
+  if (!samePaper(packet.plan.paper, drawingPaper(request.drawing)))
+    throw new Error('The captured paper reference does not match the picture.');
 
   function fail(error: unknown) {
     request.cancel(error instanceof Error ? error.message : 'PNG capture failed.');
@@ -98,6 +101,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
             width={PAPER_WIDTH}
             height={PAPER_HEIGHT}
             viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+            preserveAspectRatio="xMidYMid meet"
           >
             <Rect
               width={PAPER_WIDTH}

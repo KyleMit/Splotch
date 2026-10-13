@@ -1,7 +1,13 @@
+import {
+  adoptPaper,
+  containsPaperPoint,
+  paperContactPoint,
+  type PaperReference,
+} from './paperSpace';
 import type { GestureResponderEvent, NativeTouchEvent } from 'react-native';
 import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
-import { paperPoint, type Drawing, type Stroke } from './model';
+import { paperPoint, type Drawing, type LegacyDrawing, type Stroke } from './model';
 import type { Brush } from './brushes';
 import type { PaintColor } from './palette';
 import { contactLifetime, readStartBatch, responderTarget } from './touchBoundary';
@@ -15,11 +21,13 @@ export type ContactDrawingProps = {
   strokeWidth: StrokeWidth;
   eraserWidth: StrokeWidth;
   disabled: boolean;
-  onCohort: (strokes: readonly Stroke[]) => void;
+  onCohort: (strokes: readonly Stroke[], paper: PaperReference) => void;
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
   sound?: ContactSound | null;
 };
+
+type LegacyContactDrawingProps = Omit<ContactDrawingProps, 'currentDrawing'> & { currentDrawing: () => LegacyDrawing };
 
 type Contact = {
   startedAt: number | null;
@@ -29,15 +37,14 @@ type Contact = {
 type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'pageX' | 'pageY' | 'timestamp'>;
 const INTERRUPTED_TOUCH_MESSAGE = 'That touch was interrupted. Lift and try again.';
 
-function insidePaper(touch: NativeTouchEvent, frame: PaperFrame | null): boolean {
+function insidePaper(touch: NativeTouchEvent, frame: PaperFrame | null, legacy: boolean): boolean {
   const point = paperLocation(touch, frame);
   return (
     frame !== null &&
     point !== null &&
-    point.x >= 0 &&
-    point.x <= frame.width &&
-    point.y >= 0 &&
-    point.y <= frame.height
+    (legacy
+      ? point.x >= 0 && point.x <= frame.width && point.y >= 0 && point.y <= frame.height
+      : containsPaperPoint(point.x, point.y, frame.width, frame.height))
   );
 }
 
@@ -59,14 +66,15 @@ class ContactResponder {
   } | null = null;
 
   constructor(
-    private readonly current: () => ContactDrawingProps,
+    private readonly current: () => LegacyContactDrawingProps,
     private readonly frame: () => PaperFrame | null,
-    private readonly showDrafts: (drafts: readonly Stroke[]) => void
+    private readonly showDrafts: (drafts: readonly Stroke[], paper: PaperReference | null) => void,
+    private readonly pixelRatio: () => number
   ) {}
 
   private publish(completed: readonly Stroke[] | null = null) {
-    if (completed) this.current().onCohort(completed);
-    this.showDrafts(this.input.drafts());
+    if (completed) this.current().onCohort(completed, this.input.paper());
+    this.showDrafts(this.input.drafts(), this.input.hasActive() ? this.input.paper() : null);
     this.current().onDrawingChange(this.input.hasActive());
   }
 
@@ -113,7 +121,9 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
-      const sample = paperPoint(point.x, point.y, frame.width, frame.height);
+      const coordinate =
+        this.current().currentDrawing().version === 5 ? paperPoint : paperContactPoint;
+      const sample = coordinate(point.x, point.y, frame.width, frame.height);
       this.input.sample(touch.identifier, sample, endpoint);
       this.contacts.get(touch.identifier)?.sound?.sample(sample, touch.timestamp);
     } catch (error) {
@@ -181,7 +191,7 @@ class ContactResponder {
         !lifetime.starting ||
         this.paperTarget === null ||
         touch.target !== this.paperTarget ||
-        !insidePaper(touch, this.frame())
+        !insidePaper(touch, this.frame(), this.current().currentDrawing().version === 5)
       )
         continue;
       if (!starting.has(touch.identifier)) {
@@ -199,14 +209,17 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
-      const sample = paperPoint(point.x, point.y, frame.width, frame.height);
+      const coordinate =
+        this.current().currentDrawing().version === 5 ? paperPoint : paperContactPoint;
+      const sample = coordinate(point.x, point.y, frame.width, frame.height);
       this.input.start(
         touch.identifier,
         current.color,
         current.brush,
         sample,
         current.currentDrawing(),
-        current.brush === 'eraser' ? current.eraserWidth : current.strokeWidth
+        current.brush === 'eraser' ? current.eraserWidth : current.strokeWidth,
+        () => adoptPaper(frame.width, frame.height, this.pixelRatio())
       );
       contact.state = 'accepted';
       contact.sound = current.sound?.begin(sample, touch.timestamp) ?? null;
@@ -377,7 +390,7 @@ class ContactResponder {
     this.contacts.clear();
     this.paperTarget = null;
     const completed = this.input.interrupt();
-    if (completed) this.current().onCohort(completed);
+    if (completed) this.current().onCohort(completed, this.input.paper());
     this.current().onDrawingChange(false);
   }
 
@@ -392,9 +405,10 @@ class ContactResponder {
 }
 
 export function createContactResponder(
-  current: () => ContactDrawingProps,
+  current: () => LegacyContactDrawingProps,
   frame: () => PaperFrame | null,
-  showDrafts: (drafts: readonly Stroke[]) => void
+  showDrafts: (drafts: readonly Stroke[], paper: PaperReference | null) => void,
+  pixelRatio: () => number
 ) {
-  return new ContactResponder(current, frame, showDrafts);
+  return new ContactResponder(current, frame, showDrafts, pixelRatio);
 }

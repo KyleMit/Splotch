@@ -1,3 +1,4 @@
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   createPngCapture,
@@ -69,9 +70,9 @@ describe('native drawing interaction ownership', () => {
     const finished = input.finish('finger A', { x: 50, y: 60 });
     expect(finished.points).toHaveLength(MAX_POINTS);
     expect(input.identifier()).toBeUndefined();
-    const committed = addStroke(createHistory(), finished);
+    const committed = addStroke(createHistory(legacyDrawing()), finished);
     expect(parseDrawing(JSON.parse(JSON.stringify(committed.drawing)))).toEqual(committed.drawing);
-    expect(undoDrawing(committed).drawing).toEqual(emptyDrawing());
+    expect(undoDrawing(committed).drawing).toEqual(legacyDrawing());
     input.start('finger B', { color: 'Purple', brush: 'marker', width: 22 }, { x: 70, y: 80 });
     expect(input.finish('finger B', { x: 90, y: 100 }).points).toHaveLength(2);
   });

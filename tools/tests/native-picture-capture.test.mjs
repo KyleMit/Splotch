@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act, createElement, createRef } from 'react';
+import { createPictureSurfaceFixture } from './native-picture-surface-fixture.mjs';
 import {
   flushCaptureFrames,
   loadCaptureImage,
@@ -12,7 +14,6 @@ import { DrawingAppearanceProvider } from '../../experiments/native-architecture
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   InkAppearanceScope,
   useInkAppearance,
@@ -33,11 +34,15 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('react-native', async () => {
   const { nativeCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
-  return nativeCaptureSdk(state);
+  const { CRAYON_TILE_PX } =
+    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  return nativeCaptureSdk(state, CRAYON_TILE_PX);
 });
 vi.mock('react-native-svg', async () => {
   const { svgCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
-  return svgCaptureSdk(state);
+  const { CRAYON_TILE_PX } =
+    await import('../../experiments/native-architecture/src/drawing/crayon.ts');
+  return svgCaptureSdk(state, CRAYON_TILE_PX);
 });
 vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes, onImageLoad }) => {
@@ -124,7 +129,8 @@ async function render(strokes, prepareEraser = false, draft = null) {
           ref,
           strokes,
           drafts: draft ? [draft] : [],
-          brush: prepareEraser ? 'eraser' : 'marker',
+          brush: prepareEraser ? 'eraser' : 'pen',
+          color: 'Blue',
           onError: error,
           onBusy: busy,
         })
@@ -171,7 +177,7 @@ describe('ready-owner output handoff', () => {
       const plan = ref.current.readyPlan(strokes);
       expect(plan.checkpoint.strokes).toHaveLength(999);
       expect(plan.strokes).toEqual([erase]);
-      const request = createPngCapture().begin({ ...emptyDrawing(), strokes });
+      const request = createPngCapture().begin({ ...legacyDrawing(), strokes });
       const completion = request.promise.then(
         (value) => ({ value }),
         (failure) => ({ failure })
@@ -201,30 +207,12 @@ describe('ready-owner output handoff', () => {
   );
 });
 
-async function surface(drawing, preference = 'system') {
-  await act(async () =>
-    root.render(
-      createElement(
-        DrawingAppearanceProvider,
-        { preference },
-        createElement(DrawingSurface, {
-          ref,
-          drawing,
-          currentDrawing: () => drawing,
-          color: 'Blue',
-          brush: 'marker',
-          width: 22,
-          disabled: false,
-          onCohort: vi.fn(),
-          onDrawingChange: vi.fn(),
-          onPreparingChange: busy,
-          onRendererFault: error,
-          onError: error,
-        })
-      )
-    )
-  );
-}
+const surface = createPictureSurfaceFixture({
+  DrawingAppearanceProvider,
+  DrawingSurface,
+  createSpy: vi.fn,
+  readMount: () => ({ root, ref, error, busy }),
+});
 
 const beginOutput = (drawing, kind) => beginFixtureOutput(ref, drawing, kind);
 
@@ -232,7 +220,7 @@ describe('mounted canonical output identity', () => {
   it.each(['system', 'light'])(
     'supersedes capture after resolved %s appearance changes and rejects late output',
     async (preference) => {
-      const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic] };
+      const drawing = { ...legacyDrawing(3, 'flower'), strokes: [magic] };
       await surface(drawing, preference);
       const first = await beginOutput(drawing);
       const refused = first.promise.catch((failure) => failure.message);
@@ -258,7 +246,7 @@ describe('mounted canonical output identity', () => {
   );
 
   it('discards a pending raster prefix when appearance changes before its late SDK callback', async () => {
-    const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic, erase] };
+    const drawing = { ...legacyDrawing(3, 'flower'), strokes: [magic, erase] };
     await surface(drawing);
     await frames();
     expect(state.captures).toHaveLength(1);
@@ -280,7 +268,7 @@ describe('mounted canonical output identity', () => {
   it.each(['page', 'theme'])(
     'replays semantic ink after a settled erased prefix changes %s',
     async (change) => {
-      const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic, erase] };
+      const drawing = { ...legacyDrawing(3, 'flower'), strokes: [magic, erase] };
       await surface(drawing);
       await frames();
       await png(0, 'old-flattened-prefix');
@@ -304,7 +292,7 @@ describe('mounted canonical output identity', () => {
   );
 
   it('requires a command lease and the exact rendered Drawing snapshot', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     await expect(ref.current.captureInk(drawing)).rejects.toThrow('not ready');
     const release = ref.current.lockInput();
@@ -320,12 +308,12 @@ describe('mounted canonical output identity', () => {
   });
 
   it('cancels a replaced Drawing and refuses its late callback before allowing current output', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     const first = await beginOutput(drawing);
     const refused = first.promise.catch((failure) => failure.message);
     await frames();
-    const replacement = { ...emptyDrawing(3, 'flower'), strokes: [magic] };
+    const replacement = { ...legacyDrawing(3, 'flower'), strokes: [magic] };
     await surface(replacement);
     await expect(refused).resolves.toContain('changed');
     await png(0, 'old-output');
@@ -338,7 +326,7 @@ describe('mounted canonical output identity', () => {
   });
 
   it('remounts a same-kind terminal packet replaced before its owner cleans up', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     const first = await beginOutput(drawing);
     await frames();
@@ -362,7 +350,7 @@ describe('mounted canonical output identity', () => {
   });
 
   it('refuses output throughout checkpoint capture and incoming-image readiness', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker, erase] };
+    const drawing = { ...legacyDrawing(), strokes: [marker, erase] };
     await surface(drawing);
     const release = ref.current.lockInput();
     await expect(ref.current.captureInk(drawing)).rejects.toThrow('still being prepared');
@@ -380,7 +368,7 @@ describe('mounted canonical output identity', () => {
   });
 
   it('refuses output while the original pointer owns a draft', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     await act(async () =>
       state.layouts.at(-1)({ nativeEvent: { layout: { width: 1024, height: 768 } } })
@@ -412,7 +400,7 @@ describe('mounted canonical output identity', () => {
   });
 
   it('refuses completion after its input lease expires', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     const { promise, release } = await beginOutput(drawing);
     const refused = promise.catch((failure) => failure.message);
@@ -425,7 +413,7 @@ describe('mounted canonical output identity', () => {
   it.each(['light', 'dark'])(
     'uses resolved %s paper and page outlines only in picture output',
     async (preference) => {
-      const drawing = { ...emptyDrawing(0, 'flower'), strokes: [marker] };
+      const drawing = { ...legacyDrawing(0, 'flower'), strokes: [marker] };
       await surface(drawing, preference);
       const { promise, release } = await beginOutput(drawing, 'capturePng');
       await frames();
@@ -450,7 +438,7 @@ describe('mounted canonical output identity', () => {
   );
 
   it('cancels an unmounted output owner and refuses its callback after a new screen mounts', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     const first = await beginOutput(drawing);
     const refused = first.promise.catch((failure) => failure.message);
@@ -458,7 +446,7 @@ describe('mounted canonical output identity', () => {
     act(() => root.unmount());
     await expect(refused).resolves.toContain('cancelled');
     root = createRoot(host);
-    const replacement = { ...emptyDrawing(3), strokes: [magic] };
+    const replacement = { ...legacyDrawing(3), strokes: [magic] };
     await surface(replacement);
     const second = await beginOutput(replacement);
     await frames();
@@ -469,7 +457,7 @@ describe('mounted canonical output identity', () => {
   });
 
   it('retains canonical ink after a bounded output timeout and ignores late settlement', async () => {
-    const drawing = { ...emptyDrawing(), strokes: [marker] };
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
     const { promise, release } = await beginOutput(drawing);
     const refused = promise.catch((failure) => failure.message);
@@ -484,9 +472,9 @@ describe('mounted canonical output identity', () => {
 
 it('loads cached Android checkpoints and flattened output through decoded RN callbacks', async () => {
   state.platform.OS = 'android';
-  const drawing = { ...emptyDrawing(), strokes: [crayon, erase] };
+  const drawing = { ...legacyDrawing(), strokes: [crayon, erase] };
   const decode = async () => {
-    const image = state.nativeImages.at(-1);
+    const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
     await act(async () =>
       image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
     );

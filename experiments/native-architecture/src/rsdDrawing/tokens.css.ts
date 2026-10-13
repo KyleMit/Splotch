@@ -21,8 +21,12 @@ export const dimensions = css.defineVars({
   radiusMd: '12px',
   fontSizeMd: '16px',
   disabledOpacity: '0.65',
+  touchTarget: '52px',
+  aiResultHeight: '256px',
 });
 
-export const onBrand = '#fff';
+export const brandColors = css.defineVars({
+  onBrand: '#fff',
+});
 
 export const fixtureInk = '#0a0b10';

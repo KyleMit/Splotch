@@ -1,10 +1,10 @@
+import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import {
   addStrokes,
   createHistory,
   drawingCapacity,
-  emptyDrawing,
   parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -15,10 +15,10 @@ const point = { x: 40, y: 60 };
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [point] };
 
 describe('joint contact cohort canonical ownership', () => {
-  it.each(['marker', 'eraser', 'magic', 'crayon'])(
-    'commits two %s contacts as one reversible v4 group',
+  it.each(['pen', 'eraser', 'magic', 'crayon'])(
+    'commits two %s contacts as one reversible legacy canonical group',
     (brush) => {
-      const drawing = { ...emptyDrawing(3, 'flower'), strokes: [marker] };
+      const drawing = { ...legacyDrawing(3, 'flower'), strokes: [marker] };
       const input = createContactCohort();
       input.start('a', 'Yellow', brush, point, drawing);
       input.start('b', 'Yellow', brush, { x: 80, y: 90 }, drawing);
@@ -36,7 +36,7 @@ describe('joint contact cohort canonical ownership', () => {
 
   it('reserves distinct rich metadata across active and already-ended cohort contacts', () => {
     const drawing = {
-      ...emptyDrawing(4, 'turtle'),
+      ...legacyDrawing(4, 'turtle'),
       strokes: [{ brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [point] }],
     };
     const input = createContactCohort();
@@ -51,7 +51,7 @@ describe('joint contact cohort canonical ownership', () => {
 
   it('uses the style owner seed wrap without adding color to Magic or eraser records', () => {
     const drawing = {
-      ...emptyDrawing(5),
+      ...legacyDrawing(5),
       strokes: [
         { brush: 'crayon', width: 34, color: 'Blue', seed: MAX_CRAYON_SEED - 1, points: [point] },
       ],
@@ -64,23 +64,23 @@ describe('joint contact cohort canonical ownership', () => {
     input.start('b', 'Red', 'magic', point, drawing);
     expect(input.finish('b')[0]).toEqual({
       brush: 'magic',
-      width: 30,
+      width: 8,
       rainbow: 5,
       points: [point],
     });
     input.start('c', 'Red', 'eraser', point, drawing);
-    expect(input.finish('c')[0]).toEqual({ brush: 'eraser', width: 44, points: [point] });
+    expect(input.finish('c')[0]).toEqual({ brush: 'eraser', width: 16, points: [point] });
   });
 
   it('reserves the remaining legal stroke and point capacity before admitting another contact', () => {
-    const drawing = { ...emptyDrawing(), strokes: Array.from({ length: 999 }, () => marker) };
+    const drawing = { ...legacyDrawing(), strokes: Array.from({ length: 999 }, () => marker) };
     expect(drawingCapacity(drawing).strokes).toBe(1);
     const input = createContactCohort();
-    input.start('a', 'Blue', 'marker', point, drawing);
-    expect(() => input.start('b', 'Blue', 'marker', point, drawing)).toThrow('full');
+    input.start('a', 'Blue', 'pen', point, drawing);
+    expect(() => input.start('b', 'Blue', 'pen', point, drawing)).toThrow('full');
     expect(input.finish('a')).toHaveLength(1);
     const full = createHistory({
-      ...emptyDrawing(),
+      ...legacyDrawing(),
       strokes: [{ ...marker, points: Array.from({ length: 99999 }, () => point) }],
     });
     expect(() => addStrokes(full, [marker, marker])).toThrow('full');
@@ -91,7 +91,7 @@ describe('joint contact cohort canonical ownership', () => {
   it('keeps two-contact erase cohorts inside one bounded chronological mask stage', () => {
     const prefix = [marker];
     const input = createContactCohort();
-    const drawing = { ...emptyDrawing(), strokes: prefix };
+    const drawing = { ...legacyDrawing(), strokes: prefix };
     input.start('a', 'Red', 'eraser', point, drawing);
     input.start('b', 'Yellow', 'eraser', { x: 80, y: 90 }, drawing);
     const erasers = input.interrupt();
@@ -99,7 +99,12 @@ describe('joint contact cohort canonical ownership', () => {
     const prepare = planInk(strokes, null);
     expect(prepare.prefix).toEqual(prefix);
     expect(prepare.needsCheckpoint).toBe(true);
-    const checkpoint = { id: 1, strokes: prefix, base64: 'SDK fixture; no pixel claim' };
+    const checkpoint = {
+      id: 1,
+      strokes: prefix,
+      paper: LEGACY_PAPER,
+      base64: 'SDK fixture; no pixel claim',
+    };
     const plan = planInk(strokes, checkpoint);
     expect(plan.strokes).toEqual(erasers);
     expect(plan.needsCheckpoint).toBe(false);

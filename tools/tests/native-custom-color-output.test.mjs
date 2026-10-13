@@ -1,3 +1,4 @@
+import { adoptedDrawing, canonicalPaper } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
@@ -55,11 +56,11 @@ async function pixel(image, x, y) {
 }
 
 describe('production custom pigment artwork', () => {
-  it.each(['pencil', 'marker', 'crayon'])(
+  it.each(['pen', 'crayon'])(
     'reaches actual %s PNG pixels and preserves them through save/reopen and Clear/Undo',
     async (brush) => {
       const selected = stroke(brush, '#123ABC');
-      const history = addStrokes(createHistory(emptyDrawing(2)), [selected]);
+      const history = addStrokes(createHistory(emptyDrawing(2)), [selected], canonicalPaper());
       const original = await png(history.drawing.strokes);
       const other = await png([stroke(brush, '#FEDCBA')]);
       expect(original.equals(other)).toBe(false);
@@ -69,7 +70,7 @@ describe('production custom pigment artwork', () => {
       expect((await png(restored.strokes)).equals(original)).toBe(true);
     }
   );
-  it.each(['pencil', 'marker'])('renders exact %s pigment channels in a PNG', async (brush) => {
+  it.each(['pen'])('renders exact %s pigment channels in a PNG', async (brush) => {
     expect(await pixel(await png([stroke(brush, '#123ABC')]), 300, 200)).toEqual([
       18, 58, 188, 255,
     ]);
@@ -114,9 +115,14 @@ describe('production custom pigment artwork', () => {
         .toBuffer();
       expect(mixed.equals(named)).toBe(true);
       expect(
-        parseDrawing(JSON.parse(JSON.stringify({ ...emptyDrawing(2), strokes }))).strokes.map(
-          (item) => item.color
-        )
+        parseDrawing(
+          JSON.parse(
+            JSON.stringify({
+              ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }, 2),
+              strokes,
+            })
+          )
+        ).strokes.map((item) => item.color)
       ).toEqual(colors);
     }
   );
@@ -140,9 +146,14 @@ describe('production custom pigment artwork', () => {
       const alone = await blackRegion(await png([paints[0]], 'dark'));
       expect(mixed.equals(alone)).toBe(true);
       expect(
-        parseDrawing(JSON.parse(JSON.stringify({ ...emptyDrawing(2), strokes }))).strokes.map(
-          (item) => item.color
-        )
+        parseDrawing(
+          JSON.parse(
+            JSON.stringify({
+              ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }, 2),
+              strokes,
+            })
+          )
+        ).strokes.map((item) => item.color)
       ).toEqual(strokes.map((item) => item.color));
     }
   );

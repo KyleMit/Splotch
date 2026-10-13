@@ -2,8 +2,8 @@ import type { RefObject } from 'react';
 import { Modal, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import type { useDrawingScreen } from './useDrawingScreen';
 import type { useDrawingSound } from './useDrawingSound';
-import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
-import { COLORING_PAGES } from './drawing/pages';
+import { BRUSHES, type Brush } from './drawing/brushes';
+import { pageLabel } from './drawing/pages';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
 import { useDrawingScreenStyles } from './drawing/drawingScreenStyles';
 
@@ -12,6 +12,7 @@ export function Action({
   disabled,
   onPress,
   primary = false,
+  selected,
   accessibilityLabel = label,
   openerRef,
 }: {
@@ -19,6 +20,7 @@ export function Action({
   disabled?: boolean;
   onPress: () => void;
   primary?: boolean;
+  selected?: boolean;
   accessibilityLabel?: string;
   openerRef?: RefObject<View | null>;
 }) {
@@ -28,12 +30,14 @@ export function Action({
       ref={openerRef}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, selected }}
+      aria-pressed={selected}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.action,
         primary && styles.primary,
+        selected && styles.chosenBrush,
         disabled && styles.disabled,
         pressed && styles.pressed,
       ]}
@@ -71,12 +75,14 @@ function DrawingActions({
   showPictures,
   exportPicture,
   openSettings,
+  openFeedback,
 }: {
   disabled: boolean;
   save: () => void;
   showPictures: () => void;
   exportPicture: () => void;
   openSettings: () => void;
+  openFeedback: () => void;
 }) {
   const styles = useDrawingScreenStyles();
   return (
@@ -90,6 +96,7 @@ function DrawingActions({
         }}
       />
       <Action label="Settings" disabled={disabled} onPress={openSettings} />
+      <Action label="Send Feedback" disabled={disabled} onPress={openFeedback} />
       <Action label="Pictures" disabled={disabled} onPress={showPictures} />
       <Action
         label="Export PNG"
@@ -109,6 +116,7 @@ export function DrawingMenu({
   onClose,
   visible,
   onDismiss,
+  onFeedback,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
@@ -116,6 +124,7 @@ export function DrawingMenu({
   onClose: () => void;
   visible: boolean;
   onDismiss: () => void;
+  onFeedback: () => void;
 }) {
   const styles = useDrawingScreenStyles();
   const { brush } = screen;
@@ -135,39 +144,43 @@ export function DrawingMenu({
             Drawing tools
           </Text>
           <ScrollView contentContainerStyle={styles.menuContent}>
-            <Text accessibilityRole="header" style={styles.subtitle}>
-              Brush
-            </Text>
-            <View style={styles.toolbar}>
-              {BRUSH_ORDER.map((key) => (
-                <Pressable
-                  key={key}
-                  accessibilityRole="button"
-                  accessibilityLabel={BRUSHES[key].label}
-                  accessibilityState={{ selected: key === brush, disabled }}
-                  aria-pressed={key === brush}
-                  disabled={disabled}
-                  onPress={() => screen.setBrush(key)}
-                  style={[
-                    styles.action,
-                    key === brush && styles.chosenBrush,
-                    disabled && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.actionText}>{BRUSHES[key].label}</Text>
-                </Pressable>
-              ))}
-            </View>
+            {screen.brushControl.kind === 'menu' ? (
+              <>
+                <Text accessibilityRole="header" style={styles.subtitle}>
+                  Brush
+                </Text>
+                <View style={styles.toolbar}>
+                  {screen.availableBrushes.map((key) => (
+                    <Pressable
+                      key={key}
+                      accessibilityRole="radio"
+                      accessibilityLabel={BRUSHES[key].label}
+                      accessibilityState={{ checked: key === brush, disabled }}
+                      aria-checked={key === brush}
+                      disabled={disabled}
+                      onPress={() => screen.setBrush(key)}
+                      style={[
+                        styles.action,
+                        key === brush && styles.chosenBrush,
+                        disabled && styles.disabled,
+                      ]}
+                    >
+                      <Text style={styles.actionText}>{BRUSHES[key].label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
             <DrawingWidth brush={brush} disabled={disabled} sound={sound} />
-            <Text style={styles.subtitle}>
-              {COLORING_PAGES[screen.history.drawing.pageId].label}
-            </Text>
+            <Text style={styles.subtitle}>{pageLabel(screen.history.drawing.pageId)}</Text>
             <View style={styles.toolbar}>
-              <Action
-                label="Coloring pages"
-                disabled={disabled}
-                onPress={() => run(() => screen.setPagePickerOpen(true))}
-              />
+              {sound.settings.coloringBookEnabled ? (
+                <Action
+                  label="Coloring pages"
+                  disabled={disabled}
+                  onPress={() => run(() => screen.setPagePickerOpen(true))}
+                />
+              ) : null}
               <Action
                 label="Clear"
                 disabled={disabled}
@@ -192,6 +205,7 @@ export function DrawingMenu({
                 })
               }
               openSettings={() => run(screen.openSettings)}
+              openFeedback={() => run(onFeedback)}
             />
           </ScrollView>
           <Action label="Keep drawing" disabled={!visible} onPress={onClose} />

@@ -1,8 +1,17 @@
+import type { Drawing7 } from './drawing/recordedTypes7';
+import type { CompletedCohort7 } from './drawing/recordedContactCohort7';
+import type { PaperReference } from './drawing/paperSpace';
+import { coloringBookHistory, DEFAULT_COLORING_BOOK_ENABLED } from './settings/coloringBook';
+import { offlineLibrary } from './offlineLibrary/runtime';
+import { useOfflineLibrary } from './offlineLibrary/useOfflineLibrary';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
   changePage,
   addStrokes,
+  addRecordedCohort,
+  retainRecordedAllocation,
+  hasDrawingInk,
   commitDrawing,
   createHistory,
   clearDrawing,
@@ -14,23 +23,30 @@ import {
   listPictures,
   reopenPicture,
   savePicture,
+  savedColoringPageIds,
   type SavedPicture,
 } from './platform/drawingFiles';
+import { useBrushPreferences } from './useBrushPreferences';
+import { availableBrushes, brushControl, type OptionalBrush } from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
 import { createInkObservation } from './drawing/inkCoverage';
-import { COLORING_PAGES, type PageId } from './drawing/pages';
+import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 import { usePngRecovery } from './usePngRecovery';
 
 export function useDrawingScreen() {
-  const { history, historyRef, setHistory, currentDrawing } = useDrawingHistory();
-  const [brush, setBrush] = useState<Brush>('marker');
+  const historyOwner = useDrawingHistory();
+  const { history, historyRef, setHistory, currentDrawing } = historyOwner;
+  const brushes = useBrushPreferences();
+  const brush = brushes.state.brush;
+  const brushActions = brushPreferenceActions(brushes);
   const [preparing, setPreparing] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('Pick a color and draw.');
   const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
+  const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
@@ -43,6 +59,7 @@ export function useDrawingScreen() {
     setBusy,
     setNotice,
     report,
+    afterClear: () => brushes.owner.current?.resetAfterClear(),
     blocked: () => rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
 
@@ -50,14 +67,27 @@ export function useDrawingScreen() {
     setNotice(drawingErrorMessage(error));
   }
 
-  function finishCohort(strokes: readonly Stroke[]) {
+  function finishCohort(strokes: readonly Stroke[], paper: PaperReference) {
     try {
-      const next = addStrokes(historyRef.current, strokes);
+      const next = addStrokes(historyRef.current, strokes, paper);
       setHistory(next);
       setNotice('');
     } catch (error) {
       report(error);
     }
+  }
+
+  function finishRecordedCohort(base: Drawing7, cohort: CompletedCohort7): Drawing7 {
+    const next = addRecordedCohort(historyRef.current, base, cohort);
+    if (next.drawing.version !== 7) throw new Error('The recorded drawing mode changed.');
+    setHistory(next);
+    setNotice('');
+    return next.drawing;
+  }
+
+  function retainAllocation(base: Drawing7, cursor: number) {
+    const next = retainRecordedAllocation(historyRef.current, base, cursor);
+    if (next !== historyRef.current) setHistory(next);
   }
 
   const settings = useDrawingSettings({
@@ -73,7 +103,13 @@ export function useDrawingScreen() {
       rendererFault.current,
     report,
   });
-  const disabled = drawing || busy || preparing || pagePickerOpen || settings.sheetOpen;
+  const disabled =
+    drawing ||
+    busy ||
+    preparing ||
+    pagePickerOpen ||
+    settings.sheetOpen ||
+    brushes.state.status !== 'ready';
 
   function commandsBlocked() {
     return (
@@ -86,15 +122,13 @@ export function useDrawingScreen() {
     );
   }
 
-  function choosePage(pageId: PageId) {
-    if (commandsBlocked()) return;
-    const next = changePage(historyRef.current, pageId);
-    if (next !== historyRef.current) {
-      setHistory(next);
-      setNotice(`${COLORING_PAGES[pageId].label} ready. Undo brings your picture back.`);
-    }
-    setPagePickerOpen(false);
-  }
+  const coloring = createColoringPageActions(
+    historyOwner,
+    setPagePickerOpen,
+    commandsBlocked,
+    runCommand,
+    setNotice
+  );
 
   const pictureActions = usePictureActions({
     historyRef,
@@ -116,35 +150,98 @@ export function useDrawingScreen() {
     setPreparing,
     setDrawing,
     finishCohort,
+    finishRecordedCohort,
+    retainAllocation,
     report,
     setNotice,
   });
 
   return {
+    library,
     recovery,
     pngRecovery,
     history,
     brush,
-    setBrush,
+    ...brushActions,
     drawing,
     setDrawing,
-    busy: busy || preparing,
+    busy: busy || preparing || brushes.state.status !== 'ready',
     setPreparing,
     clear,
     undo,
-    notice,
+    notice: brushes.state.message || notice,
     pictures,
     setPictures,
     surface,
     pagePickerOpen,
-    setPagePickerOpen,
+    ...coloring,
     ...settings,
-    choosePage,
     disabled,
     report,
     currentDrawing,
     finishCohort,
     ...pictureActions,
+  };
+}
+
+function brushPreferenceActions(brushes: ReturnType<typeof useBrushPreferences>) {
+  return {
+    setBrush: (next: Brush) => brushes.owner.current?.selectBrush(next),
+    brushPreferences: brushes.state,
+    availableBrushes: availableBrushes(brushes.state.availability),
+    brushControl: brushControl(brushes.state.availability),
+    toggleBrush: () => brushes.owner.current?.toggleOptional(),
+    selectInkBrush: () => brushes.owner.current?.selectInkBrush(),
+    setBrushAvailable: (next: OptionalBrush, enabled: boolean) =>
+      brushes.owner.current?.setAvailable(next, enabled),
+    retryBrushSave: () => {
+      void brushes.owner.current?.retrySave();
+    },
+  };
+}
+
+function createColoringPageActions(
+  history: ReturnType<typeof useDrawingHistory>,
+  setPickerOpen: (open: boolean) => void,
+  blocked: () => boolean,
+  runCommand: (action: () => Promise<void>) => Promise<void>,
+  setNotice: (message: string) => void
+) {
+  return {
+    setPagePickerOpen: (open: boolean) =>
+      setPickerOpen(open && history.coloringBookEnabled.current),
+    setColoringBookEnabled(enabled: boolean) {
+      history.applyColoringBookEnabled(enabled);
+      if (!enabled) setPickerOpen(false);
+      offlineLibrary.setFeatureEnabled(enabled);
+    },
+    choosePage(pageId: PageId) {
+      if (blocked() || !history.coloringBookEnabled.current) return;
+      void runCommand(async () => {
+        await offlineLibrary.openPage(pageId);
+        if (!history.coloringBookEnabled.current) return;
+        const next = changePage(history.historyRef.current, pageId);
+        if (next !== history.historyRef.current) {
+          history.setHistory(next);
+          setNotice(`${pageLabel(pageId)} ready. Undo brings your picture back.`);
+        }
+        setPickerOpen(false);
+      });
+    },
+  };
+}
+
+function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pickerOpen: boolean) {
+  const state = useOfflineLibrary(drawing, pickerOpen);
+  return {
+    owner: offlineLibrary,
+    state,
+    remove: () =>
+      offlineLibrary.remove(async () => [
+        ...(await savedColoringPageIds()),
+        historyRef.current.drawing.pageId,
+        ...historyRef.current.undo.map((entry) => entry.pageId),
+      ]),
   };
 }
 
@@ -157,15 +254,28 @@ function drawingErrorMessage(error: unknown) {
 function useDrawingHistory() {
   const [history, renderHistory] = useState(createHistory);
   const historyRef = useRef(history);
+  const coloringBookEnabled = useRef(DEFAULT_COLORING_BOOK_ENABLED);
   function setHistory(next: History | ((current: History) => History)) {
-    const value = typeof next === 'function' ? next(historyRef.current) : next;
+    const proposed = typeof next === 'function' ? next(historyRef.current) : next;
+    const value = coloringBookHistory(proposed, coloringBookEnabled.current);
     historyRef.current = value;
     renderHistory(value);
   }
   function currentDrawing() {
     return historyRef.current.drawing;
   }
-  return { history, historyRef, setHistory, currentDrawing };
+  function applyColoringBookEnabled(enabled: boolean) {
+    coloringBookEnabled.current = enabled;
+    setHistory(historyRef.current);
+  }
+  return {
+    history,
+    historyRef,
+    setHistory,
+    currentDrawing,
+    coloringBookEnabled,
+    applyColoringBookEnabled,
+  };
 }
 
 function useDrawingSettings({
@@ -279,6 +389,7 @@ function useSurfaceCommands({
   setNotice,
   report,
   blocked,
+  afterClear,
 }: {
   historyRef: RefObject<History>;
   setHistory: (next: History | ((current: History) => History)) => void;
@@ -287,6 +398,7 @@ function useSurfaceCommands({
   setNotice: (notice: string) => void;
   report: (error: unknown) => void;
   blocked: () => boolean;
+  afterClear: () => void;
 }) {
   const command = useRef(false);
   const mounted = useRef(true);
@@ -346,19 +458,20 @@ function useSurfaceCommands({
         !blocked() &&
         historyRef.current === snapshot &&
         surface.current === owner;
-      const observation = snapshot.drawing.strokes.length
+      const observation = hasDrawingInk(snapshot.drawing)
         ? observations.current?.begin(isCurrent)
         : null;
       try {
-        const pixels = snapshot.drawing.strokes.length
+        const pixels = hasDrawingInk(snapshot.drawing)
           ? await owner?.captureInk(snapshot.drawing)
           : null;
-        if (snapshot.drawing.strokes.length && (!pixels || !observation))
+        if (hasDrawingInk(snapshot.drawing) && (!pixels || !observation))
           throw new Error('The drawing paper is not ready to check.');
         const empty = pixels && observation ? await observation.observe(pixels) : true;
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
         setHistory(clearDrawing(snapshot, empty));
+        afterClear();
         setNotice('Pick a color and draw.');
       } finally {
         observation?.cancel();

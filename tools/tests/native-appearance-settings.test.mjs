@@ -5,6 +5,11 @@ import {
 } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { resolveAppearance } from '../../experiments/native-architecture/src/settings/appearance.ts';
 
+const parentDefaults = {
+  aiEnabled: false,
+  parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+  coloringBookEnabled: true,
+};
 const choices = {
   soundEnabled: false,
   strokeWidth: 'thin',
@@ -31,16 +36,27 @@ describe('persisted candidate drawing appearance', () => {
     { version: 1, soundEnabled: false },
     { version: 2, soundEnabled: false, strokeWidth: 'thin', eraserWidth: 'thick' },
     { version: 3, ...choices },
+    { version: 4, ...choices, appearance: 'system' },
   ])('defaults an older candidate record to System without losing its choices: $version', (old) => {
     const parsed = parseSoundSettings(JSON.stringify(old));
     const { version: _version, ...retained } = old;
-    expect(parsed).toMatchObject({ version: 4, appearance: 'system', ...retained });
+    expect(parsed).toMatchObject({
+      version: 6,
+      appearance: 'system',
+      ...retained,
+      ...parentDefaults,
+    });
   });
   it.each(['light', 'dark', 'system'])(
     'round trips the exact %s preference and other settings',
     async (appearance) => {
-      const snapshot = JSON.stringify({ version: 4, ...choices, appearance });
-      expect(parseSoundSettings(snapshot)).toEqual({ version: 4, ...choices, appearance });
+      const snapshot = JSON.stringify({ version: 6, ...choices, appearance, ...parentDefaults });
+      expect(parseSoundSettings(snapshot)).toEqual({
+        version: 6,
+        ...choices,
+        appearance,
+        ...parentDefaults,
+      });
       const f = fixture(snapshot);
       await f.owner.load();
       expect(f.changes.at(-1)).toMatchObject({ ...choices, appearance, saved: true });
@@ -69,7 +85,7 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', appearance: 'dark', saved: false });
     expect(f.changes.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
-    const exact = JSON.stringify({ version: 4, ...choices, appearance: 'dark' });
+    const exact = JSON.stringify({ version: 6, ...choices, appearance: 'dark', ...parentDefaults });
     expect(f.storage.write.mock.calls).toEqual([[exact], [exact]]);
     expect(f.changes.at(-1)).toMatchObject({ appearance: 'dark', saved: true });
   });
@@ -86,10 +102,23 @@ describe('persisted candidate drawing appearance', () => {
     });
     expect(f.changes.at(-1).message).toContain('could not be read');
     await f.owner.retrySave();
-    expect(JSON.parse(f.storage.write.mock.calls[0][0])).toMatchObject({
+    expect(f.storage.write).not.toHaveBeenCalled();
+    await f.owner.retryRead();
+    expect(f.storage.write).not.toHaveBeenCalled();
+    f.storage.read.mockResolvedValueOnce(
+      JSON.stringify({ version: 4, ...choices, appearance: 'light' })
+    );
+    await f.owner.retryRead();
+    expect(f.changes.at(-1)).toMatchObject({ appearance: 'light', saved: true, ...parentDefaults });
+    expect(f.storage.write).not.toHaveBeenCalled();
+    await f.owner.setAppearance('dark');
+    expect(JSON.parse(f.storage.write.mock.calls[0][0])).toEqual({
+      version: 6,
+      ...choices,
       appearance: 'dark',
-      soundEnabled: false,
+      ...parentDefaults,
     });
+    expect(f.storage.read).toHaveBeenCalledTimes(3);
   });
   it('ignores selection before hydration and rejects unknown preference input after hydration', async () => {
     const f = fixture();

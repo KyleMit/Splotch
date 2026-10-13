@@ -1,0 +1,46 @@
+{
+  "schema": "splotch-recorded-surface-probe3224-v1",
+  "joinedCompositionSHA256": "68738dcbd4822b9fefd42bd4592c614cd3875cc6ccf24ff43c1f8dd0b452870c",
+  "surfaceSHA256": "d7ac6cc2ed00f88fa8e5e67aed9e6529a399a3210ec7f9302e3fc3bc885e1cb7",
+  "rendererSHA256": "39f87c805a69cd7ddb9d2d0d49a2f75bfd995c4673dff46fd453df5c65e9aa44",
+  "scope": "isolated actual production RecordedDrawingSurface7; product default remains6",
+  "pointer": "actual browser desktop mouse events and actual production RAF; no native proof",
+  "widthChoice": "extraThick",
+  "inkWidthCSS": 22,
+  "eraserWidthCSS": 44,
+  "viewports": [
+    {
+      "id": "tablet-landscape",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "id": "phone-portrait",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "dpr": 1,
+  "logicalPaper": {
+    "width": 1024,
+    "height": 768
+  },
+  "paperMaximumWidthCSS": 760,
+  "paperHorizontalMarginCSS": 24,
+  "scenes": [
+    "pen",
+    "same-hue-prefixes",
+    "same-contact-backtrack",
+    "yellow-under-blue",
+    "blue-under-yellow",
+    "night-blank-crayon",
+    "eraser-undo-reopen"
+  ],
+  "liveOps": "unobserved inside production Surface; retained actual live DOM/SVG plus exact completed commands; no inferred live op equivalence",
+  "acceptance": {
+    "native": false,
+    "shippingParity": false,
+    "performance": false,
+    "brushReviewRounds": 0
+  }
+}

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,6 +14,7 @@ import {
 const native = vi.hoisted(() => ({ handlers: null, paper: null, layout: null }));
 
 vi.mock('react-native', () => ({
+  PixelRatio: { get: () => 1 },
   useColorScheme: () => 'light',
   findNodeHandle: (target) => target,
   PanResponder: {
@@ -131,7 +133,9 @@ beforeEach(() => {
     drawing: emptyDrawing(),
     currentDrawing: () => props.drawing,
     color: 'Purple',
-    brush: 'marker',
+    brush: 'pen',
+    strokeWidth: 'medium',
+    eraserWidth: 'medium',
     disabled: false,
     onCohort: vi.fn(),
     onDrawingChange: vi.fn(),
@@ -150,13 +154,14 @@ afterEach(() => {
 describe('raw terminal events after Fabric releases its responder', () => {
   it('commits the stationary survivor without a move, regrant or responder terminal callback', () => {
     const baseline = {
-      ...emptyDrawing(),
-      strokes: [{ color: 'Blue', brush: 'pencil', points: [{ x: 1, y: 2 }] }],
+      ...legacyDrawing(),
+      strokes: [{ color: 'Blue', brush: 'pencil', width: 7, points: [{ x: 1, y: 2 }] }],
     };
     let history = createHistory(baseline);
-    props.currentDrawing = () => history.drawing;
-    props.onCohort.mockImplementation((strokes) => {
-      history = addStrokes(history, strokes);
+    props = { ...props, drawing: history.drawing, currentDrawing: () => history.drawing };
+    act(() => root.render(createElement(DrawingSurface, props)));
+    props.onCohort.mockImplementation((strokes, paper) => {
+      history = addStrokes(history, strokes, paper);
     });
     partialRelease();
     expect(props.onCohort).not.toHaveBeenCalled();

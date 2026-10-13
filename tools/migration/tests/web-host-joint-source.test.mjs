@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { readPolicyYaml } from '../lib/topology-policy.mjs';
-import { freezeSource, sha256 } from '../lib/web-host-source.mjs';
+import { freezeSource, sha256, sourceGitBytes } from '../lib/web-host-source.mjs';
 import { requireFrozenDependencies } from '../lib/web-host-dependencies.mjs';
 
 const control = vi.hoisted(() => ({ field: null }));
@@ -57,3 +59,47 @@ it.each(['baseline', 'actual'])(
     );
   }
 );
+
+const DEFAULT_EXEC_OUTPUT_MAX_BYTES = 1024 * 1024;
+const PATCH_FIXTURE_BYTES = 2 * DEFAULT_EXEC_OUTPUT_MAX_BYTES;
+it('freezes a real patch above the default exec buffer and preserves raw Git blob bytes', () => {
+  const fixture = mkdtempSync(join(tmpdir(), 'splotch-source-bound-'));
+  const git = (...args) => execFileSync('git', ['-C', fixture, ...args]);
+  const binary = Buffer.from([0, 255, 128, 254]);
+  try {
+    git('init', '--quiet');
+    writeFileSync(join(fixture, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
+    writeFileSync(join(fixture, 'payload.txt'), 'original\n');
+    writeFileSync(join(fixture, 'raw.bin'), binary);
+    git('add', '.');
+    git(
+      '-c',
+      'user.name=Source fixture',
+      '-c',
+      'user.email=source@example.invalid',
+      'commit',
+      '--quiet',
+      '-m',
+      'source fixture'
+    );
+    const topologySha = git('rev-parse', 'HEAD').toString().trim();
+    writeFileSync(join(fixture, 'payload.txt'), Buffer.alloc(PATCH_FIXTURE_BYTES, 97));
+    const patch = sourceGitBytes(fixture, ['diff', '--binary', 'HEAD']);
+    expect(Buffer.isBuffer(patch)).toBe(true);
+    expect(patch.length).toBeGreaterThan(DEFAULT_EXEC_OUTPUT_MAX_BYTES);
+    expect(sourceGitBytes(fixture, ['show', 'HEAD:raw.bin'])).toEqual(binary);
+    expect(() => git('diff', '--binary', 'HEAD')).toThrow(/ENOBUFS/);
+    const frozen = freezeSource({
+      root: fixture,
+      topologySha,
+      topologyLockSha256: sha256(readFileSync(join(fixture, 'pnpm-lock.yaml'))),
+      provisional: true,
+    });
+    expect(frozen.patchSha256).toBe(sha256(patch));
+    expect(frozen.entries.find((entry) => entry.path === 'payload.txt').sha256).toBe(
+      sha256(Buffer.alloc(PATCH_FIXTURE_BYTES, 97))
+    );
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
+  }
+});

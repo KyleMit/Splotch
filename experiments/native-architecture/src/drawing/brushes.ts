@@ -1,15 +1,17 @@
 import { DEFAULT_STROKE_WIDTH, STROKE_WIDTH_PX } from './strokeWidth';
 
 export const BRUSHES = {
-  pencil: { label: 'Pencil', width: STROKE_WIDTH_PX.pencil[DEFAULT_STROKE_WIDTH] },
-  marker: { label: 'Marker', width: STROKE_WIDTH_PX.marker[DEFAULT_STROKE_WIDTH] },
+  pen: { label: 'Pen', width: STROKE_WIDTH_PX.pen[DEFAULT_STROKE_WIDTH] },
   crayon: { label: 'Crayon', width: STROKE_WIDTH_PX.crayon[DEFAULT_STROKE_WIDTH] },
   magic: { label: 'Magic Brush', width: STROKE_WIDTH_PX.magic[DEFAULT_STROKE_WIDTH] },
   eraser: { label: 'Eraser', width: STROKE_WIDTH_PX.eraser[DEFAULT_STROKE_WIDTH] },
 } as const;
 
-export const BRUSH_ORDER = ['pencil', 'marker', 'crayon', 'magic', 'eraser'] as const;
+export const BRUSH_ORDER = ['pen', 'crayon', 'magic', 'eraser'] as const;
 export type Brush = (typeof BRUSH_ORDER)[number];
+export type LegacySolidBrush = 'pencil' | 'marker';
+export type StoredBrush = Brush | LegacySolidBrush;
+export const DEFAULT_BRUSH: Brush = 'pen';
 export const MAGIC_RAINBOW_COUNT = 10;
 export const INITIAL_RAINBOW = 0;
 export const MAX_CRAYON_SEED = 0xffffffff;

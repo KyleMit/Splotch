@@ -1,3 +1,4 @@
+import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -81,12 +82,12 @@ describe('joint native drawing and eraser ownership', () => {
   });
 
   it('retains rainbow across page changes and advances once per successful Clear', () => {
-    const initial = createHistory({ ...emptyDrawing(3, 'flower'), strokes: [crayon, magic] });
+    const initial = createHistory({ ...legacyDrawing(3, 'flower'), strokes: [crayon, magic] });
     const changed = changePage(initial, 'turtle');
     expect(changed.drawing.rainbow).toBe(3);
     expect(strokeStyle('magic', 'Blue', changed.drawing)).toEqual({
       brush: 'magic',
-      width: 30,
+      width: 8,
       rainbow: 3,
     });
     const blankClear = clearDrawing(changed, true);
@@ -98,7 +99,7 @@ describe('joint native drawing and eraser ownership', () => {
   });
 
   it('clears visually empty recorded operations without adding an undo state', () => {
-    const history = addStroke(addStroke(createHistory(), marker), erase);
+    const history = addStroke(addStroke(createHistory(legacyDrawing()), marker), erase);
     const cleared = clearDrawing(history, true);
     expect(cleared.undo).toBe(history.undo);
     expect(cleared.drawing.strokes).toEqual([]);
@@ -110,8 +111,8 @@ describe('joint native drawing and eraser ownership', () => {
       ...(index % 2 ? { ...erase, width: 44 } : { ...marker, width: 22 }),
       points: [{ x: index % 1024, y: 40 }],
     }));
-    expect(parseDrawing({ ...emptyDrawing(), strokes }).strokes).toHaveLength(1000);
-    expect(() => addStroke(createHistory({ ...emptyDrawing(), strokes }), marker)).toThrow('full');
+    expect(parseDrawing({ ...legacyDrawing(), strokes }).strokes).toHaveLength(1000);
+    expect(() => addStroke(createHistory({ ...legacyDrawing(), strokes }), marker)).toThrow('full');
     let checkpoint = null;
     let captures = 0;
     for (;;) {
@@ -125,6 +126,7 @@ describe('joint native drawing and eraser ownership', () => {
       checkpoint = {
         id: ++captures,
         strokes: plan.prefix,
+        paper: LEGACY_PAPER,
         base64: 'planner fixture; not raster evidence',
       };
     }
@@ -139,7 +141,7 @@ describe('joint native drawing and eraser ownership', () => {
     expect(loaded.needsCheckpoint).toBe(true);
     expect(planInk(prefix, null).needsCheckpoint).toBe(false);
     expect(needsPreparation(prefix, 'eraser')).toBe(true);
-    const checkpoint = { id: 1, strokes: prefix, base64: 'planner fixture' };
+    const checkpoint = { id: 1, strokes: prefix, paper: LEGACY_PAPER, base64: 'planner fixture' };
     const ready = planInk([...prefix, erase], checkpoint);
     expect(ready.strokes).toEqual([erase]);
     expect(ready.needsCheckpoint).toBe(false);
@@ -151,7 +153,12 @@ describe('joint native drawing and eraser ownership', () => {
     expect(planInk(strokes, null).prefix).toEqual([marker]);
     expect(planInk(strokes, null).needsCheckpoint).toBe(true);
     expect(planInk(strokes, null).needsCheckpoint).toBe(true);
-    const checkpoint = { id: 1, strokes, base64: 'planner fixture; not raster evidence' };
+    const checkpoint = {
+      id: 1,
+      strokes,
+      paper: LEGACY_PAPER,
+      base64: 'planner fixture; not raster evidence',
+    };
     expect(checkpointMatches([...strokes, erase], checkpoint)).toBe(true);
     expect(checkpointMatches([marker], checkpoint)).toBe(false);
     expect(planInk([{ ...marker }], checkpoint).checkpoint).toBeNull();

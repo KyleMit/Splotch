@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
+import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -172,7 +173,7 @@ async function mount(component = DrawingScreen) {
       await act(async () => target.click());
     },
     async settings() {
-      await this.click('Drawing tools. Marker selected.');
+      await this.click('Drawing tools');
       expect(this.dialog().textContent).toContain('Drawing tools');
       await this.click('Settings');
       expect(this.switch()).not.toBeNull();
@@ -187,7 +188,7 @@ async function mount(component = DrawingScreen) {
       container.remove();
     },
     dialog: () => container.querySelector('[role="dialog"]'),
-    switch: () => container.querySelector('[role="switch"]'),
+    switch: () => container.querySelector('[aria-label="Drawing sound"]'),
   };
   await act(async () => root.render(createElement(component)));
 }
@@ -277,7 +278,7 @@ describe('live drawing sound owner and Settings screen', () => {
       for (const kind of ['Settings', 'Pictures']) {
         if (kind === 'Pictures') {
           await ui.click('Close Settings');
-          await ui.click('Drawing tools. Marker selected.');
+          await ui.click('Drawing tools');
           await ui.click('Pictures');
         }
         expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe(theme);
@@ -314,7 +315,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":4,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
     );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
@@ -327,7 +328,7 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":4,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
     );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });
@@ -416,4 +417,8 @@ describe('live drawing sound owner and Settings screen', () => {
 vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')
+);
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );

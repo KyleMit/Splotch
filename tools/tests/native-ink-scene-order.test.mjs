@@ -1,3 +1,4 @@
+import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -51,11 +52,11 @@ function channels(color) {
 function mixedCohort() {
   const input = createContactCohort();
   const drawing = emptyDrawing();
-  input.start('a', 'Blue', 'marker', { x: 100, y: 200 }, drawing);
+  input.start('a', 'Blue', 'pen', { x: 100, y: 200 }, drawing, 'medium', canonicalPaper);
   input.sample('a', { x: 900, y: 200 }, true);
   input.start('b', 'Yellow', 'eraser', { x: 300, y: 100 }, drawing);
   input.sample('b', { x: 300, y: 300 }, true);
-  input.start('c', 'Red', 'marker', { x: 200, y: 200 }, drawing);
+  input.start('c', 'Red', 'pen', { x: 200, y: 200 }, drawing);
   input.sample('c', { x: 800, y: 200 }, true);
   input.start('d', 'Purple', 'eraser', { x: 600, y: 100 }, drawing);
   input.sample('d', { x: 600, y: 300 }, true);
@@ -80,12 +81,12 @@ describe('complete chronological live mixed-contact scene', () => {
     expect(input.finish('a')).toBeNull();
     expect(input.finish('d')).toBeNull();
     const strokes = input.finish('b');
-    expect(strokes.map(({ brush }) => brush)).toEqual(['marker', 'eraser', 'marker', 'eraser']);
-    expect(strokes.filter(({ brush }) => brush === 'marker').map(({ color }) => color)).toEqual([
+    expect(strokes.map(({ brush }) => brush)).toEqual(['pen', 'eraser', 'pen', 'eraser']);
+    expect(strokes.filter(({ brush }) => brush === 'pen').map(({ color }) => color)).toEqual([
       'Blue',
       'Red',
     ]);
-    const history = addStrokes(createHistory(drawing), strokes);
+    const history = addStrokes(createHistory(drawing), strokes, input.paper());
     expect(history.undo).toEqual([drawing]);
     const saved = parseDrawing(JSON.parse(JSON.stringify(history.drawing)));
     expect((await output(saved.strokes)).data.equals(live.data)).toBe(true);

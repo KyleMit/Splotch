@@ -1,3 +1,4 @@
+import { DEFAULT_COLORING_BOOK_ENABLED } from './coloringBook';
 import {
   DEFAULT_APPEARANCE,
   isAppearancePreference,
@@ -13,19 +14,28 @@ import {
   type CustomColor,
   type PaintColor,
 } from '../drawing/palette';
+import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { isParentPolicies, type ParentPreferences } from '../parentCenter/parentPolicy';
 
 export type WidthSettings = Readonly<{ strokeWidth: StrokeWidth; eraserWidth: StrokeWidth }>;
 type ColorSettings = Readonly<{ selectedColor: PaintColor; customColors: readonly CustomColor[] }>;
 type Choices = WidthSettings &
   ColorSettings &
-  Readonly<{ soundEnabled: boolean; appearance: AppearancePreference }>;
-export type SoundSettings = Choices & Readonly<{ version: 4 }>;
+  ParentPreferences &
+  Readonly<{
+    soundEnabled: boolean;
+    appearance: AppearancePreference;
+    coloringBookEnabled: boolean;
+  }>;
+export type SoundSettings = Choices & Readonly<{ version: 6 }>;
 export type SoundSettingsState =
   | (WidthSettings &
-      ColorSettings & {
+      ColorSettings &
+      ParentPreferences & {
         status: 'loading';
         soundEnabled: false;
         appearance: AppearancePreference;
+        coloringBookEnabled: boolean;
         message: string;
       })
   | (Choices & { status: 'saving'; message: string })
@@ -47,6 +57,26 @@ function canonical<T>(settings: T, snapshot: string): T {
   return settings;
 }
 
+function readParentPreferences(value: unknown): ParentPreferences {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('aiEnabled' in value) ||
+    typeof value.aiEnabled !== 'boolean' ||
+    !('parentPolicies' in value) ||
+    !isParentPolicies(value.parentPolicies)
+  )
+    throw new Error('Parent Center settings are invalid.');
+  return {
+    aiEnabled: value.aiEnabled,
+    parentPolicies: {
+      ai: value.parentPolicies.ai,
+      feedback: value.parentPolicies.feedback,
+      parentCenter: value.parentPolicies.parentCenter,
+    },
+  };
+}
+
 export function parseSoundSettings(snapshot: string): SoundSettings {
   if (snapshot.length > MAX_SETTINGS_BYTES) throw new Error('Sound settings are too large.');
   const value: unknown = JSON.parse(snapshot);
@@ -55,7 +85,12 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
     typeof value !== 'object' ||
     Array.isArray(value) ||
     !('version' in value) ||
-    (value.version !== 1 && value.version !== 2 && value.version !== 3 && value.version !== 4) ||
+    (value.version !== 1 &&
+      value.version !== 2 &&
+      value.version !== 3 &&
+      value.version !== 4 &&
+      value.version !== 5 &&
+      value.version !== 6) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -63,7 +98,9 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   if (value.version === 1) {
     canonical({ version: 1, soundEnabled: value.soundEnabled }, snapshot);
     return {
-      version: 4,
+      version: 6,
+      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+      ...DEFAULT_PARENT_PREFERENCES,
       soundEnabled: value.soundEnabled,
       ...DEFAULT_WIDTH_SETTINGS,
       ...DEFAULT_COLOR_SETTINGS,
@@ -84,10 +121,17 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   };
   if (value.version === 2) {
     canonical({ version: 2, ...widths }, snapshot);
-    return { version: 4, ...widths, ...DEFAULT_COLOR_SETTINGS, appearance: DEFAULT_APPEARANCE };
+    return {
+      version: 6,
+      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+      ...DEFAULT_PARENT_PREFERENCES,
+      ...widths,
+      ...DEFAULT_COLOR_SETTINGS,
+      appearance: DEFAULT_APPEARANCE,
+    };
   }
   if (
-    (value.version !== 3 && value.version !== 4) ||
+    (value.version !== 3 && value.version !== 4 && value.version !== 5 && value.version !== 6) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -101,22 +145,190 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   const colors = { selectedColor: value.selectedColor, customColors: value.customColors };
   if (value.version === 3) {
     canonical({ version: 3, ...widths, ...colors }, snapshot);
-    return { version: 4, ...widths, ...colors, appearance: DEFAULT_APPEARANCE };
+    return {
+      version: 6,
+      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+      ...DEFAULT_PARENT_PREFERENCES,
+      ...widths,
+      ...colors,
+      appearance: DEFAULT_APPEARANCE,
+    };
   }
   if (!('appearance' in value) || !isAppearancePreference(value.appearance))
     throw new Error('Appearance choice is invalid.');
-  return canonical({ version: 4, ...widths, ...colors, appearance: value.appearance }, snapshot);
+  if (value.version === 4) {
+    canonical({ version: 4, ...widths, ...colors, appearance: value.appearance }, snapshot);
+    return {
+      version: 6,
+      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+      ...widths,
+      ...colors,
+      appearance: value.appearance,
+      ...DEFAULT_PARENT_PREFERENCES,
+    };
+  }
+  const parent = readParentPreferences(value);
+  if (value.version === 5) {
+    canonical(
+      { version: 5, ...widths, ...colors, appearance: value.appearance, ...parent },
+      snapshot
+    );
+    return {
+      version: 6,
+      ...widths,
+      ...colors,
+      appearance: value.appearance,
+      ...parent,
+      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+    };
+  }
+  if (!('coloringBookEnabled' in value) || typeof value.coloringBookEnabled !== 'boolean')
+    throw new Error('Coloring book choice is invalid.');
+  return canonical(
+    {
+      version: 6,
+      ...widths,
+      ...colors,
+      appearance: value.appearance,
+      ...parent,
+      coloringBookEnabled: value.coloringBookEnabled,
+    },
+    snapshot
+  );
 }
 
 function snapshot(state: Choices): SoundSettings {
   return {
-    version: 4,
+    version: 6,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
     selectedColor: state.selectedColor,
     customColors: state.customColors,
     appearance: state.appearance,
+    aiEnabled: state.aiEnabled,
+    parentPolicies: state.parentPolicies,
+    coloringBookEnabled: state.coloringBookEnabled,
+  };
+}
+
+function initialSoundSettingsState(): SoundSettingsState {
+  return {
+    status: 'loading',
+    coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+    soundEnabled: false,
+    ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
+    ...DEFAULT_PARENT_PREFERENCES,
+    appearance: DEFAULT_APPEARANCE,
+    message: '',
+  };
+}
+
+function defaultSoundSettings(): SoundSettings {
+  return {
+    version: 6,
+    coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+    soundEnabled: DEFAULT_SOUND_ENABLED,
+    ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
+    ...DEFAULT_PARENT_PREFERENCES,
+    appearance: DEFAULT_APPEARANCE,
+  };
+}
+
+function unreadSoundSettingsState(): SoundSettingsState {
+  return {
+    status: 'ready',
+    coloringBookEnabled: false,
+    soundEnabled: false,
+    ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
+    aiEnabled: false,
+    parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+    appearance: DEFAULT_APPEARANCE,
+    saved: false,
+    message:
+      'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
+  };
+}
+
+function createDrawingPreferenceActions({
+  getState,
+  isDisposed,
+  hasReadFailed,
+  publish,
+  persist,
+}: {
+  getState: () => SoundSettingsState;
+  isDisposed: () => boolean;
+  hasReadFailed: () => boolean;
+  publish: (state: SoundSettingsState) => void;
+  persist: (settings: SoundSettings) => Promise<void>;
+}) {
+  return {
+    async setColoringBookEnabled(coloringBookEnabled: boolean) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (typeof coloringBookEnabled !== 'boolean')
+        throw new Error('Coloring book choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, coloringBookEnabled });
+        return;
+      }
+      await persist({ ...snapshot(state), coloringBookEnabled });
+    },
+    async setEnabled(soundEnabled: boolean) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (typeof soundEnabled !== 'boolean') throw new Error('Sound choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, soundEnabled });
+        return;
+      }
+      await persist({ ...snapshot(state), soundEnabled });
+    },
+    async setWidth(tool: 'drawing' | 'eraser', width: StrokeWidth) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if ((tool !== 'drawing' && tool !== 'eraser') || !isStrokeWidth(width))
+        throw new Error('Drawing width choice is invalid.');
+      const choices = {
+        strokeWidth: tool === 'drawing' ? width : state.strokeWidth,
+        eraserWidth: tool === 'eraser' ? width : state.eraserWidth,
+      };
+      if (hasReadFailed()) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ ...snapshot(state), ...choices });
+    },
+    async setColor(selectedColor: PaintColor) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (!isPaintColor(selectedColor)) throw new Error('Paint color is invalid.');
+      const choices = {
+        selectedColor,
+        customColors: isCustomColor(selectedColor)
+          ? rememberColor(state.customColors, selectedColor)
+          : state.customColors,
+      };
+      if (hasReadFailed()) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ ...snapshot(state), ...choices });
+    },
+    async setAppearance(appearance: AppearancePreference) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (!isAppearancePreference(appearance)) throw new Error('Appearance choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, appearance });
+        return;
+      }
+      await persist({ ...snapshot(state), appearance });
+    },
   };
 }
 
@@ -124,16 +336,10 @@ export function createSoundSettings(
   storage: SoundSettingsStorage,
   onChange: (state: SoundSettingsState) => void
 ) {
-  let state: SoundSettingsState = {
-    status: 'loading',
-    soundEnabled: false,
-    ...DEFAULT_WIDTH_SETTINGS,
-    ...DEFAULT_COLOR_SETTINGS,
-    appearance: DEFAULT_APPEARANCE,
-    message: '',
-  };
+  let state = initialSoundSettingsState();
   let disposed = false;
   let readFailed = false;
+  let pendingParent: SoundSettings | null = null;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
     state = next;
@@ -141,6 +347,7 @@ export function createSoundSettings(
   }
   async function persist(settings: SoundSettings) {
     readFailed = false;
+    pendingParent = null;
     const { version: _version, ...choices } = settings;
     publish({ status: 'saving', ...choices, message: '' });
     try {
@@ -155,84 +362,92 @@ export function createSoundSettings(
       });
     }
   }
+  async function persistParent(settings: SoundSettings) {
+    if (state.status !== 'ready' || readFailed) return;
+    const previous = snapshot(state);
+    pendingParent = settings;
+    const { version: _version, ...choices } = previous;
+    publish({ status: 'saving', ...choices, message: 'Saving Parent Center choices…' });
+    try {
+      await storage.write(JSON.stringify(settings));
+      const { version: _nextVersion, ...next } = settings;
+      pendingParent = null;
+      publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });
+    } catch {
+      publish({
+        status: 'ready',
+        ...choices,
+        saved: false,
+        message:
+          'Parent Center choices were not saved. Previous protection is still active. Retry saving.',
+      });
+    }
+  }
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
       try {
         const stored = await storage.read();
-        const settings =
-          stored === null
-            ? {
-                version: 4,
-                soundEnabled: DEFAULT_SOUND_ENABLED,
-                ...DEFAULT_WIDTH_SETTINGS,
-                ...DEFAULT_COLOR_SETTINGS,
-                appearance: DEFAULT_APPEARANCE,
-              }
-            : parseSoundSettings(stored);
+        const settings = stored === null ? defaultSoundSettings() : parseSoundSettings(stored);
         const { version: _version, ...choices } = settings;
         publish({ status: 'ready', ...choices, saved: true, message: '' });
       } catch {
         readFailed = true;
+        publish(unreadSoundSettingsState());
+      }
+    },
+    ...createDrawingPreferenceActions({
+      getState: () => state,
+      isDisposed: () => disposed,
+      hasReadFailed: () => readFailed,
+      publish,
+      persist,
+    }),
+    async retrySave() {
+      if (disposed || state.status !== 'ready' || state.saved) return;
+      if (pendingParent) {
+        publish({ ...state, message: 'Open Parent Center to retry saving its choices.' });
+        return;
+      }
+      if (readFailed) {
+        publish({ ...state, message: 'Read settings again before saving Parent Center choices.' });
+        return;
+      }
+      await persist(snapshot(state));
+    },
+    async setParentPreferences(choices: ParentPreferences) {
+      if (disposed || state.status !== 'ready' || readFailed) return;
+      if (typeof choices.aiEnabled !== 'boolean' || !isParentPolicies(choices.parentPolicies))
+        throw new Error('Parent Center choice is invalid.');
+      await persistParent({ ...snapshot(state), ...choices });
+    },
+    async retryParentSave() {
+      if (disposed || state.status !== 'ready' || !pendingParent || readFailed) return;
+      await persistParent({
+        ...snapshot(state),
+        aiEnabled: pendingParent.aiEnabled,
+        parentPolicies: pendingParent.parentPolicies,
+      });
+    },
+    async retryRead() {
+      if (disposed || state.status !== 'ready' || !readFailed) return;
+      try {
+        const stored = await storage.read();
+        const next =
+          stored === null
+            ? { ...snapshot(state), ...DEFAULT_PARENT_PREFERENCES }
+            : parseSoundSettings(stored);
+        const { version: _version, ...choices } = next;
+        readFailed = false;
+        publish({ status: 'ready', ...choices, saved: true, message: '' });
+      } catch {
         publish({
-          status: 'ready',
-          soundEnabled: false,
-          ...DEFAULT_WIDTH_SETTINGS,
-          ...DEFAULT_COLOR_SETTINGS,
-          appearance: DEFAULT_APPEARANCE,
-          saved: false,
-          message:
-            'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
+          ...state,
+          message: 'Settings still could not be read. AI stays off and protection stays active.',
         });
       }
     },
-    async setEnabled(soundEnabled: boolean) {
-      if (disposed || state.status !== 'ready') return;
-      if (typeof soundEnabled !== 'boolean') throw new Error('Sound choice is invalid.');
-      await persist({ ...snapshot(state), soundEnabled });
-    },
-    async setWidth(tool: 'drawing' | 'eraser', width: StrokeWidth) {
-      if (disposed || state.status !== 'ready') return;
-      if ((tool !== 'drawing' && tool !== 'eraser') || !isStrokeWidth(width))
-        throw new Error('Drawing width choice is invalid.');
-      const choices = {
-        strokeWidth: tool === 'drawing' ? width : state.strokeWidth,
-        eraserWidth: tool === 'eraser' ? width : state.eraserWidth,
-      };
-      if (readFailed) {
-        publish({ ...state, ...choices });
-        return;
-      }
-      await persist({ ...snapshot(state), ...choices });
-    },
-    async setColor(selectedColor: PaintColor) {
-      if (disposed || state.status !== 'ready') return;
-      if (!isPaintColor(selectedColor)) throw new Error('Paint color is invalid.');
-      const choices = {
-        selectedColor,
-        customColors: isCustomColor(selectedColor)
-          ? rememberColor(state.customColors, selectedColor)
-          : state.customColors,
-      };
-      if (readFailed) {
-        publish({ ...state, ...choices });
-        return;
-      }
-      await persist({ ...snapshot(state), ...choices });
-    },
-    async setAppearance(appearance: AppearancePreference) {
-      if (disposed || state.status !== 'ready') return;
-      if (!isAppearancePreference(appearance)) throw new Error('Appearance choice is invalid.');
-      if (readFailed) {
-        publish({ ...state, appearance });
-        return;
-      }
-      await persist({ ...snapshot(state), appearance });
-    },
-    async retrySave() {
-      if (disposed || state.status !== 'ready' || state.saved) return;
-      await persist(snapshot(state));
-    },
+    canEditParent: () => !disposed && !readFailed && state.status === 'ready',
     dispose() {
       disposed = true;
     },

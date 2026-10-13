@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act } from 'react';
 import { describe, expect, it } from 'vitest';
 import {
@@ -11,12 +12,11 @@ import {
   settle,
   open,
 } from './native-contacts-mounted-harness.mjs';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 describe('canonical raster contact admission and mixed chronology', () => {
   it('does not prepare a nonempty prefix or silence accepted contacts when a later contact changes mode', async () => {
     const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
-    const initial = { ...emptyDrawing(), strokes: [marker] };
+    const initial = { ...legacyDrawing(), strokes: [marker] };
     await open(initial);
     const before = owner.history;
     sdk.soundStop.mockClear();
@@ -44,7 +44,7 @@ describe('canonical raster contact admission and mixed chronology', () => {
     await send('onPanResponderEnd', event([], [touch(0, 70, 80, 400)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes.map(({ brush }) => brush)).toEqual([
       'marker',
-      'marker',
+      'pen',
       'eraser',
     ]);
     expect(owner.history.undo).toEqual([...before.undo, initial]);
@@ -60,7 +60,7 @@ describe('canonical raster contact admission and mixed chronology', () => {
       event([touch(0, 30, 40, 200), touch(1, 80, 90, 200)], [touch(1, 80, 90, 200)], { 0: 100 }),
       false
     );
-    await act(async () => owner.setBrush('marker'));
+    await act(async () => owner.setBrush('pen'));
     await send(
       'onPanResponderStart',
       event(
@@ -104,9 +104,9 @@ describe('canonical raster contact admission and mixed chronology', () => {
     expect(sdk.soundStop).not.toHaveBeenCalled();
     await send('onPanResponderEnd', event([], [touch(0, 70, 80, 600)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes.map(({ brush }) => brush)).toEqual([
-      'marker',
+      'pen',
       'eraser',
-      'marker',
+      'pen',
       'eraser',
     ]);
     expect(owner.history.undo).toEqual([initial]);

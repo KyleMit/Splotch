@@ -13,9 +13,9 @@ import { createScreen, files, pictures, STROKE } from './native-drawing-screen-h
 const SCREEN_SETUP_BUDGET_MS = 2000;
 let screen;
 async function openTools() {
-  if (screen.button('Marker')) return;
-  const opener = [...screen.container.querySelectorAll('button')].find((button) =>
-    button.getAttribute('aria-label')?.startsWith('Drawing tools.')
+  if (screen.button('Pen')) return;
+  const opener = [...screen.container.querySelectorAll('button')].find(
+    (button) => button.getAttribute('aria-label') === 'Drawing tools'
   );
   expect(opener).toBeDefined();
   await screen.click(opener.getAttribute('aria-label'));
@@ -25,8 +25,25 @@ async function menuClick(label) {
   await screen.click(label);
 }
 async function drawStroke() {
-  if (screen.button('Marker')) await screen.click('Keep drawing');
+  if (screen.button('Pen')) await screen.click('Keep drawing');
   await screen.click('Draw fixture stroke');
+}
+
+async function expectSavedSettingsReread() {
+  const reads = files.settingsRead.mock.calls.length;
+  await screen.click('Manage Parent Center');
+  const factors = screen.container.textContent.match(/(\d) × (\d)/);
+  expect(factors).not.toBeNull();
+  const field = screen.container.querySelector('[aria-label="Grown-up answer"]');
+  await act(async () => {
+    field.value = String(Number(factors[1]) * Number(factors[2]));
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await screen.click('Check answer');
+  await screen.click('Read saved settings again');
+  expect(files.settingsRead).toHaveBeenCalledTimes(reads + 1);
+  expect(files.settingsWrite).not.toHaveBeenCalled();
+  await screen.click('Keep drawing');
 }
 
 beforeEach(async () => {
@@ -37,11 +54,13 @@ beforeEach(async () => {
   files.ink.mockReset();
   files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
+  files.brushRead.mockReset().mockResolvedValue(null);
+  files.brushWrite.mockReset().mockResolvedValue(undefined);
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
   files.scheme = 'light';
   screen = createScreen();
-  await screen.mount();
+  await act(async () => screen.mount());
 });
 
 afterEach(() => {
@@ -49,62 +68,95 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const UNREAD_SETTINGS_WARNING =
+  'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
+async function chooseUnreadPaint(draw) {
+  await screen.click('More colors');
+  const choice = screen.dialog().querySelector('[aria-label^="Explore "]');
+  const chosen = choice.getAttribute('aria-label').slice('Explore '.length);
+  await screen.click(`Explore ${chosen}`);
+  await screen.click('Use color');
+  if (draw) {
+    await menuClick('Pen');
+    await drawStroke();
+  }
+  return chosen;
+}
+async function chooseUnreadWidths(draw) {
+  await menuClick('Pen');
+  await menuClick('Drawing width: Thin');
+  if (draw) await drawStroke();
+  await menuClick('Eraser');
+  await menuClick('Eraser width: Thick');
+  if (draw) await drawStroke();
+  return 'Purple';
+}
+it.each([
+  ['paint', 'Retry saving', chooseUnreadPaint],
+  ['paint', 'Drawing sound', chooseUnreadPaint],
+  ['width', 'Retry saving', chooseUnreadWidths],
+  ['width', 'Drawing sound', chooseUnreadWidths],
+])(
+  'keeps %s choices session-only through %s, then rereads before a new explicit choice',
+  async (kind, recovery, choose) => {
+    await act(async () => screen.close());
+    const original = JSON.stringify({
+      version: kind === 'paint' ? 3 : 2,
+      soundEnabled: true,
+      strokeWidth: 'thick',
+      eraserWidth: 'thin',
+      ...(kind === 'paint' ? { selectedColor: '#FEDCBA', customColors: ['#FEDCBA'] } : {}),
+    });
+    let stored = original;
+    files.settingsRead.mockImplementation(async () => stored);
+    files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
+    files.settingsWrite.mockImplementation(async (snapshot) => {
+      stored = snapshot;
+    });
+    screen = createScreen();
+    await act(async () => screen.mount());
+    expect(screen.container.textContent).toContain(UNREAD_SETTINGS_WARNING);
+    const chosen = await choose(true);
+    const strokes = JSON.parse(screen.paper()).strokes;
+    expect(strokes.map((stroke) => (kind === 'paint' ? stroke.color : stroke.width))).toEqual(
+      kind === 'paint' ? [chosen] : [4, 28]
+    );
+    if (kind === 'width') await openTools();
+    const label = kind === 'paint' ? `Custom paint ${chosen}` : 'Eraser width: Thick';
+    expect(
+      screen.container.querySelector(`[aria-label="${label}"]`).getAttribute('aria-pressed')
+    ).toBe('true');
+    expect(files.settingsWrite).not.toHaveBeenCalled();
+    expect(stored).toBe(original);
+    expect(screen.container.textContent).toContain(UNREAD_SETTINGS_WARNING);
+    await menuClick('Settings');
+    expect(screen.dialog().textContent).toContain(UNREAD_SETTINGS_WARNING);
+    await screen.click(recovery);
+    expect(files.settingsWrite).not.toHaveBeenCalled();
+    expect(stored).toBe(original);
+    await expectSavedSettingsReread();
+    expect(await choose(false)).toBe(chosen);
+    await menuClick('Settings');
+    if (recovery === 'Drawing sound') await screen.click('Drawing sound');
+    const writes = (kind === 'paint' ? 1 : 2) + (recovery === 'Drawing sound' ? 1 : 0);
+    expect(files.settingsWrite).toHaveBeenCalledTimes(writes);
+    expect(JSON.parse(stored)).toEqual({
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+      appearance: 'system',
+      soundEnabled: recovery === 'Retry saving',
+      strokeWidth: kind === 'paint' ? 'thick' : 'thin',
+      eraserWidth: kind === 'paint' ? 'thin' : 'thick',
+      selectedColor: chosen,
+      customColors: kind === 'paint' ? [chosen, '#FEDCBA'] : [],
+    });
+    expect(screen.dialog().textContent).not.toContain(UNREAD_SETTINGS_WARNING);
+  }
+);
+
 describe('custom paints wired to the drawing screen', () => {
-  it.each(['Retry saving', 'Drawing sound'])(
-    'uses a session custom paint without replacing unread preferences until explicit %s',
-    async (recovery) => {
-      await act(async () => screen.close());
-      const original = JSON.stringify({
-        version: 3,
-        soundEnabled: true,
-        strokeWidth: 'thick',
-        eraserWidth: 'thin',
-        selectedColor: '#FEDCBA',
-        customColors: ['#FEDCBA'],
-      });
-      let stored = original;
-      files.settingsRead.mockImplementation(async () => stored);
-      files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
-      files.settingsWrite.mockImplementation(async (snapshot) => {
-        stored = snapshot;
-      });
-      screen = createScreen();
-      await act(async () => screen.mount());
-      const warning =
-        'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
-      expect(screen.container.textContent).toContain(warning);
-      await screen.click('More colors');
-      const choice = screen.dialog().querySelector('[aria-label^="Explore "]');
-      const chosen = choice.getAttribute('aria-label').slice('Explore '.length);
-      await screen.click(`Explore ${chosen}`);
-      await screen.click('Use color');
-      await menuClick('Marker');
-      await drawStroke();
-      expect(JSON.parse(screen.paper()).strokes[0].color).toBe(chosen);
-      expect(
-        screen.container
-          .querySelector(`[aria-label="Custom paint ${chosen}"]`)
-          .getAttribute('aria-pressed')
-      ).toBe('true');
-      expect(files.settingsWrite).not.toHaveBeenCalled();
-      expect(stored).toBe(original);
-      expect(screen.container.textContent).toContain(warning);
-      await menuClick('Settings');
-      expect(screen.dialog().textContent).toContain(warning);
-      await screen.click(recovery);
-      expect(files.settingsWrite).toHaveBeenCalledOnce();
-      expect(JSON.parse(stored)).toEqual({
-        version: 4,
-        appearance: 'system',
-        soundEnabled: recovery === 'Drawing sound',
-        strokeWidth: 'medium',
-        eraserWidth: 'medium',
-        selectedColor: chosen,
-        customColors: [chosen],
-      });
-      expect(screen.dialog().textContent).not.toContain(warning);
-    }
-  );
   it('locks input for exploration, persists only the chosen color and carries it through drawing and remount', async () => {
     await act(async () => {});
     await screen.click('More colors');
@@ -117,7 +169,10 @@ describe('custom paints wired to the drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({
-      version: 4,
+      version: 6,
+      coloringBookEnabled: true,
+      aiEnabled: false,
+      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
       appearance: 'system',
       selectedColor: chosen,
       customColors: [chosen],
@@ -140,7 +195,7 @@ describe('custom paints wired to the drawing screen', () => {
 
 describe('drawing width controls', () => {
   it('keeps accessible, touch-sized independent selections through tool switches and reopening settings', async () => {
-    await menuClick('Marker');
+    await menuClick('Pen');
     const control = (label) => screen.container.querySelector(`[aria-label="${label}"]`);
     expect(control('Drawing width: Medium').getAttribute('aria-pressed')).toBe('true');
     expect(control('Drawing width: Medium').getAttribute('data-native-selected')).toBe('true');
@@ -152,8 +207,8 @@ describe('drawing width controls', () => {
     expect(control('Eraser width: Medium').getAttribute('aria-pressed')).toBe('true');
     await menuClick('Eraser width: Thick');
     await drawStroke();
-    expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([11, 88]);
-    await menuClick('Marker');
+    expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([4, 28]);
+    await menuClick('Pen');
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(control('Drawing width: Thin').textContent).toContain('✓');
     await menuClick('Settings');
@@ -161,7 +216,7 @@ describe('drawing width controls', () => {
     await openTools();
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":4,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system"}'
+      '{"version":6,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();
@@ -175,61 +230,17 @@ describe('drawing width controls', () => {
   });
 
   it('keeps a failed width choice usable and retries the same full settings snapshot', async () => {
-    await menuClick('Marker');
+    await menuClick('Pen');
     files.settingsWrite.mockRejectedValueOnce(new Error('disk full'));
     await menuClick('Drawing width: Thick');
     await drawStroke();
-    expect(JSON.parse(screen.paper()).strokes[0].width).toBe(44);
+    expect(JSON.parse(screen.paper()).strokes[0].width).toBe(14);
     expect(screen.container.textContent).toContain('could not be saved');
     await menuClick('Settings');
     await screen.click('Retry saving');
     expect(files.settingsWrite.mock.calls.at(-1)).toEqual(files.settingsWrite.mock.calls.at(-2));
     expect(screen.dialog().textContent).not.toContain('could not be saved');
   });
-
-  it.each(['Retry saving', 'Drawing sound'])(
-    'retains the read warning and stored preferences through width taps until explicit %s',
-    async (recovery) => {
-      await act(async () => screen.close());
-      const original =
-        '{"version":2,"soundEnabled":true,"strokeWidth":"thick","eraserWidth":"thin"}';
-      let saved = original;
-      files.settingsRead.mockImplementation(async () => saved);
-      files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
-      files.settingsWrite.mockImplementation(async (snapshot) => {
-        saved = snapshot;
-      });
-      screen = createScreen();
-      await act(async () => screen.mount());
-      const warning =
-        'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
-      expect(screen.container.textContent).toContain(warning);
-      await menuClick('Marker');
-      await menuClick('Drawing width: Thin');
-      await drawStroke();
-      await menuClick('Eraser');
-      await menuClick('Eraser width: Thick');
-      await drawStroke();
-      expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([11, 88]);
-      expect(files.settingsWrite).not.toHaveBeenCalled();
-      expect(saved).toBe(original);
-      expect(screen.container.textContent).toContain(warning);
-      await menuClick('Settings');
-      expect(screen.dialog().textContent).toContain(warning);
-      await screen.click(recovery);
-      expect(files.settingsWrite).toHaveBeenCalledOnce();
-      expect(JSON.parse(saved)).toEqual({
-        version: 4,
-        appearance: 'system',
-        soundEnabled: recovery === 'Drawing sound',
-        strokeWidth: 'thin',
-        eraserWidth: 'thick',
-        selectedColor: 'Purple',
-        customColors: [],
-      });
-      expect(screen.dialog().textContent).not.toContain(warning);
-    }
-  );
 });
 
 describe('saved-picture failure feedback', () => {
@@ -374,7 +385,7 @@ describe('coloring-page controls through the real drawing screen', () => {
     expect(screen.dialog().textContent).toContain(
       'Your drawing stays. Undo brings the last page back.'
     );
-    expect(choices.map((choice) => choice.getAttribute('aria-label'))).toEqual([
+    const expectedPages = [
       'Blank paper',
       'Sunshine',
       'Garden flower',
@@ -385,25 +396,17 @@ describe('coloring-page controls through the real drawing screen', () => {
       'Duck',
       'Horse',
       'Pig',
-    ]);
-    expect(choices.map((choice) => choice.getAttribute('aria-checked'))).toEqual([
-      'true',
-      'false',
-      'false',
-      'false',
-      'false',
-      'false',
-      'false',
-      'false',
-      'false',
-      'false',
-    ]);
+    ];
+    expect(choices.map((choice) => choice.getAttribute('aria-label'))).toEqual(expectedPages);
+    expect(choices.map((choice) => choice.getAttribute('aria-checked'))).toEqual(
+      expectedPages.map((label) => String(label === 'Blank paper'))
+    );
     const underlying = [...screen.container.querySelectorAll('button')].filter(
       (button) => !screen.dialog().contains(button)
     );
     expect(underlying.length).toBeGreaterThan(10);
     expect(underlying.every((button) => button.disabled)).toBe(true);
-    await act(async () => screen.button('Drawing tools. Marker selected.').click());
+    await act(async () => screen.button('Drawing tools').click());
     expect(screen.paper()).toBe(original);
     await screen.click('Keep drawing');
     expect(screen.dialog()).toBeNull();
@@ -464,7 +467,7 @@ describe('coloring-page controls through the real drawing screen', () => {
       );
       await menuClick('Clear');
       expect(screen.button('Draw fixture stroke').disabled).toBe(true);
-      expect(screen.button('Drawing tools. Marker selected.').disabled).toBe(true);
+      expect(screen.button('Drawing tools').disabled).toBe(true);
       await act(async () => finishInk(rgbaPng(1024, 768, 255).toString('base64')));
       await vi.waitFor(
         async () => {
@@ -494,7 +497,7 @@ describe('coloring-page controls through the real drawing screen', () => {
     await menuClick('Coloring pages');
     for (const theme of ['light', 'dark']) {
       files.scheme = theme;
-      await screen.mount();
+      await act(async () => screen.mount());
       const preview = screen.button('Sunshine').querySelector('svg');
       expect(preview.querySelector('rect').getAttribute('fill')).toBe(PAPER_THEMES[theme].paper);
       const outlines = [...preview.querySelectorAll('path')];

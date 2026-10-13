@@ -1,48 +1,68 @@
+import { parseRecordedDrawing7 } from './recordedDrawing7';
+import { addRecordedCommand7, recordedGeometry7 } from './recordedHistory7';
+import type { CompletedCohort7 } from './recordedContactCohort7';
+import type { Drawing7 } from './recordedTypes7';
 import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
 import { isPageId, type PageId } from './pages';
-import { INITIAL_RAINBOW, MAGIC_RAINBOW_COUNT, MAX_CRAYON_SEED, type Brush } from './brushes';
+import {
+  INITIAL_RAINBOW,
+  MAGIC_RAINBOW_COUNT,
+  MAX_CRAYON_SEED,
+  type Brush,
+  type LegacySolidBrush,
+} from './brushes';
 import {
   DEFAULT_STROKE_WIDTH,
   isStrokeWidthPx,
   strokeWidthPx,
   type StrokeWidth,
-  type StrokeWidthPx,
 } from './strokeWidth';
+import {
+  PAPER_WIDTH,
+  PAPER_HEIGHT,
+  UNADOPTED_PAPER,
+  readDrawingPaper,
+  samePaper,
+  type DrawingPaper,
+  type PaperReference,
+} from './paperSpace';
+export { PAPER_WIDTH, PAPER_HEIGHT } from './paperSpace';
+import {
+  defaultStoredStrokeWidth,
+  isStoredStrokeWidth,
+  type StoredStrokeWidthPx,
+} from './storedStrokeWidth';
 
-export const PAPER_WIDTH = 1024;
-export const PAPER_HEIGHT = 768;
 const MAX_STROKES = 1000;
 export const MAX_POINTS = 100_000;
 export const DRAWING_FULL_MESSAGE = 'This picture is full. Save it, then start a new picture.';
 const MIN_SAMPLE_DISTANCE = 1;
 export type Point = Readonly<{ x: number; y: number }>;
 type BrushStyle =
-  | Readonly<{ color: PaintColor; brush: 'pencil' | 'marker' }>
+  | Readonly<{ color: PaintColor; brush: 'pen' | LegacySolidBrush }>
   | Readonly<{ color: PaintColor; brush: 'crayon'; seed: number }>
   | Readonly<{ brush: 'magic'; rainbow: number }>
   | Readonly<{ brush: 'eraser' }>;
-export type StrokeStyle = BrushStyle & Readonly<{ width: StrokeWidthPx }>;
+export type StrokeStyle = BrushStyle & Readonly<{ width: StoredStrokeWidthPx }>;
 export type Stroke = StrokeStyle & Readonly<{ points: readonly Point[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
-export type Drawing = Readonly<{
-  version: 5;
-  pageId: PageId;
-  rainbow: number;
-  strokes: readonly Stroke[];
-}>;
-export type History = Readonly<{ drawing: Drawing; undo: readonly Drawing[] }>;
+type DrawingContents = Readonly<{ pageId: PageId; rainbow: number; strokes: readonly Stroke[] }>;
+export type LegacyDrawing = DrawingContents &
+  (Readonly<{ version: 5 }> | Readonly<{ version: 6; paper: DrawingPaper }>);
+export type Drawing = LegacyDrawing | Drawing7;
+export type History = Readonly<{ drawing: Drawing; undo: readonly Drawing[]; allocationCursor7: number }>;
 
 const HISTORY_LIMIT = 50;
 const HISTORY_POINT_BUDGET = 200_000;
 
-export function emptyDrawing(rainbow = INITIAL_RAINBOW, pageId: PageId = 'blank'): Drawing {
-  return { version: 5, pageId, rainbow, strokes: [] };
+export function emptyDrawing(rainbow = INITIAL_RAINBOW, pageId: PageId = 'blank'): Extract<LegacyDrawing, { version: 6 }> {
+  return { version: 6, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
 }
 
 export function strokeStyle(
   brush: Brush,
   color: PaintColor,
-  drawing: Drawing,
+  drawing: LegacyDrawing,
   selection: StrokeWidth = DEFAULT_STROKE_WIDTH
 ): StrokeStyle {
   if (!isPaintColor(color)) throw new Error('Paint color is invalid.');
@@ -61,11 +81,11 @@ export function strokeStyle(
 }
 
 export function createHistory(drawing: Drawing = emptyDrawing()): History {
-  return { drawing, undo: [] };
+  return { drawing, undo: [], allocationCursor7: drawing.version === 7 ? drawing.seedCursor : 1 };
 }
 
 function pointCount(drawing: Drawing): number {
-  return drawing.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
+  return drawing.version === 7 ? recordedGeometry7(drawing.commands) : drawing.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
 }
 
 export function commitDrawing(history: History, drawing: Drawing): History {
@@ -76,44 +96,72 @@ export function commitDrawing(history: History, drawing: Drawing): History {
   ) {
     undo = undo.slice(1);
   }
-  return { drawing, undo };
+  const allocationCursor7 = Math.max(history.allocationCursor7, drawing.version === 7 ? drawing.seedCursor : 1);
+  return { drawing: drawing.version === 7 && drawing.seedCursor !== allocationCursor7 ? Object.freeze({ ...drawing, seedCursor: allocationCursor7 }) : drawing, undo, allocationCursor7 };
 }
 
 export function drawingCapacity(drawing: Drawing): { strokes: number; points: number } {
   return {
-    strokes: MAX_STROKES - drawing.strokes.length,
+    strokes: MAX_STROKES - (drawing.version === 7 ? drawing.commands.reduce((sum, command) => sum + command.styles.length, 0) : drawing.strokes.length),
     points: MAX_POINTS - pointCount(drawing),
   };
 }
 
-export function addStrokes(history: History, strokes: readonly Stroke[]): History {
+export function addStrokes(
+  history: History,
+  strokes: readonly Stroke[],
+  paper?: PaperReference
+): History {
+  if (history.drawing.version === 7) throw new Error('Recorded pictures require recorded commands.');
   const additions = strokes.filter((stroke) => stroke.points.length > 0);
   if (additions.length === 0) return history;
   const capacity = drawingCapacity(history.drawing);
   const points = additions.reduce((sum, stroke) => sum + stroke.points.length, 0);
   if (additions.length > capacity.strokes || points > capacity.points)
     throw new Error(DRAWING_FULL_MESSAGE);
+  const drawing = history.drawing;
+  if (drawing.version === 5) {
+    if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
+    return commitDrawing(history, { ...drawing, strokes: [...drawing.strokes, ...additions] });
+  }
+  const reference = drawing.paper.kind === 'adopted' ? drawing.paper : paper;
+  if (!reference || reference.kind !== 'adopted' || (paper && !samePaper(reference, paper)))
+    throw new Error('The drawing paper reference is not ready.');
+  const validated = readDrawingPaper(reference);
+  const adopted = Object.isFrozen(reference) ? reference : validated;
+  for (const stroke of additions) {
+    if (
+      stroke.brush === 'pencil' ||
+      stroke.brush === 'marker' ||
+      !isStrokeWidthPx(stroke.brush, stroke.width)
+    )
+      throw new Error('This picture contains an invalid stroke width.');
+  }
   return commitDrawing(history, {
-    ...history.drawing,
-    strokes: [...history.drawing.strokes, ...additions],
+    ...drawing,
+    paper: drawing.paper.kind === 'adopted' ? drawing.paper : adopted,
+    strokes: [...drawing.strokes, ...additions],
   });
 }
 
-export function addStroke(history: History, stroke: Stroke): History {
-  return addStrokes(history, [stroke]);
+export function addStroke(history: History, stroke: Stroke, paper?: PaperReference): History {
+  return addStrokes(history, [stroke], paper);
 }
 
 export function undoDrawing(history: History): History {
   const drawing = history.undo.at(-1);
-  return drawing ? { drawing, undo: history.undo.slice(0, -1) } : history;
+  return drawing ? { drawing: drawing.version === 7 ? { ...drawing, seedCursor: history.allocationCursor7 } : drawing, undo: history.undo.slice(0, -1), allocationCursor7: history.allocationCursor7 } : history;
 }
 
 export function clearDrawing(history: History, visuallyEmpty: boolean): History {
-  const drawing = emptyDrawing(
+  const empty = emptyDrawing(
     (history.drawing.rainbow + 1) % MAGIC_RAINBOW_COUNT,
     history.drawing.pageId
   );
-  return visuallyEmpty ? { drawing, undo: history.undo } : commitDrawing(history, drawing);
+  const drawing: Drawing = history.drawing.version === 7
+    ? { version: 7, rainbow: empty.rainbow, pageId: empty.pageId, paper: empty.paper, seedCursor: history.allocationCursor7, commands: [] }
+    : empty;
+  return visuallyEmpty ? { drawing, undo: history.undo, allocationCursor7: history.allocationCursor7 } : commitDrawing(history, drawing);
 }
 
 export function changePage(history: History, pageId: PageId): History {
@@ -158,7 +206,7 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width' | 'color';
+type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width' | 'color' | 'paper';
 
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
   return (
@@ -176,6 +224,8 @@ function savedFormat(value: Record<string, unknown>): SavedFormat {
     return 'width';
   if (value.version === 5 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
     return 'color';
+  if (value.version === 6 && exactKeys(value, ['version', 'paper', 'pageId', 'rainbow', 'strokes']))
+    return 'paper';
   throw new Error('This saved picture is not a supported drawing.');
 }
 
@@ -196,12 +246,17 @@ function readStyle(
   rainbow: number
 ): BrushStyle {
   if (
-    (format === 'joint' || format === 'width' || format === 'color') &&
+    (format === 'joint' || format === 'width' || format === 'color' || format === 'paper') &&
     item.brush === 'eraser' &&
     exactKeys(item, ['brush', 'points'])
   )
     return { brush: 'eraser' };
-  const rich = format === 'brush' || format === 'joint' || format === 'width' || format === 'color';
+  const rich =
+    format === 'brush' ||
+    format === 'joint' ||
+    format === 'width' ||
+    format === 'color' ||
+    format === 'paper';
   if (
     rich &&
     item.brush === 'magic' &&
@@ -209,11 +264,14 @@ function readStyle(
     exactKeys(item, ['brush', 'rainbow', 'points'])
   )
     return { brush: 'magic', rainbow };
-  if (format === 'color' ? isPaintColor(item.color) : isPaletteLabel(item.color)) {
+  if (
+    format === 'color' || format === 'paper' ? isPaintColor(item.color) : isPaletteLabel(item.color)
+  ) {
     const color = item.color;
     if (!isPaintColor(color)) throw new Error('This saved picture contains an invalid color.');
     if (
-      (item.brush === 'pencil' || item.brush === 'marker') &&
+      ((format !== 'paper' && (item.brush === 'pencil' || item.brush === 'marker')) ||
+        ((format === 'color' || format === 'paper') && item.brush === 'pen')) &&
       exactKeys(item, ['brush', 'color', 'points'])
     )
       return { brush: item.brush, color };
@@ -249,6 +307,7 @@ function readPoint(point: unknown): Point {
 }
 
 export function parseDrawing(value: unknown): Drawing {
+  if (record(value) && value.version === 7) return parseRecordedDrawing7(value);
   if (!record(value) || !Array.isArray(value.strokes) || value.strokes.length > MAX_STROKES)
     throw new Error('This saved picture is not a supported drawing.');
   const format = savedFormat(value);
@@ -262,19 +321,49 @@ export function parseDrawing(value: unknown): Drawing {
       throw new Error('This saved picture contains an invalid stroke.');
     const { width, ...withoutWidth } = item;
     const style = readStyle(
-      format === 'width' || format === 'color' ? withoutWidth : item,
+      format === 'width' || format === 'color' || format === 'paper' ? withoutWidth : item,
       format,
       rainbow
     );
     const actualWidth =
-      format === 'width' || format === 'color'
+      format === 'width' || format === 'color' || format === 'paper'
         ? width
-        : strokeWidthPx(style.brush, DEFAULT_STROKE_WIDTH);
-    if (!isStrokeWidthPx(style.brush, actualWidth))
+        : defaultStoredStrokeWidth(style.brush);
+    if (
+      format === 'paper' &&
+      (style.brush === 'pencil' ||
+        style.brush === 'marker' ||
+        !isStrokeWidthPx(style.brush, actualWidth))
+    )
+      throw new Error('This saved picture contains an invalid stroke width.');
+    if (!isStoredStrokeWidth(style.brush, actualWidth))
       throw new Error('This saved picture contains an invalid stroke width.');
     total += item.points.length;
     if (total > MAX_POINTS) throw new Error('This saved picture is too large.');
     return { ...style, width: actualWidth, points: item.points.map(readPoint) };
   });
+  if (format === 'paper') {
+    const paper = readDrawingPaper(value.paper);
+    if (paper.kind === 'unadopted' && strokes.length > 0)
+      throw new Error('This saved picture contains ink without a paper reference.');
+    return { version: 6, paper, pageId, rainbow, strokes };
+  }
   return { version: 5, pageId, rainbow, strokes };
+}
+
+export function hasDrawingInk(drawing: Drawing): boolean {
+  return drawing.version === 7 ? drawing.commands.length > 0 : drawing.strokes.length > 0;
+}
+
+export function addRecordedCohort(history: History, base: Drawing7, cohort: CompletedCohort7): History {
+  if (history.drawing !== base || base.seedCursor !== history.allocationCursor7) throw new Error('The picture changed during this contact.');
+  return commitDrawing(history, addRecordedCommand7(base, cohort));
+}
+
+export function retainRecordedAllocation(history: History, base: Drawing7, cursor: number): History {
+  if (!Number.isSafeInteger(cursor) || cursor < base.seedCursor || cursor > MAX_CRAYON_SEED + 1) throw new Error('The recorded allocation cursor changed.');
+  const allocationCursor7 = Math.max(history.allocationCursor7, cursor);
+  if (allocationCursor7 === history.allocationCursor7) return history;
+  const drawing = history.drawing.version === 7 ? { ...history.drawing, seedCursor: allocationCursor7 } : history.drawing;
+  return { ...history, drawing, allocationCursor7 };
 }
