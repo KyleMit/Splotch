@@ -44,7 +44,7 @@ function button(label) {
 
 // A finger only drags Clear; the assistive activation is its one non-drag path.
 function clearProps() {
-  return records.props.findLast((props) => props.accessibilityLabel === 'Clear');
+  return records.props.findLast((props) => props.accessibilityLabel === 'Clear drawing');
 }
 
 function activateClear() {
@@ -68,7 +68,7 @@ it('renders every toolbar action as a named icon button that calls its owner', a
     ['Save picture', 'camera', () => caller.screen.save],
     ['AI picture', 'wand-stars', () => openAi],
     ['Undo', 'undo', () => caller.screen.undo],
-    ['Clear', 'trash-closed', () => caller.screen.clear],
+    ['Clear drawing', 'trash-closed', () => caller.screen.clear],
     ['Drawing tools', 'controls', () => caller.menu.show],
     ['Settings', 'settings', () => caller.screen.openSettings],
     ['Parent Center', 'parent-center', () => openParentCenter],
@@ -79,7 +79,7 @@ it('renders every toolbar action as a named icon button that calls its owner', a
     const ink = icon === 'brush-crayon' ? PURPLE : DRAWING_THEME.iconInk;
     expect(iconMarkup(node), label).toBe(NATIVE_ICONS[icon].light.replaceAll('currentColor', ink));
     const before = handler().mock.calls.length;
-    await act(async () => (label === 'Clear' ? activateClear() : node.click()));
+    await act(async () => (label === 'Clear drawing' ? activateClear() : node.click()));
     expect(handler().mock.calls.length, label).toBe(before + 1);
   }
   expect(caller.screen.setPagePickerOpen).toHaveBeenCalledWith(true);
@@ -100,7 +100,7 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
   expect(eraser.getAttribute('role')).toBe('switch');
   expect(eraser.dataset.checked).toBe('false');
   expect(iconMarkup(eraser)).toBe(NATIVE_ICONS['brush-eraser'].light);
-  expect(button('Clear')).not.toBeNull();
+  expect(button('Clear drawing')).not.toBeNull();
   expect(clearProps().accessibilityState.disabled).toBe(true);
   await act(async () => activateClear());
   for (const label of ['Eraser', 'Save picture', 'Settings', 'Undo', 'Drawing tools']) {
@@ -187,7 +187,7 @@ it('tucks the remaining tools into a drawer the chevron reveals and hides', asyn
   ];
   const shown = () => tools.filter((label) => host.querySelector(`[aria-label="${label}"]`));
   expect(shown()).toEqual([]);
-  expect(button('Clear').closest('[data-testid="rsd-clear-dock"]')).not.toBeNull();
+  expect(button('Clear drawing').closest('[data-testid="rsd-clear-dock"]')).not.toBeNull();
   expect(button('Settings').closest('[data-testid="rsd-settings-dock"]')).not.toBeNull();
   const toggle = button('Expand controls');
   expect(toggle.closest('[data-testid="rsd-drawer-dock"]')).not.toBeNull();
@@ -226,7 +226,7 @@ function layoutElement(seen) {
         seen.clearOffset = offset;
         return createElement('div', { 'data-clear-underlay': true });
       },
-      clearOverlay: createElement('button', null, 'Clear'),
+      clearOverlay: createElement('button', null, 'Clear drawing'),
       drawerToggle: (axis) => {
         seen.drawer = axis;
         return createElement('button', null, 'Tools');
@@ -264,7 +264,7 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(overlay.parentElement).toBe(layout);
   expect(layout.lastElementChild).toBe(overlay);
   expect(area.contains(overlay)).toBe(false);
-  expect(overlay.textContent).toBe('Clear');
+  expect(overlay.textContent).toBe('Clear drawing');
   const props = (testID) => records.props.findLast((candidate) => candidate.testID === testID);
   expect(props('rsd-clear-overlay').style).toMatchObject({ position: 'absolute', top: 0, left: 0 });
   expect(props('rsd-clear-overlay').pointerEvents).toBe('box-none');

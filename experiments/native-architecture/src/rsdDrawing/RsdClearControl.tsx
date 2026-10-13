@@ -21,7 +21,7 @@ function RsdClearButton({ control, disabled }: { control: ClearControl; disabled
     <Animated.View
       accessible
       accessibilityRole="button"
-      accessibilityLabel="Clear"
+      accessibilityLabel="Clear drawing"
       accessibilityState={{ disabled }}
       pointerEvents={clearing ? 'none' : 'auto'}
       {...control.responder}

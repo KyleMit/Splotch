@@ -106,7 +106,8 @@ async function mountClear({
   await mount(createElement(RsdDrawingScreen));
 }
 
-const clearProps = () => records.props.findLast((props) => props.accessibilityLabel === 'Clear');
+const clearProps = () =>
+  records.props.findLast((props) => props.accessibilityLabel === 'Clear drawing');
 // React Native responder events: the changed touch at the top level, every touch in the lists.
 const CLEAR_FINGER = 1;
 const PAPER_FINGER = 2;
@@ -138,7 +139,8 @@ async function settle(ms) {
 
 const rendered = (testID) => host.querySelector(`[data-testid="${testID}"]`) !== null;
 const everRendered = (testID) => records.props.some((props) => props.testID === testID);
-const clearIcon = () => host.querySelector('[aria-label="Clear"] svg[data-xml]').dataset.xml;
+const clearIcon = () =>
+  host.querySelector('[aria-label="Clear drawing"] svg[data-xml]').dataset.xml;
 
 afterEach(() => {
   vi.useRealTimers();
@@ -394,7 +396,7 @@ const byTestID = (testID) => flat(records.props.findLast((props) => props.testID
 const face = () => byTestID('rsd-clear-face');
 const lid = () => byTestID('rsd-clear-lid');
 const clearIconSize = () =>
-  Number(host.querySelector('[aria-label="Clear"] svg[data-xml]').getAttribute('width'));
+  Number(host.querySelector('[aria-label="Clear drawing"] svg[data-xml]').getAttribute('width'));
 
 function flat(style) {
   return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
@@ -430,8 +432,10 @@ it.each([
   records.insets = { top, right: 0, bottom: 0, left: 0 };
   await mountClear();
   const overlay = host.querySelector('[data-testid="rsd-clear-overlay"]');
-  expect(overlay.querySelector('[aria-label="Clear"]')).not.toBeNull();
-  expect(host.querySelector('[data-testid="rsd-canvas-area"] [aria-label="Clear"]')).toBeNull();
+  expect(overlay.querySelector('[aria-label="Clear drawing"]')).not.toBeNull();
+  expect(
+    host.querySelector('[data-testid="rsd-canvas-area"] [aria-label="Clear drawing"]')
+  ).toBeNull();
   expect(byTestID('rsd-clear-dock')).toEqual({ position: 'absolute', top: dock.top, right: -10 });
   expect(clearProps().style).toMatchObject({ width: dock.size, height: dock.size });
   expect(face()).toMatchObject({

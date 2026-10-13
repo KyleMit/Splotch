@@ -488,3 +488,30 @@ describe('native Clear Button dock, finish and accept ring projections of the sh
     }
   });
 });
+
+// The Clear Button's one accessible name; its drag states announce nothing further in shipping.
+const shippingClearLabel = (source) =>
+  /<button\s+class="clear-button"\s+id="clearButton"\s+aria-label="([^"]+)"/.exec(source)?.[1];
+const nativeClearLabel = (source) => /accessibilityLabel="([^"]+)"/.exec(source)?.[1];
+
+describe('native Clear Button accessible name', () => {
+  it('names the button exactly as the shipping Clear Button does', () => {
+    expect(shippingClearLabel(shipping.button)).toBe('Clear drawing');
+    expect(nativeClearLabel(nativeSource.control)).toBe(shippingClearLabel(shipping.button));
+  });
+
+  it('rejects a renamed shipping or native label', () => {
+    const shippingRenamed = shipping.button.replace(
+      'aria-label="Clear drawing"',
+      'aria-label="Clear"'
+    );
+    expect(shippingRenamed).not.toBe(shipping.button);
+    expect(nativeClearLabel(nativeSource.control)).not.toBe(shippingClearLabel(shippingRenamed));
+    const nativeRenamed = nativeSource.control.replace(
+      'accessibilityLabel="Clear drawing"',
+      'accessibilityLabel="Clear"'
+    );
+    expect(nativeRenamed).not.toBe(nativeSource.control);
+    expect(nativeClearLabel(nativeRenamed)).not.toBe(shippingClearLabel(shipping.button));
+  });
+});
