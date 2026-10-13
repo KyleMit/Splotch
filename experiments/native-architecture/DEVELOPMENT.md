@@ -82,3 +82,35 @@ permissions when a dependency changes; without a keystore, `:app:processReleaseM
 the merged manifest under `android/app/build/intermediates/merged_manifest/release/`. `expo-haptics`
 merges the normal-level `VIBRATE` permission for the drag-to-clear threshold haptic, as the shipping
 app's `@capacitor/haptics` does.
+
+## AI invite links
+
+An admin hands out invite links shaped `https://splotch.art/?ai_access_token=<code>` (the parameter
+is `AI_ACCESS_TOKEN_PARAM` in `web/src/lib/inviteLink.ts`). `src/index.ts` starts `startInviteLinks`
+before the first render, and both targets apply a link the way the shipping page's
+`captureAiAccessTokenFromUrl` does: the code is saved unverified into the access-code slot of the
+secure AI vault, with no Parent Center gate and no on-screen confirmation; the server checks it on
+first use. A code that fails `validCredential` (`src/ai/credentials.ts`), which every vault write
+enforces, is ignored.
+
+* **Web** (`src/platform/inviteLinks.web.ts`) reads the launch URL and removes the parameter only
+  after the save succeeds, so a failed or superseded save leaves the link in place to retry. The
+  browser Back owner reads page URLs without the parameter, so that scrub is not a navigation.
+* **Native** (`src/platform/inviteLinks.ts`) reads `Linking.getInitialURL()` and `url` events and
+  accepts only links that start with `https://splotch.art/?`. A launch link is dropped when any
+  credential operation, such as a runtime invite or a typed code, happened while the launch URL was
+  being read, so an older link never overwrites a newer credential. `AppDelegate.swift` already
+  forwards `open url` and universal-link activities to `RCTLinkingManager`.
+
+No link reaches the native app yet. The shipping Capacitor app declares no intent filter, URL
+scheme, or associated domain, so this app adds none either. Routing invite links to the store builds
+at cutover needs:
+
+* **Android:** an `android:autoVerify="true"` `VIEW`/`BROWSABLE` intent filter for `https`
+  `splotch.art`, with `/.well-known/assetlinks.json` on splotch.art naming the package and the Play
+  App Signing certificate SHA-256. An intent filter cannot match a query string before Android 15's
+  `uri-relative-filter-group`, so on older devices claiming `/` sends every splotch.art root visit
+  to the app.
+* **iOS:** the `com.apple.developer.associated-domains` entitlement with `applinks:splotch.art`, and
+  an `apple-app-site-association` file on splotch.art whose component for `/` requires the
+  `ai_access_token` query item, so other root visits stay in Safari.
