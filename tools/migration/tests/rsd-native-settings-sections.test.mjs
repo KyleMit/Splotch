@@ -7,6 +7,7 @@ import {
   checkedSwitch,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
+import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -347,4 +348,53 @@ it('turns the double-tap off without a toggle or haptic, and keeps that choice o
   await mount(createElement(RsdDrawingScreen));
   await openToolDrawerSettings();
   checkedSwitch(button(PENCIL_ERASER_LABEL), false);
+});
+
+function holdNextWrite(storage) {
+  let finish;
+  storage.write.mockImplementationOnce(
+    (next) =>
+      new Promise((resolve, reject) => {
+        finish = (error) => (error ? reject(error) : resolve(next));
+      })
+  );
+  return (error) => act(async () => finish(error));
+}
+
+it('keeps the first Apple Pencil detection that lands while another choice is saving', async () => {
+  const settings = await pencilScreen();
+  const finishColor = holdNextWrite(settings.storage);
+  const owner = caller.product.sound.owner.settings;
+  await act(async () => void owner.setColor('Blue'));
+  expect(caller.product.sound.settings.status).toBe('saving');
+  await pencilDoubleTap();
+  expect(brushLabel()).toBe('Brush: Eraser');
+  await finishColor();
+  expect(settings.stored()).toMatchObject({ selectedColor: 'Blue', applePencilSeen: true });
+  expect(caller.product.sound.settings).toMatchObject({ applePencilSeen: true, saved: true });
+  await openToolDrawerSettings();
+  checkedSwitch(button(PENCIL_ERASER_LABEL), true);
+});
+
+it('keeps a failed Parent Center save pending and retryable after the Apple Pencil detection writes', async () => {
+  const settings = await pencilScreen();
+  const product = caller.product.owner;
+  await act(async () => product.openParentCenter());
+  await solveParentGate();
+  expect(product.getState().parentCenterOpen).toBe(true);
+  const failAi = holdNextWrite(settings.storage);
+  let enabling;
+  await act(async () => {
+    enabling = product.setAiEnabled(true);
+  });
+  await failAi(new Error('disk full'));
+  await act(async () => enabling);
+  expect(product.getState().settings).toMatchObject({ aiEnabled: false, saved: false });
+  await pencilDoubleTap();
+  expect(settings.stored()).toMatchObject({ aiEnabled: false, applePencilSeen: true });
+  expect(product.getState().settings).toMatchObject({ saved: false, applePencilSeen: true });
+  expect(product.getState().settings.message).toContain('Parent Center choices were not saved');
+  await act(async () => product.retryParentSave());
+  expect(settings.stored()).toMatchObject({ aiEnabled: true, applePencilSeen: true });
+  expect(product.getState().settings).toMatchObject({ aiEnabled: true, saved: true });
 });
