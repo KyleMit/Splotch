@@ -1,5 +1,13 @@
+import { createRequire } from 'node:module';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createClearSound } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
+
+// React Native's own AbortController, whose signal lacks throwIfAborted(), as on a device.
+const runtimeRequire = createRequire(import.meta.url);
+const reactNativeRequire = createRequire(runtimeRequire.resolve('react-native/package.json'));
+const { AbortController: NativeAbortController } = reactNativeRequire(
+  'abort-controller/dist/abort-controller'
+);
 
 const native = vi.hoisted(() => ({ impact: vi.fn(async () => {}) }));
 vi.mock('expo-haptics', () => ({
@@ -157,7 +165,9 @@ function nativePlayer() {
 describe('native page-turn player', () => {
   it('loads in the shared playback mode and plays from the start, capped at unity', async () => {
     const player = nativePlayer();
-    const pending = loadClearPageTurn(new AbortController().signal);
+    const signal = new NativeAbortController().signal;
+    expect(signal.throwIfAborted).toBeUndefined();
+    const pending = loadClearPageTurn(signal);
     await vi.waitFor(() => expect(player.listener).not.toBeNull());
     expect(audio.mode).toHaveBeenCalledExactlyOnceWith(PLAYBACK_AUDIO_MODE);
     player.listener({ isLoaded: true, error: null });
@@ -172,9 +182,16 @@ describe('native page-turn player', () => {
     expect(player.remove).toHaveBeenCalledOnce();
   });
 
+  it('refuses a load abandoned before the player exists, on the native signal', async () => {
+    const request = new NativeAbortController();
+    request.abort();
+    await expect(loadClearPageTurn(request.signal)).rejects.toThrow('cancelled');
+    expect(audio.create).not.toHaveBeenCalled();
+  });
+
   it('releases the player when the gesture abandons the load', async () => {
     const player = nativePlayer();
-    const request = new AbortController();
+    const request = new NativeAbortController();
     const pending = loadClearPageTurn(request.signal);
     await vi.waitFor(() => expect(player.addListener).toHaveBeenCalled());
     request.abort();
@@ -185,7 +202,7 @@ describe('native page-turn player', () => {
 });
 
 describe('Clear activation without a drag', () => {
-  it('clears on an assistive activate action and nothing else on native', () => {
+  it('clears on a VoiceOver tap or a TalkBack activate action and nothing else on native', () => {
     const activate = vi.fn();
     const props = nativeActivation(activate);
     expect(props.accessibilityActions).toEqual([{ name: 'activate' }]);
@@ -193,6 +210,8 @@ describe('Clear activation without a drag', () => {
     expect(activate).not.toHaveBeenCalled();
     props.onAccessibilityAction({ nativeEvent: { actionName: 'activate' } });
     expect(activate).toHaveBeenCalledOnce();
+    props.onAccessibilityTap();
+    expect(activate).toHaveBeenCalledTimes(2);
   });
 
   it('clears on Enter, Space or a detail-zero click on the web, never a pointer click', () => {

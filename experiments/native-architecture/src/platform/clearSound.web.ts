@@ -14,7 +14,7 @@ export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
     const response = await fetch(asset.localUri ?? asset.uri, { signal });
     if (!response.ok) throw new Error('Clear sound could not be loaded.');
     const buffer = await context.decodeAudioData(await response.arrayBuffer());
-    signal.throwIfAborted();
+    if (signal.aborted) throw new Error('Clear sound was cancelled.');
     return {
       play(volume) {
         resume();

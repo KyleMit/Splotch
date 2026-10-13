@@ -91,7 +91,15 @@ async function mountClear({ sound = true, level, reduceMotion = false, ...screen
 }
 
 const clearProps = () => records.props.findLast((props) => props.accessibilityLabel === 'Clear');
-const at = (point) => ({ nativeEvent: { pageX: point.x, pageY: point.y } });
+// React Native responder events: the changed touch at the top level, every touch in the lists.
+const CLEAR_FINGER = 1;
+const PAPER_FINGER = 2;
+const touch = (identifier, point) => ({ identifier, pageX: point.x, pageY: point.y });
+function responderEvent(changed, touches) {
+  const [first] = changed;
+  return { nativeEvent: { ...first, changedTouches: changed, touches } };
+}
+const at = (point) => responderEvent([touch(CLEAR_FINGER, point)], [touch(CLEAR_FINGER, point)]);
 const offset = (distance) => ({
   x: HOME.x - distance / Math.SQRT2,
   y: HOME.y + distance / Math.SQRT2,
@@ -272,4 +280,72 @@ it('does not fly an empty page', async () => {
   await act(async () => {});
   expect(caller.screen.clear).toHaveBeenCalledOnce();
   expect(everRendered('rsd-clear-sheet')).toBe(false);
+});
+
+it('follows only the finger that pressed Clear while another finger draws', async () => {
+  await mountClear();
+  await press();
+  const resting = touch(CLEAR_FINGER, HOME);
+  const far = offset(radius() + 200);
+  for (const step of [offset(radius() + 100), far]) {
+    const paper = touch(PAPER_FINGER, step);
+    await act(async () => clearProps().onResponderMove(responderEvent([paper], [resting, paper])));
+  }
+  expect(caller.haptic).not.toHaveBeenCalled();
+  expect(clearProps().style.transform[0].translateX.value).toBe(0);
+  await act(async () =>
+    clearProps().onResponderRelease(responderEvent([touch(PAPER_FINGER, far), resting], []))
+  );
+  await act(async () => {});
+  expect(caller.haptic).not.toHaveBeenCalled();
+  expect(caller.screen.clear).not.toHaveBeenCalled();
+  await press();
+  const moved = offset(radius() + 10);
+  await act(async () =>
+    clearProps().onResponderMove(
+      responderEvent(
+        [touch(CLEAR_FINGER, moved)],
+        [touch(CLEAR_FINGER, moved), touch(PAPER_FINGER, HOME)]
+      )
+    )
+  );
+  expect(caller.haptic).toHaveBeenCalledOnce();
+  await act(async () =>
+    clearProps().onResponderRelease(
+      responderEvent([touch(PAPER_FINGER, HOME), touch(CLEAR_FINGER, moved)], [])
+    )
+  );
+  await act(async () => {});
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+});
+
+it("keeps a new drag's accept ring when the last drag's ring hide comes due", async () => {
+  await mountClear();
+  vi.useFakeTimers();
+  await press();
+  await lift(HOME);
+  await settle(100);
+  await press();
+  await drag(offset(radius() / 2));
+  await settle(150);
+  expect(rendered('rsd-clear-accept-ring')).toBe(true);
+  await settle(1000);
+  expect(rendered('rsd-clear-accept-ring')).toBe(true);
+  await lift(offset(radius() / 2));
+  await settle(1000);
+  expect(rendered('rsd-clear-accept-ring')).toBe(false);
+});
+
+it("clears through VoiceOver's default activation once, however many paths report it", async () => {
+  await mountClear();
+  vi.useFakeTimers();
+  await act(async () => clearProps().onAccessibilityTap());
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+  await act(async () =>
+    clearProps().onAccessibilityAction({ nativeEvent: { actionName: 'activate' } })
+  );
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+  await settle(CLEAR_SHEET_DURATION_MS);
+  await act(async () => clearProps().onAccessibilityTap());
+  expect(caller.screen.clear).toHaveBeenCalledTimes(2);
 });

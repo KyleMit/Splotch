@@ -11,7 +11,8 @@ const MAX_PLAYER_VOLUME = 1;
 export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   const { createAudioPlayer, setAudioModeAsync } = await import('expo-audio');
   await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
-  signal.throwIfAborted();
+  // React Native's AbortSignal has no throwIfAborted().
+  if (signal.aborted) throw new Error('Clear sound was cancelled.');
   const player = createAudioPlayer(clearPageTurn, { keepAudioSessionActive: false });
   let subscription: { remove: () => void } | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;

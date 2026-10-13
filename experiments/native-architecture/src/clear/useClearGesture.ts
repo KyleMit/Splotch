@@ -32,8 +32,17 @@ type Owner = {
   sound: ClearSound | null;
 };
 
-function point(event: GestureResponderEvent): Point {
-  return { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY };
+type Timer = ReturnType<typeof setTimeout>;
+type ClearGesture = ReturnType<typeof createClearGesture>;
+
+// The gesture belongs to the finger that pressed Clear, as the shipping action filters by
+// pointerId: a second finger on the paper must never move, cross or commit it. Its position comes
+// from whichever touch list carries its identifier; absent from both, the event is not its own.
+function fingerPoint(event: GestureResponderEvent, finger: string | null): Point | null {
+  const { nativeEvent } = event;
+  for (const touch of [...(nativeEvent.changedTouches ?? []), ...(nativeEvent.touches ?? [])])
+    if (String(touch.identifier) === finger) return { x: touch.pageX, y: touch.pageY };
+  return null;
 }
 
 function createClearValues() {
@@ -81,7 +90,9 @@ type Context = {
   owner: RefObject<Owner>;
   reduced: RefObject<boolean>;
   values: ClearValues;
-  later: (run: () => void, delay: number) => void;
+  later: (run: () => void, delay: number) => Timer;
+  cancel: (timer: Timer | null) => void;
+  ringHide: { current: Timer | null };
   reached: { current: boolean };
   sheets: { current: number };
   set: {
@@ -109,7 +120,10 @@ function letGo(context: Context) {
   set.dragging(false);
   values.progress.setValue(0);
   fade(values.ring, 0, EMPHASIS_MS, reduced.current);
-  later(() => set.ringShown(false), ACCEPT_ZONE_HIDE_DELAY_MS);
+  context.ringHide.current = later(() => {
+    context.ringHide.current = null;
+    set.ringShown(false);
+  }, ACCEPT_ZONE_HIDE_DELAY_MS);
   goHome(values.drag, reduced.current);
 }
 
@@ -121,6 +135,9 @@ function clearEffects(context: Context): ClearGestureEffects {
     showTutorial: () => set.coachmark(true),
     dismissTutorial: () => set.coachmark(false),
     begin() {
+      // A drag that starts while the last one's ring is fading keeps its own ring.
+      context.cancel(context.ringHide.current);
+      context.ringHide.current = null;
       owner.current.sound?.start();
       set.dragging(true);
       set.ringShown(true);
@@ -170,6 +187,36 @@ function useLatest<Value>(value: Value) {
   return ref;
 }
 
+function clearResponder(
+  gesture: ClearGesture,
+  disabled: boolean,
+  finger: { current: string | null }
+) {
+  return {
+    onStartShouldSetResponder: () => !disabled && gesture.accepts(),
+    onResponderTerminationRequest: () => false,
+    onResponderGrant: (event: GestureResponderEvent) => {
+      finger.current = String(event.nativeEvent.identifier);
+      const at = fingerPoint(event, finger.current);
+      if (at) gesture.down(at);
+    },
+    onResponderMove: (event: GestureResponderEvent) => {
+      const at = fingerPoint(event, finger.current);
+      if (at) gesture.move(at);
+    },
+    onResponderRelease: (event: GestureResponderEvent) => {
+      const at = fingerPoint(event, finger.current);
+      finger.current = null;
+      if (at) gesture.up(at);
+      else gesture.terminate();
+    },
+    onResponderTerminate: () => {
+      finger.current = null;
+      gesture.terminate();
+    },
+  };
+}
+
 export function useClearGesture(owner: Owner) {
   const latest = useLatest(owner);
   const window = useWindowDimensions();
@@ -188,7 +235,9 @@ export function useClearGesture(owner: Owner) {
     (id: number) => setSheet((current) => (current?.id === id ? null : current)),
     []
   );
-  const [timers] = useState(() => new Set<ReturnType<typeof setTimeout>>());
+  const [timers] = useState(() => new Set<Timer>());
+  const ringHide = useRef<Timer | null>(null);
+  const finger = useRef<string | null>(null);
   const reachedNow = useRef(false);
   const sheets = useRef(0);
   const context: Context = {
@@ -201,7 +250,14 @@ export function useClearGesture(owner: Owner) {
         run();
       }, delay);
       timers.add(timer);
+      return timer;
     },
+    cancel(timer) {
+      if (timer === null) return;
+      clearTimeout(timer);
+      timers.delete(timer);
+    },
+    ringHide,
     reached: reachedNow,
     sheets,
     set: {
@@ -263,14 +319,7 @@ export function useClearGesture(owner: Owner) {
     covered: pending > 0 || sheet !== null,
     radius: radius.current,
     finishSheet,
-    responder: {
-      onStartShouldSetResponder: () => !owner.disabled && gesture.accepts(),
-      onResponderTerminationRequest: () => false,
-      onResponderGrant: (event: GestureResponderEvent) => gesture.down(point(event)),
-      onResponderMove: (event: GestureResponderEvent) => gesture.move(point(event)),
-      onResponderRelease: (event: GestureResponderEvent) => gesture.up(point(event)),
-      onResponderTerminate: () => gesture.terminate(),
-    },
+    responder: clearResponder(gesture, owner.disabled, finger),
     activate: () => {
       if (!owner.disabled) gesture.activate();
     },
