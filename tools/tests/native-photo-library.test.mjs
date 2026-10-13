@@ -7,12 +7,8 @@ import {
 } from '../../experiments/native-architecture/src/platform/photoLibrary.ts';
 import { pictureSave as nativePictureSave } from '../../experiments/native-architecture/src/platform/pictureSave.ts';
 import {
-  FAILED_DETAIL,
-  PERMISSION_DETAIL,
   UNAVAILABLE_DETAIL,
-  UNSAVED_HEADING,
-  pictureSaveFailure,
-  pictureSaveNotice,
+  saveFailureCopy as nativeSaveFailureCopy,
 } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 import {
   DEFAULT_SAVE_ON_DELETE_ENABLED,
@@ -73,8 +69,8 @@ describe('native photo library save', () => {
     expect(photos.created).toEqual([]);
     expect(photos.files.size).toBe(0);
     // No copy stays inside the app, so a gallery this app cannot write to is a failed save.
-    expect(pictureSaveFailure('unavailable', 'android')).toEqual({
-      heading: UNSAVED_HEADING,
+    expect(nativeSaveFailureCopy('unavailable', 0, 'android')).toEqual({
+      heading: saveFailureCopy('failed', 0, 'android').heading,
       detail: UNAVAILABLE_DETAIL,
     });
   });
@@ -95,9 +91,6 @@ describe('native photo library save', () => {
 
   it('keeps native pictures in the photo library', () => {
     expect(nativePictureSave).toBe(photoLibrary);
-    expect(pictureSaveNotice('photos', 'ios')).toBe('Picture saved to Photos.');
-    expect(pictureSaveNotice('photos', 'android')).toBe('Picture saved to your gallery.');
-    expect(pictureSaveFailure('photos', 'ios')).toBeNull();
   });
 });
 
@@ -108,16 +101,18 @@ describe('shipping parity', () => {
     expect(plugin.match(/String ALBUM_NAME = "([^"]+)";/)?.[1]).toBe(ANDROID_ALBUM_NAME);
   });
 
-  it.each(['ios', 'android'])('words %s unsaved pictures with the shipping banner copy', (os) => {
-    const denied = saveFailureCopy('denied', 1, os);
-    const failed = saveFailureCopy('failed', 1, os);
-    expect(UNSAVED_HEADING).toBe(denied.heading);
-    expect(PERMISSION_DETAIL[os]).toBe(denied.detail);
-    expect(FAILED_DETAIL).toBe(failed.detail);
-    expect(pictureSaveFailure('denied', os)).toEqual(denied);
-    expect(pictureSaveFailure('failed', os)).toEqual(failed);
-    expect(pictureSaveNotice('denied', os)).toBe(`${denied.heading}. ${denied.detail}`);
-  });
+  // Every outcome shipping words, for no held picture, one, several and the held limit, on each
+  // platform the native app runs on.
+  it.each(['ios', 'android', 'web'])(
+    'words %s unsaved pictures with the shipping banner copy',
+    (os) => {
+      for (const outcome of ['denied', 'failed'])
+        for (const count of [0, 1, 2, 8])
+          expect(nativeSaveFailureCopy(outcome, count, os)).toEqual(
+            saveFailureCopy(outcome, count, os)
+          );
+    }
+  );
 
   it('ports the Auto-Save on Delete label, help, and default', () => {
     const section = read('web/src/lib/components/settings/SavingSection.svelte');

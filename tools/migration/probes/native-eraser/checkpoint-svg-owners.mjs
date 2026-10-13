@@ -1,4 +1,4 @@
-export function diagnosticAncestors(node) {
+function diagnosticAncestors(node) {
   const key = Object.getOwnPropertyNames(node).find((name) => name.startsWith('__reactFiber$'));
   let fiber = key ? node[key] : null;
   const ancestors = [];
@@ -24,7 +24,7 @@ export function diagnosticOwner(node) {
   return { kind, ancestors };
 }
 
-export function diagnosticPageOutline(instance) {
+function diagnosticPageOutline(instance) {
   const queue = [instance?.props?.children];
   let count = 0;
   while (queue.length && count++ < 256) {
@@ -62,7 +62,7 @@ export function assertObservationComplete(observation) {
     );
 }
 
-export function diagnosticInstance(node) {
+function diagnosticInstance(node) {
   const key = Object.getOwnPropertyNames(node).find((name) => name.startsWith('__reactFiber$'));
   let fiber = key ? node[key] : null,
     instance;

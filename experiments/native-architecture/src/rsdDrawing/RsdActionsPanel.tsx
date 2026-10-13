@@ -81,7 +81,13 @@ type Tool = Readonly<{ key: 'brush' | 'stroke' | 'coloring' | 'camera' | 'ai' | 
 type Face = Pick<ActionPanelLayout, 'size' | 'padding'> & { dimmed: boolean };
 
 // The Brush and Stroke Width slots are where a closing menu hands keyboard focus back.
-function triggerRef(triggers: ReturnType<typeof useFlyoutSlot>['triggers'], key: Tool['key']) {
+function triggerRef(
+  triggers: ReturnType<typeof useFlyoutSlot>['triggers'],
+  key: Tool['key'],
+  screen: Screen
+) {
+  // The save polaroid flies out of the Save screenshot button's tile.
+  if (key === 'camera') return screen.cameraTile;
   if (key !== 'brush' && key !== 'stroke') return undefined;
   return (node: View | null) => {
     triggers.current[key] = node;
@@ -290,7 +296,7 @@ export function RsdActionsPanel({
         ? tools.map((item, index) => (
             <View
               key={item.key}
-              ref={triggerRef(triggers, item.key)}
+              ref={triggerRef(triggers, item.key, screen)}
               testID="rsd-drawer-tool"
               style={[docks.slot, layout.tools[index]]}
               onStartShouldSetResponderCapture={item.key === flyout ? markInside : undefined}
