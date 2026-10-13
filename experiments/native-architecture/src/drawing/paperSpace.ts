@@ -5,8 +5,15 @@ import type { Drawing, Point } from './model';
 export const PAPER_WIDTH = 1024;
 export const PAPER_HEIGHT = 768;
 export const MAX_BACKING_SCALE = 2;
+// A browser zoomed out to its 25% floor; adoption clamps any smaller ratio up to it.
+export const MIN_BACKING_SCALE = 0.25;
 // Bounds stored metadata rather than screens: larger than any display's CSS viewport.
 export const MAX_PAPER_CSS_PX = 8192;
+// Smaller than one fingertip, so no paper a child can draw on is refused, while semantic widths
+// and texels derived from it stay finite and bounded (MAX_UNITS_PER_CSS_PX).
+export const MIN_PAPER_CSS_PX = 16;
+// The most semantic units one CSS pixel can span: a minimum-size side fitted to the sheet.
+export const MAX_UNITS_PER_CSS_PX = PAPER_WIDTH / MIN_PAPER_CSS_PX;
 export type PaperSize = Readonly<{ width: number; height: number }>;
 export const CANONICAL_PAPER_SIZE: PaperSize = Object.freeze({
   width: PAPER_WIDTH,
@@ -31,7 +38,10 @@ function exact(value: Record<string, unknown>, keys: readonly string[]): boolean
 
 function cssLength(value: unknown): value is number {
   return (
-    typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= MAX_PAPER_CSS_PX
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= MIN_PAPER_CSS_PX &&
+    value <= MAX_PAPER_CSS_PX
   );
 }
 
@@ -47,7 +57,7 @@ export function readDrawingPaper(value: unknown): DrawingPaper {
     !cssLength(item.cssHeight) ||
     typeof item.backingScale !== 'number' ||
     !Number.isFinite(item.backingScale) ||
-    item.backingScale <= 0 ||
+    item.backingScale < MIN_BACKING_SCALE ||
     item.backingScale > MAX_BACKING_SCALE
   )
     throw new Error('This saved picture contains an invalid paper reference.');
@@ -57,7 +67,13 @@ export function readDrawingPaper(value: unknown): DrawingPaper {
     cssHeight: item.cssHeight,
     backingScale: item.backingScale,
   };
-  if (!Number.isFinite(1 / paperScale(paper) / paper.backingScale))
+  const unitsPerCss = 1 / paperScale(paper);
+  const unitsPerTexel = unitsPerCss / paper.backingScale;
+  if (
+    !Number.isFinite(unitsPerTexel) ||
+    unitsPerCss > MAX_UNITS_PER_CSS_PX ||
+    unitsPerTexel > MAX_UNITS_PER_CSS_PX / MIN_BACKING_SCALE
+  )
     throw new Error('This saved picture contains an invalid paper reference.');
   return Object.freeze(paper);
 }
@@ -69,7 +85,7 @@ export function adoptPaper(cssWidth: number, cssHeight: number, pixelRatio: numb
     kind: 'adopted',
     cssWidth,
     cssHeight,
-    backingScale: Math.min(pixelRatio, MAX_BACKING_SCALE),
+    backingScale: Math.max(MIN_BACKING_SCALE, Math.min(pixelRatio, MAX_BACKING_SCALE)),
   });
   if (paper.kind !== 'adopted') throw new Error('The drawing paper is not ready.');
   return paper;

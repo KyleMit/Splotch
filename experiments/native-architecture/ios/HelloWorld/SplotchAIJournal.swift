@@ -14,6 +14,8 @@ final class SplotchAIJournal {
   private let drawingPaperWidth = 1024.0
   private let drawingPaperHeight = 768.0
   private let maximumPaperCssPx = 8192.0
+  private let minimumPaperCssPx = 16.0
+  private let minimumBackingScale = 0.25
   private let maximumBackingScale = 2.0
   private let maxUpload = 15 * 1024 * 1024
   private let maxResult = 16 * 1024 * 1024
@@ -386,14 +388,16 @@ final class SplotchAIJournal {
       else {
         try keys(paper, ["kind", "cssWidth", "cssHeight", "backingScale"])
         try checked(string(paper, "kind") == "adopted")
-        for (name, maximum) in [("cssWidth", maximumPaperCssPx), ("cssHeight", maximumPaperCssPx), ("backingScale", maximumBackingScale)] {
+        for (name, minimum, maximum) in [("cssWidth", minimumPaperCssPx, maximumPaperCssPx), ("cssHeight", minimumPaperCssPx, maximumPaperCssPx), ("backingScale", minimumBackingScale, maximumBackingScale)] {
           guard let raw = paper[name] as? NSNumber else { throw failure() }
-          try checked(CFGetTypeID(raw) != CFBooleanGetTypeID() && raw.doubleValue.isFinite && raw.doubleValue > 0 && raw.doubleValue <= maximum)
+          try checked(CFGetTypeID(raw) != CFBooleanGetTypeID() && raw.doubleValue.isFinite && raw.doubleValue >= minimum && raw.doubleValue <= maximum)
         }
         guard let width = paper["cssWidth"] as? NSNumber, let height = paper["cssHeight"] as? NSNumber, let backing = paper["backingScale"] as? NSNumber else { throw failure() }
         let portrait = height.doubleValue > width.doubleValue
         let scale = max(width.doubleValue / (portrait ? drawingPaperHeight : drawingPaperWidth), height.doubleValue / (portrait ? drawingPaperWidth : drawingPaperHeight))
-        try checked((1.0 / scale / backing.doubleValue).isFinite)
+        let unitsPerCss = 1.0 / scale, unitsPerTexel = unitsPerCss / backing.doubleValue
+        let maximumUnitsPerCss = drawingPaperWidth / minimumPaperCssPx
+        try checked(unitsPerTexel.isFinite && unitsPerCss <= maximumUnitsPerCss && unitsPerTexel <= maximumUnitsPerCss / minimumBackingScale)
       }
     }
   }

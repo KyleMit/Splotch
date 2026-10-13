@@ -11,7 +11,14 @@ import {
   CANONICAL_PAPER_SIZE,
   LEGACY_PAPER,
   UNADOPTED_PAPER,
+  MIN_BACKING_SCALE,
+  MIN_PAPER_CSS_PX,
+  MAX_UNITS_PER_CSS_PX,
+  readDrawingPaper,
+  semanticWidth,
+  textureScale,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { validateAiOriginalModel } from '../../experiments/native-architecture/src/platform/aiOriginalModel.ts';
 import {
   addStrokes,
   createHistory,
@@ -243,5 +250,55 @@ describe('coloring pages on a non-4:3 paper', () => {
     expect(markup).toContain('width="567"');
     expect(markup).toContain('height="1024"');
     expect(markup).toContain('preserveAspectRatio="xMidYMid meet"');
+  });
+});
+
+describe('the adopted paper is bounded from below', () => {
+  const stroke = { ...pen, points: [{ x: 0, y: 0 }] };
+  function wire(paper) {
+    return { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: [stroke] };
+  }
+  const paper = (cssWidth, cssHeight = cssWidth, backingScale = 1) => ({
+    kind: 'adopted',
+    cssWidth,
+    cssHeight,
+    backingScale,
+  });
+
+  it('refuses a vanishing paper whose stroke widths would overflow', () => {
+    const vanishing = wire(paper(1e-305));
+    expect(() => parseDrawing(vanishing)).toThrow('paper reference');
+    expect(() => validateAiOriginalModel(JSON.stringify(vanishing), 'current')).toThrow();
+    expect(() => adoptPaper(1e-305, 1e-305, 1)).toThrow('paper reference');
+  });
+
+  it.each([
+    [MIN_PAPER_CSS_PX, MIN_PAPER_CSS_PX],
+    [MIN_PAPER_CSS_PX + 1e-9, MIN_PAPER_CSS_PX + 1e-9],
+    [MIN_PAPER_CSS_PX, 8192],
+  ])('admits a %s x %s paper with finite, bounded derived widths and texels', (w, h) => {
+    const drawing = parseDrawing(wire(paper(w, h, MIN_BACKING_SCALE)));
+    const width = semanticWidth(22, drawing.paper);
+    expect(Number.isFinite(width)).toBe(true);
+    expect(width).toBeLessThanOrEqual(22 * MAX_UNITS_PER_CSS_PX);
+    expect(textureScale(drawing.paper)).toBeLessThanOrEqual(
+      MAX_UNITS_PER_CSS_PX / MIN_BACKING_SCALE
+    );
+    expect(() =>
+      validateAiOriginalModel(JSON.stringify(wire(paper(w, h, MIN_BACKING_SCALE))), 'current')
+    ).not.toThrow();
+  });
+
+  it.each([
+    paper(MIN_PAPER_CSS_PX - 1e-9),
+    paper(390, MIN_PAPER_CSS_PX - 1e-9),
+    paper(390, 704, MIN_BACKING_SCALE - 1e-9),
+  ])('refuses metadata just below a minimum %#', (value) => {
+    expect(() => readDrawingPaper(value)).toThrow('paper reference');
+    expect(() => validateAiOriginalModel(JSON.stringify(wire(value)), 'current')).toThrow();
+  });
+
+  it('clamps a zoomed-out display ratio up to the minimum backing scale', () => {
+    expect(adoptPaper(390, 704, 0.1).backingScale).toBe(MIN_BACKING_SCALE);
   });
 });

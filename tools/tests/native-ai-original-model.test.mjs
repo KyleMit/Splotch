@@ -16,6 +16,8 @@ import {
   PAPER_HEIGHT,
   MAX_BACKING_SCALE,
   MAX_PAPER_CSS_PX,
+  MIN_PAPER_CSS_PX,
+  MIN_BACKING_SCALE,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { MAGIC_RAINBOW_COUNT } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 const ROOT = join(import.meta.dirname, '../..');
@@ -101,6 +103,10 @@ describe('native opaque original-model admission', () => {
     expect(android).toContain('drawingPaperHeight = ' + PAPER_HEIGHT + '.0');
     expect(apple).toContain('drawingPaperHeight = ' + PAPER_HEIGHT + '.0');
     expect(android).toContain('maximumPaperCssPx = ' + MAX_PAPER_CSS_PX + '.0');
+    expect(apple).toContain('minimumPaperCssPx = ' + MIN_PAPER_CSS_PX + '.0');
+    expect(android).toContain('minimumPaperCssPx = ' + MIN_PAPER_CSS_PX + '.0');
+    expect(apple).toContain('minimumBackingScale = ' + MIN_BACKING_SCALE);
+    expect(android).toContain('minimumBackingScale = ' + MIN_BACKING_SCALE);
     expect(apple).toContain('maximumPaperCssPx = ' + MAX_PAPER_CSS_PX + '.0');
     expect(android).toContain('maximumBackingScale = ' + MAX_BACKING_SCALE + '.0');
     expect(apple).toContain('maximumBackingScale = ' + MAX_BACKING_SCALE + '.0');

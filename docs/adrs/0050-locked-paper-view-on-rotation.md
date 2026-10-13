@@ -254,8 +254,12 @@ paper area it is first drawn in, as the shipping engine adopts its viewport.
   (`fittedPaper` returns the area for an unadopted picture). The first contact cohort reserves the
   measured ink plane's CSS size and backing scale exactly as before. Drawing format version 7
   replaces version 6; the `paper` union is unchanged, but its dimensions now define the picture's
-  shape, bounded by `MAX_PAPER_CSS_PX` instead of the canonical sheet. Version 6 is not read: the
-  beta started fresh. Versions 1 to 5 still normalize to the canonical sheet.
+  shape, bounded by `MAX_PAPER_CSS_PX` instead of the canonical sheet and from below by
+  `MIN_PAPER_CSS_PX` (smaller than a fingertip) and `MIN_BACKING_SCALE` (a browser's 25% zoom floor,
+  which adoption clamps up to), so the derived units per CSS pixel and per texel stay finite and
+  within `MAX_UNITS_PER_CSS_PX`. The JS codec, AI original admission, Kotlin and Swift apply the
+  same rule. Version 6 is not read: the beta started fresh. Versions 1 to 5 still normalize to the
+  canonical sheet.
 * **Semantic size.** `paperSize` turns the adopted shape into whole semantic units contain-fitted to
   the canonical sheet turned to the shape's orientation, so a portrait 390 by 704 area becomes 567
   by 1024 and a 4:3 landscape area is exactly 1024 by 768. Saved points are bounded by that size.

@@ -24,6 +24,8 @@ class SplotchAIJournal(private val context: Context) {
   private val drawingPaperWidth = 1024.0
   private val drawingPaperHeight = 768.0
   private val maximumPaperCssPx = 8192.0
+  private val minimumPaperCssPx = 16.0
+  private val minimumBackingScale = 0.25
   private val maximumBackingScale = 2.0
   private val maxUpload = 15 * 1024 * 1024
   private val maxResult = 16 * 1024 * 1024
@@ -378,14 +380,16 @@ class SplotchAIJournal(private val context: Context) {
       else {
         keys(paper, "kind", "cssWidth", "cssHeight", "backingScale")
         check(paper.get("kind") == "adopted")
-        for ((name, maximum) in listOf("cssWidth" to maximumPaperCssPx, "cssHeight" to maximumPaperCssPx, "backingScale" to maximumBackingScale)) {
+        for ((name, bounds) in listOf("cssWidth" to (minimumPaperCssPx to maximumPaperCssPx), "cssHeight" to (minimumPaperCssPx to maximumPaperCssPx), "backingScale" to (minimumBackingScale to maximumBackingScale))) {
           val raw = paper.get(name)
-          check(raw is Number && raw.toDouble().isFinite() && raw.toDouble() > 0 && raw.toDouble() <= maximum)
+          check(raw is Number && raw.toDouble().isFinite() && raw.toDouble() >= bounds.first && raw.toDouble() <= bounds.second)
         }
         val width = paper.getDouble("cssWidth"); val height = paper.getDouble("cssHeight")
         val portrait = height > width
         val scale = maxOf(width / (if (portrait) drawingPaperHeight else drawingPaperWidth), height / (if (portrait) drawingPaperWidth else drawingPaperHeight))
-        check((1.0 / scale / paper.getDouble("backingScale")).isFinite())
+        val unitsPerCss = 1.0 / scale; val unitsPerTexel = unitsPerCss / paper.getDouble("backingScale")
+        val maximumUnitsPerCss = drawingPaperWidth / minimumPaperCssPx
+        check(unitsPerTexel.isFinite() && unitsPerCss <= maximumUnitsPerCss && unitsPerTexel <= maximumUnitsPerCss / minimumBackingScale)
       }
     }
   }
