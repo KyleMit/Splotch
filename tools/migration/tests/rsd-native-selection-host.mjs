@@ -183,6 +183,7 @@ const records = vi.hoisted(() => ({
   props: [],
   viewports: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
+  dimensionListeners: new Set(),
   os: 'ios',
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
@@ -294,7 +295,13 @@ vi.mock('react-native', async () => {
     },
     Easing: {},
     useWindowDimensions: () => records.dimensions,
-    Dimensions: { get: () => records.dimensions },
+    Dimensions: {
+      get: () => records.dimensions,
+      addEventListener: (_type, listener) => {
+        records.dimensionListeners.add(listener);
+        return { remove: () => records.dimensionListeners.delete(listener) };
+      },
+    },
     useColorScheme: () => records.scheme,
     Text,
     Pressable,

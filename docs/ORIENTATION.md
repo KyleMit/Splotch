@@ -158,7 +158,9 @@ copy, and gates, persisted as `orientation` in settings schema 8, and applies it
   requests `@capacitor/screen-orientation` makes.
 * **Auto** requests `SCREEN_ORIENTATION_SENSOR` on Android through `lockPlatformAsync`, matching
   `SensorOrientationPlugin`, and calls `unlockAsync()` on iOS.
-* **Tablets** (shorter screen side at least 600dp) get no picker and no lock request.
+* **Tablets** (shorter screen side at least 600dp) get no picker and no lock request. The gate
+  follows screen-size changes live: crossing below the line applies the saved choice, and crossing
+  back releases the lock.
 * **Web** (its `.web.ts` split) keeps the shipping gate — a coarse pointer plus fullscreen — and
   requests the lock again on every fullscreen entry.
 

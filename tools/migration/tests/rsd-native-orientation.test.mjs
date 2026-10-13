@@ -121,3 +121,31 @@ it('leaves a tablet to the OS: no picker and no lock request', async () => {
   expect(host.textContent).not.toContain(AUTO_NOTE);
   expect(orientationCalls).toEqual([]);
 });
+
+const TABLET = { width: 834, height: 1194, scale: 2, fontScale: 1 };
+const PHONE = { width: 402, height: 874, scale: 3, fontScale: 1 };
+async function resize(dimensions) {
+  records.dimensions = dimensions;
+  await act(async () => {
+    for (const listener of [...records.dimensionListeners])
+      listener({ window: dimensions, screen: dimensions });
+  });
+  await act(async () => {});
+}
+
+it('takes the saved lock when the screen crosses to phone size and releases it crossing back', async () => {
+  records.dimensions = TABLET;
+  openSettings(version8('landscape'));
+  await mount(createElement(RsdDrawingScreen));
+  expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
+  expect(orientationCalls).toEqual([]);
+  await resize(PHONE);
+  checkedRadio(host.querySelector('[aria-label="Landscape orientation"]'));
+  expect(orientationCalls).toEqual([['lockAsync', LANDSCAPE_RIGHT]]);
+  await resize(TABLET);
+  expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
+  expect(orientationCalls).toEqual([['lockAsync', LANDSCAPE_RIGHT], ['unlockAsync']]);
+  await resize(PHONE);
+  expect(orientationCalls.at(-1)).toEqual(['lockAsync', LANDSCAPE_RIGHT]);
+  expect(orientationCalls).toHaveLength(3);
+});
