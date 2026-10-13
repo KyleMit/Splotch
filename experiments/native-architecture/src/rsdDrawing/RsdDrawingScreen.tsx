@@ -17,7 +17,9 @@ import { darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
 import { DEFAULT_APPEARANCE } from '../settings/appearance';
 import { useEffect, useState } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { html } from 'react-strict-dom';
+import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingMenu } from '../useDrawingMenu';
@@ -289,12 +291,16 @@ function RsdDrawingContent({
 function RsdScreenSheets({ screen }: { screen: Screen }) {
   const pagePicker = useModalPresence(screen.pagePickerOpen || null);
   const pictures = useModalPresence(screen.pictures);
+  const window = useWindowDimensions();
   return (
     <>
       {pagePicker.shown ? (
         <RsdSurfaceBoundary onClose={() => screen.setPagePickerOpen(false)}>
           <RsdColoringBookPicker
             selected={screen.history.drawing.pageId}
+            orientation={artOrientation(
+              presentedPaperSize(drawingPaper(screen.history.drawing), window)
+            )}
             visible={pagePicker.visible}
             onDismiss={pagePicker.dismissed}
             onChoose={screen.choosePage}

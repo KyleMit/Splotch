@@ -289,12 +289,12 @@ class LibraryStore {
       `${packDirectory(pack)}/files/cover.${dark ? 'chalk.' : ''}thumb.webp`
     );
   }
-  selector(pack: Pack, page: OfflinePageSlug, dark: boolean) {
+  selector(pack: Pack, page: OfflinePageSlug, orientation: ArtOrientation, dark: boolean) {
     const book = OFFLINE_BOOKS.find((book) => book.id === pack.id);
     if (!book?.pages.some((entry) => entry.slug === page))
       throw new LibraryFault('corrupt', 'Unknown coloring page.');
     return this.platform.uri(
-      `${packDirectory(pack)}/files/${page}-wide${dark ? '.dark' : ''}.selector.webp`
+      `${packDirectory(pack)}/files/${page}-${ART_VARIANT_SLUGS[orientation]}${dark ? '.dark' : ''}.selector.webp`
     );
   }
   withSavedArtwork<T>(id: string, action: () => Promise<T>) {

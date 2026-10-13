@@ -15,6 +15,7 @@ import {
   type LibraryPlatform,
 } from './contract';
 import { createLibraryStore } from './store';
+import type { ArtOrientation } from '../drawing/paperSpace';
 import {
   initialLibrarySnapshot,
   LIBRARY_UNAVAILABLE_MESSAGE,
@@ -217,6 +218,13 @@ class OfflineLibraryController {
     this.paused = true;
     this.abort('Coloring downloads paused. Installed books stay available.');
   }
+  // An ambient retry, on the app's return to the foreground or the network's return: a failed or
+  // waiting download tries again, but a removal or cancel keeps its pause, as shipping's
+  // downloader keeps a removal's pause across visibility and network events.
+  retryStalled() {
+    if (this.paused) return;
+    if (this.state.status === 'failed' || this.state.status === 'waiting') this.retry();
+  }
   retry() {
     this.paused = false;
     this.publish({ status: 'ready', fault: null, message: '' });
@@ -266,8 +274,8 @@ class OfflineLibraryController {
   cover(pack: Pack, dark: boolean) {
     return this.store.cover(pack, dark);
   }
-  selector(pack: Pack, page: OfflinePageSlug, dark: boolean) {
-    return this.store.selector(pack, page, dark);
+  selector(pack: Pack, page: OfflinePageSlug, orientation: ArtOrientation, dark: boolean) {
+    return this.store.selector(pack, page, orientation, dark);
   }
   async withSavedArtwork<T>(pageId: string, action: () => Promise<T>): Promise<T> {
     this.consumers++;
@@ -327,6 +335,7 @@ export type OfflineLibrary = Pick<
   | 'setDrawing'
   | 'cancel'
   | 'retry'
+  | 'retryStalled'
   | 'setPolicy'
   | 'openPage'
   | 'cover'

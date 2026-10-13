@@ -16,7 +16,7 @@ import {
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
 import { filesRecursively } from '../lib/filesystem.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import { BUNDLED_FARM_DIR, bundledFarmImageFiles } from './gen-bundled-farm.mjs';
+import { BUNDLED_FARM_DIR, bundledFarmImageFiles, imageFilePaths } from './gen-bundled-farm.mjs';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import {
@@ -80,11 +80,11 @@ const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 // Every image the bundled starter book shows, by the hash of the shipping file the web export
 // serves as a hashed asset.
 export function starterBookImages() {
-  const { pages, covers } = bundledFarmImageFiles();
+  const { pages, selectors, covers } = bundledFarmImageFiles();
   return [
-    ...Object.entries(pages).flatMap(([pageId, page]) =>
-      Object.values(page).flatMap((themes) =>
-        Object.values(themes).map((path) => ({ pageId, sha256: sha256(readFileSync(path)) }))
+    ...[pages, selectors].flatMap((images) =>
+      Object.entries(images).flatMap(([pageId, page]) =>
+        imageFilePaths(page).map((path) => ({ pageId, sha256: sha256(readFileSync(path)) }))
       )
     ),
     ...Object.values(covers).map((path) => ({

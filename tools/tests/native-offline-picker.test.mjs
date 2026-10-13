@@ -2,7 +2,6 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { RsdColoringBookPicker } from '../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
 import { ColoringPagePicker } from '../../experiments/native-architecture/src/ColoringPagePicker.tsx';
 import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { LibraryProvider } from '../../experiments/native-architecture/src/offlineLibrary/LibraryScope.tsx';
@@ -126,132 +125,48 @@ async function renderPicker(Component, preference = 'system') {
     )
   );
 }
-describe('complete downloaded books and parent controls in both real picker consumers', () => {
-  it.each(['light', 'dark'])(
-    'navigates the complete %s Dinosaurs book using private revision selector URIs',
-    async (theme) => {
-      appearance.theme = theme;
-      await renderPicker(RsdColoringBookPicker);
-      expect(button('Dinosaurs coloring book').querySelector('img').getAttribute('src')).toBe(
-        owner.cover(pack, theme === 'dark')
-      );
-      expect(host.textContent).toContain('1 downloaded books');
-      expect(host.textContent).toContain('1.0 MB kept for pictures');
-      await act(() => button('Dinosaurs coloring book').click());
-      expect([...host.querySelectorAll('[role="radio"]')].map((node) => node.textContent)).toEqual([
-        'Brachiosaurus',
-        'Pterodactyl',
-        'Stegosaurus',
-        'T. Rex',
-        'Triceratops',
-        'Velociraptor',
-      ]);
-      expect(button('T. Rex').getAttribute('aria-checked')).toBe('true');
-      expect(button('T. Rex').querySelector('img').getAttribute('src')).toBe(
-        owner.selector(pack, 'trex', theme === 'dark')
-      );
-      await act(() => button('T. Rex').click());
-      expect(choose).toHaveBeenLastCalledWith(offlinePageId(pack, 'trex'));
-    }
-  );
-  it('holds the current RSD grid steady while another pack finishes, then removes missing books', async () => {
-    await renderPicker(RsdColoringBookPicker);
+// The legacy picker lists every downloaded page; the RSD picker's coverage, which lists each
+// downloaded book, is tools/migration/tests/rsd-native-coloring-picker.test.mjs.
+describe('downloaded books in the legacy picker', () => {
+  it('lists what the first completed inventory finds after it opened, then holds it', async () => {
+    state = { ...owner.snapshot(), status: 'loading', installed: [] };
+    await renderPicker(ColoringPagePicker);
+    expect(button('T. Rex')).toBeUndefined();
+    state = { ...state, status: 'ready', installed: [pack], inventoried: true };
+    await renderPicker(ColoringPagePicker);
+    expect(button('T. Rex')).toBeDefined();
     state = { ...state, installed: [pack, catalogPack('space', 'full')] };
-    await renderPicker(RsdColoringBookPicker);
-    expect(button('Space coloring book')).toBeUndefined();
-    state = { ...state, installed: [] };
-    await renderPicker(RsdColoringBookPicker);
-    expect(button('Dinosaurs coloring book')).toBeUndefined();
+    await renderPicker(ColoringPagePicker);
+    expect(button('Astronaut')).toBeUndefined();
   });
-  // The RSD picker lists each downloaded book; the earlier picker lists every downloaded page.
-  it.each([
-    ['ColoringPagePicker', ColoringPagePicker, 'T. Rex', 'Astronaut'],
-    [
-      'RsdColoringBookPicker',
-      RsdColoringBookPicker,
-      'Dinosaurs coloring book',
-      'Space coloring book',
-    ],
-  ])(
-    'lists what the first completed inventory finds after %s opened, then holds it',
-    async (_name, Component, dinosaurs, space) => {
-      state = { ...owner.snapshot(), status: 'loading', installed: [] };
-      await renderPicker(Component);
-      expect(button(dinosaurs)).toBeUndefined();
-      state = { ...state, status: 'ready', installed: [pack], inventoried: true };
-      await renderPicker(Component);
-      expect(button(dinosaurs)).toBeDefined();
-      state = { ...state, installed: [pack, catalogPack('space', 'full')] };
-      await renderPicker(Component);
-      expect(button(space)).toBeUndefined();
-    }
-  );
-  it.each([
-    ['ColoringPagePicker', ColoringPagePicker, 'T. Rex'],
-    ['RsdColoringBookPicker', RsdColoringBookPicker, 'Dinosaurs coloring book'],
-  ])(
-    'holds nothing from a failed inventory or Retry’s interim ready in %s, then lists the recovered one',
-    async (_name, Component, dinosaurs) => {
-      state = { ...owner.snapshot(), status: 'loading', installed: [] };
-      await renderPicker(Component);
-      state = { ...state, status: 'failed', fault: 'unavailable' };
-      await renderPicker(Component);
-      state = { ...state, status: 'ready', fault: null };
-      await renderPicker(Component);
-      expect(button(dinosaurs)).toBeUndefined();
-      state = { ...state, installed: [pack], inventoried: true };
-      await renderPicker(Component);
-      expect(button(dinosaurs)).toBeDefined();
-      expect(host.textContent).toContain('1 downloaded books');
-    }
-  );
-  it.each([ColoringPagePicker, RsdColoringBookPicker])(
-    'exposes automatic policy, mobile data, retry, cancel, storage and removal controls',
-    async (Component) => {
-      const setPolicy = vi.spyOn(owner, 'setPolicy').mockResolvedValue();
-      const retry = vi.spyOn(owner, 'retry').mockImplementation(() => {});
-      const cancel = vi.spyOn(owner, 'cancel').mockImplementation(() => {});
-      await renderPicker(Component);
-      await act(() => button('Pause automatic coloring downloads').click());
-      expect(setPolicy).toHaveBeenLastCalledWith(false, false);
-      await act(() => button('Allow mobile data for coloring downloads').click());
-      expect(setPolicy).toHaveBeenLastCalledWith(true, true);
-      await act(() => button('Retry coloring downloads').click());
-      expect(retry).toHaveBeenCalledOnce();
-      await act(() => button('Remove downloaded books').click());
-      expect(remove).toHaveBeenCalledOnce();
-      state = {
-        ...state,
-        status: 'downloading',
-        completedBytes: 50,
-        totalBytes: 100,
-        message: 'Downloading Dinosaurs.',
-      };
-      await renderPicker(Component);
-      expect(host.textContent).toContain('Downloading Dinosaurs. 50%.');
-      await act(() => button('Cancel coloring download').click());
-      expect(cancel).toHaveBeenCalledOnce();
-      setPolicy.mockRestore();
-      retry.mockRestore();
-      cancel.mockRestore();
-    }
-  );
+  it('holds nothing from a failed inventory or Retry’s interim ready, then lists the recovered one', async () => {
+    state = { ...owner.snapshot(), status: 'loading', installed: [] };
+    await renderPicker(ColoringPagePicker);
+    state = { ...state, status: 'failed', fault: 'unavailable' };
+    await renderPicker(ColoringPagePicker);
+    state = { ...state, status: 'ready', fault: null };
+    await renderPicker(ColoringPagePicker);
+    expect(button('T. Rex')).toBeUndefined();
+    state = { ...state, installed: [pack], inventoried: true };
+    await renderPicker(ColoringPagePicker);
+    expect(button('T. Rex')).toBeDefined();
+  });
+  it('offers no download controls in the kid-facing picker', async () => {
+    await renderPicker(ColoringPagePicker);
+    expect(host.textContent).not.toMatch(/download|Retry|Remove/i);
+  });
 });
 
 it.each([
-  [ColoringPagePicker, 'light', 'dark'],
-  [ColoringPagePicker, 'dark', 'light'],
-  [RsdColoringBookPicker, 'light', 'dark'],
-  [RsdColoringBookPicker, 'dark', 'light'],
+  ['light', 'dark'],
+  ['dark', 'light'],
 ])(
-  'uses explicit %s picker appearance %s against OS %s for private artwork',
-  async (Component, preference, system) => {
+  'uses explicit picker appearance %s against OS %s for private artwork',
+  async (preference, system) => {
     appearance.theme = system;
-    await renderPicker(Component, preference);
-    if (Component === RsdColoringBookPicker)
-      await act(() => button('Dinosaurs coloring book').click());
+    await renderPicker(ColoringPagePicker, preference);
     const image = button('T. Rex').querySelector('img').getAttribute('src');
-    expect(image).toBe(owner.selector(pack, 'trex', preference === 'dark'));
-    expect(image).not.toBe(owner.selector(pack, 'trex', system === 'dark'));
+    expect(image).toBe(owner.selector(pack, 'trex', 'landscape', preference === 'dark'));
+    expect(image).not.toBe(owner.selector(pack, 'trex', 'landscape', system === 'dark'));
   }
 );

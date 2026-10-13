@@ -275,7 +275,7 @@ it('mounts the shared color picker outside Paint colors and writes through the e
 });
 
 it.each([
-  ['coloringBookEnabled', 'Coloring', 'Coloring book on', 'Coloring book off'],
+  ['coloringBookEnabled', 'Coloring', 'Coloring book', 'Coloring book'],
   ['undoButtonEnabled', 'Tool Drawer', 'Show Undo button', 'Show Undo button'],
   [
     'strokeWidthControlEnabled',
