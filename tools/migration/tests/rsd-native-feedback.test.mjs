@@ -40,7 +40,34 @@ async function input(label, value) {
 }
 
 function settingsScreen() {
-  let stored = JSON.stringify({ version: 11, soundEnabled: false, appearance: 'light' });
+  let stored = JSON.stringify({
+    version: 12,
+    soundEnabled: false,
+    strokeWidth: 'medium',
+    eraserWidth: 'medium',
+    selectedColor: 'Purple',
+    customColors: [],
+    appearance: 'light',
+    aiEnabled: false,
+    parentPolicies: {
+      ai: 'always',
+      imageReport: 'always',
+      externalLinks: 'always',
+      feedback: 'always',
+      parentCenter: 'always',
+    },
+    coloringBookEnabled: true,
+    soundLevel: 'medium',
+    undoButtonEnabled: true,
+    strokeWidthControlEnabled: true,
+    orientation: 'portrait',
+    saveOnDeleteEnabled: false,
+    buttonScale: 100,
+    reduceMotion: 'system',
+    whatsNewSeen: null,
+    pencilEraserEnabled: true,
+    applePencilSeen: false,
+  });
   caller.settingsStorage = {
     read: async () => stored,
     write: vi.fn(async (next) => {
@@ -119,8 +146,15 @@ it('previews the device rows in the disclosure and sends the report only after t
     hp: '',
     device: { platform: 'iOS' },
   });
+  // The check stacks over Settings, so the form the parent sent from is still there for the result.
+  expect(caller.screen.closeSettings).not.toHaveBeenCalled();
+  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+  expect(labelled(REPORT_FORM_COPY.sending).disabled).toBe(true);
   await act(async () => {
     finish(new Response('{"ok":true}'));
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
+  const statuses = [...host.querySelectorAll('[role="status"]')].map((node) => node.textContent);
+  expect(statuses.filter(Boolean)).toEqual([REPORT_FORM_COPY.sent]);
+  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
 });

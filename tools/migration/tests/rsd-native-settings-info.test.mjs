@@ -1,4 +1,5 @@
 import { caller, host, mount, openSettingsSection } from './rsd-native-selection-host.mjs';
+import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement } from 'react';
 import { Platform } from 'react-native';
 import { beforeEach, expect, it, vi } from 'vitest';
@@ -22,9 +23,40 @@ vi.mock('../../../experiments/native-architecture/src/settings/hostedPages.ts', 
   openHostedPage: vi.fn(),
 }));
 
-function settingsScreen() {
+const POLICIES = {
+  ai: 'always',
+  imageReport: 'always',
+  externalLinks: 'always',
+  feedback: 'always',
+  parentCenter: 'always',
+};
+
+// A whole version 12 record, so the stored policy is the one in force.
+function settingsScreen(externalLinks = 'always') {
+  const stored = {
+    version: 12,
+    soundEnabled: false,
+    strokeWidth: 'medium',
+    eraserWidth: 'medium',
+    selectedColor: 'Purple',
+    customColors: [],
+    appearance: 'light',
+    aiEnabled: false,
+    parentPolicies: { ...POLICIES, externalLinks },
+    coloringBookEnabled: true,
+    soundLevel: 'medium',
+    undoButtonEnabled: true,
+    strokeWidthControlEnabled: true,
+    orientation: 'portrait',
+    saveOnDeleteEnabled: false,
+    buttonScale: 100,
+    reduceMotion: 'system',
+    whatsNewSeen: null,
+    pencilEraserEnabled: true,
+    applePencilSeen: false,
+  };
   caller.settingsStorage = {
-    read: async () => JSON.stringify({ version: 11, soundEnabled: false, appearance: 'light' }),
+    read: async () => JSON.stringify(stored),
     write: vi.fn(async () => {}),
   };
   caller.screen = {
@@ -56,6 +88,12 @@ function link(name) {
   return found;
 }
 
+const gateShown = () => host.querySelector(GATE_MODAL) !== null;
+
+async function press(node) {
+  await act(async () => node.click());
+}
+
 beforeEach(() => {
   vi.mocked(openHostedPage).mockClear();
   settingsScreen();
@@ -74,8 +112,14 @@ it('shows About as shipping does and opens its links outside the app through the
   ]) {
     const found = link(name);
     expect(found.querySelector(`[aria-label="${EXTERNAL_MARK_LABEL}"]`), name).not.toBeNull();
-    await act(async () => found.click());
-    expect(openHostedPage).toHaveBeenLastCalledWith(page);
+    await press(found);
+    expect(openHostedPage, name).not.toHaveBeenCalled();
+    expect(gateShown(), name).toBe(true);
+    expect(host.querySelector('[data-native-modal="About"]'), name).not.toBeNull();
+    await solveParentGate();
+    expect(openHostedPage).toHaveBeenCalledOnce();
+    expect(openHostedPage).toHaveBeenCalledWith(page);
+    vi.mocked(openHostedPage).mockClear();
   }
   expect(caller.screen.closeSettings).not.toHaveBeenCalled();
 });
@@ -94,7 +138,9 @@ it("shows only the current release under What's New, with every release one link
       expect(listed).toContain(text);
   }
   expect(host.textContent).not.toContain('• ');
-  await act(async () => link(WHATS_NEW_COPY.allReleases).click());
+  await press(link(WHATS_NEW_COPY.allReleases));
+  expect(openHostedPage).not.toHaveBeenCalled();
+  await solveParentGate();
   expect(openHostedPage).toHaveBeenCalledOnce();
   expect(openHostedPage).toHaveBeenCalledWith('changelog');
 });
@@ -107,4 +153,29 @@ it('shows an installed app the lock steps for its own platform under the lock he
   expect(host.textContent).not.toContain(INSTALL_GUIDE_COPY.title);
   const steps = [...host.querySelectorAll('[role="listitem"]')].map((node) => node.textContent);
   expect(steps).toEqual(lockGuideSteps(os).map((step, index) => `${index + 1}.${step}`));
+});
+
+it('opens nothing when the grown-up check is closed without being solved', async () => {
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('About');
+  await press(link(ABOUT_COPY.github));
+  expect(gateShown()).toBe(true);
+  await press(host.querySelector(`${GATE_MODAL} [aria-label="Close"]`));
+  expect(gateShown()).toBe(false);
+  expect(openHostedPage).not.toHaveBeenCalled();
+  expect(host.querySelector('[data-native-modal="About"]')).not.toBeNull();
+});
+
+it('asks once per session under Per session, then opens later links at once', async () => {
+  settingsScreen('session');
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('About');
+  await press(link(ABOUT_COPY.github));
+  expect(openHostedPage).not.toHaveBeenCalled();
+  await solveParentGate();
+  expect(openHostedPage).toHaveBeenLastCalledWith('github');
+  await press(link(ABOUT_COPY.privacy));
+  expect(caller.product.state.gate.open).toBe(false);
+  expect(openHostedPage).toHaveBeenLastCalledWith('privacy');
+  expect(openHostedPage).toHaveBeenCalledTimes(2);
 });
