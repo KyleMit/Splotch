@@ -250,13 +250,17 @@ The gesture is shipping's hex snap on React Native's responder. A press on or be
 highlights the nearest center within half a hexagon's height plus the slop, a drag moves the
 highlight, and lifting picks what is under the finger, or the swatch still highlighted when the
 finger lifts beyond every hexagon. The responder refuses termination, as shipping's pointer capture
-keeps the drag. A pick selects the paint, remembers it and closes the picker. Mouse hover on the web
-hit-tests the hexagon shape, as the shipping `:hover` does; touch shows no hover.
+keeps the drag. One finger explores: a second contact, a release that does not carry the tracked
+finger, or a new viewport (shipping re-measures its centers on resize) cancels the drag without a
+pick. A pick selects the paint, remembers it and closes the picker. Mouse hover on the web hit-tests
+the hexagon shape, as the shipping `:hover` does; touch shows no hover.
 
-Each hexagon is a button named by its color. Its pointer events are off so every press reaches the
-grid, and a keyboard or screen-reader activation presses the button directly. React Native Web's
-`box-none` layer above the card turns pointer events back on for the web, so a web pointer's
-trailing click (`detail` of 1 or more) is dropped, as shipping's `handleHexClick` drops it.
+Each hexagon is a button named by its color; `RsdPressable` gives its native host the button role
+when a caller names none, since that host renders as a div. Its pointer events are off so every
+press reaches the grid, and a keyboard or screen-reader activation presses the button directly.
+React Native Web's `box-none` layer above the card turns pointer events back on for the web, so a
+web pointer's trailing click (`detail` of 1 or more) is dropped, as shipping's `handleHexClick`
+drops it.
 
 On the web the picker is its own lazily loaded chunk (`drawingSheets.web.ts`). The legacy
 `DrawingScreen` also loads it on first open, so its react-native-web suites need the React Strict

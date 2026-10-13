@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdColorPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColorPicker.tsx';
+import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
+import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
 import {
   HEX_COLUMN_TRIM_ORDER,
   HEX_DIM_KEYLINE,
@@ -242,6 +244,97 @@ it('cancels a drag the system takes away without picking', async () => {
   await act(async () => grid().onResponderTerminate());
   expect(fills('#2196F3')).toEqual(['#2196F3']);
   expect(onChoose).not.toHaveBeenCalled();
+});
+
+function contact(point, identifier) {
+  return {
+    identifier,
+    pageX: PAGE.x + point.x,
+    pageY: PAGE.y + point.y,
+    locationX: point.x,
+    locationY: point.y,
+  };
+}
+// A responder event for one changed contact while `down` contacts are on the glass.
+function event(changed, down) {
+  return { nativeEvent: { ...changed, touches: down, changedTouches: [changed] } };
+}
+
+it('cancels the pick when a second finger joins, whichever finger lifts last', async () => {
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  const onChoose = vi.fn();
+  await mount(picker({ onChoose }));
+  const layout = hexPickerLayout(records.dimensions);
+  const first = contact(center(layout, '#2196F3'), 1);
+  const second = contact(center(layout, '#E63946'), 2);
+  expect(grid().onStartShouldSetResponder(event(second, [first, second]))).toBe(false);
+  await act(async () => grid().onResponderGrant(event(first, [first])));
+  await act(async () => grid().onResponderStart(event(first, [first])));
+  expect(fills('#2196F3')).toHaveLength(2);
+  await act(async () => grid().onResponderStart(event(second, [first, second])));
+  expect(fills('#2196F3')).toEqual(['#2196F3']);
+  await act(async () => grid().onResponderMove(event(second, [second])));
+  await act(async () => grid().onResponderRelease(event(second, [])));
+  expect(onChoose).not.toHaveBeenCalled();
+});
+
+it('cancels the pick when the release does not carry the tracked finger', async () => {
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  const onChoose = vi.fn();
+  await mount(picker({ onChoose }));
+  const layout = hexPickerLayout(records.dimensions);
+  const first = contact(center(layout, '#2196F3'), 1);
+  await act(async () => grid().onResponderGrant(event(first, [first])));
+  await act(async () =>
+    grid().onResponderRelease(event(contact(center(layout, '#E63946'), 2), []))
+  );
+  expect(onChoose).not.toHaveBeenCalled();
+  expect(fills('#2196F3')).toEqual(['#2196F3']);
+});
+
+it('cancels a drag when the viewport changes under it', async () => {
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  const onChoose = vi.fn();
+  await mount(picker({ onChoose }));
+  const before = hexPickerLayout(records.dimensions);
+  await act(async () => grid().onResponderGrant(touch(center(before, '#2196F3'))));
+  records.dimensions = { width: 1000, height: 844, scale: 1, fontScale: 1 };
+  await act(async () => root.render(picker({ onChoose })));
+  expect(fills('#2196F3')).toEqual(['#2196F3']);
+  const red = center(hexPickerLayout(records.dimensions), '#E63946');
+  await act(async () => grid().onResponderMove(touch(red)));
+  await act(async () => grid().onResponderRelease(touch(red)));
+  expect(onChoose).not.toHaveBeenCalled();
+});
+
+it('gives each native hexagon and the dialog header controls the button role', async () => {
+  await mount(picker({}));
+  const hexagon = records.props.findLast((props) => props.accessibilityLabel === '#2196F3');
+  expect(hexagon.role).toBe('button');
+  await act(async () =>
+    root.render(
+      createElement(
+        ModalShell,
+        {
+          visible: true,
+          label: 'Drawing tools',
+          size: 'sheet',
+          onClose() {},
+          header: createElement(DialogHeader, {
+            title: 'Drawing tools',
+            titleSize: 'xl',
+            onBack() {},
+            onClose() {},
+          }),
+        },
+        null
+      )
+    )
+  );
+  for (const label of ['Back', 'Close'])
+    expect(records.props.findLast((props) => props.accessibilityLabel === label).role).toBe(
+      'button'
+    );
 });
 
 it('picks from a keyboard or screen reader activation, and closes from the scrim and the system Back or Escape without one', async () => {

@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -37,7 +37,8 @@ import { RsdPressable } from './RsdPressable';
 import { colors, darkTheme, dimensions, shadows } from './tokens.css';
 
 type Point = { x: number; y: number };
-type Drag = { touch: string; origin: Point; highlighted: CustomColor | null };
+// The layout a drag's origin and hit-tests were taken against; a new one ends the drag.
+type Drag = { touch: string; layout: HexLayout; origin: Point; highlighted: CustomColor | null };
 
 function touchPage(event: GestureResponderEvent, touch: string): Point | null {
   const { nativeEvent } = event;
@@ -46,6 +47,10 @@ function touchPage(event: GestureResponderEvent, touch: string): Point | null {
   return String(nativeEvent.identifier) === touch
     ? { x: nativeEvent.pageX, y: nativeEvent.pageY }
     : null;
+}
+
+function contacts(event: GestureResponderEvent) {
+  return event.nativeEvent.touches?.length ?? 0;
 }
 
 // The grid's box in client coordinates: a DOM element on the web, and a React Native element on
@@ -64,45 +69,62 @@ function boundingBox(target: unknown): Point | null {
 // ColorPicker.svelte's hexSnapGesture: a press on or between hexagons highlights the nearest,
 // dragging moves the highlight, and lifting picks what is under the finger, or the swatch still
 // highlighted when the finger lifts beyond every hexagon. The responder keeps the drag once it
-// leaves the grid, as shipping's pointer capture does.
+// leaves the grid, as shipping's pointer capture does. One finger explores: a second contact, a
+// lost tracked contact or a new layout (shipping re-measures its centers on resize) cancels the
+// drag without a pick.
 function useHexSnap(layout: HexLayout, pick: (color: CustomColor) => void) {
   const [hovered, setHovered] = useState<CustomColor | null>(null);
   const drag = useRef<Drag | null>(null);
-  const highlight = (color: CustomColor | null) => {
-    if (drag.current) drag.current.highlighted = color;
-    setHovered(color);
-  };
   const reset = () => {
     drag.current = null;
     setHovered(null);
   };
-  const at = (event: GestureResponderEvent) => {
+  useEffect(() => {
+    if (drag.current && drag.current.layout !== layout) reset();
+  }, [layout]);
+  // The tracked contact's grid point, or null once the drag is cancelled.
+  const tracked = (event: GestureResponderEvent): Point | null => {
     const current = drag.current;
     const page = current ? touchPage(event, current.touch) : null;
-    return current && page
-      ? snapHexagon(layout, page.x - current.origin.x, page.y - current.origin.y)
-      : null;
+    if (!current || !page || current.layout !== layout || contacts(event) > 1) {
+      if (current) reset();
+      return null;
+    }
+    return { x: page.x - current.origin.x, y: page.y - current.origin.y };
   };
   const handlers = {
-    onStartShouldSetResponder: ({ nativeEvent }: GestureResponderEvent) =>
-      snapHexagon(layout, nativeEvent.locationX, nativeEvent.locationY) !== null,
+    onStartShouldSetResponder: (event: GestureResponderEvent) =>
+      contacts(event) <= 1 &&
+      snapHexagon(layout, event.nativeEvent.locationX, event.nativeEvent.locationY) !== null,
     onResponderGrant: ({ nativeEvent }: GestureResponderEvent) => {
+      const color = snapHexagon(layout, nativeEvent.locationX, nativeEvent.locationY);
       drag.current = {
         touch: String(nativeEvent.identifier),
+        layout,
         origin: {
           x: nativeEvent.pageX - nativeEvent.locationX,
           y: nativeEvent.pageY - nativeEvent.locationY,
         },
-        highlighted: null,
+        highlighted: color,
       };
-      highlight(snapHexagon(layout, nativeEvent.locationX, nativeEvent.locationY));
+      setHovered(color);
       return true;
     },
+    onResponderStart: (event: GestureResponderEvent) => {
+      if (drag.current && contacts(event) > 1) reset();
+    },
     onResponderMove: (event: GestureResponderEvent) => {
-      if (drag.current) highlight(at(event));
+      const point = tracked(event);
+      const current = drag.current;
+      if (!point || !current) return;
+      current.highlighted = snapHexagon(layout, point.x, point.y);
+      setHovered(current.highlighted);
     },
     onResponderRelease: (event: GestureResponderEvent) => {
-      const color = at(event) ?? drag.current?.highlighted ?? null;
+      const point = tracked(event);
+      const current = drag.current;
+      if (!point || !current) return;
+      const color = snapHexagon(layout, point.x, point.y) ?? current.highlighted;
       reset();
       if (color) pick(color);
     },
@@ -146,7 +168,12 @@ export function RsdColorPicker({
   const insets = useSafeAreaInsets();
   const theme = useDrawingAppearance();
   const ink = useDrawingTheme().iconInk;
-  const layout = hexPickerLayout(window);
+  const { width: windowWidth, height: windowHeight } = window;
+  // One layout per viewport, so a drag can tell a resize from an ordinary render.
+  const layout = useMemo(
+    () => hexPickerLayout({ width: windowWidth, height: windowHeight }),
+    [windowWidth, windowHeight]
+  );
   const latest = useRef(onChoose);
   latest.current = onChoose;
   const snap = useHexSnap(layout, (color) => latest.current(color));
