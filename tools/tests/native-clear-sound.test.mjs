@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createClearSound } from '../../experiments/native-architecture/src/audio/clearSound.ts';
+import { createClearSound } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
 
 const native = vi.hoisted(() => ({ impact: vi.fn(async () => {}) }));
 vi.mock('expo-haptics', () => ({
@@ -10,13 +10,13 @@ const audio = vi.hoisted(() => ({ create: vi.fn(), mode: vi.fn(async () => {}) }
 vi.mock('expo-audio', () => ({ createAudioPlayer: audio.create, setAudioModeAsync: audio.mode }));
 import { loadClearPageTurn } from '../../experiments/native-architecture/src/platform/clearSound.ts';
 import { PLAYBACK_AUDIO_MODE } from '../../experiments/native-architecture/src/audio/playbackMode.ts';
-import { impactThreshold } from '../../experiments/native-architecture/src/platform/haptics.ts';
+import { impactThreshold } from '../../experiments/native-architecture/src/platform/clearHaptics.ts';
 import { clearActivationProps as nativeActivation } from '../../experiments/native-architecture/src/platform/clearActivation.ts';
 import { clearActivationProps as webActivation } from '../../experiments/native-architecture/src/platform/clearActivation.web.ts';
 import {
   impactThreshold as webImpactThreshold,
   WEB_IMPACT_MS,
-} from '../../experiments/native-architecture/src/platform/haptics.web.ts';
+} from '../../experiments/native-architecture/src/platform/clearHaptics.web.ts';
 
 function loader() {
   const turn = { play: vi.fn(), dispose: vi.fn() };

@@ -7,3 +7,4 @@ export const RSD_NATIVE_PARENT_CENTER_TEST = 'migration/tests/rsd-native-parent-
 export const RSD_NATIVE_ORIENTATION_TEST = 'migration/tests/rsd-native-orientation.test.mjs';
 export const RSD_NATIVE_TOOLBAR_TEST = 'migration/tests/rsd-native-toolbar.test.mjs';
 export const RSD_NATIVE_CLEAR_TEST = 'migration/tests/rsd-native-clear.test.mjs';
+export const RSD_NATIVE_INSTALL_BANNER_TEST = 'migration/tests/rsd-native-install-banner.test.mjs';

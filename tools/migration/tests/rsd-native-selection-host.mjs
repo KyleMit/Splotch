@@ -120,7 +120,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts',
     throw new Error('Audio playback is outside this native caller fixture.');
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/haptics.ts', () => ({
+vi.mock('../../../experiments/native-architecture/src/platform/clearHaptics.ts', () => ({
   impactThreshold: caller.haptic,
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/clearSound.ts', () => ({

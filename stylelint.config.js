@@ -52,6 +52,8 @@ export default {
     'ios/App/App/public/**',
     'ios/DerivedData/**',
     'android/app/src/main/assets/public/**',
+    // The React Native web export (`npm run native:web:build`): gitignored Expo output.
+    'experiments/native-architecture/dist/**',
   ],
   rules: {
     // Constructs the CSS parser keeps and the browser then ignores. A

@@ -21,6 +21,7 @@ import { RsdAction, styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDraftNotice } from './RsdDraftNotice';
+import { RsdInstallBanner } from './RsdInstallBanner';
 import { NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
@@ -180,6 +181,15 @@ function RsdDrawingContent({
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
+            <RsdInstallBanner
+              strokes={screen.committedStrokes}
+              hidden={
+                paperBlocked ||
+                screen.pictures !== null ||
+                screen.pagePickerOpen ||
+                screen.colorPickerOpen
+              }
+            />
           </RsdEdgeLayout>
           <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
           <RsdDrawingTools

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Animated, Easing, useWindowDimensions, type GestureResponderEvent } from 'react-native';
-import { impactThreshold } from '../platform/haptics';
+import { impactThreshold } from '../platform/clearHaptics';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { hasDrawingInk, type Drawing } from '../drawing/model';
-import type { ClearSound } from '../audio/clearSound';
+import type { ClearSound } from '../audio/pageTurnSound';
 import {
   ACCEPT_ZONE_HIDE_DELAY_MS,
   COACHMARK_AUTO_DISMISS_MS,

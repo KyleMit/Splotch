@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingAudio } from './audio/drawingAudio';
-import { createClearSound } from './audio/clearSound';
+import { createClearSound } from './audio/pageTurnSound';
 import { createContactSound } from './audio/contactSound';
 import { loadDrawingLoop } from './platform/drawingAudio';
 import { loadClearPageTurn } from './platform/clearSound';

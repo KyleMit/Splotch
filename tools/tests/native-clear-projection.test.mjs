@@ -22,8 +22,8 @@ import {
   RETURN_HOME_MS,
   WASH_REACH_DIAGONAL_FRACTION,
 } from '../../experiments/native-architecture/src/clear/dragToClear.ts';
-import { CLEAR_PAGE_TURN_GAIN } from '../../experiments/native-architecture/src/audio/clearSound.ts';
-import { WEB_IMPACT_MS } from '../../experiments/native-architecture/src/platform/haptics.web.ts';
+import { CLEAR_PAGE_TURN_GAIN } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
+import { WEB_IMPACT_MS } from '../../experiments/native-architecture/src/platform/clearHaptics.web.ts';
 
 const root = join(import.meta.dirname, '../..');
 const read = (path) => readFileSync(join(root, path), 'utf8');

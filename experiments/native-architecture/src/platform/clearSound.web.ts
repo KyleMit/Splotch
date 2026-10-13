@@ -1,6 +1,6 @@
 import { Asset } from 'expo-asset';
 import clearPageTurn from '../audio/clear-page-turn.mp3';
-import type { ClearPageTurnLoader } from '../audio/clearSound';
+import type { ClearPageTurnLoader } from '../audio/pageTurnSound';
 
 export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   const context = new AudioContext();

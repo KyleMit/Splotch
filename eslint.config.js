@@ -343,6 +343,8 @@ export default tseslint.config(
       'android/',
       'ios/',
       'scrapbook/',
+      // The React Native web export (`npm run native:web:build`): bundled Expo output.
+      'experiments/native-architecture/dist/',
       'web/src/lib/components/icon-names.d.ts',
       'web/src/lib/releases.json',
     ],

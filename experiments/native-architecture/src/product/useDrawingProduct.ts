@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
 import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
-import { createClearSound } from '../audio/clearSound';
+import { createClearSound } from '../audio/pageTurnSound';
 import { loadClearPageTurn } from '../platform/clearSound';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';

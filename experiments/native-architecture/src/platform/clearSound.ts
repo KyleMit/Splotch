@@ -1,6 +1,6 @@
 import clearPageTurn from '../audio/clear-page-turn.mp3';
 import { AUDIO_LOAD_TIMEOUT_MS } from '../audio/drawingAudio';
-import type { ClearPageTurnLoader } from '../audio/clearSound';
+import type { ClearPageTurnLoader } from '../audio/pageTurnSound';
 import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
 
 // A native player's volume stops at unity, so the Loud level's doubled gain plays at full volume
