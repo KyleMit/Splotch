@@ -25,6 +25,7 @@ import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDraftNotice } from './RsdDraftNotice';
 import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
+import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingTools, RsdDrawingWidths } from './RsdDrawingTools';
 
@@ -105,6 +106,7 @@ export function RsdDrawingScreen() {
           onDismiss={dismissed}
         />
       ) : null}
+      <RsdLeaveConfirm />
     </DrawingAppearanceProvider>
   );
 }

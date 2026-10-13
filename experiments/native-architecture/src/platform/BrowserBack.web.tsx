@@ -61,3 +61,13 @@ export function useDialogBack(visible: boolean, onClose: () => void) {
     if (visible && owner) return owner.registerDialog(() => close.current());
   }, [owner, visible]);
 }
+
+const LEAVE_CONFIRM_CLOSED = { open: false, stay: () => {}, leave: () => {} };
+
+export function useLeaveConfirm() {
+  return LEAVE_CONFIRM_CLOSED;
+}
+
+export function useBackAwareDrawingState() {
+  return useState(false);
+}

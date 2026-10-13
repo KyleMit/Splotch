@@ -17,6 +17,8 @@ const NESTED_TIMER_CLAMP_MS = 4;
 const TIMER_NESTING_THRESHOLD = 5;
 const MAX_MODEL_TASKS = 20000;
 const SYNC_WORK_LIMIT = 8192;
+// A full grid outlasts several bounded stretches of decoder work, even under a frozen clock.
+const MIN_FULL_GRID_PAUSES = 8;
 const TIMEOUT_NOTICE = 'Picture observation did not finish. Your drawing is still here.';
 const PNG_TASK = '../../experiments/native-architecture/src/drawing/pngTask.ts';
 
@@ -213,7 +215,7 @@ describe('web PNG validation through browser message tasks', () => {
       );
       expect(result.status).toBe('accepted');
       expect(result.value).toBe(alpha < 4);
-      expect(result.messageTasks).toBeGreaterThan(2000);
+      expect(result.messageTasks).toBeGreaterThan(MIN_FULL_GRID_PAUSES);
       expect(result.deadlineTimers).toBe(result.messageTasks);
       expect(result.timersCancelled).toBe(result.timerCalls);
       expect(result.clampedTimers).toBe(0);
@@ -235,7 +237,7 @@ describe('web PNG validation through browser message tasks', () => {
       expect(result.message).toContain(
         kind === 'Adler checksum' ? 'invalid compressed PNG data' : 'invalid or unsupported PNG'
       );
-      expect(result.messageTasks).toBeGreaterThan(2000);
+      expect(result.messageTasks).toBeGreaterThan(MIN_FULL_GRID_PAUSES);
       expect(result.pendingAfter).toEqual({ messages: 0, timers: 0, idle: 0, ports: 0 });
     },
     PNG_TIMEOUT_MS + 2000
@@ -322,7 +324,7 @@ describe('web PNG validation through browser message tasks', () => {
   });
 
   it(
-    'reproduces the full-PNG deadline when browser idle work is starved and nested timers clamp',
+    'finishes the full PNG through native continuations even when browser idle work is starved and nested timers clamp',
     async () => {
       vi.resetModules();
       vi.doMock(PNG_TASK, () =>
@@ -336,10 +338,12 @@ describe('web PNG validation through browser message tasks', () => {
         const result = await model.run(
           nativeContinuationDecoder().decode(png.toString('base64'), GRID, () => true)
         );
-        expect(result.status).toBe('rejected');
-        expect(result.message).toBe(TIMEOUT_NOTICE);
+        expect({ status: result.status, message: result.message }).toEqual({
+          status: 'accepted',
+          message: undefined,
+        });
         expect(result.clampedTimers).toBeGreaterThan(0);
-        expect(result.elapsedVirtualMs).toBeGreaterThanOrEqual(PNG_TIMEOUT_MS);
+        expect(result.elapsedVirtualMs).toBeLessThan(PNG_TIMEOUT_MS);
         expect(result.messagesPosted).toBe(0);
         expect(result.idleCalls).toBe(result.idleCancelled);
         expect(model.pending()).toEqual({ messages: 0, timers: 0, idle: 0, ports: 0 });

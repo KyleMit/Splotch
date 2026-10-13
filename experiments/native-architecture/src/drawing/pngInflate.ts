@@ -175,10 +175,10 @@ export async function inflatePng(
       if ((length ^ complement) !== 65535) invalid();
       for (let index = 0; index < length; index++) {
         output(byte());
-        if (work.due()) await work.pause();
+        if (work.due() && work.endSlice()) await work.pause();
       }
     } else if (kind === 1 || kind === 2) {
-      if (kind === 2) await work.pause();
+      if (kind === 2 && work.endSlice()) await work.pause();
       const [literal, distance] = kind === 1 ? FIXED_TREES : dynamicTrees(bits, symbol, work);
       for (;;) {
         const value = symbol(literal);
@@ -194,13 +194,13 @@ export async function inflatePng(
           if (offset > produced || offset > windowLimit) invalid();
           for (let index = 0; index < length; index++) {
             output(window[(produced - offset) % WINDOW_BYTES]);
-            if (work.due()) await work.pause();
+            if (work.due() && work.endSlice()) await work.pause();
           }
         }
-        if (work.due()) await work.pause();
+        if (work.due() && work.endSlice()) await work.pause();
       }
     } else invalid();
-    if (work.due()) await work.pause();
+    if (work.due() && work.endSlice()) await work.pause();
   }
   held = 0;
   bitsHeld = 0;

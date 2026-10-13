@@ -113,3 +113,65 @@ export function legalDynamicFence(distanceField = 31) {
       .join('\r\n'),
   };
 }
+const INK_COLORS = [
+  [230, 40, 40],
+  [40, 120, 230],
+  [250, 200, 30],
+  [20, 20, 20],
+];
+const INK_STROKES = 24;
+const INK_STROKE_STEPS = 160;
+const INK_RADIUS_PX = [6, 24];
+const INK_STEP_FRACTION = 0.35;
+const INK_TURN_RADIANS = 0.5;
+
+function inkPixels(width, height) {
+  const pixels = Buffer.alloc(width * height * 4);
+  let seed = 7;
+  const random = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32;
+  for (let stroke = 0; stroke < INK_STROKES; stroke++) {
+    const [red, green, blue] = INK_COLORS[stroke % INK_COLORS.length];
+    const radius = INK_RADIUS_PX[0] + random() * (INK_RADIUS_PX[1] - INK_RADIUS_PX[0]);
+    let x = random() * width,
+      y = random() * height,
+      angle = random() * Math.PI * 2;
+    for (let step = 0; step < INK_STROKE_STEPS; step++) {
+      angle += (random() - 0.5) * INK_TURN_RADIANS;
+      x += Math.cos(angle) * radius * INK_STEP_FRACTION;
+      y += Math.sin(angle) * radius * INK_STEP_FRACTION;
+      const top = Math.max(0, Math.floor(y - radius - 1));
+      const bottom = Math.min(height - 1, Math.ceil(y + radius + 1));
+      const left = Math.max(0, Math.floor(x - radius - 1));
+      const right = Math.min(width - 1, Math.ceil(x + radius + 1));
+      for (let row = top; row <= bottom; row++)
+        for (let column = left; column <= right; column++) {
+          const coverage = Math.min(1, radius - Math.hypot(column - x, row - y) + 0.5);
+          if (coverage <= 0) continue;
+          const offset = (row * width + column) * 4;
+          const alpha = Math.round(coverage * 255);
+          if (alpha <= pixels[offset + 3]) continue;
+          pixels[offset] = red;
+          pixels[offset + 1] = green;
+          pixels[offset + 2] = blue;
+          pixels[offset + 3] = alpha;
+        }
+    }
+  }
+  return pixels;
+}
+
+/** Antialiased crayon-like strokes on transparent paper, Sub-filtered like a platform encoder. */
+export function inkPng(width, height) {
+  const pixels = inkPixels(width, height);
+  const rowBytes = width * 4;
+  const raw = Buffer.alloc(height * (rowBytes + 1));
+  for (let row = 0; row < height; row++) {
+    const start = row * (rowBytes + 1);
+    raw[start] = 1;
+    for (let index = 0; index < rowBytes; index++) {
+      const left = index >= 4 ? pixels[row * rowBytes + index - 4] : 0;
+      raw[start + 1 + index] = (pixels[row * rowBytes + index] - left) & 255;
+    }
+  }
+  return pngFromZlib(deflateSync(raw), width, height);
+}

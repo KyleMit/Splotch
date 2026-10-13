@@ -192,7 +192,7 @@ async function entropy(
     for (const item of items)
       for (let n = 0; n < item.component.h * item.component.v; n++) {
         block(reader, item);
-        if (work.due()) await work.pause();
+        if (work.due() && work.endSlice()) await work.pause();
       }
   }
   reader.end();
@@ -236,7 +236,7 @@ export async function jpegResultGrid(bytes: Uint8Array, work: PngWork) {
     } else invalidImage();
     for (let charged = 0; charged <= body.length; charged++) {
       work.charge();
-      if (work.due()) await work.pause();
+      if (work.due() && work.endSlice()) await work.pause();
     }
   }
   return invalidImage();
