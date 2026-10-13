@@ -23,7 +23,6 @@ import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
-import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
@@ -224,7 +223,6 @@ function RsdDrawingContent({
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
           </RsdEdgeLayout>
-          <RsdRecoveryNotice screen={screen} blocked={disabled} />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>

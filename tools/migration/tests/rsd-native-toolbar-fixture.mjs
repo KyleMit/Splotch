@@ -4,6 +4,8 @@ import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { actionPanelLayout } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
+import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 
 // The edge-control screen the toolbar and Button Size suites mount.
 export function toolbarScreen(overrides = {}) {
@@ -87,4 +89,14 @@ export function drawerTileSize(scale) {
     leg: 2,
     open: true,
   }).size;
+}
+
+// The Brushes button wears the held brush's face; its label stays "Brushes", as shipping's does.
+export function heldBrushLabel() {
+  const xml = host.querySelector('[aria-label="Brushes"] svg[data-xml]')?.dataset.xml;
+  const path = (markup) => markup.match(/\bd="([^"]+)"/)?.[1];
+  const held = Object.values(BRUSH_MENU_OPTIONS).find(
+    ({ icon }) => xml && xml.includes(path(NATIVE_ICONS[icon].light))
+  );
+  return held && `Brush: ${held.label}`;
 }

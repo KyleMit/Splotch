@@ -20,7 +20,6 @@ const files = vi.hoisted(() => ({
   lock: vi.fn(),
   capture: vi.fn(),
   ink: vi.fn(),
-  export: vi.fn(),
   aiAdmit: vi.fn().mockResolvedValue(undefined),
   aiPrepare: vi.fn().mockResolvedValue(undefined),
   aiRead: vi.fn().mockResolvedValue(null),
@@ -35,8 +34,6 @@ const files = vi.hoisted(() => ({
   feedbackWrite: vi.fn().mockResolvedValue(undefined),
   feedbackSend: vi.fn(),
   surfaceRender: vi.fn(),
-  pngRead: vi.fn().mockResolvedValue(null),
-  pngWrite: vi.fn().mockResolvedValue(undefined),
   brushRead: vi.fn().mockResolvedValue(null),
   brushWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
@@ -78,20 +75,9 @@ vi.mock('../../experiments/native-architecture/src/platform/feedback.ts', () => 
   feedbackPolicyStorage: { read: files.feedbackRead, write: files.feedbackWrite },
 }));
 
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: files.pngRead, write: files.pngWrite },
-    deliver: async (picture) => {
-      await files.export(picture.base64, picture.filename);
-      return 'sharing-closed';
-    },
-  },
-}));
-
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   savePicture: files.save,
   savedColoringPageIds: vi.fn().mockResolvedValue([]),
-  exportPng: files.export,
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({

@@ -18,7 +18,6 @@ beforeEach(async () => {
   files.save.mockReset().mockResolvedValue({ id: 'picture-1-fixture' });
   files.capture.mockReset();
   files.ink.mockReset();
-  files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
   files.brushRead.mockReset().mockResolvedValue(null);
   files.brushWrite.mockReset().mockResolvedValue(undefined);

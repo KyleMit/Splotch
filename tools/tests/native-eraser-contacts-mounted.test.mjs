@@ -193,7 +193,6 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       staleChoosePage('turtle');
     });
     expect(sdk.save).not.toHaveBeenCalled();
-    expect(sdk.export).not.toHaveBeenCalled();
     expect(sdk.captures).toEqual([]);
     expect(owner.history).toBe(before);
     await act(async () => owner.closeSettings());

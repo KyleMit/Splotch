@@ -28,7 +28,6 @@ import type { Brush } from './drawing/brushes';
 import { createInkObservation } from './drawing/inkCoverage';
 import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
-import { usePngRecovery } from './usePngRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
 
 export function useDrawingScreen() {
@@ -49,7 +48,6 @@ export function useDrawingScreen() {
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
-  const pngRecovery = usePngRecovery();
 
   const { command, runCommand, ...surfaceActions } = useSurfaceCommands({
     historyRef,
@@ -122,7 +120,6 @@ export function useDrawingScreen() {
   return {
     library,
     recovery,
-    pngRecovery,
     draftState: historyOwner.draftState,
     retryDraft: historyOwner.retryDraft,
     history,

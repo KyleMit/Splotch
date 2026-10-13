@@ -114,25 +114,6 @@ it('rejects a comment marker instead of actual canonical registration', () => {
   expect(result.stderr).toContain('Canonical registration');
 });
 
-it('rejects a recovery viewport losing its actual native import', () => {
-  const path = fixture();
-  const target = join(path, 'src/rsdDrawing/RsdRecoveryNotice.tsx');
-  const original = readFileSync(target, 'utf8');
-  expect(original).toContain("import { ScrollView } from 'react-native'");
-  writeFileSync(
-    target,
-    original.replace(
-      "import { ScrollView } from 'react-native'",
-      "import { ScrollView } from 'foreign-native'"
-    )
-  );
-  const result = run(path);
-  expect(result.status).toBe(1);
-  expect(result.stderr).toContain(
-    'Native adapter import removed: src/rsdDrawing/RsdRecoveryNotice.tsx'
-  );
-});
-
 it.each([
   [
     'selected={settings.coloringBookEnabled}',

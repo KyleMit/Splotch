@@ -281,7 +281,6 @@ const files = [
   'src/platform/offlineLibraryStorage.web.ts',
   'src/platform/offlineLibraryTransfer.web.ts',
   'src/platform/drawingFiles.web.ts',
-  'src/platform/pngRecovery.web.ts',
   'src/drawing/crayon.ts',
   'src/drawing/crayonGrain.ts',
   'src/platform/useUndoShortcut.ts',
@@ -379,7 +378,6 @@ const files = [
   'src/rsdDrawing/RsdSettingsRoute.tsx',
   'src/rsdDrawing/RsdOrientationChoices.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
-  'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/useDrawingMenu.ts',
   'src/drawing/brushes.ts',
   'src/settings/brushPreferences.ts',
@@ -389,7 +387,6 @@ const files = [
 ];
 const nativeAdapters = new Set([
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
-  'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
   'src/rsdDrawing/ModalShell.tsx',

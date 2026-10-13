@@ -39,19 +39,9 @@ const sdk = vi.hoisted(() => ({
   imageLoads: [],
   responders: [],
   save: vi.fn(),
-  export: vi.fn(),
   // The draft the screen restores on load, and every draft it writes after.
   draft: null,
   drafts: [],
-}));
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: async () => null, write: async () => {} },
-    deliver: async (picture) => {
-      await sdk.export(picture.base64);
-      return 'sharing-closed';
-    },
-  },
 }));
 
 // A photo library that refuses every picture; native-save-to-photos-mounted.test.mjs covers saves.
@@ -61,7 +51,6 @@ vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', ()
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   savePicture: sdk.save,
   savedColoringPageIds: async () => [],
-  exportPng: sdk.export,
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(),
@@ -192,7 +181,6 @@ beforeEach(() => {
   sdk.draft = null;
   sdk.drafts.length = 0;
   sdk.save.mockResolvedValue(undefined);
-  sdk.export.mockResolvedValue(undefined);
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++sdk.next;
     sdk.frames.set(id, callback);

@@ -8,7 +8,6 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Text } from './drawing/Text';
 import type { useDrawingScreen } from './useDrawingScreen';
 import { CONTROL_GAP } from './drawing/theme';
-import { PngRecoveryNotice } from './export/PngRecoveryNotice';
 import { Action } from './DrawingControls';
 import { useDraftNotice } from './product/useDraftNotice';
 
@@ -56,17 +55,6 @@ export function DrawingStatus({
       {draft.state.status === 'failed' ? (
         <Action label="Retry draft recovery" disabled={draft.disabled} onPress={draft.retry} />
       ) : null}
-      <PngRecoveryNotice
-        state={screen.pngRecovery.state}
-        drawing={screen.drawing}
-        blocked={blocked || screen.pagePickerOpen || screen.settingsOpen}
-        retry={() => {
-          void screen.pngRecovery.retry();
-        }}
-        dismiss={(id) => {
-          void screen.pngRecovery.dismiss(id);
-        }}
-      />
     </>
   );
 }

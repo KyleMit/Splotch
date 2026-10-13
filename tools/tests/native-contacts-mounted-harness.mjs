@@ -21,7 +21,6 @@ const sdk = vi.hoisted(() => ({
   fail: false,
   draft: null,
   save: vi.fn(),
-  export: vi.fn(),
   soundStart: vi.fn(),
   soundStop: vi.fn(),
   soundVolume: vi.fn(),
@@ -119,14 +118,6 @@ vi.mock('react-native-svg', () => {
     },
   };
 });
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: async () => null, write: async () => {} },
-    deliver: async () => {
-      return 'sharing-closed';
-    },
-  },
-}));
 
 // The photo library receives each saved picture's PNG; native-save-to-photos-mounted.test.mjs
 // covers what it does with it.
@@ -136,7 +127,6 @@ vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', ()
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   savePicture: vi.fn(),
   savedColoringPageIds: async () => [],
-  exportPng: sdk.export,
 }));
 
 const PAPER_TARGET = 101;
@@ -238,7 +228,6 @@ beforeEach(async () => {
   sdk.fail = false;
   sdk.frame = [0, 0, 1024, 768, 40, 800];
   sdk.save.mockClear();
-  sdk.export.mockClear();
   sdk.soundStart.mockClear();
   sdk.soundStop.mockClear();
   sdk.soundVolume.mockClear();

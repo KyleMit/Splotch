@@ -34,14 +34,6 @@ const sdk = vi.hoisted(() => ({
   draft: null,
   drafts: [],
 }));
-vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: async () => null, write: async () => {} },
-    deliver: async () => {
-      return 'sharing-closed';
-    },
-  },
-}));
 
 // Save picture is this suite's probe of the current drawing; the photo library copy it also
 // makes is covered by native-save-to-photos-mounted.test.mjs.

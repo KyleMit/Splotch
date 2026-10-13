@@ -12,8 +12,6 @@ beforeEach(async () => {
   files.dismissModal = null;
   release = vi.fn();
   files.lock.mockReset().mockReturnValue(release);
-  files.pngRead.mockReset().mockResolvedValue(null);
-  files.pngWrite.mockReset().mockResolvedValue(undefined);
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
   screen = createScreen();
@@ -74,34 +72,4 @@ it('carries brush and width choices through menu dismissal into real history and
   expect(JSON.parse(screen.paper()).strokes).toMatchObject([{ brush: 'eraser', width: 28 }]);
   await screen.click('Undo');
   expect(JSON.parse(screen.paper()).strokes).toHaveLength(0);
-});
-
-it('retains the public PNG recovery owner and blocks retry behind Tools and the Color Picker', async () => {
-  screen.close();
-  files.pngRead.mockRejectedValue(new Error('recovery storage unavailable'));
-  screen = createScreen();
-  await act(async () => screen.mount());
-  const retry = () => screen.button('Try PNG export again');
-  await vi.waitFor(() => expect(retry()).toBeDefined());
-  expect(screen.container.textContent).toContain(
-    'Held PNGs could not be read. Existing recovery data has not been replaced.'
-  );
-  expect(retry().disabled).toBe(false);
-  await screen.click('Drawing tools');
-  expect(retry().disabled).toBe(true);
-  const reads = files.pngRead.mock.calls.length;
-  retry().click();
-  expect(files.pngRead).toHaveBeenCalledTimes(reads);
-  await screen.click('Keep drawing');
-  expect(retry().disabled).toBe(true);
-  await act(async () => files.dismissModal());
-  expect(retry().disabled).toBe(false);
-  await screen.openColors();
-  expect(retry().disabled).toBe(true);
-  retry().click();
-  expect(files.pngRead).toHaveBeenCalledTimes(reads);
-  await screen.escape();
-  expect(retry().disabled).toBe(false);
-  await screen.click('Try PNG export again');
-  expect(files.pngRead).toHaveBeenCalledTimes(reads + 1);
 });

@@ -17,9 +17,10 @@ import { FLY_IN_TRANSFORM } from '../../../experiments/native-architecture/src/r
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import { drawerTileSize as tileSize } from './rsd-native-toolbar-fixture.mjs';
-import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
-import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import {
+  drawerTileSize as tileSize,
+  heldBrushLabel as brushLabel,
+} from './rsd-native-toolbar-fixture.mjs';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
@@ -423,16 +424,6 @@ it("keeps the What's New stamp when the section opens while another choice is st
 async function pencilDoubleTap() {
   expect(caller.pencilDoubleTap, 'Pencil double-tap listener').toBeTypeOf('function');
   await act(async () => caller.pencilDoubleTap());
-}
-
-// The Brushes button wears the held brush's face; its label stays "Brushes", as shipping's does.
-function brushLabel() {
-  const xml = host.querySelector('[aria-label="Brushes"] svg[data-xml]')?.dataset.xml;
-  const path = (markup) => markup.match(/\bd="([^"]+)"/)?.[1];
-  const held = Object.values(BRUSH_MENU_OPTIONS).find(
-    ({ icon }) => xml && xml.includes(path(NATIVE_ICONS[icon].light))
-  );
-  return held && `Brush: ${held.label}`;
 }
 
 async function pencilScreen(overrides) {
