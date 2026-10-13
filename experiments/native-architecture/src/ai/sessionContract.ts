@@ -14,6 +14,9 @@ import type { ParentOperationPort } from '../parentCenter/parentPolicy';
 import type { AiReportState } from './reportContract';
 export type AiState = Readonly<{
   open: boolean;
+  // Tucked into the canvas corner so the child can keep drawing while a sent
+  // picture is made; the sheet stays open underneath, so the run keeps polling.
+  minimized: boolean;
   authorized: boolean;
   gate: FeedbackGateState;
   style: AiStyle;
@@ -28,6 +31,9 @@ export type AiState = Readonly<{
   retryAt: number;
   report: AiReportState;
   refusal: { id: number } | null;
+  // The PNG this session sent for the journal with this id, kept in memory only
+  // so the waiting print can show the child their own drawing.
+  submitted: { id: number; uri: string } | null;
 }>;
 export type PreparedAiDrawing = {
   bytes: Uint8Array;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { useDrawingProduct } from './useDrawingProduct';
+import { aiSheetShown } from '../ai/uiState';
 export type ProductModal = 'none' | 'settings' | 'ai' | 'feedback' | 'gate' | 'parentCenter';
 export function isProductModalBlocked(
   shown: ProductModal,
@@ -12,7 +13,7 @@ export function isProductModalBlocked(
       product.state?.gate.open ||
       product.state?.parentCenterOpen ||
       product.feedback.state?.open ||
-      product.ai.state?.open
+      (product.ai.state && aiSheetShown(product.ai.state))
     )
   );
 }

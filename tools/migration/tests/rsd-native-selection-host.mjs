@@ -178,6 +178,7 @@ vi.mock('react-native-svg', async () => {
 });
 const records = vi.hoisted(() => ({
   scheme: 'light',
+  reduceMotion: false,
   dismissals: [],
   props: [],
   viewports: [],
@@ -204,6 +205,7 @@ vi.mock('react-native-safe-area-context', async () => {
 });
 vi.mock('react-native', async () => {
   const React = await import('react');
+  const { animatedPort, easingPort } = await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
       records.props.push(props);
@@ -255,39 +257,11 @@ vi.mock('react-native', async () => {
       select: (values) => values.ios ?? values.native ?? values.default,
     },
     AccessibilityInfo: {
-      isReduceMotionEnabled: async () => false,
+      isReduceMotionEnabled: async () => records.reduceMotion,
       addEventListener: () => ({ remove() {} }),
     },
-    Animated: {
-      createAnimatedComponent: (component) => component,
-      View,
-      Text,
-      Image: View,
-      Value: class {
-        constructor(value) {
-          this.value = value;
-        }
-        setValue(value) {
-          this.value = value;
-        }
-      },
-      timing: (value, config) => ({
-        start(done) {
-          value.setValue(config.toValue);
-          done?.();
-        },
-        stop() {},
-      }),
-      sequence: (animations) => ({
-        start() {
-          for (const animation of animations) animation.start();
-        },
-        stop() {
-          for (const animation of animations) animation.stop();
-        },
-      }),
-    },
-    Easing: {},
+    Animated: animatedPort(View, Text),
+    Easing: easingPort,
     useWindowDimensions: () => records.dimensions,
     useColorScheme: () => records.scheme,
     Text,
@@ -405,6 +379,7 @@ afterEach(async () => {
   caller.library.owner.dispose();
   caller.library = null;
   records.scheme = 'light';
+  records.reduceMotion = false;
   records.dismissals.length = 0;
   caller.sound = null;
   caller.screen = null;
