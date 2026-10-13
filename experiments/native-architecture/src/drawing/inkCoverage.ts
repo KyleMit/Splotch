@@ -1,5 +1,4 @@
 import { Dimensions, Platform } from 'react-native';
-import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
 import { createInkObservationController } from './inkObservation';
 import { createPngAlphaDecoder } from './pngAlpha';
 import { assertPngGrid } from './pngLimits';
@@ -8,7 +7,7 @@ const decoder = createPngAlphaDecoder();
 
 export function createInkObservation() {
   return createInkObservationController(
-    () => {
+    (paper) => {
       const screen = { ...Dimensions.get('screen') };
       if (
         ![screen.width, screen.height, screen.scale, screen.fontScale].every(
@@ -19,7 +18,7 @@ export function createInkObservation() {
       if (Platform.OS !== 'android' && Platform.OS !== 'ios')
         throw new Error('Picture observation is unavailable on this platform.');
       const scale = Platform.OS === 'ios' ? screen.scale : 1;
-      const grid = { width: PAPER_WIDTH * scale, height: PAPER_HEIGHT * scale };
+      const grid = { width: paper.width * scale, height: paper.height * scale };
       assertPngGrid(grid);
       let changed = false;
       const subscription = Dimensions.addEventListener('change', () => {

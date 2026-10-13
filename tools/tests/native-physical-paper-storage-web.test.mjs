@@ -45,7 +45,7 @@ describe('web actual adapter physical paper storage', () => {
     { width: 342, height: 256.5, pixelRatio: 1 },
     { width: 760, height: 570, pixelRatio: 3 },
   ])(
-    'reopens adopted v6 contact paper and exact widths at %j under the save limit',
+    'reopens adopted v7 contact paper and exact widths at %j under the save limit',
     async (frame) => {
       const { values } = storageFixture();
       const drawing = contactedDrawing(frame);
@@ -53,7 +53,7 @@ describe('web actual adapter physical paper storage', () => {
       const saved = await savePicture(drawing);
       const reopened = await reopenPicture(saved.id);
       expect(reopened).toEqual(drawing);
-      expect(reopened.version).toBe(6);
+      expect(reopened.version).toBe(7);
       expect(reopened.paper).toEqual({
         kind: 'adopted',
         cssWidth: frame.width,

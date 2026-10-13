@@ -1,4 +1,5 @@
 import type { PngGrid } from './pngLimits';
+import type { PaperSize } from './paperSpace';
 
 type ObservationContext = { grid: PngGrid | null; current: () => boolean; dispose: () => void };
 type ObservationDecode = (
@@ -14,7 +15,7 @@ type ObservationTask = {
 };
 
 export function createInkObservationController(
-  prepare: () => ObservationContext,
+  prepare: (paper: PaperSize) => ObservationContext,
   decode: ObservationDecode
 ) {
   let active: ObservationTask | null = null;
@@ -32,13 +33,13 @@ export function createInkObservationController(
     }
   }
   return {
-    begin(isCurrent: () => boolean) {
+    begin(isCurrent: () => boolean, paper: PaperSize) {
       if (disposed || active || !isCurrent()) throw new Error('Picture observation is not ready.');
       const task: ObservationTask = {
         cancelled: false,
         started: false,
         released: false,
-        context: prepare(),
+        context: prepare(paper),
       };
       active = task;
       function current() {

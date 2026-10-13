@@ -9,12 +9,16 @@ import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawin
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 
-// [x, y, width, height, pageX, pageY] as View.measure reports them: the 4:3 paper
-// fitted to a portrait phone, then to the same phone turned to landscape.
-const PORTRAIT_FRAME = [0, 0, 390, 292.5, 0, 200];
-const LANDSCAPE_FRAME = [0, 0, 400, 300, 222, 40];
+// The paper area beside the swatch bar on a 390x844 phone, upright and then turned to landscape.
+const PORTRAIT_SLOT = { width: 390, height: 704 };
+const LANDSCAPE_SLOT = { width: 844, height: 300 };
+// [x, y, width, height, pageX, pageY] as View.measure reports the ink plane: a blank picture fills
+// the portrait slot; turned to landscape, the portrait picture is contain-fitted and centered.
+const PORTRAIT_FRAME = [0, 0, 390, 704, 0, 100];
+const FITTED_WIDTH = (LANDSCAPE_SLOT.height * 390) / 704;
+const LANDSCAPE_FRAME = [0, 0, FITTED_WIDTH, 300, (LANDSCAPE_SLOT.width - FITTED_WIDTH) / 2, 40];
 
-const sdk = vi.hoisted(() => ({ handlers: null, frame: null, layouts: new Set() }));
+const sdk = vi.hoisted(() => ({ handlers: null, frame: null, layouts: new Set(), sized: [] }));
 let owner, root, host;
 vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (original) => {
   const actual = await original();
@@ -83,8 +87,16 @@ vi.mock('react-native', () => ({
     addEventListener: () => ({ remove() {} }),
   },
   findNodeHandle: (value) => value,
-  View: forwardRef(({ children, onLayout }, ref) => {
+  View: forwardRef(({ children, onLayout, style }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(...sdk.frame) }));
+    // The paper host is the one View styled with only its fitted size.
+    if (
+      style &&
+      !Array.isArray(style) &&
+      Object.keys(style).join() === 'width,height' &&
+      typeof style.width === 'number'
+    )
+      sdk.sized.push({ width: style.width, height: style.height });
     useLayoutEffect(() => {
       if (!onLayout) return undefined;
       sdk.layouts.add(onLayout);
@@ -161,9 +173,9 @@ async function stroke(frame, points, start) {
     await act(async () => sdk.handlers.onPanResponderMove(at(index)));
   await act(async () => sdk.handlers.onPanResponderEnd(at(points.length - 1, true)));
 }
-async function rotate(frame) {
+async function rotate(slot, frame) {
   sdk.frame = frame;
-  const [, , width, height] = frame;
+  const { width, height } = slot;
   await act(async () => {
     for (const layout of [...sdk.layouts])
       layout({ nativeEvent: { layout: { x: 0, y: 0, width, height } } });
@@ -182,6 +194,7 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   sdk.handlers = null;
   sdk.layouts.clear();
+  sdk.sized.length = 0;
   sdk.frame = PORTRAIT_FRAME;
   host = document.createElement('div');
   document.body.append(host);
@@ -196,30 +209,40 @@ it.each([
   ['PaperWorkspace', DrawingScreen],
   ['RSD NativePaper', RsdPaper],
 ])(
-  '%s keeps the picture and remaps new touches to the same paper spot after rotating',
+  '%s adopts the portrait slot, keeps its shape after rotating, and maps new touches under the finger',
   async (_name, Screen) => {
     await act(async () => root.render(createElement(Screen)));
+    await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
+    expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
     await stroke(
       PORTRAIT_FRAME,
       [
-        [39, 29.25],
-        [195, 146.25],
+        [39, 70.4],
+        [195, 352],
       ],
       100
     );
     const before = structuredClone(owner.history.drawing);
-    expect(before.strokes).toHaveLength(1);
+    expect(before.paper).toEqual({
+      kind: 'adopted',
+      cssWidth: 390,
+      cssHeight: 704,
+      backingScale: 1,
+    });
     expect(before.strokes[0].points).toEqual([
-      { x: 102.4, y: 76.8 },
-      { x: 512, y: 384 },
+      { x: 56.59, y: 102.4 },
+      { x: 283.5, y: 512 },
     ]);
-    await rotate(LANDSCAPE_FRAME);
+    sdk.sized.length = 0;
+    await rotate(LANDSCAPE_SLOT, LANDSCAPE_FRAME);
     expect(owner.history.drawing).toEqual(before);
+    expect(sdk.sized.at(-1).height).toBe(300);
+    expect(sdk.sized.at(-1).width).toBeCloseTo(FITTED_WIDTH, 9);
     await stroke(
       LANDSCAPE_FRAME,
       [
-        [100, 75],
-        [200, 150],
+        [FITTED_WIDTH / 4, 75],
+        [FITTED_WIDTH / 2, 150],
       ],
       1000
     );
@@ -227,8 +250,11 @@ it.each([
     expect(owner.history.drawing.strokes[0]).toEqual(before.strokes[0]);
     expect(owner.history.drawing.paper).toEqual(before.paper);
     expect(owner.history.drawing.strokes[1].points).toEqual([
-      { x: 256, y: 192 },
-      { x: 512, y: 384 },
+      { x: 141.68, y: 256 },
+      { x: 283.5, y: 512 },
     ]);
+    sdk.sized.length = 0;
+    await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
+    expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
   }
 );

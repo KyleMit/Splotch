@@ -16,11 +16,14 @@ import {
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
+  LEGACY_PAPER,
   UNADOPTED_PAPER,
+  paperSize,
   readDrawingPaper,
   samePaper,
   type DrawingPaper,
   type PaperReference,
+  type PaperSize,
 } from './paperSpace';
 export { PAPER_WIDTH, PAPER_HEIGHT } from './paperSpace';
 import {
@@ -44,7 +47,7 @@ export type Stroke = StrokeStyle & Readonly<{ points: readonly Point[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
 type DrawingContents = Readonly<{ pageId: PageId; rainbow: number; strokes: readonly Stroke[] }>;
 export type Drawing = DrawingContents &
-  (Readonly<{ version: 5 }> | Readonly<{ version: 6; paper: DrawingPaper }>);
+  (Readonly<{ version: 5 }> | Readonly<{ version: 7; paper: DrawingPaper }>);
 export type History = Readonly<{
   drawing: Drawing;
   undo: readonly Drawing[];
@@ -56,8 +59,8 @@ const HISTORY_POINT_BUDGET = 200_000;
 export function emptyDrawing(
   rainbow = INITIAL_RAINBOW,
   pageId: PageId = 'blank'
-): Extract<Drawing, { version: 6 }> {
-  return { version: 6, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
+): Extract<Drawing, { version: 7 }> {
+  return { version: 7, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
 }
 
 export function strokeStyle(
@@ -220,7 +223,7 @@ function savedFormat(value: Record<string, unknown>): SavedFormat {
     return 'width';
   if (value.version === 5 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
     return 'color';
-  if (value.version === 6 && exactKeys(value, ['version', 'paper', 'pageId', 'rainbow', 'strokes']))
+  if (value.version === 7 && exactKeys(value, ['version', 'paper', 'pageId', 'rainbow', 'strokes']))
     return 'paper';
   throw new Error('This saved picture is not a supported drawing.');
 }
@@ -285,7 +288,7 @@ function readStyle(
   throw new Error('This saved picture contains an invalid brush.');
 }
 
-function readPoint(point: unknown): Point {
+function readPoint(point: unknown, size: PaperSize): Point {
   if (
     !record(point) ||
     !exactKeys(point, ['x', 'y']) ||
@@ -294,9 +297,9 @@ function readPoint(point: unknown): Point {
     !Number.isFinite(point.x) ||
     !Number.isFinite(point.y) ||
     point.x < 0 ||
-    point.x > PAPER_WIDTH ||
+    point.x > size.width ||
     point.y < 0 ||
-    point.y > PAPER_HEIGHT
+    point.y > size.height
   )
     throw new Error('This saved picture contains an invalid point.');
   return { x: point.x, y: point.y };
@@ -310,6 +313,8 @@ export function parseDrawing(value: unknown): Drawing {
   if (!isPageId(pageId)) throw new Error('This saved picture contains an invalid coloring page.');
   const rainbow =
     format === 'legacy' || format === 'page' ? INITIAL_RAINBOW : readRainbow(value.rainbow);
+  const paper = format === 'paper' ? readDrawingPaper(value.paper) : LEGACY_PAPER;
+  const size = paperSize(paper);
   let total = 0;
   const strokes = value.strokes.map((item: unknown): Stroke => {
     if (!record(item) || !Array.isArray(item.points) || item.points.length === 0)
@@ -335,13 +340,16 @@ export function parseDrawing(value: unknown): Drawing {
       throw new Error('This saved picture contains an invalid stroke width.');
     total += item.points.length;
     if (total > MAX_POINTS) throw new Error('This saved picture is too large.');
-    return { ...style, width: actualWidth, points: item.points.map(readPoint) };
+    return {
+      ...style,
+      width: actualWidth,
+      points: item.points.map((point: unknown) => readPoint(point, size)),
+    };
   });
-  if (format === 'paper') {
-    const paper = readDrawingPaper(value.paper);
+  if (paper.kind !== 'legacy') {
     if (paper.kind === 'unadopted' && strokes.length > 0)
       throw new Error('This saved picture contains ink without a paper reference.');
-    return { version: 6, paper, pageId, rainbow, strokes };
+    return { version: 7, paper, pageId, rainbow, strokes };
   }
   return { version: 5, pageId, rainbow, strokes };
 }

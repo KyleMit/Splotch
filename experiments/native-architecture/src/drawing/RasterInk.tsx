@@ -1,5 +1,5 @@
 import { InkPaperScope, useInkPaper } from './InkPaper';
-import { samePaper, type PaperReference } from './paperSpace';
+import { paperSize, samePaper, type PaperReference } from './paperSpace';
 import {
   Fragment,
   forwardRef,
@@ -34,7 +34,7 @@ import type { Brush } from './brushes';
 import { InkScene } from './InkScene';
 import { FixedInkCapture } from './FixedInkCapture';
 import { DecodedPng } from './DecodedPng';
-import { PAPER_WIDTH, PAPER_HEIGHT, type Stroke } from './model';
+import type { Stroke } from './model';
 import { createSvgCapture, PNG_TIMEOUT_MS, type SvgCaptureJob } from './svgCapture';
 
 export type RasterInkHandle = {
@@ -315,7 +315,7 @@ function useCheckpointJob(options: {
   useEffect(() => {
     const revision = ++epoch.current;
     if (!ready) return;
-    const job = captures.capture(svg.current);
+    const job = captures.capture(svg.current, paperSize(plan.paper));
     active.current = job;
     const valid = () =>
       epoch.current === revision &&
@@ -348,6 +348,11 @@ function useCheckpointJob(options: {
   return active;
 }
 
+function paperViewBox(paper: PaperReference) {
+  const { width, height } = paperSize(paper);
+  return `0 0 ${width} ${height}`;
+}
+
 function RasterFrames({
   frames,
   onImageLoad,
@@ -365,6 +370,7 @@ function RasterFrames({
             <DecodedPng
               key={frame.plan.checkpoint.id}
               base64={frame.plan.checkpoint.base64}
+              size={paperSize(frame.plan.paper)}
               onLoad={() => {
                 if (frame.plan.checkpoint) onImageLoad(frame.plan.checkpoint);
               }}
@@ -377,7 +383,7 @@ function RasterFrames({
             <Svg
               width="100%"
               height="100%"
-              viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+              viewBox={paperViewBox(frame.plan.paper)}
               preserveAspectRatio="xMidYMid meet"
               style={StyleSheet.absoluteFill}
               pointerEvents="none"

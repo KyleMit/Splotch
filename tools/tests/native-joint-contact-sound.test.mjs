@@ -108,7 +108,7 @@ describe('joint admitted contact sound lifecycle', () => {
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
       expect(f.history().drawing).toMatchObject({
-        version: 6,
+        version: 7,
         paper: { kind: 'adopted', cssWidth: 1024, cssHeight: 768, backingScale: 1 },
         pageId: 'flower',
         rainbow: 3,

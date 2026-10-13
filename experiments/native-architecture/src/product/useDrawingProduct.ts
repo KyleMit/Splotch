@@ -20,6 +20,7 @@ import { aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from '../ai/prepare';
 import { parseDrawing } from '../drawing/model';
+import { drawingPaperSize } from '../drawing/paperSpace';
 import { initialSoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -63,7 +64,7 @@ function createProductServices(
         const base64 = await surface.capturePng(drawing);
         if (current.currentDrawing() !== drawing)
           throw new Error('The drawing changed during capture.');
-        const bytes = prepareAiPng(base64);
+        const bytes = prepareAiPng(base64, drawingPaperSize(drawing));
         const original = await savePicture(drawing);
         return {
           bytes,

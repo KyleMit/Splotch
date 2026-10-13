@@ -1,8 +1,8 @@
-import { PAPER_WIDTH, PAPER_HEIGHT } from '../drawing/model';
 import { useContext } from 'react';
 import { Image, SvgXml } from 'react-native-svg';
 import type { OfflinePageId } from './catalog';
 import type { PaperTheme } from '../drawing/theme';
+import type { PaperSize } from '../drawing/paperSpace';
 import { BundledFillLoadScope } from '../drawing/BundledBookArtwork';
 
 import { OfflineArtworkScope } from './artworkContext';
@@ -14,21 +14,31 @@ function useOfflineArtwork(id: OfflinePageId, theme: PaperTheme) {
 export function OfflineBookOutline({
   pageId,
   theme,
+  size,
 }: {
   pageId: OfflinePageId;
   theme: PaperTheme;
+  size: PaperSize;
 }) {
   const art = useOfflineArtwork(pageId, theme);
   return (
     <SvgXml
       xml={art.outline}
-      width={PAPER_WIDTH}
-      height={PAPER_HEIGHT}
+      width={size.width}
+      height={size.height}
       preserveAspectRatio="xMidYMid meet"
     />
   );
 }
-export function OfflineMagicFill({ pageId, theme }: { pageId: OfflinePageId; theme: PaperTheme }) {
+export function OfflineMagicFill({
+  pageId,
+  theme,
+  size,
+}: {
+  pageId: OfflinePageId;
+  theme: PaperTheme;
+  size: PaperSize;
+}) {
   const art = useOfflineArtwork(pageId, theme);
   const onLoad = useContext(BundledFillLoadScope);
   return (
@@ -36,8 +46,8 @@ export function OfflineMagicFill({ pageId, theme }: { pageId: OfflinePageId; the
       href={art.fill}
       x={0}
       y={0}
-      width={PAPER_WIDTH}
-      height={PAPER_HEIGHT}
+      width={size.width}
+      height={size.height}
       preserveAspectRatio="xMidYMid meet"
       onLoad={() => onLoad?.()}
     />

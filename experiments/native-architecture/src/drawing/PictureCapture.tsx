@@ -1,11 +1,10 @@
-import { drawingPaper, samePaper } from './paperSpace';
+import { drawingPaper, paperSize, samePaper } from './paperSpace';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from 'react-native-svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
 import type { InkPlan } from './checkpoints';
-import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
 import { PageOutline } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
 import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
@@ -31,6 +30,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const captures = useRef(createSvgCapture()).current;
   const current = useRef(true);
   const request = packet.request;
+  const size = paperSize(packet.plan.paper);
   if (!samePaper(packet.plan.paper, drawingPaper(request.drawing)))
     throw new Error('The captured paper reference does not match the picture.');
 
@@ -55,7 +55,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       fail(new Error('The picture changed before capture finished.'));
       return;
     }
-    const job = captures.capture(ink.current);
+    const job = captures.capture(ink.current, size);
     void job.promise.then((pixels) => accept(pixels, 'ink')).catch(fail);
     return () => job.cancel();
   }, [ready, base64, captures]);
@@ -66,7 +66,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       fail(new Error('The picture changed before capture finished.'));
       return;
     }
-    const job = captures.capture(output.current);
+    const job = captures.capture(output.current, size);
     void job.promise.then((pixels) => accept(pixels, 'picture')).catch(fail);
     return () => job.cancel();
   }, [imageLoaded, captures]);
@@ -86,8 +86,8 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
 
   return (
     <InkAppearanceScope.Provider value={packet.appearance}>
-      <View style={styles.capture} pointerEvents="none">
-        {base64 ? <DecodedPng base64={base64} onLoad={loaded} onError={fail} /> : null}
+      <View style={[styles.capture, size, { left: -size.width * 2 }]} pointerEvents="none">
+        {base64 ? <DecodedPng base64={base64} size={size} onLoad={loaded} onError={fail} /> : null}
         {!base64 ? (
           <FixedInkCapture
             plan={packet.plan}
@@ -98,28 +98,28 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
         ) : (
           <CaptureSvg
             ref={output}
-            width={PAPER_WIDTH}
-            height={PAPER_HEIGHT}
-            viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+            width={size.width}
+            height={size.height}
+            viewBox={`0 0 ${size.width} ${size.height}`}
             preserveAspectRatio="xMidYMid meet"
           >
             <Rect
-              width={PAPER_WIDTH}
-              height={PAPER_HEIGHT}
+              width={size.width}
+              height={size.height}
               fill={PAPER_THEMES[packet.appearance.theme].paper}
             />
             <Image
               href={`data:image/png;base64,${base64}`}
               x={0}
               y={0}
-              width={PAPER_WIDTH}
-              height={PAPER_HEIGHT}
+              width={size.width}
+              height={size.height}
               preserveAspectRatio="none"
               onLoad={() => {
                 if (Platform.OS !== 'android') loaded();
               }}
             />
-            <PageOutline pageId={request.drawing.pageId} />
+            <PageOutline pageId={request.drawing.pageId} size={size} />
           </CaptureSvg>
         )}
       </View>
@@ -128,11 +128,5 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
 }
 
 const styles = StyleSheet.create({
-  capture: {
-    position: 'absolute',
-    left: -PAPER_WIDTH * 2,
-    top: 0,
-    width: PAPER_WIDTH,
-    height: PAPER_HEIGHT,
-  },
+  capture: { position: 'absolute', top: 0 },
 });

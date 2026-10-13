@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
-import { PAPER_HEIGHT, PAPER_WIDTH } from './model';
+import type { PaperSize } from './paperSpace';
 
 export function DecodedPng({
   base64,
+  size,
   onLoad,
   onError,
 }: {
   base64: string;
+  size: PaperSize;
   onLoad: () => void;
   onError: (error: Error) => void;
 }) {
@@ -33,8 +35,8 @@ export function DecodedPng({
         const image = nativeEvent.source;
         if (
           image?.uri !== source.uri ||
-          image.width !== PAPER_WIDTH ||
-          image.height !== PAPER_HEIGHT
+          image.width !== size.width ||
+          image.height !== size.height
         ) {
           onError(new Error('The prepared picture has an unexpected image or sampling grid.'));
           return;

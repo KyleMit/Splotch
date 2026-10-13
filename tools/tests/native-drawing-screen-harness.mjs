@@ -294,6 +294,7 @@ vi.mock('react-native', () => {
 vi.mock('react-native-svg', () => ({
   default: ({ children }) => createElement('svg', null, children),
   Defs: ({ children }) => createElement('defs', null, children),
+  G: ({ children, ...props }) => createElement('g', props, children),
   LinearGradient: ({ children }) => createElement('linearGradient', null, children),
   Stop: () => null,
   Rect: (props) => createElement('rect', props),

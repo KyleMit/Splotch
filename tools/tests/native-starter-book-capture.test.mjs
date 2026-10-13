@@ -74,6 +74,7 @@ async function mountCapture(magic = true) {
   const onReady = vi.fn();
   const onError = vi.fn();
   const plan = {
+    paper: { kind: 'legacy' },
     checkpoint: null,
     strokes: magic ? [{ brush: 'magic', rainbow: 0, width: 30, points: [{ x: 100, y: 100 }] }] : [],
   };

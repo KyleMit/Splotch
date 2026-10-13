@@ -12,7 +12,15 @@ import {
   type SkPaint,
   type SkShader,
 } from '@shopify/react-native-skia';
-import { semanticWidth, textureScale, type PaperReference } from './paperSpace';
+import {
+  CANONICAL_PAPER_SIZE,
+  paperSize,
+  paperView,
+  semanticWidth,
+  textureScale,
+  type PaperReference,
+  type PaperSize,
+} from './paperSpace';
 import { rainbow, rainbowLine } from './brushes';
 import { CRAYON_BANDS, CRAYON_COLOR_MIX, crayonPasses, crayonPhase } from './crayon';
 import { crayonResourceUri, type CrayonTileResources } from './crayonTiles';
@@ -20,7 +28,7 @@ import { COLORING_FILLS, type PageId } from './pages';
 import { isFarmPageId } from './bundledBooks';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { paintAppearance, paletteHex } from './palette';
-import { PAPER_HEIGHT, PAPER_WIDTH, strokePath, type Point, type Stroke } from './model';
+import { strokePath, type Point, type Stroke } from './model';
 
 export type InkPaintContext = Readonly<{
   paper: PaperReference;
@@ -100,25 +108,24 @@ function drawShape(canvas: SkCanvas, points: readonly Point[], width: number, pa
   canvas.drawPath(path, paint);
 }
 
-function fitMatrix(image: SkImage) {
-  const scale = Math.min(PAPER_WIDTH / image.width(), PAPER_HEIGHT / image.height());
+// Page art contain-fitted and centered on the paper, as PageOutline places it.
+function fitMatrix(paper: PaperSize, art: PaperSize) {
+  const { scale, left, top } = paperView(paper.width, paper.height, art);
   const matrix = Skia.Matrix();
-  matrix.translate(
-    (PAPER_WIDTH - image.width() * scale) / 2,
-    (PAPER_HEIGHT - image.height() * scale) / 2
-  );
+  matrix.translate(left, top);
   matrix.scale(scale, scale);
   return matrix;
 }
 
 function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPaintContext) {
+  const size = paperSize(context.paper);
   if (context.bookFill)
     return context.bookFill.makeShaderOptions(
       TileMode.Decal,
       TileMode.Decal,
       FilterMode.Linear,
       MipmapMode.None,
-      fitMatrix(context.bookFill)
+      fitMatrix(size, { width: context.bookFill.width(), height: context.bookFill.height() })
     );
   const { pageId } = context;
   if (isFarmPageId(pageId) || isOfflinePageId(pageId))
@@ -126,10 +133,12 @@ function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPa
   const fill = pageId === 'blank' ? null : COLORING_FILLS[pageId];
   if (fill) {
     const recorder = Skia.PictureRecorder();
-    const fillCanvas = recorder.beginRecording(Skia.XYWHRect(0, 0, PAPER_WIDTH, PAPER_HEIGHT));
+    const bounds = Skia.XYWHRect(0, 0, size.width, size.height);
+    const fillCanvas = recorder.beginRecording(bounds);
     const paint = Skia.Paint();
     paint.setColor(Skia.Color(paletteHex(fill.background[context.theme])));
-    fillCanvas.drawRect(Skia.XYWHRect(0, 0, PAPER_WIDTH, PAPER_HEIGHT), paint);
+    fillCanvas.drawRect(bounds, paint);
+    fillCanvas.concat(fitMatrix(size, CANONICAL_PAPER_SIZE));
     for (const region of fill.regions) {
       const path = Skia.Path.MakeFromSVGString(region.path);
       if (!path) continue;
@@ -140,15 +149,9 @@ function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPa
     }
     return recorder
       .finishRecordingAsPicture()
-      .makeShader(
-        TileMode.Decal,
-        TileMode.Decal,
-        FilterMode.Linear,
-        undefined,
-        Skia.XYWHRect(0, 0, PAPER_WIDTH, PAPER_HEIGHT)
-      );
+      .makeShader(TileMode.Decal, TileMode.Decal, FilterMode.Linear, undefined, bounds);
   }
-  const line = rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT);
+  const line = rainbowLine(stroke.rainbow, size.width, size.height);
   const stops = rainbow(stroke.rainbow).stops;
   return Skia.Shader.MakeLinearGradient(
     { x: line.x1, y: line.y1 },
