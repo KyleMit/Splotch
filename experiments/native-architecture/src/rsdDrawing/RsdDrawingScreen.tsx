@@ -1,7 +1,7 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import {
-  ColorPicker,
   RsdAiSheet,
+  RsdColorPicker,
   RsdColoringBookPicker,
   RsdFeedbackSheet,
   RsdParentCenterSection,
@@ -249,7 +249,7 @@ function RsdDrawingContent({
             )}
           />
           <RsdScreenSheets screen={screen} />
-          {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
+          <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}
@@ -299,11 +299,17 @@ function RsdScreenSheets({ screen }: { screen: Screen }) {
   );
 }
 
+// The picker stays mounted through its fly-back after a pick or a close has cleared the screen's
+// open state.
 function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound }) {
+  const picker = useModalPresence(screen.colorPickerOpen || null);
+  if (!picker.shown) return null;
   return (
     <RsdSurfaceBoundary onClose={screen.closeColorPicker}>
-      <ColorPicker
-        selected={sound.settings.selectedColor}
+      <RsdColorPicker
+        visible={picker.visible}
+        customColor={sound.settings.customColors[0]}
+        onDismiss={picker.dismissed}
         onClose={screen.closeColorPicker}
         onChoose={(color) => {
           screen.selectInkBrush();
