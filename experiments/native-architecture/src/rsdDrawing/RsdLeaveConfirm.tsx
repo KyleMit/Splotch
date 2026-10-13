@@ -1,11 +1,12 @@
-import { html } from 'react-strict-dom';
 import { useLeaveConfirm } from '../platform/BrowserBack';
 import { LEAVE_CONFIRM_COPY } from '../product/systemBack';
 import { ModalShell } from './ModalShell';
-import { useDialogTitleId } from './dialogScope';
+import { RsdButton } from './RsdButton';
+import { RsdConfirmCard } from './RsdConfirmCard';
 import { useModalPresence } from './useModalPresence';
-import { RsdAction, styles } from './controls';
 
+// The shipping LeaveConfirm.svelte card: no close control, since its two choices are the way out,
+// and Keep drawing comes first so a stray press or switch-access activation stays.
 export function RsdLeaveConfirm() {
   const { open, stay, leave } = useLeaveConfirm();
   const presence = useModalPresence(open || null);
@@ -14,8 +15,6 @@ export function RsdLeaveConfirm() {
   const choose = (choice: () => void) => () => {
     if (!closing) choice();
   };
-  // The shipping confirmation card has no close control: its two choices are the way out, and
-  // Keep drawing comes first so a stray press or switch-access activation stays.
   return (
     <ModalShell
       visible={presence.visible}
@@ -25,22 +24,18 @@ export function RsdLeaveConfirm() {
       onClose={stay}
       header={null}
     >
-      <html.div style={styles.dialogContent}>
-        <LeaveTitle />
-        <html.p>{LEAVE_CONFIRM_COPY.body}</html.p>
-        <html.div style={styles.row}>
-          <RsdAction label={LEAVE_CONFIRM_COPY.stay} disabled={closing} onClick={choose(stay)} />
-          <RsdAction label={LEAVE_CONFIRM_COPY.leave} disabled={closing} onClick={choose(leave)} />
-        </html.div>
-      </html.div>
+      <RsdConfirmCard
+        title={LEAVE_CONFIRM_COPY.title}
+        copy={LEAVE_CONFIRM_COPY.body}
+        actions={[
+          <RsdButton key="stay" variant="brand" size="lg" disabled={closing} onPress={choose(stay)}>
+            {LEAVE_CONFIRM_COPY.stay}
+          </RsdButton>,
+          <RsdButton key="leave" size="lg" disabled={closing} onPress={choose(leave)}>
+            {LEAVE_CONFIRM_COPY.leave}
+          </RsdButton>,
+        ]}
+      />
     </ModalShell>
-  );
-}
-
-function LeaveTitle() {
-  return (
-    <html.h1 id={useDialogTitleId()} style={styles.boldText}>
-      {LEAVE_CONFIRM_COPY.title}
-    </html.h1>
   );
 }
