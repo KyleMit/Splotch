@@ -85,7 +85,15 @@ const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
 const settingsDialog = parse('src/rsdDrawing/NativeDialog.tsx');
-for (const component of [drawing, edgeControls, drawingTools, coloringPicker, settingsDialog])
+const orientationChoices = parse('src/rsdDrawing/RsdOrientationChoices.tsx');
+for (const component of [
+  drawing,
+  edgeControls,
+  drawingTools,
+  coloringPicker,
+  settingsDialog,
+  orientationChoices,
+])
   babel.traverse(component, {
     JSXOpeningElement(path) {
       const node = path.node;
@@ -131,10 +139,17 @@ for (const component of [drawing, edgeControls, drawingTools, coloringPicker, se
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 6, 'RSD radio group count');
+assert.equal(groups.length, 7, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  ['Appearance', 'Coloring page', 'Drawing brush', 'Drawing sound level', 'Paint colors'],
+  [
+    'Appearance',
+    'Coloring page',
+    'Drawing brush',
+    'Drawing sound level',
+    'Orientation',
+    'Paint colors',
+  ],
   'RSD radio group names'
 );
 const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
@@ -145,7 +160,7 @@ assert.deepEqual(
   'RSD width group label'
 );
 assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 6, 'RSD selection callers');
+assert.equal(radios, 7, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -351,6 +366,7 @@ const files = [
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
   'src/rsdDrawing/NativeDialog.tsx',
+  'src/rsdDrawing/RsdOrientationChoices.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
   'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/useDrawingMenu.ts',

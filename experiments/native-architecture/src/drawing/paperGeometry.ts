@@ -1,3 +1,5 @@
+import { PAPER_HEIGHT, PAPER_WIDTH } from './paperSpace';
+
 export type PaperFrame = { width: number; height: number; pageX: number; pageY: number };
 export type MeasurePaper = (complete: (frame: PaperFrame | null) => void) => void;
 
@@ -66,5 +68,20 @@ export function createPaperScroll(refresh: () => void) {
     x = offset.x;
     y = offset.y;
     refresh();
+  };
+}
+
+// The fixed paper contain-fitted and centered in the space it is given, never above its own size.
+export function fittedPaper(space: { width: number; height: number }) {
+  const width = Math.max(
+    0,
+    Math.min(space.width, (space.height * PAPER_WIDTH) / PAPER_HEIGHT, PAPER_WIDTH)
+  );
+  const height = (width * PAPER_HEIGHT) / PAPER_WIDTH;
+  return {
+    left: (space.width - width) / 2,
+    top: (space.height - height) / 2,
+    width,
+    height,
   };
 }

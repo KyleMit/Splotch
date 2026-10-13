@@ -4,6 +4,7 @@ import { act } from 'react';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
+import { orientationCalls } from './rsd-orientation-port.mjs';
 
 const caller = vi.hoisted(() => {
   let journal = null;
@@ -178,11 +179,15 @@ vi.mock('react-native-svg', async () => {
 });
 const records = vi.hoisted(() => ({
   scheme: 'light',
+  reduceMotion: false,
   dismissals: [],
   props: [],
   viewports: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
+  dimensionListeners: new Set(),
+  os: 'ios',
 }));
+vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
   const React = await import('react');
   const boundary = (kind) => (props) => {
@@ -204,6 +209,7 @@ vi.mock('react-native-safe-area-context', async () => {
 });
 vi.mock('react-native', async () => {
   const React = await import('react');
+  const { animatedPort, easingPort } = await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
       records.props.push(props);
@@ -250,45 +256,26 @@ vi.mock('react-native', async () => {
       );
     }),
     Platform: {
-      OS: 'ios',
+      get OS() {
+        return records.os;
+      },
       constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
       select: (values) => values.ios ?? values.native ?? values.default,
     },
     AccessibilityInfo: {
-      isReduceMotionEnabled: async () => false,
+      isReduceMotionEnabled: async () => records.reduceMotion,
       addEventListener: () => ({ remove() {} }),
     },
-    Animated: {
-      createAnimatedComponent: (component) => component,
-      View,
-      Text,
-      Image: View,
-      Value: class {
-        constructor(value) {
-          this.value = value;
-        }
-        setValue(value) {
-          this.value = value;
-        }
-      },
-      timing: (value, config) => ({
-        start(done) {
-          value.setValue(config.toValue);
-          done?.();
-        },
-        stop() {},
-      }),
-      sequence: (animations) => ({
-        start() {
-          for (const animation of animations) animation.start();
-        },
-        stop() {
-          for (const animation of animations) animation.stop();
-        },
-      }),
-    },
-    Easing: {},
+    Animated: animatedPort(View, Text),
+    Easing: easingPort,
     useWindowDimensions: () => records.dimensions,
+    Dimensions: {
+      get: () => records.dimensions,
+      addEventListener: (_type, listener) => {
+        records.dimensionListeners.add(listener);
+        return { remove: () => records.dimensionListeners.delete(listener) };
+      },
+    },
     useColorScheme: () => records.scheme,
     Text,
     Pressable,
@@ -405,39 +392,16 @@ afterEach(async () => {
   caller.library.owner.dispose();
   caller.library = null;
   records.scheme = 'light';
+  records.reduceMotion = false;
   records.dismissals.length = 0;
   caller.sound = null;
   caller.screen = null;
   records.props.length = 0;
   records.viewports.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
+  records.os = 'ios';
+  orientationCalls.length = 0;
 });
-
-function checkedRadio(node) {
-  if (!node || node.getAttribute('role') !== 'radio' || node.dataset.checked !== 'true')
-    throw new Error('Missing native checked radio');
-}
-
-function checkedSwitch(node, checked) {
-  if (!node || node.getAttribute('role') !== 'switch' || node.dataset.checked !== String(checked))
-    throw new Error('Missing native checked switch');
-}
-
-function visibleSelection(node) {
-  const color = node?.querySelector('span')?.dataset.nativeColor;
-  if (
-    !node?.dataset.nativeBackground ||
-    node.dataset.nativeBackground === 'transparent' ||
-    !color ||
-    node.dataset.nativeBackground === color
-  )
-    throw new Error('Missing contrasting native selected treatment');
-}
-
-function assertDisabledBoundary(props, disabled) {
-  if (props?.accessibilityState?.disabled !== disabled)
-    throw new Error('Missing explicit native disabled boolean');
-}
 
 async function expandControls() {
   const toggle = host.querySelector('[aria-label="Expand controls"]');
@@ -489,15 +453,9 @@ function createPickerCaller(refresh) {
 }
 
 export {
-  caller,
-  records,
-  root,
-  host,
-  mount,
   checkedRadio,
   checkedSwitch,
   visibleSelection,
   assertDisabledBoundary,
-  expandControls,
-  createPickerCaller,
-};
+} from './rsd-native-assertions.mjs';
+export { caller, records, root, host, mount, createPickerCaller, expandControls };

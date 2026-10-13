@@ -147,3 +147,24 @@ Orientation branches are covered at two layers, and the web gate cannot be reach
   `enterFullscreen` from `web/tests/helpers.ts`, which triggers real element fullscreen from a
   keypress; pair it with `exitFullscreen` before any `setViewportSize`, because Chromium refuses to
   resize a fullscreen window.
+
+## React Native candidate
+
+The Expo candidate in `experiments/native-architecture` ports the picker with the shipping choices,
+copy, and gates, persisted as `orientation` in settings schema 8, and applies it through
+`expo-screen-orientation` in `experiments/native-architecture/src/platform/deviceOrientation.ts`:
+
+* **Portrait / Landscape** lock `PORTRAIT_UP` / `LANDSCAPE_RIGHT`, the same single-direction
+  requests `@capacitor/screen-orientation` makes.
+* **Auto** requests `SCREEN_ORIENTATION_SENSOR` on Android through `lockPlatformAsync`, matching
+  `SensorOrientationPlugin`, and calls `unlockAsync()` on iOS.
+* **Tablets** (shorter screen side at least 600dp) get no picker and no lock request. The gate
+  follows screen-size changes live: crossing below the line applies the saved choice, and crossing
+  back releases the lock.
+* **Web** (its `.web.ts` split) keeps the shipping gate — a coarse pointer plus fullscreen — and
+  requests the lock again on every fullscreen entry.
+
+Its tests are `tools/tests/native-orientation-settings.test.mjs`,
+`tools/tests/native-orientation-web.test.mjs`,
+`tools/migration/tests/rsd-native-orientation.test.mjs`, and
+`tools/tests/native-paper-rotation-mounted.test.mjs`, which turns the paper with a drawing on it.

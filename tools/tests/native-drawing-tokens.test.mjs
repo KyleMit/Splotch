@@ -15,7 +15,9 @@ import {
   paletteHex,
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import {
+  DRAWING_BRAND,
   DRAWING_ON_BRAND,
+  DRAWING_POLAROID,
   DRAWING_SCALE,
   DRAWING_SCRIM,
   DRAWING_THEME,
@@ -91,6 +93,14 @@ describe('native drawing token projection', () => {
 
   it('keeps text on purple controls invariant across themes', () => {
     expect(DRAWING_ON_BRAND).toBe(brand.onBrand);
+  });
+
+  it('pins the unthemed polaroid print and brand hue to the design owner and rejects drift', async () => {
+    const expected = { paper: scale.polaroidPaper, ink: scale.polaroidInk };
+    expect(DRAWING_POLAROID).toEqual(expected);
+    expect(DRAWING_BRAND).toBe(brand.brand);
+    const changed = await fixtureModule('theme.ts', "paper: '#fdfcf7'", "paper: '#ffffff'");
+    expect(changed.DRAWING_POLAROID).not.toEqual(expected);
   });
 
   it('pins the complete dark chrome palette to the design owner', () => {

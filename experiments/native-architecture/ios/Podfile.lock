@@ -71,6 +71,29 @@ PODS:
   - ExpoModulesWorklets (57.0.20):
     - ExpoModulesCore
     - ExpoModulesJSI
+  - ExpoScreenOrientation (57.0.2):
+    - ExpoModulesCore
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - ExpoSharing (57.0.22):
     - ExpoModulesCore
   - FBLazyVector (0.86.3)
@@ -2026,6 +2049,7 @@ DEPENDENCIES:
   - ExpoModulesCore (from `../../../node_modules/expo-modules-core/ExpoModulesCore.podspec`)
   - ExpoModulesJSI (from `../../../node_modules/expo-modules-jsi/apple`)
   - ExpoModulesWorklets (from `../../../node_modules/expo-modules-core/ExpoModulesWorklets.podspec`)
+  - ExpoScreenOrientation (from `../../../node_modules/expo-screen-orientation/ios`)
   - ExpoSharing (from `../../../node_modules/expo-sharing/ios`)
   - FBLazyVector (from `../../../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../../../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
@@ -2131,6 +2155,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/expo-modules-jsi/apple"
   ExpoModulesWorklets:
     :podspec: "../../../node_modules/expo-modules-core/ExpoModulesWorklets.podspec"
+  ExpoScreenOrientation:
+    :path: "../../../node_modules/expo-screen-orientation/ios"
   ExpoSharing:
     :path: "../../../node_modules/expo-sharing/ios"
   FBLazyVector:
@@ -2302,6 +2328,7 @@ SPEC CHECKSUMS:
   ExpoModulesCore: e48cf66222de8f021edb58d5cbf463717cd2f23a
   ExpoModulesJSI: 383849017851b1ebacbd78cfaa32b18b6152585e
   ExpoModulesWorklets: 40d29262efc034e4357f2713e6037a41a27218d6
+  ExpoScreenOrientation: 29f306f9e1a37b304862310ceb9664866f653ebd
   ExpoSharing: 5cc46810cfba71e331f649d947660213082094c1
   FBLazyVector: 2138c6c2ab66c31bf5754dc18097fbc498a49c7f
   hermes-engine: 8930e5f68b09f76e00ab617da3f7587e7262efd0
