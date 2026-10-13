@@ -4,21 +4,16 @@ import {
   type OptionalBrush,
   type BrushPreferencesState,
 } from '../settings/brushPreferences';
-import {
-  APPEARANCE_PREFERENCES,
-  APPEARANCE_LABELS,
-  type AppearancePreference,
-} from '../settings/appearance';
+import type { AppearancePreference } from '../settings/appearance';
 import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
-import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from '../settings/soundLevel';
+import type { ToolbarStyle } from '../settings/toolbarStyle';
 import { RsdAction, styles as controlStyles } from './controls';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
-import { RsdOrientationChoices } from './RsdOrientationChoices';
 import type { OrientationChoice } from '../settings/orientation';
 import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
 import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
@@ -34,10 +29,14 @@ import { RsdSettingsHub, useHubToggles, useSectionActivity } from './RsdSettings
 import { RsdSettingsWide } from './RsdSettingsWide';
 import { RsdSettingsCompact } from './RsdSettingsCompact';
 import { RsdScrollCue } from './RsdScrollCue';
-import { useDialogBody } from './dialogScope';
+import { useDialogBody, useDialogSeeThrough } from './dialogScope';
 import { settingsShell } from './modalGeometry';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';
+import { RsdAppearanceSection } from './RsdAppearanceSection';
+import { RsdSoundSection } from './RsdSoundSection';
+import type { SliderDraft } from './useSliderDraft';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
+import { RsdParentCenterLock } from './RsdParentCenterLock';
 import { RsdColoringSection } from './RsdColoringSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
@@ -54,21 +53,40 @@ type NativeSoundSettingsDialogProps = {
   onStrokeWidthControlChange: (enabled: boolean) => void;
   onSaveOnDeleteChange: (enabled: boolean) => void;
   onPencilEraserChange: (enabled: boolean) => void;
-  onSoundLevelChange: (level: SoundLevel) => void;
+  onDrawingSoundChange: (enabled: boolean) => void;
+  onDeleteSoundChange: (enabled: boolean) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
+  onToolbarStyleChange: (style: ToolbarStyle) => void;
   onOrientationChange: (orientation: OrientationChoice) => void;
   onColoringBookChange: (enabled: boolean) => void;
-  onButtonScaleChange: (scale: number) => void;
+  // Lifted to the drawing screen, whose edge controls preview the size while it is dragged.
+  buttonScale: SliderDraft;
+  // Lifted to the drawing screen with the audio owner it previews through.
+  soundVolume: SliderDraft;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
   onWhatsNewSeen: () => void;
   onRetry: () => void;
   onClose: () => void;
-  onParentCenter: () => void;
+  parentCenter: ParentCenterRoute;
+  // The Grown-Ups Only card, held over Settings while a check raised from it is open.
+  gate: ReactNode;
   onFeedback: () => void;
   downloadedBooks: number;
   ai: SectionSummaryContext['ai'];
   visible?: boolean;
   onDismiss?: () => void;
+};
+
+// Parent Center's controls are themselves a gated operation: the section opens only once a check is
+// solved, and leaving it locks them again.
+type ParentCenterRoute = {
+  unlocked: boolean;
+  // Whether opening Parent Center asks for a check now; when it does not, the controls are as
+  // good as unlocked (shipping WideShell's parentCenterRevealed).
+  checkDue: boolean;
+  onUnlock: () => void;
+  onLeave: () => void;
+  section: ReactNode;
 };
 
 type SettingsPage =
@@ -77,6 +95,7 @@ type SettingsPage =
   | { kind: 'information'; page: InformationPage };
 
 const HUB: SettingsPage = { kind: 'hub', returnTo: null };
+const PARENT_CENTER_PAGE: SettingsPage = { kind: 'section', section: 'parentCenter' };
 // Install has nothing to offer where the app is already installed.
 const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
   (section) => section.id !== 'setup' || installPrompt !== null
@@ -97,11 +116,8 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
   const shell = settingsShell(useWindowDimensions());
-  const [page, setPage] = useState<SettingsPage>(HUB);
-  const sectionTitle = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (page.kind === 'section') landFocus(sectionTitle.current);
-  }, [page]);
+  const { unlocked } = props.parentCenter;
+  const { page, setPage, sectionTitle } = useSettingsPage(unlocked);
   const toggles = useHubToggles({
     busy,
     soundEnabled: settings.soundEnabled,
@@ -120,27 +136,26 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       props.onFeedback();
       return;
     }
+    if (section === 'parentCenter' && !unlocked) {
+      props.parentCenter.onUnlock();
+      return;
+    }
     if (section === 'whatsnew') onWhatsNewSeen();
     setPage({ kind: 'section', section });
   };
-  const back = () =>
+  const back = () => {
+    if (isParentCenter(page)) props.parentCenter.onLeave();
     setPage({ kind: 'hub', returnTo: page.kind === 'section' ? page.section : null });
+  };
   const onHelp = () => setPage({ kind: 'information', page: 'help' });
   // Only the phone shell drills in; the others show the same sections in place.
   const subpage =
     page.kind === 'information' || (shell === 'phone' && page.kind === 'section') ? page : null;
-  const status = (
-    <>
-      {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
-      {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-      {settings.status === 'ready' && !settings.saved ? (
-        <RsdAction label="Try saving settings again" onClick={onRetry} />
-      ) : null}
-    </>
-  );
+  const status = <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />;
   return (
     <ModalShell
       visible={visible}
+      seeThrough={props.buttonScale.active}
       onDismiss={onDismiss}
       label={pageLabel(subpage ?? HUB)}
       size="settings"
@@ -181,6 +196,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       ) : shell === 'wide' ? (
         <RsdSettingsWide
           sections={HUB_SECTIONS}
+          keptSection={props.buttonScale.active ? 'accessibility' : null}
           unseen={unseen}
           renderSection={(section) => (
             <SettingsSection {...props} section={section} busy={busy} onHelp={onHelp} />
@@ -189,6 +205,9 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
             if (section === 'whatsnew') onWhatsNewSeen();
           }}
           onFeedback={props.onFeedback}
+          locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
+          landing={unlocked ? 'parentCenter' : null}
+          onUnlock={props.parentCenter.onUnlock}
         >
           {status}
         </RsdSettingsWide>
@@ -215,8 +234,50 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           {status}
         </PhoneScroll>
       )}
+      {props.gate}
     </ModalShell>
   );
+}
+
+function SaveStatus({
+  settings,
+  notice,
+  onRetry,
+}: Pick<NativeSoundSettingsDialogProps, 'settings' | 'notice' | 'onRetry'>) {
+  // A see-through dialog shows only the control being dragged.
+  if (useDialogSeeThrough()) return null;
+  return (
+    <>
+      {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
+      {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
+      {settings.status === 'ready' && !settings.saved ? (
+        <RsdAction label="Try saving settings again" onClick={onRetry} />
+      ) : null}
+    </>
+  );
+}
+
+// The page the phone shell shows. A solved Parent Center check lands on its section wherever it
+// was raised from, and each move lands focus on the section heading that replaced the control.
+function useSettingsPage(parentCenterUnlocked: boolean) {
+  const [page, setPage] = useState<SettingsPage>(parentCenterUnlocked ? PARENT_CENTER_PAGE : HUB);
+  const sectionTitle = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (page.kind === 'section') landFocus(sectionTitle.current);
+  }, [page]);
+  useEffect(() => {
+    if (parentCenterUnlocked)
+      setPage((current) => (isParentCenter(current) ? current : PARENT_CENTER_PAGE));
+  }, [parentCenterUnlocked]);
+  return { page, setPage, sectionTitle };
+}
+
+function parentCenterRevealed({ unlocked, checkDue }: ParentCenterRoute) {
+  return unlocked || !checkDue;
+}
+
+function isParentCenter(page: SettingsPage) {
+  return page.kind === 'section' && page.section === 'parentCenter';
 }
 
 // The phone shell's one scroller, inset by the card's body padding, with its bottom edge fading
@@ -242,17 +303,37 @@ function SettingsSection(props: SectionProps) {
   const { settings, busy, onColoringBookChange } = props;
   switch (props.section) {
     case 'appearance':
-      return <AppearanceChoices {...props} />;
+      return (
+        <RsdAppearanceSection
+          appearance={settings.appearance}
+          toolbarStyle={settings.toolbarStyle}
+          orientation={settings.orientation}
+          busy={busy}
+          onAppearanceChange={props.onAppearanceChange}
+          onToolbarStyleChange={props.onToolbarStyleChange}
+          onOrientationChange={props.onOrientationChange}
+        />
+      );
     case 'sound':
-      return <SoundChoices {...props} />;
+      return (
+        <RsdSoundSection
+          soundEnabled={settings.soundEnabled}
+          volume={props.soundVolume}
+          drawingSoundEnabled={settings.drawingSoundEnabled}
+          deleteSoundEnabled={settings.deleteSoundEnabled}
+          busy={busy}
+          onToggle={props.onToggle}
+          onDrawingSoundChange={props.onDrawingSoundChange}
+          onDeleteSoundChange={props.onDeleteSoundChange}
+        />
+      );
     case 'controls':
       return <ToolDrawerChoices {...props} />;
     case 'accessibility':
       return (
         <RsdAccessibilitySection
-          buttonScale={settings.buttonScale}
+          buttonScale={props.buttonScale}
           busy={busy}
-          onButtonScaleChange={props.onButtonScaleChange}
           onReduceMotionChange={props.onReduceMotionChange}
         />
       );
@@ -271,7 +352,11 @@ function SettingsSection(props: SectionProps) {
     case 'saving':
       return <SaveOnDeleteSwitch {...props} />;
     case 'parentCenter':
-      return <RsdAction label="Manage Parent Center" onClick={props.onParentCenter} />;
+      return parentCenterRevealed(props.parentCenter) ? (
+        props.parentCenter.section
+      ) : (
+        <RsdParentCenterLock onUnlock={props.parentCenter.onUnlock} />
+      );
     case 'setup':
       return <RsdInstallGuide />;
     case 'whatsnew':
@@ -337,34 +422,6 @@ function ToolDrawerChoices({
   );
 }
 
-function SoundChoices({ settings, busy, onToggle, onSoundLevelChange }: SectionProps) {
-  return (
-    <>
-      <RsdAction
-        label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
-        selection="switch"
-        selected={settings.soundEnabled}
-        disabled={busy}
-        onClick={onToggle}
-      />
-      <html.span>Drawing sound level</html.span>
-      <html.div role="radiogroup" aria-label="Drawing sound level" style={controlStyles.row}>
-        {SOUND_LEVELS.map((level) => (
-          <RsdAction
-            key={level}
-            label={`${SOUND_LEVEL_LABELS[level]} drawing sound`}
-            text={SOUND_LEVEL_LABELS[level]}
-            selection="radio"
-            selected={settings.soundLevel === level}
-            disabled={busy}
-            onClick={() => onSoundLevelChange(level)}
-          />
-        ))}
-      </html.div>
-    </>
-  );
-}
-
 function SaveOnDeleteSwitch({ settings, busy, onSaveOnDeleteChange }: SectionProps) {
   return (
     <>
@@ -376,38 +433,6 @@ function SaveOnDeleteSwitch({ settings, busy, onSaveOnDeleteChange }: SectionPro
         onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
       />
       <html.span>{SAVE_ON_DELETE_HELP}</html.span>
-    </>
-  );
-}
-
-function AppearanceChoices({
-  settings,
-  busy,
-  onAppearanceChange,
-  onOrientationChange,
-}: SectionProps) {
-  return (
-    <>
-      <html.span>Appearance</html.span>
-      <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
-        {APPEARANCE_PREFERENCES.map((appearance) => (
-          <RsdAction
-            key={appearance}
-            label={`${APPEARANCE_LABELS[appearance]} appearance`}
-            text={APPEARANCE_LABELS[appearance]}
-            selection="radio"
-            selected={settings.appearance === appearance}
-            disabled={busy}
-            onClick={() => onAppearanceChange(appearance)}
-          />
-        ))}
-      </html.div>
-      <html.span>System follows your device.</html.span>
-      <RsdOrientationChoices
-        selected={settings.orientation}
-        busy={busy}
-        onChange={onOrientationChange}
-      />
     </>
   );
 }

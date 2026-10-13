@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { createDrawingAudio } from './audio/drawingAudio';
 import { createClearSound } from './audio/pageTurnSound';
 import { createContactSound } from './audio/contactSound';
+import { applySoundChoices, drawingSoundPlays } from './audio/soundGates';
 import { loadDrawingLoop } from './platform/drawingAudio';
 import { loadClearPageTurn } from './platform/clearSound';
 import { soundSettingsStorage } from './platform/soundSettings';
@@ -33,12 +34,8 @@ export function useDrawingSound() {
     const clear = createClearSound(loadClearPageTurn);
     const preferences = createSoundSettings(soundSettingsStorage, (next) => {
       setSettings(next);
-      if (!next.soundEnabled) contacts.interrupt();
-      audio.setLevel(next.soundLevel);
-      audio.setEnabled(next.soundEnabled);
-      clear.setLevel(next.soundLevel);
-      clear.setEnabled(next.soundEnabled);
-      if (!next.soundEnabled) setAudioMessage('');
+      applySoundChoices({ audio, contacts, clear }, next);
+      if (!drawingSoundPlays(next)) setAudioMessage('');
     });
     const foreground = (active: boolean) => {
       audio.setForeground(active);

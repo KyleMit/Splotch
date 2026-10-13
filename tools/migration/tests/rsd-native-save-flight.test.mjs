@@ -29,6 +29,14 @@ vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts',
   },
 }));
 
+// The store whose rules bound the Parent Center policies, switched per test.
+const storePlatform = vi.hoisted(() => ({ os: 'ios' }));
+vi.mock('../../../experiments/native-architecture/src/platform/parentPlatform.ts', () => ({
+  get PARENT_PLATFORM() {
+    return storePlatform.os;
+  },
+}));
+
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
 const SCREEN = { left: 0, top: 0, width: 402, height: 874 };
@@ -41,6 +49,7 @@ let timings;
 let captures;
 
 beforeEach(async () => {
+  storePlatform.os = 'ios';
   // The selection host's synchronous Animated, which every component here reads.
   const { Animated } = await import('react-native');
   library.outcomes = [];
@@ -195,21 +204,79 @@ describe('the Save Failure Banner', () => {
     await vi.waitFor(() => expect(banners()).toEqual([]));
   });
 
-  it('offers Open Settings behind the parental gate for a refused permission on iOS', async () => {
-    library.outcomes = ['denied'];
-    await drawAndSave();
-    await vi.waitFor(() => expect(banners()).toHaveLength(1));
-    const copy = saveFailureCopy('denied', 1, 'ios');
-    expect(banners()).toEqual([`${copy.heading}${copy.detail}Open SettingsTry again`]);
-    await act(async () => button('Open Settings').click());
+  async function solveGate() {
     const gate = caller.product.owner.gate;
-    expect(gate.getState()).toMatchObject({ open: true, feature: 'externalLinks' });
-    expect(host.textContent).toContain('Viewing external links');
-    expect(records.settingsOpened).toBe(0);
     const { x, y } = gate.getState();
     await act(async () => gate.input(String(x * y)));
     await act(async () => gate.answer());
+  }
+
+  // Parent Center's own route to a policy: solve its check, choose, and leave.
+  async function choosePolicy(mode) {
+    const owner = caller.product.owner;
+    await act(async () => owner.openParentCenter());
+    if (owner.gate.getState().open) await solveGate();
+    await act(async () => owner.setPolicy('externalLinks', mode));
+    await act(async () => owner.closeParentCenter());
+  }
+
+  async function refusedOnIos() {
+    library.outcomes = ['denied'];
+    await drawAndSave();
+    await vi.waitFor(() => expect(banners()).toHaveLength(1));
+  }
+
+  it('offers Open Settings behind the external links check for a refused permission on iOS', async () => {
+    await refusedOnIos();
+    const copy = saveFailureCopy('denied', 1, 'ios');
+    expect(banners()).toEqual([`${copy.heading}${copy.detail}Open SettingsTry again`]);
+    await act(async () => button('Open Settings').click());
+    expect(caller.product.owner.gate.getState()).toMatchObject({
+      open: true,
+      feature: 'externalLinks',
+    });
+    expect(records.settingsOpened).toBe(0);
+    await solveGate();
     expect(records.settingsOpened).toBe(1);
+    await act(async () => button('Open Settings').click());
+    expect(caller.product.owner.gate.getState().open).toBe(true);
+    expect(records.settingsOpened).toBe(1);
+  });
+
+  it('asks once per session when Parent Center says Per session', async () => {
+    await refusedOnIos();
+    await choosePolicy('session');
+    await act(async () => button('Open Settings').click());
+    expect(caller.product.owner.gate.getState()).toMatchObject({
+      open: true,
+      feature: 'externalLinks',
+    });
+    await solveGate();
+    await act(async () => button('Open Settings').click());
+    expect(caller.product.owner.gate.getState().open).toBe(false);
+    expect(records.settingsOpened).toBe(2);
+  });
+
+  it('opens Settings without a check where Parent Center allows Never', async () => {
+    records.os = 'android';
+    storePlatform.os = 'android';
+    library.outcomes = ['denied'];
+    await drawAndSave();
+    await vi.waitFor(() => expect(banners()).toHaveLength(1));
+    await choosePolicy('never');
+    expect(caller.product.state.settings.parentPolicies.externalLinks).toBe('never');
+    await act(async () => button('Open Settings').click());
+    expect(caller.product.owner.gate.getState().open).toBe(false);
+    expect(records.settingsOpened).toBe(1);
+  });
+
+  it('keeps the check on iOS, where Parent Center never offers Never', async () => {
+    await refusedOnIos();
+    await choosePolicy('never');
+    expect(caller.product.state.settings.parentPolicies.externalLinks).not.toBe('never');
+    await act(async () => button('Open Settings').click());
+    expect(caller.product.owner.gate.getState().open).toBe(true);
+    expect(records.settingsOpened).toBe(0);
   });
 
   it('words a web download that failed without Settings to send a parent to', async () => {

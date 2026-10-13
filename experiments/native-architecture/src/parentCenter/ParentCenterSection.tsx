@@ -4,7 +4,8 @@ import { Text } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { PARENT_FEATURES, PARENT_LABELS, PARENT_MODES, PARENT_MODE_LABELS } from './parentPolicy';
+import { PARENT_FEATURES, PARENT_MODES } from './parentPolicy';
+import { PARENT_LABELS, PARENT_MODE_LABELS } from './parentCenterCopy';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 
 export function ParentCenterSection({

@@ -3,6 +3,7 @@ import { coloringBookHistory } from '../../../experiments/native-architecture/sr
 import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { act } from 'react';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { PROTECTED_PARENT_POLICIES } from '../../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { orientationCalls } from './rsd-orientation-port.mjs';
@@ -107,11 +108,10 @@ vi.mock('../../../experiments/native-architecture/src/offlineLibrary/runtime.ts'
   const { offlineRuntimePort } = await import('./rsd-coloring-root-host.mjs');
   return { offlineLibrary: offlineRuntimePort(caller) };
 });
-vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
-  loadDrawingLoop: async () => {
-    throw new Error('Audio playback is outside this native caller fixture.');
-  },
-}));
+vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', async () => {
+  const { drawingAudioPort } = await import('./rsd-native-animated-host.mjs');
+  return drawingAudioPort(caller);
+});
 vi.mock('../../../experiments/native-architecture/src/platform/clearHaptics.ts', () => ({
   impactThreshold: caller.haptic,
 }));
@@ -212,7 +212,7 @@ function press(props) {
 }
 vi.mock('react-native', async () => {
   const React = await import('react');
-  const { animatedPort, backHandlerPort, easingPort } =
+  const { animatedPort, appStatePort, backHandlerPort, easingPort } =
     await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
@@ -254,7 +254,7 @@ vi.mock('react-native', async () => {
       records.props.push(props);
       return React.createElement('span', { 'data-status-bar': props.barStyle });
     },
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    AppState: appStatePort(records),
     Linking: {
       openSettings: async () => {
         records.settingsOpened += 1;
@@ -373,6 +373,9 @@ beforeEach(() => {
 });
 async function mount(element) {
   const settings = caller.sound?.settings;
+  // The seed is a version 7 record, which predates the external-links policy.
+  const { externalLinks: _links, ...policies } =
+    settings?.parentPolicies ?? PROTECTED_PARENT_POLICIES;
   caller.initialSettings =
     settings?.status === 'ready'
       ? JSON.stringify({
@@ -384,12 +387,7 @@ async function mount(element) {
           customColors: settings.customColors,
           appearance: settings.appearance,
           aiEnabled: settings.aiEnabled ?? false,
-          parentPolicies: settings.parentPolicies ?? {
-            ai: 'always',
-            imageReport: 'always',
-            feedback: 'always',
-            parentCenter: 'always',
-          },
+          parentPolicies: policies,
           coloringBookEnabled: settings.coloringBookEnabled ?? true,
         })
       : null;

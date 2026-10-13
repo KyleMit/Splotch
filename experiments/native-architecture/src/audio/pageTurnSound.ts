@@ -1,10 +1,9 @@
-import { DEFAULT_SOUND_LEVEL, type SoundLevel } from '../settings/soundLevel';
-import { soundLevelGain } from './drawingAudio';
+import { SOUND_VOLUME_DEFAULT, soundVolumeGain } from '../settings/soundVolume';
 
 type ClearPageTurn = { play(volume: number): void; dispose(): void };
 export type ClearPageTurnLoader = (signal: AbortSignal) => Promise<ClearPageTurn>;
 
-// The shipping page turn plays at unit gain scaled by the parent's sound level
+// The shipping page turn plays at unit gain scaled by the parent's volume
 // (web/src/lib/audio/clearSound.ts); native-clear-projection.test.mjs pins the literal.
 export const CLEAR_PAGE_TURN_GAIN = 1;
 
@@ -20,7 +19,7 @@ type Resource =
 export function createClearSound(load: ClearPageTurnLoader) {
   let enabled = false;
   let foreground = true;
-  let level: SoundLevel = DEFAULT_SOUND_LEVEL;
+  let volume = SOUND_VOLUME_DEFAULT;
   let requested = false;
   let resource: Resource = { status: 'idle' };
 
@@ -38,7 +37,7 @@ export function createClearSound(load: ClearPageTurnLoader) {
     if (!requested || resource.status !== 'ready' || !canPlay()) return;
     requested = false;
     try {
-      resource.turn.play(CLEAR_PAGE_TURN_GAIN * soundLevelGain(level));
+      resource.turn.play(CLEAR_PAGE_TURN_GAIN * soundVolumeGain(volume));
     } catch {
       release();
     }
@@ -77,8 +76,8 @@ export function createClearSound(load: ClearPageTurnLoader) {
     cancel() {
       requested = false;
     },
-    setLevel(next: SoundLevel) {
-      level = next;
+    setVolume(next: number) {
+      volume = next;
     },
     setEnabled(value: boolean) {
       enabled = value;

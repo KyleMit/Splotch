@@ -33,12 +33,13 @@ async function enableAi() {
   await solve();
   await screen.click('Enable AI picture creation');
   expect(JSON.parse(files.settingsWrite.mock.calls.at(-1)[0])).toMatchObject({
-    version: 11,
+    version: 13,
     coloringBookEnabled: true,
     aiEnabled: true,
     parentPolicies: {
       ai: 'always',
       imageReport: 'always',
+      externalLinks: 'always',
       feedback: 'always',
       parentCenter: 'always',
     },

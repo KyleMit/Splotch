@@ -10,6 +10,7 @@ const parentDefaults = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },
@@ -20,6 +21,15 @@ const parentDefaults = {
   orientation: 'portrait',
   saveOnDeleteEnabled: false,
 };
+// Schema 12 holds a volume and two sound sources where older records held a level.
+const SOUND_DEFAULTS = { soundVolume: 50, drawingSoundEnabled: true, deleteSoundEnabled: true };
+const currentDefaults = Object.fromEntries(
+  Object.entries(parentDefaults).flatMap(([key, value]) =>
+    key === 'soundLevel' ? Object.entries(SOUND_DEFAULTS) : [[key, value]]
+  )
+);
+// A record saved before the external-links policy existed.
+const { externalLinks: _links, ...policiesBeforeLinks } = parentDefaults.parentPolicies;
 const ACCESSIBILITY_DEFAULTS = { buttonScale: 100, reduceMotion: 'system', whatsNewSeen: null };
 const choices = {
   soundEnabled: false,
@@ -52,27 +62,34 @@ describe('persisted candidate drawing appearance', () => {
     const parsed = parseSoundSettings(JSON.stringify(old));
     const { version: _version, ...retained } = old;
     expect(parsed).toMatchObject({
-      version: 11,
+      version: 13,
       appearance: 'system',
       ...retained,
-      ...parentDefaults,
+      ...currentDefaults,
     });
   });
   it.each(['light', 'dark', 'system'])(
     'round trips the exact %s preference and other settings',
     async (appearance) => {
-      const snapshot = JSON.stringify({ version: 9, ...choices, appearance, ...parentDefaults });
+      const snapshot = JSON.stringify({
+        version: 9,
+        ...choices,
+        appearance,
+        ...parentDefaults,
+        parentPolicies: policiesBeforeLinks,
+      });
       expect(parseSoundSettings(snapshot)).toEqual({
-        version: 11,
+        version: 13,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
         whatsNewSeen: null,
         pencilEraserEnabled: true,
         applePencilSeen: false,
+        toolbarStyle: 'buttons',
         ...choices,
         appearance,
-        ...parentDefaults,
+        ...currentDefaults,
       });
       const f = fixture(snapshot);
       await f.owner.load();
@@ -103,13 +120,14 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.changes.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
     const exact = JSON.stringify({
-      version: 11,
+      version: 13,
       ...choices,
       appearance: 'dark',
-      ...parentDefaults,
+      ...currentDefaults,
       ...ACCESSIBILITY_DEFAULTS,
       pencilEraserEnabled: true,
       applePencilSeen: false,
+      toolbarStyle: 'buttons',
     });
     expect(f.storage.write.mock.calls).toEqual([[exact], [exact]]);
     expect(f.changes.at(-1)).toMatchObject({ appearance: 'dark', saved: true });
@@ -134,20 +152,25 @@ describe('persisted candidate drawing appearance', () => {
       JSON.stringify({ version: 4, ...choices, appearance: 'light' })
     );
     await f.owner.retryRead();
-    expect(f.changes.at(-1)).toMatchObject({ appearance: 'light', saved: true, ...parentDefaults });
+    expect(f.changes.at(-1)).toMatchObject({
+      appearance: 'light',
+      saved: true,
+      ...currentDefaults,
+    });
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.owner.setAppearance('dark');
     expect(JSON.parse(f.storage.write.mock.calls[0][0])).toEqual({
-      version: 11,
+      version: 13,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
       whatsNewSeen: null,
       pencilEraserEnabled: true,
       applePencilSeen: false,
+      toolbarStyle: 'buttons',
       ...choices,
       appearance: 'dark',
-      ...parentDefaults,
+      ...currentDefaults,
     });
     expect(f.storage.read).toHaveBeenCalledTimes(3);
   });

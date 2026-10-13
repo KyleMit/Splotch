@@ -6,13 +6,15 @@ import type { createProductOwners, ProductOwners } from './productOwners';
 import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
 import { createClearSound } from '../audio/pageTurnSound';
+import { applySoundChoices } from '../audio/soundGates';
+import { createVolumePreview } from '../audio/volumePreview';
 import { loadClearPageTurn } from '../platform/clearSound';
 import { useAiProgressOwner } from '../ai/useAiProgress';
 import { loadDrawingLoop } from '../platform/drawingAudio';
 import { subscribePencilDoubleTap } from '../platform/pencilDoubleTap';
 import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
-import { initialSoundSettingsState } from '../settings/soundSettings';
+import { initialSoundSettingsState, type SoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import { openAppSettings } from '../platform/appSettings';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
@@ -29,7 +31,30 @@ function createProductServices(publish: () => void, setAudioMessage: (message: s
   );
   const contacts = createContactSound(audio);
   const clear = createClearSound(loadClearPageTurn);
-  return { product, audio, contacts, clear };
+  const preview = createVolumePreview(loadDrawingLoop);
+  return { product, audio, contacts, clear, preview };
+}
+
+type ProductServices = ReturnType<typeof createProductServices>;
+
+// The Settings sound choices applied to the sound owners as they change: the Sound switch and its
+// sources gate playback, and the Volume preview answers to the Sound switch alone.
+function useSoundChoices(
+  services: ProductServices | null,
+  { soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled }: SoundSettingsState
+) {
+  useEffect(() => {
+    services?.preview.setAllowed(soundEnabled);
+  }, [services, soundEnabled]);
+  useEffect(() => {
+    if (services)
+      applySoundChoices(services, {
+        soundEnabled,
+        soundVolume,
+        drawingSoundEnabled,
+        deleteSoundEnabled,
+      });
+  }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
 }
 
 function createProductTicker(
@@ -115,7 +140,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   screenRef.current = screen;
   const [, update] = useState(0);
   const [audioMessage, setAudioMessage] = useState('');
-  const [services, setServices] = useState<ReturnType<typeof createProductServices> | null>(null);
+  const [services, setServices] = useState<ProductServices | null>(null);
   const [owners, setOwners] = useState<ProductOwners | null>(null);
   useEffect(() => {
     let alive = true;
@@ -128,7 +153,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       }
     };
     const services = createProductServices(publish, setAudioMessage);
-    const { product, audio, contacts, clear } = services;
+    const { product, audio, contacts, clear, preview } = services;
     let attached: ProductOwners | null = null;
     let detachOwners: (() => void) | null = null;
     const ticker = createProductTicker(product, () => attached?.feedback ?? null, foreground);
@@ -161,10 +186,12 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       }
       audio.setForeground(foreground);
       clear.setForeground(foreground);
+      preview.setForeground(foreground);
       reconcileTimer?.();
     });
     audio.setForeground(foreground);
     clear.setForeground(foreground);
+    preview.setForeground(foreground);
     // Shipping handleDoubleTap: every tap records a Pencil, which reveals the parent's opt-out.
     const offPencil = subscribePencilDoubleTap(() => {
       void product.settings.markApplePencilSeen();
@@ -185,6 +212,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       product.dispose();
       contacts.dispose();
       clear.dispose();
+      preview.dispose();
       audio.dispose();
     };
   }, []);
@@ -198,13 +226,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       owners?.feedback.close();
     }
   }, [owners, parentCenterOpen]);
-  useEffect(() => {
-    services?.audio.setLevel(settings.soundLevel);
-    services?.audio.setEnabled(settings.soundEnabled);
-    services?.clear.setLevel(settings.soundLevel);
-    services?.clear.setEnabled(settings.soundEnabled);
-    if (!settings.soundEnabled) services?.contacts.interrupt();
-  }, [services, settings.soundEnabled, settings.soundLevel]);
+  useSoundChoices(services, settings);
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();
   }, [owners, settings.aiEnabled]);
@@ -221,6 +243,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
             audio: services.audio,
             contacts: services.contacts,
             clear: services.clear,
+            preview: services.preview,
             settings: services.product.settings,
           }
         : null,

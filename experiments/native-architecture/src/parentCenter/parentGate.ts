@@ -7,9 +7,19 @@ import {
   gateLockoutDurationMs,
   gateLockoutMessage,
 } from '../feedback/gateLockout';
-import { gateMode, type GateFeature, type ParentPolicies, type ParentProof } from './parentPolicy';
+import {
+  isParentModeAvailable,
+  type ParentFeature,
+  type ParentPolicies,
+  type ParentProof,
+} from './parentPolicy';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 
 export const PARENT_GATE_SHAKE_MS = 400;
+// How long the "Unlocked!" card holds before the destination shows (shipping GATE_SUCCESS_HOLD_MS).
+export const PARENT_GATE_SUCCESS_HOLD_MS = 1200;
+// Shipping GATE_ERROR_MESSAGE; native-parent-center-parity.test.mjs reads it back.
+export const PARENT_GATE_ERROR_MESSAGE = 'Not quite — try this one';
 // The shipping keypad's keys in reading order; rsd-native-parent-center.test.mjs pins them to
 // GATE_KEYPAD_KEYS in parentalGate.svelte.ts.
 const PARENT_GATE_CHECK_KEY = 'submit';
@@ -30,12 +40,14 @@ export const PARENT_GATE_KEYPAD_KEYS = [
 export type ParentGateKey = (typeof PARENT_GATE_KEYPAD_KEYS)[number];
 export type ParentGateState = Readonly<{
   open: boolean;
-  feature: GateFeature;
+  feature: ParentFeature;
   x: number;
   y: number;
   input: string;
   locked: boolean;
   shaking: boolean;
+  /** Counts correct answers, so the card can hold its success after the gate has closed. */
+  solves: number;
   message: string;
   announcement: string;
   announcementId: number;
@@ -89,14 +101,14 @@ function createParentGateLockout(
     wrong += 1;
     shakingUntil = time + PARENT_GATE_SHAKE_MS;
     challenge();
-    update({ shaking: true, message: 'Try a new problem.' });
+    update({ shaking: true, message: PARENT_GATE_ERROR_MESSAGE });
     if (wrong >= GATE_WRONG_ANSWERS_BEFORE_LOCKOUT) {
       until = time + gateLockoutDurationMs(tier);
       tier += 1;
       wrong = 0;
       tick();
       announce(gateLockoutMessage(until - time));
-    } else announce('Try a new problem.');
+    } else announce(PARENT_GATE_ERROR_MESSAGE);
   }
   return {
     tick,
@@ -111,26 +123,29 @@ function createParentGateLockout(
   };
 }
 
+const CLOSED_GATE: ParentGateState = {
+  open: false,
+  feature: 'parentCenter',
+  x: GATE_OPERAND_MIN,
+  y: GATE_OPERAND_MIN,
+  input: '',
+  locked: false,
+  shaking: false,
+  solves: 0,
+  message: '',
+  announcement: '',
+  announcementId: 0,
+};
+
 export function createParentGate(
   policies: () => ParentPolicies,
   publish: (state: ParentGateState) => void,
   now: () => number = Date.now,
   random: () => number = Math.random
 ) {
-  let state: ParentGateState = {
-    open: false,
-    feature: 'parentCenter',
-    x: GATE_OPERAND_MIN,
-    y: GATE_OPERAND_MIN,
-    input: '',
-    locked: false,
-    shaking: false,
-    message: '',
-    announcement: '',
-    announcementId: 0,
-  };
+  let state = CLOSED_GATE;
   let pending: ((proof: ParentProof) => void) | null = null;
-  const sessions = new Set<GateFeature>();
+  const sessions = new Set<ParentFeature>();
   let epoch = 0;
   let disposed = false;
   function update(next: Partial<ParentGateState>) {
@@ -159,9 +174,14 @@ export function createParentGate(
     const proofEpoch = epoch;
     action({ valid: () => !disposed && proofEpoch === epoch });
   }
-  function bypass(feature: GateFeature) {
-    const mode = gateMode(policies(), feature);
-    return mode === 'never' || (mode === 'session' && sessions.has(feature));
+  // A Never the platform forbids still asks: the store rule holds even against a policy record
+  // that reached the gate without passing the settings checks.
+  function bypass(feature: ParentFeature) {
+    const mode = policies()[feature];
+    return (
+      (mode === 'never' && isParentModeAvailable(feature, mode, PARENT_PLATFORM)) ||
+      (mode === 'session' && sessions.has(feature))
+    );
   }
   /** A digit past the answer's length counts as a wrong answer, as it does on the shipping card. */
   function input(value: string) {
@@ -182,12 +202,19 @@ export function createParentGate(
     sessions.add(state.feature);
     const action = pending;
     pending = null;
-    update({ open: false, input: '', message: '', shaking: false, locked: false });
+    update({
+      open: false,
+      input: '',
+      message: '',
+      shaking: false,
+      locked: false,
+      solves: state.solves + 1,
+    });
     if (action) execute(action);
   }
   return {
     getState: () => state,
-    request(feature: GateFeature, action: (proof: ParentProof) => void) {
+    request(feature: ParentFeature, action: (proof: ParentProof) => void) {
       if (disposed || state.open) return false;
       epoch += 1;
       if (bypass(feature)) {
@@ -212,6 +239,8 @@ export function createParentGate(
         execute(action);
       }
     },
+    /** Whether the feature would ask for a check now, rather than run at once. */
+    requires: (feature: ParentFeature) => !bypass(feature),
     input,
     answer,
     /** One keypad tap: a digit appends, delete removes the last digit, check answers. */
@@ -220,7 +249,7 @@ export function createParentGate(
       else if (key === PARENT_GATE_CHECK_KEY) answer();
       else input(state.input + String(key));
     },
-    cancel(feature: GateFeature) {
+    cancel(feature: ParentFeature) {
       if (state.feature === feature && state.open) dismiss();
     },
     invalidate: dismiss,

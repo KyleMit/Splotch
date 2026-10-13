@@ -4,7 +4,8 @@ import {
   type DrawingControlPreferences,
 } from './drawingControlPreferences';
 import { DEFAULT_COLORING_BOOK_ENABLED } from './coloringBook';
-import { DEFAULT_SOUND_LEVEL, isSoundLevel, type SoundLevel } from './soundLevel';
+import { isSoundVolume, legacySoundLevelVolume, SOUND_VOLUME_DEFAULT } from './soundVolume';
+import { DEFAULT_TOOLBAR_STYLE, isToolbarStyle, type ToolbarStyle } from './toolbarStyle';
 import {
   DEFAULT_APPEARANCE,
   isAppearancePreference,
@@ -20,6 +21,7 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
@@ -34,6 +36,9 @@ import { DEFAULT_PENCIL_SETTINGS, readPencilSettings, type PencilSettings } from
 import {
   readLegacyParentPreferences,
   isParentPolicies,
+  isParentPoliciesBeforeExternalLinks,
+  availablePolicies,
+  orderedParentPolicies,
   type ParentPreferences,
 } from '../parentCenter/parentPolicy';
 
@@ -47,32 +52,40 @@ type ColorSettings = Readonly<{
   selectedColor: PaintColor;
   customColors: readonly CustomColor[];
 }>;
+// How loud sound plays and which of the two sources make it; the master switch stays separate.
+export type SoundSourceSettings = Readonly<{
+  soundVolume: number;
+  drawingSoundEnabled: boolean;
+  deleteSoundEnabled: boolean;
+}>;
 export type Choices = WidthSettings &
   DrawingControlPreferences &
   ColorSettings &
   ParentPreferences &
   AccessibilitySettings &
   PencilSettings &
+  SoundSourceSettings &
   Readonly<{
     soundEnabled: boolean;
-    soundLevel: SoundLevel;
     appearance: AppearancePreference;
+    toolbarStyle: ToolbarStyle;
     coloringBookEnabled: boolean;
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 11 }>;
+export type SoundSettings = Choices & Readonly<{ version: 13 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
       ColorSettings &
       ParentPreferences &
       AccessibilitySettings &
-      PencilSettings & {
+      PencilSettings &
+      SoundSourceSettings & {
         status: 'loading';
         soundEnabled: false;
-        soundLevel: SoundLevel;
         appearance: AppearancePreference;
+        toolbarStyle: ToolbarStyle;
         coloringBookEnabled: boolean;
         orientation: OrientationChoice;
         saveOnDeleteEnabled: boolean;
@@ -93,6 +106,12 @@ export const DEFAULT_WIDTH_SETTINGS: WidthSettings = {
   strokeWidth: DEFAULT_STROKE_WIDTH,
   eraserWidth: DEFAULT_STROKE_WIDTH,
 };
+// The shipping defaults: the authored loudness from both sources.
+export const DEFAULT_SOUND_SOURCE_SETTINGS: SoundSourceSettings = {
+  soundVolume: SOUND_VOLUME_DEFAULT,
+  drawingSoundEnabled: true,
+  deleteSoundEnabled: true,
+};
 // The shipping defaults: normal-size buttons, motion following the device, and a What's New
 // the parent has not opened yet.
 export const DEFAULT_ACCESSIBILITY_SETTINGS: AccessibilitySettings = {
@@ -111,29 +130,55 @@ function readAccessibilitySettings(value: object): AccessibilitySettings {
   return { buttonScale, reduceMotion, whatsNewSeen };
 }
 
+function readSoundSourceSettings(value: object): SoundSourceSettings {
+  const soundVolume = 'soundVolume' in value ? value.soundVolume : undefined;
+  if (!isSoundVolume(soundVolume)) throw new Error('Volume is invalid.');
+  const drawingSoundEnabled = 'drawingSoundEnabled' in value ? value.drawingSoundEnabled : null;
+  const deleteSoundEnabled = 'deleteSoundEnabled' in value ? value.deleteSoundEnabled : null;
+  if (typeof drawingSoundEnabled !== 'boolean' || typeof deleteSoundEnabled !== 'boolean')
+    throw new Error('Sound source choice is invalid.');
+  return { soundVolume, drawingSoundEnabled, deleteSoundEnabled };
+}
+
+// Before version 13 a record held a three-step level, or nothing before version 7.
+function migrateSoundSourceSettings(hasSoundLevel: boolean, value: object): SoundSourceSettings {
+  return {
+    ...DEFAULT_SOUND_SOURCE_SETTINGS,
+    ...(hasSoundLevel
+      ? { soundVolume: legacySoundLevelVolume('soundLevel' in value ? value.soundLevel : null) }
+      : {}),
+  };
+}
+
 function canonical<T>(settings: T, snapshot: string): T {
   if (JSON.stringify(settings) !== snapshot)
     throw new Error('Sound settings are not in the saved format.');
   return settings;
 }
 
-function readParentPreferences(value: unknown): ParentPreferences {
+function readParentPreferences(value: unknown) {
   if (
     !value ||
     typeof value !== 'object' ||
     !('aiEnabled' in value) ||
-    typeof value.aiEnabled !== 'boolean' ||
-    !('parentPolicies' in value) ||
-    !isParentPolicies(value.parentPolicies)
+    !('parentPolicies' in value)
   )
     throw new Error('Parent Center settings are invalid.');
+  const { aiEnabled, parentPolicies } = value;
+  if (typeof aiEnabled !== 'boolean') throw new Error('Parent Center settings are invalid.');
+  if ('version' in value && (value.version === 12 || value.version === 13)) {
+    if (!isParentPolicies(parentPolicies)) throw new Error('Parent Center settings are invalid.');
+    return { aiEnabled, parentPolicies: orderedParentPolicies(parentPolicies) };
+  }
+  if (!isParentPoliciesBeforeExternalLinks(parentPolicies))
+    throw new Error('Parent Center settings are invalid.');
   return {
-    aiEnabled: value.aiEnabled,
+    aiEnabled,
     parentPolicies: {
-      ai: value.parentPolicies.ai,
-      imageReport: value.parentPolicies.imageReport,
-      feedback: value.parentPolicies.feedback,
-      parentCenter: value.parentPolicies.parentCenter,
+      ai: parentPolicies.ai,
+      imageReport: parentPolicies.imageReport,
+      feedback: parentPolicies.feedback,
+      parentCenter: parentPolicies.parentCenter,
     },
   };
 }
@@ -145,8 +190,10 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const current = value.version === 11;
-  const accessible = current || value.version === 10;
+  const current = value.version === 13;
+  const linksPolicy = current || value.version === 12;
+  const pencilled = linksPolicy || value.version === 11;
+  const accessible = pencilled || value.version === 10;
   const savesOnDelete = accessible || value.version === 9;
   const complete = savesOnDelete || value.version === 8;
   const kept = (key: string) => complete || (value.version === 7 && key in value);
@@ -161,10 +208,13 @@ function readStoredParentSettings(
         ? value.coloringBookEnabled
         : null;
   if (coloringBookEnabled === null) throw new Error('Coloring book choice is invalid.');
-  const hasSoundLevel = kept('soundLevel');
-  const soundLevel =
-    hasSoundLevel && 'soundLevel' in value ? value.soundLevel : DEFAULT_SOUND_LEVEL;
-  if (!isSoundLevel(soundLevel)) throw new Error('Sound level is invalid.');
+  const hasSoundLevel = !current && kept('soundLevel');
+  const sound = current
+    ? readSoundSourceSettings(value)
+    : migrateSoundSourceSettings(hasSoundLevel, value);
+  const toolbarStyle =
+    current && 'toolbarStyle' in value ? value.toolbarStyle : DEFAULT_TOOLBAR_STYLE;
+  if (!isToolbarStyle(toolbarStyle)) throw new Error('Button style choice is invalid.');
   const controls = readDrawingControlPreferences(value);
   const orientation = complete && 'orientation' in value ? value.orientation : defaultOrientation();
   if (!isOrientationChoice(orientation)) throw new Error('Orientation choice is invalid.');
@@ -177,7 +227,7 @@ function readStoredParentSettings(
   const accessibility = accessible
     ? readAccessibilitySettings(value)
     : DEFAULT_ACCESSIBILITY_SETTINGS;
-  const pencil = current ? readPencilSettings(value) : DEFAULT_PENCIL_SETTINGS;
+  const pencil = pencilled ? readPencilSettings(value) : DEFAULT_PENCIL_SETTINGS;
   canonical(
     {
       version: value.version,
@@ -186,7 +236,8 @@ function readStoredParentSettings(
       appearance,
       ...parent,
       ...(value.version === 5 ? {} : { coloringBookEnabled }),
-      ...(hasSoundLevel ? { soundLevel } : {}),
+      ...(hasSoundLevel && 'soundLevel' in value ? { soundLevel: value.soundLevel } : {}),
+      ...(current ? sound : {}),
       ...(kept('undoButtonEnabled') ? { undoButtonEnabled: controls.undoButtonEnabled } : {}),
       ...(kept('strokeWidthControlEnabled')
         ? { strokeWidthControlEnabled: controls.strokeWidthControlEnabled }
@@ -194,30 +245,34 @@ function readStoredParentSettings(
       ...(complete ? { orientation } : {}),
       ...(savesOnDelete ? { saveOnDeleteEnabled } : {}),
       ...(accessible ? accessibility : {}),
-      ...(current ? pencil : {}),
+      ...(pencilled ? pencil : {}),
+      ...(current ? { toolbarStyle } : {}),
     },
     snapshot
   );
   return {
-    version: 11,
+    version: 13,
     ...widths,
     ...colors,
     appearance,
     ...parent,
-    parentPolicies: {
-      ai: parent.parentPolicies.ai,
-      imageReport:
-        'imageReport' in parent.parentPolicies ? parent.parentPolicies.imageReport : 'always',
-      feedback: parent.parentPolicies.feedback,
-      parentCenter: parent.parentPolicies.parentCenter,
-    },
+    parentPolicies: availablePolicies(
+      orderedParentPolicies({
+        externalLinks: DEFAULT_PARENT_PREFERENCES.parentPolicies.externalLinks,
+        imageReport: 'always',
+        ...parent.parentPolicies,
+      }),
+      PARENT_PLATFORM,
+      DEFAULT_PARENT_PREFERENCES.parentPolicies
+    ),
     coloringBookEnabled,
-    soundLevel,
+    ...sound,
     ...controls,
     orientation,
     saveOnDeleteEnabled,
     ...accessibility,
     ...pencil,
+    toolbarStyle,
   };
 }
 
@@ -227,13 +282,14 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 11,
+    version: 13,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     appearance: DEFAULT_APPEARANCE,
-    soundLevel: DEFAULT_SOUND_LEVEL,
+    toolbarStyle: DEFAULT_TOOLBAR_STYLE,
+    ...DEFAULT_SOUND_SOURCE_SETTINGS,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
@@ -261,7 +317,9 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 8 &&
       value.version !== 9 &&
       value.version !== 10 &&
-      value.version !== 11) ||
+      value.version !== 11 &&
+      value.version !== 12 &&
+      value.version !== 13) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -295,7 +353,9 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 8 &&
       value.version !== 9 &&
       value.version !== 10 &&
-      value.version !== 11) ||
+      value.version !== 11 &&
+      value.version !== 12 &&
+      value.version !== 13) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -322,7 +382,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 11,
+    version: 13,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -330,9 +390,11 @@ export function snapshot(state: Choices): SoundSettings {
     customColors: state.customColors,
     appearance: state.appearance,
     aiEnabled: state.aiEnabled,
-    parentPolicies: state.parentPolicies,
+    parentPolicies: orderedParentPolicies(state.parentPolicies),
     coloringBookEnabled: state.coloringBookEnabled,
-    soundLevel: state.soundLevel,
+    soundVolume: state.soundVolume,
+    drawingSoundEnabled: state.drawingSoundEnabled,
+    deleteSoundEnabled: state.deleteSoundEnabled,
     undoButtonEnabled: state.undoButtonEnabled,
     strokeWidthControlEnabled: state.strokeWidthControlEnabled,
     orientation: state.orientation,
@@ -342,5 +404,6 @@ export function snapshot(state: Choices): SoundSettings {
     whatsNewSeen: state.whatsNewSeen,
     pencilEraserEnabled: state.pencilEraserEnabled,
     applePencilSeen: state.applePencilSeen,
+    toolbarStyle: state.toolbarStyle,
   };
 }

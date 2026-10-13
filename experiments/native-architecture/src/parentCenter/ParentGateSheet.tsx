@@ -5,7 +5,7 @@ import { Text, TextInput } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { GATE_LABELS } from './parentPolicy';
+import { PARENT_LABELS } from './parentCenterCopy';
 import type { ParentGateState } from './parentGate';
 import { useParentGateMotion } from './useParentGateMotion';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
@@ -40,7 +40,7 @@ export function ParentGateSheet({
             <Text accessibilityRole="header" style={styles.title}>
               Grown-ups only
             </Text>
-            <Text style={styles.notice}>{GATE_LABELS[state.feature]}</Text>
+            <Text style={styles.notice}>{PARENT_LABELS[state.feature]}</Text>
             <Text style={styles.title}>
               {state.x} × {state.y}
             </Text>

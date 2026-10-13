@@ -57,7 +57,7 @@ describe('persisted Coloring Book master', () => {
     'defaults old settings $version to enabled without relaxing parental protections',
     (old) => {
       expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-        version: 11,
+        version: 13,
         coloringBookEnabled: true,
         ...parent,
       });
@@ -69,7 +69,7 @@ describe('persisted Coloring Book master', () => {
     await f.owner.setColoringBookEnabled(false);
     const saved = f.storage.write.mock.calls[0][0];
     expect(parseSoundSettings(saved)).toMatchObject({
-      version: 11,
+      version: 13,
       coloringBookEnabled: false,
       ...parent,
     });

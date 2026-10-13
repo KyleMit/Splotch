@@ -4,6 +4,7 @@ import { css, html } from 'react-strict-dom';
 import { motion } from './tokens.css';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { rgba } from './colorMix';
+import { useDialogSeeThrough } from './dialogScope';
 
 // ScrollCue.svelte's defaults, exported for native-design-primitives-drift.test.mjs, which reads
 // each from shipping. The fade is deep enough to thin the cut-off line under it rather than hide
@@ -78,6 +79,7 @@ export function RsdScrollCue({
   onUserScroll?: () => void;
 }) {
   const surface = useDrawingTheme().surface;
+  const seeThrough = useDialogSeeThrough();
   const extent = useRef(AT_REST);
   const [atEnd, setAtEnd] = useState(true);
   const update = (next: Partial<ScrollExtent>) => {
@@ -116,7 +118,11 @@ export function RsdScrollCue({
         aria-hidden
         inert
         data-testid="scroll-cue"
-        style={[styles.cue, styles.fade(fadeOver(surface), cueHeight), atEnd && styles.retired]}
+        style={[
+          styles.cue,
+          styles.fade(fadeOver(surface), cueHeight),
+          (atEnd || seeThrough) && styles.retired,
+        ]}
       />
     </html.div>
   );

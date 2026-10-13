@@ -1,5 +1,6 @@
 import { createParentGate } from '../parentCenter/parentGate';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import {
   createSoundSettings,
   type SoundSettingsState,
@@ -7,6 +8,8 @@ import {
 } from '../settings/soundSettings';
 import {
   PARENT_FEATURES,
+  endsParentCenterProtection,
+  isParentModeAvailable,
   type ParentFeature,
   type ParentMode,
   type ParentOperationPort,
@@ -51,6 +54,11 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     cancel: gate.cancel,
     consent: () => ({ enabled: !disposed && preferences.aiEnabled, epoch: consentEpoch }),
   };
+  // Parent Center's controls answer to whoever can reach them: the parent who passed its check, or
+  // anyone when its policy asks for none.
+  function editable() {
+    return (parentCenterOpen || !gate.requires('parentCenter')) && settings.canEditParent();
+  }
   function enterParentCenter() {
     if (disposed) return;
     parentCenterOpen = true;
@@ -65,6 +73,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       settings: settingsState,
       gate: gate.getState(),
       parentCenterOpen,
+      parentCenterCheckDue: gate.requires('parentCenter'),
       confirmNever,
     }),
     openParentCenter() {
@@ -80,12 +89,13 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       notify();
     },
     async setAiEnabled(aiEnabled: boolean) {
-      if (!parentCenterOpen || !settings.canEditParent()) return;
+      if (!editable()) return;
       await settings.setParentPreferences({ ...preferences, aiEnabled });
     },
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
-      if (!parentCenterOpen || !settings.canEditParent()) return;
-      if (feature === 'parentCenter' && mode === 'never' && !confirmed) {
+      if (!editable()) return;
+      if (!isParentModeAvailable(feature, mode, PARENT_PLATFORM)) return;
+      if (endsParentCenterProtection(feature, mode) && !confirmed) {
         confirmNever = true;
         notify();
         return;
@@ -101,7 +111,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       notify();
     },
     async retryParentSave() {
-      if (!parentCenterOpen || !settings.canEditParent()) return;
+      if (!editable()) return;
       await settings.retryParentSave();
     },
     background() {
