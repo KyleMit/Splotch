@@ -68,11 +68,10 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
   drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
   load only leaves the banner out.
-* `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
-  check.
 
 ## Layout
 
 * `lib/` holds the RSD drawing-test paths and token projection those entry points import.
 * `tests/` holds this capability's tests; the React Native product tests live in `tools/tests/`.
-* `probes/native-eraser/` is the browser checkpoint driver the eraser composition tests import.
+* `probes/native-eraser/` holds the eraser checkpoint fixtures and capture helpers the eraser tests
+  import.

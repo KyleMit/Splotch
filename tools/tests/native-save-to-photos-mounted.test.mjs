@@ -103,7 +103,8 @@ describe('Save picture', () => {
       expect(photos.created).toEqual([
         expect.objectContaining({ via: 'Album.create', album: 'Splotch', base64: EXPORTED_PNG }),
       ]);
-      expect(screen.container.textContent).toContain('Picture saved to your gallery.');
+      // Shipping says nothing on a save that landed; its polaroid flight is the whole answer.
+      expect(screen.container.textContent).not.toContain('saved');
     },
     SAVE_TEST_TIMEOUT_MS
   );
@@ -167,9 +168,8 @@ describe('Auto-Save on Delete', () => {
       expect(photos.created.map(({ base64 }) => base64)).toEqual([EXPORTED_PNG]);
       expect(files.capture).toHaveBeenCalledWith(drawing);
       expect(files.save).not.toHaveBeenCalled();
-      expect(screen.container.textContent).toContain(
-        'Picture saved to your gallery. Pick a color and draw.'
-      );
+      expect(screen.container.textContent).toContain('Pick a color and draw.');
+      expect(screen.container.textContent).not.toContain('saved');
     },
     SAVE_TEST_TIMEOUT_MS
   );
