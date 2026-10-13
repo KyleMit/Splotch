@@ -192,6 +192,12 @@ function brushPreferenceActions(brushes: ReturnType<typeof useBrushPreferences>)
     availableBrushes: availableBrushes(brushes.state.availability),
     brushControl: brushControl(brushes.state.availability),
     toggleBrush: () => brushes.owner.current?.toggleOptional(),
+    // Shipping's normalizeDisabledBrushes once the Tool Drawer switch hides every optional brush:
+    // selecting Pen also makes it the last ink brush the eraser and magic brush return to.
+    fallBackFromOptionalBrushes() {
+      const owner = brushes.owner.current;
+      if (owner && owner.getState().brush !== 'pen') owner.selectBrush('pen');
+    },
     selectInkBrush: () => brushes.owner.current?.selectInkBrush(),
     toggleEraser: () => (brushes.owner.current ? toggleEraser(brushes.owner.current) : false),
     setBrushAvailable: (next: OptionalBrush, enabled: boolean) =>

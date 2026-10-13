@@ -17,7 +17,7 @@ const RELAXED = {
   parentCenter: 'never',
 };
 const PROHIBITED_RECORD = JSON.stringify({
-  version: 13,
+  version: 14,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -40,6 +40,8 @@ const PROHIBITED_RECORD = JSON.stringify({
   pencilEraserEnabled: true,
   applePencilSeen: false,
   toolbarStyle: 'buttons',
+  toolDrawerEnabled: true,
+  screenshotEnabled: true,
 });
 
 describe('the iOS external-links rule at every Parent Center boundary', () => {

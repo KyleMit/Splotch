@@ -276,13 +276,8 @@ it('mounts the shared color picker outside Paint colors and writes through the e
 
 it.each([
   ['coloringBookEnabled', 'Coloring', 'Coloring book', 'Coloring book'],
-  ['undoButtonEnabled', 'Tool Drawer', 'Show Undo button', 'Show Undo button'],
-  [
-    'strokeWidthControlEnabled',
-    'Tool Drawer',
-    'Show drawing width controls',
-    'Show drawing width controls',
-  ],
+  ['undoButtonEnabled', 'Tool Drawer', 'Undo', 'Undo'],
+  ['strokeWidthControlEnabled', 'Tool Drawer', 'Stroke width', 'Stroke width'],
 ])(
   'persists %s through the released native switch without a parent challenge',
   async (property, section, enabledLabel, disabledLabel) => {
@@ -308,7 +303,7 @@ it.each([
       await act(async () => on.click());
       expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
       expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-        version: 13,
+        version: 14,
         [property]: false,
         aiEnabled: false,
       });
@@ -343,7 +338,7 @@ it('turns Auto-Save on Delete on through the released native switch, off by defa
     await act(async () => toggle.click());
     expect(host.querySelector('[aria-label="Auto-Save on Delete"]').dataset.checked).toBe('true');
     expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-      version: 13,
+      version: 14,
       saveOnDeleteEnabled: true,
     });
   } finally {

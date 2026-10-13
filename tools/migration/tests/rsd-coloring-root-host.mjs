@@ -38,6 +38,7 @@ export function drawingScreenPort(actual, caller, projectHistory) {
       flight: null,
       cameraTile: { current: null },
       landFlight() {},
+      fallBackFromOptionalBrushes() {},
       ...caller.screen,
       library: caller.library,
       setColoringBookEnabled(enabled) {
@@ -121,6 +122,8 @@ export function nativeSettingsProps(owner, state) {
     onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
     onUndoButtonChange: (enabled) => owner.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled) => owner.setStrokeWidthControlEnabled(enabled),
+    onToolDrawerChange: (enabled) => owner.setToolDrawerEnabled(enabled),
+    onScreenshotChange: (enabled) => owner.setScreenshotEnabled(enabled),
     onSaveOnDeleteChange: (enabled) => owner.setSaveOnDeleteEnabled(enabled),
     onDrawingSoundChange: (enabled) => owner.setDrawingSoundEnabled(enabled),
     onDeleteSoundChange: (enabled) => owner.setDeleteSoundEnabled(enabled),

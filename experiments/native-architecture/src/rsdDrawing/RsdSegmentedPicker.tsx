@@ -94,6 +94,8 @@ export const PICKER_METRICS = {
 
 export type SegmentedPickerOption<T extends string> = {
   value: T;
+  // The option's element id, shared with whatever control stands in for it under another skin.
+  id?: string;
   label: string;
   icon?: NativeIconName;
   disabled?: boolean;
@@ -201,6 +203,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
             optionRefs.current[index] = element;
           }}
           type="button"
+          id={option.id}
           aria-label={option.label}
           disabled={option.disabled === true}
           aria-disabled={option.disabled === true}
