@@ -163,6 +163,8 @@ function useModalMotion(visible: boolean, onDismiss: (() => void) | undefined) {
 
 type ModalStageProps = {
   visible: boolean;
+  // The scrim and card surface clear so the screen behind shows (useDialogSeeThrough).
+  seeThrough?: boolean;
   label: string;
   labelledBy?: string;
   onClose: () => void;
@@ -175,6 +177,7 @@ type ModalStageProps = {
 // Back and a press on the scrim all ask the caller to close.
 export function ModalStage({
   visible,
+  seeThrough = false,
   label,
   labelledBy,
   onClose,
@@ -202,7 +205,10 @@ export function ModalStage({
           style={layout.fill}
           onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
         >
-          <ModalScrim opacity={motion.scrim} />
+          {/* Hidden rather than unmounted: the web scrim follows its fade only while mounted. */}
+          <View style={[layout.cover, seeThrough && layout.clear]} pointerEvents="none">
+            <ModalScrim opacity={motion.scrim} />
+          </View>
           {/* A responder rather than a Pressable: React Native Web makes every enabled Pressable a
               tab stop, and its Modal focuses the first one, which would put an unnamed scrim
               ahead of the header and let Enter dismiss the dialog. */}
@@ -251,6 +257,7 @@ export function ModalShell({ size, header, scrolls = true, children, ...stage }:
         size={size}
         titleId={titleId}
         active={stage.visible}
+        seeThrough={stage.seeThrough ?? false}
         header={header}
         scrolls={scrolls}
       >
@@ -275,6 +282,7 @@ function ModalCard({
   size,
   titleId,
   active,
+  seeThrough,
   header,
   scrolls,
   children,
@@ -282,6 +290,7 @@ function ModalCard({
   size: ModalSize;
   titleId: string;
   active: boolean;
+  seeThrough: boolean;
   header: ReactNode;
   scrolls: boolean;
   children: ReactNode;
@@ -299,10 +308,11 @@ function ModalCard({
         theme === 'dark' && darkTheme,
         styles.card(frame.width, frame.maxHeight),
         frame.height !== null && styles.height(frame.height),
+        seeThrough && styles.seeThrough,
       ]}
     >
       <html.div style={styles.clip}>
-        <DialogScope value={{ titleId, header: frame.header, body, active }}>
+        <DialogScope value={{ titleId, header: frame.header, body, active, seeThrough }}>
           {header}
           {scrolls ? (
             <ScrollView
@@ -332,6 +342,7 @@ const layout = StyleSheet.create({
   fill: { flex: 1 },
   hug: { flexGrow: 0, flexShrink: 1 },
   cover: { position: 'absolute', inset: 0 },
+  clear: { opacity: 0 },
   center: { position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' },
 });
 
@@ -349,6 +360,7 @@ const styles = css.create({
     fontSize: dimensions.fontSizeMd,
   }),
   height: (height: number) => ({ height }),
+  seeThrough: { backgroundColor: 'transparent', boxShadow: 'none' },
   clip: {
     position: 'relative',
     display: 'flex',

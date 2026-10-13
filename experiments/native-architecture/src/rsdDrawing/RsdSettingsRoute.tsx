@@ -10,6 +10,7 @@ import { RsdParentGateSheet } from './drawingSheets';
 import { useModalPresence } from './useModalPresence';
 import type { ParentGateView } from '../parentCenter/useParentGateHold';
 import { soundSettingsActions } from './soundSettingsActions';
+import type { SliderDraft } from './useSliderDraft';
 import { openHostedPage, type HostedPage } from '../settings/hostedPages';
 
 // Every Settings link leaves the app, so each opens only through Parent Center's Viewing external
@@ -29,6 +30,8 @@ export function RsdSettingsRoute({
   product,
   gate,
   notice,
+  buttonScale,
+  soundVolume,
   visible,
   onDismiss,
 }: {
@@ -37,6 +40,8 @@ export function RsdSettingsRoute({
   product: ReturnType<typeof useDrawingProduct>;
   gate: ParentGateView | null;
   notice: string;
+  buttonScale: SliderDraft;
+  soundVolume: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
 }) {
@@ -54,6 +59,8 @@ export function RsdSettingsRoute({
       onRetryBrushSave={screen.retryBrushSave}
       notice={notice}
       {...soundSettingsActions(sound)}
+      buttonScale={buttonScale}
+      soundVolume={soundVolume}
       onClose={close}
       visible={visible}
       onDismiss={onDismiss}

@@ -34,6 +34,7 @@ import { controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
+import { useSliderDraft } from './useSliderDraft';
 import { useParentGateHold, type ParentGateView } from '../parentCenter/useParentGateHold';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
@@ -188,11 +189,27 @@ function RsdDrawingContent({
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
+  const ready = sound.settings.status === 'ready';
+  const buttonScale = useSliderDraft({
+    saved: sound.settings.buttonScale,
+    ready,
+    save: (scale) => void sound.owner?.settings.setButtonScale(scale),
+  });
+  // Held here rather than in the Sound section, so a choice still waiting on a pending write
+  // survives Settings closing.
+  const soundVolume = useSliderDraft({
+    saved: sound.settings.soundVolume,
+    ready,
+    save: (volume) => void sound.owner?.settings.setSoundVolume(volume),
+    preview: product.sound.owner?.preview,
+  });
   const modalBlocked = isProductModalBlocked(route.shown, product);
-  const disabled = screen.disabled || modalBlocked;
+  // A see-through Settings shows the controls it resizes as they look in use, not dimmed behind
+  // a dialog; the dragged slider keeps every touch meanwhile.
+  const disabled = !buttonScale.active && (screen.disabled || modalBlocked);
   const paperBlocked = modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  useDrawingUndoShortcut(screen, paintsDisabled);
+  useDrawingUndoShortcut(screen, paintsDisabled || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
@@ -207,10 +224,12 @@ function RsdDrawingContent({
             product={product}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
+            buttonScale={buttonScale.value}
+            resizing={buttonScale.active}
             paperOverlay={(drawerOpen) => (
               <RsdInstallBanner
                 strokes={screen.committedStrokes}
-                controlSize={controlSize(sound.settings.buttonScale)}
+                controlSize={controlSize(buttonScale.value)}
                 hidden={
                   drawerOpen || paperBlocked || screen.pagePickerOpen || screen.colorPickerOpen
                 }
@@ -240,6 +259,8 @@ function RsdDrawingContent({
               product={product}
               gate={gate}
               notice={soundNotice}
+              buttonScale={buttonScale}
+              soundVolume={soundVolume}
               visible={route.visible}
               onDismiss={onModalDismissed}
             />
