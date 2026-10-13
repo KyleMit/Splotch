@@ -16,15 +16,15 @@ export const REACT_NATIVE_WEB_FLOOR_BYTES = 323_984;
 // its app code were as lean as the shipping app's.
 export const NATIVE_WEB_STARTUP_TARGET_BYTES =
   MAX_STARTUP_JS_CSS_BYTES + REACT_NATIVE_WEB_FLOOR_BYTES;
-// The reviewed 2026-10-13 startup is 1,189,500 bytes, after the bundled Farm images became
-// hashed assets, each page's line art and every on-request sheet moved into lazy chunks, and
-// Reanimated left the web bundle. That is 340,516 bytes over NATIVE_WEB_STARTUP_TARGET_BYTES: the
-// drawing product's owners (AI generation and recovery with its storage, feedback, the offline
-// library) still start eagerly, and the clear gesture needs React Native Web's Animated, which
-// imports the virtualized list components. The 30,500 bytes of headroom stay below the AI sheet's
-// 42 KB lazy chunk, so pulling a sheet back onto the startup path fails; consuming the headroom is
-// the cue to move another owner off the startup path, not to raise the number.
-export const MAX_NATIVE_WEB_STARTUP_BYTES = 1_220_000;
+// The reviewed 2026-10-13 startup is 994,545 bytes, after the bundled Farm images became hashed
+// assets, each page's line art and every on-request sheet moved into lazy chunks, Reanimated left
+// the web bundle, the app's Animated stopped importing React Native Web's animated list components,
+// and feedback, AI generation and recovery, and the offline library began loading after the
+// drawing screen paints. That is 145,561 bytes over NATIVE_WEB_STARTUP_TARGET_BYTES, mostly the
+// startup icon set and react-native-svg. The 20,455 bytes of headroom stay below the smallest of
+// those moves (the offline library controller, 24,471 bytes) and the AI sheet, so undoing any of
+// them fails; consuming the headroom is the cue to take the next lever, not to raise the number.
+export const MAX_NATIVE_WEB_STARTUP_BYTES = 1_015_000;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(
@@ -121,7 +121,7 @@ export function nativeWebStartupProblems({
   const problems = [];
   if (startupBytes > maxStartupBytes)
     problems.push(
-      `Startup JS/CSS is ${startupBytes} bytes, above the ${maxStartupBytes}-byte budget: something heavy now loads before first paint. Load it on first use with a dynamic import (drawingSheets.web.ts, bundledOutlines.web.ts) instead of raising MAX_NATIVE_WEB_STARTUP_BYTES`
+      `Startup JS/CSS is ${startupBytes} bytes, above the ${maxStartupBytes}-byte budget: something heavy now loads before first paint. Load it on first use with a dynamic import (drawingSheets.web.ts, bundledOutlines.web.ts, productChunk.web.ts), and keep a module out of two lazy chunks, which Expo moves into its startup common chunk, instead of raising MAX_NATIVE_WEB_STARTUP_BYTES`
     );
   for (const { file, count } of inlinedImages)
     problems.push(

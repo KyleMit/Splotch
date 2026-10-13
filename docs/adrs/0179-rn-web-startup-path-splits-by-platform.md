@@ -90,28 +90,82 @@ native keeps its synchronous, offline-complete bundle unchanged.
   * The target is `NATIVE_WEB_STARTUP_TARGET_BYTES` = `MAX_STARTUP_JS_CSS_BYTES` + the 323,984-byte
     React Native Web floor (`REACT_NATIVE_WEB_FLOOR_BYTES`) = 848,984 bytes. That is the cost the
     export would have if its app code were as lean as the shipping app's.
-  * The reviewed startup after this change is 1,189,500 bytes, 340,516 bytes over that target. The
-    cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 1,220,000, is that measurement plus 30,500 bytes of
-    headroom. The headroom stays below the AI sheet's 42 KB chunk, so statically importing that
-    sheet fails the build (measured at 1,231,566 bytes).
+  * Issue 2835 left the startup at 1,189,500 bytes. The modal frame (issue 2842) brought it to
+    1,219,090, against a 1,220,000 cap. Issue 2844 took the two levers below and reviewed the
+    startup at 994,545 bytes, 145,561 over the target.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 1,015,000, is that measurement plus 20,455 bytes of
+    headroom. The headroom stays below the smallest move it protects (the offline library
+    controller, 24,471 bytes). Undoing any lever fails the build. So does statically importing the
+    AI sheet (measured at 1,099,429 bytes).
   * The cap is a ratchet. Consuming the headroom is the cue to take the next lever, not to raise the
     number.
+* **The app's `Animated` leaves out React Native Web's list components.**
+  * RNW's `Animated` export spreads its animation implementation over six animated hosts. Three of
+    them (`FlatList`, `SectionList`, `ScrollView`) import `VirtualizedList` and the list machinery,
+    which the app never renders.
+  * Every animation reads `Animated` and `Easing` from `src/platform/animated.ts`. On native that
+    re-exports React Native's. `animated.web.ts` spreads RNW's own `AnimatedImplementation` and adds
+    its animated `View`, the only host the app animates.
+  * The gesture and every animation run on the same driver as before, so they are unchanged.
+    `tools/tests/native-web-animated.test.mjs` proves each export is RNW's own value, and that no
+    app file imports `Animated` from `react-native` or animates a host the web module leaves out.
+  * Reanimated stays off web, and a CSS transition would be a second implementation of the clear
+    gesture. Neither was needed.
+* **Feedback and AI load after the drawing screen paints on web.**
+  * `src/product/productOwners.ts` creates the feedback owner, and the AI owner with its recovery,
+    storage and vault.
+  * `useDrawingProduct` attaches them to the product through `productOwnersLoader`:
+    * Native's loader returns the factory at once, so native creates them in the same effect as
+      before.
+    * `productOwnersLoader.web.ts` imports them once the drawing screen has painted with the child's
+      settings (`drawingPaint.ts`) and the shipping idle gate (`web/src/lib/idle.ts`) has passed. A
+      first paint reaches the display a frame after its commit. A fetch started straight after the
+      commit still counted toward Largest Contentful Paint.
+  * Until the owners arrive, `ai.owner` and `feedback.owner` are null. The UI already handled that
+    state for the render before the effect ran. A chunk that fails to load is retried when the app
+    returns to the foreground.
+  * Nothing AI runs at launch except a launch invite. The AI owner reads its stored journal and
+    resumes a pending generation when a parent opens the AI sheet. That path is unchanged, and
+    `tools/migration/tests/rsd-web-product-owners.test.mjs` drives it through the web loader.
+  * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite.
+  * Expo's serializer moves every module that two lazy chunks share into `__common`, a chunk
+    `index.html` loads before first paint. So the owners, the AI and feedback sheets, the waiting
+    print and the invite's vault are one chunk, `productChunk.web.ts`. A second chunk for any of
+    them put about 76 KB of AI modules back on the startup path.
+* **The offline library's controller and its launch inventory wait on web.**
+  * `offlineLibrary/runtime.web.ts` stands `deferredLibrary.ts` in for the controller:
+    * Calls that only set state (feature enabled, foreground, drawing, cancel) replay in order when
+      the controller loads.
+    * A call that needs the controller loads it at once: engaging the picker, opening an offline
+      page, saving over offline artwork, changing the policy or removing books.
+    * The launch inventory waits for the same paint-and-idle point as the owners. That inventory
+      reads the saved policy and fetches the 210 KB coloring catalog.
+  * Until then the snapshot is the controller's own loading snapshot. A failed chunk reports what a
+    failed catalog reports, and Retry loads it afresh.
+  * Native's `runtime.ts` creates the controller at import, as before.
 
-The two remaining levers, measured from the export's source map:
+Measured on the merged base, each step's change to the startup path:
 
-1. **Lazy product owners, about 130 KB.** AI generation and recovery with its storage and vault
-   (`src/ai/`, the AI half of `src/platform/`, `web/src/lib/ai/`), plus feedback and the offline
-   library controller. They start eagerly in `useDrawingProduct` because the AI owner resumes an
-   in-flight generation at launch. Deferring them is a product-layer change, not a bundling one.
-2. **React Native Web's `Animated`, about 100 KB.** The clear gesture (`useClearGesture.ts`,
-   `RsdClearControl.tsx`, `RsdClearCoachmark.tsx`) imports it. RNW's `Animated` in turn imports
-   `FlatList`, `SectionList` and `VirtualizedList`, which the app itself never renders.
+| Step                                                   | Startup bytes | Change   |
+| ------------------------------------------------------ | ------------- | -------- |
+| Before (issue 2842 merged)                             | 1,219,090     |          |
+| `Animated` without list components                     | 1,154,665     | −64,425  |
+| Feedback, AI and launch invites in `productChunk`      | 1,016,780     | −137,885 |
+| Offline library controller and inventory deferred      | 992,309       | −24,471  |
+| Waiting for paint and idle (`drawingPaint`, `idle.ts`) | 994,545       | +2,236   |
+
+The remaining 145,561 bytes over the target are mostly two libraries every first paint uses: the
+startup icon set (`icons.generated.ts`, about 78 KB) and `react-native-svg` (about 47 KB).
 
 ## Consequences
 
 * \+ First paint on a throttled phone dropped from 13.2 s LCP and 2,346 KB transferred to about
   2.7–2.9 s and 351 KB (Lighthouse, simulated Slow 4G and 4× CPU, local brotli server). The shipping
   app on the same server measured 0.9–1.3 s.
+* \+ Issue 2844's levers moved the throttled first load from 2.9 s LCP to 2.7 s on phone and tablet.
+  The entry fell from 269 KB to 220 KB over the wire. The shipping app measured 1.1–1.2 s in
+  production. Its first paint is server-rendered HTML; the RN export paints only after its entry
+  downloads and evaluates.
 * \+ The offline precache shrank from 6.18 MB to 4.89 MB, because WebP files no longer pay base64
   overhead. No precached file now needs more than Workbox's 2 MiB per-file default, so
   `build-native-web.mjs` dropped its 8 MiB allowance.
@@ -122,7 +176,12 @@ The two remaining levers, measured from the export's source map:
   implementations share a signature by convention.
 * − On web, a sheet's first open waits for its chunk. After install the chunk comes from the service
   worker cache, but a Farm page's outline and Magic fill can paint a frame after the paper does.
-* − The startup cap sits about 2.3× above the shipping budget and is set from measurement, not from
-  the shipping number. Closing the gap needs the two levers above.
+* − The startup cap sits about 1.9× above the shipping budget and is set from measurement, not from
+  the shipping number. Closing the gap needs the icon set and `react-native-svg` off the startup
+  path, or a static first paint.
+* − On web, the AI picture button and Send Feedback do nothing until the owners' chunk arrives,
+  shortly after first paint. After install the chunk comes from the service worker cache.
+* − The AI and feedback sheets now download with their owners after every web launch, rather than on
+  first open.
 * − Web capture now does a network or cache fetch per file-served fill. A failed fetch fails the
   capture closed (an empty result), as a decode error already did.

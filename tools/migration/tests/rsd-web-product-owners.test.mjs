@@ -27,6 +27,8 @@ vi.mock(
 );
 
 const JOB_ID = 'b'.repeat(64);
+// A frame, then the shipping idle gate's timer fallback (web/src/lib/idle.ts), with margin.
+const PAINT_AND_IDLE_WAIT_MS = 2000;
 const SENT_AGO_MS = 60_000;
 
 async function click(label) {
@@ -104,13 +106,14 @@ function useCaller() {
   caller.menu = { open: false };
 }
 
-it('attaches feedback and AI once their chunk arrives, after the screen has painted', async () => {
+it('requests feedback and AI only after the screen has painted, and attaches them on arrival', async () => {
   vi.clearAllMocks();
   useCaller();
   await mount(createElement(RsdDrawingScreen));
 
   expect(host.querySelector('[aria-label="Expand controls"]')).not.toBeNull();
-  expect(chunk.imports).toBe(1);
+  expect(chunk.imports).toBe(0);
+  await vi.waitFor(() => expect(chunk.imports).toBe(1), { timeout: PAINT_AND_IDLE_WAIT_MS });
   expect(caller.product.ai.owner).toBeNull();
   expect(caller.product.feedback.owner).toBeNull();
 
