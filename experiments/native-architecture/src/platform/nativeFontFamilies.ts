@@ -66,9 +66,14 @@ export function nativeFontStyle(weight: TextStyle['fontWeight']) {
   } as const;
 }
 
-// The RSD font tokens on Android and iOS, applied as a theme over the web stack.
+// The RSD font tokens on Android and iOS, applied as a theme over the web stack. The
+// medium weight takes the regular face: no 500 face is bundled.
 export const NATIVE_RSD_FONTS = {
   family: NATIVE_FONT_FAMILIES.regular,
   boldFamily: NATIVE_FONT_FAMILIES.bold,
   boldWeight: 'normal',
+  semiboldFamily: NATIVE_FONT_FAMILIES.semibold,
+  semiboldWeight: 'normal',
+  mediumFamily: NATIVE_FONT_FAMILIES.regular,
+  mediumWeight: 'normal',
 } as const;

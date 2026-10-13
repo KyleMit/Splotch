@@ -1,58 +1,236 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { format } from 'prettier';
-import { themes, scale, brand } from '../../../web/src/lib/design/tokens.ts';
+import { themes, scale, brand, isColorToken } from '../../../web/src/lib/design/tokens.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { AI_RESULT_HEIGHT_PX } from '../../../experiments/native-architecture/src/ai/uiState.ts';
 import { BLACK_INK } from '../../../web/src/lib/palette.ts';
 
-const COLOR_KEYS = [
-  'surface',
-  'surface2',
-  'text',
-  'textStrong',
-  'paper',
-  'brandSolid',
-  'brandWash',
-  'floatSurface',
-];
-const SCALE_KEYS = [
-  'space2',
-  'space3',
-  'space4',
-  'radiusMd',
-  'fontSizeMd',
-  'fontSizeLg',
+const APP_CSS_URL = new URL('../../../web/src/app.css', import.meta.url);
+
+// Shipping tokens with no RSD projection, each with the reason. Every other key of
+// themes, scale and brand is projected, so a new shipping token lands in the
+// generated file (and fails the drift check) until it is regenerated or listed here.
+export const RSD_UNPROJECTED_TOKENS = {
+  surfaceRgb: 'Bare channels for rgb(var() / alpha); React Native cannot compose a color.',
+  glassTintRgb: 'Bare channels for rgb(var() / alpha); React Native cannot compose a color.',
+  stepWashStrength: 'A color-mix() strength; React Native has no color-mix().',
+  stepInkStrength: 'A color-mix() strength; React Native has no color-mix().',
+  tapeStrength: 'A color-mix() strength; React Native has no color-mix().',
+  squiggleStrength: 'A color-mix() strength; React Native has no color-mix().',
+  glassRail: 'A color-mix() strength; React Native has no color-mix().',
+  glassStrip: 'A color-mix() strength; React Native has no color-mix().',
+  blobShadow: 'A color-mix() over another token; React Native has no color-mix().',
+  ruleBlend: 'Paper ruling effect; the native paper is drawn by Skia, not RSD.',
+  ruleOpacity: 'Paper ruling effect; the native paper is drawn by Skia, not RSD.',
+  ruleSecondaryOpacity: 'Paper ruling effect; the native paper is drawn by Skia, not RSD.',
+  lineartFilter: 'Coloring-page line art effect; the native paper is drawn by Skia, not RSD.',
+  lineartBlend: 'Coloring-page line art effect; the native paper is drawn by Skia, not RSD.',
+  inputFontSize: 'The iOS Safari focus-zoom floor (ADR-0076); native inputs never zoom.',
+  fontMono: 'A CSS family list; React Native takes one installed family per platform.',
+};
+
+const THEMED_EFFECT_KEYS = new Set(['floatShadow']);
+const FIXED_COLOR_KEYS = new Set([
+  'clearGradientRest',
+  'polaroidPaper',
+  'polaroidInk',
+  'scrimInk',
+  'scrimInkDanger',
+  'scrimInkSoft',
+  'scrimPill',
+]);
+const DIMENSION_KEY = /^(?:space\d|radius(?:Sm|Md|Lg|Pill)$|fontSize(?:Xs|Sm|Md|Lg|Xl)$)/;
+const DIMENSION_KEYS = new Set([
+  'borderWidth',
+  'focusRingWidth',
+  'focusRingOffset',
   'disabledOpacity',
-];
+]);
+const BLOB_KEY = /^radiusBlob\d$/;
+const SHADOW_KEY = /^shadow[A-Z]/;
+const MOTION_KEY = /^(?:duration|ease)[A-Z]/;
+const FONT_WEIGHT_KEY = /^fontWeight([A-Z]\w*)$/;
+const CORNERS = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+const PERCENT_ROUNDING = 100;
+
+// The released React Native color parser rejects percentage alpha, so slash
+// notation is rewritten to the comma rgba() form every renderer reads.
+function portableColor(value) {
+  return value.replace(
+    /rgb\((\d+) (\d+) (\d+) \/ (\d+(?:\.\d+)?)%\)/g,
+    (_, red, green, blue, alpha) => `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`
+  );
+}
+
+// CSS border-radius shorthand to its four corners, horizontal and vertical radii apart.
+function expandRadii(list) {
+  const values = list.trim().split(/\s+/);
+  const [a, b = a, c = a, d = b] = values;
+  if (values.length > CORNERS.length) throw new Error(`Unexpected radius list: ${list}`);
+  return [a, b, c, d].map((value) => {
+    const percent = /^(\d+(?:\.\d+)?)%$/.exec(value)?.[1];
+    if (percent === undefined) throw new Error(`Blob radius is not a percentage: ${value}`);
+    return Number(percent);
+  });
+}
+
+// React Native takes one radius per corner, so each elliptical blob corner keeps
+// the mean of its horizontal and vertical radii.
+function blobCorners(shorthand) {
+  const [horizontal, vertical = horizontal] = shorthand.split('/');
+  const across = expandRadii(horizontal);
+  const down = expandRadii(vertical);
+  return Object.fromEntries(
+    CORNERS.map((corner, index) => [
+      corner,
+      `${Math.round(((across[index] + down[index]) / 2) * PERCENT_ROUNDING) / PERCENT_ROUNDING}%`,
+    ])
+  );
+}
+
+// React Native has no calc() or clamp(), so the fluid display size is carried as
+// its bounds plus the viewport-relative term a caller evaluates against the window.
+function displayFontSize(value) {
+  const match =
+    /^clamp\((\d+)px, (\d+(?:\.\d+)?)vw \+ (\d+)px, (\d+)px\)$/.exec(value) ??
+    raise(`Unexpected display font size: ${value}`);
+  const [, min, viewportWidthPercent, offset, max] = match;
+  return {
+    bounds: { fontSizeDisplayMin: `${min}px`, fontSizeDisplayMax: `${max}px` },
+    fluid: { viewportWidthPercent: Number(viewportWidthPercent), offsetPx: Number(offset) },
+  };
+}
+
+function raise(message) {
+  throw new Error(message);
+}
+
+function appCssPixels(css, name) {
+  const value = new RegExp(`^\\s*--${name}: (\\d+)px;$`, 'm').exec(css)?.[1];
+  if (value === undefined) throw new Error(`app.css declares no --${name} in px`);
+  return Number(value);
+}
+
+function expectAppCss(css, declaration) {
+  if (!css.includes(declaration)) throw new Error(`app.css no longer declares ${declaration}`);
+}
+
+// Layout tokens app.css owns. The settings indent is derived the way app.css derives
+// it, and the modal gutter's safe-area term is the caller's: native insets come from
+// react-native-safe-area-context, not from a token.
+function appCssDimensions(css = readFileSync(APP_CSS_URL, 'utf8')) {
+  expectAppCss(css, '--setting-indent: calc(var(--setting-icon-size) + var(--setting-icon-gap));');
+  expectAppCss(
+    css,
+    '--modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));'
+  );
+  const iconSize = appCssPixels(css, 'setting-icon-size');
+  const iconGap = appCssPixels(css, 'setting-icon-gap');
+  return {
+    touchTargetMin: `${appCssPixels(css, 'touch-target-min')}px`,
+    modalGutterMin: `${appCssPixels(css, 'modal-gutter-min')}px`,
+    settingIconSize: `${iconSize}px`,
+    settingIconGap: `${iconGap}px`,
+    settingIndent: `${iconSize + iconGap}px`,
+  };
+}
+
+function themedTokens(theme) {
+  return Object.fromEntries(
+    Object.entries(theme)
+      .filter(([key]) => isColorToken[key] || THEMED_EFFECT_KEYS.has(key))
+      .map(([key, value]) => [key, portableColor(value)])
+  );
+}
+
+function scaleGroups() {
+  const groups = {
+    dimensions: {},
+    blobs: {},
+    fixedColors: {},
+    shadows: {},
+    motion: {},
+    weights: {},
+    display: null,
+  };
+  for (const [key, value] of Object.entries(scale)) {
+    if (Object.hasOwn(RSD_UNPROJECTED_TOKENS, key) || key === 'fontFamily') continue;
+    if (DIMENSION_KEY.test(key) || DIMENSION_KEYS.has(key)) groups.dimensions[key] = value;
+    else if (BLOB_KEY.test(key))
+      for (const [corner, radius] of Object.entries(blobCorners(value)))
+        groups.blobs[`${key}${corner}`] = radius;
+    else if (key === 'fontSizeDisplay') groups.display = displayFontSize(value);
+    else if (FIXED_COLOR_KEYS.has(key)) groups.fixedColors[key] = portableColor(value);
+    else if (SHADOW_KEY.test(key)) groups.shadows[key] = portableColor(value);
+    else if (MOTION_KEY.test(key)) groups.motion[key] = value;
+    else if (FONT_WEIGHT_KEY.test(key)) groups.weights[key] = value;
+    else throw new Error(`Shipping token ${key} has no RSD projection; classify it`);
+  }
+  return groups;
+}
+
+function unprojectedThemeKeys() {
+  return Object.keys(themes.light).filter(
+    (key) => !isColorToken[key] && !THEMED_EFFECT_KEYS.has(key)
+  );
+}
+
+function assertThemeClassification() {
+  const unlisted = unprojectedThemeKeys().filter(
+    (key) => !Object.hasOwn(RSD_UNPROJECTED_TOKENS, key)
+  );
+  if (unlisted.length) throw new Error(`Themed tokens with no RSD projection: ${unlisted}`);
+}
+
+function fontTokens(weights) {
+  // The web stack's variable face carries every weight; the native app's fontTheme
+  // overrides these with one static face per weight.
+  return {
+    family: scale.fontFamily,
+    boldFamily: scale.fontFamily,
+    boldWeight: weights.fontWeightBold,
+    semiboldFamily: scale.fontFamily,
+    semiboldWeight: weights.fontWeightSemibold,
+    mediumFamily: scale.fontFamily,
+    mediumWeight: weights.fontWeightMedium,
+  };
+}
 
 function tokenSource() {
-  const colors = (theme) => Object.fromEntries(COLOR_KEYS.map((key) => [key, theme[key]]));
+  assertThemeClassification();
+  const groups = scaleGroups();
   const dimensions = {
-    ...Object.fromEntries(SCALE_KEYS.map((key) => [key, scale[key]])),
+    ...groups.dimensions,
+    ...groups.blobs,
+    ...groups.display.bounds,
+    ...appCssDimensions(),
     touchTarget: `${TOUCH_TARGET}px`,
     aiResultHeight: `${AI_RESULT_HEIGHT_PX}px`,
   };
-  // The web stack's variable face carries every weight; the native app's fontTheme
-  // overrides these with one static face per weight.
-  const fonts = {
-    family: scale.fontFamily,
-    boldFamily: scale.fontFamily,
-    boldWeight: scale.fontWeightBold,
-  };
+  const vars = (name, value) =>
+    `export const ${name} = css.defineVars(${JSON.stringify(value, null, 2)});`;
   return [
     '// Generated by rsdTokenSource; fixture build and readback reject input drift.',
     "import { css } from 'react-strict-dom';",
     '',
-    `export const colors = css.defineVars(${JSON.stringify(colors(themes.light), null, 2)});`,
+    vars('colors', themedTokens(themes.light)),
     '',
-    `export const darkTheme = css.createTheme(colors, ${JSON.stringify(colors(themes.dark), null, 2)});`,
+    `export const darkTheme = css.createTheme(colors, ${JSON.stringify(themedTokens(themes.dark), null, 2)});`,
     '',
-    `export const dimensions = css.defineVars(${JSON.stringify(dimensions, null, 2)});`,
+    vars('dimensions', dimensions),
     '',
-    `export const brandColors = css.defineVars(${JSON.stringify({ onBrand: brand.onBrand }, null, 2)});`,
+    `export const fontSizeDisplayFluid = ${JSON.stringify(groups.display.fluid, null, 2)} as const;`,
     '',
-    `export const fonts = css.defineVars(${JSON.stringify(fonts, null, 2)});`,
+    vars('brandColors', brand),
+    '',
+    vars('fixedColors', groups.fixedColors),
+    '',
+    vars('shadows', groups.shadows),
+    '',
+    vars('motion', groups.motion),
+    '',
+    vars('fonts', fontTokens(groups.weights)),
     '',
     `export const fixtureInk = ${JSON.stringify(BLACK_INK)};`,
     '',
