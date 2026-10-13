@@ -1,9 +1,16 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
-import { RsdParentCenterSection } from './RsdParentCenterSection';
-import { RsdParentGateSheet } from './RsdParentGateSheet';
+import {
+  ColorPicker,
+  NativeSoundSettingsDialog,
+  RsdAiSheet,
+  RsdColoringBookPicker,
+  RsdFeedbackSheet,
+  RsdParentCenterSection,
+  RsdParentGateSheet,
+} from './drawingSheets';
+import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
-import { RsdAiSheet } from './RsdAiSheet';
-import { aiSheetShown } from '../ai/uiState';
+import { aiJournalWaiting, aiSheetShown } from '../ai/uiState';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -15,9 +22,6 @@ import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingMenu } from '../useDrawingMenu';
-import { ColorPicker } from '../drawing/ColorPicker';
-import { RsdColoringBookPicker } from './RsdColoringBookPicker';
-import { NativeSoundSettingsDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
@@ -25,7 +29,6 @@ import { RsdDraftNotice } from './RsdDraftNotice';
 import { RsdInstallBanner } from './RsdInstallBanner';
 import { NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdEdgeLayout } from './RsdEdgeControls';
-import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
@@ -80,29 +83,61 @@ export function RsdDrawingScreen() {
             onModalDismissed={dismissed}
           />
         )}
-        {product.owner && route.shown === 'parentCenter' ? (
+        <RsdModalSheets screen={screen} product={product} route={route} />
+        <RsdLeaveConfirm />
+      </ReduceMotionPreferenceProvider>
+    </DrawingAppearanceProvider>
+  );
+}
+
+// One route shows at a time (useProductModalRoute); each sheet's boundary closes the route it
+// would have shown.
+function RsdModalSheets({
+  screen,
+  product,
+  route,
+}: {
+  screen: Screen;
+  product: ReturnType<typeof useDrawingProduct>;
+  route: ReturnType<typeof useProductModalRoute>;
+}) {
+  const dismissed = route.dismissed;
+  return (
+    <>
+      {product.owner && route.shown === 'parentCenter' ? (
+        <RsdSurfaceBoundary onClose={product.owner.closeParentCenter}>
           <RsdParentCenterSection
             owner={product.owner}
             visible={route.visible}
             onDismiss={dismissed}
           />
-        ) : null}
-        {product.owner && product.state && route.shown === 'gate' ? (
+        </RsdSurfaceBoundary>
+      ) : null}
+      {product.owner && product.state && route.shown === 'gate' ? (
+        <RsdSurfaceBoundary onClose={product.owner.gate.dismiss}>
           <RsdParentGateSheet
             owner={product.owner}
             state={product.state.gate}
             visible={route.visible}
             onDismiss={dismissed}
           />
-        ) : null}
-        {route.shown === 'feedback' ? (
+        </RsdSurfaceBoundary>
+      ) : null}
+      {route.shown === 'feedback' ? (
+        <RsdSurfaceBoundary onClose={() => product.feedback.owner?.close()}>
           <RsdFeedbackSheet
             owner={product.feedback.owner}
             visible={route.visible}
             onDismiss={dismissed}
           />
-        ) : null}
-        {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
+        </RsdSurfaceBoundary>
+      ) : null}
+      {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
+        <RsdSurfaceBoundary
+          onClose={
+            aiJournalWaiting(product.ai.state) ? product.ai.owner.minimize : product.ai.owner.close
+          }
+        >
           <RsdAiSheet
             owner={product.ai.owner}
             state={product.ai.state}
@@ -112,10 +147,9 @@ export function RsdDrawingScreen() {
             visible={route.visible}
             onDismiss={dismissed}
           />
-        ) : null}
-        <RsdLeaveConfirm />
-      </ReduceMotionPreferenceProvider>
-    </DrawingAppearanceProvider>
+        </RsdSurfaceBoundary>
+      ) : null}
+    </>
   );
 }
 
@@ -216,13 +250,7 @@ function RsdDrawingContent({
               />
             )}
           />
-          {screen.pagePickerOpen ? (
-            <RsdColoringBookPicker
-              selected={screen.history.drawing.pageId}
-              onChoose={screen.choosePage}
-              onClose={() => screen.setPagePickerOpen(false)}
-            />
-          ) : null}
+          {screen.pagePickerOpen ? <DrawingPagePicker screen={screen} /> : null}
           {screen.pictures !== null ? (
             <RsdPictures screen={screen} pictures={screen.pictures} />
           ) : null}
@@ -231,34 +259,50 @@ function RsdDrawingContent({
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}
         {route.shown === 'settings' ? (
-          <NativeSoundSettingsDialog
-            settings={sound.settings}
-            brushState={screen.brushPreferences}
-            onBrushAvailabilityChange={screen.setBrushAvailable}
-            onRetryBrushSave={screen.retryBrushSave}
-            notice={soundNotice}
-            {...soundSettingsActions(sound)}
-            onClose={screen.closeSettings}
-            visible={route.visible}
-            onDismiss={onModalDismissed}
-            onParentCenter={() => product.owner?.openParentCenter()}
-          />
+          <RsdSurfaceBoundary onClose={screen.closeSettings}>
+            <NativeSoundSettingsDialog
+              settings={sound.settings}
+              brushState={screen.brushPreferences}
+              onBrushAvailabilityChange={screen.setBrushAvailable}
+              onRetryBrushSave={screen.retryBrushSave}
+              notice={soundNotice}
+              {...soundSettingsActions(sound)}
+              onClose={screen.closeSettings}
+              visible={route.visible}
+              onDismiss={onModalDismissed}
+              onParentCenter={() => product.owner?.openParentCenter()}
+            />
+          </RsdSurfaceBoundary>
         ) : null}
       </NativeFrame>
     </LibraryProvider>
   );
 }
 
+function DrawingPagePicker({ screen }: { screen: Screen }) {
+  return (
+    <RsdSurfaceBoundary onClose={() => screen.setPagePickerOpen(false)}>
+      <RsdColoringBookPicker
+        selected={screen.history.drawing.pageId}
+        onChoose={screen.choosePage}
+        onClose={() => screen.setPagePickerOpen(false)}
+      />
+    </RsdSurfaceBoundary>
+  );
+}
+
 function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound }) {
   return (
-    <ColorPicker
-      selected={sound.settings.selectedColor}
-      onClose={screen.closeColorPicker}
-      onChoose={(color) => {
-        screen.selectInkBrush();
-        void sound.owner?.settings.setColor(color);
-        screen.closeColorPicker();
-      }}
-    />
+    <RsdSurfaceBoundary onClose={screen.closeColorPicker}>
+      <ColorPicker
+        selected={sound.settings.selectedColor}
+        onClose={screen.closeColorPicker}
+        onChoose={(color) => {
+          screen.selectInkBrush();
+          void sound.owner?.settings.setColor(color);
+          screen.closeColorPicker();
+        }}
+      />
+    </RsdSurfaceBoundary>
   );
 }
