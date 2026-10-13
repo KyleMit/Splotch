@@ -27,6 +27,9 @@ export const RsdFailureBanner = lazySurface(() =>
 export const RsdFeedbackSheet = lazySurface(() =>
   import('../product/productChunk.web').then((module) => module.RsdFeedbackSheet)
 );
+export const RsdLeaveConfirmCard = lazySurface(() =>
+  import('./RsdLeaveConfirmCard').then((module) => module.RsdLeaveConfirmCard)
+);
 export const RsdParentGateSheet = lazySurface(() =>
   import('./RsdParentGateSheet').then((module) => module.RsdParentGateSheet)
 );

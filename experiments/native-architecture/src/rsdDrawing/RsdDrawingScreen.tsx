@@ -14,12 +14,12 @@ import { aiJournalWaiting, aiSheetShown } from '../ai/uiState';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { darkTheme } from './tokens.css';
+import { colors, darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
-import { DEFAULT_APPEARANCE } from '../settings/appearance';
+import { bootAppearance } from '../platform/bootAppearance';
 import { useEffect, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { html } from 'react-strict-dom';
+import { css, html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -74,13 +74,11 @@ export function RsdDrawingScreen() {
     sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading';
   useDrawingPainted(!loading);
   return (
-    <DrawingAppearanceProvider
-      preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
-    >
+    <DrawingAppearanceProvider preference={loading ? bootAppearance() : sound.settings.appearance}>
       <ModalOriginProvider>
         <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
           {loading ? (
-            <RsdDrawingLoading />
+            <RsdDrawingFirstPaint />
           ) : (
             <RsdDrawingContent
               screen={screen}
@@ -170,12 +168,19 @@ function RsdModalSheets({
   );
 }
 
-function RsdDrawingLoading() {
+const firstPaint = css.create({
+  paper: { flexGrow: 1, backgroundColor: colors.paper },
+});
+
+// Shipping has no loading screen: its page paints at once and its boot script has the theme right
+// before then. Until the settings arrive the drawing screen paints its frame and a bare paper in
+// the theme the shell booted with; the controls join when the choices they show are known.
+function RsdDrawingFirstPaint() {
   const theme = useDrawingAppearance();
   return (
-    <NativeFrame>
-      <html.div style={[styles.screen, fontTheme, theme === 'dark' && darkTheme]}>
-        <html.span>Loading drawing settings…</html.span>
+    <NativeFrame variant="drawing">
+      <html.div style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}>
+        <html.div style={firstPaint.paper} />
       </html.div>
     </NativeFrame>
   );

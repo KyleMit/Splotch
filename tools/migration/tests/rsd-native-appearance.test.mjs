@@ -87,8 +87,14 @@ it('hydrates before usable controls and persists appearance through the real RSD
   caller.sound = { settings: { status: 'loading' }, owner: null, audioMessage: '' };
   caller.settingsStorage = storage;
   await mount(createElement(RsdDrawingScreen));
-  expect(host.textContent).toContain('Loading drawing settings');
-  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  // Shipping has no loading screen: the frame and a bare paper paint at once, in the theme.
+  expect(host.textContent).toBe('');
+  expect(lastFrame().style.backgroundColor).toBe(DRAWING_THEMES.dark.surface);
+  const flat = (style) =>
+    Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
+  expect(
+    records.props.some((props) => flat(props.style)?.backgroundColor === DRAWING_THEMES.dark.paper)
+  ).toBe(true);
   expect(host.querySelector('[data-status-bar]').dataset.statusBar).toBe('light-content');
   records.scheme = 'light';
   expect(host.querySelector('button')).toBeNull();

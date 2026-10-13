@@ -9,4 +9,5 @@ export { RsdColoringBookPicker } from './RsdColoringBookPicker';
 export { RsdErrorScreen } from './RsdErrorScreen';
 export { RsdFailureBanner } from './RsdFailureBanner';
 export { RsdFeedbackSheet } from './RsdFeedbackSheet';
+export { RsdLeaveConfirmCard } from './RsdLeaveConfirmCard';
 export { RsdParentGateSheet } from './RsdParentGateSheet';

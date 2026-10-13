@@ -14,6 +14,9 @@ import {
 } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { CACHE_BUST_VERSION_PARAM } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { SERVICE_WORKER_PATH } from '../../experiments/native-architecture/src/platform/serviceWorkerPath.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
+import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
@@ -59,6 +62,30 @@ export function withInstallHeadTags(indexHtml, tags) {
   return indexHtml.replace('</head>', `${tags.join('\n')}\n</head>`);
 }
 
+// Shipping paints its prerendered page in the visitor's theme before any script loads (app.html's
+// boot script). The export's document is empty until the bundle mounts, so it paints the paper
+// instead: in the system theme, or in the Light or Dark choice saved in the drawing settings,
+// which the script stamps for the drawing screen's first frame to read (bootAppearance.web.ts).
+export function bootThemeHeadTags({
+  settingsKey = SOUND_SETTINGS_KEY,
+  themes = DRAWING_THEMES,
+} = {}) {
+  const stamped = (theme) => `[${BOOT_THEME_ATTRIBUTE}=${theme}]`;
+  const style = [
+    `html{background:${themes.light.paper}}`,
+    `@media (prefers-color-scheme:dark){html:not(${stamped('light')}){background:${themes.dark.paper}}}`,
+    `html${stamped('dark')}{background:${themes.dark.paper}}`,
+  ].join('');
+  const script = [
+    '(function(){try{',
+    `var s=JSON.parse(localStorage.getItem(${JSON.stringify(settingsKey)}));`,
+    'var a=s&&s.appearance;',
+    `if(a==='light'||a==='dark')document.documentElement.setAttribute(${JSON.stringify(BOOT_THEME_ATTRIBUTE)},a)`,
+    '}catch(e){}})();',
+  ].join('');
+  return [`<style>${style}</style>`, `<script>${script}</script>`];
+}
+
 function exportWebBundle(outputDir) {
   run(
     join(ROOT, 'node_modules/.bin/expo'),
@@ -78,7 +105,10 @@ function copyShippingInstallAssets(outputDir) {
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
   const indexPath = join(outputDir, APP_SHELL_FILE);
-  writeFileSync(indexPath, withInstallHeadTags(readFileSync(indexPath, 'utf8'), tags));
+  writeFileSync(
+    indexPath,
+    withInstallHeadTags(readFileSync(indexPath, 'utf8'), [...tags, ...bootThemeHeadTags()])
+  );
 }
 
 export function subresourceIntegrity(bytes) {
