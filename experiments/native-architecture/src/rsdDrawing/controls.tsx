@@ -37,7 +37,7 @@ function swatchDisc(size: number) {
 }
 
 // The square face of an icon control of this outer size.
-export function iconFrame(size: number) {
+function iconFrame(size: number) {
   return styles.iconBox(size, iconPadding(size));
 }
 

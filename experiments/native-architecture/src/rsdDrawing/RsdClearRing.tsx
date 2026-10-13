@@ -2,10 +2,12 @@ import { useMemo } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { createClearRingContours } from '../../../../web/src/lib/components/clearRingContours';
-import { EDGE_INSET_PX } from './edgeLayout';
-import { TOUCH_TARGET } from '../drawing/theme';
+import { dockCenterFromTopRight, type ClearDock } from '../clear/clearDock';
 
 const RING_STROKE_WIDTH_PX = 4;
+// The shipping wash is a CSS `radial-gradient(circle, …)` over the ring's square box, whose default
+// farthest-corner extent puts 100% at the box corner: the half-diagonal, not the ring's radius.
+const WASH_EXTENT_PERCENT = 50 * Math.SQRT2;
 
 export type RingInk = Readonly<{
   rgb: string;
@@ -23,14 +25,13 @@ export const ACCEPT_RING: Record<'short' | 'reached', RingInk> = {
   reached: { rgb: ALARM_RGB, strokeOpacity: 0.9, washOpacity: 0.22, washFrom: 0.5, solid: true },
 };
 
-// The accept ring is centred on the Clear button's docked centre; the button keeps the area's
-// top-right corner, one inset in from each edge.
-export function ringFrame(radius: number) {
-  const offset = EDGE_INSET_PX + TOUCH_TARGET / 2 - radius;
+// The accept ring is centred on the Clear Button's docked centre, in the dock's own frame.
+export function ringFrame(radius: number, dock: ClearDock) {
+  const center = dockCenterFromTopRight(dock);
   return {
     position: 'absolute',
-    top: offset,
-    right: offset,
+    top: center.y - radius,
+    right: center.x - radius,
     width: radius * 2,
     height: radius * 2,
   } as const;
@@ -45,7 +46,7 @@ export function RsdClearRing({ radius, ink, id }: { radius: number; ink: RingInk
     <View pointerEvents="none" style={{ width: radius * 2, height: radius * 2 }}>
       <Svg width={radius * 2} height={radius * 2}>
         <Defs>
-          <RadialGradient id={id} cx="50%" cy="50%" r="50%">
+          <RadialGradient id={id} cx="50%" cy="50%" r={`${WASH_EXTENT_PERCENT}%`}>
             <Stop offset={ink.washFrom} stopColor={ink.rgb} stopOpacity={0} />
             <Stop offset={1} stopColor={ink.rgb} stopOpacity={ink.washOpacity} />
           </RadialGradient>

@@ -72,7 +72,7 @@ try {
   }
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(paper.locator('path')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await page.getByRole('button', { name: 'Clear drawing', exact: true }).click();
   await expect(paper.locator('path')).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(paper.locator('path')).toHaveCount(1);

@@ -245,7 +245,7 @@ async function main() {
         await page.evaluate(() => {
           globalThis.__eraserCheckpointProbe.mode = 'drop-next-svg-load';
         });
-        await pick('Clear');
+        await pick('Clear drawing');
         await page
           .getByText(/capture.*did not finish/i)
           .first()

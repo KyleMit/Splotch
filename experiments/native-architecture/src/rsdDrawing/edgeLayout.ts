@@ -2,6 +2,8 @@ import { CONTROL_GAP, TOUCH_TARGET } from '../drawing/theme';
 
 export type LayoutAxis = 'row' | 'column';
 export type AreaSize = Readonly<{ width: number; height: number }>;
+// How far an area's top and right edges sit inside the layout that holds it.
+export type AreaOffset = Readonly<{ top: number; right: number }>;
 export type DrawerOffset = Readonly<{ left: number; bottom: number }>;
 
 // Every edge control is a border-box square, inset one gap from the paper area's edges and
