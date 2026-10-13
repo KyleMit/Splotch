@@ -64,6 +64,7 @@ const CROSSING = {
 // Wax is binary, so anything above half alpha is a deposited texel; the antialiased stroke rim
 // lies outside BODY.
 const WAX_ALPHA = 128;
+const OPAQUE_ALPHA = 255;
 
 // One pass must leave paper tooth showing; a solid marker fill covers the whole body.
 const MAX_SINGLE_PASS_COVERAGE = 0.9;
@@ -77,6 +78,10 @@ const MIN_SECOND_PASS_GAIN = 0.1;
 const MAX_BUILDUP_CHANNEL_DRIFT = 10;
 // Half the web crossing's mean mixed share: mixing that stops entirely measures zero.
 const MIN_MIXED_SHARE = 0.3;
+// The composite stores 8-bit channels, so a correct glaze lands within half a level of the exact
+// value; one level also covers rounding between its two blend steps. A glaze strength off by 0.2
+// misses by 0.2·(S − min(S, D)): tens of levels wherever the pigments differ.
+const MAX_MIX_CHANNEL_ERROR = 1;
 
 function line(x0, y0, x1, y1) {
   const steps = Math.round(Math.hypot(x1 - x0, y1 - y0) / 4);
@@ -160,6 +165,26 @@ function crossingShares(pixels, underHex, overHex) {
   };
 }
 
+// Each fully opaque texel where both strokes deposited, against ADR-0065's glaze computed from the
+// same texel of each stroke rendered alone: S is the over wax, D the under wax.
+function overlapMixErrors(under, over, theme) {
+  const both = render([under, over], theme);
+  const below = render([under], theme);
+  const above = render([over], theme);
+  const errors = [];
+  for (let offset = 0; offset < both.length; offset += 4) {
+    if ([both, below, above].some((pixels) => pixels[offset + 3] !== OPAQUE_ALPHA)) continue;
+    for (const channel of [0, 1, 2]) {
+      const source = above[offset + channel];
+      const destination = below[offset + channel];
+      const expected =
+        (1 - CRAYON_COLOR_MIX) * source + CRAYON_COLOR_MIX * Math.min(source, destination);
+      errors.push(Math.abs(both[offset + channel] - expected));
+    }
+  }
+  return errors;
+}
+
 describe('native Crayon matches the crayon ADRs', () => {
   it('keeps paper tooth in one pass and builds up at a constant hue over repeated passes', () => {
     const passes = [1, 2, 3].map((count) =>
@@ -211,5 +236,19 @@ describe('native Crayon matches the crayon ADRs', () => {
       paintAppearance('Black', 'dark').hex
     );
     expect(shares.mixedShare).toBeGreaterThan(MIN_MIXED_SHARE);
+  });
+
+  it.each([
+    ['Blue', 'Yellow', 'light'],
+    ['Yellow', 'Blue', 'light'],
+    ['Black', 'Blue', 'dark'],
+  ])('glazes %s over %s at the ADR-0065 strength on %s paper', (overColor, underColor, theme) => {
+    const errors = overlapMixErrors(
+      crayon(underColor, 1, ACROSS.under),
+      crayon(overColor, 2, ACROSS.over),
+      theme
+    );
+    expect(errors.length).toBeGreaterThan(0);
+    expect(Math.max(...errors)).toBeLessThanOrEqual(MAX_MIX_CHANNEL_ERROR);
   });
 });
