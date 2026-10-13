@@ -70,10 +70,10 @@ patchedDependencies:
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the
-# reviewed record of which third-party code may execute at install time. Nothing needs
-# to: each entry below either ships prebuilt platform binaries through
-# optionalDependencies or has a script that is inert for a registry install. Splotch
-# itself defines no lifecycle scripts (ADR-0062 removed the last one).
+# reviewed record of which third-party code may execute at install time. Each `false`
+# entry either ships prebuilt platform binaries through optionalDependencies or has a
+# script that is inert for a registry install. Splotch itself defines no lifecycle
+# scripts (ADR-0062 removed the last one).
 allowBuilds:
   # `prepare` runs only for git/path installs, and the script it names is not even in
   # the published tarball; `preinstall` is an `echo`.
@@ -87,3 +87,9 @@ allowBuilds:
   # Codegen for the protobufjs CLI, which nothing here invokes; the library that
   # @google/genai imports works without it.
   protobufjs: false
+  # The native app's ink renderer (ADR-0178). `scripts/install-libs.js` copies the
+  # prebuilt Skia xcframeworks and Android libraries out of its own
+  # react-native-skia-apple-* / -android dependencies into `libs/`, where the podspec
+  # and Gradle build read them. It reads no environment beyond SK_GRAPHITE and makes no
+  # network request.
+  '@shopify/react-native-skia': true
