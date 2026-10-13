@@ -6,7 +6,7 @@ import { colors, dimensions } from './tokens.css';
 import {
   CREDENTIAL_KINDS,
   AI_DISCLOSURE,
-  AI_WAIT_NOTICE,
+  AI_MINIMIZED_WAIT_NOTICE,
   MAX_CREDENTIAL_CHARACTERS,
   type CredentialKind,
 } from '../ai/contract';
@@ -104,7 +104,7 @@ export function RsdAiSheet({
               />
             ) : null}
             <html.span>{AI_DISCLOSURE}</html.span>
-            <html.span>{AI_WAIT_NOTICE}</html.span>
+            <html.span>{AI_MINIMIZED_WAIT_NOTICE}</html.span>
             <RsdAction
               label="Check AI allowance"
               disabled={state.busy || waiting || !!state.recovery}

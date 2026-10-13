@@ -37,7 +37,9 @@ export function createAiProgress() {
   let frame: number | null = null;
 
   function publish(next: AiProgress) {
-    const value = Math.round(next.value * PUBLISHED_PROGRESS_STEPS) / PUBLISHED_PROGRESS_STEPS;
+    // A restored journal on a clock that moved backward times from the future.
+    const bounded = Math.min(1, Math.max(0, next.value));
+    const value = Math.round(bounded * PUBLISHED_PROGRESS_STEPS) / PUBLISHED_PROGRESS_STEPS;
     if (
       value === snapshot.value &&
       next.overrun === snapshot.overrun &&
