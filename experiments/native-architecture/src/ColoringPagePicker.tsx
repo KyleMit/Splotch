@@ -5,7 +5,6 @@ import { createDrawingStyles, useDrawingStyles } from './drawing/DrawingAppearan
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './drawing/Text';
 import { Image } from 'react-native';
-import { NativeLibraryControls } from './offlineLibrary/NativeLibraryControls';
 import { useHeldBooks, useLibraryControls } from './offlineLibrary/LibraryScope';
 import { offlinePageId } from './offlineLibrary/identity';
 import { OFFLINE_BOOKS } from './offlineLibrary/books.generated';
@@ -99,7 +98,12 @@ export function ColoringPagePicker({
                       >
                         <Image
                           source={{
-                            uri: library?.owner.selector(pack, page.slug, theme === 'dark'),
+                            uri: library?.owner.selector(
+                              pack,
+                              page.slug,
+                              'landscape',
+                              theme === 'dark'
+                            ),
                           }}
                           style={styles.preview}
                         />
@@ -109,7 +113,6 @@ export function ColoringPagePicker({
                   }) ?? []
                 );
               })}
-            <NativeLibraryControls />
           </ScrollView>
           <Pressable
             accessibilityRole="button"

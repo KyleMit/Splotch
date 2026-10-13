@@ -18,10 +18,7 @@ import { DrawingAppearanceProvider } from '../../../experiments/native-architect
 import { RsdColoringBookPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
 import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  BUNDLED_FARM_COVERS,
-  BUNDLED_FARM_IMAGES,
-} from '../../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
+import { BUNDLED_FARM_SELECTORS } from '../../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
 import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import {
   RELEASE_NOTES,
@@ -157,13 +154,14 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(JSON.parse(stored).appearance).toBe('system');
 });
 
-it('selects Book cover and page artwork from the same explicit preference as the native modal', async () => {
+it('selects page artwork from the same explicit preference as the native modal', async () => {
   function picker(preference) {
     return createElement(
       DrawingAppearanceProvider,
       { preference },
       createElement(RsdColoringBookPicker, {
-        selected: FARM_PAGE_IDS[0],
+        selected: 'blank',
+        orientation: 'portrait',
         visible: true,
         onDismiss() {},
         onChoose() {},
@@ -171,23 +169,13 @@ it('selects Book cover and page artwork from the same explicit preference as the
       })
     );
   }
+  const art = BUNDLED_FARM_SELECTORS[FARM_PAGE_IDS[0]].portrait;
   records.scheme = 'light';
   await mount(picker('dark'));
-  expect(records.props.findLast((props) => props.source)?.source.uri).toBe(
-    BUNDLED_FARM_COVERS.dark
-  );
   expect(lastSurface().style.backgroundColor).toBe('#23232b');
-  await click('Farm coloring book');
-  const images = records.props.filter((props) => props.source?.uri);
-  expect(
-    images.some((props) => props.source.uri === BUNDLED_FARM_IMAGES[FARM_PAGE_IDS[0]].selector.dark)
-  ).toBe(true);
+  expect(records.props.some((props) => props.source?.uri === art.dark)).toBe(true);
   await act(async () => root.render(picker('light')));
-  expect(
-    records.props.findLast(
-      (props) => props.source?.uri === BUNDLED_FARM_IMAGES[FARM_PAGE_IDS[0]].selector.light
-    )
-  ).toBeDefined();
+  expect(records.props.findLast((props) => props.source?.uri === art.light)).toBeDefined();
   expect(lastSurface().style.backgroundColor).toBe('#ffffff');
 });
 
@@ -351,15 +339,14 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await mount(createElement(RsdDrawingScreen));
   await expandControls();
   await click('Coloring pages');
-  await click('More pages');
-  await click('Sunshine');
+  await click('Cat coloring page');
   await click('Draw RSD fixture stroke');
   const original = coloringPaper();
-  expect(original.pageId).toBe('sunshine');
+  expect(original.pageId).toBe('farm/cat');
   expect(original.strokes).toHaveLength(1);
   await click('Settings');
   await openSettingsSection('Coloring');
-  await click('Coloring book on');
+  await click('Coloring book');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
     version: 11,
@@ -379,13 +366,13 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Open picture from saved coloring');
   expect(caller.drawingOpen).toHaveBeenCalledExactlyOnceWith('picture-1-fixture');
   expect(coloringPaper()).toEqual({ ...original, pageId: 'blank' });
-  expect(original.pageId).toBe('sunshine');
+  expect(original.pageId).toBe('farm/cat');
   await click('Settings');
   await openSettingsSection('Coloring');
-  await click('Coloring book off');
+  await click('Coloring book');
   await click('Close');
   await click('Coloring pages');
-  expect(host.querySelector('[aria-label="Farm coloring book"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Cat coloring page"]')).not.toBeNull();
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.aiVaultWrite).not.toHaveBeenCalled();
 });
@@ -425,7 +412,7 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   await click('Close');
   await click('Settings');
   await openSettingsSection('Coloring');
-  await click('Coloring book on');
+  await click('Coloring book');
   expect(signal.aborted).toBe(true);
   expect(owner.snapshot()).toMatchObject({ enabled: true, allowMetered: false, installed: [] });
   await act(async () => {

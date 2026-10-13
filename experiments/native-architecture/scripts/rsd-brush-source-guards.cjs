@@ -306,7 +306,7 @@ function validateBrushSources({
         },
       });
       if (file === 'src/rsdDrawing/RsdSettingsDialog.tsx') {
-        assert.equal(transformedSwitches.length, 7, 'RSD transformed settings switch templates');
+        assert.equal(transformedSwitches.length, 6, 'RSD transformed settings switch templates');
         const optional = transformedSwitches.filter((node) =>
           availabilityValue(expressionValue(node, 'selected'))
         );
@@ -319,7 +319,6 @@ function validateBrushSources({
             .map((node) =>
               [
                 'soundEnabled',
-                'coloringBookEnabled',
                 'undoButtonEnabled',
                 'strokeWidthControlEnabled',
                 'saveOnDeleteEnabled',
@@ -328,7 +327,6 @@ function validateBrushSources({
             )
             .sort(),
           [
-            'coloringBookEnabled',
             'pencilEraserEnabled',
             'saveOnDeleteEnabled',
             'soundEnabled',
