@@ -116,7 +116,10 @@ class ContactResponder {
   }
 
   private finish(identifier: string) {
-    this.contacts.get(identifier)?.sound?.end();
+    const contact = this.contacts.get(identifier);
+    contact?.sound?.end();
+    // Callers drop the contact only after this publish, and a raw end publishes nothing later.
+    if (contact) delete contact.halo;
     this.publish(this.input.finish(identifier));
   }
 

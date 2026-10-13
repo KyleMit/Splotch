@@ -87,11 +87,13 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
-        version: 10,
+        version: 11,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
         whatsNewSeen: null,
+        pencilEraserEnabled: true,
+        applePencilSeen: false,
         orientation: 'portrait',
         soundLevel: 'medium',
         undoButtonEnabled: true,

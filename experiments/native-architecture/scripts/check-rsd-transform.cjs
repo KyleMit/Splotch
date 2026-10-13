@@ -177,6 +177,7 @@ assert.ok(
       'undoButtonEnabled',
       'strokeWidthControlEnabled',
       'saveOnDeleteEnabled',
+      'pencilEraserEnabled',
     ].some((property) => settingsValue(selectedValue(node), property))
   ),
   'RSD switch state owner'
@@ -185,6 +186,7 @@ assert.deepEqual(
   switches.map((node) => selectedValue(node).property.name).sort(),
   [
     'coloringBookEnabled',
+    'pencilEraserEnabled',
     'saveOnDeleteEnabled',
     'soundEnabled',
     'strokeWidthControlEnabled',
@@ -247,6 +249,7 @@ for (const [property, label, callback] of [
   ['undoButtonEnabled', 'Show Undo button', 'onUndoButtonChange'],
   ['strokeWidthControlEnabled', 'Show drawing width controls', 'onStrokeWidthControlChange'],
   ['saveOnDeleteEnabled', 'SAVE_ON_DELETE_LABEL', 'onSaveOnDeleteChange'],
+  ['pencilEraserEnabled', 'PENCIL_ERASER_LABEL', 'onPencilEraserChange'],
 ]) {
   const node = switches.find((item) => settingsValue(selectedValue(item), property));
   assert.equal(labelText(node), label, 'RSD control switch label');

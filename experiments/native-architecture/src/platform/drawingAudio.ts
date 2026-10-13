@@ -1,5 +1,5 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
-import { PENCIL_SOUNDS, pickPencilTake } from '../audio/pencilSounds';
+import { PENCIL_SOUNDS, pickPencilTake, usableTakes } from '../audio/pencilSounds';
 import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
@@ -175,12 +175,7 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
   const loads = await Promise.allSettled(
     PENCIL_SOUNDS.map((sound) => loadPencilClip(sound, signal, onFailure))
   );
-  const clips = loads.flatMap((load) => (load.status === 'fulfilled' ? [load.value] : []));
-  const refused = loads.find((load) => load.status === 'rejected');
-  if (refused) {
-    for (const clip of clips) clip.dispose();
-    throw refused.reason;
-  }
+  const clips = usableTakes(loads);
   let playing: PencilClip | null = null;
   return {
     start() {

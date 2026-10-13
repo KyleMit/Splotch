@@ -26,6 +26,7 @@ import {
 import { isButtonScale } from './buttonSize';
 import { isReduceMotionPreference, type ReduceMotionPreference } from './reduceMotion';
 import { WHATS_NEW_STAMP } from './whatsNew';
+import { DEFAULT_PENCIL_SETTINGS, type PencilSettings } from './pencilEraser';
 import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
   DEFAULT_WIDTH_SETTINGS,
@@ -59,13 +60,14 @@ export function initialSoundSettingsState(): SoundSettingsState {
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
+    ...DEFAULT_PENCIL_SETTINGS,
     message: '',
   };
 }
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 10,
+    version: 11,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -77,6 +79,7 @@ function defaultSoundSettings(): SoundSettings {
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
+    ...DEFAULT_PENCIL_SETTINGS,
   };
 }
 
@@ -95,6 +98,7 @@ function unreadSoundSettingsState(): SoundSettingsState {
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
+    ...DEFAULT_PENCIL_SETTINGS,
     saved: false,
     message:
       'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
@@ -313,6 +317,35 @@ function createDrawingPreferenceActions({
   };
 }
 
+// A double-tap landing while another choice is being written is recorded by the next double-tap.
+function createPencilActions({
+  getState,
+  isDisposed,
+  hasReadFailed,
+  publish,
+  persist,
+}: PreferenceActionContext) {
+  async function setPencil(choice: Partial<PencilSettings>) {
+    const state = getState();
+    if (isDisposed() || state.status !== 'ready') return;
+    if (hasReadFailed()) {
+      publish({ ...state, ...choice });
+      return;
+    }
+    await persist({ ...snapshot(state), ...choice });
+  }
+  return {
+    async setPencilEraserEnabled(pencilEraserEnabled: boolean) {
+      if (typeof pencilEraserEnabled !== 'boolean')
+        throw new Error('Apple Pencil choice is invalid.');
+      await setPencil({ pencilEraserEnabled });
+    },
+    async markApplePencilSeen() {
+      if (!getState().applePencilSeen) await setPencil({ applePencilSeen: true });
+    },
+  };
+}
+
 const PARENT_SAVE_FAILED_MESSAGE =
   'Parent Center choices were not saved. Previous protection is still active. Retry saving.';
 
@@ -389,6 +422,7 @@ export function createSoundSettings(
       await accessibility.flushWhatsNewSeen();
     },
     ...createDrawingPreferenceActions(actionContext),
+    ...createPencilActions(actionContext),
     ...accessibility.actions,
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;

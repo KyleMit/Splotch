@@ -140,9 +140,9 @@ describe('explicit drawing web audio adapter', () => {
         })
     );
     const f = fixture();
-    const refused = f.promise.catch((error) => error.message);
+    const refused = f.promise.catch((error) => error.name);
     f.abort.abort();
-    expect(await refused).toBe('fetch aborted');
+    expect(await refused).toBe('AbortError');
     expect(f.context.close).toHaveBeenCalledOnce();
     expect(f.context.createBufferSource).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
@@ -206,8 +206,21 @@ describe('explicit drawing web audio adapter', () => {
     expect(f.context.resume).toHaveBeenCalledTimes(3);
     loop.dispose();
   });
-  it('retains a real fetch failure and releases the context', async () => {
+  it('plays from the takes that decoded when one take fails to load', async () => {
     fetchSound.mockResolvedValueOnce({ ok: false });
+    const f = fixture();
+    const loop = await f.promise;
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0);
+    loop.start();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0);
+    loop.start();
+    expect(f.context.decodeAudioData).toHaveBeenCalledTimes(PENCIL_SOUNDS.length - 1);
+    expect(f.context.sources.map(({ buffer }) => buffer.take)).toEqual([1, 0]);
+    expect(f.failure).not.toHaveBeenCalled();
+    loop.dispose();
+  });
+  it('retains a real fetch failure and releases the context when no take loads', async () => {
+    fetchSound.mockResolvedValue({ ok: false });
     const f = fixture();
     await expect(f.promise).rejects.toThrow('could not be loaded');
     expect(f.context.close).toHaveBeenCalledOnce();

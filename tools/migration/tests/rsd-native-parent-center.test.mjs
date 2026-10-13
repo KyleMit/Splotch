@@ -85,7 +85,7 @@ it('mounts actual RSD shared gate, policy radio state, confirmation and persiste
   await click('Per session: Reporting an AI picture');
   expect(owner.getState().settings.parentPolicies.imageReport).toBe('session');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 10,
+    version: 11,
     parentPolicies: { imageReport: 'session' },
   });
   await click('Never: Opening Parent Center');
@@ -130,6 +130,8 @@ it("keeps a failed AI-disable save pending and retryable after the queued What's
     aiEnabled: true,
     saved: false,
     whatsNewSeen: WHATS_NEW_STAMP,
+    pencilEraserEnabled: true,
+    applePencilSeen: false,
   });
   checkedSwitch(host.querySelector('[aria-label="AI picture creation"]'), true);
   expect(host.textContent).toContain('Parent Center choices were not saved');

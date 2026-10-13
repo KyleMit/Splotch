@@ -1,5 +1,5 @@
 import { Asset } from 'expo-asset';
-import { PENCIL_SOUNDS, pickPencilTake } from '../audio/pencilSounds';
+import { PENCIL_SOUNDS, pickPencilTake, usableTakes } from '../audio/pencilSounds';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
   GAIN_RAMP_S,
@@ -70,8 +70,8 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
   try {
     signal.throwIfAborted();
     resume();
-    const buffers = await Promise.race([
-      Promise.all(
+    const loads = await Promise.race([
+      Promise.allSettled(
         PENCIL_SOUNDS.map(async (sound) => {
           const asset = Asset.fromModule(sound);
           const response = await fetch(asset.localUri ?? asset.uri, { signal });
@@ -83,6 +83,7 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
     ]);
     signal.throwIfAborted();
     if (disposed) throw new Error('Drawing sound was cancelled.');
+    const buffers = usableTakes(loads);
     clearTimeout(timeout);
     return {
       start() {

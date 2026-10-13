@@ -23,7 +23,12 @@ import {
 } from './platform/drawingFiles';
 import { keepPicture } from './keepPicture';
 import { useBrushPreferences } from './useBrushPreferences';
-import { availableBrushes, brushControl, type OptionalBrush } from './settings/brushPreferences';
+import {
+  availableBrushes,
+  brushControl,
+  toggleEraser,
+  type OptionalBrush,
+} from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
 import { createInkObservation } from './drawing/inkCoverage';
 import { pageLabel, type PageId } from './drawing/pages';
@@ -189,6 +194,7 @@ function brushPreferenceActions(brushes: ReturnType<typeof useBrushPreferences>)
     brushControl: brushControl(brushes.state.availability),
     toggleBrush: () => brushes.owner.current?.toggleOptional(),
     selectInkBrush: () => brushes.owner.current?.selectInkBrush(),
+    toggleEraser: () => (brushes.owner.current ? toggleEraser(brushes.owner.current) : false),
     setBrushAvailable: (next: OptionalBrush, enabled: boolean) =>
       brushes.owner.current?.setAvailable(next, enabled),
     retryBrushSave: () => {

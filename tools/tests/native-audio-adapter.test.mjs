@@ -387,13 +387,31 @@ describe('pencil take variety', () => {
     expect(third.seekTo).not.toHaveBeenCalled();
     loop.dispose();
   });
-  it('refuses the loop and frees every loaded take when one take fails', async () => {
+  it('keeps playing the takes that loaded when one take fails', async () => {
     const f = takes();
-    const refused = f.promise.catch((error) => error.message);
     await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
     f.players[0].listener({ isLoaded: true, playing: false, error: null });
     f.players[1].listener({ isLoaded: false, playing: false, error: 'decoder error' });
     f.players[2].listener({ isLoaded: true, playing: false, error: null });
+    const loop = await f.promise;
+    expect(f.players[1].release).toHaveBeenCalledOnce();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.9).mockReturnValueOnce(0);
+    loop.start();
+    expect(f.players[2].play).toHaveBeenCalledOnce();
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0);
+    loop.start();
+    expect(f.players[0].play).toHaveBeenCalledOnce();
+    expect(f.players[1].play).not.toHaveBeenCalled();
+    expect(f.failure).not.toHaveBeenCalled();
+    loop.dispose();
+    for (const player of f.players) expect(player.release).toHaveBeenCalledOnce();
+  });
+  it('refuses the loop only when no take loads', async () => {
+    const f = takes();
+    const refused = f.promise.catch((error) => error.message);
+    await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+    for (const player of f.players)
+      player.listener({ isLoaded: false, playing: false, error: 'decoder error' });
     expect(await refused).toContain('unavailable');
     for (const player of f.players) expect(player.release).toHaveBeenCalledOnce();
     expect(f.failure).not.toHaveBeenCalled();

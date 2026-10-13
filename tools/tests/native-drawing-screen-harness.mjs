@@ -446,6 +446,15 @@ export function createScreen({ cohortDrivers = false } = {}) {
   };
 }
 
+// The stored choices this screen's controls never change, at their shipping defaults.
+export const UNTOUCHED_SETTINGS = {
+  saveOnDeleteEnabled: false,
+  buttonScale: 100,
+  reduceMotion: 'system',
+  whatsNewSeen: null,
+  pencilEraserEnabled: true,
+  applePencilSeen: false,
+};
 export const pictures = [
   { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
   { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },

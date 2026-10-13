@@ -43,8 +43,10 @@ vi.mock('react-native', () => ({
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);
   return {
-    default: forwardRef(({ children }, ref) => createElement('div', { ref }, children)),
-    G: group,
+    default: forwardRef(({ children, testID }, ref) =>
+      createElement('div', { ref, 'data-testid': testID }, children)
+    ),
+    G: ({ children, transform }) => createElement('div', { 'data-transform': transform }, children),
     Defs: group,
     Mask: group,
     Pattern: group,
@@ -153,7 +155,30 @@ afterEach(() => {
   container.remove();
 });
 
+function haloTransforms() {
+  return [...container.querySelectorAll('[data-testid="pointer-halos"] > [data-transform]')].map(
+    (halo) => halo.dataset.transform
+  );
+}
+
 describe('raw terminal events after Fabric releases its responder', () => {
+  it('drops the halo of a raw-ended contact while a still contact keeps its own', () => {
+    send('onPanResponderGrant', event([touch(0, 10, 20), touch(1, 30, 40), touch(2, 50, 60)]));
+    expect(haloTransforms()).toHaveLength(3);
+    const partial = event([touch(1, 30, 40, 200), touch(2, 50, 60, 200)], [touch(0, 10, 20, 200)], {
+      0: 100,
+      1: 100,
+      2: 100,
+    });
+    send('onPanResponderEnd', partial);
+    send('onPanResponderRelease', partial);
+    expect(haloTransforms()).toHaveLength(2);
+    raw('onTouchEnd', [touch(2, 50, 60, 300)], [touch(1, 30, 40, 300)]);
+    expect(haloTransforms()).toEqual(['translate(50 60) scale(1)']);
+    raw('onTouchEnd', [], [touch(2, 50, 60, 400)]);
+    expect(haloTransforms()).toEqual([]);
+  });
+
   it('commits the stationary survivor without a move, regrant or responder terminal callback', () => {
     const baseline = {
       ...legacyDrawing(),

@@ -30,6 +30,7 @@ import {
   type ReduceMotionPreference,
 } from './reduceMotion';
 import { isWhatsNewSeen } from './whatsNew';
+import { DEFAULT_PENCIL_SETTINGS, readPencilSettings, type PencilSettings } from './pencilEraser';
 import {
   readLegacyParentPreferences,
   isParentPolicies,
@@ -51,6 +52,7 @@ export type Choices = WidthSettings &
   ColorSettings &
   ParentPreferences &
   AccessibilitySettings &
+  PencilSettings &
   Readonly<{
     soundEnabled: boolean;
     soundLevel: SoundLevel;
@@ -59,13 +61,14 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 10 }>;
+export type SoundSettings = Choices & Readonly<{ version: 11 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
       ColorSettings &
       ParentPreferences &
-      AccessibilitySettings & {
+      AccessibilitySettings &
+      PencilSettings & {
         status: 'loading';
         soundEnabled: false;
         soundLevel: SoundLevel;
@@ -142,8 +145,9 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const current = value.version === 10;
-  const savesOnDelete = current || value.version === 9;
+  const current = value.version === 11;
+  const accessible = current || value.version === 10;
+  const savesOnDelete = accessible || value.version === 9;
   const complete = savesOnDelete || value.version === 8;
   const kept = (key: string) => complete || (value.version === 7 && key in value);
   const parent =
@@ -170,7 +174,10 @@ function readStoredParentSettings(
       : DEFAULT_SAVE_ON_DELETE_ENABLED;
   if (typeof saveOnDeleteEnabled !== 'boolean')
     throw new Error('Auto-Save on Delete choice is invalid.');
-  const accessibility = current ? readAccessibilitySettings(value) : DEFAULT_ACCESSIBILITY_SETTINGS;
+  const accessibility = accessible
+    ? readAccessibilitySettings(value)
+    : DEFAULT_ACCESSIBILITY_SETTINGS;
+  const pencil = current ? readPencilSettings(value) : DEFAULT_PENCIL_SETTINGS;
   canonical(
     {
       version: value.version,
@@ -186,12 +193,13 @@ function readStoredParentSettings(
         : {}),
       ...(complete ? { orientation } : {}),
       ...(savesOnDelete ? { saveOnDeleteEnabled } : {}),
-      ...(current ? accessibility : {}),
+      ...(accessible ? accessibility : {}),
+      ...(current ? pencil : {}),
     },
     snapshot
   );
   return {
-    version: 10,
+    version: 11,
     ...widths,
     ...colors,
     appearance,
@@ -209,6 +217,7 @@ function readStoredParentSettings(
     orientation,
     saveOnDeleteEnabled,
     ...accessibility,
+    ...pencil,
   };
 }
 
@@ -218,7 +227,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 10,
+    version: 11,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -229,6 +238,7 @@ function migrateLegacyChoices(
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
+    ...DEFAULT_PENCIL_SETTINGS,
     ...choices,
   };
 }
@@ -250,7 +260,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 7 &&
       value.version !== 8 &&
       value.version !== 9 &&
-      value.version !== 10) ||
+      value.version !== 10 &&
+      value.version !== 11) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -283,7 +294,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 7 &&
       value.version !== 8 &&
       value.version !== 9 &&
-      value.version !== 10) ||
+      value.version !== 10 &&
+      value.version !== 11) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -310,7 +322,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 10,
+    version: 11,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -328,5 +340,7 @@ export function snapshot(state: Choices): SoundSettings {
     buttonScale: state.buttonScale,
     reduceMotion: state.reduceMotion,
     whatsNewSeen: state.whatsNewSeen,
+    pencilEraserEnabled: state.pencilEraserEnabled,
+    applePencilSeen: state.applePencilSeen,
   };
 }
