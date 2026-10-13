@@ -7,12 +7,17 @@ import {
   checkedSwitch,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
+import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement } from 'react';
+import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { FLY_IN_TRANSFORM } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
@@ -27,6 +32,7 @@ import {
   NATIVE_SETTINGS_SECTIONS,
   SECTION_SUBTITLES,
 } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
+import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
 import {
   RELEASE_NOTES,
   WHATS_NEW_STAMP,
@@ -117,8 +123,26 @@ async function click(label) {
 }
 
 function hubRows() {
-  return [...host.querySelectorAll('[role="list"] [role="listitem"] button')];
+  return [...host.querySelectorAll('[role="list"] [role="listitem"] button')].filter(
+    (node) => node.getAttribute('role') !== 'switch'
+  );
 }
+
+function hubSwitches() {
+  return [...host.querySelectorAll('[role="list"] [role="switch"]')];
+}
+
+function hubRow(title) {
+  const row = hubRows().find((node) => node.getAttribute('aria-label').startsWith(`${title}, `));
+  expect(row, title).toBeDefined();
+  return row;
+}
+
+// A row whose section changed since it was last opened adds "new" to its name, beside its dot.
+const dottedRows = () =>
+  hubRows()
+    .map((row) => row.getAttribute('aria-label'))
+    .filter((name) => name.endsWith(', new'));
 
 function flat(style) {
   return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
@@ -131,31 +155,128 @@ function outerSize(label) {
   return style.width;
 }
 
-function colorPickerAnimation() {
-  return records.props.findLast((props) => props.accessibilityLabel === 'Color picker')
-    .animationType;
+// The Color Picker flies in through the shipping overshoot keyframe, or fades under Reduce Motion.
+async function openColorPicker() {
+  const timing = vi.spyOn(Animated, 'timing');
+  try {
+    await rerender({ settingsOpen: false, colorPickerOpen: true });
+    expect(host.querySelector('[aria-label="Color Picker"]')).not.toBeNull();
+    const overshoot = FLY_IN_TRANSFORM.find((frame) => frame.scale > 1).scale;
+    return timing.mock.calls.some(([, config]) => config.toValue === overshoot) ? 'fly' : 'fade';
+  } finally {
+    timing.mockRestore();
+  }
 }
 
-it('lists the shipping sections that hold a native control, each with its status line', async () => {
+it('lists every shipping section in order with its icon tile and shipping status line', async () => {
   storedSettings();
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
-  const rows = hubRows();
-  expect(rows.map((row) => row.getAttribute('aria-label'))).toEqual(
-    NATIVE_SETTINGS_SECTIONS.filter(({ id }) => id !== 'setup').map(({ label }) => label)
+  const listed = NATIVE_SETTINGS_SECTIONS.filter(({ id }) => id !== 'setup');
+  expect(hubRows().map((row) => row.getAttribute('aria-label').split(', ')[0])).toEqual(
+    listed.map(({ label }) => label)
   );
-  const row = (label) => rows.find((node) => node.getAttribute('aria-label') === label);
-  expect(row('Accessibility').textContent).toContain(SECTION_SUBTITLES.accessibility);
-  expect(row(WHATS_NEW).textContent).toContain(SECTION_SUBTITLES.whatsnew);
-  expect(row('Saving').textContent).toContain(SECTION_SUBTITLES.saveOnDeleteOff);
-  expect(row('Tool Drawer').textContent).toContain(SECTION_SUBTITLES.allToolsShowing);
-  expect(row('Sound').textContent).toContain(SECTION_SUBTITLES.muted);
-  expect(row('About').textContent).toContain(`Version ${WHATS_NEW_STAMP}`);
+  expect(hubRows().map((row) => row.getAttribute('aria-label'))).toEqual([
+    'Appearance, Night Mode · portrait lock',
+    'Sound, Muted',
+    `Tool Drawer, ${SECTION_SUBTITLES.allToolsShowing}`,
+    `Accessibility, ${SECTION_SUBTITLES.accessibility}`,
+    'Coloring, 0 extra books ready',
+    'AI Art, Turned off',
+    `Saving, ${SECTION_SUBTITLES.saveOnDeleteOff}`,
+    `Parent Center, ${SECTION_SUBTITLES.parentCenter}`,
+    `Feedback, ${SECTION_SUBTITLES.feedback}`,
+    `${WHATS_NEW}, ${SECTION_SUBTITLES.whatsnew}`,
+    `About, Version ${WHATS_NEW_STAMP}`,
+  ]);
   await openSettingsSection('Accessibility');
   expect(host.querySelector('[data-native-modal="Accessibility"]')).not.toBeNull();
   expect(hubRows()).toEqual([]);
   await click('Back');
-  expect(hubRows()).toHaveLength(rows.length);
+  expect(hubRows()).toHaveLength(listed.length);
+});
+
+it('answers Night Mode and Sound with switches on their hub rows and no others', async () => {
+  const settings = storedSettings({ soundEnabled: true, soundLevel: 'loud' });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  expect(hubSwitches().map((node) => node.getAttribute('aria-label'))).toEqual([
+    'Night Mode',
+    'Sound',
+  ]);
+  checkedSwitch(button('Night Mode'), false);
+  checkedSwitch(button('Sound'), true);
+  expect(hubRow('Sound').getAttribute('aria-label')).toBe('Sound, Volume 100%');
+  await click('Night Mode');
+  checkedSwitch(button('Night Mode'), true);
+  expect(settings.stored().appearance).toBe('dark');
+  await click('Sound');
+  checkedSwitch(button('Sound'), false);
+  expect(hubRow('Sound').getAttribute('aria-label')).toBe('Sound, Muted');
+  expect(settings.stored()).toMatchObject({ appearance: 'dark', soundEnabled: false });
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
+});
+
+it('holds both hub switches while a hub choice saves, so a second tap is never dropped', async () => {
+  const settings = storedSettings({ soundEnabled: true });
+  const finishNight = holdNextWrite(settings.storage);
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Night Mode');
+  expect(caller.product.sound.settings.status).toBe('saving');
+  for (const label of ['Night Mode', 'Sound']) expect(button(label).disabled, label).toBe(true);
+  await act(async () => button('Sound').click());
+  await finishNight();
+  for (const label of ['Night Mode', 'Sound']) expect(button(label).disabled, label).toBe(false);
+  checkedSwitch(button('Sound'), true);
+  await click('Sound');
+  expect(settings.storage.write).toHaveBeenCalledTimes(2);
+  expect(settings.stored()).toMatchObject({ appearance: 'dark', soundEnabled: false });
+});
+
+it('words the Sound and Coloring rows from the native level and the downloaded books', async () => {
+  storedSettings({ soundEnabled: true, soundLevel: 'quiet', orientation: 'auto' });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  expect(hubRow('Sound').getAttribute('aria-label')).toBe('Sound, Volume 25%');
+  expect(hubRow('Appearance').getAttribute('aria-label')).toBe('Appearance, Night Mode');
+  for (const [installed, subtitle] of [
+    [['dinosaur'], 'Coloring, 1 extra book ready'],
+    [['dinosaur', 'ocean'], 'Coloring, 2 extra books ready'],
+  ]) {
+    caller.library = {
+      ...caller.library,
+      state: { ...caller.library.state, installed: installed.map((id) => ({ id })) },
+    };
+    await rerender({});
+    expect(hubRow('Coloring').getAttribute('aria-label')).toBe(subtitle);
+  }
+});
+
+it('opens Feedback from its hub row in place of Settings', async () => {
+  storedSettings();
+  drawingScreen({
+    closeSettings: vi.fn(() => {
+      caller.screen.settingsOpen = false;
+    }),
+  });
+  await mount(createElement(RsdDrawingScreen));
+  await act(async () => hubRow('Feedback').click());
+  expect(caller.screen.closeSettings).toHaveBeenCalled();
+  expect(caller.product.feedback.state.open).toBe(true);
+  await rerender({});
+  expect(host.querySelector('[data-native-modal="Settings"]')).toBeNull();
+  expect(host.querySelector('[data-native-modal="Send Feedback"]')).not.toBeNull();
+});
+
+it('drills into an AI Art page from its hub row', async () => {
+  storedSettings();
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('AI Art');
+  expect(host.querySelector('[data-native-modal="AI Art"]')).not.toBeNull();
+  await click('Back');
+  expect(hubRow('AI Art')).toBeDefined();
 });
 
 it('steps Button Size through the settings owner and resizes the edge controls from it', async () => {
@@ -173,9 +294,12 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   await click('Expand controls');
   const size = controlSize(BUTTON_SCALE_MAX);
   expect(size).toBeGreaterThan(TOUCH_TARGET);
-  for (const label of ['Purple paint', 'More colors', 'Save picture', 'Collapse controls'])
+  for (const label of ['Save picture', 'Collapse controls'])
     expect(outerSize(label), label).toBe(size);
-  expect(outerSize('Settings')).toBe(TOUCH_TARGET);
+  // Shipping sizes its swatches and the corner Settings Button apart from Button Size.
+  for (const label of ['Purple paint', 'More colors'])
+    expect(outerSize(label), label).toBe(PALETTE_FLOWS.row.swatchPx);
+  expect(outerSize('Settings')).toBe(CORNER_BUTTON_SIZE_PX);
   await rerender({ settingsOpen: true });
   await openSettingsSection('Accessibility');
   for (let step = 0; step < 6; step++) await click('Smaller buttons');
@@ -183,7 +307,8 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   expect(button('Smaller buttons').disabled).toBe(true);
   expect(settings.stored().buttonScale).toBe(BUTTON_SCALE_MIN);
   await rerender({ settingsOpen: false });
-  expect(outerSize('Purple paint')).toBe(controlSize(BUTTON_SCALE_MIN));
+  expect(outerSize('Save picture')).toBe(controlSize(BUTTON_SCALE_MIN));
+  expect(outerSize('Purple paint')).toBe(PALETTE_FLOWS.row.swatchPx);
 });
 
 it('overrides the device with the in-app Reduce Motion switch and follows it again on a match', async () => {
@@ -197,15 +322,13 @@ it('overrides the device with the in-app Reduce Motion switch and follows it aga
   await click(REDUCE_MOTION_LABEL);
   checkedSwitch(button(REDUCE_MOTION_LABEL), true);
   expect(settings.stored().reduceMotion).toBe('reduce');
-  await rerender({ settingsOpen: false, colorPickerOpen: true });
-  expect(colorPickerAnimation()).toBe('none');
+  expect(await openColorPicker()).toBe('fade');
   await rerender({ settingsOpen: true, colorPickerOpen: false });
   await openSettingsSection('Accessibility');
   await click(REDUCE_MOTION_LABEL);
   checkedSwitch(button(REDUCE_MOTION_LABEL), false);
   expect(settings.stored().reduceMotion).toBe('system');
-  await rerender({ settingsOpen: false, colorPickerOpen: true });
-  expect(colorPickerAnimation()).toBe('fade');
+  expect(await openColorPicker()).toBe('fly');
 });
 
 it('shows a device Reduce Motion as on, and keeps motion when the parent turns it off', async () => {
@@ -218,8 +341,7 @@ it('shows a device Reduce Motion as on, and keeps motion when the parent turns i
   await click(REDUCE_MOTION_LABEL);
   checkedSwitch(button(REDUCE_MOTION_LABEL), false);
   expect(settings.stored().reduceMotion).toBe('full');
-  await rerender({ settingsOpen: false, colorPickerOpen: true });
-  expect(colorPickerAnimation()).toBe('fade');
+  expect(await openColorPicker()).toBe('fly');
 });
 
 it.each([
@@ -231,10 +353,8 @@ it.each([
     const settings = storedSettings({ whatsNewSeen });
     drawingScreen();
     await mount(createElement(RsdDrawingScreen));
-    expect(host.querySelectorAll('[data-testid="settings-activity-dot"]')).toHaveLength(1);
-    const row = button(`${WHATS_NEW}, new`);
-    expect(row.querySelector('[data-testid="settings-activity-dot"]')).not.toBeNull();
-    await act(async () => row.click());
+    expect(dottedRows()).toEqual([`${WHATS_NEW}, ${SECTION_SUBTITLES.whatsnew}, new`]);
+    await act(async () => hubRow(WHATS_NEW).click());
     expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
     for (const release of RELEASE_NOTES) {
       expect(host.textContent).toContain(release.dateLabel);
@@ -242,11 +362,24 @@ it.each([
     }
     expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
     await click('Back');
-    expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
-    expect(button(WHATS_NEW)).not.toBeNull();
+    expect(dottedRows()).toEqual([]);
     expect(settings.storage.write).toHaveBeenCalledOnce();
     await openSettingsSection(WHATS_NEW);
     expect(settings.storage.write).toHaveBeenCalledOnce();
+  }
+);
+
+it.each([1, SETTINGS_ACTIVITY_DOTS_START_SESSION - 1])(
+  "keeps an unseen What's New undotted in session %i, before shipping's dots begin",
+  async (sessions) => {
+    hubSessions.count = sessions;
+    storedSettings({ whatsNewSeen: null });
+    drawingScreen();
+    await mount(createElement(RsdDrawingScreen));
+    expect(hubRow(WHATS_NEW).getAttribute('aria-label')).toBe(
+      `${WHATS_NEW}, ${SECTION_SUBTITLES.whatsnew}`
+    );
+    expect(dottedRows()).toEqual([]);
   }
 );
 
@@ -254,7 +387,7 @@ it("shows no dot once the current release's notes have been seen", async () => {
   const settings = storedSettings();
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
-  expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
+  expect(dottedRows()).toEqual([]);
   await openSettingsSection(WHATS_NEW);
   expect(settings.storage.write).not.toHaveBeenCalled();
 });
@@ -274,14 +407,15 @@ it("keeps the What's New stamp when the section opens while another choice is st
   await click('Bigger buttons');
   expect(caller.product.sound.settings.status).toBe('saving');
   await click('Back');
-  await openSettingsSection(`${WHATS_NEW}, new`);
+  expect(dottedRows()).toHaveLength(1);
+  await openSettingsSection(WHATS_NEW);
   expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
   expect(settings.storage.write).toHaveBeenCalledOnce();
   await act(async () => finishWrite());
   expect(settings.storage.write).toHaveBeenCalledTimes(2);
   expect(settings.stored()).toMatchObject({ buttonScale: 110, whatsNewSeen: WHATS_NEW_STAMP });
   await click('Back');
-  expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
+  expect(dottedRows()).toEqual([]);
 });
 
 async function pencilDoubleTap() {

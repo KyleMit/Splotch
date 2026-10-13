@@ -14,7 +14,11 @@ const read = (path) =>
 const NATIVE_REEXPORT = /^export \{ (\w+) \} from '([^']+)';$/gm;
 const WEB_LAZY_EXPORT =
   /export const (\w+) = lazySurface\(\(\) =>\s+import\('([^']+)'\)\.then\(\(module\) => module\.(\w+)\)\s+\);/g;
-const SHEET_MOUNTERS = ['rsdDrawing/RsdDrawingScreen.tsx', 'rsdDrawing/RsdPaperSlot.tsx'];
+const SHEET_MOUNTERS = [
+  'rsdDrawing/RsdDrawingScreen.tsx',
+  'rsdDrawing/RsdPaperSlot.tsx',
+  'rsdDrawing/RsdDrawingStatus.tsx',
+];
 const SHEETS = 'rsdDrawing/drawingSheets.ts';
 // The one chunk the AI and feedback surfaces share with their owners (ADR-0179).
 const PRODUCT_CHUNK = 'product/productChunk.web.ts';

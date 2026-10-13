@@ -3,30 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import rsdDrawingConfig from '../migration/rsd-drawing-vitest.config.mjs';
-import {
-  RSD_NATIVE_SELECTION_TEST,
-  RSD_NATIVE_RECOVERY_TEST,
-  RSD_NATIVE_APPEARANCE_TEST,
-  RSD_NATIVE_FEEDBACK_TEST,
-  RSD_NATIVE_AI_TEST,
-  RSD_NATIVE_PARENT_CENTER_TEST,
-  RSD_NATIVE_ORIENTATION_TEST,
-  RSD_NATIVE_TOOLBAR_TEST,
-  RSD_NATIVE_CLEAR_TEST,
-  RSD_NATIVE_INSTALL_BANNER_TEST,
-  RSD_NATIVE_SETTINGS_SECTIONS_TEST,
-  RSD_NATIVE_BUTTON_SIZE_TEST,
-  RSD_NATIVE_TOKEN_SPECIMEN_TEST,
-  RSD_NATIVE_MODAL_FRAME_TEST,
-  RSD_NATIVE_BUTTON_TEST,
-  RSD_NATIVE_ICON_BUTTON_TEST,
-  RSD_NATIVE_BUTTON_CHROME_TEST,
-  RSD_NATIVE_SEGMENTED_PICKER_TEST,
-  RSD_NATIVE_SLIDER_TEST,
-  RSD_NATIVE_SETTINGS_ROWS_TEST,
-  RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
-  RSD_WEB_PRODUCT_OWNERS_TEST,
-} from '../migration/lib/rsd-drawing-checks.mjs';
+import { RSD_NATIVE_RENDERER_TESTS } from '../migration/lib/rsd-drawing-checks.mjs';
 
 // A relative specifier that points nowhere is not always an error, so moving a
 // file between directory depths breaks these two ways silently:
@@ -214,30 +191,7 @@ describe('repo-root walks under tools/', () => {
     expect(walkers.filter((walk) => walk.file === file)).toEqual([{ file, ups: 2 }]);
     expect(isRepoRoot(join(dirname(file), '..'))).toBe(false);
     expect(rsdDrawingConfig.root).toBe(join(repoRoot, 'tools'));
-    expect(rsdDrawingConfig.test.include).toEqual([
-      RSD_NATIVE_SELECTION_TEST,
-      RSD_NATIVE_RECOVERY_TEST,
-      RSD_NATIVE_APPEARANCE_TEST,
-      RSD_NATIVE_FEEDBACK_TEST,
-      RSD_NATIVE_AI_TEST,
-      RSD_NATIVE_PARENT_CENTER_TEST,
-      RSD_NATIVE_ORIENTATION_TEST,
-      RSD_NATIVE_TOOLBAR_TEST,
-      RSD_NATIVE_CLEAR_TEST,
-      RSD_NATIVE_INSTALL_BANNER_TEST,
-      RSD_NATIVE_SETTINGS_SECTIONS_TEST,
-      RSD_NATIVE_BUTTON_SIZE_TEST,
-      RSD_NATIVE_TOKEN_SPECIMEN_TEST,
-      RSD_NATIVE_MODAL_FRAME_TEST,
-      RSD_NATIVE_BUTTON_TEST,
-      RSD_NATIVE_ICON_BUTTON_TEST,
-      RSD_NATIVE_BUTTON_CHROME_TEST,
-      RSD_NATIVE_SEGMENTED_PICKER_TEST,
-      RSD_NATIVE_SLIDER_TEST,
-      RSD_NATIVE_SETTINGS_ROWS_TEST,
-      RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
-      RSD_WEB_PRODUCT_OWNERS_TEST,
-    ]);
+    expect(rsdDrawingConfig.test.include).toEqual([RSD_NATIVE_RENDERER_TESTS]);
   });
 
   it.each(walkers)('$file walks $ups levels to the repo root', ({ file, ups }) => {

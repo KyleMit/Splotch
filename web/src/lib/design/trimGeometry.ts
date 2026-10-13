@@ -1,4 +1,6 @@
-import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+// A relative import, not $lib: the native app's Color Picker imports this module through Metro,
+// which has no $lib alias.
+import { BREAKPOINT_EPSILON_PX, TABLET_MIN_SIDE_PX } from '../breakpoints';
 
 // Executable form of the responsive-trim ladders in ColorPalette.svelte,
 // ColorPicker.svelte and ColorMenu.svelte (ADR-0048). Those components trim

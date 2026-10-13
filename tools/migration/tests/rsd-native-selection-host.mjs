@@ -1,3 +1,4 @@
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { coloringBookHistory } from '../../../experiments/native-architecture/src/settings/coloringBook.ts';
 import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { act } from 'react';
@@ -5,6 +6,7 @@ import { createSoundSettings } from '../../../experiments/native-architecture/sr
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { orientationCalls } from './rsd-orientation-port.mjs';
+import './rsd-native-settings-hub-mocks.mjs';
 
 const caller = vi.hoisted(() => {
   let journal = null;
@@ -202,6 +204,7 @@ const records = vi.hoisted(() => ({
   dismissals: [],
   props: [],
   viewports: [],
+  announcements: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
   insets: { top: 0, right: 0, bottom: 0, left: 0 },
   dimensionListeners: new Set(),
@@ -230,7 +233,7 @@ vi.mock('react-native', async () => {
         tag,
         {
           ref,
-          role: props.role,
+          role: props.role ?? props.accessibilityRole,
           id: props.nativeID,
           'aria-label': props.accessibilityLabel,
           'aria-labelledby': props['aria-labelledby'],
@@ -257,7 +260,8 @@ vi.mock('react-native', async () => {
     Pressable = host('button'),
     View = host('div');
   return {
-    StyleSheet: { create: (value) => value },
+    StyleSheet: { create: (value) => value, absoluteFill: {} },
+    I18nManager: { isRTL: false, doLeftAndRightSwapInRTL: true },
     StatusBar: (props) => {
       records.props.push(props);
       return React.createElement('span', { 'data-status-bar': props.barStyle });
@@ -282,6 +286,8 @@ vi.mock('react-native', async () => {
     AccessibilityInfo: {
       isReduceMotionEnabled: async () => records.reduceMotion,
       addEventListener: () => ({ remove() {} }),
+      announceForAccessibility: (text) => records.announcements.push(text),
+      announceForAccessibilityWithOptions: (text) => records.announcements.push(text),
     },
     Animated: animatedPort(View, Text),
     Easing: easingPort,
@@ -419,6 +425,7 @@ afterEach(async () => {
   caller.screen = null;
   records.props.length = 0;
   records.viewports.length = 0;
+  records.announcements.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
   records.insets = { top: 0, right: 0, bottom: 0, left: 0 };
   records.backListeners.clear();
@@ -434,8 +441,9 @@ async function expandControls() {
 }
 
 // Settings opens on its hub of sections; each control lives on its section's page.
+// A hub row is named by its title, status line and any "new", so it is found by its title.
 async function openSettingsSection(label) {
-  const row = host.querySelector(`[role="list"] [aria-label="${label}"]`);
+  const row = host.querySelector(`[role="list"] button[aria-label^="${label}, "]`);
   if (!row) throw new Error(`No Settings section row named ${label}.`);
   await act(async () => row.click());
 }
@@ -463,7 +471,7 @@ function createPickerCaller(refresh) {
     drawing: false,
     disabled: true,
     brush: 'marker',
-    history: { undo: [] },
+    history: { undo: [], drawing: emptyDrawing() },
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,

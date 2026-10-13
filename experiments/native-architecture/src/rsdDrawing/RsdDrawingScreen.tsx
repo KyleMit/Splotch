@@ -1,12 +1,12 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import {
-  ColorPicker,
-  NativeSoundSettingsDialog,
   RsdAiSheet,
+  RsdColorPicker,
   RsdColoringBookPicker,
   RsdFeedbackSheet,
   RsdParentCenterSection,
   RsdParentGateSheet,
+  RsdSettingsRoute,
 } from './drawingSheets';
 import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
@@ -22,17 +22,15 @@ import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingMenu } from '../useDrawingMenu';
-import { RsdAction, styles } from './controls';
+import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
-import { RsdDraftNotice } from './RsdDraftNotice';
+import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './installBannerSurface';
-import { NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
-import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
@@ -185,7 +183,7 @@ function RsdDrawingContent({
 }) {
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen, 'reported');
-  const notice = useSettledMessage(screen.notice, screen.drawing);
+  const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
     screen.drawing
@@ -198,7 +196,7 @@ function RsdDrawingContent({
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
-      <NativeFrame>
+      <NativeFrame variant="drawing">
         <html.div
           data-layoutconformance="strict"
           style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}
@@ -224,18 +222,12 @@ function RsdDrawingContent({
               />
             )}
             status={
-              <NativeDrawingStatus drawing={screen.drawing}>
-                <html.span aria-live="polite">{notice}</html.span>
-                {soundNotice ? <html.span aria-live="polite">{soundNotice}</html.span> : null}
-                <RsdDraftNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-                {screen.recovery.failed ? (
-                  <RsdAction
-                    label="Retry drawing"
-                    disabled={screen.recovery.retryDisabled}
-                    onClick={screen.recovery.retry}
-                  />
-                ) : null}
-              </NativeDrawingStatus>
+              <RsdDrawingStatus
+                screen={screen}
+                notice={notice}
+                soundNotice={soundNotice}
+                blocked={disabled || screen.pictures !== null}
+              />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
@@ -257,23 +249,19 @@ function RsdDrawingContent({
             )}
           />
           <RsdScreenSheets screen={screen} />
-          {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
+          <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}
         {route.shown === 'settings' ? (
           <RsdSurfaceBoundary onClose={screen.closeSettings}>
-            <NativeSoundSettingsDialog
-              settings={sound.settings}
-              brushState={screen.brushPreferences}
-              onBrushAvailabilityChange={screen.setBrushAvailable}
-              onRetryBrushSave={screen.retryBrushSave}
+            <RsdSettingsRoute
+              screen={screen}
+              sound={sound}
+              product={product}
               notice={soundNotice}
-              {...soundSettingsActions(sound)}
-              onClose={screen.closeSettings}
               visible={route.visible}
               onDismiss={onModalDismissed}
-              onParentCenter={() => product.owner?.openParentCenter()}
             />
           </RsdSurfaceBoundary>
         ) : null}
@@ -311,11 +299,17 @@ function RsdScreenSheets({ screen }: { screen: Screen }) {
   );
 }
 
+// The picker stays mounted through its fly-back after a pick or a close has cleared the screen's
+// open state.
 function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound }) {
+  const picker = useModalPresence(screen.colorPickerOpen || null);
+  if (!picker.shown) return null;
   return (
     <RsdSurfaceBoundary onClose={screen.closeColorPicker}>
-      <ColorPicker
-        selected={sound.settings.selectedColor}
+      <RsdColorPicker
+        visible={picker.visible}
+        customColor={sound.settings.customColors[0]}
+        onDismiss={picker.dismissed}
         onClose={screen.closeColorPicker}
         onChoose={(color) => {
           screen.selectInkBrush();

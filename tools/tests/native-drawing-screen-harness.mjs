@@ -146,7 +146,17 @@ vi.mock('react-native', () => {
           for (const animation of animations) animation.stop();
         },
       }),
+      parallel: (animations) => ({
+        start(done) {
+          for (const animation of animations) animation.start();
+          done?.({ finished: true });
+        },
+        stop() {
+          for (const animation of animations) animation.stop();
+        },
+      }),
     },
+    Easing: { linear: (t) => t, bezier: () => (t) => t },
     AccessibilityInfo: {
       isReduceMotionEnabled: files.motionRead,
       addEventListener(event, listener) {
@@ -300,7 +310,16 @@ vi.mock('react-native-svg', () => ({
   Rect: (props) => createElement('rect', props),
   Ellipse: (props) => createElement('ellipse', props),
   Path: (props) => createElement('path', props),
+  Polygon: (props) => createElement('polygon', props),
 }));
+
+// The screen's Color Picker is a React Strict DOM surface; its web build emits the plain elements
+// this stand-in renders, styles dropped, so the screen's picker wiring runs against the real picker.
+vi.mock('react-strict-dom', async () => (await import('./native-rsd-web-stub.mjs')).rsdWebStub());
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+);
 
 export const STROKE = {
   color: 'Purple',
@@ -440,6 +459,21 @@ export function createScreen({ cohortDrivers = false } = {}) {
       await this.click(opener.getAttribute('aria-label'));
       expect(this.dialog().getAttribute('aria-label')).toBe('Drawing tools');
       await this.click(label);
+    },
+    // The picker loads on first open (legacyColorPicker.ts), a few ticks after the press.
+    async openColors() {
+      await this.click('More colors');
+      await vi.waitFor(() =>
+        expect(container.querySelector('[role="dialog"][aria-label="Color Picker"]')).not.toBeNull()
+      );
+      return container.querySelector('[role="dialog"][aria-label="Color Picker"]');
+    },
+    async escape() {
+      await act(async () =>
+        container
+          .querySelector('[role="dialog"]')
+          .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      );
     },
     paper: () => container.querySelector('[data-testid="paper"]').getAttribute('data-drawing'),
     dialog: () => container.querySelector('[role="dialog"]'),

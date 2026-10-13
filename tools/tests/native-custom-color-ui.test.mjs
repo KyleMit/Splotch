@@ -5,9 +5,10 @@ import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PaintColors } from '../../experiments/native-architecture/src/drawing/PaintColors.tsx';
-import { ColorPicker } from '../../experiments/native-architecture/src/drawing/ColorPicker.tsx';
+import { RsdColorPicker } from '../../experiments/native-architecture/src/rsdDrawing/RsdColorPicker.tsx';
+import { hexPickerLayout } from '../../experiments/native-architecture/src/rsdDrawing/hexPicker.ts';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
-import { AppState } from 'react-native';
+import { AppState, Dimensions } from 'react-native';
 import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 
 const platform = vi.hoisted(() => ({
@@ -52,6 +53,12 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', ()
   };
 });
 vi.mock('react-native', () => import('react-native-web'));
+// The Color Picker is a React Strict DOM surface; its web build emits these plain elements.
+vi.mock('react-strict-dom', async () => (await import('./native-rsd-web-stub.mjs')).rsdWebStub());
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
+);
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
 vi.mock('../../experiments/native-architecture/src/drawing/measurePaper.ts', () => ({
   measurePaper: (_host, complete) => complete({ width: 260, height: 260, pageX: 0, pageY: 0 }),
@@ -71,6 +78,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// The picker loads on first open (legacyColorPicker.ts), a few ticks after the press.
+async function pickerOpened() {
+  await vi.waitFor(() =>
+    expect(document.querySelector('[role="dialog"][aria-label="Color Picker"]')).not.toBeNull()
+  );
+  return document.querySelector('[role="dialog"][aria-label="Color Picker"]');
+}
+
 async function chooseWithPendingWrite() {
   let resolve, reject;
   const promise = new Promise((yes, no) => {
@@ -89,19 +104,10 @@ async function chooseWithPendingWrite() {
     opener.dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }));
   });
   expect(platform.lock).toHaveBeenCalledTimes(1);
-  const opening = document.querySelector('[aria-label="Color picker"]');
-  expect(opening, host.textContent).not.toBeNull();
-  await act(async () =>
-    opening.parentElement.parentElement.dispatchEvent(new Event('animationend', { bubbles: true }))
-  );
-  const tile = document.querySelector('[aria-label^="Explore "]');
-  await act(async () => tile.click());
-  const chosen = tile.getAttribute('aria-label').slice('Explore '.length);
-  await act(async () =>
-    document
-      .querySelector('[aria-label="Use color"]')
-      .dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
-  );
+  const picker = await pickerOpened();
+  const hexagon = picker.querySelector('button');
+  const chosen = hexagon.getAttribute('aria-label');
+  await act(async () => hexagon.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   return { host, opener, chosen, resolve, reject };
 }
 
@@ -182,11 +188,11 @@ describe('custom color controls through installed React Native Web', () => {
   it.each([
     ['resolve', false],
     ['reject', true],
-  ])('restores focus after the real Use color delayed write %s', async (completion, failed) => {
+  ])('restores focus after the picked color delayed write %s', async (completion, failed) => {
     const pending = await chooseWithPendingWrite();
     expect(platform.write).toHaveBeenCalledTimes(1);
     expect(JSON.parse(platform.write.mock.calls[0][0]).selectedColor).toBe(pending.chosen);
-    expect(document.querySelector('[aria-label="Color picker"]')).toBeNull();
+    expect(document.querySelector('[aria-label="Color Picker"]')).toBeNull();
     expect(pending.opener.disabled).toBe(true);
     expect(document.activeElement).not.toBe(pending.opener);
     expect(platform.release).toHaveBeenCalledTimes(1);
@@ -251,7 +257,7 @@ describe('custom color controls through installed React Native Web', () => {
       expect(JSON.parse(platform.write.mock.calls[0][0]).selectedColor).toBe(pending.chosen);
     }
   );
-  it('uses the actual modal focus trap and native color buttons, applies only Use color and restores focus on close', async () => {
+  it('uses the actual modal focus trap and named hexagon buttons, picks only on a pointerless click and restores focus on close', async () => {
     const chosen = vi.fn();
     const closed = vi.fn();
     const trigger = document.createElement('button');
@@ -263,47 +269,33 @@ describe('custom color controls through installed React Native Web', () => {
     root = createRoot(host);
     await act(async () =>
       root.render(
-        createElement(ColorPicker, { selected: 'Purple', onChoose: chosen, onClose: closed })
-      )
-    );
-    const opening = document.querySelector('[aria-label="Color picker"]');
-    await act(async () =>
-      opening.parentElement.parentElement.dispatchEvent(
-        new Event('animationend', { bubbles: true })
+        createElement(RsdColorPicker, {
+          visible: true,
+          customColor: undefined,
+          onChoose: chosen,
+          onClose: closed,
+        })
       )
     );
     const modal = document.querySelector('[role="dialog"]');
-    expect(modal.getAttribute('aria-label')).toBe('Color picker');
-    const explorer = modal.querySelector('[role="group"][aria-label="Color explorer"]');
-    expect(explorer).not.toBeNull();
-    expect(explorer.tabIndex).toBe(-1);
-    expect(explorer.closest('[aria-hidden="true"]')).toBeNull();
-    const tiles = [...explorer.querySelectorAll('[aria-label^="Explore "]')];
-    expect(tiles).toHaveLength(25);
-    expect(new Set(tiles.map((button) => button.getAttribute('aria-label'))).size).toBe(25);
-    for (const button of tiles) {
-      expect(button.tagName).toBe('BUTTON');
-      expect(button.getAttribute('role')).toBe('button');
+    expect(modal.getAttribute('aria-label')).toBe('Color Picker');
+    expect(modal.textContent).toBe('');
+    const hexagons = [...modal.querySelectorAll('button')];
+    expect(hexagons.map((button) => button.getAttribute('aria-label'))).toEqual(
+      hexPickerLayout(Dimensions.get('window')).cells.map((cell) => cell.color)
+    );
+    for (const button of hexagons) {
       expect(button.disabled).toBe(false);
       expect(button.closest('[aria-hidden="true"]')).toBeNull();
-      await act(async () => button.click());
-      expect(button.getAttribute('aria-pressed')).toBe('true');
-      expect(explorer.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
-      expect(chosen).not.toHaveBeenCalled();
     }
-    const tile = tiles[0];
-    await act(async () => tile.click());
-    expect(tile.getAttribute('aria-pressed')).toBe('true');
-    expect(chosen).not.toHaveBeenCalled();
-    const otherTile = modal.querySelectorAll('[aria-label^="Explore "]')[1];
+    const [first] = hexagons;
+    const color = first.getAttribute('aria-label');
     await act(async () =>
-      otherTile.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
+      first.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
     );
-    expect(tile.getAttribute('aria-pressed')).toBe('true');
-    expect(otherTile.getAttribute('aria-pressed')).toBe('false');
-    const use = modal.querySelector('[aria-label="Use color"]');
-    await act(async () => use.click());
-    expect(chosen).toHaveBeenCalledWith(tile.getAttribute('aria-label').slice('Explore '.length));
+    expect(chosen).not.toHaveBeenCalled();
+    await act(async () => first.click());
+    expect(chosen).toHaveBeenCalledExactlyOnceWith(color);
     await act(async () => {
       document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
     });
@@ -334,29 +326,6 @@ function contrast(a, b) {
   const values = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
-it.each(['light', 'dark'])(
-  'renders the actual Use color label above AA contrast in %s',
-  async (preference) => {
-    const host = document.createElement('div');
-    document.body.append(host);
-    root = createRoot(host);
-    await act(async () =>
-      root.render(
-        createElement(
-          DrawingAppearanceProvider,
-          { preference },
-          createElement(ColorPicker, { selected: 'Black', onChoose() {}, onClose() {} })
-        )
-      )
-    );
-    const action = document.querySelector('[aria-label="Use color"]');
-    expect(action).not.toBeNull();
-    const text = [...action.querySelectorAll('*')].find((node) => node.textContent === 'Use color');
-    expect(
-      contrast(getComputedStyle(text).color, getComputedStyle(action).backgroundColor)
-    ).toBeGreaterThanOrEqual(4.5);
-  }
-);
 it.each(['light', 'dark'])(
   'renders readable RN Black and dark custom swatch selection marks in %s',
   async (preference) => {
@@ -393,7 +362,7 @@ it.each(['light', 'dark'])(
 );
 
 it.each(['light', 'dark'])(
-  'preserves unchanged semantic Black through the real More colors caller in %s',
+  'keeps semantic Black through a closed Color Picker and saves a picked hexagon in %s',
   async (appearance) => {
     let stored = JSON.stringify({
       version: 4,
@@ -414,30 +383,21 @@ it.each(['light', 'dark'])(
     await act(async () => root.render(createElement(DrawingScreen)));
     const open = async () => {
       await act(async () => host.querySelector('[aria-label="More colors"]').click());
-      const opening = document.querySelector('[aria-label="Color picker"]');
-      await act(async () =>
-        opening.parentElement.parentElement.dispatchEvent(
-          new Event('animationend', { bubbles: true })
-        )
-      );
-      return document.querySelector('[role="dialog"]');
+      return pickerOpened();
     };
     let modal = await open();
-    expect(modal.textContent).toContain(appearance === 'dark' ? '#FFFFFF' : '#0A0B10');
-    for (const id of ['rsd-window-insets', 'rsd-safe-area-frame']) {
-      const color = getComputedStyle(modal.querySelector(`[data-testid="${id}"]`)).backgroundColor;
-      expect(color).toMatch(/^(transparent|rgba\(0, 0, 0, 0(?:\.0+)?\))$/);
-    }
-    await act(async () => modal.querySelector('[aria-label="Use color"]').click());
+    await act(async () => {
+      modal.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
+    });
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
     expect(JSON.parse(stored)).toMatchObject({ selectedColor: 'Black', customColors: [] });
     expect(host.querySelector('[aria-label="Black paint"]').getAttribute('aria-pressed')).toBe(
       'true'
     );
     modal = await open();
-    const tile = modal.querySelector('[aria-label^="Explore "]');
-    const literal = tile.getAttribute('aria-label').slice('Explore '.length);
-    await act(async () => tile.click());
-    await act(async () => modal.querySelector('[aria-label="Use color"]').click());
+    const hexagon = modal.querySelector('button');
+    const literal = hexagon.getAttribute('aria-label');
+    await act(async () => hexagon.click());
     expect(JSON.parse(stored)).toMatchObject({ selectedColor: literal, customColors: [literal] });
     await act(async () => root.unmount());
     root = createRoot(host);

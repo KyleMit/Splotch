@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 const root = realpathSync(join(import.meta.dirname, '../../..'));
 const candidate = join(root, 'experiments/native-architecture');
 const fixtures = [];
@@ -30,11 +30,16 @@ function fixture() {
   symlinkSync(join(root, 'node_modules'), join(path, 'node_modules'));
   return path;
 }
+// Each case copies the project and Babel-transforms the whole mounted screen in a child process:
+// under a full parallel suite that outlasts Vitest's default 5s, so the case waits as long as
+// the child is allowed to run.
+const TRANSFORM_TIMEOUT_MS = 20_000;
+vi.setConfig({ testTimeout: TRANSFORM_TIMEOUT_MS });
 function run(path) {
   return spawnSync(process.execPath, [join(path, 'scripts/check-rsd-transform.cjs')], {
     cwd: path,
     encoding: 'utf8',
-    timeout: 20000,
+    timeout: TRANSFORM_TIMEOUT_MS,
     maxBuffer: 2 * 1024 * 1024,
   });
 }
@@ -263,19 +268,19 @@ it.each([
     'RSD optional toolbar switch callback',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdSettingsRoute.tsx',
     'brushState={screen.brushPreferences}',
     'brushState={sound.settings}',
     'RSD brush settings mount owner: brushState',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdSettingsRoute.tsx',
     'onBrushAvailabilityChange={screen.setBrushAvailable}',
     'onBrushAvailabilityChange={screen.setBrush}',
     'RSD brush settings mount owner: onBrushAvailabilityChange',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdSettingsRoute.tsx',
     'onRetryBrushSave={screen.retryBrushSave}',
     'onRetryBrushSave={screen.undo}',
     'RSD brush settings mount owner: onRetryBrushSave',

@@ -92,3 +92,17 @@ export function fittedPaper(space: { width: number; height: number }, paper: Pap
     height,
   };
 }
+
+// Sub-pixel slack from the contain fit's arithmetic, not a presentation change.
+const LIFT_TOLERANCE_PX = 0.5;
+
+// Shipping lifts the sheet off a flat margin only while it presents smaller than its space, as a
+// rotation-locked picture does; a sheet that fills its space is the page itself.
+export function paperLifted(
+  space: { width: number; height: number },
+  frame: { width: number; height: number }
+) {
+  return (
+    space.width - frame.width > LIFT_TOLERANCE_PX || space.height - frame.height > LIFT_TOLERANCE_PX
+  );
+}
