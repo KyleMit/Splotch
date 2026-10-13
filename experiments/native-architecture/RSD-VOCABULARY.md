@@ -244,6 +244,9 @@ top-right corner and the departing page flies into the docked tab.
   because native RSD resolves a token gradient after a literal one.
 * The accept ring wash reaches 100% at the corner of the ring's square box, which is what CSS
   `radial-gradient(circle, …)` means.
+* `RsdClearCoachmark` and `RsdClearUnderlay` paint nothing until a press on Clear. The web export
+  loads each from its own chunk once the screen mounts (`clearSurfaces.web.ts`), keeping them off
+  the startup budget; the native apps import them directly (`clearSurfaces.ts`).
 * `tools/tests/native-clear-projection.test.mjs` reads every dock size, finish, ring ink and stroke
   width back from the shipping stylesheets. `tools/migration/tests/rsd-native-clear.test.mjs` mounts
   the resolved rest and drag states.

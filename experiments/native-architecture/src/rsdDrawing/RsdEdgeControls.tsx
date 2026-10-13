@@ -17,7 +17,8 @@ import {
 } from './controls';
 import type { NativeIconName } from './icons.generated';
 import { useClearGesture } from '../clear/useClearGesture';
-import { RsdClearOverlay, RsdClearUnderlay } from './RsdClearControl';
+import { RsdClearOverlay } from './RsdClearControl';
+import { RsdClearUnderlay } from './clearSurfaces';
 import { NativeDrawingLayout, type DrawerTool, type PaletteLayout } from './NativeScrollAreas';
 import { controlSize } from '../settings/buttonSize';
 
