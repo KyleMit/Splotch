@@ -196,7 +196,7 @@ describe('the pane scroll geometry', () => {
 });
 
 const CURRENT_SETTINGS = {
-  version: 11,
+  version: 12,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -221,6 +221,8 @@ const CURRENT_SETTINGS = {
   whatsNewSeen: WHATS_NEW_STAMP,
   pencilEraserEnabled: true,
   applePencilSeen: false,
+  toolDrawerEnabled: true,
+  screenshotEnabled: true,
 };
 
 function openSettings(dimensions, overrides = {}) {
@@ -406,6 +408,7 @@ describe('the wide shell', () => {
 
 describe('the compact shell', () => {
   const quick = (label) => host.querySelector(`[role="switch"][aria-label="${label}"]`);
+  const QUICK_SWITCHES = ['Sound', 'Night Mode', 'Tool drawer'];
 
   // The orientation cell's width on a landscape phone: half the card's content row, less the gap.
   const orientationCell = (window) =>
@@ -453,7 +456,11 @@ describe('the compact shell', () => {
     expect(host.querySelector('[aria-label="Settings sections"]')).toBeNull();
     checkedSwitch(quick('Sound'), true);
     checkedSwitch(quick('Night Mode'), false);
+    checkedSwitch(quick('Tool drawer'), true);
     expect(host.textContent).toContain('Switch to portrait for the full settings.');
+    await act(async () => quick('Tool drawer').click());
+    checkedSwitch(quick('Tool drawer'), false);
+    expect(settings.stored().toolDrawerEnabled).toBe(false);
     await act(async () => quick('Night Mode').click());
     checkedSwitch(quick('Night Mode'), true);
     expect(settings.stored().appearance).toBe('dark');
@@ -467,9 +474,9 @@ describe('the compact shell', () => {
     await mount(createElement(RsdDrawingScreen));
     await act(async () => quick('Sound').click());
     expect(caller.product.sound.settings.status).toBe('saving');
-    for (const label of ['Sound', 'Night Mode']) expect(quick(label).disabled, label).toBe(true);
+    for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(true);
     expect(host.querySelector('[role="radio"][aria-label="Auto"]').disabled).toBe(true);
     await finish();
-    for (const label of ['Sound', 'Night Mode']) expect(quick(label).disabled, label).toBe(false);
+    for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(false);
   });
 });

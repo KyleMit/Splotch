@@ -1,16 +1,6 @@
 const assert = require('node:assert/strict');
 
-function validateBrushSources({
-  parse,
-  imported,
-  babel,
-  settingsDialog,
-  optionalSwitches,
-  toolbarSwitches,
-  toolbarConditions,
-  attribute,
-  settingsValue,
-}) {
+function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions, attribute }) {
   const unwrap = (node) => {
     while (['TSAsExpression', 'TSSatisfiesExpression', 'TSNonNullExpression'].includes(node?.type))
       node = node.expression;
@@ -35,11 +25,6 @@ function validateBrushSources({
       )?.value;
     return attribute(node, name)?.value?.expression;
   };
-  const availabilityValue = (node) =>
-    node?.type === 'MemberExpression' &&
-    node.computed &&
-    namedMember(node.object, 'brushState', 'availability') &&
-    identifier(node.property, 'brush');
   // The toolbar reads the brush control through a local alias, as RsdActionsPanel does.
   const brushControl = (node) =>
     namedMember(node, 'screen', 'brushControl') || identifier(node, 'control');
@@ -61,45 +46,6 @@ function validateBrushSources({
     node.object.computed &&
     identifier(node.object.object, table) &&
     expectedBrush(node.object.property);
-  function assertOptionalSwitch(node, prefix) {
-    assert.ok(availabilityValue(expressionValue(node, 'selected')), prefix + ' state owner');
-    const label = expressionValue(node, 'label');
-    assert.ok(
-      label?.type === 'TemplateLiteral' &&
-        label.quasis.length === 2 &&
-        label.quasis[0].value.cooked === 'Show ' &&
-        label.quasis[1].value.cooked === '' &&
-        label.expressions.length === 1 &&
-        brushLabel(label.expressions[0], (value) => identifier(value, 'brush')),
-      prefix + ' labels'
-    );
-    const disabled = expressionValue(node, 'disabled');
-    assert.ok(
-      disabled?.type === 'LogicalExpression' &&
-        disabled.operator === '||' &&
-        identifier(disabled.left, 'busy') &&
-        disabled.right.type === 'BinaryExpression' &&
-        disabled.right.operator === '!==' &&
-        namedMember(disabled.right.left, 'brushState', 'status') &&
-        disabled.right.right.type === 'StringLiteral' &&
-        disabled.right.right.value === 'ready',
-      prefix + ' disabled owner'
-    );
-    const callback = expressionValue(node, 'onClick');
-    assert.ok(
-      callback?.type === 'ArrowFunctionExpression' &&
-        !callback.async &&
-        callback.params.length === 0 &&
-        callback.body.type === 'CallExpression' &&
-        identifier(callback.body.callee, 'onBrushAvailabilityChange') &&
-        callback.body.arguments.length === 2 &&
-        identifier(callback.body.arguments[0], 'brush') &&
-        callback.body.arguments[1].type === 'UnaryExpression' &&
-        callback.body.arguments[1].operator === '!' &&
-        availabilityValue(callback.body.arguments[1].argument),
-      prefix + ' callback'
-    );
-  }
   function assertToolbarSwitch(node, prefix) {
     assert.ok(toolbarSelected(expressionValue(node, 'selected')), prefix + ' state owner');
     assert.ok(
@@ -219,14 +165,6 @@ function validateBrushSources({
       identifier(menuBrushes.arguments[0], 'availability'),
     'RSD brush control many optional policy'
   );
-  assert.ok(
-    imported(settingsDialog, '../settings/brushPreferences', 'OPTIONAL_BRUSHES'),
-    'RSD optional brush import owner'
-  );
-  assert.ok(
-    imported(settingsDialog, '../drawing/brushes', 'BRUSHES'),
-    'RSD optional brush label import owner'
-  );
   const brushDefinitions = unwrap(exportValue(parse('src/drawing/brushes.ts'), 'BRUSHES'));
   assert.equal(brushDefinitions?.type, 'ObjectExpression', 'RSD optional brush label definitions');
   const optionalLabels = ['crayon', 'magic', 'eraser'].map((name) => {
@@ -244,27 +182,6 @@ function validateBrushSources({
     ['Crayon', 'Magic Brush', 'Eraser'],
     'RSD optional brush labels'
   );
-  assert.equal(optionalSwitches.length, 1, 'RSD optional brush switch template count');
-  const optional = optionalSwitches[0];
-  assert.ok(
-    optional.map.callee.type === 'MemberExpression' &&
-      !optional.map.callee.computed &&
-      identifier(optional.map.callee.object, 'OPTIONAL_BRUSHES') &&
-      identifier(optional.map.callee.property, 'map') &&
-      optional.map.arguments.length === 1 &&
-      optional.map.arguments[0].type === 'ArrowFunctionExpression' &&
-      !optional.map.arguments[0].async &&
-      optional.map.arguments[0].params.length === 1 &&
-      identifier(optional.map.arguments[0].params[0], 'brush') &&
-      optional.map.arguments[0].body.type === 'JSXElement' &&
-      optional.map.arguments[0].body.openingElement === optional.node,
-    'RSD optional brush map owner'
-  );
-  assert.ok(
-    identifier(expressionValue(optional.node, 'key'), 'brush'),
-    'RSD optional brush key owner'
-  );
-  assertOptionalSwitch(optional.node, 'RSD optional brush switch');
   assert.equal(toolbarSwitches.length, 1, 'RSD optional toolbar switch count');
   assertToolbarSwitch(toolbarSwitches[0], 'RSD optional toolbar switch');
   const toolbarCondition = toolbarConditions[0];
@@ -299,57 +216,17 @@ function validateBrushSources({
     );
 
   function assertTransformedBrushSwitches(ast, file) {
-    if (
-      file === 'src/rsdDrawing/RsdSettingsDialog.tsx' ||
-      file === 'src/rsdDrawing/RsdActionsPanel.tsx'
-    ) {
-      const transformedSwitches = [];
-      babel.traverse(ast, {
-        ObjectExpression({ node }) {
-          const selection = expressionValue(node, 'selection');
-          if (selection?.type === 'StringLiteral' && selection.value === 'switch')
-            transformedSwitches.push(node);
-        },
-      });
-      if (file === 'src/rsdDrawing/RsdSettingsDialog.tsx') {
-        assert.equal(transformedSwitches.length, 6, 'RSD transformed settings switch templates');
-        const optional = transformedSwitches.filter((node) =>
-          availabilityValue(expressionValue(node, 'selected'))
-        );
-        assert.equal(optional.length, 1, 'RSD transformed optional brush switch count');
-        assertOptionalSwitch(optional[0], 'RSD transformed optional brush switch');
-        assert.deepEqual(
-          transformedSwitches
-            .filter((node) => node !== optional[0])
-            .map((node) => expressionValue(node, 'selected'))
-            .map((node) =>
-              [
-                'soundEnabled',
-                'undoButtonEnabled',
-                'strokeWidthControlEnabled',
-                'saveOnDeleteEnabled',
-                'pencilEraserEnabled',
-              ].find((property) => settingsValue(node, property))
-            )
-            .sort(),
-          [
-            'pencilEraserEnabled',
-            'saveOnDeleteEnabled',
-            'soundEnabled',
-            'strokeWidthControlEnabled',
-            'undoButtonEnabled',
-          ],
-          'RSD transformed settings switch state callers'
-        );
-      } else {
-        assert.equal(
-          transformedSwitches.length,
-          1,
-          'RSD transformed optional toolbar switch count'
-        );
-        assertToolbarSwitch(transformedSwitches[0], 'RSD transformed optional toolbar switch');
-      }
-    }
+    if (file !== 'src/rsdDrawing/RsdActionsPanel.tsx') return;
+    const transformedSwitches = [];
+    babel.traverse(ast, {
+      ObjectExpression({ node }) {
+        const selection = expressionValue(node, 'selection');
+        if (selection?.type === 'StringLiteral' && selection.value === 'switch')
+          transformedSwitches.push(node);
+      },
+    });
+    assert.equal(transformedSwitches.length, 1, 'RSD transformed optional toolbar switch count');
+    assertToolbarSwitch(transformedSwitches[0], 'RSD transformed optional toolbar switch');
   }
   return { optionalBrushes, optionalLabels, assertTransformedBrushSwitches };
 }

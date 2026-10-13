@@ -11,6 +11,10 @@ export function soundSettingsActions(sound: Sound) {
       void sound.owner?.settings.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled: boolean) =>
       void sound.owner?.settings.setStrokeWidthControlEnabled(enabled),
+    onToolDrawerChange: (enabled: boolean) =>
+      void sound.owner?.settings.setToolDrawerEnabled(enabled),
+    onScreenshotChange: (enabled: boolean) =>
+      void sound.owner?.settings.setScreenshotEnabled(enabled),
     onSaveOnDeleteChange: (enabled: boolean) =>
       void sound.owner?.settings.setSaveOnDeleteEnabled(enabled),
     onPencilEraserChange: (enabled: boolean) =>

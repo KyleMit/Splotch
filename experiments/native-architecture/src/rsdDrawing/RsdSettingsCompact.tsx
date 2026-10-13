@@ -4,6 +4,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useOrientationLockApplies } from '../platform/deviceOrientation';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { OrientationChoice } from '../settings/orientation';
+import { TOOL_DRAWER_COPY } from '../settings/drawingTools';
 import { RsdOrientationPicker } from './RsdOrientationPicker';
 import type { HubToggle } from './RsdHubRow';
 import { RsdIcon } from './RsdIcon';
@@ -99,6 +100,7 @@ function rows(cells: readonly ReactNode[]) {
 export function RsdSettingsCompact({
   sound,
   night,
+  toolDrawer,
   orientation,
   busy,
   onOrientationChange,
@@ -106,6 +108,7 @@ export function RsdSettingsCompact({
 }: {
   sound: HubToggle;
   night: HubToggle;
+  toolDrawer: Pick<HubToggle, 'checked' | 'disabled' | 'onToggle'>;
   orientation: OrientationChoice;
   busy: boolean;
   onOrientationChange: (orientation: OrientationChoice) => void;
@@ -132,6 +135,16 @@ export function RsdSettingsCompact({
         checked={night.checked}
         disabled={night.disabled}
         onToggle={night.onToggle}
+      />
+    </html.div>,
+    <html.div key="toolDrawer" style={styles.cell}>
+      <RsdToggleRow
+        icon="dashboard-customize"
+        label={TOOL_DRAWER_COPY.quick}
+        id="quickToolDrawerToggle"
+        checked={toolDrawer.checked}
+        disabled={toolDrawer.disabled}
+        onToggle={toolDrawer.onToggle}
       />
     </html.div>,
     lockApplies ? (

@@ -51,9 +51,9 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
     canonicalEntry: true,
     mountedRsdSource: true,
     optionalBrushSwitches: 3,
-    optionalBrushLabels: ['Show Crayon', 'Show Magic Brush', 'Show Eraser'],
+    optionalBrushLabels: ['Crayon', 'Magic Brush', 'Eraser'],
     adaptiveToolbarSwitch: true,
-    preservedSettingsSwitches: 5,
+    preservedSettingsSwitches: 1,
   });
 });
 it.each([
@@ -115,11 +115,6 @@ it('rejects a comment marker instead of actual canonical registration', () => {
 });
 
 it.each([
-  [
-    'selected={settings.undoButtonEnabled}',
-    'selected={settings.soundEnabled}',
-    'RSD switch state callers',
-  ],
   ['selected={settings.soundEnabled}', 'selected={settings.saved}', 'RSD switch state owner'],
   ['onClick={onToggle}', 'onClick={onClose}', 'RSD sound switch callback'],
   ["'Drawing sound on'", "'Drawing sound off'", 'RSD soundEnabled switch labels'],
@@ -170,54 +165,6 @@ it.each([
     "magic: { label: 'Magic Brush'",
     "magic: { label: 'Crayon'",
     'RSD optional brush labels',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'OPTIONAL_BRUSHES.map((brush)',
-    'APPEARANCE_PREFERENCES.map((brush)',
-    'RSD optional brush map owner',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'selected={brushState.availability[brush]}',
-    'selected={settings.availability[brush]}',
-    'RSD optional brush switch state owner',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'selected={brushState.availability[brush]}',
-    "selected={brushState.availability['crayon']}",
-    'RSD optional brush switch state owner',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'label={`Show ${BRUSHES[brush].label}`}',
-    'label={`Hide ${BRUSHES[brush].label}`}',
-    'RSD optional brush switch labels',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'label={`Show ${BRUSHES[brush].label}`}',
-    "label={`Show ${BRUSHES['crayon'].label}`}",
-    'RSD optional brush switch labels',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    "disabled={busy || brushState.status !== 'ready'}",
-    "disabled={busy || settings.status !== 'ready'}",
-    'RSD optional brush switch disabled owner',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}',
-    'onClick={() => onBrushAvailabilityChange(brush, brushState.availability[brush])}',
-    'RSD optional brush switch callback',
-  ],
-  [
-    'src/rsdDrawing/RsdSettingsDialog.tsx',
-    'onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}',
-    "onClick={() => onBrushAvailabilityChange('crayon', !brushState.availability[brush])}",
-    'RSD optional brush switch callback',
   ],
   [
     'src/rsdDrawing/RsdActionsPanel.tsx',
@@ -272,7 +219,7 @@ it.each([
   expect(result.stderr).toContain(reason);
 });
 
-it('rejects actual Babel output losing the optional brush selected state', () => {
+it('rejects actual Babel output losing the optional toolbar switch selected state', () => {
   const path = fixture();
   writeFileSync(
     join(path, 'babel.config.cjs'),
@@ -291,9 +238,7 @@ module.exports = function(api) {
           const selected = property('selected');
           const value = selected && selected.value;
           if (selection && selection.value.type === 'StringLiteral' && selection.value.value === 'switch' &&
-              value && value.type === 'MemberExpression' && value.computed &&
-              value.object.type === 'MemberExpression' && value.object.object.type === 'Identifier' &&
-              value.object.object.name === 'brushState') {
+              value && value.type === 'BinaryExpression') {
             selected.value = { type: 'BooleanLiteral', value: false };
           }
         }});
@@ -304,5 +249,5 @@ module.exports = function(api) {
   );
   const result = run(path);
   expect(result.status, result.stderr).toBe(1);
-  expect(result.stderr).toContain('RSD transformed optional brush switch count');
+  expect(result.stderr).toContain('RSD transformed optional toolbar switch state owner');
 });

@@ -83,7 +83,6 @@ const groups = [];
 const switches = [];
 const toolbarSwitches = [];
 const toolbarConditions = [];
-const optionalSwitches = [];
 let radios = 0;
 const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
@@ -119,18 +118,7 @@ for (const component of [
               ?.node.test
           );
         } else {
-          const map = path.findParent(
-            (parent) =>
-              parent.isCallExpression() &&
-              parent.node.arguments.some(
-                (argument) =>
-                  argument.type === 'ArrowFunctionExpression' &&
-                  argument.body.type === 'JSXElement' &&
-                  argument.body.openingElement === node
-              )
-          );
-          if (component === settingsDialog && map) optionalSwitches.push({ node, map: map.node });
-          else switches.push(node);
+          switches.push(node);
         }
         return;
       }
@@ -159,29 +147,13 @@ const settingsValue = (expression, property) =>
   expression.property.type === 'Identifier' &&
   expression.property.name === property;
 const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
+// The Tool Drawer, Saving and Coloring switches are toggle rows in their own section modules;
+// the Sound switch is the one selected action left in the dialog.
 assert.ok(
-  switches.every((node) =>
-    [
-      'soundEnabled',
-      'undoButtonEnabled',
-      'strokeWidthControlEnabled',
-      'saveOnDeleteEnabled',
-      'pencilEraserEnabled',
-    ].some((property) => settingsValue(selectedValue(node), property))
-  ),
+  switches.every((node) => settingsValue(selectedValue(node), 'soundEnabled')),
   'RSD switch state owner'
 );
-assert.deepEqual(
-  switches.map((node) => selectedValue(node).property.name).sort(),
-  [
-    'pencilEraserEnabled',
-    'saveOnDeleteEnabled',
-    'soundEnabled',
-    'strokeWidthControlEnabled',
-    'undoButtonEnabled',
-  ],
-  'RSD switch state callers'
-);
+assert.equal(switches.length, 1, 'RSD switch state callers');
 function switchCallback(property, enabledLabel, disabledLabel) {
   const node = switches.find((item) => settingsValue(selectedValue(item), property));
   const label = attribute(node, 'label')?.value?.expression;
@@ -203,45 +175,11 @@ assert.ok(
 );
 const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
   parse,
-  imported,
   babel,
-  settingsDialog,
-  optionalSwitches,
   toolbarSwitches,
   toolbarConditions,
   attribute,
-  settingsValue,
 });
-const labelText = (node) =>
-  literal(attribute(node, 'label')) ?? attribute(node, 'label')?.value?.expression?.name;
-for (const [property, label, callback] of [
-  ['undoButtonEnabled', 'Show Undo button', 'onUndoButtonChange'],
-  ['strokeWidthControlEnabled', 'Show drawing width controls', 'onStrokeWidthControlChange'],
-  ['saveOnDeleteEnabled', 'SAVE_ON_DELETE_LABEL', 'onSaveOnDeleteChange'],
-  ['pencilEraserEnabled', 'PENCIL_ERASER_LABEL', 'onPencilEraserChange'],
-]) {
-  const node = switches.find((item) => settingsValue(selectedValue(item), property));
-  assert.equal(labelText(node), label, 'RSD control switch label');
-  assert.equal(
-    attribute(node, 'disabled')?.value?.expression.name,
-    'busy',
-    'RSD control switch guard'
-  );
-  const handler = attribute(node, 'onClick')?.value?.expression;
-  assert.ok(
-    handler?.type === 'ArrowFunctionExpression' &&
-      !handler.async &&
-      handler.params.length === 0 &&
-      handler.body.type === 'CallExpression' &&
-      handler.body.callee.type === 'Identifier' &&
-      handler.body.callee.name === callback &&
-      handler.body.arguments.length === 1 &&
-      handler.body.arguments[0].type === 'UnaryExpression' &&
-      handler.body.arguments[0].operator === '!' &&
-      settingsValue(handler.body.arguments[0].argument, property),
-    'RSD control switch owner'
-  );
-}
 const files = [
   'src/platform/BrowserBack.tsx',
   'src/platform/BrowserBack.web.tsx',
@@ -418,7 +356,7 @@ process.stdout.write(
     canonicalEntry: true,
     mountedRsdSource: true,
     optionalBrushSwitches: optionalBrushes.elements.length,
-    optionalBrushLabels: optionalLabels.map((label) => `Show ${label}`),
+    optionalBrushLabels: optionalLabels,
     adaptiveToolbarSwitch: true,
     preservedSettingsSwitches: switches.length,
     releasedNative,
