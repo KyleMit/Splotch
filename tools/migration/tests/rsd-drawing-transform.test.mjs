@@ -53,7 +53,7 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
     optionalBrushSwitches: 3,
     optionalBrushLabels: ['Show Crayon', 'Show Magic Brush', 'Show Eraser'],
     adaptiveToolbarSwitch: true,
-    preservedSettingsSwitches: 5,
+    preservedSettingsSwitches: 4,
   });
 });
 it.each([
@@ -135,21 +135,11 @@ it('rejects a recovery viewport losing its actual native import', () => {
 
 it.each([
   [
-    'selected={settings.coloringBookEnabled}',
     'selected={settings.undoButtonEnabled}',
+    'selected={settings.strokeWidthControlEnabled}',
     'RSD switch state callers',
   ],
-  [
-    'selected={settings.coloringBookEnabled}',
-    'selected={settings.saved}',
-    'RSD switch state owner',
-  ],
-  [
-    'onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}',
-    'onClick={() => onColoringBookChange(settings.coloringBookEnabled)}',
-    'RSD coloring switch callback',
-  ],
-  ["'Coloring book on'", "'Coloring book off'", 'RSD coloringBookEnabled switch labels'],
+  ['selected={settings.undoButtonEnabled}', 'selected={settings.saved}', 'RSD switch state owner'],
 ])('rejects the actual Settings switch mutation for %s', (before, after, reason) => {
   const path = fixture();
   const target = join(path, 'src/rsdDrawing/RsdSettingsDialog.tsx');

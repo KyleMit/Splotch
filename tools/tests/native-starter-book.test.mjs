@@ -6,8 +6,10 @@ import {
   BUNDLED_FARM_DIR,
   BUNDLED_FARM_FILL_DIR,
   WEB_IMAGES_FILE,
+  WEB_PICKER_IMAGES_FILE,
   bundledFarmImageFiles,
   generateBundledFarm,
+  imageFilePaths,
 } from '../migration/gen-bundled-farm.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -33,10 +35,11 @@ import {
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
+import { BUNDLED_FARM_IMAGES } from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
 import {
   BUNDLED_FARM_COVERS,
-  BUNDLED_FARM_IMAGES,
-} from '../../experiments/native-architecture/src/drawing/bundledFarm/images.ts';
+  BUNDLED_FARM_SELECTORS,
+} from '../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
 import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
 import {
   reopenPicture,
@@ -448,30 +451,34 @@ describe('bundled art preserves shipped Farm provenance', () => {
   it('pins the committed modules to the current shipping overlays, fills and selectors', async () => {
     expect(await generateBundledFarm(['--check'])).toEqual({
       pages: FARM_PAGE_IDS.length,
-      modules: FARM_PAGE_IDS.length + 2,
+      modules: FARM_PAGE_IDS.length + 4,
     });
   });
 
   it('serves the web export the same shipped files the native apps carry as data URIs', () => {
-    const web = readFileSync(`${BUNDLED_FARM_DIR}${WEB_IMAGES_FILE}`, 'utf8');
-    expect(web).not.toContain('data:image/');
-    const { pages, covers } = bundledFarmImageFiles();
+    const read = (file) => readFileSync(`${BUNDLED_FARM_DIR}${file}`, 'utf8');
+    const web = read(WEB_IMAGES_FILE);
+    const picker = read(WEB_PICKER_IMAGES_FILE);
+    for (const source of [web, picker]) expect(source).not.toContain('data:image/');
+    const { pages, selectors, covers } = bundledFarmImageFiles();
+    const oriented = (files, images) =>
+      ART_VARIANTS.map(({ pageId, orientation, theme }) => [
+        files[pageId][orientation][theme],
+        images[pageId][orientation][theme],
+      ]);
     const slots = [
-      ...FARM_PAGE_IDS.flatMap((pageId) =>
-        ['landscape', 'portrait', 'selector'].flatMap((slot) =>
-          ['light', 'dark'].map((theme) => [
-            pages[pageId][slot][theme],
-            BUNDLED_FARM_IMAGES[pageId][slot][theme],
-          ])
-        )
-      ),
-      ...['light', 'dark'].map((theme) => [covers[theme], BUNDLED_FARM_COVERS[theme]]),
+      ...oriented(pages, BUNDLED_FARM_IMAGES).map((slot) => [web, ...slot]),
+      ...oriented(selectors, BUNDLED_FARM_SELECTORS).map((slot) => [picker, ...slot]),
+      ...['light', 'dark'].map((theme) => [picker, covers[theme], BUNDLED_FARM_COVERS[theme]]),
     ];
-    expect(slots).toHaveLength(FARM_PAGE_IDS.length * 6 + 2);
-    for (const [path, native] of slots) {
-      expect(web).toContain(` from '${relative(BUNDLED_FARM_DIR, path)}';`);
+    expect(slots).toHaveLength(FARM_PAGE_IDS.length * 8 + 2);
+    for (const [module, path, native] of slots) {
+      expect(module).toContain(` from '${relative(BUNDLED_FARM_DIR, path)}';`);
       expect(webpBytes(native).equals(readFileSync(path))).toBe(true);
     }
+    // The paper's fills module, on the startup path, carries none of the picker's images.
+    for (const path of [...Object.values(covers), ...imageFilePaths(selectors)])
+      expect(web).not.toContain(relative(BUNDLED_FARM_DIR, path));
   });
 
   it.each(SHIPPED_ART_EXPECTATIONS)(
@@ -487,7 +494,7 @@ describe('bundled art preserves shipped Farm provenance', () => {
         .map(({ d }) => d)
         .join('\n');
       expect(sha256(paths)).toBe(source.pathSha256);
-      expect(sha256(webpBytes(BUNDLED_FARM_IMAGES[source.pageId].selector[source.theme]))).toBe(
+      expect(sha256(webpBytes(BUNDLED_FARM_SELECTORS[source.pageId].landscape[source.theme]))).toBe(
         source.selector
       );
     }

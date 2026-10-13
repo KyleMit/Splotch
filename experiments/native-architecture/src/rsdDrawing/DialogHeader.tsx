@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState, type Ref } from 'react';
+import { useContext, useMemo, useState, type ReactNode, type Ref } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { css, html } from 'react-strict-dom';
@@ -18,6 +18,7 @@ import {
   DIALOG_BACK_PADDING_PX,
 } from './modalGeometry';
 import { DialogScope, useDialogActive } from './dialogScope';
+import { tapPoint, type TapPoint } from './tapZone';
 
 // React Native corner radii are circular, so the shipping blob outlines are drawn as paths. The
 // close blob's 2px border is a stroke centered half its width inside the box.
@@ -43,7 +44,7 @@ export function HeaderControl({
   kind: ControlKind;
   label?: string;
   disabled: boolean;
-  onClick: () => void;
+  onClick: (point: TapPoint | null) => void;
 }) {
   const palette = useDrawingTheme();
   const active = useDialogActive();
@@ -75,7 +76,7 @@ export function HeaderControl({
           : styles.close(MODAL_CLOSE_BORDER_PX + MODAL_CLOSE_PADDING_PX),
         disabled && controlStyles.disabled,
       ]}
-      onClick={onClick}
+      onClick={(event: unknown) => onClick(tapPoint(event))}
       onPointerEnter={(event: { pointerType?: string }) =>
         setHovered(event.pointerType === 'mouse')
       }
@@ -99,13 +100,16 @@ export function HeaderControl({
 type DialogHeaderProps = { onClose: () => void; closeDisabled?: boolean } & (
   | {
       title: string;
-      titleSize: 'xl' | 'lg';
-      onBack?: () => void;
+      titleSize: 'xl' | 'lg' | 'md';
+      /** Receives the tap's point, for a caller that guards the spot it repaints. */
+      onBack?: (point: TapPoint | null) => void;
+      /** Controls between the title and the close, as DialogHeader.svelte's `actions` snippet. */
+      actions?: ReactNode;
       /** Makes the title a programmatic focus target, for a page that replaced the control
        * holding focus. */
       titleRef?: Ref<HTMLHeadingElement>;
     }
-  | { title?: never; titleSize?: never; onBack?: never; titleRef?: never }
+  | { title?: never; titleSize?: never; onBack?: never; actions?: never; titleRef?: never }
 );
 
 // The shipping DialogHeader: back on a brand-wash blob, the title, and the outlined close. With no
@@ -114,6 +118,7 @@ export function DialogHeader({
   title,
   titleSize,
   onBack,
+  actions,
   onClose,
   closeDisabled = false,
   titleRef,
@@ -139,11 +144,14 @@ export function DialogHeader({
         style={[
           controlStyles.semiboldText,
           styles.title,
-          titleSize === 'lg' ? styles.titleLg : styles.titleXl,
+          titleSize === 'xl' && styles.titleXl,
+          titleSize === 'lg' && styles.titleLg,
+          titleSize === 'md' && styles.titleMd,
         ]}
       >
         {title}
       </html.h2>
+      {actions}
       {close}
     </html.header>
   );
@@ -178,6 +186,7 @@ const styles = css.create({
   },
   titleXl: { fontSize: dimensions.fontSizeXl },
   titleLg: { fontSize: dimensions.fontSizeLg },
+  titleMd: { fontSize: dimensions.fontSizeMd },
   control: (size: number, pressed: string) => ({
     boxSizing: 'border-box',
     position: 'relative',

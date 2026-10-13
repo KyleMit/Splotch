@@ -135,10 +135,10 @@ for (const component of [drawing, edgeControls, drawingTools, coloringPicker, se
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 4, 'RSD radio group count');
+assert.equal(groups.length, 3, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  ['Coloring page', 'Drawing brush', 'Paint colors'],
+  ['Drawing brush', 'Paint colors'],
   'RSD radio group names'
 );
 const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
@@ -149,7 +149,7 @@ assert.deepEqual(
   'RSD width group label'
 );
 assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 4, 'RSD selection callers');
+assert.equal(radios, 3, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -161,7 +161,6 @@ const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
 assert.ok(
   switches.every((node) =>
     [
-      'coloringBookEnabled',
       'undoButtonEnabled',
       'strokeWidthControlEnabled',
       'saveOnDeleteEnabled',
@@ -172,46 +171,8 @@ assert.ok(
 );
 assert.deepEqual(
   switches.map((node) => selectedValue(node).property.name).sort(),
-  [
-    'coloringBookEnabled',
-    'pencilEraserEnabled',
-    'saveOnDeleteEnabled',
-    'strokeWidthControlEnabled',
-    'undoButtonEnabled',
-  ],
+  ['pencilEraserEnabled', 'saveOnDeleteEnabled', 'strokeWidthControlEnabled', 'undoButtonEnabled'],
   'RSD switch state callers'
-);
-function switchCallback(property, enabledLabel, disabledLabel) {
-  const node = switches.find((item) => settingsValue(selectedValue(item), property));
-  const label = attribute(node, 'label')?.value?.expression;
-  assert.ok(
-    label?.type === 'ConditionalExpression' &&
-      settingsValue(label.test, property) &&
-      label.consequent.type === 'StringLiteral' &&
-      label.consequent.value === enabledLabel &&
-      label.alternate.type === 'StringLiteral' &&
-      label.alternate.value === disabledLabel,
-    'RSD ' + property + ' switch labels'
-  );
-  return attribute(node, 'onClick')?.value?.expression;
-}
-const coloringToggle = switchCallback(
-  'coloringBookEnabled',
-  'Coloring book on',
-  'Coloring book off'
-);
-assert.ok(
-  coloringToggle?.type === 'ArrowFunctionExpression' &&
-    !coloringToggle.async &&
-    coloringToggle.params.length === 0 &&
-    coloringToggle.body.type === 'CallExpression' &&
-    coloringToggle.body.callee.type === 'Identifier' &&
-    coloringToggle.body.callee.name === 'onColoringBookChange' &&
-    coloringToggle.body.arguments.length === 1 &&
-    coloringToggle.body.arguments[0].type === 'UnaryExpression' &&
-    coloringToggle.body.arguments[0].operator === '!' &&
-    settingsValue(coloringToggle.body.arguments[0].argument, 'coloringBookEnabled'),
-  'RSD coloring switch callback'
 );
 const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
   parse,

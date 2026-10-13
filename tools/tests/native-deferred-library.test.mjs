@@ -50,6 +50,7 @@ function recordingController() {
     setDrawing: record('setDrawing'),
     cancel: record('cancel'),
     retry: record('retry'),
+    retryStalled: record('retryStalled'),
     setPolicy: vi.fn(async (...args) => record('setPolicy')(...args)),
     openPage: vi.fn(async (...args) => record('openPage')(...args)),
     withSavedArtwork: vi.fn(async (pageId, action) => {
@@ -58,7 +59,8 @@ function recordingController() {
     }),
     remove: vi.fn(async () => record('remove')()),
     cover: (pack, dark) => `cover:${pack.id}:${dark}`,
-    selector: (pack, page, dark) => `selector:${pack.id}:${page}:${dark}`,
+    selector: (pack, page, orientation, dark) =>
+      `selector:${pack.id}:${page}:${orientation}:${dark}`,
   };
 }
 
@@ -157,10 +159,13 @@ describe('the offline library on web before its controller loads', () => {
 
     library.setDrawing(true);
     library.cancel();
+    library.retryStalled();
 
-    expect(controller.calls).toEqual([['setDrawing', true], ['cancel']]);
+    expect(controller.calls).toEqual([['setDrawing', true], ['cancel'], ['retryStalled']]);
     expect(library.cover({ id: 'dinosaur' }, true)).toBe('cover:dinosaur:true');
-    expect(library.selector({ id: 'dinosaur' }, 'egg', false)).toBe('selector:dinosaur:egg:false');
+    expect(library.selector({ id: 'dinosaur' }, 'egg', 'portrait', false)).toBe(
+      'selector:dinosaur:egg:portrait:false'
+    );
   });
 
   it('reports a failed chunk as the controller reports a failed catalog, and retries afresh', async () => {
@@ -173,6 +178,8 @@ describe('the offline library on web before its controller loads', () => {
       .mockReturnValueOnce(Promise.resolve(controller));
     const library = createDeferredLibrary(load, async () => {});
 
+    library.retryStalled();
+    expect(load).not.toHaveBeenCalled();
     library.engage();
     failure.reject(new Error('chunk unavailable'));
     await flush();
@@ -182,7 +189,7 @@ describe('the offline library on web before its controller loads', () => {
       message: LIBRARY_UNAVAILABLE_MESSAGE,
     });
 
-    library.retry();
+    library.retryStalled();
     expect(library.snapshot()).toBe(initialLibrarySnapshot);
     await flush();
 
