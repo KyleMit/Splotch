@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, type LayoutChangeEvent } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import {
   BANNER_ENTER_MS,
   BANNER_EXIT_MS,

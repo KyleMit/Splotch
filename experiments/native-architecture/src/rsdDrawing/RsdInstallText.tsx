@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
-import { Animated } from 'react-native';
+import { Animated } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE } from '../drawing/theme';

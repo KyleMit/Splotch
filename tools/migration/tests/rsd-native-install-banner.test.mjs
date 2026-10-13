@@ -52,6 +52,8 @@ const TABLET = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
 let stored;
 let host;
 let timing;
+// The port's timing lands at once; a test that needs an exit held open wraps it.
+const realTiming = Animated.timing;
 
 beforeEach(() => {
   stored = new Map();
@@ -211,6 +213,36 @@ it('steps aside under other controls without motion and restarts its countdown w
   expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
   await show(13);
   expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
+});
+
+it('holds the leaving card inert until its exit ends', async () => {
+  const prompt = vi.fn().mockResolvedValue(undefined);
+  install.owner.capture({
+    preventDefault() {},
+    prompt,
+    userChoice: Promise.resolve({ outcome: 'dismissed' }),
+  });
+  const dismiss = vi.spyOn(install.owner, 'dismiss');
+  const exits = [];
+  timing.mockImplementation((value, config) =>
+    config.toValue === 0
+      ? { start: (done) => exits.push(() => done?.({ finished: true })), stop() {} }
+      : realTiming(value, config)
+  );
+  await show(3);
+  await click(INSTALL_BANNER_COPY.dismiss);
+  expect(exits).toHaveLength(1);
+  expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
+  await click(INSTALL_BANNER_COPY.dismiss);
+  await act(async () => button(INSTALL_BANNER_COPY.install).click());
+  expect(dismiss).toHaveBeenCalledTimes(1);
+  expect(prompt).not.toHaveBeenCalled();
+  const card = records.props.findLast(
+    (props) => Array.isArray(props.style) && props.style[0]?.maxWidth !== undefined
+  );
+  expect(card.pointerEvents).toBe('none');
+  await act(async () => exits[0]());
+  expect(host.textContent).not.toContain(INSTALL_PROMPT_COPY.initial.heading);
 });
 
 it('opens the browser install dialog from the Install button', async () => {

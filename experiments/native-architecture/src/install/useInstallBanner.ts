@@ -33,6 +33,9 @@ export function useInstallBanner(
     snapshot.stage !== null &&
     snapshot.mode !== 'none' &&
     strokes >= SETTLED_IN_STROKES;
+  // A card still on screen for its exit, or behind the parting message, takes no action, as
+  // Svelte leaves an outroing block inert.
+  const actionable = eligible && !parting;
 
   useEffect(() => {
     owner?.recordSession(strokes);
@@ -58,7 +61,7 @@ export function useInstallBanner(
   }, [parting]);
 
   async function primary() {
-    if (!owner) return;
+    if (!owner || !actionable) return;
     if (snapshot.mode !== 'oneTap') {
       setHintOpen((open) => !open);
       return;
@@ -81,7 +84,10 @@ export function useInstallBanner(
     stage: snapshot.stage ?? 'initial',
     hintOpen,
     busy,
+    actionable,
     primary,
-    dismiss: () => owner?.dismiss(),
+    dismiss: () => {
+      if (actionable) owner?.dismiss();
+    },
   };
 }

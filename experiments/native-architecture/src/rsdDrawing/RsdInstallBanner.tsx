@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
-import { Animated, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { APP_HOME_SCREEN_NAME } from '../../../../web/src/lib/appIdentity';
 import { TABLET_MIN_SIDE_PX } from '../../../../web/src/lib/breakpoints';
@@ -112,13 +113,16 @@ export function RsdInstallBanner({
         area.current = boxOf(event);
       }}
     >
+      {/* The leaving card stays on screen for its exit; like Svelte's outroing block, nothing on
+          it takes a touch, focus or a screen reader's attention. */}
       <Animated.View
+        pointerEvents={banner.present ? 'auto' : 'none'}
         style={[layers.card, motionStyle]}
         onLayout={(event) => {
           card.current = boxOf(event);
         }}
       >
-        <html.div style={styles.banner}>
+        <html.div inert={!banner.present} aria-hidden={!banner.present} style={styles.banner}>
           {shown.parting ? (
             <RsdInstallParting />
           ) : (
@@ -192,7 +196,7 @@ function InstallCta({ banner, stacked }: { banner: InstallBanner; stacked: boole
       type="button"
       aria-expanded={oneTap ? undefined : banner.hintOpen}
       aria-controls={oneTap ? undefined : INSTALL_HINT_ID}
-      disabled={banner.busy}
+      disabled={banner.busy || !banner.actionable}
       aria-disabled={banner.busy}
       style={[
         controlStyles.boldText,
