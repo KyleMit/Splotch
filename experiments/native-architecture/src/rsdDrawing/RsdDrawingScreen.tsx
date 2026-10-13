@@ -3,6 +3,7 @@ import {
   RsdAiSheet,
   RsdColorPicker,
   RsdColoringBookPicker,
+  RsdErrorScreen,
   RsdFeedbackSheet,
   RsdParentGateSheet,
   RsdSettingsRoute,
@@ -260,6 +261,14 @@ function RsdDrawingContent({
           </RsdEdgeLayout>
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
+          {screen.recovery.failed ? (
+            <RsdSurfaceBoundary>
+              <RsdErrorScreen
+                disabled={screen.recovery.retryDisabled}
+                onRestart={screen.recovery.retry}
+              />
+            </RsdSurfaceBoundary>
+          ) : null}
         </html.div>
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}

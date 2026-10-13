@@ -6,6 +6,7 @@ export { RsdSettingsRoute } from './RsdSettingsRoute';
 export { RsdAiSheet } from './RsdAiSheet';
 export { RsdColorPicker } from './RsdColorPicker';
 export { RsdColoringBookPicker } from './RsdColoringBookPicker';
+export { RsdErrorScreen } from './RsdErrorScreen';
 export { RsdFailureBanner } from './RsdFailureBanner';
 export { RsdFeedbackSheet } from './RsdFeedbackSheet';
 export { RsdParentGateSheet } from './RsdParentGateSheet';
