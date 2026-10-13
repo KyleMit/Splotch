@@ -1,11 +1,6 @@
 import { edgeMargins, type EdgeFill } from '../../../../web/src/lib/drawing/magicSheetEdges';
 import { paperView, type PaperSize } from './paperSpace';
 
-// Each band reaches this far under the picture, which paints over it. A band that only met the
-// picture's fractional edge would leave both antialiased edges compositing over the paper as a
-// translucent seam, and the shipping sheet rounds band edges to whole sheet pixels, which can
-// leave the band short of that edge by half a unit.
-const BAND_UNDERLAP_UNITS = 2;
 const VIEW_BOX = /^0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)$/;
 const SVG_VIEW_BOX = /<svg [^>]*viewBox="([^"]+)"/;
 
@@ -29,8 +24,12 @@ export function svgFrame(svg: string): PaperSize {
   return viewBoxFrame(match[1]);
 }
 
-// Extends a band lying before or after the picture on one axis under it; a band spanning the
-// picture on that axis keeps its extent, so its strip still maps onto the picture's edge.
+// Extends a band lying before or after the picture on one axis to the picture's middle, under
+// the opaque picture that paints over it. A band that only met the picture's fractional edge
+// would leave both antialiased edges compositing over the paper as a translucent seam, and any
+// fixed underlap shrinks below a device pixel once the paper is presented small enough. A band
+// spanning the picture on that axis keeps its extent, so its strip still maps onto the
+// picture's edge.
 function underlap(
   start: number,
   extent: number,
@@ -38,9 +37,9 @@ function underlap(
   boxExtent: number
 ): readonly [number, number] {
   const center = start + extent / 2;
-  if (center < boxStart) return [start, extent + BAND_UNDERLAP_UNITS];
-  if (center > boxStart + boxExtent)
-    return [start - BAND_UNDERLAP_UNITS, extent + BAND_UNDERLAP_UNITS];
+  const middle = boxStart + boxExtent / 2;
+  if (center < boxStart) return [start, middle - start];
+  if (center > boxStart + boxExtent) return [middle, start + extent - middle];
   return [start, extent];
 }
 
