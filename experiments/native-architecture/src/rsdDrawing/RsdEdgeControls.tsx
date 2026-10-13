@@ -98,12 +98,16 @@ export function RsdEdgeLayout({
         />
       }
       status={status}
+      overlays={
+        <>
+          <View pointerEvents="box-none" style={paperLayer.fill}>
+            <RsdFullscreenToggle blocked={disabled} />
+          </View>
+          {paperOverlay(drawerOpen)}
+        </>
+      }
     >
       {children}
-      <View pointerEvents="box-none" style={paperLayer.fill}>
-        <RsdFullscreenToggle blocked={disabled} />
-      </View>
-      {paperOverlay(drawerOpen)}
     </NativeDrawingLayout>
   );
 }

@@ -14,6 +14,7 @@ import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
 import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import { ACTION_TILE_DISABLED_OPACITY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
+import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 import { paletteSlots } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
@@ -259,6 +260,28 @@ it('fades Undo and the screenshot camera on a page with no visible ink and wakes
   }
 });
 
+// Shipping's paper runs under the home indicator and its controls sit clear of it.
+// Negative control: a frame that pads the bottom inset, or controls that ignore it, fail here.
+it('runs the paper under the bottom inset and lifts the controls clear of it', async () => {
+  const seen = {};
+  records.insets = { top: 47, right: 0, bottom: 34, left: 0 };
+  await mount(createElement(NativeFrame, { variant: 'drawing', children: layoutElement(seen) }));
+  const frame = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
+  expect(frame.edges).toEqual(['top', 'right', 'left']);
+  const controls = host.querySelector('[data-testid="rsd-controls-inset"]');
+  expect(
+    flat(records.props.findLast((props) => props.testID === 'rsd-controls-inset').style)
+  ).toMatchObject({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 34 });
+  for (const dock of ['rsd-settings-dock'])
+    expect(controls.querySelector(`[data-testid="${dock}"]`), dock).not.toBeNull();
+  expect(controls.querySelector('[data-overlay]')).not.toBeNull();
+  expect(controls.querySelector('[data-paper]')).toBeNull();
+  const box = (x, y, width, height) => ({ nativeEvent: { layout: { x, y, width, height } } });
+  const props = (testID) => records.props.findLast((candidate) => candidate.testID === testID);
+  await act(async () => props('rsd-canvas-area').onLayout(box(0, 0, 402, 700)));
+  expect(seen.panel.area).toEqual({ width: 402, height: 700 - 34 });
+});
+
 function layoutElement(seen) {
   return createElement(
     NativeDrawingLayout,
@@ -280,6 +303,7 @@ function layoutElement(seen) {
       capturePress: () => false,
       settings: createElement('button', null, 'Settings'),
       status: createElement('output', { 'data-status': true }),
+      overlays: createElement('div', { 'data-overlay': true }),
     },
     createElement('div', { 'data-paper': true })
   );
@@ -327,7 +351,7 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(seen.clearOffset).toEqual({ top: 68, right: 2 });
   // The panel sizes itself against the measured paper area and the whole window.
   expect(seen.panel).toEqual({
-    area: { x: 0, y: 0, width: 400, height: 760 },
+    area: { width: 400, height: 760 },
     viewport: { width: 402, height: 874 },
   });
   expect(host.querySelector('[data-testid="rsd-palette-bar"] [data-paper]')).toBeNull();

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { paletteSlots } from './paletteGeometry';
 import {
@@ -21,6 +22,7 @@ const docks = StyleSheet.create({
   // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
   clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
+  controls: { position: 'absolute', top: 0, right: 0, left: 0 },
 });
 
 type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -67,6 +69,7 @@ export function NativeDrawingLayout({
   settings,
   status,
   capturePress,
+  overlays,
   children,
 }: {
   palette: (layout: PaletteLayout) => ReactNode;
@@ -76,6 +79,9 @@ export function NativeDrawingLayout({
   settings: ReactNode;
   status: ReactNode;
   capturePress: () => boolean;
+  // Floats over the paper with the controls, clear of the bottom inset.
+  overlays: ReactNode;
+  // The paper, which runs under the bottom inset.
   children: ReactNode;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
@@ -90,6 +96,11 @@ export function NativeDrawingLayout({
   const [area, setArea] = useState<Box>();
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
+  // Shipping's paper runs under the home indicator while its controls sit clear of it; the frame
+  // leaves the bottom inset unpadded (NativeFrame) and the controls take it back here.
+  const insetBottom = useSafeAreaInsets().bottom;
+  const paperArea = area ?? window;
+  const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
   return (
     <View
       testID="rsd-drawing-layout"
@@ -128,11 +139,18 @@ export function NativeDrawingLayout({
         >
           {children}
           {clearUnderlay(areaOffset(root, column, area))}
-          <View testID="rsd-settings-dock" style={docks.settings}>
-            {settings}
+          <View
+            testID="rsd-controls-inset"
+            pointerEvents="box-none"
+            style={[docks.controls, { bottom: insetBottom }]}
+          >
+            {overlays}
+            <View testID="rsd-settings-dock" style={docks.settings}>
+              {settings}
+            </View>
+            {actionsPanel(controlArea, window)}
+            {status}
           </View>
-          {actionsPanel(area ?? window, window)}
-          {status}
         </View>
       </View>
       <View testID="rsd-clear-overlay" pointerEvents="box-none" style={docks.clearOverlay}>
