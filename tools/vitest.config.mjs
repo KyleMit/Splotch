@@ -63,6 +63,17 @@ export default defineConfig({
                 )
               ),
             },
+            // Native halos draw through the same Skia module and Reanimated's UI runtime;
+            // native-skia-halos.test.mjs swaps them back in with both mocked.
+            {
+              find: /^\.\/PointerHalos$/,
+              replacement: fileURLToPath(
+                new URL(
+                  '../experiments/native-architecture/src/drawing/PointerHalos.web.tsx',
+                  import.meta.url
+                )
+              ),
+            },
             // The iOS Pencil emitter is a bridge module mounted screens never reach in Node;
             // native-pencil-double-tap.test.mjs imports the iOS adapter by its full path.
             {
