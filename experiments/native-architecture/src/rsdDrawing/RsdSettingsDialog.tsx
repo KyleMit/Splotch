@@ -1,9 +1,4 @@
-import { BRUSHES } from '../drawing/brushes';
-import {
-  OPTIONAL_BRUSHES,
-  type OptionalBrush,
-  type BrushPreferencesState,
-} from '../settings/brushPreferences';
+import type { OptionalBrush, BrushPreferencesState } from '../settings/brushPreferences';
 import type { AppearancePreference } from '../settings/appearance';
 import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
@@ -17,8 +12,6 @@ import { RsdFeedbackSection } from './RsdFeedbackSection';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { HostedPage } from '../settings/hostedPages';
 import type { OrientationChoice } from '../settings/orientation';
-import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
-import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
 import type { ReduceMotionPreference } from '../settings/reduceMotion';
 import {
   NATIVE_SETTINGS_SECTIONS,
@@ -39,6 +32,8 @@ import type { SliderDraft } from './useSliderDraft';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
 import { RsdParentCenterLock } from './RsdParentCenterLock';
 import { RsdColoringSection } from './RsdColoringSection';
+import { RsdToolDrawerSection } from './RsdToolDrawerSection';
+import { RsdSavingSection } from './RsdSavingSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
@@ -52,6 +47,8 @@ type NativeSoundSettingsDialogProps = {
   onToggle: () => void;
   onUndoButtonChange: (enabled: boolean) => void;
   onStrokeWidthControlChange: (enabled: boolean) => void;
+  onToolDrawerChange: (enabled: boolean) => void;
+  onScreenshotChange: (enabled: boolean) => void;
   onSaveOnDeleteChange: (enabled: boolean) => void;
   onPencilEraserChange: (enabled: boolean) => void;
   onDrawingSoundChange: (enabled: boolean) => void;
@@ -192,15 +189,9 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           {status}
         </RsdSettingsWide>
       ) : shell === 'compact' ? (
-        <RsdSettingsCompact
-          sound={toggles.sound}
-          night={toggles.appearance}
-          orientation={settings.orientation}
-          busy={busy}
-          onOrientationChange={props.onOrientationChange}
-        >
+        <CompactSettings {...props} toggles={toggles} busy={busy}>
           {status}
-        </RsdSettingsCompact>
+        </CompactSettings>
       ) : (
         <PhoneScroll>
           <RsdSettingsHub
@@ -216,6 +207,38 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       )}
       {props.gate}
     </ModalShell>
+  );
+}
+
+// The landscape-phone quick toggles: the hub's Sound and Night Mode switches, the Tool Drawer
+// switch and the orientation lock.
+function CompactSettings({
+  settings,
+  toggles,
+  busy,
+  onToolDrawerChange,
+  onOrientationChange,
+  children,
+}: NativeSoundSettingsDialogProps & {
+  toggles: ReturnType<typeof useHubToggles>;
+  busy: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <RsdSettingsCompact
+      sound={toggles.sound}
+      night={toggles.appearance}
+      toolDrawer={{
+        checked: settings.toolDrawerEnabled,
+        disabled: busy,
+        onToggle: onToolDrawerChange,
+      }}
+      orientation={settings.orientation}
+      busy={busy}
+      onOrientationChange={onOrientationChange}
+    >
+      {children}
+    </RsdSettingsCompact>
   );
 }
 
@@ -309,7 +332,19 @@ function SettingsSection(props: SectionProps) {
         />
       );
     case 'controls':
-      return <ToolDrawerChoices {...props} />;
+      return (
+        <RsdToolDrawerSection
+          settings={settings}
+          brushState={props.brushState}
+          busy={busy}
+          onToolDrawerChange={props.onToolDrawerChange}
+          onBrushAvailabilityChange={props.onBrushAvailabilityChange}
+          onUndoButtonChange={props.onUndoButtonChange}
+          onStrokeWidthControlChange={props.onStrokeWidthControlChange}
+          onPencilEraserChange={props.onPencilEraserChange}
+          onRetryBrushSave={props.onRetryBrushSave}
+        />
+      );
     case 'accessibility':
       return (
         <RsdAccessibilitySection
@@ -332,7 +367,15 @@ function SettingsSection(props: SectionProps) {
     case 'feedback':
       return <RsdFeedbackSection owner={props.feedback} />;
     case 'saving':
-      return <SaveOnDeleteSwitch {...props} />;
+      return (
+        <RsdSavingSection
+          screenshotEnabled={settings.screenshotEnabled}
+          saveOnDeleteEnabled={settings.saveOnDeleteEnabled}
+          busy={busy}
+          onScreenshotChange={props.onScreenshotChange}
+          onSaveOnDeleteChange={props.onSaveOnDeleteChange}
+        />
+      );
     case 'parentCenter':
       return parentCenterRevealed(props.parentCenter) ? (
         props.parentCenter.section
@@ -351,75 +394,4 @@ function SettingsSection(props: SectionProps) {
     case 'about':
       return <RsdAboutSection onOpen={props.onOpenHostedPage} />;
   }
-}
-
-function ToolDrawerChoices({
-  settings,
-  brushState,
-  busy,
-  onBrushAvailabilityChange,
-  onRetryBrushSave,
-  onUndoButtonChange,
-  onStrokeWidthControlChange,
-  onPencilEraserChange,
-}: SectionProps) {
-  return (
-    <>
-      {OPTIONAL_BRUSHES.map((brush) => (
-        <RsdAction
-          key={brush}
-          label={`Show ${BRUSHES[brush].label}`}
-          selection="switch"
-          selected={brushState.availability[brush]}
-          disabled={busy || brushState.status !== 'ready'}
-          onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
-        />
-      ))}
-      {brushState.message ? <html.span aria-live="polite">{brushState.message}</html.span> : null}
-      {!brushState.saved ? (
-        <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
-      ) : null}
-      <RsdAction
-        label="Show Undo button"
-        selection="switch"
-        selected={settings.undoButtonEnabled}
-        disabled={busy}
-        onClick={() => onUndoButtonChange(!settings.undoButtonEnabled)}
-      />
-      <RsdAction
-        label="Show drawing width controls"
-        selection="switch"
-        selected={settings.strokeWidthControlEnabled}
-        disabled={busy}
-        onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
-      />
-      {settings.applePencilSeen && brushState.availability.eraser ? (
-        <>
-          <RsdAction
-            label={PENCIL_ERASER_LABEL}
-            selection="switch"
-            selected={settings.pencilEraserEnabled}
-            disabled={busy}
-            onClick={() => onPencilEraserChange(!settings.pencilEraserEnabled)}
-          />
-          <html.span>{PENCIL_ERASER_HELP}</html.span>
-        </>
-      ) : null}
-    </>
-  );
-}
-
-function SaveOnDeleteSwitch({ settings, busy, onSaveOnDeleteChange }: SectionProps) {
-  return (
-    <>
-      <RsdAction
-        label={SAVE_ON_DELETE_LABEL}
-        selection="switch"
-        selected={settings.saveOnDeleteEnabled}
-        disabled={busy}
-        onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
-      />
-      <html.span>{SAVE_ON_DELETE_HELP}</html.span>
-    </>
-  );
 }

@@ -1,6 +1,6 @@
 import type { SoundSettingsState } from './soundSettingsCodec';
 import type { BrushPreferencesState } from './brushPreferences';
-import { OPTIONAL_BRUSHES } from './brushPreferences';
+import { hiddenDrawingToolCount, TOOL_DRAWER_COPY } from './toolDrawerSection';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { AiState } from '../ai/sessionContract';
 import { SPLOTCHY_ICON_NAME } from '../rsdDrawing/icons.generated';
@@ -45,6 +45,7 @@ export function sectionHeading(id: NativeSettingsSectionId) {
 export const SECTION_SUBTITLES = {
   nightMode: 'Night Mode',
   allToolsShowing: 'Pen, crayon, magic brush & more',
+  toolDrawerOff: TOOL_DRAWER_COPY.off,
   muted: 'Muted',
   noSoundSources: 'No sources',
   coloringOff: 'Coloring books off',
@@ -67,14 +68,6 @@ export type SectionSummaryContext = {
   downloadedBooks: number;
   ai: Pick<AiState, 'credential' | 'remaining'> | null;
 };
-
-function hiddenToolCount(settings: SoundSettingsState, brushes: BrushPreferencesState) {
-  return (
-    OPTIONAL_BRUSHES.filter((brush) => !brushes.availability[brush]).length +
-    (settings.undoButtonEnabled ? 0 : 1) +
-    (settings.strokeWidthControlEnabled ? 0 : 1)
-  );
-}
 
 function soundSubtitle({
   soundEnabled,
@@ -114,7 +107,10 @@ export function sectionSubtitle(id: NativeSettingsSectionId, context: SectionSum
     case 'sound':
       return soundSubtitle(settings);
     case 'controls': {
-      const hidden = hiddenToolCount(settings, brushes);
+      // The drawer's own switch hides every tool the row would count, so with it off the row
+      // names the switch, as Coloring's does.
+      if (!settings.toolDrawerEnabled) return SECTION_SUBTITLES.toolDrawerOff;
+      const hidden = hiddenDrawingToolCount(settings, brushes.availability);
       return hidden
         ? `${plural(hidden, 'tool', 'tools')} hidden`
         : SECTION_SUBTITLES.allToolsShowing;

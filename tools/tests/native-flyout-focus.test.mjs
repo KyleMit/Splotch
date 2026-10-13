@@ -71,6 +71,8 @@ function Panel() {
         coloringBookEnabled: true,
         aiEnabled: false,
         undoButtonEnabled: true,
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
       },
       owner: { settings: { setWidth } },
     },

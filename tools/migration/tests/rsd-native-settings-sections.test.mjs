@@ -317,7 +317,7 @@ it('keeps the opt-out hidden while the Eraser is hidden from the Tool Drawer', a
   await pencilScreen({ applePencilSeen: true });
   await openToolDrawerSettings();
   button(PENCIL_ERASER_LABEL);
-  await click('Show Eraser');
+  await click('Eraser');
   expect(host.querySelector(`[aria-label="${PENCIL_ERASER_LABEL}"]`)).toBeNull();
   await pencilDoubleTap();
   expect(brushLabel()).toBe('Brush: Pen');

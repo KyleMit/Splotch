@@ -73,7 +73,7 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 13 }>;
+export type SoundSettings = Choices & Readonly<{ version: 14 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
@@ -166,7 +166,10 @@ function readParentPreferences(value: unknown) {
     throw new Error('Parent Center settings are invalid.');
   const { aiEnabled, parentPolicies } = value;
   if (typeof aiEnabled !== 'boolean') throw new Error('Parent Center settings are invalid.');
-  if ('version' in value && (value.version === 12 || value.version === 13)) {
+  if (
+    'version' in value &&
+    (value.version === 12 || value.version === 13 || value.version === 14)
+  ) {
     if (!isParentPolicies(parentPolicies)) throw new Error('Parent Center settings are invalid.');
     return { aiEnabled, parentPolicies: orderedParentPolicies(parentPolicies) };
   }
@@ -190,8 +193,9 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const current = value.version === 13;
-  const linksPolicy = current || value.version === 12;
+  const current = value.version === 14;
+  const sourced = current || value.version === 13;
+  const linksPolicy = sourced || value.version === 12;
   const pencilled = linksPolicy || value.version === 11;
   const accessible = pencilled || value.version === 10;
   const savesOnDelete = accessible || value.version === 9;
@@ -208,12 +212,12 @@ function readStoredParentSettings(
         ? value.coloringBookEnabled
         : null;
   if (coloringBookEnabled === null) throw new Error('Coloring book choice is invalid.');
-  const hasSoundLevel = !current && kept('soundLevel');
-  const sound = current
+  const hasSoundLevel = !sourced && kept('soundLevel');
+  const sound = sourced
     ? readSoundSourceSettings(value)
     : migrateSoundSourceSettings(hasSoundLevel, value);
   const toolbarStyle =
-    current && 'toolbarStyle' in value ? value.toolbarStyle : DEFAULT_TOOLBAR_STYLE;
+    sourced && 'toolbarStyle' in value ? value.toolbarStyle : DEFAULT_TOOLBAR_STYLE;
   if (!isToolbarStyle(toolbarStyle)) throw new Error('Button style choice is invalid.');
   const controls = readDrawingControlPreferences(value);
   const orientation = complete && 'orientation' in value ? value.orientation : defaultOrientation();
@@ -237,7 +241,7 @@ function readStoredParentSettings(
       ...parent,
       ...(value.version === 5 ? {} : { coloringBookEnabled }),
       ...(hasSoundLevel && 'soundLevel' in value ? { soundLevel: value.soundLevel } : {}),
-      ...(current ? sound : {}),
+      ...(sourced ? sound : {}),
       ...(kept('undoButtonEnabled') ? { undoButtonEnabled: controls.undoButtonEnabled } : {}),
       ...(kept('strokeWidthControlEnabled')
         ? { strokeWidthControlEnabled: controls.strokeWidthControlEnabled }
@@ -246,12 +250,18 @@ function readStoredParentSettings(
       ...(savesOnDelete ? { saveOnDeleteEnabled } : {}),
       ...(accessible ? accessibility : {}),
       ...(pencilled ? pencil : {}),
-      ...(current ? { toolbarStyle } : {}),
+      ...(sourced ? { toolbarStyle } : {}),
+      ...(current
+        ? {
+            toolDrawerEnabled: controls.toolDrawerEnabled,
+            screenshotEnabled: controls.screenshotEnabled,
+          }
+        : {}),
     },
     snapshot
   );
   return {
-    version: 13,
+    version: 14,
     ...widths,
     ...colors,
     appearance,
@@ -282,7 +292,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 13,
+    version: 14,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -319,7 +329,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 10 &&
       value.version !== 11 &&
       value.version !== 12 &&
-      value.version !== 13) ||
+      value.version !== 13 &&
+      value.version !== 14) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -355,7 +366,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 10 &&
       value.version !== 11 &&
       value.version !== 12 &&
-      value.version !== 13) ||
+      value.version !== 13 &&
+      value.version !== 14) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -382,7 +394,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 13,
+    version: 14,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -405,5 +417,7 @@ export function snapshot(state: Choices): SoundSettings {
     pencilEraserEnabled: state.pencilEraserEnabled,
     applePencilSeen: state.applePencilSeen,
     toolbarStyle: state.toolbarStyle,
+    toolDrawerEnabled: state.toolDrawerEnabled,
+    screenshotEnabled: state.screenshotEnabled,
   };
 }

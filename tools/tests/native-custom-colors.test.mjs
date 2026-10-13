@@ -206,7 +206,7 @@ describe('custom palettes in the one serialized settings owner', () => {
       const writes = recovery === 'sound choice' ? 2 : 1;
       expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(parseSoundSettings(stored)).toEqual({
-        version: 13,
+        version: 14,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -214,6 +214,8 @@ describe('custom palettes in the one serialized settings owner', () => {
         pencilEraserEnabled: true,
         applePencilSeen: false,
         toolbarStyle: 'buttons',
+        toolDrawerEnabled: true,
+        screenshotEnabled: true,
         coloringBookEnabled: true,
         soundVolume: 50,
         drawingSoundEnabled: true,
@@ -262,7 +264,7 @@ describe('custom palettes in the one serialized settings owner', () => {
     await f.owner.setColor('#ABCDEF');
     expect(f.storage.write).toHaveBeenCalledTimes(3);
     expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
-      version: 13,
+      version: 14,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -270,6 +272,8 @@ describe('custom palettes in the one serialized settings owner', () => {
       pencilEraserEnabled: true,
       applePencilSeen: false,
       toolbarStyle: 'buttons',
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
       coloringBookEnabled: true,
       soundVolume: 50,
       drawingSoundEnabled: true,
@@ -334,7 +338,7 @@ describe('custom palettes in the one serialized settings owner', () => {
     };
     expect(parseSoundSettings(JSON.stringify(valid))).toEqual({
       ...valid,
-      version: 13,
+      version: 14,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -342,6 +346,8 @@ describe('custom palettes in the one serialized settings owner', () => {
       pencilEraserEnabled: true,
       applePencilSeen: false,
       toolbarStyle: 'buttons',
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
       coloringBookEnabled: true,
       soundVolume: 50,
       drawingSoundEnabled: true,
