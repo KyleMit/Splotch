@@ -170,11 +170,7 @@ it('keeps held recovery actions available and disables service changes while rec
     ...state,
     recovery: { kind: 'recovery-held', recovery: { intent: 'committed' } },
   });
-  for (const label of [
-    'Send drawing for AI',
-    'Use my OpenAI key',
-    'Remove OpenAI key',
-  ])
+  for (const label of ['Send drawing for AI', 'Use my OpenAI key', 'Remove OpenAI key'])
     expect(container.querySelector(`button[aria-label="${label}"]`).disabled).toBe(true);
   await click('Check held recovery request');
   expect(owner.collectRecovery).toHaveBeenCalledOnce();
