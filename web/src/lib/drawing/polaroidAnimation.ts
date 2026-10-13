@@ -3,12 +3,8 @@ import type { ExportOptions } from './exportDrawing';
 import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
 import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
 import { stampMotionAtStart } from '$lib/platform/reducedMotion';
+import { polaroidCssSize } from './polaroidGeometry';
 
-const POLAROID_MAX_WIDTH_PX = 480;
-const POLAROID_PREFERRED_MIN_WIDTH_PX = 260;
-const POLAROID_VIEWPORT_WIDTH_FRACTION = 0.54;
-const POLAROID_VIEWPORT_MAX_WIDTH_FRACTION = 0.8;
-const POLAROID_MAX_HEIGHT_FRACTION = 0.7;
 const POLAROID_MAX_RENDER_SCALE = 2;
 
 interface PolaroidSize {
@@ -27,24 +23,16 @@ interface PolaroidPreview extends PolaroidPreviewRequest {
 
 function polaroidSize(): PolaroidSize | null {
   const { paperCssWidth, paperCssHeight } = getViewState();
-  if (paperCssWidth <= 0 || paperCssHeight <= 0) return null;
-
-  const aspectRatio = paperCssWidth / paperCssHeight;
-  const preferredWidth = Math.max(
-    POLAROID_PREFERRED_MIN_WIDTH_PX,
-    Math.min(POLAROID_MAX_WIDTH_PX, window.innerWidth * POLAROID_VIEWPORT_WIDTH_FRACTION)
+  const size = polaroidCssSize(
+    { width: paperCssWidth, height: paperCssHeight },
+    { width: window.innerWidth, height: window.innerHeight }
   );
-  const cssWidth = Math.min(
-    preferredWidth,
-    window.innerWidth * POLAROID_VIEWPORT_MAX_WIDTH_FRACTION,
-    window.innerHeight * POLAROID_MAX_HEIGHT_FRACTION * aspectRatio
-  );
-  const cssHeight = cssWidth / aspectRatio;
+  if (!size) return null;
   const renderScale = Math.min(window.devicePixelRatio || 1, POLAROID_MAX_RENDER_SCALE);
   return {
-    cssWidth,
-    cssHeight,
-    rasterWidth: Math.max(1, Math.round(cssWidth * renderScale)),
+    cssWidth: size.width,
+    cssHeight: size.height,
+    rasterWidth: Math.max(1, Math.round(size.width * renderScale)),
   };
 }
 

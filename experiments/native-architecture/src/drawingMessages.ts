@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import { FAILED_DETAIL, UNSAVED_HEADING } from './export/pictureSave';
-import type { KeptPicture } from './keepPicture';
 
-// What went wrong, apart from what the screen announces: a save that did not land (the photo
-// library refused it, or the download failed), or an action that failed with an error. The
-// drawing screen shows it in the Save Failure Banner. An error gives way to the next notice, as
-// the notice it was written beside does; a failed save stays until it is dismissed or a later
-// save settles.
-type DrawingFailure =
-  | Readonly<{ kind: 'save'; heading: string; detail: string }>
-  | Readonly<{ kind: 'error'; detail: string }>;
+// An action that failed with an error, apart from what the screen announces. The drawing screen
+// shows it in the failure banner, and it gives way to the next notice, as the notice it was
+// written beside does. A save that did not land is the Save Failure Banner's (export/saveFailure.ts).
+type DrawingFailure = Readonly<{ kind: 'error'; detail: string }>;
 
 type Notice = Readonly<{ text: string; failed: boolean }>;
 
@@ -30,17 +24,7 @@ export function useDrawingMessages() {
     dismissFailure: () => setFailure(null),
     setNotice(text: string) {
       setNoticeState({ text, failed: false });
-      setFailure((current) => (current?.kind === 'error' ? null : current));
-    },
-    // The save's notice was written just before; a refusal claims it.
-    recordSave(kept: KeptPicture) {
-      if (kept.failure) setNoticeState((current) => ({ ...current, failed: true }));
-      setFailure(kept.failure ? { kind: 'save', ...kept.failure } : null);
-    },
-    // A save that did not land at all, in the shipping banner's words for a failed save.
-    failSave() {
-      setNoticeState({ text: '', failed: false });
-      setFailure({ kind: 'save', heading: UNSAVED_HEADING, detail: FAILED_DETAIL });
+      setFailure(null);
     },
     report(error: unknown) {
       const detail = drawingErrorMessage(error);

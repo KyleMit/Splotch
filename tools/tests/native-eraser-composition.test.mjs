@@ -1,9 +1,5 @@
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
-import { describe, expect, it, vi } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import {
   addStroke,
   changePage,
@@ -21,25 +17,6 @@ import {
 } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
 
 import { checkpointFixtures } from '../migration/probes/native-eraser/checkpoint-fixtures.mjs';
-
-const fixtureTiming = vi.hoisted(() => ({ active: false, nowMs: 0, workMs: 0, calls: 0 }));
-vi.mock('../migration/probes/native-eraser/checkpoint-fixtures.mjs', async (loadOriginal) => {
-  const actual = await loadOriginal();
-  return {
-    checkpointFixtures: () => {
-      const fixtures = actual.checkpointFixtures();
-      if (fixtureTiming.active) {
-        fixtureTiming.nowMs += fixtureTiming.workMs;
-        fixtureTiming.calls += 1;
-      }
-      return fixtures;
-    },
-  };
-});
-vi.mock('@playwright/test', () => ({
-  chromium: { launchServer: vi.fn().mockRejectedValue(new Error('Fixture timing guard stop')) },
-  expect: vi.fn(),
-}));
 
 const marker = { brush: 'marker', color: 'Blue', points: [{ x: 40, y: 40 }] };
 const erase = { brush: 'eraser', points: [{ x: 40, y: 40 }] };
@@ -180,54 +157,4 @@ describe('actual browser checkpoint fixture hash contract', () => {
       expect(parseDrawing(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
     }
   );
-});
-
-const FIXTURE_WORK_MS = 75;
-it('counts consumed fixture construction in the actual driver elapsed budget before browser launch', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'eraser-fixture-timing-'));
-  const receipt = join(directory, 'source.json');
-  const output = join(directory, 'output');
-  const priorArguments = process.argv;
-  const priorBrowserRegistry = process.env.PLAYWRIGHT_BROWSERS_PATH;
-  const priorExitCode = process.exitCode;
-  writeFileSync(
-    receipt,
-    JSON.stringify({
-      worktree: process.cwd(),
-      head: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-      files: [],
-    })
-  );
-  fixtureTiming.active = true;
-  fixtureTiming.workMs = FIXTURE_WORK_MS;
-  fixtureTiming.nowMs = 0;
-  fixtureTiming.calls = 0;
-  vi.spyOn(performance, 'now').mockImplementation(() => fixtureTiming.nowMs);
-  process.env.PLAYWRIGHT_BROWSERS_PATH = directory;
-  process.argv = [
-    'node',
-    'checkpoint-browser.mjs',
-    '--phase=small',
-    '--url=http://localhost:41234',
-    '--browser-registry=' + directory,
-    '--source-receipt=' + receipt,
-    '--output=' + output,
-    '--replay-budget-ms=60000',
-    '--rss-growth-budget-mib=256',
-  ];
-  try {
-    await import('../migration/probes/native-eraser/checkpoint-browser.mjs');
-    const report = JSON.parse(readFileSync(join(output, 'result.json'), 'utf8'));
-    expect(report.firstFailure).toContain('Fixture timing guard stop');
-    expect(fixtureTiming.calls).toBe(1);
-    expect(report.totalElapsedMs).toBe(FIXTURE_WORK_MS);
-  } finally {
-    fixtureTiming.active = false;
-    process.argv = priorArguments;
-    process.exitCode = priorExitCode;
-    if (priorBrowserRegistry === undefined) delete process.env.PLAYWRIGHT_BROWSERS_PATH;
-    else process.env.PLAYWRIGHT_BROWSERS_PATH = priorBrowserRegistry;
-    vi.restoreAllMocks();
-    rmSync(directory, { recursive: true, force: true });
-  }
 });

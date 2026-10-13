@@ -24,6 +24,7 @@ import type { useDrawingSound } from '../useDrawingSound';
 import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdDrawingStatus } from './RsdDrawingStatus';
+import { RsdPolaroidFlight } from './polaroidFlightSurface';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
@@ -241,11 +242,18 @@ function RsdDrawingContent({
                 notice={notice}
                 soundNotice={soundNotice}
                 blocked={disabled}
+                openAppSettings={product.owner ? product.openAppSettings : null}
+                aiMinimized={product.ai.state?.open === true && product.ai.state.minimized}
               />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
           </RsdEdgeLayout>
+          <RsdPolaroidFlight
+            flight={screen.flight}
+            cameraTile={screen.cameraTile}
+            onLanded={screen.landFlight}
+          />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>

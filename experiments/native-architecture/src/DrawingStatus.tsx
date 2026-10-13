@@ -10,6 +10,8 @@ import type { useDrawingScreen } from './useDrawingScreen';
 import { CONTROL_GAP } from './drawing/theme';
 import { Action } from './DrawingControls';
 import { useDraftNotice } from './product/useDraftNotice';
+import { saveFailureCopy } from './export/pictureSave';
+import { saveOs } from './keepPicture';
 
 function useIdleMessage(message: string, drawing: boolean) {
   const [settled, setSettled] = useState(message);
@@ -32,6 +34,10 @@ export function DrawingStatus({
   const visibleNotice = useIdleMessage(screen.notice, screen.drawing);
   const visibleSoundMessage = useIdleMessage(soundMessage, screen.drawing);
   const draft = useDraftNotice(screen, blocked);
+  const { saveFailure } = screen;
+  const unsaved = saveFailure.outcome
+    ? saveFailureCopy(saveFailure.outcome, saveFailure.pictureCount, saveOs())
+    : null;
   return (
     <>
       <View style={styles.status}>
@@ -42,6 +48,11 @@ export function DrawingStatus({
           {visibleNotice}
         </Text>
       </View>
+      {unsaved ? (
+        <Text accessibilityLiveRegion="polite" style={styles.notice}>
+          {`${unsaved.heading}. ${unsaved.detail}`}
+        </Text>
+      ) : null}
       {visibleSoundMessage ? (
         <Text accessibilityLiveRegion="polite" style={styles.notice}>
           {visibleSoundMessage}

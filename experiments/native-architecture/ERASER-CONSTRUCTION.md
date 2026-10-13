@@ -66,15 +66,12 @@ by this same unit; caps and F1 policy stay unchanged. No new native module or gr
 introduced before the mechanism gates. Native blank detection remains a required pending part of
 this unit, not a deferred follow-up.
 
-The tools/migration/probes/native-eraser/checkpoint-browser.mjs is additional eraser-owned probe
-source. It consumes the actual saved reader, scene and PNG pipeline through the visible app, binds
-exact current source bytes, and separates small pixel/load/failure controls from the legal
-1000-operation replay/resource phase. Its README records observed scope and remaining native,
-decoder, Undo and image-load race controls. The probe identifies actual mounted capture owners and
-binds each callback to its canonical prefix/checkpoint hashes. Its source was adapted for the
-ready-plan output and first-erase boundary; no model or saved-reader change accompanied that
-adaptation. Its failed diagnostic runs do not qualify the repaired source or clear the remaining
-gates.
+An eraser-owned browser checkpoint driver once consumed the actual saved reader, scene and PNG
+pipeline through the visible app, separating small pixel/load/failure controls from the legal
+1000-operation replay/resource phase. It reopened its fixtures through the Pictures control, and was
+deleted with that control; its fixtures and capture helpers remain in
+`tools/migration/probes/native-eraser/`. Its failed diagnostic runs never qualified the source or
+cleared the remaining gates.
 
 The global SVG observer classifies actual ActivityIndicator/progressbar SVGs outside paper as
 noncapture. Named paper outlines and picker previews still require an actual SVG method. Unknown

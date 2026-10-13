@@ -6,6 +6,7 @@ import {
   pictureFilename,
 } from '../../experiments/native-architecture/src/export/pictureFilename.ts';
 import { keepPicture } from '../../experiments/native-architecture/src/keepPicture.ts';
+import { saveFailureCopy as nativeSaveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 import { DRAWING_BASENAME as SHIPPING_BASENAME } from '../../web/src/lib/saveNaming.ts';
 import { timestamp } from '../../web/src/lib/savedFile.ts';
 import { saveFailureCopy } from '../../web/src/lib/drawing/saveFailureCopy.ts';
@@ -71,31 +72,41 @@ describe('saving a picture on the web', () => {
     expect(pictureFilename(new Date())).toBe(`${SHIPPING_BASENAME}-${timestamp()}.png`);
   });
 
-  it('keeps a picture by downloading it, with no failure for the banner', async () => {
+  it('keeps a picture by downloading it, with the PNG it captured', async () => {
     const paper = surface(PNG);
     expect(await keepPicture({ strokes: [] }, paper)).toEqual({
-      notice: 'Picture downloaded.',
-      failure: null,
+      outcome: 'downloads',
+      pngBase64: PNG,
     });
     expect(downloads).toHaveLength(1);
   });
 
-  it('hands a download that could not start to the banner in the shipping words', async () => {
+  it('holds the PNG of a download that could not start, for Try again', async () => {
     URL.createObjectURL.mockImplementation(() => {
       throw new Error('blocked');
     });
-    const kept = await keepPicture({ strokes: [] }, surface(PNG));
-    expect(kept.failure).toEqual(saveFailureCopy('failed', 1, 'web'));
+    expect(await keepPicture({ strokes: [] }, surface(PNG))).toEqual({
+      outcome: 'failed',
+      pngBase64: PNG,
+    });
     expect(downloads).toEqual([]);
   });
 
-  it('reports a capture that produced nothing as a failed save, not an error', async () => {
-    const kept = await keepPicture({ strokes: [] }, surface(undefined));
-    expect(kept.failure).toEqual(saveFailureCopy('failed', 1, 'web'));
+  it('reports a capture that produced nothing as a failed save with no picture to retry', async () => {
+    expect(await keepPicture({ strokes: [] }, surface(undefined))).toEqual({
+      outcome: 'failed',
+      pngBase64: null,
+    });
     const thrown = { capturePng: vi.fn(async () => Promise.reject(new Error('lost'))) };
-    expect((await keepPicture({ strokes: [] }, thrown)).failure).toEqual(
-      saveFailureCopy('failed', 1, 'web')
-    );
+    expect(await keepPicture({ strokes: [] }, thrown)).toEqual({
+      outcome: 'failed',
+      pngBase64: null,
+    });
     expect(downloads).toEqual([]);
+  });
+
+  it('words a failed web save in the shipping banner copy, with no Settings to send a parent to', () => {
+    expect(saveFailureCopy('denied', 1, 'web')).toEqual(nativeSaveFailureCopy('denied', 1, 'web'));
+    expect(nativeSaveFailureCopy('denied', 1, 'web').detail).not.toContain('Settings');
   });
 });
