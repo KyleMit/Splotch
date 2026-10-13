@@ -3,7 +3,9 @@ import { css } from 'react-strict-dom';
 
 export const colors = css.defineVars({
   surface: '#ffffff',
+  surface2: '#f8f8f8',
   text: '#474747',
+  textStrong: '#333',
   paper: '#fcfbf8',
   brandSolid: '#7c50bb',
   brandWash: '#ede7f6',
@@ -12,7 +14,9 @@ export const colors = css.defineVars({
 
 export const darkTheme = css.createTheme(colors, {
   surface: '#23232b',
+  surface2: '#2d2d37',
   text: '#d3d1dc',
+  textStrong: '#eceaf2',
   paper: '#211f29',
   brandSolid: '#8058c0',
   brandWash: '#3b2f4f',
@@ -25,6 +29,8 @@ export const dimensions = css.defineVars({
   space4: '16px',
   radiusMd: '12px',
   fontSizeMd: '16px',
+  fontSizeLg: '18px',
+  fontWeightBold: '700',
   disabledOpacity: '0.65',
   touchTarget: '52px',
   aiResultHeight: '256px',
