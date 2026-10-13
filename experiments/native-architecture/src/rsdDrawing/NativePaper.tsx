@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { DrawingSurface } from '../drawing/DrawingSurface';
+import { PaperTexture } from '../drawing/PaperTexture';
 import { fittedPaper } from '../drawing/paperGeometry';
 import { drawingPaper } from '../drawing/paperSpace';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
+
+const paperGrain = <PaperTexture />;
 
 export function NativePaper({
   screen,
@@ -50,6 +53,7 @@ export function NativePaper({
             sound.settings.status === 'loading'
           }
           sound={sound.owner?.contacts ?? null}
+          underlay={paperGrain}
           {...screen.recovery.callbacks}
         />
       </View>

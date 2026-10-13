@@ -33,19 +33,22 @@ const CONTROLS = {
 
 type ControlKind = keyof typeof CONTROLS;
 
-function HeaderControl({
+// Also the banners' Dismiss, which shipping draws as this same outlined close blob.
+export function HeaderControl({
   kind,
+  label = CONTROLS[kind].label,
   disabled,
   onClick,
 }: {
   kind: ControlKind;
+  label?: string;
   disabled: boolean;
   onClick: () => void;
 }) {
   const palette = useDrawingTheme();
   const active = useDialogActive();
   const [hovered, setHovered] = useState(false);
-  const { icon, label, shape, inset } = CONTROLS[kind];
+  const { icon, shape, inset } = CONTROLS[kind];
   const path = useMemo(
     () => blobPath(shape, MODAL_CONTROL_SIZE_PX, MODAL_CONTROL_SIZE_PX, inset),
     [shape, inset]

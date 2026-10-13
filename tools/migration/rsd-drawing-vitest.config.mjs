@@ -23,6 +23,9 @@ import {
   RSD_NATIVE_SLIDER_TEST,
   RSD_NATIVE_SETTINGS_ROWS_TEST,
   RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
+  RSD_NATIVE_DRAWING_FRAME_TEST,
+  RSD_NATIVE_FAILURE_BANNER_TEST,
+  RSD_WEB_PRODUCT_OWNERS_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -58,6 +61,9 @@ export default defineConfig({
       RSD_NATIVE_SLIDER_TEST,
       RSD_NATIVE_SETTINGS_ROWS_TEST,
       RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
+      RSD_NATIVE_DRAWING_FRAME_TEST,
+      RSD_NATIVE_FAILURE_BANNER_TEST,
+      RSD_WEB_PRODUCT_OWNERS_TEST,
     ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },

@@ -14,6 +14,8 @@ import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
@@ -282,9 +284,12 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   await click('Expand controls');
   const size = controlSize(BUTTON_SCALE_MAX);
   expect(size).toBeGreaterThan(TOUCH_TARGET);
-  for (const label of ['Purple paint', 'More colors', 'Save picture', 'Collapse controls'])
+  for (const label of ['Save picture', 'Collapse controls'])
     expect(outerSize(label), label).toBe(size);
-  expect(outerSize('Settings')).toBe(TOUCH_TARGET);
+  // Shipping sizes its swatches and the corner Settings Button apart from Button Size.
+  for (const label of ['Purple paint', 'More colors'])
+    expect(outerSize(label), label).toBe(PALETTE_FLOWS.row.swatchPx);
+  expect(outerSize('Settings')).toBe(CORNER_BUTTON_SIZE_PX);
   await rerender({ settingsOpen: true });
   await openSettingsSection('Accessibility');
   for (let step = 0; step < 6; step++) await click('Smaller buttons');
@@ -292,7 +297,8 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   expect(button('Smaller buttons').disabled).toBe(true);
   expect(settings.stored().buttonScale).toBe(BUTTON_SCALE_MIN);
   await rerender({ settingsOpen: false });
-  expect(outerSize('Purple paint')).toBe(controlSize(BUTTON_SCALE_MIN));
+  expect(outerSize('Save picture')).toBe(controlSize(BUTTON_SCALE_MIN));
+  expect(outerSize('Purple paint')).toBe(PALETTE_FLOWS.row.swatchPx);
 });
 
 it('overrides the device with the in-app Reduce Motion switch and follows it again on a match', async () => {

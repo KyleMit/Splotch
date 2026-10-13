@@ -1,4 +1,5 @@
-import { Animated, View } from 'react-native';
+import { View } from 'react-native';
+import { Animated } from '../platform/animated';
 import type { ClearDock } from '../clear/clearDock';
 import type { ClearControl } from '../clear/useClearGesture';
 import { clearActivationProps } from '../platform/clearActivation';

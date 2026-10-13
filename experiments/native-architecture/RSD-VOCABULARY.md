@@ -17,23 +17,35 @@ layout owner's 25% feedback height bound and spacing. The drawing layout follows
 one bar of paint swatches plus More colors along the top edge in portrait and down the left edge in
 landscape, Clear docked to the right screen edge, Settings in the bottom-right corner, and the
 remaining tools in a drawer whose chevron (`Expand controls` / `Collapse controls`) sits in the
-bottom-left corner. The bar measures its own length and shows as many swatches as fit, trimming by
-the shipping trim order (`PALETTE_TRIM_ORDER`, drift-guarded by
-`tools/tests/native-drawing-tokens.test.mjs`); remembered custom paints go first, and the selected
-paint always keeps a swatch. Compact paint radios retain their full accessible names, checked state,
-visible selected treatment and actual paint colors. Paint radios are round, text-free swatches whose
-selected state is a ring in the paint's color, matching the shipping Color Swatch. Toolbar actions
-are icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg `SvgXml` on
-every platform, fed by the generated `icons.generated.ts`); each keeps its former text as its
-accessible name. The Drawing tools sheet in the drawer keeps the brush and width choices and the
-less frequent actions. Their touch size imports the drawing control owner. Status messages have a
-separate 25% bounded viewport below the paper area so long messages cannot consume the entire
-drawing workspace. `NativePaper` fills the paper area behind the floating edge controls and
-contain-fits the fixed logical paper into it, centered, the way the shipping app presents a
-rotation-locked paper (ADR-0050); the paper keeps its fixed aspect, so a portrait phone shows it
-full width with margins above and below. These allocations require native geometry and visual
-verification; source flex bounds alone do not establish usable paper space. The recovery viewport
-preserves individual actionable children, names itself “PNG recovery” with the
+bottom-left corner. The bar is the shipping Color Palette plate (`--surface` with its drop shadow on
+the paper) holding fixed 55px portrait / 60px landscape swatches that Button Size leaves alone
+(`paletteGeometry.ts`). It measures its own length and shows as many swatches as fit at full size,
+by the shipping ladder's formula, trimming by the shipping trim order (`PALETTE_TRIM_ORDER`,
+drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`; the geometry and ladder by
+`tools/migration/tests/rsd-native-drawing-frame.test.mjs`); remembered custom paints go first, and
+the selected paint always keeps a swatch. Shipping hides the bar on phone landscape and moves color
+into the Actions Panel; the native bar stays until that panel is ported. Compact paint radios retain
+their full accessible names, checked state, visible selected treatment and actual paint colors.
+Paint radios are raised, round, text-free swatches (`RsdSwatch.tsx`) whose selected state is the
+shipping Selection Ring: a band of the bar surface inside the edge, a one-pixel surface seam and a
+4px ring a shade off the paint (`selectionRingColor`, shipping's `getRingColor`). More colors is the
+honeycomb on a raised surface disc. Settings is the muted `RsdIconButton` corner skin. Toolbar
+actions are icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg
+`SvgXml` on every platform, fed by the generated `icons.generated.ts`); each keeps its former text
+as its accessible name. The Drawing tools sheet in the drawer keeps the brush and width choices and
+the less frequent actions. Their touch size imports the drawing control owner. Status messages have
+no visible strip: `RsdDrawingStatus` speaks routine notices from an `RsdVisuallyHidden` live region
+over the paper. Failures, told apart by type rather than wording (a save the photo library refused,
+an action's error, a renderer fault, a failed draft), show in `RsdFailureBanner`: the shipping Save
+Failure Banner's card, placement, copy and Dismiss, plus the Retry a fault needs, loaded on first
+use on web. The paper area and sheet wear the shipping handmade-paper grain (`PaperTexture`, a
+memoized tile that ink never re-renders) with no border, and a sheet presented smaller than its area
+sits lifted on a flat `paperMargin` with the float shadow. `NativePaper` fills the paper area behind
+the floating edge controls and contain-fits the fixed logical paper into it, centered, the way the
+shipping app presents a rotation-locked paper (ADR-0050); the paper keeps its fixed aspect, so a
+portrait phone shows it full width with margins above and below. These allocations require native
+geometry and visual verification; source flex bounds alone do not establish usable paper space. The
+recovery viewport preserves individual actionable children, names itself “PNG recovery” with the
 `rsd-png-recovery-viewport` identity, and retains clipped child views. Recovery state and scrolling
 stay settled while contacts are drawing. An empty recovery state allocates no viewport. No new PNG
 writer, queue capacity, persistence policy or Dismiss owner is introduced.

@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
   type ForwardedRef,
+  type ReactNode,
   type RefObject,
 } from 'react';
 import { PanResponder, PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -41,6 +42,8 @@ export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
+  // Painted on the paper beneath the ink: the drawing screen's paper grain.
+  underlay?: ReactNode;
 };
 
 type LiveDraft = {
@@ -142,6 +145,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         <InkAppearanceScope.Provider value={appearance}>
           <View style={styles.container}>
             <View style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}>
+              {props.underlay}
               <View
                 ref={paper}
                 accessibilityLabel="Drawing paper"
@@ -179,7 +183,6 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 </Svg>
                 <PointerHalos feed={halos} />
               </View>
-              <View pointerEvents="none" style={styles.paperBorder} />
             </View>
             {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
           </View>
@@ -296,21 +299,10 @@ const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     container: { width: '100%', height: '100%' },
     inkPlane: { width: '100%', height: '100%' },
-    paperBorder: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      borderWidth: 1,
-      borderColor: palette.borderWarm,
-      borderRadius: 16,
-    },
     paper: {
       width: '100%',
       height: '100%',
       overflow: 'hidden',
-      borderRadius: 16,
       backgroundColor: palette.paper,
     },
   })

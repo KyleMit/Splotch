@@ -12,10 +12,7 @@ import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/r
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
-import {
-  paletteSlots,
-  swatchEdge,
-} from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
+import { paletteSlots } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import {
   PALETTE_COLORS,
   PALETTE_TRIM_ORDER,
@@ -103,11 +100,13 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
   expect(button('Clear drawing')).not.toBeNull();
   expect(clearProps().accessibilityState.disabled).toBe(true);
   await act(async () => activateClear());
-  for (const label of ['Eraser', 'Save picture', 'Settings', 'Undo', 'Drawing tools']) {
+  for (const label of ['Eraser', 'Save picture', 'Undo', 'Drawing tools']) {
     const node = button(label);
     expect(node.disabled, label).toBe(true);
     await act(async () => node.click());
   }
+  // Shipping's corner Settings Button has no disabled look; a blocked screen ignores its press.
+  await act(async () => button('Settings').click());
   expect(caller.screen.toggleBrush).not.toHaveBeenCalled();
   expect(caller.screen.clear).not.toHaveBeenCalled();
   expect(caller.screen.save).not.toHaveBeenCalled();
@@ -155,9 +154,10 @@ it('fits one bar of colors plus More colors to the edge it runs along', async ()
   expect(bar.querySelectorAll('button')).toHaveLength(portrait.length + 1);
   records.dimensions = { width: 1180, height: 820, scale: 1, fontScale: 1 };
   await act(async () => root.render(createElement(RsdDrawingScreen)));
-  expect(paintLabels()).toHaveLength(12);
+  expect(paintLabels()).toHaveLength(paletteSlots(820, 'column') - 1);
   expect(paintLabels()).toEqual(expect.arrayContaining(portrait));
-  expect(paintLabels()).not.toContain('Grey paint');
+  for (const trimmed of PALETTE_TRIM_ORDER.slice(0, 5))
+    expect(paintLabels()).not.toContain(`${trimmed} paint`);
 });
 
 it('keeps the loaded paint on the bar when the room runs out', () => {
@@ -207,12 +207,6 @@ it('tucks the remaining tools into a drawer the chevron reveals and hides', asyn
   expect(button('Expand controls')).not.toBeNull();
 });
 
-it('outlines a swatch whose paint blends into the bar and rings it in text color', () => {
-  expect(swatchEdge('#FFFFFF', 'light')).toEqual({ ring: '#474747', outline: '#474747' });
-  expect(swatchEdge('#23232B', 'dark')).toEqual({ ring: '#d3d1dc', outline: '#d3d1dc' });
-  expect(swatchEdge('#AB71E1', 'light')).toEqual({ ring: '#AB71E1', outline: null });
-});
-
 function layoutElement(seen) {
   return createElement(
     NativeDrawingLayout,
@@ -243,11 +237,11 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   const seen = {};
   await mount(layoutElement(seen));
   expect(seen).toEqual({
-    palette: { axis: 'row', slots: paletteSlots(402, TOUCH_TARGET) },
+    palette: { axis: 'row', slots: paletteSlots(402, 'row'), length: 402 },
     clearOffset: { top: 0, right: 0 },
     drawer: 'column',
   });
-  expect(paletteSlots(402, TOUCH_TARGET)).toBe(6);
+  expect(paletteSlots(402, 'row')).toBe(6);
   const area = host.querySelector('[data-testid="rsd-canvas-area"]');
   expect(area.firstElementChild.dataset.paper).toBe('true');
   expect(area.children[1].dataset.clearUnderlay).toBe('true');
@@ -277,22 +271,24 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   });
   expect(seen.clearOffset).toEqual({ top: 68, right: 2 });
   expect(host.querySelector('[data-testid="rsd-palette-bar"] [data-paper]')).toBeNull();
-  expect(area.querySelector('[data-status]')).toBeNull();
+  // The status lies over the paper rather than claiming a strip of the screen.
+  expect(area.querySelector('[data-status]')).not.toBeNull();
   expect(records.props.findLast((props) => props.testID === 'rsd-canvas-area').style.flex).toBe(1);
   const bar = () => records.props.findLast((props) => props.testID === 'rsd-palette-bar');
-  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 300, height: 68 } } }));
-  expect(seen.palette).toEqual({ axis: 'row', slots: 4 });
+  // An inset shortens the bar, not the viewport the shipping ladder counts from.
+  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 300, height: 75 } } }));
+  expect(seen.palette).toEqual({ axis: 'row', slots: 6, length: 300 });
   records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
   await act(async () => root.render(layoutElement(seen)));
   expect(seen).toEqual({
-    palette: { axis: 'column', slots: 6 },
+    palette: { axis: 'column', slots: 5, length: 402 },
     clearOffset: { top: 68, right: 2 },
     drawer: 'row',
   });
-  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 68, height: 380 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 6 });
-  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 68, height: 260 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 4 });
+  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 380 } } }));
+  expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 380 });
+  await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 260 } } }));
+  expect(seen.palette).toEqual({ axis: 'column', slots: 5, length: 260 });
 });
 
 it('frames the paper the way the full-bleed area fits it in either orientation', () => {

@@ -88,11 +88,12 @@ it('hydrates before usable controls and persists appearance through the real RSD
   });
   await openSettingsSection('Appearance');
   checkedRadio(host.querySelector('[aria-label="System appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  // The drawing screen's frame wears the palette bar's surface in its safe-area strips.
+  expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   storage.write.mockRejectedValueOnce(new Error('disk full'));
   await click('Dark appearance');
   checkedRadio(host.querySelector('[aria-label="Dark appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(lastFrame().style.backgroundColor).toBe('#23232b');
   expect(
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
   ).toEqual(['light-content', 'light-content']);
@@ -141,16 +142,16 @@ it('hydrates before usable controls and persists appearance through the real RSD
   records.scheme = 'dark';
   await refresh();
   checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   expect(
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
   ).toEqual(['dark-content', 'dark-content']);
   await click('System appearance');
   checkedRadio(host.querySelector('[aria-label="System appearance"]'));
-  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(lastFrame().style.backgroundColor).toBe('#23232b');
   records.scheme = 'light';
   await refresh();
-  expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   expect(JSON.parse(stored).appearance).toBe('system');
 });
 

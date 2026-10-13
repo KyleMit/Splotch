@@ -25,6 +25,9 @@ import {
   RSD_NATIVE_SLIDER_TEST,
   RSD_NATIVE_SETTINGS_ROWS_TEST,
   RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
+  RSD_NATIVE_DRAWING_FRAME_TEST,
+  RSD_NATIVE_FAILURE_BANNER_TEST,
+  RSD_WEB_PRODUCT_OWNERS_TEST,
 } from '../migration/lib/rsd-drawing-checks.mjs';
 
 // A relative specifier that points nowhere is not always an error, so moving a
@@ -235,6 +238,9 @@ describe('repo-root walks under tools/', () => {
       RSD_NATIVE_SLIDER_TEST,
       RSD_NATIVE_SETTINGS_ROWS_TEST,
       RSD_NATIVE_DESIGN_PRIMITIVES_TEST,
+      RSD_NATIVE_DRAWING_FRAME_TEST,
+      RSD_NATIVE_FAILURE_BANNER_TEST,
+      RSD_WEB_PRODUCT_OWNERS_TEST,
     ]);
   });
 

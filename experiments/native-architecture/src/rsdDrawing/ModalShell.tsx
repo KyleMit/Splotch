@@ -1,14 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  Easing,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
