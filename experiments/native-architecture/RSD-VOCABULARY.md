@@ -115,6 +115,11 @@ them yet; the screen units adopt them.
   properties named by their camelCase style key, so `transform` and `opacity` run on the native
   driver (one render as the press starts, one as it ends) and the kebab-case color names reach the
   web's CSS transition alone.
+* **Style reaches an `html.*` element by name.** React Strict DOM's web Babel transform merges only
+  a `style` prop it can see, so a wrapper that spreads its props onto an `html.*` element ships an
+  uncompiled style array to the DOM. `RsdPressable.web.tsx` destructures `style` and passes it
+  explicitly; `tools/migration/tests/rsd-web-buttons.test.mjs` compiles the buttons with the
+  production web transform and fails on the spread form.
 * **Flyout options** take the tile's size-class `base` and the Button Size `scale` separately, as
   shipping does: the option is `max(base, 60) × scale` and its padding `7 × scale`.
 * **Selected** uses `aria-checked` with a `radio` or `switch` role. Shipping's `aria-pressed` has no
