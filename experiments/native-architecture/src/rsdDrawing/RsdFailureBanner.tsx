@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import {
@@ -32,7 +32,12 @@ export const BANNER_DISMISS_OVERHANG_PX = -2;
 const BACK_OUT = Easing.out(Easing.back(1.70158));
 const CUBIC_OUT = Easing.out(Easing.cubic);
 
+// What an action does, which stays its identity while its label changes ("Try again" reads
+// "Saving…" while it runs), so the control a parent pressed keeps its focus.
+type FailureBannerActionId = 'retry' | 'settings';
+
 export type FailureBannerAction = Readonly<{
+  id: FailureBannerActionId;
   label: string;
   variant: 'brand' | 'wash';
   busy: boolean;
@@ -119,33 +124,40 @@ const styles = css.create({
 });
 
 type Shown = Readonly<{ model: FailureBannerModel; present: boolean }>;
+type Presence = Readonly<{
+  previous: readonly FailureBannerModel[];
+  leaving: readonly FailureBannerModel[];
+}>;
 
-// Each failure that leaves keeps its last words on screen until its exit has played, as Svelte
-// freezes an outroing block; one that comes back before then is present again.
+const absentFrom = (failures: readonly FailureBannerModel[]) => (old: FailureBannerModel) =>
+  !failures.some((failure) => failure.key === old.key);
+
+// Each failure that leaves keeps its card, its last words and its motion until its exit has
+// played, as Svelte freezes an outroing block; one that comes back before then is present again.
+// A departure is found while rendering, so the card is never unmounted on its way out: the render
+// that drops a failure already shows it leaving.
 function useBannerPresence(failures: readonly FailureBannerModel[]) {
-  const [leaving, setLeaving] = useState<readonly FailureBannerModel[]>([]);
-  const previous = useRef(failures);
-  useLayoutEffect(() => {
-    const departed = previous.current.filter(
-      (old) => !failures.some((failure) => failure.key === old.key)
-    );
-    previous.current = failures;
-    if (departed.length === 0) return;
-    setLeaving((current) => [
-      ...current.filter((old) => !departed.some((gone) => gone.key === old.key)),
+  const [presence, setPresence] = useState<Presence>({ previous: failures, leaving: [] });
+  let { leaving } = presence;
+  if (presence.previous !== failures) {
+    const departed = presence.previous.filter(absentFrom(failures));
+    leaving = [
+      ...leaving.filter((old) => absentFrom(failures)(old) && absentFrom(departed)(old)),
       ...departed,
-    ]);
-  }, [failures]);
-  const stillLeaving = leaving.filter(
-    (old) => !failures.some((failure) => failure.key === old.key)
-  );
+    ];
+    setPresence({ previous: failures, leaving });
+  }
   const shown: Shown[] = [
     ...failures.map((model) => ({ model, present: true })),
-    ...stillLeaving.map((model) => ({ model, present: false })),
+    ...leaving.map((model) => ({ model, present: false })),
   ];
   return {
     shown,
-    gone: (key: string) => setLeaving((current) => current.filter((old) => old.key !== key)),
+    gone: (key: string) =>
+      setPresence((current) => ({
+        ...current,
+        leaving: current.leaving.filter((old) => old.key !== key),
+      })),
   };
 }
 
@@ -221,7 +233,7 @@ function BannerCard({
           <html.div style={styles.actions}>
             {failure.actions.map((action) => (
               <RsdButton
-                key={action.label}
+                key={action.id}
                 variant={action.variant}
                 size="md"
                 busy={action.busy}

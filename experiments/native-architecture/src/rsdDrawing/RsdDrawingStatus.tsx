@@ -21,7 +21,7 @@ export const FAILURE_HEADING = 'Something went wrong';
 const RENDERER_FAILURE_DETAIL = 'Your picture is still here. Try again to show it.';
 
 function retryAction(label: string, disabled: boolean, onPress: () => void): FailureBannerAction {
-  return { label, variant: 'brand', busy: false, disabled, onPress };
+  return { id: 'retry', label, variant: 'brand', busy: false, disabled, onPress };
 }
 
 // SaveFailureBanner.svelte: Open Settings where a native save was refused for a permission, behind
@@ -37,6 +37,7 @@ function saveBanner(
   const offerSettings = saveFailure.outcome === 'denied' && os !== 'web' && openAppSettings;
   if (offerSettings)
     actions.push({
+      id: 'settings',
       label: 'Open Settings',
       variant: 'brand',
       busy: false,
@@ -45,6 +46,7 @@ function saveBanner(
     });
   if (saveFailure.pictureCount > 0)
     actions.push({
+      id: 'retry',
       label: saveFailure.retrying ? 'Saving…' : 'Try again',
       variant: offerSettings ? 'wash' : 'brand',
       busy: saveFailure.retrying,

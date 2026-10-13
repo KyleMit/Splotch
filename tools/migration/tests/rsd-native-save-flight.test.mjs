@@ -46,12 +46,14 @@ const REANNOUNCE_WAIT_MS = 2000;
 
 let interpolations;
 let timings;
+let animated;
 let captures;
 
 beforeEach(async () => {
   storePlatform.os = 'ios';
   // The selection host's synchronous Animated, which every component here reads.
   const { Animated } = await import('react-native');
+  animated = Animated;
   library.outcomes = [];
   library.saves = [];
   library.pending = null;
@@ -286,6 +288,60 @@ describe('the Save Failure Banner', () => {
     await vi.waitFor(() => expect(banners()).toHaveLength(1));
     const copy = saveFailureCopy('denied', 1, 'web');
     expect(banners()).toEqual([`${copy.heading}${copy.detail}Try again`]);
+  });
+
+  // The banner's exit is held until the test lets it finish, as a real timing runs over frames.
+  function holdBannerExit() {
+    const entered = [];
+    const exits = [];
+    animated.timing.mockImplementation((value, config) => ({
+      start(done) {
+        if (config.toValue === 0 && config.duration === BANNER_EXIT_MS) {
+          exits.push({ value, from: value.value, done });
+          return;
+        }
+        if (config.toValue === 1 && config.duration === BANNER_ENTER_MS) entered.push(value);
+        value.setValue(config.toValue);
+        done?.({ finished: true });
+      },
+      stop() {},
+    }));
+    return { entered, exits };
+  }
+
+  it('plays the exit on the card that was shown, from where its entrance left it', async () => {
+    const { entered, exits } = holdBannerExit();
+    library.outcomes = ['failed'];
+    await drawAndSave();
+    await vi.waitFor(() => expect(banners()).toHaveLength(1));
+    const card = host.querySelector('[data-testid="rsd-failure-banner"]');
+    expect(entered).toHaveLength(1);
+    await click('[aria-label="Dismiss"]');
+    expect(host.querySelector('[data-testid="rsd-failure-banner"]')).toBe(card);
+    expect(exits).toHaveLength(1);
+    expect(exits[0].value).toBe(entered[0]);
+    expect(exits[0].from).toBe(1);
+    await act(async () => exits[0].done({ finished: true }));
+    expect(banners()).toEqual([]);
+  });
+
+  it('keeps the pressed Try again control, and its focus, through the retry and its failure', async () => {
+    library.outcomes = ['failed'];
+    await drawAndSave();
+    await vi.waitFor(() => expect(banners()).toHaveLength(1));
+    const control = button('Try again');
+    control.setAttribute('tabindex', '0');
+    control.focus();
+    expect(document.activeElement).toBe(control);
+    let settle;
+    library.pending = new Promise((resolve) => (settle = resolve));
+    await act(async () => control.click());
+    expect(button('Saving…')).toBe(control);
+    expect(document.activeElement).toBe(control);
+    library.pending = null;
+    await act(async () => settle('failed'));
+    await vi.waitFor(() => expect(button('Try again')).toBe(control));
+    expect(document.activeElement).toBe(control);
   });
 
   it('flies in from above the paper and back up on Dismiss, under the shipping timing', async () => {
