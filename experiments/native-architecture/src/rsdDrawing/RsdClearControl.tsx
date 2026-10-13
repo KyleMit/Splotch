@@ -26,7 +26,7 @@ import { clearActivationProps } from '../platform/clearActivation';
 import { ACCEPT_RING, RsdClearRing, ringFrame } from './RsdClearRing';
 import { RsdIcon } from './RsdIcon';
 import { EDGE_INSET_PX, type AreaSize } from './edgeLayout';
-import { styles } from './controls';
+import { iconFrame, styles } from './controls';
 
 const ICON_SIZE_PX = 32;
 // ClearButton.svelte's .clear-wash: a fixed gradient square scaled out from the dock corner.
@@ -99,6 +99,7 @@ export function RsdClearButton({
       <html.div
         style={[
           styles.iconAction,
+          iconFrame(TOUCH_TARGET),
           styles.touchTarget(TOUCH_TARGET),
           dragging && clearStyles.lifted,
           dragging && clearStyles.round(TOUCH_TARGET / 2),

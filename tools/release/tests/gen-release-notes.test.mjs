@@ -8,6 +8,7 @@ import {
   renderReleaseHistory,
   renderReleaseMetadata,
   renderReleaseHueModule,
+  renderNativeReleaseSections,
   RELEASE_HUES,
   validateBundledReleaseText,
   validateEmDashSpacing,
@@ -91,6 +92,7 @@ describe('releaseNoteOutputPaths', () => {
       'web/src/lib/releases.json',
       'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
       'web/src/lib/components/page/ReleaseHistory.svelte',
+      'experiments/native-architecture/src/information/releaseNotes.generated.json',
       'fastlane/metadata/android/en-US/changelogs/9.txt',
       'fastlane/metadata/android/en-US/changelogs/8.txt',
       'fastlane/metadata/en-US/release_notes.txt',
@@ -270,4 +272,26 @@ it('keeps the generated runtime hue vocabulary owned by the generator', () => {
     'utf8'
   );
   expect(module).toBe(renderReleaseHueModule());
+});
+
+describe('renderNativeReleaseSections', () => {
+  it('turns each level-two section into plain-text items for React Native', () => {
+    expect(
+      renderNativeReleaseSections(
+        '## New\n\n* **Bold** and *soft* [links](https://splotch.art) with `code`.\n- Dashes too.\n\n## Fixed\n\n* One fix.',
+        '9.0.0.md'
+      )
+    ).toEqual([
+      { title: 'New', items: ['Bold and soft links with code.', 'Dashes too.'] },
+      { title: 'Fixed', items: ['One fix.'] },
+    ]);
+  });
+
+  it.each([
+    ['a paragraph', '## New\n\nA paragraph the native pane would drop.'],
+    ['an item before any section', '* Orphan item\n\n## New\n\n* Item'],
+    ['an empty section', '## New\n\n## Fixed\n\n* Item'],
+  ])('refuses %s rather than dropping it', (_name, body) => {
+    expect(() => renderNativeReleaseSections(body, '9.0.0.md')).toThrow('9.0.0.md');
+  });
 });

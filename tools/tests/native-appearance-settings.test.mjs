@@ -20,6 +20,7 @@ const parentDefaults = {
   orientation: 'portrait',
   saveOnDeleteEnabled: false,
 };
+const ACCESSIBILITY_DEFAULTS = { buttonScale: 100, reduceMotion: 'system', whatsNewSeen: null };
 const choices = {
   soundEnabled: false,
   strokeWidth: 'thin',
@@ -51,7 +52,7 @@ describe('persisted candidate drawing appearance', () => {
     const parsed = parseSoundSettings(JSON.stringify(old));
     const { version: _version, ...retained } = old;
     expect(parsed).toMatchObject({
-      version: 9,
+      version: 10,
       appearance: 'system',
       ...retained,
       ...parentDefaults,
@@ -62,8 +63,11 @@ describe('persisted candidate drawing appearance', () => {
     async (appearance) => {
       const snapshot = JSON.stringify({ version: 9, ...choices, appearance, ...parentDefaults });
       expect(parseSoundSettings(snapshot)).toEqual({
-        version: 9,
+        version: 10,
         saveOnDeleteEnabled: false,
+        buttonScale: 100,
+        reduceMotion: 'system',
+        whatsNewSeen: null,
         ...choices,
         appearance,
         ...parentDefaults,
@@ -96,7 +100,13 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', appearance: 'dark', saved: false });
     expect(f.changes.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
-    const exact = JSON.stringify({ version: 9, ...choices, appearance: 'dark', ...parentDefaults });
+    const exact = JSON.stringify({
+      version: 10,
+      ...choices,
+      appearance: 'dark',
+      ...parentDefaults,
+      ...ACCESSIBILITY_DEFAULTS,
+    });
     expect(f.storage.write.mock.calls).toEqual([[exact], [exact]]);
     expect(f.changes.at(-1)).toMatchObject({ appearance: 'dark', saved: true });
   });
@@ -124,8 +134,11 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.owner.setAppearance('dark');
     expect(JSON.parse(f.storage.write.mock.calls[0][0])).toEqual({
-      version: 9,
+      version: 10,
       saveOnDeleteEnabled: false,
+      buttonScale: 100,
+      reduceMotion: 'system',
+      whatsNewSeen: null,
       ...choices,
       appearance: 'dark',
       ...parentDefaults,

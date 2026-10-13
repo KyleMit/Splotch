@@ -1,5 +1,8 @@
 export { FEEDBACK_APP_VERSION as APP_VERSION } from '../feedback/feedbackCopy';
 import { AI_REPORT_HANDLING_NOTICE } from '../ai/reportContract';
+import { RELEASE_NOTES } from '../settings/whatsNew';
+
+const [CURRENT_RELEASE] = RELEASE_NOTES;
 
 export type InformationPage = 'help' | 'privacy' | 'whatsNew';
 
@@ -76,19 +79,9 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
       },
     ],
   },
+  // The shipping What's New notes for the current release, from the same release documents.
   whatsNew: {
     title: 'What’s new',
-    sections: [
-      {
-        title: 'In this beta',
-        paragraphs: [
-          'Draw with Pen, Crayon, Magic and Eraser, with separate drawing and eraser widths.',
-          'Save editable pictures, reopen them from Pictures, save before clearing, and export PNG images.',
-          'Browse coloring books and use installed pages offline.',
-          'Choose light, dark or system appearance, Quiet, Medium or Loud drawing sound, and the brushes shown to your child.',
-          'Manage grown-up checks and optional AI picture creation in Parent Center. Send private feedback from Drawing tools.',
-        ],
-      },
-    ],
+    sections: CURRENT_RELEASE.sections.map(({ title, items }) => ({ title, paragraphs: items })),
   },
 };

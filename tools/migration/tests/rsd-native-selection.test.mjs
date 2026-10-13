@@ -9,6 +9,7 @@ import {
   visibleSelection,
   assertDisabledBoundary,
   createPickerCaller,
+  openSettingsSection,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
@@ -177,13 +178,20 @@ it('rejects omitted false state from the old disabled-only path through the rele
   );
 });
 
+function blueSwatch(props) {
+  return createElement(RsdPaintAction, {
+    color: 'Blue',
+    size: TOUCH_TARGET,
+    disabled: false,
+    ...props,
+  });
+}
+
 it('renders paint as a round swatch with its name, Selection Ring, actual color and owned touch size', async () => {
   const onClick = vi.fn();
   const swatchProps = () =>
     records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
-  await mount(
-    createElement(RsdPaintAction, { color: 'Blue', selected: true, disabled: false, onClick })
-  );
+  await mount(blueSwatch({ selected: true, onClick }));
   const props = swatchProps();
   assertDisabledBoundary(props, false);
   expect(props.accessibilityState.checked).toBe(true);
@@ -198,20 +206,12 @@ it('renders paint as a round swatch with its name, Selection Ring, actual color 
   expect(records.props.some((entry) => entry.style?.backgroundColor === '#62A2E9')).toBe(true);
   await act(async () => selectedNode.click());
   expect(onClick).toHaveBeenCalledOnce();
-  await act(async () =>
-    root.render(
-      createElement(RsdPaintAction, { color: 'Blue', selected: false, disabled: false, onClick })
-    )
-  );
+  await act(async () => root.render(blueSwatch({ selected: false, onClick })));
   const unselectedNode = host.querySelector('button');
   expect(unselectedNode).toBe(selectedNode);
   expect(unselectedNode.dataset.checked).toBe('false');
   expect(swatchProps().style.borderColor).toBe('transparent');
-  await act(async () =>
-    root.render(
-      createElement(RsdPaintAction, { color: 'Blue', selected: true, disabled: false, onClick })
-    )
-  );
+  await act(async () => root.render(blueSwatch({ selected: true, onClick })));
   expect(swatchProps().style.borderColor).toBe('#62A2E9');
 });
 
@@ -231,10 +231,11 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
   }
   try {
     await mount(createElement(Settings));
+    await openSettingsSection('Sound');
     await act(async () => host.querySelector('[aria-label="Drawing sound on"]').click());
-    const modal = host.querySelector('[aria-label="Drawing settings"]');
+    const modal = host.querySelector('[data-native-modal="Sound"]');
     expect(modal).not.toBeNull();
-    const close = modal.querySelector('[data-testid="rsd-dialog-footer"] button');
+    const close = modal.querySelector('[data-testid="rsd-dialog-footer"] button:last-child');
     expect(close.getAttribute('aria-label')).toBe('Keep drawing');
     expect(close.closest('section')).toBeNull();
     expect(modal.textContent).toContain('could not be saved');
@@ -324,12 +325,7 @@ it('retains the caller-owned pictures close guard in the fixed footer', async ()
 it('propagates paint availability both ways without losing its selected color or accessible name', async () => {
   let mountedNode;
   for (const disabled of [false, true, false]) {
-    const element = createElement(RsdPaintAction, {
-      color: 'Blue',
-      selected: true,
-      disabled,
-      onClick() {},
-    });
+    const element = blueSwatch({ selected: true, disabled, onClick() {} });
     if (!root) await mount(element);
     else await act(async () => root.render(element));
     const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
@@ -428,12 +424,17 @@ it('mounts the shared color picker outside Paint colors and writes through the e
 });
 
 it.each([
-  ['coloringBookEnabled', 'Coloring book on', 'Coloring book off'],
-  ['undoButtonEnabled', 'Show Undo button', 'Show Undo button'],
-  ['strokeWidthControlEnabled', 'Show drawing width controls', 'Show drawing width controls'],
+  ['coloringBookEnabled', 'Coloring', 'Coloring book on', 'Coloring book off'],
+  ['undoButtonEnabled', 'Tool Drawer', 'Show Undo button', 'Show Undo button'],
+  [
+    'strokeWidthControlEnabled',
+    'Tool Drawer',
+    'Show drawing width controls',
+    'Show drawing width controls',
+  ],
 ])(
   'persists %s through the released native switch without a parent challenge',
-  async (property, enabledLabel, disabledLabel) => {
+  async (property, section, enabledLabel, disabledLabel) => {
     let current;
     let refresh = () => {};
     const write = vi.fn(async () => {});
@@ -449,13 +450,14 @@ it.each([
     }
     try {
       await mount(createElement(Settings));
+      await openSettingsSection(section);
       const on = host.querySelector(`[aria-label="${enabledLabel}"]`);
       expect(on.getAttribute('role')).toBe('switch');
       expect(on.dataset.checked).toBe('true');
       await act(async () => on.click());
       expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
       expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-        version: 9,
+        version: 10,
         [property]: false,
         aiEnabled: false,
       });
@@ -482,6 +484,7 @@ it('turns Auto-Save on Delete on through the released native switch, off by defa
   }
   try {
     await mount(createElement(Settings));
+    await openSettingsSection('Saving');
     const toggle = host.querySelector('[aria-label="Auto-Save on Delete"]');
     expect(toggle.getAttribute('role')).toBe('switch');
     expect(toggle.dataset.checked).toBe('false');
@@ -489,7 +492,7 @@ it('turns Auto-Save on Delete on through the released native switch, off by defa
     await act(async () => toggle.click());
     expect(host.querySelector('[aria-label="Auto-Save on Delete"]').dataset.checked).toBe('true');
     expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-      version: 9,
+      version: 10,
       saveOnDeleteEnabled: true,
     });
   } finally {

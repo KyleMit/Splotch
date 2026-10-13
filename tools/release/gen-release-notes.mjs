@@ -22,6 +22,8 @@ export const RELEASE_HUES = ['Purple', 'Blue', 'Green', 'Orange', 'Pink', 'Red']
 export const RELEASES_SHOWN_OPEN = 3;
 
 const RELEASES_DIR = join(ROOT, 'releases');
+export const NATIVE_RELEASE_NOTES_PATH =
+  'experiments/native-architecture/src/information/releaseNotes.generated.json';
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
 const ISO_RELEASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Store'];
@@ -264,6 +266,48 @@ export function renderReleaseHistory(releases) {
   );
 }
 
+// The React Native app's What's New notes: each release's sections as plain-text
+// items, keyed by version. React Native renders no HTML, and the app reads the
+// release list itself from releases.json, so this holds only the notes. Release
+// documents are written as level-two sections of list items; anything else is
+// refused rather than dropped from the native pane.
+const NATIVE_SECTION = /^##\s+(.+)$/;
+const NATIVE_ITEM = /^[*-]\s+(.+)$/;
+
+function nativeItemText(markdown) {
+  return markdown
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(?<!\*)\*(?!\*)(.+?)\*/g, '$1')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+    .trim();
+}
+
+export function renderNativeReleaseSections(body, filename) {
+  const sections = [];
+  for (const line of body.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const heading = NATIVE_SECTION.exec(line);
+    const item = NATIVE_ITEM.exec(line);
+    if (heading) sections.push({ title: heading[1].trim(), items: [] });
+    else if (item && sections.length) sections.at(-1).items.push(nativeItemText(item[1]));
+    else throw new Error(`${filename}: the native app renders only ## sections of list items`);
+  }
+  if (sections.some((section) => section.items.length === 0))
+    throw new Error(`${filename}: every native release section needs at least one item`);
+  return sections;
+}
+
+export function renderNativeReleaseNotes(releases) {
+  const notes = Object.fromEntries(
+    releases.map((release) => [
+      release.meta.version,
+      renderNativeReleaseSections(release.body, release.filename),
+    ])
+  );
+  return `${JSON.stringify(notes, null, 2)}\n`;
+}
+
 // Every release document, newest first.
 export function readReleases() {
   if (!existsSync(RELEASES_DIR)) throw new Error(`No releases/ directory at ${RELEASES_DIR}`);
@@ -301,6 +345,7 @@ function appOutputs(releases) {
       path: 'web/src/lib/components/page/ReleaseHistory.svelte',
       render: () => renderReleaseHistory(releases),
     },
+    { path: NATIVE_RELEASE_NOTES_PATH, render: () => renderNativeReleaseNotes(releases) },
   ];
 }
 

@@ -7,16 +7,15 @@ import { RsdIcon } from './RsdIcon';
 import type { NativeIconName } from './icons.generated';
 
 // Icon buttons and swatches size their border box, so the touch target is their whole outer
-// size on every renderer (React Strict DOM defaults to content-box, as the web does).
+// size on every renderer (React Strict DOM defaults to content-box, as the web does). Edge
+// controls take their size from Button Size (settings/buttonSize.ts); every other icon button
+// keeps the normal touch target.
 const SELECTION_BORDER_WIDTH_PX = 2;
-// The shipping Actions Panel pads its icon by a sixth of the face; this is that share of 52pt.
-const ICON_PADDING_PX = 8;
-const ICON_SIZE_PX = TOUCH_TARGET - 2 * (ICON_PADDING_PX + SELECTION_BORDER_WIDTH_PX);
+// The shipping Actions Panel pads its icon by a sixth of the face.
+const ICON_PADDING_SHARE = 6;
 // The shipping Selection Ring: a 4px ring in the swatch's color around a seam of the bar surface.
 const SWATCH_RING_WIDTH_PX = 4;
 const SWATCH_RING_GAP_PX = 3;
-const SWATCH_DISC_PX = TOUCH_TARGET - 2 * SWATCH_RING_WIDTH_PX;
-const SELECTED_SWATCH_DISC_PX = SWATCH_DISC_PX - 2 * SWATCH_RING_GAP_PX;
 // Below this contrast against the bar surface a text-free swatch (white custom paint on the
 // light bar) disappears, so it gains an outline and a text-colored selection ring.
 const SWATCH_MIN_CONTRAST = 1.5;
@@ -24,9 +23,26 @@ const SWATCH_OUTLINE_PX = 1;
 // The palette bar pads each end by one gap and spaces its swatches a gap apart.
 const PALETTE_GAP_PX = 8;
 
-// How many swatches, More colors among them, fit along a bar of this length.
-export function paletteSlots(length: number) {
-  return Math.max(0, Math.floor((length - PALETTE_GAP_PX) / (TOUCH_TARGET + PALETTE_GAP_PX)));
+function iconPadding(size: number) {
+  return Math.floor(size / ICON_PADDING_SHARE);
+}
+
+function iconSize(size: number) {
+  return size - 2 * (iconPadding(size) + SELECTION_BORDER_WIDTH_PX);
+}
+
+function swatchDisc(size: number) {
+  return size - 2 * SWATCH_RING_WIDTH_PX;
+}
+
+// The square face of an icon control of this outer size.
+export function iconFrame(size: number) {
+  return styles.iconBox(size, iconPadding(size));
+}
+
+// How many swatches of this size, More colors among them, fit along a bar of this length.
+export function paletteSlots(length: number, size: number) {
+  return Math.max(0, Math.floor((length - PALETTE_GAP_PX) / (size + PALETTE_GAP_PX)));
 }
 
 function relativeLuminance(hex: string) {
@@ -104,23 +120,21 @@ export const styles = css.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: dimensions.touchTarget,
-    height: dimensions.touchTarget,
-    padding: ICON_PADDING_PX,
     borderRadius: dimensions.radiusMd,
     backgroundColor: colors.floatSurface,
     borderWidth: SELECTION_BORDER_WIDTH_PX,
     borderStyle: 'solid',
     borderColor: colors.floatSurface,
   },
+  iconBox: (size: number, padding: number) => ({ width: size, height: size, padding }),
   iconSelected: { backgroundColor: colors.brandWash, borderColor: colors.brandSolid },
-  swatch: (ring: string, radius: number) => ({
+  swatch: (ring: string, size: number, radius: number) => ({
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: dimensions.touchTarget,
-    height: dimensions.touchTarget,
+    width: size,
+    height: size,
     padding: 0,
     borderRadius: radius,
     borderWidth: SWATCH_RING_WIDTH_PX,
@@ -163,8 +177,8 @@ type ActionProps = {
   disabled?: boolean;
   onClick: () => void;
 } & (
-  | { text?: string; icon?: never; ink?: never }
-  | { icon: NativeIconName; ink?: string; text?: never }
+  | { text?: string; icon?: never; ink?: never; size?: never }
+  | { icon: NativeIconName; ink?: string; size?: number; text?: never }
 ) &
   ({ selection?: never; selected?: never } | { selection: 'radio' | 'switch'; selected: boolean });
 
@@ -173,6 +187,7 @@ export function RsdAction({
   text = label,
   icon,
   ink,
+  size = TOUCH_TARGET,
   disabled = false,
   selection,
   selected,
@@ -189,7 +204,8 @@ export function RsdAction({
         icon
           ? [
               styles.iconAction,
-              styles.touchTarget(TOUCH_TARGET),
+              iconFrame(size),
+              styles.touchTarget(size),
               selected && styles.iconSelected,
               disabled && styles.disabled,
             ]
@@ -202,18 +218,20 @@ export function RsdAction({
       }
       onClick={onClick}
     >
-      {icon ? <RsdIcon name={icon} size={ICON_SIZE_PX} ink={ink} muted={disabled} /> : text}
+      {icon ? <RsdIcon name={icon} size={iconSize(size)} ink={ink} muted={disabled} /> : text}
     </html.button>
   );
 }
 
 export function RsdPaintAction({
   color,
+  size,
   selected,
   disabled,
   onClick,
 }: {
   color: PaintColor;
+  size: number;
   selected: boolean;
   disabled: boolean;
   onClick: () => void;
@@ -221,7 +239,7 @@ export function RsdPaintAction({
   const theme = useDrawingAppearance();
   const appearance = paintAppearance(color, theme);
   const edge = swatchEdge(appearance.hex, theme);
-  const disc = selected ? SELECTED_SWATCH_DISC_PX : SWATCH_DISC_PX;
+  const disc = swatchDisc(size) - (selected ? 2 * SWATCH_RING_GAP_PX : 0);
   return (
     <html.button
       role="radio"
@@ -230,8 +248,8 @@ export function RsdPaintAction({
       aria-disabled={disabled}
       disabled={disabled}
       style={[
-        styles.swatch(selected ? edge.ring : 'transparent', TOUCH_TARGET / 2),
-        styles.touchTarget(TOUCH_TARGET),
+        styles.swatch(selected ? edge.ring : 'transparent', size, size / 2),
+        styles.touchTarget(size),
         disabled && styles.disabled,
       ]}
       onClick={onClick}
@@ -248,9 +266,11 @@ export function RsdPaintAction({
 }
 
 export function RsdMoreColorsSwatch({
+  size,
   disabled,
   onClick,
 }: {
+  size: number;
   disabled: boolean;
   onClick: () => void;
 }) {
@@ -260,13 +280,13 @@ export function RsdMoreColorsSwatch({
       aria-disabled={disabled}
       disabled={disabled}
       style={[
-        styles.swatch('transparent', TOUCH_TARGET / 2),
-        styles.touchTarget(TOUCH_TARGET),
+        styles.swatch('transparent', size, size / 2),
+        styles.touchTarget(size),
         disabled && styles.disabled,
       ]}
       onClick={onClick}
     >
-      <RsdIcon name="more-colors" size={SWATCH_DISC_PX} ink={undefined} muted={disabled} />
+      <RsdIcon name="more-colors" size={swatchDisc(size)} ink={undefined} muted={disabled} />
     </html.button>
   );
 }
@@ -280,10 +300,12 @@ const CHEVRON_TURNS = {
 
 export function RsdDrawerToggle({
   axis,
+  size,
   open,
   onClick,
 }: {
   axis: 'row' | 'column';
+  size: number;
   open: boolean;
   onClick: () => void;
 }) {
@@ -291,11 +313,11 @@ export function RsdDrawerToggle({
     <html.button
       aria-label={open ? 'Collapse controls' : 'Expand controls'}
       aria-expanded={open}
-      style={[styles.iconAction, styles.touchTarget(TOUCH_TARGET)]}
+      style={[styles.iconAction, iconFrame(size), styles.touchTarget(size)]}
       onClick={onClick}
     >
       <html.div style={CHEVRON_TURNS[axis][open ? 'open' : 'closed']}>
-        <RsdIcon name="chevron-right" size={ICON_SIZE_PX} ink={undefined} muted={false} />
+        <RsdIcon name="chevron-right" size={iconSize(size)} ink={undefined} muted={false} />
       </html.div>
     </html.button>
   );

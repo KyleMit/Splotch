@@ -1,0 +1,188 @@
+{
+  "1.6.0": [
+    {
+      "title": "New",
+      "items": [
+        "Pick sounds for each part of the app — plus a clear sound.",
+        "Dottie the mascot now reacts on error screens."
+      ]
+    },
+    {
+      "title": "Improved",
+      "items": [
+        "AI pictures are opt-in, with clearer errors and retries.",
+        "Playful motion: menus pop from buttons, undo spins, clearing sweeps to the trash.",
+        "Crisper coloring pages that load faster.",
+        "Smoother drawing on iPad and Android.",
+        "App updates apply without interrupting drawing."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "Clear ring no longer reappears after release.",
+        "Drawings recover when the app resumes."
+      ]
+    }
+  ],
+  "1.5.0": [
+    {
+      "title": "New",
+      "items": [
+        "Create 10 free AI pictures — no key needed.",
+        "A new page chip shows and clears the current coloring page.",
+        "Parents choose checks, kids' tools, and report AI pictures."
+      ]
+    },
+    {
+      "title": "Improved",
+      "items": [
+        "Smaller first download; coloring art arrives in the background.",
+        "Faster Settings navigation on every screen.",
+        "Smoother iPad drawing, coloring, undo, and saving."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "Settings stays open when choosing a feedback type.",
+        "Magic brush and picture saves recover from rare canvas failures."
+      ]
+    }
+  ],
+  "1.4.0": [
+    {
+      "title": "New",
+      "items": [
+        "Dark mode — Light, Dark, or follow your device.",
+        "A wax crayon brush, from the new Brush Menu.",
+        "The magic brush now works on any drawing.",
+        "Report a bug from Settings."
+      ]
+    },
+    {
+      "title": "Improved",
+      "items": [
+        "Rotating your device keeps the paper upright.",
+        "Undo now goes back 20 steps.",
+        "A bigger eraser, sized as holes in the paper."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "The magic brush no longer leaves ghost outlines.",
+        "Swatches and pages read correctly in dark mode.",
+        "The drag-to-clear tutorial no longer vanishes instantly."
+      ]
+    }
+  ],
+  "1.3.0": [
+    {
+      "title": "New",
+      "items": [
+        "Settings: a slider to resize the on-screen buttons.",
+        "Save your drawings straight to a folder on your computer (web).",
+        "A fullscreen button for a distraction-free canvas (web).",
+        "Add Splotch to your home screen with a friendly one-tap install prompt (web).",
+        "Native Apple Pencil support, including a double-tap-to-erase setting."
+      ]
+    },
+    {
+      "title": "Improved",
+      "items": [
+        "Faster first load and quicker startup.",
+        "Bigger, easier-to-tap buttons and color swatches.",
+        "Sliders now snap to their default value."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "Apple Pencil strokes and quick taps no longer get dropped.",
+        "White strokes are now easy to see while drawing.",
+        "The color palette stays centered in landscape.",
+        "Menus no longer overlap on small phones.",
+        "Double-tapping a button no longer opens things twice."
+      ]
+    }
+  ],
+  "1.2.0": [
+    {
+      "title": "New",
+      "items": [
+        "Splotch is now on iPhone and iPad.",
+        "A volume slider to fine-tune the sound.",
+        "Swipe between tabs in Settings."
+      ]
+    },
+    {
+      "title": "Improved",
+      "items": [
+        "Smoother, crisper strokes.",
+        "Faster drawing and saving."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "The first stroke now always draws.",
+        "No more streaky multi-touch lines on iPhone/iPad.",
+        "Saving no longer creates a blank picture.",
+        "App updates no longer leave stale content."
+      ]
+    }
+  ],
+  "1.1.0": [
+    {
+      "title": "New",
+      "items": [
+        "Lock screen rotation so your drawing stays put — on by default.",
+        "Tap the speaker icon to mute or unmute sounds."
+      ]
+    },
+    {
+      "title": "Improved",
+      "items": [
+        "Coloring pages now adapt to both portrait and landscape.",
+        "Sounds start sooner for snappier feedback.",
+        "Better screen-reader support for in-app messages."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "Your coloring page no longer resets when you rotate the device.",
+        "Fixed the layout on wide screens."
+      ]
+    }
+  ],
+  "1.0.1": [
+    {
+      "title": "Improved",
+      "items": [
+        "More colors now fit on smaller screens.",
+        "The clear button is friendlier and more fun.",
+        "A colorful gradient sweeps in while you're clearing the canvas."
+      ]
+    },
+    {
+      "title": "Fixed",
+      "items": [
+        "The color palette now adapts more gracefully across devices."
+      ]
+    }
+  ],
+  "1.0.0": [
+    {
+      "title": "New",
+      "items": [
+        "First public release of Splotch — a quiet, ad-free drawing app made for the youngest artists.",
+        "Draw with big, chunky, crayon-like strokes and a row of bright, friendly colors.",
+        "Rainbow color picker for hundreds more colors.",
+        "Coloring book pages to fill in.",
+        "Settings: preferences, install help, and an About page — no ads, no tracking, no accounts."
+      ]
+    }
+  ]
+}

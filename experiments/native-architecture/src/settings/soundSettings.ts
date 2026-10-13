@@ -23,7 +23,11 @@ import {
   PROTECTED_PARENT_POLICIES,
   type ParentPreferences,
 } from '../parentCenter/parentPolicy';
+import { isButtonScale } from './buttonSize';
+import { isReduceMotionPreference, type ReduceMotionPreference } from './reduceMotion';
+import { WHATS_NEW_STAMP } from './whatsNew';
 import {
+  DEFAULT_ACCESSIBILITY_SETTINGS,
   DEFAULT_WIDTH_SETTINGS,
   parseSoundSettings,
   snapshot,
@@ -54,13 +58,14 @@ export function initialSoundSettingsState(): SoundSettingsState {
     appearance: DEFAULT_APPEARANCE,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
+    ...DEFAULT_ACCESSIBILITY_SETTINGS,
     message: '',
   };
 }
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 9,
+    version: 10,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -71,6 +76,7 @@ function defaultSoundSettings(): SoundSettings {
     appearance: DEFAULT_APPEARANCE,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
+    ...DEFAULT_ACCESSIBILITY_SETTINGS,
   };
 }
 
@@ -88,9 +94,60 @@ function unreadSoundSettingsState(): SoundSettingsState {
     appearance: DEFAULT_APPEARANCE,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
+    ...DEFAULT_ACCESSIBILITY_SETTINGS,
     saved: false,
     message:
       'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
+  };
+}
+
+type PreferenceActionContext = {
+  getState: () => SoundSettingsState;
+  isDisposed: () => boolean;
+  hasReadFailed: () => boolean;
+  publish: (state: SoundSettingsState) => void;
+  persist: (settings: SoundSettings) => Promise<void>;
+};
+
+function createAccessibilityActions({
+  getState,
+  isDisposed,
+  hasReadFailed,
+  publish,
+  persist,
+}: PreferenceActionContext) {
+  return {
+    async setButtonScale(buttonScale: number) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (!isButtonScale(buttonScale)) throw new Error('Button Size choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, buttonScale });
+        return;
+      }
+      await persist({ ...snapshot(state), buttonScale });
+    },
+    async setReduceMotion(reduceMotion: ReduceMotionPreference) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (!isReduceMotionPreference(reduceMotion))
+        throw new Error('Reduce Motion choice is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, reduceMotion });
+        return;
+      }
+      await persist({ ...snapshot(state), reduceMotion });
+    },
+    async markWhatsNewSeen() {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready' || state.whatsNewSeen === WHATS_NEW_STAMP)
+        return;
+      if (hasReadFailed()) {
+        publish({ ...state, whatsNewSeen: WHATS_NEW_STAMP });
+        return;
+      }
+      await persist({ ...snapshot(state), whatsNewSeen: WHATS_NEW_STAMP });
+    },
   };
 }
 
@@ -100,13 +157,7 @@ function createDrawingPreferenceActions({
   hasReadFailed,
   publish,
   persist,
-}: {
-  getState: () => SoundSettingsState;
-  isDisposed: () => boolean;
-  hasReadFailed: () => boolean;
-  publish: (state: SoundSettingsState) => void;
-  persist: (settings: SoundSettings) => Promise<void>;
-}) {
+}: PreferenceActionContext) {
   async function setControl(
     key: 'undoButtonEnabled' | 'strokeWidthControlEnabled',
     enabled: boolean
@@ -271,6 +322,13 @@ export function createSoundSettings(
       });
     }
   }
+  const actionContext: PreferenceActionContext = {
+    getState: () => state,
+    isDisposed: () => disposed,
+    hasReadFailed: () => readFailed,
+    publish,
+    persist,
+  };
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
@@ -284,13 +342,8 @@ export function createSoundSettings(
         publish(unreadSoundSettingsState());
       }
     },
-    ...createDrawingPreferenceActions({
-      getState: () => state,
-      isDisposed: () => disposed,
-      hasReadFailed: () => readFailed,
-      publish,
-      persist,
-    }),
+    ...createDrawingPreferenceActions(actionContext),
+    ...createAccessibilityActions(actionContext),
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;
       if (pendingParent) {

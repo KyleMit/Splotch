@@ -2,6 +2,7 @@
 import { act } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createScreen, files } from './native-drawing-screen-harness.mjs';
+import { RELEASE_NOTES } from '../../experiments/native-architecture/src/settings/whatsNew.ts';
 
 let screen;
 beforeEach(async () => {
@@ -37,7 +38,8 @@ it('keeps the drawing and history while reading bundled information from Setting
   expect(screen.dialog().textContent).toContain('Opening a report or cancelling it sends nothing.');
   await screen.click('Back to help and about');
   await screen.click('What’s new');
-  expect(screen.dialog().textContent).toContain('In this beta');
+  expect(screen.dialog().textContent).toContain(RELEASE_NOTES[0].sections[0].items[0]);
+  expect(screen.dialog().textContent).not.toContain('In this beta');
   await screen.click('Back to Settings');
   expect(screen.button('Manage Parent Center')).toBeDefined();
   await screen.click('Help and about');

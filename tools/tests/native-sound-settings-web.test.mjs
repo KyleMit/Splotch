@@ -23,7 +23,7 @@ describe('web sound settings persistence', () => {
     await owner.setEnabled(false);
     expect(storage.setItem).toHaveBeenCalledWith(
       'splotch-candidate:sound-v1',
-      '{"version":9,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","imageReport":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false}'
+      '{"version":10,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","imageReport":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null}'
     );
     const reopened = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
     await reopened.load();
