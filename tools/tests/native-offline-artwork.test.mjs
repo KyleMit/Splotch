@@ -41,19 +41,24 @@ const pack = catalogPack('dinosaur', 'full');
 const pageId = offlinePageId(pack, 'trex');
 const staticRoot = pathToFileURL(`${resolve(process.cwd(), 'web/static/coloring/dinosaur')}/`);
 async function artwork() {
-  const theme = async (dark) => ({
+  const variant = async (slug, dark) => ({
     outline: await readFile(
-      new URL(`trex-wide${dark ? '.dark' : ''}.overlay.svg`, staticRoot),
+      new URL(`trex-${slug}${dark ? '.dark' : ''}.overlay.svg`, staticRoot),
       'utf8'
     ),
     fill: `data:image/png;base64,${(
-      await sharp(await readFile(new URL(`trex-wide.${dark ? 'night' : 'light'}.webp`, staticRoot)))
+      await sharp(
+        await readFile(new URL(`trex-${slug}.${dark ? 'night' : 'light'}.webp`, staticRoot))
+      )
         .png()
         .toBuffer()
     ).toString('base64')}`,
-    selector: '',
   });
-  return { light: await theme(false), dark: await theme(true) };
+  const themes = async (slug) => ({
+    light: await variant(slug, false),
+    dark: await variant(slug, true),
+  });
+  return { landscape: await themes('wide'), portrait: await themes('tall') };
 }
 function render(art, theme, content) {
   return renderToStaticMarkup(
@@ -81,7 +86,7 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
         render(art, theme, createElement(PageOutline, { pageId, size: CANONICAL_PAPER_SIZE }))
       );
       const expected = await pixels(
-        art[theme].outline.replace(
+        art.landscape[theme].outline.replace(
           'width="1536" height="1024"',
           `width="${PAPER_WIDTH}" height="${PAPER_HEIGHT}"`
         )
@@ -91,9 +96,12 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
       expect(actual.data.some((value, index) => index % 4 === 3 && value > 0)).toBe(true);
       const missing = {
         ...art,
-        [theme]: {
-          ...art[theme],
-          outline: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" />',
+        landscape: {
+          ...art.landscape,
+          [theme]: {
+            ...art.landscape[theme],
+            outline: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" />',
+          },
         },
       };
       expect(
@@ -113,9 +121,12 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
     const art = await artwork();
     const privateArt = {
       ...art,
-      light: {
-        ...art.light,
-        fill: 'file:///private/coloring/dinosaur-revision/files/trex-wide.light.webp',
+      landscape: {
+        ...art.landscape,
+        light: {
+          ...art.landscape.light,
+          fill: 'file:///private/coloring/dinosaur-revision/files/trex-wide.light.webp',
+        },
       },
     };
     expect(
@@ -124,7 +135,7 @@ describe('downloaded Dinosaurs artwork through actual paper and export consumers
         'light',
         createElement(OfflineMagicFill, { pageId, theme: 'light', size: CANONICAL_PAPER_SIZE })
       )
-    ).toContain(privateArt.light.fill);
+    ).toContain(privateArt.landscape.light.fill);
     const stroke = {
       ...strokeStyle('magic', 'Blue', emptyDrawing()),
       points: [

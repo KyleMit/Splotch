@@ -262,8 +262,8 @@ describe('real disk pack publication and saved picture consumers', () => {
     const reopened = await reopenPicture(picture.id);
     expect(reopened).toEqual(drawing);
     expect(relaunched.snapshot().artwork[id]).toEqual(artBefore);
-    expect(relaunched.snapshot().artwork[id].light.outline).toContain('<svg');
-    expect(relaunched.snapshot().artwork[id].dark.fill).toContain('trex-wide.night.webp');
+    expect(relaunched.snapshot().artwork[id].portrait.dark.fill).toContain('trex-tall.night.webp');
+    expect(relaunched.snapshot().artwork[id].landscape.dark.fill).toContain('trex-wide.night.webp');
     expect(scratch.state.downloads).toBe(74);
   });
   it('never shows an interrupted partial pack and discards its staging directory on fresh launch', async () => {

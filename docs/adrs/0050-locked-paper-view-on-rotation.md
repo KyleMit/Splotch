@@ -276,7 +276,20 @@ paper area it is first drawn in, as the shipping engine adopts its viewport.
 * **Coloring pages.** Each page's art frame is contain-fitted and centered on the paper, the way the
   shipping overlay is `object-fit: contain`: the sample pages and their Magic fills through
   `pageArtTransform` from the canonical frame, bundled and downloaded art through their own
-  `viewBox` with `xMidYMid meet` over the whole paper. Magic reveals the page background across the
-  whole paper. The native app still ships only the wide art variants, so an upright phone shows the
-  wide page centered on a tall sheet; choosing the tall variant by paper orientation (as
-  `ColoringBook.svelte` does) remains open.
+  `viewBox` with `xMidYMid meet` over the whole paper.
+* **Tall and wide art (issue 2785).** A book page uses the composition matching its paper, as
+  `ColoringBook.svelte` keys the variant off `paperOrientation`: `artOrientation` takes the tall art
+  unless the semantic paper is wider than tall, so a square paper is tall as on the web. An
+  unadopted page decides from the paper it would adopt, so the fill a first Magic contact needs is
+  already decoded. The bundled Farm book carries both compositions, generated from
+  `web/static/coloring` by `tools/migration/gen-bundled-farm.mjs`; downloaded packs already held
+  both, and the store now opens both. Picker thumbnails stay wide. Magic on a book page covers the
+  whole paper the way the shipping magic sheet does: the fill is contain-fitted under its line art
+  and `edgeMargins` (`magicSheetEdges.ts`) stretches an inset edge strip through each letterbox band
+  (`bookFill.ts`, on a quarter-unit grid so a band meets the fill's fractional edge without a seam).
+  Sample pages already paint their background across the paper.
+* **Bundled fills use the compact tier.** Both Farm compositions with the canonical full-size fills
+  exceed the native web precache budget (`MAX_NATIVE_WEB_PRECACHE_BYTES`). The bundle therefore uses
+  ADR-0103's compact `max-1152px` fills for both orientations; line art stays the canonical vector.
+  Raising the budget to keep full-size fills was the rejected alternative. A downloaded book still
+  installs the full pack.

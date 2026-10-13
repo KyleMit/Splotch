@@ -29,7 +29,7 @@ export const CurrentDrawingPreview = memo(function CurrentDrawingPreview({
   const theme = useDrawingAppearance();
   const styles = useDrawingStyles(themedStyles);
   const size = paperSize(drawingPaper(drawing));
-  if (isOfflinePageId(drawing.pageId) && !artwork[drawing.pageId]?.[theme])
+  if (isOfflinePageId(drawing.pageId) && !artwork[drawing.pageId])
     return (
       <Text style={styles.notice}>
         The current picture preview is unavailable until its coloring artwork is ready.

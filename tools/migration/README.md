@@ -8,6 +8,10 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
 
 * `gen-offline-catalog.mjs` generates the native offline coloring-book catalog
   (`experiments/native-architecture/src/offlineLibrary/books.generated.ts`).
+* `gen-bundled-farm.mjs` generates the bundled starter book's art modules
+  (`experiments/native-architecture/src/drawing/bundledFarm/`) from the shipping Farm overlays, the
+  compact-tier fills and the wide selectors in `web/static/coloring`; `--check` verifies them and
+  `tools/tests/native-starter-book.test.mjs` runs that check.
 * `gen-native-icons.mjs` generates the drawing toolbar's icon module
   (`experiments/native-architecture/src/rsdDrawing/icons.generated.ts`) from the shipping SVGs in
   `web/src/lib/icons`, resolving themed icon parts per theme; `--check` verifies it and
