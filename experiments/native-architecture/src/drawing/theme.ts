@@ -2,6 +2,7 @@
 export const DRAWING_THEME = {
   surface: '#ffffff',
   surfaceHover: '#f5f5f5',
+  border: '#e0e0e0',
   borderWarm: '#ddd6cc',
   borderWarmStrong: '#c4bbad',
   textStrong: '#333',
@@ -32,6 +33,7 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
   dark: {
     surface: '#23232b',
     surfaceHover: '#33333e',
+    border: '#3d3d49',
     borderWarm: '#3d3d49',
     borderWarmStrong: '#4d4d5b',
     textStrong: '#eceaf2',
