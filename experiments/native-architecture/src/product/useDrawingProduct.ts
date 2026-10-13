@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
 import { productOwners } from './productOwnersLoader';
@@ -135,6 +135,23 @@ function attachProductOwners(
   };
 }
 
+// The drawing screen's choices that follow saved settings: the coloring book's availability, and
+// the Pen fallback when the tool drawer is hidden.
+function useScreenFollowsSettings(
+  screenRef: RefObject<ReturnType<typeof useDrawingScreen>>,
+  brushesReady: boolean,
+  settings: SoundSettingsState
+) {
+  useEffect(() => {
+    if (settings.status !== 'loading')
+      screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);
+  }, [screenRef, settings.status, settings.coloringBookEnabled]);
+  const drawerHidden = settings.status !== 'loading' && !settings.toolDrawerEnabled;
+  useEffect(() => {
+    if (drawerHidden && brushesReady) screenRef.current.fallBackFromOptionalBrushes();
+  }, [screenRef, drawerHidden, brushesReady]);
+}
+
 export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const screenRef = useRef(screen);
   screenRef.current = screen;
@@ -232,15 +249,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();
   }, [owners, settings.aiEnabled]);
-  useEffect(() => {
-    if (settings.status !== 'loading')
-      screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);
-  }, [settings.status, settings.coloringBookEnabled]);
-  const brushesReady = screen.brushPreferences.status === 'ready';
-  const drawerHidden = settings.status !== 'loading' && !settings.toolDrawerEnabled;
-  useEffect(() => {
-    if (drawerHidden && brushesReady) screenRef.current.fallBackFromOptionalBrushes();
-  }, [drawerHidden, brushesReady]);
+  useScreenFollowsSettings(screenRef, screen.brushPreferences.status === 'ready', settings);
   return {
     sound: {
       settings,
