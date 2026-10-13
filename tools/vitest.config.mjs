@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import {
   RSD_NATIVE_SELECTION_TEST,
@@ -45,6 +46,21 @@ export default defineConfig({
         root: import.meta.dirname,
         // Expo and React Native sources read Metro's __DEV__ global at import time.
         define: { __DEV__: 'false' },
+        // Native ink renders through Skia's native module, which Node cannot load; mounted
+        // drawing tests exercise contacts and ink against the SVG renderer the web build ships.
+        resolve: {
+          alias: [
+            {
+              find: /^\.\/InkLayer$/,
+              replacement: fileURLToPath(
+                new URL(
+                  '../experiments/native-architecture/src/drawing/InkLayer.web.tsx',
+                  import.meta.url
+                )
+              ),
+            },
+          ],
+        },
         test: {
           name: 'repo-tools',
           environment: 'node',
