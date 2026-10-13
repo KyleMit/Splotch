@@ -68,7 +68,7 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 11,
+    version: 12,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -417,7 +417,8 @@ export function createSoundSettings(
     const { version: _version, ...choices } = previous;
     publish({ status: 'saving', ...choices, message: 'Saving Parent Center choices…' });
     try {
-      await storage.write(JSON.stringify(settings));
+      // Through snapshot, so the policies land in their saved order however the caller built them.
+      await storage.write(JSON.stringify(snapshot(settings)));
       const { version: _nextVersion, ...next } = settings;
       pendingParent = null;
       publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });

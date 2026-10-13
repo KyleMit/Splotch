@@ -73,7 +73,10 @@ export type ModalFrame = {
 
 type Window = { width: number; height: number };
 
-function gateClass({ width, height }: Window): keyof typeof GATE_MAX_WIDTH_PX {
+export type GateSizeClass = keyof typeof GATE_MAX_WIDTH_PX;
+
+// The gate's viewport steps (ParentalGate.svelte): the landscape phone, then tablet and large tablet.
+export function gateSizeClass({ width, height }: Window): GateSizeClass {
   if (isPhoneLandscape(width, height)) return 'phoneLandscape';
   if (width >= LARGE_TABLET_MIN_SIDE_PX && height >= LARGE_TABLET_MIN_SIDE_PX) return 'largeTablet';
   if (width >= TABLET_MIN_SIDE_PX && height >= TABLET_MIN_SIDE_PX) return 'tablet';
@@ -106,7 +109,7 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
   const cap = window.height * CARD_HEIGHT_CAP_FRACTION;
   const fill = window.height - 2 * gutter;
   if (size === 'gate') {
-    const step = gateClass(window);
+    const step = gateSizeClass(window);
     const content = GATE_CONTENT[step];
     return {
       width: fitWidth(window, gutter, GATE_MAX_WIDTH_PX[step]),

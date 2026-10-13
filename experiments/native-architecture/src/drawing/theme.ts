@@ -16,6 +16,7 @@ export const DRAWING_THEME = {
   externalMarkWash: '#f1efeb',
   iconInk: '#1f1f1f',
   iconMuted: '#737373',
+  successText: '#2e7d4f',
   darkInkKeyline: 'transparent',
 } as const;
 
@@ -46,6 +47,7 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
     externalMarkWash: '#33333e',
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
+    successText: '#8bcfa4',
     darkInkKeyline: '#e9e7f0',
   },
 };

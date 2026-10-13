@@ -42,7 +42,7 @@ import {
 
 const WHATS_NEW = "What's New";
 const CURRENT_SETTINGS = {
-  version: 11,
+  version: 12,
   soundEnabled: false,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -53,6 +53,7 @@ const CURRENT_SETTINGS = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },
@@ -279,7 +280,7 @@ it('steps Button Size through the settings owner and resizes the edge controls f
   for (let step = 0; step < 3; step++) await click('Bigger buttons');
   expect(host.textContent).toContain(`Button Size ${BUTTON_SCALE_MAX}%`);
   expect(button('Bigger buttons').disabled).toBe(true);
-  expect(settings.stored()).toMatchObject({ version: 11, buttonScale: BUTTON_SCALE_MAX });
+  expect(settings.stored()).toMatchObject({ version: 12, buttonScale: BUTTON_SCALE_MAX });
   await rerender({ settingsOpen: false });
   await click('Expand controls');
   const size = controlSize(BUTTON_SCALE_MAX);

@@ -179,7 +179,7 @@ describe('canonical shared stroke widths', () => {
 describe('one persisted candidate settings owner', () => {
   it('defaults drawing levels while preserving historic geometry only in saved pictures', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
-      version: 11,
+      version: 12,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -195,6 +195,7 @@ describe('one persisted candidate settings owner', () => {
       parentPolicies: {
         ai: 'always',
         imageReport: 'always',
+        externalLinks: 'always',
         feedback: 'always',
         parentCenter: 'always',
       },
@@ -241,7 +242,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":11,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
+      '{"version":12,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -253,7 +254,7 @@ describe('one persisted candidate settings owner', () => {
     });
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
-      version: 11,
+      version: 12,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -269,6 +270,7 @@ describe('one persisted candidate settings owner', () => {
       parentPolicies: {
         ai: 'always',
         imageReport: 'always',
+        externalLinks: 'always',
         feedback: 'always',
         parentCenter: 'always',
       },
@@ -325,6 +327,7 @@ describe('one persisted candidate settings owner', () => {
         parentPolicies: {
           ai: 'always',
           imageReport: 'always',
+          externalLinks: 'always',
           feedback: 'always',
           parentCenter: 'always',
         },
@@ -350,7 +353,7 @@ describe('one persisted candidate settings owner', () => {
       const writes = recovery === 'sound choice' ? 3 : 2;
       expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(JSON.parse(saved)).toEqual({
-        version: 11,
+        version: 12,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -366,6 +369,7 @@ describe('one persisted candidate settings owner', () => {
         parentPolicies: {
           ai: 'always',
           imageReport: 'always',
+          externalLinks: 'always',
           feedback: 'always',
           parentCenter: 'always',
         },
@@ -408,7 +412,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.setWidth('eraser', 'thick');
     expect(storage.write).toHaveBeenCalledTimes(2);
     expect(JSON.parse(saved)).toEqual({
-      version: 11,
+      version: 12,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -424,6 +428,7 @@ describe('one persisted candidate settings owner', () => {
       parentPolicies: {
         ai: 'always',
         imageReport: 'always',
+        externalLinks: 'always',
         feedback: 'always',
         parentCenter: 'always',
       },

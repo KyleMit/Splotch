@@ -7,6 +7,7 @@ import {
 } from '../settings/soundSettings';
 import {
   PARENT_FEATURES,
+  endsParentCenterProtection,
   type ParentFeature,
   type ParentMode,
   type ParentOperationPort,
@@ -85,7 +86,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     },
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
       if (!parentCenterOpen || !settings.canEditParent()) return;
-      if (feature === 'parentCenter' && mode === 'never' && !confirmed) {
+      if (endsParentCenterProtection(feature, mode) && !confirmed) {
         confirmNever = true;
         notify();
         return;

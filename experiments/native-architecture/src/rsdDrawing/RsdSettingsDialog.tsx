@@ -13,7 +13,7 @@ import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
 import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from '../settings/soundLevel';
 import { RsdAction, styles as controlStyles } from './controls';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
@@ -32,6 +32,7 @@ import { installPrompt } from '../platform/installPrompt';
 import { RsdSettingsHub, useHubToggles } from './RsdSettingsHub';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
+import { RsdParentCenterLock } from './RsdParentCenterLock';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
@@ -56,12 +57,23 @@ type NativeSoundSettingsDialogProps = {
   onWhatsNewSeen: () => void;
   onRetry: () => void;
   onClose: () => void;
-  onParentCenter: () => void;
+  parentCenter: ParentCenterRoute;
+  // The Grown-Ups Only card, held over Settings while a check raised from it is open.
+  gate: ReactNode;
   onFeedback: () => void;
   downloadedBooks: number;
   ai: SectionSummaryContext['ai'];
   visible?: boolean;
   onDismiss?: () => void;
+};
+
+// Parent Center's controls are themselves a gated operation: the section opens only once a check is
+// solved, and leaving it locks them again.
+type ParentCenterRoute = {
+  unlocked: boolean;
+  onUnlock: () => void;
+  onLeave: () => void;
+  section: ReactNode;
 };
 
 type SettingsPage =
@@ -70,6 +82,7 @@ type SettingsPage =
   | { kind: 'information'; page: InformationPage };
 
 const HUB: SettingsPage = { kind: 'hub', returnTo: null };
+const PARENT_CENTER_PAGE: SettingsPage = { kind: 'section', section: 'parentCenter' };
 // Install has nothing to offer where the app is already installed.
 const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
   (section) => section.id !== 'setup' || installPrompt !== null
@@ -87,11 +100,15 @@ function pageLabel(page: SettingsPage) {
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
   const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
-  const [page, setPage] = useState<SettingsPage>(HUB);
+  const { unlocked } = props.parentCenter;
+  const [page, setPage] = useState<SettingsPage>(unlocked ? PARENT_CENTER_PAGE : HUB);
   const sectionTitle = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (page.kind === 'section') landFocus(sectionTitle.current);
   }, [page]);
+  useEffect(() => {
+    if (unlocked) setPage((current) => (isParentCenter(current) ? current : PARENT_CENTER_PAGE));
+  }, [unlocked]);
   const toggles = useHubToggles({
     busy,
     soundEnabled: settings.soundEnabled,
@@ -103,11 +120,17 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       props.onFeedback();
       return;
     }
+    if (section === 'parentCenter' && !unlocked) {
+      props.parentCenter.onUnlock();
+      return;
+    }
     if (section === 'whatsnew') onWhatsNewSeen();
     setPage({ kind: 'section', section });
   };
-  const back = () =>
+  const back = () => {
+    if (isParentCenter(page)) props.parentCenter.onLeave();
     setPage({ kind: 'hub', returnTo: page.kind === 'section' ? page.section : null });
+  };
   return (
     <ModalShell
       visible={visible}
@@ -168,8 +191,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           ) : null}
         </html.div>
       )}
+      {props.gate}
     </ModalShell>
   );
+}
+
+function isParentCenter(page: SettingsPage) {
+  return page.kind === 'section' && page.section === 'parentCenter';
 }
 
 type SectionProps = NativeSoundSettingsDialogProps & {
@@ -213,7 +241,11 @@ function SettingsSection(props: SectionProps) {
     case 'saving':
       return <SaveOnDeleteSwitch {...props} />;
     case 'parentCenter':
-      return <RsdAction label="Manage Parent Center" onClick={props.onParentCenter} />;
+      return props.parentCenter.unlocked ? (
+        props.parentCenter.section
+      ) : (
+        <RsdParentCenterLock onUnlock={props.parentCenter.onUnlock} />
+      );
     case 'setup':
       return <RsdInstallGuide />;
     case 'whatsnew':
