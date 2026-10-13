@@ -55,10 +55,11 @@ another deploy's document or chunks fails rather than pairing them
 (`tools/tests/native-web-deploy-race.test.mjs`). Its post hook,
 `tools/migration/check-native-web-precache.mjs`, fails when the shell is not first or not at its
 content address, an entry is not pinned to the exported bytes, an exported file or a file the shell
-names is not precached, a bundled Farm page is missing from the precached chunks, or the precache
-outgrows its budget. Serve `dist/web` from any static server that returns the exported bytes
-unchanged: a host that rewrites HTML or assets (snippet injection, minification) makes every install
-fail its integrity check. The entry registers `/sw.js` only in the web build
+names is not precached, a bundled Farm page is missing from the precached chunks, a lazily loaded
+icon (`experiments/native-architecture/src/rsdDrawing/iconRegistry.ts`) reaches a script the shell
+loads, or the precache outgrows its budget. Serve `dist/web` from any static server that returns the
+exported bytes unchanged: a host that rewrites HTML or assets (snippet injection, minification)
+makes every install fail its integrity check. The entry registers `/sw.js` only in the web build
 (`src/platform/serviceWorker.web.ts`).
 
 A new worker waits until every window of the old one closes, so an update never interrupts a
