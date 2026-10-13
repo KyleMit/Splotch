@@ -3,7 +3,8 @@
 // (drawingSheets.web.ts).
 export { AiWaitingPolaroid } from '../ai/AiWaitingPolaroid';
 export { RsdSettingsRoute } from './RsdSettingsRoute';
-export { RsdAiSheet } from './RsdAiSheet';
+export { RsdAiStylePrompt } from './RsdAiStylePrompt';
+export { RsdAiResult } from './RsdAiResult';
 export { RsdColorPicker } from './RsdColorPicker';
 export { RsdColoringBookPicker } from './RsdColoringBookPicker';
 export { RsdFailureBanner } from './RsdFailureBanner';

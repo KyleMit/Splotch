@@ -2,129 +2,78 @@ import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
-import { solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
+import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
+
+const save = vi.hoisted(() => ({ outcome: 'photos', calls: [] }));
+vi.mock('../../../experiments/native-architecture/src/platform/pictureSave.ts', () => ({
+  pictureSave: {
+    save: async (base64, format) => {
+      save.calls.push({ base64, format });
+      return save.outcome;
+    },
+  },
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/aiPictureBase64.ts', () => ({
+  aiPictureBase64: async (picture) => `bytes-of:${picture.uri}`,
+}));
+
+const labelled = (label) => host.querySelector(`[aria-label="${label}"]`);
+const testId = (id) => host.querySelector(`[data-testid="${id}"]`);
+const modal = (label) => host.querySelector(`[data-native-modal="${label}"]`);
 async function click(label) {
-  const node = host.querySelector(`[aria-label="${label}"]`);
+  const node = labelled(label);
   expect(node, label).not.toBeNull();
-  expect(node.disabled).toBe(false);
+  expect(node.disabled, label).toBe(false);
   await act(async () => node.click());
 }
-async function input(label, value) {
-  const props = records.props.findLast((item) => item.accessibilityLabel === label);
-  expect(props, label).toBeDefined();
-  await act(async () => props.onChange({ nativeEvent: { text: value } }));
+// A design Button is named by its label, which the caller reads as its text.
+async function press(text) {
+  const node = [...host.querySelectorAll('button')].find((button) => button.textContent === text);
+  expect(node, text).toBeDefined();
+  expect(node.disabled, text).toBe(false);
+  await act(async () => node.click());
+}
+async function settle(check) {
+  await act(() => vi.waitFor(check));
 }
 // Each solved check holds its "Unlocked!" card in real time before its destination shows, and a
-// full send-and-report run solves up to four.
+// full send-and-report run solves up to three.
 const GATED_FLOW_TIMEOUT_MS = 15_000;
-async function reviewReport() {
-  await click('Open AI picture');
-  const beforeReport = caller.aiSend.mock.calls.length;
-  await click('Report AI picture');
-  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-  expect(host.textContent).toContain('Grown-Ups Only');
-  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
-  await solve();
-  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-  expect(host.textContent).toContain('Report this AI picture');
-  expect(host.textContent).toContain('private report');
-  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
-  await click('Cancel report');
-  expect(host.textContent).not.toContain('Report this AI picture');
-}
-async function reviewRefusalReport(drawing) {
-  expect(caller.aiRetain).not.toHaveBeenCalled();
-  expect(host.textContent).not.toContain('private refusal reason');
-  const beforeReport = caller.aiSend.mock.calls.length;
-  await click('Grown-ups: report this refusal');
-  expect(host.textContent).toContain('Grown-Ups Only');
-  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
-  await solve();
-  expect(host.textContent).toContain('Report this refusal');
-  expect(host.textContent).toContain('Original style: Sticker');
-  expect(host.textContent).toContain('schedule deletion after 30 days by a daily cleanup');
-  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
-  await click('Send report');
-  const request = caller.aiSend.mock.calls.at(-1)[0];
-  expect(request.path).toBe('/api/report-image');
-  expect(request.headers['X-Report-Token']).toBe('fixture-refusal-proof');
-  const form = await new Response(request.body, { headers: request.headers }).formData();
-  expect(form.get('kind')).toBe('false-positive-refusal');
-  expect(form.get('style')).toBe('Sticker');
-  expect(form.has('output')).toBe(false);
-  expect(host.textContent).toContain('Report received.');
-  expect(caller.screen.history.drawing).toBe(drawing);
-}
-it.each(['picture', 'decode-rejection', 'refusal'])(
-  'drives actual RSD AI production callers through %s',
-  async (outcome) => {
-    const rejectDecode = outcome === 'decode-rejection';
-    vi.clearAllMocks();
-    caller.aiAdmit.mockImplementation(async () => {
-      if (rejectDecode) throw new Error('controlled native rejection');
-    });
-    const drawing = emptyDrawing();
-    caller.aiSend.mockImplementation(async (request) =>
-      request.path === '/api/free-generation-grant'
-        ? new Response('{"ok":true,"remaining":10,"limit":10}')
-        : request.path === '/api/verify-key'
-          ? new Response('{"ok":true}')
-          : request.path === '/api/report-image'
-            ? new Response('{"ok":true,"reportId":"17-00000000-0000-0000-0000-000000000001"}')
-            : outcome === 'refusal'
-              ? new Response('{"ok":false,"error":"private refusal reason"}', {
-                  status: 422,
-                  headers: { 'X-Report-Token': 'fixture-refusal-proof' },
-                })
-              : pictureReply()
-    );
-    useCaller(drawing);
-    await mount(createElement(RsdDrawingScreen));
-    await expandControls();
-    // Parent Center opens from Settings alone; the kid-facing drawer carries no button for it.
-    expect(host.querySelector('[aria-label="Parent Center"]')).toBeNull();
-    expect(host.querySelector('[aria-label="AI picture"]')).toBeNull();
-    await sendDrawing();
-    expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
-    expect(caller.aiReadPreparedUpload).toHaveBeenCalledOnce();
-    if (outcome === 'refusal') {
-      await reviewRefusalReport(drawing);
-      return;
-    }
-    expect(caller.aiAdmit).toHaveBeenCalledTimes(2);
-    expect(caller.aiAdmit.mock.calls.map(([bytes]) => bytes.length)).toEqual([
-      rgbaPng(1024, 768, 255).length,
-      rgbaPng(2, 2, 255).length,
-    ]);
-    expect(caller.aiRetain).toHaveBeenCalledTimes(rejectDecode ? 0 : 1);
-    expect(host.textContent).toContain(
-      rejectDecode ? 'could not be safely opened' : 'original drawing are saved'
-    );
-    expect(
-      records.props.some(
-        (props) => props.alt === 'Your AI picture' && props.src === 'file:///owned/rsd-ai.png'
-      )
-    ).toBe(!rejectDecode);
-    expect(caller.screen.history.drawing).toBe(drawing);
-    if (!rejectDecode) await reviewReport();
-    await click('Use my OpenAI key');
-    await input('OpenAI API key', 'fixture-key');
-    await click('Verify and save credential');
-    expect(caller.aiVaultWrite).not.toHaveBeenCalled();
-    await solve();
-    expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'fixture-key');
-    expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
-  },
-  GATED_FLOW_TIMEOUT_MS
-);
+// The dial's done-ramp closes a sixth of the remaining gap each frame, so it
+// needs about forty frames; this is several times that at happy-dom's frame rate.
+const REVEAL_RAMP_WAIT_MS = 2000;
+// One poll interval (POLL_INTERVAL_MS) and a margin for the poll to settle.
+const POLL_WAIT_MS = 3500;
+const POLL_TEST_TIMEOUT_MS = 15_000;
+const WAND = 'Create AI image, 10 free left';
+const WAITING_LABEL = 'Your picture is being made — tap to watch';
+const READY_LABEL = 'Your picture is ready — tap to see it';
+const GRANT = '{"ok":true,"remaining":10,"limit":10}';
+
 function pictureReply() {
   return new Response(rgbaPng(2, 2, 255), {
     headers: { 'Content-Type': 'image/png', 'X-Report-Token': 'fixture-report-proof' },
   });
 }
-function useCaller(drawing) {
+function reply(generate, grant = () => new Response(GRANT), poll = pictureReply) {
+  vi.clearAllMocks();
+  save.calls.length = 0;
+  save.outcome = 'photos';
+  caller.aiAdmit.mockResolvedValue(undefined);
+  caller.aiSend.mockImplementation(async (request) =>
+    request.path === '/api/free-generation-grant'
+      ? grant()
+      : request.path === '/api/report-image'
+        ? new Response('{"ok":true,"reportId":"17-00000000-0000-0000-0000-000000000001"}')
+        : request.path === '/api/generate-image'
+          ? generate()
+          : poll()
+  );
+}
+function useCaller(drawing = emptyDrawing(), overrides = {}) {
   caller.screen = {
     notice: '',
     drawing: false,
@@ -138,11 +87,14 @@ function useCaller(drawing) {
         capturePng: async () => rgbaPng(1024, 768, 255).toString('base64'),
       },
     },
+    inkVisible: true,
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,
     settingsOpen: false,
     colorPickerOpen: false,
+    recordKept: vi.fn(),
+    ...overrides,
   };
   caller.sound = {
     settings: {
@@ -158,96 +110,233 @@ function useCaller(drawing) {
     audioMessage: '',
   };
 }
-// Settings' Parent Center section opens it through this owner method.
-async function sendDrawing() {
+// Parent Center's AI switch is the master control; the drawer carries the wand only once it is on.
+async function enableAi() {
+  await mount(createElement(RsdDrawingScreen));
+  await expandControls();
+  expect(host.querySelector('[aria-label^="Create AI image"]')).toBeNull();
   await act(async () => caller.product.owner.openParentCenter());
-  expect(caller.aiSend).not.toHaveBeenCalled();
   await solve();
   await click('Create AI Images');
   await click('Close');
-  await click('AI picture');
-  expect(caller.aiSend).not.toHaveBeenCalled();
-  await click('Check AI allowance');
-  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-  expect(records.dismissals).toContain('AI picture');
-  expect(caller.aiSend).not.toHaveBeenCalled();
+}
+const drawingRequests = () =>
+  caller.aiSend.mock.calls.filter(([request]) => request.path !== '/api/free-generation-grant');
+
+// The wand asks a grown-up at the tap, as shipping does, and the AI Style Prompt follows.
+async function openPrompt() {
+  await settle(() => expect(labelled(WAND)).not.toBeNull());
+  await click(WAND);
+  expect(modal('Grown-Ups Only')).not.toBeNull();
+  expect(caller.aiRead).not.toHaveBeenCalled();
   await solve();
-  expect(host.querySelector('[aria-label="Sticker AI style"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Save held recovery request"]')).toBeNull();
-  expect(host.textContent).toContain('splotch.art and OpenAI');
-  await click('Sticker AI style');
-  const requestsBeforeSend = caller.aiSend.mock.calls.length;
-  await click('Send drawing for AI');
-  expect(caller.aiSend).toHaveBeenCalledTimes(requestsBeforeSend);
-  expect(host.querySelector('[aria-label="Send drawing for AI"]')).toBeNull();
-  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-  await solve();
+  expect(modal('Pick a style')).not.toBeNull();
+}
+async function sendDrawing(style = 'Sticker') {
+  await enableAi();
+  await openPrompt();
+  expect(drawingRequests()).toHaveLength(0);
+  await click(style);
+  expect(host.querySelector(GATE_MODAL)).toBeNull();
 }
 
-// The dial's done-ramp closes a sixth of the remaining gap each frame, so it
-// needs about forty frames; this is several times that at happy-dom's frame rate.
-const REVEAL_RAMP_WAIT_MS = 2000;
-// One poll interval (POLL_INTERVAL_MS) and a margin for the poll to settle.
-const POLL_WAIT_MS = 3500;
-const POLL_TEST_TIMEOUT_MS = 15_000;
-const WAITING_LABEL = 'Your picture is being made — tap to watch';
-const READY_LABEL = 'Your picture is ready — tap to see it';
-
-function pendingGeneration(generate) {
-  vi.clearAllMocks();
-  caller.aiAdmit.mockResolvedValue(undefined);
-  caller.aiSend.mockImplementation(async (request) =>
-    request.path === '/api/free-generation-grant'
-      ? new Response('{"ok":true,"remaining":10,"limit":10}')
-      : request.path === '/api/generate-image'
-        ? generate()
-        : pictureReply()
-  );
-}
-function deferred() {
-  let resolve;
-  const promise = new Promise((done) => (resolve = done));
-  return { promise, resolve };
-}
-async function elapse(ms) {
-  await act(async () => new Promise((done) => setTimeout(done, ms)));
-}
-const testId = (id) => host.querySelector(`[data-testid="${id}"]`);
-const labelled = (label) => host.querySelector(`[aria-label="${label}"]`);
+it(
+  'gates the wand at the tap, then picks a style from the covers and sends it at once',
+  async () => {
+    const pending = Promise.withResolvers();
+    reply(() => pending.promise);
+    useCaller();
+    await enableAi();
+    await openPrompt();
+    const prompt = modal('Pick a style');
+    expect(prompt.textContent).toContain('Pick a style');
+    for (const style of AI_STYLES)
+      expect(prompt.querySelector(`[aria-label="${style}"]`)).not.toBeNull();
+    // RN's own sheet copy and controls are gone from the prompt.
+    for (const gone of ['splotch.art and OpenAI', 'Check AI allowance', 'Selected', 'Choose'])
+      expect(prompt.textContent).not.toContain(gone);
+    expect(labelled('Check AI allowance')).toBeNull();
+    await click('Sticker');
+    expect(host.querySelector(GATE_MODAL)).toBeNull();
+    await settle(() => expect(drawingRequests()).toHaveLength(1));
+    expect(drawingRequests()[0][0].query).toBe('style=Sticker');
+    expect(modal('AI Result')).not.toBeNull();
+    await act(async () => pending.resolve(pictureReply()));
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
 
 it.each([
   ['moving', false],
   ['calm', true],
 ])(
-  'shows the %s waiting print with the sent drawing until the picture lands',
+  'shows the %s dial over the blurred drawing until the picture lands, then Download and the disclosure',
   async (_, calm) => {
     records.reduceMotion = calm;
-    const reply = deferred();
-    pendingGeneration(() => reply.promise);
-    useCaller(emptyDrawing());
-    await mount(createElement(RsdDrawingScreen));
-    await expandControls();
+    const pending = Promise.withResolvers();
+    reply(() => pending.promise);
+    useCaller();
     await sendDrawing();
-    expect(testId('ai-run-polaroid')).not.toBeNull();
+    await settle(() => expect(testId('ai-submitted-drawing')).not.toBeNull());
     const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
     expect(sent.source.uri).toBe(
       `data:image/png;base64,${rgbaPng(1024, 768, 255).toString('base64')}`
     );
+    expect(sent.blurRadius).toBeGreaterThan(2);
     expect(labelled('AI picture progress')).not.toBeNull();
     expect(testId('ai-confetti') !== null).toBe(!calm);
-    await act(async () => reply.resolve(pictureReply()));
-    expect(host.textContent).toContain('original drawing are saved');
-    expect(
-      records.props.some(
-        (props) => props.alt === 'Your AI picture' && props.src === 'file:///owned/rsd-ai.png'
-      )
-    ).toBe(true);
-    expect(labelled('AI picture progress')).not.toBeNull();
-    expect(testId('ai-confetti') !== null).toBe(!calm);
-    await elapse(REVEAL_RAMP_WAIT_MS);
+    expect(modal('AI Result').textContent).toContain('Making your picture…');
+    expect(labelled('Keep drawing while this is made')).not.toBeNull();
+    expect(host.textContent).toContain('Keep drawing while you wait');
+    expect(labelled('Report this picture')).toBeNull();
+    await act(async () => pending.resolve(pictureReply()));
+    await settle(() => expect(labelled('Your AI picture')).not.toBeNull());
+    await act(async () => new Promise((done) => setTimeout(done, REVEAL_RAMP_WAIT_MS)));
     expect(labelled('AI picture progress')).toBeNull();
     expect(testId('ai-confetti')).toBeNull();
-    expect(testId('ai-run-polaroid')).not.toBeNull();
+    expect(host.textContent).not.toContain('Making your picture…');
+    expect(host.textContent).not.toContain('Keep drawing while you wait');
+    expect(host.textContent).toContain('Download');
+    expect(host.textContent).toContain('AI-generated picture');
+    expect(labelled('Report this picture')).not.toBeNull();
+    expect(labelled('Close')).not.toBeNull();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+async function finishedPicture() {
+  reply(pictureReply);
+  useCaller();
+  await sendDrawing();
+  await settle(() => expect(labelled('Report this picture')).not.toBeNull());
+}
+
+it(
+  'downloads the picture through the screenshot save path and sends the card off',
+  async () => {
+    await finishedPicture();
+    await press('Download');
+    expect(save.calls).toEqual([
+      {
+        base64: 'bytes-of:file:///owned/rsd-ai.png',
+        format: { baseName: 'splotch-ai', mime: 'image/png' },
+      },
+    ]);
+    expect(caller.screen.recordKept).toHaveBeenCalledWith({
+      notice: 'Picture saved to Photos.',
+      failure: null,
+    });
+    await settle(() => expect(modal('AI Result')).toBeNull());
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'keeps the picture on the card when its save does not land, for the banner to retry',
+  async () => {
+    await finishedPicture();
+    save.outcome = 'denied';
+    await press('Download');
+    expect(caller.screen.recordKept.mock.calls[0][0].failure?.heading).toBe(
+      "Your picture wasn't saved"
+    );
+    expect(modal('AI Result')).not.toBeNull();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'reports the picture from the disclosure behind the gate, on the confirm card',
+  async () => {
+    await finishedPicture();
+    const before = drawingRequests().length;
+    await click('Report this picture');
+    expect(modal('Grown-Ups Only')).not.toBeNull();
+    await solve();
+    const confirm = modal('Report this picture');
+    expect(confirm).not.toBeNull();
+    expect(confirm.textContent).toContain('go to a grown-up at Splotch');
+    expect(confirm.textContent).toContain('We look within 24 hours');
+    expect(confirm.textContent).toContain('The AI picture');
+    expect(confirm.textContent).toContain('The drawing behind it');
+    expect(drawingRequests()).toHaveLength(before);
+    await press('Cancel');
+    await settle(() => expect(modal('Report this picture')).toBeNull());
+    await click('Report this picture');
+    await solve();
+    await press('Send report');
+    const request = caller.aiSend.mock.calls.at(-1)[0];
+    expect(request.path).toBe('/api/report-image');
+    expect(request.headers['X-Report-Token']).toBe('fixture-report-proof');
+    await settle(() =>
+      expect(host.textContent).toContain(
+        "Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001"
+      )
+    );
+    expect(labelled('Report this picture')).toBeNull();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'guides the child after a refusal and lets a grown-up report it',
+  async () => {
+    reply(
+      () =>
+        new Response('{"ok":false,"error":"private refusal reason"}', {
+          status: 422,
+          headers: { 'X-Report-Token': 'fixture-refusal-proof' },
+        })
+    );
+    const drawing = emptyDrawing();
+    useCaller(drawing);
+    await sendDrawing();
+    await settle(() => expect(host.textContent).toContain("Let's try drawing something else!"));
+    expect(host.textContent).toContain(
+      "That picture didn't work — try drawing something different!"
+    );
+    expect(host.textContent).toContain('For grown-ups');
+    expect(host.textContent).not.toContain('private refusal reason');
+    await press('Report this refusal');
+    await solve();
+    const confirm = modal('Report this refusal');
+    expect(confirm.textContent).toContain("the AI's refusal reason go to a grown-up at Splotch");
+    expect(confirm.textContent).toContain('The rejected drawing');
+    await press('Send report');
+    const request = caller.aiSend.mock.calls.at(-1)[0];
+    const form = await new Response(request.body, { headers: request.headers }).formData();
+    expect(form.get('kind')).toBe('false-positive-refusal');
+    expect(form.get('style')).toBe('Sticker');
+    expect(form.has('output')).toBe(false);
+    await settle(() => expect(host.textContent).toContain("Thanks. We'll review it"));
+    expect(labelled('Report this refusal')).toBeNull();
+    expect(caller.screen.history.drawing).toBe(drawing);
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'shows the error card for a picture that could not be opened, with Try again',
+  async () => {
+    reply(pictureReply);
+    caller.aiAdmit.mockImplementation(async (bytes) => {
+      if (bytes.length === rgbaPng(2, 2, 255).length)
+        throw new Error('controlled native rejection');
+    });
+    useCaller();
+    await sendDrawing();
+    await settle(() => expect(host.textContent).toContain("Hmm, that didn't work"));
+    expect(host.textContent).toContain("Let's give it one more go.");
+    expect(caller.aiRetain).not.toHaveBeenCalled();
+    expect(labelled('Your AI picture')).toBeNull();
+    const before = drawingRequests().length;
+    await press('Try again');
+    expect(host.querySelector(GATE_MODAL)).toBeNull();
+    await settle(() => expect(drawingRequests()).toHaveLength(before + 1));
+    await settle(() => expect(host.textContent).toContain('Still not working'));
+    expect(host.textContent).toContain('Try the wand again in a few minutes.');
+    await press('Keep drawing');
+    await settle(() => expect(modal('AI Result')).toBeNull());
   },
   GATED_FLOW_TIMEOUT_MS
 );
@@ -255,38 +344,86 @@ it.each([
 it(
   'keeps polling a minimized picture and brings the child back when it is ready',
   async () => {
-    pendingGeneration(
+    let ready = false;
+    reply(
       async () =>
         new Response(JSON.stringify({ ok: true, jobId: 'b'.repeat(64), pollAfterMs: 0 }), {
           status: 202,
-        })
+        }),
+      () => new Response(GRANT),
+      () => (ready ? pictureReply() : new Response(null, { status: 202 }))
     );
-    useCaller(emptyDrawing());
-    await mount(createElement(RsdDrawingScreen));
-    await expandControls();
+    useCaller();
     await sendDrawing();
-    expect(testId('ai-run-polaroid')).not.toBeNull();
-    await click('Close');
-    expect(host.querySelector('[data-native-modal]')).toBeNull();
+    await settle(() => expect(caller.aiWrite).toHaveBeenCalled());
+    await click('Keep drawing while this is made');
+    await settle(() => expect(modal('AI Result')).toBeNull());
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     expect(labelled(WAITING_LABEL).closest('[data-testid="rsd-paper-corner"]')).not.toBeNull();
-    expect(labelled('AI picture').disabled).toBe(false);
-    await click('AI picture');
-    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+    // A minimized run is the one time the wand works with a picture in flight: it shows it again,
+    // without a second check.
+    await click('Show the picture being made');
+    expect(host.querySelector(GATE_MODAL)).toBeNull();
+    expect(modal('AI Result')).not.toBeNull();
     expect(labelled(WAITING_LABEL)).toBeNull();
-    await click('Close');
-    expect(labelled(WAITING_LABEL)).not.toBeNull();
-    await elapse(POLL_WAIT_MS);
+    await press('Keep drawing while you wait');
+    await settle(() => expect(labelled(WAITING_LABEL)).not.toBeNull());
+    ready = true;
+    await act(async () => new Promise((done) => setTimeout(done, POLL_WAIT_MS)));
     expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/generation-result');
     expect(labelled(WAITING_LABEL)).toBeNull();
-    expect(host.querySelector('[data-native-modal]')).toBeNull();
+    expect(labelled('Show your finished picture')).not.toBeNull();
+    expect(modal('AI Result')).toBeNull();
     await click(READY_LABEL);
-    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+    expect(modal('AI Result')).not.toBeNull();
     expect(labelled(READY_LABEL)).toBeNull();
-    expect(testId('ai-run-polaroid')).not.toBeNull();
     expect(labelled('AI picture progress')).toBeNull();
-    expect(testId('ai-confetti')).toBeNull();
-    expect(labelled('Open AI picture')).not.toBeNull();
+    expect(labelled('Your AI picture')).not.toBeNull();
+    expect(host.textContent).toContain('Download');
   },
   POLL_TEST_TIMEOUT_MS
+);
+
+it.each([
+  ['checks the allowance', () => new Promise(() => {}), 'Checking AI image availability', true],
+  [
+    'finds no allowance',
+    () => new Response('{"ok":false}', { status: 503 }),
+    'AI image unavailable',
+    true,
+  ],
+  ['counts the free pictures left', () => new Response(GRANT), WAND, false],
+])(
+  'labels the wand while it %s, as shipping does',
+  async (_, grant, label, disabled) => {
+    reply(pictureReply, grant);
+    useCaller();
+    await enableAi();
+    await settle(() => expect(labelled(label)).not.toBeNull());
+    expect(labelled(label).disabled).toBe(disabled);
+    const badge = labelled(label).querySelector('[data-testid="free-count"]');
+    expect(badge?.textContent ?? null).toBe(label === 'AI image unavailable' ? null : '10');
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'parks the wand on a blank page, and sends a grown-up to Settings when no picture is left',
+  async () => {
+    reply(pictureReply, () => new Response('{"ok":true,"remaining":0,"limit":10}'));
+    useCaller(emptyDrawing(), { inkVisible: false });
+    await enableAi();
+    await settle(() => expect(labelled('Set up AI image')).not.toBeNull());
+    expect(labelled('Set up AI image').disabled).toBe(true);
+    caller.screen = { ...caller.screen, inkVisible: true };
+    await act(async () => caller.product.owner.openParentCenter());
+    await solve();
+    await click('Close');
+    await click('Set up AI image');
+    await solve();
+    expect(caller.screen.settingsOpen).toBe(true);
+    expect(modal('Pick a style')).toBeNull();
+    expect(drawingRequests()).toHaveLength(0);
+  },
+  GATED_FLOW_TIMEOUT_MS
 );

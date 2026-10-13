@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import type { PictureSave, PictureSaveOutcome } from '../export/pictureSave';
-import { pictureFilename } from '../export/pictureFilename';
+import { DRAWING_PICTURE, pictureFilename, type PictureFormat } from '../export/pictureFilename';
 
 const STAGING_DIRECTORY = 'splotch-photo-library-v1';
 // The shipping app's Android album, PhotoLibraryPlugin.java's ALBUM_NAME; Album.create files
@@ -18,7 +18,7 @@ const MEDIASTORE_WITHOUT_PERMISSION_API = 30;
 // through Album.create, which inserts it under the album's relative path and finds the album
 // among the app's own MediaStore rows; on iOS that call needs full library access, so iOS
 // keeps the default camera roll save.
-async function save(pngBase64: string): Promise<PictureSaveOutcome> {
+async function save(base64: string, format: PictureFormat): Promise<PictureSaveOutcome> {
   if (Platform.OS === 'android' && Number(Platform.Version) < MEDIASTORE_WITHOUT_PERMISSION_API)
     return 'unavailable';
   const MediaLibrary = await import('expo-media-library');
@@ -28,9 +28,9 @@ async function save(pngBase64: string): Promise<PictureSaveOutcome> {
   const LegacyFiles = await import('expo-file-system/legacy');
   const owner = new Directory(Paths.cache, STAGING_DIRECTORY);
   owner.create({ intermediates: true, idempotent: true });
-  const staged = new File(owner, pictureFilename(new Date()));
+  const staged = new File(owner, pictureFilename(new Date(), format));
   try {
-    await LegacyFiles.writeAsStringAsync(staged.uri, pngBase64, {
+    await LegacyFiles.writeAsStringAsync(staged.uri, base64, {
       encoding: LegacyFiles.EncodingType.Base64,
     });
     if (Platform.OS === 'android')
@@ -47,9 +47,9 @@ async function save(pngBase64: string): Promise<PictureSaveOutcome> {
 }
 
 export const photoLibrary: PictureSave = {
-  async save(pngBase64) {
+  async save(base64, format = DRAWING_PICTURE) {
     try {
-      return await save(pngBase64);
+      return await save(base64, format);
     } catch {
       return 'failed';
     }

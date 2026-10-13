@@ -1,10 +1,13 @@
+import { useEffect, useRef } from 'react';
 import { css, html } from 'react-strict-dom';
+import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
+import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
-import { brandColors, colors, dimensions, motion } from './tokens.css';
+import { brandColors, colors, dimensions, fonts, motion, shadows } from './tokens.css';
 
 // The app.css chrome values that no design token carries. They stay in this module because the
 // StyleX web compile resolves only local constants and token files inside css.create;
@@ -72,6 +75,7 @@ const styles = css.create({
     transitionDuration: motion.durationBase,
   },
   tile: {
+    position: 'relative',
     borderWidth: ACTION_TILE_BORDER_PX,
     backgroundColor: {
       default: colors.floatSurface,
@@ -153,7 +157,64 @@ const styles = css.create({
     borderRadius: size * ACTION_TILE_RADIUS_RATIO,
   }),
   turn: (degrees: number) => ({ transform: `rotate(${degrees}deg)` }),
+  // app.css's .free-count on the AI Image Button's corner.
+  badge: (offset: number, size: number, padding: number) => ({
+    position: 'absolute',
+    top: offset,
+    right: offset,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: size,
+    height: size,
+    paddingLeft: padding,
+    paddingRight: padding,
+    borderRadius: dimensions.radiusPill,
+    backgroundColor: colors.brandSolid,
+    color: brandColors.onBrand,
+    fontSize: dimensions.fontSizeXs,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
+    lineHeight: 1,
+    boxShadow: shadows.shadowControl,
+  }),
 });
+
+// The AI Image Button's .free-count badge and its .loading spin; native-ai-flow-geometry.test.mjs
+// reads each back from AiImageButton.svelte and app.css.
+export const BADGE_OFFSET_PX = -4;
+export const BADGE_SIZE_PX = 20;
+export const BADGE_PADDING_PX = 5;
+export const BUSY_TURN_MS = 1000;
+// The spin slows rather than stopping under Reduce Motion: it is the button's only sign that a
+// picture is still being made.
+export const CALM_BUSY_TURN_MS = 2400;
+
+function SpinningIcon({ size, muted }: { size: number; muted: boolean }) {
+  const reduced = useReduceMotion();
+  const turn = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(turn, {
+        toValue: 1,
+        duration: reduced ? CALM_BUSY_TURN_MS : BUSY_TURN_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      turn.setValue(0);
+    };
+  }, [reduced, turn]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <RsdIcon name="loading" size={size} ink={undefined} muted={muted} />
+    </Animated.View>
+  );
+}
 
 const CORNER_ICON_PX = CORNER_BUTTON_SIZE_PX - 2 * DRAWING_SCALE.space2;
 
@@ -222,6 +283,10 @@ export type IconButtonProps = Common &
         disabled?: boolean;
         expanded?: boolean;
         dimmed?: boolean;
+        // Turns the icon into the spinning loading glyph while the tile's work runs.
+        busy?: boolean;
+        // A count pinned to the tile's corner (the AI Image Button's free pictures left).
+        badge?: number | null;
       } & FaceInk &
         Selection)
     | ({
@@ -270,6 +335,8 @@ export function RsdIconButton(props: IconButtonProps) {
   const disabled = skin === 'tile' && props.disabled === true;
   const expanded = skin === 'tile' ? props.expanded : undefined;
   const dimmed = skin === 'tile' && props.dimmed === true;
+  const busy = skin === 'tile' && props.busy === true;
+  const badge = skin === 'tile' ? (props.badge ?? null) : null;
   const brandInk = skin === 'flyout' && selected ? DRAWING_BRAND : undefined;
   return (
     <RsdPressable
@@ -279,6 +346,7 @@ export function RsdIconButton(props: IconButtonProps) {
       aria-checked={selection ? selected : undefined}
       aria-expanded={expanded}
       aria-disabled={disabled}
+      aria-busy={busy || undefined}
       disabled={disabled}
       style={[
         styles.base,
@@ -292,13 +360,26 @@ export function RsdIconButton(props: IconButtonProps) {
       ]}
       onClick={onPress}
     >
-      <RsdIcon
-        name={icon}
-        size={iconSize(props, face)}
-        ink={ink ?? brandInk}
-        muted={disabled}
-        keyline={keyline}
-      />
+      {busy ? (
+        <SpinningIcon size={iconSize(props, face)} muted={disabled} />
+      ) : (
+        <RsdIcon
+          name={icon}
+          size={iconSize(props, face)}
+          ink={ink ?? brandInk}
+          muted={disabled}
+          keyline={keyline}
+        />
+      )}
+      {badge !== null ? (
+        <html.span
+          aria-hidden
+          data-testid="free-count"
+          style={styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX)}
+        >
+          {badge}
+        </html.span>
+      ) : null}
     </RsdPressable>
   );
 }

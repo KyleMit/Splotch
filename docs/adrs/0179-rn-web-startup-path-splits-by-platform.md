@@ -124,8 +124,12 @@ native keeps its synchronous, offline-complete bundle unchanged.
   * Until the owners arrive, `ai.owner` and `feedback.owner` are null. The UI already handled that
     state for the render before the effect ran. A chunk that fails to load is retried when the app
     returns to the foreground.
-  * Nothing AI runs at launch except a launch invite. The AI owner reads its stored journal and
-    resumes a pending generation when a parent opens the AI sheet. That path is unchanged, and
+  * Nothing AI runs at launch except a launch invite and, once the owners arrive with AI image
+    creation on, the free-allowance check behind the AI Image Button's states
+    (`product/useAiAvailability.ts`), which reads which credential is saved and asks
+    `/api/free-generation-grant` as shipping's free grant does; no drawing leaves the device. The AI
+    owner reads its stored journal and resumes a pending generation when a parent taps the AI Image
+    Button and answers the grown-up check, and
     `tools/migration/tests/rsd-native-web-product-owners.test.mjs` drives it through the web loader.
   * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite. If that chunk
     request fails, the capture stays pending. The owners' loader settles it before it hands out the
@@ -189,7 +193,7 @@ startup icon set (`icons.generated.ts`, about 78 KB) and `react-native-svg` (abo
   path, or a static first paint.
 * − On web, the AI picture button and Send Feedback do nothing until the owners' chunk arrives,
   shortly after first paint. After install the chunk comes from the service worker cache.
-* − The AI and feedback sheets now download with their owners after every web launch, rather than on
-  first open.
+* − The AI surfaces and the feedback sheet now download with their owners after every web launch,
+  rather than on first open.
 * − Web capture now does a network or cache fetch per file-served fill. A failed fetch fails the
   capture closed (an empty result), as a decode error already did.

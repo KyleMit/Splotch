@@ -1,30 +1,55 @@
 import { useEffect, useRef } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { css, html } from 'react-strict-dom';
 import { Animated, Easing } from '../platform/animated';
 import { Text } from '../drawing/Text';
+import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_BRAND, DRAWING_POLAROID, DRAWING_SCALE } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
+import { RsdIcon } from '../rsdDrawing/RsdIcon';
 import { useAiProgress } from './useAiProgress';
 import type { AiProgressOwner } from './aiProgress';
-import type { AiRun } from './uiState';
+import type { AiCornerFace, AiRun } from './uiState';
 
-type Face = 'waiting' | 'ready' | 'failed';
-
-const LABELS: Record<Face, string> = {
+const LABELS: Record<AiCornerFace, string> = {
   waiting: 'Your picture is being made — tap to watch',
   ready: 'Your picture is ready — tap to see it',
   failed: "That didn't work — tap to see",
 };
 
-const PRINT_WIDTH_PX = 104;
-const PHOTO_HEIGHT_PX = 68;
-const TILT_DEG = -5;
+// AiWaitingPolaroid.svelte's literals; native-ai-flow-geometry.test.mjs reads them back.
+export const PRINT_WIDTH_PX = 104;
+export const PHOTO_HEIGHT_PX = 68;
+export const TILT_DEG = -5;
+// Where the print pins: below the portrait palette bar, or beside the landscape column with room
+// for the ready wiggle and its badge above it.
+export const POLAROID_PORTRAIT_INSET_PX = 16;
+export const POLAROID_HEADROOM_PX = 30;
+export const POLAROID_CLEARANCE_PX = 28;
+export const BADGE_ICON_PX = 28;
+export const BADGE_OFFSET = { top: -12, right: -10 } as const;
 const SPINNER_SIZE_PX = 18;
 const SPINNER_MS = 900;
 // The spinner slows rather than stopping: it is the only sign left that anything is happening.
 const CALM_SPINNER_MS = 2400;
+const ARRIVAL_MS = 400;
+const BADGE_POP_MS = 560;
 const WIGGLE_DELAY_MS = 150;
 const WIGGLE_CYCLE_MS = 2600;
+// Arrival: a pop and a wiggle, not a takeover. Each stop is [fraction, tilt, scale, lift, opacity].
+const ARRIVAL_STOPS: readonly (readonly [number, number, number, number, number])[] = [
+  [0, 6, 0.62, -18, 0],
+  [0.62, -7, 1.04, 0, 1],
+  [0.84, -3.4, 0.995, 0, 1],
+  [1, TILT_DEG, 1, 0, 1],
+];
+// The badge pops on like a sticker. Each stop is [fraction, scale, turn].
+const BADGE_STOPS: readonly (readonly [number, number, number])[] = [
+  [0, 0, -22],
+  [0.62, 1.18, 5],
+  [0.84, 0.97, -2],
+  [1, 1, 0],
+];
 // Two passes per cycle, the second at half the swing, so the print settles
 // instead of stopping. Each stop is [fraction of the cycle, tilt, scale].
 const WIGGLE_STOPS: readonly (readonly [number, number, number])[] = [
@@ -55,10 +80,7 @@ const CAPTION_HEIGHT_PX = 20;
 const CAPTION_GAP_PX = 6;
 const TRACK_HEIGHT_PX = 6;
 const CAPTION_FONT_SIZE_PX = 12;
-
-function faceOf(run: AiRun): Face {
-  return run.phase === 'arrived' ? 'ready' : run.phase;
-}
+const DEG = 'deg';
 
 function useSpin(active: boolean, reduceMotion: boolean) {
   const turn = useRef(new Animated.Value(0)).current;
@@ -78,7 +100,30 @@ function useSpin(active: boolean, reduceMotion: boolean) {
   return turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 }
 
-function useWiggle(face: Face, reduceMotion: boolean) {
+function useOnce(duration: number, delay: number, run: boolean) {
+  const clock = useRef(new Animated.Value(run ? 0 : 1)).current;
+  useEffect(() => {
+    if (!run) {
+      clock.setValue(1);
+      return;
+    }
+    clock.setValue(0);
+    const once = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(clock, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ]);
+    once.start();
+    return () => once.stop();
+  }, [clock, delay, duration, run]);
+  return clock;
+}
+
+function useWiggle(face: AiCornerFace, reduceMotion: boolean) {
   const cycle = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (face === 'waiting' || reduceMotion) return;
@@ -100,32 +145,69 @@ function useWiggle(face: Face, reduceMotion: boolean) {
   ).flat();
   const inputRange = passes.map(([at]) => at);
   return {
-    rotate: cycle.interpolate({ inputRange, outputRange: passes.map(([, tilt]) => `${tilt}deg`) }),
+    rotate: cycle.interpolate({ inputRange, outputRange: passes.map(([, tilt]) => tilt) }),
     scale: cycle.interpolate({ inputRange, outputRange: passes.map(([, , scale]) => scale) }),
   };
 }
 
-// The picture-in-progress, pinned to the top-left of the paper while the child
-// keeps drawing. It is the way back into a minimized run, so a picture that is
-// already being made can never be lost by minimizing it.
+function stops<Stop extends readonly number[]>(
+  clock: Animated.Value,
+  table: readonly Stop[],
+  pick: (stop: Stop) => number
+) {
+  return clock.interpolate({ inputRange: table.map(([at]) => at), outputRange: table.map(pick) });
+}
+
+const asDegrees = (value: Animated.AnimatedInterpolation<number>) =>
+  value.interpolate({ inputRange: [-360, 360], outputRange: [`-360${DEG}`, `360${DEG}`] });
+
+// The picture-in-progress, pinned to the paper's top-left corner while the child keeps drawing
+// (ADR-0116, ADR-0117). It is the way back into a minimized run, so a picture that is already
+// being made can never be lost by minimizing it.
 export function AiWaitingPolaroid({
   run,
+  face,
+  portrait,
   progress: owner,
   onRestore,
 }: {
   run: AiRun;
+  face: AiCornerFace;
+  portrait: boolean;
   progress: AiProgressOwner;
   onRestore: () => void;
 }) {
   const progress = useAiProgress(owner);
   const reduceMotion = useReduceMotion();
-  const face = faceOf(run);
   const spin = useSpin(face === 'waiting', reduceMotion);
   const wiggle = useWiggle(face, reduceMotion);
-  const photo = face === 'ready' ? run.picture?.uri : run.submitted;
+  const arrival = useOnce(ARRIVAL_MS, 0, !reduceMotion);
+  const ready = face === 'ready';
+  const pop = useOnce(BADGE_POP_MS, 0, ready && !reduceMotion);
+  const photo = ready ? run.picture?.uri : run.submitted;
+  const tilt = Animated.add(
+    stops(arrival, ARRIVAL_STOPS, ([, turn]) => turn - TILT_DEG),
+    wiggle.rotate
+  );
   return (
     <Animated.View
-      style={[styles.anchor, { transform: [{ rotate: wiggle.rotate }, { scale: wiggle.scale }] }]}
+      style={[
+        styles.anchor,
+        portrait ? styles.portrait : styles.landscape,
+        {
+          opacity: stops(arrival, ARRIVAL_STOPS, ([, , , , opacity]) => opacity),
+          transform: [
+            { translateY: stops(arrival, ARRIVAL_STOPS, ([, , , lift]) => lift) },
+            { rotate: asDegrees(tilt) },
+            {
+              scale: Animated.multiply(
+                stops(arrival, ARRIVAL_STOPS, ([, , scale]) => scale),
+                wiggle.scale
+              ),
+            },
+          ],
+        },
+      ]}
     >
       <Pressable
         accessibilityRole="button"
@@ -139,9 +221,9 @@ export function AiWaitingPolaroid({
             <Image
               accessible={false}
               source={{ uri: photo }}
-              blurRadius={face === 'ready' ? 0 : 1}
+              blurRadius={ready ? 0 : 1}
               resizeMode="cover"
-              style={[styles.photo, face !== 'ready' && styles.waitingArt]}
+              style={[styles.photo, !ready && styles.waitingArt]}
             />
           ) : null}
           {face === 'waiting' ? (
@@ -151,7 +233,7 @@ export function AiWaitingPolaroid({
         <View style={styles.caption}>
           {face === 'waiting' ? (
             <View style={styles.track}>
-              <View style={[styles.fill, { width: `${Math.round(progress.value * PERCENT)}%` }]} />
+              <ProgressFill percent={Math.round(progress.value * PERCENT)} />
             </View>
           ) : (
             <Text style={[styles.captionText, face === 'failed' && styles.mutedText]}>
@@ -160,16 +242,49 @@ export function AiWaitingPolaroid({
           )}
         </View>
       </Pressable>
+      {ready ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.badge,
+            {
+              transform: [
+                { scale: stops(pop, BADGE_STOPS, ([, scale]) => scale) },
+                { rotate: asDegrees(stops(pop, BADGE_STOPS, ([, , turn]) => turn)) },
+              ],
+            },
+          ]}
+        >
+          <RsdIcon name="wand-stars" size={BADGE_ICON_PX} ink={undefined} muted={false} />
+        </Animated.View>
+      ) : null}
     </Animated.View>
   );
 }
 
+// The fill runs from the brand hue to its solid shade, as shipping's caption bar does.
+function ProgressFill({ percent }: { percent: number }) {
+  const { brandSolid } = useDrawingTheme();
+  return (
+    <html.div
+      style={fill.bar(`${percent}%`, `linear-gradient(90deg, ${DRAWING_BRAND}, ${brandSolid})`)}
+    />
+  );
+}
+
+const fill = css.create({
+  bar: (width: string, backgroundImage: string) => ({
+    width,
+    height: '100%',
+    borderRadius: TRACK_HEIGHT_PX / 2,
+    backgroundImage,
+  }),
+});
+
 const styles = StyleSheet.create({
-  anchor: {
-    position: 'absolute',
-    top: DRAWING_SCALE.space4,
-    left: DRAWING_SCALE.space4,
-  },
+  anchor: { position: 'absolute' },
+  portrait: { top: POLAROID_PORTRAIT_INSET_PX, left: POLAROID_PORTRAIT_INSET_PX },
+  landscape: { top: POLAROID_HEADROOM_PX, left: POLAROID_CLEARANCE_PX },
   print: {
     width: PRINT_WIDTH_PX,
     paddingTop: PRINT_INSET_PX,
@@ -210,15 +325,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
-  fill: {
-    height: '100%',
-    borderRadius: TRACK_HEIGHT_PX / 2,
-    backgroundColor: DRAWING_POLAROID.ink,
-  },
   captionText: {
     color: DRAWING_POLAROID.ink,
     fontSize: CAPTION_FONT_SIZE_PX,
     fontWeight: DRAWING_SCALE.fontWeightBold,
   },
   mutedText: { color: MUTED_INK },
+  badge: { position: 'absolute', top: BADGE_OFFSET.top, right: BADGE_OFFSET.right },
 });

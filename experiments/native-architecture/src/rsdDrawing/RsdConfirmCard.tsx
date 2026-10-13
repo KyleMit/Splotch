@@ -1,4 +1,4 @@
-import { useContext, type ReactElement } from 'react';
+import { useContext, type ReactElement, type ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
 import { DialogScope } from './dialogScope';
 import { colors, dimensions, fonts } from './tokens.css';
@@ -60,10 +60,13 @@ const styles = css.create({
 export function RsdConfirmCard({
   title,
   copy,
+  children,
   actions,
 }: {
   title: string;
   copy: string;
+  // What the choice acts on, shown between the copy and the actions (the AI report's pictures).
+  children?: ReactNode;
   actions: readonly [ReactElement, ReactElement];
 }) {
   const dialog = useContext(DialogScope);
@@ -75,6 +78,7 @@ export function RsdConfirmCard({
         </html.h2>
         <html.p style={styles.copy}>{copy}</html.p>
       </html.div>
+      {children}
       <html.div style={styles.actions}>
         {actions.map((action, index) => (
           <html.div key={index} style={styles.action}>

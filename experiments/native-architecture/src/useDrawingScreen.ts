@@ -318,7 +318,14 @@ function usePictureActions({
     });
   }
 
-  return { save };
+  // A picture kept by another surface (the AI Result's Download) reports as the Screenshot
+  // Button's save does: its notice, and a failure in the Save Failure Banner.
+  function recordKept(kept: KeptPicture) {
+    setNotice(kept.notice);
+    recordSave(kept);
+  }
+
+  return { save, recordKept };
 }
 
 function useSurfaceCommands({

@@ -4,6 +4,7 @@
 // for any of these would put the modules they share back on the startup path (ADR-0179).
 export { createProductOwners } from './productOwners';
 export { aiVault } from '../platform/ai';
-export { RsdAiSheet } from '../rsdDrawing/RsdAiSheet';
+export { RsdAiStylePrompt } from '../rsdDrawing/RsdAiStylePrompt';
+export { RsdAiResult } from '../rsdDrawing/RsdAiResult';
 export { RsdFeedbackSheet } from '../rsdDrawing/RsdFeedbackSheet';
 export { AiWaitingPolaroid } from '../ai/AiWaitingPolaroid';

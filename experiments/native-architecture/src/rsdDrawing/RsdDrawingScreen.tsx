@@ -1,6 +1,7 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import {
-  RsdAiSheet,
+  RsdAiResult,
+  RsdAiStylePrompt,
   RsdColorPicker,
   RsdColoringBookPicker,
   RsdFeedbackSheet,
@@ -9,7 +10,8 @@ import {
 } from './drawingSheets';
 import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
-import { aiJournalWaiting, aiSheetShown } from '../ai/uiState';
+import { aiSheetShown } from '../ai/uiState';
+import { useAiAvailability } from '../product/useAiAvailability';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -62,9 +64,12 @@ export function RsdDrawingScreen() {
         : product.feedback.state?.open
           ? 'feedback'
           : product.ai.state && aiSheetShown(product.ai.state)
-            ? 'ai'
+            ? product.ai.state.view === 'prompt'
+              ? 'aiPrompt'
+              : 'aiResult'
             : 'none';
   useParentCenterSettings(screen, product, gate?.open === true);
+  useAiAvailability(product.ai.owner, sound.settings);
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
   });
@@ -148,20 +153,25 @@ function RsdModalSheets({
           />
         </RsdSurfaceBoundary>
       ) : null}
-      {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
-        <RsdSurfaceBoundary
-          onClose={
-            aiJournalWaiting(product.ai.state) ? product.ai.owner.minimize : product.ai.owner.close
-          }
-        >
-          <RsdAiSheet
+      {product.ai.owner && route.shown === 'aiPrompt' ? (
+        <RsdSurfaceBoundary onClose={product.ai.owner.close}>
+          <RsdAiStylePrompt
+            visible={route.visible}
+            onPick={product.ai.owner.pickStyle}
+            onClose={product.ai.owner.close}
+            onDismiss={dismissed}
+          />
+        </RsdSurfaceBoundary>
+      ) : null}
+      {product.ai.owner && product.ai.state && route.shown === 'aiResult' ? (
+        <RsdSurfaceBoundary onClose={product.ai.owner.close}>
+          <RsdAiResult
             owner={product.ai.owner}
             state={product.ai.state}
-            drawing={screen.history.drawing}
-            artwork={screen.library.state.artwork}
             progress={product.ai.progress}
             visible={route.visible}
             onDismiss={dismissed}
+            onKept={screen.recordKept}
           />
         </RsdSurfaceBoundary>
       ) : null}

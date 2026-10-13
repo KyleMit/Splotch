@@ -87,6 +87,10 @@ export class AiSession {
     })
   );
   protected state: AiState = {
+    view: 'prompt',
+    attempt: null,
+    availability: 'loading',
+    failures: 0,
     open: false,
     minimized: false,
     authorized: false,
@@ -148,6 +152,56 @@ export class AiSession {
     this.writing = work;
     return work;
   };
+  private readCredential = async (permitted: () => boolean): Promise<AiCredential> => {
+    const changed = () => new Error('AI authorization changed.');
+    const byok = await this.deps.vault.read('byok');
+    if (!permitted()) throw changed();
+    const managed = await this.deps.vault.read('managed');
+    if (!permitted()) throw changed();
+    if (
+      (byok !== null && !validCredential(byok)) ||
+      (managed !== null && !validCredential(managed))
+    )
+      throw new Error('Saved AI credentials could not be read safely.');
+    if (byok) return { kind: 'byok', value: byok };
+    if (managed) return { kind: 'managed', value: managed };
+    const id = await this.deps.vault.installationId();
+    if (!permitted()) throw changed();
+    if (!isInstallationId(id)) throw new Error('Installation grant unavailable.');
+    return { kind: 'free', installationId: id };
+  };
+  private applyCredential = async (credential: AiCredential, permitted: () => boolean) => {
+    this.credential = credential;
+    this.update({ credential: credential.kind });
+    if (credential.kind !== 'free') {
+      this.update({ availability: 'ready' });
+      return;
+    }
+    const reply = await requestAi(
+      this.deps.transport,
+      {
+        path: '/api/free-generation-grant',
+        method: 'GET',
+        headers: credentialHeaders(credential),
+      },
+      () => {}
+    );
+    if (!permitted()) return;
+    if (reply.kind === 'grant')
+      this.update({
+        remaining: reply.remaining,
+        availability: 'ready',
+      });
+    else
+      this.update({
+        availability: 'unavailable',
+        message:
+          reply.kind === 'failure' || reply.kind === 'unknown'
+            ? reply.message
+            : 'Free allowance unavailable.',
+        retryAt: reply.kind === 'failure' ? (reply.retryAt ?? 0) : 0,
+      });
+  };
   protected refreshCredential = async () => {
     const proof = this.authorization;
     const permitted = () =>
@@ -157,61 +211,27 @@ export class AiSession {
     this.update({
       credential: 'unavailable',
       remaining: null,
+      availability: 'loading',
     });
-    const byok = await this.deps.vault.read('byok');
-    if (!permitted()) throw new Error('AI authorization changed.');
-    const managed = await this.deps.vault.read('managed');
-    if (!permitted()) throw new Error('AI authorization changed.');
-    if (
-      (byok !== null && !validCredential(byok)) ||
-      (managed !== null && !validCredential(managed))
-    )
-      throw new Error('Saved AI credentials could not be read safely.');
-    if (byok)
-      this.credential = {
-        kind: 'byok',
-        value: byok,
-      };
-    else if (managed)
-      this.credential = {
-        kind: 'managed',
-        value: managed,
-      };
-    else {
-      const id = await this.deps.vault.installationId();
-      if (!permitted()) throw new Error('AI authorization changed.');
-      if (!isInstallationId(id)) throw new Error('Installation grant unavailable.');
-      this.credential = {
-        kind: 'free',
-        installationId: id,
-      };
-    }
-    this.update({
-      credential: this.credential.kind,
-    });
-    if (this.credential.kind === 'free') {
-      const reply = await requestAi(
-        this.deps.transport,
-        {
-          path: '/api/free-generation-grant',
-          method: 'GET',
-          headers: credentialHeaders(this.credential),
-        },
-        () => {}
-      );
+    await this.applyCredential(await this.readCredential(permitted), permitted);
+  };
+  private availabilityCheck = 0;
+  // What the AI Image Button shows before anyone taps it: which credential is saved and, on the
+  // free tier, how many pictures are left. Reading that is not sending a drawing, so no grown-up
+  // is asked, as shipping requests its free grant whenever AI image creation is on.
+  checkAvailability = async () => {
+    if (this.disposed || this.active || this.state.open) return;
+    const check = ++this.availabilityCheck;
+    const permitted = () =>
+      !this.disposed && check === this.availabilityCheck && !this.active && !this.state.open;
+    this.update({ availability: 'loading' });
+    try {
+      const credential = await this.readCredential(permitted);
+      if (permitted()) await this.applyCredential(credential, permitted);
+    } catch {
       if (!permitted()) return;
-      if (reply.kind === 'grant')
-        this.update({
-          remaining: reply.remaining,
-        });
-      else
-        this.update({
-          message:
-            reply.kind === 'failure' || reply.kind === 'unknown'
-              ? reply.message
-              : 'Free allowance unavailable.',
-          retryAt: reply.kind === 'failure' ? (reply.retryAt ?? 0) : 0,
-        });
+      this.credential = null;
+      this.update({ credential: 'unavailable', remaining: null, availability: 'unavailable' });
     }
   };
   private holdRecovery = (receipt: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt) => {
@@ -232,6 +252,7 @@ export class AiSession {
     const proof = this.authorization;
     const permitted = () =>
       this.state.authorized && proof === this.authorization && !this.disposed && this.consented();
+    this.availabilityCheck += 1;
     this.active = true;
     this.update({
       busy: true,
@@ -428,12 +449,18 @@ export class AiSession {
       open: false,
       minimized: false,
       authorized: false,
+      view: 'prompt',
+      attempt: null,
     });
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   };
   minimize = () => {
-    if (!this.state.open || !aiJournalWaiting(this.state)) return;
+    if (
+      !this.state.open ||
+      !(aiJournalWaiting(this.state) || this.state.attempt?.kind === 'starting')
+    )
+      return;
     this.reports.cancel();
     this.update({ minimized: true });
   };

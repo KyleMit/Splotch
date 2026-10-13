@@ -1,0 +1,201 @@
+import { css, html } from 'react-strict-dom';
+import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../../../../web/src/lib/ai/loadingCopy';
+import { scale } from '../../../../web/src/lib/design/tokens';
+import { AI_RESULT_COPY } from '../ai/aiResultCopy';
+import { AI_RESULT_METRICS } from '../ai/aiResultGeometry';
+import { DRAWING_ON_BRAND } from '../drawing/theme';
+import { RsdIcon } from './RsdIcon';
+import { RsdPressable } from './RsdPressable';
+import { brandColors, colors, dimensions, fixedColors, fonts, motion } from './tokens.css';
+import { styles as controlStyles } from './controls';
+
+// AiResultFooter.svelte, AiImageResult.svelte and AiResultDisclosure.svelte literals;
+// native-ai-flow-geometry.test.mjs reads them back.
+export const RESULT_PILL_PADDING_PX = 22;
+export const DOWNLOAD_ICON_PX = 18;
+export const DOWNLOAD_GAP_PX = 8;
+export const DOWNLOAD_PRESSED_SCALE = 0.95;
+// Shipping mixes --brand 40% into transparent under the Download button.
+export const DOWNLOAD_SHADOW = '0 4px 12px rgba(171, 113, 225, 0.4)';
+export const DISCLOSURE_PADDING_PX = 14;
+export const REPORT_FLAG_ICON_PX = 14;
+export const REPORT_FLAG_PRESSED_SCALE = 0.95;
+
+// The caption under the dial while the picture is made.
+export function RsdAiLoadingCaption() {
+  return (
+    <html.div style={styles.caption(AI_RESULT_METRICS.loadingCaptionHeight)}>
+      <html.p style={[controlStyles.semiboldText, styles.captionTitle]}>{AI_LOADING_TITLE}</html.p>
+      <html.p style={[styles.medium, styles.captionSubtitle]}>{AI_LOADING_SUBTITLE}</html.p>
+    </html.div>
+  );
+}
+
+// The X and the scrim tuck a waiting picture away too, but both read as cancel; half a minute is
+// long enough that the way out is written down. Shaped like the Download button that later stands
+// in the same place, so the two read as one slot.
+export function RsdAiKeepDrawing({ onPress }: { onPress: () => void }) {
+  return (
+    <RsdPressable
+      type="button"
+      style={[
+        controlStyles.boldText,
+        styles.pill(AI_RESULT_METRICS.keepDrawingHeight, RESULT_PILL_PADDING_PX),
+        styles.wash,
+      ]}
+      onClick={onPress}
+    >
+      <html.span>{AI_RESULT_COPY.keepDrawing}</html.span>
+    </RsdPressable>
+  );
+}
+
+// The finished picture's footer: Download, then any report outcome under it.
+export function RsdAiDownload({ onPress }: { onPress: () => void }) {
+  return (
+    <RsdPressable
+      type="button"
+      style={[
+        controlStyles.boldText,
+        styles.pill(AI_RESULT_METRICS.keepDrawingHeight, RESULT_PILL_PADDING_PX),
+        styles.download(DOWNLOAD_GAP_PX, DOWNLOAD_SHADOW, `scale(${DOWNLOAD_PRESSED_SCALE})`),
+      ]}
+      onClick={onPress}
+    >
+      <RsdIcon name="download" size={DOWNLOAD_ICON_PX} ink={DRAWING_ON_BRAND} muted={false} />
+      <html.span>{AI_RESULT_COPY.download}</html.span>
+    </RsdPressable>
+  );
+}
+
+// The fine print hanging under the card: the picture is AI-made, and grown-ups can report it.
+export function RsdAiDisclosure({
+  disabled,
+  onReport,
+}: {
+  disabled: boolean;
+  onReport: () => void;
+}) {
+  const m = AI_RESULT_METRICS;
+  return (
+    <html.div
+      style={[
+        controlStyles.semiboldText,
+        styles.strip(m.reportStripGap, m.reportStripHeight, DISCLOSURE_PADDING_PX),
+      ]}
+    >
+      <html.span>{AI_RESULT_COPY.disclosure}</html.span>
+      <html.span aria-hidden style={styles.separator}>
+        ·
+      </html.span>
+      <RsdPressable
+        type="button"
+        aria-label={AI_RESULT_COPY.reportPictureLabel}
+        disabled={disabled}
+        aria-disabled={disabled}
+        style={[
+          styles.flag(m.reportStripTap, REPORT_FLAG_ICON_PX, `scale(${REPORT_FLAG_PRESSED_SCALE})`),
+          disabled && styles.flagDisabled,
+        ]}
+        onClick={onReport}
+      >
+        <FlagIcon disabled={disabled} />
+        <html.span>{AI_RESULT_COPY.reportPicture}</html.span>
+      </RsdPressable>
+    </html.div>
+  );
+}
+
+// The scrim inks stay put in both themes, so the flag reads them as plain colors for its markup.
+function FlagIcon({ disabled }: { disabled: boolean }) {
+  const ink = disabled ? scale.scrimInkSoft : scale.scrimInkDanger;
+  return <RsdIcon name="flag" size={REPORT_FLAG_ICON_PX} ink={ink} muted={false} />;
+}
+
+const styles = css.create({
+  medium: { fontFamily: fonts.mediumFamily, fontWeight: fonts.mediumWeight },
+  caption: (minHeight: number) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+    minHeight,
+    paddingLeft: dimensions.space2,
+    paddingRight: dimensions.space2,
+    textAlign: 'center',
+  }),
+  captionTitle: { margin: 0, color: colors.text, fontSize: dimensions.fontSizeLg },
+  captionSubtitle: { margin: 0, color: colors.textSoft, fontSize: dimensions.fontSizeSm },
+  pill: (height: number, padding: number) => ({
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: height,
+    minHeight: height,
+    paddingLeft: padding,
+    paddingRight: padding,
+    borderWidth: 0,
+    borderRadius: dimensions.radiusPill,
+    fontSize: dimensions.fontSizeSm,
+    cursor: 'pointer',
+  }),
+  wash: {
+    backgroundColor: {
+      default: colors.brandWash,
+      '@media (hover: hover)': { default: colors.brandWash, ':hover': colors.brandWashHover },
+    },
+    color: colors.brandText,
+    transform: { default: 'scale(1)', ':active': 'scale(0.96)' },
+    transitionProperty: 'transform, background-color',
+    transitionDuration: motion.durationFast,
+  },
+  download: (gap: number, shadow: string, pressed: string) => ({
+    gap,
+    backgroundColor: {
+      default: colors.brandSolid,
+      '@media (hover: hover)': { default: colors.brandSolid, ':hover': colors.brandSolidHover },
+    },
+    color: brandColors.onBrand,
+    boxShadow: shadow,
+    transform: { default: 'scale(1)', ':active': pressed },
+    transitionProperty: 'transform, background-color',
+    transitionDuration: motion.durationFast,
+  }),
+  strip: (gap: number, height: number, padding: number) => ({
+    marginTop: gap,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: dimensions.space2,
+    height,
+    paddingLeft: padding,
+    paddingRight: padding,
+    borderRadius: dimensions.radiusPill,
+    backgroundColor: fixedColors.scrimPill,
+    color: fixedColors.scrimInk,
+    fontSize: dimensions.fontSizeXs,
+    whiteSpace: 'nowrap',
+  }),
+  separator: { color: fixedColors.scrimInkSoft },
+  flag: (tap: number, icon: number, pressed: string) => ({
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: dimensions.space1,
+    minWidth: tap,
+    height: tap,
+    marginTop: (icon - tap) / 2,
+    marginBottom: (icon - tap) / 2,
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    color: fixedColors.scrimInkDanger,
+    fontSize: dimensions.fontSizeXs,
+    cursor: 'pointer',
+    transform: { default: 'scale(1)', ':active': pressed },
+  }),
+  flagDisabled: { color: fixedColors.scrimInkSoft, cursor: 'default' },
+});

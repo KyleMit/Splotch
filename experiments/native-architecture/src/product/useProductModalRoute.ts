@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { useDrawingProduct } from './useDrawingProduct';
 import { aiSheetShown } from '../ai/uiState';
-export type ProductModal = 'none' | 'settings' | 'ai' | 'feedback' | 'gate' | 'parentCenter';
+export type ProductModal =
+  'none' | 'settings' | 'ai' | 'aiPrompt' | 'aiResult' | 'feedback' | 'gate' | 'parentCenter';
 // Who reports a closing dialog's dismissal: the platform Modal (iOS alone has a dismissal
 // callback, so elsewhere the route moves on at once), or the RSD ModalShell, which reports it on
 // every platform once its exit has played.

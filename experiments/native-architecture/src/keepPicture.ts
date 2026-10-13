@@ -31,13 +31,16 @@ async function capturedSave(
   }
 }
 
+export function keptPicture(outcome: PictureSaveOutcome): KeptPicture {
+  const os = saveOs();
+  return { notice: pictureSaveNotice(outcome, os), failure: pictureSaveFailure(outcome, os) };
+}
+
 // The picture goes to the photo library on Android and iOS and downloads on the web; there is no
 // copy kept inside the app, so a save that does not land leaves the picture on the paper alone.
 export async function keepPicture(
   drawing: Drawing,
   surface: DrawingSurfaceHandle | null
 ): Promise<KeptPicture> {
-  const outcome = await capturedSave(drawing, surface);
-  const os = saveOs();
-  return { notice: pictureSaveNotice(outcome, os), failure: pictureSaveFailure(outcome, os) };
+  return keptPicture(await capturedSave(drawing, surface));
 }
