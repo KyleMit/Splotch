@@ -1,11 +1,5 @@
 import { useEffect, useRef } from 'react';
-import {
-  Image,
-  StyleSheet,
-  View,
-  type ImageLoadEventData,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Animated, Easing } from '../platform/animated';
 import { CALM_FADE_MS } from '../../../../web/src/lib/motionDurations';
 import { AiConfetti } from '../ai/AiConfetti';
@@ -71,9 +65,23 @@ function useReveal(revealed: boolean, reduceMotion: boolean) {
   return { preview, result, scale };
 }
 
-function aspectOf(event: NativeSyntheticEvent<ImageLoadEventData>) {
-  const { width, height } = event.nativeEvent.source;
-  return width > 0 && height > 0 ? { width, height } : null;
+function pixelSize(value: unknown) {
+  if (!value || typeof value !== 'object') return null;
+  const width = 'naturalWidth' in value ? value.naturalWidth : 'width' in value ? value.width : 0;
+  const height =
+    'naturalHeight' in value ? value.naturalHeight : 'height' in value ? value.height : 0;
+  return typeof width === 'number' && typeof height === 'number' && width > 0 && height > 0
+    ? { width, height }
+    : null;
+}
+
+// The decoded picture's own size: React Native reports its source, React Native Web hands over
+// the browser's load event, whose target is the decoded image.
+function decodedSize(event: { nativeEvent: unknown }) {
+  const native = event.nativeEvent;
+  if (!native || typeof native !== 'object') return null;
+  if ('source' in native) return pixelSize(native.source);
+  return 'target' in native ? pixelSize(native.target) : null;
 }
 
 // The AI Result's stage: the child's own drawing, blurred under the progress dial with confetti
@@ -98,8 +106,8 @@ export function RsdAiResultStage({
   const reduceMotion = useReduceMotion();
   const revealed = progress.revealed && !!run?.picture;
   const reveal = useReveal(revealed, reduceMotion);
-  const decoded = (event: NativeSyntheticEvent<ImageLoadEventData>) => {
-    const size = aspectOf(event);
+  const decoded = (event: { nativeEvent: unknown }) => {
+    const size = decodedSize(event);
     if (size) onDecoded(size);
   };
   return (

@@ -159,6 +159,7 @@ const styles = css.create({
   turn: (degrees: number) => ({ transform: `rotate(${degrees}deg)` }),
   // app.css's .free-count on the AI Image Button's corner.
   badge: (offset: number, size: number, padding: number) => ({
+    boxSizing: 'border-box',
     position: 'absolute',
     top: offset,
     right: offset,

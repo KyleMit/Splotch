@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Animated, Easing } from '../platform/animated';
-import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { dialColors } from '../../../../web/src/lib/ai/dialColors';
 import { CALM_FADE_MS } from '../../../../web/src/lib/motionDurations';
 import type { AiProgress } from './aiProgress';
@@ -16,13 +16,49 @@ const CORE_FRACTION = 0.07;
 const FULL_TURN_DEG = 360;
 const HALF_TURN_DEG = 180;
 const PERCENT = 100;
+// Neighbouring slices overlap by this much so no hairline of the track shows between them.
+const SLICE_SEAM_PX = 0.5;
 
-function wedgePath(center: number, radius: number, sweepDeg: number) {
-  const radians = (sweepDeg * Math.PI) / HALF_TURN_DEG;
-  const x = center + radius * Math.sin(radians);
-  const y = center - radius * Math.cos(radians);
-  const largeArc = sweepDeg > HALF_TURN_DEG ? 1 : 0;
-  return `M ${center} ${center} L ${center} ${center - radius} A ${radius} ${radius} 0 ${largeArc} 1 ${x} ${y} Z`;
+// The pie is shipping's conic-gradient, which react-native-svg cannot paint: the wedge is cut
+// into narrow slices, each filled with the gradient's color at its middle. A slice this narrow
+// shows no step at the dial's largest size.
+const CONIC_SLICE_DEG = 4;
+
+function wedgePath(center: number, radius: number, fromDeg: number, toDeg: number) {
+  const point = (deg: number) => {
+    const radians = (deg * Math.PI) / HALF_TURN_DEG;
+    return `${center + radius * Math.sin(radians)} ${center - radius * Math.cos(radians)}`;
+  };
+  const largeArc = toDeg - fromDeg > HALF_TURN_DEG ? 1 : 0;
+  return `M ${center} ${center} L ${point(fromDeg)} A ${radius} ${radius} 0 ${largeArc} 1 ${point(toDeg)} Z`;
+}
+
+function hslChannels(color: string) {
+  const [hue, saturation, lightness] = (/hsl\(([^)]+)\)/.exec(color)?.[1] ?? '0,0%,0%')
+    .split(',')
+    .map((part) => Number.parseFloat(part));
+  const s = saturation / PERCENT;
+  const l = lightness / PERCENT;
+  const chroma = (1 - Math.abs(2 * l - 1)) * s;
+  return [0, 8, 4].map((offset) => {
+    const k = (offset + hue / 30) % 12;
+    return 255 * (l - (chroma / 2) * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+  });
+}
+
+// conic-gradient(from 0deg, start, end <sweep>): the color a CSS gradient reaches at `fraction`,
+// interpolated in sRGB as browsers do.
+function conicSlices(start: string, end: string, sweepDeg: number) {
+  const from = hslChannels(start);
+  const to = hslChannels(end);
+  const count = Math.max(1, Math.ceil(sweepDeg / CONIC_SLICE_DEG));
+  return Array.from({ length: count }, (_, index) => {
+    const fromDeg = (sweepDeg * index) / count;
+    const toDeg = (sweepDeg * (index + 1)) / count;
+    const fraction = (index + 0.5) / count;
+    const rgb = from.map((value, channel) => Math.round(value + (to[channel] - value) * fraction));
+    return { fromDeg, toDeg, color: `rgb(${rgb.join(', ')})` };
+  });
 }
 
 function usePulse(scale: Animated.Value, active: boolean) {
@@ -112,10 +148,6 @@ export function AiProgressDial({
             <Stop offset="0.57" stopColor={colors.start} stopOpacity={GLOW_OPACITY} />
             <Stop offset="1" stopColor={colors.start} stopOpacity={0} />
           </RadialGradient>
-          <LinearGradient id={`${id}fill`} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={colors.start} />
-            <Stop offset="1" stopColor={colors.end} />
-          </LinearGradient>
           <RadialGradient id={`${id}sheen`} cx="38%" cy="32%" r="60%">
             <Stop offset="0" stopColor="#fff" stopOpacity={0.55} />
             <Stop offset="0.53" stopColor="#fff" stopOpacity={0.12} />
@@ -124,11 +156,17 @@ export function AiProgressDial({
         </Defs>
         <Circle cx={center} cy={center} r={center} fill={`url(#${id}glow)`} />
         <Circle cx={center} cy={center} r={radius} fill="#fff" fillOpacity={0.1} />
-        {sweep >= FULL_TURN_DEG ? (
-          <Circle cx={center} cy={center} r={radius} fill={`url(#${id}fill)`} />
-        ) : sweep > 0 ? (
-          <Path d={wedgePath(center, radius, sweep)} fill={`url(#${id}fill)`} />
-        ) : null}
+        {sweep > 0
+          ? conicSlices(colors.start, colors.end, sweep).map((slice) => (
+              <Path
+                key={slice.fromDeg}
+                d={wedgePath(center, radius, slice.fromDeg, slice.toDeg)}
+                fill={slice.color}
+                stroke={slice.color}
+                strokeWidth={SLICE_SEAM_PX}
+              />
+            ))
+          : null}
         <Circle cx={center} cy={center} r={radius} fill={`url(#${id}sheen)`} />
         <Circle cx={center} cy={center} r={size * CORE_FRACTION} fill="#fff" />
       </Svg>
