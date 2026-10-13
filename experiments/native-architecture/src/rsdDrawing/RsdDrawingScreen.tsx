@@ -30,6 +30,8 @@ import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
 import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
+import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
+import { controlSize } from '../settings/buttonSize';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -65,51 +67,53 @@ export function RsdDrawingScreen() {
     <DrawingAppearanceProvider
       preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
     >
-      {loading ? (
-        <RsdDrawingLoading />
-      ) : (
-        <RsdDrawingContent
-          screen={screen}
-          sound={sound}
-          product={product}
-          route={route}
-          onModalDismissed={dismissed}
-        />
-      )}
-      {product.owner && route.shown === 'parentCenter' ? (
-        <RsdParentCenterSection
-          owner={product.owner}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
-      ) : null}
-      {product.owner && product.state && route.shown === 'gate' ? (
-        <RsdParentGateSheet
-          owner={product.owner}
-          state={product.state.gate}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
-      ) : null}
-      {route.shown === 'feedback' ? (
-        <RsdFeedbackSheet
-          owner={product.feedback.owner}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
-      ) : null}
-      {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
-        <RsdAiSheet
-          owner={product.ai.owner}
-          state={product.ai.state}
-          drawing={screen.history.drawing}
-          artwork={screen.library.state.artwork}
-          progress={product.ai.progress}
-          visible={route.visible}
-          onDismiss={dismissed}
-        />
-      ) : null}
-      <RsdLeaveConfirm />
+      <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
+        {loading ? (
+          <RsdDrawingLoading />
+        ) : (
+          <RsdDrawingContent
+            screen={screen}
+            sound={sound}
+            product={product}
+            route={route}
+            onModalDismissed={dismissed}
+          />
+        )}
+        {product.owner && route.shown === 'parentCenter' ? (
+          <RsdParentCenterSection
+            owner={product.owner}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        ) : null}
+        {product.owner && product.state && route.shown === 'gate' ? (
+          <RsdParentGateSheet
+            owner={product.owner}
+            state={product.state.gate}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        ) : null}
+        {route.shown === 'feedback' ? (
+          <RsdFeedbackSheet
+            owner={product.feedback.owner}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        ) : null}
+        {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
+          <RsdAiSheet
+            owner={product.ai.owner}
+            state={product.ai.state}
+            drawing={screen.history.drawing}
+            artwork={screen.library.state.artwork}
+            progress={product.ai.progress}
+            visible={route.visible}
+            onDismiss={dismissed}
+          />
+        ) : null}
+        <RsdLeaveConfirm />
+      </ReduceMotionPreferenceProvider>
     </DrawingAppearanceProvider>
   );
 }
@@ -183,6 +187,7 @@ function RsdDrawingContent({
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
             <RsdInstallBanner
               strokes={screen.committedStrokes}
+              controlSize={controlSize(sound.settings.buttonScale)}
               hidden={
                 paperBlocked ||
                 screen.pictures !== null ||
@@ -218,21 +223,23 @@ function RsdDrawingContent({
             <RsdPictures screen={screen} pictures={screen.pictures} />
           ) : null}
           {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
-          {route.shown === 'settings' ? (
-            <NativeSoundSettingsDialog
-              settings={sound.settings}
-              brushState={screen.brushPreferences}
-              onBrushAvailabilityChange={screen.setBrushAvailable}
-              onRetryBrushSave={screen.retryBrushSave}
-              notice={soundNotice}
-              {...soundSettingsActions(sound)}
-              onClose={screen.closeSettings}
-              visible={route.visible}
-              onDismiss={onModalDismissed}
-              onParentCenter={() => product.owner?.openParentCenter()}
-            />
-          ) : null}
         </html.div>
+        {/* Outside the themed screen root: switching its theme remounts what it holds, and
+            Settings keeps which section is open across an Appearance change. */}
+        {route.shown === 'settings' ? (
+          <NativeSoundSettingsDialog
+            settings={sound.settings}
+            brushState={screen.brushPreferences}
+            onBrushAvailabilityChange={screen.setBrushAvailable}
+            onRetryBrushSave={screen.retryBrushSave}
+            notice={soundNotice}
+            {...soundSettingsActions(sound)}
+            onClose={screen.closeSettings}
+            visible={route.visible}
+            onDismiss={onModalDismissed}
+            onParentCenter={() => product.owner?.openParentCenter()}
+          />
+        ) : null}
       </NativeFrame>
     </LibraryProvider>
   );

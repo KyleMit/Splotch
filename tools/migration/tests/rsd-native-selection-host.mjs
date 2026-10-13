@@ -423,6 +423,13 @@ async function expandControls() {
   await act(async () => toggle.click());
 }
 
+// Settings opens on its hub of sections; each control lives on its section's page.
+async function openSettingsSection(label) {
+  const row = host.querySelector(`[role="list"] [aria-label="${label}"]`);
+  if (!row) throw new Error(`No Settings section row named ${label}.`);
+  await act(async () => row.click());
+}
+
 function createPickerCaller(refresh) {
   const owner = createSoundSettings(
     { read: async () => null, write: async () => {} },
@@ -472,4 +479,13 @@ export {
   visibleSelection,
   assertDisabledBoundary,
 } from './rsd-native-assertions.mjs';
-export { caller, records, root, host, mount, createPickerCaller, expandControls };
+export {
+  caller,
+  records,
+  root,
+  host,
+  mount,
+  createPickerCaller,
+  expandControls,
+  openSettingsSection,
+};

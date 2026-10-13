@@ -23,6 +23,7 @@ function sameSize(previous: AreaSize | undefined, next: AreaSize) {
 // one, all floating over a paper area that takes the rest of the screen. The open drawer's tools
 // are placed by drawerOffsets so they stay inside that area and clear of Clear and Settings.
 export function NativeDrawingLayout({
+  controlSize,
   palette,
   clear,
   clearUnderlay,
@@ -33,6 +34,7 @@ export function NativeDrawingLayout({
   status,
   children,
 }: {
+  controlSize: number;
   palette: (layout: PaletteLayout) => ReactNode;
   clear: ReactNode;
   clearUnderlay: ReactNode;
@@ -52,7 +54,7 @@ export function NativeDrawingLayout({
     measured?.axis === axis ? measured.length : axis === 'row' ? window.width : window.height;
   // Until the paper area reports its size, the window bounds it from above.
   const [area, setArea] = useState<AreaSize>();
-  const offsets = drawerOffsets(area ?? window, drawerAxis, drawerTools.length);
+  const offsets = drawerOffsets(area ?? window, drawerAxis, drawerTools.length, controlSize);
   return (
     <View
       testID="rsd-drawing-layout"
@@ -71,7 +73,7 @@ export function NativeDrawingLayout({
           );
         }}
       >
-        {palette({ axis, slots: paletteSlots(length) })}
+        {palette({ axis, slots: paletteSlots(length, controlSize) })}
       </View>
       <View style={drawingScreenStyles.canvasColumn}>
         <View

@@ -22,6 +22,8 @@ export const RELEASE_HUES = ['Purple', 'Blue', 'Green', 'Orange', 'Pink', 'Red']
 export const RELEASES_SHOWN_OPEN = 3;
 
 const RELEASES_DIR = join(ROOT, 'releases');
+export const NATIVE_RELEASE_NOTES_PATH =
+  'experiments/native-architecture/src/information/releaseNotes.generated.json';
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
 const ISO_RELEASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Store'];
@@ -264,6 +266,53 @@ export function renderReleaseHistory(releases) {
   );
 }
 
+// The React Native app's What's New notes. React Native renders no HTML, so this reads back the
+// HTML the shipping renderer already produced for a release rather than parsing its Markdown a
+// second time: whatever renderReleaseMarkdown accepts, the native notes carry, and nothing here
+// can refuse a release the shipping app shows. Each heading opens a section (untitled for text
+// before the first heading); list items and paragraphs become its plain-text blocks.
+const RENDERED_BLOCK = /<h([1-6])>([\s\S]*?)<\/h\1>|<li>([\s\S]*?)<\/li>|<p>([\s\S]*?)<\/p>/g;
+const HTML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
+
+function renderedText(html) {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&(#\d{1,7}|#[Xx][\da-fA-F]{1,6}|\w+);/g, (entity, name) => {
+      if (name in HTML_ENTITIES) return HTML_ENTITIES[name];
+      if (name.startsWith('#x') || name.startsWith('#X'))
+        return String.fromCodePoint(parseInt(name.slice(2), 16));
+      if (name.startsWith('#')) return String.fromCodePoint(Number(name.slice(1)));
+      return entity;
+    })
+    .replace(/\s*\n\s*/g, ' ')
+    .trim();
+}
+
+export function nativeSectionsFromRenderedHtml(html) {
+  const sections = [];
+  const current = () => {
+    if (!sections.length) sections.push({ title: '', blocks: [] });
+    return sections.at(-1);
+  };
+  for (const [, , heading, item, paragraph] of html.matchAll(RENDERED_BLOCK)) {
+    if (heading !== undefined) sections.push({ title: renderedText(heading), blocks: [] });
+    else if (item !== undefined) current().blocks.push({ kind: 'item', text: renderedText(item) });
+    else current().blocks.push({ kind: 'paragraph', text: renderedText(paragraph) });
+  }
+  return sections;
+}
+
+export function renderNativeReleaseSections(body) {
+  return nativeSectionsFromRenderedHtml(renderReleaseMarkdown(body));
+}
+
+export function renderNativeReleaseNotes(releases) {
+  const notes = Object.fromEntries(
+    releases.map((release) => [release.meta.version, renderNativeReleaseSections(release.body)])
+  );
+  return `${JSON.stringify(notes, null, 2)}\n`;
+}
+
 // Every release document, newest first.
 export function readReleases() {
   if (!existsSync(RELEASES_DIR)) throw new Error(`No releases/ directory at ${RELEASES_DIR}`);
@@ -301,6 +350,7 @@ function appOutputs(releases) {
       path: 'web/src/lib/components/page/ReleaseHistory.svelte',
       render: () => renderReleaseHistory(releases),
     },
+    { path: NATIVE_RELEASE_NOTES_PATH, render: () => renderNativeReleaseNotes(releases) },
   ];
 }
 

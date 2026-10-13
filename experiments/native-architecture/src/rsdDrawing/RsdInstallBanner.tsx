@@ -11,10 +11,12 @@ import { useShareButtonLocation } from '../install/shareLocation';
 const BANNER_BORDER_PX = 2;
 // The shipping Install Banner's width cap, so the card reads the same on a tablet.
 const BANNER_MAX_WIDTH_PX = 420;
-// How far an edge layout corner control reaches into the paper area: Clear (top right),
-// Settings (bottom right) and the drawer chevron (bottom left) each sit one inset from
-// their corner, and the card keeps one more gap from them.
-const CORNER_CONTROL_REACH_PX = EDGE_INSET_PX + TOUCH_TARGET + CONTROL_GAP;
+// How far an edge layout corner control of this size reaches into the paper area: Clear (top
+// right), Settings (bottom right) and the drawer chevron (bottom left, at the Button Size) each
+// sit one inset from their corner, and the card keeps one more gap from them.
+function cornerControlReach(controlSize: number) {
+  return EDGE_INSET_PX + Math.max(controlSize, TOUCH_TARGET) + CONTROL_GAP;
+}
 
 // The banner floats over the paper area, as the shipping one floats in its bottom dock,
 // so showing it or expanding its steps never takes space from the paper. Rendered inside
@@ -58,12 +60,20 @@ const styles = css.create({
   copy: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
 });
 
-export function RsdInstallBanner({ strokes, hidden }: { strokes: number; hidden: boolean }) {
+export function RsdInstallBanner({
+  strokes,
+  hidden,
+  controlSize,
+}: {
+  strokes: number;
+  hidden: boolean;
+  controlSize: number;
+}) {
   const banner = useInstallBanner(installPrompt, strokes, hidden);
   const shareLocation = useShareButtonLocation();
   if (!banner.shown) return null;
   return (
-    <html.div style={styles.overlay(CORNER_CONTROL_REACH_PX, EDGE_INSET_PX)}>
+    <html.div style={styles.overlay(cornerControlReach(controlSize), EDGE_INSET_PX)}>
       {banner.parting ? (
         <html.div role="status" style={styles.banner}>
           <html.p>{INSTALL_BANNER_COPY.parting}</html.p>

@@ -23,6 +23,13 @@ import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
+import { DEFAULT_BUTTON_SCALE, isButtonScale } from './buttonSize';
+import {
+  isReduceMotionPreference,
+  REDUCE_MOTION_DEFAULT,
+  type ReduceMotionPreference,
+} from './reduceMotion';
+import { isWhatsNewSeen } from './whatsNew';
 import {
   readLegacyParentPreferences,
   isParentPolicies,
@@ -30,6 +37,11 @@ import {
 } from '../parentCenter/parentPolicy';
 
 export type WidthSettings = Readonly<{ strokeWidth: StrokeWidth; eraserWidth: StrokeWidth }>;
+export type AccessibilitySettings = Readonly<{
+  buttonScale: number;
+  reduceMotion: ReduceMotionPreference;
+  whatsNewSeen: string | null;
+}>;
 type ColorSettings = Readonly<{
   selectedColor: PaintColor;
   customColors: readonly CustomColor[];
@@ -38,6 +50,7 @@ export type Choices = WidthSettings &
   DrawingControlPreferences &
   ColorSettings &
   ParentPreferences &
+  AccessibilitySettings &
   Readonly<{
     soundEnabled: boolean;
     soundLevel: SoundLevel;
@@ -46,12 +59,13 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 9 }>;
+export type SoundSettings = Choices & Readonly<{ version: 10 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
       ColorSettings &
-      ParentPreferences & {
+      ParentPreferences &
+      AccessibilitySettings & {
         status: 'loading';
         soundEnabled: false;
         soundLevel: SoundLevel;
@@ -76,6 +90,23 @@ export const DEFAULT_WIDTH_SETTINGS: WidthSettings = {
   strokeWidth: DEFAULT_STROKE_WIDTH,
   eraserWidth: DEFAULT_STROKE_WIDTH,
 };
+// The shipping defaults: normal-size buttons, motion following the device, and a What's New
+// the parent has not opened yet.
+export const DEFAULT_ACCESSIBILITY_SETTINGS: AccessibilitySettings = {
+  buttonScale: DEFAULT_BUTTON_SCALE,
+  reduceMotion: REDUCE_MOTION_DEFAULT,
+  whatsNewSeen: null,
+};
+
+function readAccessibilitySettings(value: object): AccessibilitySettings {
+  const buttonScale = 'buttonScale' in value ? value.buttonScale : undefined;
+  if (!isButtonScale(buttonScale)) throw new Error('Button Size choice is invalid.');
+  const reduceMotion = 'reduceMotion' in value ? value.reduceMotion : undefined;
+  if (!isReduceMotionPreference(reduceMotion)) throw new Error('Reduce Motion choice is invalid.');
+  const whatsNewSeen = 'whatsNewSeen' in value ? value.whatsNewSeen : undefined;
+  if (!isWhatsNewSeen(whatsNewSeen)) throw new Error("What's New stamp is invalid.");
+  return { buttonScale, reduceMotion, whatsNewSeen };
+}
 
 function canonical<T>(settings: T, snapshot: string): T {
   if (JSON.stringify(settings) !== snapshot)
@@ -111,8 +142,9 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const current = value.version === 9;
-  const complete = current || value.version === 8;
+  const current = value.version === 10;
+  const savesOnDelete = current || value.version === 9;
+  const complete = savesOnDelete || value.version === 8;
   const kept = (key: string) => complete || (value.version === 7 && key in value);
   const parent =
     complete || value.version === 7
@@ -133,11 +165,12 @@ function readStoredParentSettings(
   const orientation = complete && 'orientation' in value ? value.orientation : defaultOrientation();
   if (!isOrientationChoice(orientation)) throw new Error('Orientation choice is invalid.');
   const saveOnDeleteEnabled =
-    current && 'saveOnDeleteEnabled' in value
+    savesOnDelete && 'saveOnDeleteEnabled' in value
       ? value.saveOnDeleteEnabled
       : DEFAULT_SAVE_ON_DELETE_ENABLED;
   if (typeof saveOnDeleteEnabled !== 'boolean')
     throw new Error('Auto-Save on Delete choice is invalid.');
+  const accessibility = current ? readAccessibilitySettings(value) : DEFAULT_ACCESSIBILITY_SETTINGS;
   canonical(
     {
       version: value.version,
@@ -152,12 +185,13 @@ function readStoredParentSettings(
         ? { strokeWidthControlEnabled: controls.strokeWidthControlEnabled }
         : {}),
       ...(complete ? { orientation } : {}),
-      ...(current ? { saveOnDeleteEnabled } : {}),
+      ...(savesOnDelete ? { saveOnDeleteEnabled } : {}),
+      ...(current ? accessibility : {}),
     },
     snapshot
   );
   return {
-    version: 9,
+    version: 10,
     ...widths,
     ...colors,
     appearance,
@@ -174,6 +208,7 @@ function readStoredParentSettings(
     ...controls,
     orientation,
     saveOnDeleteEnabled,
+    ...accessibility,
   };
 }
 
@@ -183,7 +218,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 9,
+    version: 10,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -193,6 +228,7 @@ function migrateLegacyChoices(
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
+    ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...choices,
   };
 }
@@ -213,7 +249,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 6 &&
       value.version !== 7 &&
       value.version !== 8 &&
-      value.version !== 9) ||
+      value.version !== 9 &&
+      value.version !== 10) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -245,7 +282,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 6 &&
       value.version !== 7 &&
       value.version !== 8 &&
-      value.version !== 9) ||
+      value.version !== 9 &&
+      value.version !== 10) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -272,7 +310,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 9,
+    version: 10,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -287,5 +325,8 @@ export function snapshot(state: Choices): SoundSettings {
     strokeWidthControlEnabled: state.strokeWidthControlEnabled,
     orientation: state.orientation,
     saveOnDeleteEnabled: state.saveOnDeleteEnabled,
+    buttonScale: state.buttonScale,
+    reduceMotion: state.reduceMotion,
+    whatsNewSeen: state.whatsNewSeen,
   };
 }
