@@ -3,27 +3,7 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { FAILURE_HEADING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingStatus.tsx';
-import {
-  BANNER_CLEAR_RESERVE_PX,
-  BANNER_DISMISS_OVERHANG_PX,
-  BANNER_LINE_HEIGHT,
-  BANNER_MASCOT_PX,
-  BANNER_MAX_WIDTH_PX,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
-import { photoLibraryFailure } from '../../../experiments/native-architecture/src/export/photoLibrary.ts';
-import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 
-// The photo library's answer to a save, and the PNGs it was handed.
-const library = vi.hoisted(() => ({ outcome: 'photos', saves: [] }));
-vi.mock('../../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
-  photoLibrary: {
-    save: async (png) => {
-      library.saves.push(png);
-      return library.outcome;
-    },
-  },
-}));
 import {
   flat,
   mountToolbar,
@@ -70,7 +50,6 @@ const styleBlock = (path) =>
 const PALETTE_STYLE = styleBlock('web/src/lib/components/ColorPalette.svelte');
 const SWATCH_STYLE = styleBlock('web/src/lib/components/ColorSwatch.svelte');
 const APP_CSS = read('web/src/app.css');
-const PICK_A_COLOR = 'Pick a color and draw.';
 
 // The shipping trim ladder as written: each `@media` rule hides one trim rank below its threshold.
 function shippingLadder(feature) {
@@ -171,21 +150,6 @@ describe('the shipping palette geometry', () => {
       }
   });
 
-  it('keeps the Save Failure Banner literals SaveFailureBanner.svelte writes', () => {
-    const banner = styleBlock('web/src/lib/components/SaveFailureBanner.svelte');
-    expect(declaration(banner, 'max-width')).toEqual([`${BANNER_MAX_WIDTH_PX}px`]);
-    expect(declaration(banner, 'width')).toContain(`${BANNER_MASCOT_PX}px`);
-    expect(declaration(banner, 'line-height')).toEqual([`${BANNER_LINE_HEIGHT}`]);
-    expect(declaration(banner, '--save-failure-clear-button-reserve')).toEqual([
-      `${BANNER_CLEAR_RESERVE_PX}px`,
-    ]);
-    expect(APP_CSS).toMatch(
-      new RegExp(
-        `\\.banner-dismiss \\{[^}]*margin: ${BANNER_DISMISS_OVERHANG_PX}px ${BANNER_DISMISS_OVERHANG_PX}px 0 0;`
-      )
-    );
-  });
-
   it('bundles the shipping handmade-paper grain byte for byte', () => {
     const bundled = readFileSync(
       join(REPOSITORY, 'experiments/native-architecture/assets/paper/handmade-paper.webp')
@@ -198,15 +162,6 @@ describe('the shipping palette geometry', () => {
     ).toBe(true);
   });
 });
-
-// Each banner is one card in the dock the banner stack pins over the paper.
-function bannerNodes() {
-  return [...(host.querySelector('[data-testid="rsd-failure-banners"]')?.children ?? [])];
-}
-
-function banners() {
-  return bannerNodes().map((node) => node.textContent);
-}
 
 function viewport(width, height) {
   records.dimensions = { width, height, scale: 1, fontScale: 1 };
@@ -380,74 +335,6 @@ describe('the mounted drawing screen frame', () => {
     expect(settings.boxShadow).toBeUndefined();
     await act(async () => host.querySelector('[aria-label="Settings"]').click());
     expect(caller.screen.openSettings).toHaveBeenCalledOnce();
-  });
-
-  it('speaks routine notices from a hidden live region instead of a visible strip', async () => {
-    await mountToolbar(toolbarScreen({ notice: PICK_A_COLOR }));
-    expect(records.viewports.some((props) => props.testID === 'rsd-drawing-status-viewport')).toBe(
-      false
-    );
-    const holders = [...host.querySelectorAll('*')].filter(
-      (node) => node.textContent === PICK_A_COLOR && node.children.length === 0
-    );
-    expect(holders).toHaveLength(1);
-    expect(holders[0].closest('[role="status"]')).not.toBeNull();
-    expect(flat(records.props.findLast((props) => props.role === 'status')?.style)).toMatchObject({
-      position: 'absolute',
-      width: 1,
-      height: 1,
-      overflow: 'hidden',
-    });
-    expect(records.announcements).toContain(PICK_A_COLOR);
-    expect(banners()).toEqual([]);
-  });
-
-  it('shows a renderer fault in the banner with the Retry that clears it', async () => {
-    const retry = vi.fn();
-    const detail = 'The drawing paper stopped drawing.';
-    await mountToolbar(
-      toolbarScreen({
-        notice: detail,
-        failure: { kind: 'error', detail },
-        recovery: { failed: true, retryDisabled: false, retry },
-      })
-    );
-    expect(banners()).toEqual([`${FAILURE_HEADING}${detail}Retry drawing`]);
-    const [banner] = bannerNodes();
-    expect(banner.closest('[data-testid="rsd-canvas-area"]')).not.toBeNull();
-    expect(banner.querySelector('[aria-label="Dismiss"]')).toBeNull();
-    const retryButton = [...banner.querySelectorAll('*')].find(
-      (node) => node.textContent === 'Retry drawing' && node.getAttribute('role') === 'button'
-    );
-    await act(async () => retryButton.click());
-    expect(retry).toHaveBeenCalledOnce();
-    expect(records.announcements).toContain(`${FAILURE_HEADING}. ${detail}`);
-    expect(records.announcements).not.toContain(detail);
-  });
-
-  it('shows a denied photo save in the visible banner, with its explanation, until dismissed', async () => {
-    library.outcome = 'denied';
-    caller.realScreen = true;
-    caller.settingsStorage = {
-      read: vi.fn(async () => '{"version":1,"soundEnabled":false}'),
-      write: vi.fn(async () => {}),
-    };
-    await mount(createElement(RsdDrawingScreen));
-    await act(async () => host.querySelector('[aria-label="Draw RSD fixture stroke"]').click());
-    await act(async () => host.querySelector('[aria-label="Expand controls"]').click());
-    await act(async () => host.querySelector('[aria-label="Save picture"]').click());
-    await vi.waitFor(() => expect(banners()).toHaveLength(1));
-    const refused = photoLibraryFailure('denied', 'ios');
-    expect(banners()).toEqual([`${refused.heading}${refused.detail}`]);
-    expect(refused.detail).toContain(saveFailureCopy('denied', 1, 'ios').detail);
-    expect(library.saves).toEqual(['cmVhbC1wbmc=']);
-    const banner = flat(
-      records.props.findLast((props) => props.testID === 'rsd-failure-banner')?.style
-    );
-    expect(banner).toMatchObject({ maxWidth: BANNER_MAX_WIDTH_PX, borderStyle: 'solid' });
-    expect(records.announcements).toContain(`${refused.heading}. ${refused.detail}`);
-    await act(async () => host.querySelector('[aria-label="Dismiss"]').click());
-    expect(banners()).toEqual([]);
   });
 
   it('textures the full-bleed paper area, and gives a rotated sheet a flat margin instead', async () => {

@@ -23,3 +23,4 @@ export const RSD_NATIVE_SETTINGS_ROWS_TEST = 'migration/tests/rsd-native-setting
 export const RSD_NATIVE_DESIGN_PRIMITIVES_TEST =
   'migration/tests/rsd-native-design-primitives.test.mjs';
 export const RSD_NATIVE_DRAWING_FRAME_TEST = 'migration/tests/rsd-native-drawing-frame.test.mjs';
+export const RSD_NATIVE_FAILURE_BANNER_TEST = 'migration/tests/rsd-native-failure-banner.test.mjs';

@@ -46,7 +46,8 @@ function failureBanners(
 
 // Shipping shows no status text on the paper. Routine notices are spoken from a visually hidden
 // polite region; failures show in the Save Failure Banner, whose words a second region, mounted
-// before any failure, speaks. A notice that is an error's own words is the banner's to speak.
+// before any failure, speaks. Each failure is spoken there once: the screen's routine notice
+// leaves out any notice a failure wrote, and a failed draft's words are the banner's.
 export function RsdDrawingStatus({
   screen,
   notice,
@@ -60,11 +61,7 @@ export function RsdDrawingStatus({
 }) {
   const draft = useDraftNotice(screen, blocked);
   const banners = failureBanners(screen, draft);
-  const routine = [
-    screen.failure?.kind === 'error' ? '' : notice,
-    soundNotice,
-    draft.state.status === 'failed' ? '' : draft.state.message,
-  ];
+  const routine = [notice, soundNotice, draft.state.status === 'failed' ? '' : draft.state.message];
   return (
     <>
       <RsdVisuallyHidden live>{routine.filter(Boolean).join(' ')}</RsdVisuallyHidden>

@@ -152,6 +152,7 @@ export function useDrawingScreen() {
     setPreparing,
     ...surfaceActions,
     notice: brushes.state.message || notice,
+    routineNotice: brushes.state.message || messages.routineNotice,
     failure: messages.failure,
     dismissFailure: messages.dismissFailure,
     pictures,

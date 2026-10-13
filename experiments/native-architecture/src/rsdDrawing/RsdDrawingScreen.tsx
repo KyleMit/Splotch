@@ -182,7 +182,7 @@ function RsdDrawingContent({
 }) {
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen, 'reported');
-  const notice = useSettledMessage(screen.notice, screen.drawing);
+  const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
     screen.drawing
