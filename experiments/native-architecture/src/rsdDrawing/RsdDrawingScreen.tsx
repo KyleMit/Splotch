@@ -29,6 +29,8 @@ import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
+import { RsdNotchBand } from './notchBandSurface';
+import { paintAppearance } from '../drawing/palette';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
@@ -231,7 +233,15 @@ function RsdDrawingContent({
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
-      <NativeFrame variant="drawing">
+      <NativeFrame
+        variant="drawing"
+        edges={
+          <RsdNotchBand
+            ink={paintAppearance(sound.settings.selectedColor, theme).hex}
+            eraser={screen.brush === 'eraser'}
+          />
+        }
+      >
         <html.div
           data-layoutconformance="strict"
           style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}

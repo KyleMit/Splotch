@@ -57,6 +57,18 @@ export function manifestIconAssets(manifest) {
   return manifest.icons.map((icon) => icon.src.replace(/^\//, ''));
 }
 
+const VIEWPORT_META = /<meta name="viewport" content="[^"]*"\s*\/?>/;
+
+// Shipping's viewport lets the page run under the status bar, notch and home indicator
+// (viewport-fit=cover, ADR-0026), so the safe-area insets reach NativeFrame and the Notch Band
+// on the web as they do in the native apps.
+export function withShippingViewport(indexHtml, appHtml) {
+  const viewport = VIEWPORT_META.exec(appHtml)?.[0];
+  if (!viewport) throw new Error('The shipping app.html no longer declares a viewport.');
+  if (!VIEWPORT_META.test(indexHtml)) throw new Error('The export has no viewport to replace.');
+  return indexHtml.replace(VIEWPORT_META, viewport);
+}
+
 export function withInstallHeadTags(indexHtml, tags) {
   if (!indexHtml.includes('</head>')) throw new Error('The export has no </head> to extend.');
   return indexHtml.replace('</head>', `${tags.join('\n')}\n</head>`);
@@ -107,7 +119,10 @@ function copyShippingInstallAssets(outputDir) {
   const indexPath = join(outputDir, APP_SHELL_FILE);
   writeFileSync(
     indexPath,
-    withInstallHeadTags(readFileSync(indexPath, 'utf8'), [...tags, ...bootThemeHeadTags()])
+    withShippingViewport(
+      withInstallHeadTags(readFileSync(indexPath, 'utf8'), [...tags, ...bootThemeHeadTags()]),
+      appHtml
+    )
   );
 }
 

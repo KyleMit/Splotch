@@ -25,9 +25,13 @@ const themedStyles = createDrawingStyles((palette) =>
 export function NativeFrame({
   children,
   variant = 'screen',
+  edges,
 }: {
   children: ReactNode;
   variant?: 'screen' | 'drawing' | 'overlay';
+  // Painted over the safe-area strips the frame's padding leaves (the drawing screen's Notch Band),
+  // in this frame's own inset coordinates.
+  edges?: ReactNode;
 }) {
   const styles = useDrawingStyles(themedStyles);
   const frame = { screen: styles.frame, drawing: styles.drawing, overlay: styles.overlay }[variant];
@@ -48,6 +52,7 @@ export function NativeFrame({
       >
         {children}
       </SafeAreaView>
+      {edges}
     </SafeAreaProvider>
   );
 }

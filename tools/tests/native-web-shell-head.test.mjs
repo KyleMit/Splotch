@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it } from 'vitest';
-import { bootThemeHeadTags } from '../migration/build-native-web.mjs';
+import { bootThemeHeadTags, withShippingViewport } from '../migration/build-native-web.mjs';
 import { bootAppearance } from '../../experiments/native-architecture/src/platform/bootAppearance.web.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
@@ -56,5 +58,19 @@ describe("the web shell's boot theme", () => {
     expect(bootAppearance()).toBe('dark');
     document.documentElement.setAttribute(BOOT_THEME_ATTRIBUTE, 'sepia');
     expect(bootAppearance()).toBe('system');
+  });
+});
+
+describe("the web shell's viewport", () => {
+  it("takes shipping's viewport-fit=cover, so safe-area insets reach the Notch Band", () => {
+    const appHtml = readFileSync(join(import.meta.dirname, '../../web/src/app.html'), 'utf8');
+    const expo =
+      '<head><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" /></head>';
+    const shell = withShippingViewport(expo, appHtml);
+    expect(shell).toContain(
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />'
+    );
+    expect(shell.match(/name="viewport"/g)).toHaveLength(1);
+    expect(() => withShippingViewport('<head></head>', appHtml)).toThrow();
   });
 });
