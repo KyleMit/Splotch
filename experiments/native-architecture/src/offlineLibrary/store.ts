@@ -17,6 +17,7 @@ import {
   requireDownloadNetwork,
   type LibraryPlatform,
 } from './contract';
+import { ART_VARIANT_SLUGS, type ArtOrientation } from '../drawing/paperSpace';
 
 const PACK_DIRECTORY = /^([a-z]+)-([a-f0-9]{64})$/;
 const stageName = (pack: Pack) => `staging-${packDirectory(pack)}`;
@@ -262,8 +263,8 @@ class LibraryStore {
           'corrupt',
           'This picture’s coloring artwork is unavailable or damaged. Your saved picture is unchanged.'
         );
-      const theme = async (dark: boolean) => {
-        const basename = `${page.slug}-wide`;
+      const variant = async (orientation: ArtOrientation, dark: boolean) => {
+        const basename = `${page.slug}-${ART_VARIANT_SLUGS[orientation]}`;
         const outline = await this.platform.read(
           `${directory}/files/${basename}${dark ? '.dark' : ''}.overlay.svg`,
           LIBRARY_TEXT_LIMIT_BYTES
@@ -274,12 +275,13 @@ class LibraryStore {
           fill: this.platform.uri(
             `${directory}/files/${basename}.${dark ? 'night' : 'light'}.webp`
           ),
-          selector: this.platform.uri(
-            `${directory}/files/${basename}${dark ? '.dark' : ''}.selector.webp`
-          ),
         };
       };
-      return { light: await theme(false), dark: await theme(true) };
+      const themes = async (orientation: ArtOrientation) => ({
+        light: await variant(orientation, false),
+        dark: await variant(orientation, true),
+      });
+      return { landscape: await themes('landscape'), portrait: await themes('portrait') };
     });
   }
   cover(pack: Pack, dark: boolean) {

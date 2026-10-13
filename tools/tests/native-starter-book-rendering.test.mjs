@@ -94,7 +94,7 @@ describe('bundled book navigation through real picker state', () => {
       for (const pageId of FARM_PAGE_IDS) {
         const page = button(COLORING_PAGES[pageId].label);
         expect(page.querySelector('img').getAttribute('src')).toBe(
-          BUNDLED_BOOK_ART[pageId][theme].selector
+          BUNDLED_BOOK_ART[pageId].selector[theme]
         );
         await act(async () => page.click());
         expect(mounted.onChoose).toHaveBeenLastCalledWith(pageId);

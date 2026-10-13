@@ -22,6 +22,7 @@ import {
   type PaperSize,
 } from './paperSpace';
 import { rainbow, rainbowLine } from './brushes';
+import { bookFillPlacement } from './bookFill';
 import { CRAYON_BANDS, CRAYON_COLOR_MIX, crayonPasses, crayonPhase } from './crayon';
 import { crayonResourceUri, type CrayonTileResources } from './crayonTiles';
 import { COLORING_FILLS, type PageId } from './pages';
@@ -117,16 +118,39 @@ function fitMatrix(paper: PaperSize, art: PaperSize) {
   return matrix;
 }
 
+// The fill over the whole paper, letterbox bands included (bookFillPlacement), in image
+// pixels rather than frame units: a compact fill is smaller than its art frame.
+function bookFillShader(image: SkImage, size: PaperSize) {
+  const pixels = { width: image.width(), height: image.height() };
+  const placement = bookFillPlacement(size, pixels);
+  const recorder = Skia.PictureRecorder();
+  const bounds = Skia.XYWHRect(0, 0, size.width, size.height);
+  const canvas = recorder.beginRecording(bounds);
+  const draw = (
+    source: readonly [number, number, number, number],
+    target: readonly [number, number, number, number]
+  ) =>
+    canvas.drawImageRectOptions(
+      image,
+      Skia.XYWHRect(...source),
+      Skia.XYWHRect(...target),
+      FilterMode.Linear,
+      MipmapMode.None
+    );
+  draw(
+    [0, 0, pixels.width, pixels.height],
+    [placement.x, placement.y, placement.width, placement.height]
+  );
+  for (const edge of placement.edges)
+    draw([edge.sx, edge.sy, edge.sw, edge.sh], [edge.dx, edge.dy, edge.dw, edge.dh]);
+  return recorder
+    .finishRecordingAsPicture()
+    .makeShader(TileMode.Decal, TileMode.Decal, FilterMode.Linear, undefined, bounds);
+}
+
 function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPaintContext) {
   const size = paperSize(context.paper);
-  if (context.bookFill)
-    return context.bookFill.makeShaderOptions(
-      TileMode.Decal,
-      TileMode.Decal,
-      FilterMode.Linear,
-      MipmapMode.None,
-      fitMatrix(size, { width: context.bookFill.width(), height: context.bookFill.height() })
-    );
+  if (context.bookFill) return bookFillShader(context.bookFill, size);
   const { pageId } = context;
   if (isFarmPageId(pageId) || isOfflinePageId(pageId))
     throw new Error('Magic ink on a coloring book page needs its fill artwork.');

@@ -2,21 +2,23 @@ import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
-import { BUNDLED_BOOK_ART } from './bundledBookAssets';
+import { bundledArt } from './bundledBookAssets';
 import { isFarmPageId } from './bundledBooks';
+import { artOrientation, paperSize } from './paperSpace';
 import { useInkAppearance } from './InkAppearance';
 import type { InkPlan } from './checkpoints';
 
 export function useBundledFillReadiness(
-  plan: Pick<InkPlan, 'strokes'>,
+  plan: Pick<InkPlan, 'paper' | 'strokes'>,
   onError: (error: unknown) => void
 ) {
   const { pageId, theme } = useInkAppearance();
   const offlineArtwork = useContext(OfflineArtworkScope);
+  const size = paperSize(plan.paper);
   const fill = isOfflinePageId(pageId)
-    ? offlineArtwork[pageId]?.[theme].fill
+    ? offlineArtwork[pageId]?.[artOrientation(size)][theme].fill
     : isFarmPageId(pageId)
-      ? BUNDLED_BOOK_ART[pageId][theme].fill
+      ? bundledArt(pageId, theme, size).fill
       : null;
   const uri = plan.strokes.some((stroke) => stroke.brush === 'magic') ? (fill ?? null) : null;
   const [svgLoaded, setSvgLoaded] = useState<string | null>(null);

@@ -119,7 +119,7 @@ export function RsdColoringBookPicker({
                         onClick={() => onChoose(pageId)}
                       >
                         <Image
-                          source={{ uri: BUNDLED_BOOK_ART[pageId][theme].selector }}
+                          source={{ uri: BUNDLED_BOOK_ART[pageId].selector[theme] }}
                           style={[images.page, { backgroundColor: PAPER_THEMES[theme].paper }]}
                           accessible={false}
                         />

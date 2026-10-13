@@ -23,8 +23,9 @@ import {
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 
-// The export is about 4.2 MB with the Farm book bundled; this leaves room for app
-// growth while rejecting a second bundled book or an accidental duplicate bundle.
+// Leaves room for app growth beside the bundled Farm book's tall and wide art while
+// rejecting a second bundled book or an accidental duplicate bundle; gen-bundled-farm.mjs
+// bundles compact fills to stay inside it.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = 6_000_000;
 // Served by the export but never fetched by the page: the worker itself, and Expo's
 // build-identity file.

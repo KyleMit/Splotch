@@ -1,0 +1,312 @@
+// @vitest-environment happy-dom
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { readFile } from 'node:fs/promises';
+import { URL, pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
+import sharp from 'sharp';
+import {
+  adoptPaper,
+  artOrientation,
+  CANONICAL_PAPER_SIZE,
+  paperSize,
+  presentedPaperSize,
+  UNADOPTED_PAPER,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { bookFillPlacement } from '../../experiments/native-architecture/src/drawing/bookFill.ts';
+import {
+  BUNDLED_BOOK_ART,
+  bundledArt,
+} from '../../experiments/native-architecture/src/drawing/bundledBookAssets.ts';
+import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
+import { OfflineArtworkScope } from '../../experiments/native-architecture/src/offlineLibrary/artworkContext.ts';
+import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
+import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
+import {
+  emptyDrawing,
+  strokeStyle,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
+
+vi.mock('react-native', () => import('react-native-web'));
+vi.mock(
+  'react-native-svg/lib/module/elements',
+  () => import('react-native-svg/lib/module/elements.web.js')
+);
+vi.mock('react-native-svg', async () => ({
+  ...(await import('react-native-svg/lib/module/elements.web.js')),
+  SvgXml: (await import('react-native-svg/lib/module/xml.js')).SvgXml,
+}));
+vi.mock(
+  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
+  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
+);
+const { Svg, Rect } = await import('react-native-svg');
+const { PageOutline } =
+  await import('../../experiments/native-architecture/src/drawing/PageOutline.tsx');
+const { InkScene } = await import('../../experiments/native-architecture/src/drawing/InkScene.tsx');
+const { BundledMagicFill } =
+  await import('../../experiments/native-architecture/src/drawing/BundledBookArtwork.tsx');
+const { OfflineMagicFill } =
+  await import('../../experiments/native-architecture/src/offlineLibrary/artwork.tsx');
+
+// The paper area beside the swatch bar on a 390x844 phone held upright, and the same phone
+// turned on its side.
+const PORTRAIT_FRAME = { width: 390, height: 704 };
+const LANDSCAPE_FRAME = { width: 844, height: 300 };
+const PORTRAIT_PAPER = adoptPaper(PORTRAIT_FRAME.width, PORTRAIT_FRAME.height, 3);
+const PORTRAIT_SIZE = paperSize(PORTRAIT_PAPER);
+const TALL_FRAME = { width: 1024, height: 1536 };
+const WIDE_FRAME = { width: 1536, height: 1024 };
+// The flat sky and grass of a lossless fill, compared after SVG resampling.
+const COLOR_TOLERANCE = 12;
+// The widest seam a band may leave beside the fill's fractional edge (bookFill.ts).
+const MAX_SEAM_UNITS = 1 / 8;
+
+const pack = catalogPack('dinosaur', 'full');
+const trex = offlinePageId(pack, 'trex');
+const staticRoot = pathToFileURL(`${resolve(process.cwd(), 'web/static/coloring/dinosaur')}/`);
+const sources = new Map();
+async function source(name) {
+  if (!sources.has(name)) sources.set(name, await readFile(new URL(name, staticRoot)));
+  return sources.get(name);
+}
+async function offlineArtwork() {
+  const variant = async (slug) => ({
+    outline: (await source(`trex-${slug}.overlay.svg`)).toString('utf8'),
+    fill: `data:image/png;base64,${(
+      await sharp(await source(`trex-${slug}.light.webp`))
+        .png()
+        .toBuffer()
+    ).toString('base64')}`,
+  });
+  const light = async (slug) => {
+    const art = await variant(slug);
+    return { light: art, dark: art };
+  };
+  return { landscape: await light('wide'), portrait: await light('tall') };
+}
+
+function scoped(content, { pageId, paper, artwork = {} }) {
+  return createElement(
+    OfflineArtworkScope.Provider,
+    { value: artwork },
+    createElement(
+      InkAppearanceScope.Provider,
+      { value: { pageId, theme: 'light' } },
+      createElement(InkPaperScope.Provider, { value: paper }, content)
+    )
+  );
+}
+
+function picture(size, content, scope) {
+  return renderToStaticMarkup(
+    createElement(
+      Svg,
+      { width: size.width, height: size.height, viewBox: `0 0 ${size.width} ${size.height}` },
+      scoped(content, scope)
+    )
+  );
+}
+
+async function pixels(markup) {
+  return sharp(Buffer.from(markup)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+}
+
+function pixelAt({ data, info }, x, y) {
+  const offset = (Math.round(y) * info.width + Math.round(x)) * 4;
+  return [...data.subarray(offset, offset + 4)];
+}
+
+describe('coloring art follows the paper orientation (ADR-0050 native amendment)', () => {
+  it.each([
+    ['an upright phone', PORTRAIT_SIZE, 'portrait'],
+    ['a phone on its side', paperSize(adoptPaper(844, 300, 3)), 'landscape'],
+    ['the canonical sheet', CANONICAL_PAPER_SIZE, 'landscape'],
+    ['a square paper, as the shipping picker', paperSize(adoptPaper(800, 800, 2)), 'portrait'],
+    [
+      'a blank page on an upright phone',
+      presentedPaperSize(UNADOPTED_PAPER, PORTRAIT_FRAME),
+      'portrait',
+    ],
+    [
+      'a blank page on a phone on its side',
+      presentedPaperSize(UNADOPTED_PAPER, LANDSCAPE_FRAME),
+      'landscape',
+    ],
+  ])('uses the %s art for %j', (_label, size, orientation) => {
+    expect(artOrientation(size)).toBe(orientation);
+    for (const pageId of FARM_PAGE_IDS)
+      expect(bundledArt(pageId, 'light', size)).toBe(BUNDLED_BOOK_ART[pageId][orientation].light);
+  });
+
+  it.each([
+    [PORTRAIT_SIZE, 'viewBox="0 0 1024 1536"', 'portrait'],
+    [CANONICAL_PAPER_SIZE, 'viewBox="0 0 1536 1024"', 'landscape'],
+  ])(
+    'draws the bundled outline and Magic fill from the same variant on %j',
+    (size, viewBox, orientation) => {
+      const scope = { pageId: 'farm/horse', paper: PORTRAIT_PAPER };
+      expect(
+        picture(size, createElement(PageOutline, { pageId: 'farm/horse', size }), scope)
+      ).toContain(viewBox);
+      const fill = picture(
+        size,
+        createElement(BundledMagicFill, { pageId: 'farm/horse', theme: 'light', size }),
+        scope
+      );
+      const other = orientation === 'portrait' ? 'landscape' : 'portrait';
+      expect(fill).toContain(BUNDLED_BOOK_ART['farm/horse'][orientation].light.fill);
+      expect(fill).not.toContain(BUNDLED_BOOK_ART['farm/horse'][other].light.fill);
+    }
+  );
+
+  it('draws the tall dark Dog outline, including its circle, exactly as the canonical SVG', async () => {
+    const size = { width: 1024, height: 1536 };
+    const actual = await pixels(
+      renderToStaticMarkup(
+        createElement(
+          Svg,
+          { width: size.width, height: size.height, viewBox: `0 0 ${size.width} ${size.height}` },
+          createElement(
+            InkAppearanceScope.Provider,
+            { value: { pageId: 'farm/dog', theme: 'dark' } },
+            createElement(PageOutline, { pageId: 'farm/dog', size })
+          )
+        )
+      )
+    );
+    const canonical = await readFile(
+      resolve(process.cwd(), 'web/static/coloring/farm/dog-tall.dark.overlay.svg')
+    );
+    const expected = await pixels(canonical);
+    expect(actual.info).toEqual(expected.info);
+    let differing = 0;
+    for (let index = 3; index < actual.data.length; index += 4)
+      if (Math.abs(actual.data[index] - expected.data[index]) > COLOR_TOLERANCE) differing += 1;
+    expect(differing / (actual.data.length / 4)).toBeLessThan(0.001);
+  });
+
+  it('uses a downloaded book’s tall outline and fill on portrait paper', async () => {
+    const artwork = await offlineArtwork();
+    const scope = { pageId: trex, paper: PORTRAIT_PAPER, artwork: { [trex]: artwork } };
+    const outline = picture(
+      PORTRAIT_SIZE,
+      createElement(PageOutline, { pageId: trex, size: PORTRAIT_SIZE }),
+      scope
+    );
+    expect(outline).toContain('viewBox="0 0 1024 1536"');
+    const fill = picture(
+      PORTRAIT_SIZE,
+      createElement(OfflineMagicFill, { pageId: trex, theme: 'light', size: PORTRAIT_SIZE }),
+      scope
+    );
+    expect(fill).toContain(artwork.portrait.light.fill);
+    expect(fill).not.toContain(artwork.landscape.light.fill);
+  });
+});
+
+describe('Magic covers the whole paper on a book page', () => {
+  it.each([
+    ['tall art on portrait paper', PORTRAIT_SIZE, TALL_FRAME],
+    ['wide art on portrait paper', PORTRAIT_SIZE, WIDE_FRAME],
+    ['wide art on the canonical sheet', CANONICAL_PAPER_SIZE, WIDE_FRAME],
+    ['tall art on a wide paper', paperSize(adoptPaper(844, 300, 3)), TALL_FRAME],
+    ['tall art on a near-square tablet paper', paperSize(adoptPaper(768, 950, 2)), TALL_FRAME],
+    ['wide art on a narrow phone paper', paperSize(adoptPaper(393, 700, 3)), WIDE_FRAME],
+  ])('lays the fill and its edge bands over every point of %s', (_label, size, frame) => {
+    const placement = bookFillPlacement(size, frame);
+    const rects = [
+      { dx: placement.x, dy: placement.y, dw: placement.width, dh: placement.height },
+      ...placement.edges,
+    ].map((rect) => ({
+      left: rect.dx - MAX_SEAM_UNITS,
+      top: rect.dy - MAX_SEAM_UNITS,
+      right: rect.dx + rect.dw + MAX_SEAM_UNITS,
+      bottom: rect.dy + rect.dh + MAX_SEAM_UNITS,
+    }));
+    const covered = (x, y) =>
+      rects.some((rect) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+    const seams = (start, extent) =>
+      [start, start + extent].flatMap((edge) =>
+        Array.from({ length: 65 }, (_, index) => edge - 1 + index / 32)
+      );
+    const across = (extent) => Array.from({ length: 33 }, (_, index) => (extent * index) / 32);
+    const onPaper = (values, extent) => values.filter((value) => value >= 0 && value <= extent);
+    const rows = onPaper(
+      [...across(size.height), ...seams(placement.y, placement.height)],
+      size.height
+    );
+    const columns = onPaper(
+      [...across(size.width), ...seams(placement.x, placement.width)],
+      size.width
+    );
+    for (const y of rows)
+      for (const x of columns) expect(covered(x, y), `(${x}, ${y}) is outside the fill`).toBe(true);
+    for (const edge of placement.edges) {
+      expect(edge.sx).toBeGreaterThanOrEqual(0);
+      expect(edge.sy).toBeGreaterThanOrEqual(0);
+      expect(edge.sx + edge.sw).toBeLessThanOrEqual(frame.width);
+      expect(edge.sy + edge.sh).toBeLessThanOrEqual(frame.height);
+    }
+  });
+
+  it('reveals the tall fill’s edge colour in both letterbox bands of a portrait picture', async () => {
+    const artwork = await offlineArtwork();
+    const drawing = { ...emptyDrawing(0, trex), paper: PORTRAIT_PAPER };
+    const placement = bookFillPlacement(PORTRAIT_SIZE, TALL_FRAME);
+    const bands = [placement.y / 2, placement.y + placement.height + placement.y / 2];
+    const strokes = bands.map((y) => ({
+      ...strokeStyle('magic', 'Blue', drawing, 'thick'),
+      points: [
+        { x: 40, y },
+        { x: PORTRAIT_SIZE.width - 40, y },
+      ],
+    }));
+    const scope = { pageId: trex, paper: PORTRAIT_PAPER, artwork: { [trex]: artwork } };
+    const render = (ink) =>
+      pixels(
+        picture(
+          PORTRAIT_SIZE,
+          [
+            createElement(Rect, {
+              key: 'paper',
+              width: PORTRAIT_SIZE.width,
+              height: PORTRAIT_SIZE.height,
+              fill: 'white',
+            }),
+            createElement(InkScene, {
+              key: 'ink',
+              strokes: ink,
+              checkpoint: null,
+              onImageLoad() {},
+            }),
+          ],
+          scope
+        )
+      );
+    const blank = await render([]);
+    const painted = await render(strokes);
+    const fill = await sharp(await source('trex-tall.light.webp'))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    for (const [index, y] of bands.entries()) {
+      const edge = placement.edges[index];
+      for (const x of [80, PORTRAIT_SIZE.width / 2, PORTRAIT_SIZE.width - 80]) {
+        expect(pixelAt(blank, x, y)).toEqual([255, 255, 255, 255]);
+        const revealed = pixelAt(painted, x, y);
+        const sourceX = ((x - placement.x) / placement.width) * TALL_FRAME.width;
+        const expected = pixelAt(fill, sourceX, edge.sy + edge.sh / 2);
+        expect(revealed[3]).toBe(255);
+        for (let channel = 0; channel < 3; channel += 1)
+          expect(Math.abs(revealed[channel] - expected[channel])).toBeLessThanOrEqual(
+            COLOR_TOLERANCE
+          );
+        expect(revealed.slice(0, 3)).not.toEqual([255, 255, 255]);
+      }
+    }
+  });
+});
