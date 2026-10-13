@@ -243,6 +243,11 @@ source to `android/app/src/main/res/drawable/ic_launcher_monochrome.xml` and ref
 adaptive icon definitions. Android 13+ themed icons depend on the user's setting and launcher
 support; ordinary color and pre-adaptive launcher icons use their existing artwork.
 
+The React Native app in `experiments/native-architecture` ships byte-for-byte copies of these
+launcher, splash, and launch-screen files. After regenerating, run
+`node tools/migration/gen-native-branding.mjs` to refresh them;
+`tools/tests/native-branding.test.mjs` fails until the copies match.
+
 ## 3. Store listing assets & copywriting (both stores)
 
 Everything lives in **`store-assets/`** (see its README for sizes and regeneration notes) and is

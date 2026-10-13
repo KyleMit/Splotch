@@ -17,6 +17,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `web/src/lib/icons`, resolving themed icon parts per theme; `--check` verifies it and
   `tools/tests/native-icons.test.mjs` runs that check. Add an icon to `NATIVE_ICON_SOURCES` and
   rerun it with `node tools/migration/gen-native-icons.mjs`.
+* `gen-native-branding.mjs` copies the shipping launcher icon, adaptive icon, splash, and launch
+  screen (the `@capacitor/assets` output under `android/app/src/main/res` and `ios/App/App`) into
+  the native Android and iOS projects, removing stale copies; `--check` verifies them and
+  `tools/tests/native-branding.test.mjs` runs that check. Rerun it with
+  `node tools/migration/gen-native-branding.mjs` after regenerating the shipping assets.
 * `check:migration:rsd-drawing-tokens` checks the react-strict-dom drawing screen's token projection
   against the shared design owner.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
