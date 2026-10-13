@@ -1,4 +1,5 @@
 import {
+  caller,
   expandControls,
   host as screenHost,
   mount,
@@ -154,10 +155,12 @@ it('steps aside while the landscape tool drawer is open and returns when it clos
   await act(async () =>
     screenHost.querySelector(`[aria-label="${INSTALL_BANNER_COPY.showHint}"]`).click()
   );
+  const paperRenders = caller.paperRender.mock.calls.length;
   await expandControls();
   expect(screenHost.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
   expect(screenHost.textContent).not.toContain(heading);
   await act(async () => screenHost.querySelector('[aria-label="Collapse controls"]').click());
   expect(screenHost.textContent).toContain(heading);
+  expect(caller.paperRender).toHaveBeenCalledTimes(paperRenders);
   expect(screenHost.querySelector(`[aria-label="${INSTALL_BANNER_COPY.hideHint}"]`)).not.toBeNull();
 });

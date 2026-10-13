@@ -153,7 +153,6 @@ function RsdDrawingContent({
   const disabled = screen.disabled || menu.open || modalBlocked;
   const paperBlocked = menu.open || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  const [drawerOpen, setDrawerOpen] = useState(false);
   useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
   useDeviceOrientation(sound.settings.orientation);
   return (
@@ -170,8 +169,19 @@ function RsdDrawingContent({
             menu={menu}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
-            drawerOpen={drawerOpen}
-            onDrawerOpenChange={setDrawerOpen}
+            paperOverlay={(drawerOpen) => (
+              <RsdInstallBanner
+                strokes={screen.committedStrokes}
+                controlSize={controlSize(sound.settings.buttonScale)}
+                hidden={
+                  drawerOpen ||
+                  paperBlocked ||
+                  screen.pictures !== null ||
+                  screen.pagePickerOpen ||
+                  screen.colorPickerOpen
+                }
+              />
+            )}
             status={
               <NativeDrawingStatus drawing={screen.drawing}>
                 <html.span aria-live="polite">{notice}</html.span>
@@ -188,17 +198,6 @@ function RsdDrawingContent({
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
-            <RsdInstallBanner
-              strokes={screen.committedStrokes}
-              controlSize={controlSize(sound.settings.buttonScale)}
-              hidden={
-                drawerOpen ||
-                paperBlocked ||
-                screen.pictures !== null ||
-                screen.pagePickerOpen ||
-                screen.colorPickerOpen
-              }
-            />
           </RsdEdgeLayout>
           <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
           <RsdDrawingTools

@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { html } from 'react-strict-dom';
 import type { useNativeAi } from '../ai/useNativeAi';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
@@ -42,22 +42,23 @@ const BRUSH_ICONS = {
   eraser: 'brush-eraser',
 } as const satisfies Record<Brush, NativeIconName>;
 
+// The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
+// and the overlay that reads the drawer state, never the strokes on the paper.
 export function RsdEdgeLayout({
   paintsDisabled,
-  drawerOpen,
-  onDrawerOpenChange,
   status,
   children,
+  paperOverlay,
   ...controls
 }: Controls & {
   paintsDisabled: boolean;
-  drawerOpen: boolean;
-  onDrawerOpenChange: (open: boolean) => void;
   status: ReactNode;
   children: ReactNode;
+  paperOverlay: (drawerOpen: boolean) => ReactNode;
 }) {
   const { screen, sound, disabled } = controls;
   const size = controlSize(sound.settings.buttonScale);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
     disabled,
@@ -92,7 +93,7 @@ export function RsdEdgeLayout({
           axis={axis}
           size={size}
           open={drawerOpen}
-          onClick={() => onDrawerOpenChange(!drawerOpen)}
+          onClick={() => setDrawerOpen(!drawerOpen)}
         />
       )}
       drawerTools={drawerOpen ? drawerTools({ ...controls, size }, ink) : []}
@@ -107,6 +108,7 @@ export function RsdEdgeLayout({
       status={status}
     >
       {children}
+      {paperOverlay(drawerOpen)}
     </NativeDrawingLayout>
   );
 }
