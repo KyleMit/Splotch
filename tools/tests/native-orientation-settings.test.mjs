@@ -34,6 +34,8 @@ const VERSION_7 = {
   strokeWidthControlEnabled: true,
 };
 const VERSION_8 = { ...VERSION_7, version: 8, orientation: 'landscape' };
+// Version 7 predates the external-links policy, which reads back at the native default.
+const MIGRATED_POLICIES = { ...VERSION_7.parentPolicies, externalLinks: 'always' };
 
 function fixture(snapshot) {
   let stored = snapshot;
@@ -54,7 +56,8 @@ describe('persisted orientation choice', () => {
   it('migrates a version 7 record to the shipping Portrait default without rewriting it', async () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_7))).toEqual({
       ...VERSION_7,
-      version: 11,
+      parentPolicies: MIGRATED_POLICIES,
+      version: 12,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -81,7 +84,7 @@ describe('persisted orientation choice', () => {
       });
     if (version >= 6) Object.assign(old, { coloringBookEnabled: true });
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 11,
+      version: 12,
       orientation: 'portrait',
     });
   });
@@ -94,7 +97,8 @@ describe('persisted orientation choice', () => {
       await f.owner.setOrientation(choice);
       expect(JSON.parse(f.stored())).toEqual({
         ...VERSION_7,
-        version: 11,
+        parentPolicies: MIGRATED_POLICIES,
+        version: 12,
         orientation: choice,
         saveOnDeleteEnabled: false,
         buttonScale: 100,

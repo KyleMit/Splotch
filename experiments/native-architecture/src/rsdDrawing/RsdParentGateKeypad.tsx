@@ -1,12 +1,11 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, fonts } from './tokens.css';
+import { colors, dimensions, fonts, motion } from './tokens.css';
 import { RsdIcon } from './RsdIcon';
+import type { GateSizeClass } from './modalGeometry';
+import { PARENT_GATE_KEYPAD_METRICS } from '../parentCenter/parentGateMetrics';
 import { PARENT_GATE_KEYPAD_KEYS, type ParentGateKey } from '../parentCenter/parentGate';
 
-// The shipping keypad's phone-size key height and glyph size (ParentalGateKeypad.svelte);
-// rsd-native-parent-center.test.mjs fails when either side changes alone.
-export const PARENT_GATE_KEY_HEIGHT_PX = 46;
-export const PARENT_GATE_KEY_ICON_PX = 22;
+const KEY_PRESSED_SCALE = 0.92;
 const KEYS_PER_ROW = 3;
 
 export const PARENT_GATE_KEY_ICONS = { delete: 'backspace', submit: 'check' } as const;
@@ -17,26 +16,32 @@ const KEY_ROWS = Array.from({ length: PARENT_GATE_KEYPAD_KEYS.length / KEYS_PER_
 );
 
 const styles = css.create({
-  keypad: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
-  row: { display: 'flex', flexDirection: 'row', gap: dimensions.space2 },
-  key: {
+  keypad: (gap: number) => ({ display: 'flex', flexDirection: 'column', gap }),
+  width: (width: number) => ({ width, flexShrink: 0 }),
+  row: (gap: number) => ({ display: 'flex', flexDirection: 'row', gap }),
+  key: (height: number) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
-    height: PARENT_GATE_KEY_HEIGHT_PX,
+    height,
     padding: 0,
     borderWidth: 0,
     borderRadius: dimensions.radiusMd,
-    backgroundColor: colors.surface2,
+    backgroundColor: { default: colors.surface2, ':hover': colors.brandWash },
     color: colors.textStrong,
-    fontSize: dimensions.fontSizeLg,
     fontFamily: fonts.boldFamily,
     fontWeight: fonts.boldWeight,
-  },
-  locked: { opacity: dimensions.disabledOpacity },
+    cursor: 'pointer',
+    transform: { default: 'scale(1)', ':active': `scale(${KEY_PRESSED_SCALE})` },
+    transitionProperty: 'transform',
+    transitionDuration: motion.durationFast,
+  }),
+  lg: { fontSize: dimensions.fontSizeLg },
+  xl: { fontSize: dimensions.fontSizeXl },
+  locked: { opacity: dimensions.disabledOpacity, cursor: 'default', transform: 'scale(1)' },
 });
 
 /**
@@ -45,23 +50,33 @@ const styles = css.create({
  * dialog; the gate ignores what it is handed until the pause ends.
  */
 export function RsdParentGateKeypad({
+  size,
   locked,
   onPress,
 }: {
+  size: GateSizeClass;
   locked: boolean;
   onPress: (key: ParentGateKey) => void;
 }) {
+  const metrics = PARENT_GATE_KEYPAD_METRICS[size];
   return (
-    <html.div style={styles.keypad}>
+    <html.div
+      data-testid="gate-keypad"
+      style={[styles.keypad(metrics.gap), metrics.width !== null && styles.width(metrics.width)]}
+    >
       {KEY_ROWS.map((keys) => (
-        <html.div key={keys.join()} style={styles.row}>
+        <html.div key={keys.join()} style={styles.row(metrics.gap)}>
           {keys.map((key) => (
             <html.button
               key={key}
               data-key={key}
               aria-label={typeof key === 'number' ? undefined : PARENT_GATE_KEY_LABELS[key]}
               aria-disabled={locked}
-              style={[styles.key, locked && styles.locked]}
+              style={[
+                styles.key(metrics.keyHeight),
+                metrics.digits === 'xl' ? styles.xl : styles.lg,
+                locked && styles.locked,
+              ]}
               onClick={() => onPress(key)}
             >
               {typeof key === 'number' ? (
@@ -69,7 +84,7 @@ export function RsdParentGateKeypad({
               ) : (
                 <RsdIcon
                   name={PARENT_GATE_KEY_ICONS[key]}
-                  size={PARENT_GATE_KEY_ICON_PX}
+                  size={metrics.icon}
                   ink={undefined}
                   muted={false}
                 />

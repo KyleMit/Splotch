@@ -15,11 +15,13 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
 import {
   isParentPolicies,
+  arePoliciesAvailable,
   PROTECTED_PARENT_POLICIES,
   type ParentPreferences,
 } from '../parentCenter/parentPolicy';
@@ -68,7 +70,7 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 11,
+    version: 12,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     soundLevel: DEFAULT_SOUND_LEVEL,
@@ -379,6 +381,15 @@ function createPreferenceActions(context: PreferenceActionContext) {
 const PARENT_SAVE_FAILED_MESSAGE =
   'Parent Center choices were not saved. Previous protection is still active. Retry saving.';
 
+// A Parent Center choice the platform's store rules forbid never reaches storage.
+function isSavableParentPreferences(choices: ParentPreferences) {
+  return (
+    typeof choices.aiEnabled === 'boolean' &&
+    isParentPolicies(choices.parentPolicies) &&
+    arePoliciesAvailable(choices.parentPolicies, PARENT_PLATFORM)
+  );
+}
+
 export function createSoundSettings(
   storage: SoundSettingsStorage,
   onChange: (state: SoundSettingsState) => void
@@ -417,7 +428,8 @@ export function createSoundSettings(
     const { version: _version, ...choices } = previous;
     publish({ status: 'saving', ...choices, message: 'Saving Parent Center choices…' });
     try {
-      await storage.write(JSON.stringify(settings));
+      // Through snapshot, so the policies land in their saved order however the caller built them.
+      await storage.write(JSON.stringify(snapshot(settings)));
       const { version: _nextVersion, ...next } = settings;
       pendingParent = null;
       publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });
@@ -467,8 +479,7 @@ export function createSoundSettings(
     },
     async setParentPreferences(choices: ParentPreferences) {
       if (disposed || state.status !== 'ready' || readFailed) return;
-      if (typeof choices.aiEnabled !== 'boolean' || !isParentPolicies(choices.parentPolicies))
-        throw new Error('Parent Center choice is invalid.');
+      if (!isSavableParentPreferences(choices)) throw new Error('Parent Center choice is invalid.');
       await persistParent({ ...snapshot(state), ...choices });
     },
     async retryParentSave() {

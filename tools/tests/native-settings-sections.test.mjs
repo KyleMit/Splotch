@@ -80,7 +80,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 11,
+  version: 12,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -91,6 +91,7 @@ const CURRENT = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },
@@ -311,12 +312,60 @@ describe("What's New", () => {
   });
 });
 
+// A record from before version 12, which gave Viewing external links its own policy.
+function withoutLinksPolicy(record) {
+  const { externalLinks: _links, ...policies } = record.parentPolicies;
+  return { ...record, parentPolicies: policies };
+}
+
+describe('settings schema 12', () => {
+  const VERSION_11 = { ...withoutLinksPolicy(CURRENT), version: 11 };
+
+  it('migrates version 11 to the native protected external-links default', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_11))).toEqual(CURRENT);
+  });
+  it('rejects a version 12 record without the external-links policy, and a version 11 record carrying one', () => {
+    expect(() =>
+      parseSoundSettings(JSON.stringify({ ...withoutLinksPolicy(CURRENT), version: 12 }))
+    ).toThrow('Parent Center');
+    expect(() => parseSoundSettings(JSON.stringify({ ...CURRENT, version: 11 }))).toThrow(
+      'Parent Center'
+    );
+  });
+  it('writes the policies in the shipping order whatever order they were set in', async () => {
+    let stored = JSON.stringify(CURRENT);
+    const settings = createSoundSettings(
+      {
+        read: async () => stored,
+        write: async (next) => {
+          stored = next;
+        },
+      },
+      () => {}
+    );
+    await settings.load();
+    const { parentCenter, ai: _ai, ...rest } = CURRENT.parentPolicies;
+    await settings.setParentPreferences({
+      aiEnabled: true,
+      parentPolicies: { parentCenter, ...rest, ai: 'session' },
+    });
+    expect(Object.keys(JSON.parse(stored).parentPolicies)).toEqual([
+      'ai',
+      'imageReport',
+      'externalLinks',
+      'feedback',
+      'parentCenter',
+    ]);
+    expect(parseSoundSettings(stored).parentPolicies.ai).toBe('session');
+  });
+});
+
 describe('settings schema 11', () => {
   const PENCIL_SEEN = { ...CURRENT, pencilEraserEnabled: false, applePencilSeen: true };
   const VERSION_10 = (({ pencilEraserEnabled: _e, applePencilSeen: _s, ...rest }) => ({
     ...rest,
     version: 10,
-  }))(CURRENT);
+  }))(withoutLinksPolicy(CURRENT));
 
   it('round trips the Apple Pencil choices exactly', () => {
     expect(parseSoundSettings(JSON.stringify(PENCIL_SEEN))).toEqual(PENCIL_SEEN);
@@ -359,9 +408,9 @@ describe('settings schema 10', () => {
           }) => ({
             ...rest,
             version: 9,
-          }))(CURRENT);
+          }))(withoutLinksPolicy(CURRENT));
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 11,
+      version: 12,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,

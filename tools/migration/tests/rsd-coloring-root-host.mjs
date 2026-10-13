@@ -1,33 +1,43 @@
+import { useReducer } from 'react';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { DEFAULT_BRUSH_AVAILABILITY } from '../../../experiments/native-architecture/src/settings/brushPreferences.ts';
 
 export function drawingScreenPort(actual, caller, projectHistory) {
   return {
-    useDrawingScreen: () =>
-      caller.realScreen
-        ? actual.useDrawingScreen()
-        : {
-            brushPreferences: {
-              status: 'ready',
-              availability: DEFAULT_BRUSH_AVAILABILITY,
-              saved: true,
-              message: '',
-            },
-            brushControl: { kind: 'none' },
-            availableBrushes: [],
-            draftState: { status: 'session', message: '' },
-            retryDraft: async () => {},
-            selectInkBrush() {},
-            ...caller.screen,
-            library: caller.library,
-            setColoringBookEnabled(enabled) {
-              caller.library.owner.setFeatureEnabled(enabled);
-              if (caller.screen?.history?.drawing)
-                caller.screen.history = projectHistory(caller.screen.history, enabled);
-              if (!enabled && caller.screen) caller.screen.pagePickerOpen = false;
-            },
-          },
+    useDrawingScreen: () => (caller.realScreen ? actual.useDrawingScreen() : useStubScreen()),
   };
+  // The stub's own Settings open and close, so a product route that opens Settings (a Parent
+  // Center unlock) renders it; a test that stubs either one keeps its own.
+  function useStubScreen() {
+    const [, rerender] = useReducer((count) => count + 1, 0);
+    const setSettingsOpen = (open) => {
+      caller.screen.settingsOpen = open;
+      rerender();
+    };
+    return {
+      openSettings: () => setSettingsOpen(true),
+      closeSettings: () => setSettingsOpen(false),
+      brushPreferences: {
+        status: 'ready',
+        availability: DEFAULT_BRUSH_AVAILABILITY,
+        saved: true,
+        message: '',
+      },
+      brushControl: { kind: 'none' },
+      availableBrushes: [],
+      draftState: { status: 'session', message: '' },
+      retryDraft: async () => {},
+      selectInkBrush() {},
+      ...caller.screen,
+      library: caller.library,
+      setColoringBookEnabled(enabled) {
+        caller.library.owner.setFeatureEnabled(enabled);
+        if (caller.screen?.history?.drawing)
+          caller.screen.history = projectHistory(caller.screen.history, enabled);
+        if (!enabled && caller.screen) caller.screen.pagePickerOpen = false;
+      },
+    };
+  }
 }
 export function offlineRuntimePort(caller) {
   return {
@@ -110,7 +120,8 @@ export function nativeSettingsProps(owner, state) {
     onWhatsNewSeen: () => owner.markWhatsNewSeen(),
     onRetry: () => owner.retrySave(),
     onClose() {},
-    onParentCenter() {},
+    parentCenter: { unlocked: false, checkDue: true, onUnlock() {}, onLeave() {}, section: null },
+    gate: null,
     onFeedback() {},
     downloadedBooks: 0,
     ai: null,

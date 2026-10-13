@@ -37,6 +37,7 @@ describe('candidate sound settings', () => {
         parentPolicies: {
           ai: 'always',
           imageReport: 'always',
+          externalLinks: 'always',
           feedback: 'always',
           parentCenter: 'always',
         },
@@ -93,7 +94,7 @@ describe('candidate sound settings', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":11,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
+      '{"version":12,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -110,10 +111,10 @@ describe('candidate sound settings', () => {
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
       [
-        '{"version":11,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}',
+        '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}',
       ],
       [
-        '{"version":11,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}',
+        '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}',
       ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
@@ -184,7 +185,7 @@ describe('candidate sound settings', () => {
     }
   );
   it.each(['quiet', 'medium', 'loud'])(
-    'round-trips %s independently of mute and all four parent policies',
+    'round-trips %s independently of mute and every parent policy',
     async (soundLevel) => {
       const f = fixture();
       await f.settings.load();
@@ -192,6 +193,7 @@ describe('candidate sound settings', () => {
       const parentPolicies = {
         ai: 'never',
         imageReport: 'session',
+        externalLinks: 'session',
         feedback: 'always',
         parentCenter: 'session',
       };
@@ -199,7 +201,7 @@ describe('candidate sound settings', () => {
       await f.settings.setSoundLevel(soundLevel);
       const stored = f.storage.write.mock.calls.at(-1)[0];
       expect(parseSoundSettings(stored)).toMatchObject({
-        version: 11,
+        version: 12,
         soundEnabled: false,
         soundLevel,
         aiEnabled: true,
@@ -229,6 +231,9 @@ describe('candidate sound settings', () => {
         parseSoundSettings(
           JSON.stringify({
             ...withoutLevel,
+            parentPolicies: (({ externalLinks: _links, ...rest }) => rest)(
+              withoutLevel.parentPolicies
+            ),
             version: 7,
             undoButtonEnabled,
             strokeWidthControlEnabled,

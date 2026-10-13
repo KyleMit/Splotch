@@ -54,12 +54,13 @@ it('mounts ungated Settings, gated Parent Center, persisted AI opt-in and a pane
   await solve();
   await screen.click('Enable AI picture creation');
   expect(JSON.parse(files.settingsWrite.mock.calls[0][0])).toMatchObject({
-    version: 11,
+    version: 12,
     coloringBookEnabled: true,
     aiEnabled: true,
     parentPolicies: {
       ai: 'always',
       imageReport: 'always',
+      externalLinks: 'always',
       feedback: 'always',
       parentCenter: 'always',
     },
