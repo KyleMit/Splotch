@@ -4,9 +4,12 @@ import { dirname, join } from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 import {
   checkNativeWebPrecache,
+  lazyIconSamples,
   starterBookFills,
 } from '../migration/check-native-web-precache.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { contentAddressedShell, subresourceIntegrity } from '../migration/build-native-web.mjs';
 
@@ -142,6 +145,23 @@ it('rejects a precache above its budget', () => {
   expect(() => check(exportFixture({ urls: COMPLETE }), { maxPrecacheBytes: 10 })).toThrow(
     /above the 10-byte budget/
   );
+});
+
+it('keeps lazily loaded icons out of the scripts the app shell loads', () => {
+  const [sample] = lazyIconSamples();
+  const LAZY = '_expo/static/js/web/icons.deferred-1.js';
+  const lazy = { ...ASSETS, [LAZY]: `var d="${sample}";` };
+  expect(() => check(exportFixture({ urls: [...COMPLETE, LAZY], assets: lazy }))).not.toThrow();
+  const eager = { ...ASSETS, [ENTRY]: `${ASSETS[ENTRY]}var d="${sample}";` };
+  expect(() => check(exportFixture({ urls: COMPLETE, assets: eager }))).toThrow(
+    /1 lazily loaded icons are in the app shell's scripts/
+  );
+});
+
+it('samples every lazily imported icon module', () => {
+  const samples = lazyIconSamples();
+  expect(samples).toContain(/ d="([^"]+)"/.exec(NATIVE_SPLOTCHY)[1]);
+  expect(samples.length).toBeGreaterThan(Object.keys(NATIVE_DEFERRED_ICONS).length / 2);
 });
 
 it('reads a bundled fill for every starter page from the native art sources', () => {
