@@ -93,6 +93,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     if (page.kind === 'section') landFocus(sectionTitle.current);
   }, [page]);
   const toggles = useHubToggles({
+    busy,
     soundEnabled: settings.soundEnabled,
     onSoundToggle: props.onToggle,
     onAppearanceChange: props.onAppearanceChange,

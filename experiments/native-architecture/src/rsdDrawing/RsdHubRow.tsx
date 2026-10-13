@@ -93,7 +93,7 @@ const styles = css.create({
   },
 });
 
-export type HubToggle = Omit<ToggleSwitchProps, 'description' | 'disabled'>;
+export type HubToggle = Omit<ToggleSwitchProps, 'description'>;
 
 // The shipping phone hub row (HubList.svelte): the body drills into its section, and a section
 // whose boolean is legible from its own name answers it inline with a trailing switch.

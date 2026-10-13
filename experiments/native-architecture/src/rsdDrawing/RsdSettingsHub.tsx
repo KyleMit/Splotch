@@ -25,12 +25,15 @@ const styles = css.create({
 export type HubToggles = Partial<Record<NativeSettingsSectionId, HubToggle>>;
 
 // Night Mode flips the resolved theme, as shipping's does: on System it pins the opposite choice,
-// and the three-way choice stays in the Appearance section.
+// and the three-way choice stays in the Appearance section. Both wait out a pending save, as the
+// section controls do: the settings owner drops a choice made before the last one is written.
 export function useHubToggles({
+  busy,
   soundEnabled,
   onSoundToggle,
   onAppearanceChange,
 }: {
+  busy: boolean;
   soundEnabled: boolean;
   onSoundToggle: () => void;
   onAppearanceChange: (appearance: 'light' | 'dark') => void;
@@ -43,11 +46,13 @@ export function useHubToggles({
       checked: night,
       onToggle: (next) => onAppearanceChange(next ? 'dark' : 'light'),
       thumbIcon: night ? 'theme-dark' : 'theme-light',
+      disabled: busy,
     },
     sound: {
       id: 'hubSoundToggle',
       label: 'Sound',
       checked: soundEnabled,
+      disabled: busy,
       onToggle: (next) => {
         if (next !== soundEnabled) onSoundToggle();
       },

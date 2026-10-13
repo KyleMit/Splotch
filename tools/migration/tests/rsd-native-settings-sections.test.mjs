@@ -205,6 +205,23 @@ it('answers Night Mode and Sound with switches on their hub rows and no others',
   expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
 });
 
+it('holds both hub switches while a hub choice saves, so a second tap is never dropped', async () => {
+  const settings = storedSettings({ soundEnabled: true });
+  const finishNight = holdNextWrite(settings.storage);
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Night Mode');
+  expect(caller.product.sound.settings.status).toBe('saving');
+  for (const label of ['Night Mode', 'Sound']) expect(button(label).disabled, label).toBe(true);
+  await act(async () => button('Sound').click());
+  await finishNight();
+  for (const label of ['Night Mode', 'Sound']) expect(button(label).disabled, label).toBe(false);
+  checkedSwitch(button('Sound'), true);
+  await click('Sound');
+  expect(settings.storage.write).toHaveBeenCalledTimes(2);
+  expect(settings.stored()).toMatchObject({ appearance: 'dark', soundEnabled: false });
+});
+
 it('words the Sound and Coloring rows from the native level and the downloaded books', async () => {
   storedSettings({ soundEnabled: true, soundLevel: 'quiet', orientation: 'auto' });
   drawingScreen();
