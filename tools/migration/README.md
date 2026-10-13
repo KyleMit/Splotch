@@ -36,10 +36,16 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   specimen in `tools/migration/tests/rsd-token-specimen.mjs` through the released native renderer.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
-  the native `react-strict-dom` alias. `tools/migration/tests/rsd-native-button.test.mjs` and
-  `tools/migration/tests/rsd-native-icon-button.test.mjs` among them mount the button primitives,
-  and `tools/migration/tests/rsd-native-button-chrome.test.mjs` holds their untokened chrome values
-  to `Button.svelte` and `app.css`.
+  the native `react-strict-dom` alias. Among them, `rsd-native-segmented-picker.test.mjs` and
+  `rsd-native-slider.test.mjs` mount the shared `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow`
+  controls over the stand-in in `rsd-native-control-host.mjs` and hold each literal those ports
+  carry, and the colour token each painted part takes, to the shipping Svelte sources. The picker's
+  RTL thumb origin is laid out by React Native's own Yoga, which `rsd-yoga-host.mjs` compiles from
+  the installed `react-native`'s `ReactCommon` sources with the system `c++`.
+  `tools/migration/tests/rsd-native-button.test.mjs` and
+  `tools/migration/tests/rsd-native-icon-button.test.mjs` mount the button primitives, and
+  `tools/migration/tests/rsd-native-button-chrome.test.mjs` holds their untokened chrome values to
+  `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build;
   `check-native-web-precache.mjs` verifies its service worker as the post hook.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual

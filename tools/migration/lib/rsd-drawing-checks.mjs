@@ -15,3 +15,6 @@ export const RSD_NATIVE_TOKEN_SPECIMEN_TEST = 'migration/tests/rsd-native-token-
 export const RSD_NATIVE_BUTTON_TEST = 'migration/tests/rsd-native-button.test.mjs';
 export const RSD_NATIVE_ICON_BUTTON_TEST = 'migration/tests/rsd-native-icon-button.test.mjs';
 export const RSD_NATIVE_BUTTON_CHROME_TEST = 'migration/tests/rsd-native-button-chrome.test.mjs';
+export const RSD_NATIVE_SEGMENTED_PICKER_TEST =
+  'migration/tests/rsd-native-segmented-picker.test.mjs';
+export const RSD_NATIVE_SLIDER_TEST = 'migration/tests/rsd-native-slider.test.mjs';

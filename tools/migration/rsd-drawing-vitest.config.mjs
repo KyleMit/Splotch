@@ -18,6 +18,8 @@ import {
   RSD_NATIVE_BUTTON_TEST,
   RSD_NATIVE_ICON_BUTTON_TEST,
   RSD_NATIVE_BUTTON_CHROME_TEST,
+  RSD_NATIVE_SEGMENTED_PICKER_TEST,
+  RSD_NATIVE_SLIDER_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -48,6 +50,8 @@ export default defineConfig({
       RSD_NATIVE_BUTTON_TEST,
       RSD_NATIVE_ICON_BUTTON_TEST,
       RSD_NATIVE_BUTTON_CHROME_TEST,
+      RSD_NATIVE_SEGMENTED_PICKER_TEST,
+      RSD_NATIVE_SLIDER_TEST,
     ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },
