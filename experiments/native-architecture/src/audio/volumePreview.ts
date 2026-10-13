@@ -104,5 +104,3 @@ export function createVolumePreview(load: DrawingLoopLoader) {
     },
   };
 }
-
-export type VolumePreview = ReturnType<typeof createVolumePreview>;
