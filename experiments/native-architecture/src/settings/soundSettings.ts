@@ -112,12 +112,13 @@ type PreferenceActionContext = {
 const SETTINGS_SAVE_FAILED_MESSAGE =
   'Your settings work for this session, but could not be saved. Please retry.';
 
-// The What's New stamp is written on its own rather than through persist: the write keeps the
-// save state the last choice left, so a failed Parent Center save stays pending for its retry.
+// The What's New stamp is written on its own rather than through persist, so a failed Parent
+// Center save stays pending for its retry. Ordinary choices are already in the state it writes,
+// so once that write lands, an earlier ordinary failure is recovered.
 function createStampWriter(
   storage: SoundSettingsStorage,
-  getState: () => SoundSettingsState,
-  publish: (state: SoundSettingsState) => void
+  { getState, publish }: PreferenceActionContext,
+  hasPendingParent: () => boolean
 ) {
   return async function persistStamp() {
     const state = getState();
@@ -127,7 +128,8 @@ function createStampWriter(
     publish({ status: 'saving', ...choices, message });
     try {
       await storage.write(JSON.stringify(snapshot(choices)));
-      publish({ status: 'ready', ...choices, saved, message });
+      if (saved || hasPendingParent()) publish({ status: 'ready', ...choices, saved, message });
+      else publish({ status: 'ready', ...choices, saved: true, message: '' });
     } catch {
       const failure = saved ? SETTINGS_SAVE_FAILED_MESSAGE : message;
       publish({ status: 'ready', ...choices, saved: false, message: failure });
@@ -370,7 +372,7 @@ export function createSoundSettings(
   };
   const accessibility = createAccessibilityActions({
     ...actionContext,
-    persistStamp: createStampWriter(storage, () => state, publish),
+    persistStamp: createStampWriter(storage, actionContext, () => pendingParent !== null),
   });
   return {
     async load() {
