@@ -123,6 +123,17 @@ describe('the landscape phone Color Button and Color Menu', () => {
     expect(flat(slot().style).bottom).toBe(EDGE_INSET_PX + 3 * (size + PHONE_TOOLBAR_GAP_PX));
   });
 
+  // Shipping centres it on 50dvh, so the inset under the controls does not lift it.
+  it('centres the closed drawer button on the whole viewport, above a bottom inset', async () => {
+    const insetBottom = 21;
+    viewport(LANDSCAPE_PHONE);
+    records.insets = { top: 0, right: 0, bottom: insetBottom, left: 0 };
+    await mountToolbar(toolbarScreen());
+    expect(flat(slot().style).bottom).toBe(
+      (LANDSCAPE_PHONE.height - PHONE_TOOLBAR_BUTTON_PX) / 2 - insetBottom
+    );
+  });
+
   it('keeps the palette bar, with no Color Button, in portrait', async () => {
     viewport(PORTRAIT_PHONE);
     await mountToolbar(toolbarScreen());

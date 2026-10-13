@@ -85,7 +85,7 @@ export type ActionPanelLayout = Readonly<{
   tools: readonly EdgeOffset[];
   toggle: EdgeOffset;
   // The landscape phone's Color Button, which stands in for the palette bar there: centred on the
-  // paper area's height while the drawer is closed, at the top of the L's leg while it is open.
+  // viewport's height while the drawer is closed, at the top of the L's leg while it is open.
   color: EdgeOffset | null;
 }>;
 
@@ -113,6 +113,7 @@ export function actionPanelLayout({
   count,
   leg,
   open,
+  bottomInset = 0,
 }: {
   area: AreaSize;
   viewport: AreaSize;
@@ -120,6 +121,9 @@ export function actionPanelLayout({
   count: number;
   leg: number;
   open: boolean;
+  // The window's bottom safe-area inset, which the area's bottom edge sits above: shipping centres
+  // the closed drawer's Color Button on the whole viewport, insets included.
+  bottomInset?: number;
 }): ActionPanelLayout {
   const mode = actionPanelMode(viewport);
   const base = actionButtonBase(viewport);
@@ -168,7 +172,10 @@ export function actionPanelLayout({
     color: phone
       ? {
           left: EDGE_INSET_PX,
-          bottom: open && count > 0 ? rowBottom + (climbing + 1) * pitch : (area.height - size) / 2,
+          bottom:
+            open && count > 0
+              ? rowBottom + (climbing + 1) * pitch
+              : (viewport.height - size) / 2 - bottomInset,
         }
       : null,
   };

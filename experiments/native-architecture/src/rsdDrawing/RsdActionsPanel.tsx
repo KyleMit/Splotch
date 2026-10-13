@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -275,6 +276,7 @@ export function RsdActionsPanel({
   slot: ReturnType<typeof useFlyoutSlot>;
 }) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
+  const insets = useSafeAreaInsets();
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
   // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
   // landscape phone keeps its Color Button, which no Settings section owns.
@@ -287,6 +289,7 @@ export function RsdActionsPanel({
     count: tools.length,
     leg: tools.filter((tool) => tool.key === 'brush' || tool.key === 'stroke').length,
     open,
+    bottomInset: insets.bottom,
   });
   const trigger = tools.findIndex((tool) => tool.key === flyout);
   const placement =
