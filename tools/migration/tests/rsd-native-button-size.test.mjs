@@ -13,7 +13,11 @@ import {
   drawerOffsets,
   EDGE_INSET_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import { paletteSlots } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
+import {
+  PALETTE_FLOWS,
+  paletteSlots,
+} from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
@@ -37,32 +41,27 @@ async function chooseButtonScale(scale) {
 const BUTTON_SCALES = [BUTTON_SCALE_MIN, DEFAULT_BUTTON_SCALE, BUTTON_SCALE_MAX];
 
 it.each(BUTTON_SCALES)(
-  'counts palette slots from the outer size the renderer gives each swatch at %i%% Button Size',
+  'keeps every swatch at the shipping size and counts palette slots from it at %i%% Button Size',
   async (scale) => {
     await mountToolbar(toolbarScreen());
     await chooseButtonScale(scale);
-    const size = controlSize(scale);
+    const { swatchPx, gapPx, endPaddingPx } = PALETTE_FLOWS.row;
     const outer = [
       outerSize(resolved((props) => props.accessibilityLabel === 'Purple paint')),
       outerSize(resolved((props) => props.accessibilityLabel === 'More colors')),
     ];
-    expect(outer).toEqual([size, size]);
-    const { gap } = resolved((props) => props.accessibilityLabel === 'Paint colors');
-    const bar = resolved(
-      (props) => flat(props.style)?.flexGrow === 1 && flat(props.style).padding !== undefined
-    );
-    expect(bar.gap).toBe(gap);
-    const span = (count) => count * outer[0] + (count - 1) * gap + 2 * bar.padding;
+    expect(outer).toEqual([swatchPx, swatchPx]);
+    const span = (count) => count * swatchPx + (count - 1) * gapPx + 2 * endPaddingPx;
     for (const length of [320, 390, 402, 568, 820, 1180]) {
-      const slots = paletteSlots(length, size);
+      const slots = paletteSlots(length, 'row');
       expect(span(slots), `${length}`).toBeLessThanOrEqual(length);
       expect(span(slots + 1), `${length}`).toBeGreaterThan(length);
     }
-    expect(paintLabels()).toHaveLength(paletteSlots(402, size) - 1);
+    expect(paintLabels()).toHaveLength(paletteSlots(402, 'row') - 1);
   }
 );
 
-it('sizes the chevron and every drawer tool from Button Size, and keeps Clear and Settings normal', async () => {
+it('sizes the chevron and every drawer tool from Button Size, and keeps Clear and Settings apart from it', async () => {
   await mountToolbar(toolbarScreen());
   await expandControls();
   const drawerLabels = ['Brush: Crayon', 'Save picture', 'Undo', 'Collapse controls'];
@@ -72,7 +71,7 @@ it('sizes the chevron and every drawer tool from Button Size, and keeps Clear an
   await chooseButtonScale(BUTTON_SCALE_MAX);
   expect(sizes()).toEqual(drawerLabels.map(() => controlSize(BUTTON_SCALE_MAX)));
   expect(outerSize(resolved((props) => props.accessibilityLabel === 'Settings'))).toBe(
-    TOUCH_TARGET
+    CORNER_BUTTON_SIZE_PX
   );
   await chooseButtonScale(BUTTON_SCALE_MIN);
   expect(sizes()).toEqual(drawerLabels.map(() => controlSize(BUTTON_SCALE_MIN)));
@@ -101,13 +100,10 @@ it.each(
     await chooseButtonScale(scale);
     const size = controlSize(scale);
     const portrait = height > width;
-    const status = flat(
-      records.viewports.findLast((props) => props.testID === 'rsd-drawing-status-viewport').style
-    );
-    const bar = size + 2 * EDGE_INSET_PX;
+    const bar = PALETTE_FLOWS[portrait ? 'row' : 'column'].extentPx;
     const area = {
       width: portrait ? width : width - bar,
-      height: (portrait ? height - bar : height) - status.height,
+      height: portrait ? height - bar : height,
     };
     const canvas = records.props.findLast((props) => props.testID === 'rsd-canvas-area');
     await act(async () => canvas.onLayout({ nativeEvent: { layout: { x: 0, y: 0, ...area } } }));
@@ -124,9 +120,9 @@ it.each(
     const inset = EDGE_INSET_PX;
     const toggle = rect(inset, area.height - inset - size, size);
     const settings = rect(
-      area.width - inset - TOUCH_TARGET,
-      area.height - inset - TOUCH_TARGET,
-      TOUCH_TARGET
+      area.width - inset - CORNER_BUTTON_SIZE_PX,
+      area.height - inset - CORNER_BUTTON_SIZE_PX,
+      CORNER_BUTTON_SIZE_PX
     );
     const clear = rect(area.width - inset - TOUCH_TARGET, inset, TOUCH_TARGET);
     expect(resolved((props) => props.testID === 'rsd-drawer-dock')).toMatchObject({

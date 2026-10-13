@@ -28,6 +28,7 @@ import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 import { PointerHalos } from './PointerHalos';
+import { PaperTexture } from './PaperTexture';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
 
@@ -142,6 +143,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         <InkAppearanceScope.Provider value={appearance}>
           <View style={styles.container}>
             <View style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}>
+              <PaperTexture />
               <View
                 ref={paper}
                 accessibilityLabel="Drawing paper"
@@ -179,7 +181,6 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 </Svg>
                 <PointerHalos feed={halos} />
               </View>
-              <View pointerEvents="none" style={styles.paperBorder} />
             </View>
             {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
           </View>
@@ -296,21 +297,10 @@ const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     container: { width: '100%', height: '100%' },
     inkPlane: { width: '100%', height: '100%' },
-    paperBorder: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      borderWidth: 1,
-      borderColor: palette.borderWarm,
-      borderRadius: 16,
-    },
     paper: {
       width: '100%',
       height: '100%',
       overflow: 'hidden',
-      borderRadius: 16,
       backgroundColor: palette.paper,
     },
   })

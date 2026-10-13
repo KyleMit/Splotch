@@ -18,9 +18,9 @@ import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/r
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import {
   RsdAction,
-  RsdPaintAction,
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
+import { RsdPaintAction } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
 import {
   NativeDialog,
   NativeSoundSettingsDialog,
@@ -186,34 +186,6 @@ function blueSwatch(props) {
     ...props,
   });
 }
-
-it('renders paint as a round swatch with its name, Selection Ring, actual color and owned touch size', async () => {
-  const onClick = vi.fn();
-  const swatchProps = () =>
-    records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
-  await mount(blueSwatch({ selected: true, onClick }));
-  const props = swatchProps();
-  assertDisabledBoundary(props, false);
-  expect(props.accessibilityState.checked).toBe(true);
-  expect(props.style.minWidth).toBe(TOUCH_TARGET);
-  expect(props.style.minHeight).toBe(TOUCH_TARGET);
-  expect(props.style.borderRadius).toBe(TOUCH_TARGET / 2);
-  expect(props.style.borderColor).toBe('#62A2E9');
-  const selectedNode = host.querySelector('button');
-  expect(selectedNode.getAttribute('role')).toBe('radio');
-  expect(selectedNode.getAttribute('aria-label')).toBe('Blue paint');
-  expect(selectedNode.textContent).toBe('');
-  expect(records.props.some((entry) => entry.style?.backgroundColor === '#62A2E9')).toBe(true);
-  await act(async () => selectedNode.click());
-  expect(onClick).toHaveBeenCalledOnce();
-  await act(async () => root.render(blueSwatch({ selected: false, onClick })));
-  const unselectedNode = host.querySelector('button');
-  expect(unselectedNode).toBe(selectedNode);
-  expect(unselectedNode.dataset.checked).toBe('false');
-  expect(swatchProps().style.borderColor).toBe('transparent');
-  await act(async () => root.render(blueSwatch({ selected: true, onClick })));
-  expect(swatchProps().style.borderColor).toBe('#62A2E9');
-});
 
 it('keeps actual failed-write recovery copy live inside the Settings modal and clears it after retry', async () => {
   let current;

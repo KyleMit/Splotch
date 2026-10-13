@@ -26,9 +26,10 @@ const themedStyles = createDrawingStyles((palette) =>
     sideControls: { width: LANDSCAPE_CONTROLS_WIDTH_PX, flexGrow: 0, flexShrink: 0 },
     fullBleed: { flex: 1, minHeight: 0 },
     fullBleedLandscape: { flexDirection: 'row' },
-    paletteBar: { flexGrow: 0, flexShrink: 0, backgroundColor: palette.surface },
+    // Above the paper so the plate's shadow falls on it.
+    paletteBar: { flexGrow: 0, flexShrink: 0, zIndex: 1 },
     canvasColumn: { flex: 1, minWidth: 0, minHeight: 0 },
-    canvasArea: { flex: 1, minWidth: 0, minHeight: 0, backgroundColor: palette.paperMargin },
+    canvasArea: { flex: 1, minWidth: 0, minHeight: 0, backgroundColor: palette.paper },
     workspace: {
       flex: 1,
       minWidth: 0,

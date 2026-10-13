@@ -1,11 +1,20 @@
 import { useState } from 'react';
 import { View } from 'react-native';
+import { css, html } from 'react-strict-dom';
 import { DrawingSurface } from '../drawing/DrawingSurface';
-import { fittedPaper } from '../drawing/paperGeometry';
+import { fittedPaper, paperLifted } from '../drawing/paperGeometry';
 import { drawingPaper } from '../drawing/paperSpace';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
+import { colors } from './tokens.css';
+
+// A lifted sheet wears the themed float shadow, whose dark value carries the hairline that edges
+// the sheet against the night margin, as shipping's .paper-lifted does.
+const styles = css.create({
+  sheet: (width: number, height: number) => ({ width, height }),
+  lifted: { boxShadow: colors.floatShadow },
+});
 
 export function NativePaper({
   screen,
@@ -18,7 +27,7 @@ export function NativePaper({
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const [space, setSpace] = useState({ width: 0, height: 0 });
-  const { width, height } = fittedPaper(space, drawingPaper(screen.history.drawing));
+  const frame = fittedPaper(space, drawingPaper(screen.history.drawing));
   return (
     <View
       style={drawingScreenStyles.workspace}
@@ -30,7 +39,12 @@ export function NativePaper({
         screen.surface.current?.refreshGeometry();
       }}
     >
-      <View style={{ width, height }}>
+      <html.div
+        style={[
+          styles.sheet(frame.width, frame.height),
+          paperLifted(space, frame) && styles.lifted,
+        ]}
+      >
         <DrawingSurface
           key={screen.recovery.generation}
           ref={screen.surface}
@@ -52,7 +66,7 @@ export function NativePaper({
           sound={sound.owner?.contacts ?? null}
           {...screen.recovery.callbacks}
         />
-      </View>
+      </html.div>
     </View>
   );
 }

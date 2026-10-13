@@ -14,6 +14,9 @@ import {
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     frame: { flex: 1, backgroundColor: palette.paperMargin },
+    // Shipping paints the drawing screen's safe-area strips with the palette bar's surface, so
+    // the top band reads as an extension of the bar.
+    drawing: { flex: 1, backgroundColor: palette.surface },
     overlay: { flex: 1, backgroundColor: 'transparent' },
   })
 );
@@ -23,10 +26,10 @@ export function NativeFrame({
   variant = 'screen',
 }: {
   children: ReactNode;
-  variant?: 'screen' | 'overlay';
+  variant?: 'screen' | 'drawing' | 'overlay';
 }) {
   const styles = useDrawingStyles(themedStyles);
-  const frame = variant === 'overlay' ? styles.overlay : styles.frame;
+  const frame = { screen: styles.frame, drawing: styles.drawing, overlay: styles.overlay }[variant];
   return (
     <SafeAreaProvider
       testID="rsd-window-insets"

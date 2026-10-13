@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { paletteSlots } from './controls';
+import { paletteSlots } from './paletteGeometry';
 import { drawerOffsets, EDGE_INSET_PX, type AreaSize, type LayoutAxis } from './edgeLayout';
 
-export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number }>;
+export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number; length: number }>;
 export type DrawerTool = Readonly<{ label: string; node: ReactNode }>;
 
 const docks = StyleSheet.create({
@@ -73,7 +73,7 @@ export function NativeDrawingLayout({
           );
         }}
       >
-        {palette({ axis, slots: paletteSlots(length, controlSize) })}
+        {palette({ axis, slots: paletteSlots(length, axis), length })}
       </View>
       <View style={drawingScreenStyles.canvasColumn}>
         <View
@@ -103,32 +103,9 @@ export function NativeDrawingLayout({
             {clear}
           </View>
           {clearCoachmark}
+          {status}
         </View>
-        {status}
       </View>
     </View>
-  );
-}
-
-export function NativeDrawingStatus({
-  drawing,
-  children,
-}: {
-  drawing: boolean;
-  children: ReactNode;
-}) {
-  const drawingScreenStyles = useDrawingScreenStyles();
-  return (
-    <ScrollView
-      testID="rsd-drawing-status-viewport"
-      accessibilityLabel="Drawing status"
-      accessible={false}
-      style={drawingScreenStyles.feedback}
-      contentContainerStyle={drawingScreenStyles.feedbackContent}
-      removeClippedSubviews={false}
-      scrollEnabled={!drawing}
-    >
-      {children}
-    </ScrollView>
   );
 }

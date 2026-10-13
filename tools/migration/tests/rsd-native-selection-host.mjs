@@ -1,3 +1,4 @@
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { coloringBookHistory } from '../../../experiments/native-architecture/src/settings/coloringBook.ts';
 import { createOfflineLibrary } from '../../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { act } from 'react';
@@ -202,6 +203,7 @@ const records = vi.hoisted(() => ({
   dismissals: [],
   props: [],
   viewports: [],
+  announcements: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
   dimensionListeners: new Set(),
   os: 'ios',
@@ -284,6 +286,8 @@ vi.mock('react-native', async () => {
     AccessibilityInfo: {
       isReduceMotionEnabled: async () => records.reduceMotion,
       addEventListener: () => ({ remove() {} }),
+      announceForAccessibility: (text) => records.announcements.push(text),
+      announceForAccessibilityWithOptions: (text) => records.announcements.push(text),
     },
     Animated: animatedPort(View, Text),
     Easing: easingPort,
@@ -420,6 +424,7 @@ afterEach(async () => {
   caller.screen = null;
   records.props.length = 0;
   records.viewports.length = 0;
+  records.announcements.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
   records.os = 'ios';
   orientationCalls.length = 0;
@@ -461,7 +466,7 @@ function createPickerCaller(refresh) {
     drawing: false,
     disabled: true,
     brush: 'marker',
-    history: { undo: [] },
+    history: { undo: [], drawing: emptyDrawing() },
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,
