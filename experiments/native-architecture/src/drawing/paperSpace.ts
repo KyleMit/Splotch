@@ -209,6 +209,18 @@ export function paperContactPoint(
   };
 }
 
+// Book pages ship a tall and a wide composition; a picture uses the one matching its paper, as
+// the shipping picker keys the variant off the paper (describePaperView in paperView.ts), so a
+// square paper takes the tall art.
+export type ArtOrientation = 'portrait' | 'landscape';
+export const ART_VARIANT_SLUGS = {
+  portrait: 'tall',
+  landscape: 'wide',
+} as const satisfies Record<ArtOrientation, string>;
+export function artOrientation(paper: PaperSize): ArtOrientation {
+  return paper.width > paper.height ? 'landscape' : 'portrait';
+}
+
 // A coloring page's art frame sits contain-fitted and centered on the paper, the way the
 // shipping app's coloring overlay is object-fit: contain within its paper. The sample pages and
 // their Magic fills are drawn in the canonical frame.

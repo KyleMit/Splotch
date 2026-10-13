@@ -122,7 +122,7 @@ function PaperArt({ drawing, ink, frame }: { drawing: Drawing; ink: boolean; fra
   const theme = useDrawingAppearance();
   const size = presentedPaperSize(drawingPaper(drawing), frame);
   const artwork = useContext(OfflineArtworkScope);
-  const outline = !isOfflinePageId(drawing.pageId) || Boolean(artwork[drawing.pageId]?.[theme]);
+  const outline = !isOfflinePageId(drawing.pageId) || Boolean(artwork[drawing.pageId]);
   return (
     <InkAppearanceScope.Provider value={{ pageId: drawing.pageId, theme }}>
       <InkPaperScope.Provider value={drawingPaper(drawing)}>

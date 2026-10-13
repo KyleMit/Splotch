@@ -169,12 +169,12 @@ it('selects Book cover and page artwork from the same explicit preference as the
   await click('Farm coloring book');
   const images = records.props.filter((props) => props.source?.uri);
   expect(
-    images.some((props) => props.source.uri === BUNDLED_BOOK_ART[FARM_PAGE_IDS[0]].dark.selector)
+    images.some((props) => props.source.uri === BUNDLED_BOOK_ART[FARM_PAGE_IDS[0]].selector.dark)
   ).toBe(true);
   await act(async () => root.render(picker('light')));
   expect(
     records.props.findLast(
-      (props) => props.source?.uri === BUNDLED_BOOK_ART[FARM_PAGE_IDS[0]].light.selector
+      (props) => props.source?.uri === BUNDLED_BOOK_ART[FARM_PAGE_IDS[0]].selector.light
     )
   ).toBeDefined();
   expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
