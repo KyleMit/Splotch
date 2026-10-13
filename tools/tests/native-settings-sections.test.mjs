@@ -20,8 +20,16 @@ import {
 import {
   NATIVE_SETTINGS_SECTIONS,
   SECTION_SUBTITLES,
+  SHIPPING_SOUND_VOLUME_DEFAULT,
   sectionHeading,
+  sectionSubtitle,
 } from '../../experiments/native-architecture/src/settings/settingsSections.ts';
+import {
+  SETTINGS_ACTIVITY_DOTS_START_SESSION,
+  activityDotsShown,
+  createSettingsSessions,
+} from '../../experiments/native-architecture/src/settings/settingsSessions.ts';
+import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
 import {
   RELEASE_NOTES,
   WHATS_NEW_STAMP,
@@ -47,6 +55,9 @@ const BUTTON_SIZE_SETTING = source('web/src/lib/components/settings/ButtonSizeSe
 const ACCESSIBILITY_SECTION = source('web/src/lib/components/settings/AccessibilitySection.svelte');
 const APPEARANCE_STATE = source('web/src/lib/state/appearance.svelte.ts');
 const SECTIONS = source('web/src/lib/components/settings/sections.ts');
+const SESSION_COUNTERS = source('web/src/lib/state/sessionCounters.svelte.ts');
+const DRAWING_SOUND = source('web/src/lib/audio/drawingSound.ts');
+const HUB_LIST = source('web/src/lib/components/settings/HubList.svelte');
 
 function shippingConstant(name) {
   const match = new RegExp(`export const ${name} = (\\d+);`).exec(SETTINGS_STATE);
@@ -57,10 +68,15 @@ function shippingConstant(name) {
 function shippingSections() {
   const entries = [
     ...SECTIONS.matchAll(
-      /\{\s*id: '(\w+)',\s*label: (['"])(.+?)\2,(?:\s*title: '([^']+)',)?\s*icon:/g
+      /\{\s*id: '(\w+)',\s*label: (['"])(.+?)\2,(?:\s*title: '([^']+)',)?\s*icon: '([\w-]+)'/g
     ),
   ];
-  return entries.map(([, id, , label, title]) => ({ id, label, ...(title ? { title } : {}) }));
+  return entries.map(([, id, , label, title, icon]) => ({
+    id,
+    label,
+    ...(title ? { title } : {}),
+    icon,
+  }));
 }
 
 const CURRENT = {
@@ -146,13 +162,10 @@ describe('Reduce Motion', () => {
 });
 
 describe('sectioned Settings', () => {
-  it('names, titles and orders its sections as the shipping list does', () => {
+  it('names, titles, icons and orders every section as the shipping list does', () => {
     const shipping = shippingSections();
     expect(shipping.map(({ id }) => id)).toContain('whatsnew');
-    const native = NATIVE_SETTINGS_SECTIONS.map(({ id }) => id);
-    expect(shipping.map(({ id }) => id).filter((id) => native.includes(id))).toEqual(native);
-    for (const section of NATIVE_SETTINGS_SECTIONS)
-      expect(section, section.id).toEqual(shipping.find(({ id }) => id === section.id));
+    expect(NATIVE_SETTINGS_SECTIONS).toEqual(shipping);
     expect(sectionHeading('whatsnew')).toBe('Updates');
     expect(sectionHeading('accessibility')).toBe('Accessibility');
   });
@@ -160,6 +173,117 @@ describe('sectioned Settings', () => {
   it('words its fixed status lines as the shipping hub does', () => {
     for (const [name, subtitle] of Object.entries(SECTION_SUBTITLES))
       expect(SECTIONS, name).toMatch(new RegExp(`['"]${subtitle.replace(/[&]/g, '\\$&')}['"]`));
+  });
+
+  it('builds its counted status lines from the shipping templates', () => {
+    for (const template of [
+      'parts.push(`${orientation} lock`)',
+      "parts.join(' · ')",
+      'const volume = `Volume ${settingsState.soundVolume}%`;',
+      "return `${books} extra ${books === 1 ? 'book' : 'books'} ready`;",
+      "`${grant.remaining} free ${grant.remaining === 1 ? 'creation' : 'creations'} left`",
+      "return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;",
+      'return `Version ${APP_VERSION}`;',
+    ])
+      expect(SECTIONS, template).toContain(template);
+    const settings = { ...CURRENT, status: 'ready', saved: true, message: '' };
+    const context = (overrides, extra = {}) => ({
+      settings: { ...settings, ...overrides },
+      brushes: { status: 'ready', availability: DEFAULT_BRUSH_AVAILABILITY },
+      downloadedBooks: 0,
+      ai: null,
+      ...extra,
+    });
+    expect(sectionSubtitle('appearance', context({ orientation: 'landscape' }))).toBe(
+      'Night Mode · landscape lock'
+    );
+    expect(sectionSubtitle('appearance', context({ orientation: 'auto' }))).toBe('Night Mode');
+    expect(sectionSubtitle('sound', context({ soundLevel: 'medium' }))).toBe('Volume 50%');
+    expect(sectionSubtitle('coloring', context({}, { downloadedBooks: 1 }))).toBe(
+      '1 extra book ready'
+    );
+    expect(sectionSubtitle('ai', context({ aiEnabled: true }))).toBe(
+      SECTION_SUBTITLES.aiAllowanceUnavailable
+    );
+    expect(
+      sectionSubtitle(
+        'ai',
+        context({ aiEnabled: true }, { ai: { credential: 'free', remaining: 1 } })
+      )
+    ).toBe('1 free creation left');
+    expect(
+      sectionSubtitle(
+        'ai',
+        context({ aiEnabled: true }, { ai: { credential: 'free', remaining: 3 } })
+      )
+    ).toBe('3 free creations left');
+    expect(
+      sectionSubtitle(
+        'ai',
+        context({ aiEnabled: true }, { ai: { credential: 'byok', remaining: null } })
+      )
+    ).toBe(SECTION_SUBTITLES.aiOwnKey);
+    expect(
+      sectionSubtitle(
+        'ai',
+        context({ aiEnabled: true }, { ai: { credential: 'managed', remaining: null } })
+      )
+    ).toBe(SECTION_SUBTITLES.aiAccessCode);
+  });
+
+  it('reads a native sound level as the shipping volume with the same gain', () => {
+    expect(SETTINGS_STATE).toContain(
+      `export const SOUND_VOLUME_DEFAULT = ${SHIPPING_SOUND_VOLUME_DEFAULT};`
+    );
+    expect(DRAWING_SOUND).toContain('return settingsState.soundVolume / SOUND_VOLUME_DEFAULT;');
+  });
+
+  it('puts only Night Mode and Sound switches on the hub, as HubList does', () => {
+    expect(
+      [...HUB_LIST.matchAll(/^ {4}(\w+): \{\n {6}id: '(\w+)',\n {6}label: '([^']+)'/gm)].map(
+        ([, section, id, label]) => ({ section, id, label })
+      )
+    ).toEqual([
+      { section: 'appearance', id: 'hubNightToggle', label: 'Night Mode' },
+      { section: 'sound', id: 'hubSoundToggle', label: 'Sound' },
+    ]);
+  });
+});
+
+describe('Settings activity dots', () => {
+  it("wait for shipping's sixth session", () => {
+    expect(SESSION_COUNTERS).toContain(
+      `export const SETTINGS_ACTIVITY_DOTS_START_SESSION = ${SETTINGS_ACTIVITY_DOTS_START_SESSION};`
+    );
+    expect(activityDotsShown(undefined)).toBe(false);
+    expect(activityDotsShown(SETTINGS_ACTIVITY_DOTS_START_SESSION - 1)).toBe(false);
+    expect(activityDotsShown(SETTINGS_ACTIVITY_DOTS_START_SESSION)).toBe(true);
+  });
+
+  it('counts each launch once, saturates at the milestone, and treats bad storage as a first visit', async () => {
+    const launch = async (stored, write = async () => {}) => {
+      const storage = { read: async () => stored, write: vi.fn(write) };
+      const sessions = createSettingsSessions(storage);
+      const counts = [await sessions.load(), await sessions.load()];
+      return { counts, writes: storage.write.mock.calls.map(([count]) => count) };
+    };
+    expect(await launch(null)).toEqual({ counts: [1, 1], writes: ['1'] });
+    expect(await launch('5')).toEqual({ counts: [6, 6], writes: ['6'] });
+    expect(await launch('6')).toEqual({ counts: [6, 6], writes: [] });
+    expect(await launch('99')).toEqual({ counts: [6, 6], writes: [] });
+    expect(await launch('-4')).toEqual({ counts: [1, 1], writes: ['1'] });
+    expect(await launch('soon')).toEqual({ counts: [1, 1], writes: ['1'] });
+    const failing = await launch('2', async () => {
+      throw new Error('quota');
+    });
+    expect(failing).toEqual({ counts: [3, 3], writes: ['3'] });
+    const unreadable = createSettingsSessions({
+      read: async () => {
+        throw new Error('blocked');
+      },
+      write: async () => {},
+    });
+    expect(await unreadable.load()).toBe(1);
   });
 });
 

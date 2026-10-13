@@ -268,19 +268,19 @@ it.each([
     'RSD optional toolbar switch callback',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdSettingsRoute.tsx',
     'brushState={screen.brushPreferences}',
     'brushState={sound.settings}',
     'RSD brush settings mount owner: brushState',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdSettingsRoute.tsx',
     'onBrushAvailabilityChange={screen.setBrushAvailable}',
     'onBrushAvailabilityChange={screen.setBrush}',
     'RSD brush settings mount owner: onBrushAvailabilityChange',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdSettingsRoute.tsx',
     'onRetryBrushSave={screen.retryBrushSave}',
     'onRetryBrushSave={screen.undo}',
     'RSD brush settings mount owner: onRetryBrushSave',

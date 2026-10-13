@@ -309,7 +309,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   expect(host.textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);
   expect(host.textContent).not.toContain('In this beta');
   await click('Back');
-  expect(host.querySelector('[role="list"] [aria-label="Appearance"]')).not.toBeNull();
+  expect(host.querySelector('[role="list"] button[aria-label^="Appearance, "]')).not.toBeNull();
   await openSettingsSection('About');
   await click('Help and about');
   await click('Close');
