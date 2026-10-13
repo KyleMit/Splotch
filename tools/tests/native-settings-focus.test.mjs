@@ -148,3 +148,14 @@ it('leaves the hub title out of the tab order and initial focus on Close', async
   expect(document.activeElement.getAttribute('aria-label')).toBe('Close');
   expect(document.querySelector('[role="dialog"] h2').hasAttribute('tabindex')).toBe(false);
 });
+
+// React Native Web's box-none dialog stage sets `pointer-events: auto` on every descendant from
+// an unlayered rule, which outranks the fade's own `pointer-events: none`; inert keeps it out of
+// hit testing, so the rows under a fade, retired or not, still take the tap.
+it('keeps the scroll fade out of hit testing over the rows under it', async () => {
+  await openSettings();
+  const cue = document.querySelector('[role="dialog"] [data-testid="scroll-cue"]');
+  expect(cue).not.toBeNull();
+  expect(cue.hasAttribute('inert')).toBe(true);
+  expect(cue.getAttribute('aria-hidden')).toBe('true');
+});
