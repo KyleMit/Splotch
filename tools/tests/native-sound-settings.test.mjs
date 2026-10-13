@@ -20,6 +20,31 @@ function fixture(snapshot = null) {
   const settings = createSoundSettings(storage, (state) => changes.push(state));
   return { changes, storage, settings };
 }
+const SOUND_DEFAULTS = { soundVolume: 50, drawingSoundEnabled: true, deleteSoundEnabled: true };
+
+async function currentSnapshot() {
+  const f = fixture();
+  await f.settings.load();
+  await f.settings.setEnabled(false);
+  return f.storage.write.mock.calls.at(-1)[0];
+}
+
+// The record a current one replaced: a level where the volume and sources sit, and no Button
+// style. Schema 11 also predates the external-links policy.
+function legacyRecord(current, soundLevel, version) {
+  const legacy = {};
+  for (const [key, value] of Object.entries(current)) {
+    if (key === 'version') legacy.version = version;
+    else if (key === 'soundVolume') legacy.soundLevel = soundLevel;
+    else if (key === 'parentPolicies' && version === 11) {
+      const { externalLinks: _links, ...policies } = value;
+      legacy.parentPolicies = policies;
+    } else if (!['drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'].includes(key))
+      legacy[key] = value;
+  }
+  return legacy;
+}
+
 describe('candidate sound settings', () => {
   it.each([true, false])('restores exactly the persisted %s choice', async (soundEnabled) => {
     const f = fixture(JSON.stringify({ version: 1, soundEnabled }));
@@ -42,7 +67,9 @@ describe('candidate sound settings', () => {
           parentCenter: 'always',
         },
         coloringBookEnabled: true,
-        soundLevel: 'medium',
+        soundVolume: 50,
+        drawingSoundEnabled: true,
+        deleteSoundEnabled: true,
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
         orientation: 'portrait',
@@ -52,6 +79,7 @@ describe('candidate sound settings', () => {
         whatsNewSeen: null,
         pencilEraserEnabled: true,
         applePencilSeen: false,
+        toolbarStyle: 'buttons',
         saved: true,
         message: '',
       },
@@ -94,7 +122,7 @@ describe('candidate sound settings', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":12,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
+      '{"version":13,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -111,10 +139,10 @@ describe('candidate sound settings', () => {
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
       [
-        '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}',
+        '{"version":13,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}',
       ],
       [
-        '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}',
+        '{"version":13,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}',
       ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
@@ -156,7 +184,7 @@ describe('candidate sound settings', () => {
     expect(f.changes.at(-1)).toMatchObject({ status: 'saving', soundEnabled: false });
   });
   it.each([1, 2, 3, 4, 5, 6, 7])(
-    'normalizes legacy schema %s to Medium without writing',
+    'normalizes legacy schema %s to the shipping volume and both sources without writing',
     async (version) => {
       const old = { version, soundEnabled: false };
       if (version >= 2) Object.assign(old, { strokeWidth: 'medium', eraserWidth: 'medium' });
@@ -174,7 +202,8 @@ describe('candidate sound settings', () => {
       const f = fixture(JSON.stringify(old));
       await f.settings.load();
       expect(f.changes.at(-1)).toMatchObject({
-        soundLevel: 'medium',
+        ...SOUND_DEFAULTS,
+        toolbarStyle: 'buttons',
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
         soundEnabled: false,
@@ -184,103 +213,128 @@ describe('candidate sound settings', () => {
       expect(() => parseSoundSettings(JSON.stringify({ ...old, soundLevel: 'invalid' }))).toThrow();
     }
   );
-  it.each(['quiet', 'medium', 'loud'])(
-    'round-trips %s independently of mute and every parent policy',
-    async (soundLevel) => {
-      const f = fixture();
+  it.each([
+    ['quiet', 25, 12],
+    ['medium', 50, 12],
+    ['loud', 100, 12],
+    ['quiet', 25, 11],
+    ['loud', 100, 11],
+  ])(
+    'migrates a stored %s level to the volume that plays at its gain, both sources on (schema %i)',
+    async (soundLevel, soundVolume, version) => {
+      const stored = JSON.parse(await currentSnapshot());
+      const legacy = legacyRecord(stored, soundLevel, version);
+      const f = fixture(JSON.stringify(legacy));
       await f.settings.load();
-      await f.settings.setEnabled(false);
-      const parentPolicies = {
-        ai: 'never',
-        imageReport: 'session',
-        externalLinks: 'session',
-        feedback: 'always',
-        parentCenter: 'session',
-      };
-      await f.settings.setParentPreferences({ aiEnabled: true, parentPolicies });
-      await f.settings.setSoundLevel(soundLevel);
-      const stored = f.storage.write.mock.calls.at(-1)[0];
-      expect(parseSoundSettings(stored)).toMatchObject({
-        version: 12,
-        soundEnabled: false,
-        soundLevel,
-        aiEnabled: true,
-        parentPolicies,
+      expect(f.changes.at(-1)).toMatchObject({
+        soundVolume,
+        drawingSoundEnabled: true,
+        deleteSoundEnabled: true,
+        toolbarStyle: 'buttons',
+        saved: true,
       });
-      const reopened = fixture(stored);
-      await reopened.settings.load();
-      expect(reopened.changes.at(-1)).toMatchObject({
-        soundEnabled: false,
-        soundLevel,
-        parentPolicies,
-      });
-      const {
-        soundLevel: _level,
-        undoButtonEnabled,
-        strokeWidthControlEnabled,
-        orientation: _orientation,
-        saveOnDeleteEnabled: _saveOnDelete,
-        buttonScale: _buttonScale,
-        reduceMotion: _reduceMotion,
-        whatsNewSeen: _whatsNewSeen,
-        pencilEraserEnabled: _pencilEraserEnabled,
-        applePencilSeen: _applePencilSeen,
-        ...withoutLevel
-      } = JSON.parse(stored);
-      expect(
-        parseSoundSettings(
-          JSON.stringify({
-            ...withoutLevel,
-            parentPolicies: (({ externalLinks: _links, ...rest }) => rest)(
-              withoutLevel.parentPolicies
-            ),
-            version: 7,
-            undoButtonEnabled,
-            strokeWidthControlEnabled,
-          })
-        ).soundLevel
-      ).toBe('medium');
-      expect(() =>
-        parseSoundSettings(JSON.stringify({ ...JSON.parse(stored), soundLevel: undefined }))
-      ).toThrow();
-      for (const invalid of ['LOUD', '', null, 2, {}, ['quiet']]) {
+      expect(f.storage.write).not.toHaveBeenCalled();
+      for (const invalid of ['LOUD', '', null, 2, {}, ['quiet']])
         expect(() =>
-          parseSoundSettings(JSON.stringify({ ...withoutLevel, soundLevel: invalid }))
+          parseSoundSettings(JSON.stringify(legacyRecord(stored, invalid, version)))
         ).toThrow('Sound level');
-      }
-      expect(() =>
-        parseSoundSettings(JSON.stringify({ ...withoutLevel, soundLevel, unknown: true }))
-      ).toThrow();
+      const { soundLevel: _level, ...withoutLevel } = legacy;
+      expect(() => parseSoundSettings(JSON.stringify(withoutLevel))).toThrow('Sound level');
     }
   );
-  it('applies a failed level save for the session and retries that exact level', async () => {
+  it('round-trips volume, sources and Button style independently of mute and parent policies', async () => {
+    const f = fixture();
+    await f.settings.load();
+    await f.settings.setEnabled(false);
+    const parentPolicies = {
+      ai: 'never',
+      imageReport: 'session',
+      externalLinks: 'session',
+      feedback: 'always',
+      parentCenter: 'session',
+    };
+    await f.settings.setParentPreferences({ aiEnabled: true, parentPolicies });
+    await f.settings.setSoundVolume(73);
+    await f.settings.setDrawingSoundEnabled(false);
+    await f.settings.setDeleteSoundEnabled(false);
+    await f.settings.setToolbarStyle('bare');
+    const stored = f.storage.write.mock.calls.at(-1)[0];
+    const chosen = {
+      soundEnabled: false,
+      soundVolume: 73,
+      drawingSoundEnabled: false,
+      deleteSoundEnabled: false,
+      toolbarStyle: 'bare',
+    };
+    expect(parseSoundSettings(stored)).toMatchObject({
+      version: 13,
+      ...chosen,
+      aiEnabled: true,
+      parentPolicies,
+    });
+    const reopened = fixture(stored);
+    await reopened.settings.load();
+    expect(reopened.changes.at(-1)).toMatchObject({ ...chosen, parentPolicies, saved: true });
+    const current = JSON.parse(stored);
+    for (const [key, invalid] of [
+      ['soundVolume', -1],
+      ['soundVolume', 101],
+      ['soundVolume', 50.5],
+      ['soundVolume', '50'],
+      ['soundVolume', undefined],
+      ['drawingSoundEnabled', 'yes'],
+      ['drawingSoundEnabled', undefined],
+      ['deleteSoundEnabled', 0],
+      ['toolbarStyle', 'flat'],
+      ['toolbarStyle', undefined],
+      ['soundLevel', 'medium'],
+    ])
+      expect(
+        () => parseSoundSettings(JSON.stringify({ ...current, [key]: invalid })),
+        `${key} ${invalid}`
+      ).toThrow();
+  });
+  it('rejects invalid volume, source and Button style choices without writing', async () => {
+    const f = fixture();
+    await f.settings.load();
+    await expect(f.settings.setSoundVolume(101)).rejects.toThrow('Volume');
+    await expect(f.settings.setSoundVolume(12.5)).rejects.toThrow('Volume');
+    await expect(f.settings.setDrawingSoundEnabled('off')).rejects.toThrow('Sound source');
+    await expect(f.settings.setDeleteSoundEnabled(null)).rejects.toThrow('Sound source');
+    await expect(f.settings.setToolbarStyle('flat')).rejects.toThrow('Button style');
+    expect(f.storage.write).not.toHaveBeenCalled();
+  });
+  it('applies a failed volume save for the session and retries that exact volume', async () => {
     const f = fixture();
     await f.settings.load();
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
-    const writing = f.settings.setSoundLevel('quiet');
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', soundLevel: 'quiet' });
-    await f.settings.setSoundLevel('loud');
+    const writing = f.settings.setSoundVolume(20);
+    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', soundVolume: 20 });
+    await f.settings.setSoundVolume(90);
     expect(f.storage.write).toHaveBeenCalledOnce();
     save.reject(new Error('disk full'));
     await writing;
-    expect(f.changes.at(-1)).toMatchObject({ soundLevel: 'quiet', saved: false });
+    expect(f.changes.at(-1)).toMatchObject({ soundVolume: 20, saved: false });
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
-    expect(f.changes.at(-1)).toMatchObject({ soundLevel: 'quiet', saved: true });
+    expect(f.changes.at(-1)).toMatchObject({ soundVolume: 20, saved: true });
   });
-  it('keeps level edits session-only after a failed read and rejects an invalid choice', async () => {
+  it('keeps sound edits session-only after a failed read', async () => {
     const f = fixture();
     f.storage.read.mockRejectedValueOnce(new Error('denied'));
     await f.settings.load();
-    await f.settings.setSoundLevel('loud');
+    await f.settings.setSoundVolume(90);
+    await f.settings.setDeleteSoundEnabled(false);
+    await f.settings.setToolbarStyle('bare');
     await f.settings.retrySave();
     expect(f.changes.at(-1)).toMatchObject({
-      soundLevel: 'loud',
+      soundVolume: 90,
+      deleteSoundEnabled: false,
+      toolbarStyle: 'bare',
       soundEnabled: false,
       saved: false,
     });
     expect(f.storage.write).not.toHaveBeenCalled();
-    await expect(f.settings.setSoundLevel('invalid')).rejects.toThrow('Sound level');
   });
 });

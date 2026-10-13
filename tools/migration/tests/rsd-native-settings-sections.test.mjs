@@ -9,23 +9,23 @@ import {
 } from './rsd-native-selection-host.mjs';
 import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
+import {
+  button,
+  click,
+  drawingScreen,
+  dottedRows,
+  hubRow,
+  hubRows,
+  hubSwitches,
+  rerender,
+  storedSettings,
+} from './rsd-native-settings-fixture.mjs';
+import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 import { act, createElement } from 'react';
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { FLY_IN_TRANSFORM } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
-import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
-import {
-  drawerTileSize as tileSize,
-  heldBrushLabel as brushLabel,
-} from './rsd-native-toolbar-fixture.mjs';
-import {
-  BUTTON_SCALE_MAX,
-  BUTTON_SCALE_MIN,
-  BUTTON_SIZE_HELP,
-} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 import {
   REDUCE_MOTION_HELP,
   REDUCE_MOTION_LABEL,
@@ -45,119 +45,6 @@ import {
 } from '../../../experiments/native-architecture/src/settings/pencilEraser.ts';
 
 const WHATS_NEW = "What's New";
-const CURRENT_SETTINGS = {
-  version: 12,
-  soundEnabled: false,
-  strokeWidth: 'medium',
-  eraserWidth: 'medium',
-  selectedColor: 'Purple',
-  customColors: [],
-  appearance: 'light',
-  aiEnabled: false,
-  parentPolicies: {
-    ai: 'always',
-    imageReport: 'always',
-    externalLinks: 'always',
-    feedback: 'always',
-    parentCenter: 'always',
-  },
-  coloringBookEnabled: true,
-  soundLevel: 'medium',
-  undoButtonEnabled: true,
-  strokeWidthControlEnabled: true,
-  orientation: 'portrait',
-  saveOnDeleteEnabled: false,
-  buttonScale: 100,
-  reduceMotion: 'system',
-  whatsNewSeen: WHATS_NEW_STAMP,
-  pencilEraserEnabled: true,
-  applePencilSeen: false,
-};
-
-function storedSettings(overrides = {}) {
-  let stored = JSON.stringify({ ...CURRENT_SETTINGS, ...overrides });
-  caller.settingsStorage = {
-    read: async () => stored,
-    write: vi.fn(async (next) => {
-      stored = next;
-    }),
-  };
-  return { storage: caller.settingsStorage, stored: () => JSON.parse(stored) };
-}
-
-function drawingScreen(overrides = {}) {
-  caller.screen = {
-    notice: '',
-    drawing: false,
-    disabled: false,
-    brush: 'pen',
-    brushControl: { kind: 'menu', brushes: ['pen', 'crayon'] },
-    availableBrushes: ['pen', 'crayon'],
-    history: { undo: [], drawing: emptyDrawing() },
-    recovery: { failed: false },
-    pictures: null,
-    pagePickerOpen: false,
-    settingsOpen: true,
-    colorPickerOpen: false,
-    closeSettings: vi.fn(),
-    closeColorPicker: vi.fn(),
-    openColorPicker: vi.fn(),
-    selectInkBrush: vi.fn(),
-    ...overrides,
-  };
-  caller.sound = { settings: { status: 'loading' }, owner: null, audioMessage: '' };
-}
-
-async function rerender(overrides) {
-  Object.assign(caller.screen, overrides);
-  await act(async () => root.render(createElement(RsdDrawingScreen)));
-}
-
-function button(label) {
-  const node = host.querySelector(`[aria-label="${label}"]`);
-  expect(node, label).not.toBeNull();
-  return node;
-}
-
-async function click(label) {
-  const node = button(label);
-  expect(node.disabled, label).toBe(false);
-  await act(async () => node.click());
-}
-
-function hubRows() {
-  return [...host.querySelectorAll('[role="list"] [role="listitem"] button')].filter(
-    (node) => node.getAttribute('role') !== 'switch'
-  );
-}
-
-function hubSwitches() {
-  return [...host.querySelectorAll('[role="list"] [role="switch"]')];
-}
-
-function hubRow(title) {
-  const row = hubRows().find((node) => node.getAttribute('aria-label').startsWith(`${title}, `));
-  expect(row, title).toBeDefined();
-  return row;
-}
-
-// A row whose section changed since it was last opened adds "new" to its name, beside its dot.
-const dottedRows = () =>
-  hubRows()
-    .map((row) => row.getAttribute('aria-label'))
-    .filter((name) => name.endsWith(', new'));
-
-function flat(style) {
-  return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
-}
-
-function outerSize(label) {
-  const style = flat(records.props.findLast((props) => props.accessibilityLabel === label).style);
-  expect(style.boxSizing, label).toBe('border-box');
-  expect(style.width, label).toBe(style.height);
-  return style.width;
-}
-
 // The Color Picker flies in through the shipping overshoot keyframe, or fades under Reduce Motion.
 async function openColorPicker() {
   const timing = vi.spyOn(Animated, 'timing');
@@ -200,7 +87,7 @@ it('lists every shipping section in order with its icon tile and shipping status
 });
 
 it('answers Night Mode and Sound with switches on their hub rows and no others', async () => {
-  const settings = storedSettings({ soundEnabled: true, soundLevel: 'loud' });
+  const settings = storedSettings({ soundEnabled: true, soundVolume: 100 });
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   expect(hubSwitches().map((node) => node.getAttribute('aria-label'))).toEqual([
@@ -237,8 +124,8 @@ it('holds both hub switches while a hub choice saves, so a second tap is never d
   expect(settings.stored()).toMatchObject({ appearance: 'dark', soundEnabled: false });
 });
 
-it('words the Sound and Coloring rows from the native level and the downloaded books', async () => {
-  storedSettings({ soundEnabled: true, soundLevel: 'quiet', orientation: 'auto' });
+it('words the Sound and Coloring rows from the volume and the downloaded books', async () => {
+  storedSettings({ soundEnabled: true, soundVolume: 25, orientation: 'auto' });
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   expect(hubRow('Sound').getAttribute('aria-label')).toBe('Sound, Volume 25%');
@@ -280,39 +167,6 @@ it('drills into an AI Art page from its hub row', async () => {
   expect(host.querySelector('[data-native-modal="AI Art"]')).not.toBeNull();
   await click('Back');
   expect(hubRow('AI Art')).toBeDefined();
-});
-
-it('steps Button Size through the settings owner and resizes the edge controls from it', async () => {
-  const settings = storedSettings();
-  drawingScreen();
-  await mount(createElement(RsdDrawingScreen));
-  await openSettingsSection('Accessibility');
-  expect(host.textContent).toContain('Button Size 100%');
-  expect(host.textContent).toContain(BUTTON_SIZE_HELP);
-  for (let step = 0; step < 3; step++) await click('Bigger buttons');
-  expect(host.textContent).toContain(`Button Size ${BUTTON_SCALE_MAX}%`);
-  expect(button('Bigger buttons').disabled).toBe(true);
-  expect(settings.stored()).toMatchObject({ version: 12, buttonScale: BUTTON_SCALE_MAX });
-  await rerender({ settingsOpen: false });
-  await click('Expand controls');
-  const size = tileSize(BUTTON_SCALE_MAX);
-  expect(size).toBeGreaterThan(tileSize(100));
-  expect(outerSize('Save screenshot')).toBe(size);
-  expect(outerSize('Collapse controls')).toBe(CORNER_BUTTON_SIZE_PX);
-  // Shipping sizes its swatches and the corner Settings Button apart from Button Size.
-  for (const label of ['Purple paint', 'More colors'])
-    expect(outerSize(label), label).toBe(PALETTE_FLOWS.row.swatchPx);
-  expect(outerSize('Settings')).toBe(CORNER_BUTTON_SIZE_PX);
-  await rerender({ settingsOpen: true });
-  await openSettingsSection('Accessibility');
-  for (let step = 0; step < 6; step++) await click('Smaller buttons');
-  expect(host.textContent).toContain(`Button Size ${BUTTON_SCALE_MIN}%`);
-  expect(button('Smaller buttons').disabled).toBe(true);
-  expect(settings.stored().buttonScale).toBe(BUTTON_SCALE_MIN);
-  await rerender({ settingsOpen: false });
-  expect(outerSize('Save screenshot')).toBe(tileSize(BUTTON_SCALE_MIN));
-  expect(tileSize(BUTTON_SCALE_MIN)).toBeLessThan(tileSize(100));
-  expect(outerSize('Purple paint')).toBe(PALETTE_FLOWS.row.swatchPx);
 });
 
 it('overrides the device with the in-app Reduce Motion switch and follows it again on a match', async () => {
@@ -408,7 +262,7 @@ it("keeps the What's New stamp when the section opens while another choice is st
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Accessibility');
-  await click('Bigger buttons');
+  await click(REDUCE_MOTION_LABEL);
   expect(caller.product.sound.settings.status).toBe('saving');
   await click('Back');
   expect(dottedRows()).toHaveLength(1);
@@ -417,7 +271,10 @@ it("keeps the What's New stamp when the section opens while another choice is st
   expect(settings.storage.write).toHaveBeenCalledOnce();
   await act(async () => finishWrite());
   expect(settings.storage.write).toHaveBeenCalledTimes(2);
-  expect(settings.stored()).toMatchObject({ buttonScale: 110, whatsNewSeen: WHATS_NEW_STAMP });
+  expect(settings.stored()).toMatchObject({
+    reduceMotion: 'reduce',
+    whatsNewSeen: WHATS_NEW_STAMP,
+  });
   await click('Back');
   expect(dottedRows()).toEqual([]);
 });

@@ -9,6 +9,7 @@ import { RsdParentGateSheet } from './drawingSheets';
 import { useModalPresence } from './useModalPresence';
 import type { ParentGateView } from '../parentCenter/useParentGateHold';
 import { soundSettingsActions } from './soundSettingsActions';
+import type { SliderDraft } from './useSliderDraft';
 
 // Settings wired to the drawing screen's owners. Its own module so the wiring loads with the
 // dialog's chunk rather than on the startup path.
@@ -18,6 +19,8 @@ export function RsdSettingsRoute({
   product,
   gate,
   notice,
+  buttonScale,
+  soundVolume,
   visible,
   onDismiss,
 }: {
@@ -26,6 +29,8 @@ export function RsdSettingsRoute({
   product: ReturnType<typeof useDrawingProduct>;
   gate: ParentGateView | null;
   notice: string;
+  buttonScale: SliderDraft;
+  soundVolume: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
 }) {
@@ -43,6 +48,8 @@ export function RsdSettingsRoute({
       onRetryBrushSave={screen.retryBrushSave}
       notice={notice}
       {...soundSettingsActions(sound)}
+      buttonScale={buttonScale}
+      soundVolume={soundVolume}
       onClose={close}
       visible={visible}
       onDismiss={onDismiss}

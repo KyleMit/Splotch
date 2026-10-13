@@ -65,6 +65,28 @@ export function animatedPort(View, Text) {
 export const easingPort = new Proxy({}, { get: () => () => (t) => t });
 
 // Hardware Back presses reach the listeners the test fires; exits are counted, not taken.
+// Audio is outside the selection fixture unless a case hands it a pencil loop to load.
+export function drawingAudioPort(caller) {
+  return {
+    loadDrawingLoop: async (signal, onFailure) => {
+      if (caller.drawingLoop) return caller.drawingLoop(signal, onFailure);
+      throw new Error('Audio playback is outside this native caller fixture.');
+    },
+  };
+}
+
+// The app's foreground: a case moves it by calling each recorded listener with the next state.
+export function appStatePort(records) {
+  records.appStateListeners = new Set();
+  return {
+    currentState: 'active',
+    addEventListener: (_type, listener) => {
+      records.appStateListeners.add(listener);
+      return { remove: () => records.appStateListeners.delete(listener) };
+    },
+  };
+}
+
 export function backHandlerPort(records) {
   return {
     addEventListener: (_type, listener) => {

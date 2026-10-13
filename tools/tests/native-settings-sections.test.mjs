@@ -3,13 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
-  BUTTON_SCALE_STEP,
   BUTTON_SIZE_HELP,
   BUTTON_SIZE_LABEL,
   DEFAULT_BUTTON_SCALE,
   controlSize,
   isButtonScale,
-  stepButtonScale,
 } from '../../experiments/native-architecture/src/settings/buttonSize.ts';
 import {
   REDUCE_MOTION_HELP,
@@ -20,7 +18,6 @@ import {
 import {
   NATIVE_SETTINGS_SECTIONS,
   SECTION_SUBTITLES,
-  SHIPPING_SOUND_VOLUME_DEFAULT,
   sectionHeading,
   sectionSubtitle,
 } from '../../experiments/native-architecture/src/settings/settingsSections.ts';
@@ -56,7 +53,6 @@ const ACCESSIBILITY_SECTION = source('web/src/lib/components/settings/Accessibil
 const APPEARANCE_STATE = source('web/src/lib/state/appearance.svelte.ts');
 const SECTIONS = source('web/src/lib/components/settings/sections.ts');
 const SESSION_COUNTERS = source('web/src/lib/state/sessionCounters.svelte.ts');
-const DRAWING_SOUND = source('web/src/lib/audio/drawingSound.ts');
 const HUB_LIST = source('web/src/lib/components/settings/HubList.svelte');
 
 function shippingConstant(name) {
@@ -80,7 +76,7 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 12,
+  version: 13,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -96,7 +92,9 @@ const CURRENT = {
     parentCenter: 'always',
   },
   coloringBookEnabled: true,
-  soundLevel: 'medium',
+  soundVolume: 50,
+  drawingSoundEnabled: true,
+  deleteSoundEnabled: true,
   undoButtonEnabled: true,
   strokeWidthControlEnabled: true,
   orientation: 'portrait',
@@ -106,7 +104,19 @@ const CURRENT = {
   whatsNewSeen: '1.5.0',
   pencilEraserEnabled: true,
   applePencilSeen: false,
+  toolbarStyle: 'buttons',
 };
+
+// CURRENT as schema 12 stored it: the medium level where the volume and sources sit, and no
+// Button style.
+const VERSION_12 = Object.fromEntries(
+  Object.entries(CURRENT).flatMap(([key, value]) => {
+    if (key === 'version') return [[key, 12]];
+    if (key === 'soundVolume') return [['soundLevel', 'medium']];
+    if (['drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'].includes(key)) return [];
+    return [[key, value]];
+  })
+);
 
 describe('Button Size', () => {
   it('keeps the shipping range, default, label and help', () => {
@@ -119,15 +129,7 @@ describe('Button Size', () => {
     expect(BUTTON_SIZE_SETTING).toContain(`help="${BUTTON_SIZE_HELP}"`);
   });
 
-  it('steps through the default from either end and clamps at the range', () => {
-    const fromMin = [];
-    for (let scale = BUTTON_SCALE_MIN; scale < BUTTON_SCALE_MAX; scale = stepButtonScale(scale, 1))
-      fromMin.push(scale);
-    expect(fromMin).toContain(DEFAULT_BUTTON_SCALE);
-    expect((DEFAULT_BUTTON_SCALE - BUTTON_SCALE_MIN) % BUTTON_SCALE_STEP).toBe(0);
-    expect((BUTTON_SCALE_MAX - DEFAULT_BUTTON_SCALE) % BUTTON_SCALE_STEP).toBe(0);
-    expect(stepButtonScale(BUTTON_SCALE_MAX, 1)).toBe(BUTTON_SCALE_MAX);
-    expect(stepButtonScale(BUTTON_SCALE_MIN, -1)).toBe(BUTTON_SCALE_MIN);
+  it('sizes the default to the touch target and every choice to whole pixels', () => {
     expect(controlSize(DEFAULT_BUTTON_SCALE)).toBe(TOUCH_TARGET);
     expect(Number.isInteger(controlSize(BUTTON_SCALE_MAX))).toBe(true);
   });
@@ -199,7 +201,22 @@ describe('sectioned Settings', () => {
       'Night Mode · landscape lock'
     );
     expect(sectionSubtitle('appearance', context({ orientation: 'auto' }))).toBe('Night Mode');
-    expect(sectionSubtitle('sound', context({ soundLevel: 'medium' }))).toBe('Volume 50%');
+    for (const template of [
+      "if (!settingsState.soundEnabled) return 'Muted';",
+      "return 'No sources';",
+      "return `${volume} · ${settingsState.drawingSoundEnabled ? 'drawing' : 'deleting'} only`;",
+    ])
+      expect(SECTIONS, template).toContain(template);
+    const sound = (overrides) => sectionSubtitle('sound', context(overrides));
+    expect(sound({ soundVolume: 73 })).toBe('Volume 73%');
+    expect(sound({ soundVolume: 73, soundEnabled: false })).toBe(SECTION_SUBTITLES.muted);
+    expect(sound({ drawingSoundEnabled: false, deleteSoundEnabled: false })).toBe(
+      SECTION_SUBTITLES.noSoundSources
+    );
+    expect(sound({ soundVolume: 20, deleteSoundEnabled: false })).toBe('Volume 20% · drawing only');
+    expect(sound({ soundVolume: 20, drawingSoundEnabled: false })).toBe(
+      'Volume 20% · deleting only'
+    );
     expect(sectionSubtitle('coloring', context({}, { downloadedBooks: 1 }))).toBe(
       '1 extra book ready'
     );
@@ -230,13 +247,6 @@ describe('sectioned Settings', () => {
         context({ aiEnabled: true }, { ai: { credential: 'managed', remaining: null } })
       )
     ).toBe(SECTION_SUBTITLES.aiAccessCode);
-  });
-
-  it('reads a native sound level as the shipping volume with the same gain', () => {
-    expect(SETTINGS_STATE).toContain(
-      `export const SOUND_VOLUME_DEFAULT = ${SHIPPING_SOUND_VOLUME_DEFAULT};`
-    );
-    expect(DRAWING_SOUND).toContain('return settingsState.soundVolume / SOUND_VOLUME_DEFAULT;');
   });
 
   it('puts only Night Mode and Sound switches on the hub, as HubList does', () => {
@@ -318,17 +328,43 @@ function withoutLinksPolicy(record) {
   return { ...record, parentPolicies: policies };
 }
 
-describe('settings schema 12', () => {
-  const VERSION_11 = { ...withoutLinksPolicy(CURRENT), version: 11 };
+describe('settings schema 13', () => {
+  it('migrates version 12 to the volume its level played at, both sources and Raised buttons', () => {
+    for (const [soundLevel, soundVolume] of [
+      ['quiet', 25],
+      ['medium', 50],
+      ['loud', 100],
+    ])
+      expect(parseSoundSettings(JSON.stringify({ ...VERSION_12, soundLevel }))).toEqual({
+        ...CURRENT,
+        soundVolume,
+      });
+  });
+  it('rejects a version 13 record still holding a level or missing a sound choice, and a version 12 record carrying one', () => {
+    expect(() =>
+      parseSoundSettings(JSON.stringify({ ...CURRENT, soundLevel: 'medium' }))
+    ).toThrow();
+    for (const key of ['soundVolume', 'drawingSoundEnabled', 'deleteSoundEnabled', 'toolbarStyle'])
+      expect(
+        () => parseSoundSettings(JSON.stringify({ ...CURRENT, [key]: undefined })),
+        key
+      ).toThrow();
+    expect(() => parseSoundSettings(JSON.stringify({ ...VERSION_12, soundVolume: 50 }))).toThrow();
+    expect(() => parseSoundSettings(JSON.stringify({ ...CURRENT, version: 12 }))).toThrow();
+  });
+});
 
-  it('migrates version 11 to the native protected external-links default', () => {
+describe('settings schema 12', () => {
+  const VERSION_11 = { ...withoutLinksPolicy(VERSION_12), version: 11 };
+
+  it('migrates version 11 through both steps to the links default and the shipping sound', () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_11))).toEqual(CURRENT);
   });
   it('rejects a version 12 record without the external-links policy, and a version 11 record carrying one', () => {
     expect(() =>
-      parseSoundSettings(JSON.stringify({ ...withoutLinksPolicy(CURRENT), version: 12 }))
+      parseSoundSettings(JSON.stringify({ ...withoutLinksPolicy(VERSION_12), version: 12 }))
     ).toThrow('Parent Center');
-    expect(() => parseSoundSettings(JSON.stringify({ ...CURRENT, version: 11 }))).toThrow(
+    expect(() => parseSoundSettings(JSON.stringify({ ...VERSION_12, version: 11 }))).toThrow(
       'Parent Center'
     );
   });
@@ -365,7 +401,7 @@ describe('settings schema 11', () => {
   const VERSION_10 = (({ pencilEraserEnabled: _e, applePencilSeen: _s, ...rest }) => ({
     ...rest,
     version: 10,
-  }))(withoutLinksPolicy(CURRENT));
+  }))(withoutLinksPolicy(VERSION_12));
 
   it('round trips the Apple Pencil choices exactly', () => {
     expect(parseSoundSettings(JSON.stringify(PENCIL_SEEN))).toEqual(PENCIL_SEEN);
@@ -408,14 +444,15 @@ describe('settings schema 10', () => {
           }) => ({
             ...rest,
             version: 9,
-          }))(withoutLinksPolicy(CURRENT));
+          }))(withoutLinksPolicy(VERSION_12));
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 12,
+      version: 13,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,
       pencilEraserEnabled: true,
       applePencilSeen: false,
+      toolbarStyle: 'buttons',
     });
   });
 

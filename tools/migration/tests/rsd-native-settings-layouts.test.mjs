@@ -197,7 +197,7 @@ describe('the pane scroll geometry', () => {
 });
 
 const CURRENT_SETTINGS = {
-  version: 11,
+  version: 13,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -208,11 +208,14 @@ const CURRENT_SETTINGS = {
   parentPolicies: {
     ai: 'always',
     imageReport: 'always',
+    externalLinks: 'always',
     feedback: 'always',
     parentCenter: 'always',
   },
   coloringBookEnabled: true,
-  soundLevel: 'medium',
+  soundVolume: 50,
+  drawingSoundEnabled: true,
+  deleteSoundEnabled: true,
   undoButtonEnabled: true,
   strokeWidthControlEnabled: true,
   orientation: 'portrait',
@@ -222,6 +225,7 @@ const CURRENT_SETTINGS = {
   whatsNewSeen: WHATS_NEW_STAMP,
   pencilEraserEnabled: true,
   applePencilSeen: false,
+  toolbarStyle: 'buttons',
 };
 
 function openSettings(dimensions, overrides = {}) {

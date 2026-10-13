@@ -190,7 +190,7 @@ describe('RSD Parent Center section', () => {
     checkedRadio(policyOption('imageReport', 'session'));
     expect(owner.getState().settings.parentPolicies.imageReport).toBe('session');
     expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-      version: 12,
+      version: 13,
       parentPolicies: { imageReport: 'session', externalLinks: 'always' },
     });
   });

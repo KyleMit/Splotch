@@ -52,16 +52,16 @@ afterEach(() => {
 });
 
 describe('native clear page-turn owner', () => {
-  it('plays once per commit at the sound level gain', async () => {
+  it('plays once per commit at the gain of its volume', async () => {
     const fixture = loader();
     const sound = createClearSound(fixture.load);
     sound.setEnabled(true);
     await ready(sound, fixture);
     sound.commit();
     expect(fixture.turn.play).toHaveBeenCalledExactlyOnceWith(1);
-    sound.setLevel('loud');
+    sound.setVolume(100);
     sound.commit();
-    sound.setLevel('quiet');
+    sound.setVolume(25);
     sound.commit();
     expect(fixture.turn.play.mock.calls).toEqual([[1], [2], [0.5]]);
     expect(fixture.load).toHaveBeenCalledOnce();

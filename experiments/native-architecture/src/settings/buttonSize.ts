@@ -6,9 +6,6 @@ import { TOUCH_TARGET } from '../drawing/theme';
 export const BUTTON_SCALE_MIN = 70;
 export const BUTTON_SCALE_MAX = 130;
 export const DEFAULT_BUTTON_SCALE = 100;
-// React Native has no slider, so Smaller and Bigger step the percentage; every step from either
-// end of the range passes through the default the shipping slider snaps to.
-export const BUTTON_SCALE_STEP = 10;
 export const BUTTON_SIZE_LABEL = 'Button Size';
 export const BUTTON_SIZE_HELP = 'Bigger buttons help small or unsteady hands';
 
@@ -18,13 +15,6 @@ export function isButtonScale(value: unknown): value is number {
     Number.isInteger(value) &&
     value >= BUTTON_SCALE_MIN &&
     value <= BUTTON_SCALE_MAX
-  );
-}
-
-export function stepButtonScale(scale: number, direction: -1 | 1) {
-  return Math.min(
-    BUTTON_SCALE_MAX,
-    Math.max(BUTTON_SCALE_MIN, scale + direction * BUTTON_SCALE_STEP)
   );
 }
 

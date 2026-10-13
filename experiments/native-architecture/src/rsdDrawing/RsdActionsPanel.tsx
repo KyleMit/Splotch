@@ -242,6 +242,7 @@ export function RsdActionsPanel({
   area,
   viewport,
   open,
+  buttonScale,
   onToggle,
   slot,
 }: {
@@ -253,12 +254,14 @@ export function RsdActionsPanel({
   area: AreaSize;
   viewport: AreaSize;
   open: boolean;
+  // Button Size, live while its slider is dragged.
+  buttonScale: number;
   onToggle: () => void;
   slot: ReturnType<typeof useFlyoutSlot>;
 }) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
-  const scale = sound.settings.buttonScale / PERCENT;
+  const scale = buttonScale / PERCENT;
   const layout = actionPanelLayout({
     area,
     viewport,

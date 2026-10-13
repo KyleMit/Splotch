@@ -66,6 +66,7 @@ const styles = css.create({
   bottom: { bottom: 0 },
   fade: (backgroundImage: string) => ({ backgroundImage }),
   hidden: { opacity: 0 },
+  seeThroughHidden: { visibility: 'hidden' },
   title: {
     marginTop: 0,
     marginLeft: 0,
@@ -101,11 +102,13 @@ function useHeights() {
 function SettingsToc({
   sections,
   spied,
+  hidden,
   unseen,
   onSelect,
 }: {
   sections: readonly NativeSettingsSection[];
   spied: NativeSettingsSectionId;
+  hidden: boolean;
   unseen: (id: NativeSettingsSectionId) => boolean;
   onSelect: (id: NativeSettingsSectionId) => void;
 }) {
@@ -128,7 +131,7 @@ function SettingsToc({
     if (target !== null) nav.current?.scrollTo({ y: target, animated: !reduced });
   }, [spied, sections, rows.heights, reduced]);
   return (
-    <html.div style={styles.nav}>
+    <html.div style={[styles.nav, hidden && styles.seeThroughHidden]}>
       <ScrollView
         ref={nav}
         scrollEventThrottle={NAV_REPORT_INTERVAL_MS}
@@ -178,12 +181,50 @@ function SettingsToc({
   );
 }
 
+// One section of the pane under its heading. While the dialog is see-through, the headings hide
+// and only the kept section's body stays, for its cards to decide what shows.
+function PaneSection({
+  id,
+  headingId,
+  following,
+  keptSection,
+  onLayout,
+  children,
+}: {
+  id: NativeSettingsSectionId;
+  headingId: string;
+  following: boolean;
+  keptSection: NativeSettingsSectionId | null;
+  onLayout: (event: LayoutChangeEvent) => void;
+  children: ReactNode;
+}) {
+  const seeThrough = keptSection !== null;
+  return (
+    <View style={following ? FOLLOWING_SECTION : undefined} onLayout={onLayout}>
+      <html.section
+        data-section={id}
+        aria-labelledby={headingId}
+        style={seeThrough && keptSection !== id && styles.seeThroughHidden}
+      >
+        <html.h3
+          id={headingId}
+          style={[controlStyles.semiboldText, styles.title, seeThrough && styles.seeThroughHidden]}
+        >
+          {sectionHeading(id)}
+        </html.h3>
+        <html.div style={controlStyles.dialogContent}>{children}</html.div>
+      </html.section>
+    </View>
+  );
+}
+
 // The shipping tablet Settings (WideShell.svelte): a table of contents beside one continuously
 // scrolling pane that stacks every section. The table of contents marks where the reading
 // position is rather than a page, and a row jumps the pane to its section. Feedback opens its own
 // sheet from its row, as from the phone hub, so it holds no place in the pane.
 export function RsdSettingsWide({
   sections,
+  keptSection,
   unseen,
   renderSection,
   onSeen,
@@ -194,6 +235,7 @@ export function RsdSettingsWide({
   children,
 }: {
   sections: readonly NativeSettingsSection[];
+  keptSection: NativeSettingsSectionId | null;
   unseen: (id: NativeSettingsSectionId) => boolean;
   renderSection: (id: NativeSettingsSectionId) => ReactNode;
   onSeen: (id: NativeSettingsSectionId) => void;
@@ -283,7 +325,7 @@ export function RsdSettingsWide({
 
   return (
     <html.div style={styles.split}>
-      <SettingsToc sections={sections} spied={spied} unseen={unseen} onSelect={jump} />
+      <SettingsToc {...{ sections, spied, unseen }} hidden={keptSection !== null} onSelect={jump} />
       <RsdScrollCue
         inset={WIDE_SHELL.pane}
         scrollRef={pane}
@@ -298,18 +340,16 @@ export function RsdSettingsWide({
         }}
       >
         {paneIds.map((id, index) => (
-          <View
+          <PaneSection
             key={id}
-            style={index > 0 ? FOLLOWING_SECTION : undefined}
+            id={id}
+            headingId={`${headingId}-${id}`}
+            following={index > 0}
+            keptSection={keptSection}
             onLayout={sectionHeights.measure(index, elect)}
           >
-            <html.section data-section={id} aria-labelledby={`${headingId}-${id}`}>
-              <html.h3 id={`${headingId}-${id}`} style={[controlStyles.semiboldText, styles.title]}>
-                {sectionHeading(id)}
-              </html.h3>
-              <html.div style={controlStyles.dialogContent}>{renderSection(id)}</html.div>
-            </html.section>
-          </View>
+            {renderSection(id)}
+          </PaneSection>
         ))}
         {children}
       </RsdScrollCue>

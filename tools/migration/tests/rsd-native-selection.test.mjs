@@ -197,7 +197,7 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
   try {
     await mount(createElement(Settings));
     await openSettingsSection('Sound');
-    await act(async () => host.querySelector('[aria-label="Drawing sound on"]').click());
+    await act(async () => host.querySelector('[role="switch"][aria-label="Sound"]').click());
     const modal = host.querySelector('[data-native-modal="Sound"]');
     expect(modal).not.toBeNull();
     const close = modal.querySelector('[aria-label="Close"]');
@@ -308,7 +308,7 @@ it.each([
       await act(async () => on.click());
       expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
       expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-        version: 12,
+        version: 13,
         [property]: false,
         aiEnabled: false,
       });
@@ -343,7 +343,7 @@ it('turns Auto-Save on Delete on through the released native switch, off by defa
     await act(async () => toggle.click());
     expect(host.querySelector('[aria-label="Auto-Save on Delete"]').dataset.checked).toBe('true');
     expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-      version: 12,
+      version: 13,
       saveOnDeleteEnabled: true,
     });
   } finally {

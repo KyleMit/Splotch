@@ -1,8 +1,6 @@
 import type { SoundSettingsState } from './soundSettingsCodec';
 import type { BrushPreferencesState } from './brushPreferences';
 import { OPTIONAL_BRUSHES } from './brushPreferences';
-import type { SoundLevel } from './soundLevel';
-import { soundLevelGain } from '../audio/drawingAudio';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { AiState } from '../ai/sessionContract';
 import { SPLOTCHY_ICON_NAME } from '../rsdDrawing/icons.generated';
@@ -48,6 +46,7 @@ export const SECTION_SUBTITLES = {
   nightMode: 'Night Mode',
   allToolsShowing: 'Pen, crayon, magic brush & more',
   muted: 'Muted',
+  noSoundSources: 'No sources',
   coloringOff: 'Coloring books off',
   accessibility: 'Make it easier to see and tap',
   aiOff: 'Turned off',
@@ -62,14 +61,6 @@ export const SECTION_SUBTITLES = {
   saveOnDeleteOff: 'Auto-save off',
 } as const;
 
-// Shipping's Volume slider scales the drawing sound by soundVolume / SOUND_VOLUME_DEFAULT
-// (drawingSound.ts), so a native level reads as the shipping percentage with the same gain.
-export const SHIPPING_SOUND_VOLUME_DEFAULT = 50;
-
-function soundLevelVolume(level: SoundLevel) {
-  return soundLevelGain(level) * SHIPPING_SOUND_VOLUME_DEFAULT;
-}
-
 export type SectionSummaryContext = {
   settings: SoundSettingsState;
   brushes: BrushPreferencesState;
@@ -83,6 +74,19 @@ function hiddenToolCount(settings: SoundSettingsState, brushes: BrushPreferences
     (settings.undoButtonEnabled ? 0 : 1) +
     (settings.strokeWidthControlEnabled ? 0 : 1)
   );
+}
+
+function soundSubtitle({
+  soundEnabled,
+  soundVolume,
+  drawingSoundEnabled,
+  deleteSoundEnabled,
+}: SoundSettingsState) {
+  if (!soundEnabled) return SECTION_SUBTITLES.muted;
+  if (!drawingSoundEnabled && !deleteSoundEnabled) return SECTION_SUBTITLES.noSoundSources;
+  const volume = `Volume ${soundVolume}%`;
+  if (drawingSoundEnabled && deleteSoundEnabled) return volume;
+  return `${volume} · ${drawingSoundEnabled ? 'drawing' : 'deleting'} only`;
 }
 
 function plural(count: number, one: string, many: string) {
@@ -108,9 +112,7 @@ export function sectionSubtitle(id: NativeSettingsSectionId, context: SectionSum
         ? SECTION_SUBTITLES.nightMode
         : `${SECTION_SUBTITLES.nightMode} · ${settings.orientation} lock`;
     case 'sound':
-      return settings.soundEnabled
-        ? `Volume ${soundLevelVolume(settings.soundLevel)}%`
-        : SECTION_SUBTITLES.muted;
+      return soundSubtitle(settings);
     case 'controls': {
       const hidden = hiddenToolCount(settings, brushes);
       return hidden
