@@ -21,6 +21,8 @@ const CURRENT = {
   },
   coloringBookEnabled: false,
 };
+// Version 7 predates the external-links policy, which reads back at the native default.
+const MIGRATED_POLICIES = { ...CURRENT.parentPolicies, externalLinks: 'always' };
 const CONTROLS = [
   ['undoButtonEnabled', 'setUndoButtonEnabled'],
   ['strokeWidthControlEnabled', 'setStrokeWidthControlEnabled'],
@@ -52,6 +54,7 @@ describe('parent drawing control preferences', () => {
       const { version: _version, ...choices } = CURRENT;
       expect(f.changes.at(-1)).toMatchObject({
         ...choices,
+        parentPolicies: MIGRATED_POLICIES,
         soundLevel: mask & 1 ? 'loud' : 'medium',
         undoButtonEnabled: !(mask & 2),
         strokeWidthControlEnabled: !(mask & 4),
@@ -87,7 +90,8 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
-        version: 11,
+        parentPolicies: MIGRATED_POLICIES,
+        version: 12,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -107,7 +111,7 @@ describe('parent drawing control preferences', () => {
         saved: true,
         strokeWidth: 'thin',
         eraserWidth: 'thick',
-        parentPolicies: CURRENT.parentPolicies,
+        parentPolicies: MIGRATED_POLICIES,
       });
       await reopened.owner[method](true);
       expect(parseSoundSettings(reopened.stored())).toMatchObject({
@@ -160,7 +164,7 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write).toHaveBeenCalledOnce();
       expect(parseSoundSettings(f.stored())).toMatchObject({
         [field]: false,
-        parentPolicies: CURRENT.parentPolicies,
+        parentPolicies: MIGRATED_POLICIES,
       });
     }
   );

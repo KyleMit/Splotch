@@ -33,12 +33,13 @@ async function enableAi() {
   await solve();
   await screen.click('Enable AI picture creation');
   expect(JSON.parse(files.settingsWrite.mock.calls.at(-1)[0])).toMatchObject({
-    version: 11,
+    version: 12,
     coloringBookEnabled: true,
     aiEnabled: true,
     parentPolicies: {
       ai: 'always',
       imageReport: 'always',
+      externalLinks: 'always',
       feedback: 'always',
       parentCenter: 'always',
     },
@@ -123,7 +124,6 @@ beforeEach(async () => {
   );
   files.lock.mockReturnValue(() => {});
   files.capture.mockResolvedValue(rgbaPng(1024, 768, 255).toString('base64'));
-  files.list.mockReturnValue([]);
   screen = createScreen();
   await act(async () => screen.mount());
 });

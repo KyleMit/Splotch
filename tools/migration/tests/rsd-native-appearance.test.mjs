@@ -106,7 +106,7 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 11,
+    version: 12,
     orientation: 'portrait',
     saveOnDeleteEnabled: false,
     buttonScale: 100,
@@ -128,6 +128,7 @@ it('hydrates before usable controls and persists appearance through the real RSD
     parentPolicies: {
       ai: 'always',
       imageReport: 'always',
+      externalLinks: 'always',
       feedback: 'always',
       parentCenter: 'always',
     },
@@ -226,10 +227,6 @@ it.each(['light', 'dark'])(
   }
 );
 
-async function drawingToolsMenu(label) {
-  await click('Drawing tools');
-  await click(label);
-}
 function coloringPaper() {
   return JSON.parse(host.querySelector('[data-testid="rsd-real-history-paper"]').dataset.drawing);
 }
@@ -272,28 +269,11 @@ it('uses real RSD sound-level radios independently of the sound switch, retries,
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.feedbackSend).not.toHaveBeenCalled();
 });
-it('guides an empty pictures gallery until a saved picture is available', async () => {
-  rootColoringSettings();
-  await mount(createElement(RsdDrawingScreen));
-  await expandControls();
-  await drawingToolsMenu('Pictures');
-  const empty = host.querySelector('[aria-label="Your pictures"]');
-  expect(empty.textContent).toContain('Save a picture to find it here.');
-  expect(empty.querySelector('[aria-label^="Open picture from "]')).toBeNull();
-  await click('Close');
-  caller.drawingList.mockReturnValue([
-    { id: 'picture-1-fixture', name: 'saved drawing', modifiedAt: 1 },
-  ]);
-  await drawingToolsMenu('Pictures');
-  const saved = host.querySelector('[aria-label="Your pictures"]');
-  expect(saved.textContent).not.toContain('Save a picture to find it here.');
-  expect(saved.querySelector('[aria-label="Open picture from saved drawing"]')).not.toBeNull();
-});
-it('hides Coloring through actual RSD Settings and clamps actual history Undo and saved reopen while retaining ink', async () => {
+it('hides Coloring through actual RSD Settings and clamps actual history Undo while retaining ink', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
   await expandControls();
-  await click('Coloring pages');
+  await click('Coloring books');
   await click('Cat coloring page');
   await click('Draw RSD fixture stroke');
   const original = coloringPaper();
@@ -302,9 +282,9 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Settings');
   await openSettingsSection('Coloring');
   await click('Coloring book');
-  expect(host.textContent).not.toContain('Grown-ups only');
+  expect(host.textContent).not.toContain('Grown-Ups Only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 11,
+    version: 12,
     coloringBookEnabled: false,
     aiEnabled: false,
   });
@@ -312,21 +292,13 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Close');
   await click('Undo');
   expect(coloringPaper().pageId).toBe('blank');
-  expect(host.querySelector('[aria-label="Coloring pages"]')).toBeNull();
-  caller.drawingList.mockReturnValue([
-    { id: 'picture-1-fixture', name: 'saved coloring', modifiedAt: 1 },
-  ]);
-  caller.drawingOpen.mockResolvedValue(original);
-  await drawingToolsMenu('Pictures');
-  await click('Open picture from saved coloring');
-  expect(caller.drawingOpen).toHaveBeenCalledExactlyOnceWith('picture-1-fixture');
-  expect(coloringPaper()).toEqual({ ...original, pageId: 'blank' });
+  expect(host.querySelector('[aria-label="Coloring books"]')).toBeNull();
   expect(original.pageId).toBe('farm/cat');
   await click('Settings');
   await openSettingsSection('Coloring');
   await click('Coloring book');
   await click('Close');
-  await click('Coloring pages');
+  await click('Coloring books');
   expect(host.querySelector('[aria-label="Cat coloring page"]')).not.toBeNull();
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.aiVaultWrite).not.toHaveBeenCalled();
@@ -361,7 +333,7 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove(async () => []) };
   await mount(createElement(RsdDrawingScreen));
   await expandControls();
-  await click('Coloring pages');
+  await click('Coloring books');
   await started;
   expect(platform.download).toHaveBeenCalledOnce();
   await click('Close');

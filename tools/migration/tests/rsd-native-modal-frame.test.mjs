@@ -337,10 +337,19 @@ it('floats only the Close on the parental gate card, named by the heading in its
     message: '',
     announcement: '',
     announcementId: 0,
+    solves: 0,
   };
-  await mount(createElement(RsdParentGateSheet, { owner, state }));
+  await mount(
+    createElement(RsdParentGateSheet, {
+      owner,
+      state,
+      unlocked: false,
+      visible: true,
+      onDismiss: () => {},
+    })
+  );
   const title = labelledTitle();
-  expect(title.textContent).toBe('Grown-ups only');
+  expect(title.textContent).toBe('Grown-Ups Only');
   expect(title.closest('[data-testid="modal-body"]')).not.toBeNull();
   expect(frameControls()).toEqual(['Close']);
   expectNoFooter();

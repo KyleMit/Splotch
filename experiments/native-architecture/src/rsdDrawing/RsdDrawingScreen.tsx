@@ -3,7 +3,6 @@ import {
   RsdAiSheet,
   RsdColorPicker,
   RsdColoringBookPicker,
-  RsdParentCenterSection,
   RsdParentGateSheet,
   RsdSettingsRoute,
 } from './drawingSheets';
@@ -16,28 +15,26 @@ import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/Draw
 import { darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
 import { DEFAULT_APPEARANCE } from '../settings/appearance';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
-import { useDrawingMenu } from '../useDrawingMenu';
 import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
-import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
-import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
+import { useParentGateHold, type ParentGateView } from '../parentCenter/useParentGateHold';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -51,16 +48,19 @@ function useSettledMessage(message: string, drawing: boolean) {
 export function RsdDrawingScreen() {
   const screen = useDrawingScreen();
   const product = useDrawingProduct(screen);
+  const gate = useParentGateHold(product.state?.gate ?? null);
   const sound = product.sound;
-  const target = product.state?.gate.open
-    ? 'gate'
-    : product.state?.parentCenterOpen
-      ? 'parentCenter'
+  // Settings holds the gate over itself, as shipping stacks the challenge over its modal, so a
+  // check raised from Settings never closes the page the parent is on.
+  const target =
+    gate?.open && !screen.settingsOpen
+      ? 'gate'
       : screen.settingsOpen
         ? 'settings'
         : product.ai.state && aiSheetShown(product.ai.state)
           ? 'ai'
           : 'none';
+  useParentCenterSettings(screen, product, gate?.open === true);
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
   });
@@ -82,15 +82,30 @@ export function RsdDrawingScreen() {
               sound={sound}
               product={product}
               route={route}
+              gate={gate}
               onModalDismissed={dismissed}
             />
           )}
-          <RsdModalSheets screen={screen} product={product} route={route} />
+          <RsdModalSheets screen={screen} product={product} route={route} gate={gate} />
           <RsdLeaveConfirm />
         </ReduceMotionPreferenceProvider>
       </ModalOriginProvider>
     </DrawingAppearanceProvider>
   );
+}
+
+// Parent Center is a Settings section: a check solved anywhere else for it (the gate's Manage these
+// checks footer) opens Settings there once the gate has closed.
+function useParentCenterSettings(
+  screen: Screen,
+  product: ReturnType<typeof useDrawingProduct>,
+  gateOpen: boolean
+) {
+  const unlocked = product.state?.parentCenterOpen === true;
+  const { settingsOpen, openSettings } = screen;
+  useEffect(() => {
+    if (unlocked && !gateOpen && !settingsOpen) openSettings();
+  }, [unlocked, gateOpen, settingsOpen, openSettings]);
 }
 
 // One route shows at a time (useProductModalRoute); each sheet's boundary closes the route it
@@ -99,28 +114,22 @@ function RsdModalSheets({
   screen,
   product,
   route,
+  gate,
 }: {
   screen: Screen;
   product: ReturnType<typeof useDrawingProduct>;
   route: ReturnType<typeof useProductModalRoute>;
+  gate: ParentGateView | null;
 }) {
   const dismissed = route.dismissed;
   return (
     <>
-      {product.owner && route.shown === 'parentCenter' ? (
-        <RsdSurfaceBoundary onClose={product.owner.closeParentCenter}>
-          <RsdParentCenterSection
-            owner={product.owner}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        </RsdSurfaceBoundary>
-      ) : null}
-      {product.owner && product.state && route.shown === 'gate' ? (
+      {product.owner && gate && route.shown === 'gate' ? (
         <RsdSurfaceBoundary onClose={product.owner.gate.dismiss}>
           <RsdParentGateSheet
             owner={product.owner}
-            state={product.state.gate}
+            state={gate.state}
+            unlocked={gate.unlocked}
             visible={route.visible}
             onDismiss={dismissed}
           />
@@ -163,26 +172,27 @@ function RsdDrawingContent({
   sound,
   product,
   route,
+  gate,
   onModalDismissed,
 }: {
   screen: Screen;
   sound: Sound;
   product: ReturnType<typeof useDrawingProduct>;
   route: ReturnType<typeof useProductModalRoute>;
+  gate: ParentGateView | null;
   onModalDismissed: () => void;
 }) {
   const theme = useDrawingAppearance();
-  const menu = useDrawingMenu(screen, 'reported');
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
   const modalBlocked = isProductModalBlocked(route.shown, product);
-  const disabled = screen.disabled || menu.open || modalBlocked;
-  const paperBlocked = menu.open || modalBlocked;
+  const disabled = screen.disabled || modalBlocked;
+  const paperBlocked = modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
+  useDrawingUndoShortcut(screen, paintsDisabled);
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
@@ -195,7 +205,6 @@ function RsdDrawingContent({
             screen={screen}
             sound={sound}
             product={product}
-            menu={menu}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
             paperOverlay={(drawerOpen) => (
@@ -203,11 +212,7 @@ function RsdDrawingContent({
                 strokes={screen.committedStrokes}
                 controlSize={controlSize(sound.settings.buttonScale)}
                 hidden={
-                  drawerOpen ||
-                  paperBlocked ||
-                  screen.pictures !== null ||
-                  screen.pagePickerOpen ||
-                  screen.colorPickerOpen
+                  drawerOpen || paperBlocked || screen.pagePickerOpen || screen.colorPickerOpen
                 }
               />
             )}
@@ -216,27 +221,12 @@ function RsdDrawingContent({
                 screen={screen}
                 notice={notice}
                 soundNotice={soundNotice}
-                blocked={disabled || screen.pictures !== null}
+                blocked={disabled}
               />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
           </RsdEdgeLayout>
-          <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-          <RsdDrawingTools
-            menu={menu}
-            blocked={
-              screen.disabled || modalBlocked || screen.pictures !== null || screen.colorPickerOpen
-            }
-            renderMenu={(browserAction) => (
-              <RsdDrawingMenu
-                screen={screen}
-                sound={sound}
-                menu={menu}
-                browserAction={browserAction}
-              />
-            )}
-          />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
         </html.div>
@@ -248,6 +238,7 @@ function RsdDrawingContent({
               screen={screen}
               sound={sound}
               product={product}
+              gate={gate}
               notice={soundNotice}
               visible={route.visible}
               onDismiss={onModalDismissed}
@@ -259,10 +250,9 @@ function RsdDrawingContent({
   );
 }
 
-// The page picker and pictures stay mounted through their exit, after the screen has cleared them.
+// The page picker stays mounted through its exit, after the screen has closed it.
 function RsdScreenSheets({ screen }: { screen: Screen }) {
   const pagePicker = useModalPresence(screen.pagePickerOpen || null);
-  const pictures = useModalPresence(screen.pictures);
   const window = useWindowDimensions();
   return (
     <>
@@ -279,14 +269,6 @@ function RsdScreenSheets({ screen }: { screen: Screen }) {
             onClose={() => screen.setPagePickerOpen(false)}
           />
         </RsdSurfaceBoundary>
-      ) : null}
-      {pictures.shown ? (
-        <RsdPictures
-          screen={screen}
-          pictures={pictures.shown}
-          visible={pictures.visible}
-          onDismiss={pictures.dismissed}
-        />
       ) : null}
     </>
   );

@@ -21,9 +21,6 @@ export const RsdColoringBookPicker = lazySurface(() =>
 export const RsdFailureBanner = lazySurface(() =>
   import('./RsdFailureBanner').then((module) => module.RsdFailureBanner)
 );
-export const RsdParentCenterSection = lazySurface(() =>
-  import('./RsdParentCenterSection').then((module) => module.RsdParentCenterSection)
-);
 export const RsdParentGateSheet = lazySurface(() =>
   import('./RsdParentGateSheet').then((module) => module.RsdParentGateSheet)
 );

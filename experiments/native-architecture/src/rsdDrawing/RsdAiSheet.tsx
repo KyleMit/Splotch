@@ -63,11 +63,7 @@ export function RsdAiSheet({
   // way back to it.
   const keepDrawing = waiting ? owner.minimize : owner.close;
   const back = reporting ? owner.cancelPictureReport : viewer.picture ? viewer.back : null;
-  const title = state.gate.open
-    ? 'Grown-ups only'
-    : viewer.picture
-      ? 'AI picture view'
-      : 'AI picture';
+  const title = viewer.picture ? 'AI picture view' : 'AI picture';
   return (
     <ModalShell
       visible={visible}
@@ -85,9 +81,7 @@ export function RsdAiSheet({
       }
     >
       <html.div style={styles.dialogContent}>
-        {state.gate.open ? (
-          <RsdAiParentalGate owner={owner} state={state} />
-        ) : reporting ? (
+        {reporting ? (
           <AiPictureReport owner={owner} report={state.report} />
         ) : viewer.picture ? (
           <>
@@ -172,29 +166,6 @@ function AiWaitingActions({ owner, state }: { owner: NativeAiOwner; state: AiSta
     </>
   );
 }
-function RsdAiParentalGate({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
-  return (
-    <>
-      <html.span>Solve this multiplication problem to continue.</html.span>
-      <html.span>
-        {state.gate.x} × {state.gate.y}
-      </html.span>
-      <html.input
-        aria-label="AI answer"
-        value={state.gate.input}
-        inputMode="numeric"
-        disabled={state.gate.locked}
-        onChange={(event: unknown) => {
-          const next = inputValue(event);
-          if (next !== null) owner.gateInput(next);
-        }}
-        style={aiStyles.input}
-      />
-      <html.span aria-live="polite">{state.gate.message}</html.span>
-      <RsdAction label="Continue to AI" disabled={state.gate.locked} onClick={owner.gateAnswer} />
-    </>
-  );
-}
 function AiCurrentRun({
   owner,
   state,
@@ -262,19 +233,6 @@ function AiPictures({
           <RetryRetention owner={owner} state={state} />
         </>
       ) : null}
-      {state.pictures.map((picture, index) => (
-        <html.div key={picture.uri}>
-          <html.img
-            alt={`Saved AI picture ${index + 1}`}
-            src={picture.uri}
-            style={aiStyles.image}
-          />
-          <RsdAction
-            label={`Open saved AI picture ${index + 1}`}
-            onClick={() => onOpen(picture.uri)}
-          />
-        </html.div>
-      ))}
     </>
   );
 }

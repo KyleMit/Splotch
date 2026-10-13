@@ -1,40 +1,45 @@
 # RSD drawing vocabulary and native adapters
 
 The canonical `src/index.ts` registers `ProbeApp`, which mounts `RsdDrawingScreen`. Shared chrome,
-recovery cards, labels, selection groups and actions use React Strict DOM 0.0.54. The behavior,
-ordered ink, history, save and export owners remain the drawing candidate owners. This alternative
-is unselected and incomplete.
+labels, selection groups and actions use React Strict DOM 0.0.54. The behavior, ordered ink, history
+and save owners remain the drawing candidate owners. This alternative is unselected and incomplete.
 
 Explicit native boundaries are `NativeFrame` (safe area and window background), `NativePaper`
 (drawing surface and measured paper geometry), `NativeDialog` (native modal and bounded action
-scroll viewport), `NativeScrollAreas` (the full-bleed drawing layout and the bounded status
-viewport) and `RsdRecoveryNotice` (the PNG recovery scroll viewport). Its cards and exact filename
-actions remain RSD children; the viewport itself is a React Native `ScrollView`.
+scroll viewport) and `NativeScrollAreas` (the full-bleed drawing layout and the bounded status
+viewport).
 
 The released RSD native renderer implements `html.div` using a native view. Accepting the `overflow`
-style does not create a `ScrollView`. The recovery adapter therefore uses the existing drawing
-layout owner's 25% feedback height bound and spacing. The drawing layout follows the shipping app:
-one bar of paint swatches plus More colors along the top edge in portrait and down the left edge in
-landscape, Clear docked to the right screen edge, Settings in the bottom-right corner, and the
-remaining tools in a drawer whose chevron (`Expand controls` / `Collapse controls`) sits in the
-bottom-left corner. The bar is the shipping Color Palette plate (`--surface` with its drop shadow on
-the paper) holding fixed 55px portrait / 60px landscape swatches that Button Size leaves alone
-(`paletteGeometry.ts`). It measures its own length and shows as many swatches as fit at full size,
-by the shipping ladder's formula, trimming by the shipping trim order (`PALETTE_TRIM_ORDER`,
-drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`; the geometry and ladder by
-`tools/migration/tests/rsd-native-drawing-frame.test.mjs`); remembered custom paints go first, and
-the selected paint always keeps a swatch. Shipping hides the bar on phone landscape and moves color
-into the Actions Panel; the native bar stays until that panel is ported. Compact paint radios retain
-their full accessible names, checked state, visible selected treatment and actual paint colors.
-Paint radios are raised, round, text-free swatches (`RsdSwatch.tsx`) whose selected state is the
-shipping Selection Ring: a band of the bar surface inside the edge, a one-pixel surface seam and a
-4px ring a shade off the paint (`selectionRingColor`, shipping's `getRingColor`). More colors is the
-honeycomb on a raised surface disc. Settings is the muted `RsdIconButton` corner skin. Toolbar
-actions are icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg
-`SvgXml` on every platform, fed by the generated `icons.generated.ts`); each keeps its former text
-as its accessible name. The Drawing tools sheet in the drawer keeps the brush and width choices and
-the less frequent actions. Their touch size imports the drawing control owner. Status messages have
-no visible strip: `RsdDrawingStatus` speaks routine notices from an `RsdVisuallyHidden` live region
+style does not create a `ScrollView`. The drawing layout follows the shipping app: one bar of paint
+swatches plus More colors along the top edge in portrait and down the left edge in landscape, Clear
+docked to the right screen edge, Settings in the bottom-right corner, and the shipping Actions Panel
+in the bottom-left corner (`RsdActionsPanel.tsx`): Brush, Stroke Width, Coloring Book, Screenshot,
+AI Image and Undo tiles in the shipping order, followed by the muted corner chevron
+(`Expand controls` / `Collapse controls`) that keeps the corner while the drawer is closed.
+`edgeLayout.ts` ports `actionButtonLayout.ts` and the app.css panel rules: the size-class button
+step times Button Size, capped so the line fits the paper area, a portrait column, a landscape row,
+and the landscape phone's L (Brush and Stroke Width climb a vertical leg, the rest run along the
+bottom). The Brush and Stroke Width buttons open `RsdFlyoutMenu` flyouts of icon options beside (or,
+on a landscape row, above) their buttons, the selected option ringed, while the other tiles grey
+out; a press anywhere outside closes the menu without being claimed. The menus load from their own
+chunk on the web (`toolFlyouts.web.ts`). On an Android browser tab alone, the Fullscreen Toggle sits
+in the paper area's top-left corner. The bar is the shipping Color Palette plate (`--surface` with
+its drop shadow on the paper) holding fixed 55px portrait / 60px landscape swatches that Button Size
+leaves alone (`paletteGeometry.ts`). It measures its own length and shows as many swatches as fit at
+full size, by the shipping ladder's formula, trimming by the shipping trim order
+(`PALETTE_TRIM_ORDER`, drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`; the geometry
+and ladder by `tools/migration/tests/rsd-native-drawing-frame.test.mjs`); remembered custom paints
+go first, and the selected paint always keeps a swatch. Shipping hides the bar on phone landscape
+and moves color into the Actions Panel; the native bar stays until that panel is ported. Compact
+paint radios retain their full accessible names, checked state, visible selected treatment and
+actual paint colors. Paint radios are raised, round, text-free swatches (`RsdSwatch.tsx`) whose
+selected state is the shipping Selection Ring: a band of the bar surface inside the edge, a
+one-pixel surface seam and a 4px ring a shade off the paint (`selectionRingColor`, shipping's
+`getRingColor`). More colors is the honeycomb on a raised surface disc. Settings is the muted
+`RsdIconButton` corner skin. Toolbar actions are icon buttons drawn from the shipping icon set
+through `RsdIcon` (react-native-svg `SvgXml` on every platform, fed by the generated
+`icons.generated.ts`); each keeps its former text as its accessible name. Status messages have no
+visible strip: `RsdDrawingStatus` speaks routine notices from an `RsdVisuallyHidden` live region
 over the paper. Failures, told apart by type rather than wording (a save the photo library refused,
 an action's error, a renderer fault, a failed draft), show in `RsdFailureBanner`: the shipping Save
 Failure Banner's card, placement, copy and Dismiss, plus the Retry a fault needs, loaded on first
@@ -44,11 +49,7 @@ sits lifted on a flat `paperMargin` with the float shadow. `NativePaper` fills t
 the floating edge controls and contain-fits the fixed logical paper into it, centered, the way the
 shipping app presents a rotation-locked paper (ADR-0050); the paper keeps its fixed aspect, so a
 portrait phone shows it full width with margins above and below. These allocations require native
-geometry and visual verification; source flex bounds alone do not establish usable paper space. The
-recovery viewport preserves individual actionable children, names itself “PNG recovery” with the
-`rsd-png-recovery-viewport` identity, and retains clipped child views. Recovery state and scrolling
-stay settled while contacts are drawing. An empty recovery state allocates no viewport. No new PNG
-writer, queue capacity, persistence policy or Dismiss owner is introduced.
+geometry and visual verification; source flex bounds alone do not establish usable paper space.
 
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The
@@ -58,17 +59,17 @@ unavailable controls. A native transition still requires empirical readback.
 The native dialog retains Modal back/dismiss callbacks and gives its RSD options a bounded, named
 scroll viewport. Its caller-owned close action sits in a nonshrinking native footer outside that
 viewport. Dialog content uses a natural-height stack rather than a full-screen flex basis inside
-scroll content. Main tools, pages, saved pictures and settings keep their behavior owners. Native
-escape declarations do not establish keyboard or screen-reader equivalence.
+scroll content. Main tools, pages and settings keep their behavior owners. Native escape
+declarations do not establish keyboard or screen-reader equivalence.
 
 Focused source and mounted-host checks can establish the released renderer, viewport props, exact
 action identity, disabled input and canonical transform. They do not establish native scroll
 geometry or screen-reader behavior. A fresh optimized artifact and actual native controls/dialog
-scrolling, enabled-state transition, paper geometry and recovery scroll/reveal/Dismiss interaction
-must bind this source before native acceptance. The existing pre-scroll build and structural fixture
-results do not cover this adapter. Small-screen and large-text paper allocation, remaining native
-drawing fidelity, complete web adapters, lifecycle, services, security and release gates remain
-open. See the migration contract and Phase 1 plan.
+scrolling, enabled-state transition and paper geometry must bind this source before native
+acceptance. The existing pre-scroll build and structural fixture results do not cover this adapter.
+Small-screen and large-text paper allocation, remaining native drawing fidelity, complete web
+adapters, lifecycle, services, security and release gates remain open. See the migration contract
+and Phase 1 plan.
 
 `NativeFrame` owns a `react-native-safe-area-context` 5.7.0 provider and padding safe-area view for
 all four window edges. Each frame mounts its provider in its own coordinate space: the drawing root

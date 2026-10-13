@@ -1,44 +1,43 @@
 import { Platform } from 'react-native';
 import type { Drawing } from './drawing/model';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
-import { savePicture } from './platform/drawingFiles';
-import { photoLibrary } from './platform/photoLibrary';
+import { pictureSave } from './platform/pictureSave';
 import {
-  IN_APP_SAVED_NOTICE,
-  photoLibraryFailure,
-  photoLibraryNotice,
-  type PhotoLibrary,
-  type PhotoLibraryOutcome,
+  pictureSaveFailure,
+  pictureSaveNotice,
+  type PictureSaveOutcome,
   type SaveFailure,
-} from './export/photoLibrary';
+  type SaveOs,
+} from './export/pictureSave';
 
 // What a save tells the child: the notice always, and the failure the banner shows when the
-// photo library refused its copy.
+// picture did not land.
 export type KeptPicture = Readonly<{ notice: string; failure: SaveFailure | null }>;
 
-async function saveToPhotoLibrary(
-  library: PhotoLibrary,
+function saveOs(): SaveOs {
+  if (Platform.OS === 'web') return 'web';
+  return Platform.OS === 'android' ? 'android' : 'ios';
+}
+
+async function capturedSave(
   drawing: Drawing,
   surface: DrawingSurfaceHandle | null
-): Promise<PhotoLibraryOutcome> {
+): Promise<PictureSaveOutcome> {
   try {
     const pngBase64 = await surface?.capturePng(drawing);
-    return pngBase64 ? await library.save(pngBase64) : 'failed';
+    return pngBase64 ? await pictureSave.save(pngBase64) : 'failed';
   } catch {
     return 'failed';
   }
 }
 
-// The in-app copy is written first and its failure stops the save, as it always has; the
-// photo library copy follows wherever one exists, and its failure only changes the notice,
-// because the in-app copy already holds the picture.
+// The picture goes to the photo library on Android and iOS and downloads on the web; there is no
+// copy kept inside the app, so a save that does not land leaves the picture on the paper alone.
 export async function keepPicture(
   drawing: Drawing,
   surface: DrawingSurfaceHandle | null
 ): Promise<KeptPicture> {
-  await savePicture(drawing);
-  if (!photoLibrary) return { notice: IN_APP_SAVED_NOTICE, failure: null };
-  const outcome = await saveToPhotoLibrary(photoLibrary, drawing, surface);
-  const os = Platform.OS === 'android' ? 'android' : 'ios';
-  return { notice: photoLibraryNotice(outcome, os), failure: photoLibraryFailure(outcome, os) };
+  const outcome = await capturedSave(drawing, surface);
+  const os = saveOs();
+  return { notice: pictureSaveNotice(outcome, os), failure: pictureSaveFailure(outcome, os) };
 }

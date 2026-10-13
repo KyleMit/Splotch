@@ -9,18 +9,12 @@ import {
   changePage,
   addStrokes,
   hasDrawingInk,
-  commitDrawing,
   clearDrawing,
   undoDrawing,
   type History,
   type Stroke,
 } from './drawing/model';
-import {
-  listPictures,
-  reopenPicture,
-  savedColoringPageIds,
-  type SavedPicture,
-} from './platform/drawingFiles';
+import { savedColoringPageIds } from './platform/drawingFiles';
 import { keepPicture, type KeptPicture } from './keepPicture';
 import { useDrawingMessages } from './drawingMessages';
 import { useBrushPreferences } from './useBrushPreferences';
@@ -31,11 +25,11 @@ import {
   type OptionalBrush,
 } from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
-import { createInkObservation } from './drawing/inkCoverage';
 import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
-import { usePngRecovery } from './usePngRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
+import { useVisibleInk } from './drawing/inkVisibility';
+import { createEmptyScan, useInkObservers } from './drawingScan';
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
@@ -50,15 +44,13 @@ export function useDrawingScreen() {
   const busy = commandBusy || historyOwner.draftState.status === 'loading';
   const messages = useDrawingMessages();
   const { notice, setNotice, report } = messages;
-  const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
   const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
-  const pngRecovery = usePngRecovery();
 
-  const { command, runCommand, ...surfaceActions } = useSurfaceCommands({
+  const { command, runCommand, scanEmpty, ...surfaceActions } = useSurfaceCommands({
     historyRef,
     setHistory,
     surface,
@@ -71,21 +63,18 @@ export function useDrawingScreen() {
 
   // Strokes committed since this screen opened; the install banner waits on them.
   const [committedStrokes, setCommittedStrokes] = useState(0);
-  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (count) =>
-    setCommittedStrokes((total) => total + count)
-  );
+  // Whether the page shows ink: the screenshot camera's blank state.
+  const ink = useVisibleInk(history.drawing, !drawing, scanEmpty);
+  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (strokes) => {
+    setCommittedStrokes((total) => total + strokes.length);
+    if (strokes.some((stroke) => stroke.brush === 'eraser')) ink.erased(historyRef.current.drawing);
+  });
 
   const settings = useDrawingSettings({
     surface,
     settingsLease,
     blocked: () =>
-      drawing ||
-      busy ||
-      preparing ||
-      pagePickerOpen ||
-      pictures !== null ||
-      command.current ||
-      rendererFault.current,
+      drawing || busy || preparing || pagePickerOpen || command.current || rendererFault.current,
     report,
   });
   const disabled =
@@ -115,21 +104,16 @@ export function useDrawingScreen() {
 
   const pictureActions = usePictureActions({
     historyRef,
-    setHistory,
     surface,
     runCommand,
     ...messages,
-    setPictures,
-    pngRecovery,
-    commandsBlocked,
-    replacementGuard,
   });
 
   const recovery = useRendererRecovery({
     surface,
     rendererFault,
     command,
-    blocked: drawing || busy || pagePickerOpen || settings.sheetOpen || pictures !== null,
+    blocked: drawing || busy || pagePickerOpen || settings.sheetOpen,
     setPreparing,
     setDrawing,
     finishCohort,
@@ -140,7 +124,6 @@ export function useDrawingScreen() {
   return {
     library,
     recovery,
-    pngRecovery,
     draftState: historyOwner.draftState,
     retryDraft: historyOwner.retryDraft,
     history,
@@ -155,8 +138,6 @@ export function useDrawingScreen() {
     routineNotice: brushes.state.message || messages.routineNotice,
     failure: messages.failure,
     dismissFailure: messages.dismissFailure,
-    pictures,
-    setPictures,
     surface,
     pagePickerOpen,
     ...coloring,
@@ -166,6 +147,7 @@ export function useDrawingScreen() {
     currentDrawing,
     finishCohort,
     committedStrokes,
+    inkVisible: ink.visible,
     ...pictureActions,
   };
 }
@@ -175,12 +157,12 @@ function createCohortCommit(
   setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
   setNotice: (notice: string) => void,
   report: (error: unknown) => void,
-  onCommitted: (count: number) => void
+  onCommitted: (strokes: readonly Stroke[]) => void
 ) {
   return (strokes: readonly Stroke[], paper: PaperReference) => {
     try {
       setHistory(addStrokes(historyRef.current, strokes, paper));
-      onCommitted(strokes.length);
+      onCommitted(strokes);
       setNotice('');
     } catch (error) {
       report(error);
@@ -309,41 +291,19 @@ function useDrawingSettings({
 
 function usePictureActions({
   historyRef,
-  setHistory,
   surface,
   runCommand,
   setNotice,
   recordSave,
   failSave,
-  setPictures,
-  pngRecovery,
-  commandsBlocked,
-  report,
-  replacementGuard,
 }: {
   historyRef: RefObject<History>;
-  setHistory: (next: History | ((current: History) => History)) => void;
   surface: RefObject<DrawingSurfaceHandle | null>;
   runCommand: (action: () => Promise<void>) => Promise<void>;
   setNotice: (notice: string) => void;
   recordSave: (kept: KeptPicture) => void;
   failSave: () => void;
-  setPictures: (pictures: SavedPicture[] | null) => void;
-  pngRecovery: ReturnType<typeof usePngRecovery>;
-  commandsBlocked: () => boolean;
-  report: (error: unknown) => void;
-  replacementGuard: () => () => boolean;
 }) {
-  function showPictures() {
-    if (commandsBlocked()) return;
-    try {
-      setPictures(listPictures());
-      setNotice('');
-    } catch (error) {
-      report(error);
-    }
-  }
-
   async function save() {
     await runCommand(async () => {
       let kept: KeptPicture;
@@ -358,31 +318,7 @@ function usePictureActions({
     });
   }
 
-  async function exportPicture() {
-    await runCommand(async () => {
-      const snapshot = historyRef.current.drawing;
-      const base64 = await surface.current?.capturePng(snapshot);
-      if (!base64) throw new Error('The drawing paper is not ready to export.');
-      if (historyRef.current.drawing !== snapshot)
-        throw new Error('The picture changed before export finished. Please try again.');
-      await pngRecovery.submit(base64);
-      setNotice('');
-    });
-  }
-
-  async function openPicture(picture: SavedPicture) {
-    await runCommand(async () => {
-      const isCurrent = replacementGuard();
-      setNotice('');
-      const saved = await reopenPicture(picture.id);
-      if (!isCurrent()) return;
-      setHistory((current) => commitDrawing(current, saved));
-      setPictures(null);
-      setNotice('Picture opened. Undo returns to your previous picture.');
-    });
-  }
-
-  return { save, exportPicture, openPicture, showPictures };
+  return { save };
 }
 
 function useSurfaceCommands({
@@ -407,19 +343,7 @@ function useSurfaceCommands({
   afterClear: () => void;
 }) {
   const command = useRef(false);
-  const mounted = useRef(true);
-  const observations = useRef<ReturnType<typeof createInkObservation> | null>(null);
-  if (!observations.current) observations.current = createInkObservation();
-  useEffect(() => {
-    if (!observations.current) observations.current = createInkObservation();
-    const owner = observations.current;
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      owner.dispose();
-      if (observations.current === owner) observations.current = null;
-    };
-  }, []);
+  const { mounted, observations, scanObservations } = useInkObservers();
   async function runCommand(action: () => Promise<void>) {
     if (command.current || blocked()) return;
     let release: (() => void) | undefined;
@@ -454,7 +378,7 @@ function useSurfaceCommands({
     }
   }
 
-  async function clearCurrentPicture(keep: 'never' | 'whenInked' | 'always') {
+  async function clearCurrentPicture(keepInked: boolean) {
     await runCommand(async () => {
       const snapshot = historyRef.current;
       const owner = surface.current;
@@ -476,10 +400,13 @@ function useSurfaceCommands({
         const empty = pixels && observation ? await observation.observe(pixels) : true;
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
-        const saved =
-          keep === 'always' || (keep === 'whenInked' && !empty)
-            ? await keepPicture(snapshot.drawing, owner)
-            : null;
+        const saved = keepInked && !empty ? await keepPicture(snapshot.drawing, owner) : null;
+        // No copy stays inside the app, so a picture Auto-Save could not keep stays on the paper.
+        if (saved?.failure) {
+          setNotice(saved.notice);
+          recordSave(saved);
+          return;
+        }
         if (saved !== null && !isCurrent())
           throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
         setHistory(clearDrawing(snapshot, empty));
@@ -497,8 +424,15 @@ function useSurfaceCommands({
   return {
     command,
     runCommand,
+    scanEmpty: createEmptyScan({
+      command,
+      mounted,
+      observations: scanObservations,
+      surface,
+      historyRef,
+      blocked,
+    }),
     undo,
-    clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete ? 'whenInked' : 'never'),
-    saveAndClear: () => clearCurrentPicture('always'),
+    clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
 }

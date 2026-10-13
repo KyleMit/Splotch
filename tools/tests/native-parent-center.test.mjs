@@ -15,7 +15,13 @@ import {
   GATE_ESCALATION_QUIET_MS,
 } from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
 
-const ALWAYS = { ai: 'always', imageReport: 'always', feedback: 'always', parentCenter: 'always' };
+const ALWAYS = {
+  ai: 'always',
+  imageReport: 'always',
+  externalLinks: 'always',
+  feedback: 'always',
+  parentCenter: 'always',
+};
 function fixture(policies = ALWAYS) {
   let clock = 1000;
   const changes = [];
@@ -69,7 +75,7 @@ describe('root Parent Center policy and lifetime', () => {
     const current = parseSoundSettings(JSON.stringify(old));
     expect(current).toEqual({
       ...old,
-      version: 11,
+      version: 12,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -110,11 +116,12 @@ describe('root Parent Center policy and lifetime', () => {
       };
       const migrated = parseSoundSettings(JSON.stringify(old));
       expect(migrated).toMatchObject({
-        version: 11,
+        version: 12,
         aiEnabled: true,
         parentPolicies: {
           ai: 'never',
           imageReport: 'always',
+          externalLinks: 'always',
           feedback: 'session',
           parentCenter: 'always',
         },
@@ -147,7 +154,7 @@ describe('root Parent Center policy and lifetime', () => {
     await f.owner.setPolicy('imageReport', 'session');
     const stored = f.storage.write.mock.calls[0][0];
     expect(parseSoundSettings(stored)).toMatchObject({
-      version: 11,
+      version: 12,
       parentPolicies: { ...ALWAYS, imageReport: 'session' },
     });
     const current = JSON.parse(stored);

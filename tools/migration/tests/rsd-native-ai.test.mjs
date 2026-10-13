@@ -16,12 +16,15 @@ async function input(label, value) {
   expect(props, label).toBeDefined();
   await act(async () => props.onChange({ nativeEvent: { text: value } }));
 }
+// Each solved check holds its "Unlocked!" card in real time before its destination shows, and a
+// full send-and-report run solves up to four.
+const GATED_FLOW_TIMEOUT_MS = 15_000;
 async function reviewReport() {
   await click('Open AI picture');
   const beforeReport = caller.aiSend.mock.calls.length;
   await click('Report AI picture');
   expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-  expect(host.textContent).toContain('Grown-ups only');
+  expect(host.textContent).toContain('Grown-Ups Only');
   expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
   await solve();
   expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
@@ -36,7 +39,7 @@ async function reviewRefusalReport(drawing) {
   expect(host.textContent).not.toContain('private refusal reason');
   const beforeReport = caller.aiSend.mock.calls.length;
   await click('Grown-ups: report this refusal');
-  expect(host.textContent).toContain('Grown-ups only');
+  expect(host.textContent).toContain('Grown-Ups Only');
   expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
   await solve();
   expect(host.textContent).toContain('Report this refusal');
@@ -80,7 +83,8 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     useCaller(drawing);
     await mount(createElement(RsdDrawingScreen));
     await expandControls();
-    expect(host.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
+    // Parent Center opens from Settings alone; the kid-facing drawer carries no button for it.
+    expect(host.querySelector('[aria-label="Parent Center"]')).toBeNull();
     expect(host.querySelector('[aria-label="AI picture"]')).toBeNull();
     await sendDrawing();
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
@@ -112,7 +116,8 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     await solve();
     expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'fixture-key');
     expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
-  }
+  },
+  GATED_FLOW_TIMEOUT_MS
 );
 function pictureReply() {
   return new Response(rgbaPng(2, 2, 255), {
@@ -152,13 +157,13 @@ function useCaller(drawing) {
     owner: null,
     audioMessage: '',
   };
-  caller.menu = { open: false };
 }
+// Settings' Parent Center section opens it through this owner method.
 async function sendDrawing() {
-  await click('Parent Center');
+  await act(async () => caller.product.owner.openParentCenter());
   expect(caller.aiSend).not.toHaveBeenCalled();
   await solve();
-  await click('AI picture creation');
+  await click('Create AI Images');
   await click('Close');
   await click('AI picture');
   expect(caller.aiSend).not.toHaveBeenCalled();
@@ -213,35 +218,39 @@ const labelled = (label) => host.querySelector(`[aria-label="${label}"]`);
 it.each([
   ['moving', false],
   ['calm', true],
-])('shows the %s waiting print with the sent drawing until the picture lands', async (_, calm) => {
-  records.reduceMotion = calm;
-  const reply = deferred();
-  pendingGeneration(() => reply.promise);
-  useCaller(emptyDrawing());
-  await mount(createElement(RsdDrawingScreen));
-  await expandControls();
-  await sendDrawing();
-  expect(testId('ai-run-polaroid')).not.toBeNull();
-  const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
-  expect(sent.source.uri).toBe(
-    `data:image/png;base64,${rgbaPng(1024, 768, 255).toString('base64')}`
-  );
-  expect(labelled('AI picture progress')).not.toBeNull();
-  expect(testId('ai-confetti') !== null).toBe(!calm);
-  await act(async () => reply.resolve(pictureReply()));
-  expect(host.textContent).toContain('original drawing are saved');
-  expect(
-    records.props.some(
-      (props) => props.alt === 'Your AI picture' && props.src === 'file:///owned/rsd-ai.png'
-    )
-  ).toBe(true);
-  expect(labelled('AI picture progress')).not.toBeNull();
-  expect(testId('ai-confetti') !== null).toBe(!calm);
-  await elapse(REVEAL_RAMP_WAIT_MS);
-  expect(labelled('AI picture progress')).toBeNull();
-  expect(testId('ai-confetti')).toBeNull();
-  expect(testId('ai-run-polaroid')).not.toBeNull();
-});
+])(
+  'shows the %s waiting print with the sent drawing until the picture lands',
+  async (_, calm) => {
+    records.reduceMotion = calm;
+    const reply = deferred();
+    pendingGeneration(() => reply.promise);
+    useCaller(emptyDrawing());
+    await mount(createElement(RsdDrawingScreen));
+    await expandControls();
+    await sendDrawing();
+    expect(testId('ai-run-polaroid')).not.toBeNull();
+    const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
+    expect(sent.source.uri).toBe(
+      `data:image/png;base64,${rgbaPng(1024, 768, 255).toString('base64')}`
+    );
+    expect(labelled('AI picture progress')).not.toBeNull();
+    expect(testId('ai-confetti') !== null).toBe(!calm);
+    await act(async () => reply.resolve(pictureReply()));
+    expect(host.textContent).toContain('original drawing are saved');
+    expect(
+      records.props.some(
+        (props) => props.alt === 'Your AI picture' && props.src === 'file:///owned/rsd-ai.png'
+      )
+    ).toBe(true);
+    expect(labelled('AI picture progress')).not.toBeNull();
+    expect(testId('ai-confetti') !== null).toBe(!calm);
+    await elapse(REVEAL_RAMP_WAIT_MS);
+    expect(labelled('AI picture progress')).toBeNull();
+    expect(testId('ai-confetti')).toBeNull();
+    expect(testId('ai-run-polaroid')).not.toBeNull();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
 
 it(
   'keeps polling a minimized picture and brings the child back when it is ready',
@@ -261,7 +270,7 @@ it(
     expect(host.querySelector('[data-native-modal]')).toBeNull();
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     expect(labelled(WAITING_LABEL).closest('[data-testid="rsd-paper-corner"]')).not.toBeNull();
-    expect(labelled('Parent Center').disabled).toBe(false);
+    expect(labelled('AI picture').disabled).toBe(false);
     await click('AI picture');
     expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
     expect(labelled(WAITING_LABEL)).toBeNull();

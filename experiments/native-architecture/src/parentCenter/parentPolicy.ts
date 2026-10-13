@@ -1,4 +1,12 @@
-export const PARENT_FEATURES = ['ai', 'imageReport', 'feedback', 'parentCenter'] as const;
+// The shipping PARENTAL_GATE_FEATURES in its order, with `ai` standing for shipping's `aiImage`;
+// native-parent-center-parity.test.mjs pins the two lists together.
+export const PARENT_FEATURES = [
+  'ai',
+  'imageReport',
+  'externalLinks',
+  'feedback',
+  'parentCenter',
+] as const;
 export type ParentFeature = (typeof PARENT_FEATURES)[number];
 export const PARENT_MODES = ['always', 'session', 'never'] as const;
 export type ParentMode = (typeof PARENT_MODES)[number];
@@ -7,33 +15,88 @@ export type ParentPreferences = Readonly<{ aiEnabled: boolean; parentPolicies: P
 export const PROTECTED_PARENT_POLICIES: ParentPolicies = {
   ai: 'always',
   imageReport: 'always',
+  externalLinks: 'always',
   feedback: 'always',
   parentCenter: 'always',
-};
-export const PARENT_LABELS: Record<ParentFeature, string> = {
-  ai: 'Sending a drawing for AI',
-  imageReport: 'Reporting an AI picture',
-  feedback: 'Sending feedback',
-  parentCenter: 'Opening Parent Center',
-};
-export const PARENT_MODE_LABELS: Record<ParentMode, string> = {
-  always: 'Every time',
-  session: 'Per session',
-  never: 'Never',
 };
 function isParentMode(value: unknown): value is ParentMode {
   return PARENT_MODES.some((mode) => mode === value);
 }
-export function isParentPolicies(value: unknown): value is ParentPolicies {
+export type ParentPlatform = 'ios' | 'android' | 'web';
+// Apple's Kids Category keeps links that leave the app behind a grown-up check, so on iOS external
+// links cannot be set to Never (shipping isParentalGateModeAvailable).
+export function isParentModeAvailable(
+  feature: ParentFeature,
+  mode: ParentMode,
+  platform: ParentPlatform
+) {
+  return !(feature === 'externalLinks' && mode === 'never' && platform === 'ios');
+}
+export function arePoliciesAvailable(policies: ParentPolicies, platform: ParentPlatform) {
+  return PARENT_FEATURES.every((feature) =>
+    isParentModeAvailable(feature, policies[feature], platform)
+  );
+}
+// A saved choice the platform forbids reads back as the build's default for it, or Every time where
+// that is forbidden too (shipping readFeatureMode), so no stored record can relax a store rule.
+export function availablePolicies(
+  policies: ParentPolicies,
+  platform: ParentPlatform,
+  defaults: ParentPolicies
+): ParentPolicies {
+  const pick = (feature: ParentFeature): ParentMode =>
+    isParentModeAvailable(feature, policies[feature], platform)
+      ? policies[feature]
+      : isParentModeAvailable(feature, defaults[feature], platform)
+        ? defaults[feature]
+        : 'always';
+  return {
+    ai: pick('ai'),
+    imageReport: pick('imageReport'),
+    externalLinks: pick('externalLinks'),
+    feedback: pick('feedback'),
+    parentCenter: pick('parentCenter'),
+  };
+}
+// Never on Parent Center is the one choice that waits for a confirmation: it leaves the checks
+// themselves unprotected.
+export function endsParentCenterProtection(feature: ParentFeature, mode: ParentMode) {
+  return feature === 'parentCenter' && mode === 'never';
+}
+function hasExactPolicies<Feature extends ParentFeature>(
+  value: unknown,
+  features: readonly Feature[]
+): value is Readonly<Record<Feature, ParentMode>> {
   return (
     !!value &&
     typeof value === 'object' &&
     !Array.isArray(value) &&
-    Object.keys(value).sort().join(',') === [...PARENT_FEATURES].sort().join(',') &&
-    PARENT_FEATURES.every(
-      (feature) => feature in value && isParentMode(Reflect.get(value, feature))
-    )
+    Object.keys(value).sort().join(',') === [...features].sort().join(',') &&
+    features.every((feature) => feature in value && isParentMode(Reflect.get(value, feature)))
   );
+}
+export function isParentPolicies(value: unknown): value is ParentPolicies {
+  return hasExactPolicies(value, PARENT_FEATURES);
+}
+// Settings saved before Viewing external links had a policy of its own.
+const FEATURES_BEFORE_EXTERNAL_LINKS = PARENT_FEATURES.filter(
+  (feature): feature is Exclude<ParentFeature, 'externalLinks'> => feature !== 'externalLinks'
+);
+export function isParentPoliciesBeforeExternalLinks(
+  value: unknown
+): value is Omit<ParentPolicies, 'externalLinks'> {
+  return hasExactPolicies(value, FEATURES_BEFORE_EXTERNAL_LINKS);
+}
+// The saved form lists the policies in PARENT_FEATURES order, so a snapshot reads back canonical
+// however the in-memory record was assembled.
+export function orderedParentPolicies(policies: ParentPolicies): ParentPolicies {
+  return {
+    ai: policies.ai,
+    imageReport: policies.imageReport,
+    externalLinks: policies.externalLinks,
+    feedback: policies.feedback,
+    parentCenter: policies.parentCenter,
+  };
 }
 export type ParentProof = Readonly<{ valid: () => boolean }>;
 export type ParentOperationPort = {

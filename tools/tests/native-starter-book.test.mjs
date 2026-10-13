@@ -1,3 +1,4 @@
+import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -41,10 +42,7 @@ import {
   BUNDLED_FARM_SELECTORS,
 } from '../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
 import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
-import {
-  reopenPicture,
-  savePicture,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
+import { savePicture } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 
 function paintedPage(pageId) {
   const selected = changePage(createHistory(emptyDrawing(3)), pageId);
@@ -144,7 +142,7 @@ describe('bundled Farm book and saved page identity', () => {
     const original = paintedPage(pageId).drawing;
     const saved = await savePicture(original);
     expect(JSON.parse(values.get(`splotch-picture:${saved.id}`))).toEqual(original);
-    await expect(reopenPicture(saved.id)).resolves.toEqual(original);
+    await expect(readSavedWebPicture(saved.id)).resolves.toEqual(original);
   });
 
   it.each(FARM_PAGE_IDS)(
@@ -203,7 +201,7 @@ describe('bundled Farm book and saved page identity', () => {
     const values = new Map([[`splotch-picture:${id}`, serialized]]);
     const write = vi.fn((key, value) => values.set(key, value));
     vi.stubGlobal('localStorage', { getItem: (key) => values.get(key) ?? null, setItem: write });
-    await expect(reopenPicture(id)).rejects.toThrow(
+    await expect(readSavedWebPicture(id)).rejects.toThrow(
       'This saved picture contains an invalid coloring page.'
     );
     expect(values.get(`splotch-picture:${id}`)).toBe(serialized);

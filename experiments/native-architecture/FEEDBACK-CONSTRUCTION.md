@@ -10,11 +10,11 @@ unvalidated.
 
 ## Product behavior
 
-Drawing tools exposes an accessible **Send Feedback** action. Parents choose a bug or an idea, write
-a nonempty message of at most the canonical 4000 UTF-16 code units, and inspect the exact immutable
-request before explicitly sending. Bug device details are optional and initially off; ideas cannot
-attach them. The disclosure identifies the private support issue, connection IP exposure,
-sensitive-message precautions and the absence of drawing, image and credential attachments.
+Settings' Feedback row opens the feedback sheet. Parents choose a bug or an idea, write a nonempty
+message of at most the canonical 4000 UTF-16 code units, and inspect the exact immutable request
+before explicitly sending. Bug device details are optional and initially off; ideas cannot attach
+them. The disclosure identifies the private support issue, connection IP exposure, sensitive-message
+precautions and the absence of drawing, image and credential attachments.
 
 The default native protection is **Every time**. Feedback can use **Per session** or **Never** only
 after a fresh arithmetic challenge. Every preference edit requires that independent challenge, even

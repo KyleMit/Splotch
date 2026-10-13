@@ -51,6 +51,14 @@ const TIGHT_TRACK_GAP_PX = 4;
 const TIGHT_TRACK_PADDING_PX = 3;
 const TIGHT_OPTION_PADDING_BLOCK_PX = 9;
 const TIGHT_OPTION_PADDING_INLINE_PX = 6;
+// Parent Center's matrix (ParentCenterSection.svelte) names each mode once in a column heading, so
+// its options show a radio mark instead of their words: a ring, filled with a surface-ringed dot
+// when chosen.
+const MARK_PX = 22;
+const MARK_EDGE_PX = 3;
+const MARK_INSET_PX = 4;
+const MARK_DOT_PX = MARK_PX - 2 * (MARK_EDGE_PX + MARK_INSET_PX);
+export const PICKER_MARK_METRICS = { MARK_PX, MARK_EDGE_PX, MARK_INSET_PX } as const;
 
 // The SegmentedPicker.svelte literals no token carries, exported for the drift guard in
 // tools/migration/tests/rsd-native-segmented-picker.test.mjs.
@@ -92,6 +100,7 @@ export type SegmentedPickerOption<T extends string> = {
 };
 
 type Variant = 'segment' | 'chip' | 'underline';
+type Labels = 'shown' | 'hidden' | 'marks';
 
 type SharedProps<T extends string> = {
   // The option group's accessible name.
@@ -103,7 +112,8 @@ type SharedProps<T extends string> = {
   // false: the segment track hugs its options instead of stretching.
   fill?: boolean;
   // hidden: the caller has no room for the words; each option keeps its label as its name.
-  labels?: 'shown' | 'hidden';
+  // marks: a column heading names each option, which shows a radio mark in place of its words.
+  labels?: Labels;
   // column: each segment option puts its icon above its label, for a track too narrow for both
   // side by side.
   optionDirection?: 'row' | 'column';
@@ -155,8 +165,9 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { cells, measure } = useCells();
   const phone = useWindowDimensions().width <= PHONE_MAX_WIDTH_PX;
+  const marks = props.labels === 'marks';
   const thumbIndex =
-    variant === 'segment' && props.mode !== 'toggle' && props.selected !== null
+    variant === 'segment' && props.mode !== 'toggle' && props.selected !== null && !marks
       ? options.findIndex((option) => option.value === props.selected)
       : -1;
   const thumbCell = thumbIndex === -1 ? undefined : cells[thumbIndex];
@@ -205,7 +216,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
             variant === 'segment' && !fill && styles.hugOption,
             variant === 'segment' && optionDirection === 'column' && styles.columnOption,
             variant === 'segment' && tight && styles.tightOption,
-            active && ACTIVE_OPTION[variant],
+            active && (marks ? styles.markActive : ACTIVE_OPTION[variant]),
             option.disabled && styles.disabled,
           ]}
         >
@@ -259,9 +270,15 @@ function OptionBody<T extends string>({
   option: SegmentedPickerOption<T>;
   variant: Variant;
   active: boolean;
-  labels: 'shown' | 'hidden' | undefined;
+  labels: Labels | undefined;
 }) {
   const theme = useDrawingTheme();
+  if (labels === 'marks')
+    return (
+      <html.span aria-hidden style={[styles.mark, active && styles.markChosen]}>
+        {active ? <html.span style={styles.markDot} /> : null}
+      </html.span>
+    );
   const ink =
     variant === 'underline'
       ? active
@@ -416,6 +433,31 @@ const styles = css.create({
     borderBottomColor: brandColors.brand,
   },
   disabled: { opacity: dimensions.disabledOpacity, cursor: 'not-allowed' },
+  markActive: {
+    backgroundColor: colors.surface,
+    color: { default: colors.textStrong, ':hover': colors.textStrong },
+  },
+  mark: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: MARK_PX,
+    height: MARK_PX,
+    borderWidth: MARK_EDGE_PX,
+    borderStyle: 'solid',
+    borderColor: colors.iconMuted,
+    borderRadius: dimensions.radiusPill,
+  },
+  // The chosen mark is the identity hue, a textless fill, with the surface showing between its
+  // edge and its dot.
+  markChosen: { borderColor: brandColors.brand, backgroundColor: colors.surface },
+  markDot: {
+    width: MARK_DOT_PX,
+    height: MARK_DOT_PX,
+    borderRadius: dimensions.radiusPill,
+    backgroundColor: brandColors.brand,
+  },
 });
 
 const TRACK = {

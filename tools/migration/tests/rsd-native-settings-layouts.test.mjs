@@ -1,4 +1,5 @@
 import { caller, records, host, mount, checkedSwitch } from './rsd-native-selection-host.mjs';
+import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -476,5 +477,44 @@ describe('the compact shell', () => {
     expect(host.querySelector('[role="radio"][aria-label="Auto"]').disabled).toBe(true);
     await finish();
     for (const label of ['Sound', 'Night Mode']) expect(quick(label).disabled, label).toBe(false);
+  });
+});
+describe('Parent Center in the wide shell', () => {
+  const parentCenterOffset = (sectionHeight) =>
+    WIDE_SHELL.pane.top +
+    PANE_SECTIONS.findIndex(({ id }) => id === 'parentCenter') *
+      (sectionHeight + WIDE_SHELL.sectionGap) -
+    SECTION_JUMP_INSET_PX;
+
+  it('lands the pane on Parent Center when a solved check opens Settings for it', async () => {
+    HTMLElement.prototype.scrollTo = scrollTo;
+    openSettings(TABLET);
+    caller.screen.settingsOpen = false;
+    await mount(createElement(RsdDrawingScreen));
+    expect(host.querySelector('[data-native-modal="Settings"]')).toBeNull();
+    await act(async () => caller.product.owner.openParentCenter());
+    await solveParentGate();
+    expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
+    expect(host.textContent).not.toContain('Unlock these settings');
+    expect(scrollTo).not.toHaveBeenCalled();
+    await layOutPane(300, 600);
+    expect(scrollTo).toHaveBeenCalledOnce();
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      y: parentCenterOffset(300),
+      animated: false,
+    });
+    await scrollPane(parentCenterOffset(300));
+    expect(spiedRow()).toEqual(['Parent Center']);
+    await layOutPane(300, 600);
+    expect(scrollTo).toHaveBeenCalledOnce();
+  });
+
+  it('opens on Appearance, with Parent Center behind its lock, when nothing asked for it', async () => {
+    HTMLElement.prototype.scrollTo = scrollTo;
+    openSettings(TABLET);
+    await mount(createElement(RsdDrawingScreen));
+    await layOutPane(300, 600);
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(host.textContent).toContain('Unlock these settings');
   });
 });

@@ -108,8 +108,16 @@ async function openSettings() {
     downloadedBooks: 0,
     ai: null,
     visible: true,
+    gate: null,
   };
   const noop = () => {};
+  props.parentCenter = {
+    unlocked: false,
+    checkDue: true,
+    onUnlock: noop,
+    onLeave: noop,
+    section: null,
+  };
   const handlers = new Proxy({}, { get: () => noop });
   await act(async () =>
     root.render(createElement(NativeSoundSettingsDialog, { ...handlers, ...props }))

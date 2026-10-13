@@ -206,7 +206,7 @@ describe('beta browser current-draft ownership', () => {
     );
     await draft.retry();
     expect(draft.getSnapshot().status).toBe('failed');
-    expect(draft.getSnapshot().message).toContain('save it in Pictures');
+    expect(draft.getSnapshot().message).toContain('Keep this app open and retry.');
     expect(session.currentDrawing().strokes).toHaveLength(1);
     expect(disk.rows.get('legacy').snapshot).toBe(snapshot(1, 'flower'));
   });

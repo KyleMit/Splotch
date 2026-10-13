@@ -297,7 +297,7 @@ it('steps aside while the landscape tool drawer is open and returns when it clos
   await act(async () => how(INSTALL_BANNER_COPY.showHint).click());
   const paperRenders = caller.paperRender.mock.calls.length;
   await expandControls();
-  expect(screenHost.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
+  expect(screenHost.querySelector('[aria-label="Undo"]')).not.toBeNull();
   expect(screenHost.textContent).not.toContain(heading);
   await act(async () => screenHost.querySelector('[aria-label="Collapse controls"]').click());
   expect(screenHost.textContent).toContain(heading);

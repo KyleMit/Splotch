@@ -5,13 +5,15 @@ import {
   ANDROID_ALBUM_NAME,
   photoLibrary,
 } from '../../experiments/native-architecture/src/platform/photoLibrary.ts';
-import { photoLibrary as webPhotoLibrary } from '../../experiments/native-architecture/src/platform/photoLibrary.web.ts';
+import { pictureSave as nativePictureSave } from '../../experiments/native-architecture/src/platform/pictureSave.ts';
 import {
   FAILED_DETAIL,
   PERMISSION_DETAIL,
+  UNAVAILABLE_DETAIL,
   UNSAVED_HEADING,
-  photoLibraryNotice,
-} from '../../experiments/native-architecture/src/export/photoLibrary.ts';
+  pictureSaveFailure,
+  pictureSaveNotice,
+} from '../../experiments/native-architecture/src/export/pictureSave.ts';
 import {
   DEFAULT_SAVE_ON_DELETE_ENABLED,
   SAVE_ON_DELETE_HELP,
@@ -70,9 +72,11 @@ describe('native photo library save', () => {
     expect(photos.permissionRequests).toEqual([]);
     expect(photos.created).toEqual([]);
     expect(photos.files.size).toBe(0);
-    expect(photoLibraryNotice('unavailable', 'android')).toBe(
-      'Picture saved on this device. Saving to your gallery needs Android 11 or later.'
-    );
+    // No copy stays inside the app, so a gallery this app cannot write to is a failed save.
+    expect(pictureSaveFailure('unavailable', 'android')).toEqual({
+      heading: UNSAVED_HEADING,
+      detail: UNAVAILABLE_DETAIL,
+    });
   });
 
   it('reports a refused permission as denied without writing anything', async () => {
@@ -89,8 +93,11 @@ describe('native photo library save', () => {
     expect(photos.files.size).toBe(0);
   });
 
-  it('has no photo library on the web target', () => {
-    expect(webPhotoLibrary).toBeNull();
+  it('keeps native pictures in the photo library', () => {
+    expect(nativePictureSave).toBe(photoLibrary);
+    expect(pictureSaveNotice('photos', 'ios')).toBe('Picture saved to Photos.');
+    expect(pictureSaveNotice('photos', 'android')).toBe('Picture saved to your gallery.');
+    expect(pictureSaveFailure('photos', 'ios')).toBeNull();
   });
 });
 
@@ -107,8 +114,9 @@ describe('shipping parity', () => {
     expect(UNSAVED_HEADING).toBe(denied.heading);
     expect(PERMISSION_DETAIL[os]).toBe(denied.detail);
     expect(FAILED_DETAIL).toBe(failed.detail);
-    expect(photoLibraryNotice('denied', os)).toContain(`${denied.detail} `);
-    expect(photoLibraryNotice('failed', os)).toContain(`${failed.detail} `);
+    expect(pictureSaveFailure('denied', os)).toEqual(denied);
+    expect(pictureSaveFailure('failed', os)).toEqual(failed);
+    expect(pictureSaveNotice('denied', os)).toBe(`${denied.heading}. ${denied.detail}`);
   });
 
   it('ports the Auto-Save on Delete label, help, and default', () => {

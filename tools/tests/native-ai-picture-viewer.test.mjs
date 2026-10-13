@@ -77,7 +77,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it('opens current and saved local pictures inside one modal, returns, and keeps retry available', async () => {
+it('opens the current picture inside one modal, returns, keeps retry available and lists no gallery', async () => {
   await click('Open AI picture');
   expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
   expect(container.querySelector('img[alt="Opened AI picture"]').getAttribute('src')).toBe(
@@ -85,13 +85,13 @@ it('opens current and saved local pictures inside one modal, returns, and keeps 
   );
   expect(container.querySelector('button[aria-label="Send drawing for AI"]')).toBeNull();
   expect(container.querySelector('button[aria-label="Retry saving AI picture"]')).not.toBeNull();
-  await click('Back to AI pictures');
+  await click('Back');
   await click('Retry saving AI picture');
   expect(owner.retryRetention).toHaveBeenCalledOnce();
-  await click('Open saved AI picture 1');
-  expect(container.querySelector('img[alt="Opened AI picture"]').getAttribute('src')).toBe(
-    SAVED.uri
-  );
+  // Shipping keeps no AI gallery, so an earlier picture is never listed to reopen.
+  expect(container.querySelector('button[aria-label^="Open saved AI picture"]')).toBeNull();
+  expect(container.querySelector(`img[src="${SAVED.uri}"]`)).toBeNull();
+  await click('Open AI picture');
   await act(async () => {
     container
       .querySelector('[role="dialog"]')
@@ -152,12 +152,9 @@ it('zooms within limits, resets, and starts each opened picture at its fitted si
   await click('Reset zoom');
   expect(container.textContent).toContain('Picture zoom 100%.');
   await click('Zoom in');
-  await click('Back to AI pictures');
-  await click('Open saved AI picture 1');
+  await click('Back');
+  await click('Open AI picture');
   expect(container.textContent).toContain('Picture zoom 100%.');
-  expect(container.querySelector('img[alt="Opened AI picture"]').getAttribute('src')).toBe(
-    SAVED.uri
-  );
   expect(files.aiSend).not.toHaveBeenCalled();
 });
 

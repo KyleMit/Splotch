@@ -7,5 +7,4 @@ export { RsdAiSheet } from './RsdAiSheet';
 export { RsdColorPicker } from './RsdColorPicker';
 export { RsdColoringBookPicker } from './RsdColoringBookPicker';
 export { RsdFailureBanner } from './RsdFailureBanner';
-export { RsdParentCenterSection } from './RsdParentCenterSection';
 export { RsdParentGateSheet } from './RsdParentGateSheet';
