@@ -6,8 +6,9 @@ import {
   type AiMime,
   type CredentialKind,
 } from './contract';
-import { credentialHeaders, validCredential, type AiCredential } from './credentials';
-import { requestAi } from './transport';
+import { credentialHeaders, maskSecret, validCredential, type AiCredential } from './credentials';
+import { AI_THROTTLED_MESSAGE, requestAi } from './transport';
+import { credentialRefusal, type AiCredentialOutcome } from './credentialResult';
 import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
 import type { ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
@@ -95,6 +96,9 @@ export class AiSession {
     busy: false,
     remaining: null,
     credential: 'unavailable',
+    saved: null,
+    checking: false,
+    credentialResult: null,
     journal: null,
     recovery: null,
     heldResult: null,
@@ -158,15 +162,7 @@ export class AiSession {
       credential: 'unavailable',
       remaining: null,
     });
-    const byok = await this.deps.vault.read('byok');
-    if (!permitted()) throw new Error('AI authorization changed.');
-    const managed = await this.deps.vault.read('managed');
-    if (!permitted()) throw new Error('AI authorization changed.');
-    if (
-      (byok !== null && !validCredential(byok)) ||
-      (managed !== null && !validCredential(managed))
-    )
-      throw new Error('Saved AI credentials could not be read safely.');
+    const { byok, managed } = await this.readSaved(permitted);
     if (byok)
       this.credential = {
         kind: 'byok',
@@ -190,15 +186,7 @@ export class AiSession {
       credential: this.credential.kind,
     });
     if (this.credential.kind === 'free') {
-      const reply = await requestAi(
-        this.deps.transport,
-        {
-          path: '/api/free-generation-grant',
-          method: 'GET',
-          headers: credentialHeaders(this.credential),
-        },
-        () => {}
-      );
+      const reply = await this.grantRequest(this.credential.installationId);
       if (!permitted()) return;
       if (reply.kind === 'grant')
         this.update({
@@ -213,6 +201,64 @@ export class AiSession {
           retryAt: reply.kind === 'failure' ? (reply.retryAt ?? 0) : 0,
         });
     }
+  };
+  // Both saved credentials, validated, and what Settings shows of the one in use: a key wins over
+  // an access code, as the request headers choose.
+  private readSaved = async (permitted: () => boolean) => {
+    const byok = await this.deps.vault.read('byok');
+    if (!permitted()) throw new Error('AI authorization changed.');
+    const managed = await this.deps.vault.read('managed');
+    if (!permitted()) throw new Error('AI authorization changed.');
+    if (
+      (byok !== null && !validCredential(byok)) ||
+      (managed !== null && !validCredential(managed))
+    )
+      throw new Error('Saved AI credentials could not be read safely.');
+    this.update({ saved: byok ? maskSecret(byok) : managed });
+    return { byok, managed };
+  };
+  private grantRequest = (installationId: string) =>
+    requestAi(
+      this.deps.transport,
+      {
+        path: '/api/free-generation-grant',
+        method: 'GET',
+        headers: credentialHeaders({ kind: 'free', installationId }),
+      },
+      () => {}
+    );
+  // Settings › AI Art's read of which credential is saved and, while AI is on with none, of the free
+  // allowance. Neither sends a drawing, so neither waits for the generation check; both wait out a
+  // generation or credential change in flight, whose vault lease a read would end.
+  inspect = async () => {
+    if (this.disposed || this.active || this.unresolved()) return;
+    this.active = true;
+    const current = () => !this.disposed;
+    this.update({ busy: true, checking: true });
+    try {
+      const { byok, managed } = await this.readSaved(current);
+      if (byok || managed) {
+        this.update({ credential: byok ? 'byok' : 'managed', remaining: null });
+        return;
+      }
+      this.update({ credential: 'free' });
+      if (!this.deps.parent?.consent().enabled) return;
+      this.update({ remaining: null });
+      const id = await this.deps.vault.installationId();
+      if (!current() || !isInstallationId(id)) return;
+      const reply = await this.grantRequest(id);
+      if (current() && reply.kind === 'grant') this.update({ remaining: reply.remaining });
+    } catch {
+      this.update({ credential: 'unavailable', saved: null, remaining: null });
+    } finally {
+      this.active = false;
+      this.update({ busy: false, checking: false });
+    }
+  };
+  private resultCount = 0;
+  private report = (result: AiCredentialOutcome) => {
+    this.resultCount += 1;
+    this.update({ credentialResult: { id: this.resultCount, ...result } });
   };
   private holdRecovery = (receipt: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt) => {
     this.recoveryUncertain = receipt.kind === 'recovery-request';
@@ -287,18 +333,13 @@ export class AiSession {
     mime: AiMime;
   } | null = null;
   private setupAuthorized = async (kind: CredentialKind, value: string) => {
-    if (
-      !this.state.authorized ||
-      !this.consented() ||
-      this.active ||
-      this.unresolved() ||
-      this.state.retryAt > Date.now()
-    )
+    if (!this.state.authorized || !this.consented() || this.active || this.unresolved()) return;
+    if (this.state.retryAt > Date.now()) {
+      this.report({ kind, outcome: 'throttled', detail: AI_THROTTLED_MESSAGE });
       return;
+    }
     if (!validCredential(value)) {
-      this.update({
-        message: 'Enter a credential without spaces, up to 2048 characters.',
-      });
+      this.report({ kind, outcome: 'invalid', detail: null });
       return;
     }
     const proof = this.authorization;
@@ -328,13 +369,8 @@ export class AiSession {
         () => {}
       );
       if (reply.kind !== 'verified') {
-        this.update({
-          message:
-            reply.kind === 'failure' || reply.kind === 'unknown'
-              ? reply.message
-              : 'Credential check unavailable.',
-          retryAt: reply.kind === 'failure' ? (reply.retryAt ?? 0) : 0,
-        });
+        this.update({ retryAt: reply.kind === 'failure' ? (reply.retryAt ?? 0) : 0 });
+        this.report(credentialRefusal(kind, reply));
         return;
       }
       if (
@@ -350,16 +386,11 @@ export class AiSession {
       if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
       await this.refreshCredential();
       if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
-      this.update({
-        message: 'AI credential saved securely on this device.',
-      });
+      this.report({ kind, outcome: 'accepted' });
     } catch {
       this.credential = null;
-      this.update({
-        credential: 'unavailable',
-        message:
-          'Secure storage did not confirm the change. AI is unavailable until storage can be read safely.',
-      });
+      this.update({ credential: 'unavailable', saved: null });
+      this.report({ kind, outcome: 'saveFailed' });
     } finally {
       this.active = false;
       this.update({
@@ -388,14 +419,10 @@ export class AiSession {
       if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
       await this.refreshCredential();
       if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
-      this.update({
-        message: 'Credential removed from secure storage.',
-      });
+      this.report({ kind, outcome: 'forgotten' });
     } catch {
-      this.update({
-        message:
-          'Removal was not confirmed. AI stays unavailable until secure storage can be read safely.',
-      });
+      this.update({ saved: null });
+      this.report({ kind, outcome: 'forgetFailed' });
     } finally {
       this.active = false;
       this.update({

@@ -16,6 +16,13 @@ export function validCredential(value: unknown): value is string {
     )
   );
 }
+// Every character of a saved key but the last four is masked, so a parent can recognise it without
+// the whole secret showing (shipping AiKeyManager's maskSecret).
+const UNMASKED_TAIL = 4;
+export function maskSecret(value: string) {
+  if (value.length <= UNMASKED_TAIL) return '*'.repeat(value.length);
+  return '*'.repeat(value.length - UNMASKED_TAIL) + value.slice(-UNMASKED_TAIL);
+}
 export type AiCredential =
   { kind: 'free'; installationId: string } | { kind: CredentialKind; value: string };
 export function credentialHeaders(credential: AiCredential): Record<string, string> {
