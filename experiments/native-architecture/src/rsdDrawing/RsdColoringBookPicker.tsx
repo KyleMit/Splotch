@@ -8,7 +8,8 @@ import type { PaperTheme } from '../drawing/theme';
 import { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { html } from 'react-strict-dom';
-import { NativeDialog } from './NativeDialog';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
 import { RsdAction, styles } from './controls';
 import { BUNDLED_BOOKS, STARTER_BOOK_ID, type BookId } from '../drawing/bundledBooks';
 import { BUNDLED_BOOK_ART, BUNDLED_BOOK_COVERS } from '../drawing/bundledBookAssets';
@@ -23,12 +24,21 @@ type PickerView =
   | { kind: 'samples' }
   | { kind: 'offline'; pack: Pack };
 
+function pickerLabel(view: PickerView, bookLabel: string | undefined) {
+  if (bookLabel) return `${bookLabel} coloring pages`;
+  return view.kind === 'samples' ? 'Sample coloring pages' : 'Coloring books';
+}
+
 export function RsdColoringBookPicker({
   selected,
+  visible,
+  onDismiss,
   onChoose,
   onClose,
 }: {
   selected: PageId;
+  visible: boolean;
+  onDismiss: () => void;
   onChoose: (pageId: PageId) => void;
   onClose: () => void;
 }) {
@@ -39,25 +49,27 @@ export function RsdColoringBookPicker({
   const book = view.kind === 'pages' ? BUNDLED_BOOKS[view.bookId] : null;
   const offlineBook =
     view.kind === 'offline' ? OFFLINE_BOOKS.find((book) => book.id === view.pack.id) : null;
-  const label = offlineBook
-    ? `${offlineBook.label} coloring pages`
-    : book
-      ? `${book.label} coloring pages`
-      : view.kind === 'samples'
-        ? 'Sample coloring pages'
-        : 'Coloring books';
+  const label = pickerLabel(view, (offlineBook ?? book)?.label);
   function back() {
     setView({ kind: 'books' });
   }
   return (
-    <NativeDialog
-      visible
+    <ModalShell
+      visible={visible}
+      onDismiss={onDismiss}
       label={label}
+      size="sheet"
       onClose={view.kind === 'books' ? onClose : back}
-      footer={<RsdAction label="Keep drawing" onClick={onClose} />}
+      header={
+        <DialogHeader
+          title={label}
+          titleSize="xl"
+          onBack={view.kind === 'books' ? undefined : back}
+          onClose={onClose}
+        />
+      }
     >
       <html.div style={styles.dialogContent}>
-        <html.span>{label}</html.span>
         <html.span>Your drawing stays. Undo brings the last page back.</html.span>
         {view.kind === 'books' ? (
           <>
@@ -91,7 +103,6 @@ export function RsdColoringBookPicker({
           </>
         ) : (
           <>
-            <RsdAction label="Back to coloring books" onClick={back} />
             <html.div role="radiogroup" aria-label="Coloring page" style={styles.row}>
               {view.kind === 'offline' && offlineBook
                 ? offlineBook.pages.map((page) => (
@@ -139,7 +150,7 @@ export function RsdColoringBookPicker({
           </>
         )}
       </html.div>
-    </NativeDialog>
+    </ModalShell>
   );
 }
 

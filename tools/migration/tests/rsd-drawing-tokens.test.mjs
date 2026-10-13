@@ -91,7 +91,10 @@ function scaleProjection(rsd, key, value) {
     return [`clamp(${min}, ${viewportWidthPercent}vw + ${offsetPx}px, ${max})`, value];
   }
   if (/^radiusBlob\d$/.test(key))
-    return [CORNERS.map((corner) => rsd.dimensions[`${key}${corner}`]).join(' '), blobMeans(value)];
+    return [
+      `${CORNERS.map((corner) => rsd.dimensions[`${key}${corner}`]).join(' ')} | ${rsd.blobShapes[key]}`,
+      `${blobMeans(value)} | ${value}`,
+    ];
   const owners = SCALE_GROUPS.filter((group) => Object.hasOwn(rsd[group], key));
   if (owners.length !== 1) return [`${key} in ${owners.length} groups`, value];
   return [canonical(rsd[owners[0]][key]), canonical(value)];

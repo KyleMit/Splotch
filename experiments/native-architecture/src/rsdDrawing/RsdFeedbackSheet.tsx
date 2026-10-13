@@ -1,5 +1,6 @@
 import { css, html } from 'react-strict-dom';
-import { NativeDialog } from './NativeDialog';
+import { ModalShell } from './ModalShell';
+import { DialogHeader } from './DialogHeader';
 import { RsdAction, styles } from './controls';
 import { colors, dimensions } from './tokens.css';
 import { describeDeviceInfo } from '../feedback/deviceReport';
@@ -42,23 +43,17 @@ export function RsdFeedbackSheet({
   if (!owner || !state || (!state.open && visible === undefined)) return null;
   const close = () => (state.gate.open ? owner.dismissGate() : owner.close());
   const sending = state.delivery.status === 'sending';
+  const title = state.gate.open ? 'Grown-ups only' : 'Send Feedback';
   return (
-    <NativeDialog
+    <ModalShell
       visible={visible ?? state.open}
       onDismiss={onDismiss}
-      label="Send Feedback"
+      label={title}
+      size="sheet"
       onClose={close}
-      footer={
-        <RsdAction
-          label={state.gate.open ? 'Cancel challenge' : 'Close feedback'}
-          onClick={close}
-        />
-      }
+      header={<DialogHeader title={title} titleSize="xl" onClose={close} />}
     >
       <html.div style={styles.dialogContent}>
-        <html.h1 style={styles.boldText}>
-          {state.gate.open ? 'Grown-ups only' : 'Send Feedback'}
-        </html.h1>
         {state.gate.open ? (
           <RsdFeedbackChallenge owner={owner} state={state} />
         ) : (
@@ -136,7 +131,7 @@ export function RsdFeedbackSheet({
           </>
         )}
       </html.div>
-    </NativeDialog>
+    </ModalShell>
   );
 }
 function RsdFeedbackChallenge({

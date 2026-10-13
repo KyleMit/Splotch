@@ -48,7 +48,7 @@ export function DrawingScreen() {
           : product.ai.state?.open
             ? 'ai'
             : 'none';
-  const route = useProductModalRoute(target, (outgoing) => {
+  const route = useProductModalRoute('platform', target, (outgoing) => {
     if (outgoing === 'settings') {
       screen.closeSettings();
       setSettingsClosing(false);
@@ -135,7 +135,7 @@ function DrawingScreenContent({
 }) {
   const { feedback } = product;
   const styles = useDrawingScreenStyles();
-  const menu = useDrawingMenu(screen);
+  const menu = useDrawingMenu(screen, 'platform');
   const window = useWindowDimensions();
   const landscape = window.width > window.height;
   const { pictures, surface, colorPickerOpen, disabled: drawingDisabled } = screen;

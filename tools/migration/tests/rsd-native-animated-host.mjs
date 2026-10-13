@@ -63,3 +63,16 @@ export function animatedPort(View, Text) {
 }
 
 export const easingPort = new Proxy({}, { get: () => () => (t) => t });
+
+// Hardware Back presses reach the listeners the test fires; exits are counted, not taken.
+export function backHandlerPort(records) {
+  return {
+    addEventListener: (_type, listener) => {
+      records.backListeners.add(listener);
+      return { remove: () => records.backListeners.delete(listener) };
+    },
+    exitApp: () => {
+      records.exits += 1;
+    },
+  };
+}

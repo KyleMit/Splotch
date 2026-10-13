@@ -116,6 +116,8 @@ export function svgPort(React) {
   const Svg = ({ children }) => React.createElement('div', null, children);
   const SvgXml = ({ xml, width, height }) =>
     React.createElement('svg', { 'data-xml': xml, width, height });
+  const Path = ({ d, fill, stroke, strokeWidth }) =>
+    React.createElement('path', { d, fill, stroke, 'stroke-width': strokeWidth });
   return {
     default: Svg,
     Circle: Svg,
@@ -125,10 +127,28 @@ export function svgPort(React) {
     Image: Svg,
     Mask: Svg,
     LinearGradient: Svg,
-    Path: Svg,
+    Path,
     RadialGradient: Svg,
     Rect: Svg,
     Stop: Svg,
     SvgXml,
+  };
+}
+
+// Each inset boundary renders a marked element and records its props; insets come from records.
+export function safeAreaPort(React, records) {
+  const boundary = (kind) => (props) => {
+    records.props.push(props);
+    return React.createElement(
+      'div',
+      { 'data-safe-area-kind': kind, 'data-testid': props.testID },
+      props.children
+    );
+  };
+  return {
+    initialWindowMetrics: null,
+    SafeAreaProvider: boundary('provider'),
+    SafeAreaView: boundary('padding'),
+    useSafeAreaInsets: () => records.insets,
   };
 }

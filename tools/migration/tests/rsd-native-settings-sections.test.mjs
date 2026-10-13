@@ -154,7 +154,7 @@ it('lists the shipping sections that hold a native control, each with its status
   await openSettingsSection('Accessibility');
   expect(host.querySelector('[data-native-modal="Accessibility"]')).not.toBeNull();
   expect(hubRows()).toEqual([]);
-  await click('Back to Settings');
+  await click('Back');
   expect(hubRows()).toHaveLength(rows.length);
 });
 
@@ -241,7 +241,7 @@ it.each([
       expect(host.textContent).toContain(release.sections[0].blocks[0].text);
     }
     expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
-    await click('Back to Settings');
+    await click('Back');
     expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
     expect(button(WHATS_NEW)).not.toBeNull();
     expect(settings.storage.write).toHaveBeenCalledOnce();
@@ -273,14 +273,14 @@ it("keeps the What's New stamp when the section opens while another choice is st
   await openSettingsSection('Accessibility');
   await click('Bigger buttons');
   expect(caller.product.sound.settings.status).toBe('saving');
-  await click('Back to Settings');
+  await click('Back');
   await openSettingsSection(`${WHATS_NEW}, new`);
   expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
   expect(settings.storage.write).toHaveBeenCalledOnce();
   await act(async () => finishWrite());
   expect(settings.storage.write).toHaveBeenCalledTimes(2);
   expect(settings.stored()).toMatchObject({ buttonScale: 110, whatsNewSeen: WHATS_NEW_STAMP });
-  await click('Back to Settings');
+  await click('Back');
   expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
 });
 

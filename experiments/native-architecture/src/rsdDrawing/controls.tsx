@@ -110,12 +110,11 @@ export const styles = css.create({
   row: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space3 },
   stack: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
   toolbar: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space2 },
+  // ModalShell's card owns the surface and the inset; a dialog body only stacks its content.
   dialogContent: {
     display: 'flex',
     flexDirection: 'column',
-    padding: dimensions.space4,
     gap: dimensions.space3,
-    backgroundColor: colors.surface,
     color: colors.text,
     fontSize: dimensions.fontSizeMd,
   },

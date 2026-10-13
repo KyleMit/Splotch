@@ -3,6 +3,10 @@ import { Platform } from 'react-native';
 import type { useDrawingProduct } from './useDrawingProduct';
 import { aiSheetShown } from '../ai/uiState';
 export type ProductModal = 'none' | 'settings' | 'ai' | 'feedback' | 'gate' | 'parentCenter';
+// Who reports a closing dialog's dismissal: the platform Modal (iOS alone has a dismissal
+// callback, so elsewhere the route moves on at once), or the RSD ModalShell, which reports it on
+// every platform once its exit has played.
+export type ModalDismissal = 'platform' | 'reported';
 export function isProductModalBlocked(
   shown: ProductModal,
   product: ReturnType<typeof useDrawingProduct>
@@ -18,6 +22,7 @@ export function isProductModalBlocked(
   );
 }
 export function useProductModalRoute(
+  dismissal: ModalDismissal,
   target: ProductModal,
   onDismissed: (outgoing: ProductModal) => void
 ) {
@@ -49,7 +54,7 @@ export function useProductModalRoute(
     callbackRef.current(route.shown);
   }
   useEffect(() => {
-    if (route.closing && Platform.OS !== 'ios') dismissed();
-  }, [route.closing, target]);
+    if (route.closing && dismissal === 'platform' && Platform.OS !== 'ios') dismissed();
+  }, [route.closing, target, dismissal]);
   return { ...route, visible: !route.closing, dismissed };
 }

@@ -203,32 +203,21 @@ const records = vi.hoisted(() => ({
   props: [],
   viewports: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
+  insets: { top: 0, right: 0, bottom: 0, left: 0 },
   dimensionListeners: new Set(),
+  backListeners: new Set(),
+  exits: 0,
   os: 'ios',
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
-  const React = await import('react');
-  const boundary = (kind) => (props) => {
-    records.props.push(props);
-    return React.createElement(
-      'div',
-      {
-        'data-safe-area-kind': kind,
-        'data-testid': props.testID,
-      },
-      props.children
-    );
-  };
-  return {
-    initialWindowMetrics: null,
-    SafeAreaProvider: boundary('provider'),
-    SafeAreaView: boundary('padding'),
-  };
+  const { safeAreaPort } = await import('./rsd-coloring-root-host.mjs');
+  return safeAreaPort(await import('react'), records);
 });
 vi.mock('react-native', async () => {
   const React = await import('react');
-  const { animatedPort, easingPort } = await import('./rsd-native-animated-host.mjs');
+  const { animatedPort, backHandlerPort, easingPort } =
+    await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
       records.props.push(props);
@@ -237,7 +226,10 @@ vi.mock('react-native', async () => {
         {
           ref,
           role: props.role,
+          id: props.nativeID,
           'aria-label': props.accessibilityLabel,
+          'aria-labelledby': props['aria-labelledby'],
+          'aria-modal': props['aria-modal'],
           'data-checked': props.accessibilityState?.checked,
           'data-native-background': props.style?.backgroundColor,
           'data-native-color': props.style?.color,
@@ -266,6 +258,7 @@ vi.mock('react-native', async () => {
       return React.createElement('span', { 'data-status-bar': props.barStyle });
     },
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    BackHandler: backHandlerPort(records),
     ScrollView: React.forwardRef((props, ref) => {
       records.viewports.push(props);
       return React.createElement(
@@ -309,12 +302,13 @@ vi.mock('react-native', async () => {
         }
         previous.current = props.visible;
       }, [props.visible, props.onDismiss]);
+      // React Native Web's Modal content is the dialog: role, aria-modal and the caller's labels.
       return props.visible === false
         ? null
         : React.createElement(
             'div',
             { 'data-native-modal': props.accessibilityLabel },
-            React.createElement(View, props)
+            React.createElement(View, { ...props, role: 'dialog', 'aria-modal': true })
           );
     },
     Image: View,
@@ -421,6 +415,9 @@ afterEach(async () => {
   records.props.length = 0;
   records.viewports.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
+  records.insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  records.backListeners.clear();
+  records.exits = 0;
   records.os = 'ios';
   orientationCalls.length = 0;
 });

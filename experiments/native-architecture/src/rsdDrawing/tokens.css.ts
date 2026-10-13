@@ -147,6 +147,13 @@ export const fontSizeDisplayFluid = {
   offsetPx: 17,
 } as const;
 
+// The full elliptical radii, for shapes drawn as paths rather than with corner radii.
+export const blobShapes = {
+  radiusBlob1: '58% 42% 55% 45% / 45% 58% 42% 55%',
+  radiusBlob2: '45% 55% 48% 52% / 55% 45% 58% 42%',
+  radiusBlob3: '52% 48% 55% 45% / 45% 55%',
+} as const;
+
 export const brandColors = css.defineVars({
   brand: '#ab71e1',
   onBrand: '#fff',

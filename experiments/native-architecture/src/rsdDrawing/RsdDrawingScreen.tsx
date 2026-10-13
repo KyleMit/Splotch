@@ -33,6 +33,8 @@ import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
+import { ModalOriginProvider } from './modalOrigin';
+import { useModalPresence } from './useModalPresence';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -58,7 +60,7 @@ export function RsdDrawingScreen() {
           : product.ai.state && aiSheetShown(product.ai.state)
             ? 'ai'
             : 'none';
-  const route = useProductModalRoute(target, (outgoing) => {
+  const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
   });
   const dismissed = route.dismissed;
@@ -68,53 +70,55 @@ export function RsdDrawingScreen() {
     <DrawingAppearanceProvider
       preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
     >
-      <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
-        {loading ? (
-          <RsdDrawingLoading />
-        ) : (
-          <RsdDrawingContent
-            screen={screen}
-            sound={sound}
-            product={product}
-            route={route}
-            onModalDismissed={dismissed}
-          />
-        )}
-        {product.owner && route.shown === 'parentCenter' ? (
-          <RsdParentCenterSection
-            owner={product.owner}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        ) : null}
-        {product.owner && product.state && route.shown === 'gate' ? (
-          <RsdParentGateSheet
-            owner={product.owner}
-            state={product.state.gate}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        ) : null}
-        {route.shown === 'feedback' ? (
-          <RsdFeedbackSheet
-            owner={product.feedback.owner}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        ) : null}
-        {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
-          <RsdAiSheet
-            owner={product.ai.owner}
-            state={product.ai.state}
-            drawing={screen.history.drawing}
-            artwork={screen.library.state.artwork}
-            progress={product.ai.progress}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        ) : null}
-        <RsdLeaveConfirm />
-      </ReduceMotionPreferenceProvider>
+      <ModalOriginProvider>
+        <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
+          {loading ? (
+            <RsdDrawingLoading />
+          ) : (
+            <RsdDrawingContent
+              screen={screen}
+              sound={sound}
+              product={product}
+              route={route}
+              onModalDismissed={dismissed}
+            />
+          )}
+          {product.owner && route.shown === 'parentCenter' ? (
+            <RsdParentCenterSection
+              owner={product.owner}
+              visible={route.visible}
+              onDismiss={dismissed}
+            />
+          ) : null}
+          {product.owner && product.state && route.shown === 'gate' ? (
+            <RsdParentGateSheet
+              owner={product.owner}
+              state={product.state.gate}
+              visible={route.visible}
+              onDismiss={dismissed}
+            />
+          ) : null}
+          {route.shown === 'feedback' ? (
+            <RsdFeedbackSheet
+              owner={product.feedback.owner}
+              visible={route.visible}
+              onDismiss={dismissed}
+            />
+          ) : null}
+          {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
+            <RsdAiSheet
+              owner={product.ai.owner}
+              state={product.ai.state}
+              drawing={screen.history.drawing}
+              artwork={screen.library.state.artwork}
+              progress={product.ai.progress}
+              visible={route.visible}
+              onDismiss={dismissed}
+            />
+          ) : null}
+          <RsdLeaveConfirm />
+        </ReduceMotionPreferenceProvider>
+      </ModalOriginProvider>
     </DrawingAppearanceProvider>
   );
 }
@@ -144,7 +148,7 @@ function RsdDrawingContent({
   onModalDismissed: () => void;
 }) {
   const theme = useDrawingAppearance();
-  const menu = useDrawingMenu(screen);
+  const menu = useDrawingMenu(screen, 'reported');
   const notice = useSettledMessage(screen.notice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
@@ -216,16 +220,7 @@ function RsdDrawingContent({
               />
             )}
           />
-          {screen.pagePickerOpen ? (
-            <RsdColoringBookPicker
-              selected={screen.history.drawing.pageId}
-              onChoose={screen.choosePage}
-              onClose={() => screen.setPagePickerOpen(false)}
-            />
-          ) : null}
-          {screen.pictures !== null ? (
-            <RsdPictures screen={screen} pictures={screen.pictures} />
-          ) : null}
+          <RsdScreenSheets screen={screen} />
           {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
         </html.div>
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
@@ -246,6 +241,33 @@ function RsdDrawingContent({
         ) : null}
       </NativeFrame>
     </LibraryProvider>
+  );
+}
+
+// The page picker and pictures stay mounted through their exit, after the screen has cleared them.
+function RsdScreenSheets({ screen }: { screen: Screen }) {
+  const pagePicker = useModalPresence(screen.pagePickerOpen || null);
+  const pictures = useModalPresence(screen.pictures);
+  return (
+    <>
+      {pagePicker.shown ? (
+        <RsdColoringBookPicker
+          selected={screen.history.drawing.pageId}
+          visible={pagePicker.visible}
+          onDismiss={pagePicker.dismissed}
+          onChoose={screen.choosePage}
+          onClose={() => screen.setPagePickerOpen(false)}
+        />
+      ) : null}
+      {pictures.shown ? (
+        <RsdPictures
+          screen={screen}
+          pictures={pictures.shown}
+          visible={pictures.visible}
+          onDismiss={pictures.dismissed}
+        />
+      ) : null}
+    </>
   );
 }
 

@@ -148,6 +148,7 @@ function scaleGroups() {
   const groups = {
     dimensions: {},
     blobs: {},
+    blobShapes: {},
     fixedColors: {},
     shadows: {},
     motion: {},
@@ -157,10 +158,11 @@ function scaleGroups() {
   for (const [key, value] of Object.entries(scale)) {
     if (Object.hasOwn(RSD_UNPROJECTED_TOKENS, key) || key === 'fontFamily') continue;
     if (DIMENSION_KEY.test(key) || DIMENSION_KEYS.has(key)) groups.dimensions[key] = value;
-    else if (BLOB_KEY.test(key))
+    else if (BLOB_KEY.test(key)) {
+      groups.blobShapes[key] = value;
       for (const [corner, radius] of Object.entries(blobCorners(value)))
         groups.blobs[`${key}${corner}`] = radius;
-    else if (key === 'fontSizeDisplay') groups.display = displayFontSize(value);
+    } else if (key === 'fontSizeDisplay') groups.display = displayFontSize(value);
     else if (FIXED_COLOR_KEYS.has(key)) groups.fixedColors[key] = portableColor(value);
     else if (SHADOW_KEY.test(key)) groups.shadows[key] = portableColor(value);
     else if (MOTION_KEY.test(key)) groups.motion[key] = value;
@@ -221,6 +223,9 @@ function tokenSource() {
     vars('dimensions', dimensions),
     '',
     `export const fontSizeDisplayFluid = ${JSON.stringify(groups.display.fluid, null, 2)} as const;`,
+    '',
+    '// The full elliptical radii, for shapes drawn as paths rather than with corner radii.',
+    `export const blobShapes = ${JSON.stringify(groups.blobShapes, null, 2)} as const;`,
     '',
     vars('brandColors', brand),
     '',

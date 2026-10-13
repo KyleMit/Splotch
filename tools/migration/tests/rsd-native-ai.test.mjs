@@ -159,7 +159,7 @@ async function sendDrawing() {
   expect(caller.aiSend).not.toHaveBeenCalled();
   await solve();
   await click('AI picture creation');
-  await click('Keep drawing');
+  await click('Close');
   await click('AI picture');
   expect(caller.aiSend).not.toHaveBeenCalled();
   await click('Check AI allowance');
@@ -257,7 +257,7 @@ it(
     await expandControls();
     await sendDrawing();
     expect(testId('ai-run-polaroid')).not.toBeNull();
-    await click('Keep drawing');
+    await click('Close');
     expect(host.querySelector('[data-native-modal]')).toBeNull();
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     expect(labelled(WAITING_LABEL).closest('[data-testid="rsd-paper-corner"]')).not.toBeNull();
@@ -265,7 +265,7 @@ it(
     await click('AI picture');
     expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
     expect(labelled(WAITING_LABEL)).toBeNull();
-    await click('Keep drawing');
+    await click('Close');
     expect(labelled(WAITING_LABEL)).not.toBeNull();
     await elapse(POLL_WAIT_MS);
     expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/generation-result');
