@@ -78,13 +78,13 @@ export function RsdParentGateSheet({
               {state.x} × {state.y} =
             </html.span>
             {answerDabs(state).map((digit, index) => (
-              <html.span
+              <html.div
                 key={index}
                 aria-hidden
                 style={[sheetStyles.dab(iconMuted), digit !== '' && sheetStyles.filled]}
               >
-                {digit}
-              </html.span>
+                <html.span>{digit}</html.span>
+              </html.div>
             ))}
           </html.div>
           <html.span aria-hidden>{state.message}</html.span>
