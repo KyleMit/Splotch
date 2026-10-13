@@ -131,26 +131,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         geometry.clear();
       };
     }, [input, geometry, refreshGeometry]);
-    const responder = useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => {
-          preemptBackground();
-          return input.ready();
-        },
-        onMoveShouldSetPanResponder: () => {
-          preemptBackground();
-          return input.ready();
-        },
-        onPanResponderGrant: (event) => input.grant(event),
-        onPanResponderStart: (event) => input.start(event),
-        onPanResponderMove: (event) => input.move(event),
-        onPanResponderEnd: (event) => input.end(event),
-        onPanResponderRelease: (event) => input.release(event),
-        onPanResponderTerminate: () => input.interrupt(),
-        onPanResponderTerminationRequest: () => false,
-        onShouldBlockNativeResponder: () => true,
-      })
-    ).current;
+    const responder = useRef(createSurfaceResponder(input, preemptBackground)).current;
 
     return (
       <InkPaperScope.Provider value={paperReference}>
@@ -218,6 +199,30 @@ function usePresentedPaper(paper: PaperReference, refreshGeometry: () => void) {
     [refreshGeometry]
   );
   return [presentedPaperSize(paper, plane), layout] as const;
+}
+
+// A new touch is a foreground claim: it ends background work on the paper before asking whether
+// the paper can take it.
+function createSurfaceResponder(
+  input: ReturnType<typeof createContactResponder>,
+  preemptBackground: () => void
+) {
+  const admit = () => {
+    preemptBackground();
+    return input.ready();
+  };
+  return PanResponder.create({
+    onStartShouldSetPanResponder: admit,
+    onMoveShouldSetPanResponder: admit,
+    onPanResponderGrant: (event) => input.grant(event),
+    onPanResponderStart: (event) => input.start(event),
+    onPanResponderMove: (event) => input.move(event),
+    onPanResponderEnd: (event) => input.end(event),
+    onPanResponderRelease: (event) => input.release(event),
+    onPanResponderTerminate: () => input.interrupt(),
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
+  });
 }
 
 function useSurfaceCapture(
