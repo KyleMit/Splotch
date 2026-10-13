@@ -24,6 +24,7 @@ import { RsdAction, styles as controlStyles } from './controls';
 import { useState } from 'react';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
+import { RsdInstallGuide } from './RsdInstallGuide';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -158,6 +159,7 @@ export function NativeSoundSettingsDialog({
               />
             ))}
           </html.div>
+          <RsdInstallGuide />
           {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
           {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
           {settings.status === 'ready' && !settings.saved ? (

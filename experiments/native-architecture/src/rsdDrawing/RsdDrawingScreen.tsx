@@ -25,6 +25,7 @@ import type { NativeIconName } from './icons.generated';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDraftNotice } from './RsdDraftNotice';
+import { RsdInstallBanner } from './RsdInstallBanner';
 import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
@@ -185,6 +186,15 @@ function RsdDrawingContent({
             ) : null}
           </NativeDrawingStatus>
           <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
+          <RsdInstallBanner
+            strokes={screen.committedStrokes}
+            hidden={
+              paperBlocked ||
+              screen.pictures !== null ||
+              screen.pagePickerOpen ||
+              screen.colorPickerOpen
+            }
+          />
           <RsdDrawingTools
             menu={menu}
             blocked={
@@ -212,42 +222,69 @@ function RsdDrawingContent({
           ) : null}
           {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
           {route.shown === 'settings' ? (
-            <NativeSoundSettingsDialog
-              settings={sound.settings}
-              brushState={screen.brushPreferences}
-              onBrushAvailabilityChange={screen.setBrushAvailable}
-              onRetryBrushSave={screen.retryBrushSave}
+            <DrawingSettingsDialog
+              screen={screen}
+              sound={sound}
+              product={product}
               notice={soundNotice}
-              onToggle={() => {
-                void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
-              }}
-              onUndoButtonChange={(enabled) => {
-                void sound.owner?.settings.setUndoButtonEnabled(enabled);
-              }}
-              onStrokeWidthControlChange={(enabled) => {
-                void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
-              }}
-              onSoundLevelChange={(level) => {
-                void sound.owner?.settings.setSoundLevel(level);
-              }}
-              onAppearanceChange={(appearance) => {
-                void sound.owner?.settings.setAppearance(appearance);
-              }}
-              onColoringBookChange={(enabled) => {
-                void sound.owner?.settings.setColoringBookEnabled(enabled);
-              }}
-              onRetry={() => {
-                void sound.owner?.settings.retrySave();
-              }}
-              onClose={screen.closeSettings}
               visible={route.visible}
               onDismiss={onModalDismissed}
-              onParentCenter={() => product.owner?.openParentCenter()}
             />
           ) : null}
         </html.div>
       </NativeFrame>
     </LibraryProvider>
+  );
+}
+
+function DrawingSettingsDialog({
+  screen,
+  sound,
+  product,
+  notice,
+  visible,
+  onDismiss,
+}: {
+  screen: Screen;
+  sound: Sound;
+  product: ReturnType<typeof useDrawingProduct>;
+  notice: string;
+  visible: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <NativeSoundSettingsDialog
+      settings={sound.settings}
+      brushState={screen.brushPreferences}
+      onBrushAvailabilityChange={screen.setBrushAvailable}
+      onRetryBrushSave={screen.retryBrushSave}
+      notice={notice}
+      onToggle={() => {
+        void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
+      }}
+      onUndoButtonChange={(enabled) => {
+        void sound.owner?.settings.setUndoButtonEnabled(enabled);
+      }}
+      onStrokeWidthControlChange={(enabled) => {
+        void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
+      }}
+      onSoundLevelChange={(level) => {
+        void sound.owner?.settings.setSoundLevel(level);
+      }}
+      onAppearanceChange={(appearance) => {
+        void sound.owner?.settings.setAppearance(appearance);
+      }}
+      onColoringBookChange={(enabled) => {
+        void sound.owner?.settings.setColoringBookEnabled(enabled);
+      }}
+      onRetry={() => {
+        void sound.owner?.settings.retrySave();
+      }}
+      onClose={screen.closeSettings}
+      visible={visible}
+      onDismiss={onDismiss}
+      onParentCenter={() => product.owner?.openParentCenter()}
+    />
   );
 }
 

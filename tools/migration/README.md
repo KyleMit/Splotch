@@ -18,6 +18,8 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
   the native `react-strict-dom` alias.
+* `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build;
+  `check-native-web-precache.mjs` verifies its service worker as the post hook.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
   check.
 

@@ -7,6 +7,7 @@ import {
   RSD_NATIVE_AI_TEST,
   RSD_NATIVE_PARENT_CENTER_TEST,
   RSD_NATIVE_TOOLBAR_TEST,
+  RSD_NATIVE_INSTALL_BANNER_TEST,
 } from './migration/lib/rsd-drawing-checks.mjs';
 
 // Node-environment unit tests for the repo tooling. Separate from the web
@@ -28,6 +29,7 @@ const CAPABILITY_EXCLUSIONS = [
   RSD_NATIVE_AI_TEST,
   RSD_NATIVE_PARENT_CENTER_TEST,
   RSD_NATIVE_TOOLBAR_TEST,
+  RSD_NATIVE_INSTALL_BANNER_TEST,
 ];
 
 export default defineConfig({
