@@ -3,14 +3,6 @@ import { AppState } from 'react-native';
 import { subscribeNetworkReturn } from '../platform/networkReturn';
 import { offlineLibrary } from './runtime';
 
-// A download that failed or is waiting for a network retries on its own when the app returns to
-// the foreground or the device comes back online, as shipping's downloader does. Drawing never
-// retries it.
-function retryStalledDownloads() {
-  const { status } = offlineLibrary.snapshot();
-  if (status === 'failed' || status === 'waiting') offlineLibrary.retry();
-}
-
 export function useOfflineLibrary(drawing: boolean, pickerOpen: boolean) {
   const snapshot = useSyncExternalStore(offlineLibrary.subscribe, offlineLibrary.snapshot);
   useEffect(() => {
@@ -18,9 +10,11 @@ export function useOfflineLibrary(drawing: boolean, pickerOpen: boolean) {
     offlineLibrary.setActive(AppState.currentState === 'active');
     const subscription = AppState.addEventListener('change', (state) => {
       offlineLibrary.setActive(state === 'active');
-      if (state === 'active') retryStalledDownloads();
+      if (state === 'active') offlineLibrary.retryStalled();
     });
-    const unsubscribeNetwork = subscribeNetworkReturn(retryStalledDownloads);
+    // A failed or waiting download retries on its own when the app returns to the foreground or
+    // the network returns, as shipping's downloader does; drawing never retries it.
+    const unsubscribeNetwork = subscribeNetworkReturn(() => offlineLibrary.retryStalled());
     return () => {
       subscription.remove();
       unsubscribeNetwork();

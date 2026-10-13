@@ -11,9 +11,9 @@ import { colors, dimensions, fonts } from './tokens.css';
 // ColoringSection.svelte's status line height; rsd-native-coloring-picker.test.mjs reads it.
 export const STATUS_LINE_HEIGHT = 1.4;
 
-// Downloads resume on any download policy change, as shipping's policy event unpauses its
-// downloader: a removal pauses them, and turning Coloring book on or changing the mobile data
-// choice starts them again.
+// Every download policy change reapplies the policy, as shipping's policy event does: it lifts a
+// removal's pause and clears a failure or network wait, so turning Coloring book on or changing
+// the mobile data choice starts downloads again.
 function resumeDownloads(library: LibraryContext | null, allowMetered: boolean) {
   if (library) void library.owner.setPolicy(true, allowMetered);
 }
@@ -57,7 +57,7 @@ export function RsdColoringSection({
             help={COLORING_SECTION_COPY.coloringBookHelp}
             onToggle={(next) => {
               onColoringBookChange(next);
-              if (next && state?.enabled === false) resumeDownloads(library, allowMetered);
+              if (next) resumeDownloads(library, allowMetered);
             }}
           />
         </RsdSettingCard>

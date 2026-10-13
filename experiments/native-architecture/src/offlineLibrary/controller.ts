@@ -218,6 +218,13 @@ class OfflineLibraryController {
     this.paused = true;
     this.abort('Coloring downloads paused. Installed books stay available.');
   }
+  // An ambient retry, on the app's return to the foreground or the network's return: a failed or
+  // waiting download tries again, but a removal or cancel keeps its pause, as shipping's
+  // downloader keeps a removal's pause across visibility and network events.
+  retryStalled() {
+    if (this.paused) return;
+    if (this.state.status === 'failed' || this.state.status === 'waiting') this.retry();
+  }
   retry() {
     this.paused = false;
     this.publish({ status: 'ready', fault: null, message: '' });
@@ -328,6 +335,7 @@ export type OfflineLibrary = Pick<
   | 'setDrawing'
   | 'cancel'
   | 'retry'
+  | 'retryStalled'
   | 'setPolicy'
   | 'openPage'
   | 'cover'

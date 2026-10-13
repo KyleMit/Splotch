@@ -7,6 +7,7 @@ import { DRAWING_BRAND } from '../drawing/theme';
 import { rgba } from './colorMix';
 import { COVER_CAPTION_HEIGHT_PX, PAGE_TILE_ASPECT, TILE_ART_INSET_PX } from './coloringGrid';
 import { RsdPressable } from './RsdPressable';
+import { tapPoint, type TapPoint } from './tapZone';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
 import { styles as controlStyles } from './controls';
 
@@ -41,7 +42,7 @@ export function RsdColoringTile({
   image: string | undefined;
   width: number;
   accessibleName: string;
-  onPress: () => void;
+  onPress: (point: TapPoint | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const height = tile.shape === 'cover' ? width : width / PAGE_TILE_ASPECT[tile.shape];
@@ -59,7 +60,7 @@ export function RsdColoringTile({
             TILE_HOVER_SHADOW
           ),
       ]}
-      onClick={onPress}
+      onClick={(event: unknown) => onPress(tapPoint(event))}
       onPointerMove={(event: { pointerType?: string }) => {
         if (event.pointerType === 'mouse') setHovered(true);
       }}

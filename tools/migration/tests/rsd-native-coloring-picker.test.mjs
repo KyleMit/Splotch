@@ -3,10 +3,11 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { records, host, root, mount } from './rsd-native-selection-host.mjs';
+import { RsdColoringBookPicker } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
 import {
-  RsdColoringBookPicker,
-  TILE_SWAP_GUARD_MS,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
+  TAP_ZONE_DURATION_MS,
+  TAP_ZONE_RADIUS_PX,
+} from '../../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
 import { STATUS_LINE_HEIGHT } from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringSection.tsx';
 import { LibraryProvider } from '../../../experiments/native-architecture/src/offlineLibrary/LibraryScope.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
@@ -200,16 +201,50 @@ describe('the Coloring Book Picker', () => {
 
   // Negative control: without the guard, the press that lands on the freshly painted page tile
   // picks it and closes the picker.
-  it('ignores the rest of a tap burst that swapped the grid, then picks normally', async () => {
+  // A finger press at a page point, as React Native reports it to the tile's Pressable.
+  async function tap(label, x, y) {
+    const props = records.props.findLast(
+      (entry) => entry.accessibilityLabel === label && entry.onPress
+    );
+    expect(props, label).toBeDefined();
+    await act(async () => props.onPress({ nativeEvent: { pageX: x, pageY: y } }));
+  }
+
+  // Negative control: without the zone, the burst's second press picks the page painted under it.
+  it('ignores the rest of a tap burst on the spot that swapped the grid, then picks normally', async () => {
     const { tree, onChoose } = picker({ state: inventory([dinosaurs]) });
     await mount(tree);
-    await press('Farm coloring book');
-    clock += TILE_SWAP_GUARD_MS - 1;
-    await press('Cat coloring page');
+    await tap('Farm coloring book', 100, 200);
+    clock += TAP_ZONE_DURATION_MS - 1;
+    await tap('Cat coloring page', 100 + TAP_ZONE_RADIUS_PX, 200);
     expect(onChoose).not.toHaveBeenCalled();
     clock += 1;
+    await tap('Cat coloring page', 100, 200);
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith('farm/cat');
+  });
+
+  it('lets a deliberate tap elsewhere through the zone at once', async () => {
+    const { tree, onChoose } = picker({ state: inventory([dinosaurs]) });
+    await mount(tree);
+    await tap('Farm coloring book', 100, 200);
+    await tap('Dog coloring page', 100 + TAP_ZONE_RADIUS_PX + 1, 200);
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith('farm/dog');
+  });
+
+  it('never guards a keyboard or assistive activation, which has no tap point', async () => {
+    const { tree, onChoose } = picker({ state: inventory([dinosaurs]) });
+    await mount(tree);
+    await tap('Farm coloring book', 100, 200);
     await press('Cat coloring page');
     expect(onChoose).toHaveBeenCalledExactlyOnceWith('farm/cat');
+  });
+
+  it('guards the spot Back was tapped at, as a cover tap does', async () => {
+    await mount(picker({ state: inventory([dinosaurs]) }).tree);
+    await press('Farm coloring book');
+    await tap('Back', 40, 60);
+    await tap('Dinosaurs coloring book', 40, 60);
+    expect(title()).toBe('Coloring Books');
   });
 
   it('clears the applied page from the Active Page Chip in the header', async () => {
@@ -423,9 +458,9 @@ describe('the picker geometry matches the shipping Coloring Book Picker', () => 
   });
 
   it('holds tiles for the shipping launch guard and words Settings › Coloring as shipping does', () => {
-    expect(read('web/src/lib/actions/launchGuard.ts')).toContain(
-      `export const LAUNCH_ZONE_DURATION_MS = ${TILE_SWAP_GUARD_MS};`
-    );
+    const guard = read('web/src/lib/actions/launchGuard.ts');
+    expect(guard).toContain(`export const LAUNCH_ZONE_DURATION_MS = ${TAP_ZONE_DURATION_MS};`);
+    expect(guard).toContain(`export const LAUNCH_ZONE_RADIUS_PX = ${TAP_ZONE_RADIUS_PX};`);
     const section = read(SECTION);
     expect(
       declaration(rule(style(SECTION), '.pack-summary p,\n  .remove-error'), 'line-height')

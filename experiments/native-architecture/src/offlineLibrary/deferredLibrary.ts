@@ -57,6 +57,14 @@ export function createDeferredLibrary(
     if (library) call(library);
     else queued.push(call);
   };
+  const retry = () => {
+    if (!library && fallback !== initialLibrarySnapshot) {
+      fallback = initialLibrarySnapshot;
+      notify();
+    }
+    record((owner) => owner.retry());
+    settle(start());
+  };
   const loaded = () => {
     if (!library) throw new Error('The offline library is not loaded.');
     return library;
@@ -85,14 +93,12 @@ export function createDeferredLibrary(
       record((owner) => owner.engage());
       settle(start());
     },
-    retry() {
-      if (!library && fallback !== initialLibrarySnapshot) {
-        fallback = initialLibrarySnapshot;
-        notify();
-      }
-      record((owner) => owner.retry());
-      settle(start());
+    // Before the controller loads, the only stalled state is a failed load, which nothing paused.
+    retryStalled() {
+      if (library) library.retryStalled();
+      else if (fallback !== initialLibrarySnapshot) retry();
     },
+    retry,
     setPolicy: (enabled, allowMetered) =>
       start().then(
         (owner) => owner.setPolicy(enabled, allowMetered),

@@ -18,12 +18,14 @@ script catalog or any dependency, lockfile, patch or build policy (ADR-0019).
 Existing save and reopen behavior is exercised through the production file adapters.
 
 The controller keeps a download failure or network-policy wait until something calls `retry()` or
-changes the download policy; drawing never does. The app calls `retry()` for a failed or waiting
-download when it returns to the foreground, and on web when the browser reports it is back online
-(`useOfflineLibrary.ts`), as shipping's downloader retries on visibility and `online`. Removing
-books commits disabled download policy before deleting files; an online relaunch respects that
-policy until a parent turns Coloring book on or changes the mobile data choice, either of which
-enables downloads again. If the policy write fails, installed books are kept.
+changes the download policy; drawing never does. The app calls `retryStalled()` when it returns to
+the foreground, and on web when the browser reports it is back online or its connection changes
+(`useOfflineLibrary.ts`), as shipping's downloader retries on visibility, `online` and connection
+`change`. That ambient retry only retries a failed or waiting download: a removal or cancel keeps
+its pause, even when the removal itself failed. Removing books commits disabled download policy
+before deleting files; an online relaunch respects that policy until a parent turns Coloring book on
+or changes the mobile data choice. Either change reapplies the download policy, which lifts the
+pause and clears a failure or wait. If the policy write fails, installed books are kept.
 
 Drawing and background pauses preserve the current owner’s staged files. Resume rechecks their exact
 byte lengths and SHA-256 digests before skipping verified files, and checks storage for the

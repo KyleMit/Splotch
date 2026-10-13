@@ -26,15 +26,10 @@ import {
   tileWidth,
   type GridLayout,
 } from './coloringGrid';
+import { armTapZone, insideTapZone, type TapPoint } from './tapZone';
 
 const COLORING_PICKER_LABEL = 'Coloring books';
 const BOOK_GRID_TITLE = 'Coloring Books';
-// A toddler mashes a cover several times before registering that anything happened, and the
-// first tap swaps the grid, so the rest of the burst would land on whichever page painted under
-// the finger and pick it. Shipping arms its launch guard's dead zone for LAUNCH_ZONE_DURATION_MS
-// (launchGuard.ts) at the tap; here a swap holds every tile for that long.
-// rsd-native-coloring-picker.test.mjs reads the shipping value.
-export const TILE_SWAP_GUARD_MS = 600;
 
 type PickerPage = Readonly<{ pageId: PageId; label: string; image: string | undefined }>;
 type PickerBook = Readonly<{
@@ -140,11 +135,14 @@ export function RsdColoringBookPicker({
     listsBooks ? null : books[0].id
   );
   const active = books.find((book) => book.id === activeBookId) ?? (listsBooks ? null : books[0]);
-  const swappedAt = useRef(Number.NEGATIVE_INFINITY);
+  // A toddler mashes a cover several times before registering that anything happened; the first
+  // tap swaps the grid, so the rest of the burst would pick whichever tile painted under the
+  // finger. Each swap guards the spot it was tapped at (tapZone.ts), as shipping's swapView does.
+  const swapZone = useRef<ReturnType<typeof armTapZone>>(null);
   const grid = useGridWidth();
-  const guarded = () => Date.now() - swappedAt.current < TILE_SWAP_GUARD_MS;
-  function swap(bookId: string | null) {
-    swappedAt.current = Date.now();
+  const guarded = (point: TapPoint | null) => insideTapZone(swapZone.current, point, Date.now());
+  function swap(bookId: string | null, point: TapPoint | null) {
+    swapZone.current = armTapZone(point, Date.now());
     setActiveBookId(bookId);
   }
   const chip =
@@ -171,7 +169,7 @@ export function RsdColoringBookPicker({
         <DialogHeader
           title={active ? active.label : BOOK_GRID_TITLE}
           titleSize={coloringTitleCompact(grid.window) ? 'md' : 'xl'}
-          onBack={active && listsBooks ? () => swap(null) : undefined}
+          onBack={active && listsBooks ? (point) => swap(null, point) : undefined}
           actions={chip}
           onClose={onClose}
         />
@@ -187,8 +185,8 @@ export function RsdColoringBookPicker({
                   image={page.image}
                   width={size}
                   accessibleName={`${page.label} coloring page`}
-                  onPress={() => {
-                    if (!guarded()) onChoose(page.pageId);
+                  onPress={(point) => {
+                    if (!guarded(point)) onChoose(page.pageId);
                   }}
                 />
               ))
@@ -201,8 +199,8 @@ export function RsdColoringBookPicker({
                   image={book.cover}
                   width={size}
                   accessibleName={`${book.label} coloring book`}
-                  onPress={() => {
-                    if (!guarded()) swap(book.id);
+                  onPress={(point) => {
+                    if (!guarded(point)) swap(book.id, point);
                   }}
                 />
               ))}

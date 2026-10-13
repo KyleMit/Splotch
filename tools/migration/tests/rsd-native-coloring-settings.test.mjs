@@ -65,17 +65,16 @@ describe('Settings › Coloring', () => {
     }
   });
 
-  it('resumes downloads a removal paused when Coloring book turns back on', async () => {
+  // Negative control: reapplying only after a removal leaves a failed or waiting library stalled.
+  it.each([
+    ['a removal paused', { enabled: false, allowMetered: true }],
+    ['a failure stalled', { status: 'failed', fault: 'unavailable', allowMetered: true }],
+    ['a network wait stalled', { status: 'waiting', fault: 'metered', allowMetered: true }],
+  ])('reapplies the download policy %s when Coloring book turns back on', async (_name, change) => {
     const setPolicy = vi.spyOn(owner, 'setPolicy').mockResolvedValue();
     const onColoringBookChange = vi.fn();
     try {
-      await mount(
-        section({
-          state: inventory([], { enabled: false, allowMetered: true }),
-          enabled: false,
-          onColoringBookChange,
-        })
-      );
+      await mount(section({ state: inventory([], change), enabled: false, onColoringBookChange }));
       expect(control('Download over mobile data').disabled).toBe(true);
       await press('Coloring book');
       expect(onColoringBookChange).toHaveBeenCalledExactlyOnceWith(true);
