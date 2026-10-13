@@ -1,20 +1,37 @@
 import { execFileSync } from 'node:child_process';
-import { matchesGlob, relative } from 'node:path';
+import { dirname, matchesGlob, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
-import toolsConfig from '../../vitest.config.mjs';
-import rsdConfig from '../rsd-drawing-vitest.config.mjs';
+import { createVitest } from 'vitest/node';
 import { RSD_NATIVE_RENDERER_TESTS } from '../lib/rsd-drawing-checks.mjs';
 
-// Each tier's selection, evaluated from its own config object, so a test named for the native
-// renderer that one config stops selecting, or both start selecting, fails here by name.
+// Each tier's membership comes from Vitest's own test-file discovery over its real config, so a
+// test named for the native renderer that one tier stops collecting, or both start collecting,
+// fails here by name — whatever spelling the include or exclude glob uses.
 const RSD_TIER = 'test:migration:rsd-selection';
 const TOOLS_TIER = 'test:tools';
-const toolsProject = toolsConfig.test.projects.find(({ test }) => test.name === 'repo-tools');
-const TIERS = {
-  [TOOLS_TIER]: { root: toolsProject.root, ...toolsProject.test },
-  [RSD_TIER]: { root: rsdConfig.root, ...rsdConfig.test },
+const configPath = (path) => fileURLToPath(new URL(path, import.meta.url));
+const TIER_CONFIGS = {
+  [TOOLS_TIER]: configPath('../../vitest.config.mjs'),
+  [RSD_TIER]: configPath('../rsd-drawing-vitest.config.mjs'),
 };
-const root = rsdConfig.root;
+const root = dirname(TIER_CONFIGS[TOOLS_TIER]);
+
+async function discover(config) {
+  const vitest = await createVitest({ config, watch: false, reporters: [] });
+  try {
+    const specs = await vitest.globTestSpecifications();
+    return new Set(specs.map(({ moduleId }) => relative(root, moduleId)));
+  } finally {
+    await vitest.close();
+  }
+}
+
+const collected = Object.fromEntries(
+  await Promise.all(
+    Object.entries(TIER_CONFIGS).map(async ([tier, config]) => [tier, await discover(config)])
+  )
+);
 const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
   cwd: root,
   encoding: 'utf8',
@@ -22,16 +39,7 @@ const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclud
   .trim()
   .split('\n');
 const rsdNamed = files.filter((file) => matchesGlob(file, RSD_NATIVE_RENDERER_TESTS));
-
-const matchesAny = (file, globs = []) => globs.some((glob) => matchesGlob(file, glob));
-const tiersOf = (file) =>
-  Object.entries(TIERS)
-    .filter(([, tier]) => matchesAny(file, tier.include) && !matchesAny(file, tier.exclude))
-    .map(([name]) => name);
-
-it('reads both tiers relative to the one root the pattern is written against', () => {
-  expect(TIERS[TOOLS_TIER].root).toBe(root);
-});
+const tiersOf = (file) => Object.keys(TIER_CONFIGS).filter((tier) => collected[tier].has(file));
 
 it('places this guard in the tools tier', () => {
   expect(tiersOf(relative(root, import.meta.filename))).toEqual([TOOLS_TIER]);
@@ -45,8 +53,6 @@ it.each(rsdNamed)('%s runs in the RSD renderer tier only', (file) => {
   expect(tiersOf(file)).toEqual([RSD_TIER]);
 });
 
-it('selects nothing for the RSD renderer tier that the pattern does not name', () => {
-  expect(
-    files.filter((file) => tiersOf(file).includes(RSD_TIER) && !rsdNamed.includes(file))
-  ).toEqual([]);
+it('collects nothing for the RSD renderer tier that the pattern does not name', () => {
+  expect([...collected[RSD_TIER]].filter((file) => !rsdNamed.includes(file))).toEqual([]);
 });
