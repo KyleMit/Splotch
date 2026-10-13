@@ -224,6 +224,37 @@ describe('settings schema 10', () => {
     expect(() => parseSoundSettings(JSON.stringify({ ...CURRENT, version: 9 }))).toThrow();
   });
 
+  it('recovers an earlier failed ordinary save once the What\u2019s New stamp writes it', async () => {
+    let stored = null;
+    const write = vi
+      .fn(async (next) => {
+        stored = next;
+      })
+      .mockRejectedValueOnce(new Error('disk full'));
+    const states = [];
+    const owner = createSoundSettings({ read: async () => null, write }, (state) =>
+      states.push(state)
+    );
+    await owner.load();
+    await owner.setEnabled(false);
+    expect(states.at(-1)).toMatchObject({ soundEnabled: false, saved: false });
+    expect(states.at(-1).message).toContain('could not be saved');
+    expect(stored).toBeNull();
+    await owner.markWhatsNewSeen();
+    expect(JSON.parse(stored)).toMatchObject({
+      soundEnabled: false,
+      whatsNewSeen: WHATS_NEW_STAMP,
+    });
+    expect(states.at(-1)).toMatchObject({
+      status: 'ready',
+      soundEnabled: false,
+      whatsNewSeen: WHATS_NEW_STAMP,
+      saved: true,
+      message: '',
+    });
+    owner.dispose();
+  });
+
   it('persists Button Size, Reduce Motion and the seen stamp through the one settings owner', async () => {
     const write = vi.fn(async () => {});
     const owner = createSoundSettings({ read: async () => null, write }, () => {});

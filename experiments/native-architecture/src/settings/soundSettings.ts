@@ -109,6 +109,34 @@ type PreferenceActionContext = {
   persist: (settings: SoundSettings) => Promise<void>;
 };
 
+const SETTINGS_SAVE_FAILED_MESSAGE =
+  'Your settings work for this session, but could not be saved. Please retry.';
+
+// The What's New stamp is written on its own rather than through persist, so a failed Parent
+// Center save stays pending for its retry. Ordinary choices are already in the state it writes,
+// so once that write lands, an earlier ordinary failure is recovered.
+function createStampWriter(
+  storage: SoundSettingsStorage,
+  { getState, publish }: PreferenceActionContext,
+  hasPendingParent: () => boolean
+) {
+  return async function persistStamp() {
+    const state = getState();
+    if (state.status !== 'ready') return;
+    const { status: _status, saved, message, ...current } = state;
+    const choices = { ...current, whatsNewSeen: WHATS_NEW_STAMP };
+    publish({ status: 'saving', ...choices, message });
+    try {
+      await storage.write(JSON.stringify(snapshot(choices)));
+      if (saved || hasPendingParent()) publish({ status: 'ready', ...choices, saved, message });
+      else publish({ status: 'ready', ...choices, saved: true, message: '' });
+    } catch {
+      const failure = saved ? SETTINGS_SAVE_FAILED_MESSAGE : message;
+      publish({ status: 'ready', ...choices, saved: false, message: failure });
+    }
+  };
+}
+
 // The owner awaits flushWhatsNewSeen after each write it finishes.
 function createAccessibilityActions({
   getState,
@@ -116,7 +144,8 @@ function createAccessibilityActions({
   hasReadFailed,
   publish,
   persist,
-}: PreferenceActionContext) {
+  persistStamp,
+}: PreferenceActionContext & { persistStamp: () => Promise<void> }) {
   let whatsNewSeenQueued = false;
   const actions = {
     async setButtonScale(buttonScale: number) {
@@ -153,7 +182,7 @@ function createAccessibilityActions({
         publish({ ...state, whatsNewSeen: WHATS_NEW_STAMP });
         return;
       }
-      await persist({ ...snapshot(state), whatsNewSeen: WHATS_NEW_STAMP });
+      await persistStamp();
     },
   };
   async function flushWhatsNewSeen() {
@@ -313,7 +342,7 @@ export function createSoundSettings(
         status: 'ready',
         ...choices,
         saved: false,
-        message: 'Your settings work for this session, but could not be saved. Please retry.',
+        message: SETTINGS_SAVE_FAILED_MESSAGE,
       });
     }
     await accessibility.flushWhatsNewSeen();
@@ -341,7 +370,10 @@ export function createSoundSettings(
     publish,
     persist,
   };
-  const accessibility = createAccessibilityActions(actionContext);
+  const accessibility = createAccessibilityActions({
+    ...actionContext,
+    persistStamp: createStampWriter(storage, actionContext, () => pendingParent !== null),
+  });
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
