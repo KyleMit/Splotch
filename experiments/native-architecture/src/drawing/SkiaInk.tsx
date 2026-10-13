@@ -36,7 +36,7 @@ import type { CrayonTileResources } from './crayonTiles';
 import type { PaintColor } from './palette';
 import type { Brush } from './brushes';
 import { isFarmPageId } from './bundledBooks';
-import { bundledArt } from './bundledBookAssets';
+import { bundledFill } from './bundledBookAssets';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import type { PageId } from './pages';
@@ -85,7 +85,7 @@ function useBookFill(
 ) {
   const offline = useContext(OfflineArtworkScope);
   const uri = isFarmPageId(pageId)
-    ? bundledArt(pageId, theme, paper).fill
+    ? bundledFill(pageId, theme, paper)
     : isOfflinePageId(pageId)
       ? (offline[pageId]?.[artOrientation(paper)][theme].fill ?? null)
       : null;

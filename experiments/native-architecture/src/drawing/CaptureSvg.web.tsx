@@ -2,6 +2,7 @@ import Svg from 'react-native-svg';
 import type { PaperSize } from './paperSpace';
 import type { SvgCaptureTarget } from './svgCapture';
 
+type Callback = Parameters<SvgCaptureTarget['toDataURL']>[0];
 type RasterJob = {
   image: HTMLImageElement | null;
   canvas: HTMLCanvasElement | null;
@@ -9,6 +10,7 @@ type RasterJob = {
   released: boolean;
 };
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const XLINK_NAMESPACE = 'http://www.w3.org/1999/xlink';
 const PNG_PREFIX = 'data:image/png;base64,';
 
 function snapshotElement(value: unknown): SVGSVGElement {
@@ -62,6 +64,38 @@ function snapshotRoot(target: SVGSVGElement, size: PaperSize) {
   return root;
 }
 
+// An SVG decoded as an image loads nothing outside itself, so a fill served as a file (a bundled
+// page's hashed asset, an offline book's object URL) is copied into the snapshot as a data URI.
+function externalImages(root: SVGSVGElement) {
+  return [...root.querySelectorAll('image')].flatMap((image) => {
+    const href = image.getAttribute('href') ?? image.getAttributeNS(XLINK_NAMESPACE, 'href');
+    return href && !href.startsWith('data:') ? [{ image, href }] : [];
+  });
+}
+
+function readDataUri(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      typeof reader.result === 'string'
+        ? resolve(reader.result)
+        : reject(new Error('A coloring image could not be read for capture.'));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function inlineImages(images: ReturnType<typeof externalImages>) {
+  await Promise.all(
+    images.map(async ({ image, href }) => {
+      const response = await fetch(href);
+      if (!response.ok) throw new Error('A coloring image did not load for capture.');
+      image.removeAttributeNS(XLINK_NAMESPACE, 'href');
+      image.setAttribute('href', await readDataUri(await response.blob()));
+    })
+  );
+}
+
 export class CaptureSvg extends Svg {
   private active: RasterJob | null = null;
 
@@ -105,38 +139,56 @@ export class CaptureSvg extends Svg {
     callback(base64);
   }
 
+  private rasterize(job: RasterJob, clone: SVGSVGElement, size: PaperSize, callback: Callback) {
+    const image = new window.Image();
+    job.image = image;
+    image.onerror = () => this.complete(job, callback, '');
+    image.onload = () => {
+      if (this.active !== job) return;
+      try {
+        const canvas = document.createElement('canvas');
+        job.canvas = canvas;
+        canvas.width = size.width;
+        canvas.height = size.height;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Pixel capture is unavailable.');
+        context.drawImage(image, 0, 0);
+        const png = canvas.toDataURL();
+        if (!png.startsWith(PNG_PREFIX)) throw new Error('Pixel capture did not return a PNG.');
+        this.complete(job, callback, png.slice(PNG_PREFIX.length));
+      } catch {
+        this.complete(job, callback, '');
+      }
+    };
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+      new XMLSerializer().serializeToString(clone)
+    )}`;
+    clone.replaceChildren();
+    job.clone = null;
+  }
+
   toDataURL: SvgCaptureTarget['toDataURL'] = (callback, options) => {
     if (this.active) this.release(this.active);
     const job: RasterJob = { image: null, canvas: null, clone: null, released: false };
     this.active = job;
     try {
       const size = captureSize(options);
-      job.clone = snapshotRoot(snapshotElement(this), size);
-      const image = new window.Image();
-      job.image = image;
-      image.onerror = () => this.complete(job, callback, '');
-      image.onload = () => {
-        if (this.active !== job) return;
-        try {
-          const canvas = document.createElement('canvas');
-          job.canvas = canvas;
-          canvas.width = size.width;
-          canvas.height = size.height;
-          const context = canvas.getContext('2d');
-          if (!context) throw new Error('Pixel capture is unavailable.');
-          context.drawImage(image, 0, 0);
-          const png = canvas.toDataURL();
-          if (!png.startsWith(PNG_PREFIX)) throw new Error('Pixel capture did not return a PNG.');
-          this.complete(job, callback, png.slice(PNG_PREFIX.length));
-        } catch {
-          this.complete(job, callback, '');
-        }
-      };
-      image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-        new XMLSerializer().serializeToString(job.clone)
-      )}`;
-      job.clone?.replaceChildren();
-      job.clone = null;
+      const clone = snapshotRoot(snapshotElement(this), size);
+      job.clone = clone;
+      const external = externalImages(clone);
+      if (external.length === 0) this.rasterize(job, clone, size, callback);
+      else
+        inlineImages(external).then(
+          () => {
+            if (this.active !== job) return;
+            try {
+              this.rasterize(job, clone, size, callback);
+            } catch {
+              this.complete(job, callback, '');
+            }
+          },
+          () => this.complete(job, callback, '')
+        );
     } catch (error) {
       this.release(job);
       throw error;

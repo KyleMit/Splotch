@@ -2,8 +2,10 @@
 // tools/check-pwa-precache.mjs verifies the shipping one: this build's app shell is
 // the first entry and the offline answer, every entry is pinned to the bytes this
 // build exported, every file the export serves (and every asset the shell names) is
-// precached, the bundled starter coloring book is in a precached chunk, and the
-// precache stays inside its budget.
+// precached, every bundled starter coloring page's line art and images are precached
+// while none of them rides in a script the shell loads, and the precache stays inside
+// its budget.
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import {
@@ -14,11 +16,11 @@ import {
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
 import { filesRecursively } from '../lib/filesystem.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
+import { BUNDLED_FARM_DIR, bundledFarmImageFiles } from './gen-bundled-farm.mjs';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import {
   APP_SHELL_FILE,
-  NATIVE_APP_DIR,
   NATIVE_WEB_EXPORT_DIR,
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
@@ -32,7 +34,7 @@ export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // Served by the export but never fetched by the page: the worker itself, and Expo's
 // build-identity file.
 const UNFETCHED_EXPORT_FILES = new Set([NATIVE_WEB_SERVICE_WORKER, 'metadata.json']);
-const BUNDLED_ART_FILL = /fill: '(data:image\/webp;base64,[A-Za-z0-9+/=]+)'/g;
+const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';
 const PRECACHE_ENTRY = new RegExp(
   `\\{url:(${JSON_STRING}),revision:(${JSON_STRING}|null)(?:,integrity:(${JSON_STRING}))?\\}`,
@@ -51,6 +53,47 @@ export function lazyIconSamples() {
     .filter((pathData) => pathData !== undefined && pathData.length >= MIN_LAZY_ICON_SAMPLE_CHARS);
 }
 
+// The first path of each bundled page's line art, which the web export loads per page
+// (bundledOutlines.web.ts): it must be in a precached chunk and in no script the shell loads.
+export function starterOutlineSamples(farmDir = BUNDLED_FARM_DIR) {
+  return FARM_PAGE_IDS.map((pageId) => {
+    const sample = OUTLINE_PATH_DATA.exec(
+      readFileSync(join(farmDir, `${pageId.split('/')[1]}.ts`), 'utf8')
+    )?.[1];
+    if (!sample) throw new Error(`No bundled line art found for ${pageId}`);
+    return { pageId, sample };
+  });
+}
+
+export function lazyModuleSamples() {
+  return [
+    ...lazyIconSamples().map((sample) => ({ module: 'deferred icons', sample })),
+    ...starterOutlineSamples().map(({ pageId, sample }) => ({
+      module: `${pageId} line art`,
+      sample,
+    })),
+  ];
+}
+
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+// Every image the bundled starter book shows, by the hash of the shipping file the web export
+// serves as a hashed asset.
+export function starterBookImages() {
+  const { pages, covers } = bundledFarmImageFiles();
+  return [
+    ...Object.entries(pages).flatMap(([pageId, page]) =>
+      Object.values(page).flatMap((themes) =>
+        Object.values(themes).map((path) => ({ pageId, sha256: sha256(readFileSync(path)) }))
+      )
+    ),
+    ...Object.values(covers).map((path) => ({
+      pageId: 'farm cover',
+      sha256: sha256(readFileSync(path)),
+    })),
+  ];
+}
+
 export function precacheEntriesFromSource(source) {
   return [...source.matchAll(PRECACHE_ENTRY)].map((match) => ({
     url: JSON.parse(match[1]),
@@ -61,18 +104,6 @@ export function precacheEntriesFromSource(source) {
 
 export function shellAssetReferences(indexHtml) {
   return [...new Set([...indexHtml.matchAll(SHELL_ASSET_REFERENCE)].map((match) => match[1]))];
-}
-
-export function starterBookFills(appDir = NATIVE_APP_DIR) {
-  return FARM_PAGE_IDS.flatMap((pageId) => {
-    const source = readFileSync(
-      join(appDir, 'src/drawing/bundledFarm', `${pageId.split('/')[1]}.ts`),
-      'utf8'
-    );
-    const fills = [...source.matchAll(BUNDLED_ART_FILL)].map((match) => match[1]);
-    if (!fills.length) throw new Error(`No bundled fill found for ${pageId}`);
-    return fills.map((fill) => ({ pageId, fill }));
-  });
 }
 
 function shellProblems({ precacheUrls, expectedShellUrl, appShellFallbackLookups }) {
@@ -100,8 +131,10 @@ export function nativeWebPrecacheProblems({
   shellReferences,
   exportedFiles,
   precachedScripts,
+  precachedHashes,
   shellScripts,
-  starterFills,
+  starterOutlines,
+  starterImages,
   lazySamples,
   precacheBytes,
   maxPrecacheBytes = MAX_NATIVE_WEB_PRECACHE_BYTES,
@@ -132,22 +165,29 @@ export function nativeWebPrecacheProblems({
     problems.push(
       `The app shell names files outside its precache: ${unbackedReferences.join(', ')}`
     );
-  const missingPages = [
-    ...new Set(
-      starterFills
-        .filter(({ fill }) => !precachedScripts.some((script) => script.includes(fill)))
-        .map(({ pageId }) => pageId)
-    ),
-  ];
+  const missingPages = starterOutlines
+    .filter(({ sample }) => !precachedScripts.some((script) => script.includes(sample)))
+    .map(({ pageId }) => pageId);
   if (missingPages.length)
     problems.push(
       `Starter coloring pages missing from precached chunks: ${missingPages.join(', ')}`
     );
-  const startupIcons = lazySamples.filter((sample) =>
+  const missingImages = [
+    ...new Set(
+      starterImages
+        .filter((image) => !precachedHashes.has(image.sha256))
+        .map(({ pageId }) => pageId)
+    ),
+  ];
+  if (missingImages.length)
+    problems.push(`Starter coloring images missing from the precache: ${missingImages.join(', ')}`);
+  const startupModules = lazySamples.filter(({ sample }) =>
     shellScripts.some((script) => script.includes(sample))
   );
-  if (startupIcons.length)
-    problems.push(`${startupIcons.length} lazily loaded icons are in the app shell's scripts`);
+  if (startupModules.length)
+    problems.push(
+      `${startupModules.length} lazily loaded samples are in the app shell's scripts: ${[...new Set(startupModules.map(({ module }) => module))].join(', ')}`
+    );
   if (precacheBytes > maxPrecacheBytes)
     problems.push(`Precache is ${precacheBytes} bytes, above the ${maxPrecacheBytes}-byte budget`);
   return problems;
@@ -155,8 +195,9 @@ export function nativeWebPrecacheProblems({
 
 export function checkNativeWebPrecache({
   exportDir = NATIVE_WEB_EXPORT_DIR,
-  starterFills = starterBookFills(),
-  lazySamples = lazyIconSamples(),
+  starterOutlines = starterOutlineSamples(),
+  starterImages = starterBookImages(),
+  lazySamples = lazyModuleSamples(),
   maxPrecacheBytes,
   log = console.log,
 } = {}) {
@@ -190,17 +231,19 @@ export function checkNativeWebPrecache({
     precachedScripts: present
       .filter((url) => url.endsWith('.js'))
       .map((url) => readFileSync(onDisk(url), 'utf8')),
+    precachedHashes: new Set(present.map((url) => sha256(readFileSync(onDisk(url))))),
     shellScripts: shellReferences
       .filter((path) => path.endsWith('.js') && existsSync(join(exportDir, path)))
       .map((path) => readFileSync(join(exportDir, path), 'utf8')),
-    starterFills,
+    starterOutlines,
+    starterImages,
     lazySamples,
     precacheBytes,
     maxPrecacheBytes,
   });
   if (problems.length) throw new Error(problems.join('\n'));
   log(
-    `[native-web-precache] ${present.length} entries / ${precacheBytes} bytes; content-addressed app shell first; every entry integrity-pinned; ${new Set(starterFills.map(({ pageId }) => pageId)).size} starter pages bundled`
+    `[native-web-precache] ${present.length} entries / ${precacheBytes} bytes; content-addressed app shell first; every entry integrity-pinned; ${starterOutlines.length} starter pages and ${starterImages.length} starter images precached off the startup path`
   );
 }
 

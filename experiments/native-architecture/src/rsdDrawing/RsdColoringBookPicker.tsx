@@ -11,7 +11,7 @@ import { html } from 'react-strict-dom';
 import { NativeDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
 import { BUNDLED_BOOKS, STARTER_BOOK_ID, type BookId } from '../drawing/bundledBooks';
-import { BUNDLED_BOOK_ART, BUNDLED_BOOK_COVERS } from '../drawing/bundledBookAssets';
+import { BUNDLED_FARM_COVERS, BUNDLED_FARM_IMAGES } from '../drawing/bundledFarm/images';
 import { COLORING_PAGES, SAMPLE_PAGE_IDS, type PageId } from '../drawing/pages';
 import { PAPER_THEMES } from '../drawing/theme';
 
@@ -67,7 +67,7 @@ export function RsdColoringBookPicker({
               onClick={() => setView({ kind: 'pages', bookId: STARTER_BOOK_ID })}
             >
               <Image
-                source={{ uri: BUNDLED_BOOK_COVERS[theme] }}
+                source={{ uri: BUNDLED_FARM_COVERS[theme] }}
                 style={images.cover}
                 accessible={false}
               />
@@ -119,7 +119,7 @@ export function RsdColoringBookPicker({
                         onClick={() => onChoose(pageId)}
                       >
                         <Image
-                          source={{ uri: BUNDLED_BOOK_ART[pageId].selector[theme] }}
+                          source={{ uri: BUNDLED_FARM_IMAGES[pageId].selector[theme] }}
                           style={[images.page, { backgroundColor: PAPER_THEMES[theme].paper }]}
                           accessible={false}
                         />

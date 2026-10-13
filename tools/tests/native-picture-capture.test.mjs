@@ -79,6 +79,7 @@ vi.mock(
 
 vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', () => ({
   PageOutline: ({ pageId }) => createElement('div', { 'data-page': pageId }),
+  usePageOutlineReady: () => true,
 }));
 
 const LEGAL_REPLAY_TEST_TIMEOUT_MS = 30_000;

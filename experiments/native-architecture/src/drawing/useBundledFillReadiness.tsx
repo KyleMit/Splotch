@@ -2,7 +2,7 @@ import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
-import { bundledArt } from './bundledBookAssets';
+import { bundledFill } from './bundledBookAssets';
 import { isFarmPageId } from './bundledBooks';
 import { artOrientation, paperSize } from './paperSpace';
 import { useInkAppearance } from './InkAppearance';
@@ -18,7 +18,7 @@ export function useBundledFillReadiness(
   const fill = isOfflinePageId(pageId)
     ? offlineArtwork[pageId]?.[artOrientation(size)][theme].fill
     : isFarmPageId(pageId)
-      ? bundledArt(pageId, theme, size).fill
+      ? bundledFill(pageId, theme, size)
       : null;
   const uri = plan.strokes.some((stroke) => stroke.brush === 'magic') ? (fill ?? null) : null;
   const [svgLoaded, setSvgLoaded] = useState<string | null>(null);
