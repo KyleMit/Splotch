@@ -8,6 +8,10 @@ ios/
 experiments/native-architecture/ios/Pods/
 experiments/native-architecture/android/.gradle/
 experiments/native-architecture/android/app/.cxx/
+# Byte-identical copies of the shipping branding, written by tools/migration/gen-native-branding.mjs
+# and held to the shipping files by tools/tests/native-branding.test.mjs.
+experiments/native-architecture/ios/HelloWorld/Images.xcassets/AppIcon.appiconset/Contents.json
+experiments/native-architecture/ios/HelloWorld/Images.xcassets/Splash.imageset/Contents.json
 **/.svelte-kit/
 **/build/
 **/.netlify/
