@@ -441,6 +441,7 @@ const styles = css.create({
     fontWeight: fonts.semiboldWeight,
   },
   success: {
+    boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
