@@ -10,6 +10,24 @@ import {
 import type { ParentFeature, ParentPolicies, ParentProof } from './parentPolicy';
 
 export const PARENT_GATE_SHAKE_MS = 400;
+// The shipping keypad's keys in reading order; rsd-native-parent-center.test.mjs pins them to
+// GATE_KEYPAD_KEYS in parentalGate.svelte.ts.
+const PARENT_GATE_CHECK_KEY = 'submit';
+export const PARENT_GATE_KEYPAD_KEYS = [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  0,
+  'delete',
+  PARENT_GATE_CHECK_KEY,
+] as const;
+export type ParentGateKey = (typeof PARENT_GATE_KEYPAD_KEYS)[number];
 export type ParentGateState = Readonly<{
   open: boolean;
   feature: ParentFeature;
@@ -145,6 +163,28 @@ export function createParentGate(
     const mode = policies()[feature];
     return mode === 'never' || (mode === 'session' && sessions.has(feature));
   }
+  /** A digit past the answer's length counts as a wrong answer, as it does on the shipping card. */
+  function input(value: string) {
+    if (!state.open || tick() || !/^\d*$/.test(value)) return;
+    if (value.length > String(state.x * state.y).length) {
+      wrongAnswer();
+      return;
+    }
+    update({ input: value });
+  }
+  function answer() {
+    if (!state.open || tick()) return;
+    if (state.input !== String(state.x * state.y)) {
+      wrongAnswer();
+      return;
+    }
+    resetLockout();
+    sessions.add(state.feature);
+    const action = pending;
+    pending = null;
+    update({ open: false, input: '', message: '', shaking: false, locked: false });
+    if (action) execute(action);
+  }
   return {
     getState: () => state,
     request(feature: ParentFeature, action: (proof: ParentProof) => void) {
@@ -172,26 +212,13 @@ export function createParentGate(
         execute(action);
       }
     },
-    input(value: string) {
-      if (!state.open || tick() || !/^\d*$/.test(value)) return;
-      if (value.length > String(state.x * state.y).length) {
-        wrongAnswer();
-        return;
-      }
-      update({ input: value });
-    },
-    answer() {
-      if (!state.open || tick()) return;
-      if (state.input !== String(state.x * state.y)) {
-        wrongAnswer();
-        return;
-      }
-      resetLockout();
-      sessions.add(state.feature);
-      const action = pending;
-      pending = null;
-      update({ open: false, input: '', message: '', shaking: false, locked: false });
-      if (action) execute(action);
+    input,
+    answer,
+    /** One keypad tap: a digit appends, delete removes the last digit, check answers. */
+    press(key: ParentGateKey) {
+      if (key === 'delete') input(state.input.slice(0, -1));
+      else if (key === PARENT_GATE_CHECK_KEY) answer();
+      else input(state.input + String(key));
     },
     cancel(feature: ParentFeature) {
       if (state.feature === feature && state.open) dismiss();

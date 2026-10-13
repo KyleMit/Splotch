@@ -7,7 +7,7 @@ import { ROOT, isMain } from '../lib/proc.mjs';
 const SOURCE = `${ROOT}/web/src/lib/icons/`;
 export const NATIVE_ICONS_TARGET = `${ROOT}/experiments/native-architecture/src/rsdDrawing/icons.generated.ts`;
 
-// The drawing toolbar's icons, by shipping icon name; a deferred icon names its subdirectory.
+// The drawing toolbar's and Parental Gate keypad's icons, by shipping icon name; a deferred icon names its subdirectory.
 export const NATIVE_ICON_SOURCES = {
   undo: 'undo.svg',
   'brush-pen': 'brush-pen.svg',
@@ -25,6 +25,8 @@ export const NATIVE_ICON_SOURCES = {
   'parent-center': 'deferred/parent-center.svg',
   controls: 'deferred/controls.svg',
   'chevron-right': 'chevron-right.svg',
+  backspace: 'deferred/backspace.svg',
+  check: 'deferred/check.svg',
 };
 
 const THEMES = ['light', 'dark'];

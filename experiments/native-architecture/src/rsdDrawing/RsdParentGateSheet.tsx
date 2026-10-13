@@ -1,11 +1,52 @@
-import { html } from 'react-strict-dom';
+import { css, html } from 'react-strict-dom';
 import { Animated } from 'react-native';
 import { NativeDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
+import { RsdParentGateKeypad } from './RsdParentGateKeypad';
+import { colors, dimensions } from './tokens.css';
+import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { PARENT_LABELS } from '../parentCenter/parentPolicy';
 import type { ParentGateState } from '../parentCenter/parentGate';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import { useParentGateMotion } from '../parentCenter/useParentGateMotion';
+
+// The shipping answer dab (ParentalGateProblem.svelte): one per answer digit, its dashed edge the
+// only hint of how many digits the answer has until it fills.
+const DAB_WIDTH_PX = 48;
+const DAB_HEIGHT_PX = 54;
+const DAB_EDGE_PX = 2;
+
+const sheetStyles = css.create({
+  problem: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: dimensions.space2,
+    fontSize: dimensions.fontSizeLg,
+    fontWeight: dimensions.fontWeightBold,
+    color: colors.textStrong,
+  },
+  dab: (edge: string) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: DAB_WIDTH_PX,
+    height: DAB_HEIGHT_PX,
+    borderRadius: dimensions.radiusMd,
+    borderWidth: DAB_EDGE_PX,
+    borderStyle: 'dashed',
+    borderColor: edge,
+  }),
+  filled: { borderColor: 'transparent', backgroundColor: colors.brandWash },
+});
+
+function answerDabs(state: ParentGateState) {
+  return Array.from(
+    { length: String(state.x * state.y).length },
+    (_, index) => state.input[index] ?? ''
+  );
+}
 
 export function RsdParentGateSheet({
   owner,
@@ -18,8 +59,8 @@ export function RsdParentGateSheet({
   visible?: boolean;
   onDismiss?: () => void;
 }) {
-  const disabled = state.locked || state.shaking;
   const offset = useParentGateMotion(state);
+  const { iconMuted } = useDrawingTheme();
   return (
     <NativeDialog
       visible={visible}
@@ -32,35 +73,25 @@ export function RsdParentGateSheet({
         <html.div style={styles.dialogContent}>
           <html.h1>Grown-ups only</html.h1>
           <html.span>{PARENT_LABELS[state.feature]}</html.span>
-          <html.span>
-            {state.x} × {state.y}
-          </html.span>
-          <html.input
-            aria-label="Grown-up answer"
-            inputMode="numeric"
-            value={state.input}
-            disabled={disabled}
-            onChange={(event: unknown) => {
-              if (
-                event &&
-                typeof event === 'object' &&
-                'target' in event &&
-                event.target &&
-                typeof event.target === 'object' &&
-                'value' in event.target &&
-                typeof event.target.value === 'string'
-              )
-                owner.gate.input(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') owner.gate.answer();
-            }}
-          />
+          <html.div style={sheetStyles.problem}>
+            <html.span>
+              {state.x} × {state.y} =
+            </html.span>
+            {answerDabs(state).map((digit, index) => (
+              <html.span
+                key={index}
+                aria-hidden
+                style={[sheetStyles.dab(iconMuted), digit !== '' && sheetStyles.filled]}
+              >
+                {digit}
+              </html.span>
+            ))}
+          </html.div>
           <html.span aria-hidden>{state.message}</html.span>
           <html.span key={state.announcementId} aria-live="polite">
             {state.announcement}
           </html.span>
-          <RsdAction label="Check answer" disabled={disabled} onClick={owner.gate.answer} />
+          <RsdParentGateKeypad locked={state.locked} onPress={owner.gate.press} />
           {state.feature !== 'parentCenter' ? (
             <RsdAction
               label="Manage these checks in Settings › Parent Center"

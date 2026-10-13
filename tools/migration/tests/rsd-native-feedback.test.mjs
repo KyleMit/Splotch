@@ -1,6 +1,7 @@
 import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
+import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 async function click(label) {
@@ -73,10 +74,7 @@ it('uses the actual RSD native input bridge, preview, gate and transport caller 
   expect(caller.feedbackSend).not.toHaveBeenCalled();
   expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
   expect(records.dismissals.length).toBeGreaterThan(0);
-  const match = host.textContent.match(/(\d) × (\d)/);
-  expect(match).not.toBeNull();
-  await input('Grown-up answer', String(Number(match[1]) * Number(match[2])));
-  await click('Check answer');
+  await solveParentGate();
   expect(caller.feedbackSend).toHaveBeenCalledOnce();
   expect(caller.feedbackSend.mock.calls[0][0]).toEqual({
     kind: 'bug',
