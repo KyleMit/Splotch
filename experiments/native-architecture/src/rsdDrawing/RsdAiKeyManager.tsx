@@ -34,8 +34,8 @@ const NOTE_GAP_PX = 6;
 const NOTE_LINE_HEIGHT = 1.45;
 const NOTE_ICON_PX = 13;
 const NOTE_ICON_TOP_PX = 1;
-// The design tokens' --font-mono stack for the web; each native platform names its own face.
-const MONO_WEB = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+// The design tokens' --font-mono face for a saved credential: strict.css sets the web's stack, and
+// each native platform names its own face.
 const MONO_IOS = 'Menlo';
 const MONO_ANDROID = 'monospace';
 
@@ -83,7 +83,6 @@ const styles = css.create({
     backgroundColor: colors.surfaceHover,
     letterSpacing: SAVED_LETTER_SPACING_PX,
   },
-  monoWeb: { fontFamily: MONO_WEB },
   monoIos: { fontFamily: MONO_IOS },
   monoAndroid: { fontFamily: MONO_ANDROID },
   manager: { marginBottom: dimensions.space6 },
@@ -215,11 +214,8 @@ function SavedCredential({
           style={[
             styles.input,
             styles.saved,
-            Platform.OS === 'ios'
-              ? styles.monoIos
-              : Platform.OS === 'android'
-                ? styles.monoAndroid
-                : styles.monoWeb,
+            Platform.OS === 'ios' && styles.monoIos,
+            Platform.OS === 'android' && styles.monoAndroid,
           ]}
         />
         <html.div style={styles.submit}>

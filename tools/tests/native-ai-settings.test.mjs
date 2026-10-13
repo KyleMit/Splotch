@@ -38,6 +38,7 @@ const NATIVE = {
   valueProp: read('experiments/native-architecture/src/rsdDrawing/RsdAiValueProp.tsx'),
   howTo: read('experiments/native-architecture/src/rsdDrawing/RsdOpenAiKeyHowTo.tsx'),
   geometry: read('experiments/native-architecture/src/rsdDrawing/modalGeometry.ts'),
+  strictCss: read('experiments/native-architecture/src/strict.css'),
   hostedPages: read('experiments/native-architecture/src/settings/hostedPages.ts'),
 };
 // A module-scope literal of a native port, as the StyleX compile needs it written.
@@ -126,7 +127,8 @@ describe('Settings › AI Art against shipping', () => {
     expect(SHIPPING.sectionCss).toContain(
       `--ai-section-card-height: ${literal(NATIVE.geometry, 'AI_SECTION_CARD_HEIGHT_PX')}px;`
     );
-    expect(SHIPPING.tokens).toContain(`fontMono: '${literal(NATIVE.manager, 'MONO_WEB')}'`);
+    const mono = /input\[readonly\] \{\s*font-family: ([^;]+);/.exec(NATIVE.strictCss)[1];
+    expect(SHIPPING.tokens).toContain(`fontMono: '${mono}'`);
     const css = flat(SHIPPING.manager);
     const manager = (name) => literal(NATIVE.manager, name);
     expect(css).toContain(`margin: 0 0 ${manager('INTRO_BOTTOM_PX')}px;`);
