@@ -123,6 +123,11 @@ vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () 
   },
 }));
 
+// Save picture is this suite's probe of the current drawing; the photo library copy it also
+// makes is covered by native-save-to-photos-mounted.test.mjs.
+vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
+  photoLibrary: null,
+}));
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   savePicture: sdk.save,
   exportPng: sdk.export,

@@ -35,6 +35,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<false/>
 	</dict>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Splotch saves your child's drawing to your photo library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

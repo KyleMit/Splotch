@@ -27,6 +27,7 @@ import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdOrientationChoices } from './RsdOrientationChoices';
 import type { OrientationChoice } from '../settings/orientation';
+import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -37,6 +38,7 @@ type NativeSoundSettingsDialogProps = {
   onToggle: () => void;
   onUndoButtonChange: (enabled: boolean) => void;
   onStrokeWidthControlChange: (enabled: boolean) => void;
+  onSaveOnDeleteChange: (enabled: boolean) => void;
   onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onOrientationChange: (orientation: OrientationChoice) => void;
@@ -57,6 +59,7 @@ export function NativeSoundSettingsDialog({
   onToggle,
   onUndoButtonChange,
   onStrokeWidthControlChange,
+  onSaveOnDeleteChange,
   onSoundLevelChange,
   onAppearanceChange,
   onOrientationChange,
@@ -127,6 +130,11 @@ export function NativeSoundSettingsDialog({
             disabled={busy}
             onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
           />
+          <SaveOnDeleteSwitch
+            settings={settings}
+            busy={busy}
+            onSaveOnDeleteChange={onSaveOnDeleteChange}
+          />
           <AppearanceChoices
             settings={settings}
             busy={busy}
@@ -163,6 +171,25 @@ export function NativeSoundSettingsDialog({
         </html.div>
       )}
     </NativeDialog>
+  );
+}
+
+function SaveOnDeleteSwitch({
+  settings,
+  busy,
+  onSaveOnDeleteChange,
+}: Pick<NativeSoundSettingsDialogProps, 'settings' | 'onSaveOnDeleteChange'> & { busy: boolean }) {
+  return (
+    <>
+      <RsdAction
+        label={SAVE_ON_DELETE_LABEL}
+        selection="switch"
+        selected={settings.saveOnDeleteEnabled}
+        disabled={busy}
+        onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
+      />
+      <html.span>{SAVE_ON_DELETE_HELP}</html.span>
+    </>
   );
 }
 

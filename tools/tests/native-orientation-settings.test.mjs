@@ -54,7 +54,8 @@ describe('persisted orientation choice', () => {
   it('migrates a version 7 record to the shipping Portrait default without rewriting it', async () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_7))).toEqual({
       ...VERSION_7,
-      version: 8,
+      version: 9,
+      saveOnDeleteEnabled: false,
       orientation: 'portrait',
     });
     const f = fixture(JSON.stringify(VERSION_7));
@@ -75,7 +76,7 @@ describe('persisted orientation choice', () => {
       });
     if (version >= 6) Object.assign(old, { coloringBookEnabled: true });
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 8,
+      version: 9,
       orientation: 'portrait',
     });
   });
@@ -86,7 +87,12 @@ describe('persisted orientation choice', () => {
       const f = fixture(JSON.stringify(VERSION_7));
       await f.owner.load();
       await f.owner.setOrientation(choice);
-      expect(JSON.parse(f.stored())).toEqual({ ...VERSION_7, version: 8, orientation: choice });
+      expect(JSON.parse(f.stored())).toEqual({
+        ...VERSION_7,
+        version: 9,
+        orientation: choice,
+        saveOnDeleteEnabled: false,
+      });
       const reopened = fixture(f.stored());
       await reopened.owner.load();
       expect(reopened.changes.at(-1)).toMatchObject({ orientation: choice, saved: true });
