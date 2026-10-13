@@ -1,22 +1,13 @@
-import { Fragment, type ReactNode } from 'react';
 import { Animated } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
-import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE } from '../drawing/theme';
-import {
-  INSTALL_BANNER_PARTS,
-  iosBannerStepParts,
-  type InstallTextPart,
-} from '../install/installCopy';
+import { INSTALL_BANNER_PARTS, iosBannerStepParts } from '../install/installCopy';
 import type { InstallBanner } from '../install/useInstallBanner';
 import { useShareButtonLocation } from '../install/shareLocation';
-import { styles as controlStyles } from './controls';
-import type { NativeIconName } from './icons.generated';
 import { INSTALL_BANNER_MOTION, useFade } from './installBannerMotion';
-import { RsdIcon } from './RsdIcon';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { RsdStepNumber } from './RsdStepNumber';
-import { RsdVisuallyHidden } from './RsdVisuallyHidden';
+import { InstallText } from './RsdInstallParts';
 import { colors, dimensions } from './tokens.css';
 
 // InstallBanner.svelte's literals for the hint and the parting message, local for the StyleX web
@@ -40,7 +31,7 @@ export function RsdInstallParting() {
           <RsdSplotchyIcon size={MASCOT_PX} />
         </html.div>
         <html.p style={[styles.prose, styles.partingText]}>
-          <InstallText parts={INSTALL_BANNER_PARTS.parting} />
+          <InstallText parts={INSTALL_BANNER_PARTS.parting} iconPx={DRAWING_SCALE.fontSizeSm} />
         </html.p>
       </html.div>
     </Animated.View>
@@ -61,50 +52,21 @@ export function RsdInstallHint({ shown, mode }: { shown: boolean; mode: InstallB
               <html.li key={index} style={styles.step}>
                 <RsdStepNumber number={index + 1} size="compact" shape="disc" />
                 <html.span style={styles.stepText}>
-                  <InstallText parts={parts} />
+                  <InstallText parts={parts} iconPx={DRAWING_SCALE.fontSizeSm} />
                 </html.span>
               </html.li>
             ))}
           </html.ol>
         ) : (
           <html.p style={styles.flush}>
-            <InstallText parts={INSTALL_BANNER_PARTS.androidHint} />
+            <InstallText
+              parts={INSTALL_BANNER_PARTS.androidHint}
+              iconPx={DRAWING_SCALE.fontSizeSm}
+            />
           </html.p>
         )}
       </html.div>
     </Animated.View>
-  );
-}
-
-function TextPart({ part, termInk }: { part: InstallTextPart; termInk: string }): ReactNode {
-  if (part.kind === 'text') return part.text;
-  if (part.kind === 'strong')
-    return <html.strong style={controlStyles.boldText}>{part.text}</html.strong>;
-  if (part.kind === 'icon') return <InlineIcon name={part.icon} ink={undefined} />;
-  return (
-    <html.span style={[controlStyles.boldText, styles.term]}>
-      <InlineIcon name={part.icon} ink={part.textInk ? termInk : undefined} />
-      {part.spoken ? <RsdVisuallyHidden>{part.spoken}</RsdVisuallyHidden> : null}
-      {part.text}
-    </html.span>
-  );
-}
-
-// A banner sentence in the hint's text size: its inline icons are one em, as shipping's are.
-function InstallText({ parts }: { parts: readonly InstallTextPart[] }) {
-  const termInk = useDrawingTheme().textStrong;
-  return parts.map((part, index) => (
-    <Fragment key={index}>
-      <TextPart part={part} termInk={termInk} />
-    </Fragment>
-  ));
-}
-
-function InlineIcon({ name, ink }: { name: NativeIconName; ink: string | undefined }) {
-  return (
-    <html.span aria-hidden style={styles.inlineIcon}>
-      <RsdIcon name={name} size={DRAWING_SCALE.fontSizeSm} ink={ink} muted={false} />
-    </html.span>
   );
 }
 
@@ -138,6 +100,4 @@ const styles = css.create({
   },
   step: { display: 'flex', flexDirection: 'row', gap: dimensions.space3, alignItems: 'flex-start' },
   stepText: { flexShrink: 1 },
-  term: { whiteSpace: 'nowrap', color: colors.textStrong },
-  inlineIcon: { display: 'inline-flex', verticalAlign: '-0.125em' },
 });
