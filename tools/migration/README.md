@@ -37,6 +37,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `tools/migration/tests/rsd-drawing-tokens.test.mjs` holds every shipping token, light and dark, to
   its projected value, and `tools/migration/tests/rsd-native-token-specimen.test.mjs` renders the
   specimen in `tools/migration/tests/rsd-token-specimen.mjs` through the released native renderer.
+* `tools/migration/tests/rsd-web-buttons.test.mjs` (in `test:tools`) spawns
+  `tools/migration/render-rsd-web-buttons.mjs`, which compiles the RSD button primitives with the
+  app's production Babel config for Metro's web caller and renders them, plus a caller passing a
+  style array straight to `RsdPressable`, to markup, so a style the web transform cannot see fails
+  before it ships.
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
   the native `react-strict-dom` alias. Among them, `rsd-native-segmented-picker.test.mjs` and
