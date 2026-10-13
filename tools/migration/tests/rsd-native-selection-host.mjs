@@ -403,6 +403,12 @@ afterEach(async () => {
   orientationCalls.length = 0;
 });
 
+async function expandControls() {
+  const toggle = host.querySelector('[aria-label="Expand controls"]');
+  if (!toggle) throw new Error('The tool drawer is not collapsed.');
+  await act(async () => toggle.click());
+}
+
 function createPickerCaller(refresh) {
   const owner = createSoundSettings(
     { read: async () => null, write: async () => {} },
@@ -451,6 +457,5 @@ export {
   checkedSwitch,
   visibleSelection,
   assertDisabledBoundary,
-  assertPortraitControls,
 } from './rsd-native-assertions.mjs';
-export { caller, records, root, host, mount, createPickerCaller };
+export { caller, records, root, host, mount, createPickerCaller, expandControls };

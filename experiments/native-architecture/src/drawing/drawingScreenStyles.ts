@@ -24,6 +24,11 @@ const themedStyles = createDrawingStyles((palette) =>
     controls: { gap: CONTROL_GAP, padding: DRAWING_SCALE.space1 },
     topControls: { flexGrow: 0, maxHeight: PORTRAIT_CONTROLS_MAX_HEIGHT_PERCENT },
     sideControls: { width: LANDSCAPE_CONTROLS_WIDTH_PX, flexGrow: 0, flexShrink: 0 },
+    fullBleed: { flex: 1, minHeight: 0 },
+    fullBleedLandscape: { flexDirection: 'row' },
+    paletteBar: { flexGrow: 0, flexShrink: 0, backgroundColor: palette.surface },
+    canvasColumn: { flex: 1, minWidth: 0, minHeight: 0 },
+    canvasArea: { flex: 1, minWidth: 0, minHeight: 0, backgroundColor: palette.paperMargin },
     workspace: {
       flex: 1,
       minWidth: 0,

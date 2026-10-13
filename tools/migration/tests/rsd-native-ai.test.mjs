@@ -1,5 +1,5 @@
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
+import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -84,6 +84,8 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     );
     useCaller(drawing);
     await mount(createElement(RsdDrawingScreen));
+    await expandControls();
+    expect(host.querySelector('[aria-label="Parent Center"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="AI picture"]')).toBeNull();
     await sendDrawing();
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
@@ -222,6 +224,7 @@ it.each([
   pendingGeneration(() => reply.promise);
   useCaller(emptyDrawing());
   await mount(createElement(RsdDrawingScreen));
+  await expandControls();
   await sendDrawing();
   expect(testId('ai-run-polaroid')).not.toBeNull();
   const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
@@ -256,11 +259,13 @@ it(
     );
     useCaller(emptyDrawing());
     await mount(createElement(RsdDrawingScreen));
+    await expandControls();
     await sendDrawing();
     expect(testId('ai-run-polaroid')).not.toBeNull();
     await click('Keep drawing');
     expect(host.querySelector('[data-native-modal]')).toBeNull();
     expect(labelled(WAITING_LABEL)).not.toBeNull();
+    expect(labelled(WAITING_LABEL).closest('[data-testid="rsd-paper-corner"]')).not.toBeNull();
     expect(labelled('Parent Center').disabled).toBe(false);
     await click('AI picture');
     expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);

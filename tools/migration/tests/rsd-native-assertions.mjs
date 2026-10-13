@@ -24,13 +24,3 @@ export function assertDisabledBoundary(props, disabled) {
   if (props?.accessibilityState?.disabled !== disabled)
     throw new Error('Missing explicit native disabled boolean');
 }
-
-export function assertPortraitControls(props) {
-  if (
-    props?.testID !== 'rsd-paint-controls-viewport' ||
-    props.style?.maxHeight !== '45%' ||
-    props.style.flexGrow !== 0 ||
-    props.accessible !== false
-  )
-    throw new Error('Missing bounded native controls owner');
-}

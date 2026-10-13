@@ -296,7 +296,7 @@ function validateBrushSources({
   function assertTransformedBrushSwitches(ast, file) {
     if (
       file === 'src/rsdDrawing/NativeDialog.tsx' ||
-      file === 'src/rsdDrawing/RsdDrawingScreen.tsx'
+      file === 'src/rsdDrawing/RsdEdgeControls.tsx'
     ) {
       const transformedSwitches = [];
       babel.traverse(ast, {
