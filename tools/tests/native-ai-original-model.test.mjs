@@ -8,24 +8,18 @@ import {
   AI_ORIGINAL_IMPORT_VERSIONS,
 } from '../../experiments/native-architecture/src/platform/aiOriginalModel.ts';
 import {
-  MAX_CONTACTS_7,
-  MAX_GEOMETRY_7,
-  MAX_RETAINED_OPS_7,
-} from '../../experiments/native-architecture/src/drawing/recordedTypes7.ts';
+  drawingCapacity,
+  emptyDrawing,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
   MAX_BACKING_SCALE,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import {
-  MAGIC_RAINBOW_COUNT,
-  MAX_CRAYON_SEED,
-} from '../../experiments/native-architecture/src/drawing/brushes.ts';
-import { createRecordedContactCohort7 } from '../../experiments/native-architecture/src/drawing/recordedContactCohort7.ts';
+import { MAGIC_RAINBOW_COUNT } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 const ROOT = join(import.meta.dirname, '../..');
 const ANDROID = 'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt';
 const APPLE = 'ios/HelloWorld/SplotchAIJournal.swift';
-const PAPER = { kind: 'adopted', cssWidth: 512, cssHeight: 384, backingScale: 2 };
 function nativeFiles() {
   return new Map(
     [ANDROID, APPLE].map((path) => [
@@ -33,21 +27,6 @@ function nativeFiles() {
       readFileSync(join(ROOT, 'experiments/native-architecture', path)),
     ])
   );
-}
-function recorded() {
-  const owner = createRecordedContactCohort7(PAPER, 'per-frame', 65);
-  owner.start('one', { brush: 'crayon', color: 'Red', width: 8 }, { x: 2, y: 3 });
-  owner.move('one', [{ x: 12, y: 13 }]);
-  owner.drain();
-  const completed = owner.end('one');
-  return {
-    version: 7,
-    pageId: 'blank',
-    rainbow: 0,
-    paper: PAPER,
-    commands: [completed.command],
-    seedCursor: completed.seedCursor + 1,
-  };
 }
 const IMPORTS = [
   { version: 1, strokes: [] },
@@ -63,13 +42,6 @@ describe('native opaque original-model admission', () => {
     const source = '  ' + JSON.stringify(value) + '\n';
     expect(() => validateAiOriginalModel(source, 'imported')).not.toThrow();
     expect(source).toBe('  ' + JSON.stringify(value) + '\n');
-  });
-  it('admits declared v7 allocation gaps and rejects retained ops that differ from their actual input', () => {
-    const value = recorded();
-    expect(() => validateAiOriginalModel(JSON.stringify(value), 'current')).not.toThrow();
-    const forged = structuredClone(value);
-    forged.commands[0].ops[0].at.x += 1;
-    expect(() => validateAiOriginalModel(JSON.stringify(forged), 'current')).toThrow();
   });
   it.each([
     null,
@@ -115,17 +87,13 @@ describe('native opaque original-model admission', () => {
     expect(apple).toContain(
       'importedOriginalVersions: Set<Int64> = [' + AI_ORIGINAL_IMPORT_VERSIONS.join(', ') + ']'
     );
-    expect(android).toContain('maxDrawingContacts = ' + MAX_CONTACTS_7);
-    expect(apple).toContain('maxDrawingContacts = ' + MAX_CONTACTS_7);
-    expect(android).toContain('maxDrawingSamples = ' + MAX_GEOMETRY_7);
-    expect(apple).toContain('maxDrawingSamples = ' + MAX_GEOMETRY_7);
-    expect(MAX_RETAINED_OPS_7).toBe(MAX_GEOMETRY_7 * 2);
-    expect(android).toContain('maxRecordedOps = maxDrawingSamples * 2');
-    expect(apple).toContain('maxRecordedOps: Int { maxDrawingSamples * 2 }');
+    const capacity = drawingCapacity(emptyDrawing());
+    expect(android).toContain('maxDrawingContacts = ' + capacity.strokes);
+    expect(apple).toContain('maxDrawingContacts = ' + capacity.strokes);
+    expect(android).toContain('maxDrawingSamples = ' + capacity.points);
+    expect(apple).toContain('maxDrawingSamples = ' + capacity.points);
     expect(android).toContain('drawingRainbowCount = ' + MAGIC_RAINBOW_COUNT + 'L');
     expect(apple).toContain('drawingRainbowCount: Int64 = ' + MAGIC_RAINBOW_COUNT);
-    expect(android).toContain('maxAllocationCursor = ' + (MAX_CRAYON_SEED + 1) + 'L');
-    expect(apple).toContain('maxAllocationCursor: Int64 = ' + (MAX_CRAYON_SEED + 1));
     expect(android).toContain('drawingPaperWidth = ' + PAPER_WIDTH + '.0');
     expect(apple).toContain('drawingPaperWidth = ' + PAPER_WIDTH + '.0');
     expect(android).toContain('drawingPaperHeight = ' + PAPER_HEIGHT + '.0');

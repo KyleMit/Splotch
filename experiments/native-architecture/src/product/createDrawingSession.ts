@@ -1,23 +1,8 @@
 import { createHistory, type History } from '../drawing/model';
 import { coloringBookHistory, DEFAULT_COLORING_BOOK_ENABLED } from '../settings/coloringBook';
-import { INITIAL_RAINBOW } from '../drawing/brushes';
-import { UNADOPTED_PAPER } from '../drawing/paperSpace';
-import { parseRecordedDrawing7 } from '../drawing/recordedDrawing7';
-import type { DrawingBackend } from './drawingBackend';
 
-export function createDrawingSession(backend: DrawingBackend = 'legacy') {
-  let history = createHistory(
-    backend === 'recorded'
-      ? parseRecordedDrawing7({
-          version: 7,
-          paper: UNADOPTED_PAPER,
-          pageId: 'blank',
-          rainbow: INITIAL_RAINBOW,
-          seedCursor: 1,
-          commands: [],
-        })
-      : undefined
-  );
+export function createDrawingSession() {
+  let history = createHistory();
   let coloringBookEnabled = DEFAULT_COLORING_BOOK_ENABLED;
   const listeners = new Set<() => void>();
 

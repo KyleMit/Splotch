@@ -4,10 +4,10 @@ import {
   type IdbDatabase,
   type IdbTransaction,
 } from '../../../../web/src/lib/idbDatabase';
-import type { DrawingBackend } from '../product/drawingBackend';
 import {
   claimDraftAuthority,
   DRAFT_DATABASE,
+  DRAFT_KEY,
   DRAFT_STORE,
   hasDraftAuthority,
   invalidDraftRecord,
@@ -19,7 +19,7 @@ import {
 } from './drawingDraftRecords.web';
 
 interface DraftDatabase extends DBSchema {
-  drafts: { key: DrawingBackend; value: unknown };
+  drafts: { key: typeof DRAFT_KEY; value: unknown };
 }
 type DraftTransaction = IdbTransaction<DraftDatabase, 'drafts'>;
 
@@ -57,11 +57,13 @@ class WebDraftDatabase {
     }
   }
 
-  async rawSnapshot(backend: DrawingBackend): Promise<string | null> {
-    const raw = await this.transaction('readonly', (transaction) => transaction.store.get(backend));
+  async rawSnapshot(): Promise<string | null> {
+    const raw = await this.transaction('readonly', (transaction) =>
+      transaction.store.get(DRAFT_KEY)
+    );
     if (raw !== undefined) return parseDraftRecord(raw).snapshot;
-    if (hasDraftAuthority(backend)) invalidDraftRecord();
-    return readLegacyDraft(backend);
+    if (hasDraftAuthority()) invalidDraftRecord();
+    return readLegacyDraft();
   }
 }
 
@@ -70,8 +72,6 @@ export class WebDrawingDraftOwner {
   private expected: WebDrawingDraftRecord | undefined;
   private uncertain: WebDrawingDraftRecord | undefined;
   private conflicted = false;
-
-  constructor(private readonly backend: DrawingBackend) {}
 
   private conflict(): never {
     this.conflicted = true;
@@ -102,17 +102,17 @@ export class WebDrawingDraftOwner {
     const found = await this.database.transaction(
       this.expected ? 'readonly' : 'readwrite',
       async (tx) => {
-        const raw = await tx.store.get(this.backend);
+        const raw = await tx.store.get(DRAFT_KEY);
         if (this.expected) return this.checkedRecord(raw);
         if (raw !== undefined) {
           const record = parseDraftRecord(raw);
-          claimDraftAuthority(this.backend);
+          claimDraftAuthority();
           return record;
         }
-        if (hasDraftAuthority(this.backend)) invalidDraftRecord();
-        const record = newDraftRecord(1, readLegacyDraft(this.backend));
-        claimDraftAuthority(this.backend);
-        await tx.store.put(record, this.backend);
+        if (hasDraftAuthority()) invalidDraftRecord();
+        const record = newDraftRecord(1, readLegacyDraft());
+        claimDraftAuthority();
+        await tx.store.put(record, DRAFT_KEY);
         return record;
       }
     );
@@ -126,10 +126,10 @@ export class WebDrawingDraftOwner {
     if (!this.expected) throw new Error('Recover the current draft before saving.');
     if (this.uncertain) await this.read();
     const found = await this.database.transaction('readwrite', async (tx) => {
-      const previous = this.checkedRecord(await tx.store.get(this.backend));
+      const previous = this.checkedRecord(await tx.store.get(DRAFT_KEY));
       const next = newDraftRecord(previous.revision + 1, snapshot);
       this.uncertain = next;
-      await tx.store.put(next, this.backend);
+      await tx.store.put(next, DRAFT_KEY);
       return next;
     });
     this.expected = found;
@@ -139,6 +139,6 @@ export class WebDrawingDraftOwner {
 
 const protectionDatabase = new WebDraftDatabase();
 
-export function readProtectedDraftSnapshot(backend: DrawingBackend): Promise<string | null> {
-  return protectionDatabase.rawSnapshot(backend);
+export function readProtectedDraftSnapshot(): Promise<string | null> {
+  return protectionDatabase.rawSnapshot();
 }

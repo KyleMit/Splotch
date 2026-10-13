@@ -19,8 +19,6 @@ import {
   LEGACY_PAPER,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
-import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
-import { createRecordedContactCohort7 } from '../../experiments/native-architecture/src/drawing/recordedContactCohort7.ts';
 
 const capturePngFixture = readFileSync(
   new NodeURL('./fixtures/native-png-android-rgba-sbit.png', import.meta.url)
@@ -363,8 +361,6 @@ describe('generation and real input/command admission', () => {
       setPreparing: vi.fn(),
       setDrawing: vi.fn(),
       finishCohort: vi.fn(),
-      finishRecordedCohort: vi.fn(),
-      retainAllocation: vi.fn(),
       report: vi.fn(),
       setNotice: vi.fn(),
     };
@@ -463,40 +459,6 @@ describe('generation and real input/command admission', () => {
     expect(h.options.report).toHaveBeenLastCalledWith(
       expect.objectContaining({ message: 'active contact' })
     );
-  });
-  it('forwards an exact recorded cohort only while its renderer generation is mounted', () => {
-    const h = harness();
-    const paper = adoptPaper(342, 256.5, 1);
-    const drawing = { version: 7, paper, pageId: 'blank', rainbow: 0, seedCursor: 1, commands: [] };
-    const input = createRecordedContactCohort7(paper, 'per-frame', 1);
-    input.start('recorded', { brush: 'pen', color: 'Red', width: 22 }, { x: 200, y: 300 });
-    const cohort = input.end('recorded');
-    const committed = { ...drawing, commands: [cohort.command], seedCursor: cohort.seedCursor };
-    h.options.finishRecordedCohort.mockReturnValue(committed);
-    const old = h.get();
-    expect(old.callbacks.onRecordedCohort(drawing, cohort)).toBe(committed);
-    expect(h.options.finishRecordedCohort).toHaveBeenCalledWith(drawing, cohort);
-    act(() => old.callbacks.onRendererFault(new Error('fault')));
-    act(() => h.get().retry());
-    expect(() => old.callbacks.onRecordedCohort(drawing, cohort)).toThrow('renderer changed');
-    const current = h.get();
-    act(() => root.render(null));
-    expect(() => current.callbacks.onRecordedCohort(drawing, cohort)).toThrow('renderer changed');
-    expect(h.options.finishRecordedCohort).toHaveBeenCalledOnce();
-  });
-  it('retains abandoned allocation receipts after renderer replacement and unmount', () => {
-    const h = harness();
-    const drawing = createDrawingSession('recorded').currentDrawing();
-    const old = h.get();
-    act(() => old.callbacks.onRendererFault(new Error('fault')));
-    act(() => h.get().retry());
-    act(() => old.callbacks.onAbandonAllocation(drawing, 2));
-    expect(h.options.retainAllocation).toHaveBeenLastCalledWith(drawing, 2);
-    const current = h.get();
-    act(() => root.render(null));
-    current.callbacks.onAbandonAllocation(drawing, 3);
-    expect(h.options.retainAllocation).toHaveBeenLastCalledWith(drawing, 3);
-    expect(h.options.finishRecordedCohort).not.toHaveBeenCalled();
   });
 });
 

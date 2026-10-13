@@ -6,13 +6,11 @@ import Darwin
 final class SplotchAIJournal {
   private let queue = DispatchQueue(label: "art.splotch.ai-journal")
   private let maxModel = 8 * 1024 * 1024
-  private let currentOriginalVersions: Set<Int64> = [5, 6, 7]
-  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 6, 7]
+  private let currentOriginalVersions: Set<Int64> = [5, 6]
+  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 6]
   private let maxDrawingContacts = 1000
   private let maxDrawingSamples = 100000
-  private var maxRecordedOps: Int { maxDrawingSamples * 2 }
   private let drawingRainbowCount: Int64 = 10
-  private let maxAllocationCursor: Int64 = 4294967296
   private let drawingPaperWidth = 1024.0
   private let drawingPaperHeight = 768.0
   private let maximumBackingScale = 2.0
@@ -366,46 +364,21 @@ final class SplotchAIJournal {
     case 2: expected = value["pageId"] == nil ? ["version", "rainbow", "strokes"] : ["version", "pageId", "strokes"]
     case 3, 4, 5: expected = ["version", "pageId", "rainbow", "strokes"]
     case 6: expected = ["version", "paper", "pageId", "rainbow", "strokes"]
-    case 7: expected = ["version", "paper", "pageId", "rainbow", "seedCursor", "commands"]
     default: throw failure()
     }
     try keys(value, expected)
     if value["pageId"] != nil { try checked(!string(value, "pageId").isEmpty) }
     if value["rainbow"] != nil { try checked(integer(value, "rainbow", 0) < drawingRainbowCount) }
-    let count: Int
-    if version == 7 {
-      let highWater = try integer(value, "seedCursor")
-      try checked(highWater <= maxAllocationCursor)
-      guard let commands = value["commands"] as? [Any], commands.count <= maxDrawingContacts else { throw failure() }
-      var contacts = 0
-      var previous: Int64 = 1
-      for entry in commands {
-        let command = try object(entry)
-        try keys(command, ["firstSeed", "granularity", "styles", "moves", "ops"])
-        let firstSeed = try integer(command, "firstSeed")
-        try checked(firstSeed >= previous && firstSeed <= highWater)
-        previous = firstSeed
-        try checked(["per-move", "per-frame"].contains(string(command, "granularity")))
-        guard let styles = command["styles"] as? [Any], let moves = command["moves"] as? [Any], let ops = command["ops"] as? [Any] else { throw failure() }
-        contacts += styles.count
-        try checked(!styles.isEmpty && contacts <= maxDrawingContacts && moves.count <= maxDrawingSamples && ops.count <= maxRecordedOps)
-        for item in styles { _ = try object(item) }
-        for item in moves { _ = try object(item) }
-        for item in ops { _ = try object(item) }
-      }
-      count = commands.count
-    } else {
-      guard let strokes = value["strokes"] as? [Any], strokes.count <= maxDrawingContacts else { throw failure() }
-      var points = 0
-      for entry in strokes {
-        let stroke = try object(entry)
-        guard let samples = stroke["points"] as? [Any] else { throw failure() }
-        points += samples.count
-        try checked(!samples.isEmpty && points <= maxDrawingSamples)
-        for item in samples { _ = try object(item) }
-      }
-      count = strokes.count
+    guard let strokes = value["strokes"] as? [Any], strokes.count <= maxDrawingContacts else { throw failure() }
+    var points = 0
+    for entry in strokes {
+      let stroke = try object(entry)
+      guard let samples = stroke["points"] as? [Any] else { throw failure() }
+      points += samples.count
+      try checked(!samples.isEmpty && points <= maxDrawingSamples)
+      for item in samples { _ = try object(item) }
     }
+    let count = strokes.count
     if version >= 6 {
       let paper = try object(value["paper"])
       if try string(paper, "kind") == "unadopted" { try keys(paper, ["kind"]); try checked(count == 0) }

@@ -5,7 +5,7 @@ import {
   strokeStyle,
   drawingCapacity,
   DRAWING_FULL_MESSAGE,
-  type LegacyDrawing,
+  type Drawing,
   type Point,
   type Stroke,
 } from './model';
@@ -33,7 +33,7 @@ export function createContactCohort() {
       color: PaintColor,
       brush: Brush,
       point: Point,
-      drawing: LegacyDrawing,
+      drawing: Drawing,
       width: StrokeWidth = DEFAULT_STROKE_WIDTH,
       adoption?: () => AdoptedPaper
     ) {

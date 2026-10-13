@@ -8,9 +8,6 @@ native smoke flow.
 Install JavaScript dependencies once with `pnpm install` at the repository root. The app has no
 separate install step; Metro and the native builds resolve packages from the root `node_modules`.
 
-Set `EXPO_PUBLIC_DRAWING_BACKEND=recorded` in the environment that runs Metro or a Release bundle to
-select the format-7 recorded drawing core; unset or `legacy` keeps the previous one.
-
 ## iOS
 
 ```sh

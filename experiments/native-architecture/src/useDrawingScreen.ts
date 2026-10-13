@@ -1,5 +1,3 @@
-import type { Drawing7 } from './drawing/recordedTypes7';
-import type { CompletedCohort7 } from './drawing/recordedContactCohort7';
 import type { PaperReference } from './drawing/paperSpace';
 import { useDrawingHistory } from './product/DrawingSession';
 import { protectedDraftPageIds } from './platform/drawingDraft';
@@ -10,8 +8,6 @@ import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
   changePage,
   addStrokes,
-  addRecordedCohort,
-  retainRecordedAllocation,
   hasDrawingInk,
   commitDrawing,
   clearDrawing,
@@ -68,12 +64,6 @@ export function useDrawingScreen() {
   });
 
   const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report);
-
-  const { finishRecordedCohort, retainAllocation } = recordedCommitActions(
-    historyRef,
-    setHistory,
-    setNotice
-  );
 
   const settings = useDrawingSettings({
     surface,
@@ -134,8 +124,6 @@ export function useDrawingScreen() {
     setPreparing,
     setDrawing,
     finishCohort,
-    finishRecordedCohort,
-    retainAllocation,
     report,
     setNotice,
   });
@@ -167,27 +155,6 @@ export function useDrawingScreen() {
     finishCohort,
     ...pictureActions,
   };
-}
-
-function recordedCommitActions(
-  historyRef: RefObject<History>,
-  setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
-  setNotice: (notice: string) => void
-) {
-  function finishRecordedCohort(base: Drawing7, cohort: CompletedCohort7): Drawing7 {
-    const next = addRecordedCohort(historyRef.current, base, cohort);
-    if (next.drawing.version !== 7) throw new Error('The recorded drawing mode changed.');
-    setHistory(next);
-    setNotice('');
-    return next.drawing;
-  }
-
-  function retainAllocation(base: Drawing7, cursor: number) {
-    const next = retainRecordedAllocation(historyRef.current, base, cursor);
-    if (next !== historyRef.current) setHistory(next);
-  }
-
-  return { finishRecordedCohort, retainAllocation };
 }
 
 function createCohortCommit(

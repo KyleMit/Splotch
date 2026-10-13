@@ -7,7 +7,7 @@ import {
 import type { GestureResponderEvent, NativeTouchEvent } from 'react-native';
 import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
-import { paperPoint, type Drawing, type LegacyDrawing, type Stroke } from './model';
+import { paperPoint, type Drawing, type Stroke } from './model';
 import type { Brush } from './brushes';
 import type { PaintColor } from './palette';
 import { contactLifetime, readStartBatch, responderTarget } from './touchBoundary';
@@ -25,10 +25,6 @@ export type ContactDrawingProps = {
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
   sound?: ContactSound | null;
-};
-
-type LegacyContactDrawingProps = Omit<ContactDrawingProps, 'currentDrawing'> & {
-  currentDrawing: () => LegacyDrawing;
 };
 
 type Contact = {
@@ -68,7 +64,7 @@ class ContactResponder {
   } | null = null;
 
   constructor(
-    private readonly current: () => LegacyContactDrawingProps,
+    private readonly current: () => ContactDrawingProps,
     private readonly frame: () => PaperFrame | null,
     private readonly showDrafts: (drafts: readonly Stroke[], paper: PaperReference | null) => void,
     private readonly pixelRatio: () => number
@@ -407,7 +403,7 @@ class ContactResponder {
 }
 
 export function createContactResponder(
-  current: () => LegacyContactDrawingProps,
+  current: () => ContactDrawingProps,
   frame: () => PaperFrame | null,
   showDrafts: (drafts: readonly Stroke[], paper: PaperReference | null) => void,
   pixelRatio: () => number

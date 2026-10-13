@@ -1,5 +1,3 @@
-import { isRecordedInkPlan, type CaptureInkPlan } from './captureInkPlan';
-import { RecordedFixedInkCapture7 } from './RecordedFixedInkCapture7';
 import { InkPaperScope } from './InkPaper';
 import { samePaper } from './paperSpace';
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -20,7 +18,7 @@ import {
 } from './useCrayonTileReadiness';
 import { useBundledFillReadiness } from './useBundledFillReadiness';
 
-function LegacyFixedInkCapture({
+export function FixedInkCapture({
   plan,
   svgRef,
   onReady,
@@ -108,16 +106,3 @@ const styles = StyleSheet.create({
     height: PAPER_HEIGHT,
   },
 });
-
-export function FixedInkCapture(props: {
-  plan: CaptureInkPlan;
-  svgRef: RefObject<Svg | null>;
-  onReady: () => void;
-  onError: (error: unknown) => void;
-}) {
-  return isRecordedInkPlan(props.plan) ? (
-    <RecordedFixedInkCapture7 {...props} plan={props.plan} />
-  ) : (
-    <LegacyFixedInkCapture {...props} plan={props.plan} />
-  );
-}

@@ -16,13 +16,11 @@ class SplotchAIJournal(private val context: Context) {
   private val executor = Executors.newSingleThreadExecutor()
   private val root get() = File(context.noBackupFilesDir, "splotch-ai-journal-v1")
   private val maxModel = 8 * 1024 * 1024
-  private val currentOriginalVersions = setOf(5L, 6L, 7L)
-  private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 6L, 7L)
+  private val currentOriginalVersions = setOf(5L, 6L)
+  private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 6L)
   private val maxDrawingContacts = 1000
   private val maxDrawingSamples = 100000
-  private val maxRecordedOps = maxDrawingSamples * 2
   private val drawingRainbowCount = 10L
-  private val maxAllocationCursor = 4294967296L
   private val drawingPaperWidth = 1024.0
   private val drawingPaperHeight = 768.0
   private val maximumBackingScale = 2.0
@@ -357,51 +355,22 @@ class SplotchAIJournal(private val context: Context) {
       2L -> if (value.has("pageId")) setOf("version", "pageId", "strokes") else setOf("version", "rainbow", "strokes")
       3L, 4L, 5L -> setOf("version", "pageId", "rainbow", "strokes")
       6L -> setOf("version", "paper", "pageId", "rainbow", "strokes")
-      7L -> setOf("version", "paper", "pageId", "rainbow", "seedCursor", "commands")
       else -> error("Original drawing version unavailable")
     }
     check(value.keys().asSequence().toSet() == expected)
     if (value.has("pageId")) check(value.get("pageId") is String && value.getString("pageId").isNotEmpty())
     if (value.has("rainbow")) check(integer(value, "rainbow", 0) < drawingRainbowCount)
-    val count: Int
-    if (version == 7L) {
-      val highWater = integer(value, "seedCursor")
-      check(highWater <= maxAllocationCursor)
-      val commands = value.getJSONArray("commands")
-      check(commands.length() <= maxDrawingContacts)
-      var contacts = 0
-      var previous = 1L
-      for (index in 0 until commands.length()) {
-        val command = commands.getJSONObject(index)
-        keys(command, "firstSeed", "granularity", "styles", "moves", "ops")
-        val firstSeed = integer(command, "firstSeed")
-        check(firstSeed in previous..highWater)
-        previous = firstSeed
-        check(command.get("granularity") is String && command.getString("granularity") in setOf("per-move", "per-frame"))
-        val styles = command.getJSONArray("styles")
-        contacts += styles.length()
-        check(styles.length() > 0 && contacts <= maxDrawingContacts)
-        val moves = command.getJSONArray("moves")
-        val ops = command.getJSONArray("ops")
-        check(moves.length() <= maxDrawingSamples && ops.length() <= maxRecordedOps)
-        for (entry in 0 until styles.length()) styles.getJSONObject(entry)
-        for (entry in 0 until moves.length()) moves.getJSONObject(entry)
-        for (entry in 0 until ops.length()) ops.getJSONObject(entry)
-      }
-      count = commands.length()
-    } else {
-      val strokes = value.getJSONArray("strokes")
-      check(strokes.length() <= maxDrawingContacts)
-      var points = 0
-      for (index in 0 until strokes.length()) {
-        val stroke = strokes.getJSONObject(index)
-        val samples = stroke.getJSONArray("points")
-        points += samples.length()
-        check(samples.length() > 0 && points <= maxDrawingSamples)
-        for (entry in 0 until samples.length()) samples.getJSONObject(entry)
-      }
-      count = strokes.length()
+    val strokes = value.getJSONArray("strokes")
+    check(strokes.length() <= maxDrawingContacts)
+    var points = 0
+    for (index in 0 until strokes.length()) {
+      val stroke = strokes.getJSONObject(index)
+      val samples = stroke.getJSONArray("points")
+      points += samples.length()
+      check(samples.length() > 0 && points <= maxDrawingSamples)
+      for (entry in 0 until samples.length()) samples.getJSONObject(entry)
     }
+    val count = strokes.length()
     if (version >= 6L) {
       val paper = value.getJSONObject("paper")
       if (paper.get("kind") == "unadopted") { keys(paper, "kind"); check(count == 0) }

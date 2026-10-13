@@ -1,7 +1,6 @@
 import type { Point, Stroke } from './model';
 
 export const CRAYON_COLOR_MIX = 0.55;
-export const NATIVE_CRAYON_EFFECTIVE_RETURN = 0.2944;
 export const CRAYON_BANDS = [
   { widthScale: 1, coverage: 0.45 },
   { widthScale: 0.68, coverage: 0.63 },
