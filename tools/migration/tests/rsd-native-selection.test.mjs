@@ -8,7 +8,6 @@ import {
   checkedRadio,
   visibleSelection,
   assertDisabledBoundary,
-  assertPortraitControls,
   createPickerCaller,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
@@ -21,7 +20,6 @@ import {
   RsdPaintAction,
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import {
   NativeDialog,
   NativeSoundSettingsDialog,
@@ -250,29 +248,6 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
   }
 });
 
-it('bounds portrait and landscape controls independently of the paper and freezes scroll during contacts', async () => {
-  const element = (drawing) =>
-    createElement(
-      NativeDrawingLayout,
-      { drawing, controls: createElement('button', null, 'Tools') },
-      createElement('div', { 'data-paper': true })
-    );
-  await mount(element(false));
-  let viewport = records.viewports.at(-1);
-  expect(viewport.testID).toBe('rsd-paint-controls-viewport');
-  expect(viewport.style.maxHeight).toBe('45%');
-  expect(viewport.style.flexGrow).toBe(0);
-  expect(viewport.scrollEnabled).toBe(true);
-  expect(host.querySelector('[data-paper]')).not.toBeNull();
-  expect(host.querySelector('section [data-paper]')).toBeNull();
-  records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
-  await act(async () => root.render(element(true)));
-  viewport = records.viewports.at(-1);
-  expect(viewport.style.width).toBe(TOUCH_TARGET * 4);
-  expect(viewport.style.flexShrink).toBe(0);
-  expect(viewport.scrollEnabled).toBe(false);
-});
-
 it('keeps the caller close action outside the bounded options viewport with ordinary Modal lifecycle', async () => {
   const onClose = vi.fn(),
     onDismiss = vi.fn();
@@ -344,21 +319,6 @@ it('retains the caller-owned pictures close guard in the fixed footer', async ()
   expect(close.disabled).toBe(false);
   await act(async () => close.click());
   expect(onClose).toHaveBeenCalledOnce();
-});
-
-it('rejects a lost controls height budget from actual production viewport props', async () => {
-  await mount(
-    createElement(
-      NativeDrawingLayout,
-      { drawing: false, controls: createElement('button', null, 'Tools') },
-      createElement('div', { 'data-paper': true })
-    )
-  );
-  const actual = records.viewports.at(-1);
-  expect(() => assertPortraitControls(actual)).not.toThrow();
-  expect(() =>
-    assertPortraitControls({ ...actual, style: { ...actual.style, maxHeight: undefined } })
-  ).toThrow('Missing bounded native controls owner');
 });
 
 it('propagates paint availability both ways without losing its selected color or accessible name', async () => {

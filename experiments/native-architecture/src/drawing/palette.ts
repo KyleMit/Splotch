@@ -78,6 +78,44 @@ export const DEFAULT_COLOR_SETTINGS: Readonly<{
   customColors: readonly CustomColor[];
 }> = { selectedColor: 'Purple', customColors: [] };
 
+// The shipping bar's trim priority: first listed is the first hidden when the bar runs out of room.
+export const PALETTE_TRIM_ORDER = [
+  'Grey',
+  'Lime',
+  'Indigo',
+  'Magenta',
+  'Mint',
+  'Brown',
+  'Teal',
+  'Pink',
+  'Red',
+  'Orange',
+  'Green',
+  'Yellow',
+  'Blue',
+  'Purple',
+  'Black',
+] as const satisfies readonly PaletteLabel[];
+
+// One bar of swatches: remembered custom paints go first, oldest first, then the shipping trim
+// order; the selected paint keeps its swatch so the child always sees which color is loaded.
+export function visiblePaints(
+  customColors: readonly CustomColor[],
+  selected: PaintColor,
+  slots: number
+): PaintColor[] {
+  const trim: PaintColor[] = [...customColors].reverse();
+  trim.push(...PALETTE_TRIM_ORDER);
+  const kept = new Set(trim.slice(Math.max(0, trim.length - Math.max(0, slots))));
+  if (kept.size > 0 && !kept.has(selected) && trim.includes(selected)) {
+    kept.delete(trim.find((color) => kept.has(color)) ?? selected);
+    kept.add(selected);
+  }
+  const display: PaintColor[] = PALETTE_COLORS.map((color) => color.label);
+  display.push(...customColors);
+  return display.filter((color) => kept.has(color));
+}
+
 export function isPaletteLabel(value: unknown): value is PaletteLabel {
   return PALETTE_COLORS.some((entry) => entry.label === value);
 }

@@ -59,7 +59,7 @@ it.each([
     'Canonical registration',
   ],
   ['src/ProbeApp.tsx', '<RsdDrawingScreen />', '<DrawingScreen />', 'Mounted RSD screen'],
-  ['src/rsdDrawing/RsdDrawingScreen.tsx', 'role="radiogroup"', 'role="group"', 'RSD radio group'],
+  ['src/rsdDrawing/RsdEdgeControls.tsx', 'role="radiogroup"', 'role="group"', 'RSD radio group'],
   [
     'src/rsdDrawing/NativePaper.tsx',
     "from 'react-native'",
@@ -232,25 +232,25 @@ it.each([
     'RSD optional brush switch callback',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdEdgeControls.tsx',
     "screen.brushControl.kind === 'toggle'",
     "screen.brushControl.kind === 'menu'",
     'RSD optional toolbar switch branch',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdEdgeControls.tsx',
     'selected={screen.brush === screen.brushControl.brush}',
     'selected={screen.brushControl.brush === screen.brushControl.brush}',
     'RSD optional toolbar switch state owner',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdEdgeControls.tsx',
     'label={BRUSHES[screen.brushControl.brush].label}',
     'label={BRUSHES[screen.brush].label}',
     'RSD optional toolbar switch labels',
   ],
   [
-    'src/rsdDrawing/RsdDrawingScreen.tsx',
+    'src/rsdDrawing/RsdEdgeControls.tsx',
     'onClick={screen.toggleBrush}',
     'onClick={screen.undo}',
     'RSD optional toolbar switch callback',

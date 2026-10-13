@@ -72,6 +72,7 @@ const mountedScreens = returns[0].argument.children.filter((node) => node.type =
 assert.equal(mountedScreens.length, 1, 'Drawing session has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
+const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');
 const drawingTools = parse('src/rsdDrawing/RsdDrawingTools.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
@@ -85,7 +86,14 @@ const attribute = (node, name) =>
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
 const settingsDialog = parse('src/rsdDrawing/NativeDialog.tsx');
 const orientationChoices = parse('src/rsdDrawing/RsdOrientationChoices.tsx');
-for (const component of [drawing, drawingTools, coloringPicker, settingsDialog, orientationChoices])
+for (const component of [
+  drawing,
+  edgeControls,
+  drawingTools,
+  coloringPicker,
+  settingsDialog,
+  orientationChoices,
+])
   babel.traverse(component, {
     JSXOpeningElement(path) {
       const node = path.node;
@@ -100,7 +108,7 @@ for (const component of [drawing, drawingTools, coloringPicker, settingsDialog, 
       const selection =
         node.name.name === 'RsdPaintAction' ? 'radio' : literal(attribute(node, 'selection'));
       if (selection === 'switch') {
-        if (component === drawing) {
+        if (component === edgeControls) {
           toolbarSwitches.push(node);
           toolbarConditions.push(
             path.findParent((parent) => parent.isConditionalExpression())?.node.test
@@ -337,6 +345,7 @@ const files = [
   'src/information/InformationSection.tsx',
   'src/rsdDrawing/RsdInformationSection.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
+  'src/rsdDrawing/RsdEdgeControls.tsx',
   'src/rsdDrawing/RsdAiSheet.tsx',
   'src/ai/useAiPictureViewer.ts',
   'src/ai/AiPictureViewport.tsx',
