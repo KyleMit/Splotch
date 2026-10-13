@@ -190,6 +190,7 @@ export function RsdSettingsWide({
   onFeedback,
   locked,
   onUnlock,
+  landing,
   children,
 }: {
   sections: readonly NativeSettingsSection[];
@@ -201,6 +202,9 @@ export function RsdSettingsWide({
   // row naming it asks for the check, and the jump lands once the check is passed.
   locked: NativeSettingsSectionId | null;
   onUnlock: () => void;
+  // The section an open asked to land on (shipping's landingSection): the pane goes straight there
+  // once its sections have measured, and lands once per request.
+  landing: NativeSettingsSectionId | null;
   children: ReactNode;
 }) {
   const reduced = useReduceMotion();
@@ -221,7 +225,24 @@ export function RsdSettingsWide({
       WIDE_SHELL.sectionGap
     );
 
+  const landed = useRef<NativeSettingsSectionId | null>(null);
+  const lockedJump = useRef<NativeSettingsSectionId | null>(null);
+  const land = () => {
+    const stacked = offsets();
+    const at = paneIds.findIndex((id) => id === landing);
+    if (landing === null || landed.current === landing || !stacked || at === -1) return;
+    landed.current = landing;
+    if (lockedJump.current === landing) return;
+    jumpTarget.current = null;
+    onSeen(landing);
+    pane.current?.scrollTo({
+      y: sectionJumpOffset(stacked[at]),
+      animated: false,
+    });
+  };
+
   const elect = () => {
+    land();
     const stacked = offsets();
     if (!stacked) return;
     const next = spiedSectionAt(paneIds, stacked, paneExtent.current);
@@ -233,7 +254,6 @@ export function RsdSettingsWide({
     if (!inFlight) onSeen(next);
   };
 
-  const lockedJump = useRef<NativeSettingsSectionId | null>(null);
   const jump = (id: NativeSettingsSectionId) => {
     if (id === locked) {
       lockedJump.current = id;
@@ -252,10 +272,13 @@ export function RsdSettingsWide({
   };
 
   useEffect(() => {
+    if (landing === null) landed.current = null;
     const pending = lockedJump.current;
-    if (pending === null || pending === locked) return;
-    lockedJump.current = null;
-    jump(pending);
+    if (pending !== null && pending !== locked) {
+      lockedJump.current = null;
+      jump(pending);
+    }
+    land();
   });
 
   return (

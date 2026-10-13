@@ -201,6 +201,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           }}
           onFeedback={props.onFeedback}
           locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
+          landing={unlocked ? 'parentCenter' : null}
           onUnlock={props.parentCenter.onUnlock}
         >
           {status}
