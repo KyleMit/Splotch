@@ -97,8 +97,10 @@ enforces, is ignored.
   after the save succeeds, so a failed or superseded save leaves the link in place to retry. The
   browser Back owner reads page URLs without the parameter, so that scrub is not a navigation.
 * **Native** (`src/platform/inviteLinks.ts`) reads `Linking.getInitialURL()` and `url` events and
-  accepts only links that start with `https://splotch.art/?`. `AppDelegate.swift` already forwards
-  `open url` and universal-link activities to `RCTLinkingManager`.
+  accepts only links that start with `https://splotch.art/?`. A launch link is dropped when any
+  credential operation, such as a runtime invite or a typed code, happened while the launch URL was
+  being read, so an older link never overwrites a newer credential. `AppDelegate.swift` already
+  forwards `open url` and universal-link activities to `RCTLinkingManager`.
 
 No link reaches the native app yet. The shipping Capacitor app declares no intent filter, URL
 scheme, or associated domain, so this app adds none either. Routing invite links to the store builds

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AI_ACCESS_TOKEN_PARAM } from '../../../web/src/lib/inviteLink.ts';
 import { AI_ORIGIN } from '../../../experiments/native-architecture/src/ai/contract.ts';
+import { withCredentialLeases } from '../../../experiments/native-architecture/src/ai/credentialLease.ts';
 import { INVITE_SAVE_FAILED_WARNING } from '../../../experiments/native-architecture/src/ai/inviteLink.ts';
 
 const linking = vi.hoisted(() => ({
@@ -23,7 +24,16 @@ const invite = (code) => `${AI_ORIGIN}/?${AI_ACCESS_TOKEN_PARAM}=${encodeURIComp
 
 function recordingVault() {
   const writes = [];
-  return { writes, write: vi.fn(async (kind, value) => void writes.push([kind, value])) };
+  const leased = withCredentialLeases({
+    write: async (kind, value) => void writes.push([kind, value]),
+  });
+  return { writes, lease: leased.lease, write: vi.fn(leased.write) };
+}
+
+function heldLaunchUrl() {
+  let resolve;
+  linking.initial = new Promise((settle) => (resolve = settle));
+  return resolve;
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve));
@@ -87,8 +97,35 @@ describe('native invite links', () => {
     const failure = new Error('secure storage unavailable');
     linking.initial = Promise.resolve(invite('launch-code'));
 
-    await startInviteLinks({ write: vi.fn().mockRejectedValue(failure) });
+    await startInviteLinks({
+      lease: () => ({ valid: () => true }),
+      write: vi.fn().mockRejectedValue(failure),
+    });
 
     expect(warn).toHaveBeenCalledWith(INVITE_SAVE_FAILED_WARNING, failure);
+  });
+
+  it('drops a launch invite that resolves after a runtime invite was saved', async () => {
+    const resolveLaunch = heldLaunchUrl();
+    const vault = recordingVault();
+    const starting = startInviteLinks(vault);
+
+    await emitUrl(invite('runtime-code'));
+    resolveLaunch(invite('launch-code'));
+    await starting;
+
+    expect(vault.writes).toEqual([['managed', 'runtime-code']]);
+  });
+
+  it('drops a launch invite that resolves after a typed code was saved', async () => {
+    const resolveLaunch = heldLaunchUrl();
+    const vault = recordingVault();
+    const starting = startInviteLinks(vault);
+
+    await vault.write('managed', 'typed-code');
+    resolveLaunch(invite('launch-code'));
+    await starting;
+
+    expect(vault.writes).toEqual([['managed', 'typed-code']]);
   });
 });
