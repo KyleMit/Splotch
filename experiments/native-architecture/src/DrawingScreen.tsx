@@ -1,85 +1,107 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { PaintColors } from './drawing/PaintColors';
+import { usePaintSelectionFocus } from './drawing/usePaintSelectionFocus';
 import { ColorPicker } from './drawing/ColorPicker';
 import { ColoringPagePicker } from './ColoringPagePicker';
-import { COLORING_PAGES } from './drawing/pages';
 import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
-import { createPaperScroll } from './drawing/paperGeometry';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
-import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
-import type { History } from './drawing/model';
-import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+import { BRUSHES } from './drawing/brushes';
+import { PAPER_HEIGHT, PAPER_WIDTH } from './drawing/model';
+import { DRAWING_THEME } from './drawing/theme';
+import { drawingScreenStyles as styles } from './drawing/drawingScreenStyles';
+import { Action, DrawingMenu } from './DrawingControls';
 import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
-import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
 import { useColorPickerFocus } from './useColorPickerFocus';
 
-const SCROLL_GEOMETRY_THROTTLE_MS = 16;
-
-function Action({
-  label,
-  disabled,
-  onPress,
-  primary = false,
-}: {
-  label: string;
-  disabled?: boolean;
-  onPress: () => void;
-  primary?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.action,
-        primary && styles.primary,
-        disabled && styles.disabled,
-        pressed && styles.pressed,
-      ]}
-    >
-      <Text style={[styles.actionText, primary && styles.primaryText]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function DrawingScroll({
+function PaperWorkspace({
   children,
-  drawing,
   surface,
 }: {
   children: ReactNode;
-  drawing: boolean;
   surface: RefObject<DrawingSurfaceHandle | null>;
 }) {
-  const scrollGeometry = useRef(
-    createPaperScroll(() => surface.current?.refreshGeometry())
-  ).current;
-  return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      scrollEnabled={!drawing}
-      onLayout={() => surface.current?.refreshGeometry()}
-      onScroll={({ nativeEvent }) => scrollGeometry(nativeEvent.contentOffset)}
-      onContentSizeChange={() => surface.current?.refreshGeometry()}
-      scrollEventThrottle={SCROLL_GEOMETRY_THROTTLE_MS}
-    >
-      {children}
-    </ScrollView>
+  const [space, setSpace] = useState({ width: 0, height: 0 });
+  const paperWidth = Math.min(
+    space.width,
+    (space.height * PAPER_WIDTH) / PAPER_HEIGHT,
+    PAPER_WIDTH
   );
+  return (
+    <View
+      style={styles.workspace}
+      onLayout={({ nativeEvent }) => {
+        const { width, height } = nativeEvent.layout;
+        setSpace((previous) =>
+          previous.width === width && previous.height === height ? previous : { width, height }
+        );
+        surface.current?.refreshGeometry();
+      }}
+    >
+      <View style={{ width: paperWidth }}>{children}</View>
+    </View>
+  );
+}
+
+function useDrawingMenu(screen: ReturnType<typeof useDrawingScreen>) {
+  const [phase, setPhase] = useState<'closed' | 'open' | 'closing'>('closed');
+  const lease = useRef<(() => void) | null>(null);
+  const pendingAction = useRef<(() => void) | null>(null);
+  const dismissed = useCallback(() => {
+    lease.current?.();
+    lease.current = null;
+    const action = pendingAction.current;
+    pendingAction.current = null;
+    setPhase('closed');
+    action?.();
+  }, []);
+  useEffect(
+    () => () => {
+      lease.current?.();
+      pendingAction.current = null;
+    },
+    []
+  );
+  useEffect(() => {
+    // Android Modal has no dismissal callback; its hidden render commits before the handoff.
+    if (phase === 'closing' && Platform.OS === 'android') dismissed();
+  }, [phase, dismissed]);
+  function close() {
+    setPhase('closing');
+  }
+  return {
+    open: phase !== 'closed',
+    visible: phase === 'open',
+    close,
+    dismissed,
+    run(action: () => void) {
+      pendingAction.current = action;
+      close();
+    },
+    show() {
+      if (screen.disabled || screen.pictures !== null || lease.current || phase !== 'closed')
+        return;
+      try {
+        if (!screen.surface.current) throw new Error('The drawing paper is not ready.');
+        lease.current = screen.surface.current.lockInput();
+        setPhase('open');
+      } catch (error) {
+        screen.report(error);
+      }
+    },
+  };
 }
 
 function useIdleMessage(message: string, drawing: boolean) {
@@ -91,29 +113,20 @@ function useIdleMessage(message: string, drawing: boolean) {
 
 export function DrawingScreen() {
   const screen = useDrawingScreen();
+  const menu = useDrawingMenu(screen);
+  const [settingsClosing, setSettingsClosing] = useState(false);
+  const window = useWindowDimensions();
+  const landscape = window.width > window.height;
   const {
     history,
-    currentDrawing,
-    clear,
     undo,
-    recovery,
     brush,
-    setBrush,
     drawing,
-    busy,
-    notice,
     pictures,
     surface,
-    pagePickerOpen,
-    setPagePickerOpen,
-    settingsOpen,
     colorPickerOpen,
     openColorPicker,
-    openSettings,
     disabled,
-    save,
-    exportPicture,
-    showPictures,
   } = screen;
   const sound = useDrawingSound();
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
@@ -124,92 +137,187 @@ export function DrawingScreen() {
     blocked: disabled || pictures !== null,
   });
   const color = sound.settings.selectedColor;
-  const visibleNotice = useIdleMessage(notice, drawing);
-  const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
+  const paintFocus = usePaintSelectionFocus({
+    color,
+    disabled: paintsDisabled || menu.open,
+    blocked: disabled || menu.open || pictures !== null || colorPickerOpen,
+  });
+  const menuFocus = useColorPickerFocus({
+    pickerOpen: menu.open || screen.settingsOpen,
+    closePicker: () => {
+      if (screen.settingsOpen) setSettingsClosing(true);
+      else menu.close();
+    },
+    disabled,
+    blocked: disabled || pictures !== null,
+  });
   return (
     <SafeAreaView
       style={styles.screen}
       onLayout={() => surface.current?.refreshGeometry()}
-      onFocus={focusReturn.cancel}
-      onPointerDown={focusReturn.cancel}
-      onTouchStart={focusReturn.cancel}
+      onFocus={() => {
+        paintFocus.cancel();
+        focusReturn.cancel();
+        menuFocus.cancel();
+      }}
+      onPointerDown={() => {
+        paintFocus.cancel();
+        focusReturn.cancel();
+        menuFocus.cancel();
+      }}
+      onTouchStart={() => {
+        paintFocus.cancel();
+        focusReturn.cancel();
+        menuFocus.cancel();
+      }}
     >
-      <DrawingScroll drawing={drawing} surface={surface}>
-        <View style={styles.heading}>
-          <Text style={styles.title}>Splotch</Text>
-          <Text style={styles.subtitle}>Make something colorful.</Text>
-        </View>
-        <PaintColors
-          color={color}
-          customColors={sound.settings.customColors}
-          disabled={paintsDisabled}
-          openerRef={focusReturn.opener}
-          onExplore={openColorPicker}
-          onChange={(next) => {
-            void sound.owner?.settings.setColor(next);
-          }}
-        />
-        <DrawingTools
-          history={history}
-          brush={brush}
-          disabled={disabled}
-          onBrush={setBrush}
-          onPages={() => setPagePickerOpen(true)}
-          onUndo={undo}
-          onClear={() => {
-            void clear();
-          }}
-        />
-        <DrawingWidth brush={brush} disabled={disabled} sound={sound} />
-        <Text style={styles.subtitle}>{COLORING_PAGES[history.drawing.pageId].label}</Text>
-        <DrawingSurface
-          key={recovery.generation}
-          ref={surface}
-          drawing={history.drawing}
-          currentDrawing={currentDrawing}
-          color={color}
-          brush={brush}
-          strokeWidth={sound.settings.strokeWidth}
-          eraserWidth={sound.settings.eraserWidth}
-          disabled={
-            busy ||
-            pictures !== null ||
-            pagePickerOpen ||
-            settingsOpen ||
-            colorPickerOpen ||
-            sound.settings.status === 'loading'
-          }
-          sound={sound.owner?.contacts ?? null}
-          {...recovery.callbacks}
-        />
-        <DrawingActions
-          disabled={disabled}
-          save={save}
-          showPictures={showPictures}
-          exportPicture={exportPicture}
-          openSettings={openSettings}
-        />
-        {recovery.failed ? (
-          <Action
-            label="Retry drawing"
-            disabled={recovery.retryDisabled}
-            onPress={recovery.retry}
+      <View
+        accessibilityElementsHidden={menu.open}
+        importantForAccessibility={menu.open ? 'no-hide-descendants' : 'auto'}
+        style={[styles.content, landscape && styles.landscape]}
+      >
+        <ScrollView
+          style={landscape ? styles.sideControls : styles.topControls}
+          contentContainerStyle={styles.controls}
+          scrollEnabled={!drawing}
+        >
+          <View style={styles.heading}>
+            <Text style={styles.title}>Splotch</Text>
+            <Action
+              label="Undo"
+              disabled={disabled || menu.open || history.undo.length === 0}
+              onPress={undo}
+            />
+            <Action
+              label={`${BRUSHES[brush].label} ▾`}
+              accessibilityLabel={`Drawing tools. ${BRUSHES[brush].label} selected.`}
+              openerRef={menuFocus.opener}
+              disabled={disabled || menu.open}
+              onPress={menu.show}
+            />
+          </View>
+          <PaintColors
+            color={color}
+            customColors={sound.settings.customColors}
+            disabled={paintsDisabled || menu.open}
+            openerRef={focusReturn.opener}
+            onExplore={openColorPicker}
+            onChange={(next, target) => {
+              void paintFocus.choose(next, target, () => sound.owner?.settings.setColor(next));
+            }}
           />
-        ) : null}
-        <View style={styles.status}>
-          {busy && !recovery.failed ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
-          <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {visibleNotice}
-          </Text>
-        </View>
-        {visibleSoundMessage ? (
-          <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {visibleSoundMessage}
-          </Text>
-        ) : null}
-      </DrawingScroll>
-      <DrawingSheets screen={screen} sound={sound} onCloseColors={focusReturn.close} />
+        </ScrollView>
+        <DrawingPaper screen={screen} sound={sound} menuOpen={menu.open} />
+      </View>
+      <DrawingFeedback screen={screen} sound={sound} menuOpen={menu.open} />
+      {menu.open ? (
+        <DrawingMenu
+          screen={screen}
+          sound={sound}
+          visible={menu.visible}
+          onDismiss={menu.dismissed}
+          run={menu.run}
+          onClose={menuFocus.close}
+        />
+      ) : null}
+      <DrawingSheets
+        screen={screen}
+        sound={sound}
+        onCloseColors={focusReturn.close}
+        settingsClosing={settingsClosing}
+        onCloseSettings={menuFocus.close}
+        onSettingsDismissed={() => {
+          screen.closeSettings();
+          setSettingsClosing(false);
+        }}
+      />
     </SafeAreaView>
+  );
+}
+
+function DrawingPaper({
+  screen,
+  sound,
+  menuOpen,
+}: {
+  screen: ReturnType<typeof useDrawingScreen>;
+  sound: ReturnType<typeof useDrawingSound>;
+  menuOpen: boolean;
+}) {
+  const {
+    surface,
+    recovery,
+    history,
+    currentDrawing,
+    brush,
+    busy,
+    pictures,
+    pagePickerOpen,
+    settingsOpen,
+    colorPickerOpen,
+  } = screen;
+  const color = sound.settings.selectedColor;
+  return (
+    <PaperWorkspace surface={surface}>
+      <DrawingSurface
+        key={recovery.generation}
+        ref={surface}
+        drawing={history.drawing}
+        currentDrawing={currentDrawing}
+        color={color}
+        brush={brush}
+        strokeWidth={sound.settings.strokeWidth}
+        eraserWidth={sound.settings.eraserWidth}
+        disabled={
+          busy ||
+          pictures !== null ||
+          pagePickerOpen ||
+          settingsOpen ||
+          colorPickerOpen ||
+          menuOpen ||
+          sound.settings.status === 'loading'
+        }
+        sound={sound.owner?.contacts ?? null}
+        {...recovery.callbacks}
+      />
+    </PaperWorkspace>
+  );
+}
+
+function DrawingFeedback({
+  screen,
+  sound,
+  menuOpen,
+}: {
+  screen: ReturnType<typeof useDrawingScreen>;
+  sound: ReturnType<typeof useDrawingSound>;
+  menuOpen: boolean;
+}) {
+  const { recovery, busy, notice, drawing } = screen;
+  const visibleNotice = useIdleMessage(notice, drawing);
+  const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
+  return (
+    <ScrollView
+      accessibilityElementsHidden={menuOpen}
+      importantForAccessibility={menuOpen ? 'no-hide-descendants' : 'auto'}
+      style={styles.feedback}
+      contentContainerStyle={styles.feedbackContent}
+    >
+      {recovery.failed ? (
+        <Action label="Retry drawing" disabled={recovery.retryDisabled} onPress={recovery.retry} />
+      ) : null}
+      <View style={styles.status}>
+        {busy && !recovery.failed ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
+        <Text accessibilityLiveRegion="polite" style={styles.notice}>
+          {visibleNotice}
+        </Text>
+      </View>
+      {visibleSoundMessage ? (
+        <Text accessibilityLiveRegion="polite" style={styles.notice}>
+          {visibleSoundMessage}
+        </Text>
+      ) : null}
+    </ScrollView>
   );
 }
 
@@ -217,10 +325,16 @@ function DrawingSheets({
   screen,
   sound,
   onCloseColors,
+  settingsClosing,
+  onCloseSettings,
+  onSettingsDismissed,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
   onCloseColors: () => void;
+  settingsClosing: boolean;
+  onCloseSettings: () => void;
+  onSettingsDismissed: () => void;
 }) {
   const {
     history,
@@ -229,7 +343,6 @@ function DrawingSheets({
     choosePage,
     setPagePickerOpen,
     settingsOpen,
-    closeSettings,
     pictures,
     busy,
     notice,
@@ -258,6 +371,8 @@ function DrawingSheets({
       ) : null}
       {settingsOpen ? (
         <SoundSettings
+          visible={!settingsClosing}
+          onDismiss={onSettingsDismissed}
           state={sound.settings}
           audioMessage={sound.audioMessage}
           onChange={(enabled) => {
@@ -266,7 +381,7 @@ function DrawingSheets({
           onRetrySave={() => {
             void sound.owner?.settings.retrySave();
           }}
-          onClose={closeSettings}
+          onClose={onCloseSettings}
         />
       ) : null}
       <SavedPictures
@@ -277,100 +392,6 @@ function DrawingSheets({
         onClose={() => setPictures(null)}
       />
     </>
-  );
-}
-
-function DrawingWidth({
-  brush,
-  disabled,
-  sound,
-}: {
-  brush: Brush;
-  disabled: boolean;
-  sound: ReturnType<typeof useDrawingSound>;
-}) {
-  const tool = brush === 'eraser' ? 'eraser' : 'drawing';
-  return (
-    <StrokeWidthSelector
-      tool={tool}
-      selected={tool === 'eraser' ? sound.settings.eraserWidth : sound.settings.strokeWidth}
-      disabled={disabled || sound.settings.status !== 'ready'}
-      onChange={(width) => {
-        void sound.owner?.settings.setWidth(tool, width);
-      }}
-    />
-  );
-}
-
-function DrawingActions({
-  disabled,
-  save,
-  showPictures,
-  exportPicture,
-  openSettings,
-}: Pick<
-  ReturnType<typeof useDrawingScreen>,
-  'disabled' | 'save' | 'showPictures' | 'exportPicture' | 'openSettings'
->) {
-  return (
-    <View style={styles.toolbar}>
-      <Action
-        label="Save picture"
-        primary
-        disabled={disabled}
-        onPress={() => {
-          void save();
-        }}
-      />
-      <Action label="Settings" disabled={disabled} onPress={openSettings} />
-      <Action label="Pictures" disabled={disabled} onPress={showPictures} />
-      <Action
-        label="Export PNG"
-        disabled={disabled}
-        onPress={() => {
-          void exportPicture();
-        }}
-      />
-    </View>
-  );
-}
-
-function DrawingTools({
-  history,
-  brush,
-  disabled,
-  onBrush,
-  onPages,
-  onUndo,
-  onClear,
-}: {
-  history: History;
-  brush: Brush;
-  disabled: boolean;
-  onBrush: (brush: Brush) => void;
-  onPages: () => void;
-  onUndo: () => void;
-  onClear: () => void;
-}) {
-  return (
-    <View style={styles.toolbar}>
-      <Action label="Coloring pages" disabled={disabled} onPress={onPages} />
-      {BRUSH_ORDER.map((key) => (
-        <Pressable
-          key={key}
-          accessibilityRole="button"
-          accessibilityLabel={BRUSHES[key].label}
-          accessibilityState={{ selected: key === brush, disabled }}
-          disabled={disabled}
-          onPress={() => onBrush(key)}
-          style={[styles.action, key === brush && styles.chosenBrush]}
-        >
-          <Text style={styles.actionText}>{BRUSHES[key].label}</Text>
-        </Pressable>
-      ))}
-      <Action label="Undo" disabled={disabled || history.undo.length === 0} onPress={onUndo} />
-      <Action label="Clear" disabled={disabled} onPress={onClear} />
-    </View>
   );
 }
 
@@ -436,65 +457,3 @@ function SavedPictures({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: DRAWING_THEME.paperMargin },
-  content: { padding: 16, gap: 16, alignItems: 'center' },
-  heading: { width: '100%', maxWidth: 1024, gap: 4 },
-  title: { fontSize: 32, fontWeight: '800', color: DRAWING_THEME.brandSolid },
-  subtitle: { fontSize: 16, color: DRAWING_THEME.textSoft },
-  toolbar: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: CONTROL_GAP },
-  action: {
-    minHeight: TOUCH_TARGET,
-    paddingHorizontal: 18,
-    borderRadius: CONTROL_RADIUS,
-    borderWidth: 1,
-    borderColor: DRAWING_THEME.borderWarm,
-    backgroundColor: DRAWING_THEME.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionText: { fontSize: 16, fontWeight: '600', color: DRAWING_THEME.textStrong },
-  primary: { backgroundColor: DRAWING_THEME.brandSolid, borderColor: DRAWING_THEME.brandSolid },
-  primaryText: { color: DRAWING_THEME.surface },
-  chosenBrush: {
-    backgroundColor: DRAWING_THEME.brandWash,
-    borderColor: DRAWING_THEME.brandSolid,
-    borderWidth: 2,
-  },
-  disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.75 },
-  status: {
-    minHeight: 32,
-    flexDirection: 'row',
-    gap: CONTROL_GAP,
-    alignItems: 'center',
-    maxWidth: 1024,
-  },
-  notice: { fontSize: 15, color: DRAWING_THEME.text, flexShrink: 1 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 480,
-    maxHeight: '80%',
-    padding: 24,
-    borderRadius: 16,
-    backgroundColor: DRAWING_THEME.paper,
-    gap: 16,
-  },
-  modalTitle: { fontSize: 24, fontWeight: '700', color: DRAWING_THEME.textStrong },
-  modalNotice: { flexShrink: 0, alignSelf: 'stretch' },
-  pictureList: { flexGrow: 0, flexShrink: 1 },
-  savedPicture: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: DRAWING_THEME.borderWarm,
-    gap: 4,
-  },
-});

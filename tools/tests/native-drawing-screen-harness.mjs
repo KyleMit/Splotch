@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef, useImperativeHandle } from 'react';
+import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
@@ -16,6 +16,9 @@ const files = vi.hoisted(() => ({
   settingsWrite: vi.fn().mockResolvedValue(undefined),
   cohort: null,
   cohortDrivers: false,
+  platform: 'android',
+  retainClosingModal: false,
+  dismissModal: null,
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
@@ -45,7 +48,12 @@ vi.mock('react-native', () => {
       get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
       addEventListener: () => ({ remove: vi.fn() }),
     },
-    Platform: { OS: 'android' },
+    useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+    Platform: {
+      get OS() {
+        return files.platform;
+      },
+    },
     ActivityIndicator: () => null,
     Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
       createElement('button', {
@@ -55,34 +63,49 @@ vi.mock('react-native', () => {
         disabled,
         onClick: () => onValueChange(!value),
       }),
-    Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
-    Pressable: ({
-      children,
-      onPress,
-      disabled,
-      accessibilityLabel,
-      accessibilityState,
-      accessibilityRole,
-      'aria-pressed': pressed,
-      style,
-    }) =>
-      createElement(
-        'button',
+    Modal: ({ visible, children, onDismiss, accessibilityLabel }) => {
+      const shown = useRef(false);
+      if (visible) shown.current = true;
+      const retained = files.retainClosingModal && onDismiss && shown.current;
+      if (!visible && retained) files.dismissModal = onDismiss;
+      return (
+        (visible || retained) &&
+        createElement('div', { role: 'dialog', 'aria-label': accessibilityLabel }, children)
+      );
+    },
+    Pressable: forwardRef(
+      (
         {
-          onClick: onPress,
+          children,
+          onPress,
           disabled,
-          'aria-label': accessibilityLabel,
-          role: accessibilityRole,
-          'aria-checked': accessibilityState?.checked,
+          accessibilityLabel,
+          accessibilityState,
+          accessibilityRole,
           'aria-pressed': pressed,
-          'data-native-selected': accessibilityState?.selected,
-          style:
-            typeof style === 'function'
-              ? undefined
-              : Object.assign({}, ...[style].flat().filter(Boolean)),
+          style,
         },
-        children
-      ),
+        ref
+      ) =>
+        createElement(
+          'button',
+          {
+            ref,
+            onClick: onPress,
+            disabled,
+            'aria-label': accessibilityLabel,
+            role: accessibilityRole,
+            'aria-checked': accessibilityState?.checked,
+            'aria-pressed': pressed,
+            'data-native-selected': accessibilityState?.selected,
+            style:
+              typeof style === 'function'
+                ? undefined
+                : Object.assign({}, ...[style].flat().filter(Boolean)),
+          },
+          children
+        )
+    ),
     SafeAreaView: container,
     ScrollView: container,
     View: container,
