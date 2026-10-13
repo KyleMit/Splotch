@@ -49,11 +49,17 @@ The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; insta
 `expo export --platform web`, then makes it installable and offline-capable like the shipping PWA
 (ADR-0022, ADR-0039): it copies the shipping `web/static/site.webmanifest`, the icons it and
 `web/src/app.html` name, and that document's install head tags, then generates a Workbox worker
-whose first precache entry is the build's own app shell. Its post hook,
-`tools/migration/check-native-web-precache.mjs`, fails when the shell is not first, an exported file
-is not precached, a bundled Farm page is missing from the precached chunks, or the precache outgrows
-its budget. Serve `dist/web` from any static server; the entry registers `/sw.js` only in the web
-build (`src/platform/serviceWorker.web.ts`).
+whose first precache entry is the exported `index.html` under a URL derived from its bytes. Every
+entry carries the subresource integrity of the bytes this build wrote, so an install that receives
+another deploy's document or chunks fails rather than pairing them
+(`tools/tests/native-web-deploy-race.test.mjs`). Its post hook,
+`tools/migration/check-native-web-precache.mjs`, fails when the shell is not first or not at its
+content address, an entry is not pinned to the exported bytes, an exported file or a file the shell
+names is not precached, a bundled Farm page is missing from the precached chunks, or the precache
+outgrows its budget. Serve `dist/web` from any static server that returns the exported bytes
+unchanged: a host that rewrites HTML or assets (snippet injection, minification) makes every install
+fail its integrity check. The entry registers `/sw.js` only in the web build
+(`src/platform/serviceWorker.web.ts`).
 
 A new worker waits until every window of the old one closes, so an update never interrupts a
 drawing. The Install Banner and the Settings install guide (`src/install/`) follow the shipping

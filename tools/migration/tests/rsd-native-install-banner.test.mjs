@@ -107,3 +107,10 @@ it('opens the browser install dialog from the Install button', async () => {
   expect(host.textContent).not.toContain(INSTALL_PROMPT_COPY.initial.heading);
   expect(stored.get(STORAGE_KEYS.installCompleted)).toBe('true');
 });
+
+it('floats over the screen instead of taking space from the paper', async () => {
+  await show(3);
+  const overlay = records.props.findLast((props) => props.style?.position === 'absolute');
+  expect(overlay?.style).toMatchObject({ position: 'absolute', left: 0, right: 0, bottom: 0 });
+  expect(host.textContent).toContain(INSTALL_PROMPT_COPY.initial.heading);
+});

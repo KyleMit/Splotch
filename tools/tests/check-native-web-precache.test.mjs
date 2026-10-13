@@ -8,62 +8,127 @@ import {
 } from '../migration/check-native-web-precache.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
+import { contentAddressedShell, subresourceIntegrity } from '../migration/build-native-web.mjs';
 
-const SHELL = appShellPrecacheUrl('fixture-build');
 const STARTER = [
   { pageId: 'farm/cat', fill: 'data:image/webp;base64,Q0FU' },
   { pageId: 'farm/cow', fill: 'data:image/webp;base64,Q09X' },
 ];
 const ENTRY = '_expo/static/js/web/index-1.js';
+const CSS = '_expo/static/css/strict-1.css';
+const INDEX = `<html><head><link rel="stylesheet" href="/${CSS}"></head><body><script src="/${ENTRY}" defer></script></body></html>`;
 const ASSETS = {
-  'index.html': '<html><head></head><body></body></html>',
+  'index.html': INDEX,
   [ENTRY]: `var art={cat:"${STARTER[0].fill}",cow:"${STARTER[1].fill}"};`,
-  '_expo/static/css/strict-1.css': 'body{}',
+  [CSS]: 'body{}',
   'site.webmanifest': '{}',
   'metadata.json': '{}',
 };
-const lookup = (callback) =>
-  `${callback}:async function(){return caches.match(${JSON.stringify(SHELL)})}`;
-const worker = (urls) =>
-  `precacheAndRoute([${urls.map((url) => `{url:${JSON.stringify(url)},revision:null}`).join(',')}]);` +
-  `plugins:[{${lookup('cachedResponseWillBeUsed')},${lookup('handlerDidError')}}]`;
+const SHELL = contentAddressedShell(INDEX);
+const lookup = (callback, url) =>
+  `${callback}:async function(){return caches.match(${JSON.stringify(url)})}`;
+
+// The worker as generateSW serializes it: one entry per precached file, pinned to
+// the integrity of the bytes the fixture exported unless an entry overrides it.
+function worker(urls, assets, { integrity = {}, fallbackUrl = SHELL.url } = {}) {
+  const entries = urls.map((url) => {
+    const pinned =
+      url in integrity
+        ? integrity[url]
+        : url === SHELL.url
+          ? SHELL.integrity
+          : url in assets
+            ? subresourceIntegrity(assets[url])
+            : 'sha384-missing';
+    const pin = pinned === null ? '' : `,integrity:${JSON.stringify(pinned)}`;
+    return `{url:${JSON.stringify(url)},revision:null${pin}}`;
+  });
+  return (
+    `precacheAndRoute([${entries.join(',')}]);` +
+    `plugins:[{${lookup('cachedResponseWillBeUsed', fallbackUrl)},${lookup('handlerDidError', fallbackUrl)}}]`
+  );
+}
 
 let dir;
 afterEach(() => dir && rmSync(dir, { recursive: true, force: true }));
 
-function exportFixture({ urls, assets = ASSETS }) {
+function exportFixture({ urls, assets = ASSETS, ...options }) {
   dir = mkdtempSync(join(tmpdir(), 'native-web-precache-'));
   for (const [path, body] of Object.entries(assets)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), body);
   }
-  writeFileSync(join(dir, 'sw.js'), worker(urls));
+  writeFileSync(join(dir, 'sw.js'), worker(urls, assets, options));
   return dir;
 }
 
-const COMPLETE = [SHELL, ENTRY, '_expo/static/css/strict-1.css', 'site.webmanifest'];
+const COMPLETE = [SHELL.url, ENTRY, CSS, 'site.webmanifest'];
 const check = (exportDir, options = {}) =>
   checkNativeWebPrecache({ exportDir, starterFills: STARTER, log: () => {}, ...options });
 
-it('accepts a complete export whose app shell is first', () => {
+it('accepts a complete export whose pinned app shell is first', () => {
   expect(() => check(exportFixture({ urls: COMPLETE }))).not.toThrow();
 });
 
 it.each([
-  ['the shell is not first', [ENTRY, SHELL, ...COMPLETE.slice(2)], /must be the first/],
-  ['the shell is missing', COMPLETE.slice(1), /one build-matched app shell/],
+  ['the shell is not first', [ENTRY, SHELL.url, CSS, 'site.webmanifest'], {}, /must be the first/],
+  ['the shell is missing', COMPLETE.slice(1), {}, /one build-matched app shell/],
+  [
+    "the shell URL is not the document's content address",
+    [appShellPrecacheUrl('random-build'), ...COMPLETE.slice(1)],
+    {
+      integrity: { [appShellPrecacheUrl('random-build')]: SHELL.integrity },
+      fallbackUrl: appShellPrecacheUrl('random-build'),
+    },
+    /is not the content address/,
+  ],
+  [
+    'the shell carries no integrity',
+    COMPLETE,
+    { integrity: { [SHELL.url]: null } },
+    /not pinned to this export's bytes: \/\?app-shell-build/,
+  ],
+  [
+    'a chunk is pinned to other bytes',
+    COMPLETE,
+    { integrity: { [ENTRY]: subresourceIntegrity('another build') } },
+    /not pinned to this export's bytes: _expo\/static\/js\/web\/index-1\.js/,
+  ],
+  [
+    'the fallback looks up another URL',
+    COMPLETE,
+    { fallbackUrl: '/index.html' },
+    /does not look up/,
+  ],
   [
     'an exported chunk is not precached',
-    COMPLETE.slice(0, 2).concat('site.webmanifest'),
+    [SHELL.url, ENTRY, 'site.webmanifest'],
+    {},
     /strict-1\.css/,
   ],
   [
     'a precached file is not exported',
     [...COMPLETE, 'gone.js'],
+    {},
     /missing from the export: gone\.js/,
   ],
-])('rejects an export where %s', (_, urls, problem) => {
-  expect(() => check(exportFixture({ urls }))).toThrow(problem);
+])('rejects an export where %s', (_, urls, options, problem) => {
+  expect(() => check(exportFixture({ urls, ...options }))).toThrow(problem);
+});
+
+it('rejects a shell that names a file outside its precache', () => {
+  const index = INDEX.replace(
+    '</body>',
+    '<script src="/_expo/static/js/web/late-2.js"></script></body>'
+  );
+  const shell = contentAddressedShell(index);
+  const fixture = exportFixture({
+    urls: [shell.url, ...COMPLETE.slice(1)],
+    assets: { ...ASSETS, 'index.html': index },
+    integrity: { [shell.url]: shell.integrity },
+    fallbackUrl: shell.url,
+  });
+  expect(() => check(fixture)).toThrow(/names files outside its precache: .*late-2\.js/);
 });
 
 it('rejects an export whose precached chunks lack a starter page', () => {

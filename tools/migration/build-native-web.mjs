@@ -1,8 +1,9 @@
 // Production web export of the React Native app (experiments/native-architecture),
 // made installable and offline-capable the way the shipping PWA is (ADR-0022): the
 // shipping manifest, icons and install head tags, plus a Workbox service worker
-// whose first precache entry is this build's own app shell.
-import { randomUUID } from 'node:crypto';
+// whose first precache entry is this build's own document, and whose every entry is
+// pinned to the bytes this build wrote.
+import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateSW } from 'workbox-build';
@@ -10,7 +11,6 @@ import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
   isAppShellNavigation,
-  prependAppShellEntry,
 } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { CACHE_BUST_VERSION_PARAM } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { SERVICE_WORKER_PATH } from '../../experiments/native-architecture/src/platform/serviceWorkerPath.ts';
@@ -25,6 +25,7 @@ const SHIPPING_MANIFEST = 'site.webmanifest';
 const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 // Expo's build-identity file is read by its own tooling, never by the app.
 const EXPORT_METADATA_FILE = 'metadata.json';
+export const APP_SHELL_FILE = 'index.html';
 
 // The bundled starter coloring book makes the entry bundle the largest file, well
 // above Workbox's 2 MiB default, and it must be precached for offline launch.
@@ -80,11 +81,44 @@ function copyShippingInstallAssets(outputDir) {
     SHIPPING_MANIFEST,
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
-  const indexPath = join(outputDir, 'index.html');
+  const indexPath = join(outputDir, APP_SHELL_FILE);
   writeFileSync(indexPath, withInstallHeadTags(readFileSync(indexPath, 'utf8'), tags));
 }
 
-export function nativeWebServiceWorkerConfig(outputDir, shellUrl) {
+export function subresourceIntegrity(bytes) {
+  return `sha384-${createHash('sha384').update(bytes).digest('base64')}`;
+}
+
+// Expo writes the document before the worker is generated, so unlike the shipping
+// shell (prerendered afterwards) its bytes are known here. The shell is precached
+// under a URL derived from those bytes and carries their integrity, so an install
+// that receives any other document — a deploy landing between serving sw.js and
+// fetching the shell — fails instead of pairing that document with this build's
+// chunks.
+export function contentAddressedShell(indexHtml) {
+  return {
+    url: appShellPrecacheUrl(createHash('sha256').update(indexHtml).digest('hex')),
+    integrity: subresourceIntegrity(indexHtml),
+  };
+}
+
+// Workbox reuses an entry already cached under the same URL and revision instead of
+// fetching it, and otherwise trusts whatever the host answers. Every entry carries
+// the integrity of the bytes this build wrote, so the browser rejects a fetched
+// response from any other deploy and the install is abandoned.
+export function pinPrecacheToExport(outputDir, shell) {
+  return (manifest) => ({
+    manifest: [
+      { url: shell.url, revision: null, integrity: shell.integrity, size: 0 },
+      ...manifest.map((entry) => ({
+        ...entry,
+        integrity: subresourceIntegrity(readFileSync(join(outputDir, entry.url))),
+      })),
+    ],
+  });
+}
+
+export function nativeWebServiceWorkerConfig(outputDir, shell) {
   return {
     globDirectory: outputDir,
     globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,ttf,woff2,webmanifest}'],
@@ -93,7 +127,7 @@ export function nativeWebServiceWorkerConfig(outputDir, shellUrl) {
     inlineWorkboxRuntime: true,
     sourcemap: false,
     maximumFileSizeToCacheInBytes: MAX_PRECACHED_FILE_BYTES,
-    manifestTransforms: [prependAppShellEntry(shellUrl)],
+    manifestTransforms: [pinPrecacheToExport(outputDir, shell)],
     // A new worker waits instead of taking over an open drawing; it activates
     // once every window of the old one has closed.
     clientsClaim: true,
@@ -103,7 +137,7 @@ export function nativeWebServiceWorkerConfig(outputDir, shellUrl) {
         handler: 'NetworkFirst',
         options: {
           networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,
-          plugins: [createAppShellFallbackPlugin(shellUrl, CACHE_BUST_VERSION_PARAM)],
+          plugins: [createAppShellFallbackPlugin(shell.url, CACHE_BUST_VERSION_PARAM)],
         },
       },
     ],
@@ -113,12 +147,12 @@ export function nativeWebServiceWorkerConfig(outputDir, shellUrl) {
 export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {}) {
   rmSync(outputDir, { recursive: true, force: true });
   exportWebBundle(outputDir);
-  if (!existsSync(join(outputDir, 'index.html')))
-    throw new Error(`Expo exported no index.html into ${outputDir}`);
+  if (!existsSync(join(outputDir, APP_SHELL_FILE)))
+    throw new Error(`Expo exported no ${APP_SHELL_FILE} into ${outputDir}`);
   copyShippingInstallAssets(outputDir);
-  const shellUrl = appShellPrecacheUrl(randomUUID());
+  const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
-    nativeWebServiceWorkerConfig(outputDir, shellUrl)
+    nativeWebServiceWorkerConfig(outputDir, shell)
   );
   if (warnings.length) throw new Error(warnings.join('\n'));
   console.log(`[native-web] ${outputDir}: ${count} precached files / ${size} bytes`);
