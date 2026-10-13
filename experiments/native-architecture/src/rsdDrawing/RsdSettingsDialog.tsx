@@ -114,14 +114,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   const busy = settings.status !== 'ready' || !visible;
   const shell = settingsShell(useWindowDimensions());
   const { unlocked } = props.parentCenter;
-  const [page, setPage] = useState<SettingsPage>(unlocked ? PARENT_CENTER_PAGE : HUB);
-  const sectionTitle = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (page.kind === 'section') landFocus(sectionTitle.current);
-  }, [page]);
-  useEffect(() => {
-    if (unlocked) setPage((current) => (isParentCenter(current) ? current : PARENT_CENTER_PAGE));
-  }, [unlocked]);
+  const { page, setPage, sectionTitle } = useSettingsPage(unlocked);
   const toggles = useHubToggles({
     busy,
     soundEnabled: settings.soundEnabled,
@@ -155,15 +148,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   // Only the phone shell drills in; the others show the same sections in place.
   const subpage =
     page.kind === 'information' || (shell === 'phone' && page.kind === 'section') ? page : null;
-  const status = (
-    <>
-      {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
-      {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-      {settings.status === 'ready' && !settings.saved ? (
-        <RsdAction label="Try saving settings again" onClick={onRetry} />
-      ) : null}
-    </>
-  );
+  const status = <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />;
   return (
     <ModalShell
       visible={visible}
@@ -246,6 +231,37 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       {props.gate}
     </ModalShell>
   );
+}
+
+function SaveStatus({
+  settings,
+  notice,
+  onRetry,
+}: Pick<NativeSoundSettingsDialogProps, 'settings' | 'notice' | 'onRetry'>) {
+  return (
+    <>
+      {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
+      {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
+      {settings.status === 'ready' && !settings.saved ? (
+        <RsdAction label="Try saving settings again" onClick={onRetry} />
+      ) : null}
+    </>
+  );
+}
+
+// The page the phone shell shows. A solved Parent Center check lands on its section wherever it
+// was raised from, and each move lands focus on the section heading that replaced the control.
+function useSettingsPage(parentCenterUnlocked: boolean) {
+  const [page, setPage] = useState<SettingsPage>(parentCenterUnlocked ? PARENT_CENTER_PAGE : HUB);
+  const sectionTitle = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (page.kind === 'section') landFocus(sectionTitle.current);
+  }, [page]);
+  useEffect(() => {
+    if (parentCenterUnlocked)
+      setPage((current) => (isParentCenter(current) ? current : PARENT_CENTER_PAGE));
+  }, [parentCenterUnlocked]);
+  return { page, setPage, sectionTitle };
 }
 
 function parentCenterRevealed({ unlocked, checkDue }: ParentCenterRoute) {
