@@ -6,9 +6,11 @@ import type { ToolbarStyle } from '../settings/toolbarStyle';
 import { RsdAction, styles as controlStyles } from './controls';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
-import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
+import { RsdAboutSection } from './RsdAboutSection';
+import { RsdFeedbackSection } from './RsdFeedbackSection';
+import type { NativeFeedbackOwner } from '../feedback/feedback';
+import type { HostedPage } from '../settings/hostedPages';
 import type { OrientationChoice } from '../settings/orientation';
 import type { ReduceMotionPreference } from '../settings/reduceMotion';
 import {
@@ -17,7 +19,6 @@ import {
   type NativeSettingsSectionId,
   type SectionSummaryContext,
 } from '../settings/settingsSections';
-import { installPrompt } from '../platform/installPrompt';
 import { RsdSettingsHub, useHubToggles, useSectionActivity } from './RsdSettingsHub';
 import { RsdSettingsWide } from './RsdSettingsWide';
 import { RsdSettingsCompact } from './RsdSettingsCompact';
@@ -67,7 +68,9 @@ type NativeSoundSettingsDialogProps = {
   parentCenter: ParentCenterRoute;
   // The Grown-Ups Only card, held over Settings while a check raised from it is open.
   gate: ReactNode;
-  onFeedback: () => void;
+  feedback: NativeFeedbackOwner | null;
+  // Opens a page outside the app; the route holds it behind the external-links check.
+  onOpenHostedPage: (page: HostedPage) => void;
   downloadedBooks: number;
   ai: SectionSummaryContext['ai'];
   visible?: boolean;
@@ -88,20 +91,13 @@ type ParentCenterRoute = {
 
 type SettingsPage =
   | { kind: 'hub'; returnTo: NativeSettingsSectionId | null }
-  | { kind: 'section'; section: NativeSettingsSectionId }
-  | { kind: 'information'; page: InformationPage };
+  | { kind: 'section'; section: NativeSettingsSectionId };
 
 const HUB: SettingsPage = { kind: 'hub', returnTo: null };
 const PARENT_CENTER_PAGE: SettingsPage = { kind: 'section', section: 'parentCenter' };
-// Install has nothing to offer where the app is already installed.
-const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
-  (section) => section.id !== 'setup' || installPrompt !== null
-);
 
 function pageLabel(page: SettingsPage) {
-  if (page.kind === 'section') return sectionHeading(page.section);
-  if (page.kind === 'information') return INFORMATION_CONTENT[page.page].title;
-  return 'Settings';
+  return page.kind === 'section' ? sectionHeading(page.section) : 'Settings';
 }
 
 // The shipping Settings, in the shell the window selects (ADR-0061). The phone hub drills into one
@@ -129,10 +125,6 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   };
   const unseen = useSectionActivity(context);
   const openSection = (section: NativeSettingsSectionId) => {
-    if (section === 'feedback') {
-      props.onFeedback();
-      return;
-    }
     if (section === 'parentCenter' && !unlocked) {
       props.parentCenter.onUnlock();
       return;
@@ -144,10 +136,8 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     if (isParentCenter(page)) props.parentCenter.onLeave();
     setPage({ kind: 'hub', returnTo: page.kind === 'section' ? page.section : null });
   };
-  const onHelp = () => setPage({ kind: 'information', page: 'help' });
   // Only the phone shell drills in; the others show the same sections in place.
-  const subpage =
-    page.kind === 'information' || (shell === 'phone' && page.kind === 'section') ? page : null;
+  const subpage = shell === 'phone' && page.kind === 'section' ? page : null;
   const status = <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />;
   return (
     <ModalShell
@@ -157,13 +147,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       label={pageLabel(subpage ?? HUB)}
       size="settings"
       onClose={subpage ? back : onClose}
-      scrolls={subpage?.kind === 'information'}
+      scrolls={false}
       header={
         subpage ? (
           <DialogHeader
             title={pageLabel(subpage)}
             titleSize="lg"
-            titleRef={subpage.kind === 'section' ? sectionTitle : undefined}
+            titleRef={sectionTitle}
             onBack={back}
             onClose={onClose}
           />
@@ -176,32 +166,22 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
         )
       }
     >
-      {subpage?.kind === 'information' ? (
-        <RsdInformationSection
-          page={subpage.page}
-          onNavigate={(next) =>
-            next === 'whatsNew'
-              ? openSection('whatsnew')
-              : setPage({ kind: 'information', page: next })
-          }
-        />
-      ) : subpage?.kind === 'section' ? (
+      {subpage ? (
         <PhoneScroll>
-          <SettingsSection {...props} section={subpage.section} busy={busy} onHelp={onHelp} />
+          <SettingsSection {...props} section={subpage.section} busy={busy} wide={false} />
           {status}
         </PhoneScroll>
       ) : shell === 'wide' ? (
         <RsdSettingsWide
-          sections={HUB_SECTIONS}
+          sections={NATIVE_SETTINGS_SECTIONS}
           keptSection={props.buttonScale.active ? 'accessibility' : null}
           unseen={unseen}
           renderSection={(section) => (
-            <SettingsSection {...props} section={section} busy={busy} onHelp={onHelp} />
+            <SettingsSection {...props} section={section} busy={busy} wide />
           )}
           onSeen={(section) => {
             if (section === 'whatsnew') onWhatsNewSeen();
           }}
-          onFeedback={props.onFeedback}
           locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
           landing={unlocked ? 'parentCenter' : null}
           onUnlock={props.parentCenter.onUnlock}
@@ -215,7 +195,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       ) : (
         <PhoneScroll>
           <RsdSettingsHub
-            sections={HUB_SECTIONS}
+            sections={NATIVE_SETTINGS_SECTIONS}
             context={context}
             toggles={toggles}
             unseen={unseen}
@@ -319,7 +299,8 @@ function PhoneScroll({ children }: { children: ReactNode }) {
 type SectionProps = NativeSoundSettingsDialogProps & {
   section: NativeSettingsSectionId;
   busy: boolean;
-  onHelp: () => void;
+  // The wide pane titles each section one heading level below the phone page's title.
+  wide: boolean;
 };
 
 function SettingsSection(props: SectionProps) {
@@ -380,10 +361,11 @@ function SettingsSection(props: SectionProps) {
           onColoringBookChange={onColoringBookChange}
         />
       );
-    // Feedback opens its own sheet from the hub, and AI Art has no native section body yet.
+    // AI Art has no native section body yet.
     case 'ai':
-    case 'feedback':
       return null;
+    case 'feedback':
+      return <RsdFeedbackSection owner={props.feedback} />;
     case 'saving':
       return (
         <RsdSavingSection
@@ -403,8 +385,13 @@ function SettingsSection(props: SectionProps) {
     case 'setup':
       return <RsdInstallGuide />;
     case 'whatsnew':
-      return <RsdWhatsNewSection />;
+      return (
+        <RsdWhatsNewSection
+          sectionHeadingLevel={props.wide ? 3 : 2}
+          onOpen={props.onOpenHostedPage}
+        />
+      );
     case 'about':
-      return <RsdAction label="Help and about" onClick={props.onHelp} />;
+      return <RsdAboutSection onOpen={props.onOpenHostedPage} />;
   }
 }

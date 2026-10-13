@@ -272,8 +272,9 @@ function holdNextWrite(storage) {
   return () => act(async () => finish());
 }
 
-const LISTED = NATIVE_SETTINGS_SECTIONS.filter(({ id }) => id !== 'setup');
-const PANE_SECTIONS = LISTED.filter(({ id }) => id !== 'feedback');
+const LISTED = NATIVE_SETTINGS_SECTIONS;
+// Every section, Feedback and Install among them, holds its place in the one pane.
+const PANE_SECTIONS = LISTED;
 
 const sidebarRows = () => [...host.querySelectorAll('[data-testid="sidebar-row"]')];
 const sidebarRow = (label) => {
@@ -338,7 +339,6 @@ describe('the wide shell', () => {
     const paneSection = (id) =>
       latest((props) => props.onLayout && props.children?.props?.['data-section'] === id);
     for (const { id } of PANE_SECTIONS) expect(paneSection(id), id).toBeDefined();
-    expect(paneSection('feedback')).toBeUndefined();
     for (const { id } of PANE_SECTIONS) expect(host.textContent).toContain(sectionHeading(id));
     expect(spiedRow()).toEqual(['Appearance']);
     expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
@@ -360,7 +360,7 @@ describe('the wide shell', () => {
     expect(sidebarRow("What's New").getAttribute('aria-label')).toBe("What's New");
   });
 
-  it('jumps the pane to a tapped section and opens Feedback in its own sheet', async () => {
+  it('jumps the pane to a tapped section, Feedback included, without leaving Settings', async () => {
     HTMLElement.prototype.scrollTo = scrollTo;
     openSettings(TABLET, { whatsNewSeen: null });
     await mount(createElement(RsdDrawingScreen));
@@ -373,9 +373,14 @@ describe('the wide shell', () => {
     });
     scrollTo.mockClear();
     await act(async () => sidebarRow('Feedback').click());
-    expect(scrollTo).not.toHaveBeenCalled();
-    expect(caller.screen.closeSettings).toHaveBeenCalled();
-    expect(caller.product.feedback.state.open).toBe(true);
+    const feedback = PANE_SECTIONS.findIndex(({ id }) => id === 'feedback');
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      y: WIDE_SHELL.pane.top + feedback * 360 - SECTION_JUMP_INSET_PX,
+      animated: true,
+    });
+    expect(caller.screen.closeSettings).not.toHaveBeenCalled();
+    expect(caller.product.feedback.state.open).toBe(false);
+    expect(host.querySelector('[data-native-modal="Send Feedback"]')).toBeNull();
   });
 
   it('keeps a smooth jump from marking the sections it passes', async () => {

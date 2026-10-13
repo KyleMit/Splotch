@@ -21,10 +21,6 @@ import { createOfflineLibrary } from '../../../experiments/native-architecture/s
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { BUNDLED_FARM_SELECTORS } from '../../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
 import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
-import {
-  RELEASE_NOTES,
-  WHATS_NEW_STAMP,
-} from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
 
 async function refresh() {
   await act(async () => root.render(createElement(RsdDrawingScreen)));
@@ -306,47 +302,6 @@ it('writes the real Volume slider once it settles, independently of the Sound sw
   expect(coloringPaper()).toEqual(drawing);
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.feedbackSend).not.toHaveBeenCalled();
-});
-it('reads bundled help, privacy and beta notes through Settings without changing ink or sending requests', async () => {
-  const storage = rootColoringSettings();
-  await mount(createElement(RsdDrawingScreen));
-  await expandControls();
-  await click('Draw RSD fixture stroke');
-  const drawing = coloringPaper();
-  expect(drawing.strokes).toHaveLength(1);
-  await click('Settings');
-  await openSettingsSection('About');
-  await click('Help and about');
-  expect(host.textContent).toContain('Make a picture');
-  expect(host.textContent).toContain('Splotch 1.6.0 · Beta');
-  await click('Privacy');
-  expect(host.textContent).toContain('Drawing stays on your device');
-  expect(host.textContent).toContain('AI pictures are optional');
-  expect(host.textContent).toContain(
-    'We review reports within 24 hours and schedule deletion after 30 days by a daily cleanup.'
-  );
-  await click('Back to help and about');
-  await click('What’s new');
-  expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
-  expect(host.textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);
-  expect(host.textContent).not.toContain('In this beta');
-  await click('Back');
-  expect(host.querySelector('[role="list"] button[aria-label^="Appearance, "]')).not.toBeNull();
-  await openSettingsSection('About');
-  await click('Help and about');
-  await click('Close');
-  expect(coloringPaper()).toEqual(drawing);
-  await click('Undo');
-  expect(coloringPaper().strokes).toHaveLength(0);
-  expect(storage.write).toHaveBeenCalledOnce();
-  expect(JSON.parse(storage.write.mock.calls[0][0])).toMatchObject({
-    whatsNewSeen: WHATS_NEW_STAMP,
-    pencilEraserEnabled: true,
-    applePencilSeen: false,
-  });
-  expect(caller.aiSend).not.toHaveBeenCalled();
-  expect(caller.feedbackSend).not.toHaveBeenCalled();
-  expect(caller.aiVaultRead).not.toHaveBeenCalled();
 });
 it('hides Coloring through actual RSD Settings and clamps actual history Undo while retaining ink', async () => {
   const storage = rootColoringSettings();

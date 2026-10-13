@@ -138,7 +138,8 @@ export function nativeSettingsProps(owner, state) {
     onClose() {},
     parentCenter: { unlocked: false, checkDue: true, onUnlock() {}, onLeave() {}, section: null },
     gate: null,
-    onFeedback() {},
+    feedback: null,
+    onOpenHostedPage() {},
     downloadedBooks: 0,
     ai: null,
   };

@@ -4,7 +4,7 @@ import {
   type ReportKind,
   type ReportRequestBody,
 } from './report';
-import type { DeviceInfo } from './deviceReport';
+import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from './deviceReport';
 import { truncateCodeUnits } from './truncate';
 import { createFeedbackGate, type FeedbackGateMode, type FeedbackGateState } from './feedbackGate';
 import type { FeedbackTransport } from './feedbackTransport';
@@ -33,11 +33,13 @@ export type NativeFeedbackState = Readonly<{
   validation: string;
 }>;
 
+const EMPTY_DRAFT: FeedbackDraft = { kind: 'bug', message: '', includeDevice: false };
+
 function initialFeedbackState(sharedParent: boolean, gate: FeedbackGateState): NativeFeedbackState {
   return {
     sharedParent,
     open: false,
-    draft: { kind: 'bug', message: '', includeDevice: false },
+    draft: EMPTY_DRAFT,
     preview: null,
     gate,
     ...DEFAULT_FEEDBACK_POLICY,
@@ -56,6 +58,45 @@ type NativeFeedbackOptions = {
   random?: () => number;
   parent?: ParentOperationPort;
 };
+
+// A report the owner cannot reach mid-send keeps its delivery state; any other edit clears the
+// last outcome.
+function settledDelivery(delivery: FeedbackDeliveryState) {
+  return delivery.status === 'sending' || delivery.status === 'throttled'
+    ? {}
+    : { delivery: { status: 'idle' } as const };
+}
+
+// The snapshot goes out once the grown-up check passes: Parent Center's when the product shares
+// one, else this owner's own, and only while `current` still holds.
+function routeDelivery(
+  snapshot: FeedbackSnapshot,
+  route: {
+    parent: ParentOperationPort | undefined;
+    gate: ReturnType<typeof createFeedbackGate>;
+    delivery: ReturnType<typeof createFeedbackDelivery>;
+  },
+  current: () => boolean
+) {
+  const submit = () => void route.delivery.submit(snapshot);
+  if (!route.parent) {
+    route.gate.request(submit);
+    return;
+  }
+  route.parent.request('feedback', (proof) => {
+    if (proof.valid() && current()) submit();
+  });
+}
+
+// What the device-details disclosure lists: the rows a bug report would attach, or none when the
+// device cannot describe itself.
+function describeFeedbackDevice(device: () => DeviceInfo) {
+  try {
+    return describeDeviceInfo(sanitizeDeviceInfo(device()));
+  } catch {
+    return [];
+  }
+}
 
 export function createNativeFeedback({
   transport,
@@ -84,23 +125,28 @@ export function createNativeFeedback({
     (snapshot) => {
       if (snapshot.revision !== revision) return;
       revision += 1;
-      update({ draft: { kind: 'bug', message: '', includeDevice: false }, preview: null });
+      update({ draft: EMPTY_DRAFT, preview: null });
     },
     now
   );
-  function edit(next: Partial<FeedbackDraft>) {
+  function replaceDraft(draft: FeedbackDraft) {
     parent?.cancel('feedback');
     revision += 1;
+    update({ draft, preview: null, validation: '', ...settledDelivery(state.delivery) });
+  }
+  function edit(next: Partial<FeedbackDraft>) {
     const draft = { ...state.draft, ...next };
     if (draft.kind === 'feature') draft.includeDevice = false;
-    update({
-      draft,
-      preview: null,
-      validation: '',
-      ...(state.delivery.status !== 'sending' && state.delivery.status !== 'throttled'
-        ? { delivery: { status: 'idle' } as const }
-        : {}),
-    });
+    replaceDraft(draft);
+  }
+  // A snapshot is withdrawn when its draft changes, the owner goes, or `shown` says its form closed.
+  function deliver(snapshot: FeedbackSnapshot, shown: () => boolean) {
+    if (!state.policyReady || !delivery.available() || disposed) return;
+    routeDelivery(
+      snapshot,
+      { parent, gate, delivery },
+      () => !disposed && shown() && state.preview === snapshot && snapshot.revision === revision
+    );
   }
   const owner = {
     getState: () => state,
@@ -141,25 +187,32 @@ export function createNativeFeedback({
       update({ preview: null });
     },
     send() {
-      if (!state.policyReady || !state.preview || !delivery.available() || disposed) return;
-      const snapshot = state.preview;
-      if (parent) {
-        parent.request('feedback', (proof) => {
-          if (
-            proof.valid() &&
-            !disposed &&
-            state.open &&
-            state.preview === snapshot &&
-            snapshot.revision === revision
-          )
-            void delivery.submit(snapshot);
-        });
+      if (state.preview) deliver(state.preview, () => state.open);
+    },
+    // The Settings form's Send report: the shipping form checks the draft and sends it behind the
+    // grown-up check in one step, with no review page. A check raised from Settings may close
+    // Settings while it is answered, so only a changed draft withdraws the report.
+    submit() {
+      const result = buildFeedbackPreview(state.draft, revision, device);
+      if (!result.ok) {
+        update({ validation: result.message });
         return;
       }
-      gate.request(() => {
-        void delivery.submit(snapshot);
-      });
+      update({ preview: result.snapshot, validation: '' });
+      deliver(result.snapshot, () => true);
     },
+    // Each visit to the Settings form starts from an empty draft and no outcome, as the shipping
+    // form does: a report already on its way keeps going, but it belongs to the visit that sent it,
+    // so it can neither keep the new form busy nor report into it. A wait the server asked for still
+    // holds.
+    reset() {
+      if (state.delivery.status === 'sending') {
+        delivery.detach();
+        update({ delivery: { status: 'idle' } });
+      }
+      replaceDraft(EMPTY_DRAFT);
+    },
+    deviceRows: () => describeFeedbackDevice(device),
     cancelSending: delivery.cancel,
     deliveryTick: delivery.tick,
     changePolicy: parent ? () => {} : policy.change,
