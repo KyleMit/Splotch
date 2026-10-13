@@ -17,14 +17,17 @@ type ResolvedProps = PressableProps & {
 // up to whatever is under the finger at release, so a press that slides off and lifts elsewhere
 // stays pressed. Pressable's own press lifecycle drives that state instead: press-out fires on
 // sliding off, on cancellation and on release, and press-in again on sliding back. A native
-// host has no form to submit, so the button's type is dropped.
+// host has no form to submit, so the button's type is dropped. The host renders as a div, which
+// carries no implicit role natively, so a caller that names none gets the button role a web
+// <button> implies.
 export function RsdPressable({
   children,
   type: _formType,
+  role = 'button',
   ...props
 }: ComponentProps<typeof html.button>) {
   return (
-    <compat.native<ResolvedProps> {...props} as="div">
+    <compat.native<ResolvedProps> {...props} role={role} as="div">
       {({ animated, onPointerDown, onPointerUp, onPointerCancel, ...resolved }) => {
         const Host = animated ? AnimatedPressable : Pressable;
         return (
