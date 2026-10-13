@@ -286,10 +286,11 @@ paper area it is first drawn in, as the shipping engine adopts its viewport.
   both, and the store now opens both. Picker thumbnails stay wide. Magic on a book page covers the
   whole paper the way the shipping magic sheet does: the fill is contain-fitted under its line art
   and `edgeMargins` (`magicSheetEdges.ts`) stretches an inset edge strip through each letterbox band
-  (`bookFill.ts`, on a quarter-unit grid so a band meets the fill's fractional edge without a seam).
-  Sample pages already paint their background across the paper.
-* **Bundled fills use the compact tier.** Both Farm compositions with the canonical full-size fills
-  exceed the native web precache budget (`MAX_NATIVE_WEB_PRECACHE_BYTES`). The bundle therefore uses
-  ADR-0103's compact `max-1152px` fills for both orientations; line art stays the canonical vector.
-  Raising the budget to keep full-size fills was the rejected alternative. A downloaded book still
-  installs the full pack.
+  (`bookFill.ts`; each band reaches under the picture to its midpoint, so the join stays opaque at
+  any presentation size). Sample pages already paint their background across the paper.
+* **Bundled fills use the compact tier.** The bundle uses ADR-0103's compact `max-1152px` fills for
+  both Farm orientations; line art stays the canonical vector. The choice was made under a 6 MB
+  native web precache budget that the full-size pair exceeded. `MAX_NATIVE_WEB_PRECACHE_BYTES` now
+  equals the shipping PWA budget (`MAX_PWA_PRECACHE_BYTES`), because the RN web export makes the
+  same offline promise as the app it replaces, so full-size fills are a fidelity question to revisit
+  rather than a budget breach. A downloaded book still installs the full pack.

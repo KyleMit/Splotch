@@ -8,6 +8,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import {
   APP_SHELL_FALLBACK_CALLBACKS,
+  MAX_PWA_PRECACHE_BYTES,
   appShellFallbackLookupsFromSource,
 } from '../check-pwa-precache.mjs';
 import { APP_SHELL_PRECACHE_URL_PATTERN } from '../lib/pwa-precache-source.mjs';
@@ -23,10 +24,9 @@ import {
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 
-// Leaves room for app growth beside the bundled Farm book's tall and wide art while
-// rejecting a second bundled book or an accidental duplicate bundle; gen-bundled-farm.mjs
-// bundles compact fills to stay inside it.
-export const MAX_NATIVE_WEB_PRECACHE_BYTES = 6_000_000;
+// The RN web export makes the same offline promise as the shipping PWA it is meant to
+// replace, so it answers to the same budget.
+export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
 // Served by the export but never fetched by the page: the worker itself, and Expo's
 // build-identity file.
 const UNFETCHED_EXPORT_FILES = new Set([NATIVE_WEB_SERVICE_WORKER, 'metadata.json']);
