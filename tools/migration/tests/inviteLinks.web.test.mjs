@@ -13,7 +13,9 @@ import {
   inviteAccessCode,
   nativeInviteAccessCode,
 } from '../../../experiments/native-architecture/src/ai/inviteLink.ts';
-import { startInviteLinks } from '../../../experiments/native-architecture/src/platform/inviteLinks.web.ts';
+import { createInviteCapture } from '../../../experiments/native-architecture/src/platform/inviteLinks.web.ts';
+
+const startInviteLinks = (loadVault) => createInviteCapture(loadVault).settle();
 import { browserHistoryPort } from '../../../experiments/native-architecture/src/platform/BrowserBack.web.tsx';
 import {
   BROWSER_BACK_STATE_KEY,
@@ -150,14 +152,22 @@ describe('web launch invite capture', () => {
     expect(location.href).toBe(before);
   });
 
-  it('keeps the parameter when the vault chunk fails to load', async () => {
+  it('retries a capture whose vault chunk failed to load, then saves and scrubs', async () => {
     history.replaceState({}, '', invitePath('offline-code'));
     const failure = new Error('chunk unavailable');
+    const vault = recordingVault();
+    const loadVault = vi.fn().mockRejectedValueOnce(failure).mockResolvedValueOnce(vault);
+    const capture = createInviteCapture(loadVault);
 
-    await startInviteLinks(() => Promise.reject(failure));
-
+    await capture.settle();
     expect(location.search).toContain(`${AI_ACCESS_TOKEN_PARAM}=offline-code`);
     expect(warn).toHaveBeenCalledWith(INVITE_SAVE_FAILED_WARNING, failure);
+
+    await capture.settle();
+    expect(vault.writes).toEqual([['managed', 'offline-code']]);
+    expect(location.search).toBe('');
+    await capture.settle();
+    expect(loadVault).toHaveBeenCalledTimes(2);
   });
 
   it('keeps browser Back attached across the scrub', async () => {

@@ -92,8 +92,8 @@ native keeps its synchronous, offline-complete bundle unchanged.
     export would have if its app code were as lean as the shipping app's.
   * Issue 2835 left the startup at 1,189,500 bytes. The modal frame (issue 2842) brought it to
     1,219,090, against a 1,220,000 cap. Issue 2844 took the two levers below and reviewed the
-    startup at 994,545 bytes, 145,561 over the target.
-  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 1,015,000, is that measurement plus 20,455 bytes of
+    startup at 993,619 bytes, 144,635 over the target.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 1,015,000, is that measurement plus 21,381 bytes of
     headroom. The headroom stays below the smallest move it protects (the offline library
     controller, 24,471 bytes). Undoing any lever fails the build. So does statically importing the
     AI sheet (measured at 1,099,429 bytes).
@@ -127,7 +127,9 @@ native keeps its synchronous, offline-complete bundle unchanged.
   * Nothing AI runs at launch except a launch invite. The AI owner reads its stored journal and
     resumes a pending generation when a parent opens the AI sheet. That path is unchanged, and
     `tools/migration/tests/rsd-web-product-owners.test.mjs` drives it through the web loader.
-  * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite.
+  * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite. If that chunk
+    request fails, the capture stays pending. The owners' loader settles it before it hands out the
+    AI owner, so a recovered chunk still saves and scrubs the invite before any credential read.
   * Expo's serializer moves every module that two lazy chunks share into `__common`, a chunk
     `index.html` loads before first paint. So the owners, the AI and feedback sheets, the waiting
     print and the invite's vault are one chunk, `productChunk.web.ts`. A second chunk for any of
@@ -142,6 +144,9 @@ native keeps its synchronous, offline-complete bundle unchanged.
       reads the saved policy and fetches the 210 KB coloring catalog.
   * Until then the snapshot is the controller's own loading snapshot. A failed chunk reports what a
     failed catalog reports, and Retry loads it afresh.
+  * A picker opened before the launch inventory finishes would hold an empty list of books.
+    `useHeldBooks` holds the books from the first finished inventory instead. A book that finishes
+    downloading while the picker is open still waits for the next open.
   * Native's `runtime.ts` creates the controller at import, as before.
 
 Measured on the merged base, each step's change to the startup path:
@@ -153,8 +158,9 @@ Measured on the merged base, each step's change to the startup path:
 | Feedback, AI and launch invites in `productChunk`      | 1,016,780     | −137,885 |
 | Offline library controller and inventory deferred      | 992,309       | −24,471  |
 | Waiting for paint and idle (`drawingPaint`, `idle.ts`) | 994,545       | +2,236   |
+| Clear button (issue 2849) merged, review fixes         | 993,619       | −926     |
 
-The remaining 145,561 bytes over the target are mostly two libraries every first paint uses: the
+The remaining 144,635 bytes over the target are mostly two libraries every first paint uses: the
 startup icon set (`icons.generated.ts`, about 78 KB) and `react-native-svg` (about 47 KB).
 
 ## Consequences

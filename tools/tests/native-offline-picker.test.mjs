@@ -157,6 +157,29 @@ describe('complete downloaded books and parent controls in both real picker cons
     await renderPicker(RsdColoringBookPicker);
     expect(button('Dinosaurs coloring book')).toBeUndefined();
   });
+  // The RSD picker lists each downloaded book; the earlier picker lists every downloaded page.
+  it.each([
+    ['ColoringPagePicker', ColoringPagePicker, 'T. Rex', 'Astronaut'],
+    [
+      'RsdColoringBookPicker',
+      RsdColoringBookPicker,
+      'Dinosaurs coloring book',
+      'Space coloring book',
+    ],
+  ])(
+    'lists what the launch inventory finds after %s opened, then holds it',
+    async (_name, Component, dinosaurs, space) => {
+      state = { ...owner.snapshot(), status: 'loading', installed: [] };
+      await renderPicker(Component);
+      expect(button(dinosaurs)).toBeUndefined();
+      state = { ...state, status: 'ready', installed: [pack] };
+      await renderPicker(Component);
+      expect(button(dinosaurs)).toBeDefined();
+      state = { ...state, installed: [pack, catalogPack('space', 'full')] };
+      await renderPicker(Component);
+      expect(button(space)).toBeUndefined();
+    }
+  );
   it.each([ColoringPagePicker, RsdColoringBookPicker])(
     'exposes automatic policy, mobile data, retry, cancel, storage and removal controls',
     async (Component) => {

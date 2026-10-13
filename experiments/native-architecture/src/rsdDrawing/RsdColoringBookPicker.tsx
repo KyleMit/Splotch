@@ -1,6 +1,6 @@
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { RsdLibraryControls } from '../offlineLibrary/RsdLibraryControls';
-import { useLibraryControls } from '../offlineLibrary/LibraryScope';
+import { useHeldBooks, useLibraryControls } from '../offlineLibrary/LibraryScope';
 import { OFFLINE_BOOKS } from '../offlineLibrary/books.generated';
 import { offlinePageId } from '../offlineLibrary/identity';
 import type { Pack, OfflinePageSlug } from '../offlineLibrary/manifest';
@@ -43,7 +43,7 @@ export function RsdColoringBookPicker({
   onClose: () => void;
 }) {
   const library = useLibraryControls();
-  const [heldBooks] = useState(() => library?.state.installed ?? []);
+  const heldBooks = useHeldBooks(library);
   const [view, setView] = useState<PickerView>({ kind: 'books' });
   const theme = useDrawingAppearance();
   const book = view.kind === 'pages' ? BUNDLED_BOOKS[view.bookId] : null;
