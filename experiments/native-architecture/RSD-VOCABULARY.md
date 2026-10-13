@@ -96,3 +96,26 @@ paper effects, the iOS input-zoom floor and the mono stack — are listed with t
 `RSD_UNPROJECTED_TOKENS`. `tools/migration/tests/rsd-drawing-tokens.test.mjs` fails when a shipping
 token is added or changed without regenerating, or when a projected value stops parsing in React
 Native.
+
+## Settings rows
+
+The Settings building blocks port the shipping components one to one, for the Settings screens to
+adopt: `RsdToggleSwitch` and `RsdToggleRow` (`settings/ToggleSwitch.svelte`, `ToggleRow.svelte`),
+`RsdSettingCard`, `RsdSettingGroup` and `RsdSettingSectionBody` (`SettingsModal.svelte`'s `.setting`
+and `.setting-group`), `RsdRuleLabel` (`design/RuleLabel.svelte`), `RsdHubRow`
+(`settings/HubList.svelte`) and `RsdSidebarRow` (`nav/SidebarToc.svelte`'s Settings rows), with the
+shared `RsdActivityDot`.
+
+The switch is the one platform split. On the web (`RsdToggleSwitch.web.tsx`) it is a
+`<button role="switch">` described by the row's help line through `aria-describedby`, its row label
+is a `<label for>`, and the thumb slides by a CSS transition over `--duration-base`. On Android and
+iOS (`RsdToggleSwitch.tsx`) a React Native `Pressable` carries the switch role, the checked and
+disabled state, and the help line as its accessibility hint, which React Strict DOM cannot express;
+the thumb slides through a Reanimated shared value on the UI thread, so a toggle renders React once
+rather than per frame. Both read the app's Reduce Motion answer and land the thumb without sliding
+when it is on. The track, thumb face and glyph are shared RSD markup (`toggleSwitchFace.tsx`).
+
+`tools/migration/tests/rsd-native-settings-rows.test.mjs` mounts every primitive through the
+released native renderer, light and dark, and reads each geometry value from the shipping Svelte and
+CSS sources (`rsd-settings-rows-shipping.mjs`); `tools/tests/native-toggle-switch-web.test.mjs`
+covers the web switch.
