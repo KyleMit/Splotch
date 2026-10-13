@@ -6,6 +6,8 @@ export const colors = css.defineVars({
   text: '#474747',
   paper: '#fcfbf8',
   brandSolid: '#7c50bb',
+  brandWash: '#ede7f6',
+  floatSurface: '#ffffff',
 });
 
 export const darkTheme = css.createTheme(colors, {
@@ -13,9 +15,12 @@ export const darkTheme = css.createTheme(colors, {
   text: '#d3d1dc',
   paper: '#211f29',
   brandSolid: '#8058c0',
+  brandWash: '#3b2f4f',
+  floatSurface: '#2e2c38',
 });
 
 export const dimensions = css.defineVars({
+  space2: '8px',
   space3: '12px',
   space4: '16px',
   radiusMd: '12px',

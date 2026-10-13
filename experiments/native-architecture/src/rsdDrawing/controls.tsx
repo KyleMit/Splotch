@@ -3,8 +3,18 @@ import { colors, dimensions, brandColors } from './tokens.css';
 import { paintAppearance, paintLabel, type PaintColor } from '../drawing/palette';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { TOUCH_TARGET } from '../drawing/theme';
+import { RsdIcon } from './RsdIcon';
+import type { NativeIconName } from './icons.generated';
 
 const SELECTION_BORDER_WIDTH_PX = 2;
+// The shipping Actions Panel pads its icon by a sixth of the face; this is that share of 52pt.
+const ICON_PADDING_PX = 8;
+const ICON_SIZE_PX = TOUCH_TARGET - 2 * (ICON_PADDING_PX + SELECTION_BORDER_WIDTH_PX);
+// The shipping Selection Ring: a 4px ring in the swatch's color around a seam of the bar surface.
+const SWATCH_RING_WIDTH_PX = 4;
+const SWATCH_RING_GAP_PX = 3;
+const SWATCH_DISC_PX = TOUCH_TARGET - 2 * SWATCH_RING_WIDTH_PX;
+const SELECTED_SWATCH_DISC_PX = SWATCH_DISC_PX - 2 * SWATCH_RING_GAP_PX;
 
 export const styles = css.create({
   themeRoot: {
@@ -30,6 +40,7 @@ export const styles = css.create({
   },
   row: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space3 },
   stack: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
+  toolbar: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: dimensions.space2 },
   dialogContent: {
     display: 'flex',
     flexDirection: 'column',
@@ -39,18 +50,37 @@ export const styles = css.create({
     color: colors.text,
     fontSize: dimensions.fontSizeMd,
   },
-  compactAction: {
+  iconAction: {
     display: 'flex',
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: dimensions.space3,
-    padding: dimensions.space3,
-  },
-  paintDot: (backgroundColor: string) => ({
-    width: dimensions.space4,
-    height: dimensions.space4,
+    width: dimensions.touchTarget,
+    height: dimensions.touchTarget,
+    padding: ICON_PADDING_PX,
     borderRadius: dimensions.radiusMd,
+    backgroundColor: colors.floatSurface,
+    borderWidth: SELECTION_BORDER_WIDTH_PX,
+    borderStyle: 'solid',
+    borderColor: colors.floatSurface,
+  },
+  iconSelected: { backgroundColor: colors.brandWash, borderColor: colors.brandSolid },
+  swatch: (ring: string, radius: number) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: dimensions.touchTarget,
+    height: dimensions.touchTarget,
+    padding: 0,
+    borderRadius: radius,
+    borderWidth: SWATCH_RING_WIDTH_PX,
+    borderStyle: 'solid',
+    borderColor: ring,
+    backgroundColor: 'transparent',
+  }),
+  swatchDisc: (backgroundColor: string, size: number, radius: number) => ({
+    width: size,
+    height: size,
+    borderRadius: radius,
     backgroundColor,
   }),
   recoveryCard: { display: 'flex', flexDirection: 'column', gap: dimensions.space3 },
@@ -74,16 +104,19 @@ export const styles = css.create({
 
 type ActionProps = {
   label: string;
-  text?: string;
   disabled?: boolean;
   onClick: () => void;
 } & (
-  { selection?: never; selected?: never } | { selection: 'radio' | 'switch'; selected: boolean }
-);
+  | { text?: string; icon?: never; ink?: never }
+  | { icon: NativeIconName; ink?: string; text?: never }
+) &
+  ({ selection?: never; selected?: never } | { selection: 'radio' | 'switch'; selected: boolean });
 
 export function RsdAction({
   label,
   text = label,
+  icon,
+  ink,
   disabled = false,
   selection,
   selected,
@@ -96,15 +129,24 @@ export function RsdAction({
       aria-label={label}
       role={selection ?? 'button'}
       aria-checked={selection ? selected : undefined}
-      style={[
-        styles.action,
-        styles.touchTarget(TOUCH_TARGET),
-        selected && styles.selected,
-        disabled && styles.disabled,
-      ]}
+      style={
+        icon
+          ? [
+              styles.iconAction,
+              styles.touchTarget(TOUCH_TARGET),
+              selected && styles.iconSelected,
+              disabled && styles.disabled,
+            ]
+          : [
+              styles.action,
+              styles.touchTarget(TOUCH_TARGET),
+              selected && styles.selected,
+              disabled && styles.disabled,
+            ]
+      }
       onClick={onClick}
     >
-      {text}
+      {icon ? <RsdIcon name={icon} size={ICON_SIZE_PX} ink={ink} muted={disabled} /> : text}
     </html.button>
   );
 }
@@ -121,6 +163,7 @@ export function RsdPaintAction({
   onClick: () => void;
 }) {
   const appearance = paintAppearance(color, useDrawingAppearance());
+  const disc = selected ? SELECTED_SWATCH_DISC_PX : SWATCH_DISC_PX;
   return (
     <html.button
       role="radio"
@@ -129,16 +172,37 @@ export function RsdPaintAction({
       aria-disabled={disabled}
       disabled={disabled}
       style={[
-        styles.action,
+        styles.swatch(selected ? appearance.hex : 'transparent', TOUCH_TARGET / 2),
         styles.touchTarget(TOUCH_TARGET),
-        styles.compactAction,
-        selected && styles.selected,
         disabled && styles.disabled,
       ]}
       onClick={onClick}
     >
-      <html.div aria-hidden style={styles.paintDot(appearance.hex)} />
-      <html.span>{color}</html.span>
+      <html.div aria-hidden style={styles.swatchDisc(appearance.hex, disc, disc / 2)} />
+    </html.button>
+  );
+}
+
+export function RsdMoreColorsSwatch({
+  disabled,
+  onClick,
+}: {
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <html.button
+      aria-label="More colors"
+      aria-disabled={disabled}
+      disabled={disabled}
+      style={[
+        styles.swatch('transparent', TOUCH_TARGET / 2),
+        styles.touchTarget(TOUCH_TARGET),
+        disabled && styles.disabled,
+      ]}
+      onClick={onClick}
+    >
+      <RsdIcon name="more-colors" size={SWATCH_DISC_PX} ink={undefined} muted={disabled} />
     </html.button>
   );
 }
