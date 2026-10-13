@@ -64,7 +64,9 @@ describe('bundled page line art on the web export', () => {
   it('imports one chunk per bundled page', () => {
     const source = read('drawing/bundledOutlines.web.ts');
     for (const pageId of FARM_PAGE_IDS)
-      expect(source).toContain(`import('./bundledFarm/${pageId.split('/')[1]}')`);
+      expect(source).toContain(
+        ['import(', `'./bundledFarm/${pageId.split('/')[1]}'`, ')'].join('')
+      );
     expect(source).not.toMatch(/^import .* from '\.\/bundledFarm\//m);
   });
 });
