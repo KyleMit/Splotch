@@ -280,6 +280,12 @@ it('runs the paper under the bottom inset and lifts the controls clear of it', a
   const props = (testID) => records.props.findLast((candidate) => candidate.testID === testID);
   await act(async () => props('rsd-canvas-area').onLayout(box(0, 0, 402, 700)));
   expect(seen.panel.area).toEqual({ width: 402, height: 700 - 34 });
+  // The landscape column's swatches stop above the inset too; its surface runs on beneath.
+  records.dimensions = { width: 1180, height: 820, scale: 1, fontScale: 1 };
+  await act(async () =>
+    root.render(createElement(NativeFrame, { variant: 'drawing', children: layoutElement(seen) }))
+  );
+  expect(seen.palette).toMatchObject({ axis: 'column', endInset: 34 });
 });
 
 function layoutElement(seen) {
@@ -313,7 +319,7 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   const seen = {};
   await mount(layoutElement(seen));
   expect(seen).toEqual({
-    palette: { axis: 'row', slots: paletteSlots(402, 'row'), length: 402 },
+    palette: { axis: 'row', slots: paletteSlots(402, 'row'), length: 402, endInset: 0 },
     clearOffset: { top: 0, right: 0 },
     panel: {
       area: expect.objectContaining({ width: 402, height: 874 }),
@@ -361,18 +367,18 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   const bar = () => records.props.findLast((props) => props.testID === 'rsd-palette-bar');
   // An inset shortens the bar, not the viewport the shipping ladder counts from.
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 300, height: 75 } } }));
-  expect(seen.palette).toEqual({ axis: 'row', slots: 6, length: 300 });
+  expect(seen.palette).toEqual({ axis: 'row', slots: 6, length: 300, endInset: 0 });
   records.dimensions = { width: 1180, height: 820, scale: 1, fontScale: 2 };
   await act(async () => root.render(layoutElement(seen)));
   expect(seen).toMatchObject({
-    palette: { axis: 'column', slots: paletteSlots(820, 'column'), length: 820 },
+    palette: { axis: 'column', slots: paletteSlots(820, 'column'), length: 820, endInset: 0 },
     clearOffset: { top: 68, right: 2 },
     panel: { viewport: { width: 1180, height: 820 } },
   });
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 780 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 11, length: 780 });
+  expect(seen.palette).toEqual({ axis: 'column', slots: 11, length: 780, endInset: 0 });
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 84, height: 660 } } }));
-  expect(seen.palette).toEqual({ axis: 'column', slots: 11, length: 660 });
+  expect(seen.palette).toEqual({ axis: 'column', slots: 11, length: 660, endInset: 0 });
   // A landscape phone hands the bar's strip back to the paper, as shipping's palette does.
   records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 2 };
   seen.palette = null;

@@ -11,7 +11,13 @@ import {
   type LayoutAxis,
 } from './edgeLayout';
 
-export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number; length: number }>;
+// endInset is the bar's length past the bottom inset, which the column's swatches stay clear of.
+export type PaletteLayout = Readonly<{
+  axis: LayoutAxis;
+  slots: number;
+  length: number;
+  endInset: number;
+}>;
 
 // The shipping palette (--z-palette) stacks over the paper, so its plate's shadow falls on it,
 // and over the Clear Button, its accept ring and coachmark.
@@ -88,17 +94,20 @@ export function NativeDrawingLayout({
   const window = useWindowDimensions();
   const axis = window.width > window.height ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
+  // Shipping's paper runs under the home indicator while its controls sit clear of it; the frame
+  // leaves the bottom inset unpadded (NativeFrame) and the controls take it back here.
+  const insetBottom = useSafeAreaInsets().bottom;
+  const endInset = axis === 'column' ? insetBottom : 0;
   // Shipping trims by the viewport's own length, insets included, and clips what an inset
-  // shortens the bar by; only the spacing follows the bar's measured length.
+  // shortens the bar by; only the spacing follows the bar's measured length. The landscape column
+  // alone trims short of the bottom inset: there shipping's own last swatch overruns into the home
+  // indicator (safe-area-matrix.spec.ts), and More colors, which never trims, must stay reachable.
   const viewportLength = axis === 'row' ? window.width : window.height;
   const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
   const [area, setArea] = useState<Box>();
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
-  // Shipping's paper runs under the home indicator while its controls sit clear of it; the frame
-  // leaves the bottom inset unpadded (NativeFrame) and the controls take it back here.
-  const insetBottom = useSafeAreaInsets().bottom;
   const paperArea = area ?? window;
   const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
   return (
@@ -124,7 +133,12 @@ export function NativeDrawingLayout({
             );
           }}
         >
-          {palette({ axis, slots: paletteSlots(viewportLength, axis), length })}
+          {palette({
+            axis,
+            slots: paletteSlots(viewportLength - endInset, axis),
+            length,
+            endInset,
+          })}
         </View>
       )}
       <View

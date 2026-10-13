@@ -277,20 +277,43 @@ describe('the mounted drawing screen frame', () => {
     }
   );
 
-  it('trims by the viewport, not a bar an inset shortened, and clips the overrun', async () => {
+  // The bottom inset alone comes out of the column's trim length: shipping's last swatch overruns
+  // into the home indicator there, and More colors never trims.
+  it('trims by the viewport less the bottom inset, not a bar an inset shortened, and clips the overrun', async () => {
     const [width, height, insetTop, insetBottom] = [1180, 820, 24, 20];
     viewport(width, height);
+    records.insets = { top: insetTop, right: 0, bottom: insetBottom, left: 0 };
     await mountToolbar(toolbarScreen());
     const bar = records.props.findLast((props) => props.testID === 'rsd-palette-bar');
     const shortened = height - insetTop - insetBottom;
     await act(async () =>
       bar.onLayout({ nativeEvent: { layout: { width: 84, height: shortened } } })
     );
-    expect(paintLabels()).toHaveLength(shippingPaintCount(shippingLadder('max-height'), height));
-    expect(paintLabels()).toContain('Brown paint');
+    expect(paintLabels()).toHaveLength(
+      shippingPaintCount(shippingLadder('max-height'), height - insetBottom)
+    );
     expect(resolved((props) => props.testID === 'rsd-palette-plate')).toMatchObject({
       overflow: 'hidden',
     });
+  });
+
+  // Negative control: a column that lets its swatches run to the screen's edge puts More colors
+  // under the home indicator.
+  it('keeps the landscape column clear of the bottom inset, its surface running on beneath', async () => {
+    const insetBottom = 34;
+    viewport(1180, 820);
+    records.insets = { top: 0, right: 0, bottom: insetBottom, left: 0 };
+    await mountToolbar(toolbarScreen());
+    const strip = drawn(
+      (style) =>
+        style.height === insetBottom && style.backgroundColor === DRAWING_THEMES.light.surface
+    );
+    expect(strip).toEqual([
+      expect.objectContaining({
+        width: PALETTE_FLOWS.column.extentPx,
+        boxShadow: PALETTE_FLOWS.column.shadow,
+      }),
+    ]);
   });
 
   it('sits More colors on a raised disc of the bar surface, its honeycomb inside the ring band', async () => {
