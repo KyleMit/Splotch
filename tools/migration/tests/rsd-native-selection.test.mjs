@@ -455,7 +455,7 @@ it.each([
       await act(async () => on.click());
       expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
       expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-        version: 8,
+        version: 9,
         [property]: false,
         aiEnabled: false,
       });
@@ -465,3 +465,34 @@ it.each([
     }
   }
 );
+
+it('turns Auto-Save on Delete on through the released native switch, off by default', async () => {
+  let current;
+  let refresh = () => {};
+  const write = vi.fn(async () => {});
+  const owner = createSoundSettings({ read: async () => null, write }, (state) => {
+    current = state;
+    refresh();
+  });
+  await owner.load();
+  function Settings() {
+    const [, update] = useState(0);
+    refresh = () => update((value) => value + 1);
+    return createElement(NativeSoundSettingsDialog, nativeSettingsProps(owner, current));
+  }
+  try {
+    await mount(createElement(Settings));
+    const toggle = host.querySelector('[aria-label="Auto-Save on Delete"]');
+    expect(toggle.getAttribute('role')).toBe('switch');
+    expect(toggle.dataset.checked).toBe('false');
+    expect(host.textContent).toContain('Saves the current drawing each time the page is cleared');
+    await act(async () => toggle.click());
+    expect(host.querySelector('[aria-label="Auto-Save on Delete"]').dataset.checked).toBe('true');
+    expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
+      version: 9,
+      saveOnDeleteEnabled: true,
+    });
+  } finally {
+    owner.dispose();
+  }
+});

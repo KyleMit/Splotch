@@ -57,7 +57,7 @@ export function RsdEdgeLayout({
           icon="trash-closed"
           disabled={disabled}
           onClick={() => {
-            void screen.clear();
+            void screen.clear(sound.settings.saveOnDeleteEnabled);
           }}
         />
       }

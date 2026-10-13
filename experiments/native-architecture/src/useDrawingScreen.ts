@@ -18,10 +18,10 @@ import {
 import {
   listPictures,
   reopenPicture,
-  savePicture,
   savedColoringPageIds,
   type SavedPicture,
 } from './platform/drawingFiles';
+import { keepPicture } from './keepPicture';
 import { useBrushPreferences } from './useBrushPreferences';
 import { availableBrushes, brushControl, type OptionalBrush } from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
@@ -333,9 +333,7 @@ function usePictureActions({
 
   async function save() {
     await runCommand(async () => {
-      const snapshot = historyRef.current.drawing;
-      await savePicture(snapshot);
-      setNotice('Picture saved on this device.');
+      setNotice(await keepPicture(historyRef.current.drawing, surface.current));
     });
   }
 
@@ -433,7 +431,7 @@ function useSurfaceCommands({
     }
   }
 
-  async function clearCurrentPicture(saveFirst: boolean) {
+  async function clearCurrentPicture(keep: 'never' | 'whenInked' | 'always') {
     await runCommand(async () => {
       const snapshot = historyRef.current;
       const owner = surface.current;
@@ -455,18 +453,15 @@ function useSurfaceCommands({
         const empty = pixels && observation ? await observation.observe(pixels) : true;
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
-        if (saveFirst) {
-          await savePicture(snapshot.drawing);
-          if (!isCurrent())
-            throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
-        }
+        const saved =
+          keep === 'always' || (keep === 'whenInked' && !empty)
+            ? await keepPicture(snapshot.drawing, owner)
+            : null;
+        if (saved !== null && !isCurrent())
+          throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
         setHistory(clearDrawing(snapshot, empty));
         afterClear();
-        setNotice(
-          saveFirst
-            ? 'Picture saved on this device. Pick a color and draw.'
-            : 'Pick a color and draw.'
-        );
+        setNotice(saved === null ? 'Pick a color and draw.' : `${saved} Pick a color and draw.`);
       } finally {
         observation?.cancel();
       }
@@ -477,7 +472,7 @@ function useSurfaceCommands({
     command,
     runCommand,
     undo,
-    clear: () => clearCurrentPicture(false),
-    saveAndClear: () => clearCurrentPicture(true),
+    clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete ? 'whenInked' : 'never'),
+    saveAndClear: () => clearCurrentPicture('always'),
   };
 }

@@ -45,7 +45,14 @@ The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; insta
 
 ## Permissions
 
-The Android manifest removes Expo FileSystem's legacy `READ_EXTERNAL_STORAGE` and
-`WRITE_EXTERNAL_STORAGE` declarations; saving uses app-private storage and sharing uses a cache PNG.
-`tools/migration/tests/native-permissions.test.mjs` guards the manifest. Check a built APK's merged
-permissions when a dependency changes.
+The Android manifest removes the `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, and
+`READ_MEDIA_VISUAL_USER_SELECTED` declarations that Expo FileSystem and expo-media-library merge in.
+Editable copies use app-private storage, sharing uses a cache PNG, and saving to the photo library
+inserts into MediaStore, which needs no permission on Android 11 and later; on Android 7–10 the
+photo library save fails and the in-app copy is kept. iOS asks only for add-only Photos access
+(`NSPhotoLibraryAddUsageDescription`), never read access. expo-media-library's config plugin is
+deliberately not registered in `app.json`: it would add the read permissions and
+`requestLegacyExternalStorage`. `tools/migration/tests/native-permissions.test.mjs` guards the
+manifest, including every permission expo-media-library declares. Check a built APK's merged
+permissions when a dependency changes; without a keystore, `:app:processReleaseMainManifest` writes
+the merged manifest under `android/app/build/intermediates/merged_manifest/release/`.

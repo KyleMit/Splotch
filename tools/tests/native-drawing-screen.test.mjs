@@ -131,7 +131,8 @@ it.each([
     const writes = (kind === 'paint' ? 1 : 2) + (recovery === 'Drawing sound' ? 1 : 0);
     expect(files.settingsWrite).toHaveBeenCalledTimes(writes);
     expect(JSON.parse(stored)).toEqual({
-      version: 8,
+      version: 9,
+      saveOnDeleteEnabled: false,
       coloringBookEnabled: true,
       aiEnabled: false,
       parentPolicies: {
@@ -168,7 +169,7 @@ describe('custom paints wired to the drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({
-      version: 8,
+      version: 9,
       coloringBookEnabled: true,
       aiEnabled: false,
       parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
@@ -215,7 +216,7 @@ describe('drawing width controls', () => {
     await openTools();
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":8,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait"}'
+      '{"version":9,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();

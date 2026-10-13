@@ -26,6 +26,7 @@ import { INFORMATION_CONTENT, type InformationPage } from '../information/conten
 import { RsdInformationSection } from './RsdInformationSection';
 import { RsdOrientationChoices } from './RsdOrientationChoices';
 import type { OrientationChoice } from '../settings/orientation';
+import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDelete';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -36,6 +37,7 @@ type NativeSoundSettingsDialogProps = {
   onToggle: () => void;
   onUndoButtonChange: (enabled: boolean) => void;
   onStrokeWidthControlChange: (enabled: boolean) => void;
+  onSaveOnDeleteChange: (enabled: boolean) => void;
   onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onOrientationChange: (orientation: OrientationChoice) => void;
@@ -56,6 +58,7 @@ export function NativeSoundSettingsDialog({
   onToggle,
   onUndoButtonChange,
   onStrokeWidthControlChange,
+  onSaveOnDeleteChange,
   onSoundLevelChange,
   onAppearanceChange,
   onOrientationChange,
@@ -126,6 +129,14 @@ export function NativeSoundSettingsDialog({
             disabled={busy}
             onClick={() => onStrokeWidthControlChange(!settings.strokeWidthControlEnabled)}
           />
+          <RsdAction
+            label={SAVE_ON_DELETE_LABEL}
+            selection="switch"
+            selected={settings.saveOnDeleteEnabled}
+            disabled={busy}
+            onClick={() => onSaveOnDeleteChange(!settings.saveOnDeleteEnabled)}
+          />
+          <html.span>{SAVE_ON_DELETE_HELP}</html.span>
           <AppearanceChoices
             settings={settings}
             busy={busy}

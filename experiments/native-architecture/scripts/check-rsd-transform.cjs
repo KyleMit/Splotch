@@ -171,15 +171,25 @@ const settingsValue = (expression, property) =>
 const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
 assert.ok(
   switches.every((node) =>
-    ['soundEnabled', 'coloringBookEnabled', 'undoButtonEnabled', 'strokeWidthControlEnabled'].some(
-      (property) => settingsValue(selectedValue(node), property)
-    )
+    [
+      'soundEnabled',
+      'coloringBookEnabled',
+      'undoButtonEnabled',
+      'strokeWidthControlEnabled',
+      'saveOnDeleteEnabled',
+    ].some((property) => settingsValue(selectedValue(node), property))
   ),
   'RSD switch state owner'
 );
 assert.deepEqual(
   switches.map((node) => selectedValue(node).property.name).sort(),
-  ['coloringBookEnabled', 'soundEnabled', 'strokeWidthControlEnabled', 'undoButtonEnabled'],
+  [
+    'coloringBookEnabled',
+    'saveOnDeleteEnabled',
+    'soundEnabled',
+    'strokeWidthControlEnabled',
+    'undoButtonEnabled',
+  ],
   'RSD switch state callers'
 );
 function switchCallback(property, enabledLabel, disabledLabel) {
@@ -231,12 +241,15 @@ const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = vali
   attribute,
   settingsValue,
 });
+const labelText = (node) =>
+  literal(attribute(node, 'label')) ?? attribute(node, 'label')?.value?.expression?.name;
 for (const [property, label, callback] of [
   ['undoButtonEnabled', 'Show Undo button', 'onUndoButtonChange'],
   ['strokeWidthControlEnabled', 'Show drawing width controls', 'onStrokeWidthControlChange'],
+  ['saveOnDeleteEnabled', 'SAVE_ON_DELETE_LABEL', 'onSaveOnDeleteChange'],
 ]) {
   const node = switches.find((item) => settingsValue(selectedValue(item), property));
-  assert.equal(literal(attribute(node, 'label')), label, 'RSD control switch label');
+  assert.equal(labelText(node), label, 'RSD control switch label');
   assert.equal(
     attribute(node, 'disabled')?.value?.expression.name,
     'busy',

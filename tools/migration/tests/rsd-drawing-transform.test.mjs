@@ -47,7 +47,7 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
     optionalBrushSwitches: 3,
     optionalBrushLabels: ['Show Crayon', 'Show Magic Brush', 'Show Eraser'],
     adaptiveToolbarSwitch: true,
-    preservedSettingsSwitches: 4,
+    preservedSettingsSwitches: 5,
   });
 });
 it.each([

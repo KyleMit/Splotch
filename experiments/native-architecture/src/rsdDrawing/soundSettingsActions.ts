@@ -11,6 +11,8 @@ export function soundSettingsActions(sound: Sound) {
       void sound.owner?.settings.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled: boolean) =>
       void sound.owner?.settings.setStrokeWidthControlEnabled(enabled),
+    onSaveOnDeleteChange: (enabled: boolean) =>
+      void sound.owner?.settings.setSaveOnDeleteEnabled(enabled),
     onSoundLevelChange: (level: Parameters<SettingsOwner['setSoundLevel']>[0]) =>
       void sound.owner?.settings.setSoundLevel(level),
     onAppearanceChange: (appearance: Parameters<SettingsOwner['setAppearance']>[0]) =>
