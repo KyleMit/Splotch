@@ -10,6 +10,7 @@ import {
   RSD_NATIVE_PARENT_CENTER_TEST,
   RSD_NATIVE_ORIENTATION_TEST,
   RSD_NATIVE_TOOLBAR_TEST,
+  RSD_NATIVE_INSTALL_BANNER_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -32,6 +33,7 @@ export default defineConfig({
       RSD_NATIVE_PARENT_CENTER_TEST,
       RSD_NATIVE_ORIENTATION_TEST,
       RSD_NATIVE_TOOLBAR_TEST,
+      RSD_NATIVE_INSTALL_BANNER_TEST,
     ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },

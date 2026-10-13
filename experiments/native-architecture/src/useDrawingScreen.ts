@@ -64,7 +64,11 @@ export function useDrawingScreen() {
       busy || rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
 
-  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report);
+  // Strokes committed since this screen opened; the install banner waits on them.
+  const [committedStrokes, setCommittedStrokes] = useState(0);
+  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (count) =>
+    setCommittedStrokes((total) => total + count)
+  );
 
   const settings = useDrawingSettings({
     surface,
@@ -154,6 +158,7 @@ export function useDrawingScreen() {
     report,
     currentDrawing,
     finishCohort,
+    committedStrokes,
     ...pictureActions,
   };
 }
@@ -162,11 +167,13 @@ function createCohortCommit(
   historyRef: RefObject<History>,
   setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
   setNotice: (notice: string) => void,
-  report: (error: unknown) => void
+  report: (error: unknown) => void,
+  onCommitted: (count: number) => void
 ) {
   return (strokes: readonly Stroke[], paper: PaperReference) => {
     try {
       setHistory(addStrokes(historyRef.current, strokes, paper));
+      onCommitted(strokes.length);
       setNotice('');
     } catch (error) {
       report(error);

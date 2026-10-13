@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { TABLET_MIN_SIDE_PX } from '../breakpoints';
+import { TABLET_MIN_SIDE_PX, type Orientation } from '../breakpoints';
 
 // The one display mode Chromium will accept an orientation lock in without
 // element fullscreen, so it is named apart from the chrome-less list below that
@@ -92,7 +92,7 @@ export function osLabelFromUserAgent(ua: string): string {
 
 export type Platform = 'android' | 'ios' | 'web';
 
-export type Orientation = 'portrait' | 'landscape';
+export type { Orientation };
 
 // The Orientation picker's vocabulary: a locked side, or 'auto' for no in-app
 // lock. `settingsState.orientationChoice()` is the one place it is derived from

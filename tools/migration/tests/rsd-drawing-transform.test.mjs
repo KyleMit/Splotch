@@ -14,8 +14,9 @@ import { afterEach, expect, it } from 'vitest';
 const root = realpathSync(join(import.meta.dirname, '../../..'));
 const candidate = join(root, 'experiments/native-architecture');
 const fixtures = [];
-// The Babel transform reads only JavaScript sources; in-tree native builds leave gigabytes here.
-const NATIVE_PROJECT_ROOTS = /^(?:android|ios)(?:\/|$)/;
+// The Babel transform reads only JavaScript sources; in-tree native builds leave gigabytes here,
+// and native:web:build leaves its export under dist/.
+const NATIVE_PROJECT_ROOTS = /^(?:android|ios|dist)(?:\/|$)/;
 function fixture() {
   const path = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-rsd-transform-')));
   fixtures.push(path);
