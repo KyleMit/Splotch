@@ -1,4 +1,4 @@
-import type { AiVault } from '../ai/credentials';
+import type { AiVault, AiReferencedVault } from '../ai/credentials';
 import type { AiStorage } from '../ai/journal';
 import { aiUrl, type AiTransport } from '../ai/transport';
 export const aiTransport: AiTransport = (request, signal) =>
@@ -18,14 +18,20 @@ export const aiTransport: AiTransport = (request, signal) =>
 const unavailable = async (): Promise<never> => {
   throw new Error('This native AI experiment requires its OS secure storage bridge.');
 };
-export const aiVault: AiVault = {
+export const aiVault: AiVault & AiReferencedVault = {
   installationId: unavailable,
+  pin: unavailable,
+  readReferenced: unavailable,
   read: unavailable,
   write: unavailable,
   remove: unavailable,
 };
 export const aiStorage: AiStorage = {
   prepare: unavailable,
+  prepareRecovery: unavailable,
+  commitRecoveryIntent: unavailable,
+  recordRecoveryStatus: unavailable,
+  readPreparedUpload: unavailable,
   read: unavailable,
   write: unavailable,
   retain: unavailable,

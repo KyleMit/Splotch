@@ -2,10 +2,11 @@ import { POLL_INTERVAL_MS, JOB_TTL_MS, POLL_TIMEOUT_MS } from './contract';
 import { credentialHeaders } from './credentials';
 import { requestAi, type AiReply } from './transport';
 import type { AiJournal, AiResult } from './journal';
-import { AiSession } from './session';
+import type { AiSession } from './session';
+import { AiRecoverySession } from './recoverySession';
 export type { AiState, PreparedAiDrawing } from './session';
 import { bytesBase64 } from './base64';
-class NativeAiController extends AiSession {
+class NativeAiController extends AiRecoverySession {
   private collectImage = async (
     journal: AiJournal,
     reply: Extract<
@@ -18,7 +19,7 @@ class NativeAiController extends AiSession {
     const id = journal.id;
     let result: AiResult;
     try {
-      result = await this.deps.storage.retain(id, reply.bytes, reply.mime);
+      result = (await this.deps.storage.retain(id, reply.bytes, reply.mime)).picture;
     } catch {
       result = {
         uri: `data:${reply.mime};base64,${bytesBase64(reply.bytes)}`,
@@ -91,7 +92,7 @@ class NativeAiController extends AiSession {
       if (reply.kind === 'image') {
         let result: AiResult;
         try {
-          result = await this.deps.storage.retain(id, reply.bytes, reply.mime);
+          result = (await this.deps.storage.retain(id, reply.bytes, reply.mime)).picture;
         } catch {
           this.heldBytes = {
             id,
@@ -211,7 +212,8 @@ class NativeAiController extends AiSession {
         jobId: null,
         result: null,
       };
-      await this.persistPrepared(journal, prepared);
+      const receipt = await this.persistPrepared(journal, prepared);
+      const upload = await this.deps.storage.readPreparedUpload(receipt);
       if (!this.state.authorized || proof !== this.authorization || this.disposed) {
         await this.persist({
           ...journal,
@@ -234,7 +236,7 @@ class NativeAiController extends AiSession {
             'Content-Type': 'image/png',
             'X-Async-Generation': '1',
           },
-          body: prepared.bytes,
+          body: upload,
         },
         (late) => this.settle(id, late, false)
       );

@@ -9,10 +9,14 @@ final class SplotchAIJournal {
   private let maxUpload = 15 * 1024 * 1024
   private let maxResult = 16 * 1024 * 1024
   private let maxJournal = 32 * 1024
+  private var maxUploadReply: Int { ((maxUpload + 2) / 3) * 4 + maxJournal }
   private let maxQuota = 128 * 1024 * 1024
   private let maxAttempts = 32
   private let maxLegacy = 256
   private let safeInteger: Int64 = 9007199254740991
+  private let minimumRecoveryExpiryDeltaMs: Int64 = 1170000
+  private let maximumRecoveryExpiryDeltaMs: Int64 = 1260000
+  private let recoveryPollAfterMs: Int64 = 4000
   private let styles = ["Magical", "Crayon", "Watercolor", "Paper", "Felt", "Sticker", "Cartoon", "Clay"]
   private func failure() -> NSError { NSError(domain: "AI_DURABILITY_UNAVAILABLE", code: 1) }
   private func checked(_ condition: Bool) throws { if !condition { throw failure() } }
@@ -163,6 +167,44 @@ final class SplotchAIJournal {
     guard let number = Int64(file.lastPathComponent.dropFirst(8).dropLast(5)), number >= 1 else { throw failure() }
     return number
   }
+  private func recovery(_ value: [String: Any]) throws -> [String: Any] {
+    let r = try object(value["recovery"])
+    try keys(r, ["version", "protocol", "id", "credential", "expiry", "intent"])
+    try checked(integer(r, "version") == 2 && string(r, "protocol") == "splotch-ai-recovery-v1")
+    let j = try journal(value["journal"])
+    try checked(string(j, "phase") == "unknown" && isNull(j, "jobId") && isNull(j, "result"))
+    try checked(!isNull(value, "upload") && isNull(value, "result"))
+    let nonce = try string(value, "nonce")
+    let created = try integer(j, "createdAt", 0)
+    let envelope = Data("[\"splotch-ai-recovery-v1\",\"\(nonce)\",\(created)]".utf8)
+    try checked(string(r, "id") == hash(envelope))
+    let credential = try object(r["credential"])
+    try keys(credential, ["kind", "reference"])
+    try checked(["free", "managed", "byok"].contains(string(credential, "kind")) && matches(string(credential, "reference"), "[a-f0-9]{64}"))
+    try checked(["prepared", "committed"].contains(string(r, "intent")))
+    let expiry = try object(r["expiry"])
+    if try string(expiry, "kind") == "unknown" { try keys(expiry, ["kind"]) }
+    else {
+      try keys(expiry, ["kind", "expiresAt", "provenance"])
+      try checked(string(expiry, "provenance") == "admitted-status-202")
+      try checked(string(expiry, "kind") == "known" && string(r, "intent") == "committed")
+      try checked(created <= safeInteger - maximumRecoveryExpiryDeltaMs)
+      let delta = try integer(expiry, "expiresAt") - created
+      try checked(delta >= minimumRecoveryExpiryDeltaMs && delta <= maximumRecoveryExpiryDeltaMs)
+    }
+    return r
+  }
+  private func recoveryProgress(_ older: [String: Any], _ newer: [String: Any]) throws {
+    try checked(integer(older, "schema") == integer(newer, "schema"))
+    if try integer(older, "schema") != 2 { return }
+    let a = try recovery(older); let b = try recovery(newer)
+    for key in ["version", "protocol", "id"] { try checked(NSDictionary(dictionary: [key: a[key]!]).isEqual(to: [key: b[key]!])) }
+    try checked(same(object(a["credential"]), object(b["credential"])))
+    try checked(string(a, "intent") != "committed" || string(b, "intent") == "committed")
+    let expiry = try object(a["expiry"])
+    try checked(string(expiry, "kind") != "known" || same(expiry, object(b["expiry"])))
+    for key in ["original", "upload"] { try checked(same(object(older[key]), object(newer[key]))) }
+  }
   private func latest(_ dir: URL) throws -> [String: Any] {
     let files = try children(dir)
     try checked(files.count <= 12)
@@ -177,8 +219,11 @@ final class SplotchAIJournal {
     var values = [[String: Any]]()
     for (number, file) in revisions {
       let value = try object(JSONSerialization.jsonObject(with: read(file, maxJournal)))
-      try keys(value, ["schema", "nonce", "revision", "journal", "original", "upload", "result"])
-      try checked(integer(value, "schema") == 1 && integer(value, "revision") == number && matches(string(value, "nonce"), "[a-f0-9]{64}"))
+      let schema = try integer(value, "schema")
+      try checked(schema == 1 || schema == 2)
+      try keys(value, schema == 1 ? ["schema", "nonce", "revision", "journal", "original", "upload", "result"] : ["schema", "nonce", "revision", "journal", "original", "upload", "result", "recovery"])
+      try checked(integer(value, "revision") == number && matches(string(value, "nonce"), "[a-f0-9]{64}"))
+      if schema == 2 { _ = try recovery(value) }
       let j = try journal(value["journal"])
       try checked(dir.lastPathComponent == "attempt-\(try integer(j, "id"))")
       try verify(dir, "original.bin", value["original"], maxModel)
@@ -192,6 +237,7 @@ final class SplotchAIJournal {
     }
     guard let first = values.first else { throw failure() }
     for (index, value) in values.enumerated() {
+      try recoveryProgress(value, first)
       try checked(string(value, "nonce") == string(first, "nonce") && integer(value, "revision") == integer(first, "revision") - Int64(index))
       let current = try journal(value["journal"])
       let newest = try journal(first["journal"])
@@ -208,11 +254,19 @@ final class SplotchAIJournal {
     try fence(dir)
     return value
   }
-  private func unresolved(_ value: [String: Any]) throws -> Bool { try !["result", "failed"].contains(string(object(value["journal"]), "phase")) }
+  private func unresolved(_ value: [String: Any]) throws -> Bool { try integer(value, "schema") == 2 || !["result", "failed"].contains(string(object(value["journal"]), "phase")) }
   private func receipt(_ value: [String: Any]) throws -> [String: Any] {
-    ["journal": try journal(value["journal"]), "nonce": try string(value, "nonce"), "revision": try integer(value, "revision"),
+    let upload: [String: Any]? = isNull(value, "upload") ? nil : try object(value["upload"])
+    let result: [String: Any]? = isNull(value, "result") ? nil : try object(value["result"])
+    var resultReceipt: [String: Any] = ["kind": try integer(value, "schema") == 2 ? "recovery-held" : upload == nil ? "imported" : "prepared", "originalRevision": 1,
+      "journal": try journal(value["journal"]), "nonce": try string(value, "nonce"), "revision": try integer(value, "revision"),
       "originalDigest": try string(object(value["original"]), "sha256"),
-      "inputDigest": isNull(value, "upload") ? NSNull() as Any : try string(object(value["upload"]), "sha256")]
+      "inputDigest": try upload.map { try string($0, "sha256") as Any } ?? NSNull(),
+      "inputLength": try upload.map { try integer($0, "bytes") as Any } ?? NSNull(),
+      "resultDigest": try result.map { try string($0, "sha256") as Any } ?? NSNull(),
+      "resultLength": try result.map { try integer($0, "bytes") as Any } ?? NSNull()]
+    if try integer(value, "schema") == 2 { resultReceipt["recovery"] = try recovery(value) }
+    return resultReceipt
   }
   private func quota(_ root: URL, _ extra: Int, _ replacing: URL? = nil) throws {
     var size: Int64 = 0
@@ -268,10 +322,27 @@ final class SplotchAIJournal {
       try keys(input, [])
       let all = try attempts(root).map { try confirm($0, latest($0)) }
       return ["pictures": try all.filter { !isNull($0, "result") }.map { try object(object($0["journal"])["result"]) }]
-    case "prepare", "importLegacy":
-      try keys(input, kind == "prepare" ? ["journal", "originalModel", "upload"] : ["journal", "originalModel"])
+    case "readPreparedUpload":
+      try keys(input, ["id", "nonce", "revision"])
+      let dir = root.appendingPathComponent("attempt-\(try integer(input, "id"))")
+      try checked(attempts(root).contains(dir))
+      let pinned = try confirm(dir, latest(dir))
+      try checked(string(input, "nonce") == string(pinned, "nonce") && integer(input, "revision") == integer(pinned, "revision"))
+      try checked(integer(pinned, "schema") == 1 && !isNull(pinned, "upload"))
+      let bytes = try read(dir.appendingPathComponent("upload.bin"), maxUpload)
+      let meta = try object(pinned["upload"])
+      try checked(integer(meta, "bytes") == bytes.count && string(meta, "sha256") == hash(bytes))
+      return ["receipt": try receipt(pinned), "upload": bytes.base64EncodedString()]
+    case "prepare", "importLegacy", "prepareRecovery":
+      try keys(input, kind == "prepareRecovery" ? ["journal", "originalModel", "upload", "credential"] : kind == "prepare" ? ["journal", "originalModel", "upload"] : ["journal", "originalModel"])
       let j = try journal(input["journal"])
       try checked(isNull(j, "result") && (kind != "prepare" || (string(j, "phase") == "sent" && isNull(j, "jobId"))))
+      if kind == "prepareRecovery" {
+        try checked(string(j, "phase") == "unknown" && isNull(j, "jobId"))
+        let credential = try object(input["credential"])
+        try keys(credential, ["kind", "reference"])
+        try checked(["free", "managed", "byok"].contains(string(credential, "kind")) && matches(string(credential, "reference"), "[a-f0-9]{64}"))
+      }
       let all = try attempts(root)
       try checked(all.count < maxAttempts)
       for dir in all { try checked(!unresolved(latest(dir))) }
@@ -279,7 +350,7 @@ final class SplotchAIJournal {
       try checked(!original.isEmpty && original.count <= maxModel)
       let model = try object(JSONSerialization.jsonObject(with: original))
       try checked(integer(model, "version") == 5)
-      let upload = kind == "prepare" ? try decode(input, "upload", maxUpload) : nil
+      let upload = kind != "importLegacy" ? try decode(input, "upload", maxUpload) : nil
       try quota(root, original.count + (upload?.count ?? 0) + maxResult + maxJournal * 2)
       let dir = root.appendingPathComponent("attempt-\(try integer(j, "id"))")
       try checked(!FileManager.default.fileExists(atPath: dir.path)); try directory(dir, root)
@@ -288,13 +359,52 @@ final class SplotchAIJournal {
       var entropy = [UInt8](repeating: 0, count: 32)
       try checked(SecRandomCopyBytes(kSecRandomDefault, entropy.count, &entropy) == errSecSuccess)
       let nonce = entropy.map { String(format: "%02x", $0) }.joined()
-      return try publish(dir, ["schema": 1, "nonce": nonce, "revision": 1, "journal": j,
-        "original": metadata(original), "upload": upload.map { metadata($0) as Any } ?? NSNull(), "result": NSNull()])
+      var value: [String: Any] = ["schema": kind == "prepareRecovery" ? 2 : 1, "nonce": nonce, "revision": 1, "journal": j,
+        "original": metadata(original), "upload": upload.map { metadata($0) as Any } ?? NSNull(), "result": NSNull()]
+      if kind == "prepareRecovery" {
+        let created = try integer(j, "createdAt", 0)
+        let envelope = Data("[\"splotch-ai-recovery-v1\",\"\(nonce)\",\(created)]".utf8)
+        value["recovery"] = ["version": 2, "protocol": "splotch-ai-recovery-v1", "id": hash(envelope),
+          "credential": try object(input["credential"]), "expiry": ["kind": "unknown"], "intent": "prepared"]
+        _ = try recovery(value)
+      }
+      return try publish(dir, value)
+    case "commitRecoveryIntent", "recordRecoveryStatus":
+      try keys(input, kind == "commitRecoveryIntent" ? ["id", "nonce", "revision"] : ["id", "nonce", "revision", "status"])
+      let dir = root.appendingPathComponent("attempt-\(try integer(input, "id"))")
+      try checked(attempts(root).contains(dir))
+      var value = try latest(dir)
+      try checked(integer(value, "schema") == 2 && string(input, "nonce") == string(value, "nonce") && integer(input, "revision") == integer(value, "revision"))
+      let before = value
+      var r = try recovery(value)
+      if kind == "commitRecoveryIntent" { r["intent"] = "committed" }
+      else {
+        try checked(string(r, "intent") == "committed")
+        let status = try object(input["status"])
+        try keys(status, ["kind", "protocol", "id", "expiresAt", "phase", "pollAfterMs", "headerExpiresAt"])
+        try checked(string(status, "kind") == "status" && string(status, "protocol") == string(r, "protocol") && string(status, "id") == string(r, "id"))
+        try checked(["preparing", "funded", "pending", "working", "image", "delivery", "refusal", "error", "acknowledged"].contains(string(status, "phase")))
+        try checked(integer(status, "pollAfterMs") == recoveryPollAfterMs)
+        let expiry = try integer(status, "expiresAt")
+        try checked(string(status, "headerExpiresAt") == String(expiry))
+        let known: [String: Any] = ["kind": "known", "expiresAt": expiry, "provenance": "admitted-status-202"]
+        let previous = try object(r["expiry"])
+        try checked(string(previous, "kind") == "unknown" || same(previous, known))
+        r["expiry"] = known
+      }
+      value["recovery"] = r
+      _ = try recovery(value); try recoveryProgress(before, value)
+      if same(before, value) { return ["receipt": try receipt(confirm(dir, value))] }
+      try checked(integer(value, "revision") < safeInteger)
+      try quota(root, maxJournal)
+      value["revision"] = try integer(value, "revision") + 1
+      return try publish(dir, value)
     case "write", "retain":
       try keys(input, kind == "write" ? ["id", "nonce", "revision", "journal"] : ["id", "nonce", "revision", "bytes", "mime"])
       let dir = root.appendingPathComponent("attempt-\(try integer(input, "id"))")
       try checked(attempts(root).contains(dir))
       var value = try latest(dir)
+      try checked(integer(value, "schema") == 1)
       try checked(string(input, "nonce") == string(value, "nonce"))
       var previous = try journal(value["journal"])
       if kind == "write" {
@@ -353,7 +463,7 @@ final class SplotchAIJournal {
           try self.fence(root)
           let input = try self.object(JSONSerialization.jsonObject(with: Data(payload.utf8)))
           let output = try self.data(self.dispatch(root, kind, input))
-          try self.checked(output.count <= self.maxJournal)
+          try self.checked(output.count <= (kind == "readPreparedUpload" ? self.maxUploadReply : self.maxJournal))
           try self.checked(flock(descriptor, LOCK_UN) == 0)
           guard let text = String(data: output, encoding: .utf8) else { throw self.failure() }
           response = text

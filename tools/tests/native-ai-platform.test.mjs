@@ -7,6 +7,8 @@ const fixture = vi.hoisted(() => ({
   decode: vi.fn(),
   read: vi.fn(),
   write: vi.fn(),
+  pin: vi.fn(),
+  referenced: vi.fn(),
   remove: vi.fn(),
   id: vi.fn(),
 }));
@@ -19,6 +21,9 @@ vi.mock('react-native', () => ({
       decodeImage: fixture.decode,
       readCredential: fixture.read,
       writeCredential: fixture.write,
+      writeReferencedCredential: fixture.write,
+      pinCredentialReference: fixture.pin,
+      readReferencedCredential: fixture.referenced,
       removeCredential: fixture.remove,
     },
   },
@@ -101,20 +106,25 @@ const journal = {
   result: null,
 };
 afterEach(() => vi.useRealTimers());
-beforeEach(() => {
+beforeEach(async () => {
   fixture.files.clear();
   vi.resetAllMocks();
   fixture.decode.mockImplementation(async (_, __, width, height) => ({ width, height }));
   fixture.id.mockResolvedValue('a'.repeat(64));
   fixture.read.mockResolvedValue(null);
+  fixture.pin.mockResolvedValue('b'.repeat(64));
+  fixture.referenced.mockResolvedValue('fixture-key');
   fixture.storage.mockImplementation(async (kind) =>
     JSON.stringify(kind === 'pictures' ? { pictures: [] } : { receipt: null })
   );
+  await aiStorage.read();
+  fixture.storage.mockClear();
 });
 it('uses strict native secure readback for writes and removals, with no fallback on an ambiguous outcome', async () => {
   fixture.write.mockResolvedValue(true);
   await expect(aiVault.write('byok', 'fixture-key')).rejects.toThrow('not confirmed');
   fixture.read.mockResolvedValue('fixture-key');
+  fixture.write.mockResolvedValue('b'.repeat(64));
   await aiVault.write('byok', 'fixture-key');
   expect(fixture.write).toHaveBeenCalledWith('gemini-api-key', 'fixture-key');
   fixture.remove.mockResolvedValue(true);
@@ -130,8 +140,13 @@ it('uses strict native secure readback for writes and removals, with no fallback
 const originalModel = JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] });
 function committed(journal, revision = 1) {
   return {
+    kind: 'prepared',
     journal,
     revision,
+    originalRevision: 1,
+    inputLength: rgbaPng(2, 2, 255).length,
+    resultDigest: journal.result ? 'f'.repeat(64) : null,
+    resultLength: journal.result ? rgbaPng(2, 2, 255).length : null,
     nonce: 'c'.repeat(64),
     originalDigest: 'd'.repeat(64),
     inputDigest: 'e'.repeat(64),
@@ -151,24 +166,33 @@ it('requires a native preparation receipt and preserves exact original and uploa
       fixture.files.set(result.uri, bytes);
       current = committed({ ...current.journal, phase: 'result', result }, current.revision + 1);
     }
+    if (kind === 'readPreparedUpload')
+      return JSON.stringify({ receipt: current, upload: Buffer.from(bytes).toString('base64') });
     return JSON.stringify(
       kind === 'pictures' ? { pictures: [current.journal.result] } : { receipt: current }
     );
   });
   const exactModel = '  ' + originalModel + '\n';
-  await aiStorage.prepare(journal, exactModel, bytes);
+  const receipt = await aiStorage.prepare(journal, exactModel, bytes);
   const prepared = JSON.parse(fixture.storage.mock.calls.at(-1)[1]);
   expect(prepared.originalModel).toBe(exactModel);
   expect(Buffer.from(prepared.upload, 'base64')).toEqual(Buffer.from(bytes));
-  expect(await aiStorage.read()).toEqual(journal);
-  const result = await aiStorage.retain(1, bytes, 'image/png');
+  expect(Object.isFrozen(receipt)).toBe(true);
+  expect(Object.isFrozen(receipt.journal)).toBe(true);
+  const pinned = await aiStorage.readPreparedUpload(receipt);
+  expect(pinned).toBeInstanceOf(Uint8Array);
+  expect(pinned).toEqual(new Uint8Array(bytes));
+  expect((await aiStorage.read()).receipt.journal).toEqual(journal);
+  const retained = await aiStorage.retain(1, bytes, 'image/png');
   expect(JSON.parse(fixture.storage.mock.calls.at(-1)[1])).toMatchObject({
     id: 1,
     nonce: 'c'.repeat(64),
     revision: 1,
   });
+  const result = retained.picture;
+  expect(retained.receipt.resultDigest).toBe('f'.repeat(64));
   await aiStorage.write({ ...journal, phase: 'result', result });
-  expect((await aiStorage.read()).result).toEqual(result);
+  expect((await aiStorage.read()).receipt.journal.result).toEqual(result);
   expect(await aiStorage.pictures()).toEqual([result]);
   fixture.files.delete(result.uri);
   await expect(aiStorage.read()).rejects.toThrow('missing');
@@ -179,6 +203,8 @@ it('refuses unconfirmed native storage without publishing through Expo', async (
     aiStorage.prepare({ ...journal, id: 22 }, originalModel, rgbaPng(2, 2, 255))
   ).rejects.toThrow('fsync');
   expect(fixture.files.size).toBe(0);
+  fixture.storage.mockResolvedValue(JSON.stringify({ receipt: null }));
+  await aiStorage.read();
   fixture.storage.mockResolvedValue(
     JSON.stringify({ receipt: { ...committed({ ...journal, id: 22 }), revision: 0 } })
   );
@@ -217,10 +243,19 @@ it('imports an existing unresolved ticket and original with absent upload metada
   fixture.storage.mockImplementation(async (kind, raw) =>
     JSON.stringify({
       receipt:
-        kind === 'read' ? null : { ...committed(JSON.parse(raw).journal), inputDigest: null },
+        kind === 'read'
+          ? null
+          : {
+              ...committed(JSON.parse(raw).journal),
+              kind: 'imported',
+              inputDigest: null,
+              inputLength: null,
+            },
     })
   );
-  expect(await aiStorage.read()).toEqual(saved);
+  const imported = await aiStorage.read();
+  expect(imported.receipt.kind).toBe('imported');
+  expect(imported.receipt.journal).toEqual(saved);
   expect(fixture.storage.mock.calls.map(([kind]) => kind)).toEqual(['read', 'importLegacy']);
   expect(JSON.parse(fixture.storage.mock.calls[1][1])).toEqual({ journal: saved, originalModel });
 });
@@ -249,4 +284,90 @@ it('fails closed when the native decoder never answers and does not publish a fi
     vi.advanceTimersByTimeAsync(AI_IMAGE_DECODE_TIMEOUT_MS),
   ]);
   expect(fixture.files.size).toBe(0);
+});
+
+it('rejects a copied receipt and changed pinned bytes before returning any upload', async () => {
+  const next = { ...journal, id: 101 };
+  const bytes = rgbaPng(2, 2, 255);
+  fixture.storage.mockResolvedValue(JSON.stringify({ receipt: committed(next) }));
+  const receipt = await aiStorage.prepare(next, originalModel, bytes);
+  await expect(aiStorage.readPreparedUpload({ ...receipt })).rejects.toThrow('stale');
+  expect(fixture.storage).toHaveBeenCalledTimes(1);
+  fixture.storage.mockResolvedValue(JSON.stringify({ receipt: committed(next) }));
+  await aiStorage.read();
+  const fresh = (await aiStorage.read()).receipt;
+  fixture.storage.mockResolvedValue(JSON.stringify({ receipt: committed(next), upload: 'AQ==' }));
+  await expect(aiStorage.readPreparedUpload(fresh)).rejects.toThrow('bytes changed');
+});
+it('serializes a mutation behind native readback and blocks mutation after ambiguity', async () => {
+  const next = { ...journal, id: 102 };
+  let release;
+  fixture.storage.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      })
+  );
+  const reading = aiStorage.read();
+  const preparing = aiStorage.prepare(next, originalModel, rgbaPng(2, 2, 255));
+  await vi.waitFor(() => expect(fixture.storage).toHaveBeenCalledOnce());
+  fixture.storage.mockRejectedValue(new Error('unknown native completion'));
+  release(JSON.stringify({ receipt: null }));
+  await reading;
+  await expect(preparing).rejects.toThrow('unknown native completion');
+  const before = fixture.storage.mock.calls.length;
+  await expect(aiStorage.prepare(next, originalModel, rgbaPng(2, 2, 255))).rejects.toThrow(
+    'Read native recovery'
+  );
+  expect(fixture.storage).toHaveBeenCalledTimes(before);
+  fixture.storage.mockResolvedValue(JSON.stringify({ receipt: null }));
+  await aiStorage.read();
+});
+
+it('rejects a changed journal at an identical native revision', async () => {
+  const next = { ...journal, id: 103 };
+  fixture.storage.mockResolvedValue(JSON.stringify({ receipt: committed(next) }));
+  await aiStorage.prepare(next, originalModel, rgbaPng(2, 2, 255));
+  fixture.storage.mockResolvedValue(
+    JSON.stringify({ receipt: committed({ ...next, phase: 'unknown' }) })
+  );
+  await expect(aiStorage.read()).rejects.toThrow('attempt changed');
+});
+
+it('confirms the exact generation returned by the real write caller and rejects substitution or missing references', async () => {
+  fixture.write.mockResolvedValue('b'.repeat(64));
+  fixture.read.mockResolvedValue('fixture-key');
+  fixture.referenced.mockResolvedValue('fixture-key');
+  await aiVault.write('byok', 'fixture-key');
+  expect(fixture.referenced).toHaveBeenCalledWith('gemini-api-key', 'b'.repeat(64));
+  fixture.referenced.mockResolvedValue('different-key');
+  await expect(aiVault.write('byok', 'fixture-key')).rejects.toThrow('generation');
+  fixture.write.mockResolvedValue(true);
+  await expect(aiVault.write('byok', 'fixture-key')).rejects.toThrow('not confirmed');
+});
+it('retains an opaque reference without a credential and rejects replaced, removed or unavailable generations', async () => {
+  const pinned = await aiVault.pin('managed');
+  expect(pinned).toEqual({ kind: 'managed', reference: 'b'.repeat(64) });
+  expect(Object.isFrozen(pinned)).toBe(true);
+  expect(Object.keys(pinned)).toEqual(['kind', 'reference']);
+  fixture.referenced.mockResolvedValue('fixture-code');
+  expect(await aiVault.readReferenced(pinned)).toEqual({ kind: 'managed', value: 'fixture-code' });
+  fixture.referenced.mockRejectedValue(new Error('replaced or removed'));
+  await expect(aiVault.readReferenced(pinned)).rejects.toThrow('replaced or removed');
+  fixture.pin.mockRejectedValue(new Error('locked'));
+  await expect(aiVault.pin('managed')).rejects.toThrow('locked');
+  expect(fixture.files.size).toBe(0);
+});
+it('pins the free identity only through the explicit prerequisite seam and rejects a native binding mismatch', async () => {
+  const pinned = await aiVault.pin('free');
+  expect(fixture.pin).toHaveBeenCalledWith('free-generation-identity');
+  fixture.referenced.mockResolvedValue('a'.repeat(64));
+  expect(await aiVault.readReferenced(pinned)).toEqual({
+    kind: 'free',
+    installationId: 'a'.repeat(64),
+  });
+  fixture.referenced.mockRejectedValue(new Error('free identity changed'));
+  await expect(aiVault.readReferenced(pinned)).rejects.toThrow('free identity changed');
+  fixture.referenced.mockResolvedValue('raw-device-id');
+  await expect(aiVault.readReferenced(pinned)).rejects.toThrow('binding unavailable');
 });

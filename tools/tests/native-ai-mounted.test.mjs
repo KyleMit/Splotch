@@ -28,12 +28,37 @@ beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.aiAdmit.mockResolvedValue(undefined);
   let journal = null;
-  files.aiRead.mockImplementation(async () => journal);
-  files.aiPrepare.mockImplementation(async (next) => {
+  let upload = new Uint8Array();
+  const receipt = (next) =>
+    Object.freeze({
+      kind: 'prepared',
+      journal: Object.freeze({ ...next }),
+      nonce: 'c'.repeat(64),
+      revision: 1,
+      originalRevision: 1,
+      originalDigest: 'd'.repeat(64),
+      inputDigest: 'e'.repeat(64),
+      inputLength: upload.length,
+      resultDigest: next.result ? 'f'.repeat(64) : null,
+      resultLength: next.result ? 1 : null,
+    });
+  files.aiRead.mockImplementation(async () =>
+    journal ? { kind: 'native', receipt: receipt(journal) } : null
+  );
+  files.aiPrepare.mockImplementation(async (next, _, bytes) => {
     journal = next;
+    upload = bytes.slice();
+    return receipt(next);
   });
+  files.aiReadPreparedUpload.mockImplementation(async () => upload.slice());
   files.aiWrite.mockImplementation(async (next) => {
     journal = next;
+    return receipt(next);
+  });
+  files.aiRetain.mockImplementation(async () => {
+    const picture = { uri: 'file:///owned/ai.png', mime: 'image/png' };
+    journal = { ...journal, phase: 'result', result: picture };
+    return { picture, receipt: receipt(journal) };
   });
   files.aiVaultRead.mockResolvedValue(null);
   files.aiSend.mockImplementation(async (request) =>
@@ -76,6 +101,7 @@ it('mounts the RN parent challenge, disclosure, finite style picker and retained
   expect(screen.container.querySelector('img[alt="Your AI picture"]').getAttribute('src')).toBe(
     'file:///owned/ai.png'
   );
+  expect(files.aiReadPreparedUpload).toHaveBeenCalledOnce();
   expect(files.aiRetain).toHaveBeenCalledOnce();
 });
 it('mounts both credential setup callers and clears the secret input before verification', async () => {
@@ -133,4 +159,18 @@ it('withholds an RN picture rejected by native decoding and preserves the drawin
   expect(screen.container.querySelector('img[alt="Your AI picture"]')).toBeNull();
   expect(screen.container.textContent).toContain('could not be safely opened');
   expect(screen.paper()).toBe(original);
+});
+
+it('withholds the mounted RN upload if pinned native readback fails', async () => {
+  files.aiReadPreparedUpload.mockRejectedValue(new Error('native pinned digest failed'));
+  await open();
+  const original = screen.paper();
+  await screen.click('Send drawing for AI');
+  await flush();
+  expect(
+    files.aiSend.mock.calls.filter(([request]) => request.path === '/api/generate-image')
+  ).toHaveLength(0);
+  expect(files.aiRetain).not.toHaveBeenCalled();
+  expect(screen.paper()).toBe(original);
+  expect(screen.container.textContent).toContain('Nothing was sent');
 });

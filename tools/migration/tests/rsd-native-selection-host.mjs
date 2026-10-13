@@ -3,22 +3,51 @@ import { createSoundSettings } from '../../../experiments/native-architecture/sr
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 
-const caller = vi.hoisted(() => ({
-  screen: null,
-  sound: null,
-  menu: null,
-  aiAdmit: vi.fn().mockResolvedValue(undefined),
-  aiPrepare: vi.fn().mockResolvedValue(undefined),
-  aiRead: vi.fn().mockResolvedValue(null),
-  aiWrite: vi.fn().mockResolvedValue(undefined),
-  aiSend: vi.fn(),
-  aiRetain: vi.fn().mockResolvedValue({ uri: 'file:///owned/rsd-ai.png', mime: 'image/png' }),
-  aiVaultRead: vi.fn().mockResolvedValue(null),
-  aiVaultWrite: vi.fn().mockResolvedValue(undefined),
-  feedbackRead: vi.fn().mockResolvedValue(null),
-  feedbackWrite: vi.fn().mockResolvedValue(undefined),
-  feedbackSend: vi.fn(),
-}));
+const caller = vi.hoisted(() => {
+  let journal = null;
+  let upload = new Uint8Array();
+  const receipt = (next) =>
+    Object.freeze({
+      kind: 'prepared',
+      journal: Object.freeze({ ...next }),
+      nonce: 'c'.repeat(64),
+      revision: 1,
+      originalRevision: 1,
+      originalDigest: 'd'.repeat(64),
+      inputDigest: 'e'.repeat(64),
+      inputLength: upload.length,
+      resultDigest: next.result ? 'f'.repeat(64) : null,
+      resultLength: next.result ? 1 : null,
+    });
+  return {
+    screen: null,
+    sound: null,
+    menu: null,
+    aiAdmit: vi.fn().mockResolvedValue(undefined),
+    aiPrepare: vi.fn(async (next, _, bytes) => {
+      journal = next;
+      upload = bytes.slice();
+      return receipt(next);
+    }),
+    aiReadPreparedUpload: vi.fn(async () => upload.slice()),
+    aiRead: vi.fn().mockResolvedValue(null),
+    aiWrite: vi.fn(async (next) => {
+      journal = next;
+      return receipt(next);
+    }),
+    aiSend: vi.fn(),
+    aiRetain: vi.fn(async () => {
+      const picture = { uri: 'file:///owned/rsd-ai.png', mime: 'image/png' };
+      journal = { ...journal, phase: 'result', result: picture };
+      return { picture, receipt: receipt(journal) };
+    }),
+    aiVaultRead: vi.fn().mockResolvedValue(null),
+    aiVaultWrite: vi.fn().mockResolvedValue(undefined),
+    feedbackRead: vi.fn().mockResolvedValue(null),
+    feedbackWrite: vi.fn().mockResolvedValue(undefined),
+    feedbackSend: vi.fn(),
+  };
+});
 vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   aiTransport: caller.aiSend,
   admitAiImage: caller.aiAdmit,
@@ -30,6 +59,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   },
   aiStorage: {
     prepare: caller.aiPrepare,
+    readPreparedUpload: caller.aiReadPreparedUpload,
     read: caller.aiRead,
     write: caller.aiWrite,
     retain: caller.aiRetain,

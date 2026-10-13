@@ -1,5 +1,6 @@
 import type { AiState } from './generation';
 export function aiCanGenerate(state: AiState) {
+  if (state.recovery) return false;
   return (
     state.authorized &&
     !state.busy &&

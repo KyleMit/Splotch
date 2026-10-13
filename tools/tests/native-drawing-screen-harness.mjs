@@ -15,6 +15,7 @@ const files = vi.hoisted(() => ({
   aiAdmit: vi.fn().mockResolvedValue(undefined),
   aiPrepare: vi.fn().mockResolvedValue(undefined),
   aiRead: vi.fn().mockResolvedValue(null),
+  aiReadPreparedUpload: vi.fn(),
   aiWrite: vi.fn().mockResolvedValue(undefined),
   aiPictures: vi.fn().mockResolvedValue([]),
   aiRetain: vi.fn().mockResolvedValue({ uri: 'file:///owned/ai.png', mime: 'image/png' }),
@@ -47,6 +48,7 @@ vi.mock('../../experiments/native-architecture/src/platform/ai.ts', () => ({
   },
   aiStorage: {
     prepare: files.aiPrepare,
+    readPreparedUpload: files.aiReadPreparedUpload,
     read: files.aiRead,
     write: files.aiWrite,
     retain: files.aiRetain,

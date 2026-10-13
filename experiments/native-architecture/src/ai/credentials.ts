@@ -25,3 +25,9 @@ export function credentialHeaders(credential: AiCredential): Record<string, stri
       ? { 'X-Access-Token': credential.value }
       : { 'X-Api-Key': credential.value };
 }
+
+export type AiCredentialReference = Readonly<{ kind: 'free' | CredentialKind; reference: string }>;
+export interface AiReferencedVault {
+  pin(kind: 'free' | CredentialKind): Promise<AiCredentialReference>;
+  readReferenced(reference: AiCredentialReference): Promise<AiCredential>;
+}

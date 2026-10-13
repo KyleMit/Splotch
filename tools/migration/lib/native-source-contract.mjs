@@ -1,3 +1,4 @@
+import { assertAiVaultContract } from './native-ai-vault-contract.mjs';
 import { createHash } from 'node:crypto';
 import { assertAppleSceneContract } from './native-apple-scene.mjs';
 
@@ -309,6 +310,11 @@ function assertAppleProject(files) {
 function assertAiJournalContract(files) {
   const android = text(files, `${KOTLIN_DIRECTORY}/SplotchAIJournal.kt`);
   const apple = text(files, 'ios/HelloWorld/SplotchAIJournal.swift');
+  requireMatch(
+    android,
+    /old\.forEach \{\s*val stat = Os\.lstat\(it\.path\)\s*check\(OsConstants\.S_ISREG\(stat\.st_mode\) && stat\.st_nlink == 1L\)\s*Os\.remove\(it\.path\)\s*\}\s*fence\(dir\)\s*return JSONObject\(\)\.put\("receipt", receipt\(confirm\(dir, latest\(dir\)\)\)\)/,
+    'journal contract: public Android prune, directory fence and confirmed receipt'
+  );
   for (const [source, tokens] of [
     [
       android,
@@ -323,6 +329,28 @@ function assertAiJournalContract(files) {
         'maxQuota = 128L * 1024 * 1024',
         'maxAttempts = 32',
         'maxLegacy = 256',
+        'val pinned = confirm(dir, latest(dir))',
+        'input.getString("nonce") == pinned.getString("nonce")',
+        'integer(input, "revision") == pinned.getLong("revision")',
+        'meta.getString("sha256") == digest(bytes)',
+        'integer(meta, "bytes") == bytes.size.toLong()',
+        'maxUploadReply = ((maxUpload + 2) / 3) * 4 + maxJournal',
+        'if (kind == "readPreparedUpload") maxUploadReply else maxJournal',
+        'recoveryProgress(value, first)',
+        'r.getString("id") == digest(envelope)',
+        'integer(older, "schema") == integer(newer, "schema")',
+        'a.getString("intent") != "committed" || b.getString("intent") == "committed"',
+        'expiry.getString("kind") != "known" || same(expiry, b.getJSONObject("expiry"))',
+        'minimumRecoveryExpiryDeltaMs = 1170000L',
+        'maximumRecoveryExpiryDeltaMs = 1260000L',
+        '"prepare", "importLegacy", "prepareRecovery"',
+        '"commitRecoveryIntent", "recordRecoveryStatus"',
+        'input.getString("nonce") == value.getString("nonce") && integer(input, "revision") == integer(value, "revision")',
+        'recovery(value); recoveryProgress(before, value)',
+        'status.getString("headerExpiresAt") == expiry.toString()',
+        'expiry.getString("provenance") == "admitted-status-202"',
+        'integer(value, "schema") == 1L',
+        'integer(pinned, "schema") == 1L',
       ],
     ],
     [
@@ -339,6 +367,28 @@ function assertAiJournalContract(files) {
         'maxQuota = 128 * 1024 * 1024',
         'maxAttempts = 32',
         'maxLegacy = 256',
+        'let pinned = try confirm(dir, latest(dir))',
+        'string(input, "nonce") == string(pinned, "nonce")',
+        'integer(input, "revision") == integer(pinned, "revision")',
+        'string(meta, "sha256") == hash(bytes)',
+        'integer(meta, "bytes") == bytes.count',
+        'maxUploadReply: Int { ((maxUpload + 2) / 3) * 4 + maxJournal }',
+        'kind == "readPreparedUpload" ? self.maxUploadReply : self.maxJournal',
+        'try recoveryProgress(value, first)',
+        'string(r, "id") == hash(envelope)',
+        'integer(older, "schema") == integer(newer, "schema")',
+        'string(a, "intent") != "committed" || string(b, "intent") == "committed"',
+        'string(expiry, "kind") != "known" || same(expiry, object(b["expiry"]))',
+        'minimumRecoveryExpiryDeltaMs: Int64 = 1170000',
+        'maximumRecoveryExpiryDeltaMs: Int64 = 1260000',
+        'case "prepare", "importLegacy", "prepareRecovery"',
+        'case "commitRecoveryIntent", "recordRecoveryStatus"',
+        'string(input, "nonce") == string(value, "nonce") && integer(input, "revision") == integer(value, "revision")',
+        '_ = try recovery(value); try recoveryProgress(before, value)',
+        'string(status, "headerExpiresAt") == String(expiry)',
+        'string(expiry, "provenance") == "admitted-status-202"',
+        'integer(value, "schema") == 1',
+        'integer(pinned, "schema") == 1',
       ],
     ],
   ]) {
@@ -354,8 +404,8 @@ function assertAiJournalContract(files) {
   if (
     android.split('confirm(it, latest(it))').length !== 3 ||
     apple.split('confirm($0, latest($0))').length !== 3 ||
-    android.split('receipt(confirm(dir, value))').length !== 3 ||
-    apple.split('receipt(confirm(dir, value))').length !== 3 ||
+    android.split('receipt(confirm(dir, value))').length !== 4 ||
+    apple.split('receipt(confirm(dir, value))').length !== 4 ||
     android.split('receipt(confirm(dir, latest(dir)))').length !== 2 ||
     apple.split('receipt(confirm(dir, latest(dir)))').length !== 2
   )
@@ -409,6 +459,7 @@ export function assertNativeSourceContract(files, packageManifest, indexSource) 
     }
   }
   assertAiJournalContract(files);
+  assertAiVaultContract(files, KOTLIN_DIRECTORY);
   assertAndroidProperties(files);
   assertAndroidApplication(files);
   assertAndroidManifest(files);

@@ -1,4 +1,11 @@
 import {
+  RECOVERY_PATH,
+  parseRecoveryJson,
+  recoveryImageMetadata,
+  type RecoveryRead,
+  type RecoveryReply,
+} from './recoveryContract';
+import {
   AI_ORIGIN,
   MAX_JSON_BYTES,
   MAX_RESULT_BYTES,
@@ -11,7 +18,7 @@ import {
   type AiMime,
 } from './contract';
 import { resultImageGrid } from './imageAdmission';
-export type AiRequest = {
+type LegacyAiRequest = {
   path:
     | '/api/generate-image'
     | '/api/generation-result'
@@ -23,6 +30,15 @@ export type AiRequest = {
   headers: Record<string, string>;
   body?: Uint8Array | string;
 };
+export type RecoveryReadRequest = {
+  path: typeof RECOVERY_PATH;
+  method: 'GET';
+  headers: Record<string, string>;
+  recovery: RecoveryRead;
+  body?: never;
+  query?: never;
+};
+export type AiRequest = LegacyAiRequest | RecoveryReadRequest;
 export type AiResponse = {
   status: number;
   headers: Pick<Headers, 'get'>;
@@ -30,6 +46,7 @@ export type AiResponse = {
 };
 export type AiTransport = (request: AiRequest, signal: AbortSignal) => Promise<AiResponse>;
 export type AiReply =
+  | { kind: 'recovery'; reply: RecoveryReply }
   | {
       kind: 'image';
       bytes: Uint8Array;
@@ -49,6 +66,10 @@ export type AiReply =
     }
   | { kind: 'unknown'; message: string };
 export function aiUrl(request: AiRequest) {
+  if (request.path === RECOVERY_PATH)
+    throw new Error(
+      'Recovery activation requires qualified native storage, secure references, privacy and service contract.'
+    );
   return `${AI_ORIGIN}${request.path}${request.query ? `?${request.query}` : ''}`;
 }
 function object(value: unknown): value is Record<string, unknown> {
@@ -116,6 +137,23 @@ export async function parseAiResponse(
   signal: AbortSignal,
   now: number
 ): Promise<AiReply> {
+  if (request.path === RECOVERY_PATH) {
+    if (response.status === 200 && request.recovery.kind === 'collect') {
+      const metadata = recoveryImageMetadata(response.headers, request.recovery);
+      const bytes = await readAiBytes(response, MAX_RESULT_BYTES, signal);
+      await resultImageGrid(bytes, metadata.mime, () => !signal.aborted);
+      return {
+        kind: 'recovery',
+        reply: Object.freeze({ kind: 'unadmitted-image', ...metadata, bytes }),
+      };
+    }
+    const bytes = await readAiBytes(response, MAX_JSON_BYTES, signal);
+    const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    return {
+      kind: 'recovery',
+      reply: parseRecoveryJson(response.status, value, response.headers, request.recovery),
+    };
+  }
   const poll = request.path === '/api/generation-result';
   if (response.status === 200 && (poll || request.path === '/api/generate-image')) {
     const mime = response.headers.get('Content-Type')?.split(';')[0].trim();
@@ -264,6 +302,8 @@ export async function requestAi(
   request: AiRequest,
   onLate: (reply: AiReply) => void | Promise<void>
 ): Promise<AiReply> {
+  if (request.path === RECOVERY_PATH)
+    return { kind: 'recovery', reply: Object.freeze({ kind: 'held', reason: 'unavailable' }) };
   const controller = new AbortController();
   let expired = false;
   let timer: ReturnType<typeof setTimeout> | undefined;

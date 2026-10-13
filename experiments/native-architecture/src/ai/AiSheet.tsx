@@ -86,7 +86,7 @@ export function NativeAiSheet({ owner, state }: { owner: NativeAiOwner; state: A
                     key={style}
                     label={`${style} AI style`}
                     selected={state.style === style}
-                    disabled={state.busy || waiting}
+                    disabled={state.busy || waiting || !!state.recovery}
                     onPress={() => owner.chooseStyle(style)}
                   />
                 ))}
@@ -98,24 +98,29 @@ export function NativeAiSheet({ owner, state }: { owner: NativeAiOwner; state: A
                   void owner.generate();
                 }}
               />
-              {waiting ? (
-                <>
-                  <Text style={styles.text}>
-                    The original drawing is saved. This attempt stays separate from anything you
-                    draw next.
-                  </Text>
-                  <Action
-                    label="Check waiting picture"
-                    disabled={state.busy || !state.journal?.jobId}
-                    onPress={owner.resume}
-                  />
-                  <Action
-                    label="Release expired attempt"
-                    disabled={state.busy}
-                    onPress={owner.releaseExpired}
-                  />
-                </>
+              <Text style={styles.text}>
+                Recovery preview saves a held request on this device. Sending is unavailable and no
+                drawing is uploaded.
+              </Text>
+              <Action
+                label="Save held recovery request"
+                disabled={
+                  state.busy || waiting || !!state.recovery || state.credential === 'unavailable'
+                }
+                onPress={() => {
+                  void owner.prepareRecovery();
+                }}
+              />
+              {state.recovery ? (
+                <Action
+                  label="Check held recovery request"
+                  disabled={state.busy}
+                  onPress={() => {
+                    void owner.collectRecovery();
+                  }}
+                />
               ) : null}
+              {waiting ? <AiWaitingActions owner={owner} state={state} /> : null}
               <Text accessibilityLiveRegion="polite" style={styles.text}>
                 {state.message}
               </Text>
@@ -190,7 +195,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
             key={next}
             label={next === 'managed' ? 'Use access code' : 'Use my OpenAI key'}
             selected={kind === next}
-            disabled={state.busy || waiting}
+            disabled={state.busy || waiting || !!state.recovery}
             onPress={() => {
               setValue('');
               setKind(next);
@@ -206,12 +211,12 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
         autoCapitalize="none"
         autoCorrect={false}
         maxLength={MAX_CREDENTIAL_CHARACTERS}
-        editable={!state.busy && !waiting}
+        editable={!state.busy && !waiting && !state.recovery}
         style={styles.input}
       />
       <Action
         label="Verify and save credential"
-        disabled={state.busy || waiting || !value}
+        disabled={state.busy || waiting || !!state.recovery || !value}
         onPress={() => {
           const pending = value;
           setValue('');
@@ -220,14 +225,14 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
       />
       <Action
         label="Remove access code"
-        disabled={state.busy || waiting}
+        disabled={state.busy || waiting || !!state.recovery}
         onPress={() => {
           void owner.removeCredential('managed');
         }}
       />
       <Action
         label="Remove OpenAI key"
-        disabled={state.busy || waiting}
+        disabled={state.busy || waiting || !!state.recovery}
         onPress={() => {
           void owner.removeCredential('byok');
         }}
@@ -283,5 +288,26 @@ function AiChoice({
     >
       <Text style={styles.text}>{label}</Text>
     </Pressable>
+  );
+}
+
+function AiWaitingActions({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <>
+      <Text style={styles.text}>
+        The original drawing is saved. This attempt stays separate from anything you draw next.
+      </Text>
+      <Action
+        label="Check waiting picture"
+        disabled={state.busy || !state.journal?.jobId}
+        onPress={owner.resume}
+      />
+      <Action
+        label="Release expired attempt"
+        disabled={state.busy}
+        onPress={owner.releaseExpired}
+      />
+    </>
   );
 }

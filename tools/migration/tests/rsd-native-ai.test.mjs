@@ -76,6 +76,7 @@ it.each([false, true])(
     await click('Sticker AI style');
     await click('Send drawing for AI');
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
+    expect(caller.aiReadPreparedUpload).toHaveBeenCalledOnce();
     expect(caller.aiAdmit).toHaveBeenCalledOnce();
     expect(caller.aiRetain).toHaveBeenCalledTimes(rejectDecode ? 0 : 1);
     expect(host.textContent).toContain(

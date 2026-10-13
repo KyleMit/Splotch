@@ -10,20 +10,87 @@ const image = () =>
   });
 function fixture() {
   let journal = null;
+  let recovery = null;
   let finish;
+  const attempts = new Map();
+  const pinned = new Map();
+  function receipt(next) {
+    return Object.freeze({
+      kind: 'prepared',
+      journal: Object.freeze({ ...next }),
+      nonce: 'c'.repeat(64),
+      revision: 1,
+      originalRevision: 1,
+      originalDigest: 'd'.repeat(64),
+      inputDigest: 'e'.repeat(64),
+      inputLength: pinned.get(next.id)?.length ?? 1,
+      resultDigest: next.result ? 'f'.repeat(64) : null,
+      resultLength: next.result ? 1 : null,
+    });
+  }
   const storage = {
-    read: vi.fn(async () => journal),
-    prepare: vi.fn(async (next) => {
-      journal = next;
+    read: vi.fn(async () =>
+      recovery
+        ? { kind: 'recovery-held', receipt: recovery }
+        : journal
+          ? { kind: 'native', receipt: receipt(journal) }
+          : null
+    ),
+    prepareRecovery: vi.fn(async (next, _, bytes, reference) => {
+      pinned.set(next.id, bytes.slice());
+      recovery = Object.freeze({
+        ...receipt(next),
+        kind: 'recovery-held',
+        recovery: Object.freeze({
+          version: 2,
+          protocol: 'splotch-ai-recovery-v1',
+          id: 'a'.repeat(64),
+          credential: reference,
+          expiry: Object.freeze({ kind: 'unknown' }),
+          intent: 'prepared',
+        }),
+      });
+      return recovery;
     }),
+    commitRecoveryIntent: vi.fn(async (value) => {
+      recovery = Object.freeze({
+        ...value,
+        revision: value.revision + 1,
+        recovery: Object.freeze({ ...value.recovery, intent: 'committed' }),
+      });
+      return recovery;
+    }),
+    recordRecoveryStatus: vi.fn(async () => {
+      throw new Error('Recovery transport is held');
+    }),
+    prepare: vi.fn(async (next, _, bytes) => {
+      pinned.set(next.id, bytes.slice());
+      journal = next;
+      attempts.set(next.id, next);
+      return receipt(next);
+    }),
+    readPreparedUpload: vi.fn(async (value) => pinned.get(value.journal.id).slice()),
     write: vi.fn(async (next) => {
       journal = next;
+      attempts.set(next.id, next);
+      return receipt(next);
     }),
-    retain: vi.fn(async () => ({ uri: 'file:///owned/result.png', mime: 'image/png' })),
+    retain: vi.fn(async (id) => {
+      const picture = { uri: 'file:///owned/result.png', mime: 'image/png' };
+      const next = { ...attempts.get(id), phase: 'result', result: picture };
+      attempts.set(id, next);
+      return { picture, receipt: receipt(next) };
+    }),
     pictures: vi.fn(async () => []),
   };
   const vault = {
     installationId: vi.fn(async () => INSTALLATION),
+    pin: vi.fn(async (kind) => Object.freeze({ kind, reference: 'b'.repeat(64) })),
+    readReferenced: vi.fn(async (reference) =>
+      reference.kind === 'free'
+        ? { kind: 'free', installationId: INSTALLATION }
+        : { kind: reference.kind, value: 'fixture-key' }
+    ),
     read: vi.fn(async () => null),
     write: vi.fn(async () => {}),
     remove: vi.fn(async () => {}),
@@ -40,7 +107,7 @@ function fixture() {
       : post(request)
   );
   const prepare = vi.fn(async () => ({
-    bytes: Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10),
+    bytes: rgbaPng(2, 2, 255),
     originalId: 'picture-1-fixture',
     originalModel: JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] }),
   }));
@@ -300,4 +367,75 @@ it('requires native decode admission before any retention or in-memory result di
   expect(f.post).toHaveBeenCalledOnce();
   expect(f.owner.getState().journal.phase).toBe('failed');
   f.owner.dispose();
+});
+
+it('suppresses funded POST when pinned native readback fails', async () => {
+  const f = fixture();
+  await f.open();
+  f.storage.readPreparedUpload.mockRejectedValue(new Error('pinned digest changed'));
+  await f.owner.generate();
+  expect(f.post).not.toHaveBeenCalled();
+  expect(f.storage.retain).not.toHaveBeenCalled();
+  expect(f.owner.getState().journal.originalId).toBe('picture-1-fixture');
+  f.owner.dispose();
+});
+it('rechecks parent permission after the pinned native upload read', async () => {
+  const f = fixture();
+  await f.open();
+  let release;
+  f.storage.readPreparedUpload.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      })
+  );
+  const work = f.owner.generate();
+  await vi.waitFor(() => expect(f.storage.readPreparedUpload).toHaveBeenCalledOnce());
+  f.owner.close();
+  release(rgbaPng(2, 2, 255));
+  await work;
+  expect(f.post).not.toHaveBeenCalled();
+  expect(f.owner.getState().journal.originalId).toBe('picture-1-fixture');
+  f.owner.dispose();
+});
+it('uploads the private pinned copy after capture bytes are mutated', async () => {
+  const f = fixture();
+  await f.open();
+  const bytes = rgbaPng(2, 2, 255);
+  const expected = bytes.slice();
+  f.prepare.mockResolvedValue({
+    bytes,
+    originalId: 'picture-1-fixture',
+    originalModel: JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] }),
+  });
+  const read = f.storage.readPreparedUpload.getMockImplementation();
+  f.storage.readPreparedUpload.mockImplementation(async (value) => {
+    bytes.fill(0);
+    return read(value);
+  });
+  const work = f.owner.generate();
+  await vi.waitFor(() => expect(f.post).toHaveBeenCalledOnce());
+  expect(f.post.mock.calls[0][0].body).toEqual(expected);
+  f.finish(image());
+  await work;
+  f.owner.dispose();
+});
+
+it('consumes the actual preparation rejection without a detached sequencing rejection', async () => {
+  const f = fixture();
+  const unhandled = [];
+  const observe = (error) => unhandled.push(error);
+  process.on('unhandledRejection', observe);
+  try {
+    await f.open();
+    f.storage.prepare.mockRejectedValue(new Error('controlled preparation fence failure'));
+    await f.owner.generate();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(f.post).not.toHaveBeenCalled();
+    expect(unhandled).toEqual([]);
+    expect(f.owner.getState().message).toContain('Nothing was sent');
+  } finally {
+    process.off('unhandledRejection', observe);
+    f.owner.dispose();
+  }
 });

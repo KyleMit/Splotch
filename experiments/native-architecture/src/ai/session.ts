@@ -6,9 +6,15 @@ import {
   type AiMime,
   type CredentialKind,
 } from './contract';
-import { credentialHeaders, validCredential, type AiCredential, type AiVault } from './credentials';
+import {
+  credentialHeaders,
+  validCredential,
+  type AiCredential,
+  type AiVault,
+  type AiReferencedVault,
+} from './credentials';
 import { requestAi, type AiTransport } from './transport';
-import type { AiJournal, AiResult, AiStorage } from './journal';
+import type { AiJournal, AiResult, AiStorage, AiRecoveryHeldReceipt } from './journal';
 import type { AiImageAdmission } from './imageAdmission';
 export type AiState = Readonly<{
   open: boolean;
@@ -19,6 +25,7 @@ export type AiState = Readonly<{
   remaining: number | null;
   credential: 'free' | CredentialKind | 'unavailable';
   journal: AiJournal | null;
+  recovery: AiRecoveryHeldReceipt | null;
   heldResult: AiResult | null;
   pictures: readonly AiResult[];
   message: string;
@@ -31,14 +38,14 @@ export type PreparedAiDrawing = {
 };
 export class AiSession {
   protected deps: {
-    vault: AiVault;
+    vault: AiVault & AiReferencedVault;
     storage: AiStorage;
     transport: AiTransport;
     prepare: () => Promise<PreparedAiDrawing>;
     admit: AiImageAdmission;
   };
   constructor(deps: {
-    vault: AiVault;
+    vault: AiVault & AiReferencedVault;
     storage: AiStorage;
     transport: AiTransport;
     prepare: () => Promise<PreparedAiDrawing>;
@@ -48,6 +55,7 @@ export class AiSession {
   }
   protected listeners = new Set<() => void>();
   protected disposed = false;
+  protected recoveryUncertain = false;
   protected timer: ReturnType<typeof setTimeout> | null = null;
   protected journals = new Map<number, AiJournal>();
   protected ambiguous = new Set<number>();
@@ -69,6 +77,7 @@ export class AiSession {
     remaining: null,
     credential: 'unavailable',
     journal: null,
+    recovery: null,
     heldResult: null,
     pictures: [],
     message: '',
@@ -82,17 +91,21 @@ export class AiSession {
     if (!this.disposed) for (const listener of this.listeners) listener();
   };
   protected unresolved = () => {
-    return !!this.state.journal && !['result', 'failed'].includes(this.state.journal.phase);
+    return (
+      this.recoveryUncertain ||
+      this.state.recovery !== null ||
+      (!!this.state.journal && !['result', 'failed'].includes(this.state.journal.phase))
+    );
   };
-  private writing: Promise<void> = Promise.resolve();
+  private writing: Promise<unknown> = Promise.resolve();
   protected persist = (journal: AiJournal) => {
     const work = this.writing
       .catch(() => {})
       .then(async () => {
         if (this.journals.get(journal.id)?.phase === 'result' && journal.phase !== 'result') return;
-        await this.deps.storage.write(journal);
-        this.journals.set(journal.id, journal);
-        this.update({ journal });
+        const receipt = await this.deps.storage.write(journal);
+        this.journals.set(journal.id, receipt.journal);
+        this.update({ journal: receipt.journal });
       });
     this.writing = work;
     return work;
@@ -101,21 +114,31 @@ export class AiSession {
     const work = this.writing
       .catch(() => {})
       .then(async () => {
-        await this.deps.storage.prepare(journal, prepared.originalModel, prepared.bytes);
-        this.journals.set(journal.id, journal);
-        this.update({ journal });
+        const receipt = await this.deps.storage.prepare(
+          journal,
+          prepared.originalModel,
+          prepared.bytes
+        );
+        this.journals.set(journal.id, receipt.journal);
+        this.update({ journal: receipt.journal });
+        return receipt;
       });
     this.writing = work;
     return work;
   };
   protected refreshCredential = async () => {
+    const proof = this.authorization;
+    const permitted = () => this.state.authorized && proof === this.authorization && !this.disposed;
+    if (!permitted()) throw new Error('AI authorization changed.');
     this.credential = null;
     this.update({
       credential: 'unavailable',
       remaining: null,
     });
     const byok = await this.deps.vault.read('byok');
+    if (!permitted()) throw new Error('AI authorization changed.');
     const managed = await this.deps.vault.read('managed');
+    if (!permitted()) throw new Error('AI authorization changed.');
     if (
       (byok !== null && !validCredential(byok)) ||
       (managed !== null && !validCredential(managed))
@@ -133,6 +156,7 @@ export class AiSession {
       };
     else {
       const id = await this.deps.vault.installationId();
+      if (!permitted()) throw new Error('AI authorization changed.');
       if (!isInstallationId(id)) throw new Error('Installation grant unavailable.');
       this.credential = {
         kind: 'free',
@@ -175,7 +199,28 @@ export class AiSession {
     });
     try {
       {
-        const journal = await this.deps.storage.read();
+        const proof = this.authorization;
+        const stored = await this.deps.storage.read();
+        if (!this.state.authorized || proof !== this.authorization || this.disposed) return;
+        this.recoveryUncertain = false;
+        if (stored?.kind === 'recovery-held') {
+          this.credential = null;
+          this.update({
+            recovery: stored.receipt,
+            journal: null,
+            credential: 'unavailable',
+            remaining: null,
+            message:
+              'A recovery attempt is saved. Collection is unavailable until recovery is qualified. Your original stays held.',
+          });
+          return;
+        }
+        const journal =
+          stored === null
+            ? null
+            : stored.kind === 'native'
+              ? stored.receipt.journal
+              : stored.journal;
         this.update({
           journal,
         });
@@ -262,7 +307,9 @@ export class AiSession {
       const verified = kind === 'managed' ? reply.accessCode : value;
       if (!validCredential(verified)) throw new Error('Invalid credential');
       await this.deps.vault.write(kind, verified);
+      if (!this.state.authorized || proof !== this.authorization || this.disposed) return;
       await this.refreshCredential();
+      if (!this.state.authorized || proof !== this.authorization || this.disposed) return;
       this.update({
         message: 'AI credential saved securely on this device.',
       });
@@ -282,6 +329,7 @@ export class AiSession {
   };
   removeCredential = async (kind: CredentialKind) => {
     if (!this.state.authorized || this.active || this.unresolved()) return;
+    const proof = this.authorization;
     this.active = true;
     this.credential = null;
     this.update({
@@ -290,7 +338,9 @@ export class AiSession {
     });
     try {
       await this.deps.vault.remove(kind);
+      if (!this.state.authorized || proof !== this.authorization || this.disposed) return;
       await this.refreshCredential();
+      if (!this.state.authorized || proof !== this.authorization || this.disposed) return;
       this.update({
         message: 'Credential removed from secure storage.',
       });

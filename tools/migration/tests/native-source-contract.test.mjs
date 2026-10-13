@@ -40,6 +40,7 @@ const materializerToolPaths = [
   'tools/migration/inputs/native-ai-source-extension.json',
   'tools/migration/lib/native-template-transforms.mjs',
   'tools/migration/lib/native-source-contract.mjs',
+  'tools/migration/lib/native-ai-vault-contract.mjs',
   'tools/migration/lib/native-apple-scene.mjs',
   'tools/migration/lib/native-gemfile.mjs',
   'tools/migration/lib/native-source-files.mjs',

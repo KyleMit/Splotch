@@ -17,6 +17,8 @@ import com.facebook.react.uimanager.ViewManager
 import java.io.File
 import java.security.KeyStore
 import java.security.MessageDigest
+import java.security.SecureRandom
+import org.json.JSONObject
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -34,13 +36,16 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
   }
   private val alias = "splotch-ai-credentials-v1"
   private val maxBytes = 8192
+  private val maxCredentialBytes = 2048
+  private val referenceBytes = 32
+  private val protectedPrefix = "SPLOTCH-AI-VAULT-2\n"
   private val maxImageBytes = 16 * 1024 * 1024
   private val maxImageDimension = 4096
   private val maxImagePixels = 4 * 1024 * 1024
   private val maxDecodedBytes = maxImagePixels * 4
   override fun getName() = "SplotchAIEnvironment"
   private fun slot(name: String): AtomicFile {
-    require(name == "gemini-api-key" || name == "managed-access-code")
+    require(name == "gemini-api-key" || name == "managed-access-code" || name == "free-generation-identity")
     return AtomicFile(File(context.noBackupFilesDir, "splotch-ai-$name.enc"))
   }
   private fun key(create: Boolean): SecretKey {
@@ -55,7 +60,7 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
         .setKeySize(256).setRandomizedEncryptionRequired(true).build())
     }.generateKey()
   }
-  private fun read(name: String): String? {
+  private fun readStored(name: String): String? {
     val file = slot(name)
     if (!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists()) return null
     val bytes = file.openRead().use { input ->
@@ -74,6 +79,60 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
     cipher.init(Cipher.DECRYPT_MODE, key(false), GCMParameterSpec(128, bytes.copyOfRange(0, 12)))
     return String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)), Charsets.UTF_8).also { check(it.isNotBlank()) }
   }
+  private fun protectedRecord(name: String): JSONObject? {
+    val stored = readStored(name) ?: return null
+    if (!stored.startsWith(protectedPrefix)) return null
+    val value = JSONObject(stored.removePrefix(protectedPrefix))
+    check(value.keys().asSequence().toSet() == setOf("version", "reference", "value"))
+    check(value.get("version") is Number && (value.get("version") as Number).toDouble() == 2.0)
+    check(value.get("reference") is String && value.get("value") is String)
+    check(Regex("[a-f0-9]{64}").matches(value.getString("reference")))
+    check(value.getString("value").isNotEmpty())
+    return value
+  }
+  private fun read(name: String): String? {
+    val stored = readStored(name) ?: return null
+    return if (stored.startsWith(protectedPrefix)) protectedRecord(name)!!.getString("value") else stored
+  }
+  private fun installationValue(): String {
+    val raw = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+    check(!raw.isNullOrBlank())
+    return MessageDigest.getInstance("SHA-256").digest("splotch-free-generation-v1:$raw".toByteArray(Charsets.UTF_8))
+      .joinToString("") { "%02x".format(it.toInt() and 255) }
+  }
+  private fun writeProtected(name: String, value: String): String {
+    val reference = ByteArray(referenceBytes).also { SecureRandom().nextBytes(it) }
+      .joinToString("") { "%02x".format(it.toInt() and 255) }
+    check(protectedRecord(name)?.getString("reference") != reference)
+    val record = JSONObject().put("version", 2).put("reference", reference).put("value", value)
+    val plain = (protectedPrefix + record.toString()).toByteArray(Charsets.UTF_8)
+    check(plain.isNotEmpty() && plain.size <= maxBytes - 28)
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(Cipher.ENCRYPT_MODE, key(true))
+    val bytes = cipher.iv + cipher.doFinal(plain)
+    val file = slot(name)
+    val output = file.startWrite()
+    try { output.write(bytes); file.finishWrite(output) }
+    catch (error: Exception) { file.failWrite(output); throw error }
+    val confirmed = protectedRecord(name) ?: error("Secure publication unavailable")
+    check(confirmed.getString("reference") == reference && confirmed.getString("value") == value)
+    return reference
+  }
+  @ReactMethod fun pinCredentialReference(name: String, promise: Promise) = guarded(promise) {
+    val value = if (name == "free-generation-identity") installationValue() else read(name)
+    check(!value.isNullOrBlank())
+    val current = protectedRecord(name)
+    if (current != null && current.getString("value") == value) current.getString("reference")
+    else writeProtected(name, value)
+  }
+  @ReactMethod fun readReferencedCredential(name: String, reference: String, promise: Promise) = guarded(promise) {
+    check(Regex("[a-f0-9]{64}").matches(reference))
+    val current = protectedRecord(name) ?: error("Credential reference unavailable")
+    check(current.getString("reference") == reference)
+    val value = current.getString("value")
+    if (name == "free-generation-identity") check(value == installationValue())
+    value
+  }
   private fun guarded(promise: Promise, operation: () -> Any?) {
     try { synchronized(this) { promise.resolve(operation()) } }
     catch (_: Exception) { promise.reject("AI_SECURE_UNAVAILABLE", "Secure AI storage is unavailable.") }
@@ -88,27 +147,24 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
       decoder.setOnPartialImageListener { false }
     }
   }
-  @ReactMethod fun installationId(promise: Promise) = guarded(promise) {
-    val raw = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-    check(!raw.isNullOrBlank())
-    MessageDigest.getInstance("SHA-256").digest("splotch-free-generation-v1:$raw".toByteArray(Charsets.UTF_8))
-      .joinToString("") { "%02x".format(it.toInt() and 255) }
+  @ReactMethod fun installationId(promise: Promise) = guarded(promise) { installationValue() }
+  @ReactMethod fun readCredential(name: String, promise: Promise) = guarded(promise) {
+    check(name == "gemini-api-key" || name == "managed-access-code")
+    read(name)
   }
-  @ReactMethod fun readCredential(name: String, promise: Promise) = guarded(promise) { read(name) }
   @ReactMethod fun writeCredential(name: String, value: String, promise: Promise) = guarded(promise) {
-    val plain = value.toByteArray(Charsets.UTF_8)
-    check(plain.isNotEmpty() && plain.size <= maxBytes - 28)
-    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-    cipher.init(Cipher.ENCRYPT_MODE, key(true))
-    val bytes = cipher.iv + cipher.doFinal(plain)
-    val file = slot(name)
-    val output = file.startWrite()
-    try { output.write(bytes); file.finishWrite(output) }
-    catch (error: Exception) { file.failWrite(output); throw error }
-    check(read(name) == value)
+    check(name == "gemini-api-key" || name == "managed-access-code")
+    check(value.isNotBlank() && value.toByteArray(Charsets.UTF_8).size <= maxCredentialBytes)
+    writeProtected(name, value)
     true
   }
+  @ReactMethod fun writeReferencedCredential(name: String, value: String, promise: Promise) = guarded(promise) {
+    check(name == "gemini-api-key" || name == "managed-access-code")
+    check(value.isNotBlank() && value.toByteArray(Charsets.UTF_8).size <= maxCredentialBytes)
+    writeProtected(name, value)
+  }
   @ReactMethod fun removeCredential(name: String, promise: Promise) = guarded(promise) {
+    check(name == "gemini-api-key" || name == "managed-access-code")
     slot(name).delete()
     check(read(name) == null)
     true
