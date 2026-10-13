@@ -4,7 +4,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useOrientationLockApplies } from '../platform/deviceOrientation';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { OrientationChoice } from '../settings/orientation';
-import { TOOL_DRAWER_COPY } from '../settings/drawingTools';
+import { TOOL_DRAWER_COPY } from '../settings/toolDrawerSection';
 import { RsdOrientationPicker } from './RsdOrientationPicker';
 import type { HubToggle } from './RsdHubRow';
 import { RsdIcon } from './RsdIcon';

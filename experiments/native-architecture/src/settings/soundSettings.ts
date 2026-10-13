@@ -3,7 +3,8 @@ import {
   type DrawingControlPreferences,
 } from './drawingControlPreferences';
 import { DEFAULT_COLORING_BOOK_ENABLED } from './coloringBook';
-import { DEFAULT_SOUND_LEVEL, isSoundLevel, type SoundLevel } from './soundLevel';
+import { isSoundVolume } from './soundVolume';
+import { DEFAULT_TOOLBAR_STYLE, isToolbarStyle, type ToolbarStyle } from './toolbarStyle';
 import {
   DEFAULT_APPEARANCE,
   isAppearancePreference,
@@ -18,11 +19,13 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
+import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
 import {
   isParentPolicies,
+  arePoliciesAvailable,
   PROTECTED_PARENT_POLICIES,
   type ParentPreferences,
 } from '../parentCenter/parentPolicy';
@@ -32,6 +35,7 @@ import { WHATS_NEW_STAMP } from './whatsNew';
 import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
 import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
+  DEFAULT_SOUND_SOURCE_SETTINGS,
   DEFAULT_WIDTH_SETTINGS,
   parseSoundSettings,
   snapshot,
@@ -39,6 +43,7 @@ import {
   type SoundSettings,
   type SoundSettingsState,
   type SoundSettingsStorage,
+  type SoundSourceSettings,
 } from './soundSettingsCodec';
 export {
   MAX_SETTINGS_BYTES,
@@ -55,12 +60,13 @@ export function initialSoundSettingsState(): SoundSettingsState {
     status: 'loading',
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: false,
-    soundLevel: DEFAULT_SOUND_LEVEL,
+    ...DEFAULT_SOUND_SOURCE_SETTINGS,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
+    toolbarStyle: DEFAULT_TOOLBAR_STYLE,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
@@ -71,15 +77,16 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 12,
+    version: 14,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
-    soundLevel: DEFAULT_SOUND_LEVEL,
+    ...DEFAULT_SOUND_SOURCE_SETTINGS,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
+    toolbarStyle: DEFAULT_TOOLBAR_STYLE,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
@@ -92,13 +99,14 @@ function unreadSoundSettingsState(): SoundSettingsState {
     status: 'ready',
     coloringBookEnabled: false,
     soundEnabled: false,
-    soundLevel: DEFAULT_SOUND_LEVEL,
+    ...DEFAULT_SOUND_SOURCE_SETTINGS,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     aiEnabled: false,
     parentPolicies: PROTECTED_PARENT_POLICIES,
     appearance: DEFAULT_APPEARANCE,
+    toolbarStyle: DEFAULT_TOOLBAR_STYLE,
     orientation: defaultOrientation(),
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
@@ -197,35 +205,39 @@ function createMetadataActions({
   };
 }
 
-function createAccessibilityActions({
+// One validated choice: dropped while settings load or save, kept for the session alone after a
+// failed read, and written otherwise.
+function createChoiceSetter({
   getState,
   isDisposed,
   hasReadFailed,
   publish,
   persist,
 }: PreferenceActionContext) {
+  return async function choose(choice: Partial<Choices>, valid: boolean, invalid: string) {
+    const state = getState();
+    if (isDisposed() || state.status !== 'ready') return;
+    if (!valid) throw new Error(invalid);
+    if (hasReadFailed()) {
+      publish({ ...state, ...choice });
+      return;
+    }
+    await persist({ ...snapshot(state), ...choice });
+  };
+}
+
+type Choose = ReturnType<typeof createChoiceSetter>;
+
+function createAccessibilityActions(choose: Choose) {
   return {
-    async setButtonScale(buttonScale: number) {
-      const state = getState();
-      if (isDisposed() || state.status !== 'ready') return;
-      if (!isButtonScale(buttonScale)) throw new Error('Button Size choice is invalid.');
-      if (hasReadFailed()) {
-        publish({ ...state, buttonScale });
-        return;
-      }
-      await persist({ ...snapshot(state), buttonScale });
-    },
-    async setReduceMotion(reduceMotion: ReduceMotionPreference) {
-      const state = getState();
-      if (isDisposed() || state.status !== 'ready') return;
-      if (!isReduceMotionPreference(reduceMotion))
-        throw new Error('Reduce Motion choice is invalid.');
-      if (hasReadFailed()) {
-        publish({ ...state, reduceMotion });
-        return;
-      }
-      await persist({ ...snapshot(state), reduceMotion });
-    },
+    setButtonScale: (buttonScale: number) =>
+      choose({ buttonScale }, isButtonScale(buttonScale), 'Button Size choice is invalid.'),
+    setReduceMotion: (reduceMotion: ReduceMotionPreference) =>
+      choose(
+        { reduceMotion },
+        isReduceMotionPreference(reduceMotion),
+        'Reduce Motion choice is invalid.'
+      ),
   };
 }
 
@@ -252,16 +264,6 @@ function createDrawingPreferenceActions({
       setControl('strokeWidthControlEnabled', enabled),
     setToolDrawerEnabled: (enabled: boolean) => setControl('toolDrawerEnabled', enabled),
     setScreenshotEnabled: (enabled: boolean) => setControl('screenshotEnabled', enabled),
-    async setSoundLevel(soundLevel: SoundLevel) {
-      const state = getState();
-      if (isDisposed() || state.status !== 'ready') return;
-      if (!isSoundLevel(soundLevel)) throw new Error('Sound level is invalid.');
-      if (hasReadFailed()) {
-        publish({ ...state, soundLevel });
-        return;
-      }
-      await persist({ ...snapshot(state), soundLevel });
-    },
     async setColoringBookEnabled(coloringBookEnabled: boolean) {
       const state = getState();
       if (isDisposed() || state.status !== 'ready') return;
@@ -348,38 +350,53 @@ function createDrawingPreferenceActions({
   };
 }
 
-function createPencilActions({
-  getState,
-  isDisposed,
-  hasReadFailed,
-  publish,
-  persist,
-}: PreferenceActionContext) {
+function createSoundActions(choose: Choose) {
+  const source = (choice: Partial<SoundSourceSettings>, enabled: boolean) =>
+    choose(choice, typeof enabled === 'boolean', 'Sound source choice is invalid.');
   return {
-    async setPencilEraserEnabled(pencilEraserEnabled: boolean) {
-      const state = getState();
-      if (isDisposed() || state.status !== 'ready') return;
-      if (typeof pencilEraserEnabled !== 'boolean')
-        throw new Error('Apple Pencil choice is invalid.');
-      if (hasReadFailed()) {
-        publish({ ...state, pencilEraserEnabled });
-        return;
-      }
-      await persist({ ...snapshot(state), pencilEraserEnabled });
-    },
+    setSoundVolume: (soundVolume: number) =>
+      choose({ soundVolume }, isSoundVolume(soundVolume), 'Volume is invalid.'),
+    setDrawingSoundEnabled: (drawingSoundEnabled: boolean) =>
+      source({ drawingSoundEnabled }, drawingSoundEnabled),
+    setDeleteSoundEnabled: (deleteSoundEnabled: boolean) =>
+      source({ deleteSoundEnabled }, deleteSoundEnabled),
+  };
+}
+
+function createPencilActions(choose: Choose) {
+  return {
+    setPencilEraserEnabled: (pencilEraserEnabled: boolean) =>
+      choose(
+        { pencilEraserEnabled },
+        typeof pencilEraserEnabled === 'boolean',
+        'Apple Pencil choice is invalid.'
+      ),
   };
 }
 
 function createPreferenceActions(context: PreferenceActionContext) {
+  const choose = createChoiceSetter(context);
   return {
     ...createDrawingPreferenceActions(context),
-    ...createPencilActions(context),
-    ...createAccessibilityActions(context),
+    ...createSoundActions(choose),
+    ...createPencilActions(choose),
+    ...createAccessibilityActions(choose),
+    setToolbarStyle: (toolbarStyle: ToolbarStyle) =>
+      choose({ toolbarStyle }, isToolbarStyle(toolbarStyle), 'Button style choice is invalid.'),
   };
 }
 
 const PARENT_SAVE_FAILED_MESSAGE =
   'Parent Center choices were not saved. Previous protection is still active. Retry saving.';
+
+// A Parent Center choice the platform's store rules forbid never reaches storage.
+function isSavableParentPreferences(choices: ParentPreferences) {
+  return (
+    typeof choices.aiEnabled === 'boolean' &&
+    isParentPolicies(choices.parentPolicies) &&
+    arePoliciesAvailable(choices.parentPolicies, PARENT_PLATFORM)
+  );
+}
 
 export function createSoundSettings(
   storage: SoundSettingsStorage,
@@ -419,7 +436,8 @@ export function createSoundSettings(
     const { version: _version, ...choices } = previous;
     publish({ status: 'saving', ...choices, message: 'Saving Parent Center choices…' });
     try {
-      await storage.write(JSON.stringify(settings));
+      // Through snapshot, so the policies land in their saved order however the caller built them.
+      await storage.write(JSON.stringify(snapshot(settings)));
       const { version: _nextVersion, ...next } = settings;
       pendingParent = null;
       publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });
@@ -469,8 +487,7 @@ export function createSoundSettings(
     },
     async setParentPreferences(choices: ParentPreferences) {
       if (disposed || state.status !== 'ready' || readFailed) return;
-      if (typeof choices.aiEnabled !== 'boolean' || !isParentPolicies(choices.parentPolicies))
-        throw new Error('Parent Center choice is invalid.');
+      if (!isSavableParentPreferences(choices)) throw new Error('Parent Center choice is invalid.');
       await persistParent({ ...snapshot(state), ...choices });
     },
     async retryParentSave() {

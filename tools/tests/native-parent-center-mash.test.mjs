@@ -24,7 +24,13 @@ function unlockRate(interval, guided, brokenAutoSubmit = false) {
     let clock = 1000;
     let solved = false;
     const gate = createParentGate(
-      () => ({ ai: 'always', imageReport: 'always', feedback: 'always', parentCenter: 'always' }),
+      () => ({
+        ai: 'always',
+        imageReport: 'always',
+        externalLinks: 'always',
+        feedback: 'always',
+        parentCenter: 'always',
+      }),
       () => {},
       () => clock,
       random

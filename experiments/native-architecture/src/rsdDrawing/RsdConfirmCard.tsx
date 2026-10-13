@@ -1,5 +1,6 @@
-import type { ReactElement } from 'react';
+import { useContext, type ReactElement } from 'react';
 import { css, html } from 'react-strict-dom';
+import { DialogScope } from './dialogScope';
 import { colors, dimensions, fonts } from './tokens.css';
 import { styles as controlStyles } from './controls';
 
@@ -19,10 +20,12 @@ const styles = css.create({
     flexDirection: 'column',
     width: '100%',
     maxWidth: CONFIRM_CARD_MAX_WIDTH_PX,
+    gap: dimensions.space4,
+  },
+  padded: {
     paddingTop: dimensions.space6,
     paddingInline: dimensions.space6,
     paddingBottom: dimensions.space5,
-    gap: dimensions.space4,
   },
   heading: { display: 'flex', flexDirection: 'column', gap: CONFIRM_HEADING_GAP_PX },
   title: {
@@ -51,8 +54,9 @@ const styles = css.create({
 });
 
 // The shipping two-choice confirm card's content: a title and its consequence, then two actions
-// side by side. The caller supplies the actions, the safe choice first so a stray press stays,
-// and the dialog that hosts the card names itself from the same title.
+// side by side. The caller supplies the actions, the safe choice first so a stray press stays.
+// Hosted in a ModalShell, the card names the dialog by its title and lets the confirm frame,
+// which carries the same padding, pad it.
 export function RsdConfirmCard({
   title,
   copy,
@@ -62,10 +66,13 @@ export function RsdConfirmCard({
   copy: string;
   actions: readonly [ReactElement, ReactElement];
 }) {
+  const dialog = useContext(DialogScope);
   return (
-    <html.div style={styles.card}>
+    <html.div style={[styles.card, !dialog && styles.padded]}>
       <html.div style={styles.heading}>
-        <html.h2 style={[controlStyles.boldText, styles.title]}>{title}</html.h2>
+        <html.h2 id={dialog?.titleId} style={[controlStyles.boldText, styles.title]}>
+          {title}
+        </html.h2>
         <html.p style={styles.copy}>{copy}</html.p>
       </html.div>
       <html.div style={styles.actions}>

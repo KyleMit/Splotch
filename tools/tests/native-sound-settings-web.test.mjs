@@ -5,6 +5,10 @@ vi.mock(
   '../../experiments/native-architecture/src/platform/parentDefaults.ts',
   () => import('../../experiments/native-architecture/src/platform/parentDefaults.web.ts')
 );
+vi.mock(
+  '../../experiments/native-architecture/src/platform/parentPlatform.ts',
+  () => import('../../experiments/native-architecture/src/platform/parentPlatform.web.ts')
+);
 let storage;
 beforeEach(() => {
   const values = new Map();
@@ -23,7 +27,7 @@ describe('web sound settings persistence', () => {
     await owner.setEnabled(false);
     expect(storage.setItem).toHaveBeenCalledWith(
       'splotch-candidate:sound-v1',
-      '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","imageReport":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolDrawerEnabled":true,"screenshotEnabled":true}'
+      '{"version":14,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","imageReport":"never","externalLinks":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons","toolDrawerEnabled":true,"screenshotEnabled":true}'
     );
     const reopened = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
     await reopened.load();
@@ -54,6 +58,7 @@ describe('web sound settings persistence', () => {
       parentPolicies: {
         ai: 'never',
         imageReport: 'always',
+        externalLinks: 'never',
         feedback: 'session',
         parentCenter: 'never',
       },

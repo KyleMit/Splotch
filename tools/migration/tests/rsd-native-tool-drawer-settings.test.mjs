@@ -9,14 +9,14 @@ import {
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { TOOL_DRAWER_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToolDrawerSection.tsx';
 import {
   DRAWING_TOOLS,
   TOOL_DRAWER_COPY,
   TWO_COLUMN_CHIP_WIDTH_PX,
-} from '../../../experiments/native-architecture/src/settings/drawingTools.ts';
+} from '../../../experiments/native-architecture/src/settings/toolDrawerSection.ts';
 import {
   CAMERA_BUTTON_HELP,
   CAMERA_BUTTON_LABEL,
@@ -24,7 +24,7 @@ import {
 import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from '../../../experiments/native-architecture/src/settings/drawingControlPreferences.ts';
 import { SECTION_SUBTITLES } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
 import { PENCIL_ERASER_LABEL } from '../../../experiments/native-architecture/src/settings/pencilEraser.ts';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
@@ -98,47 +98,11 @@ describe('the shipping Tool Drawer and Saving sources', () => {
   });
 });
 
-const CURRENT_SETTINGS = {
-  version: 12,
-  soundEnabled: false,
-  strokeWidth: 'medium',
-  eraserWidth: 'medium',
-  selectedColor: 'Purple',
-  customColors: [],
-  appearance: 'light',
-  aiEnabled: false,
-  parentPolicies: {
-    ai: 'always',
-    imageReport: 'always',
-    feedback: 'always',
-    parentCenter: 'always',
-  },
-  coloringBookEnabled: true,
-  soundLevel: 'medium',
-  undoButtonEnabled: true,
-  strokeWidthControlEnabled: true,
-  orientation: 'portrait',
-  saveOnDeleteEnabled: false,
-  buttonScale: 100,
-  reduceMotion: 'system',
-  whatsNewSeen: WHATS_NEW_STAMP,
-  pencilEraserEnabled: true,
-  applePencilSeen: false,
-  toolDrawerEnabled: true,
-  screenshotEnabled: true,
-};
-
 async function drawingScreen(overrides = {}) {
   caller.realScreen = true;
-  let stored = JSON.stringify({ ...CURRENT_SETTINGS, ...overrides });
-  caller.settingsStorage = {
-    read: async () => stored,
-    write: vi.fn(async (next) => {
-      stored = next;
-    }),
-  };
+  const settings = storedSettings(overrides);
   await mount(createElement(RsdDrawingScreen));
-  return () => JSON.parse(stored);
+  return settings.stored;
 }
 
 const named = (label) => host.querySelector(`[aria-label="${label}"]`);

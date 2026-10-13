@@ -5,7 +5,7 @@ import { Text, TextInput } from '../drawing/Text';
 import { Action } from '../DrawingControls';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { PARENT_LABELS } from './parentPolicy';
+import { PARENT_LABELS } from './parentCenterCopy';
 import type { ParentGateState } from './parentGate';
 import { useParentGateMotion } from './useParentGateMotion';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';

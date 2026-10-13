@@ -21,7 +21,6 @@ import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react
 import { Text } from '../drawing/Text';
 import { SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 import type { SoundSettingsState } from './soundSettings';
-import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from './soundLevel';
 
 const SETTINGS_MAX_WIDTH = 480;
 
@@ -34,7 +33,6 @@ type SoundSettingsProps = {
   onChange: (enabled: boolean) => void;
   onUndoButtonChange: (enabled: boolean) => void;
   onStrokeWidthControlChange: (enabled: boolean) => void;
-  onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onColoringBookChange: (enabled: boolean) => void;
   onRetrySave: () => void;
@@ -53,7 +51,6 @@ export function SoundSettings({
   onChange,
   onUndoButtonChange,
   onStrokeWidthControlChange,
-  onSoundLevelChange,
   onAppearanceChange,
   onColoringBookChange,
   onRetrySave,
@@ -125,7 +122,6 @@ export function SoundSettings({
                       onStrokeWidthControlChange,
                       onAppearanceChange,
                       onChange,
-                      onSoundLevelChange,
                     }}
                   />
                   {state.status === 'loading' ? (
@@ -175,7 +171,6 @@ function SettingsChoices({
   onStrokeWidthControlChange,
   onAppearanceChange,
   onChange,
-  onSoundLevelChange,
 }: Pick<
   SoundSettingsProps,
   | 'state'
@@ -187,7 +182,6 @@ function SettingsChoices({
   | 'onStrokeWidthControlChange'
   | 'onAppearanceChange'
   | 'onChange'
-  | 'onSoundLevelChange'
 > & { busy: boolean }) {
   return (
     <>
@@ -210,7 +204,6 @@ function SettingsChoices({
       />
       <AppearanceChoices selected={state.appearance} busy={busy} onChange={onAppearanceChange} />
       <SoundChoice enabled={state.soundEnabled} busy={busy} onChange={onChange} />
-      <SoundLevelChoices selected={state.soundLevel} busy={busy} onChange={onSoundLevelChange} />
     </>
   );
 }
@@ -289,46 +282,6 @@ function AppearanceChoices({
         ))}
       </View>
       <Text style={styles.help}>System follows your device.</Text>
-    </>
-  );
-}
-
-function SoundLevelChoices({
-  selected,
-  busy,
-  onChange,
-}: {
-  selected: SoundLevel;
-  busy: boolean;
-  onChange: SoundSettingsProps['onSoundLevelChange'];
-}) {
-  const styles = useDrawingStyles(themedStyles);
-  return (
-    <>
-      <Text style={styles.labelText}>Drawing sound level</Text>
-      <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel="Drawing sound level"
-        style={styles.appearanceRow}
-      >
-        {SOUND_LEVELS.map((level) => (
-          <Pressable
-            key={level}
-            accessibilityRole="radio"
-            accessibilityLabel={`${SOUND_LEVEL_LABELS[level]} drawing sound`}
-            accessibilityState={{ checked: selected === level, disabled: busy }}
-            aria-checked={selected === level}
-            disabled={busy}
-            onPress={() => onChange(level)}
-            style={styles.button}
-          >
-            <Text style={styles.labelText}>
-              {SOUND_LEVEL_LABELS[level]}
-              {selected === level ? ' ✓' : ''}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
     </>
   );
 }

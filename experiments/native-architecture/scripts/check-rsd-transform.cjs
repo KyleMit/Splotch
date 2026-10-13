@@ -88,15 +88,7 @@ const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
 const settingsDialog = parse('src/rsdDrawing/RsdSettingsDialog.tsx');
-const orientationChoices = parse('src/rsdDrawing/RsdOrientationChoices.tsx');
-for (const component of [
-  drawing,
-  edgeControls,
-  actionsPanel,
-  coloringPicker,
-  settingsDialog,
-  orientationChoices,
-])
+for (const component of [drawing, edgeControls, actionsPanel, coloringPicker, settingsDialog])
   babel.traverse(component, {
     JSXOpeningElement(path) {
       const node = path.node;
@@ -132,47 +124,11 @@ for (const component of [
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 4, 'RSD radio group count');
-assert.deepEqual(
-  groups.map(literal).filter(Boolean).sort(),
-  ['Appearance', 'Drawing sound level', 'Orientation', 'Paint colors'],
-  'RSD radio group names'
-);
-assert.equal(radios, 4, 'RSD selection callers');
-const settingsValue = (expression, property) =>
-  expression?.type === 'MemberExpression' &&
-  !expression.computed &&
-  expression.object.type === 'Identifier' &&
-  expression.object.name === 'settings' &&
-  expression.property.type === 'Identifier' &&
-  expression.property.name === property;
-const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
-// The Tool Drawer, Saving and Coloring switches are toggle rows in their own section modules;
-// the Sound switch is the one selected action left in the dialog.
-assert.ok(
-  switches.every((node) => settingsValue(selectedValue(node), 'soundEnabled')),
-  'RSD switch state owner'
-);
-assert.equal(switches.length, 1, 'RSD switch state callers');
-function switchCallback(property, enabledLabel, disabledLabel) {
-  const node = switches.find((item) => settingsValue(selectedValue(item), property));
-  const label = attribute(node, 'label')?.value?.expression;
-  assert.ok(
-    label?.type === 'ConditionalExpression' &&
-      settingsValue(label.test, property) &&
-      label.consequent.type === 'StringLiteral' &&
-      label.consequent.value === enabledLabel &&
-      label.alternate.type === 'StringLiteral' &&
-      label.alternate.value === disabledLabel,
-    'RSD ' + property + ' switch labels'
-  );
-  return attribute(node, 'onClick')?.value?.expression;
-}
-const soundToggle = switchCallback('soundEnabled', 'Drawing sound on', 'Drawing sound off');
-assert.ok(
-  soundToggle?.type === 'Identifier' && soundToggle.name === 'onToggle',
-  'RSD sound switch callback'
-);
+assert.equal(groups.length, 1, 'RSD radio group count');
+assert.deepEqual(groups.map(literal), ['Paint colors'], 'RSD radio group names');
+assert.equal(radios, 1, 'RSD selection callers');
+// Every Settings switch is a toggle row in its own section module; none is a selected action.
+assert.equal(switches.length, 0, 'RSD switch state callers');
 const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
   parse,
   babel,
@@ -206,7 +162,11 @@ const files = [
   'src/product/useDrawingUndoShortcut.ts',
   'src/product/useProductModalRoute.ts',
   'src/parentCenter/parentPolicy.ts',
-  'src/settings/soundLevel.ts',
+  'src/settings/soundVolume.ts',
+  'src/settings/toolbarStyle.ts',
+  'src/rsdDrawing/RsdAppearanceSection.tsx',
+  'src/rsdDrawing/RsdSoundSection.tsx',
+  'src/rsdDrawing/RsdAccessibilitySection.tsx',
   'src/settings/soundSettings.ts',
   'src/settings/soundSettingsCodec.ts',
   'src/settings/drawingControlPreferences.ts',
@@ -294,7 +254,6 @@ const files = [
   'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdSettingsRoute.tsx',
-  'src/rsdDrawing/RsdOrientationChoices.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
   'src/useDrawingMenu.ts',
   'src/drawing/brushes.ts',

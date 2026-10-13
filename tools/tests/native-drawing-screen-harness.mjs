@@ -470,6 +470,7 @@ export const UNTOUCHED_SETTINGS = {
   whatsNewSeen: null,
   pencilEraserEnabled: true,
   applePencilSeen: false,
+  toolbarStyle: 'buttons',
 };
 
 export { files };

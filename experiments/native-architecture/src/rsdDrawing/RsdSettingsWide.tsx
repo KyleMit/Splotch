@@ -66,6 +66,7 @@ const styles = css.create({
   bottom: { bottom: 0 },
   fade: (backgroundImage: string) => ({ backgroundImage }),
   hidden: { opacity: 0 },
+  seeThroughHidden: { visibility: 'hidden' },
   title: {
     marginTop: 0,
     marginLeft: 0,
@@ -101,11 +102,13 @@ function useHeights() {
 function SettingsToc({
   sections,
   spied,
+  hidden,
   unseen,
   onSelect,
 }: {
   sections: readonly NativeSettingsSection[];
   spied: NativeSettingsSectionId;
+  hidden: boolean;
   unseen: (id: NativeSettingsSectionId) => boolean;
   onSelect: (id: NativeSettingsSectionId) => void;
 }) {
@@ -128,7 +131,7 @@ function SettingsToc({
     if (target !== null) nav.current?.scrollTo({ y: target, animated: !reduced });
   }, [spied, sections, rows.heights, reduced]);
   return (
-    <html.div style={styles.nav}>
+    <html.div style={[styles.nav, hidden && styles.seeThroughHidden]}>
       <ScrollView
         ref={nav}
         scrollEventThrottle={NAV_REPORT_INTERVAL_MS}
@@ -178,23 +181,72 @@ function SettingsToc({
   );
 }
 
+// One section of the pane under its heading. While the dialog is see-through, the headings hide
+// and only the kept section's body stays, for its cards to decide what shows.
+function PaneSection({
+  id,
+  headingId,
+  following,
+  keptSection,
+  onLayout,
+  children,
+}: {
+  id: NativeSettingsSectionId;
+  headingId: string;
+  following: boolean;
+  keptSection: NativeSettingsSectionId | null;
+  onLayout: (event: LayoutChangeEvent) => void;
+  children: ReactNode;
+}) {
+  const seeThrough = keptSection !== null;
+  return (
+    <View style={following ? FOLLOWING_SECTION : undefined} onLayout={onLayout}>
+      <html.section
+        data-section={id}
+        aria-labelledby={headingId}
+        style={seeThrough && keptSection !== id && styles.seeThroughHidden}
+      >
+        <html.h3
+          id={headingId}
+          style={[controlStyles.semiboldText, styles.title, seeThrough && styles.seeThroughHidden]}
+        >
+          {sectionHeading(id)}
+        </html.h3>
+        <html.div style={controlStyles.dialogContent}>{children}</html.div>
+      </html.section>
+    </View>
+  );
+}
+
 // The shipping tablet Settings (WideShell.svelte): a table of contents beside one continuously
 // scrolling pane that stacks every section. The table of contents marks where the reading
 // position is rather than a page, and a row jumps the pane to its section. Feedback opens its own
 // sheet from its row, as from the phone hub, so it holds no place in the pane.
 export function RsdSettingsWide({
   sections,
+  keptSection,
   unseen,
   renderSection,
   onSeen,
   onFeedback,
+  locked,
+  onUnlock,
+  landing,
   children,
 }: {
   sections: readonly NativeSettingsSection[];
+  keptSection: NativeSettingsSectionId | null;
   unseen: (id: NativeSettingsSectionId) => boolean;
   renderSection: (id: NativeSettingsSectionId) => ReactNode;
   onSeen: (id: NativeSettingsSectionId) => void;
   onFeedback: () => void;
+  // The section whose controls wait behind a grown-up check (Parent Center until it is solved): a
+  // row naming it asks for the check, and the jump lands once the check is passed.
+  locked: NativeSettingsSectionId | null;
+  onUnlock: () => void;
+  // The section an open asked to land on (shipping's landingSection): the pane goes straight there
+  // once its sections have measured, and lands once per request.
+  landing: NativeSettingsSectionId | null;
   children: ReactNode;
 }) {
   const reduced = useReduceMotion();
@@ -215,7 +267,24 @@ export function RsdSettingsWide({
       WIDE_SHELL.sectionGap
     );
 
+  const landed = useRef<NativeSettingsSectionId | null>(null);
+  const lockedJump = useRef<NativeSettingsSectionId | null>(null);
+  const land = () => {
+    const stacked = offsets();
+    const at = paneIds.findIndex((id) => id === landing);
+    if (landing === null || landed.current === landing || !stacked || at === -1) return;
+    landed.current = landing;
+    if (lockedJump.current === landing) return;
+    jumpTarget.current = null;
+    onSeen(landing);
+    pane.current?.scrollTo({
+      y: sectionJumpOffset(stacked[at]),
+      animated: false,
+    });
+  };
+
   const elect = () => {
+    land();
     const stacked = offsets();
     if (!stacked) return;
     const next = spiedSectionAt(paneIds, stacked, paneExtent.current);
@@ -228,6 +297,11 @@ export function RsdSettingsWide({
   };
 
   const jump = (id: NativeSettingsSectionId) => {
+    if (id === locked) {
+      lockedJump.current = id;
+      onUnlock();
+      return;
+    }
     const stacked = offsets();
     if (id === 'feedback') onFeedback();
     if (id === 'feedback' || !stacked) return;
@@ -239,9 +313,19 @@ export function RsdSettingsWide({
     });
   };
 
+  useEffect(() => {
+    if (landing === null) landed.current = null;
+    const pending = lockedJump.current;
+    if (pending !== null && pending !== locked) {
+      lockedJump.current = null;
+      jump(pending);
+    }
+    land();
+  });
+
   return (
     <html.div style={styles.split}>
-      <SettingsToc sections={sections} spied={spied} unseen={unseen} onSelect={jump} />
+      <SettingsToc {...{ sections, spied, unseen }} hidden={keptSection !== null} onSelect={jump} />
       <RsdScrollCue
         inset={WIDE_SHELL.pane}
         scrollRef={pane}
@@ -256,18 +340,16 @@ export function RsdSettingsWide({
         }}
       >
         {paneIds.map((id, index) => (
-          <View
+          <PaneSection
             key={id}
-            style={index > 0 ? FOLLOWING_SECTION : undefined}
+            id={id}
+            headingId={`${headingId}-${id}`}
+            following={index > 0}
+            keptSection={keptSection}
             onLayout={sectionHeights.measure(index, elect)}
           >
-            <html.section data-section={id} aria-labelledby={`${headingId}-${id}`}>
-              <html.h3 id={`${headingId}-${id}`} style={[controlStyles.semiboldText, styles.title]}>
-                {sectionHeading(id)}
-              </html.h3>
-              <html.div style={controlStyles.dialogContent}>{renderSection(id)}</html.div>
-            </html.section>
-          </View>
+            {renderSection(id)}
+          </PaneSection>
         ))}
         {children}
       </RsdScrollCue>

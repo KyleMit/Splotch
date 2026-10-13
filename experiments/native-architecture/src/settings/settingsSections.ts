@@ -1,8 +1,6 @@
 import type { SoundSettingsState } from './soundSettingsCodec';
 import type { BrushPreferencesState } from './brushPreferences';
-import { hiddenDrawingToolCount, TOOL_DRAWER_COPY } from './drawingTools';
-import type { SoundLevel } from './soundLevel';
-import { soundLevelGain } from '../audio/drawingAudio';
+import { hiddenDrawingToolCount, TOOL_DRAWER_COPY } from './toolDrawerSection';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { AiState } from '../ai/sessionContract';
 import { SPLOTCHY_ICON_NAME } from '../rsdDrawing/icons.generated';
@@ -49,6 +47,7 @@ export const SECTION_SUBTITLES = {
   allToolsShowing: 'Pen, crayon, magic brush & more',
   toolDrawerOff: TOOL_DRAWER_COPY.off,
   muted: 'Muted',
+  noSoundSources: 'No sources',
   coloringOff: 'Coloring books off',
   accessibility: 'Make it easier to see and tap',
   aiOff: 'Turned off',
@@ -63,20 +62,25 @@ export const SECTION_SUBTITLES = {
   saveOnDeleteOff: 'Auto-save off',
 } as const;
 
-// Shipping's Volume slider scales the drawing sound by soundVolume / SOUND_VOLUME_DEFAULT
-// (drawingSound.ts), so a native level reads as the shipping percentage with the same gain.
-export const SHIPPING_SOUND_VOLUME_DEFAULT = 50;
-
-function soundLevelVolume(level: SoundLevel) {
-  return soundLevelGain(level) * SHIPPING_SOUND_VOLUME_DEFAULT;
-}
-
 export type SectionSummaryContext = {
   settings: SoundSettingsState;
   brushes: BrushPreferencesState;
   downloadedBooks: number;
   ai: Pick<AiState, 'credential' | 'remaining'> | null;
 };
+
+function soundSubtitle({
+  soundEnabled,
+  soundVolume,
+  drawingSoundEnabled,
+  deleteSoundEnabled,
+}: SoundSettingsState) {
+  if (!soundEnabled) return SECTION_SUBTITLES.muted;
+  if (!drawingSoundEnabled && !deleteSoundEnabled) return SECTION_SUBTITLES.noSoundSources;
+  const volume = `Volume ${soundVolume}%`;
+  if (drawingSoundEnabled && deleteSoundEnabled) return volume;
+  return `${volume} · ${drawingSoundEnabled ? 'drawing' : 'deleting'} only`;
+}
 
 function plural(count: number, one: string, many: string) {
   return `${count} ${count === 1 ? one : many}`;
@@ -101,9 +105,7 @@ export function sectionSubtitle(id: NativeSettingsSectionId, context: SectionSum
         ? SECTION_SUBTITLES.nightMode
         : `${SECTION_SUBTITLES.nightMode} · ${settings.orientation} lock`;
     case 'sound':
-      return settings.soundEnabled
-        ? `Volume ${soundLevelVolume(settings.soundLevel)}%`
-        : SECTION_SUBTITLES.muted;
+      return soundSubtitle(settings);
     case 'controls': {
       // The drawer's own switch hides every tool the row would count, so with it off the row
       // names the switch, as Coloring's does.

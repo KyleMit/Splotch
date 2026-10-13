@@ -13,7 +13,7 @@ import {
   isDrawingToolOn,
   type DrawingTool,
   type DrawingToolId,
-} from '../settings/drawingTools';
+} from '../settings/toolDrawerSection';
 import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
 import { RsdButton } from './RsdButton';
 import { RsdRuleLabel } from './RsdRuleLabel';

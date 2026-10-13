@@ -53,7 +53,7 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
     optionalBrushSwitches: 3,
     optionalBrushLabels: ['Crayon', 'Magic Brush', 'Eraser'],
     adaptiveToolbarSwitch: true,
-    preservedSettingsSwitches: 1,
+    preservedSettingsSwitches: 0,
   });
 });
 it.each([
@@ -114,10 +114,13 @@ it('rejects a comment marker instead of actual canonical registration', () => {
   expect(result.stderr).toContain('Canonical registration');
 });
 
+// Settings switches are section toggle rows; a selected action switch returning to the dialog fails.
 it.each([
-  ['selected={settings.soundEnabled}', 'selected={settings.saved}', 'RSD switch state owner'],
-  ['onClick={onToggle}', 'onClick={onClose}', 'RSD sound switch callback'],
-  ["'Drawing sound on'", "'Drawing sound off'", 'RSD soundEnabled switch labels'],
+  [
+    '<RsdAction label="Help and about" onClick={props.onHelp} />',
+    '<RsdAction label="Help and about" selection="switch" selected={settings.saveOnDeleteEnabled} onClick={props.onHelp} />',
+    'RSD switch state callers',
+  ],
 ])('rejects the actual Settings switch mutation for %s', (before, after, reason) => {
   const path = fixture();
   const target = join(path, 'src/rsdDrawing/RsdSettingsDialog.tsx');

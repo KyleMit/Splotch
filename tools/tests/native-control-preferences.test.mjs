@@ -21,13 +21,16 @@ const CURRENT = {
   },
   coloringBookEnabled: false,
 };
+// Version 7 predates the external-links policy, which reads back at the native default.
+const MIGRATED_POLICIES = { ...CURRENT.parentPolicies, externalLinks: 'always' };
 const CONTROLS = [
   ['undoButtonEnabled', 'setUndoButtonEnabled'],
   ['strokeWidthControlEnabled', 'setStrokeWidthControlEnabled'],
   ['toolDrawerEnabled', 'setToolDrawerEnabled'],
   ['screenshotEnabled', 'setScreenshotEnabled'],
 ];
-// The last schema before the Tool Drawer switch and the Camera button were stored.
+// A record from before the Tool Drawer switch and the Camera button were stored, with the three-step
+// sound level version 13 replaced.
 const VERSION_11 = {
   ...CURRENT,
   version: 11,
@@ -42,6 +45,16 @@ const VERSION_11 = {
   pencilEraserEnabled: true,
   applePencilSeen: false,
 };
+const DRAWER_FIELDS = ['toolDrawerEnabled', 'screenshotEnabled'];
+// The version 13 record the current owner would have written, in its saved key order.
+async function version13Record() {
+  const f = fixture();
+  await f.owner.load();
+  await f.owner.setUndoButtonEnabled(false);
+  const current = JSON.parse(f.stored());
+  for (const field of DRAWER_FIELDS) delete current[field];
+  return { ...current, version: 13 };
+}
 function fixture(snapshot = JSON.stringify(CURRENT)) {
   let stored = snapshot;
   const changes = [];
@@ -56,23 +69,35 @@ function fixture(snapshot = JSON.stringify(CURRENT)) {
 }
 
 describe('parent drawing control preferences', () => {
-  it('migrates a version 11 snapshot to a shown drawer and camera, keeping its choices', () => {
-    expect(parseSoundSettings(JSON.stringify(VERSION_11))).toEqual({
-      ...VERSION_11,
-      version: 12,
+  it('migrates a version 13 record to a shown drawer and camera, keeping its choices', async () => {
+    const version13 = await version13Record();
+    expect(parseSoundSettings(JSON.stringify(version13))).toEqual({
+      ...version13,
+      version: 14,
       toolDrawerEnabled: true,
       screenshotEnabled: true,
     });
   });
-  it.each(['toolDrawerEnabled', 'screenshotEnabled'])(
-    'rejects %s in a version 11 snapshot and its absence from a version 12 one',
-    (field) => {
-      expect(() => parseSoundSettings(JSON.stringify({ ...VERSION_11, [field]: false }))).toThrow(
+  it('carries a version 11 record through every step to version 14', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_11))).toMatchObject({
+      version: 14,
+      undoButtonEnabled: false,
+      toolDrawerEnabled: true,
+      screenshotEnabled: true,
+      toolbarStyle: 'buttons',
+      parentPolicies: MIGRATED_POLICIES,
+    });
+  });
+  it.each(DRAWER_FIELDS)(
+    'rejects %s in a version 13 record and its absence from a version 14 one',
+    async (field) => {
+      const version13 = await version13Record();
+      expect(() => parseSoundSettings(JSON.stringify({ ...version13, [field]: false }))).toThrow(
         'not in the saved format'
       );
       const current = {
-        ...VERSION_11,
-        version: 12,
+        ...version13,
+        version: 14,
         toolDrawerEnabled: true,
         screenshotEnabled: true,
       };
@@ -96,7 +121,8 @@ describe('parent drawing control preferences', () => {
       const { version: _version, ...choices } = CURRENT;
       expect(f.changes.at(-1)).toMatchObject({
         ...choices,
-        soundLevel: mask & 1 ? 'loud' : 'medium',
+        parentPolicies: MIGRATED_POLICIES,
+        soundVolume: mask & 1 ? 100 : 50,
         undoButtonEnabled: !(mask & 2),
         strokeWidthControlEnabled: !(mask & 4),
         saved: true,
@@ -131,17 +157,21 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
-        version: 12,
+        parentPolicies: MIGRATED_POLICIES,
+        version: 14,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
         whatsNewSeen: null,
         pencilEraserEnabled: true,
         applePencilSeen: false,
+        toolbarStyle: 'buttons',
         toolDrawerEnabled: true,
         screenshotEnabled: true,
         orientation: 'portrait',
-        soundLevel: 'medium',
+        soundVolume: 50,
+        drawingSoundEnabled: true,
+        deleteSoundEnabled: true,
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
         [field]: false,
@@ -153,7 +183,7 @@ describe('parent drawing control preferences', () => {
         saved: true,
         strokeWidth: 'thin',
         eraserWidth: 'thick',
-        parentPolicies: CURRENT.parentPolicies,
+        parentPolicies: MIGRATED_POLICIES,
       });
       await reopened.owner[method](true);
       expect(parseSoundSettings(reopened.stored())).toMatchObject({
@@ -179,7 +209,7 @@ describe('parent drawing control preferences', () => {
       const saving = f.owner[method](false);
       expect(f.changes.at(-1)).toMatchObject({ status: 'saving', [field]: false });
       await f.owner[method](true);
-      await f.owner.setSoundLevel('quiet');
+      await f.owner.setSoundVolume(25);
       expect(f.storage.write).toHaveBeenCalledOnce();
       f.owner.dispose();
       finish();
@@ -206,7 +236,7 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write).toHaveBeenCalledOnce();
       expect(parseSoundSettings(f.stored())).toMatchObject({
         [field]: false,
-        parentPolicies: CURRENT.parentPolicies,
+        parentPolicies: MIGRATED_POLICIES,
       });
     }
   );

@@ -249,6 +249,7 @@ export function RsdActionsPanel({
   area,
   viewport,
   open,
+  buttonScale,
   onToggle,
   slot,
 }: {
@@ -260,6 +261,8 @@ export function RsdActionsPanel({
   area: AreaSize;
   viewport: AreaSize;
   open: boolean;
+  // Button Size, live while its slider is dragged.
+  buttonScale: number;
   onToggle: () => void;
   slot: ReturnType<typeof useFlyoutSlot>;
 }) {
@@ -267,7 +270,7 @@ export function RsdActionsPanel({
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
   // Shipping's data-no-actions: with no control left to show, the chevron goes too.
   if (tools.length === 0) return null;
-  const scale = sound.settings.buttonScale / PERCENT;
+  const scale = buttonScale / PERCENT;
   const layout = actionPanelLayout({
     area,
     viewport,

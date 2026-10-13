@@ -122,13 +122,14 @@ it.each([
     const writes = (kind === 'paint' ? 1 : 2) + (recovery === 'Drawing sound' ? 1 : 0);
     expect(files.settingsWrite).toHaveBeenCalledTimes(writes);
     expect(JSON.parse(stored)).toEqual({
-      version: 12,
+      version: 14,
       ...UNTOUCHED_SETTINGS,
       coloringBookEnabled: true,
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
         imageReport: 'always',
+        externalLinks: 'always',
         feedback: 'always',
         parentCenter: 'always',
       },
@@ -138,7 +139,9 @@ it.each([
       eraserWidth: kind === 'paint' ? 'thin' : 'thick',
       selectedColor: chosen,
       customColors: kind === 'paint' ? [chosen, '#FEDCBA'] : [],
-      soundLevel: 'medium',
+      soundVolume: 50,
+      drawingSoundEnabled: true,
+      deleteSoundEnabled: true,
       undoButtonEnabled: true,
       strokeWidthControlEnabled: true,
       toolDrawerEnabled: true,
@@ -160,7 +163,7 @@ describe('custom paints wired to the drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({
-      version: 12,
+      version: 14,
       coloringBookEnabled: true,
       aiEnabled: false,
       parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
@@ -207,7 +210,7 @@ describe('drawing width controls', () => {
     await openTools();
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":12,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolDrawerEnabled":true,"screenshotEnabled":true}'
+      '{"version":14,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons","toolDrawerEnabled":true,"screenshotEnabled":true}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();

@@ -82,6 +82,7 @@ function Panel() {
     area: { width: 390, height: 769 },
     viewport: { width: 390, height: 844 },
     open: true,
+    buttonScale: 100,
     onToggle() {},
     slot,
   });

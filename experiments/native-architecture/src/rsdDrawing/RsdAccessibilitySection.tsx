@@ -1,12 +1,10 @@
-import { html } from 'react-strict-dom';
-import { RsdAction, styles } from './controls';
 import { useDeviceReduceMotion, useReduceMotion } from '../drawing/useReduceMotion';
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   BUTTON_SIZE_HELP,
   BUTTON_SIZE_LABEL,
-  stepButtonScale,
+  DEFAULT_BUTTON_SCALE,
 } from '../settings/buttonSize';
 import {
   REDUCE_MOTION_HELP,
@@ -14,52 +12,55 @@ import {
   reduceMotionChoice,
   type ReduceMotionPreference,
 } from '../settings/reduceMotion';
+import { RsdSettingCard, RsdSettingGroup } from './RsdSettingCard';
+import { RsdSliderRow } from './RsdSlider';
+import { RsdToggleRow } from './RsdToggleRow';
+import type { SliderDraft } from './useSliderDraft';
 
-// The shipping Accessibility section (AccessibilitySection.svelte): Button Size, then the
-// Reduce Motion switch, each with the one sentence on who it helps.
+// The shipping Accessibility section (AccessibilitySection.svelte, ButtonSizeSetting.svelte):
+// Button Size, then the Reduce Motion switch, each with the one sentence on who it helps. While
+// Button Size is dragged the dialog turns see-through and only its card stays, so the edge
+// controls resize in view behind it.
 export function RsdAccessibilitySection({
   buttonScale,
   busy,
-  onButtonScaleChange,
   onReduceMotionChange,
 }: {
-  buttonScale: number;
+  buttonScale: SliderDraft;
   busy: boolean;
-  onButtonScaleChange: (scale: number) => void;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
 }) {
   const reduced = useReduceMotion();
   const deviceReduced = useDeviceReduceMotion();
   return (
-    <html.div style={styles.stack}>
-      <html.div role="group" aria-label={BUTTON_SIZE_LABEL} style={styles.stack}>
-        <html.span>{`${BUTTON_SIZE_LABEL} ${buttonScale}%`}</html.span>
-        <html.div style={styles.row}>
-          <RsdAction
-            label="Smaller buttons"
-            text="Smaller"
-            disabled={busy || buttonScale <= BUTTON_SCALE_MIN}
-            onClick={() => onButtonScaleChange(stepButtonScale(buttonScale, -1))}
-          />
-          <RsdAction
-            label="Bigger buttons"
-            text="Bigger"
-            disabled={busy || buttonScale >= BUTTON_SCALE_MAX}
-            onClick={() => onButtonScaleChange(stepButtonScale(buttonScale, 1))}
-          />
-        </html.div>
-        <html.span>{BUTTON_SIZE_HELP}</html.span>
-      </html.div>
+    <RsdSettingGroup>
+      <RsdSettingCard keptSeeThrough>
+        <RsdSliderRow
+          id="accessibilityButtonScaleLabel"
+          label={BUTTON_SIZE_LABEL}
+          icon="photo-size-select-small"
+          value={buttonScale.value}
+          min={BUTTON_SCALE_MIN}
+          max={BUTTON_SCALE_MAX}
+          snap={DEFAULT_BUTTON_SCALE}
+          help={BUTTON_SIZE_HELP}
+          onInput={buttonScale.onInput}
+          onActiveChange={buttonScale.onActiveChange}
+        />
+      </RsdSettingCard>
       {/* The switch shows the effective answer, so it reads as on when only the device's own
           setting asks for reduced motion. */}
-      <RsdAction
-        label={REDUCE_MOTION_LABEL}
-        selection="switch"
-        selected={reduced}
-        disabled={busy}
-        onClick={() => onReduceMotionChange(reduceMotionChoice(!reduced, deviceReduced))}
-      />
-      <html.span>{REDUCE_MOTION_HELP}</html.span>
-    </html.div>
+      <RsdSettingCard>
+        <RsdToggleRow
+          icon="reduce-motion"
+          label={REDUCE_MOTION_LABEL}
+          id="reduceMotionToggle"
+          checked={reduced}
+          disabled={busy}
+          onToggle={(next) => onReduceMotionChange(reduceMotionChoice(next, deviceReduced))}
+          help={REDUCE_MOTION_HELP}
+        />
+      </RsdSettingCard>
+    </RsdSettingGroup>
   );
 }
