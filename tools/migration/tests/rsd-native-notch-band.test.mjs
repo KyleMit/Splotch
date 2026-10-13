@@ -26,7 +26,7 @@ function strips() {
 function painted() {
   return strips()
     .filter((style) => style.backgroundColor !== 'transparent')
-    .map(({ backgroundColor, height, width, left, right }) => ({
+    .map(({ backgroundColor, height, width, left }) => ({
       backgroundColor,
       ...(height === undefined ? { width, side: left === 0 ? 'left' : 'right' } : { height }),
     }));

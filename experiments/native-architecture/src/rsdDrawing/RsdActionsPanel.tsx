@@ -364,22 +364,44 @@ export function RsdActionsPanel({
         </View>
       ) : null}
       {noActions ? null : (
-        <View testID="rsd-drawer-dock" style={[docks.slot, layout.toggle]}>
-          <RsdIconButton
-            skin="corner"
-            icon="chevron-right"
-            label={open ? 'Collapse controls' : 'Expand controls'}
-            expanded={open}
-            dimmed={flyout !== null}
-            turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
-            onPress={() => {
-              setFlyout(null);
-              onToggle();
-            }}
-          />
-        </View>
+        <DrawerChevron
+          layout={layout}
+          open={open}
+          dimmed={flyout !== null}
+          onPress={() => {
+            setFlyout(null);
+            onToggle();
+          }}
+        />
       )}
     </>
+  );
+}
+
+// The muted corner chevron that opens and closes the drawer, turned toward where it will move.
+function DrawerChevron({
+  layout,
+  open,
+  dimmed,
+  onPress,
+}: {
+  layout: ActionPanelLayout;
+  open: boolean;
+  dimmed: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <View testID="rsd-drawer-dock" style={[docks.slot, layout.toggle]}>
+      <RsdIconButton
+        skin="corner"
+        icon="chevron-right"
+        label={open ? 'Collapse controls' : 'Expand controls'}
+        expanded={open}
+        dimmed={dimmed}
+        turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
+        onPress={onPress}
+      />
+    </View>
   );
 }
 
