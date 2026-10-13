@@ -33,19 +33,24 @@ const CONTROLS = {
 
 type ControlKind = keyof typeof CONTROLS;
 
-function HeaderControl({
+// The Install Banner's dismiss wears the same outlined close (app.css .banner-dismiss) under its
+// own name.
+export function HeaderControl({
   kind,
+  label: name,
   disabled,
   onClick,
 }: {
   kind: ControlKind;
+  label?: string;
   disabled: boolean;
   onClick: () => void;
 }) {
   const palette = useDrawingTheme();
   const active = useDialogActive();
   const [hovered, setHovered] = useState(false);
-  const { icon, label, shape, inset } = CONTROLS[kind];
+  const { icon, shape, inset } = CONTROLS[kind];
+  const label = name ?? CONTROLS[kind].label;
   const path = useMemo(
     () => blobPath(shape, MODAL_CONTROL_SIZE_PX, MODAL_CONTROL_SIZE_PX, inset),
     [shape, inset]
