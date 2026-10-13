@@ -15,13 +15,13 @@ The released RSD native renderer implements `html.div` using a native view. Acce
 style does not create a `ScrollView`. The recovery adapter therefore uses the existing drawing
 layout owner's 25% feedback height bound and spacing. The drawing layout follows the shipping app:
 one bar of paint swatches plus More colors along the top edge in portrait and down the left edge in
-landscape, Clear on the right edge, Settings in the bottom-right corner, and the remaining tools in
-a drawer whose chevron (`Expand controls` / `Collapse controls`) sits in the bottom-left corner. The
-bar is the shipping Color Palette plate (`--surface` with its drop shadow on the paper) holding
-fixed 55px portrait / 60px landscape swatches that Button Size leaves alone (`paletteGeometry.ts`).
-It measures its own length and shows as many swatches as fit at full size, by the shipping ladder's
-formula, trimming by the shipping trim order (`PALETTE_TRIM_ORDER`, drift-guarded by
-`tools/tests/native-drawing-tokens.test.mjs`; the geometry and ladder by
+landscape, Clear docked to the right screen edge, Settings in the bottom-right corner, and the
+remaining tools in a drawer whose chevron (`Expand controls` / `Collapse controls`) sits in the
+bottom-left corner. The bar is the shipping Color Palette plate (`--surface` with its drop shadow on
+the paper) holding fixed 55px portrait / 60px landscape swatches that Button Size leaves alone
+(`paletteGeometry.ts`). It measures its own length and shows as many swatches as fit at full size,
+by the shipping ladder's formula, trimming by the shipping trim order (`PALETTE_TRIM_ORDER`,
+drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`; the geometry and ladder by
 `tools/migration/tests/rsd-native-drawing-frame.test.mjs`); remembered custom paints go first, and
 the selected paint always keeps a swatch. Shipping hides the bar on phone landscape and moves color
 into the Actions Panel; the native bar stays until that panel is ported. Compact paint radios retain
@@ -237,3 +237,28 @@ Where React Native differs:
   Quicksand face, and draw the focus ring with React Native's `outline*` styles.
 * `RsdConfirmCard` lays out the title, copy and two actions; the caller passes the actions (the
   design Button) and hosts the card in its dialog.
+
+## Clear Button
+
+The shipping Clear Button (`ClearButton.svelte`) docks to the screen, not the paper.
+`NativeDrawingLayout` therefore renders a clear overlay that spans the whole safe-area frame, after
+the paper column and under the palette bar (the shipping `--z-palette` stacking), clipped to that
+frame. The overlay holds the accept ring, the dock and the coachmark. The clear underlay stays in
+the paper area and receives the area's offset inside the layout, so the wash grows from the screen's
+top-right corner and the departing page flies into the docked tab.
+
+* `experiments/native-architecture/src/clear/clearDock.ts` projects the dock geometry: the tab's
+  10px overhang past the right edge, 90px down and 60px tall in portrait, and 48px down (or 20px
+  below a taller safe-area top) and 70px tall in landscape, with the 38px or 40px lid.
+  `useClearGesture` exposes it as `dock`.
+* `RsdClearFace` draws the tab and the coachmark ghost. The face is a half-disc docked, a full disc
+  lifted, and turns alarm red with a glow past the accept ring. Each state names its own background,
+  because native RSD resolves a token gradient after a literal one.
+* The accept ring wash reaches 100% at the corner of the ring's square box, which is what CSS
+  `radial-gradient(circle, …)` means.
+* `RsdClearCoachmark` and `RsdClearUnderlay` paint nothing until a press on Clear. The web export
+  loads each from its own chunk once the screen mounts (`clearSurfaces.web.ts`), keeping them off
+  the startup budget; the native apps import them directly (`clearSurfaces.ts`).
+* `tools/tests/native-clear-projection.test.mjs` reads every dock size, finish, ring ink and stroke
+  width back from the shipping stylesheets. `tools/migration/tests/rsd-native-clear.test.mjs` mounts
+  the resolved rest and drag states.

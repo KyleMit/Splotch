@@ -120,6 +120,11 @@ export function svgPort(React) {
     React.createElement('svg', { 'data-xml': xml, width, height });
   const Path = ({ d, fill, stroke, strokeWidth }) =>
     React.createElement('path', { d, fill, stroke, 'stroke-width': strokeWidth });
+  // Gradients keep the geometry and stops a wash is drawn from, for tests that read it.
+  const RadialGradient = ({ children, id, r }) =>
+    React.createElement('div', { 'data-gradient': id, 'data-r': r }, children);
+  const Stop = ({ offset, stopOpacity }) =>
+    React.createElement('i', { 'data-offset': offset, 'data-stop-opacity': stopOpacity });
   return {
     default: Svg,
     Circle: Svg,
@@ -130,9 +135,9 @@ export function svgPort(React) {
     Mask: Svg,
     LinearGradient: Svg,
     Path,
-    RadialGradient: Svg,
+    RadialGradient,
     Rect: Svg,
-    Stop: Svg,
+    Stop,
     SvgXml,
   };
 }
