@@ -122,7 +122,7 @@ async function openSettings() {
     },
     notice: '',
     downloadedBooks: 0,
-    ai: null,
+    ai: { owner: null, state: null, onToggle: vi.fn(), onOpenKeysPage: vi.fn() },
     visible: true,
     buttonScale: { value: 100, active: false, onInput: () => {}, onActiveChange: () => {} },
     soundVolume: { value: 50, active: false, onInput: () => {}, onActiveChange: () => {} },

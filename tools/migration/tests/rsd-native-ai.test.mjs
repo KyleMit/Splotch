@@ -11,6 +11,18 @@ async function click(label) {
   expect(node.disabled).toBe(false);
   await act(async () => node.click());
 }
+async function openAiArt() {
+  const row = host.querySelector('[aria-label^="AI Art, "]');
+  expect(row, 'AI Art row').not.toBeNull();
+  await act(async () => row.click());
+}
+// Settings reads the free allowance on its own once AI is on, as shipping does; nothing else may
+// have gone out before a send.
+function onlyAllowanceChecks() {
+  return caller.aiSend.mock.calls.every(
+    ([request]) => request.path === '/api/free-generation-grant'
+  );
+}
 async function input(label, value) {
   const props = records.props.findLast((item) => item.accessibilityLabel === label);
   expect(props, label).toBeDefined();
@@ -109,13 +121,7 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     ).toBe(!rejectDecode);
     expect(caller.screen.history.drawing).toBe(drawing);
     if (!rejectDecode) await reviewReport();
-    await click('Use my OpenAI key');
-    await input('OpenAI API key', 'fixture-key');
-    await click('Verify and save credential');
-    expect(caller.aiVaultWrite).not.toHaveBeenCalled();
-    await solve();
-    expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'fixture-key');
-    expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
+    await saveKeyFromSettings();
   },
   GATED_FLOW_TIMEOUT_MS
 );
@@ -158,19 +164,40 @@ function useCaller(drawing) {
     audioMessage: '',
   };
 }
-// Settings' Parent Center section opens it through this owner method.
+// The key goes in through Settings › AI Art, behind the same grown-up check a send asks for.
+async function saveKeyFromSettings() {
+  await click('Close');
+  await click('Settings');
+  await openAiArt();
+  await input('OpenAI API Key', 'sk-fixture-key');
+  const save = [...host.querySelectorAll('button')].find((node) => node.textContent === 'Save');
+  expect(save?.disabled).toBe(false);
+  await act(async () => save.click());
+  expect(caller.aiVaultWrite).not.toHaveBeenCalled();
+  await solve();
+  expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'sk-fixture-key');
+  expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
+  expect(host.textContent).toContain('Your key works and has been accepted!');
+}
+// Settings' AI Art switch is a Parent Center choice: with Parent Center locked again it waits for
+// the grown-up check before AI turns on.
 async function sendDrawing() {
   await act(async () => caller.product.owner.openParentCenter());
   expect(caller.aiSend).not.toHaveBeenCalled();
   await solve();
+  await click('Back');
+  await openAiArt();
   await click('Create AI Images');
+  expect(caller.product.state.settings.aiEnabled).toBe(false);
+  await solve();
+  expect(caller.product.state.settings.aiEnabled).toBe(true);
   await click('Close');
   await click('AI picture');
-  expect(caller.aiSend).not.toHaveBeenCalled();
+  expect(onlyAllowanceChecks()).toBe(true);
   await click('Check AI allowance');
   expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
   expect(records.dismissals).toContain('AI picture');
-  expect(caller.aiSend).not.toHaveBeenCalled();
+  expect(onlyAllowanceChecks()).toBe(true);
   await solve();
   expect(host.querySelector('[aria-label="Sticker AI style"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Save held recovery request"]')).toBeNull();

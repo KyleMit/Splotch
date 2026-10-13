@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement, useEffect, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { host, mount, records, checkedRadio, checkedSwitch } from './rsd-native-selection-host.mjs';
+import { host, mount, records, checkedRadio } from './rsd-native-selection-host.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { createDrawingProduct } from '../../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
@@ -190,7 +190,7 @@ describe('RSD Parent Center section', () => {
     checkedRadio(policyOption('imageReport', 'session'));
     expect(owner.getState().settings.parentPolicies.imageReport).toBe('session');
     expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-      version: 14,
+      version: 15,
       parentPolicies: { imageReport: 'session', externalLinks: 'always' },
     });
   });
@@ -240,8 +240,9 @@ describe('RSD Parent Center section', () => {
       }),
     };
     const owner = await openParentCenter(storage);
-    checkedSwitch(host.querySelector(AI_SWITCH), false);
-    await click('Create AI Images');
+    // The AI switch lives in Settings › AI Art; Parent Center keeps only its save and retry.
+    expect(host.querySelector(AI_SWITCH)).toBeNull();
+    await act(async () => owner.setAiEnabled(true));
     expect(owner.port.consent().enabled).toBe(true);
     expect(JSON.parse(stored)).toMatchObject({ aiEnabled: true, whatsNewSeen: null });
     storage.write.mockImplementationOnce(
@@ -250,7 +251,9 @@ describe('RSD Parent Center section', () => {
           rejectDisable = reject;
         })
     );
-    await click('Create AI Images');
+    await act(async () => {
+      void owner.setAiEnabled(false);
+    });
     expect(owner.getState().settings.status).toBe('saving');
     await act(async () => owner.settings.markWhatsNewSeen());
     expect(storage.write).toHaveBeenCalledTimes(2);
@@ -262,12 +265,10 @@ describe('RSD Parent Center section', () => {
       aiEnabled: true,
       saved: false,
     });
-    checkedSwitch(host.querySelector(AI_SWITCH), true);
     expect(host.textContent).toContain('Parent Center choices were not saved');
     await clickText('Retry saving Parent Center choices');
     expect(JSON.parse(stored)).toMatchObject({ aiEnabled: false, whatsNewSeen: WHATS_NEW_STAMP });
     expect(owner.getState().settings).toMatchObject({ aiEnabled: false, saved: true });
-    checkedSwitch(host.querySelector(AI_SWITCH), false);
   });
 });
 

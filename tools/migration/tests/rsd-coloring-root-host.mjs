@@ -110,6 +110,8 @@ export function nativeSettingsProps(owner, state) {
     notice: state.message,
     onToggle: () => owner.setEnabled(!state.soundEnabled),
     onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
+    onAiCustomizationChange: (enabled) => owner.setAiCustomizationEnabled(enabled),
+    onAutoSaveAiChange: (enabled) => owner.setAutoSaveAiEnabled(enabled),
     onUndoButtonChange: (enabled) => owner.setUndoButtonEnabled(enabled),
     onStrokeWidthControlChange: (enabled) => owner.setStrokeWidthControlEnabled(enabled),
     onToolDrawerChange: (enabled) => owner.setToolDrawerEnabled(enabled),
@@ -141,7 +143,7 @@ export function nativeSettingsProps(owner, state) {
     feedback: null,
     onOpenHostedPage() {},
     downloadedBooks: 0,
-    ai: null,
+    ai: { owner: null, state: null, onToggle() {}, onOpenKeysPage() {} },
   };
 }
 

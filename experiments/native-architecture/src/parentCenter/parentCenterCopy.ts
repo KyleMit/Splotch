@@ -48,14 +48,3 @@ export const PARENT_CENTER_COPY = {
   lock: 'Parent Center decides when Splotch asks for a grown-up check, so it waits behind one itself.',
   unlock: 'Unlock these settings',
 } as const;
-
-// The AI master switch, worded as shipping's Settings › AI Art words it (aiSettingsCopy.ts), until
-// that section is ported (issue 2827): enabling AI is a Parent Center choice in this app, so the
-// switch waits behind the same check as the policies.
-export const PARENT_CENTER_AI_COPY = {
-  label: 'Create AI Images',
-  help: {
-    off: 'Turns a finished drawing into an AI picture based on it.',
-    on: 'A finished drawing can now be turned into an AI picture based on it.',
-  },
-} as const;

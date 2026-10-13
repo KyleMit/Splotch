@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -46,7 +47,14 @@ export function RsdSettingsRoute({
   onDismiss: () => void;
 }) {
   const owner = product.owner;
+  const aiOwner = product.ai.owner;
+  const aiEnabled = sound.settings.aiEnabled;
   const gateCard = useModalPresence(gate?.open ? gate : null);
+  // The AI Art row and section say which credential is saved and how many free creations are
+  // left, as shipping's do, so Settings reads both whenever it opens and whenever AI turns on.
+  useEffect(() => {
+    if (visible) void aiOwner?.inspect();
+  }, [visible, aiOwner, aiEnabled]);
   const close = () => {
     owner?.closeParentCenter();
     screen.closeSettings();
@@ -85,7 +93,12 @@ export function RsdSettingsRoute({
       feedback={product.feedback.owner}
       onOpenHostedPage={(page) => openOutside(owner, page)}
       downloadedBooks={screen.library.state.installed.length}
-      ai={product.ai.state}
+      ai={{
+        owner: aiOwner,
+        state: product.ai.state,
+        onToggle: (enabled) => owner?.toggleAi(enabled),
+        onOpenKeysPage: () => openOutside(owner, 'openAiKeys'),
+      }}
     />
   );
 }

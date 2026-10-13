@@ -245,6 +245,32 @@ the way. `audio/soundGates.ts` gates drawing sound on Sound and Drawing, and the
 Sound and Deleting, as shipping's `canPlayDrawingSound` and `canPlayDeleteSound` do. Button style is
 stored and chosen here; the flat toolbar's rendering is not ported yet.
 
+## Settings › AI Art
+
+`RsdAiSettingsSection` ports shipping's `AiKeyManager.svelte` with `RsdAiValueProp`
+(`AiValueProp.svelte`), `RsdAiKeyManager` and `RsdOpenAiKeyHowTo` (`OpenAiKeyHowTo.svelte`). The
+Create AI Images switch sits over the three-step explainer while it is off, and over the key manager
+and the Customize AI Style and Auto-Save AI Images switches once it is on. On the phone the
+drilled-in page claims shipping's stable card height (`aiSettings` in `modalGeometry.ts`).
+
+The switch stays a Parent Center choice, as it was when it lived in that section: it applies at once
+only while Parent Center's controls are editable, and otherwise raises the Parent Center check first
+(`toggleAi` in `createDrawingProduct.ts`). Shipping asks for no check there. Saving or forgetting a
+key or access code goes through the AI owner's `setup` and `removeCredential`, which keep the
+generation check in front and verify a credential with the server before the vault keeps it. The one
+field tells a key from a code by shipping's prefixes (`ai/credentialKind.ts`, reading
+`web/src/lib/ai/keyFormat.ts`), and a refusal shows the server's own words. Settings reads which
+credential is saved, and the free allowance while AI is on, through the owner's `inspect`, which
+sends no drawing and so asks for no check; it waits out a generation in flight, whose vault lease a
+read would end.
+
+The two feature switches persist in settings schema 15 at shipping's defaults (customization on,
+auto-save off); every earlier record migrates to them. The AI sheet does not read them yet.
+`tools/tests/native-ai-settings.test.mjs` reads the copy, defaults, geometry and illustrations back
+from shipping and drives the owner, the schema and the gated switch;
+`tools/migration/tests/rsd-native-ai-settings.test.mjs` mounts the section through the released
+native renderer.
+
 ## Design primitives
 
 `src/rsdDrawing/` ports the small shipping primitives in `web/src/lib/components/design/` and the
