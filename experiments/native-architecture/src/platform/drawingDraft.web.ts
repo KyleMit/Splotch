@@ -3,12 +3,11 @@ import {
   serializeDrawingDraftStorage,
   type DrawingDraftStorage,
 } from '../product/drawingDraft';
-import type { DrawingBackend } from '../product/drawingBackend';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { readProtectedDraftSnapshot, WebDrawingDraftOwner } from './drawingDraftOwner.web';
 
-export function createWebDrawingDraftStorage(backend: DrawingBackend): DrawingDraftStorage {
-  const owner = new WebDrawingDraftOwner(backend);
+export function createWebDrawingDraftStorage(): DrawingDraftStorage {
+  const owner = new WebDrawingDraftOwner();
   return serializeDrawingDraftStorage({
     read: () => owner.read(),
     async write(snapshot) {
@@ -23,22 +22,9 @@ export function createWebDrawingDraftStorage(backend: DrawingBackend): DrawingDr
   });
 }
 
-const storageByBackend: Record<DrawingBackend, DrawingDraftStorage> = {
-  legacy: createWebDrawingDraftStorage('legacy'),
-  recorded: createWebDrawingDraftStorage('recorded'),
-};
-export const drawingDraftStorage = storageByBackend.legacy;
-export function drawingDraftStorageFor(backend: DrawingBackend) {
-  return storageByBackend[backend];
-}
+export const drawingDraftStorage = createWebDrawingDraftStorage();
 export async function protectedDraftPageIds(): Promise<readonly string[]> {
   // Removal owns the artwork lock; a writer waiting for that lock cannot own this read.
-  const snapshots = await Promise.all([
-    readProtectedDraftSnapshot('legacy'),
-    readProtectedDraftSnapshot('recorded'),
-  ]);
-  return snapshots.flatMap((snapshot) => {
-    const drawing = decodeDrawingDraft(snapshot);
-    return drawing ? [drawing.pageId] : [];
-  });
+  const drawing = decodeDrawingDraft(await readProtectedDraftSnapshot());
+  return drawing ? [drawing.pageId] : [];
 }

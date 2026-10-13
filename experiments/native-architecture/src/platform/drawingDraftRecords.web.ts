@@ -1,16 +1,10 @@
 import { decodeDrawingDraft } from '../product/drawingDraft';
-import type { DrawingBackend } from '../product/drawingBackend';
 
 export const DRAFT_DATABASE = 'splotch-beta-current-draft-v1';
 export const DRAFT_STORE = 'drafts';
-export const LEGACY_DRAFT_KEYS: Record<DrawingBackend, string> = {
-  legacy: 'splotch-candidate:current-draft-v1',
-  recorded: 'splotch-candidate:recorded-current-draft-v1',
-};
-const AUTHORITY_KEYS: Record<DrawingBackend, string> = {
-  legacy: 'splotch-beta:current-draft-idb-v1',
-  recorded: 'splotch-beta:recorded-current-draft-idb-v1',
-};
+export const DRAFT_KEY = 'legacy';
+export const LEGACY_DRAFT_KEY = 'splotch-candidate:current-draft-v1';
+const AUTHORITY_KEY = 'splotch-beta:current-draft-idb-v1';
 const AUTHORITY_VALUE = '1';
 const COMMIT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -52,21 +46,21 @@ export function sameDraftRecord(a: WebDrawingDraftRecord, b: WebDrawingDraftReco
   return a.revision === b.revision && a.commitId === b.commitId && a.snapshot === b.snapshot;
 }
 
-export function hasDraftAuthority(backend: DrawingBackend): boolean {
-  const marker = localStorage.getItem(AUTHORITY_KEYS[backend]);
+export function hasDraftAuthority(): boolean {
+  const marker = localStorage.getItem(AUTHORITY_KEY);
   if (marker !== null && marker !== AUTHORITY_VALUE) invalidDraftRecord();
   return marker === AUTHORITY_VALUE;
 }
 
-export function claimDraftAuthority(backend: DrawingBackend): void {
-  if (hasDraftAuthority(backend)) return;
+export function claimDraftAuthority(): void {
+  if (hasDraftAuthority()) return;
   // Claim before the IDB commit so a later missing record cannot resurrect a stale backup.
-  localStorage.setItem(AUTHORITY_KEYS[backend], AUTHORITY_VALUE);
-  if (!hasDraftAuthority(backend)) invalidDraftRecord();
+  localStorage.setItem(AUTHORITY_KEY, AUTHORITY_VALUE);
+  if (!hasDraftAuthority()) invalidDraftRecord();
 }
 
-export function readLegacyDraft(backend: DrawingBackend): string | null {
-  const snapshot = localStorage.getItem(LEGACY_DRAFT_KEYS[backend]);
+export function readLegacyDraft(): string | null {
+  const snapshot = localStorage.getItem(LEGACY_DRAFT_KEY);
   decodeDrawingDraft(snapshot);
   return snapshot;
 }

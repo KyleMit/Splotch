@@ -4,7 +4,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from 'react-native-svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
-import type { CaptureInkPlan } from './captureInkPlan';
+import type { InkPlan } from './checkpoints';
 import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
 import { PageOutline } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
@@ -17,7 +17,7 @@ export type PictureRequest = Readonly<{
   id: number;
   request: PngCaptureRequest;
   kind: 'ink' | 'picture';
-  plan: CaptureInkPlan;
+  plan: InkPlan;
   appearance: InkAppearance;
   isCurrent: () => boolean;
 }>;

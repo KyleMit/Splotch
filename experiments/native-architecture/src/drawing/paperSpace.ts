@@ -70,7 +70,7 @@ export function drawingPaper(drawing: Drawing): PaperReference {
   return drawing.version === 5 ? LEGACY_PAPER : drawing.paper;
 }
 
-export function paperScale(paper: PaperReference): number {
+function paperScale(paper: PaperReference): number {
   return paper.kind === 'adopted'
     ? Math.min(paper.cssWidth / PAPER_WIDTH, paper.cssHeight / PAPER_HEIGHT)
     : 1;

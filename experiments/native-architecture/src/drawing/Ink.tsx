@@ -77,7 +77,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
   );
 }
 
-export function MagicPaint({
+function MagicPaint({
   stroke,
   shape,
 }: {
@@ -146,12 +146,6 @@ function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
       shape={(width, paint) => <StrokeShape points={stroke.points} width={width} paint={paint} />}
     />
   );
-}
-
-export function useCrayonDefinition() {
-  const value = useContext(CrayonDefinitionScope);
-  if (value === null) throw new Error('Crayon Ink requires an InkArtwork definition scope');
-  return value;
 }
 
 export function InkArtwork({

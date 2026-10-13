@@ -45,7 +45,6 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', ()
   const storage = { read: async () => null, write: async () => {} };
   return {
     drawingDraftStorage: storage,
-    drawingDraftStorageFor: () => storage,
     protectedDraftPageIds: async () => [],
   };
 });

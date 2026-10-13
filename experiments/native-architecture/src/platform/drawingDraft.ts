@@ -6,17 +6,13 @@ import {
   type DrawingDraftStorage,
 } from '../product/drawingDraft';
 import { isOfflinePageId } from '../offlineLibrary/identity';
-import type { DrawingBackend } from '../product/drawingBackend';
 
-const DRAFT_DIRECTORIES: Record<DrawingBackend, string> = {
-  legacy: 'splotch-current-draft-v1',
-  recorded: 'splotch-recorded-current-draft-v1',
-};
+const DRAFT_DIRECTORY = 'splotch-current-draft-v1';
 const REVISION_NAME = /^draft-(\d+)\.json$/;
 const RETAINED_REVISIONS = 2;
 
-function directory(backend: DrawingBackend) {
-  const owner = new Directory(Paths.document, DRAFT_DIRECTORIES[backend]);
+function directory() {
+  const owner = new Directory(Paths.document, DRAFT_DIRECTORY);
   owner.create({ intermediates: true, idempotent: true });
   return owner;
 }
@@ -39,10 +35,10 @@ function revisions(owner: Directory) {
     .sort((a, b) => b.revision - a.revision);
 }
 
-function createStorage(backend: DrawingBackend): DrawingDraftStorage {
+function createStorage(): DrawingDraftStorage {
   return {
     async read() {
-      const file = revisions(directory(backend))[0]?.file;
+      const file = revisions(directory())[0]?.file;
       if (!file) return null;
       if (file.size > MAX_DRAFT_BYTES) throw new Error('The current draft is too large.');
       const snapshot = await file.text();
@@ -51,7 +47,7 @@ function createStorage(backend: DrawingBackend): DrawingDraftStorage {
     },
     async write(snapshot) {
       decodeDrawingDraft(snapshot);
-      const owner = directory(backend);
+      const owner = directory();
       const previous = revisions(owner);
       const revision = (previous[0]?.revision ?? 0) + 1;
       if (!Number.isSafeInteger(revision))
@@ -87,10 +83,7 @@ function createStorage(backend: DrawingBackend): DrawingDraftStorage {
     },
   };
 }
-const rawStorage: Record<DrawingBackend, DrawingDraftStorage> = {
-  legacy: createStorage('legacy'),
-  recorded: createStorage('recorded'),
-};
+const rawStorage = createStorage();
 function admitStorage(storage: DrawingDraftStorage): DrawingDraftStorage {
   return serializeDrawingDraftStorage({
     read: storage.read,
@@ -104,19 +97,9 @@ function admitStorage(storage: DrawingDraftStorage): DrawingDraftStorage {
     },
   });
 }
-const storageByBackend: Record<DrawingBackend, DrawingDraftStorage> = {
-  legacy: admitStorage(rawStorage.legacy),
-  recorded: admitStorage(rawStorage.recorded),
-};
-export const drawingDraftStorage = storageByBackend.legacy;
-export function drawingDraftStorageFor(backend: DrawingBackend) {
-  return storageByBackend[backend];
-}
+export const drawingDraftStorage = admitStorage(rawStorage);
 export async function protectedDraftPageIds(): Promise<readonly string[]> {
   // Removal holds the artwork store lock; joining a writer waiting for that lock would deadlock.
-  const snapshots = await Promise.all(Object.values(rawStorage).map((storage) => storage.read()));
-  return snapshots.flatMap((snapshot) => {
-    const drawing = decodeDrawingDraft(snapshot);
-    return drawing ? [drawing.pageId] : [];
-  });
+  const drawing = decodeDrawingDraft(await rawStorage.read());
+  return drawing ? [drawing.pageId] : [];
 }

@@ -7,7 +7,7 @@ import {
 import {
   DRAFT_DATABASE,
   DRAFT_STORE,
-  LEGACY_DRAFT_KEYS,
+  LEGACY_DRAFT_KEY,
 } from '../../experiments/native-architecture/src/platform/drawingDraftRecords.web.ts';
 import { createDrawingDraft } from '../../experiments/native-architecture/src/product/createDrawingDraft.ts';
 import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
@@ -102,7 +102,7 @@ vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
 
 const PAGE = `offline:dinosaur:brachiosaurus:${'a'.repeat(64)}`;
 const snapshot = (rainbow = 0, page = 'blank') => encodeDrawingDraft(emptyDrawing(rainbow, page));
-const owner = (backend = 'legacy') => createWebDrawingDraftStorage(backend);
+const owner = () => createWebDrawingDraftStorage();
 let backups;
 let storage;
 const coordinators = [];
@@ -329,7 +329,7 @@ describe('beta browser current-draft ownership', () => {
   );
 
   it('never falls back to an in-memory or legacy snapshot when storage is unavailable', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(1));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(1));
     const storage = owner();
     await storage.read();
     disk.failRead = true;
@@ -353,91 +353,76 @@ describe('beta browser current-draft ownership', () => {
 describe('beta browser draft migration and artwork protection', () => {
   it('imports validated legacy bytes once and retains them as an unchanged backup', async () => {
     const original = snapshot(0, 'flower');
-    backups.set(LEGACY_DRAFT_KEYS.legacy, original);
+    backups.set(LEGACY_DRAFT_KEY, original);
     const draftStorage = owner();
     await expect(draftStorage.read()).resolves.toBe(original);
     await draftStorage.write(snapshot(1));
-    expect(backups.get(LEGACY_DRAFT_KEYS.legacy)).toBe(original);
+    expect(backups.get(LEGACY_DRAFT_KEY)).toBe(original);
     expect(storage.removeItem).not.toHaveBeenCalled();
-    expect(storage.setItem).not.toHaveBeenCalledWith(LEGACY_DRAFT_KEYS.legacy, expect.anything());
+    expect(storage.setItem).not.toHaveBeenCalledWith(LEGACY_DRAFT_KEY, expect.anything());
     expect(navigator.storage.persist).not.toHaveBeenCalled();
   });
 
   it('keeps IDB authoritative when an older version tab changes the retained localStorage backup', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(0, 'flower'));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(0, 'flower'));
     const storage = owner();
     await storage.read();
     await storage.write(snapshot(1));
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(2, 'flower'));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(2, 'flower'));
     await expect(owner().read()).resolves.toBe(snapshot(1));
-    expect(backups.get(LEGACY_DRAFT_KEYS.legacy)).toBe(snapshot(2, 'flower'));
+    expect(backups.get(LEGACY_DRAFT_KEY)).toBe(snapshot(2, 'flower'));
   });
 
   it('refuses to resurrect retained backup bytes after the authoritative record disappears', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(0, 'flower'));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(0, 'flower'));
     const storage = owner();
     await storage.read();
     await storage.write(snapshot(1));
     disk.rows.clear();
     await expect(owner().read()).rejects.toThrow('could not be checked');
     await expect(protectedDraftPageIds()).rejects.toThrow('could not be checked');
-    expect(backups.get(LEGACY_DRAFT_KEYS.legacy)).toBe(snapshot(0, 'flower'));
+    expect(backups.get(LEGACY_DRAFT_KEY)).toBe(snapshot(0, 'flower'));
     expect(disk.rows.size).toBe(0);
   });
 
   it('keeps a failed initial migration visible and preserves its backup', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(0, 'flower'));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(0, 'flower'));
     const storage = owner();
     disk.nextWriteOutcome = 'abort';
     await expect(storage.read()).rejects.toThrow('not confirmed');
     await expect(storage.read()).rejects.toThrow('could not be checked');
-    expect(backups.get(LEGACY_DRAFT_KEYS.legacy)).toBe(snapshot(0, 'flower'));
+    expect(backups.get(LEGACY_DRAFT_KEY)).toBe(snapshot(0, 'flower'));
     expect(disk.rows.size).toBe(0);
   });
 
   it('validates a legacy snapshot before claiming authority or importing it', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, '{invalid');
+    backups.set(LEGACY_DRAFT_KEY, '{invalid');
     await expect(owner().read()).rejects.toThrow();
     expect(storage.setItem).not.toHaveBeenCalled();
     expect(disk.rows.size).toBe(0);
-    expect(backups.get(LEGACY_DRAFT_KEYS.legacy)).toBe('{invalid');
+    expect(backups.get(LEGACY_DRAFT_KEY)).toBe('{invalid');
   });
 
   it('does not import or fall back when the authority marker cannot be verified', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(0, 'flower'));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(0, 'flower'));
     storage.setItem.mockImplementation(() => {});
     const draftStorage = owner();
     await expect(draftStorage.read()).rejects.toThrow('could not be checked');
     await expect(draftStorage.write(snapshot(1))).rejects.toThrow('Recover the current draft');
     expect(disk.rows.size).toBe(0);
-    expect(backups.get(LEGACY_DRAFT_KEYS.legacy)).toBe(snapshot(0, 'flower'));
+    expect(backups.get(LEGACY_DRAFT_KEY)).toBe(snapshot(0, 'flower'));
   });
 
   it('rejects an invalid authoritative record without consulting a valid migration backup', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot());
+    backups.set(LEGACY_DRAFT_KEY, snapshot());
     disk.rows.set('legacy', { version: 1, revision: 1, snapshot: snapshot() });
     await expect(owner().read()).rejects.toThrow('could not be checked');
     expect(storage.getItem).not.toHaveBeenCalled();
     expect(disk.puts).toEqual([]);
   });
 
-  it('uses separate durable records and migration backups for legacy and recorded sessions', async () => {
-    const recorded = encodeDrawingDraft(createDrawingSession('recorded').currentDrawing());
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(0, 'flower'));
-    backups.set(LEGACY_DRAFT_KEYS.recorded, recorded);
-    const legacy = owner();
-    const modern = owner('recorded');
-    await Promise.all([legacy.read(), modern.read()]);
-    await legacy.write(snapshot(1, 'flower'));
-    await expect(modern.read()).resolves.toBe(recorded);
-    expect(disk.rows.get('legacy').snapshot).toBe(snapshot(1, 'flower'));
-    expect(disk.rows.get('recorded').snapshot).toBe(recorded);
-    expect((await protectedDraftPageIds()).sort()).toEqual(['blank', 'flower']);
-    expect(createDrawingSession().currentDrawing().version).toBe(6);
-  });
-
   it('enumerates unmigrated protection snapshots without writing or claiming authority', async () => {
-    backups.set(LEGACY_DRAFT_KEYS.legacy, snapshot(0, PAGE));
+    backups.set(LEGACY_DRAFT_KEY, snapshot(0, PAGE));
     await expect(protectedDraftPageIds()).resolves.toEqual([PAGE]);
     expect(storage.setItem).not.toHaveBeenCalled();
     expect(disk.puts).toEqual([]);
