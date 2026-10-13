@@ -53,11 +53,13 @@ const scale = {
   space4: '16px',
   radiusMd: '12px',
   radiusLg: '16px',
+  borderWidth: '1px',
   fontSizeSm: '14px',
   fontSizeMd: '16px',
   fontSizeXl: '22px',
   fontWeightSemibold: '600',
   fontWeightBold: '700',
+  durationBase: '0.2s',
   scrimPill: 'rgb(23 23 29 / 72%)',
 } as const;
 
@@ -78,11 +80,14 @@ export const DRAWING_SCALE = {
   space4: Number.parseFloat(scale.space4),
   radiusMd: Number.parseFloat(scale.radiusMd),
   radiusLg: Number.parseFloat(scale.radiusLg),
+  borderWidth: Number.parseFloat(scale.borderWidth),
   fontSizeSm: Number.parseFloat(scale.fontSizeSm),
   fontSizeMd: Number.parseFloat(scale.fontSizeMd),
   fontSizeXl: Number.parseFloat(scale.fontSizeXl),
   fontWeightSemibold: scale.fontWeightSemibold,
   fontWeightBold: scale.fontWeightBold,
+  // Seconds, as the shipping token states it; Reanimated takes milliseconds.
+  durationBase: Number.parseFloat(scale.durationBase),
 };
 
 // native-audio-projection.test.mjs pins these Settings metrics to the design scale.

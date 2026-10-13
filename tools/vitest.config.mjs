@@ -16,6 +16,7 @@ import {
   RSD_NATIVE_TOKEN_SPECIMEN_TEST,
   RSD_NATIVE_SEGMENTED_PICKER_TEST,
   RSD_NATIVE_SLIDER_TEST,
+  RSD_NATIVE_SETTINGS_ROWS_TEST,
 } from './migration/lib/rsd-drawing-checks.mjs';
 
 // Node-environment unit tests for the repo tooling. Separate from the web
@@ -45,6 +46,7 @@ const CAPABILITY_EXCLUSIONS = [
   RSD_NATIVE_TOKEN_SPECIMEN_TEST,
   RSD_NATIVE_SEGMENTED_PICKER_TEST,
   RSD_NATIVE_SLIDER_TEST,
+  RSD_NATIVE_SETTINGS_ROWS_TEST,
 ];
 
 export default defineConfig({

@@ -2,7 +2,7 @@ import { RsdIcon } from './RsdIcon';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { SPLOTCHY_ICON_NAME, type NativeIconName } from './icons.generated';
 
-type SectionIconName = NativeIconName | typeof SPLOTCHY_ICON_NAME;
+export type SectionIconName = NativeIconName | typeof SPLOTCHY_ICON_NAME;
 
 // The shipping SectionIcon.svelte: a settings section names any icon, and Splotchy routes to its
 // structural component instead of the icon registry.

@@ -15,3 +15,4 @@ export const RSD_NATIVE_TOKEN_SPECIMEN_TEST = 'migration/tests/rsd-native-token-
 export const RSD_NATIVE_SEGMENTED_PICKER_TEST =
   'migration/tests/rsd-native-segmented-picker.test.mjs';
 export const RSD_NATIVE_SLIDER_TEST = 'migration/tests/rsd-native-slider.test.mjs';
+export const RSD_NATIVE_SETTINGS_ROWS_TEST = 'migration/tests/rsd-native-settings-rows.test.mjs';

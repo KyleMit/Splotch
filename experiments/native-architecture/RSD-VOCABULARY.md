@@ -130,3 +130,32 @@ sources by `tools/migration/tests/rsd-native-segmented-picker.test.mjs` and
 has no form submission), the keyboard focus ring (React Strict DOM has no `outline` or
 `:focus-visible`). Arrow-key roving and slider keys reach the option cell and slider host through
 react-native-web's key events; a hardware keyboard on Android or iOS is unverified.
+
+## Settings rows
+
+The Settings building blocks port the shipping components one to one, for the Settings screens to
+adopt: `RsdToggleSwitch` and `RsdToggleRow` (`settings/ToggleSwitch.svelte`, `ToggleRow.svelte`),
+`RsdSettingCard`, `RsdSettingGroup` and `RsdSettingSectionBody` (`SettingsModal.svelte`'s `.setting`
+and `.setting-group`), `RsdRuleLabel` (`design/RuleLabel.svelte`), `RsdHubRow`
+(`settings/HubList.svelte`) and `RsdSidebarRow` (`nav/SidebarToc.svelte`'s Settings rows), with the
+shared `RsdActivityDot`.
+
+The switch is the one platform split. On the web (`RsdToggleSwitch.web.tsx`) it is a
+`<button role="switch">` described by the row's help line through `aria-describedby`, its row label
+is a `<label for>`, and the thumb slides by a CSS transition over `--duration-base`. On Android and
+iOS (`RsdToggleSwitch.tsx`) a React Native `Pressable` carries the switch role, the checked and
+disabled state, and the help line as its accessibility hint, which React Strict DOM cannot express;
+the thumb slides through a Reanimated shared value on the UI thread, so a toggle renders React once
+rather than per frame. Both read the app's Reduce Motion answer and land the thumb without sliding
+when it is on. The track, thumb face and glyph are shared RSD markup (`toggleSwitchFace.tsx`). React
+Native mirrors the thumb's `left` inset to the trailing edge in an RTL layout while its translation
+stays physical, so the native slide is signed: leftward when the layout is swapped.
+
+The hub row's two-line subtitle is the other web difference. React Strict DOM compiles `lineClamp`
+to native `numberOfLines`, but on the web to a bare `line-clamp`, which browsers ignore outside a
+`-webkit-box`; `lineClampBox.web.tsx` wraps the text in shipping's clamp box there.
+
+`tools/migration/tests/rsd-native-settings-rows.test.mjs` mounts every primitive through the
+released native renderer, light and dark, and reads each geometry value from the shipping Svelte and
+CSS sources (`rsd-settings-rows-shipping.mjs`); `tools/tests/native-settings-rows-web.test.mjs`
+covers the web switch and the hub subtitle's clamp.
