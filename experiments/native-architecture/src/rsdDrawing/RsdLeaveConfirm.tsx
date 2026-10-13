@@ -21,7 +21,7 @@ export function RsdLeaveConfirm() {
       }
     >
       <html.div style={styles.dialogContent}>
-        <html.h1>{LEAVE_CONFIRM_COPY.title}</html.h1>
+        <html.h1 style={styles.boldText}>{LEAVE_CONFIRM_COPY.title}</html.h1>
         <html.p>{LEAVE_CONFIRM_COPY.body}</html.p>
       </html.div>
     </NativeDialog>

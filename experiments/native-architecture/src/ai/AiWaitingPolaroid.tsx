@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../drawing/Text';
 import { DRAWING_BRAND, DRAWING_POLAROID, DRAWING_SCALE } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useAiProgress } from './useAiProgress';

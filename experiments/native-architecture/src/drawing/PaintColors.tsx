@@ -1,6 +1,7 @@
 import { createDrawingStyles, useDrawingAppearance, useDrawingStyles } from './DrawingAppearance';
 import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import {
   paintAppearance,
   paletteHex,

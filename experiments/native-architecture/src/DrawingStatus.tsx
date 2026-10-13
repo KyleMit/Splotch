@@ -4,7 +4,8 @@ import {
   useDrawingTheme,
 } from './drawing/DrawingAppearance';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Text } from './drawing/Text';
 import type { useDrawingScreen } from './useDrawingScreen';
 import { CONTROL_GAP } from './drawing/theme';
 import { PngRecoveryNotice } from './export/PngRecoveryNotice';

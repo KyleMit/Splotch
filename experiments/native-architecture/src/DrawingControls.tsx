@@ -1,6 +1,7 @@
 import { DrawingModal as Modal } from './platform/DrawingModal';
 import type { ReactNode, RefObject } from 'react';
-import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, View } from 'react-native';
+import { Text } from './drawing/Text';
 import type { useDrawingScreen } from './useDrawingScreen';
 import type { useDrawingSound } from './useDrawingSound';
 import { BRUSHES, type Brush } from './drawing/brushes';

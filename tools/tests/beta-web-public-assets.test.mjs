@@ -143,6 +143,7 @@ describe('beta web public coloring assets', () => {
           if (specifier === 'expo/metro-config')
             return {
               getDefaultConfig: () => ({
+                resolver: { assetExts: ['png'] },
                 server: hasEnhancer ? { enhanceMiddleware: defaultEnhancer } : {},
               }),
             };
@@ -162,6 +163,7 @@ describe('beta web public coloring assets', () => {
       expect(createMiddleware).toHaveBeenCalledWith('/repository/web/static/coloring');
       expect(serveAssets).toHaveBeenCalledOnce();
       expect((hasEnhancer ? fallback : middleware).mock.calls).toEqual([[req, res, next]]);
+      expect(module.exports.resolver.assetExts).toEqual(['png', 'woff2']);
     }
   );
 });

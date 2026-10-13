@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions } from './tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 import { DRAWING_SCALE } from '../drawing/theme';
 import type { BrushPreferencesState } from '../settings/brushPreferences';
 import type { SoundSettingsState } from '../settings/soundSettingsCodec';
@@ -30,7 +30,8 @@ const styles = css.create({
   title: {
     color: colors.textStrong,
     fontSize: dimensions.fontSizeMd,
-    fontWeight: dimensions.fontWeightBold,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
   },
   subtitle: (fontSize: number) => ({ color: colors.text, fontSize }),
   dot: (size: number, radius: number) => ({

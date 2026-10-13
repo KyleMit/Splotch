@@ -8,10 +8,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   type GestureResponderEvent,
 } from 'react-native';
+import { Text } from './Text';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import {
   EXPLORER_COLUMNS,

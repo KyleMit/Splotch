@@ -80,7 +80,7 @@ export function RsdAiSheet({
       }
     >
       <html.div style={styles.dialogContent}>
-        <html.h1>
+        <html.h1 style={styles.boldText}>
           {state.gate.open ? 'Grown-ups only' : viewer.picture ? 'AI picture view' : 'AI picture'}
         </html.h1>
         {state.gate.open ? (
@@ -282,7 +282,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
   const waiting = aiJournalWaiting(state);
   return (
     <>
-      <html.h2>AI service setup</html.h2>
+      <html.h2 style={styles.boldText}>AI service setup</html.h2>
       <html.span>
         A credential check sends your code to Splotch, or your OpenAI key through Splotch to OpenAI.
         A key check makes a small provider request. Saved credentials stay in this device’s secure

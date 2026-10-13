@@ -60,6 +60,12 @@ it.each([
     'Canonical registration',
   ],
   ['src/ProbeApp.tsx', '<RsdDrawingScreen />', '<DrawingScreen />', 'Mounted RSD screen'],
+  [
+    'src/ProbeApp.tsx',
+    '<ShippingFontGate>\n        <RsdDrawingScreen />\n      </ShippingFontGate>',
+    '<RsdDrawingScreen />',
+    'Font-gated screen',
+  ],
   ['src/rsdDrawing/RsdEdgeControls.tsx', 'role="radiogroup"', 'role="group"', 'RSD radio group'],
   [
     'src/rsdDrawing/NativePaper.tsx',

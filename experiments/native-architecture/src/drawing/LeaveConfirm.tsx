@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from './Text';
 import { DrawingModal as Modal } from '../platform/DrawingModal';
 import { useLeaveConfirm } from '../platform/BrowserBack';
 import { LEAVE_CONFIRM_COPY } from '../product/systemBack';
