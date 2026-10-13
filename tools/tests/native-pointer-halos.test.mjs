@@ -4,12 +4,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { scale } from '../../web/src/lib/design/tokens.ts';
 import {
   EASE_GLIDE,
+  ERASER_FILL_OPACITY,
+  ERASER_GLOW_OPACITY,
+  ERASER_LINE_OPACITY,
+  HALO_GLOW,
+  HALO_GLOW_PX,
+  HALO_LINE,
   HALO_IN_FROM_SCALE,
   HALO_IN_MS,
   HALO_OUT_MS,
   HALO_OUT_TO_SCALE,
   HALO_RAINBOW,
   RAINBOW_BAND_PX,
+  RING_GLOW_OPACITY,
+  RING_LINE_OPACITY,
   RING_LINE_PX,
   haloMotionPending,
   haloPose,
@@ -40,7 +48,18 @@ function shippingProjection(source) {
     ringLine: Number(read(/\.brush-ring \{[^}]*border: (\d+)px solid/)),
     band: Number(read(/\.brush-ring\.magic \{[^}]*padding: (\d+)px/)),
     rainbow: read(/conic-gradient\(([^)]*)\)/).split(/,\s*/),
+    ringColor: read(/\.brush-ring \{[^}]*border: \d+px solid rgb\(([^)]*)\)/),
+    ringGlow: read(/\.brush-ring \{[^}]*box-shadow: 0 0 0 \d+px rgb\(([^)]*)\)/),
+    ringGlowPx: Number(read(/\.brush-ring \{[^}]*box-shadow: 0 0 0 (\d+)px/)),
+    eraserLinePx: Number(read(/\.eraser-bubble \{[^}]*border: (\d+)px solid/)),
+    eraserColor: read(/\.eraser-bubble \{[^}]*border: \d+px solid rgb\(([^)]*)\)/),
+    eraserFill: read(/\.eraser-bubble \{[^}]*background-color: rgb\(([^)]*)\)/),
+    eraserGlow: read(/\.eraser-bubble \{[^}]*box-shadow: 0 0 0 \d+px rgb\(([^)]*)\)/),
+    eraserGlowPx: Number(read(/\.eraser-bubble \{[^}]*box-shadow: 0 0 0 (\d+)px/)),
   };
+}
+function cssRgb(color, opacity) {
+  return `${color.match(/\d+/g).join(' ')} / ${Math.round(opacity * 100)}%`;
 }
 const candidate = {
   inMs: HALO_IN_MS,
@@ -50,6 +69,14 @@ const candidate = {
   ringLine: RING_LINE_PX,
   band: RAINBOW_BAND_PX,
   rainbow: [...HALO_RAINBOW],
+  ringColor: cssRgb(HALO_LINE, RING_LINE_OPACITY),
+  ringGlow: cssRgb(HALO_GLOW, RING_GLOW_OPACITY),
+  ringGlowPx: HALO_GLOW_PX,
+  eraserLinePx: RING_LINE_PX,
+  eraserColor: cssRgb(HALO_LINE, ERASER_LINE_OPACITY),
+  eraserFill: cssRgb(HALO_GLOW, ERASER_FILL_OPACITY),
+  eraserGlow: cssRgb(HALO_GLOW, ERASER_GLOW_OPACITY),
+  eraserGlowPx: HALO_GLOW_PX,
 };
 
 function touch(identifier, x, y, timestamp = 100) {
@@ -112,8 +139,12 @@ describe('native Pointer Halos', () => {
     expect(shippingProjection(shipping)).toEqual(candidate);
     expect(`cubic-bezier(${EASE_GLIDE.join(', ')})`).toBe(scale.easeGlide);
   });
-  it('rejects a changed shipping halo duration', () => {
-    const changed = shipping.replace('--halo-out-duration: 140ms', '--halo-out-duration: 300ms');
+  it.each([
+    ['--halo-out-duration: 140ms', '--halo-out-duration: 300ms'],
+    ['rgb(80 80 80 / 70%)', 'rgb(80 80 80 / 50%)'],
+    ['box-shadow: 0 0 0 1px rgb(255 255 255 / 35%)', 'box-shadow: 0 0 0 1px rgb(0 0 0 / 35%)'],
+  ])('rejects a changed shipping halo: %s', (from, to) => {
+    const changed = shipping.replace(from, to);
     expect(changed).not.toBe(shipping);
     expect(shippingProjection(changed)).not.toEqual(candidate);
   });

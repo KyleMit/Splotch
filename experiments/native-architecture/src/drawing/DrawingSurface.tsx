@@ -28,6 +28,7 @@ import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 import { PointerHalos } from './PointerHalos';
+import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
 
 export type DrawingSurfaceHandle = {
@@ -45,8 +46,21 @@ export type DrawingSurfaceProps = ContactDrawingProps & {
 type LiveDraft = {
   strokes: readonly Stroke[];
   paper: PaperReference | null;
-  halos: readonly Halo[];
 };
+
+// Drafts render the surface; halos go straight to their own layer.
+function useLiveDraft() {
+  const [draft, setDraft] = useState<LiveDraft>({ strokes: [], paper: null });
+  const halos = useRef(createHaloFeed()).current;
+  const show = useCallback(
+    (strokes: readonly Stroke[], paper: PaperReference | null, live: readonly Halo[]) => {
+      setDraft({ strokes, paper });
+      halos.publish(live);
+    },
+    [halos]
+  );
+  return { draft, halos, show };
+}
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
   function DrawingSurface(props, ref) {
@@ -61,7 +75,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const paper = useRef<View>(null);
     const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
     const geometry = useRef(createPaperGeometry(() => inputRef.current?.resize())).current;
-    const [draft, setDraft] = useState<LiveDraft>({ strokes: [], paper: null, halos: [] });
+    const { draft, halos, show } = useLiveDraft();
     const paperReference = draft.paper ?? drawingPaper(props.drawing);
     const raster = useRef<RasterInkHandle>(null);
     const input = useRef(
@@ -79,7 +93,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
             ) !== true,
         }),
         geometry.current,
-        (strokes, paper, halos) => setDraft({ strokes, paper, halos }),
+        show,
         () => PixelRatio.get()
       )
     ).current;
@@ -163,7 +177,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 >
                   <PageOutline pageId={props.drawing.pageId} size={presented} />
                 </Svg>
-                <PointerHalos halos={draft.halos} />
+                <PointerHalos feed={halos} />
               </View>
               <View pointerEvents="none" style={styles.paperBorder} />
             </View>

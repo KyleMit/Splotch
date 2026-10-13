@@ -20,6 +20,14 @@ export const HALO_RAINBOW = [
 ] as const;
 export const RING_LINE_PX = 2;
 export const RAINBOW_BAND_PX = 3;
+export const HALO_LINE = 'rgb(80, 80, 80)';
+export const HALO_GLOW = 'rgb(255, 255, 255)';
+export const HALO_GLOW_PX = 1;
+export const RING_LINE_OPACITY = 0.35;
+export const RING_GLOW_OPACITY = 0.35;
+export const ERASER_LINE_OPACITY = 0.7;
+export const ERASER_FILL_OPACITY = 0.35;
+export const ERASER_GLOW_OPACITY = 0.6;
 // Enough arcs that the band reads as the shipping conic gradient rather than as visible steps.
 const RAINBOW_SEGMENTS = 36;
 const BEZIER_STEPS = 12;
@@ -68,28 +76,28 @@ export function settleHalos(shown: readonly ShownHalo[], now: number): readonly 
   return kept.length === shown.length ? shown : kept;
 }
 
-export function haloMotionPending(shown: readonly ShownHalo[], now: number, reduced: boolean) {
-  return (
-    !reduced &&
-    shown.some((entry) => now - entry.since < (entry.lifting ? HALO_OUT_MS : HALO_IN_MS))
+// When the last grow-in or lift-off among the shown halos finishes.
+export function haloMotionEnd(shown: readonly ShownHalo[]) {
+  return Math.max(
+    -Infinity,
+    ...shown.map((entry) => entry.since + (entry.lifting ? HALO_OUT_MS : HALO_IN_MS))
   );
 }
 
-export function haloPose(entry: ShownHalo, now: number, reduced: boolean) {
-  if (reduced) return { scale: 1, opacity: 1 };
-  const duration = entry.lifting ? HALO_OUT_MS : HALO_IN_MS;
-  const eased = glide(Math.min(Math.max((now - entry.since) / duration, 0), 1));
-  return entry.lifting
-    ? { scale: 1 + (HALO_OUT_TO_SCALE - 1) * eased, opacity: 1 - eased }
-    : { scale: HALO_IN_FROM_SCALE + (1 - HALO_IN_FROM_SCALE) * eased, opacity: eased };
+export function haloMotionPending(shown: readonly ShownHalo[], now: number, reduced: boolean) {
+  return !reduced && haloMotionEnd(shown) > now;
 }
 
+// The worklets plugin turns each worklet into a value captured where it is declared, not a hoisted
+// function, so a worklet's callees must be declared above it (native-halo-worklets.test.mjs).
 function bezier(a: number, b: number, t: number) {
+  'worklet';
   const u = 1 - t;
   return 3 * u * u * t * a + 3 * u * t * t * b + t * t * t;
 }
 
 function glide(progress: number) {
+  'worklet';
   if (progress <= 0) return 0;
   if (progress >= 1) return 1;
   const [x1, y1, x2, y2] = EASE_GLIDE;
@@ -101,6 +109,16 @@ function glide(progress: number) {
     else high = middle;
   }
   return bezier(y1, y2, (low + high) / 2);
+}
+
+export function haloPose(entry: ShownHalo, now: number, reduced: boolean) {
+  'worklet';
+  if (reduced) return { scale: 1, opacity: 1 };
+  const duration = entry.lifting ? HALO_OUT_MS : HALO_IN_MS;
+  const eased = glide(Math.min(Math.max((now - entry.since) / duration, 0), 1));
+  return entry.lifting
+    ? { scale: 1 + (HALO_OUT_TO_SCALE - 1) * eased, opacity: 1 - eased }
+    : { scale: HALO_IN_FROM_SCALE + (1 - HALO_IN_FROM_SCALE) * eased, opacity: eased };
 }
 
 function channel(hex: string, offset: number) {
