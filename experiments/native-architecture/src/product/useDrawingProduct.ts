@@ -1,6 +1,3 @@
-import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from '../settings/drawingControlPreferences';
-import { DEFAULT_COLORING_BOOK_ENABLED } from '../settings/coloringBook';
-import { DEFAULT_SOUND_LEVEL } from '../settings/soundLevel';
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
@@ -8,6 +5,7 @@ import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
+import { useAiProgressOwner } from '../ai/useAiProgress';
 import { loadDrawingLoop } from '../platform/drawingAudio';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import {
@@ -20,10 +18,7 @@ import { aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from '../ai/prepare';
 import { parseDrawing } from '../drawing/model';
-import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
-import { DEFAULT_WIDTH_SETTINGS, type SoundSettingsState } from '../settings/soundSettings';
-import { DEFAULT_COLOR_SETTINGS } from '../drawing/palette';
-import { DEFAULT_APPEARANCE } from '../settings/appearance';
+import { initialSoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
@@ -196,19 +191,9 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       audio.dispose();
     };
   }, []);
-  const initial: SoundSettingsState = {
-    status: 'loading',
-    soundEnabled: false,
-    soundLevel: DEFAULT_SOUND_LEVEL,
-    ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
-    coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-    ...DEFAULT_WIDTH_SETTINGS,
-    ...DEFAULT_COLOR_SETTINGS,
-    ...DEFAULT_PARENT_PREFERENCES,
-    appearance: DEFAULT_APPEARANCE,
-    message: '',
-  };
-  const settings = services?.product.getState().settings ?? initial;
+  const settings = services?.product.getState().settings ?? initialSoundSettingsState();
+  const aiState = services?.ai.getState() ?? null;
+  const aiProgress = useAiProgressOwner(aiState);
   const parentCenterOpen = services?.product.getState().parentCenterOpen ?? false;
   useEffect(() => {
     if (parentCenterOpen) {
@@ -239,7 +224,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
         : null,
     },
     feedback: { owner: services?.feedback ?? null, state: services?.feedback.getState() ?? null },
-    ai: { owner: services?.ai ?? null, state: services?.ai.getState() ?? null },
+    ai: { owner: services?.ai ?? null, state: aiState, progress: aiProgress },
     owner: services?.product ?? null,
     state: services?.product.getState() ?? null,
   };

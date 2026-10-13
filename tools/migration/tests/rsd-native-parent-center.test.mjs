@@ -70,7 +70,7 @@ it('mounts actual RSD shared gate, policy radio state, confirmation and persiste
   await click('Per session: Reporting an AI picture');
   expect(owner.getState().settings.parentPolicies.imageReport).toBe('session');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 7,
+    version: 8,
     parentPolicies: { imageReport: 'session' },
   });
   await click('Never: Opening Parent Center');

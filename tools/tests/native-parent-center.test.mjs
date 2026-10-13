@@ -69,11 +69,12 @@ describe('root Parent Center policy and lifetime', () => {
     const current = parseSoundSettings(JSON.stringify(old));
     expect(current).toEqual({
       ...old,
-      version: 7,
+      version: 8,
       coloringBookEnabled: true,
       soundLevel: 'medium',
       undoButtonEnabled: true,
       strokeWidthControlEnabled: true,
+      orientation: 'portrait',
       aiEnabled: false,
       parentPolicies: ALWAYS,
     });
@@ -103,7 +104,7 @@ describe('root Parent Center policy and lifetime', () => {
       };
       const migrated = parseSoundSettings(JSON.stringify(old));
       expect(migrated).toMatchObject({
-        version: 7,
+        version: 8,
         aiEnabled: true,
         parentPolicies: {
           ai: 'never',
@@ -140,7 +141,7 @@ describe('root Parent Center policy and lifetime', () => {
     await f.owner.setPolicy('imageReport', 'session');
     const stored = f.storage.write.mock.calls[0][0];
     expect(parseSoundSettings(stored)).toMatchObject({
-      version: 7,
+      version: 8,
       parentPolicies: { ...ALWAYS, imageReport: 'session' },
     });
     const current = JSON.parse(stored);

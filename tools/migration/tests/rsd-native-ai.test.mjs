@@ -80,70 +80,12 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
                   status: 422,
                   headers: { 'X-Report-Token': 'fixture-refusal-proof' },
                 })
-              : new Response(rgbaPng(2, 2, 255), {
-                  headers: {
-                    'Content-Type': 'image/png',
-                    'X-Report-Token': 'fixture-report-proof',
-                  },
-                })
+              : pictureReply()
     );
-    caller.screen = {
-      notice: '',
-      drawing: false,
-      disabled: false,
-      brush: 'marker',
-      history: { undo: [], drawing },
-      currentDrawing: () => drawing,
-      surface: {
-        current: {
-          lockInput: () => () => {},
-          capturePng: async () => rgbaPng(1024, 768, 255).toString('base64'),
-        },
-      },
-      recovery: { failed: false },
-      pictures: null,
-      pagePickerOpen: false,
-      settingsOpen: false,
-      colorPickerOpen: false,
-    };
-    caller.sound = {
-      settings: {
-        status: 'ready',
-        soundEnabled: false,
-        appearance: 'dark',
-        selectedColor: 'Purple',
-        customColors: [],
-        strokeWidth: 'medium',
-        eraserWidth: 'medium',
-      },
-      owner: null,
-      audioMessage: '',
-    };
-    caller.menu = { open: false };
+    useCaller(drawing);
     await mount(createElement(RsdDrawingScreen));
     expect(host.querySelector('[aria-label="AI picture"]')).toBeNull();
-    await click('Parent Center');
-    expect(caller.aiSend).not.toHaveBeenCalled();
-    await solve();
-    await click('AI picture creation');
-    await click('Keep drawing');
-    await click('AI picture');
-    expect(caller.aiSend).not.toHaveBeenCalled();
-    await click('Check AI allowance');
-    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-    expect(records.dismissals).toContain('AI picture');
-    expect(caller.aiSend).not.toHaveBeenCalled();
-    await solve();
-    expect(host.querySelector('[aria-label="Sticker AI style"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="Save held recovery request"]')).toBeNull();
-    expect(host.textContent).toContain('splotch.art and OpenAI');
-    await click('Sticker AI style');
-    const requestsBeforeSend = caller.aiSend.mock.calls.length;
-    await click('Send drawing for AI');
-    expect(caller.aiSend).toHaveBeenCalledTimes(requestsBeforeSend);
-    expect(host.querySelector('[aria-label="Send drawing for AI"]')).toBeNull();
-    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
-    await solve();
+    await sendDrawing();
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
     expect(caller.aiReadPreparedUpload).toHaveBeenCalledOnce();
     if (outcome === 'refusal') {
@@ -174,4 +116,168 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'fixture-key');
     expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
   }
+);
+function pictureReply() {
+  return new Response(rgbaPng(2, 2, 255), {
+    headers: { 'Content-Type': 'image/png', 'X-Report-Token': 'fixture-report-proof' },
+  });
+}
+function useCaller(drawing) {
+  caller.screen = {
+    notice: '',
+    drawing: false,
+    disabled: false,
+    brush: 'marker',
+    history: { undo: [], drawing },
+    currentDrawing: () => drawing,
+    surface: {
+      current: {
+        lockInput: () => () => {},
+        capturePng: async () => rgbaPng(1024, 768, 255).toString('base64'),
+      },
+    },
+    recovery: { failed: false },
+    pictures: null,
+    pagePickerOpen: false,
+    settingsOpen: false,
+    colorPickerOpen: false,
+  };
+  caller.sound = {
+    settings: {
+      status: 'ready',
+      soundEnabled: false,
+      appearance: 'dark',
+      selectedColor: 'Purple',
+      customColors: [],
+      strokeWidth: 'medium',
+      eraserWidth: 'medium',
+    },
+    owner: null,
+    audioMessage: '',
+  };
+  caller.menu = { open: false };
+}
+async function sendDrawing() {
+  await click('Parent Center');
+  expect(caller.aiSend).not.toHaveBeenCalled();
+  await solve();
+  await click('AI picture creation');
+  await click('Keep drawing');
+  await click('AI picture');
+  expect(caller.aiSend).not.toHaveBeenCalled();
+  await click('Check AI allowance');
+  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+  expect(records.dismissals).toContain('AI picture');
+  expect(caller.aiSend).not.toHaveBeenCalled();
+  await solve();
+  expect(host.querySelector('[aria-label="Sticker AI style"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Save held recovery request"]')).toBeNull();
+  expect(host.textContent).toContain('splotch.art and OpenAI');
+  await click('Sticker AI style');
+  const requestsBeforeSend = caller.aiSend.mock.calls.length;
+  await click('Send drawing for AI');
+  expect(caller.aiSend).toHaveBeenCalledTimes(requestsBeforeSend);
+  expect(host.querySelector('[aria-label="Send drawing for AI"]')).toBeNull();
+  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+  await solve();
+}
+
+// The dial's done-ramp closes a sixth of the remaining gap each frame, so it
+// needs about forty frames; this is several times that at happy-dom's frame rate.
+const REVEAL_RAMP_WAIT_MS = 2000;
+// One poll interval (POLL_INTERVAL_MS) and a margin for the poll to settle.
+const POLL_WAIT_MS = 3500;
+const POLL_TEST_TIMEOUT_MS = 15_000;
+const WAITING_LABEL = 'Your picture is being made — tap to watch';
+const READY_LABEL = 'Your picture is ready — tap to see it';
+
+function pendingGeneration(generate) {
+  vi.clearAllMocks();
+  caller.aiAdmit.mockResolvedValue(undefined);
+  caller.aiSend.mockImplementation(async (request) =>
+    request.path === '/api/free-generation-grant'
+      ? new Response('{"ok":true,"remaining":10,"limit":10}')
+      : request.path === '/api/generate-image'
+        ? generate()
+        : pictureReply()
+  );
+}
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => (resolve = done));
+  return { promise, resolve };
+}
+async function elapse(ms) {
+  await act(async () => new Promise((done) => setTimeout(done, ms)));
+}
+const testId = (id) => host.querySelector(`[data-testid="${id}"]`);
+const labelled = (label) => host.querySelector(`[aria-label="${label}"]`);
+
+it.each([
+  ['moving', false],
+  ['calm', true],
+])('shows the %s waiting print with the sent drawing until the picture lands', async (_, calm) => {
+  records.reduceMotion = calm;
+  const reply = deferred();
+  pendingGeneration(() => reply.promise);
+  useCaller(emptyDrawing());
+  await mount(createElement(RsdDrawingScreen));
+  await sendDrawing();
+  expect(testId('ai-run-polaroid')).not.toBeNull();
+  const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
+  expect(sent.source.uri).toBe(
+    `data:image/png;base64,${rgbaPng(1024, 768, 255).toString('base64')}`
+  );
+  expect(labelled('AI picture progress')).not.toBeNull();
+  expect(testId('ai-confetti') !== null).toBe(!calm);
+  await act(async () => reply.resolve(pictureReply()));
+  expect(host.textContent).toContain('original drawing are saved');
+  expect(
+    records.props.some(
+      (props) => props.alt === 'Your AI picture' && props.src === 'file:///owned/rsd-ai.png'
+    )
+  ).toBe(true);
+  expect(labelled('AI picture progress')).not.toBeNull();
+  expect(testId('ai-confetti') !== null).toBe(!calm);
+  await elapse(REVEAL_RAMP_WAIT_MS);
+  expect(labelled('AI picture progress')).toBeNull();
+  expect(testId('ai-confetti')).toBeNull();
+  expect(testId('ai-run-polaroid')).not.toBeNull();
+});
+
+it(
+  'keeps polling a minimized picture and brings the child back when it is ready',
+  async () => {
+    pendingGeneration(
+      async () =>
+        new Response(JSON.stringify({ ok: true, jobId: 'b'.repeat(64), pollAfterMs: 0 }), {
+          status: 202,
+        })
+    );
+    useCaller(emptyDrawing());
+    await mount(createElement(RsdDrawingScreen));
+    await sendDrawing();
+    expect(testId('ai-run-polaroid')).not.toBeNull();
+    await click('Keep drawing');
+    expect(host.querySelector('[data-native-modal]')).toBeNull();
+    expect(labelled(WAITING_LABEL)).not.toBeNull();
+    expect(labelled('Parent Center').disabled).toBe(false);
+    await click('AI picture');
+    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+    expect(labelled(WAITING_LABEL)).toBeNull();
+    await click('Keep drawing');
+    expect(labelled(WAITING_LABEL)).not.toBeNull();
+    await elapse(POLL_WAIT_MS);
+    expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/generation-result');
+    expect(labelled(WAITING_LABEL)).toBeNull();
+    expect(host.querySelector('[data-native-modal]')).toBeNull();
+    await click(READY_LABEL);
+    expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+    expect(labelled(READY_LABEL)).toBeNull();
+    expect(testId('ai-run-polaroid')).not.toBeNull();
+    expect(labelled('AI picture progress')).toBeNull();
+    expect(testId('ai-confetti')).toBeNull();
+    expect(labelled('Open AI picture')).not.toBeNull();
+  },
+  POLL_TEST_TIMEOUT_MS
 );

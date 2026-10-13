@@ -44,6 +44,7 @@ describe('candidate sound settings', () => {
         soundLevel: 'medium',
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
+        orientation: 'portrait',
         saved: true,
         message: '',
       },
@@ -86,7 +87,7 @@ describe('candidate sound settings', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":7,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}'
+      '{"version":8,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait"}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -103,10 +104,10 @@ describe('candidate sound settings', () => {
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
       [
-        '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}',
+        '{"version":8,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait"}',
       ],
       [
-        '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}',
+        '{"version":8,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait"}',
       ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
@@ -192,7 +193,7 @@ describe('candidate sound settings', () => {
       await f.settings.setSoundLevel(soundLevel);
       const stored = f.storage.write.mock.calls.at(-1)[0];
       expect(parseSoundSettings(stored)).toMatchObject({
-        version: 7,
+        version: 8,
         soundEnabled: false,
         soundLevel,
         aiEnabled: true,
@@ -209,13 +210,22 @@ describe('candidate sound settings', () => {
         soundLevel: _level,
         undoButtonEnabled,
         strokeWidthControlEnabled,
+        orientation: _orientation,
         ...withoutLevel
       } = JSON.parse(stored);
       expect(
         parseSoundSettings(
-          JSON.stringify({ ...withoutLevel, undoButtonEnabled, strokeWidthControlEnabled })
+          JSON.stringify({
+            ...withoutLevel,
+            version: 7,
+            undoButtonEnabled,
+            strokeWidthControlEnabled,
+          })
         ).soundLevel
       ).toBe('medium');
+      expect(() =>
+        parseSoundSettings(JSON.stringify({ ...JSON.parse(stored), soundLevel: undefined }))
+      ).toThrow();
       for (const invalid of ['LOUD', '', null, 2, {}, ['quiet']]) {
         expect(() =>
           parseSoundSettings(JSON.stringify({ ...withoutLevel, soundLevel: invalid }))

@@ -4,10 +4,8 @@
   import { calm } from '$lib/platform/calmTransition';
   import { aiProgressState } from '$lib/state/aiProgress.svelte';
   import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
+  import { dialColors } from '$lib/ai/dialColors';
 
-  const HUE_START_DEG = 282;
-  const HUE_SWEEP_DEG = 132;
-  const HUE_SECOND_STOP_OFFSET_DEG = 46;
   const DIAL_EXIT_MS = 480;
   const DIAL_EXIT_START_SCALE = 1.35;
 
@@ -23,10 +21,7 @@
   // restoring the modal never restarts it.
   const progress = $derived(aiProgressState.value);
 
-  // A friendly violet → blue → teal → green sweep as the dial fills.
-  const hueA = $derived(HUE_START_DEG - HUE_SWEEP_DEG * progress);
-  const dialColor = $derived(`hsl(${hueA}, 82%, 62%)`);
-  const dialColor2 = $derived(`hsl(${hueA + HUE_SECOND_STOP_OFFSET_DEG}, 88%, 67%)`);
+  const colors = $derived(dialColors(progress));
   const wedgeAngle = $derived(`${(1 - progress) * 360}deg`);
 </script>
 
@@ -34,7 +29,7 @@
   <div
     class="dial"
     class:waiting={aiProgressState.waiting}
-    style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle}; --dial-size: min({DIAL_STAGE_FRACTION *
+    style="--c1: {colors.start}; --c2: {colors.end}; --angle: {wedgeAngle}; --dial-size: min({DIAL_STAGE_FRACTION *
       100}%, {DIAL_MAX_SIZE_PX}px);"
     out:dialExit
   >

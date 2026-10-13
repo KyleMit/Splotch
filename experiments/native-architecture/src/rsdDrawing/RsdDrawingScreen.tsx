@@ -4,6 +4,8 @@ import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { RsdParentGateSheet } from './RsdParentGateSheet';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
 import { RsdAiSheet } from './RsdAiSheet';
+import { aiSheetShown } from '../ai/uiState';
+import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
@@ -17,7 +19,6 @@ import { BRUSHES, type Brush } from '../drawing/brushes';
 import { PALETTE_COLORS, paintAppearance } from '../drawing/palette';
 import { ColorPicker } from '../drawing/ColorPicker';
 import { RsdColoringBookPicker } from './RsdColoringBookPicker';
-import { NativePaper } from './NativePaper';
 import { NativeSoundSettingsDialog } from './NativeDialog';
 import { RsdAction, RsdMoreColorsSwatch, RsdPaintAction, styles } from './controls';
 import type { NativeIconName } from './icons.generated';
@@ -29,6 +30,8 @@ import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
+import { soundSettingsActions } from './soundSettingsActions';
+import { useDeviceOrientation } from '../platform/deviceOrientation';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -51,7 +54,7 @@ export function RsdDrawingScreen() {
         ? 'settings'
         : product.feedback.state?.open
           ? 'feedback'
-          : product.ai.state?.open
+          : product.ai.state && aiSheetShown(product.ai.state)
             ? 'ai'
             : 'none';
   const route = useProductModalRoute(target, (outgoing) => {
@@ -103,6 +106,7 @@ export function RsdDrawingScreen() {
           state={product.ai.state}
           drawing={screen.history.drawing}
           artwork={screen.library.state.artwork}
+          progress={product.ai.progress}
           visible={route.visible}
           onDismiss={dismissed}
         />
@@ -136,7 +140,6 @@ function RsdDrawingContent({
   route: ReturnType<typeof useProductModalRoute>;
   onModalDismissed: () => void;
 }) {
-  const { feedback } = product;
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen);
   const notice = useSettledMessage(screen.notice, screen.drawing);
@@ -146,8 +149,10 @@ function RsdDrawingContent({
   );
   const modalBlocked = isProductModalBlocked(route.shown, product);
   const disabled = screen.disabled || menu.open || modalBlocked;
+  const paperBlocked = menu.open || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
   useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
+  useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
       <NativeFrame>
@@ -168,7 +173,7 @@ function RsdDrawingContent({
               />
             }
           >
-            <NativePaper screen={screen} sound={sound} menuOpen={menu.open || modalBlocked} />
+            <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
           </NativeDrawingLayout>
           <NativeDrawingStatus drawing={screen.drawing}>
             <html.span aria-live="polite">{notice}</html.span>
@@ -193,7 +198,7 @@ function RsdDrawingContent({
                 screen={screen}
                 sound={sound}
                 menu={menu}
-                onFeedback={() => feedback.owner?.open()}
+                onFeedback={() => product.feedback.owner?.open()}
                 browserAction={browserAction}
               />
             )}
@@ -216,27 +221,7 @@ function RsdDrawingContent({
               onBrushAvailabilityChange={screen.setBrushAvailable}
               onRetryBrushSave={screen.retryBrushSave}
               notice={soundNotice}
-              onToggle={() => {
-                void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
-              }}
-              onUndoButtonChange={(enabled) => {
-                void sound.owner?.settings.setUndoButtonEnabled(enabled);
-              }}
-              onStrokeWidthControlChange={(enabled) => {
-                void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
-              }}
-              onSoundLevelChange={(level) => {
-                void sound.owner?.settings.setSoundLevel(level);
-              }}
-              onAppearanceChange={(appearance) => {
-                void sound.owner?.settings.setAppearance(appearance);
-              }}
-              onColoringBookChange={(enabled) => {
-                void sound.owner?.settings.setColoringBookEnabled(enabled);
-              }}
-              onRetry={() => {
-                void sound.owner?.settings.retrySave();
-              }}
+              {...soundSettingsActions(sound)}
               onClose={screen.closeSettings}
               visible={route.visible}
               onDismiss={onModalDismissed}
