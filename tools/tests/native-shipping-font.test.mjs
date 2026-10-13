@@ -313,6 +313,25 @@ describe('RN shipping font on Android and iOS', () => {
     expect(textStyle(overridden).fontFamily).toBe(NATIVE_FONT_FAMILIES.semibold);
   });
 
+  it.each([
+    ['inherits a bold parent', '700', undefined, 'bold'],
+    ['inherits a semibold parent', '600', undefined, 'semibold'],
+    ['inherits through an unweighted middle text', '700', null, 'bold'],
+    ['overrides a bold parent with an explicit normal', '700', 'normal', 'regular'],
+  ])('sets nested text that %s in the matching face', (_, parent, child, face) => {
+    const innermost =
+      child === null
+        ? createElement(Text, null, createElement(Text, null, 'child'))
+        : createElement(Text, { style: child && { fontWeight: child } }, 'child');
+    const markup = renderToStaticMarkup(
+      createElement(Text, { style: { fontWeight: parent } }, 'parent ', innermost)
+    );
+    const styles = [...markup.matchAll(/data-style="[^"]*"/g)].map(([element]) =>
+      textStyle(element)
+    );
+    expect(styles.at(-1).fontFamily).toBe(NATIVE_FONT_FAMILIES[face]);
+  });
+
   it('routes every React Native text through the font wrapper', () => {
     expect(() => assertTextThroughWrapper(sources)).not.toThrow();
     const direct = new Map(sources).set(

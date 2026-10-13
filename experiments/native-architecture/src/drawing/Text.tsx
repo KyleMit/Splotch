@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from 'react';
+import { createContext, useContext, type ComponentPropsWithRef } from 'react';
 import {
   Text as BaseText,
   TextInput as BaseTextInput,
@@ -26,8 +26,23 @@ function fontWeightOf(style: TextStyles): TextStyle['fontWeight'] {
   return undefined;
 }
 
-export function Text({ style, ...props }: ComponentPropsWithRef<typeof BaseText>) {
-  return <BaseText {...props} style={[style, shippingTextFont(fontWeightOf(style))]} />;
+// Nested text inherits its parent's weight, as React Native's own text does, so it
+// takes the parent's face unless it sets a weight of its own.
+const InheritedFontWeight = createContext<TextStyle['fontWeight']>(undefined);
+
+export function Text({ style, children, ...props }: ComponentPropsWithRef<typeof BaseText>) {
+  const inherited = useContext(InheritedFontWeight);
+  const own = fontWeightOf(style);
+  const font = shippingTextFont(own ?? inherited);
+  return (
+    <BaseText {...props} style={[style, font]}>
+      {own === undefined ? (
+        children
+      ) : (
+        <InheritedFontWeight value={own}>{children}</InheritedFontWeight>
+      )}
+    </BaseText>
+  );
 }
 
 export function TextInput({ style, ...props }: ComponentPropsWithRef<typeof BaseTextInput>) {
