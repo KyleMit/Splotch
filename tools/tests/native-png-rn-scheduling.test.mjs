@@ -5,14 +5,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createPngAlphaDecoder } from '../../experiments/native-architecture/src/drawing/pngAlpha.ts';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { createPngWork } from '../../experiments/native-architecture/src/drawing/pngWork.ts';
-import { pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
+import { inkPng, pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
 
 const GRID = { width: 1024, height: 768 };
 const CHANNELS = 4;
 const FRAME_MS = 1000 / 60;
+// A full grid outlasts several bounded stretches of decoder work, even under a frozen clock.
+const MIN_FULL_GRID_PAUSES = 8;
 const MICROTASK_TURNS = 16;
 const TIMEOUT_NOTICE = 'Picture observation did not finish. Your drawing is still here.';
 const FIXTURE_SHA = 'bec2c1fceb86daff95c56e12ff12bdfc4f96727d7c6e32875fc224e152b3f9ec';
+// Frame waiting a cold-start held-PNG decode may spend; the rest of the deadline is Hermes CPU.
+const COLD_START_FRAME_WAIT_BUDGET_MS = PNG_TIMEOUT_MS / 10;
 const actualAndroidPng = new URL('./fixtures/native-png-android-rgba-sbit.png', import.meta.url);
 
 function nativeTaskBoundary({ winner = 'idle', missing, throws } = {}) {
@@ -192,6 +196,27 @@ describe('native task continuation with owned frame fallback', () => {
     PNG_TIMEOUT_MS + 2_000
   );
 
+  it.each([
+    ['realistic ink', () => inkPng(GRID.width, GRID.height)],
+    ['actual Android sBIT producer', () => readFileSync(actualAndroidPng)],
+  ])(
+    'validates the full-size %s PNG within the deadline when idle work is starved and every continuation waits a frame',
+    async (name, fixture) => {
+      const png = fixture();
+      const model = nativeTaskBoundary({ winner: 'timer' });
+      const result = await model.run(
+        createPngAlphaDecoder().decode(png.toString('base64'), GRID, () => true)
+      );
+      expect({ status: result.status, message: result.message }).toEqual({
+        status: 'accepted',
+        message: undefined,
+      });
+      expect(result.frames).toBeGreaterThan(0);
+      expect(result.elapsedVirtualMs).toBeLessThan(COLD_START_FRAME_WAIT_BUDGET_MS);
+    },
+    PNG_TIMEOUT_MS + 2_000
+  );
+
   it.each(['IEND CRC', 'IDAT CRC', 'Adler checksum', 'trailing byte'])(
     'rejects full PNG %s after opaque alpha',
     async (kind) => {
@@ -213,7 +238,7 @@ describe('native task continuation with owned frame fallback', () => {
       expect(result.message).toContain(
         kind === 'Adler checksum' ? 'invalid compressed PNG data' : 'invalid or unsupported PNG'
       );
-      expect(result.tasksFired).toBeGreaterThan(600);
+      expect(result.tasksFired).toBeGreaterThan(MIN_FULL_GRID_PAUSES);
       expect(model.pending()).toEqual({ timers: 0, tasks: 0 });
     }
   );

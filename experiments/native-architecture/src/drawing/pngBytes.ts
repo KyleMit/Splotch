@@ -127,7 +127,7 @@ export async function openPng(input: string, expected: PngGrid, work: PngWork) {
   async function skip(current: Chunk) {
     while (current.remaining) {
       data(current);
-      if (work.due()) await work.pause();
+      if (work.due() && work.endSlice()) await work.pause();
     }
     finish(current);
   }
