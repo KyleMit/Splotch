@@ -96,3 +96,33 @@ paper effects, the iOS input-zoom floor and the mono stack — are listed with t
 `RSD_UNPROJECTED_TOKENS`. `tools/migration/tests/rsd-drawing-tokens.test.mjs` fails when a shipping
 token is added or changed without regenerating, or when a projected value stops parsing in React
 Native.
+
+## Pickers and sliders
+
+`RsdSegmentedPicker` ports the shipping design `SegmentedPicker`: the `segment` track with its
+sliding brand thumb, the two-column toggle `chip` grid and the `underline` tabs, in radio mode (a
+radiogroup with one roving tab stop and arrow-key selection, `rovingRadio.ts`) or toggle mode.
+`RsdSlider` and `RsdSliderRow` port the shipping relative-drag `Slider` and its labelled settings
+row (`sliderModel.ts` holds the drag, detent and key rules). Neither is adopted by a screen yet.
+
+Each picker option sits in a React Native view whose `onLayout` frame places the thumb, so the same
+measurement serves web and native. The thumb is a Reanimated view: a selection change starts a
+`withTiming` glide on the UI thread (requestAnimationFrame on web), and first placement, a resize
+and reduced motion snap; no frame renders React. The options' ink fades are CSS transitions on web
+only (`pickerPlatform.ts`); React Strict DOM would run them natively through the JS-driven
+`Animated`. React Strict DOM also drops `aria-pressed` natively, so a pressed toggle chip reports
+`selected` there (`pickerPlatform.native.ts`).
+
+The slider's host is a React Native view, because the responder system carries the relative drag on
+every renderer and only a React Native view takes the increment and decrement accessibility actions
+VoiceOver and TalkBack adjust a slider with. Its track, fill, detent notch and thumb are React
+Strict DOM children painted from the tokens.
+
+The literals these ports carry that no token holds (the thumb's travel and its `--ease-glide` curve
+for Reanimated, option and icon sizes, the slider's disc, track, shadows and notch, the phone
+breakpoint) are exported as `PICKER_METRICS` and `SLIDER_METRICS` and read against the Svelte
+sources by `tools/migration/tests/rsd-native-segmented-picker.test.mjs` and
+`rsd-native-slider.test.mjs`. Not ported: the shipping `inputName` native-form radios (React Native
+has no form submission), the keyboard focus ring (React Strict DOM has no `outline` or
+`:focus-visible`). Arrow-key roving and slider keys reach the option cell and slider host through
+react-native-web's key events; a hardware keyboard on Android or iOS is unverified.
