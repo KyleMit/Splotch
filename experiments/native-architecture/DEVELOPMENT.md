@@ -48,4 +48,5 @@ The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; insta
 The Android manifest removes Expo FileSystem's legacy `READ_EXTERNAL_STORAGE` and
 `WRITE_EXTERNAL_STORAGE` declarations; saving uses app-private storage and sharing uses a cache PNG.
 `tools/migration/tests/native-permissions.test.mjs` guards the manifest. Check a built APK's merged
-permissions when a dependency changes.
+permissions when a dependency changes. `expo-haptics` merges the normal-level `VIBRATE` permission
+for the drag-to-clear threshold haptic, as the shipping app's `@capacitor/haptics` does.

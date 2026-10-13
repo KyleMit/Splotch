@@ -22,6 +22,9 @@ const SOUND_LEVEL_GAIN: Record<SoundLevel, number> = {
   medium: MEDIUM_GAIN_MULTIPLIER,
   loud: LOUD_GAIN_MULTIPLIER,
 };
+export function soundLevelGain(level: SoundLevel) {
+  return SOUND_LEVEL_GAIN[level];
+}
 export const FULL_VOLUME_PAPER_UNITS_PER_MS = 0.45;
 export const GAIN_RAMP_S = 0.06;
 export const STOP_DECLICK_S = 0.005;

@@ -15,6 +15,7 @@ const { AbortController: NativeAbortController } = reactNativeRequire(
 const native = vi.hoisted(() => ({ players: [], mode: vi.fn(async () => {}), create: vi.fn() }));
 vi.mock('expo-audio', () => ({ setAudioModeAsync: native.mode, createAudioPlayer: native.create }));
 import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
+import { PLAYBACK_AUDIO_MODE } from '../../experiments/native-architecture/src/audio/playbackMode.ts';
 
 function fixture(loader = loadDrawingLoop) {
   const player = {
@@ -64,7 +65,7 @@ async function resetRefusalMutation() {
   });
   const body = outputText.replace(/^import .*;$/gm, '').replace(/^export /gm, '');
   const fixtureSource = `export function createLoader({createAudioPlayer, setAudioModeAsync,
-    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, pencilSound}) { ${body}; return loadDrawingLoop; }`;
+    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, PLAYBACK_AUDIO_MODE, pencilSound}) { ${body}; return loadDrawingLoop; }`;
   const module = await import(
     `data:text/javascript;base64,${Buffer.from(fixtureSource).toString('base64')}`
   );
@@ -73,6 +74,7 @@ async function resetRefusalMutation() {
     setAudioModeAsync: native.mode,
     AUDIO_LOAD_TIMEOUT_MS,
     GAIN_RAMP_S,
+    PLAYBACK_AUDIO_MODE,
     pencilSound: 1,
   });
 }

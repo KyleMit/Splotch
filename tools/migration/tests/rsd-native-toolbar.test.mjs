@@ -84,6 +84,15 @@ function button(label) {
   return node;
 }
 
+// A finger only drags Clear; the assistive activation is its one non-drag path.
+function clearProps() {
+  return records.props.findLast((props) => props.accessibilityLabel === 'Clear');
+}
+
+function activateClear() {
+  clearProps().onAccessibilityAction({ nativeEvent: { actionName: 'activate' } });
+}
+
 function iconMarkup(node) {
   const icon = node.querySelector('svg[data-xml]');
   expect(icon, node.getAttribute('aria-label')).not.toBeNull();
@@ -112,7 +121,7 @@ it('renders every toolbar action as a named icon button that calls its owner', a
     const ink = icon === 'brush-crayon' ? PURPLE : DRAWING_THEME.iconInk;
     expect(iconMarkup(node), label).toBe(NATIVE_ICONS[icon].light.replaceAll('currentColor', ink));
     const before = handler().mock.calls.length;
-    await act(async () => node.click());
+    await act(async () => (label === 'Clear' ? activateClear() : node.click()));
     expect(handler().mock.calls.length, label).toBe(before + 1);
   }
   expect(caller.screen.setPagePickerOpen).toHaveBeenCalledWith(true);
@@ -133,7 +142,10 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
   expect(eraser.getAttribute('role')).toBe('switch');
   expect(eraser.dataset.checked).toBe('false');
   expect(iconMarkup(eraser)).toBe(NATIVE_ICONS['brush-eraser'].light);
-  for (const label of ['Eraser', 'Clear', 'Save picture', 'Settings', 'Undo', 'Drawing tools']) {
+  expect(button('Clear')).not.toBeNull();
+  expect(clearProps().accessibilityState.disabled).toBe(true);
+  await act(async () => activateClear());
+  for (const label of ['Eraser', 'Save picture', 'Settings', 'Undo', 'Drawing tools']) {
     const node = button(label);
     expect(node.disabled, label).toBe(true);
     await act(async () => node.click());

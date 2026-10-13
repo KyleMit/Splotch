@@ -114,7 +114,11 @@ export function svgPort(React) {
   return {
     default: Svg,
     Circle: Svg,
+    ClipPath: Svg,
     Defs: Svg,
+    G: Svg,
+    Image: Svg,
+    Mask: Svg,
     LinearGradient: Svg,
     Path: Svg,
     RadialGradient: Svg,
