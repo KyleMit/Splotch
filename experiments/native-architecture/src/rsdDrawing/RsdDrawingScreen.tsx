@@ -1,12 +1,12 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import {
-  NativeSoundSettingsDialog,
   RsdAiSheet,
   RsdColorPicker,
   RsdColoringBookPicker,
   RsdFeedbackSheet,
   RsdParentCenterSection,
   RsdParentGateSheet,
+  RsdSettingsRoute,
 } from './drawingSheets';
 import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
@@ -22,20 +22,19 @@ import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingMenu } from '../useDrawingMenu';
-import { RsdAction, styles } from './controls';
+import { styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
-import { RsdDraftNotice } from './RsdDraftNotice';
+import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdInstallBanner } from './RsdInstallBanner';
-import { NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
-import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
+import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 
@@ -69,6 +68,7 @@ export function RsdDrawingScreen() {
   const dismissed = route.dismissed;
   const loading =
     sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading';
+  useDrawingPainted(!loading);
   return (
     <DrawingAppearanceProvider
       preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
@@ -183,7 +183,7 @@ function RsdDrawingContent({
 }) {
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen, 'reported');
-  const notice = useSettledMessage(screen.notice, screen.drawing);
+  const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
     screen.drawing
@@ -196,7 +196,7 @@ function RsdDrawingContent({
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
-      <NativeFrame>
+      <NativeFrame variant="drawing">
         <html.div
           data-layoutconformance="strict"
           style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}
@@ -222,18 +222,12 @@ function RsdDrawingContent({
               />
             )}
             status={
-              <NativeDrawingStatus drawing={screen.drawing}>
-                <html.span aria-live="polite">{notice}</html.span>
-                {soundNotice ? <html.span aria-live="polite">{soundNotice}</html.span> : null}
-                <RsdDraftNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-                {screen.recovery.failed ? (
-                  <RsdAction
-                    label="Retry drawing"
-                    disabled={screen.recovery.retryDisabled}
-                    onClick={screen.recovery.retry}
-                  />
-                ) : null}
-              </NativeDrawingStatus>
+              <RsdDrawingStatus
+                screen={screen}
+                notice={notice}
+                soundNotice={soundNotice}
+                blocked={disabled || screen.pictures !== null}
+              />
             }
           >
             <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
@@ -261,17 +255,13 @@ function RsdDrawingContent({
             Settings keeps which section is open across an Appearance change. */}
         {route.shown === 'settings' ? (
           <RsdSurfaceBoundary onClose={screen.closeSettings}>
-            <NativeSoundSettingsDialog
-              settings={sound.settings}
-              brushState={screen.brushPreferences}
-              onBrushAvailabilityChange={screen.setBrushAvailable}
-              onRetryBrushSave={screen.retryBrushSave}
+            <RsdSettingsRoute
+              screen={screen}
+              sound={sound}
+              product={product}
               notice={soundNotice}
-              {...soundSettingsActions(sound)}
-              onClose={screen.closeSettings}
               visible={route.visible}
               onDismiss={onModalDismissed}
-              onParentCenter={() => product.owner?.openParentCenter()}
             />
           </RsdSurfaceBoundary>
         ) : null}

@@ -21,6 +21,22 @@ const IN_APP_KEPT = "A copy is kept in this app's Pictures.";
 // Android 7-9 saves fall back to app-specific media storage instead of failing.
 const UNAVAILABLE_NOTICE = `${IN_APP_SAVED_NOTICE} Saving to your gallery needs Android 11 or later.`;
 
+// A save the library refused is a failure, not news: the drawing screen shows it in the Save
+// Failure Banner. A refusal still leaves the in-app copy, so the banner says so.
+export type SaveFailure = Readonly<{ heading: string; detail: string }>;
+
+export function photoLibraryFailure(
+  outcome: PhotoLibraryOutcome,
+  os: PhotoLibraryOs
+): SaveFailure | null {
+  if (outcome === 'photos' || outcome === 'unavailable') return null;
+  const detail = outcome === 'denied' ? PERMISSION_DETAIL[os] : FAILED_DETAIL;
+  return {
+    heading: `${UNSAVED_HEADING} to ${LIBRARY_NAME[os]}`,
+    detail: `${detail} ${IN_APP_KEPT}`,
+  };
+}
+
 export function photoLibraryNotice(outcome: PhotoLibraryOutcome, os: PhotoLibraryOs): string {
   if (outcome === 'photos') return `Picture saved to ${LIBRARY_NAME[os]} and on this device.`;
   if (outcome === 'unavailable') return UNAVAILABLE_NOTICE;

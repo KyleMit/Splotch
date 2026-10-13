@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import { Animated } from '../platform/animated';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { PARENT_GATE_SHAKE_MS, type ParentGateState } from './parentGate';
 

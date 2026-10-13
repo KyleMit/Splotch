@@ -4,10 +4,9 @@ import { useDrawingAppearance } from './drawing/DrawingAppearance';
 import { createDrawingStyles, useDrawingStyles } from './drawing/DrawingAppearance';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './drawing/Text';
-import { useState } from 'react';
 import { Image } from 'react-native';
 import { NativeLibraryControls } from './offlineLibrary/NativeLibraryControls';
-import { useLibraryControls } from './offlineLibrary/LibraryScope';
+import { useHeldBooks, useLibraryControls } from './offlineLibrary/LibraryScope';
 import { offlinePageId } from './offlineLibrary/identity';
 import { OFFLINE_BOOKS } from './offlineLibrary/books.generated';
 import Svg, { Rect } from 'react-native-svg';
@@ -34,7 +33,7 @@ export function ColoringPagePicker({
   const styles = useDrawingStyles(themedStyles);
   const theme = useDrawingAppearance();
   const library = useLibraryControls();
-  const [heldBooks] = useState(() => library?.state.installed ?? []);
+  const heldBooks = useHeldBooks(library);
   return (
     <Modal visible transparent animationType={animationType} onRequestClose={onClose}>
       <View style={styles.backdrop}>

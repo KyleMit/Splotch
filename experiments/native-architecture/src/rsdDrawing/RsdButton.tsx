@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { RsdPressable } from './RsdPressable';

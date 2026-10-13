@@ -2,10 +2,11 @@
 // bundle, so each renders on its first frame; the web export loads each on first use
 // (drawingSheets.web.ts).
 export { AiWaitingPolaroid } from '../ai/AiWaitingPolaroid';
-export { NativeSoundSettingsDialog } from './RsdSettingsDialog';
+export { RsdSettingsRoute } from './RsdSettingsRoute';
 export { RsdAiSheet } from './RsdAiSheet';
 export { RsdColorPicker } from './RsdColorPicker';
 export { RsdColoringBookPicker } from './RsdColoringBookPicker';
+export { RsdFailureBanner } from './RsdFailureBanner';
 export { RsdFeedbackSheet } from './RsdFeedbackSheet';
 export { RsdParentCenterSection } from './RsdParentCenterSection';
 export { RsdParentGateSheet } from './RsdParentGateSheet';

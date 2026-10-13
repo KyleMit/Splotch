@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useMemo, useState, type Ref } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { css, html } from 'react-strict-dom';
@@ -33,19 +33,22 @@ const CONTROLS = {
 
 type ControlKind = keyof typeof CONTROLS;
 
-function HeaderControl({
+// Also the banners' Dismiss, which shipping draws as this same outlined close blob.
+export function HeaderControl({
   kind,
+  label = CONTROLS[kind].label,
   disabled,
   onClick,
 }: {
   kind: ControlKind;
+  label?: string;
   disabled: boolean;
   onClick: () => void;
 }) {
   const palette = useDrawingTheme();
   const active = useDialogActive();
   const [hovered, setHovered] = useState(false);
-  const { icon, label, shape, inset } = CONTROLS[kind];
+  const { icon, shape, inset } = CONTROLS[kind];
   const path = useMemo(
     () => blobPath(shape, MODAL_CONTROL_SIZE_PX, MODAL_CONTROL_SIZE_PX, inset),
     [shape, inset]
@@ -94,8 +97,15 @@ function HeaderControl({
 }
 
 type DialogHeaderProps = { onClose: () => void; closeDisabled?: boolean } & (
-  | { title: string; titleSize: 'xl' | 'lg'; onBack?: () => void }
-  | { title?: never; titleSize?: never; onBack?: never }
+  | {
+      title: string;
+      titleSize: 'xl' | 'lg';
+      onBack?: () => void;
+      /** Makes the title a programmatic focus target, for a page that replaced the control
+       * holding focus. */
+      titleRef?: Ref<HTMLHeadingElement>;
+    }
+  | { title?: never; titleSize?: never; onBack?: never; titleRef?: never }
 );
 
 // The shipping DialogHeader: back on a brand-wash blob, the title, and the outlined close. With no
@@ -106,6 +116,7 @@ export function DialogHeader({
   onBack,
   onClose,
   closeDisabled = false,
+  titleRef,
 }: DialogHeaderProps) {
   const scope = useContext(DialogScope);
   const close = <HeaderControl kind="close" disabled={closeDisabled} onClick={onClose} />;
@@ -116,7 +127,9 @@ export function DialogHeader({
     <html.header style={[styles.header, box && styles.padding(box.top, box.inline, box.bottom)]}>
       {onBack ? <HeaderControl kind="back" disabled={false} onClick={onBack} /> : null}
       <html.h2
+        ref={titleRef}
         id={scope?.titleId}
+        tabIndex={titleRef ? -1 : undefined}
         style={[
           controlStyles.semiboldText,
           styles.title,

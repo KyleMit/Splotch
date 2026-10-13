@@ -1,14 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  Easing,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing } from '../platform/animated';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -210,9 +202,7 @@ export function ModalStage({
           style={layout.fill}
           onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
         >
-          <Animated.View pointerEvents="none" style={[layout.cover, { opacity: motion.scrim }]}>
-            <ModalScrim />
-          </Animated.View>
+          <ModalScrim opacity={motion.scrim} />
           {/* A responder rather than a Pressable: React Native Web makes every enabled Pressable a
               tab stop, and its Modal focuses the first one, which would put an unnamed scrim
               ahead of the header and let Enter dismiss the dialog. */}
