@@ -19,15 +19,23 @@ const drawn = (...strokes) => ({ ...emptyDrawing(), strokes });
 let root;
 let host;
 let visible;
+let ink;
 let scan;
 
 function Probe({ drawing, idle }) {
-  visible = useVisibleInk(drawing, idle, scan);
+  ink = useVisibleInk(drawing, idle, scan);
+  visible = ink.visible;
   return null;
 }
 
 async function show(drawing, idle = true) {
   await act(async () => root.render(createElement(Probe, { drawing, idle })));
+}
+
+// An eraser lift commits this drawing, as the screen's cohort commit reports it.
+async function lift(drawing, idle = true) {
+  await show(drawing, idle);
+  await act(async () => ink.erased(drawing));
 }
 
 async function idleFor(ms) {
@@ -53,7 +61,7 @@ describe('the drawing owner’s visible-ink state', () => {
   it('reads an eraser-only page as blank without scanning a pixel', async () => {
     const erased = drawn(eraser, eraser);
     expect(inkVerdict(erased)).toBe('blank');
-    await show(erased);
+    await lift(erased);
     await idleFor(EMPTY_SCAN_IDLE_MS * 3);
     expect(visible).toBe(false);
     expect(scan).not.toHaveBeenCalled();
@@ -66,10 +74,10 @@ describe('the drawing owner’s visible-ink state', () => {
     expect(scan).not.toHaveBeenCalled();
   });
 
-  it('counts erased ink as visible until the idle scan finds the page blank', async () => {
+  it('counts erased ink as visible until the idle scan after the eraser lift finds it blank', async () => {
     const erased = drawn(pen, eraser);
     expect(inkVerdict(erased)).toBe('scan');
-    await show(erased, false);
+    await lift(erased, false);
     await idleFor(EMPTY_SCAN_IDLE_MS * 3);
     expect(scan).not.toHaveBeenCalled();
     expect(visible).toBe(true);
@@ -83,12 +91,12 @@ describe('the drawing owner’s visible-ink state', () => {
 
   it('keeps erased ink that still shows enabled, and remembers each answer for Undo', async () => {
     const partial = drawn(pen, eraser);
-    const blank = drawn(pen, eraser, eraser);
+    const blank = drawn(...partial.strokes, eraser);
     scan.mockImplementation(async (drawing) => drawing === blank);
-    await show(partial);
+    await lift(partial);
     await idleFor(EMPTY_SCAN_IDLE_MS);
     expect(visible).toBe(true);
-    await show(blank);
+    await lift(blank);
     await idleFor(EMPTY_SCAN_IDLE_MS);
     expect(visible).toBe(false);
     await show(partial);
@@ -101,19 +109,30 @@ describe('the drawing owner’s visible-ink state', () => {
   it('waits another idle stretch when the paper is busy, and stops at a page it cannot read', async () => {
     const erased = drawn(pen, eraser);
     scan.mockResolvedValueOnce('busy').mockResolvedValueOnce(true);
-    await show(erased);
+    await lift(erased);
     await idleFor(EMPTY_SCAN_IDLE_MS);
     expect(scan).toHaveBeenCalledOnce();
     expect(visible).toBe(true);
     await idleFor(EMPTY_SCAN_IDLE_MS);
     expect(scan).toHaveBeenCalledTimes(2);
     expect(visible).toBe(false);
-    const unreadable = drawn(pen, eraser, eraser);
+    const unreadable = drawn(...erased.strokes, eraser);
     scan.mockRejectedValueOnce(new Error('no pixels'));
-    await show(unreadable);
+    await lift(unreadable);
     await idleFor(EMPTY_SCAN_IDLE_MS * 3);
     expect(scan).toHaveBeenCalledTimes(3);
     expect(visible).toBe(true);
+  });
+
+  it('scans only after an eraser lift, never a restored or undone page', async () => {
+    const restored = drawn(pen, eraser);
+    await show(restored);
+    await idleFor(EMPTY_SCAN_IDLE_MS * 3);
+    expect(scan).not.toHaveBeenCalled();
+    expect(visible).toBe(true);
+    await show(drawn(pen));
+    await idleFor(EMPTY_SCAN_IDLE_MS * 3);
+    expect(scan).not.toHaveBeenCalled();
   });
 
   it('waits as long as the shipping eraser scan does', () => {

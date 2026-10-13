@@ -21,34 +21,39 @@ export function inkVerdict(drawing: Drawing): InkVerdict {
 // a contact holds the paper) and should be tried again after another idle wait.
 export type EmptyScan = (drawing: Drawing) => Promise<boolean | 'busy'>;
 
-// The drawing owner's visible-ink state. Each scanned drawing keeps its answer, so Undo back to it
-// needs no second scan; until a drawing's scan lands it counts as showing ink, as shipping holds
-// the page non-empty from the stroke until its scan.
+// The drawing owner's visible-ink state. An eraser lift (`erased`, called with the drawing the lift
+// committed) schedules a scan of that page once the child has been idle, as shipping schedules its
+// scan on an eraser lift and on nothing else. Each answer is kept per drawing, so Undo back to it
+// needs no second scan, as shipping's undo restores the empty state it recorded. Erased ink no scan
+// has read (a restored draft, an Undo past the scans) counts as showing, as shipping holds the page
+// non-empty until a scan says otherwise.
 export function useVisibleInk(drawing: Drawing, idle: boolean, scanEmpty: EmptyScan) {
   const answers = useRef(new WeakMap<Drawing, boolean>());
+  const awaiting = useRef(new WeakSet<Drawing>());
   const scan = useRef(scanEmpty);
   scan.current = scanEmpty;
-  const [, answered] = useReducer((count: number) => count + 1, 0);
+  const [lifts, changed] = useReducer((count: number) => count + 1, 0);
   const verdict = inkVerdict(drawing);
-  const needsScan = verdict === 'scan' && !answers.current.has(drawing);
   useEffect(() => {
-    if (!needsScan || !idle) return;
+    if (!idle || !awaiting.current.has(drawing) || answers.current.has(drawing)) return;
     let live = true;
     let timer: ReturnType<typeof setTimeout>;
+    function settle(visible: boolean) {
+      awaiting.current.delete(drawing);
+      answers.current.set(drawing, visible);
+      changed();
+    }
     function wait() {
       timer = setTimeout(() => {
         void scan.current(drawing).then(
           (empty) => {
             if (!live) return;
             if (empty === 'busy') return wait();
-            answers.current.set(drawing, !empty);
-            answered();
+            settle(!empty);
           },
           () => {
             // A page the scan cannot read keeps counting as inked rather than retrying forever.
-            if (!live) return;
-            answers.current.set(drawing, true);
-            answered();
+            if (live) settle(true);
           }
         );
       }, EMPTY_SCAN_IDLE_MS);
@@ -58,7 +63,13 @@ export function useVisibleInk(drawing: Drawing, idle: boolean, scanEmpty: EmptyS
       live = false;
       clearTimeout(timer);
     };
-  }, [drawing, needsScan, idle]);
-  if (verdict !== 'scan') return verdict === 'inked';
-  return answers.current.get(drawing) ?? true;
+  }, [drawing, idle, lifts]);
+  return {
+    visible: verdict === 'scan' ? (answers.current.get(drawing) ?? true) : verdict === 'inked',
+    erased(lifted: Drawing) {
+      if (inkVerdict(lifted) !== 'scan') return;
+      awaiting.current.add(lifted);
+      changed();
+    },
+  };
 }

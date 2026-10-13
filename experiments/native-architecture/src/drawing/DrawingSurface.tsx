@@ -276,8 +276,12 @@ function useSurfaceCapture(
           throw new Error('Finish drawing before using this control.');
         const lease = {};
         commandLock.current = lease;
+        // A capture belongs to the lease it was taken under, so giving the lease up mid-capture
+        // ends that capture rather than leaving it to block the next command's.
         return () => {
-          if (commandLock.current === lease) commandLock.current = null;
+          if (commandLock.current !== lease) return;
+          commandLock.current = null;
+          captureLock.current?.cancel('Picture capture was cancelled.');
         };
       },
     }),

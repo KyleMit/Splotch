@@ -11,7 +11,6 @@ import {
   hasDrawingInk,
   clearDrawing,
   undoDrawing,
-  type Drawing,
   type History,
   type Stroke,
 } from './drawing/model';
@@ -26,11 +25,11 @@ import {
   type OptionalBrush,
 } from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
-import { createInkObservation } from './drawing/inkCoverage';
 import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
 import { useVisibleInk } from './drawing/inkVisibility';
+import { createEmptyScan, useInkObservers } from './drawingScan';
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
@@ -64,9 +63,12 @@ export function useDrawingScreen() {
 
   // Strokes committed since this screen opened; the install banner waits on them.
   const [committedStrokes, setCommittedStrokes] = useState(0);
-  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (count) =>
-    setCommittedStrokes((total) => total + count)
-  );
+  // Whether the page shows ink: the screenshot camera's blank state.
+  const ink = useVisibleInk(history.drawing, !drawing, scanEmpty);
+  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (strokes) => {
+    setCommittedStrokes((total) => total + strokes.length);
+    if (strokes.some((stroke) => stroke.brush === 'eraser')) ink.erased(historyRef.current.drawing);
+  });
 
   const settings = useDrawingSettings({
     surface,
@@ -119,9 +121,6 @@ export function useDrawingScreen() {
     setNotice,
   });
 
-  // Whether the page shows ink: the screenshot camera's blank state.
-  const inkVisible = useVisibleInk(history.drawing, !drawing, scanEmpty);
-
   return {
     library,
     recovery,
@@ -148,7 +147,7 @@ export function useDrawingScreen() {
     currentDrawing,
     finishCohort,
     committedStrokes,
-    inkVisible,
+    inkVisible: ink.visible,
     ...pictureActions,
   };
 }
@@ -158,12 +157,12 @@ function createCohortCommit(
   setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
   setNotice: (notice: string) => void,
   report: (error: unknown) => void,
-  onCommitted: (count: number) => void
+  onCommitted: (strokes: readonly Stroke[]) => void
 ) {
   return (strokes: readonly Stroke[], paper: PaperReference) => {
     try {
       setHistory(addStrokes(historyRef.current, strokes, paper));
-      onCommitted(strokes.length);
+      onCommitted(strokes);
       setNotice('');
     } catch (error) {
       report(error);
@@ -344,47 +343,11 @@ function useSurfaceCommands({
   afterClear: () => void;
 }) {
   const command = useRef(false);
-  const mounted = useRef(true);
-  const observations = useRef<ReturnType<typeof createInkObservation> | null>(null);
-  if (!observations.current) observations.current = createInkObservation();
-  useEffect(() => {
-    if (!observations.current) observations.current = createInkObservation();
-    const owner = observations.current;
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      owner.dispose();
-      if (observations.current === owner) observations.current = null;
-    };
-  }, []);
-  // The eraser's idle blank-page check: a short command that reads the ink back, as Clear does.
-  // It takes the paper only when nothing else holds it, and otherwise asks to be tried later.
-  async function scanEmpty(snapshot: Drawing): Promise<boolean | 'busy'> {
-    const owner = surface.current;
-    if (command.current || blocked() || !owner || historyRef.current.drawing !== snapshot)
-      return 'busy';
-    let release: () => void;
-    try {
-      release = owner.lockInput();
-    } catch {
-      return 'busy';
-    }
-    command.current = true;
-    const isCurrent = () =>
-      mounted.current && historyRef.current.drawing === snapshot && surface.current === owner;
-    const observation = observations.current?.begin(isCurrent, drawingPaperSize(snapshot));
-    try {
-      if (!observation) throw new Error('Picture observation is not ready.');
-      return await observation.observe(await owner.captureInk(snapshot));
-    } finally {
-      observation?.cancel();
-      command.current = false;
-      release();
-    }
-  }
-
+  const scanning = useRef<(() => void) | null>(null);
+  const { mounted, observations, scanObservations } = useInkObservers(scanning);
   async function runCommand(action: () => Promise<void>) {
     if (command.current || blocked()) return;
+    scanning.current?.();
     let release: (() => void) | undefined;
     try {
       if (!surface.current) throw new Error('The drawing paper is not ready.');
@@ -405,6 +368,7 @@ function useSurfaceCommands({
 
   function undo() {
     if (command.current || blocked()) return;
+    scanning.current?.();
     let release: (() => void) | undefined;
     try {
       release = surface.current?.lockInput();
@@ -463,7 +427,15 @@ function useSurfaceCommands({
   return {
     command,
     runCommand,
-    scanEmpty,
+    scanEmpty: createEmptyScan({
+      command,
+      scanning,
+      mounted,
+      observations: scanObservations,
+      surface,
+      historyRef,
+      blocked,
+    }),
     undo,
     clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
