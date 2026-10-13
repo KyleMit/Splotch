@@ -266,44 +266,49 @@ export function renderReleaseHistory(releases) {
   );
 }
 
-// The React Native app's What's New notes: each release's sections as plain-text
-// items, keyed by version. React Native renders no HTML, and the app reads the
-// release list itself from releases.json, so this holds only the notes. Release
-// documents are written as level-two sections of list items; anything else is
-// refused rather than dropped from the native pane.
-const NATIVE_SECTION = /^##\s+(.+)$/;
-const NATIVE_ITEM = /^[*-]\s+(.+)$/;
+// The React Native app's What's New notes. React Native renders no HTML, so this reads back the
+// HTML the shipping renderer already produced for a release rather than parsing its Markdown a
+// second time: whatever renderReleaseMarkdown accepts, the native notes carry, and nothing here
+// can refuse a release the shipping app shows. Each heading opens a section (untitled for text
+// before the first heading); list items and paragraphs become its plain-text blocks.
+const RENDERED_BLOCK = /<h([1-6])>([\s\S]*?)<\/h\1>|<li>([\s\S]*?)<\/li>|<p>([\s\S]*?)<\/p>/g;
+const HTML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
 
-function nativeItemText(markdown) {
-  return markdown
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/(?<!\*)\*(?!\*)(.+?)\*/g, '$1')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '$1')
-    .replace(/`(.+?)`/g, '$1')
+function renderedText(html) {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&(#\d{1,7}|#[Xx][\da-fA-F]{1,6}|\w+);/g, (entity, name) => {
+      if (name in HTML_ENTITIES) return HTML_ENTITIES[name];
+      if (name.startsWith('#x') || name.startsWith('#X'))
+        return String.fromCodePoint(parseInt(name.slice(2), 16));
+      if (name.startsWith('#')) return String.fromCodePoint(Number(name.slice(1)));
+      return entity;
+    })
+    .replace(/\s*\n\s*/g, ' ')
     .trim();
 }
 
-export function renderNativeReleaseSections(body, filename) {
+export function nativeSectionsFromRenderedHtml(html) {
   const sections = [];
-  for (const line of body.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    const heading = NATIVE_SECTION.exec(line);
-    const item = NATIVE_ITEM.exec(line);
-    if (heading) sections.push({ title: heading[1].trim(), items: [] });
-    else if (item && sections.length) sections.at(-1).items.push(nativeItemText(item[1]));
-    else throw new Error(`${filename}: the native app renders only ## sections of list items`);
+  const current = () => {
+    if (!sections.length) sections.push({ title: '', blocks: [] });
+    return sections.at(-1);
+  };
+  for (const [, , heading, item, paragraph] of html.matchAll(RENDERED_BLOCK)) {
+    if (heading !== undefined) sections.push({ title: renderedText(heading), blocks: [] });
+    else if (item !== undefined) current().blocks.push({ kind: 'item', text: renderedText(item) });
+    else current().blocks.push({ kind: 'paragraph', text: renderedText(paragraph) });
   }
-  if (sections.some((section) => section.items.length === 0))
-    throw new Error(`${filename}: every native release section needs at least one item`);
   return sections;
+}
+
+export function renderNativeReleaseSections(body) {
+  return nativeSectionsFromRenderedHtml(renderReleaseMarkdown(body));
 }
 
 export function renderNativeReleaseNotes(releases) {
   const notes = Object.fromEntries(
-    releases.map((release) => [
-      release.meta.version,
-      renderNativeReleaseSections(release.body, release.filename),
-    ])
+    releases.map((release) => [release.meta.version, renderNativeReleaseSections(release.body)])
   );
   return `${JSON.stringify(notes, null, 2)}\n`;
 }

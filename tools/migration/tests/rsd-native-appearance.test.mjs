@@ -297,7 +297,7 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   await click('Back to help and about');
   await click('What’s new');
   expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
-  expect(host.textContent).toContain(RELEASE_NOTES[0].sections[0].items[0]);
+  expect(host.textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);
   expect(host.textContent).not.toContain('In this beta');
   await click('Back to Settings');
   expect(host.querySelector('[role="list"] [aria-label="Appearance"]')).not.toBeNull();

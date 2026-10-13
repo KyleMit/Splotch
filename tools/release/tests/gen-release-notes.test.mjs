@@ -8,12 +8,15 @@ import {
   renderReleaseHistory,
   renderReleaseMetadata,
   renderReleaseHueModule,
+  renderNativeReleaseNotes,
   renderNativeReleaseSections,
+  nativeSectionsFromRenderedHtml,
   RELEASE_HUES,
   validateBundledReleaseText,
   validateEmDashSpacing,
   validateStoreText,
 } from '../gen-release-notes.mjs';
+import { renderReleaseMarkdown } from '../lib/release-markdown.mjs';
 
 it('generates every release datetime from its validated source date', () => {
   const metadata = JSON.parse(
@@ -275,23 +278,105 @@ it('keeps the generated runtime hue vocabulary owned by the generator', () => {
 });
 
 describe('renderNativeReleaseSections', () => {
-  it('turns each level-two section into plain-text items for React Native', () => {
-    expect(
-      renderNativeReleaseSections(
-        '## New\n\n* **Bold** and *soft* [links](https://splotch.art) with `code`.\n- Dashes too.\n\n## Fixed\n\n* One fix.',
-        '9.0.0.md'
-      )
-    ).toEqual([
-      { title: 'New', items: ['Bold and soft links with code.', 'Dashes too.'] },
-      { title: 'Fixed', items: ['One fix.'] },
+  // Every construct releases/README.md permits, including the spellings that span lines.
+  const PERMITTED = {
+    'wrapped bullets':
+      '## New\n\n* A bullet that wraps\n  onto a second line.\n* Another\ncontinues unindented.',
+    'multi-line paragraphs':
+      '## Improved\n\nA paragraph that runs\nacross two lines.\n\nA second paragraph.',
+    'dash and star items': '## Fixed\n\n- A dash item.\n* A star item.',
+    'level-three headings':
+      '## New\n\n### Drawing\n\n* Smoother lines.\n\n### Sound\n\nQuieter clicks.',
+    'inline spans':
+      '## New\n\n* **Bold**, *italic*, _underscored_, `code` and [a link](https://splotch.art).',
+    'escaped text': '## New\n\n* Fish & chips < 5 "quoted" it\'s &amp; kept.',
+    'text before any heading': 'A lead paragraph.\n\n* A lead item.\n\n## New\n\n* An item.',
+    'a heading with no notes': '## New\n\n## Fixed\n\n* One fix.',
+    'a heading outside the vocabulary': '## Thanks\n\n* To everyone who tested.',
+  };
+
+  function shippingTexts(body) {
+    const html = renderReleaseMarkdown(body);
+    return [...html.matchAll(/<(h[1-6]|li|p)>([\s\S]*?)<\/\1>/g)].map(([, tag, inner]) => ({
+      heading: tag.startsWith('h'),
+      text: nativeSectionsFromRenderedHtml(`<p>${inner}</p>`)[0].blocks[0].text,
+    }));
+  }
+
+  function nativeTexts(sections) {
+    return sections.flatMap(({ title, blocks }, index) => [
+      ...(index > 0 || title ? [{ heading: true, text: title }] : []),
+      ...blocks.map(({ text }) => ({ heading: false, text })),
     ]);
+  }
+
+  it.each(Object.entries(PERMITTED))(
+    'carries %s exactly as the shipping renderer reads them',
+    (_name, body) => {
+      const native = renderNativeReleaseSections(body);
+      expect(nativeTexts(native)).toEqual(shippingTexts(body));
+      for (const { blocks } of native)
+        for (const { text } of blocks) expect(text).not.toMatch(/<\/?[a-z]|&(?:#\d+|\w+);|\n/);
+    }
+  );
+
+  it('keeps list items, paragraphs, wrapped lines and entities as plain text', () => {
+    expect(renderNativeReleaseSections(PERMITTED['wrapped bullets'])).toEqual([
+      {
+        title: 'New',
+        blocks: [
+          { kind: 'item', text: 'A bullet that wraps onto a second line.' },
+          { kind: 'item', text: 'Another continues unindented.' },
+        ],
+      },
+    ]);
+    expect(renderNativeReleaseSections(PERMITTED['multi-line paragraphs'])).toEqual([
+      {
+        title: 'Improved',
+        blocks: [
+          {
+            kind: 'paragraph',
+            text: 'A paragraph that runs across two lines.',
+          },
+          { kind: 'paragraph', text: 'A second paragraph.' },
+        ],
+      },
+    ]);
+    expect(renderNativeReleaseSections(PERMITTED['escaped text'])[0].blocks[0].text).toBe(
+      'Fish & chips < 5 "quoted" it\'s & kept.'
+    );
+    expect(renderNativeReleaseSections(PERMITTED['text before any heading'])[0]).toEqual({
+      title: '',
+      blocks: [
+        { kind: 'paragraph', text: 'A lead paragraph.' },
+        { kind: 'item', text: 'A lead item.' },
+      ],
+    });
+  });
+
+  it('generates native notes for every release the shipping renderer accepts', () => {
+    const releases = Object.values(PERMITTED).map((body, index) =>
+      parseReleaseSource(
+        `9.${index}.0.md`,
+        `---\nversion: 9.${index}.0\ndate: 2026-10-01\n---\n\n${body}\n`
+      )
+    );
+    const notes = JSON.parse(renderNativeReleaseNotes(releases));
+    expect(Object.keys(notes)).toEqual(releases.map(({ meta }) => meta.version));
   });
 
   it.each([
-    ['a paragraph', '## New\n\nA paragraph the native pane would drop.'],
-    ['an item before any section', '* Orphan item\n\n## New\n\n* Item'],
-    ['an empty section', '## New\n\n## Fixed\n\n* Item'],
-  ])('refuses %s rather than dropping it', (_name, body) => {
-    expect(() => renderNativeReleaseSections(body, '9.0.0.md')).toThrow('9.0.0.md');
+    ['a fenced code block', '## New\n\n```\ncode\n```'],
+    ['an ordered list', '## New\n\n1. First'],
+    ['raw HTML', '## New\n\n<b>bold</b>'],
+  ])('refuses %s only where the shipping renderer refuses it, with its error', (_name, body) => {
+    let shipping;
+    try {
+      renderReleaseMarkdown(body);
+    } catch (error) {
+      shipping = error.message;
+    }
+    expect(shipping).toBeDefined();
+    expect(() => renderNativeReleaseSections(body)).toThrow(shipping);
   });
 });

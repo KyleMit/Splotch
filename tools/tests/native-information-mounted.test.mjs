@@ -38,7 +38,7 @@ it('keeps the drawing and history while reading bundled information from Setting
   expect(screen.dialog().textContent).toContain('Opening a report or cancelling it sends nothing.');
   await screen.click('Back to help and about');
   await screen.click('What’s new');
-  expect(screen.dialog().textContent).toContain(RELEASE_NOTES[0].sections[0].items[0]);
+  expect(screen.dialog().textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);
   expect(screen.dialog().textContent).not.toContain('In this beta');
   await screen.click('Back to Settings');
   expect(screen.button('Manage Parent Center')).toBeDefined();

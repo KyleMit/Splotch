@@ -231,7 +231,7 @@ it.each([
     expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
     for (const release of RELEASE_NOTES) {
       expect(host.textContent).toContain(release.dateLabel);
-      expect(host.textContent).toContain(release.sections[0].items[0]);
+      expect(host.textContent).toContain(release.sections[0].blocks[0].text);
     }
     expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
     await click('Back to Settings');
@@ -250,4 +250,29 @@ it("shows no dot once the current release's notes have been seen", async () => {
   expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
   await openSettingsSection(WHATS_NEW);
   expect(settings.storage.write).not.toHaveBeenCalled();
+});
+
+it("keeps the What's New stamp when the section opens while another choice is still saving", async () => {
+  const settings = storedSettings({ whatsNewSeen: null });
+  let finishWrite;
+  settings.storage.write.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finishWrite = resolve;
+      })
+  );
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Accessibility');
+  await click('Bigger buttons');
+  expect(caller.product.sound.settings.status).toBe('saving');
+  await click('Back to Settings');
+  await openSettingsSection(`${WHATS_NEW}, new`);
+  expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
+  expect(settings.storage.write).toHaveBeenCalledOnce();
+  await act(async () => finishWrite());
+  expect(settings.storage.write).toHaveBeenCalledTimes(2);
+  expect(settings.stored()).toMatchObject({ buttonScale: 110, whatsNewSeen: WHATS_NEW_STAMP });
+  await click('Back to Settings');
+  expect(host.querySelector('[data-testid="settings-activity-dot"]')).toBeNull();
 });

@@ -2,21 +2,36 @@ import releases from '../../../../web/src/lib/releases.json';
 import notes from '../information/releaseNotes.generated.json';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 
-type ReleaseSection = Readonly<{ title: string; items: readonly string[] }>;
+export type ReleaseBlock = Readonly<{ kind: 'item' | 'paragraph'; text: string }>;
+type ReleaseSection = Readonly<{ title: string; blocks: readonly ReleaseBlock[] }>;
 export type ReleaseNotes = Readonly<{
   version: string;
   dateLabel: string;
   sections: readonly ReleaseSection[];
 }>;
 
-const NOTES_BY_VERSION: Readonly<Record<string, readonly ReleaseSection[] | undefined>> = notes;
+const NOTES_BY_VERSION: Readonly<
+  Record<
+    string,
+    readonly { title: string; blocks: readonly { kind: string; text: string }[] }[] | undefined
+  >
+> = notes;
+
+function releaseBlock({ kind, text }: { kind: string; text: string }): ReleaseBlock {
+  if (kind !== 'item' && kind !== 'paragraph') throw new Error(`Unknown release block: ${kind}`);
+  return { kind, text };
+}
 
 // The shipping release list, newest first, with the notes tools/release/gen-release-notes.mjs
-// renders for this app from the same releases/*.md documents.
+// reads back from the shipping renderer's output for the same releases/*.md documents.
 export const RELEASE_NOTES: readonly ReleaseNotes[] = releases.map(({ version, dateLabel }) => {
   const sections = NOTES_BY_VERSION[version];
   if (!sections) throw new Error(`Release ${version} has no generated notes.`);
-  return { version, dateLabel, sections };
+  return {
+    version,
+    dateLabel,
+    sections: sections.map(({ title, blocks }) => ({ title, blocks: blocks.map(releaseBlock) })),
+  };
 });
 
 // The shipping What's New section's content stamp is the app version, so its dot returns with

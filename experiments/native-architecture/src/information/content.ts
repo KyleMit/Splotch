@@ -82,6 +82,9 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
   // The shipping What's New notes for the current release, from the same release documents.
   whatsNew: {
     title: 'What’s new',
-    sections: CURRENT_RELEASE.sections.map(({ title, items }) => ({ title, paragraphs: items })),
+    sections: CURRENT_RELEASE.sections.map(({ title, blocks }) => ({
+      title,
+      paragraphs: blocks.map(({ text }) => text),
+    })),
   },
 };

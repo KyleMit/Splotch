@@ -169,7 +169,10 @@ describe("What's New", () => {
     );
     expect(source(NATIVE_RELEASE_NOTES_PATH)).toBe(renderNativeReleaseNotes(readReleases()));
     expect(INFORMATION_CONTENT.whatsNew.sections).toEqual(
-      RELEASE_NOTES[0].sections.map(({ title, items }) => ({ title, paragraphs: items }))
+      RELEASE_NOTES[0].sections.map(({ title, blocks }) => ({
+        title,
+        paragraphs: blocks.map(({ text }) => text),
+      }))
     );
   });
 

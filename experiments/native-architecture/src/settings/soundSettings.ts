@@ -109,6 +109,7 @@ type PreferenceActionContext = {
   persist: (settings: SoundSettings) => Promise<void>;
 };
 
+// The owner awaits flushWhatsNewSeen after each write it finishes.
 function createAccessibilityActions({
   getState,
   isDisposed,
@@ -116,7 +117,8 @@ function createAccessibilityActions({
   publish,
   persist,
 }: PreferenceActionContext) {
-  return {
+  let whatsNewSeenQueued = false;
+  const actions = {
     async setButtonScale(buttonScale: number) {
       const state = getState();
       if (isDisposed() || state.status !== 'ready') return;
@@ -138,10 +140,15 @@ function createAccessibilityActions({
       }
       await persist({ ...snapshot(state), reduceMotion });
     },
+    // Opening What's New can happen while another choice is still being written; the stamp then
+    // waits for that writer instead of being dropped, so the dot clears once it finishes.
     async markWhatsNewSeen() {
       const state = getState();
-      if (isDisposed() || state.status !== 'ready' || state.whatsNewSeen === WHATS_NEW_STAMP)
+      if (isDisposed() || state.whatsNewSeen === WHATS_NEW_STAMP) return;
+      if (state.status !== 'ready') {
+        whatsNewSeenQueued = true;
         return;
+      }
       if (hasReadFailed()) {
         publish({ ...state, whatsNewSeen: WHATS_NEW_STAMP });
         return;
@@ -149,6 +156,12 @@ function createAccessibilityActions({
       await persist({ ...snapshot(state), whatsNewSeen: WHATS_NEW_STAMP });
     },
   };
+  async function flushWhatsNewSeen() {
+    if (!whatsNewSeenQueued || isDisposed() || getState().status !== 'ready') return;
+    whatsNewSeenQueued = false;
+    await actions.markWhatsNewSeen();
+  }
+  return { actions, flushWhatsNewSeen };
 }
 
 function createDrawingPreferenceActions({
@@ -271,6 +284,9 @@ function createDrawingPreferenceActions({
   };
 }
 
+const PARENT_SAVE_FAILED_MESSAGE =
+  'Parent Center choices were not saved. Previous protection is still active. Retry saving.';
+
 export function createSoundSettings(
   storage: SoundSettingsStorage,
   onChange: (state: SoundSettingsState) => void
@@ -300,6 +316,7 @@ export function createSoundSettings(
         message: 'Your settings work for this session, but could not be saved. Please retry.',
       });
     }
+    await accessibility.flushWhatsNewSeen();
   }
   async function persistParent(settings: SoundSettings) {
     if (state.status !== 'ready' || readFailed) return;
@@ -313,14 +330,9 @@ export function createSoundSettings(
       pendingParent = null;
       publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });
     } catch {
-      publish({
-        status: 'ready',
-        ...choices,
-        saved: false,
-        message:
-          'Parent Center choices were not saved. Previous protection is still active. Retry saving.',
-      });
+      publish({ status: 'ready', ...choices, saved: false, message: PARENT_SAVE_FAILED_MESSAGE });
     }
+    await accessibility.flushWhatsNewSeen();
   }
   const actionContext: PreferenceActionContext = {
     getState: () => state,
@@ -329,6 +341,7 @@ export function createSoundSettings(
     publish,
     persist,
   };
+  const accessibility = createAccessibilityActions(actionContext);
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
@@ -341,9 +354,10 @@ export function createSoundSettings(
         readFailed = true;
         publish(unreadSoundSettingsState());
       }
+      await accessibility.flushWhatsNewSeen();
     },
     ...createDrawingPreferenceActions(actionContext),
-    ...createAccessibilityActions(actionContext),
+    ...accessibility.actions,
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;
       if (pendingParent) {
