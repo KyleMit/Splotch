@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { Image, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
 import {
@@ -177,7 +177,7 @@ function ResultCard({
   const loading = phase.kind !== 'error' && !revealed;
   const waiting = loading && phase.kind === 'generating';
   const sizerSrc = result?.uri ?? run?.submitted ?? null;
-  const [decoded, setDecoded] = useState<Decoded | null>(null);
+  const decoded = useDecodedSize(sizerSrc);
   const aspect = decoded ? decoded.width / decoded.height : window.width / window.height;
   const frame = aiResultFrame({
     window,
@@ -226,9 +226,6 @@ function ResultCard({
                 width={frame.stage.width}
                 height={frame.stage.height}
                 dialSize={frame.dialSize}
-                onDecoded={(size) => {
-                  if (sizerSrc) setDecoded({ src: sizerSrc, ...size });
-                }}
               />
               {loading ? <RsdAiLoadingCaption /> : null}
               {waiting ? <RsdAiKeepDrawing onPress={owner.minimize} /> : null}
@@ -254,6 +251,27 @@ function ResultCard({
       </html.div>
     </SendOff>
   );
+}
+
+// The shown picture's own size, which the card sizes itself from, read from the image rather
+// than a load event, which React Native Web's Image restarts on every render of a turning dial.
+function useDecodedSize(src: string | null) {
+  const [decoded, setDecoded] = useState<Decoded | null>(null);
+  useEffect(() => {
+    if (!src) return;
+    let current = true;
+    Image.getSize(
+      src,
+      (width, height) => {
+        if (current && width > 0 && height > 0) setDecoded({ src, width, height });
+      },
+      () => {}
+    );
+    return () => {
+      current = false;
+    };
+  }, [src]);
+  return decoded;
 }
 
 // One Download at a time per picture: a second tap while its save is in flight does nothing.

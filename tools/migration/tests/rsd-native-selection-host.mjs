@@ -319,7 +319,10 @@ vi.mock('react-native', async () => {
             React.createElement(View, { ...props, role: 'dialog', 'aria-modal': true })
           );
     },
-    Image: View,
+    // Every picture the fixtures hand out reads as a landscape drawing's size.
+    Image: Object.assign(host('div'), {
+      getSize: (_uri, done) => queueMicrotask(() => done(1024, 768)),
+    }),
     TextInput: host('input'),
     experimental_LayoutConformance: View,
   };
