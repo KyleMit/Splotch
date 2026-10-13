@@ -6,8 +6,26 @@ import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawi
 import { AI_RESULT_HEIGHT_PX } from '../../../experiments/native-architecture/src/ai/uiState.ts';
 import { BLACK_INK } from '../../../web/src/lib/palette.ts';
 
-const COLOR_KEYS = ['surface', 'text', 'paper', 'brandSolid', 'brandWash', 'floatSurface'];
-const SCALE_KEYS = ['space2', 'space3', 'space4', 'radiusMd', 'fontSizeMd', 'disabledOpacity'];
+const COLOR_KEYS = [
+  'surface',
+  'surface2',
+  'text',
+  'textStrong',
+  'paper',
+  'brandSolid',
+  'brandWash',
+  'floatSurface',
+];
+const SCALE_KEYS = [
+  'space2',
+  'space3',
+  'space4',
+  'radiusMd',
+  'fontSizeMd',
+  'fontSizeLg',
+  'fontWeightBold',
+  'disabledOpacity',
+];
 
 function tokenSource() {
   const colors = (theme) => Object.fromEntries(COLOR_KEYS.map((key) => [key, theme[key]]));

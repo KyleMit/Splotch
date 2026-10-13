@@ -1,7 +1,29 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { hasDrawingInk } from '../drawing/model';
-import { createBrowserBack, type BrowserBackOwner } from '../product/browserBack';
+import {
+  createBrowserBack,
+  type BrowserBackOwner,
+  type BrowserHistoryPort,
+} from '../product/browserBack';
+import { withoutInviteParam } from '../ai/inviteLink';
 import type { DrawingSession } from '../product/createDrawingSession';
+
+// Exported so tools/migration/tests/inviteLinks.web.test.mjs drives the real port.
+export function browserHistoryPort(): BrowserHistoryPort {
+  return {
+    state: () => history.state,
+    // Invite capture strips its parameter after this owner records the page URL; that is not a
+    // navigation away from the drawing.
+    url: () => withoutInviteParam(location.href),
+    push: (state) => history.pushState(state, '', location.href),
+    replace: (state) => history.replaceState(state, '', location.href),
+    back: () => history.back(),
+    listen: (listener) => {
+      addEventListener('popstate', listener);
+      return () => removeEventListener('popstate', listener);
+    },
+  };
+}
 
 const BrowserBackScope = createContext<BrowserBackOwner | null>(null);
 
@@ -17,26 +39,13 @@ export function BrowserBackProvider({
   useEffect(() => {
     const back =
       retainedOwner.current ??
-      createBrowserBack(
-        {
-          state: () => history.state,
-          url: () => location.href,
-          push: (state) => history.pushState(state, '', location.href),
-          replace: (state) => history.replaceState(state, '', location.href),
-          back: () => history.back(),
-          listen: (listener) => {
-            addEventListener('popstate', listener);
-            return () => removeEventListener('popstate', listener);
-          },
-        },
-        {
-          owner: crypto.randomUUID(),
-          runtime: String(performance.timeOrigin),
-          guardEligible:
-            matchMedia('(pointer: coarse)').matches ||
-            matchMedia('(display-mode: standalone)').matches,
-        }
-      );
+      createBrowserBack(browserHistoryPort(), {
+        owner: crypto.randomUUID(),
+        runtime: String(performance.timeOrigin),
+        guardEligible:
+          matchMedia('(pointer: coarse)').matches ||
+          matchMedia('(display-mode: standalone)').matches,
+      });
     retainedOwner.current = back;
     function changed() {
       back.setDrawingInk(hasDrawingInk(session.currentDrawing()));

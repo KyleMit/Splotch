@@ -2,6 +2,7 @@ import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
+import { solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 async function click(label) {
@@ -14,12 +15,6 @@ async function input(label, value) {
   const props = records.props.findLast((item) => item.accessibilityLabel === label);
   expect(props, label).toBeDefined();
   await act(async () => props.onChange({ nativeEvent: { text: value } }));
-}
-async function solve() {
-  const match = host.textContent.match(/(\d) × (\d)/);
-  expect(match).not.toBeNull();
-  await input('Grown-up answer', String(Number(match[1]) * Number(match[2])));
-  await click('Check answer');
 }
 async function reviewReport() {
   await click('Open AI picture');

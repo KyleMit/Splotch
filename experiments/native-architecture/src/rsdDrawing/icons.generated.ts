@@ -42,6 +42,10 @@ const controlsDark =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><rect width="891.11" height="201.59" x="54.4" y="241.63" rx="100.8" fill="#8fbdea"/><rect width="891.19" height="201.83" x="54.37" y="556.68" fill="#f87791" rx="100.91"/><circle cx="327.21" cy="339.63" r="143.03" fill="#f9c915"/><circle cx="668.3" cy="660.48" r="143.02" fill="#f9c915"/></svg>';
 const chevronRight =
   '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 1000 1000"><path d="M525 500 362.5 337.5q-11.46-11.46-11.46-29.17t11.46-29.17 29.17-11.46 29.17 11.46l191.67 191.67q6.25 6.25 8.85 13.54t2.6 15.63-2.6 15.63-8.85 13.54L420.83 720.83q-11.46 11.46-29.17 11.46t-29.17-11.46-11.46-29.17 11.46-29.17z"/></svg>';
+const backspace =
+  '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 1000 1000"><path d="M375 791.67q-20.83 0-39.06-9.37t-29.69-26.05L125 500l181.25-256.25q11.46-16.67 29.69-26.04t39.06-9.37h416.67q34.38 0 58.85 24.48T875 291.67v416.67q0 34.38-24.48 58.85t-58.85 24.48zm150-172.92 79.17-79.17 79.17 79.17q11.46 11.46 29.17 11.46t29.17-11.46 11.46-29.17-11.46-29.17l-79.17-79.17 79.17-79.17q11.46-11.46 11.46-29.17t-11.46-29.17-29.17-11.46-29.17 11.46l-79.17 79.17L525 343.73q-11.46-11.46-29.17-11.46t-29.17 11.46-11.46 29.17 11.46 29.17l79.17 79.17-79.17 79.17q-11.46 11.46-11.46 29.17t11.46 29.17 29.17 11.46T525 618.75"/></svg>';
+const check =
+  '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 1000 1000"><path d="m397.92 631.25 353.13-353.12q12.5-12.5 29.17-12.5t29.17 12.5 12.5 29.17-12.5 29.17L427.08 718.75q-12.5 12.5-29.17 12.5t-29.17-12.5l-162.49-162.5q-12.5-12.5-12.5-29.17t12.5-29.17 29.17-12.5 29.17 12.5z"/></svg>';
 
 export const NATIVE_ICONS = {
   undo: { light: undo, dark: undo },
@@ -60,6 +64,8 @@ export const NATIVE_ICONS = {
   'parent-center': { light: parentCenter, dark: parentCenter },
   controls: { light: controlsLight, dark: controlsDark },
   'chevron-right': { light: chevronRight, dark: chevronRight },
+  backspace: { light: backspace, dark: backspace },
+  check: { light: check, dark: check },
 } as const satisfies Record<string, Record<'light' | 'dark', string>>;
 
 export type NativeIconName = keyof typeof NATIVE_ICONS;

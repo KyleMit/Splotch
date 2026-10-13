@@ -44,6 +44,8 @@ const WEB_STYLE_FILES = [
   'src/rsdDrawing/controls.tsx',
   'src/rsdDrawing/RsdAiSheet.tsx',
   'src/rsdDrawing/RsdFeedbackSheet.tsx',
+  'src/rsdDrawing/RsdParentGateKeypad.tsx',
+  'src/rsdDrawing/RsdParentGateSheet.tsx',
 ];
 const WEB_COMPILE_SOURCE = `
 const assert = require('node:assert/strict');
