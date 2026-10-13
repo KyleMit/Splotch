@@ -15,27 +15,28 @@ The released RSD native renderer implements `html.div` using a native view. Acce
 style does not create a `ScrollView`. The recovery adapter therefore uses the existing drawing
 layout owner's 25% feedback height bound and spacing. The drawing layout follows the shipping app:
 one bar of paint swatches plus More colors along the top edge in portrait and down the left edge in
-landscape, Clear on the right edge, Settings in the bottom-right corner, and the remaining tools in
-a drawer whose chevron (`Expand controls` / `Collapse controls`) sits in the bottom-left corner. The
-bar measures its own length and shows as many swatches as fit, trimming by the shipping trim order
-(`PALETTE_TRIM_ORDER`, drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`); remembered
-custom paints go first, and the selected paint always keeps a swatch. Compact paint radios retain
-their full accessible names, checked state, visible selected treatment and actual paint colors.
-Paint radios are round, text-free swatches whose selected state is a ring in the paint's color,
-matching the shipping Color Swatch. Toolbar actions are icon buttons drawn from the shipping icon
-set through `RsdIcon` (react-native-svg `SvgXml` on every platform, fed by the generated
-`icons.generated.ts`); each keeps its former text as its accessible name. The Drawing tools sheet in
-the drawer keeps the brush and width choices and the less frequent actions. Their touch size imports
-the drawing control owner. Status messages have a separate 25% bounded viewport below the paper area
-so long messages cannot consume the entire drawing workspace. `NativePaper` fills the paper area
-behind the floating edge controls and contain-fits the fixed logical paper into it, centered, the
-way the shipping app presents a rotation-locked paper (ADR-0050); the paper keeps its fixed aspect,
-so a portrait phone shows it full width with margins above and below. These allocations require
-native geometry and visual verification; source flex bounds alone do not establish usable paper
-space. The recovery viewport preserves individual actionable children, names itself “PNG recovery”
-with the `rsd-png-recovery-viewport` identity, and retains clipped child views. Recovery state and
-scrolling stay settled while contacts are drawing. An empty recovery state allocates no viewport. No
-new PNG writer, queue capacity, persistence policy or Dismiss owner is introduced.
+landscape, Clear docked to the right screen edge, Settings in the bottom-right corner, and the
+remaining tools in a drawer whose chevron (`Expand controls` / `Collapse controls`) sits in the
+bottom-left corner. The bar measures its own length and shows as many swatches as fit, trimming by
+the shipping trim order (`PALETTE_TRIM_ORDER`, drift-guarded by
+`tools/tests/native-drawing-tokens.test.mjs`); remembered custom paints go first, and the selected
+paint always keeps a swatch. Compact paint radios retain their full accessible names, checked state,
+visible selected treatment and actual paint colors. Paint radios are round, text-free swatches whose
+selected state is a ring in the paint's color, matching the shipping Color Swatch. Toolbar actions
+are icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg `SvgXml` on
+every platform, fed by the generated `icons.generated.ts`); each keeps its former text as its
+accessible name. The Drawing tools sheet in the drawer keeps the brush and width choices and the
+less frequent actions. Their touch size imports the drawing control owner. Status messages have a
+separate 25% bounded viewport below the paper area so long messages cannot consume the entire
+drawing workspace. `NativePaper` fills the paper area behind the floating edge controls and
+contain-fits the fixed logical paper into it, centered, the way the shipping app presents a
+rotation-locked paper (ADR-0050); the paper keeps its fixed aspect, so a portrait phone shows it
+full width with margins above and below. These allocations require native geometry and visual
+verification; source flex bounds alone do not establish usable paper space. The recovery viewport
+preserves individual actionable children, names itself “PNG recovery” with the
+`rsd-png-recovery-viewport` identity, and retains clipped child views. Recovery state and scrolling
+stay settled while contacts are drawing. An empty recovery state allocates no viewport. No new PNG
+writer, queue capacity, persistence policy or Dismiss owner is introduced.
 
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The
@@ -224,3 +225,28 @@ Where React Native differs:
   Quicksand face, and draw the focus ring with React Native's `outline*` styles.
 * `RsdConfirmCard` lays out the title, copy and two actions; the caller passes the actions (the
   design Button) and hosts the card in its dialog.
+
+## Clear Button
+
+The shipping Clear Button (`ClearButton.svelte`) docks to the screen, not the paper.
+`NativeDrawingLayout` therefore renders a clear overlay that spans the whole safe-area frame, after
+the paper column and under the palette bar (the shipping `--z-palette` stacking), clipped to that
+frame. The overlay holds the accept ring, the dock and the coachmark. The clear underlay stays in
+the paper area and receives the area's offset inside the layout, so the wash grows from the screen's
+top-right corner and the departing page flies into the docked tab.
+
+* `experiments/native-architecture/src/clear/clearDock.ts` projects the dock geometry: the tab's
+  10px overhang past the right edge, 90px down and 60px tall in portrait, and 48px down (or 20px
+  below a taller safe-area top) and 70px tall in landscape, with the 38px or 40px lid.
+  `useClearGesture` exposes it as `dock`.
+* `RsdClearFace` draws the tab and the coachmark ghost. The face is a half-disc docked, a full disc
+  lifted, and turns alarm red with a glow past the accept ring. Each state names its own background,
+  because native RSD resolves a token gradient after a literal one.
+* The accept ring wash reaches 100% at the corner of the ring's square box, which is what CSS
+  `radial-gradient(circle, …)` means.
+* `RsdClearCoachmark` and `RsdClearUnderlay` paint nothing until a press on Clear. The web export
+  loads each from its own chunk once the screen mounts (`clearSurfaces.web.ts`), keeping them off
+  the startup budget; the native apps import them directly (`clearSurfaces.ts`).
+* `tools/tests/native-clear-projection.test.mjs` reads every dock size, finish, ring ink and stroke
+  width back from the shipping stylesheets. `tools/migration/tests/rsd-native-clear.test.mjs` mounts
+  the resolved rest and drag states.

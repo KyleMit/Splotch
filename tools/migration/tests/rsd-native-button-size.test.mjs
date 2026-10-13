@@ -14,6 +14,10 @@ import {
   EDGE_INSET_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import { paletteSlots } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
+import {
+  CLEAR_DOCK_OVERHANG_PX,
+  clearDock,
+} from '../../../experiments/native-architecture/src/clear/clearDock.ts';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
@@ -128,7 +132,14 @@ it.each(
       area.height - inset - TOUCH_TARGET,
       TOUCH_TARGET
     );
-    const clear = rect(area.width - inset - TOUCH_TARGET, inset, TOUCH_TARGET);
+    // Clear docks to the layout, not the paper area: the palette bar sits above the area in
+    // portrait and beside it in landscape.
+    const dock = clearDock(records.dimensions, 0);
+    const clear = rect(
+      area.width + CLEAR_DOCK_OVERHANG_PX - dock.size,
+      dock.top - (portrait ? bar : 0),
+      dock.size
+    );
     expect(resolved((props) => props.testID === 'rsd-drawer-dock')).toMatchObject({
       left: inset,
       bottom: inset,
@@ -138,8 +149,8 @@ it.each(
       bottom: inset,
     });
     expect(resolved((props) => props.testID === 'rsd-clear-dock')).toMatchObject({
-      right: inset,
-      top: inset,
+      right: -CLEAR_DOCK_OVERHANG_PX,
+      top: dock.top,
     });
     for (const [index, tool] of [toggle, ...tools].entries()) {
       expect(tool.left, `${index}`).toBeGreaterThanOrEqual(0);
