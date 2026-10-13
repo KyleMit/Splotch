@@ -111,7 +111,8 @@ export function nativeSettingsProps(owner, state) {
     onRetry: () => owner.retrySave(),
     onClose() {},
     onParentCenter() {},
-    onFeedback() {},
+    feedback: null,
+    onOpenHostedPage() {},
     downloadedBooks: 0,
     ai: null,
   };

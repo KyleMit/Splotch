@@ -76,13 +76,11 @@ export function RsdDrawingMenu({
   screen,
   sound,
   menu,
-  onFeedback,
   browserAction,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
   menu: ReturnType<typeof useDrawingMenu>;
-  onFeedback: () => void;
   browserAction: ReactNode;
 }) {
   return (
@@ -146,11 +144,6 @@ export function RsdDrawingMenu({
               void screen.exportPicture();
             })
           }
-        />
-        <RsdAction
-          label="Send Feedback"
-          disabled={!menu.visible}
-          onClick={() => menu.run(onFeedback)}
         />
       </html.div>
     </ModalShell>

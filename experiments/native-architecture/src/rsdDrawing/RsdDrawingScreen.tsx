@@ -3,7 +3,6 @@ import {
   RsdAiSheet,
   RsdColorPicker,
   RsdColoringBookPicker,
-  RsdFeedbackSheet,
   RsdParentCenterSection,
   RsdParentGateSheet,
   RsdSettingsRoute,
@@ -57,11 +56,9 @@ export function RsdDrawingScreen() {
       ? 'parentCenter'
       : screen.settingsOpen
         ? 'settings'
-        : product.feedback.state?.open
-          ? 'feedback'
-          : product.ai.state && aiSheetShown(product.ai.state)
-            ? 'ai'
-            : 'none';
+        : product.ai.state && aiSheetShown(product.ai.state)
+          ? 'ai'
+          : 'none';
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
   });
@@ -122,15 +119,6 @@ function RsdModalSheets({
           <RsdParentGateSheet
             owner={product.owner}
             state={product.state.gate}
-            visible={route.visible}
-            onDismiss={dismissed}
-          />
-        </RsdSurfaceBoundary>
-      ) : null}
-      {route.shown === 'feedback' ? (
-        <RsdSurfaceBoundary onClose={() => product.feedback.owner?.close()}>
-          <RsdFeedbackSheet
-            owner={product.feedback.owner}
             visible={route.visible}
             onDismiss={dismissed}
           />
@@ -243,7 +231,6 @@ function RsdDrawingContent({
                 screen={screen}
                 sound={sound}
                 menu={menu}
-                onFeedback={() => product.feedback.owner?.open()}
                 browserAction={browserAction}
               />
             )}
