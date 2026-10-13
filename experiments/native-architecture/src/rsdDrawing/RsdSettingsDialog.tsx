@@ -13,7 +13,7 @@ import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
 import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from '../settings/soundLevel';
 import { RsdAction, styles as controlStyles } from './controls';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
 import { RsdInformationSection } from './RsdInformationSection';
 import { RsdInstallGuide } from './RsdInstallGuide';
@@ -26,13 +26,15 @@ import {
   NATIVE_SETTINGS_SECTIONS,
   sectionHeading,
   type NativeSettingsSectionId,
+  type SectionSummaryContext,
 } from '../settings/settingsSections';
 import { installPrompt } from '../platform/installPrompt';
-import { RsdSettingsHub } from './RsdSettingsHub';
+import { RsdSettingsHub, useHubToggles } from './RsdSettingsHub';
 import { RsdAccessibilitySection } from './RsdAccessibilitySection';
 import { RsdWhatsNewSection } from './RsdWhatsNewSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
+import { landFocus } from './landFocus';
 
 type NativeSoundSettingsDialogProps = {
   settings: SoundSettingsState;
@@ -55,16 +57,19 @@ type NativeSoundSettingsDialogProps = {
   onRetry: () => void;
   onClose: () => void;
   onParentCenter: () => void;
+  onFeedback: () => void;
+  downloadedBooks: number;
+  ai: SectionSummaryContext['ai'];
   visible?: boolean;
   onDismiss?: () => void;
 };
 
 type SettingsPage =
-  | { kind: 'hub' }
+  | { kind: 'hub'; returnTo: NativeSettingsSectionId | null }
   | { kind: 'section'; section: NativeSettingsSectionId }
   | { kind: 'information'; page: InformationPage };
 
-const HUB: SettingsPage = { kind: 'hub' };
+const HUB: SettingsPage = { kind: 'hub', returnTo: null };
 // Install has nothing to offer where the app is already installed.
 const HUB_SECTIONS = NATIVE_SETTINGS_SECTIONS.filter(
   (section) => section.id !== 'setup' || installPrompt !== null
@@ -77,16 +82,31 @@ function pageLabel(page: SettingsPage) {
 }
 
 // The shipping phone Settings: a hub of sections that each drill into their own page, with the
-// header's Back returning to the hub.
+// header's Back returning to the hub. Each move unmounts the control that held focus, so focus
+// lands on what replaced it: the section's heading, or the hub row Back returned to.
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
   const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
   const [page, setPage] = useState<SettingsPage>(HUB);
+  const sectionTitle = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (page.kind === 'section') landFocus(sectionTitle.current);
+  }, [page]);
+  const toggles = useHubToggles({
+    soundEnabled: settings.soundEnabled,
+    onSoundToggle: props.onToggle,
+    onAppearanceChange: props.onAppearanceChange,
+  });
   const openSection = (section: NativeSettingsSectionId) => {
+    if (section === 'feedback') {
+      props.onFeedback();
+      return;
+    }
     if (section === 'whatsnew') onWhatsNewSeen();
     setPage({ kind: 'section', section });
   };
-  const back = () => setPage(HUB);
+  const back = () =>
+    setPage({ kind: 'hub', returnTo: page.kind === 'section' ? page.section : null });
   return (
     <ModalShell
       visible={visible}
@@ -98,7 +118,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
         page.kind === 'hub' ? (
           <DialogHeader title={pageLabel(page)} titleSize="xl" onClose={onClose} />
         ) : (
-          <DialogHeader title={pageLabel(page)} titleSize="lg" onBack={back} onClose={onClose} />
+          <DialogHeader
+            title={pageLabel(page)}
+            titleSize="lg"
+            titleRef={page.kind === 'section' ? sectionTitle : undefined}
+            onBack={back}
+            onClose={onClose}
+          />
         )
       }
     >
@@ -123,8 +149,14 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           ) : (
             <RsdSettingsHub
               sections={HUB_SECTIONS}
-              settings={settings}
-              brushState={props.brushState}
+              context={{
+                settings,
+                brushes: props.brushState,
+                downloadedBooks: props.downloadedBooks,
+                ai: props.ai,
+              }}
+              toggles={toggles}
+              returnTo={page.returnTo}
               onOpen={openSection}
             />
           )}
@@ -173,6 +205,10 @@ function SettingsSection(props: SectionProps) {
           onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
         />
       );
+    // Feedback opens its own sheet from the hub, and AI Art has no native section body yet.
+    case 'ai':
+    case 'feedback':
+      return null;
     case 'saving':
       return <SaveOnDeleteSwitch {...props} />;
     case 'parentCenter':

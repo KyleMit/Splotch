@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { css, html } from 'react-strict-dom';
+import { landFocus } from './landFocus';
 import { colors, dimensions, fonts, motion } from './tokens.css';
 import { RsdActivityDot } from './RsdActivityDot';
 import { LineClampBox } from './lineClampBox';
@@ -91,7 +93,7 @@ const styles = css.create({
   },
 });
 
-type HubToggle = Omit<ToggleSwitchProps, 'description' | 'disabled'>;
+export type HubToggle = Omit<ToggleSwitchProps, 'description' | 'disabled'>;
 
 // The shipping phone hub row (HubList.svelte): the body drills into its section, and a section
 // whose boolean is legible from its own name answers it inline with a trailing switch.
@@ -100,6 +102,7 @@ export function RsdHubRow({
   title,
   subtitle,
   unseen,
+  focusOnMount = false,
   onOpen,
   toggle,
 }: {
@@ -107,14 +110,20 @@ export function RsdHubRow({
   title: string;
   subtitle: string;
   unseen: boolean;
+  /** Takes focus: the row a phone Back returns to, in place of the Back it unmounted. */
+  focusOnMount?: boolean;
   onOpen: () => void;
   toggle?: HubToggle;
 }) {
   const theme = useDrawingTheme();
+  const body = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusOnMount) landFocus(body.current);
+  }, [focusOnMount]);
   const name = [title, subtitle, ...(unseen ? ['new'] : [])].join(', ');
   return (
     <html.div data-testid="hub-tile" style={styles.tile}>
-      <html.button aria-label={name} style={styles.row} onClick={onOpen}>
+      <html.button ref={body} aria-label={name} style={styles.row} onClick={onOpen}>
         <html.div style={styles.icon}>
           <RsdSectionIcon icon={icon} size={ICON_PX} ink={theme.brandText} />
           <RsdActivityDot unseen={unseen} surface="surface2" />

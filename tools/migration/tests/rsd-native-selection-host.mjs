@@ -5,6 +5,7 @@ import { createSoundSettings } from '../../../experiments/native-architecture/sr
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { orientationCalls } from './rsd-orientation-port.mjs';
+import './rsd-native-settings-hub-mocks.mjs';
 
 const caller = vi.hoisted(() => {
   let journal = null;
@@ -230,7 +231,7 @@ vi.mock('react-native', async () => {
         tag,
         {
           ref,
-          role: props.role,
+          role: props.role ?? props.accessibilityRole,
           id: props.nativeID,
           'aria-label': props.accessibilityLabel,
           'aria-labelledby': props['aria-labelledby'],
@@ -257,7 +258,8 @@ vi.mock('react-native', async () => {
     Pressable = host('button'),
     View = host('div');
   return {
-    StyleSheet: { create: (value) => value },
+    StyleSheet: { create: (value) => value, absoluteFill: {} },
+    I18nManager: { isRTL: false, doLeftAndRightSwapInRTL: true },
     StatusBar: (props) => {
       records.props.push(props);
       return React.createElement('span', { 'data-status-bar': props.barStyle });
@@ -434,8 +436,9 @@ async function expandControls() {
 }
 
 // Settings opens on its hub of sections; each control lives on its section's page.
+// A hub row is named by its title, status line and any "new", so it is found by its title.
 async function openSettingsSection(label) {
-  const row = host.querySelector(`[role="list"] [aria-label="${label}"]`);
+  const row = host.querySelector(`[role="list"] button[aria-label^="${label}, "]`);
   if (!row) throw new Error(`No Settings section row named ${label}.`);
   await act(async () => row.click());
 }

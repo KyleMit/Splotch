@@ -4,7 +4,6 @@ function validateBrushSources({
   parse,
   imported,
   babel,
-  drawing,
   settingsDialog,
   optionalSwitches,
   toolbarSwitches,
@@ -276,7 +275,7 @@ function validateBrushSources({
   );
 
   const settingsMounts = [];
-  babel.traverse(drawing, {
+  babel.traverse(parse('src/rsdDrawing/RsdSettingsRoute.tsx'), {
     JSXOpeningElement({ node }) {
       if (node.name.type === 'JSXIdentifier' && node.name.name === 'NativeSoundSettingsDialog')
         settingsMounts.push(node);

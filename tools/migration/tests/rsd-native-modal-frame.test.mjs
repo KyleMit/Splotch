@@ -311,7 +311,7 @@ it('heads the Settings hub with Settings and Close, and a section with Back to t
     await openSettingsSection('Sound');
     await click('Back');
     expect(labelledTitle().textContent).toBe('Settings');
-    expect(host.querySelector('[role="list"] [aria-label="Sound"]')).not.toBeNull();
+    expect(host.querySelector('[role="list"] button[aria-label^="Sound, "]')).not.toBeNull();
     expect(onClose).not.toHaveBeenCalled();
     await click('Close');
     expect(onClose).toHaveBeenCalledOnce();

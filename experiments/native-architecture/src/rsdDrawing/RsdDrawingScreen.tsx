@@ -1,12 +1,12 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import {
   ColorPicker,
-  NativeSoundSettingsDialog,
   RsdAiSheet,
   RsdColoringBookPicker,
   RsdFeedbackSheet,
   RsdParentCenterSection,
   RsdParentGateSheet,
+  RsdSettingsRoute,
 } from './drawingSheets';
 import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
@@ -32,7 +32,6 @@ import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { RsdDrawingMenu, RsdDrawingTools, RsdPictures } from './RsdDrawingTools';
-import { soundSettingsActions } from './soundSettingsActions';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { controlSize } from '../settings/buttonSize';
@@ -261,17 +260,13 @@ function RsdDrawingContent({
             Settings keeps which section is open across an Appearance change. */}
         {route.shown === 'settings' ? (
           <RsdSurfaceBoundary onClose={screen.closeSettings}>
-            <NativeSoundSettingsDialog
-              settings={sound.settings}
-              brushState={screen.brushPreferences}
-              onBrushAvailabilityChange={screen.setBrushAvailable}
-              onRetryBrushSave={screen.retryBrushSave}
+            <RsdSettingsRoute
+              screen={screen}
+              sound={sound}
+              product={product}
               notice={soundNotice}
-              {...soundSettingsActions(sound)}
-              onClose={screen.closeSettings}
               visible={route.visible}
               onDismiss={onModalDismissed}
-              onParentCenter={() => product.owner?.openParentCenter()}
             />
           </RsdSurfaceBoundary>
         ) : null}

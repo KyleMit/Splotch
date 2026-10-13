@@ -1,89 +1,102 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions, fonts } from './tokens.css';
-import { DRAWING_SCALE } from '../drawing/theme';
-import type { BrushPreferencesState } from '../settings/brushPreferences';
-import type { SoundSettingsState } from '../settings/soundSettingsCodec';
-import { sectionSubtitle, type NativeSettingsSectionId } from '../settings/settingsSections';
+import { dimensions } from './tokens.css';
+import { RsdHubRow, type HubToggle } from './RsdHubRow';
+import { useDrawingAppearance } from '../drawing/DrawingAppearance';
+import { useLazyValue } from '../lazyExport';
+import { settingsSessions } from '../platform/settingsSessions';
+import { activityDotsShown } from '../settings/settingsSessions';
+import {
+  sectionSubtitle,
+  type NativeSettingsSection,
+  type NativeSettingsSectionId,
+  type SectionSummaryContext,
+} from '../settings/settingsSections';
 import { whatsNewUnseen } from '../settings/whatsNew';
 
-// The shipping hub row's activity dot.
-const ACTIVITY_DOT_PX = 8;
+const SESSION_COUNT_DESCRIPTION = 'Settings session count';
 
 const styles = css.create({
   list: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
-  item: { display: 'flex', flexDirection: 'column' },
-  row: {
-    boxSizing: 'border-box',
-    alignSelf: 'stretch',
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: dimensions.space3,
-    minHeight: dimensions.touchTarget,
-    padding: dimensions.space4,
-    borderWidth: 0,
-    borderRadius: dimensions.radiusMd,
-    backgroundColor: colors.surface2,
-    textAlign: 'left',
-  },
-  text: { display: 'flex', flexDirection: 'column', flexGrow: 1, flexShrink: 1, gap: 2 },
-  title: {
-    color: colors.textStrong,
-    fontSize: dimensions.fontSizeMd,
-    fontFamily: fonts.boldFamily,
-    fontWeight: fonts.boldWeight,
-  },
-  subtitle: (fontSize: number) => ({ color: colors.text, fontSize }),
-  dot: (size: number, radius: number) => ({
-    width: size,
-    height: size,
-    borderRadius: radius,
-    backgroundColor: colors.brandSolid,
-  }),
+  // The switch rows lead the list; the first drill-in doubles the gap as the break between
+  // "flip it here" and "go configure".
+  groupBreak: { marginTop: dimensions.space2 },
 });
 
-function sectionUnseen(id: NativeSettingsSectionId, settings: SoundSettingsState) {
-  return id === 'whatsnew' && whatsNewUnseen(settings.whatsNewSeen);
+export type HubToggles = Partial<Record<NativeSettingsSectionId, HubToggle>>;
+
+// Night Mode flips the resolved theme, as shipping's does: on System it pins the opposite choice,
+// and the three-way choice stays in the Appearance section.
+export function useHubToggles({
+  soundEnabled,
+  onSoundToggle,
+  onAppearanceChange,
+}: {
+  soundEnabled: boolean;
+  onSoundToggle: () => void;
+  onAppearanceChange: (appearance: 'light' | 'dark') => void;
+}): HubToggles {
+  const night = useDrawingAppearance() === 'dark';
+  return {
+    appearance: {
+      id: 'hubNightToggle',
+      label: 'Night Mode',
+      checked: night,
+      onToggle: (next) => onAppearanceChange(next ? 'dark' : 'light'),
+      thumbIcon: night ? 'theme-dark' : 'theme-light',
+    },
+    sound: {
+      id: 'hubSoundToggle',
+      label: 'Sound',
+      checked: soundEnabled,
+      onToggle: (next) => {
+        if (next !== soundEnabled) onSoundToggle();
+      },
+    },
+  };
 }
 
-// The shipping phone hub (HubList.svelte): one row per section with its live status, and the
-// activity dot on a section whose content changed since the parent last opened it.
+function sectionUnseen(id: NativeSettingsSectionId, context: SectionSummaryContext) {
+  return id === 'whatsnew' && whatsNewUnseen(context.settings.whatsNewSeen);
+}
+
+// The shipping phone hub (HubList.svelte): one tile per section with its icon and live status, a
+// trailing switch on the rows a parent flips mid-session, and the activity dot on a section whose
+// content changed since the parent last opened it, from the sixth session on.
 export function RsdSettingsHub({
   sections,
-  settings,
-  brushState,
+  context,
+  toggles,
+  returnTo,
   onOpen,
 }: {
-  sections: readonly { id: NativeSettingsSectionId; label: string }[];
-  settings: SoundSettingsState;
-  brushState: BrushPreferencesState;
+  sections: readonly NativeSettingsSection[];
+  context: SectionSummaryContext;
+  toggles: HubToggles;
+  returnTo: NativeSettingsSectionId | null;
   onOpen: (id: NativeSettingsSectionId) => void;
 }) {
+  const sessions = useLazyValue(settingsSessions, (count) => count, SESSION_COUNT_DESCRIPTION);
+  const dots = activityDotsShown(sessions);
+  const firstDrillIn = sections.findIndex((section) => !toggles[section.id]);
   return (
     <html.div role="list" style={styles.list}>
-      {sections.map(({ id, label }) => {
-        const unseen = sectionUnseen(id, settings);
+      {sections.map((section, index) => {
+        const toggle = toggles[section.id];
         return (
-          <html.div key={id} role="listitem" style={styles.item}>
-            <html.button
-              aria-label={unseen ? `${label}, new` : label}
-              style={styles.row}
-              onClick={() => onOpen(id)}
-            >
-              <html.span style={styles.text}>
-                <html.span style={styles.title}>{label}</html.span>
-                <html.span style={styles.subtitle(DRAWING_SCALE.fontSizeSm)}>
-                  {sectionSubtitle(id, settings, brushState)}
-                </html.span>
-              </html.span>
-              {unseen ? (
-                <html.span
-                  aria-hidden
-                  data-testid="settings-activity-dot"
-                  style={styles.dot(ACTIVITY_DOT_PX, ACTIVITY_DOT_PX / 2)}
-                />
-              ) : null}
-            </html.button>
+          <html.div
+            key={section.id}
+            role="listitem"
+            style={index === firstDrillIn && index > 0 && styles.groupBreak}
+          >
+            <RsdHubRow
+              icon={section.icon}
+              title={section.label}
+              subtitle={sectionSubtitle(section.id, context)}
+              unseen={dots && sectionUnseen(section.id, context)}
+              focusOnMount={section.id === returnTo}
+              onOpen={() => onOpen(section.id)}
+              toggle={toggle}
+            />
           </html.div>
         );
       })}
