@@ -5,6 +5,13 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useFullscreen } from '../../../experiments/native-architecture/src/platform/useFullscreen.web.ts';
 import { useFullscreen as useNativeFullscreen } from '../../../experiments/native-architecture/src/platform/useFullscreen.ts';
 
+const ANDROID_CHROME =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+const IPHONE_SAFARI =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+const DESKTOP_CHROME =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
+
 let root;
 let host;
 let current;
@@ -46,6 +53,8 @@ beforeEach(() => {
   originalActEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   browser = {
+    userAgent: ANDROID_CHROME,
+    appLike: false,
     enabled: true,
     element: null,
     request: vi.fn().mockResolvedValue(undefined),
@@ -56,6 +65,8 @@ beforeEach(() => {
     [document, 'fullscreenElement'],
     [document, 'exitFullscreen'],
     [document.documentElement, 'requestFullscreen'],
+    [navigator, 'userAgent'],
+    [window, 'matchMedia'],
   ].map(([target, key]) => [target, key, Object.getOwnPropertyDescriptor(target, key)]);
   Object.defineProperties(document, {
     fullscreenEnabled: { configurable: true, get: () => browser.enabled },
@@ -65,6 +76,14 @@ beforeEach(() => {
   Object.defineProperty(document.documentElement, 'requestFullscreen', {
     configurable: true,
     get: () => browser.request,
+  });
+  Object.defineProperty(navigator, 'userAgent', {
+    configurable: true,
+    get: () => browser.userAgent,
+  });
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query) => ({ matches: browser.appLike && query.includes('display-mode') }),
   });
   host = document.createElement('div');
   document.body.append(host);
@@ -219,6 +238,35 @@ it('removes listeners and rejects retained activation after unmount and late set
   expect(current.message).toBe('');
   expect(current.pending).toBe(false);
   expect(browser.request).toHaveBeenCalledOnce();
+});
+
+it.each([
+  ['an iPhone', IPHONE_SAFARI, false],
+  ['a desktop browser', DESKTOP_CHROME, false],
+  ['an installed Android app', ANDROID_CHROME, true],
+])(
+  'offers no fullscreen to %s, as shipping offers it to an Android browser tab alone',
+  async (_name, userAgent, appLike) => {
+    browser.userAgent = userAgent;
+    browser.appLike = appLike;
+    await act(async () => root.render(createElement(FullscreenAction)));
+    expect(host.querySelector('button')).toBeNull();
+    expect(current.supported).toBe(false);
+    expect(current.toggle()).toBe(false);
+    expect(browser.request).not.toHaveBeenCalled();
+  }
+);
+
+it('keeps offering the way back once fullscreen itself reports an app-like display mode', async () => {
+  await act(async () => root.render(createElement(FullscreenAction)));
+  act(() => {
+    browser.appLike = true;
+    browser.element = document.documentElement;
+    document.dispatchEvent(new Event('fullscreenchange'));
+  });
+  expect(host.querySelector('button').getAttribute('aria-label')).toBe('Exit fullscreen');
+  act(() => host.querySelector('button').click());
+  expect(browser.exit).toHaveBeenCalledOnce();
 });
 
 it('offers no redundant native fullscreen action', () => {

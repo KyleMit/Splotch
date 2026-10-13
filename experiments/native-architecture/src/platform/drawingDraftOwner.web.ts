@@ -75,7 +75,7 @@ export class WebDrawingDraftOwner {
 
   private conflict(): never {
     this.conflicted = true;
-    throw new Error('Another tab changed the current draft. Save your picture in Pictures.');
+    throw new Error('Another tab changed the current draft. Keep drawing in that tab.');
   }
 
   private checkedRecord(raw: unknown): WebDrawingDraftRecord {

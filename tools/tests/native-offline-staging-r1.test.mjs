@@ -1,3 +1,4 @@
+import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename } from 'node:fs/promises';
 import * as fs from 'node:fs';
@@ -15,7 +16,6 @@ import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../experiments/native-architec
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   savePicture,
-  reopenPicture,
   savedColoringPageIds,
 } from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
@@ -284,7 +284,8 @@ describe('R1 real controller and disk regression controls', () => {
         .installed.filter((pack) => pack.id === 'dinosaur')
         .map((pack) => pack.revision)
     ).toEqual([dinosaur.revision]);
-    expect(await reopenPicture(picture.id)).toEqual(drawing);
+    expect(await readSavedNativePicture(picture.id)).toEqual(drawing);
+    await fresh.openPage(oldId);
     expect(fresh.snapshot().artwork[oldId]).toEqual(oldArt);
     await fresh.openPage(liveId);
     expect(fresh.snapshot().artwork[liveId]).toEqual(liveArt);

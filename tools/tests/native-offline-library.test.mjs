@@ -1,3 +1,4 @@
+import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename, stat } from 'node:fs/promises';
@@ -27,7 +28,6 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   savePicture,
-  reopenPicture,
   savedColoringPageIds,
 } from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
@@ -259,8 +259,8 @@ describe('real disk pack publication and saved picture consumers', () => {
     savedConsumer.owner = relaunched;
     await readyLibrary(relaunched);
     expect(relaunched.snapshot().retainedBytes).toBe(dinosaur.bytes);
-    const reopened = await reopenPicture(picture.id);
-    expect(reopened).toEqual(drawing);
+    expect(await readSavedNativePicture(picture.id)).toEqual(drawing);
+    await relaunched.openPage(drawing.pageId);
     expect(relaunched.snapshot().artwork[id]).toEqual(artBefore);
     expect(relaunched.snapshot().artwork[id].portrait.dark.fill).toContain('trex-tall.night.webp');
     expect(relaunched.snapshot().artwork[id].landscape.dark.fill).toContain('trex-wide.night.webp');

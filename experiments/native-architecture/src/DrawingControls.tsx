@@ -126,15 +126,11 @@ function DrawingWidth({
 function DrawingActions({
   disabled,
   save,
-  showPictures,
-  exportPicture,
   openSettings,
   openFeedback,
 }: {
   disabled: boolean;
   save: () => void;
-  showPictures: () => void;
-  exportPicture: () => void;
   openSettings: () => void;
   openFeedback: () => void;
 }) {
@@ -151,14 +147,6 @@ function DrawingActions({
       />
       <Action label="Settings" disabled={disabled} onPress={openSettings} />
       <Action label="Send Feedback" disabled={disabled} onPress={openFeedback} />
-      <Action label="Pictures" disabled={disabled} onPress={showPictures} />
-      <Action
-        label="Export PNG"
-        disabled={disabled}
-        onPress={() => {
-          void exportPicture();
-        }}
-      />
     </View>
   );
 }
@@ -248,27 +236,12 @@ function DrawingMenu({
                   })
                 }
               />
-              <Action
-                label="Save and clear"
-                disabled={disabled}
-                onPress={() =>
-                  run(() => {
-                    void screen.saveAndClear();
-                  })
-                }
-              />
             </View>
             <DrawingActions
               disabled={disabled}
               save={() =>
                 run(() => {
                   void screen.save();
-                })
-              }
-              showPictures={() => run(screen.showPictures)}
-              exportPicture={() =>
-                run(() => {
-                  void screen.exportPicture();
                 })
               }
               openSettings={() => run(screen.openSettings)}

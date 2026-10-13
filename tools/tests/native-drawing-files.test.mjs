@@ -1,3 +1,4 @@
+import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { adoptedDrawing, legacyDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -7,7 +8,6 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   listPictures,
-  reopenPicture,
   savePicture,
 } from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
@@ -132,7 +132,7 @@ describe('native picture save commit', () => {
       ],
     };
     const saved = await savePicture(drawing);
-    const reopened = await reopenPicture(saved.id);
+    const reopened = await readSavedNativePicture(saved.id);
     expect(reopened).toEqual(drawing);
     expect(reopened.strokes.map(({ width }) => width)).toEqual([4, 14, 28]);
     const stored = JSON.parse(
@@ -170,7 +170,7 @@ describe('native picture save commit', () => {
       gate.resolve();
     }
     const picture = await saving;
-    expect(await reopenPicture(picture.id)).toEqual(emptyDrawing());
+    expect(await readSavedNativePicture(picture.id)).toEqual(emptyDrawing());
     expect(listPictures().map((saved) => saved.id)).toEqual([picture.id]);
     expect([...filesystem.contents.keys()]).toEqual([
       `document/splotch-pictures/${picture.id}.json`,
@@ -263,7 +263,7 @@ it('reopens native legacy v5 without adding paper or rewriting its original cano
   };
   const before = JSON.stringify(drawing);
   const saved = await savePicture(drawing);
-  const reopened = await reopenPicture(saved.id);
+  const reopened = await readSavedNativePicture(saved.id);
   expect(reopened).toEqual(drawing);
   expect(Object.hasOwn(reopened, 'paper')).toBe(false);
   expect(filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)).toBe(

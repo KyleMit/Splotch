@@ -26,8 +26,6 @@ const caller = vi.hoisted(() => {
     });
   return {
     realScreen: false,
-    drawingList: vi.fn(() => []),
-    drawingOpen: vi.fn(),
     paper: null,
     screen: null,
     library: null,
@@ -89,8 +87,6 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   savePicture: async () => ({ id: 'picture-1-fixture' }),
-  listPictures: caller.drawingList,
-  reopenPicture: caller.drawingOpen,
   savedColoringPageIds: async () => [],
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
@@ -111,12 +107,6 @@ vi.mock('../../../experiments/native-architecture/src/offlineLibrary/runtime.ts'
   const { offlineRuntimePort } = await import('./rsd-coloring-root-host.mjs');
   return { offlineLibrary: offlineRuntimePort(caller) };
 });
-vi.mock('../../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
-  pngRecoveryPlatform: {
-    storage: { read: async () => null, write: async () => {} },
-    deliver: async () => 'sharing-closed',
-  },
-}));
 vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: async () => {
     throw new Error('Audio playback is outside this native caller fixture.');
@@ -191,9 +181,6 @@ vi.mock('../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx
     },
   };
 });
-vi.mock('../../../experiments/native-architecture/src/rsdDrawing/RsdRecoveryNotice.tsx', () => ({
-  RsdRecoveryNotice: () => null,
-}));
 vi.mock('react-native-svg', async () => {
   const { svgPort } = await import('./rsd-coloring-root-host.mjs');
   return svgPort(await import('react'));
@@ -354,8 +341,6 @@ beforeEach(() => {
   caller.clearSound.play.mockClear();
   caller.realScreen = false;
   caller.paper = null;
-  caller.drawingList.mockReset().mockReturnValue([]);
-  caller.drawingOpen.mockReset();
   caller.settingsStorage = null;
   caller.initialSettings = null;
   const refused = async () => {

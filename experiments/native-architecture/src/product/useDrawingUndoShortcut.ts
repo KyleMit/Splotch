@@ -11,7 +11,6 @@ export function useDrawingUndoShortcut(
       !screen.busy &&
       !screen.drawing &&
       !screen.recovery.failed &&
-      screen.pictures === null &&
       screen.history.undo.length > 0
   );
 }

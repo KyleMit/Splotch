@@ -15,7 +15,7 @@ async function input(label, value) {
   expect(props, label).toBeDefined();
   await act(async () => props.onChange({ nativeEvent: { text: value } }));
 }
-it('uses the actual RSD native input bridge, preview, gate and transport caller from Drawing tools', async () => {
+it('uses the actual RSD native input bridge, preview, gate and transport caller Settings opens', async () => {
   let finish;
   caller.feedbackRead.mockReset().mockResolvedValue(null);
   caller.feedbackWrite.mockReset().mockResolvedValue(undefined);
@@ -50,18 +50,9 @@ it('uses the actual RSD native input bridge, preview, gate and transport caller 
     owner: null,
     audioMessage: '',
   };
-  caller.menu = {
-    open: true,
-    visible: true,
-    close() {},
-    dismissed() {},
-    run(action) {
-      caller.menu.open = false;
-      action();
-    },
-  };
   await mount(createElement(RsdDrawingScreen));
-  await click('Send Feedback');
+  // Settings' Feedback row opens the sheet through this owner method.
+  await act(async () => caller.product.feedback.owner.open());
   const paperRenders = caller.paperRender.mock.calls.length;
   await input('Feedback message', 'RSD native bridge bug');
   await click('Include device details');

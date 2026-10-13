@@ -5,7 +5,6 @@ import { ParentGateSheet } from './parentCenter/ParentGateSheet';
 import { useProductModalRoute, isProductModalBlocked } from './product/useProductModalRoute';
 import { NativeAiSheet } from './ai/AiSheet';
 import { LibraryProvider } from './offlineLibrary/LibraryScope';
-import { SavedPictures } from './drawing/SavedPictures';
 import { LeaveConfirm } from './drawing/LeaveConfirm';
 import { DrawingAppearanceProvider } from './drawing/DrawingAppearance';
 import { DEFAULT_APPEARANCE } from './settings/appearance';
@@ -138,7 +137,7 @@ function DrawingScreenContent({
   const menu = useDrawingMenu(screen, 'platform');
   const window = useWindowDimensions();
   const landscape = window.width > window.height;
-  const { pictures, surface, colorPickerOpen, disabled: drawingDisabled } = screen;
+  const { surface, colorPickerOpen, disabled: drawingDisabled } = screen;
   const modalBlocked = isProductModalBlocked(route.shown, product);
   const disabled = drawingDisabled || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
@@ -147,13 +146,13 @@ function DrawingScreenContent({
     pickerOpen: colorPickerOpen,
     closePicker: screen.closeColorPicker,
     disabled: paintsDisabled,
-    blocked: disabled || pictures !== null,
+    blocked: disabled,
   });
   const color = sound.settings.selectedColor;
   const paintFocus = usePaintSelectionFocus({
     color,
     disabled: paintsDisabled || menu.open,
-    blocked: disabled || menu.open || pictures !== null || colorPickerOpen,
+    blocked: disabled || menu.open || colorPickerOpen,
   });
   const menuFocus = useColorPickerFocus({
     pickerOpen: menu.open || screen.settingsOpen,
@@ -162,7 +161,7 @@ function DrawingScreenContent({
       else menu.close();
     },
     disabled,
-    blocked: disabled || pictures !== null,
+    blocked: disabled,
   });
   function cancelFocus() {
     paintFocus.cancel();
@@ -203,7 +202,7 @@ function DrawingScreenContent({
             screen={screen}
             sound={sound}
             menu={menu}
-            blocked={disabled || pictures !== null || colorPickerOpen || settingsClosing}
+            blocked={disabled || colorPickerOpen || settingsClosing}
             onClose={menuFocus.close}
             onFeedback={() => feedback.owner?.open()}
           />
@@ -335,7 +334,6 @@ function DrawingPaper({
     currentDrawing,
     brush,
     busy,
-    pictures,
     pagePickerOpen,
     settingsOpen,
     colorPickerOpen,
@@ -354,7 +352,6 @@ function DrawingPaper({
         eraserWidth={sound.settings.eraserWidth}
         disabled={
           busy ||
-          pictures !== null ||
           pagePickerOpen ||
           settingsOpen ||
           colorPickerOpen ||
@@ -419,18 +416,7 @@ function DrawingSheets({
   settingsMounted: boolean;
   settingsVisible: boolean;
 }) {
-  const {
-    history,
-    colorPickerOpen,
-    pagePickerOpen,
-    choosePage,
-    setPagePickerOpen,
-    pictures,
-    busy,
-    notice,
-    openPicture,
-    setPictures,
-  } = screen;
+  const { history, colorPickerOpen, pagePickerOpen, choosePage, setPagePickerOpen } = screen;
   return (
     <>
       {colorPickerOpen ? (
@@ -486,13 +472,6 @@ function DrawingSheets({
           onParentCenter={onParentCenter}
         />
       ) : null}
-      <SavedPictures
-        pictures={pictures}
-        busy={busy}
-        notice={notice}
-        onOpen={openPicture}
-        onClose={() => setPictures(null)}
-      />
     </>
   );
 }
