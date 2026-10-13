@@ -193,14 +193,7 @@ it('keeps the loaded paint on the bar when the room runs out', () => {
 
 it('tucks the shipping tools, in order, into a drawer the chevron after them reveals and hides', async () => {
   await mountToolbar(toolbarScreen());
-  const tools = [
-    'Brushes',
-    'Stroke width',
-    'Coloring books',
-    'Save screenshot',
-    AI_BUTTON,
-    'Undo',
-  ];
+  const tools = ['Brushes', 'Stroke width', 'Coloring books', 'Save screenshot', AI_BUTTON, 'Undo'];
   const shown = () =>
     [...host.querySelectorAll('[data-testid="rsd-drawer-tool"] [aria-label]')]
       .map((node) => node.getAttribute('aria-label'))

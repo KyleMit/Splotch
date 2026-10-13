@@ -30,7 +30,7 @@ describe('the Save Failure Banner owner', () => {
     failure.report('failed', 'first-png');
     expect(failure.getState()).toEqual({ outcome: 'failed', pictureCount: 1, retrying: false });
     await failure.retry();
-    expect(save.mock.calls).toEqual([['first-png']]);
+    expect(save.mock.calls).toEqual([['first-png', undefined]]);
     expect(failure.getState()).toEqual({ outcome: null, pictureCount: 0, retrying: false });
   });
 

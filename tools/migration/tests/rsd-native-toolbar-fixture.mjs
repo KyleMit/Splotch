@@ -59,9 +59,7 @@ export async function mountToolbar(screen) {
     },
   };
   await mount(createElement(RsdDrawingScreen));
-  await act(() =>
-    vi.waitFor(() => expect(caller.product.ai.state?.availability).toBe('ready'))
-  );
+  await act(() => vi.waitFor(() => expect(caller.product.ai.state?.availability).toBe('ready')));
 }
 
 export function paintGroup() {
