@@ -6,7 +6,10 @@ import {
 } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
 import { APP_SHELL_FILE, NOT_FOUND_FILE } from '../migration/build-native-web.mjs';
 import { nativeWebPrecacheProblems } from '../migration/check-native-web-precache.mjs';
-import { reloadApp } from '../../experiments/native-architecture/src/platform/appRestart.web.ts';
+import {
+  reloadApp,
+  takeFreshStart,
+} from '../../experiments/native-architecture/src/platform/appRestart.web.ts';
 
 const PATHS = ['/', '/index.html', '/does-not-exist', '/changelog', '/index.htm', '/a/'];
 
@@ -48,10 +51,24 @@ describe("the web export's unknown paths", () => {
 });
 
 describe("the web export's restart", () => {
-  it("reloads the app root, as shipping's Start over does", () => {
+  // Negative control: a reload with no fresh mark reads the stored picture back.
+  it("reloads the app root as shipping's Start over does, marking that one load fresh", () => {
     const assigned = [];
+    const session = new Map();
     globalThis.location = { assign: (url) => assigned.push(url) };
-    expect(reloadApp()).toBe(true);
-    expect(assigned).toEqual(['/']);
+    globalThis.sessionStorage = {
+      getItem: (key) => session.get(key) ?? null,
+      setItem: (key, value) => session.set(key, value),
+      removeItem: (key) => session.delete(key),
+    };
+    try {
+      expect(takeFreshStart()).toBe(false);
+      expect(reloadApp()).toBe(true);
+      expect(assigned).toEqual(['/']);
+      expect(takeFreshStart()).toBe(true);
+      expect(takeFreshStart()).toBe(false);
+    } finally {
+      delete globalThis.sessionStorage;
+    }
   });
 });

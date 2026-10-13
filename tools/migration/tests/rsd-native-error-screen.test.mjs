@@ -82,44 +82,69 @@ describe("the drawing screen's Error Screen", () => {
 
   // Shipping's location.assign('/') keeps nothing of the picture: it reloads on a blank page.
   // Negative control: restarting without storing the blank page brings the old drawing back.
-  it('restarts the app on a fresh drawing, the blank page stored before the remount', async () => {
-    // A draft store that keeps what it is given, so the remounted app reads back the last write.
-    let stored = null;
-    const reads = vi.spyOn(drawingDraftStorage, 'read').mockImplementation(async () => stored);
+  // A draft store that keeps what it is given, so a remounted app reads back the last write.
+  function restartableApp() {
+    const app = { stored: null, refuse: false, launches: [], session: null };
+    const reads = vi.spyOn(drawingDraftStorage, 'read').mockImplementation(async () => app.stored);
     const writes = vi.spyOn(drawingDraftStorage, 'write').mockImplementation(async (snapshot) => {
-      stored = snapshot;
+      if (app.refuse) throw new Error('The draft store is full.');
+      app.stored = snapshot;
     });
-    const launches = [];
-    let session;
     function Probe() {
       const history = useDrawingHistory();
       const startOver = useStartOver();
-      session = { history: history.history, setHistory: history.setHistory, startOver };
+      app.session = { history: history.history, setHistory: history.setHistory, startOver };
       useEffect(() => {
-        launches.push(writes.mock.calls.length);
+        app.launches.push(writes.mock.calls.length);
       }, []);
       return null;
     }
-    try {
-      await mount(
+    app.writes = writes;
+    app.restore = () => {
+      writes.mockRestore();
+      reads.mockRestore();
+    };
+    app.mount = () =>
+      mount(
         createElement(
           AppRestartRoot,
           null,
           createElement(DrawingSessionProvider, null, createElement(Probe))
         )
       );
+    return app;
+  }
+
+  it('restarts the app on a fresh drawing, the blank page stored before the remount', async () => {
+    const app = restartableApp();
+    try {
+      await app.mount();
       const drawn = emptyDrawing(RAINBOW_IN_USE);
-      await act(async () => session.setHistory(createHistory(drawn)));
-      expect(decodeDrawingDraft(stored)).toEqual(drawn);
-      await act(async () => session.startOver());
-      expect(launches).toHaveLength(2);
-      const lastWrite = decodeDrawingDraft(writes.mock.calls.at(-1)[0]);
-      expect(lastWrite).toEqual(emptyDrawing());
-      expect(launches[1]).toBe(writes.mock.calls.length);
-      expect(session.history.drawing).toEqual(emptyDrawing());
+      await act(async () => app.session.setHistory(createHistory(drawn)));
+      expect(decodeDrawingDraft(app.stored)).toEqual(drawn);
+      await act(async () => app.session.startOver());
+      expect(app.launches).toHaveLength(2);
+      expect(decodeDrawingDraft(app.writes.mock.calls.at(-1)[0])).toEqual(emptyDrawing());
+      expect(app.session.history.drawing).toEqual(emptyDrawing());
     } finally {
-      writes.mockRestore();
-      reads.mockRestore();
+      app.restore();
+    }
+  });
+
+  // Negative control: a restart that reads the draft back returns the picture the fault left.
+  it('keeps the restart fresh when the blank page cannot be stored', async () => {
+    const app = restartableApp();
+    try {
+      await app.mount();
+      const drawn = emptyDrawing(RAINBOW_IN_USE);
+      await act(async () => app.session.setHistory(createHistory(drawn)));
+      app.refuse = true;
+      await act(async () => app.session.startOver());
+      expect(app.launches).toHaveLength(2);
+      expect(decodeDrawingDraft(app.stored)).toEqual(drawn);
+      expect(app.session.history.drawing).toEqual(emptyDrawing());
+    } finally {
+      app.restore();
     }
   });
 

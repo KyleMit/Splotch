@@ -10,7 +10,10 @@ export type DrawingDraftState = Readonly<{
 export function createDrawingDraft(
   session: DrawingSession,
   storage: DrawingDraftStorage,
-  prepare: (drawing: Drawing) => Promise<void>
+  prepare: (drawing: Drawing) => Promise<void>,
+  // A launch after Start over: it never reads the stored draft back, which may still hold the
+  // picture the restart left, and stores its own blank page over it instead.
+  fresh = false
 ) {
   const initial = session.getSnapshot();
   const listeners = new Set<() => void>();
@@ -64,7 +67,7 @@ export function createDrawingDraft(
     const owner = generation;
     publish({ status: 'loading', message: 'Recovering your current picture…' });
     try {
-      const drawing = decodeDrawingDraft(await storage.read());
+      const drawing = fresh ? null : decodeDrawingDraft(await storage.read());
       if (!isCurrent(owner)) return;
       if (drawing && !changed && session.getSnapshot() === initial) {
         await prepare(drawing);
@@ -79,6 +82,7 @@ export function createDrawingDraft(
         }
       }
       loaded = true;
+      if (fresh) pending ??= session.currentDrawing();
       publish({ status: 'ready', message: '' });
       await flush();
     } catch {
