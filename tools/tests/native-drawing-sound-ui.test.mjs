@@ -237,37 +237,22 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('live drawing sound owner and Settings screen', () => {
-  it('persists the level independently of mute and restores its real drawing gain', async () => {
+  it('persists the volume and scales the live loop by it after a remount', async () => {
     let stored = '{"version":1,"soundEnabled":true}';
     sound.read.mockImplementation(async () => stored);
     sound.write.mockImplementation(async (snapshot) => {
       stored = snapshot;
     });
-    await mount();
-    await ui.settings();
-    const medium = ui.container.querySelector('[aria-label="Medium drawing sound"]');
-    expect(medium.getAttribute('aria-checked')).toBe('true');
-    await ui.click('Quiet drawing sound');
-    expect(JSON.parse(stored)).toMatchObject({ soundEnabled: true, soundLevel: 'quiet' });
-    await ui.click('Close Settings');
-    await ui.click('Start stroke');
-    await ui.click('Move stroke');
-    expect(loop.setVolume).toHaveBeenLastCalledWith(0.1);
-    await ui.click('End stroke');
+    await mount(Probe);
+    await act(async () => latest.owner.settings.setSoundVolume(25));
+    expect(JSON.parse(stored)).toMatchObject({ soundEnabled: true, soundVolume: 25 });
     ui.close();
-    await mount();
-    await ui.settings();
-    expect(
-      ui.container.querySelector('[aria-label="Quiet drawing sound"]').getAttribute('aria-checked')
-    ).toBe('true');
-    await ui.click('Drawing sound');
-    await ui.click('Loud drawing sound');
-    expect(JSON.parse(stored)).toMatchObject({ soundEnabled: false, soundLevel: 'loud' });
-    await ui.click('Drawing sound');
-    await ui.click('Close Settings');
-    await ui.click('Start stroke');
-    await ui.click('Move stroke');
-    expect(loop.setVolume).toHaveBeenLastCalledWith(0.4);
+    await mount(Probe);
+    const owner = latest.owner;
+    expect(latest.settings).toMatchObject({ soundVolume: 25, saved: true });
+    await act(async () => owner.audio.begin({ x: 10, y: 20 }, 100));
+    await act(async () => owner.audio.sample({ x: 100, y: 20 }, 200));
+    expect(loop.setVolume).toHaveBeenLastCalledWith(0.1);
   });
   it('updates active sound through the legacy hook without replacing its audio owner', async () => {
     sound.read.mockResolvedValueOnce('{"version":1,"soundEnabled":true}');
@@ -275,12 +260,26 @@ describe('live drawing sound owner and Settings screen', () => {
     const owner = latest.owner;
     await act(async () => owner.audio.begin({ x: 10, y: 20 }, 100));
     await act(async () => owner.audio.sample({ x: 100, y: 20 }, 200));
-    await act(async () => owner.settings.setSoundLevel('quiet'));
+    await act(async () => owner.settings.setSoundVolume(25));
     expect(latest.owner).toBe(owner);
     expect(loop.setVolume).toHaveBeenLastCalledWith(0.1);
     expect(sound.load).toHaveBeenCalledOnce();
-    await act(async () => owner.settings.setSoundLevel('loud'));
+    await act(async () => owner.settings.setSoundVolume(100));
     expect(loop.setVolume).toHaveBeenLastCalledWith(0.4);
+  });
+  it('silences the drawing loop when Drawing stops making sound, and loads it again after', async () => {
+    sound.read.mockResolvedValueOnce('{"version":1,"soundEnabled":true}');
+    await mount(Probe);
+    const owner = latest.owner;
+    await act(async () => owner.audio.begin({ x: 10, y: 20 }, 100));
+    expect(sound.load).toHaveBeenCalledOnce();
+    await act(async () => owner.settings.setDrawingSoundEnabled(false));
+    expect(loop.dispose).toHaveBeenCalledOnce();
+    await act(async () => owner.audio.begin({ x: 10, y: 20 }, 300));
+    expect(sound.load).toHaveBeenCalledOnce();
+    await act(async () => owner.settings.setDrawingSoundEnabled(true));
+    await act(async () => owner.audio.begin({ x: 10, y: 20 }, 500));
+    expect(sound.load).toHaveBeenCalledTimes(2);
   });
   it('persists real appearance controls, themes chrome immediately after failure, retries and restores on remount', async () => {
     let stored = '{"version":1,"soundEnabled":false}';
@@ -375,7 +374,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":11,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
+      '{"version":12,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}'
     );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
@@ -388,7 +387,7 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":11,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false}'
+      '{"version":12,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons"}'
     );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });

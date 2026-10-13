@@ -68,29 +68,33 @@ function openSettings(snapshot) {
   caller.settingsStorage = storage;
   return { storage, stored: () => JSON.parse(stored) };
 }
+// One option of a Settings segmented track, named by its group and its own label.
+const radio = (group, label) =>
+  host.querySelector(`[role="radiogroup"][aria-label="${group}"] [aria-label="${label}"]`);
+
 async function choose(label) {
-  const node = host.querySelector(`[aria-label="${label}"]`);
+  const node = radio('Orientation', label);
   expect(node, label).not.toBeNull();
   expect(node.disabled, label).toBe(false);
   await act(async () => node.click());
-  checkedRadio(host.querySelector(`[aria-label="${label}"]`));
+  checkedRadio(radio('Orientation', label));
 }
 
 it('locks an iPhone at startup and on each Settings choice, with Auto following the system', async () => {
   const settings = openSettings(VERSION_7);
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Appearance');
-  checkedRadio(host.querySelector('[aria-label="Portrait orientation"]'));
+  checkedRadio(radio('Orientation', 'Portrait'));
   expect(host.textContent).toContain(AUTO_NOTE);
   expect(orientationCalls).toEqual([['lockAsync', PORTRAIT_UP]]);
   expect(settings.storage.write).not.toHaveBeenCalled();
-  await choose('Landscape orientation');
+  await choose('Landscape');
   expect(orientationCalls.at(-1)).toEqual(['lockAsync', LANDSCAPE_RIGHT]);
-  expect(settings.stored()).toMatchObject({ version: 11, orientation: 'landscape' });
-  await choose('Auto orientation');
+  expect(settings.stored()).toMatchObject({ version: 12, orientation: 'landscape' });
+  await choose('Auto');
   expect(orientationCalls.at(-1)).toEqual(['unlockAsync']);
   expect(settings.stored().orientation).toBe('auto');
-  await choose('Portrait orientation');
+  await choose('Portrait');
   expect(orientationCalls).toEqual([
     ['lockAsync', PORTRAIT_UP],
     ['lockAsync', LANDSCAPE_RIGHT],
@@ -105,14 +109,14 @@ it('restores a saved Android Auto through the sensor request that beats the rota
   const settings = openSettings(version8('auto'));
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Appearance');
-  checkedRadio(host.querySelector('[aria-label="Auto orientation"]'));
+  checkedRadio(radio('Orientation', 'Auto'));
   expect(host.textContent).not.toContain(AUTO_NOTE);
   expect(orientationCalls).toEqual([
     ['lockPlatformAsync', { screenOrientationConstantAndroid: ANDROID_SENSOR }],
   ]);
-  await choose('Portrait orientation');
-  await choose('Landscape orientation');
-  await choose('Auto orientation');
+  await choose('Portrait');
+  await choose('Landscape');
+  await choose('Auto');
   expect(orientationCalls.slice(1)).toEqual([
     ['lockAsync', PORTRAIT_UP],
     ['lockAsync', LANDSCAPE_RIGHT],
@@ -126,7 +130,7 @@ it('leaves a tablet to the OS: no picker and no lock request', async () => {
   openSettings(version8('landscape'));
   await mount(createElement(RsdDrawingScreen));
   // The tablet's wide shell lays Appearance out in its pane rather than behind a hub row.
-  checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
+  checkedRadio(radio('Theme', 'Light'));
   expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();
   expect(host.textContent).not.toContain(AUTO_NOTE);
   expect(orientationCalls).toEqual([]);
@@ -151,7 +155,7 @@ it('takes the saved lock when the screen crosses to phone size and releases it c
   expect(orientationCalls).toEqual([]);
   await resize(PHONE);
   await openSettingsSection('Appearance');
-  checkedRadio(host.querySelector('[aria-label="Landscape orientation"]'));
+  checkedRadio(radio('Orientation', 'Landscape'));
   expect(orientationCalls).toEqual([['lockAsync', LANDSCAPE_RIGHT]]);
   await resize(TABLET);
   expect(host.querySelector('[aria-label="Orientation"]')).toBeNull();

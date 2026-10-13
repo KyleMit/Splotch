@@ -470,9 +470,6 @@ function DrawingSheets({
           onStrokeWidthControlChange={(enabled) => {
             void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
           }}
-          onSoundLevelChange={(level) => {
-            void sound.owner?.settings.setSoundLevel(level);
-          }}
           onAppearanceChange={(appearance) => {
             void sound.owner?.settings.setAppearance(appearance);
           }}

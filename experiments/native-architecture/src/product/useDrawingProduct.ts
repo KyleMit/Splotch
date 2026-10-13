@@ -6,6 +6,7 @@ import type { createProductOwners, ProductOwners } from './productOwners';
 import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
 import { createClearSound } from '../audio/pageTurnSound';
+import { applySoundChoices } from '../audio/soundGates';
 import { loadClearPageTurn } from '../platform/clearSound';
 import { useAiProgressOwner } from '../ai/useAiProgress';
 import { loadDrawingLoop } from '../platform/drawingAudio';
@@ -197,13 +198,16 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       owners?.feedback.close();
     }
   }, [owners, parentCenterOpen]);
+  const { soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled } = settings;
   useEffect(() => {
-    services?.audio.setLevel(settings.soundLevel);
-    services?.audio.setEnabled(settings.soundEnabled);
-    services?.clear.setLevel(settings.soundLevel);
-    services?.clear.setEnabled(settings.soundEnabled);
-    if (!settings.soundEnabled) services?.contacts.interrupt();
-  }, [services, settings.soundEnabled, settings.soundLevel]);
+    if (services)
+      applySoundChoices(services, {
+        soundEnabled,
+        soundVolume,
+        drawingSoundEnabled,
+        deleteSoundEnabled,
+      });
+  }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();
   }, [owners, settings.aiEnabled]);

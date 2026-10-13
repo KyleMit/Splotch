@@ -12,6 +12,7 @@ import {
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { themes } from '../../../web/src/lib/design/tokens.ts';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { HEX_DIM_KEYLINE } from '../../../experiments/native-architecture/src/rsdDrawing/hexPicker.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
@@ -30,6 +31,15 @@ import {
 
 async function refresh() {
   await act(async () => root.render(createElement(RsdDrawingScreen)));
+}
+// One option of a Settings segmented track, named by its group and its own label.
+const radio = (group, label) =>
+  host.querySelector(`[role="radiogroup"][aria-label="${group}"] [aria-label="${label}"]`);
+async function chooseTheme(label) {
+  const node = radio('Theme', label);
+  expect(node, label).not.toBeNull();
+  expect(node.disabled, label).toBe(false);
+  await act(async () => node.click());
 }
 async function click(label) {
   const node = host.querySelector(`[aria-label="${label}"]`);
@@ -89,12 +99,12 @@ it('hydrates before usable controls and persists appearance through the real RSD
     resolveRead(stored);
   });
   await openSettingsSection('Appearance');
-  checkedRadio(host.querySelector('[aria-label="System appearance"]'));
+  checkedRadio(radio('Theme', 'System'));
   // The drawing screen's frame wears the palette bar's surface in its safe-area strips.
   expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   storage.write.mockRejectedValueOnce(new Error('disk full'));
-  await click('Dark appearance');
-  checkedRadio(host.querySelector('[aria-label="Dark appearance"]'));
+  await chooseTheme('Dark');
+  checkedRadio(radio('Theme', 'Dark'));
   expect(lastFrame().style.backgroundColor).toBe('#23232b');
   expect(
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
@@ -107,13 +117,16 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(
     records.props.filter((props) => props.style?.backgroundColor === '#23232b').length
   ).toBeGreaterThanOrEqual(2);
-  expect(host.querySelector('[aria-label="Light appearance"]').dataset.nativeBackground).toBe(
-    '#211f29'
+  const themeTrack = records.props.findLast(
+    (props) =>
+      (props.role ?? props.accessibilityRole) === 'radiogroup' &&
+      (props['aria-label'] ?? props.accessibilityLabel) === 'Theme'
   );
+  expect(themeTrack.style.backgroundColor).toBe(themes.dark.controlTrack);
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 11,
+    version: 12,
     orientation: 'portrait',
     saveOnDeleteEnabled: false,
     buttonScale: 100,
@@ -121,8 +134,11 @@ it('hydrates before usable controls and persists appearance through the real RSD
     whatsNewSeen: null,
     pencilEraserEnabled: true,
     applePencilSeen: false,
+    toolbarStyle: 'buttons',
     coloringBookEnabled: true,
-    soundLevel: 'medium',
+    soundVolume: 50,
+    drawingSoundEnabled: true,
+    deleteSoundEnabled: true,
     undoButtonEnabled: true,
     strokeWidthControlEnabled: true,
     soundEnabled: false,
@@ -140,16 +156,16 @@ it('hydrates before usable controls and persists appearance through the real RSD
     },
   });
   expect(host.textContent).not.toContain('could not be saved');
-  await click('Light appearance');
+  await chooseTheme('Light');
   records.scheme = 'dark';
   await refresh();
-  checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
+  checkedRadio(radio('Theme', 'Light'));
   expect(lastFrame().style.backgroundColor).toBe('#ffffff');
   expect(
     [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
   ).toEqual(['dark-content', 'dark-content']);
-  await click('System appearance');
-  checkedRadio(host.querySelector('[aria-label="System appearance"]'));
+  await chooseTheme('System');
+  checkedRadio(radio('Theme', 'System'));
   expect(lastFrame().style.backgroundColor).toBe('#23232b');
   records.scheme = 'light';
   await refresh();
@@ -257,31 +273,47 @@ function rootColoringSettings() {
   };
   return caller.settingsStorage;
 }
-it('uses real RSD sound-level radios independently of the sound switch, retries, and retains ink', async () => {
+function volumeSlider() {
+  const props = records.props.findLast((entry) => entry.role === 'slider');
+  expect(props?.['aria-label']).toBe('Volume');
+  return props;
+}
+async function toggleSound() {
+  const node = host.querySelector('[role="switch"][aria-label="Sound"]');
+  expect(node).not.toBeNull();
+  await act(async () => node.click());
+}
+async function adjustVolume(actionName) {
+  await act(async () => volumeSlider().onAccessibilityAction({ nativeEvent: { actionName } }));
+}
+it('writes the real Volume slider once it settles, independently of the Sound switch, retries, and retains ink', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
   await click('Draw RSD fixture stroke');
   const drawing = coloringPaper();
   await click('Settings');
   await openSettingsSection('Sound');
-  checkedRadio(host.querySelector('[aria-label="Medium drawing sound"]'));
+  expect(host.querySelector('[role="slider"]')).toBeNull();
+  await toggleSound();
+  expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({ soundEnabled: true });
+  expect(volumeSlider()['aria-valuenow']).toBe(50);
   storage.write.mockRejectedValueOnce(new Error('disk full'));
-  await click('Quiet drawing sound');
-  checkedRadio(host.querySelector('[aria-label="Quiet drawing sound"]'));
+  await adjustVolume('increment');
+  const raised = volumeSlider()['aria-valuenow'];
+  expect(raised).toBeGreaterThan(50);
   expect(host.textContent).toContain('could not be saved');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    soundEnabled: false,
-    soundLevel: 'quiet',
+    soundEnabled: true,
+    soundVolume: raised,
   });
   await click('Try saving settings again');
   expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
   expect(host.textContent).not.toContain('could not be saved');
-  await click('Drawing sound off');
-  await click('Loud drawing sound');
-  checkedRadio(host.querySelector('[aria-label="Loud drawing sound"]'));
+  await toggleSound();
+  expect(host.querySelector('[role="slider"]')).toBeNull();
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    soundEnabled: true,
-    soundLevel: 'loud',
+    soundEnabled: false,
+    soundVolume: raised,
   });
   await click('Close');
   expect(coloringPaper()).toEqual(drawing);
@@ -362,7 +394,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Coloring book on');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 11,
+    version: 12,
     coloringBookEnabled: false,
     aiEnabled: false,
   });

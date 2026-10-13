@@ -52,7 +52,7 @@ describe('parent drawing control preferences', () => {
       const { version: _version, ...choices } = CURRENT;
       expect(f.changes.at(-1)).toMatchObject({
         ...choices,
-        soundLevel: mask & 1 ? 'loud' : 'medium',
+        soundVolume: mask & 1 ? 100 : 50,
         undoButtonEnabled: !(mask & 2),
         strokeWidthControlEnabled: !(mask & 4),
         saved: true,
@@ -87,15 +87,18 @@ describe('parent drawing control preferences', () => {
       expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
-        version: 11,
+        version: 12,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
         whatsNewSeen: null,
         pencilEraserEnabled: true,
         applePencilSeen: false,
+        toolbarStyle: 'buttons',
         orientation: 'portrait',
-        soundLevel: 'medium',
+        soundVolume: 50,
+        drawingSoundEnabled: true,
+        deleteSoundEnabled: true,
         undoButtonEnabled: true,
         strokeWidthControlEnabled: true,
         [field]: false,
@@ -133,7 +136,7 @@ describe('parent drawing control preferences', () => {
       const saving = f.owner[method](false);
       expect(f.changes.at(-1)).toMatchObject({ status: 'saving', [field]: false });
       await f.owner[method](true);
-      await f.owner.setSoundLevel('quiet');
+      await f.owner.setSoundVolume(25);
       expect(f.storage.write).toHaveBeenCalledOnce();
       f.owner.dispose();
       finish();

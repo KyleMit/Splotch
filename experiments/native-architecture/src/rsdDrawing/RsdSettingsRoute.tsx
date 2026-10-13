@@ -3,6 +3,7 @@ import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { NativeSoundSettingsDialog } from './RsdSettingsDialog';
 import { soundSettingsActions } from './soundSettingsActions';
+import type { SliderDraft } from './useSliderDraft';
 
 // Settings wired to the drawing screen's owners. Its own module so the wiring loads with the
 // dialog's chunk rather than on the startup path.
@@ -11,6 +12,7 @@ export function RsdSettingsRoute({
   sound,
   product,
   notice,
+  buttonScale,
   visible,
   onDismiss,
 }: {
@@ -18,6 +20,7 @@ export function RsdSettingsRoute({
   sound: ReturnType<typeof useDrawingSound>;
   product: ReturnType<typeof useDrawingProduct>;
   notice: string;
+  buttonScale: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
 }) {
@@ -29,6 +32,7 @@ export function RsdSettingsRoute({
       onRetryBrushSave={screen.retryBrushSave}
       notice={notice}
       {...soundSettingsActions(sound)}
+      buttonScale={buttonScale}
       onClose={screen.closeSettings}
       visible={visible}
       onDismiss={onDismiss}

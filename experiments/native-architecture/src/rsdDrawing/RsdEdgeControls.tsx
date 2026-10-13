@@ -44,19 +44,27 @@ const BRUSH_ICONS = {
 // and the overlay that reads the drawer state, never the strokes on the paper.
 export function RsdEdgeLayout({
   paintsDisabled,
+  buttonScale,
+  resizing,
   status,
   children,
   paperOverlay,
   ...controls
 }: Controls & {
   paintsDisabled: boolean;
+  // Button Size, live while its slider is dragged.
+  buttonScale: number;
+  // The drawer opens while Button Size is dragged, as shipping's does, so every control it
+  // resizes is in view.
+  resizing: boolean;
   status: ReactNode;
   children: ReactNode;
   paperOverlay: (drawerOpen: boolean) => ReactNode;
 }) {
   const { screen, sound, disabled } = controls;
-  const size = controlSize(sound.settings.buttonScale);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const size = controlSize(buttonScale);
+  const [drawerChosen, setDrawerChosen] = useState(false);
+  const drawerOpen = drawerChosen || resizing;
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
     disabled,
@@ -80,7 +88,7 @@ export function RsdEdgeLayout({
           axis={axis}
           size={size}
           open={drawerOpen}
-          onClick={() => setDrawerOpen(!drawerOpen)}
+          onClick={() => setDrawerChosen(!drawerOpen)}
         />
       )}
       drawerTools={drawerOpen ? drawerTools({ ...controls, size }, ink) : []}

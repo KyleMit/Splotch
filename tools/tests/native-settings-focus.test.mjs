@@ -45,7 +45,23 @@ vi.mock('react-strict-dom', () => {
     forwardRef(({ style: _style, 'data-testid': testId, ...props }, ref) =>
       createElement(tag, { ...props, ref, 'data-testid': testId })
     );
-  const tags = ['div', 'span', 'button', 'header', 'h1', 'h2', 'h3', 'p', 'ul', 'ol', 'li'];
+  const tags = [
+    'div',
+    'span',
+    'button',
+    'header',
+    'section',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'p',
+    'ul',
+    'ol',
+    'li',
+    'nav',
+    'label',
+  ];
   return {
     html: Object.fromEntries(tags.map((tag) => [tag, element(tag)])),
     css: {
@@ -108,6 +124,7 @@ async function openSettings() {
     downloadedBooks: 0,
     ai: null,
     visible: true,
+    buttonScale: { value: 100, active: false, onInput: () => {}, onActiveChange: () => {} },
   };
   const noop = () => {};
   const handlers = new Proxy({}, { get: () => noop });

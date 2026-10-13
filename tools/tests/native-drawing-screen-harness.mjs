@@ -488,6 +488,7 @@ export const UNTOUCHED_SETTINGS = {
   whatsNewSeen: null,
   pencilEraserEnabled: true,
   applePencilSeen: false,
+  toolbarStyle: 'buttons',
 };
 export const pictures = [
   { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },

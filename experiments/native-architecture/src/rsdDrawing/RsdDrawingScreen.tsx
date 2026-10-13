@@ -37,6 +37,7 @@ import { controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
+import { useSliderDraft } from './useSliderDraft';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -188,11 +189,17 @@ function RsdDrawingContent({
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
+  const buttonScale = useSliderDraft(
+    sound.settings.buttonScale,
+    (scale) => void sound.owner?.settings.setButtonScale(scale)
+  );
   const modalBlocked = isProductModalBlocked(route.shown, product);
-  const disabled = screen.disabled || menu.open || modalBlocked;
+  // A see-through Settings shows the controls it resizes as they look in use, not dimmed behind
+  // a dialog; the dragged slider keeps every touch meanwhile.
+  const disabled = !buttonScale.active && (screen.disabled || menu.open || modalBlocked);
   const paperBlocked = menu.open || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
+  useDrawingUndoShortcut(screen, paintsDisabled || menu.open || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
@@ -208,10 +215,12 @@ function RsdDrawingContent({
             menu={menu}
             disabled={disabled}
             paintsDisabled={paintsDisabled}
+            buttonScale={buttonScale.value}
+            resizing={buttonScale.active}
             paperOverlay={(drawerOpen) => (
               <RsdInstallBanner
                 strokes={screen.committedStrokes}
-                controlSize={controlSize(sound.settings.buttonScale)}
+                controlSize={controlSize(buttonScale.value)}
                 hidden={
                   drawerOpen ||
                   paperBlocked ||
@@ -260,6 +269,7 @@ function RsdDrawingContent({
               sound={sound}
               product={product}
               notice={soundNotice}
+              buttonScale={buttonScale}
               visible={route.visible}
               onDismiss={onModalDismissed}
             />

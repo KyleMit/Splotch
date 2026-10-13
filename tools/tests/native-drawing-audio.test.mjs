@@ -32,16 +32,16 @@ async function ready(f) {
 afterEach(() => vi.useRealTimers());
 
 describe('drawing audio gesture and resource ownership', () => {
-  it('updates an active loop immediately and retains the level for the next gesture', async () => {
+  it('updates an active loop immediately and retains the volume for the next gesture', async () => {
     const f = fixture();
     f.audio.setEnabled(true);
     f.audio.begin(first, 100);
     await ready(f);
     f.audio.sample({ x: 100, y: 20 }, 200);
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.2);
-    f.audio.setLevel('quiet');
+    f.audio.setVolume(25);
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.1);
-    f.audio.setLevel('loud');
+    f.audio.setVolume(100);
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.4);
     expect(f.load).toHaveBeenCalledOnce();
     expect(f.loop.start).toHaveBeenCalledOnce();
@@ -49,22 +49,22 @@ describe('drawing audio gesture and resource ownership', () => {
     f.audio.begin(first, 300);
     f.audio.sample({ x: 100, y: 20 }, 400);
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.4);
-    f.audio.setLevel('medium');
+    f.audio.setVolume(50);
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.2);
     f.audio.dispose();
   });
-  it('uses the latest level when a pending loop loads and after a foreground reload', async () => {
+  it('uses the latest volume when a pending loop loads and after a foreground reload', async () => {
     const f = fixture();
-    f.audio.setLevel('loud');
+    f.audio.setVolume(100);
     expect(f.load).not.toHaveBeenCalled();
     f.audio.setEnabled(true);
     f.audio.begin(first, 100);
     f.audio.sample({ x: 100, y: 20 }, 200);
-    f.audio.setLevel('quiet');
+    f.audio.setVolume(25);
     await ready(f);
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.1);
     f.audio.setForeground(false);
-    f.audio.setLevel('loud');
+    f.audio.setVolume(100);
     expect(f.load).toHaveBeenCalledOnce();
     f.audio.setForeground(true);
     const reloaded = { start: vi.fn(), setVolume: vi.fn(), stop: vi.fn(), dispose: vi.fn() };
@@ -76,12 +76,13 @@ describe('drawing audio gesture and resource ownership', () => {
     expect(reloaded.setVolume).toHaveBeenLastCalledWith(0.4);
     f.audio.dispose();
     f.loop.setVolume.mockClear();
-    f.audio.setLevel('quiet');
+    f.audio.setVolume(25);
     expect(f.loop.setVolume).not.toHaveBeenCalled();
   });
-  it('rejects unknown levels without starting audio', () => {
+  it('rejects volumes outside the slider without starting audio', () => {
     const f = fixture();
-    expect(() => f.audio.setLevel('invalid')).toThrow('Sound level');
+    for (const invalid of [-1, 101, 12.5, '50'])
+      expect(() => f.audio.setVolume(invalid), String(invalid)).toThrow('Volume');
     expect(f.load).not.toHaveBeenCalled();
     f.audio.dispose();
   });

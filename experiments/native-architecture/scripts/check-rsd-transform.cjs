@@ -89,15 +89,7 @@ const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
 const settingsDialog = parse('src/rsdDrawing/RsdSettingsDialog.tsx');
-const orientationChoices = parse('src/rsdDrawing/RsdOrientationChoices.tsx');
-for (const component of [
-  drawing,
-  edgeControls,
-  drawingTools,
-  coloringPicker,
-  settingsDialog,
-  orientationChoices,
-])
+for (const component of [drawing, edgeControls, drawingTools, coloringPicker, settingsDialog])
   babel.traverse(component, {
     JSXOpeningElement(path) {
       const node = path.node;
@@ -143,17 +135,10 @@ for (const component of [
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 7, 'RSD radio group count');
+assert.equal(groups.length, 4, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  [
-    'Appearance',
-    'Coloring page',
-    'Drawing brush',
-    'Drawing sound level',
-    'Orientation',
-    'Paint colors',
-  ],
+  ['Coloring page', 'Drawing brush', 'Paint colors'],
   'RSD radio group names'
 );
 const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
@@ -164,7 +149,7 @@ assert.deepEqual(
   'RSD width group label'
 );
 assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 7, 'RSD selection callers');
+assert.equal(radios, 4, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -176,7 +161,6 @@ const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
 assert.ok(
   switches.every((node) =>
     [
-      'soundEnabled',
       'coloringBookEnabled',
       'undoButtonEnabled',
       'strokeWidthControlEnabled',
@@ -192,7 +176,6 @@ assert.deepEqual(
     'coloringBookEnabled',
     'pencilEraserEnabled',
     'saveOnDeleteEnabled',
-    'soundEnabled',
     'strokeWidthControlEnabled',
     'undoButtonEnabled',
   ],
@@ -212,11 +195,6 @@ function switchCallback(property, enabledLabel, disabledLabel) {
   );
   return attribute(node, 'onClick')?.value?.expression;
 }
-const soundToggle = switchCallback('soundEnabled', 'Drawing sound on', 'Drawing sound off');
-assert.ok(
-  soundToggle?.type === 'Identifier' && soundToggle.name === 'onToggle',
-  'RSD sound switch callback'
-);
 const coloringToggle = switchCallback(
   'coloringBookEnabled',
   'Coloring book on',
@@ -305,7 +283,11 @@ const files = [
   'src/product/useDrawingUndoShortcut.ts',
   'src/product/useProductModalRoute.ts',
   'src/parentCenter/parentPolicy.ts',
-  'src/settings/soundLevel.ts',
+  'src/settings/soundVolume.ts',
+  'src/settings/toolbarStyle.ts',
+  'src/rsdDrawing/RsdAppearanceSection.tsx',
+  'src/rsdDrawing/RsdSoundSection.tsx',
+  'src/rsdDrawing/RsdAccessibilitySection.tsx',
   'src/settings/soundSettings.ts',
   'src/settings/soundSettingsCodec.ts',
   'src/settings/drawingControlPreferences.ts',
@@ -390,7 +372,6 @@ const files = [
   'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdSettingsRoute.tsx',
-  'src/rsdDrawing/RsdOrientationChoices.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
   'src/rsdDrawing/RsdRecoveryNotice.tsx',
   'src/useDrawingMenu.ts',

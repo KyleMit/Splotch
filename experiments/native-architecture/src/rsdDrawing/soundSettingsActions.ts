@@ -15,15 +15,19 @@ export function soundSettingsActions(sound: Sound) {
       void sound.owner?.settings.setSaveOnDeleteEnabled(enabled),
     onPencilEraserChange: (enabled: boolean) =>
       void sound.owner?.settings.setPencilEraserEnabled(enabled),
-    onSoundLevelChange: (level: Parameters<SettingsOwner['setSoundLevel']>[0]) =>
-      void sound.owner?.settings.setSoundLevel(level),
+    onSoundVolumeChange: (volume: number) => void sound.owner?.settings.setSoundVolume(volume),
+    onDrawingSoundChange: (enabled: boolean) =>
+      void sound.owner?.settings.setDrawingSoundEnabled(enabled),
+    onDeleteSoundChange: (enabled: boolean) =>
+      void sound.owner?.settings.setDeleteSoundEnabled(enabled),
     onAppearanceChange: (appearance: Parameters<SettingsOwner['setAppearance']>[0]) =>
       void sound.owner?.settings.setAppearance(appearance),
+    onToolbarStyleChange: (style: Parameters<SettingsOwner['setToolbarStyle']>[0]) =>
+      void sound.owner?.settings.setToolbarStyle(style),
     onOrientationChange: (orientation: Parameters<SettingsOwner['setOrientation']>[0]) =>
       void sound.owner?.settings.setOrientation(orientation),
     onColoringBookChange: (enabled: boolean) =>
       void sound.owner?.settings.setColoringBookEnabled(enabled),
-    onButtonScaleChange: (scale: number) => void sound.owner?.settings.setButtonScale(scale),
     onReduceMotionChange: (preference: Parameters<SettingsOwner['setReduceMotion']>[0]) =>
       void sound.owner?.settings.setReduceMotion(preference),
     onWhatsNewSeen: () => void sound.owner?.settings.markWhatsNewSeen(),

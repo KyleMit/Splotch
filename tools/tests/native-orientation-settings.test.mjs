@@ -34,6 +34,14 @@ const VERSION_7 = {
   strokeWidthControlEnabled: true,
 };
 const VERSION_8 = { ...VERSION_7, version: 8, orientation: 'landscape' };
+// Schema 12 reads the loud level as the volume that plays at its gain, with both sources on.
+const { soundLevel: _soundLevel7, ...VERSION_7_CHOICES } = VERSION_7;
+const MIGRATED_7 = {
+  ...VERSION_7_CHOICES,
+  soundVolume: 100,
+  drawingSoundEnabled: true,
+  deleteSoundEnabled: true,
+};
 
 function fixture(snapshot) {
   let stored = snapshot;
@@ -53,19 +61,20 @@ afterEach(() => vi.unstubAllGlobals());
 describe('persisted orientation choice', () => {
   it('migrates a version 7 record to the shipping Portrait default without rewriting it', async () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_7))).toEqual({
-      ...VERSION_7,
-      version: 11,
+      ...MIGRATED_7,
+      version: 12,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
       whatsNewSeen: null,
       pencilEraserEnabled: true,
       applePencilSeen: false,
+      toolbarStyle: 'buttons',
       orientation: 'portrait',
     });
     const f = fixture(JSON.stringify(VERSION_7));
     await f.owner.load();
-    expect(f.changes.at(-1)).toMatchObject({ orientation: 'portrait', soundLevel: 'loud' });
+    expect(f.changes.at(-1)).toMatchObject({ orientation: 'portrait', soundVolume: 100 });
     expect(f.storage.write).not.toHaveBeenCalled();
   });
 
@@ -81,7 +90,7 @@ describe('persisted orientation choice', () => {
       });
     if (version >= 6) Object.assign(old, { coloringBookEnabled: true });
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 11,
+      version: 12,
       orientation: 'portrait',
     });
   });
@@ -93,8 +102,8 @@ describe('persisted orientation choice', () => {
       await f.owner.load();
       await f.owner.setOrientation(choice);
       expect(JSON.parse(f.stored())).toEqual({
-        ...VERSION_7,
-        version: 11,
+        ...MIGRATED_7,
+        version: 12,
         orientation: choice,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
@@ -102,6 +111,7 @@ describe('persisted orientation choice', () => {
         whatsNewSeen: null,
         pencilEraserEnabled: true,
         applePencilSeen: false,
+        toolbarStyle: 'buttons',
       });
       const reopened = fixture(f.stored());
       await reopened.owner.load();

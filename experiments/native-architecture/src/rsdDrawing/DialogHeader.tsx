@@ -124,7 +124,13 @@ export function DialogHeader({
     return <html.div style={styles.floating(MODAL_CLOSE_INSET_PX)}>{close}</html.div>;
   const box = scope?.header;
   return (
-    <html.header style={[styles.header, box && styles.padding(box.top, box.inline, box.bottom)]}>
+    <html.header
+      style={[
+        styles.header,
+        box && styles.padding(box.top, box.inline, box.bottom),
+        scope?.seeThrough && styles.hidden,
+      ]}
+    >
       {onBack ? <HeaderControl kind="back" disabled={false} onClick={onBack} /> : null}
       <html.h2
         ref={titleRef}
@@ -161,6 +167,7 @@ const styles = css.create({
     paddingLeft: inline,
     paddingRight: inline,
   }),
+  hidden: { visibility: 'hidden' },
   floating: (inset: number) => ({ position: 'absolute', top: inset, right: inset, zIndex: 1 }),
   title: {
     flexGrow: 1,
