@@ -21,9 +21,9 @@ async function pressBack() {
   });
   return handled;
 }
-async function mount(platform) {
+async function mount(platform, options) {
   files.platform = platform;
-  screen = createScreen();
+  screen = createScreen(options);
   await act(async () => screen.mount());
 }
 beforeEach(() => {
@@ -82,6 +82,14 @@ it('leaves through exitApp only from the Leave choice', async () => {
   await screen.click('Leave');
   expect(files.exitApp).toHaveBeenCalledTimes(1);
   expect(screen.dialog()).toBeNull();
+});
+
+it('asks before Back leaves a first stroke whose finger has not lifted', async () => {
+  await mount('android', { cohortDrivers: true });
+  await screen.click('Begin cohort');
+  expect(await pressBack()).toBe(true);
+  expect(screen.dialog().getAttribute('aria-label')).toBe('Leave Splotch?');
+  expect(files.exitApp).not.toHaveBeenCalled();
 });
 
 it('leaves an empty canvas at once', async () => {

@@ -11,12 +11,14 @@ export interface SystemBackPort {
 }
 
 // The policy of ADR-0165: Back closes the top dialog, leaves an empty canvas at once, and asks
-// before leaving ink. Back on the question is its cancel, so repeated Back never leaves.
+// before leaving ink. Back on the question is its cancel, so repeated Back never leaves. A stroke
+// still under a finger is ink: it commits only when its last contact lifts.
 export function createSystemBack(port: SystemBackPort) {
   const dialogs = new Map<number, () => void>();
   const listeners = new Set<() => void>();
   let nextDialog = 0;
   let leaveOpen = false;
+  let drawingActive = false;
 
   function setLeaveOpen(value: boolean) {
     if (leaveOpen === value) return;
@@ -36,6 +38,9 @@ export function createSystemBack(port: SystemBackPort) {
       };
     },
     isLeaveOpen: () => leaveOpen,
+    setDrawingActive(active: boolean) {
+      drawingActive = active;
+    },
     registerDialog(close: () => void) {
       const id = ++nextDialog;
       dialogs.set(id, close);
@@ -47,7 +52,7 @@ export function createSystemBack(port: SystemBackPort) {
       const top = [...dialogs.values()].at(-1);
       if (top) top();
       else if (leaveOpen) stay();
-      else if (port.hasInk()) setLeaveOpen(true);
+      else if (drawingActive || port.hasInk()) setLeaveOpen(true);
       else port.exit();
       return true;
     },

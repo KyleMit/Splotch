@@ -33,6 +33,7 @@ import { createInkObservation } from './drawing/inkCoverage';
 import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 import { usePngRecovery } from './usePngRecovery';
+import { useBackAwareDrawingState } from './platform/BrowserBack';
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
@@ -42,7 +43,7 @@ export function useDrawingScreen() {
   const brush = brushes.state.brush;
   const brushActions = brushPreferenceActions(brushes);
   const [preparing, setPreparing] = useState(false);
-  const [drawing, setDrawing] = useState(false);
+  const [drawing, setDrawing] = useBackAwareDrawingState();
   const [commandBusy, setBusy] = useState(false);
   const busy = commandBusy || historyOwner.draftState.status === 'loading';
   const [notice, setNotice] = useState('Pick a color and draw.');

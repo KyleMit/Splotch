@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
@@ -47,6 +48,16 @@ export function useDialogBack(visible: boolean, onClose: () => void) {
   useEffect(() => {
     if (visible && owner) return owner.registerDialog(() => close.current());
   }, [owner, visible]);
+}
+
+export function useBackAwareDrawingState() {
+  const owner = useContext(SystemBackScope);
+  const state = useState(false);
+  const active = state[0];
+  useEffect(() => {
+    owner?.setDrawingActive(active);
+  }, [owner, active]);
+  return state;
 }
 
 export function useLeaveConfirm() {

@@ -67,3 +67,7 @@ const LEAVE_CONFIRM_CLOSED = { open: false, stay: () => {}, leave: () => {} };
 export function useLeaveConfirm() {
   return LEAVE_CONFIRM_CLOSED;
 }
+
+export function useBackAwareDrawingState() {
+  return useState(false);
+}
