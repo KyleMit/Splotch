@@ -108,6 +108,6 @@ export function createDeferredLibrary(
     },
     withSavedArtwork: async (pageId, action) => (await start()).withSavedArtwork(pageId, action),
     cover: (pack, dark) => loaded().cover(pack, dark),
-    selector: (pack, page, dark) => loaded().selector(pack, page, dark),
+    selector: (pack, page, orientation, dark) => loaded().selector(pack, page, orientation, dark),
   };
 }

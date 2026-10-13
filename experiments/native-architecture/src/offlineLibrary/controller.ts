@@ -15,6 +15,7 @@ import {
   type LibraryPlatform,
 } from './contract';
 import { createLibraryStore } from './store';
+import type { ArtOrientation } from '../drawing/paperSpace';
 import {
   initialLibrarySnapshot,
   LIBRARY_UNAVAILABLE_MESSAGE,
@@ -266,8 +267,8 @@ class OfflineLibraryController {
   cover(pack: Pack, dark: boolean) {
     return this.store.cover(pack, dark);
   }
-  selector(pack: Pack, page: OfflinePageSlug, dark: boolean) {
-    return this.store.selector(pack, page, dark);
+  selector(pack: Pack, page: OfflinePageSlug, orientation: ArtOrientation, dark: boolean) {
+    return this.store.selector(pack, page, orientation, dark);
   }
   async withSavedArtwork<T>(pageId: string, action: () => Promise<T>): Promise<T> {
     this.consumers++;

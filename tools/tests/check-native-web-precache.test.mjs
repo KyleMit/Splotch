@@ -215,7 +215,7 @@ it('samples line art for every starter page and lists it among the lazily loaded
 
 it('hashes every starter page image and both covers from the shipped files', () => {
   const images = starterBookImages();
-  expect(images).toHaveLength(FARM_PAGE_IDS.length * 6 + 2);
+  expect(images).toHaveLength(FARM_PAGE_IDS.length * 8 + 2);
   expect(new Set(images.map(({ pageId }) => pageId))).toEqual(
     new Set([...FARM_PAGE_IDS, 'farm cover'])
   );

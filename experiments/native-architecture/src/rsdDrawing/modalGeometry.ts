@@ -7,7 +7,7 @@ import {
 
 // The shipping modal frame: app.css .modal-dialog / .modal-shell / .modal-close-btn /
 // .dialog-header-control, DialogHeader.svelte, and each card's own width rules in
-// SettingsModal.svelte, ParentalGate.svelte and app.css .confirm-card.
+// SettingsModal.svelte, ColoringBook.svelte, ParentalGate.svelte and app.css .confirm-card.
 // modal-geometry.test.mjs reads those sources and fails when a value here drifts.
 
 export const MODAL_SCRIM_FROSTED = 'rgba(0, 0, 0, 0.6)';
@@ -25,7 +25,7 @@ export const DIALOG_BACK_PADDING_PX = 12;
 export const MODAL_CONTROL_ICON_PX = MODAL_CONTROL_SIZE_PX - 2 * DIALOG_BACK_PADDING_PX;
 export const MODAL_CONTROL_PRESSED_SCALE = 0.92;
 
-const CARD_HEIGHT_CAP_FRACTION = 0.85;
+export const CARD_HEIGHT_CAP_FRACTION = 0.85;
 const WIDE_CARD_HEIGHT_CEILING_PX = 760;
 const SETTINGS_MAX_WIDTH_PX = 500;
 const SETTINGS_WIDE_MAX_WIDTH_PX = 860;
@@ -33,6 +33,13 @@ const SETTINGS_COMPACT_MAX_WIDTH_PX = 640;
 // SettingsModal.svelte's narrow-phone step for its header and scroll padding.
 const SETTINGS_NARROW_MAX_WIDTH_PX = 480;
 const CONFIRM_MAX_WIDTH_PX = 336;
+export const COLORING_MAX_WIDTH_PX = 920;
+// ColoringBook.svelte's content padding steps down on a phone and again on a narrow one; the
+// header row stands its own gap above the grid.
+export const COLORING_PHONE_MAX_WIDTH_PX = 520;
+export const COLORING_NARROW_MAX_WIDTH_PX = 400;
+export const COLORING_PADDING_PX = { roomy: 32, phoneBlock: 24, phoneInline: 16, narrowInline: 8 };
+export const COLORING_HEADER_GAP_PX = 20;
 const GATE_MAX_WIDTH_PX = {
   phone: 336,
   phoneLandscape: 560,
@@ -59,9 +66,9 @@ const GATE_CONTENT: Record<keyof typeof GATE_MAX_WIDTH_PX, Box> = {
 };
 
 // Settings is the shipping Settings card; a sheet is that card's phone shell, which every RN
-// sheet without a shipping card of its own wears; the gate and confirm cards are the narrow
-// boundary cards.
-export type ModalSize = 'settings' | 'sheet' | 'gate' | 'confirm';
+// sheet without a shipping card of its own wears; the coloring card is the Coloring Book
+// Picker's; the gate and confirm cards are the narrow boundary cards.
+export type ModalSize = 'settings' | 'sheet' | 'coloring' | 'gate' | 'confirm';
 
 export type ModalFrame = {
   width: number;
@@ -100,6 +107,18 @@ function fitWidth(window: Window, gutter: number, maxWidth: number) {
   return Math.min(maxWidth, window.width - 2 * gutter);
 }
 
+function coloringPadding(width: number) {
+  if (width > COLORING_PHONE_MAX_WIDTH_PX)
+    return { block: COLORING_PADDING_PX.roomy, inline: COLORING_PADDING_PX.roomy };
+  return {
+    block: COLORING_PADDING_PX.phoneBlock,
+    inline:
+      width > COLORING_NARROW_MAX_WIDTH_PX
+        ? COLORING_PADDING_PX.phoneInline
+        : COLORING_PADDING_PX.narrowInline,
+  };
+}
+
 // The card's box for a window: the viewport width less the gutter each side, under the card's
 // own cap; Settings and the sheets also stop at the card height cap.
 export function modalFrame(size: ModalSize, window: Window, gutter: number): ModalFrame {
@@ -114,6 +133,16 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
       height: null,
       header: content,
       body: content,
+    };
+  }
+  if (size === 'coloring') {
+    const padding = coloringPadding(window.width);
+    return {
+      width: fitWidth(window, gutter, COLORING_MAX_WIDTH_PX),
+      maxHeight: cap,
+      height: null,
+      header: { top: padding.block, inline: padding.inline, bottom: COLORING_HEADER_GAP_PX },
+      body: { top: 0, inline: padding.inline, bottom: padding.block },
     };
   }
   if (size === 'confirm')

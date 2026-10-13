@@ -1,225 +1,228 @@
+import { useRef, useState } from 'react';
+import { View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { css, html } from 'react-strict-dom';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { RsdLibraryControls } from '../offlineLibrary/RsdLibraryControls';
-import { useHeldBooks, useLibraryControls } from '../offlineLibrary/LibraryScope';
+import {
+  useHeldBooks,
+  useLibraryControls,
+  type LibraryContext,
+} from '../offlineLibrary/LibraryScope';
 import { OFFLINE_BOOKS } from '../offlineLibrary/books.generated';
 import { offlinePageId } from '../offlineLibrary/identity';
-import type { Pack, OfflinePageSlug } from '../offlineLibrary/manifest';
+import type { ArtOrientation } from '../drawing/paperSpace';
 import type { PaperTheme } from '../drawing/theme';
-import { useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
-import { html } from 'react-strict-dom';
+import { BUNDLED_BOOKS, STARTER_BOOK_ID, isFarmPageId } from '../drawing/bundledBooks';
+import { BUNDLED_FARM_COVERS, BUNDLED_FARM_SELECTORS } from '../drawing/bundledFarm/pickerImages';
+import { COLORING_PAGES, pageLabel, type PageId } from '../drawing/pages';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
-import { RsdAction, styles } from './controls';
-import { BUNDLED_BOOKS, STARTER_BOOK_ID, type BookId } from '../drawing/bundledBooks';
-import { BUNDLED_FARM_COVERS, BUNDLED_FARM_IMAGES } from '../drawing/bundledFarm/images';
-import { COLORING_PAGES, SAMPLE_PAGE_IDS, type PageId } from '../drawing/pages';
-import { PAPER_THEMES } from '../drawing/theme';
+import { RsdColoringTile } from './RsdColoringTile';
+import { ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX, RsdActivePageChip } from './RsdActivePageChip';
+import { MODAL_GUTTER_MIN_PX, modalFrame } from './modalGeometry';
+import {
+  bookGridLayout,
+  coloringTitleCompact,
+  pageGridLayout,
+  tileWidth,
+  type GridLayout,
+} from './coloringGrid';
 
-const THUMBNAIL_WIDTH_PX = 132;
-const PAGE_THUMBNAIL_ASPECT = 3 / 2;
-type PickerView =
-  | { kind: 'books' }
-  | { kind: 'pages'; bookId: BookId }
-  | { kind: 'samples' }
-  | { kind: 'offline'; pack: Pack };
+const COLORING_PICKER_LABEL = 'Coloring books';
+const BOOK_GRID_TITLE = 'Coloring Books';
+// A toddler mashes a cover several times before registering that anything happened, and the
+// first tap swaps the grid, so the rest of the burst would land on whichever page painted under
+// the finger and pick it. Shipping arms its launch guard's dead zone for LAUNCH_ZONE_DURATION_MS
+// (launchGuard.ts) at the tap; here a swap holds every tile for that long.
+// rsd-native-coloring-picker.test.mjs reads the shipping value.
+export const TILE_SWAP_GUARD_MS = 600;
 
-function pickerLabel(view: PickerView, bookLabel: string | undefined) {
-  if (bookLabel) return `${bookLabel} coloring pages`;
-  return view.kind === 'samples' ? 'Sample coloring pages' : 'Coloring books';
+type PickerPage = Readonly<{ pageId: PageId; label: string; image: string | undefined }>;
+type PickerBook = Readonly<{
+  id: string;
+  label: string;
+  cover: string | undefined;
+  pages: readonly PickerPage[];
+}>;
+
+function starterBook(theme: PaperTheme, orientation: ArtOrientation): PickerBook {
+  const book = BUNDLED_BOOKS[STARTER_BOOK_ID];
+  return {
+    id: STARTER_BOOK_ID,
+    label: book.label,
+    cover: BUNDLED_FARM_COVERS[theme],
+    pages: book.pageIds.map((pageId) => ({
+      pageId,
+      label: COLORING_PAGES[pageId].label,
+      image: BUNDLED_FARM_SELECTORS[pageId][orientation][theme],
+    })),
+  };
 }
 
+// The books this open shows: the starter book, then each downloaded book the picker holds, in
+// catalog order rather than the order they finished downloading.
+function usePickerBooks(theme: PaperTheme, orientation: ArtOrientation): readonly PickerBook[] {
+  const library = useLibraryControls();
+  const held = useHeldBooks(library);
+  const dark = theme === 'dark';
+  const downloaded = library
+    ? OFFLINE_BOOKS.flatMap((book) => {
+        const pack = held.find((entry) => entry.id === book.id);
+        if (!pack || !installed(library, pack.revision)) return [];
+        return [
+          {
+            id: pack.id,
+            label: book.label,
+            cover: library.owner.cover(pack, dark),
+            pages: book.pages.map((page) => ({
+              pageId: offlinePageId(pack, page.slug),
+              label: page.label,
+              image: library.owner.selector(pack, page.slug, orientation, dark),
+            })),
+          },
+        ];
+      })
+    : [];
+  return [starterBook(theme, orientation), ...downloaded];
+}
+
+function installed(library: LibraryContext, revision: string) {
+  return library.state.installed.some((pack) => pack.revision === revision);
+}
+
+function activePagePreview(
+  pageId: PageId,
+  books: readonly PickerBook[],
+  theme: PaperTheme,
+  orientation: ArtOrientation
+) {
+  const page = books.flatMap((book) => book.pages).find((entry) => entry.pageId === pageId);
+  if (page) return page.image;
+  return isFarmPageId(pageId) ? BUNDLED_FARM_SELECTORS[pageId][orientation][theme] : undefined;
+}
+
+// The grid's own width, measured once laid out; until then the card's content width.
+function useGridWidth() {
+  const window = useWindowDimensions();
+  const [measured, setMeasured] = useState<number | null>(null);
+  const frame = modalFrame('coloring', window, MODAL_GUTTER_MIN_PX);
+  return {
+    window,
+    width: measured ?? frame.width - 2 * frame.body.inline,
+    onLayout: (event: LayoutChangeEvent) => setMeasured(event.nativeEvent.layout.width),
+  };
+}
+
+// The shipping Coloring Book Picker (ColoringBook.svelte): a modal card whose header carries the
+// Active Page Chip, over the Book Grid, or over one book's Coloring Page Grid with Back in the
+// header. With only the starter book it opens straight to that book's pages. The page art follows
+// the paper's orientation, tall tiles on portrait paper.
 export function RsdColoringBookPicker({
   selected,
+  orientation,
   visible,
   onDismiss,
   onChoose,
   onClose,
 }: {
   selected: PageId;
+  orientation: ArtOrientation;
   visible: boolean;
   onDismiss: () => void;
   onChoose: (pageId: PageId) => void;
   onClose: () => void;
 }) {
-  const library = useLibraryControls();
-  const heldBooks = useHeldBooks(library);
-  const [view, setView] = useState<PickerView>({ kind: 'books' });
   const theme = useDrawingAppearance();
-  const book = view.kind === 'pages' ? BUNDLED_BOOKS[view.bookId] : null;
-  const offlineBook =
-    view.kind === 'offline' ? OFFLINE_BOOKS.find((book) => book.id === view.pack.id) : null;
-  const label = pickerLabel(view, (offlineBook ?? book)?.label);
-  function back() {
-    setView({ kind: 'books' });
+  const books = usePickerBooks(theme, orientation);
+  const listsBooks = books.length >= 2;
+  // An open that starts in the one book's pages stays there when the launch inventory lists
+  // more books mid-open; Back then leads to them.
+  const [activeBookId, setActiveBookId] = useState<string | null>(() =>
+    listsBooks ? null : books[0].id
+  );
+  const active = books.find((book) => book.id === activeBookId) ?? (listsBooks ? null : books[0]);
+  const swappedAt = useRef(Number.NEGATIVE_INFINITY);
+  const grid = useGridWidth();
+  const guarded = () => Date.now() - swappedAt.current < TILE_SWAP_GUARD_MS;
+  function swap(bookId: string | null) {
+    swappedAt.current = Date.now();
+    setActiveBookId(bookId);
   }
+  const chip =
+    selected === 'blank' ? null : (
+      <RsdActivePageChip
+        name={pageLabel(selected)}
+        preview={activePagePreview(selected, books, theme, orientation)}
+        showName={grid.window.width > ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX}
+        onClear={() => onChoose('blank')}
+      />
+    );
+  const layout = active
+    ? pageGridLayout(grid.window, orientation)
+    : bookGridLayout(grid.window, books.length);
+  const size = tileWidth(layout, grid.width);
   return (
     <ModalShell
       visible={visible}
       onDismiss={onDismiss}
-      label={label}
-      size="sheet"
-      onClose={view.kind === 'books' ? onClose : back}
+      label={COLORING_PICKER_LABEL}
+      size="coloring"
+      onClose={onClose}
       header={
         <DialogHeader
-          title={label}
-          titleSize="xl"
-          onBack={view.kind === 'books' ? undefined : back}
+          title={active ? active.label : BOOK_GRID_TITLE}
+          titleSize={coloringTitleCompact(grid.window) ? 'md' : 'xl'}
+          onBack={active && listsBooks ? () => swap(null) : undefined}
+          actions={chip}
           onClose={onClose}
         />
       }
     >
-      <html.div style={styles.dialogContent}>
-        <html.span>Your drawing stays. Undo brings the last page back.</html.span>
-        {view.kind === 'books' ? (
-          <>
-            <html.button
-              aria-label="Farm coloring book"
-              style={[styles.action, styles.touchTarget(THUMBNAIL_WIDTH_PX)]}
-              onClick={() => setView({ kind: 'pages', bookId: STARTER_BOOK_ID })}
-            >
-              <Image
-                source={{ uri: BUNDLED_FARM_COVERS[theme] }}
-                style={images.cover}
-                accessible={false}
-              />
-              <html.span>{BUNDLED_BOOKS[STARTER_BOOK_ID].label}</html.span>
-            </html.button>
-            {heldBooks
-              .filter((pack) =>
-                library?.state.installed.some((current) => current.revision === pack.revision)
-              )
-              .map((pack) => (
-                <OfflineColoringBook
-                  key={pack.revision}
-                  pack={pack}
+      <View onLayout={grid.onLayout}>
+        <html.div style={[styles.grid(layout.gap), styles.width(gridWidth(layout, size))]}>
+          {active
+            ? active.pages.map((page) => (
+                <RsdColoringTile
+                  key={page.pageId}
+                  shape={orientation}
+                  image={page.image}
+                  width={size}
+                  accessibleName={`${page.label} coloring page`}
+                  onPress={() => {
+                    if (!guarded()) onChoose(page.pageId);
+                  }}
+                />
+              ))
+            : books.map((book) => (
+                <RsdColoringTile
+                  key={book.id}
+                  shape="cover"
+                  label={book.label}
                   theme={theme}
-                  onOpen={() => setView({ kind: 'offline', pack })}
+                  image={book.cover}
+                  width={size}
+                  accessibleName={`${book.label} coloring book`}
+                  onPress={() => {
+                    if (!guarded()) swap(book.id);
+                  }}
                 />
               ))}
-            <RsdLibraryControls />
-            <RsdAction label="Blank paper" onClick={() => onChoose('blank')} />
-            <RsdAction label="More pages" onClick={() => setView({ kind: 'samples' })} />
-          </>
-        ) : (
-          <>
-            <html.div role="radiogroup" aria-label="Coloring page" style={styles.row}>
-              {view.kind === 'offline' && offlineBook
-                ? offlineBook.pages.map((page) => (
-                    <OfflineColoringPage
-                      key={page.slug}
-                      pack={view.pack}
-                      page={page}
-                      selected={selected}
-                      theme={theme}
-                      onChoose={onChoose}
-                    />
-                  ))
-                : book
-                  ? book.pageIds.map((pageId) => (
-                      <html.button
-                        key={pageId}
-                        role="radio"
-                        aria-label={COLORING_PAGES[pageId].label}
-                        aria-checked={selected === pageId}
-                        style={[
-                          styles.action,
-                          styles.touchTarget(THUMBNAIL_WIDTH_PX),
-                          selected === pageId && styles.selected,
-                        ]}
-                        onClick={() => onChoose(pageId)}
-                      >
-                        <Image
-                          source={{ uri: BUNDLED_FARM_IMAGES[pageId].selector[theme] }}
-                          style={[images.page, { backgroundColor: PAPER_THEMES[theme].paper }]}
-                          accessible={false}
-                        />
-                        <html.span>{COLORING_PAGES[pageId].label}</html.span>
-                      </html.button>
-                    ))
-                  : SAMPLE_PAGE_IDS.map((pageId) => (
-                      <RsdAction
-                        key={pageId}
-                        label={COLORING_PAGES[pageId].label}
-                        selection="radio"
-                        selected={selected === pageId}
-                        onClick={() => onChoose(pageId)}
-                      />
-                    ))}
-            </html.div>
-          </>
-        )}
-      </html.div>
+        </html.div>
+      </View>
     </ModalShell>
   );
 }
 
-function OfflineColoringBook({
-  pack,
-  theme,
-  onOpen,
-}: {
-  pack: Pack;
-  theme: PaperTheme;
-  onOpen: () => void;
-}) {
-  const library = useLibraryControls();
-  const book = OFFLINE_BOOKS.find((book) => book.id === pack.id);
-  return (
-    <html.button
-      aria-label={`${book?.label} coloring book`}
-      style={[styles.action, styles.touchTarget(THUMBNAIL_WIDTH_PX)]}
-      onClick={onOpen}
-    >
-      <Image
-        source={{ uri: library?.owner.cover(pack, theme === 'dark') }}
-        style={images.cover}
-        accessible={false}
-      />
-      <html.span>{book?.label}</html.span>
-    </html.button>
-  );
+function gridWidth(layout: GridLayout, tile: number) {
+  return layout.columns * tile + (layout.columns - 1) * layout.gap;
 }
 
-function OfflineColoringPage({
-  pack,
-  page,
-  selected,
-  theme,
-  onChoose,
-}: {
-  pack: Pack;
-  page: { slug: OfflinePageSlug; label: string };
-  selected: PageId;
-  theme: PaperTheme;
-  onChoose: (pageId: PageId) => void;
-}) {
-  const library = useLibraryControls();
-  const pageId = offlinePageId(pack, page.slug);
-  return (
-    <html.button
-      key={pageId}
-      role="radio"
-      aria-label={page.label}
-      aria-checked={selected === pageId}
-      style={[
-        styles.action,
-        styles.touchTarget(THUMBNAIL_WIDTH_PX),
-        selected === pageId && styles.selected,
-      ]}
-      onClick={() => onChoose(pageId)}
-    >
-      <Image
-        source={{ uri: library?.owner.selector(pack, page.slug, theme === 'dark') }}
-        style={images.page}
-        accessible={false}
-      />
-      <html.span>{page.label}</html.span>
-    </html.button>
-  );
-}
-
-const images = StyleSheet.create({
-  cover: { width: THUMBNAIL_WIDTH_PX, height: THUMBNAIL_WIDTH_PX },
-  page: { width: THUMBNAIL_WIDTH_PX, height: THUMBNAIL_WIDTH_PX / PAGE_THUMBNAIL_ASPECT },
+const styles = css.create({
+  grid: (gap: number) => ({
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignSelf: 'center',
+    gap,
+  }),
+  width: (width: number) => ({ width }),
 });
