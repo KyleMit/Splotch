@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -5,7 +6,9 @@ import { afterEach, expect, it } from 'vitest';
 import {
   checkNativeWebPrecache,
   lazyIconSamples,
-  starterBookFills,
+  lazyModuleSamples,
+  starterBookImages,
+  starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
@@ -13,16 +16,30 @@ import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDr
 import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { contentAddressedShell, subresourceIntegrity } from '../migration/build-native-web.mjs';
 
-const STARTER = [
-  { pageId: 'farm/cat', fill: 'data:image/webp;base64,Q0FU' },
-  { pageId: 'farm/cow', fill: 'data:image/webp;base64,Q09X' },
+const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+const OUTLINES = [
+  { pageId: 'farm/cat', sample: 'M1 2C3 4 5 6 7 8CAT' },
+  { pageId: 'farm/cow', sample: 'M1 2C3 4 5 6 7 8COW' },
 ];
+const IMAGE_BYTES = { 'farm/cat': 'cat webp bytes', 'farm/cow': 'cow webp bytes' };
+const IMAGES = Object.entries(IMAGE_BYTES).map(([pageId, bytes]) => ({
+  pageId,
+  sha256: sha256(bytes),
+}));
 const ENTRY = '_expo/static/js/web/index-1.js';
+const CAT = '_expo/static/js/web/cat-1.js';
+const COW = '_expo/static/js/web/cow-1.js';
+const CAT_IMAGE = 'assets/__web/static/coloring/farm/cat-wide.selector.1.webp';
+const COW_IMAGE = 'assets/__web/static/coloring/farm/cow-wide.selector.1.webp';
 const CSS = '_expo/static/css/strict-1.css';
 const INDEX = `<html><head><link rel="stylesheet" href="/${CSS}"></head><body><script src="/${ENTRY}" defer></script></body></html>`;
 const ASSETS = {
   'index.html': INDEX,
-  [ENTRY]: `var art={cat:"${STARTER[0].fill}",cow:"${STARTER[1].fill}"};`,
+  [ENTRY]: 'var app={};',
+  [CAT]: `var d="${OUTLINES[0].sample}";`,
+  [COW]: `var d="${OUTLINES[1].sample}";`,
+  [CAT_IMAGE]: IMAGE_BYTES['farm/cat'],
+  [COW_IMAGE]: IMAGE_BYTES['farm/cow'],
   [CSS]: 'body{}',
   'site.webmanifest': '{}',
   'metadata.json': '{}',
@@ -65,16 +82,26 @@ function exportFixture({ urls, assets = ASSETS, ...options }) {
   return dir;
 }
 
-const COMPLETE = [SHELL.url, ENTRY, CSS, 'site.webmanifest'];
+const COMPLETE = [SHELL.url, ENTRY, CAT, COW, CAT_IMAGE, COW_IMAGE, CSS, 'site.webmanifest'];
 const check = (exportDir, options = {}) =>
-  checkNativeWebPrecache({ exportDir, starterFills: STARTER, log: () => {}, ...options });
+  checkNativeWebPrecache({
+    exportDir,
+    starterOutlines: OUTLINES,
+    starterImages: IMAGES,
+    lazySamples: [
+      ...lazyIconSamples().map((sample) => ({ module: 'deferred icons', sample })),
+      ...OUTLINES.map(({ pageId, sample }) => ({ module: `${pageId} line art`, sample })),
+    ],
+    log: () => {},
+    ...options,
+  });
 
 it('accepts a complete export whose pinned app shell is first', () => {
   expect(() => check(exportFixture({ urls: COMPLETE }))).not.toThrow();
 });
 
 it.each([
-  ['the shell is not first', [ENTRY, SHELL.url, CSS, 'site.webmanifest'], {}, /must be the first/],
+  ['the shell is not first', [ENTRY, SHELL.url, ...COMPLETE.slice(2)], {}, /must be the first/],
   ['the shell is missing', COMPLETE.slice(1), {}, /one build-matched app shell/],
   [
     "the shell URL is not the document's content address",
@@ -105,7 +132,7 @@ it.each([
   ],
   [
     'an exported chunk is not precached',
-    [SHELL.url, ENTRY, 'site.webmanifest'],
+    COMPLETE.filter((url) => url !== CSS),
     {},
     /strict-1\.css/,
   ],
@@ -135,9 +162,23 @@ it('rejects a shell that names a file outside its precache', () => {
 });
 
 it('rejects an export whose precached chunks lack a starter page', () => {
-  const assets = { ...ASSETS, [ENTRY]: `var art="${STARTER[0].fill}";` };
+  const assets = { ...ASSETS, [COW]: 'var d="";' };
   expect(() => check(exportFixture({ urls: COMPLETE, assets }))).toThrow(
     /Starter coloring pages missing from precached chunks: farm\/cow/
+  );
+});
+
+it('rejects an export whose precached files lack a starter image', () => {
+  const assets = { ...ASSETS, [COW_IMAGE]: 'other bytes' };
+  expect(() => check(exportFixture({ urls: COMPLETE, assets }))).toThrow(
+    /Starter coloring images missing from the precache: farm\/cow/
+  );
+});
+
+it('keeps bundled page line art out of the scripts the app shell loads', () => {
+  const eager = { ...ASSETS, [ENTRY]: `var d="${OUTLINES[0].sample}";` };
+  expect(() => check(exportFixture({ urls: COMPLETE, assets: eager }))).toThrow(
+    /1 lazily loaded samples are in the app shell's scripts: farm\/cat line art/
   );
 });
 
@@ -154,7 +195,7 @@ it('keeps lazily loaded icons out of the scripts the app shell loads', () => {
   expect(() => check(exportFixture({ urls: [...COMPLETE, LAZY], assets: lazy }))).not.toThrow();
   const eager = { ...ASSETS, [ENTRY]: `${ASSETS[ENTRY]}var d="${sample}";` };
   expect(() => check(exportFixture({ urls: COMPLETE, assets: eager }))).toThrow(
-    /1 lazily loaded icons are in the app shell's scripts/
+    /1 lazily loaded samples are in the app shell's scripts: deferred icons/
   );
 });
 
@@ -164,10 +205,21 @@ it('samples every lazily imported icon module', () => {
   expect(samples.length).toBeGreaterThan(Object.keys(NATIVE_DEFERRED_ICONS).length / 2);
 });
 
-it('reads a bundled fill for every starter page from the native art sources', () => {
-  const fills = starterBookFills();
-  expect(new Set(fills.map(({ pageId }) => pageId))).toEqual(new Set(FARM_PAGE_IDS));
-  expect(fills.every(({ fill }) => fill.startsWith('data:image/webp;base64,'))).toBe(true);
+it('samples line art for every starter page and lists it among the lazily loaded modules', () => {
+  const outlines = starterOutlineSamples();
+  expect(outlines.map(({ pageId }) => pageId)).toEqual([...FARM_PAGE_IDS]);
+  expect(new Set(outlines.map(({ sample }) => sample)).size).toBe(FARM_PAGE_IDS.length);
+  const lazy = lazyModuleSamples().map(({ sample }) => sample);
+  for (const { sample } of outlines) expect(lazy).toContain(sample);
+});
+
+it('hashes every starter page image and both covers from the shipped files', () => {
+  const images = starterBookImages();
+  expect(images).toHaveLength(FARM_PAGE_IDS.length * 6 + 2);
+  expect(new Set(images.map(({ pageId }) => pageId))).toEqual(
+    new Set([...FARM_PAGE_IDS, 'farm cover'])
+  );
+  expect(new Set(images.map((image) => image.sha256)).size).toBe(images.length);
 });
 
 it('runs after the native web export with type stripping', () => {
@@ -175,6 +227,6 @@ it('runs after the native web export with type stripping', () => {
     readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
   );
   expect(scripts['postnative:web:build']).toMatch(
-    /^node --experimental-strip-types .*tools\/migration\/check-native-web-precache\.mjs$/
+    /^node --experimental-strip-types .*tools\/migration\/check-native-web-precache\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-startup\.mjs$/
   );
 });

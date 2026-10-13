@@ -295,7 +295,7 @@ function validateBrushSources({
 
   function assertTransformedBrushSwitches(ast, file) {
     if (
-      file === 'src/rsdDrawing/NativeDialog.tsx' ||
+      file === 'src/rsdDrawing/RsdSettingsDialog.tsx' ||
       file === 'src/rsdDrawing/RsdEdgeControls.tsx'
     ) {
       const transformedSwitches = [];
@@ -306,7 +306,7 @@ function validateBrushSources({
             transformedSwitches.push(node);
         },
       });
-      if (file === 'src/rsdDrawing/NativeDialog.tsx') {
+      if (file === 'src/rsdDrawing/RsdSettingsDialog.tsx') {
         assert.equal(transformedSwitches.length, 7, 'RSD transformed settings switch templates');
         const optional = transformedSwitches.filter((node) =>
           availabilityValue(expressionValue(node, 'selected'))

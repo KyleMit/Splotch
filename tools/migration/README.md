@@ -10,8 +10,11 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   (`experiments/native-architecture/src/offlineLibrary/books.generated.ts`).
 * `gen-bundled-farm.mjs` generates the bundled starter book's art modules
   (`experiments/native-architecture/src/drawing/bundledFarm/`) from the shipping Farm overlays, the
-  compact-tier fills and the wide selectors in `web/static/coloring`; `--check` verifies them and
-  `tools/tests/native-starter-book.test.mjs` runs that check.
+  compact-tier fills, the wide selectors and the covers in `web/static/coloring`: one line-art
+  module per page, which the web export loads per page on first use (`bundledOutlines.web.ts`);
+  `images.ts`, the same images as data URIs for the native apps; and `images.web.ts`, which imports
+  the shipping files as hashed Metro assets so no image rides in a web startup script. `--check`
+  verifies them and `tools/tests/native-starter-book.test.mjs` runs that check.
 * `gen-native-icons.mjs` generates the native icon registry from every shipping SVG in
   `web/src/lib/icons` and its `deferred/` subdirectory, resolving themed parts and page tokens per
   theme and re-inking through `currentColor` exactly the icons outside the shipping `COLOR_ICONS`.
@@ -37,8 +40,13 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
 * `test:migration:rsd-selection` runs the RSD drawing-screen tests through the released native
   renderer (`rsd-drawing-vitest.config.mjs`). They are excluded from `test:tools` because they need
   the native `react-strict-dom` alias.
-* `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build;
-  `check-native-web-precache.mjs` verifies its service worker as the post hook.
+* `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
+  Its post hook runs `check-native-web-precache.mjs`, which verifies the service worker, then
+  `check-native-web-startup.mjs`, which holds the scripts and stylesheets the app shell loads before
+  first paint to `MAX_NATIVE_WEB_STARTUP_BYTES` and rejects an image inlined into them. That cap is
+  set from the measured export against the shipping `MAX_STARTUP_JS_CSS_BYTES` plus the measured
+  React Native Web floor; the constant's comment carries the numbers. A surface the drawing screen
+  shows only on request loads through `drawingSheets.web.ts`, so it stays off that path.
 * `verify-drawing-dev.mjs` drives the browser preview and saves a painted PNG for a quick visual
   check.
 

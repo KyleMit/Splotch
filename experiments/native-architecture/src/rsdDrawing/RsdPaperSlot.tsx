@@ -1,7 +1,7 @@
 import { View } from 'react-native';
-import { useState, type ComponentProps } from 'react';
+import { Suspense, useState, type ComponentProps } from 'react';
 import { NativePaper } from './NativePaper';
-import { AiWaitingPolaroid } from '../ai/AiWaitingPolaroid';
+import { AiWaitingPolaroid } from './drawingSheets';
 import { aiRun } from '../ai/uiState';
 import { fittedPaper } from '../drawing/paperGeometry';
 import { drawingPaper } from '../drawing/paperSpace';
@@ -35,7 +35,9 @@ export function RsdPaperSlot({
           testID="rsd-paper-corner"
           style={[paperCorner, fittedPaper(space, drawingPaper(paper.screen.history.drawing))]}
         >
-          <AiWaitingPolaroid run={run} progress={ai.progress} onRestore={ai.owner.restore} />
+          <Suspense fallback={null}>
+            <AiWaitingPolaroid run={run} progress={ai.progress} onRestore={ai.owner.restore} />
+          </Suspense>
         </View>
       ) : null}
     </View>
