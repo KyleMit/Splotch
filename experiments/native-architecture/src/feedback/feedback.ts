@@ -201,9 +201,15 @@ export function createNativeFeedback({
       update({ preview: result.snapshot, validation: '' });
       deliver(result.snapshot, () => true);
     },
-    // Each visit to the Settings form starts from an empty draft, as the shipping form does; a
-    // report already on its way keeps going.
+    // Each visit to the Settings form starts from an empty draft and no outcome, as the shipping
+    // form does: a report already on its way keeps going, but it belongs to the visit that sent it,
+    // so it can neither keep the new form busy nor report into it. A wait the server asked for still
+    // holds.
     reset() {
+      if (state.delivery.status === 'sending') {
+        delivery.detach();
+        update({ delivery: { status: 'idle' } });
+      }
       replaceDraft(EMPTY_DRAFT);
     },
     deviceRows: () => describeFeedbackDevice(device),

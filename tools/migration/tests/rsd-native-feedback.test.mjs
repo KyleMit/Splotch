@@ -1,4 +1,11 @@
-import { caller, records, host, mount, openSettingsSection } from './rsd-native-selection-host.mjs';
+import {
+  caller,
+  records,
+  root,
+  host,
+  mount,
+  openSettingsSection,
+} from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
@@ -157,4 +164,45 @@ it('previews the device rows in the disclosure and sends the report only after t
   const statuses = [...host.querySelectorAll('[role="status"]')].map((node) => node.textContent);
   expect(statuses.filter(Boolean)).toEqual([REPORT_FORM_COPY.sent]);
   expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+});
+
+// The shell's exit plays before the route lets Settings go, so a reopen is a fresh visit.
+const EXIT_SETTLE_MS = 600;
+
+async function rerender(settingsOpen) {
+  caller.screen.settingsOpen = settingsOpen;
+  await act(async () => root.render(createElement(RsdDrawingScreen)));
+  await act(async () => new Promise((resolve) => setTimeout(resolve, EXIT_SETTLE_MS)));
+}
+
+it("keeps an earlier visit's report out of the next visit's form", async () => {
+  let finish;
+  settingsScreen();
+  caller.feedbackSend.mockReset().mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Feedback');
+  await input(BUG_FIELD, 'First visit report');
+  await press(labelled(REPORT_FORM_COPY.send), REPORT_FORM_COPY.send);
+  await solveParentGate();
+  expect(caller.feedbackSend).toHaveBeenCalledOnce();
+  expect(labelled(REPORT_FORM_COPY.sending).disabled).toBe(true);
+  await rerender(false);
+  expect(host.querySelector('[data-native-modal="Feedback"]')).toBeNull();
+  await rerender(true);
+  await openSettingsSection('Feedback');
+  await input(BUG_FIELD, 'Second visit, not sent');
+  expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(false);
+  await act(async () => {
+    finish(new Response('{"ok":true}'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  const statuses = [...host.querySelectorAll('[role="status"]')].map((node) => node.textContent);
+  expect(statuses.filter(Boolean)).toEqual([]);
+  expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(false);
+  expect(caller.product.feedback.owner.getState().draft.message).toBe('Second visit, not sent');
 });
