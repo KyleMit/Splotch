@@ -1,7 +1,6 @@
-import { caller, host, mount, openSettingsSection } from './rsd-native-selection-host.mjs';
+import { caller, host, mount, openSettingsSection, records } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement } from 'react';
-import { Platform } from 'react-native';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
@@ -10,6 +9,7 @@ import { EXTERNAL_MARK_LABEL } from '../../../experiments/native-architecture/sr
 import { FEEDBACK_APP_VERSION } from '../../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
 import {
   INSTALL_GUIDE_COPY,
+  exitGuideSteps,
   lockGuideSteps,
 } from '../../../experiments/native-architecture/src/install/installGuideCopy.ts';
 import {
@@ -145,15 +145,32 @@ it("shows only the current release under What's New, with every release one link
   expect(openHostedPage).toHaveBeenCalledWith('changelog');
 });
 
-it('shows an installed app the lock steps for its own platform under the lock heading', async () => {
-  await mount(createElement(RsdDrawingScreen));
-  await openSettingsSection('Install');
-  const os = Platform.OS === 'android' ? 'android' : 'ios';
-  expect(host.textContent).toContain(INSTALL_GUIDE_COPY.lockTitle[os]);
-  expect(host.textContent).not.toContain(INSTALL_GUIDE_COPY.title);
-  const steps = [...host.querySelectorAll('[role="listitem"]')].map((node) => node.textContent);
-  expect(steps).toEqual(lockGuideSteps(os).map((step, index) => `${index + 1}.${step}`));
-});
+const numbered = (steps) => steps.map((step, index) => `${index + 1}.${step}`);
+
+it.each([
+  ['ios', false],
+  ['ios', true],
+  ['android', false],
+  ['android', true],
+])(
+  'shows an installed %s app its lock steps, or the way out once the lock is on (locked: %s)',
+  async (os, locked) => {
+    records.os = os;
+    caller.deviceLocked = locked;
+    await mount(createElement(RsdDrawingScreen));
+    await openSettingsSection('Install');
+    await act(async () => {});
+    const title = locked ? INSTALL_GUIDE_COPY.lockedTitle[os] : INSTALL_GUIDE_COPY.lockTitle[os];
+    const heading = [...host.querySelectorAll('[role="heading"]')].find((node) =>
+      node.textContent.startsWith(title)
+    );
+    expect(heading, title).toBeDefined();
+    expect(heading.textContent.includes('✓')).toBe(locked);
+    expect(host.textContent).not.toContain(INSTALL_GUIDE_COPY.title);
+    const steps = [...host.querySelectorAll('[role="listitem"]')].map((node) => node.textContent);
+    expect(steps).toEqual(numbered(locked ? exitGuideSteps(os) : lockGuideSteps(os)));
+  }
+);
 
 it('opens nothing when the grown-up check is closed without being solved', async () => {
   await mount(createElement(RsdDrawingScreen));

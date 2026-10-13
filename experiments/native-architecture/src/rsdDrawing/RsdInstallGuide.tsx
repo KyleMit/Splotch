@@ -1,13 +1,16 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { installPrompt } from '../platform/installPrompt';
 import type { InstallTextPart } from '../install/installCopy';
 import {
   INSTALL_GUIDE_COPY,
+  exitGuideStepParts,
   installGuideStepParts,
   lockGuideStepParts,
+  type LockOs,
 } from '../install/installGuideCopy';
+import { isDeviceLocked } from '../platform/deviceLock';
 import type { InstallDeviceOs } from '../install/installPolicy';
 import { useInstallSnapshot } from '../install/useInstallBanner';
 import { useShareButtonLocation } from '../install/shareLocation';
@@ -39,8 +42,7 @@ const ONE_TAP_GAP_PX = 20;
 const ONE_TAP_HINT_GAP_PX = 8;
 const ONE_TAP_ICON_PX = 20;
 const STEPS_FONT_PX = 16;
-
-type LockOs = Exclude<InstallDeviceOs, 'desktop'>;
+const LOCKED_CHECK_GAP_PX = 8;
 
 const styles = css.create({
   guide: { display: 'flex', flexDirection: 'column' },
@@ -82,6 +84,8 @@ const styles = css.create({
     gap: dimensions.space2,
   },
   summaryLabel: { flexShrink: 1 },
+  // SetupInstructions.svelte's .install-check sits apart from the title by its own margin.
+  lockedCheck: { marginLeft: LOCKED_CHECK_GAP_PX },
   check: {
     color: colors.successText,
     fontSize: dimensions.fontSizeLg,
@@ -225,14 +229,37 @@ function OneTapInstall() {
   );
 }
 
-// An installed app has one step left, so the lock title stands as the heading over flat steps.
+// Whether Guided Access or App Pinning holds the app, asked each time the guide mounts, which is
+// each time Settings opens. Until the answer arrives, and if it never does, the lock reads as off.
+function useDeviceLocked() {
+  const [locked, setLocked] = useState(false);
+  useEffect(() => {
+    let current = true;
+    void isDeviceLocked().then((answer) => {
+      if (current) setLocked(answer);
+    });
+    return () => {
+      current = false;
+    };
+  }, []);
+  return locked;
+}
+
+// An installed app has one step left, so the lock title stands as the heading over flat steps. Once
+// the lock is on, the heading confirms it and the steps show the way back out.
 function NativeLockGuide({ os }: { os: LockOs }) {
+  const locked = useDeviceLocked();
   return (
     <html.section style={styles.guide}>
       <html.h3 style={[controlStyles.semiboldText, styles.lockHeading]}>
-        {INSTALL_GUIDE_COPY.lockTitle[os]}
+        {locked ? INSTALL_GUIDE_COPY.lockedTitle[os] : INSTALL_GUIDE_COPY.lockTitle[os]}
+        {locked ? (
+          <html.span style={[controlStyles.boldText, styles.check, styles.lockedCheck]}>
+            {' ✓'}
+          </html.span>
+        ) : null}
       </html.h3>
-      <StepList steps={lockGuideStepParts(os)} ordered />
+      <StepList steps={locked ? exitGuideStepParts(os) : lockGuideStepParts(os)} ordered />
     </html.section>
   );
 }

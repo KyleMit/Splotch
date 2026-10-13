@@ -112,6 +112,7 @@ function pairs() {
       box(constant(install, 'ONE_TAP_HINT_GAP_PX'), 0, 0),
     ],
     [SHIPPING.setup, ':global(.one-tap-icon)', 'width', px(constant(install, 'ONE_TAP_ICON_PX'))],
+    [SHIPPING.setup, '.install-check', 'margin-left', px(constant(install, 'LOCKED_CHECK_GAP_PX'))],
     // ReportForm.svelte and ReportFields.svelte
     [
       SHIPPING.reportForm,

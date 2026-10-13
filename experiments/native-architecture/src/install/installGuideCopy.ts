@@ -1,4 +1,7 @@
 import type { InstallDeviceOs } from './installPolicy';
+
+// The two platforms that own an app lock (Guided Access, App Pinning).
+export type LockOs = Exclude<InstallDeviceOs, 'desktop'>;
 import { spokenInstallText, strong, text, type InstallTextPart } from './installCopy';
 
 // The Settings install guide's words, which shipping authors in SetupInstructions.svelte markup;
@@ -19,6 +22,11 @@ export const INSTALL_GUIDE_COPY = {
     android: 'Enable App Pinning',
     desktop: 'Keep kids in the app',
   } satisfies Record<InstallDeviceOs, string>,
+  // An installed app whose lock is already engaged: the title confirms it, over the way back out.
+  lockedTitle: {
+    ios: 'Guided Access is on',
+    android: 'App Pinning is on',
+  } satisfies Record<LockOs, string>,
   desktopNote: 'Firefox has no install of its own, so it keeps Splotch in a tab — that works too.',
   desktopLockNote:
     'A computer has no Guided Access or App Pinning to turn on — nothing locks it to one app. These come closest:',
@@ -111,6 +119,31 @@ export function lockGuideStepParts(os: InstallDeviceOs): readonly (readonly Inst
         [text('Stay nearby — a keyboard can leave the app at any time')],
       ];
   }
+}
+
+// How to leave the lock that is engaged, shown in place of the steps that turn it on.
+export function exitGuideStepParts(os: LockOs): readonly (readonly InstallTextPart[])[] {
+  return os === 'ios'
+    ? [
+        [text('Triple-click the '), strong('side button'), text(' (or Home button)')],
+        [text('Enter your Guided Access passcode')],
+        [text('Tap '), strong('End'), text(' in the top left')],
+      ]
+    : [
+        [
+          text('Touch and hold '),
+          strong('Back'),
+          text(' + '),
+          strong('Recent Apps'),
+          text(' together'),
+        ],
+        [text('(or swipe up and hold, then tap '), strong('Unpin'), text(')')],
+        [text('Splotch is now unlocked')],
+      ];
+}
+
+export function exitGuideSteps(os: LockOs) {
+  return exitGuideStepParts(os).map(spokenInstallText);
 }
 
 export function installGuideSteps(

@@ -132,6 +132,10 @@ vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts'
 vi.mock('../../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
+// The device lock answers what a case sets; a case that sets nothing sees no lock.
+vi.mock('../../../experiments/native-architecture/src/platform/deviceLock.ts', () => ({
+  isDeviceLocked: async () => caller.deviceLocked === true,
+}));
 vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.ts', () => ({
   subscribePencilDoubleTap(listener) {
     caller.pencilDoubleTap = listener;
@@ -415,6 +419,7 @@ afterEach(async () => {
   records.backListeners.clear();
   records.exits = 0;
   records.os = 'ios';
+  caller.deviceLocked = false;
   orientationCalls.length = 0;
 });
 

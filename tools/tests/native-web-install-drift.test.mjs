@@ -6,6 +6,7 @@ import {
 } from '../../experiments/native-architecture/src/install/installCopy.ts';
 import {
   INSTALL_GUIDE_COPY,
+  exitGuideSteps,
   installGuideSteps,
   lockGuideSteps,
 } from '../../experiments/native-architecture/src/install/installGuideCopy.ts';
@@ -34,7 +35,7 @@ function markupText(svelte) {
     .replace(/\{[#:/@][^}]*\}/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/ ([.,])/g, '$1');
+    .replace(/ ([.,)])/g, '$1');
 }
 
 const banner = markupText(source('components/InstallBanner.svelte'));
@@ -71,6 +72,10 @@ it('keeps the Settings install guide', () => {
     for (const step of lockGuideSteps(os)) expect(guide).toContain(step);
     expect(guideSource).toContain(`${os}: '${INSTALL_GUIDE_COPY.osLabel[os]}'`);
     expect(guideSource).toContain(`${os}: '${INSTALL_GUIDE_COPY.lockTitle[os]}'`);
+  }
+  for (const os of ['ios', 'android']) {
+    for (const step of exitGuideSteps(os)) expect(guide).toContain(step);
+    expect(guideSource).toContain(`'${INSTALL_GUIDE_COPY.lockedTitle[os]}'`);
   }
   expect(installGuideSteps('ios', SHARE_LOCATION, true)).toHaveLength(
     installGuideSteps('ios', SHARE_LOCATION, false).length + 1
