@@ -5,6 +5,7 @@ import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
+import { useAiProgressOwner } from '../ai/useAiProgress';
 import { loadDrawingLoop } from '../platform/drawingAudio';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import {
@@ -191,6 +192,8 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     };
   }, []);
   const settings = services?.product.getState().settings ?? initialSoundSettingsState();
+  const aiState = services?.ai.getState() ?? null;
+  const aiProgress = useAiProgressOwner(aiState);
   const parentCenterOpen = services?.product.getState().parentCenterOpen ?? false;
   useEffect(() => {
     if (parentCenterOpen) {
@@ -221,7 +224,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
         : null,
     },
     feedback: { owner: services?.feedback ?? null, state: services?.feedback.getState() ?? null },
-    ai: { owner: services?.ai ?? null, state: services?.ai.getState() ?? null },
+    ai: { owner: services?.ai ?? null, state: aiState, progress: aiProgress },
     owner: services?.product ?? null,
     state: services?.product.getState() ?? null,
   };

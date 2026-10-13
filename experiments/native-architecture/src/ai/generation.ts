@@ -234,6 +234,9 @@ class NativeAiController extends AiRecoverySession {
         result: null,
       };
       const receipt = await this.persistPrepared(journal, prepared);
+      this.update({
+        submitted: { id, uri: `data:image/png;base64,${bytesBase64(prepared.bytes)}` },
+      });
       if (!this.currentGenerationPermission(proof)) {
         await this.persist({ ...receipt.journal, phase: 'failed' });
         return;
@@ -343,6 +346,10 @@ class NativeAiController extends AiRecoverySession {
     }
   };
   open = () => {
+    if (this.state.minimized) {
+      this.restore();
+      return;
+    }
     if (this.deps.parent) {
       if (!this.deps.parent.consent().enabled) return;
       this.authorization += 1;
