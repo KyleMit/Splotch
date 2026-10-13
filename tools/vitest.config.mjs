@@ -15,6 +15,8 @@ import {
   RSD_NATIVE_BUTTON_SIZE_TEST,
   RSD_NATIVE_TOKEN_SPECIMEN_TEST,
   RSD_NATIVE_MODAL_FRAME_TEST,
+  RSD_NATIVE_SEGMENTED_PICKER_TEST,
+  RSD_NATIVE_SLIDER_TEST,
 } from './migration/lib/rsd-drawing-checks.mjs';
 
 // Node-environment unit tests for the repo tooling. Separate from the web
@@ -43,6 +45,8 @@ const CAPABILITY_EXCLUSIONS = [
   RSD_NATIVE_BUTTON_SIZE_TEST,
   RSD_NATIVE_TOKEN_SPECIMEN_TEST,
   RSD_NATIVE_MODAL_FRAME_TEST,
+  RSD_NATIVE_SEGMENTED_PICKER_TEST,
+  RSD_NATIVE_SLIDER_TEST,
 ];
 
 export default defineConfig({
