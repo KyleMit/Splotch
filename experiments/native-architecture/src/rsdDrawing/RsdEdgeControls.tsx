@@ -110,11 +110,13 @@ export function RsdEdgeLayout({
 
 // The shipping Color Palette's plate: the bar surface with a soft shadow cast onto the paper.
 const paletteStyles = css.create({
+  // The web style compiler rejects an undefined value at every render, so the declared extent
+  // goes on whichever axis the flow crosses through a style of its own.
+  columnExtent: (extent: number) => ({ width: extent }),
+  rowExtent: (extent: number) => ({ height: extent }),
   plate: (flow: PaletteFlow, column: boolean) => ({
     boxSizing: 'border-box',
     flexGrow: 1,
-    width: column ? flow.extentPx : undefined,
-    height: column ? undefined : flow.extentPx,
     paddingTop: column ? flow.endPaddingPx : flow.crossStartPaddingPx,
     paddingBottom: column ? flow.endPaddingPx : flow.crossEndPaddingPx,
     paddingLeft: column ? flow.crossStartPaddingPx : flow.endPaddingPx,
@@ -154,6 +156,7 @@ function RsdPalette({
       data-testid="rsd-palette-plate"
       style={[
         paletteStyles.plate(flow, column),
+        column ? paletteStyles.columnExtent(flow.extentPx) : paletteStyles.rowExtent(flow.extentPx),
         paletteStyles.surface,
         paletteStyles.flow(column, spacing),
       ]}

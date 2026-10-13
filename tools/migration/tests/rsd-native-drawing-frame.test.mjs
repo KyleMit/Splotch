@@ -262,6 +262,13 @@ describe('the mounted drawing screen frame', () => {
           height: PALETTE_FLOWS[axis].swatchPx,
         });
       const plate = resolved((props) => props.testID === 'rsd-palette-plate');
+      // The web style compiler logs an error for every undefined value it is handed, each render.
+      // Negative control: a plate that declares the extent it does not use fails here.
+      expect(
+        Object.entries(plate)
+          .filter(([, value]) => value === undefined)
+          .map(([key]) => key)
+      ).toEqual([]);
       expect(plate).toMatchObject({
         backgroundColor: DRAWING_THEMES.light.surface,
         boxShadow: PALETTE_FLOWS[axis].shadow,
