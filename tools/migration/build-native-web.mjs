@@ -29,6 +29,10 @@ const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 // Expo's build-identity file is read by its own tooling, never by the app.
 const EXPORT_METADATA_FILE = 'metadata.json';
 export const APP_SHELL_FILE = 'index.html';
+// What a static host answers any other path with (Netlify, GitHub Pages and most others look for
+// it): the app shell itself, which shows shipping's not-found page off the drawing route
+// (src/platform/appPath.web.ts). Only the host fetches it, so it stays out of the precache.
+export const NOT_FOUND_FILE = '404.html';
 
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish (the shipping value).
@@ -190,6 +194,7 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
   if (!existsSync(join(outputDir, APP_SHELL_FILE)))
     throw new Error(`Expo exported no ${APP_SHELL_FILE} into ${outputDir}`);
   copyShippingInstallAssets(outputDir);
+  copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
     nativeWebServiceWorkerConfig(outputDir, shell)
