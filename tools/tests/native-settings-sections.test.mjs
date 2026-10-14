@@ -76,12 +76,10 @@ function shippingSections() {
 }
 
 const CURRENT = {
-  version: 15,
+  version: 16,
   soundEnabled: true,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
-  selectedColor: 'Purple',
-  customColors: [],
   appearance: 'system',
   aiEnabled: false,
   parentPolicies: {
@@ -111,11 +109,13 @@ const CURRENT = {
   autoSaveAiEnabled: false,
 };
 
-// CURRENT as schema 12 stored it: the medium level where the volume and sources sit, and no
-// Button style.
+// CURRENT as schema 12 stored it: the paint after the widths, the medium level where the volume
+// and sources sit, and no Button style.
+const STORED_PAINT = Object.entries({ selectedColor: 'Purple', customColors: [] });
 const VERSION_12 = Object.fromEntries(
   Object.entries(CURRENT).flatMap(([key, value]) => {
     if (key === 'version') return [[key, 12]];
+    if (key === 'eraserWidth') return [[key, value], ...STORED_PAINT];
     if (key === 'soundVolume') return [['soundLevel', 'medium']];
     // The sound sources, Button style, drawer and camera switches, and AI Art's came later.
     if (/SoundEnabled$|^toolbarStyle$|^toolDrawer|^screenshot|^ai[CS]|^autoSave/.test(key))
@@ -447,7 +447,7 @@ describe('settings schema 10', () => {
             version: 9,
           }))(withoutLinksPolicy(VERSION_12));
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 15,
+      version: 16,
       buttonScale: DEFAULT_BUTTON_SCALE,
       reduceMotion: 'system',
       whatsNewSeen: null,

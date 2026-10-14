@@ -1,5 +1,6 @@
 import { legacyDrawing, adoptedDrawing, canonicalPaper } from './native-paper-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_STROKE_COLOR } from '../../web/src/lib/palette.ts';
 import {
   isCustomColor,
   paintHex,
@@ -137,19 +138,62 @@ describe('new candidate custom paints', () => {
   });
 });
 
-describe('custom palettes in the one serialized settings owner', () => {
+const SETTINGS_DEFAULTS = {
+  saveOnDeleteEnabled: false,
+  buttonScale: 100,
+  reduceMotion: 'system',
+  whatsNewSeen: null,
+  pencilEraserEnabled: true,
+  applePencilSeen: false,
+  toolbarStyle: 'buttons',
+  toolDrawerEnabled: true,
+  screenshotEnabled: true,
+  aiCustomizationEnabled: true,
+  autoSaveAiEnabled: false,
+  coloringBookEnabled: true,
+  soundVolume: 50,
+  drawingSoundEnabled: true,
+  deleteSoundEnabled: true,
+  undoButtonEnabled: true,
+  strokeWidthControlEnabled: true,
+  orientation: 'portrait',
+  aiEnabled: false,
+  parentPolicies: {
+    ai: 'always',
+    imageReport: 'always',
+    externalLinks: 'always',
+    feedback: 'always',
+    parentCenter: 'always',
+  },
+  appearance: 'system',
+};
+const PAINTED_RECORD = JSON.stringify({
+  version: 3,
+  soundEnabled: true,
+  strokeWidth: 'thick',
+  eraserWidth: 'thin',
+  selectedColor: '#FEDCBA',
+  customColors: ['#FEDCBA', '#000000'],
+});
+
+describe('custom paints as session state beside the one settings owner', () => {
+  it("starts every launch on shipping's default paint, whatever the record saved", async () => {
+    const states = [];
+    await createSoundSettings({ read: async () => PAINTED_RECORD, write: vi.fn() }, (state) =>
+      states.push(state)
+    ).load();
+    expect(states.at(-1)).toMatchObject({
+      saved: true,
+      strokeWidth: 'thick',
+      eraserWidth: 'thin',
+    });
+    expect(paintHex(states.at(-1).selectedColor)).toBe(DEFAULT_STROKE_COLOR);
+    expect(states.at(-1).customColors).toEqual([]);
+  });
   it.each(['retry', 'sound choice'])(
-    'preserves unread stored preferences and the warning through session paint changes through explicit %s until successful reread and a new choice',
+    'keeps paint picks through a failed read, its %s and a reread, and never writes them',
     async (recovery) => {
-      const original = JSON.stringify({
-        version: 3,
-        soundEnabled: true,
-        strokeWidth: 'thick',
-        eraserWidth: 'thin',
-        selectedColor: '#FEDCBA',
-        customColors: ['#FEDCBA', '#000000'],
-      });
-      let stored = original;
+      let stored = PAINTED_RECORD;
       const states = [];
       const storage = {
         read: vi.fn(async () => stored).mockRejectedValueOnce(new Error('temporarily unreadable')),
@@ -161,13 +205,12 @@ describe('custom palettes in the one serialized settings owner', () => {
       await owner.load();
       const warning = states.at(-1).message;
       expect(warning).toContain('could not be read');
-      await owner.setColor('#123ABC');
-      await owner.setColor('Blue');
+      owner.setColor('#123ABC');
+      owner.setColor('Blue');
       await owner.setWidth('drawing', 'thin');
-      await owner.setColor('#000077');
-      await owner.setColor('#123ABC');
+      owner.setColor('#000077');
+      owner.setColor('#123ABC');
       expect(storage.write).not.toHaveBeenCalled();
-      expect(stored).toBe(original);
       expect(states.at(-1)).toMatchObject({
         saved: false,
         message: warning,
@@ -177,161 +220,108 @@ describe('custom palettes in the one serialized settings owner', () => {
         selectedColor: '#123ABC',
         customColors: ['#123ABC', '#000077'],
       });
-      const untouched = [];
-      await createSoundSettings(storage, (state) => untouched.push(state)).load();
-      expect(untouched.at(-1)).toMatchObject({
+      if (recovery === 'retry') await owner.retrySave();
+      else await owner.setEnabled(true);
+      expect(storage.write).not.toHaveBeenCalled();
+      await owner.retryRead();
+      expect(states.at(-1)).toMatchObject({
         saved: true,
         soundEnabled: true,
         strokeWidth: 'thick',
         eraserWidth: 'thin',
-        selectedColor: '#FEDCBA',
-        customColors: ['#FEDCBA', '#000000'],
-      });
-      if (recovery === 'retry') await owner.retrySave();
-      else await owner.setEnabled(true);
-      expect(storage.write).not.toHaveBeenCalled();
-      expect(stored).toBe(original);
-      const reads = storage.read.mock.calls.length;
-      await owner.retryRead();
-      expect(storage.read).toHaveBeenCalledTimes(reads + 1);
-      expect(states.at(-1)).toMatchObject({
-        saved: true,
-        selectedColor: '#FEDCBA',
-        strokeWidth: 'thick',
-        eraserWidth: 'thin',
-      });
-      expect(storage.write).not.toHaveBeenCalled();
-      await owner.setColor('#123ABC');
-      if (recovery === 'sound choice') await owner.setEnabled(false);
-      const writes = recovery === 'sound choice' ? 2 : 1;
-      expect(storage.write).toHaveBeenCalledTimes(writes);
-      expect(parseSoundSettings(stored)).toEqual({
-        version: 15,
-        saveOnDeleteEnabled: false,
-        buttonScale: 100,
-        reduceMotion: 'system',
-        whatsNewSeen: null,
-        pencilEraserEnabled: true,
-        applePencilSeen: false,
-        toolbarStyle: 'buttons',
-        toolDrawerEnabled: true,
-        screenshotEnabled: true,
-        aiCustomizationEnabled: true,
-        autoSaveAiEnabled: false,
-        coloringBookEnabled: true,
-        soundVolume: 50,
-        drawingSoundEnabled: true,
-        deleteSoundEnabled: true,
-        undoButtonEnabled: true,
-        strokeWidthControlEnabled: true,
-        orientation: 'portrait',
-        aiEnabled: false,
-        parentPolicies: {
-          ai: 'always',
-          imageReport: 'always',
-          externalLinks: 'always',
-          feedback: 'always',
-          parentCenter: 'always',
-        },
-        appearance: 'system',
-        soundEnabled: recovery === 'retry',
-        strokeWidth: 'thick',
-        eraserWidth: 'thin',
         selectedColor: '#123ABC',
-        customColors: ['#123ABC', '#FEDCBA', '#000000'],
+        customColors: ['#123ABC', '#000077'],
       });
-      expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
-      await owner.setColor('#ABCDEF');
-      expect(storage.write).toHaveBeenCalledTimes(writes + 1);
+      await owner.setEnabled(false);
+      expect(storage.write).toHaveBeenCalledTimes(1);
+      expect(parseSoundSettings(stored)).toEqual({
+        version: 16,
+        ...SETTINGS_DEFAULTS,
+        soundEnabled: false,
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+      });
+      expect(JSON.parse(stored)).not.toHaveProperty('selectedColor');
       const reopened = [];
       await createSoundSettings(storage, (state) => reopened.push(state)).load();
       expect(reopened.at(-1)).toMatchObject({
         saved: true,
-        selectedColor: '#ABCDEF',
-        customColors: ['#ABCDEF', '#123ABC', '#FEDCBA', '#000000'],
-        soundEnabled: recovery === 'retry',
-        strokeWidth: 'thick',
-        eraserWidth: 'thin',
+        soundEnabled: false,
+        selectedColor: 'Purple',
+        customColors: [],
       });
     }
   );
-  it('persists a later paint choice after a failed write following a known successful read', async () => {
+  it('keeps a paint pick through a failed write and its retry, which saves no paint', async () => {
     const f = settingsFixture();
     await f.owner.load();
-    await f.owner.setWidth('eraser', 'thick');
     f.storage.write.mockRejectedValueOnce(new Error('disk full'));
-    await f.owner.setColor('#123ABC');
-    expect(f.states.at(-1)).toMatchObject({ saved: false, soundEnabled: true });
-    expect(f.states.at(-1).message).toContain('could not be saved');
-    await f.owner.setColor('#ABCDEF');
-    expect(f.storage.write).toHaveBeenCalledTimes(3);
-    expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
-      version: 15,
-      saveOnDeleteEnabled: false,
-      buttonScale: 100,
-      reduceMotion: 'system',
-      whatsNewSeen: null,
-      pencilEraserEnabled: true,
-      applePencilSeen: false,
-      toolbarStyle: 'buttons',
-      toolDrawerEnabled: true,
-      screenshotEnabled: true,
-      aiCustomizationEnabled: true,
-      autoSaveAiEnabled: false,
-      coloringBookEnabled: true,
-      soundVolume: 50,
-      drawingSoundEnabled: true,
-      deleteSoundEnabled: true,
-      undoButtonEnabled: true,
-      strokeWidthControlEnabled: true,
-      orientation: 'portrait',
-      aiEnabled: false,
-      parentPolicies: {
-        ai: 'always',
-        imageReport: 'always',
-        externalLinks: 'always',
-        feedback: 'always',
-        parentCenter: 'always',
-      },
-      appearance: 'system',
-      soundEnabled: true,
-      strokeWidth: 'medium',
-      eraserWidth: 'thick',
-      selectedColor: '#ABCDEF',
-      customColors: ['#ABCDEF', '#123ABC'],
-    });
-    expect(f.states.at(-1)).toMatchObject({ saved: true, message: '' });
-  });
-  it('retains the exact failed palette snapshot through width/sound changes and retry, then reopens it', async () => {
-    const f = settingsFixture();
-    await f.owner.load();
     await f.owner.setWidth('eraser', 'thick');
-    await f.owner.setEnabled(false);
-    f.storage.write.mockRejectedValueOnce(new Error('disk full'));
-    await f.owner.setColor('#123ABC');
+    f.owner.setColor('#123ABC');
     expect(f.states.at(-1)).toMatchObject({
       saved: false,
       selectedColor: '#123ABC',
-      customColors: ['#123ABC'],
-      eraserWidth: 'thick',
-      soundEnabled: false,
     });
+    expect(f.states.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
-    expect(f.storage.write.mock.calls.at(-1)).toEqual(f.storage.write.mock.calls.at(-2));
-    await f.owner.setWidth('drawing', 'thin');
-    await f.owner.setColor('Blue');
-    const reopened = createSoundSettings(f.storage, (state) => f.states.push(state));
-    await reopened.load();
+    expect(f.storage.write).toHaveBeenCalledTimes(2);
+    expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
+      version: 16,
+      ...SETTINGS_DEFAULTS,
+      soundEnabled: true,
+      strokeWidth: 'medium',
+      eraserWidth: 'thick',
+    });
     expect(f.states.at(-1)).toMatchObject({
       saved: true,
-      selectedColor: 'Blue',
+      message: '',
+      selectedColor: '#123ABC',
       customColors: ['#123ABC'],
-      strokeWidth: 'thin',
-      eraserWidth: 'thick',
-      soundEnabled: false,
     });
   });
-  it('rejects corrupt palette snapshots, unsafe colors, duplicates, overflow and selected colors missing from the palette', () => {
+  it('lands a paint pick made while another choice saves, and rejects unsafe live colors', async () => {
+    const f = settingsFixture();
+    await f.owner.load();
+    expect(f.states.at(-1)).toMatchObject({
+      saved: true,
+      selectedColor: 'Purple',
+      customColors: [],
+    });
+    let finish;
+    f.storage.write.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const saving = f.owner.setWidth('drawing', 'thin');
+    expect(f.states.at(-1).status).toBe('saving');
+    f.owner.setColor('#123ABC');
+    f.owner.setColor('#FEDCBA');
+    expect(f.states.at(-1)).toMatchObject({
+      status: 'saving',
+      selectedColor: '#FEDCBA',
+    });
+    finish();
+    await saving;
+    expect(f.states.at(-1)).toMatchObject({
+      status: 'ready',
+      saved: true,
+      strokeWidth: 'thin',
+      selectedColor: '#FEDCBA',
+      customColors: ['#FEDCBA', '#123ABC'],
+    });
+    expect(() => f.owner.setColor('red')).toThrow();
+    expect(f.storage.write).toHaveBeenCalledTimes(1);
+  });
+  it('drops a paint pick while settings load', async () => {
+    const f = settingsFixture();
+    f.owner.setColor('Blue');
+    expect(f.states).toEqual([]);
+    await f.owner.load();
+    expect(f.states.at(-1)).toMatchObject({ selectedColor: 'Purple' });
+  });
+  it('validates but drops the paint an older record saved', () => {
     const valid = {
       version: 3,
       soundEnabled: true,
@@ -341,35 +331,11 @@ describe('custom palettes in the one serialized settings owner', () => {
       customColors: ['#123ABC'],
     };
     expect(parseSoundSettings(JSON.stringify(valid))).toEqual({
-      ...valid,
-      version: 15,
-      saveOnDeleteEnabled: false,
-      buttonScale: 100,
-      reduceMotion: 'system',
-      whatsNewSeen: null,
-      pencilEraserEnabled: true,
-      applePencilSeen: false,
-      toolbarStyle: 'buttons',
-      toolDrawerEnabled: true,
-      screenshotEnabled: true,
-      aiCustomizationEnabled: true,
-      autoSaveAiEnabled: false,
-      coloringBookEnabled: true,
-      soundVolume: 50,
-      drawingSoundEnabled: true,
-      deleteSoundEnabled: true,
-      undoButtonEnabled: true,
-      strokeWidthControlEnabled: true,
-      orientation: 'portrait',
-      aiEnabled: false,
-      parentPolicies: {
-        ai: 'always',
-        imageReport: 'always',
-        externalLinks: 'always',
-        feedback: 'always',
-        parentCenter: 'always',
-      },
-      appearance: 'system',
+      ...SETTINGS_DEFAULTS,
+      version: 16,
+      soundEnabled: true,
+      strokeWidth: 'thin',
+      eraserWidth: 'thick',
     });
     for (const customColors of [
       [],
@@ -385,36 +351,5 @@ describe('custom palettes in the one serialized settings owner', () => {
       parseSoundSettings(JSON.stringify({ ...valid, selectedColor: 'url(#x)' }))
     ).toThrow();
     expect(() => parseSoundSettings(JSON.stringify({ ...valid, extra: true }))).toThrow();
-  });
-  it('serializes pending palette writes and rejects unsafe live colors', async () => {
-    const f = settingsFixture();
-    await f.owner.load();
-    expect(f.states.at(-1)).toMatchObject({
-      saved: true,
-      selectedColor: 'Purple',
-      customColors: [],
-    });
-    let finish;
-    f.storage.write.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finish = resolve;
-        })
-    );
-    const saving = f.owner.setColor('#123ABC');
-    await f.owner.setColor('#FEDCBA');
-    await f.owner.setWidth('drawing', 'thin');
-    await f.owner.retrySave();
-    expect(f.storage.write).toHaveBeenCalledTimes(1);
-    finish();
-    await saving;
-    expect(f.states.at(-1)).toMatchObject({
-      saved: true,
-      selectedColor: '#123ABC',
-      customColors: ['#123ABC'],
-      strokeWidth: 'medium',
-    });
-    await expect(f.owner.setColor('red')).rejects.toThrow();
-    expect(f.storage.write).toHaveBeenCalledTimes(1);
   });
 });

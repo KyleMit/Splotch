@@ -176,9 +176,9 @@ describe('canonical shared stroke widths', () => {
   });
 });
 
-// The shipping defaults a stored record carries beside its sound, paint and widths.
+// The shipping defaults a stored record carries beside its sound and widths.
 const PERSISTED_DEFAULTS = {
-  version: 15,
+  version: 16,
   saveOnDeleteEnabled: false,
   buttonScale: 100,
   reduceMotion: 'system',
@@ -212,8 +212,6 @@ describe('one persisted candidate settings owner', () => {
   it('defaults drawing levels while preserving historic geometry only in saved pictures', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
       ...PERSISTED_DEFAULTS,
-      selectedColor: 'Purple',
-      customColors: [],
       soundEnabled: false,
       strokeWidth: 'medium',
       eraserWidth: 'medium',
@@ -254,7 +252,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":15,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons","toolDrawerEnabled":true,"screenshotEnabled":true,"aiCustomizationEnabled":true,"autoSaveAiEnabled":false}'
+      '{"version":16,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","externalLinks":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundVolume":50,"drawingSoundEnabled":true,"deleteSoundEnabled":true,"undoButtonEnabled":true,"strokeWidthControlEnabled":true,"orientation":"portrait","saveOnDeleteEnabled":false,"buttonScale":100,"reduceMotion":"system","whatsNewSeen":null,"pencilEraserEnabled":true,"applePencilSeen":false,"toolbarStyle":"buttons","toolDrawerEnabled":true,"screenshotEnabled":true,"aiCustomizationEnabled":true,"autoSaveAiEnabled":false}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -267,8 +265,6 @@ describe('one persisted candidate settings owner', () => {
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
       ...PERSISTED_DEFAULTS,
-      selectedColor: 'Purple',
-      customColors: [],
       soundEnabled: true,
       strokeWidth: 'thin',
       eraserWidth: 'thick',
@@ -356,8 +352,6 @@ describe('one persisted candidate settings owner', () => {
         soundEnabled: recovery === 'retry',
         strokeWidth: 'thin',
         eraserWidth: 'thick',
-        selectedColor: 'Purple',
-        customColors: [],
       });
       expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
       await owner.setWidth('drawing', 'medium');
@@ -395,8 +389,6 @@ describe('one persisted candidate settings owner', () => {
       soundEnabled: true,
       strokeWidth: 'thin',
       eraserWidth: 'thick',
-      selectedColor: 'Purple',
-      customColors: [],
     });
     expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
   });
