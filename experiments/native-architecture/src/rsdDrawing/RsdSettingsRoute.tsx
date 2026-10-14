@@ -70,6 +70,7 @@ export function RsdSettingsRoute({
       buttonScale={buttonScale}
       soundVolume={soundVolume}
       onClose={close}
+      initialSection={screen.settingsSection}
       visible={visible}
       onDismiss={onDismiss}
       parentCenter={{

@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -35,7 +35,15 @@ export function toolbarScreen(overrides = {}) {
   };
 }
 
+// The AI Image Button's name once the free allowance has answered with every picture left.
+export const AI_BUTTON = 'Create AI image, 10 free left';
+
 export async function mountToolbar(screen) {
+  caller.aiSend.mockImplementation(async (request) =>
+    request.path === '/api/free-generation-grant'
+      ? new Response('{"ok":true,"remaining":10,"limit":10}')
+      : new Response('{"ok":false}', { status: 500 })
+  );
   caller.screen = screen;
   caller.menu = { open: false, visible: false, show: vi.fn() };
   caller.sound = {
@@ -51,6 +59,7 @@ export async function mountToolbar(screen) {
     },
   };
   await mount(createElement(RsdDrawingScreen));
+  await act(() => vi.waitFor(() => expect(caller.product.ai.state?.availability).toBe('ready')));
 }
 
 export function paintGroup() {

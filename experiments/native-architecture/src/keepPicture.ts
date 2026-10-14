@@ -3,6 +3,7 @@ import type { Drawing } from './drawing/model';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { pictureSave } from './platform/pictureSave';
 import type { PictureSaveOutcome, SaveOs } from './export/pictureSave';
+import type { PictureFormat } from './export/pictureFilename';
 
 // What a save did with the picture, and the PNG it captured: the bytes Try again saves when the
 // save did not land.
@@ -24,9 +25,12 @@ export async function capturePicture(
   }
 }
 
-export async function savePicture(pngBase64: string): Promise<PictureSaveOutcome> {
+export async function savePicture(
+  pngBase64: string,
+  format?: PictureFormat
+): Promise<PictureSaveOutcome> {
   try {
-    return await pictureSave.save(pngBase64);
+    return await pictureSave.save(pngBase64, format);
   } catch {
     return 'failed';
   }

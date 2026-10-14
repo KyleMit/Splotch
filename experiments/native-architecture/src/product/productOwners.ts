@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
 import {
@@ -6,7 +7,7 @@ import {
   feedbackPolicyStorage,
   feedbackTransport,
 } from '../platform/feedback';
-import { aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
+import { aiDismissal, aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from '../ai/prepare';
 import { parseDrawing } from '../drawing/model';
@@ -30,9 +31,16 @@ export function createProductOwners(
   const ai = createNativeAi({
     vault: aiVault,
     storage: aiStorage,
+    dismissal: aiDismissal,
     transport: aiTransport,
     admit: admitAiImage,
     parent,
+    problems: {
+      platform: Platform.OS,
+      transport: feedbackTransport,
+      device: feedbackDevice,
+      offline: feedbackOffline,
+    },
     async prepare() {
       const current = screenRef.current;
       const surface = current.surface.current;

@@ -30,8 +30,16 @@ describe('the Save Failure Banner owner', () => {
     failure.report('failed', 'first-png');
     expect(failure.getState()).toEqual({ outcome: 'failed', pictureCount: 1, retrying: false });
     await failure.retry();
-    expect(save.mock.calls).toEqual([['first-png']]);
+    expect(save.mock.calls).toEqual([['first-png', undefined]]);
     expect(failure.getState()).toEqual({ outcome: null, pictureCount: 0, retrying: false });
+  });
+
+  it('retries an AI picture in the format it arrived in', async () => {
+    const { failure, save } = owner(vi.fn(async () => 'downloads'));
+    const format = { baseName: 'splotch-ai', mime: 'image/jpeg' };
+    failure.report('failed', 'ai-jpeg', format);
+    await failure.retry();
+    expect(save).toHaveBeenCalledWith('ai-jpeg', format);
   });
 
   it('is busy while a retry saves, and keeps a picture that fails again with its new outcome', async () => {

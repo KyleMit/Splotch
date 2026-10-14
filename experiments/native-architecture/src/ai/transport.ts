@@ -76,12 +76,15 @@ export type AiReply =
       message: string;
       reportToken: string | null;
       retryAt?: never;
+      status?: number;
     }
   | {
       kind: 'failure';
       reason: 'exhausted' | 'unavailable' | 'expired' | 'rejected' | 'server' | 'invalid';
       message: string;
       retryAt?: number;
+      status?: number;
+      detail?: string;
     }
   | { kind: 'unknown'; message: string };
 export function aiUrl(request: AiRequest) {
@@ -182,7 +185,14 @@ export async function parseAiResponse(
     Object.keys(raw).sort().join(',') === 'accessCode,ok'
   )
     return { kind: 'verified', accessCode: raw.accessCode };
-  return parseAiFailure(raw, response, poll, now, VERIFY_PATHS.includes(request.path));
+  const reply = parseAiFailure(raw, response, poll, now, VERIFY_PATHS.includes(request.path));
+  // The HTTP status, and for anything but a refusal the server's own words, ride along for the
+  // problem report a grown-up can send about a failure; the child sees only the app's message. A
+  // refusal's provider reason is never kept.
+  if (reply.kind !== 'failure') return reply;
+  return reply.reason === 'safety'
+    ? { ...reply, status: response.status }
+    : { ...reply, status: response.status, detail: String(raw.error) };
 }
 const VERIFY_PATHS: readonly AiRequest['path'][] = ['/api/verify-key', '/api/verify-access-code'];
 export const AI_THROTTLED_MESSAGE = 'Too many attempts. Please wait before trying again.';

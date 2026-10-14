@@ -45,7 +45,7 @@ it('closes the transitive native operation vocabulary and preserves the legacy g
   ]);
   expect(storage).not.toContain('file.write(');
   expect(storage).not.toContain('file.move(');
-  const generation = readFileSync(new URL('src/ai/generation.ts', candidate), 'utf8');
+  const generation = readFileSync(new URL('src/ai/generationController.ts', candidate), 'utf8');
   expect(generation).toContain('await this.persistPrepared(journal, prepared)');
   expect(generation).not.toMatch(/acknowledge|generation-result-ack|X-Recovery/);
   for (const path of [android, apple]) {

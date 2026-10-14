@@ -83,6 +83,7 @@ function useCaller() {
     history: { undo: [], drawing },
     currentDrawing: () => drawing,
     surface: { current: null },
+    inkVisible: true,
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,
@@ -137,17 +138,23 @@ it('still recovers a generation left pending before the reload', async () => {
   await arrive();
   await expandControls();
 
-  await click('AI picture');
-  await click('Check AI allowance');
+  // The wand reopens the waiting run once a grown-up has answered, and checks on it at once.
+  const wand = 'Create AI image, 9 free left';
+  await act(() =>
+    vi.waitFor(() => expect(host.querySelector(`[aria-label="${wand}"]`)).not.toBeNull())
+  );
+  expect(caller.aiRead).not.toHaveBeenCalled();
+  await click(wand);
   await solve();
   expect(caller.aiRead).toHaveBeenCalled();
-  await click('Check waiting picture');
-  await solve();
+  await act(() => vi.waitFor(() => expect(caller.aiRetain).toHaveBeenCalledOnce()));
 
   const poll = caller.aiSend.mock.calls.find(
     ([request]) => request.path === '/api/generation-result'
   );
   expect(poll?.[0].query).toBe(`job=${JOB_ID}`);
   expect(caller.aiRetain).toHaveBeenCalledOnce();
-  expect(host.textContent).toContain('original drawing are saved');
+  expect(
+    host.querySelector('[data-native-modal="AI Result"] [aria-label="Your AI picture"]')
+  ).not.toBeNull();
 });

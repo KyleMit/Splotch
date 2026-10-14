@@ -93,8 +93,9 @@ native keeps its synchronous, offline-complete bundle unchanged.
   * Issue 2835 left the startup at 1,189,500 bytes. The modal frame (issue 2842) brought it to
     1,219,090, against a 1,220,000 cap. Issue 2844 took the two levers below and reviewed the
     startup at 993,619 bytes, 144,635 over the target. The third cut (below) took the startup icon
-    set and `react-native-svg` off the path and reviewed it at 877,862 bytes, 28,878 over.
-  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 890,000, is that measurement plus 12,138 bytes of
+    set and `react-native-svg` off the path, reached 877,862 bytes, and with the AI flow (PR 2869)
+    merged was reviewed at 894,104, 45,120 over.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 906,000, is that measurement plus 11,896 bytes of
     headroom. The headroom stays below the smallest move it protects (the offline library
     controller, 24,471 bytes). Undoing any lever fails the build. So does statically importing the
     AI sheet (measured at 1,099,429 bytes against the earlier base).
@@ -125,8 +126,12 @@ native keeps its synchronous, offline-complete bundle unchanged.
   * Until the owners arrive, `ai.owner` and `feedback.owner` are null. The UI already handled that
     state for the render before the effect ran. A chunk that fails to load is retried when the app
     returns to the foreground.
-  * Nothing AI runs at launch except a launch invite. The AI owner reads its stored journal and
-    resumes a pending generation when a parent opens the AI sheet. That path is unchanged, and
+  * Nothing AI runs at launch except a launch invite and, once the owners arrive with AI image
+    creation on, the free-allowance check behind the AI Image Button's states
+    (`product/useAiAvailability.ts`), which reads which credential is saved and asks
+    `/api/free-generation-grant` as shipping's free grant does; no drawing leaves the device. The AI
+    owner reads its stored journal and resumes a pending generation when a parent taps the AI Image
+    Button and answers the grown-up check, and
     `tools/migration/tests/rsd-native-web-product-owners.test.mjs` drives it through the web loader.
   * `launchInvites.web.ts` loads the vault only when the launch URL carries an invite. If that chunk
     request fails, the capture stays pending. The owners' loader settles it before it hands out the
@@ -219,6 +224,7 @@ Measured one lever at a time on the same base (`origin/codex/native-migration` a
 | Warm-up behind the background idle gate              | 876,232       | +82     | 3.14 s / 3.14 s                |
 | Fullscreen Toggle icons in the startup set           | 877,863       | +1,631  | 2.69 s / 2.69 s                |
 | Review: the native apps resolve the icons at launch  | 877,862       | −1      |                                |
+| The AI flow (PR 2869) merged                         | 894,104       | +16,242 | LCPMERGED                |
 
 The LCP column is Lighthouse's simulated first visit on a local brotli server, the median of two or
 three runs. The entry fell from 223.0 KB to 199.1 KB over the wire, but LCP moved only with the last
@@ -227,9 +233,10 @@ the prewarm, then the Fullscreen Toggle's own icons, which Lighthouse's mobile e
 
 Screenshots of the export before and after, at 390×844 and 1366×1024 in light and dark, are
 pixel-identical at first paint, with the drawer open, with the brush flyout open, in Settings, and
-after a pen and a crayon stroke. The remaining 28,878 bytes over the target have no single large
-owner. The largest app modules left on the path are the startup icons (14 KB), the sound settings
-with their codec (16 KB) and the contact responder (8 KB).
+after a pen and a crayon stroke. The AI flow added the same 16,242 bytes it adds to the old path, 6,828 of them in Expo's
+`__common` chunk. The remaining 45,120 bytes over the target have no single large owner. The
+largest app modules left on the path are the startup icons (14 KB), the sound settings with their
+codec (16 KB) and the contact responder (8 KB).
 
 ## Consequences
 
@@ -256,7 +263,7 @@ with their codec (16 KB) and the contact responder (8 KB).
   the entry from 223.0 KB to 199.1 KB over the wire. A phone browser's first paint now draws the
   Fullscreen Toggle instead of an empty button.
 * − The startup cap sits about 1.7× above the shipping budget and is set from measurement, not from
-  the shipping number. The last 28,878 bytes over the target need another lever, or a static first
+  the shipping number. The last 45,120 bytes over the target need another lever, or a static first
   paint.
 * − On web, the drawer's tools draw from the deferred module. Opening the drawer before the
   background prewarm has run (in the first moments, or while a child keeps drawing) shows its tool
@@ -267,7 +274,7 @@ with their codec (16 KB) and the contact responder (8 KB).
   changes that rewrite does not reach the web export until the DOM parity test fails.
 * − On web, the AI picture button and Send Feedback do nothing until the owners' chunk arrives,
   shortly after first paint. After install the chunk comes from the service worker cache.
-* − The AI and feedback sheets now download with their owners after every web launch, rather than on
-  first open.
+* − The AI surfaces and the feedback sheet now download with their owners after every web launch,
+  rather than on first open.
 * − Web capture now does a network or cache fetch per file-served fill. A failed fetch fails the
   capture closed (an empty result), as a decode error already did.

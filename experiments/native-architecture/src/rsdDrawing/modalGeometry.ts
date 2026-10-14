@@ -4,6 +4,7 @@ import {
   TABLET_MIN_SIDE_PX,
   isPhoneLandscape,
 } from '../../../../web/src/lib/breakpoints';
+import { AI_PROMPT_LAYOUTS, aiPromptStep } from './aiPromptGeometry';
 
 // The shipping modal frame: app.css .modal-dialog / .modal-shell / .modal-close-btn /
 // .dialog-header-control, DialogHeader.svelte, and each card's own width rules in
@@ -69,14 +70,16 @@ const GATE_CONTENT: Record<keyof typeof GATE_MAX_WIDTH_PX, Box> = {
 
 // Settings is the shipping Settings card; a sheet is that card's phone shell, which every RN
 // sheet without a shipping card of its own wears; the coloring card is the Coloring Book
-// Picker's; the gate and confirm cards are the narrow boundary cards.
+// Picker's; the gate and confirm cards are the narrow boundary cards; the AI prompt card is the AI
+// Style Prompt's.
 // SettingsModal.ai.css: the phone AI Art page claims one stable card height, so the card does not
 // jump when its master switch swaps the short explainer for the longer setup form; the enabled
 // form scrolls inside it.
 const AI_SECTION_CARD_HEIGHT_PX = 604;
 
 // `aiSettings` is Settings drilled into AI Art.
-export type ModalSize = 'settings' | 'aiSettings' | 'sheet' | 'coloring' | 'gate' | 'confirm';
+export type ModalSize =
+  'settings' | 'aiSettings' | 'sheet' | 'coloring' | 'gate' | 'confirm' | 'aiPrompt';
 
 export type ModalFrame = {
   width: number;
@@ -153,6 +156,16 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
       height: null,
       header: { top: padding.block, inline: padding.inline, bottom: COLORING_HEADER_GAP_PX },
       body: { top: 0, inline: padding.inline, bottom: padding.block },
+    };
+  }
+  if (size === 'aiPrompt') {
+    const layout = AI_PROMPT_LAYOUTS[aiPromptStep(window)];
+    return {
+      width: fitWidth(window, gutter, layout.maxWidth),
+      maxHeight: window.height * layout.maxHeightFraction,
+      height: null,
+      header: layout.padding,
+      body: layout.padding,
     };
   }
   if (size === 'confirm')

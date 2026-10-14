@@ -101,6 +101,8 @@ type DialogHeaderProps = { onClose: () => void; closeDisabled?: boolean } & (
   | {
       title: string;
       titleSize: 'xl' | 'lg' | 'md';
+      closeLabel?: never;
+      closeInset?: never;
       /** Receives the tap's point, for a caller that guards the spot it repaints. */
       onBack?: (point: TapPoint | null) => void;
       /** Controls between the title and the close, as DialogHeader.svelte's `actions` snippet. */
@@ -109,7 +111,18 @@ type DialogHeaderProps = { onClose: () => void; closeDisabled?: boolean } & (
        * holding focus. */
       titleRef?: Ref<HTMLHeadingElement>;
     }
-  | { title?: never; titleSize?: never; onBack?: never; actions?: never; titleRef?: never }
+  | {
+      title?: never;
+      titleSize?: never;
+      onBack?: never;
+      actions?: never;
+      titleRef?: never;
+      /** What the floating close says it does, when closing is not dismissing (the AI Result
+       * tucks a waiting picture away). */
+      closeLabel?: string;
+      /** The floating close's distance from the card's corner, where a card steps it out. */
+      closeInset?: number;
+    }
 );
 
 // The shipping DialogHeader: back on a brand-wash blob, the title, and the outlined close. With no
@@ -122,11 +135,14 @@ export function DialogHeader({
   onClose,
   closeDisabled = false,
   titleRef,
+  closeLabel,
+  closeInset = MODAL_CLOSE_INSET_PX,
 }: DialogHeaderProps) {
   const scope = useContext(DialogScope);
-  const close = <HeaderControl kind="close" disabled={closeDisabled} onClick={onClose} />;
-  if (title === undefined)
-    return <html.div style={styles.floating(MODAL_CLOSE_INSET_PX)}>{close}</html.div>;
+  const close = (
+    <HeaderControl kind="close" label={closeLabel} disabled={closeDisabled} onClick={onClose} />
+  );
+  if (title === undefined) return <html.div style={styles.floating(closeInset)}>{close}</html.div>;
   const box = scope?.header;
   return (
     <html.header

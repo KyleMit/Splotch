@@ -1,7 +1,8 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import { useStartOver } from '../product/DrawingSession';
 import {
-  RsdAiSheet,
+  RsdAiResult,
+  RsdAiStylePrompt,
   RsdColorPicker,
   RsdColoringBookPicker,
   RsdErrorScreen,
@@ -10,7 +11,9 @@ import {
 } from './drawingSheets';
 import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
-import { aiJournalWaiting, aiSheetShown } from '../ai/uiState';
+import { aiSheetShown } from '../ai/uiState';
+import { useAiAvailability } from '../product/useAiAvailability';
+import { useAiAutoSave } from '../product/useAiAutoSave';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -64,9 +67,12 @@ export function RsdDrawingScreen() {
       : screen.settingsOpen
         ? 'settings'
         : product.ai.state && aiSheetShown(product.ai.state)
-          ? 'ai'
+          ? product.ai.state.view === 'prompt'
+            ? 'aiPrompt'
+            : 'aiResult'
           : 'none';
   useParentCenterSettings(screen, product, gate?.open === true);
+  useAiAvailability(product.ai.owner, sound.settings);
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
   });
@@ -126,6 +132,8 @@ function RsdModalSheets({
   gate: ParentGateView | null;
 }) {
   const dismissed = route.dismissed;
+  const autoSaveEnabled = product.sound.settings.autoSaveAiEnabled;
+  const autoSave = useAiAutoSave(product.ai.state, autoSaveEnabled, screen.saveFailure.report);
   return (
     <>
       {product.owner && gate && route.shown === 'gate' ? (
@@ -139,20 +147,27 @@ function RsdModalSheets({
           />
         </RsdSurfaceBoundary>
       ) : null}
-      {product.ai.owner && product.ai.state && route.shown === 'ai' ? (
-        <RsdSurfaceBoundary
-          onClose={
-            aiJournalWaiting(product.ai.state) ? product.ai.owner.minimize : product.ai.owner.close
-          }
-        >
-          <RsdAiSheet
+      {product.ai.owner && route.shown === 'aiPrompt' ? (
+        <RsdSurfaceBoundary onClose={product.ai.owner.close}>
+          <RsdAiStylePrompt
+            visible={route.visible}
+            onPick={product.ai.owner.pickStyle}
+            onClose={product.ai.owner.close}
+            onDismiss={dismissed}
+          />
+        </RsdSurfaceBoundary>
+      ) : null}
+      {product.ai.owner && product.ai.state && route.shown === 'aiResult' ? (
+        <RsdSurfaceBoundary onClose={product.ai.owner.close}>
+          <RsdAiResult
             owner={product.ai.owner}
             state={product.ai.state}
-            drawing={screen.history.drawing}
-            artwork={screen.library.state.artwork}
             progress={product.ai.progress}
             visible={route.visible}
             onDismiss={dismissed}
+            onSaveFailed={screen.saveFailure.report}
+            autoSaveEnabled={autoSaveEnabled}
+            autoSave={autoSave}
           />
         </RsdSurfaceBoundary>
       ) : null}

@@ -259,7 +259,8 @@ const SELECTED_FOREGROUND_TOKEN_SPECIFIER = './tokens.css';
 const WEB_STYLE_FILES = [
   'src/rsdDrawing/tokens.css.ts',
   'src/rsdDrawing/controls.tsx',
-  'src/rsdDrawing/RsdAiSheet.tsx',
+  'src/rsdDrawing/RsdAiStylePrompt.tsx',
+  'src/rsdDrawing/RsdAiResult.tsx',
   'src/rsdDrawing/RsdFeedbackSection.tsx',
   'src/rsdDrawing/RsdParentGateKeypad.tsx',
   'src/rsdDrawing/RsdParentGateSheet.tsx',
@@ -339,11 +340,11 @@ it(
 
 it.each([
   [
-    'src/rsdDrawing/RsdAiStyleChoices.tsx',
+    'src/rsdDrawing/RsdAiStylePrompt.tsx',
     'TOUCH_TARGET',
     '../drawing/theme',
-    'minHeight: dimensions.touchTarget',
-    'minHeight: TOUCH_TARGET',
+    'plate: { backgroundColor: colors.paper }',
+    'plate: { minHeight: TOUCH_TARGET }',
   ],
   [
     'src/rsdDrawing/RsdFeedbackSection.tsx',
@@ -353,11 +354,11 @@ it.each([
     'minHeight: TEXT_AREA_MIN_HEIGHT_PX',
   ],
   [
-    'src/rsdDrawing/RsdAiSheet.tsx',
+    'src/rsdDrawing/RsdAiResult.tsx',
     'AI_RESULT_HEIGHT_PX',
     '../ai/uiState',
-    'height: dimensions.aiResultHeight',
-    'height: AI_RESULT_HEIGHT_PX',
+    'polaroid: { backgroundColor: fixedColors.polaroidPaper }',
+    'polaroid: { height: AI_RESULT_HEIGHT_PX }',
   ],
 ])(
   'rejects non-theme imported %s / %s in actual web StyleX',

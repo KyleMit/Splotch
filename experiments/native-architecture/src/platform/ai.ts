@@ -5,6 +5,8 @@ import { aiUrl, type AiTransport } from '../ai/transport';
 import { SECRET_SLOTS, isInstallationId } from '../ai/contract';
 import { validCredential, type AiVault, type AiReferencedVault } from '../ai/credentials';
 import { admitAiImage } from './aiImage';
+import { File, Paths } from 'expo-file-system';
+import type { AiDismissalStore } from '../ai/sessionContract';
 export { admitAiImage };
 
 type Bridge = {
@@ -119,3 +121,15 @@ export const aiTransport: AiTransport = (request, signal) =>
     redirect: 'error',
   });
 export { aiStorage } from './durableAiStorage';
+const AI_DISMISSAL_FILE = 'splotch-ai-dismissed-result.txt';
+export const aiDismissal: AiDismissalStore = {
+  async read() {
+    const file = new File(Paths.document, AI_DISMISSAL_FILE);
+    return file.exists ? file.text() : null;
+  },
+  async write(id) {
+    const file = new File(Paths.document, AI_DISMISSAL_FILE);
+    if (!file.exists) file.create();
+    file.write(id);
+  },
+};
