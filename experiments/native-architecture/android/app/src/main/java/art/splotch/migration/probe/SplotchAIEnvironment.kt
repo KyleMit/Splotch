@@ -208,26 +208,25 @@ internal object SplotchAIImageDecoder {
       }
       "image/jpeg" -> {
         check(bytes.size >= 4 && u(0) == 255 && u(1) == 0xd8)
-        var offset = 2; var segments = 0; var scan = false; var ended = false
+        var offset = 2; var segments = 0; var entropy = false; var scanned = false; var ended = false
         while (offset < bytes.size) {
           check(offset + 1 < bytes.size && u(offset) == 255)
           val marker = u(offset + 1); offset += 2
-          if (scan) {
-            if (marker == 0 || marker in 0xd0..0xd7) {
-              while (offset < bytes.size && u(offset) != 255) offset++
-              continue
-            }
-            check(marker == 0xd9 && offset == bytes.size); ended = true; break
+          if (entropy && (marker == 0 || marker in 0xd0..0xd7)) {
+            while (offset < bytes.size && u(offset) != 255) offset++
+            continue
           }
+          entropy = false
+          if (marker == 0xd9) { check(scanned && offset == bytes.size); ended = true; break }
           check(++segments <= maxJpegSegments && offset + 1 < bytes.size)
           val length = u(offset) * 256 + u(offset + 1)
           check(length >= 2 && length <= bytes.size - offset)
-          check(marker in setOf(0xc0, 0xc4, 0xdb, 0xdd, 0xda, 0xfe) || marker in 0xe0..0xef)
+          check(marker in setOf(0xc0, 0xc1, 0xc2, 0xc4, 0xdb, 0xdd, 0xda, 0xfe) || marker in 0xe0..0xef)
           offset += length
-          if (marker == 0xda) scan = true
-          while (scan && offset < bytes.size && u(offset) != 255) offset++
+          if (marker == 0xda) { entropy = true; scanned = true }
+          while (entropy && offset < bytes.size && u(offset) != 255) offset++
         }
-        check(scan && ended)
+        check(ended)
       }
       "image/webp" -> {
         check(bytes.size >= 20 && text(0, 4) == "RIFF" && text(8, 4) == "WEBP" && le(4) == (bytes.size - 8).toLong())
