@@ -4,7 +4,7 @@ import { PRESS_CLICK_CONSUME_WINDOW_MS } from '../../../../web/src/lib/actions/c
 import { DRAWING_SCALE } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { Animated, Easing } from '../platform/animated';
-import { ACTION_TILE_BORDER_PX, RsdIconButton } from './RsdIconButton';
+import { RsdIconButton } from './RsdIconButton';
 import type { EdgeOffset } from './edgeLayout';
 import { inkKeyline } from './inkKeyline';
 import { EASE_GLIDE } from './modalGeometry';
@@ -123,7 +123,7 @@ export function RsdColorButton({
         <RsdIconButton
           skin="tile"
           size={size}
-          padding={Math.max(0, (size - 2 * ACTION_TILE_BORDER_PX - COLOR_ICON_PX) / 2)}
+          iconPx={COLOR_ICON_PX}
           icon="ink-splotch"
           label="Colors"
           ink={ink}

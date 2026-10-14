@@ -1,23 +1,14 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Animated } from 'react-native';
+import { useReducedTransparency } from '../platform/reducedTransparency.web';
 import { MODAL_SCRIM_BLUR_PX, MODAL_SCRIM_FROSTED, MODAL_SCRIM_PLAIN } from './modalGeometry';
-
-const REDUCED_TRANSPARENCY_QUERY = '(prefers-reduced-transparency: reduce)';
-
-function subscribe(changed: () => void) {
-  const query = matchMedia(REDUCED_TRANSPARENCY_QUERY);
-  query.addEventListener('change', changed);
-  return () => query.removeEventListener('change', changed);
-}
-
-const reducedTransparency = () => matchMedia(REDUCED_TRANSPARENCY_QUERY).matches;
 
 // The shipping frosted backdrop. A raw element: neither React Native's nor React Strict DOM's
 // style types carry backdrop-filter. The fade sets the frosted element's own opacity, as shipping
 // fades its ::backdrop: under a fading ancestor, Chromium keeps that ancestor as the filter's
 // backdrop root once the fade lands, and the canvas behind stays dimmed but unblurred.
 export function ModalScrim({ opacity }: { opacity: Animated.Value }) {
-  const plain = useSyncExternalStore(subscribe, reducedTransparency, () => false);
+  const plain = useReducedTransparency();
   const blur = plain ? 'none' : `blur(${MODAL_SCRIM_BLUR_PX}px)`;
   const scrim = useRef<HTMLDivElement>(null);
   useEffect(() => {

@@ -29,6 +29,7 @@ import { RsdDrawingStatus } from './RsdDrawingStatus';
 import { RsdPolaroidFlight } from './polaroidFlightSurface';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
+import { useBareGlassReady } from './bareGlass';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { RsdNotchBand } from './notchBandSurface';
 import { paintAppearance } from '../drawing/palette';
@@ -71,8 +72,11 @@ export function RsdDrawingScreen() {
     if (outgoing === 'settings') screen.closeSettings();
   });
   const dismissed = route.dismissed;
-  const loading =
-    sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading';
+  const glassReady = useBareGlassReady(sound.settings.toolbarStyle === 'bare');
+  const loading = useFirstPaintHeld(
+    sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading',
+    glassReady
+  );
   useDrawingPainted(!loading);
   return (
     <DrawingAppearanceProvider preference={loading ? bootAppearance() : sound.settings.appearance}>
@@ -96,6 +100,15 @@ export function RsdDrawingScreen() {
       </ModalOriginProvider>
     </DrawingAppearanceProvider>
   );
+}
+
+// The controls join once the settings and, for the flat style, its glass have arrived. Only the
+// first paint waits on the glass: a style switched later must not unmount the Settings it came from.
+function useFirstPaintHeld(settingsLoading: boolean, glassReady: boolean) {
+  const [shown, setShown] = useState(false);
+  const held = settingsLoading || (!shown && !glassReady);
+  if (!held && !shown) setShown(true);
+  return held;
 }
 
 // Parent Center is a Settings section: a check solved anywhere else for it (the gate's Manage these
@@ -225,7 +238,7 @@ function RsdDrawingContent({
   return (
     <LibraryProvider {...screen.library}>
       <NativeFrame
-        variant="drawing"
+        variant={sound.settings.toolbarStyle === 'bare' ? 'flatDrawing' : 'drawing'}
         edges={
           <RsdNotchBand
             ink={paintAppearance(sound.settings.selectedColor, theme).hex}

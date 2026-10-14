@@ -2,11 +2,14 @@ import type { ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
 import { ACTION_TILE_RADIUS_RATIO, flyoutOptionSize, type FlyoutScale } from './RsdIconButton';
 import { colors } from './tokens.css';
+import { useBareToolbar } from './toolbarSkin';
 
 // The app.css .flyout-menu values that no design token carries, kept local for the StyleX web
 // compile; tools/tests/native-button-chrome.test.mjs holds them to app.css.
 export const FLYOUT_MENU_PADDING_PX = 6;
 export const FLYOUT_MENU_GAP_PX = 6;
+// A flat menu has no card: its options sit on the paper this far apart, with no padding.
+export const BARE_FLYOUT_MENU_GAP_PX = 4;
 
 // The shipping .flyout-menu popover card. Its options round by the action tile's ratio, so the
 // card's radius is theirs plus its padding: concentric corners. Placement stays with the caller.
@@ -25,6 +28,7 @@ const styles = css.create({
   column: { flexDirection: 'column' },
   radius: (radius: number) => ({ borderRadius: radius }),
   spacing: (padding: number, gap: number) => ({ padding, gap }),
+  bare: { backgroundColor: 'transparent', boxShadow: 'none' },
 });
 
 // A menu whose options are not action tiles spaces them its own way: the Color Menu's swatch row.
@@ -47,6 +51,7 @@ export function RsdFlyoutMenu({
   spacing?: FlyoutMenuSpacing;
   children: ReactNode;
 }) {
+  const bare = useBareToolbar();
   return (
     <html.div
       role="group"
@@ -55,7 +60,10 @@ export function RsdFlyoutMenu({
         styles.menu,
         styles[direction],
         styles.radius(flyoutMenuRadius({ base, scale })),
-        spacing && styles.spacing(spacing.paddingPx, spacing.gapPx),
+        bare && styles.bare,
+        spacing
+          ? styles.spacing(spacing.paddingPx, spacing.gapPx)
+          : bare && styles.spacing(0, BARE_FLYOUT_MENU_GAP_PX),
       ]}
     >
       {children}

@@ -6,6 +6,7 @@ import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { refocusFlyoutTrigger, useFlyoutEscape } from '../platform/flyoutFocus';
 import { RsdIconButton } from './RsdIconButton';
+import { useReportPanelGlass, type ReportPanelGlass } from './bareGlassLayout';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
 import { RsdBrushMenu, RsdColorMenu, RsdStrokeWidthMenu } from './toolFlyouts';
 import { RsdColorButton } from './RsdColorButton';
@@ -255,6 +256,23 @@ function panelTools(context: ToolContext): Tool[] {
   return tools;
 }
 
+type ActionsPanelProps = {
+  screen: Screen;
+  sound: Sound;
+  product: Product;
+  disabled: boolean;
+  ink: string;
+  area: AreaSize;
+  viewport: AreaSize;
+  open: boolean;
+  // Button Size, live while its slider is dragged.
+  buttonScale: number;
+  onToggle: () => void;
+  slot: ReturnType<typeof useFlyoutSlot>;
+  // The flat style's glass follows the panel's tiles; the raised style has none.
+  onGlass: ReportPanelGlass | undefined;
+};
+
 // The drawer of drawing tools in the paper area's bottom-left corner, with its chevron after the
 // tools, and the Brush and Stroke Width menus that pop beside their buttons.
 export function RsdActionsPanel({
@@ -269,20 +287,8 @@ export function RsdActionsPanel({
   buttonScale,
   onToggle,
   slot,
-}: {
-  screen: Screen;
-  sound: Sound;
-  product: Product;
-  disabled: boolean;
-  ink: string;
-  area: AreaSize;
-  viewport: AreaSize;
-  open: boolean;
-  // Button Size, live while its slider is dragged.
-  buttonScale: number;
-  onToggle: () => void;
-  slot: ReturnType<typeof useFlyoutSlot>;
-}) {
+  onGlass,
+}: ActionsPanelProps) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
   const insets = useSafeAreaInsets();
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
@@ -299,6 +305,7 @@ export function RsdActionsPanel({
     open,
     bottomInset: insets.bottom,
   });
+  useReportPanelGlass(onGlass, layout, scale, tools, screen.availableBrushes.length);
   const trigger = tools.findIndex((tool) => tool.key === flyout);
   const placement =
     trigger < 0 ? null : flyoutPlacement(layout.mode, layout.tools[trigger], layout.size, viewport);

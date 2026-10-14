@@ -58,6 +58,21 @@ the fixed logical paper into it, centered, the way the shipping app presents a r
 above and below. These allocations require native geometry and visual verification; source flex
 bounds alone do not establish usable paper space.
 
+The Settings › Appearance Button style reaches the chrome through `ToolbarSkin` (`toolbarSkin.ts`),
+as shipping's `html[data-toolbar]`. Flat (`'bare'`) prints the controls on the paper: tiles, flyout
+options, the flyout card and More colors lose their faces (`RsdIconButton`, `RsdFlyoutMenu`,
+`RsdSwatch`), Selection Ring bands and seams take the paper, and the palette bar floats over a paper
+that runs under it while the controls keep the place the raised bar leaves them. Shipping's
+`BareToolbarPaper.svelte` and `GlassPanes.svelte` become `RsdBareGlass`: the rail glass inside the
+bar, the two printed margin rules beside the paper in the layout's own stacking context (inside the
+bar's their blend could not reach the ink), and the feathered panes under the drawer, its open menu
+and the Settings corner, computed by shipping's own `web/src/lib/glassPaneGeometry.ts` from the size
+the Actions Panel reports (`bareGlassLayout.ts`). On the web the glass loads from its own chunk
+(`bareGlass.web.ts`) and only the first paint waits for it; the native renderers have no backdrop
+blur or CSS masks, so their rail is shipping's opaque no-blur fallback, their rules print unmasked,
+and they draw no panes. `rsd-native-bare-toolbar.test.mjs` holds every value to the shipping
+sources.
+
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The
 application keeps its settings/menu/busy guards; this does not force settings ready or bypass
