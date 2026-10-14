@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { SvgXml } from '../platform/svg';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES } from '../drawing/theme';
-import { greyedMarkup } from './greyed';
+import { filteredMarkup } from './greyed';
 import { useNativeIconMarkup } from './iconRegistry';
 import type { NativeIconName } from './icons.generated';
 
@@ -37,21 +37,21 @@ function keylinedMarkup(markup: string, keyline: string, size: number) {
 // Monochrome glyphs and the ink parts of brush faces paint currentColor. Resolving it in the markup
 // keeps native and web identical instead of depending on each renderer's color inheritance.
 // A keyline rings those ink parts so a white or near-black ink still reads on its button.
-// `grey` paints the icon through CSS grayscale(1), which iOS's renderer cannot apply as a filter.
+// `filter` paints the icon through a tile's CSS filter, which the native renderers cannot apply.
 export function RsdIcon({
   name,
   size,
   ink,
   muted,
   keyline,
-  grey = false,
+  filter,
 }: {
   name: NativeIconName;
   size: number;
   ink: string | undefined;
   muted: boolean;
   keyline?: string | undefined;
-  grey?: boolean;
+  filter?: string | undefined;
 }) {
   const theme = useDrawingAppearance();
   const palette = DRAWING_THEMES[theme];
@@ -61,7 +61,7 @@ export function RsdIcon({
     if (!markup) return EMPTY_ICON_MARKUP;
     const ringed = keyline ? keylinedMarkup(markup, keyline, size) : markup;
     const inked = ringed.replaceAll('currentColor', color);
-    return grey ? greyedMarkup(inked) : inked;
-  }, [markup, color, keyline, size, grey]);
+    return filter ? filteredMarkup(inked, filter) : inked;
+  }, [markup, color, keyline, size, filter]);
   return <SvgXml xml={xml} width={size} height={size} />;
 }
