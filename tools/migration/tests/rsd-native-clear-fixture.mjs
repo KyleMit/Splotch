@@ -27,8 +27,9 @@ export function inkedDrawing() {
   return { ...drawing, paper: canonicalPaper(), strokes: [stroke] };
 }
 
-export function clearScreen(overrides = {}) {
-  const drawing = overrides.drawing ?? inkedDrawing();
+// `drawing` names the picture on the paper; the screen's own `drawing` flag, a stroke in progress,
+// stays false.
+export function clearScreen({ drawing = inkedDrawing(), ...overrides } = {}) {
   return {
     notice: '',
     drawing: false,
