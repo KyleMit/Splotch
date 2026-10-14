@@ -4,7 +4,7 @@ import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
-import { paintedTile } from './greyed';
+import { paintedTile } from './paintedTile';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';

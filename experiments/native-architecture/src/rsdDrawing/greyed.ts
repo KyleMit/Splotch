@@ -1,11 +1,8 @@
-import { css } from 'react-strict-dom';
-import { DRAWING_ON_BRAND, type DrawingTheme } from '../drawing/theme';
 import { channels, hexByte } from './colorMix';
 
 // A tile greys through a CSS filter, which React Native's renderers cannot be trusted with: iOS
 // drops grayscale() and paints brightness() over a flat tile's whole face. So the native apps paint
-// the filter into the tile's own colors instead: its icon markup, its badge and the badge's paper
-// ring. Each function acts on the sRGB channels as the Filter Effects shorthand defines it, clamped
+// the filter into the tile's own colors instead (paintedTile.ts). Each function acts on the sRGB channels as the Filter Effects shorthand defines it, clamped
 // after every step. Icon markup writes every color in hex.
 const GRAYSCALE_LUMA = [0.2126, 0.7152, 0.0722] as const;
 const CHANNEL_MAX = 255;
@@ -46,7 +43,7 @@ function clampChannel(value: number) {
   return Math.min(CHANNEL_MAX, Math.max(0, value));
 }
 
-function painter(filter: string) {
+export function colorPainter(filter: string) {
   const steps = filterSteps(filter);
   return (hex: string) => {
     const painted = steps.reduce(
@@ -58,24 +55,5 @@ function painter(filter: string) {
 }
 
 export function filteredMarkup(markup: string, filter: string): string {
-  return markup.replace(MARKUP_HEX_COLOR, painter(filter));
-}
-
-const badges = css.create({
-  painted: (fill: string, text: string) => ({ backgroundColor: fill, color: text }),
-});
-
-// The filter a tile's icon paints, the AI Image Button badge's face under it, and the flat badge's
-// paper ring. The tile itself carries no filter on the native apps.
-export function paintedTile(
-  filter: string | undefined,
-  { brandSolid, paper }: Pick<DrawingTheme, 'brandSolid' | 'paper'>
-) {
-  if (!filter) return { filter, badge: null, ring: paper };
-  const paint = painter(filter);
-  return {
-    filter,
-    badge: badges.painted(paint(brandSolid), paint(DRAWING_ON_BRAND)),
-    ring: paint(paper),
-  };
+  return markup.replace(MARKUP_HEX_COLOR, colorPainter(filter));
 }
