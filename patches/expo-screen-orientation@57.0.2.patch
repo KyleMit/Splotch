@@ -1,0 +1,17 @@
+diff --git a/ios/ScreenOrientationRegistry.swift b/ios/ScreenOrientationRegistry.swift
+index f0cbbac0ff5c5cf5edf57b5468502e6ff6b3fa39..b9eff3ff23bbbcaf2a9e16142ce74ff274b3c876 100644
+--- a/ios/ScreenOrientationRegistry.swift
++++ b/ios/ScreenOrientationRegistry.swift
+@@ -94,9 +94,10 @@ public class ScreenOrientationRegistry: NSObject, UIApplicationDelegate {
+         let windowScene = self.rootViewController?.view.window?.windowScene
+         windowScene?.requestGeometryUpdate(.iOS(interfaceOrientations: orientationMask))
+         self.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
++      } else {
++        UIDevice.current.setValue(newOrientation.rawValue, forKey: "orientation")
++        UIViewController.attemptRotationToDeviceOrientation()
+       }
+-      UIDevice.current.setValue(newOrientation.rawValue, forKey: "orientation")
+-      UIViewController.attemptRotationToDeviceOrientation()
+ 
+       if self.currentScreenOrientation == .unknown {
+         // CurrentScreenOrientation might be unknown (especially just after launch), but at this point we already know it.

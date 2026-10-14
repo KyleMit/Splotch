@@ -67,6 +67,9 @@ patchedDependencies:
   node-forge@1.4.0: patches/node-forge@1.4.0.patch
   expo-audio@57.0.5: patches/expo-audio@57.0.5.patch
   react-native-svg@15.15.4: patches/react-native-svg@15.15.4.patch
+  expo-screen-orientation@57.0.2: patches/expo-screen-orientation@57.0.2.patch
+  react-native-reanimated@4.5.1: patches/react-native-reanimated@4.5.1.patch
+  react-native@0.86.3: patches/react-native@0.86.3.patch
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the
