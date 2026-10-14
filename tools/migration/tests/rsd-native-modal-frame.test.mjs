@@ -124,6 +124,13 @@ it('frames the dialog as a card over the scrim, named by its header title, with 
   expectNoFooter();
 });
 
+it('leaves the dialog orientation to the app rotation lock', async () => {
+  await mount(sheet());
+  expect(modalProps().supportedOrientations).toEqual(
+    expect.arrayContaining(['portrait', 'landscape'])
+  );
+});
+
 it.each([
   ['sheet', { width: 402, height: 874 }, null, 370, null],
   ['sheet', { width: 375, height: 812 }, { left: 20, right: 0 }, 335, null],
