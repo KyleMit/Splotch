@@ -6,6 +6,7 @@ import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import { BARE_MENU_GAP_PX } from '../../../web/src/lib/glassPaneGeometry.ts';
 import { control, host, markup, mount, view } from './rsd-native-button-host.mjs';
 import {
+  BARE_BADGE_RING_PX,
   BARE_OPTION_OUTLINE_PX,
   BARE_TILE_DISABLED_FILTER,
   BARE_TILE_LIFT_SCALE,
@@ -119,6 +120,10 @@ function shippingBare({ app, paper, panes }) {
         .join(' | ') === '2px 0 | -2px 0 | 0 2px | 0 -2px'
         ? 2
         : outline,
+    BARE_BADGE_RING_PX: number(
+      declaration(app, `${BARE} .actions-panel .free-count`, 'box-shadow'),
+      /^0 0 0 (\d+)px var\(--paper\)$/
+    ),
     BARE_FLYOUT_MENU_GAP_PX: number(
       declaration(app, `${BARE} .actions-panel .flyout-menu`, 'gap'),
       /^(\d+)px$/
@@ -158,6 +163,7 @@ const NATIVE_BARE = {
   BARE_TILE_LIFT_SCALE,
   BARE_TILE_DISABLED_FILTER,
   BARE_OPTION_OUTLINE_PX,
+  BARE_BADGE_RING_PX,
   BARE_FLYOUT_MENU_GAP_PX,
   RAIL_GLASS_BLUR_PX: GLASS.RAIL_GLASS_BLUR_PX,
   STRIP_GLASS_BLUR_PX: GLASS.STRIP_GLASS_BLUR_PX,

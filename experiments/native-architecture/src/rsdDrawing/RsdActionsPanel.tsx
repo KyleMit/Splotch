@@ -11,6 +11,7 @@ import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
 import { RsdBrushMenu, RsdColorMenu, RsdStrokeWidthMenu } from './toolFlyouts';
 import { RsdColorButton } from './RsdColorButton';
 import { inkKeyline } from './inkKeyline';
+import { aiButtonFace } from '../ai/uiState';
 import {
   actionPanelLayout,
   DRAWER_CHEVRON_TURN_DEG,
@@ -225,7 +226,8 @@ function panelTools(context: ToolContext): Tool[] {
         />
       ),
     });
-  if (sound.settings.aiEnabled)
+  if (sound.settings.aiEnabled) {
+    const ai = aiButtonFace(product.ai.state, !screen.inkVisible);
     tools.push({
       key: 'ai',
       render: (face) => (
@@ -233,12 +235,20 @@ function panelTools(context: ToolContext): Tool[] {
           skin="tile"
           {...face}
           icon="wand-stars"
-          label="AI picture"
-          disabled={disabled}
-          onPress={() => product.ai.owner?.open()}
+          label={ai.label}
+          disabled={disabled || ai.disabled}
+          busy={ai.busy}
+          badge={ai.badge}
+          onPress={() =>
+            product.ai.owner?.start({
+              onSetup: screen.openAiSettings,
+              customize: sound.settings.aiCustomizationEnabled,
+            })
+          }
         />
       ),
     });
+  }
   if (drawerControlShown(sound.settings, 'undoButtonEnabled'))
     tools.push({
       key: 'undo',

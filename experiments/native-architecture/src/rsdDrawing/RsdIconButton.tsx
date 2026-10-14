@@ -1,11 +1,14 @@
+import { useEffect, useRef } from 'react';
 import { css, html } from 'react-strict-dom';
+import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
+import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
 import { useBareToolbar } from './toolbarSkin';
-import { brandColors, colors, dimensions, motion } from './tokens.css';
+import { brandColors, colors, dimensions, fonts, motion, shadows } from './tokens.css';
 
 // The app.css chrome values that no design token carries. They stay in this module because the
 // StyleX web compile resolves only local constants and token files inside css.create;
@@ -46,6 +49,7 @@ export const BARE_TILE_PRESS_SCALE = 0.9;
 export const BARE_TILE_LIFT_SCALE = 1.08;
 export const BARE_TILE_DISABLED_FILTER = 'grayscale(1) contrast(0.55) brightness(1.2)';
 export const BARE_OPTION_OUTLINE_PX = 2;
+export const BARE_BADGE_RING_PX = 2;
 
 // The shipping icon-button skins: .corner-button, the Actions Panel's .action-button tile and
 // .flyout-option. Hover is web-only, under (hover: hover), which React Native never matches. Every
@@ -82,6 +86,7 @@ const styles = css.create({
     transitionDuration: motion.durationBase,
   },
   tile: {
+    position: 'relative',
     borderWidth: ACTION_TILE_BORDER_PX,
     backgroundColor: {
       default: colors.floatSurface,
@@ -186,6 +191,30 @@ const styles = css.create({
   },
   bareTileDisabled: { filter: BARE_TILE_DISABLED_FILTER, transform: 'scale(1)', cursor: 'auto' },
   outlined: (size: number, filter: string) => ({ width: size, height: size, filter }),
+  // app.css's .free-count on the AI Image Button's corner.
+  badge: (offset: number, size: number, padding: number) => ({
+    boxSizing: 'border-box',
+    position: 'absolute',
+    top: offset,
+    right: offset,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: size,
+    height: size,
+    paddingLeft: padding,
+    paddingRight: padding,
+    borderRadius: dimensions.radiusPill,
+    backgroundColor: colors.brandSolid,
+    color: brandColors.onBrand,
+    fontSize: dimensions.fontSizeXs,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
+    lineHeight: 1,
+    boxShadow: shadows.shadowControl,
+  }),
+  // A flat badge sits on the paper, ringed in paper to lift it off the ink beneath.
+  bareBadge: (paper: string) => ({ boxShadow: `0 0 0 ${BARE_BADGE_RING_PX}px ${paper}` }),
 });
 
 function outlineFilter(ink: string) {
@@ -197,6 +226,42 @@ function outlineFilter(ink: string) {
   ]
     .map((offset) => `drop-shadow(${offset} 0 ${ink})`)
     .join(' ');
+}
+
+// The AI Image Button's .free-count badge and its .loading spin; native-ai-flow-geometry.test.mjs
+// reads each back from AiImageButton.svelte and app.css.
+export const BADGE_OFFSET_PX = -4;
+export const BADGE_SIZE_PX = 20;
+export const BADGE_PADDING_PX = 5;
+export const BUSY_TURN_MS = 1000;
+// The spin slows rather than stopping under Reduce Motion: it is the button's only sign that a
+// picture is still being made.
+export const CALM_BUSY_TURN_MS = 2400;
+
+function SpinningIcon({ size, muted }: { size: number; muted: boolean }) {
+  const reduced = useReduceMotion();
+  const turn = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(turn, {
+        toValue: 1,
+        duration: reduced ? CALM_BUSY_TURN_MS : BUSY_TURN_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      turn.setValue(0);
+    };
+  }, [reduced, turn]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <RsdIcon name="loading" size={size} ink={undefined} muted={muted} />
+    </Animated.View>
+  );
 }
 
 const CORNER_ICON_PX = CORNER_BUTTON_SIZE_PX - 2 * DRAWING_SCALE.space2;
@@ -281,6 +346,10 @@ export type IconButtonProps = Common &
         disabled?: boolean;
         expanded?: boolean;
         dimmed?: boolean;
+        // Turns the icon into the spinning loading glyph while the tile's work runs.
+        busy?: boolean;
+        // A count pinned to the tile's corner (the AI Image Button's free pictures left).
+        badge?: number | null;
       } & FaceInk &
         Selection)
     | ({
@@ -303,7 +372,7 @@ export function RsdIconButton(props: IconButtonProps) {
   const keylineSource = props.skin === 'corner' ? undefined : props.keyline;
   const keyline = useKeylineColor(keylineSource);
   const bare = useBareToolbar();
-  const { textStrong } = useDrawingTheme();
+  const { textStrong, paper } = useDrawingTheme();
   const { icon, label, onPress } = props;
   if (props.skin === 'corner') {
     return (
@@ -331,6 +400,8 @@ export function RsdIconButton(props: IconButtonProps) {
   const disabled = skin === 'tile' && props.disabled === true;
   const expanded = skin === 'tile' ? props.expanded : undefined;
   const dimmed = skin === 'tile' && props.dimmed === true;
+  const busy = skin === 'tile' && props.busy === true;
+  const badge = skin === 'tile' ? (props.badge ?? null) : null;
   const brandInk = skin === 'flyout' && selected && !bare ? DRAWING_BRAND : undefined;
   const glyphPx = iconSize(props, face, bare);
   const glyph = (
@@ -350,6 +421,7 @@ export function RsdIconButton(props: IconButtonProps) {
       aria-checked={selection ? selected : undefined}
       aria-expanded={expanded}
       aria-disabled={disabled}
+      aria-busy={busy || undefined}
       disabled={disabled}
       style={
         bare
@@ -378,9 +450,23 @@ export function RsdIconButton(props: IconButtonProps) {
     >
       {bare && skin === 'flyout' && selected ? (
         <html.div style={styles.outlined(glyphPx, outlineFilter(textStrong))}>{glyph}</html.div>
+      ) : busy ? (
+        <SpinningIcon size={glyphPx} muted={disabled && !bare} />
       ) : (
         glyph
       )}
+      {badge !== null ? (
+        <html.span
+          aria-hidden
+          data-testid="free-count"
+          style={[
+            styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX),
+            bare && styles.bareBadge(paper),
+          ]}
+        >
+          {badge}
+        </html.span>
+      ) : null}
     </RsdPressable>
   );
 }

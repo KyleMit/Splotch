@@ -1,10 +1,12 @@
+import type { PictureFormat } from './pictureFilename';
+
 // Where a kept picture goes: the device's photo library on Android and iOS, and a downloaded PNG
 // on the web, as the shipping Screenshot Button saves (drawing/imageSave.ts). 'unavailable' is
 // Android below 11, where this app cannot write to the gallery at all.
 export type PictureSaveOutcome = 'photos' | 'downloads' | 'denied' | 'failed' | 'unavailable';
 export type UnsavedOutcome = Exclude<PictureSaveOutcome, 'photos' | 'downloads'>;
 export type PictureSave = Readonly<{
-  save: (pngBase64: string) => Promise<PictureSaveOutcome>;
+  save: (base64: string, format?: PictureFormat) => Promise<PictureSaveOutcome>;
 }>;
 export type SaveOs = 'ios' | 'android' | 'web';
 

@@ -2,6 +2,7 @@ import { caller, records, host, expandControls } from './rsd-native-selection-ho
 import { act } from 'react';
 import { expect, it } from 'vitest';
 import {
+  AI_BUTTON,
   flat,
   mountToolbar,
   outerSize,
@@ -68,7 +69,7 @@ const DRAWER_TOOLS = [
   'Stroke width',
   'Coloring books',
   'Save screenshot',
-  'AI picture',
+  AI_BUTTON,
   'Undo',
 ];
 

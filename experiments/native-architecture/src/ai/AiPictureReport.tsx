@@ -8,7 +8,7 @@ import type { AiResult } from './journal';
 import { AI_REPORT_HANDLING_NOTICE, type AiReportState } from './reportContract';
 import { NativeAiPictureView } from './NativeAiPictureView';
 
-export function AiReportAction({ owner, uri }: { owner: NativeAiOwner; uri: string }) {
+function AiReportAction({ owner, uri }: { owner: NativeAiOwner; uri: string }) {
   return <Action label="Report AI picture" onPress={() => owner.reportPicture(uri)} />;
 }
 
@@ -72,7 +72,7 @@ export function AiPictureReport({
               ? `The original drawing, original art style, exact instruction and authenticated refusal reason go to a grown-up at Splotch in a private report. ${AI_REPORT_HANDLING_NOTICE}`
               : `The original drawing, AI picture, original art style and exact instruction go to a grown-up at Splotch in a private report. ${AI_REPORT_HANDLING_NOTICE}`}
           </Text>
-          <Text style={styles.text}>{`Original style: ${report.preview.style}`}</Text>
+          <Text style={styles.text}>{`Original style: ${report.preview.style ?? 'Default'}`}</Text>
           <Image
             accessibilityLabel="Original drawing to report"
             source={{ uri: report.preview.drawing }}

@@ -1,4 +1,5 @@
 import { isUnsaved, type PictureSaveOutcome, type UnsavedOutcome } from './pictureSave';
+import type { PictureFormat } from './pictureFilename';
 
 // The shipping Save Failure Banner's owner (web/src/lib/state/saveFailure.svelte.ts), held in
 // memory: no copy of a picture outlives the app, so a picture still unsaved when the app closes
@@ -7,7 +8,12 @@ import { isUnsaved, type PictureSaveOutcome, type UnsavedOutcome } from './pictu
 // A picture whose save did not land, held as the exact PNG that was captured. Try again saves
 // these bytes, never a fresh capture: by the time a parent reads the banner the paper may have
 // been cleared or drawn over.
-type HeldPicture = Readonly<{ pngBase64: string; outcome: UnsavedOutcome }>;
+// An AI picture keeps the format it arrived in, so Try again saves it under its own name.
+type HeldPicture = Readonly<{
+  pngBase64: string;
+  outcome: UnsavedOutcome;
+  format?: PictureFormat;
+}>;
 
 // Each held picture is a full-resolution PNG in memory, and a toddler can tap the camera again
 // and again while the permission stays denied. The oldest is released first. The shipping
@@ -32,7 +38,7 @@ function withPicture(held: readonly HeldPicture[], picture: HeldPicture): HeldPi
 }
 
 export function createSaveFailure(
-  save: (pngBase64: string) => Promise<PictureSaveOutcome>,
+  save: (pngBase64: string, format?: PictureFormat) => Promise<PictureSaveOutcome>,
   publish: () => void
 ) {
   let pictures: readonly HeldPicture[] = [];
@@ -63,7 +69,9 @@ export function createSaveFailure(
     const stillUnsaved: HeldPicture[] = [];
     const saved: HeldPicture[] = [];
     for (const picture of attempted) {
-      const result = await save(picture.pngBase64).catch((): PictureSaveOutcome => 'failed');
+      const result = await save(picture.pngBase64, picture.format).catch(
+        (): PictureSaveOutcome => 'failed'
+      );
       if (retryGeneration !== generation) return;
       if (isUnsaved(result)) stillUnsaved.push({ ...picture, outcome: result });
       else saved.push(picture);
@@ -82,9 +90,9 @@ export function createSaveFailure(
   return {
     getState: () => state,
     // A gallery this app cannot write to refuses every retry alike, so its picture is not held.
-    report(failed: UnsavedOutcome, pngBase64: string | null) {
+    report(failed: UnsavedOutcome, pngBase64: string | null, format?: PictureFormat) {
       if (pngBase64 !== null && failed !== 'unavailable') {
-        pictures = withPicture(pictures, { pngBase64, outcome: failed });
+        pictures = withPicture(pictures, { pngBase64, outcome: failed, format });
       } else {
         uncapturedVersion += 1;
         uncapturedOutcome = failed;

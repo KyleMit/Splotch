@@ -10,12 +10,15 @@ export function drawingScreenPort(actual, caller, projectHistory) {
   // Center unlock) renders it; a test that stubs either one keeps its own.
   function useStubScreen() {
     const [, rerender] = useReducer((count) => count + 1, 0);
-    const setSettingsOpen = (open) => {
+    const setSettingsOpen = (open, section = null) => {
       caller.screen.settingsOpen = open;
+      caller.screen.settingsSection = section;
       rerender();
     };
     return {
+      settingsSection: null,
       openSettings: () => setSettingsOpen(true),
+      openAiSettings: () => setSettingsOpen(true, 'ai'),
       closeSettings: () => setSettingsOpen(false),
       brushPreferences: {
         status: 'ready',

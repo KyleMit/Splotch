@@ -29,6 +29,7 @@ import {
   TOUCH_TARGET,
 } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
+  AI_BUTTON,
   flat,
   mountToolbar,
   paintGroup,
@@ -71,18 +72,19 @@ function iconMarkup(node) {
 it('renders every toolbar action as a named icon button that calls its owner', async () => {
   await mountToolbar(toolbarScreen({ history: { undo: [emptyDrawing()], drawing: inked() } }));
   await expandControls();
-  const openAi = vi.spyOn(caller.product.ai.owner, 'open').mockImplementation(() => {});
+  const openAi = vi.spyOn(caller.product.ai.owner, 'start').mockImplementation(() => {});
   const actions = [
     ['Coloring books', 'shapes', () => caller.screen.setPagePickerOpen],
     ['Save screenshot', 'camera', () => caller.screen.save],
-    ['AI picture', 'wand-stars', () => openAi],
+    [AI_BUTTON, 'wand-stars', () => openAi],
     ['Undo', 'undo', () => caller.screen.undo],
     ['Clear drawing', 'trash-closed', () => caller.screen.clear],
     ['Settings', 'settings', () => caller.screen.openSettings],
   ];
   for (const [label, icon, handler] of actions) {
     const node = button(label);
-    expect(node.textContent, label).toBe('');
+    // The AI Image Button's corner carries its free-picture count, hidden from screen readers.
+    expect(node.textContent, label).toBe(label === AI_BUTTON ? '10' : '');
     expect(iconMarkup(node), label).toBe(
       NATIVE_ICONS[icon].light.replaceAll('currentColor', DRAWING_THEME.iconInk)
     );
@@ -192,14 +194,7 @@ it('keeps the loaded paint on the bar when the room runs out', () => {
 
 it('tucks the shipping tools, in order, into a drawer the chevron after them reveals and hides', async () => {
   await mountToolbar(toolbarScreen());
-  const tools = [
-    'Brushes',
-    'Stroke width',
-    'Coloring books',
-    'Save screenshot',
-    'AI picture',
-    'Undo',
-  ];
+  const tools = ['Brushes', 'Stroke width', 'Coloring books', 'Save screenshot', AI_BUTTON, 'Undo'];
   const shown = () =>
     [...host.querySelectorAll('[data-testid="rsd-drawer-tool"] [aria-label]')]
       .map((node) => node.getAttribute('aria-label'))
