@@ -1,1 +1,1 @@
-export { default as CaptureSvg } from 'react-native-svg';
+export { Svg as CaptureSvg } from '../platform/svg';

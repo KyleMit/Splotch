@@ -1,4 +1,4 @@
-import { Circle, Path } from 'react-native-svg';
+import { Circle, Path } from '../platform/svg';
 import { strokePath, type Point } from './model';
 
 export function StrokeShape({

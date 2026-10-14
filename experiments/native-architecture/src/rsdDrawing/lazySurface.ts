@@ -6,14 +6,18 @@ import {
   type ComponentType,
 } from 'react';
 import { createLazyExport } from '../lazyExport';
+import { deferredIconsSettled } from './iconRegistry';
 
 // A surface loaded from its own chunk on first use. The service worker precaches every chunk, so a
 // surface still opens offline once the worker has installed. Before then a load can fail: it throws
 // to the RsdSurfaceBoundary around it, and since a failed load is forgotten (lazyExport.ts), the
 // boundary's Try again loads the chunk afresh. React.lazy is not used because it keeps a rejected
-// load for good.
+// load for good. The surface also waits for the deferred icons (iconRegistry.ts), fetched
+// alongside its own chunk, so it never opens with an icon box still empty.
 export function lazySurface<P extends object>(load: () => Promise<ComponentType<P>>) {
-  const surface = createLazyExport(load);
+  const surface = createLazyExport(() =>
+    Promise.all([load(), deferredIconsSettled()]).then(([loaded]) => loaded)
+  );
   return function LazySurface(props: P) {
     const Loaded = useSyncExternalStore(surface.subscribe, surface.current);
     const [failure, setFailure] = useState<{ error: unknown } | null>(null);

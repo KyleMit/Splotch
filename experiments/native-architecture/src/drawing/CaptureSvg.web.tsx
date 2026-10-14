@@ -1,4 +1,4 @@
-import Svg from 'react-native-svg';
+import { Svg } from '../platform/svg';
 import type { PaperSize } from './paperSpace';
 import type { SvgCaptureTarget } from './svgCapture';
 

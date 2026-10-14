@@ -8,7 +8,7 @@ import { Image } from 'react-native';
 import { useHeldBooks, useLibraryControls } from './offlineLibrary/LibraryScope';
 import { offlinePageId } from './offlineLibrary/identity';
 import { OFFLINE_BOOKS } from './offlineLibrary/books.generated';
-import Svg, { Rect } from 'react-native-svg';
+import { Svg, Rect } from './platform/svg';
 import { CANONICAL_PAPER_SIZE, PAPER_HEIGHT, PAPER_WIDTH } from './drawing/paperSpace';
 import { InkAppearanceScope } from './drawing/InkAppearance';
 import { PageOutline } from './drawing/PageOutline';

@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { SvgXml } from 'react-native-svg';
+import { SvgXml } from '../platform/svg';
 import type { OfflinePageId } from './catalog';
 import type { PaperTheme } from '../drawing/theme';
 import { artOrientation, type PaperSize } from '../drawing/paperSpace';

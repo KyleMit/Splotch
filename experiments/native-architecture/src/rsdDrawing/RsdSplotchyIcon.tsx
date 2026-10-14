@@ -1,4 +1,4 @@
-import { SvgXml } from 'react-native-svg';
+import { SvgXml } from '../platform/svg';
 import { useSplotchyMarkup } from './iconRegistry';
 import { EMPTY_ICON_MARKUP } from './RsdIcon';
 

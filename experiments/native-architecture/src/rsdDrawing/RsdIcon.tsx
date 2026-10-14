@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SvgXml } from 'react-native-svg';
+import { SvgXml } from '../platform/svg';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES } from '../drawing/theme';
 import { useNativeIconMarkup } from './iconRegistry';

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../drawing/Text';
-import Svg, { Rect } from 'react-native-svg';
+import { Svg, Rect } from '../platform/svg';
 import {
   createDrawingStyles,
   useDrawingAppearance,

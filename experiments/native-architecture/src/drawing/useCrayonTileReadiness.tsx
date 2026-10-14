@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet, View } from 'react-native';
-import Svg, { Image as SvgImage } from 'react-native-svg';
+import { Svg, Image as SvgImage } from '../platform/svg';
 import { CRAYON_TILE_PX } from './crayon';
 import { PNG_TIMEOUT_MS } from './svgCapture';
 import { createCrayonTileResources, type CrayonTileResources } from './crayonTiles';

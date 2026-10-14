@@ -92,11 +92,13 @@ native keeps its synchronous, offline-complete bundle unchanged.
     export would have if its app code were as lean as the shipping app's.
   * Issue 2835 left the startup at 1,189,500 bytes. The modal frame (issue 2842) brought it to
     1,219,090, against a 1,220,000 cap. Issue 2844 took the two levers below and reviewed the
-    startup at 993,619 bytes, 144,635 over the target.
-  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 1,015,000, is that measurement plus 21,381 bytes of
+    startup at 993,619 bytes, 144,635 over the target. The third cut (below) took the startup icon
+    set and `react-native-svg` off the path, reached 877,862 bytes, and with the AI flow (PR 2869)
+    merged was reviewed at 894,104, 45,120 over.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 906,000, is that measurement plus 11,896 bytes of
     headroom. The headroom stays below the smallest move it protects (the offline library
     controller, 24,471 bytes). Undoing any lever fails the build. So does statically importing the
-    AI sheet (measured at 1,099,429 bytes).
+    AI sheet (measured at 1,099,429 bytes against the earlier base).
   * The cap is a ratchet. Consuming the headroom is the cue to take the next lever, not to raise the
     number.
 * **The app's `Animated` leaves out React Native Web's list components.**
@@ -166,8 +168,79 @@ Measured on the merged base, each step's change to the startup path:
 | Waiting for paint and idle (`drawingPaint`, `idle.ts`) | 994,545       | +2,236   |
 | Clear button (issue 2849) merged, review fixes         | 993,619       | −926     |
 
-The remaining 144,635 bytes over the target are mostly two libraries every first paint uses: the
-startup icon set (`icons.generated.ts`, about 78 KB) and `react-native-svg` (about 47 KB).
+That left 144,635 bytes over the target, mostly two libraries every first paint used: the startup
+icon set (`icons.generated.ts`, about 78 KB) and `react-native-svg` (about 47 KB).
+
+### The third cut: the icon set and `react-native-svg`
+
+* **The startup icon set holds only the icons the drawing screen mounts with.**
+  * `NATIVE_STARTUP_ICONS` in `tools/migration/gen-native-icons.mjs` lists More colors, the folded
+    palette's ink, the Clear control and its coachmark hand, the settings gear, the drawer toggle,
+    and the Fullscreen Toggle a phone browser shows. The drawer's tools, the flyouts and every sheet
+    draw from the deferred module (ADR-0164), so the big themed glyphs (`shapes`, `wand-stars`) left
+    the entry.
+  * The Fullscreen Toggle's icons were deferred before this cut, so a phone browser's first paint
+    drew an empty corner button until the chunk arrived. They are in the startup set now.
+  * `deferredIconWarmup.web.ts` prewarms the deferred module once the drawing screen has painted,
+    behind the shipping app's background gate (`scheduleInteractionIdle` in `web/src/lib/idle.ts`).
+    At plain idle (`scheduleIdle`), Lighthouse's simulated Slow 4G counted the chunk against the
+    paper texture that paints Largest Contentful Paint. The native `deferredIconWarmup.ts` resolves
+    the module at launch, because it is already in the bundle.
+  * `lazySurface.ts` resolves a sheet only once the deferred icons have settled, fetched alongside
+    its own chunk, so a sheet never opens with an empty icon box. A failed icon load does not fail
+    the sheet; each icon retries when it mounts.
+  * `tools/tests/native-section-icon-mounted.test.mjs` proves both: a lazy surface's first render
+    has its deferred icon, and the warm-up loads the chunk before any icon asks for it.
+* **`react-native-svg` stays off the web bundle.**
+  * Every app module imports its SVG elements from `src/platform/svg.ts`, which re-exports
+    `react-native-svg` for the native apps. `svg.web.ts` renders the same DOM through React Native
+    Web's `createElement`, rewriting the same props as `react-native-svg`'s `WebShape`. It leaves
+    out the library's parsers for React Native transform lists (`transform.js`, `transformToRn.js`)
+    and for XML. `SvgXml` parses with the browser's `DOMParser` and renders the same element
+    classes.
+  * A press handler, a transform list or a bundled asset id throws instead of being silently
+    dropped. The app passes none of them.
+  * The web module is `.web.ts`, not `.web.tsx`. Metro tries each source extension in turn with
+    every platform suffix, so `svg.ts` would win over a `svg.web.tsx` and the library would stay.
+  * `tools/tests/native-web-svg.test.mjs` renders every icon in both themes, two downloaded coloring
+    outlines and a tree of every prop the paper passes through both implementations, and compares
+    the DOM. It also fails if any app file imports `react-native-svg` directly, since one such
+    import puts the whole library back on the path.
+* **Rejected levers.**
+  * Sharing one markup between an icon's light and dark variants saved about 27 KB of the old
+    startup set. After the split no startup icon has a theme variant, so it saves nothing on the
+    startup path.
+  * A Metro resolver alias for `react-native-svg` on web would need no import changes. It was
+    rejected for the same reason the `Animated` split was: a `.web.ts` split is visible in the
+    importing file, and an alias would silently swap a library under every future import.
+
+Measured one lever at a time on the same base (`origin/codex/native-migration` at 7e0553dda):
+
+| Step                                                 | Startup bytes | Change  | Lighthouse LCP, phone / tablet |
+| ---------------------------------------------------- | ------------- | ------- | ------------------------------ |
+| Before (issue 2849 and the AI art settings merged)   | 997,252       |         | 3.15 s / 3.15 s                |
+| Startup icon set cut to first paint, sheets wait     | 931,367       | −65,885 |                                |
+| `react-native-svg` replaced by `platform/svg.web.ts` | 876,150       | −55,217 | 3.17 s / 3.22 s                |
+| Warm-up behind the background idle gate              | 876,232       | +82     | 3.14 s / 3.14 s                |
+| Fullscreen Toggle icons in the startup set           | 877,863       | +1,631  | 2.69 s / 2.69 s                |
+| Review: the native apps resolve the icons at launch  | 877,862       | −1      |                                |
+| The AI flow (PR 2869) merged                         | 894,104       | +16,242 | 2.70 s / 2.68 s                |
+
+The LCP column is Lighthouse's simulated first visit on a local brotli server, the median of two or
+three runs. The entry fell from 223.0 KB to 199.1 KB over the wire, but LCP moved only with the last
+two steps. Until then a deferred icon chunk was still fetched while the paper texture loaded: first
+the prewarm, then the Fullscreen Toggle's own icons, which Lighthouse's mobile emulation shows.
+
+Screenshots of the export before and after, at 390×844 and 1366×1024 in light and dark, are
+pixel-identical at first paint, with the drawer open, with the brush flyout open, in Settings, and
+after a pen and a crayon stroke. On the merged base, with splotch.art's `/api` mocked, so are the AI
+button in the drawer, the style prompt and the result; each frame of the animated waiting dial
+matches a baseline frame. The AI flow added the same 16,242 bytes it adds to the old path, 6,828 of
+them in Expo's `__common` chunk. Its merged base without this cut measures 1,013,494 bytes, a 225.2
+KB entry over the wire and 3.15 s LCP on phone and tablet; with the cut, 894,104 bytes, 201.0 KB and
+2.7 s. The remaining 45,120 bytes over the target have no single large owner. The largest app
+modules left on the path are the startup icons (14 KB), the sound settings with their codec (16 KB)
+and the contact responder (8 KB).
 
 ## Consequences
 
@@ -181,16 +254,28 @@ startup icon set (`icons.generated.ts`, about 78 KB) and `react-native-svg` (abo
 * \+ The offline precache shrank from 6.18 MB to 4.89 MB, because WebP files no longer pay base64
   overhead. No precached file now needs more than Workbox's 2 MiB per-file default, so
   `build-native-web.mjs` dropped its 8 MiB allowance.
-* \+ Native bundles are unchanged. The Android release bundle still carries all 38 data URIs and all
-  line art.
+* \+ Native bundles keep their content. The Android release bundle still carries all 38 data URIs,
+  all line art and `react-native-svg`. The native apps now resolve the deferred icons at launch
+  rather than on first use, so the drawer's tools, which moved out of the startup set, have their
+  icons before a child can open the drawer.
 * − Each lazy surface has two platform files whose exports must agree. TypeScript checks consumers
   against the native file only. The parity test covers the sheets; the outline hook's two
   implementations share a signature by convention.
 * − On web, a sheet's first open waits for its chunk. After install the chunk comes from the service
   worker cache, but a Farm page's outline and Magic fill can paint a frame after the paper does.
-* − The startup cap sits about 1.9× above the shipping budget and is set from measurement, not from
-  the shipping number. Closing the gap needs the icon set and `react-native-svg` off the startup
-  path, or a static first paint.
+* \+ The third cut moved the throttled first load from 3.15 s LCP to 2.69 s on phone and tablet, and
+  the entry from 223.0 KB to 199.1 KB over the wire. A phone browser's first paint now draws the
+  Fullscreen Toggle instead of an empty button.
+* − The startup cap sits about 1.7× above the shipping budget and is set from measurement, not from
+  the shipping number. The last 45,120 bytes over the target need another lever, or a static first
+  paint.
+* − On web, the drawer's tools draw from the deferred module. Opening the drawer before the
+  background prewarm has run (in the first moments, or while a child keeps drawing) shows its tool
+  buttons empty until the chunk arrives. Before this cut only the stroke-width tool did that.
+* − On web, a sheet's first open also waits for the deferred icon chunk when the prewarm has not
+  run.
+* − `svg.web.ts` mirrors `react-native-svg`'s web prop rewrite. A `react-native-svg` upgrade that
+  changes that rewrite does not reach the web export until the DOM parity test fails.
 * − On web, the AI picture button and Send Feedback do nothing until the owners' chunk arrives,
   shortly after first paint. After install the chunk comes from the service worker cache.
 * − The AI surfaces and the feedback sheet now download with their owners after every web launch,

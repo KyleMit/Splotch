@@ -11,6 +11,10 @@ vi.mock('react-native', () => ({ StatusBar: () => null, useColorScheme: () => 'l
 vi.mock('react-native-svg', () => ({
   SvgXml: ({ xml, width, height }) => createElement('svg', { 'data-xml': xml, width, height }),
 }));
+// Held unreached, so each test sees the registry load its chunks on demand; the warm-up test
+// below releases its own.
+const UNREACHED = vi.hoisted(() => () => ({ DEFERRED_ICON_WARMUP: new Promise(() => {}) }));
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/deferredIconWarmup.ts', UNREACHED);
 
 const SIZE_PX = 38;
 let container, root, components;
@@ -63,8 +67,8 @@ async function loaded(expected) {
 }
 
 it('paints a startup icon on the first render, re-inked for the theme', async () => {
-  render('controls', { theme: 'dark' });
-  expect(markup()).toBe(NATIVE_ICONS.controls.dark);
+  render('more-colors', { theme: 'dark' });
+  expect(markup()).toBe(NATIVE_ICONS['more-colors'].dark);
   render('settings', { theme: 'dark' });
   expect(markup()).toBe(
     NATIVE_ICONS.settings.dark.replaceAll('currentColor', DRAWING_THEMES.dark.iconInk)
@@ -120,4 +124,57 @@ it('routes splotchy to the mascot artwork in both themes', async () => {
   render('splotchy', { theme: 'dark', ink: '#7c50bb' });
   expect(markup()).toBe(components.EMPTY_ICON_MARKUP);
   await loaded(NATIVE_SPLOTCHY);
+});
+
+const DEFERRED = '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+const WARMUP = '../../experiments/native-architecture/src/rsdDrawing/deferredIconWarmup.ts';
+
+// Each render's markup for one deferred icon, read straight from the registry.
+async function probe(seen) {
+  const { useNativeIconMarkup } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/iconRegistry.ts');
+  return function Probe() {
+    seen.push(useNativeIconMarkup('accessibility'));
+    return null;
+  };
+}
+
+it('opens a lazy surface with its deferred icons already painted', async () => {
+  const { lazySurface } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts');
+  const seen = [];
+  const Probe = await probe(seen);
+  const Sheet = lazySurface(async () => Probe);
+  act(() => root.render(createElement(Sheet)));
+  await vi.waitFor(async () => {
+    await act(async () => {});
+    expect(seen.length).toBeGreaterThan(0);
+  });
+  expect(seen[0]).toEqual(NATIVE_DEFERRED_ICONS.accessibility);
+});
+
+it('fetches the deferred icons at the warm-up point, before any icon asks for them', async () => {
+  vi.resetModules();
+  let pass;
+  let loads = 0;
+  vi.doMock(WARMUP, () => ({
+    DEFERRED_ICON_WARMUP: new Promise((resolve) => {
+      pass = resolve;
+    }),
+  }));
+  vi.doMock(DEFERRED, async (importOriginal) => {
+    loads += 1;
+    return importOriginal();
+  });
+  const seen = [];
+  const Probe = await probe(seen);
+  await act(async () => {});
+  expect(loads).toBe(0);
+  pass();
+  await vi.waitFor(() => expect(loads).toBe(1));
+  await act(async () => {});
+  act(() => root.render(createElement(Probe)));
+  expect(seen[0]).toEqual(NATIVE_DEFERRED_ICONS.accessibility);
+  vi.doMock(WARMUP, UNREACHED);
+  vi.doUnmock(DEFERRED);
 });
