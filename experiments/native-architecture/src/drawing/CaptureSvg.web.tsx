@@ -44,20 +44,39 @@ function captureSize(options: unknown): PaperSize {
   return { width: options.width, height: options.height };
 }
 
-function snapshotRoot(target: SVGSVGElement, size: PaperSize) {
+// The paper's fixed grid: the SVG laid out at its own view box.
+function fixedGrid(target: SVGSVGElement): PaperSize {
+  const width = Number(target.getAttribute('width'));
+  const height = Number(target.getAttribute('height'));
   const rect = target.getBoundingClientRect();
-  const viewBox = `0 0 ${size.width} ${size.height}`;
   // Browser layout can quantize fixed SVG dimensions to fractional CSS pixels.
   if (
-    Math.round(rect.width) !== size.width ||
-    Math.round(rect.height) !== size.height ||
-    target.getAttribute('width') !== String(size.width) ||
-    target.getAttribute('height') !== String(size.height) ||
-    target.getAttribute('viewBox') !== viewBox
+    !Number.isSafeInteger(width) ||
+    !Number.isSafeInteger(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    Math.round(rect.width) !== width ||
+    Math.round(rect.height) !== height ||
+    target.getAttribute('viewBox') !== `0 0 ${width} ${height}`
   )
     throw new Error('The fixed drawing paper is not ready to capture.');
+  return { width, height };
+}
+
+// As react-native-svg's Android capture does, the requested pixels take the grid at one scale; a
+// request of another shape, beyond a pixel of rounding on any side, is another surface.
+function sameShape(grid: PaperSize, size: PaperSize): boolean {
+  return (
+    Math.abs(size.width * grid.height - size.height * grid.width) <=
+    grid.width + grid.height + size.width + size.height
+  );
+}
+
+function snapshotRoot(target: SVGSVGElement, size: PaperSize) {
+  const grid = fixedGrid(target);
+  if (!sameShape(grid, size)) throw new Error('The fixed drawing paper is not ready to capture.');
   const root = document.createElementNS(SVG_NAMESPACE, 'svg');
-  root.setAttribute('viewBox', viewBox);
+  root.setAttribute('viewBox', `0 0 ${grid.width} ${grid.height}`);
   root.setAttribute('width', String(size.width));
   root.setAttribute('height', String(size.height));
   root.appendChild(target.cloneNode(true));

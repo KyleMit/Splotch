@@ -61,7 +61,7 @@ afterEach(() => {
 });
 
 function surface(png) {
-  return { capturePng: vi.fn(async () => png) };
+  return { exportPng: vi.fn(async () => png) };
 }
 
 describe('saving a picture on the web', () => {
@@ -133,7 +133,7 @@ describe('saving a picture on the web', () => {
       outcome: 'failed',
       pngBase64: null,
     });
-    const thrown = { capturePng: vi.fn(async () => Promise.reject(new Error('lost'))) };
+    const thrown = { exportPng: vi.fn(async () => Promise.reject(new Error('lost'))) };
     expect(await keepPicture({ strokes: [] }, thrown)).toEqual({
       outcome: 'failed',
       pngBase64: null,
