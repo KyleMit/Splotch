@@ -32,8 +32,9 @@ async function chooseButtonStyle(style) {
   checkedRadio(option);
 }
 
-// The drawing screen is disabled while Settings is open, so a Raised tile has faded to its
-// disabled opacity on the native driver by the time the parent changes Button style there.
+// A parked screen fades a Raised tile to its disabled opacity on the native driver, and that fade
+// must not survive a Button style switch. Settings leaves the chrome at full strength and cannot
+// open over a parked screen, so the screen is parked here directly while Settings switches.
 it.each([
   ['buttons', 'bare'],
   ['bare', 'buttons'],
@@ -45,11 +46,11 @@ it.each([
     await expandControls();
     expect(drawerTiles().length).toBeGreaterThan(0);
     expect(shownOpacities().every((opacity) => opacity === 1)).toBe(true);
-    await rerender({ settingsOpen: true, disabled: true });
+    await rerender({ settingsOpen: true, dialogOpen: true, disabled: true });
     const parked = from === 'buttons' ? ACTION_TILE_DISABLED_OPACITY : 1;
     expect(shownOpacities().every((opacity) => opacity === parked)).toBe(true);
     await chooseButtonStyle(to);
-    await rerender({ settingsOpen: false, disabled: false });
+    await rerender({ settingsOpen: false, dialogOpen: false, disabled: false });
     expect(caller.sound.settings.toolbarStyle).toBe(to);
     expect(shownOpacities()).toEqual(drawerTiles().map(() => 1));
   }

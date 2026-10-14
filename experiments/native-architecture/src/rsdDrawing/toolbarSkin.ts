@@ -8,3 +8,9 @@ export const ToolbarSkin = createContext<ToolbarStyle>(DEFAULT_TOOLBAR_STYLE);
 export function useBareToolbar() {
   return useContext(ToolbarSkin) === 'bare';
 }
+
+// Shipping's modal dialog leaves the page behind it inert without greying it: no touch, key or
+// assistive press reaches a control there. RsdPressable drops every press inside a region that
+// holds this true, so the drawing chrome stays at full strength under a dialog's scrim and still
+// refuses to open a menu or run a command.
+export const InertRegion = createContext(false);

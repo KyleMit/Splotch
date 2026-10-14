@@ -458,12 +458,12 @@ function createPickerCaller(refresh) {
   );
   const open = vi.fn(() => {
     caller.screen.colorPickerOpen = true;
-    caller.screen.disabled = true;
+    caller.screen.dialogOpen = true;
     refresh();
   });
   const close = vi.fn(() => {
     caller.screen.colorPickerOpen = false;
-    caller.screen.disabled = false;
+    caller.screen.dialogOpen = false;
     refresh();
   });
   caller.screen = {
@@ -474,6 +474,7 @@ function createPickerCaller(refresh) {
     history: { undo: [], drawing: emptyDrawing() },
     recovery: { failed: false },
     pictures: null,
+    dialogOpen: false,
     pagePickerOpen: false,
     settingsOpen: false,
     colorPickerOpen: false,

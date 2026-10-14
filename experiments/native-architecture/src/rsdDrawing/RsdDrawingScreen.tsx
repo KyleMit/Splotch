@@ -243,12 +243,14 @@ function RsdDrawingContent({
     preview: product.sound.owner?.preview,
   });
   const modalBlocked = isProductModalBlocked(route.shown, product);
-  // A see-through Settings shows the controls it resizes as they look in use, not dimmed behind
-  // a dialog; the dragged slider keeps every touch meanwhile.
-  const disabled = !buttonScale.active && (screen.disabled || modalBlocked);
+  // A see-through Settings shows the controls it resizes as they look in use; the dragged slider
+  // keeps every touch meanwhile.
+  const disabled = !buttonScale.active && screen.disabled;
+  // Any dialog holds the chrome under its scrim at full strength, as shipping's modal does.
+  const covered = screen.dialogOpen || modalBlocked;
   const paperBlocked = modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  useDrawingUndoShortcut(screen, paintsDisabled || buttonScale.active);
+  useDrawingUndoShortcut(screen, paintsDisabled || covered || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
@@ -270,6 +272,7 @@ function RsdDrawingContent({
             sound={sound}
             product={product}
             disabled={disabled}
+            covered={covered}
             paintsDisabled={paintsDisabled}
             buttonScale={buttonScale.value}
             resizing={buttonScale.active}

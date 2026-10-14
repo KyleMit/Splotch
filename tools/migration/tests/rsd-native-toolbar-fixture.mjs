@@ -20,6 +20,7 @@ export function toolbarScreen(overrides = {}) {
     inkVisible: true,
     recovery: { failed: false },
     pictures: null,
+    dialogOpen: false,
     pagePickerOpen: false,
     settingsOpen: false,
     colorPickerOpen: false,
