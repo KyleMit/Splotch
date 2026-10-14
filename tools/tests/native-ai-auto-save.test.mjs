@@ -1,5 +1,11 @@
 import { expect, it, vi } from 'vitest';
 import { createAiAutoSave } from '../../experiments/native-architecture/src/ai/aiAutoSave.ts';
+import { createAutoSaveRunner } from '../../experiments/native-architecture/src/product/useAiAutoSave.ts';
+
+vi.mock('react-native', () => ({}));
+vi.mock('../../experiments/native-architecture/src/keepPicture.ts', () => ({
+  savePicture: async () => 'photos',
+}));
 
 const DRAWING = 'drawing-bytes';
 const SUBMITTED = `data:image/png;base64,${DRAWING}`;
@@ -99,4 +105,21 @@ it('tries a drawing again on the next run when its save did not land', async () 
   expect(f.saves).toHaveLength(2);
   f.saves[1].resolve('photos');
   await second;
+});
+
+it('reports a run whose saver failed to load, and loads it again for the next run', async () => {
+  const save = vi.fn(async () => {});
+  const load = vi.fn().mockRejectedValueOnce(new Error('chunk offline')).mockResolvedValue(save);
+  const failed = vi.fn();
+  const run = createAutoSaveRunner(load, failed);
+  run(1, picture(1), SUBMITTED);
+  await settle();
+  expect(failed).toHaveBeenCalledWith(1, picture(1));
+  expect(save).not.toHaveBeenCalled();
+  run(1, picture(1), SUBMITTED);
+  run(2, picture(2), SUBMITTED);
+  await settle();
+  expect(load).toHaveBeenCalledTimes(2);
+  expect(failed).toHaveBeenCalledOnce();
+  expect(save).toHaveBeenCalledExactlyOnceWith(2, picture(2), SUBMITTED);
 });
