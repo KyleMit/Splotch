@@ -23,6 +23,7 @@ import { ShippingFontGate } from '../../experiments/native-architecture/src/plat
 const fontLoad = vi.hoisted(() => ({ useFonts: vi.fn() }));
 vi.mock('expo-font', () => ({ useFonts: fontLoad.useFonts }));
 vi.mock('@expo-google-fonts/quicksand/400Regular', () => ({ Quicksand_400Regular: 400 }));
+vi.mock('@expo-google-fonts/quicksand/500Medium', () => ({ Quicksand_500Medium: 500 }));
 vi.mock('@expo-google-fonts/quicksand/600SemiBold', () => ({ Quicksand_600SemiBold: 600 }));
 vi.mock('@expo-google-fonts/quicksand/700Bold', () => ({ Quicksand_700Bold: 700 }));
 vi.mock('react-native', async () => {
@@ -279,8 +280,13 @@ describe('RN shipping font on Android and iOS', () => {
     ).toThrow();
   });
 
-  it('bundles only the regular, semibold and bold faces', () => {
-    expect(bundledNativeFaces(sources)).toEqual(['/400Regular', '/600SemiBold', '/700Bold']);
+  it('bundles only the regular, medium, semibold and bold faces', () => {
+    expect(bundledNativeFaces(sources)).toEqual([
+      '/400Regular',
+      '/500Medium',
+      '/600SemiBold',
+      '/700Bold',
+    ]);
     const everyWeight = new Map(sources).set(
       'fixture.ts',
       `import { Quicksand_300Light } from '${NATIVE_FONT_PACKAGE}';`
@@ -293,8 +299,9 @@ describe('RN shipping font on Android and iOS', () => {
     ['normal', 'regular'],
     ['light', 'regular'],
     ['400', 'regular'],
-    [500, 'regular'],
-    ['medium', 'regular'],
+    [450, 'medium'],
+    [500, 'medium'],
+    ['medium', 'medium'],
     ['600', 'semibold'],
     ['semibold', 'semibold'],
     [650, 'bold'],

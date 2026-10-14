@@ -82,9 +82,9 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
   stylesheet's local `url()` sources, so the gate registers the `@fontsource-variable/quicksand`
   faces itself (`shippingFont.web.tsx`) and renders at once, swapping the font in as the shipping
   app does; the precache carries their WOFF2 files.
-* **Android and iOS** cannot register WOFF2, so the gate loads the 400, 600 and 700 static faces
-  from `@expo-google-fonts/quicksand` through `expo-font` and renders once they register (or, if
-  they fail, in the system font). Each face is its own family, so
+* **Android and iOS** cannot register WOFF2, so the gate loads the 400, 500, 600 and 700 static
+  faces from `@expo-google-fonts/quicksand` through `expo-font` and renders once they register (or,
+  if they fail, in the system font). Each face is its own family, so
   `src/platform/nativeFontFamilies.ts` picks the family from the weight and sets the weight itself
   back to normal: Android resolves a weight of 700 or more on a registered family to a system bold
   face. `fontTheme.native.ts` applies the same faces to the RSD tokens.
