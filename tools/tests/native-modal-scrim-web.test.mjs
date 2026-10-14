@@ -6,15 +6,18 @@ import { ModalScrim } from '../../experiments/native-architecture/src/rsdDrawing
 import {
   MODAL_SCRIM_BLUR_PX,
   MODAL_SCRIM_FROSTED,
+  MODAL_SCRIM_PLAIN,
 } from '../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 
 let root;
 let host;
+let matching;
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  window.matchMedia = () => ({
-    matches: false,
+  matching = new Set();
+  window.matchMedia = (query) => ({
+    matches: matching.has(query),
     addEventListener() {},
     removeEventListener() {},
   });
@@ -51,7 +54,9 @@ function fadeValue() {
 // the frost must fade itself: the opacity belongs to the element carrying the filter.
 it('fades the frosted element itself rather than a wrapper around it', async () => {
   const opacity = fadeValue();
-  await act(async () => root.render(createElement(ModalScrim, { opacity })));
+  await act(async () =>
+    root.render(createElement(ModalScrim, { opacity, touchBackdrop: 'frosted' }))
+  );
   const scrim = host.querySelector('[data-testid="modal-scrim"]');
   expect(scrim.parentElement).toBe(host);
   expect(scrim.style.backdropFilter).toBe(`blur(${MODAL_SCRIM_BLUR_PX}px)`);
@@ -65,3 +70,20 @@ it('fades the frosted element itself rather than a wrapper around it', async () 
   await act(async () => root.render(null));
   expect(opacity.listening()).toBe(0);
 });
+
+// app.css drops the Coloring Book Picker's backdrop blur on a coarse pointer only.
+it.each([
+  [true, MODAL_SCRIM_PLAIN, 'none'],
+  [false, MODAL_SCRIM_FROSTED, `blur(${MODAL_SCRIM_BLUR_PX}px)`],
+])(
+  'gives a plain touch backdrop the plain dim under a coarse pointer: %s',
+  async (coarse, background, filter) => {
+    if (coarse) matching.add('(pointer: coarse)');
+    await act(async () =>
+      root.render(createElement(ModalScrim, { opacity: fadeValue(), touchBackdrop: 'plain' }))
+    );
+    const scrim = host.querySelector('[data-testid="modal-scrim"]');
+    expect(scrim.style.background).toBe(background);
+    expect(scrim.style.backdropFilter).toBe(filter);
+  }
+);

@@ -28,32 +28,35 @@ its drop shadow on the paper) holding fixed 55px portrait / 60px landscape swatc
 leaves alone (`paletteGeometry.ts`). It measures its own length and shows as many swatches as fit at
 full size, by the shipping ladder's formula, trimming by the shipping trim order
 (`PALETTE_TRIM_ORDER`, drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`; the geometry
-and ladder by `tools/migration/tests/rsd-native-drawing-frame.test.mjs`); remembered custom paints
-go first, and the selected paint always keeps a swatch. On a landscape phone (shipping's
-`PHONE_LANDSCAPE_QUERY`, through `isPhoneLandscapeViewport`) the bar gives its strip back to the
-paper and the Actions Panel carries the shipping Color Button (`RsdColorButton.tsx`): the loaded ink
-as an `ink-splotch` on an action tile, centred on the paper while the drawer is closed and topping
-the L's leg while it is open, gliding between the two. A vertical swipe on it folds the drawer, as
-shipping's `colorFoldGesture` does. It opens the Color Menu (`RsdColorMenu.tsx`, in the flyout chunk
-on the web): the landscape palette's flat paint swatches and the honeycomb in one row, trimmed by
-shipping's container-query ladder to the room beside the button (`colorMenuLayout.ts`, held rung for
-rung by `tools/migration/tests/rsd-native-color-control.test.mjs`). Compact paint radios retain
-their full accessible names, checked state, visible selected treatment and actual paint colors.
-Paint radios are raised, round, text-free swatches (`RsdSwatch.tsx`) whose selected state is the
-shipping Selection Ring: a band of the bar surface inside the edge, a one-pixel surface seam and a
-4px ring a shade off the paint (`selectionRingColor`, shipping's `getRingColor`). More colors is the
-honeycomb on a raised surface disc. Settings is the muted `RsdIconButton` corner skin. Toolbar
-actions are icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg
-`SvgXml` on every platform, fed by the generated `icons.generated.ts`); each keeps its former text
-as its accessible name. Status messages have no visible strip: `RsdDrawingStatus` speaks routine
-notices from an `RsdVisuallyHidden` live region over the paper. Failures, told apart by type rather
-than wording (a save the photo library refused, an action's error, a renderer fault, a failed
-draft), show in `RsdFailureBanner`: the shipping Save Failure Banner's card, placement, copy and
-Dismiss, plus the Retry a fault needs, loaded on first use on web. The paper area and sheet wear the
-shipping handmade-paper grain (`PaperTexture`, a memoized tile that ink never re-renders) with no
-border, and a sheet presented smaller than its area sits lifted on a flat `paperMargin` with the
-float shadow. `NativePaper` fills the paper area behind the floating edge controls and contain-fits
-the fixed logical paper into it, centered, the way the shipping app presents a rotation-locked paper
+and ladder by `tools/migration/tests/rsd-native-drawing-frame.test.mjs`); custom paints picked this
+session go first, and the selected paint always keeps a swatch. As in shipping, the paint is session
+state: settings schema 16 stores none, so every launch starts on `DEFAULT_COLOR_SETTINGS` (pinned to
+shipping's `DEFAULT_STROKE_COLOR` by `tools/tests/native-custom-colors.test.mjs`). On a landscape
+phone (shipping's `PHONE_LANDSCAPE_QUERY`, through `isPhoneLandscapeViewport`) the bar gives its
+strip back to the paper and the Actions Panel carries the shipping Color Button
+(`RsdColorButton.tsx`): the loaded ink as an `ink-splotch` on an action tile, centred on the paper
+while the drawer is closed and topping the L's leg while it is open, gliding between the two. A
+vertical swipe on it folds the drawer, as shipping's `colorFoldGesture` does. It opens the Color
+Menu (`RsdColorMenu.tsx`, in the flyout chunk on the web): the landscape palette's flat paint
+swatches and the honeycomb in one row, trimmed by shipping's container-query ladder to the room
+beside the button (`colorMenuLayout.ts`, held rung for rung by
+`tools/migration/tests/rsd-native-color-control.test.mjs`). Compact paint radios retain their full
+accessible names, checked state, visible selected treatment and actual paint colors. Paint radios
+are raised, round, text-free swatches (`RsdSwatch.tsx`) whose selected state is the shipping
+Selection Ring: a band of the bar surface inside the edge, a one-pixel surface seam and a 4px ring a
+shade off the paint (`selectionRingColor`, shipping's `getRingColor`). More colors is the honeycomb
+on a raised surface disc. Settings is the muted `RsdIconButton` corner skin. Toolbar actions are
+icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg `SvgXml` on every
+platform, fed by the generated `icons.generated.ts`); each keeps its former text as its accessible
+name. Status messages have no visible strip: `RsdDrawingStatus` speaks routine notices from an
+`RsdVisuallyHidden` live region over the paper. Failures, told apart by type rather than wording (a
+save the photo library refused, an action's error, a renderer fault, a failed draft), show in
+`RsdFailureBanner`: the shipping Save Failure Banner's card, placement, copy and Dismiss, plus the
+Retry a fault needs, loaded on first use on web. The paper area and sheet wear the shipping
+handmade-paper grain (`PaperTexture`, a memoized tile that ink never re-renders) with no border, and
+a sheet presented smaller than its area sits lifted on a flat `paperMargin` with the float shadow.
+`NativePaper` fills the paper area behind the floating edge controls and contain-fits the fixed
+logical paper into it, centered, the way the shipping app presents a rotation-locked paper
 (ADR-0050); the paper keeps its fixed aspect, so a portrait phone shows it full width with margins
 above and below. These allocations require native geometry and visual verification; source flex
 bounds alone do not establish usable paper space.
@@ -290,6 +293,17 @@ contents and the other sections, and the drawer opens. React Strict DOM maps `vi
 zero opacity natively, so each hidden piece hides itself rather than an ancestor hiding everything
 below it.
 
+Every dialog's scrim is shipping's frosted backdrop, as each platform's shipping WebView draws it.
+On the web it is the CSS `backdrop-filter` itself (`ModalScrim.web.tsx`). On iOS the modal mounts
+`SplotchBackdropBlur` (`platform/backdropBlur.tsx` and the Swift view of that name) under the dim: a
+`UIVisualEffectView` held part-way through its effect, so the style's blur and tint scale down to
+the CSS radius. The blur fades with the scrim, drops at once with a see-through dialog, and exists
+only while a dialog is open. Shipping's Android WebView draws the dim and no blur, so Android takes
+the frosted dim alone. Under iOS Reduce Transparency, and for the Coloring Book Picker on a touch
+screen (shipping's coarse-pointer rule), the scrim takes shipping's plain, deeper dim instead.
+`tools/migration/tests/native-backdrop-blur.test.mjs` holds the native view's name and keys to the
+JavaScript.
+
 The Volume, its two sources and Button style persist in settings schema 13. A schema 12 or earlier
 record's quiet, medium or loud level becomes the volume that plays at the same gain (25, 50, 100),
 with both sources on and Raised buttons; a schema 11 record also takes the external-links default on
@@ -317,8 +331,8 @@ reading `web/src/lib/ai/keyFormat.ts`), and a refusal shows the server's own wor
 which credential is saved, and the free allowance while AI is on, through the owner's `inspect`; it
 waits out a generation in flight, whose vault lease a read would end.
 
-The two feature switches persist in settings schema 15 at shipping's defaults (customization on,
-auto-save off); every earlier record migrates to them. The AI sheet does not read them yet.
+The two feature switches persist, since settings schema 15, at shipping's defaults (customization
+on, auto-save off); every earlier record migrates to them. The AI sheet does not read them yet.
 `tools/tests/native-ai-settings-drift.test.mjs` reads the copy, defaults, geometry and illustrations
 back from shipping; `tools/tests/native-ai-settings.test.mjs` drives the owner, the schema, and the
 switch and key save that ask for no check while a send still does;

@@ -73,9 +73,10 @@ describe('root Parent Center policy and lifetime', () => {
       appearance: 'dark',
     };
     const current = parseSoundSettings(JSON.stringify(old));
+    const { selectedColor: _paint, customColors: _paints, ...kept } = old;
     expect(current).toEqual({
-      ...old,
-      version: 15,
+      ...kept,
+      version: 16,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -123,7 +124,7 @@ describe('root Parent Center policy and lifetime', () => {
       };
       const migrated = parseSoundSettings(JSON.stringify(old));
       expect(migrated).toMatchObject({
-        version: 15,
+        version: 16,
         aiEnabled: true,
         parentPolicies: {
           ai: 'never',
@@ -161,7 +162,7 @@ describe('root Parent Center policy and lifetime', () => {
     await f.owner.setPolicy('imageReport', 'session');
     const stored = f.storage.write.mock.calls[0][0];
     expect(parseSoundSettings(stored)).toMatchObject({
-      version: 15,
+      version: 16,
       parentPolicies: { ...ALWAYS, imageReport: 'session' },
     });
     const current = JSON.parse(stored);

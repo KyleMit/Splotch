@@ -12,7 +12,6 @@ import {
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { usePaintSelectionFocus } from '../../experiments/native-architecture/src/drawing/usePaintSelectionFocus.ts';
-import { createSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
 
 const native = vi.hoisted(() => ({ listener: null }));
 vi.mock('react-native', () => ({
@@ -34,23 +33,7 @@ let container;
 let resolveWrite;
 let driver;
 let attempted;
-let states;
 let returnedCurrent;
-const storage = {
-  read: async () =>
-    JSON.stringify({
-      version: 3,
-      soundEnabled: false,
-      strokeWidth: 'medium',
-      eraserWidth: 'medium',
-      selectedColor: 'Purple',
-      customColors: [],
-    }),
-  write: () =>
-    new Promise((resolve) => {
-      resolveWrite = resolve;
-    }),
-};
 
 const NativeButton = forwardRef(({ disabled, ...props }, ref) => {
   const target = useRef(null);
@@ -63,26 +46,36 @@ const NativeButton = forwardRef(({ disabled, ...props }, ref) => {
   return createElement('button', { ...props, ref: target });
 });
 
+// A choice that holds the palette disabled until its write lands, as any settings save does.
 function Fixture() {
-  const [settings, setSettings] = useState(null);
+  const [color, setColor] = useState('Purple');
+  const [saving, setSaving] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const black = useRef(null);
-  const owner = useRef(null);
-  const disabled = settings?.status !== 'ready' || blocked;
-  const focus = usePaintSelectionFocus({
-    color: settings?.selectedColor ?? 'Purple',
-    disabled,
-    blocked,
-  });
-  useEffect(() => {
-    owner.current = createSoundSettings(storage, (state) => {
-      states.push(state);
-      setSettings(state);
+  const mounted = useRef(true);
+  const disabled = saving || blocked;
+  const focus = usePaintSelectionFocus({ color, disabled, blocked });
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    []
+  );
+  function save(next) {
+    setSaving(true);
+    return new Promise((resolve) => {
+      resolveWrite = () => {
+        if (mounted.current) {
+          setColor(next);
+          setSaving(false);
+        }
+        resolve();
+      };
     });
-    void owner.current.load();
-    return () => owner.current.dispose();
-  }, []);
+  }
   driver = {
+    saving: () => saving,
+    color: () => color,
     choose(hasFocus = true) {
       return focus.choose(
         'Black',
@@ -96,7 +89,7 @@ function Fixture() {
           : null,
         () => {
           attempted();
-          return owner.current.setColor('Black');
+          return save('Black');
         }
       );
     },
@@ -115,7 +108,6 @@ function button(label) {
 }
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  states = [];
   attempted = vi.fn();
   resolveWrite = null;
   returnedCurrent = null;
@@ -147,11 +139,11 @@ async function complete() {
 }
 
 it.each(['keyboard', 'pointer'])(
-  'restores the %s choice only after its real serialized save and blocks busy actions',
+  'restores the %s choice only after its save and blocks busy actions',
   async (origin) => {
     const focus = vi.spyOn(button('Black'), 'focus');
     choose(origin);
-    expect(states.at(-1).status).toBe('saving');
+    expect(driver.saving()).toBe(true);
     expect(button('Black').disabled).toBe(true);
     expect(document.activeElement).not.toBe(button('Black'));
     expect(focus).toHaveBeenCalledTimes(1);
@@ -160,7 +152,8 @@ it.each(['keyboard', 'pointer'])(
     });
     expect(attempted).toHaveBeenCalledTimes(1);
     await complete();
-    expect(states.at(-1)).toMatchObject({ status: 'ready', selectedColor: 'Black' });
+    expect(driver.saving()).toBe(false);
+    expect(driver.color()).toBe('Black');
     expect(document.activeElement).toBe(button('Black'));
     expect(focus).toHaveBeenCalledTimes(2);
     act(() => button('Purple').focus());

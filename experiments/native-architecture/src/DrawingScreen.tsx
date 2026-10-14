@@ -426,7 +426,7 @@ function DrawingSheets({
           onClose={onCloseColors}
           onChoose={(next) => {
             screen.selectInkBrush();
-            void sound.owner?.settings.setColor(next);
+            sound.owner?.settings.setColor(next);
             onCloseColors();
           }}
         />

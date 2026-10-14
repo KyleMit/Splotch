@@ -31,6 +31,7 @@ vi.mock('react-native', () => ({
   Image: () => null,
   Modal: () => null,
   Platform: { OS: 'web', select: (values) => values.web ?? values.default },
+  requireNativeComponent: () => () => null,
   Pressable: () => null,
   ScrollView: () => null,
   StyleSheet: { create: (styles) => styles, absoluteFill: {} },

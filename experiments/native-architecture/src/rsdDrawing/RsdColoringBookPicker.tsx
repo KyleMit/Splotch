@@ -188,6 +188,7 @@ export function RsdColoringBookPicker({
       onDismiss={onDismiss}
       label={COLORING_PICKER_LABEL}
       size="coloring"
+      touchBackdrop="plain"
       onClose={onClose}
       scrolls={false}
       heightBudget={heightBudget}

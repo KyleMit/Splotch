@@ -411,10 +411,15 @@ export function RsdIconButton(props: IconButtonProps) {
       ink={ink ?? brandInk}
       muted={disabled && !bare}
       keyline={keyline}
+      grey={dimmed}
     />
   );
   return (
+    // A Button style switch remounts the face. A Raised face fades its opacity on the native
+    // driver, which leaves the value on the view; the Flat face's opacity equals the one React last
+    // committed, so React never sends it and the old fade would stay.
     <RsdPressable
+      key={bare ? 'flat' : 'raised'}
       type="button"
       role={selection ?? 'button'}
       aria-label={label}

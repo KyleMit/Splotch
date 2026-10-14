@@ -50,12 +50,14 @@ const VERSION_15 = {
   aiCustomizationEnabled: false,
   autoSaveAiEnabled: true,
 };
+// Schema 16 stops saving the paint, which every launch resets.
+const { selectedColor: _paint, customColors: _paints, ...KEPT_15 } = VERSION_15;
+const VERSION_16 = { ...KEPT_15, version: 16 };
 
 describe('settings schema 15', () => {
   it('migrates a version 14 record to the shipping AI Art defaults, keeping every choice', () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_14))).toEqual({
-      ...VERSION_14,
-      version: 15,
+      ...VERSION_16,
       aiCustomizationEnabled: true,
       autoSaveAiEnabled: false,
     });
@@ -63,7 +65,7 @@ describe('settings schema 15', () => {
 
   it('carries a version 1 record through every step to the AI Art defaults', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toMatchObject({
-      version: 15,
+      version: 16,
       soundEnabled: false,
       aiEnabled: false,
       aiCustomizationEnabled: true,
@@ -71,8 +73,9 @@ describe('settings schema 15', () => {
     });
   });
 
-  it('reads a version 15 record exactly', () => {
-    expect(parseSoundSettings(JSON.stringify(VERSION_15))).toEqual(VERSION_15);
+  it('reads a version 15 record without its paint, and a version 16 record exactly', () => {
+    expect(parseSoundSettings(JSON.stringify(VERSION_15))).toEqual(VERSION_16);
+    expect(parseSoundSettings(JSON.stringify(VERSION_16))).toEqual(VERSION_16);
   });
 
   it('refuses the AI Art switches in a version 14 record, and their absence or a bad value in 15', () => {
@@ -98,7 +101,7 @@ describe('settings schema 15', () => {
     await owner.setAiCustomizationEnabled(false);
     await owner.setAutoSaveAiEnabled(true);
     expect(JSON.parse(stored)).toEqual({
-      ...VERSION_15,
+      ...VERSION_16,
       aiCustomizationEnabled: false,
       autoSaveAiEnabled: true,
     });

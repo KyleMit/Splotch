@@ -30,6 +30,7 @@ import {
   modalFrame,
   type ModalFrame,
   type ModalSize,
+  type TouchBackdrop,
 } from './modalGeometry';
 
 type Phase = 'entering' | 'open' | 'exiting' | 'gone';
@@ -165,6 +166,7 @@ type ModalStageProps = {
   visible: boolean;
   // The scrim and card surface clear so the screen behind shows (useDialogSeeThrough).
   seeThrough?: boolean;
+  touchBackdrop?: TouchBackdrop;
   label: string;
   labelledBy?: string;
   onClose: () => void;
@@ -178,6 +180,7 @@ type ModalStageProps = {
 export function ModalStage({
   visible,
   seeThrough = false,
+  touchBackdrop = 'frosted',
   label,
   labelledBy,
   onClose,
@@ -207,7 +210,12 @@ export function ModalStage({
         >
           {/* Hidden rather than unmounted: the web scrim follows its fade only while mounted. */}
           <View style={[layout.cover, seeThrough && layout.clear]} pointerEvents="none">
-            <ModalScrim opacity={motion.scrim} />
+            <ModalScrim
+              opacity={motion.scrim}
+              visible={visible}
+              seeThrough={seeThrough}
+              touchBackdrop={touchBackdrop}
+            />
           </View>
           {/* A responder rather than a Pressable: React Native Web makes every enabled Pressable a
               tab stop, and its Modal focuses the first one, which would put an unnamed scrim

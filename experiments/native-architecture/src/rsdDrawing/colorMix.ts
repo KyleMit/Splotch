@@ -1,13 +1,13 @@
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
-function channels(hex: string): readonly number[] {
+export function channels(hex: string): readonly number[] {
   if (!HEX_COLOR.test(hex)) throw new Error(`Not a hex color: ${hex}`);
   const digits = hex.length === 4 ? [...hex.slice(1)].map((digit) => digit + digit) : null;
   const full = digits ? digits.join('') : hex.slice(1);
   return [0, 2, 4].map((offset) => Number.parseInt(full.slice(offset, offset + 2), 16));
 }
 
-function hexByte(value: number) {
+export function hexByte(value: number) {
   return Math.round(value).toString(16).padStart(2, '0');
 }
 

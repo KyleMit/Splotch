@@ -1,15 +1,70 @@
+import { useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
+import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { Animated } from '../platform/animated';
-import { MODAL_SCRIM_PLAIN } from './modalGeometry';
+import { BackdropBlur, backdropBlurs, type BackdropBlurTransition } from '../platform/backdropBlur';
+import { useReducedTransparency } from '../platform/reducedTransparency';
+import {
+  CSS_EASE,
+  CSS_EASE_REVERSED,
+  MODAL_EXIT_MS,
+  MODAL_FADE_MS,
+  MODAL_SCRIM_BLUR_PX,
+  MODAL_SCRIM_FROSTED,
+  MODAL_SCRIM_PLAIN,
+  type TouchBackdrop,
+} from './modalGeometry';
 
-// Android and iOS have no backdrop blur without a native blur view, so the scrim takes the
-// shipping no-blur dim, faded by the dialog's motion.
-export function ModalScrim({ opacity }: { opacity: Animated.Value }) {
+type ModalScrimProps = {
+  opacity: Animated.Value;
+  visible: boolean;
+  seeThrough: boolean;
+  touchBackdrop: TouchBackdrop;
+};
+
+// The blur arrives and leaves with the scrim's fade, and goes and comes back at once with a
+// see-through dialog, as shipping's resizing backdrop drops its filter.
+function useBlurTransition(visible: boolean, seeThrough: boolean): BackdropBlurTransition {
+  const theme = useDrawingAppearance();
+  const [last, setLast] = useState({ visible, seeThrough });
+  const [durationMs, setDurationMs] = useState(MODAL_FADE_MS);
+  if (last.visible !== visible || last.seeThrough !== seeThrough) {
+    setLast({ visible, seeThrough });
+    setDurationMs(last.seeThrough !== seeThrough ? 0 : visible ? MODAL_FADE_MS : MODAL_EXIT_MS);
+  }
+  const shown = visible && !seeThrough;
+  return useMemo(
+    () => ({
+      radius: shown ? MODAL_SCRIM_BLUR_PX : 0,
+      durationMs,
+      easing: shown ? CSS_EASE : CSS_EASE_REVERSED,
+      theme,
+    }),
+    [shown, durationMs, theme]
+  );
+}
+
+// The shipping frosted backdrop: its dim, over a native blur of the screen behind where shipping's
+// platform draws one. Where the reader asked for less transparency, or the dialog keeps a blur-less
+// backdrop on a touch screen, it takes shipping's plain, deeper dim instead.
+export function ModalScrim({ opacity, visible, seeThrough, touchBackdrop }: ModalScrimProps) {
+  const plain = useReducedTransparency() || touchBackdrop === 'plain';
+  const blur = useBlurTransition(visible, seeThrough);
   return (
-    <Animated.View testID="modal-scrim" pointerEvents="none" style={[styles.scrim, { opacity }]} />
+    <>
+      {plain || !backdropBlurs() ? null : <BackdropBlur blur={blur} />}
+      <Animated.View
+        testID="modal-scrim"
+        pointerEvents="none"
+        style={[
+          styles.scrim,
+          { backgroundColor: plain ? MODAL_SCRIM_PLAIN : MODAL_SCRIM_FROSTED, opacity },
+        ]}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { position: 'absolute', inset: 0, backgroundColor: MODAL_SCRIM_PLAIN },
+  scrim: { position: 'absolute', inset: 0 },
 });
