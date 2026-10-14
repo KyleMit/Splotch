@@ -54,8 +54,8 @@ function contacts(event: GestureResponderEvent) {
 }
 
 // The grid's box in client coordinates: a DOM element on the web, and a React Native element on
-// Android and iOS, both answer getBoundingClientRect. A pointer's offset is from whichever swatch
-// it is over, since react-native-web's box-none layer above the card turns pointer events back on.
+// Android and iOS, both answer getBoundingClientRect. Hover measures from the grid itself rather
+// than a pointer's offset, which is relative to whichever element the pointer is over.
 function boundingBox(target: unknown): Point | null {
   if (typeof target !== 'object' || target === null || !('getBoundingClientRect' in target))
     return null;
@@ -279,8 +279,8 @@ const styles = css.create({
     boxShadow: shadows.shadowPop,
   }),
   // Pointer events skip the buttons so every press reaches the grid's snap; a keyboard or
-  // screen reader still activates a hexagon directly. react-native-web's box-none layer above the
-  // card turns them back on for the web, where isDiscreteActivation drops a pointer's click.
+  // screen reader still activates a hexagon directly, and isDiscreteActivation drops a pointer's
+  // click should one reach it, as shipping's handleHexClick does.
   hexagon: (left: number, top: number, width: number, height: number) => ({
     position: 'absolute',
     left,

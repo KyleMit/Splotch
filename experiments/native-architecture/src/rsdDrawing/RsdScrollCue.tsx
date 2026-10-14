@@ -57,8 +57,6 @@ function reachedEnd({ viewport, content, offset }: ScrollExtent) {
 
 // A bounded scroller whose bottom edge fades while more content lies below, and clears once the
 // end is reached. The fade is decoration only: hidden from assistive technology and from touches.
-// Inert as well as `pointerEvents: 'none'`: inside a dialog, React Native Web's box-none stage turns
-// pointer events back on for every descendant, which would let a retired fade swallow taps.
 // The inset pads the scrolled content, so the fade covers it as shipping's covers the scrollport
 // padding; a shallower `cueHeight` suits a pane only a couple of rows tall. `onUserScroll` reports
 // a hand on the scroller — a drag natively, a pointer, wheel or key on the web — as distinct from
@@ -116,7 +114,6 @@ export function RsdScrollCue({
       </ScrollView>
       <html.div
         aria-hidden
-        inert
         data-testid="scroll-cue"
         style={[
           styles.cue,

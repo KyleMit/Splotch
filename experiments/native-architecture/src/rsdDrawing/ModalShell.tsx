@@ -219,7 +219,11 @@ export function ModalStage({
             onStartShouldSetResponder={() => visible}
             onResponderRelease={onClose}
           />
-          <View pointerEvents="box-none" style={layout.center}>
+          {/* box-none, so a press beside the card reaches the backdrop. React Native Web's box-none
+              also stamps an unlayered `pointer-events: auto` on every descendant, outranking React
+              Strict DOM's layered `pointerEvents: 'none'`; the card turns its own subtree back on,
+              so plain `none` is the same stage on the web without that rule. */}
+          <View pointerEvents={Platform.OS === 'web' ? 'none' : 'box-none'} style={layout.center}>
             <Animated.View
               testID="modal-card"
               pointerEvents={visible ? 'auto' : 'none'}

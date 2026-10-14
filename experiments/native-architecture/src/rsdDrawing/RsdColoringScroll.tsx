@@ -76,7 +76,6 @@ export function RsdColoringScroll({ children }: { children: ReactNode }) {
       </ScrollView>
       <html.div
         aria-hidden
-        inert
         data-testid="scroll-cue"
         style={[styles.cue, styles.fade(fade, COLORING_CUE_HEIGHT_PX), atEnd && styles.retired]}
       />

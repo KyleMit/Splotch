@@ -208,27 +208,26 @@ enum SplotchAIImageDecoder {
       try require(ended)
     } else if mime == "image/jpeg" {
       try require(b.count >= 4 && b[0] == 255 && b[1] == 0xd8)
-      var offset = 2, segments = 0, scan = false, ended = false
+      var offset = 2, segments = 0, entropy = false, scanned = false, ended = false
       while offset < b.count {
         try require(offset + 1 < b.count && b[offset] == 255)
         let marker = b[offset + 1]; offset += 2
-        if scan {
-          if marker == 0 || (0xd0...0xd7).contains(marker) {
-            while offset < b.count && b[offset] != 255 { offset += 1 }
-            continue
-          }
-          try require(marker == 0xd9 && offset == b.count); ended = true; break
+        if entropy && (marker == 0 || (0xd0...0xd7).contains(marker)) {
+          while offset < b.count && b[offset] != 255 { offset += 1 }
+          continue
         }
+        entropy = false
+        if marker == 0xd9 { try require(scanned && offset == b.count); ended = true; break }
         segments += 1
         try require(segments <= maxJpegSegments && offset + 1 < b.count)
         let length = Int(b[offset]) * 256 + Int(b[offset + 1])
         try require(length >= 2 && length <= b.count - offset)
-        try require([0xc0, 0xc4, 0xdb, 0xdd, 0xda, 0xfe].contains(marker) || (0xe0...0xef).contains(marker))
+        try require([0xc0, 0xc1, 0xc2, 0xc4, 0xdb, 0xdd, 0xda, 0xfe].contains(marker) || (0xe0...0xef).contains(marker))
         offset += length
-        if marker == 0xda { scan = true }
-        while scan && offset < b.count && b[offset] != 255 { offset += 1 }
+        if marker == 0xda { entropy = true; scanned = true }
+        while entropy && offset < b.count && b[offset] != 255 { offset += 1 }
       }
-      try require(scan && ended)
+      try require(ended)
     } else {
       try require(mime == "image/webp" && b.count >= 20 && text(0, 4) == "RIFF" && text(8, 4) == "WEBP" && Int(le(4)) == b.count - 8)
       var offset = 12, seen = Set<String>(), picture = false

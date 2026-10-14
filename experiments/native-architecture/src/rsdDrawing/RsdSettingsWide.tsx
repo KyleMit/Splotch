@@ -159,7 +159,6 @@ function SettingsToc({
       </ScrollView>
       <html.div
         aria-hidden
-        inert
         style={[
           styles.shade,
           styles.top,
@@ -169,7 +168,6 @@ function SettingsToc({
       />
       <html.div
         aria-hidden
-        inert
         style={[
           styles.shade,
           styles.bottom,

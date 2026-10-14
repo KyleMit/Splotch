@@ -2,6 +2,7 @@ import { css, html } from 'react-strict-dom';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { REPORT_FORM_COPY } from '../feedback/reportFormCopy';
 import { styles as controlStyles } from './controls';
+import { focusRingHost, focusRingPart } from './focusRing';
 import { RsdDisclosure } from './RsdDisclosure';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
@@ -40,15 +41,15 @@ const styles = css.create({
     textAlign: 'left',
     cursor: 'pointer',
   },
+  // Square, unlike the box it holds: the browser rings shipping's checkbox square.
+  boxFrame: { flexShrink: 0, marginTop: CHECKBOX_TOP_PX },
   box: {
     boxSizing: 'border-box',
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     width: CHECKBOX_PX,
     height: CHECKBOX_PX,
-    marginTop: CHECKBOX_TOP_PX,
     borderRadius: CHECKBOX_RADIUS_PX,
     borderWidth: dimensions.borderWidth,
     borderStyle: 'solid',
@@ -112,6 +113,7 @@ const styles = css.create({
 export function DeviceCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
     <RsdPressable
+      {...focusRingHost('part')}
       type="button"
       role="checkbox"
       aria-checked={checked}
@@ -119,10 +121,12 @@ export function DeviceCheckbox({ checked, onToggle }: { checked: boolean; onTogg
       style={styles.check}
       onClick={onToggle}
     >
-      <html.div aria-hidden style={[styles.box, checked && styles.boxChecked]}>
-        {checked ? (
-          <RsdIcon name="check" size={CHECKBOX_TICK_PX} ink={DRAWING_ON_BRAND} muted={false} />
-        ) : null}
+      <html.div {...focusRingPart('ring')} aria-hidden style={styles.boxFrame}>
+        <html.div style={[styles.box, checked && styles.boxChecked]}>
+          {checked ? (
+            <RsdIcon name="check" size={CHECKBOX_TICK_PX} ink={DRAWING_ON_BRAND} muted={false} />
+          ) : null}
+        </html.div>
       </html.div>
       <html.span aria-hidden style={styles.checkText}>
         {`${REPORT_FORM_COPY.includeDevice} `}

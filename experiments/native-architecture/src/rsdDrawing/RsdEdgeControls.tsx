@@ -154,6 +154,9 @@ const paletteStyles = css.create({
   rowExtent: (extent: number) => ({ height: extent }),
   plate: (flow: PaletteFlow, column: boolean, endClearance: number) => ({
     boxSizing: 'border-box',
+    // Positioned, as shipping's .color-palette is. React Native paints a static child before
+    // every positioned sibling, so a static plate would sit under the flat style's rail glass.
+    position: 'relative',
     flexGrow: 1,
     paddingTop: column ? flow.endPaddingPx : flow.crossStartPaddingPx,
     paddingBottom: column ? endClearance : flow.crossEndPaddingPx,

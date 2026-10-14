@@ -1,5 +1,6 @@
 import { useState, type PointerEvent, type ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
+import { focusRingHost } from './focusRing';
 import { motion } from './tokens.css';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import {
@@ -38,6 +39,7 @@ export function RsdToggleSwitch({
   const [hovered, setHovered] = useState(false);
   return (
     <html.button
+      {...focusRingHost('part')}
       id={id}
       role="switch"
       aria-label={label}
