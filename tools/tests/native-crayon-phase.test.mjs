@@ -104,12 +104,26 @@ function corePixels(output, x, y) {
   );
 }
 
+// Each oracle transpiles shipping's brush into a fresh VM context and rebuilds its tooth fields
+// there on cold JIT, so the file shares one owner rather than paying that per reference.
+const shippingOwner = createShippingCrayonOracle();
+// The tooth cases and the coverage-ceiling counterexample rasterise the same PHASE_SEEDS
+// references; memoised by input, the counterexample reuses them instead of rebuilding every one
+// inside a single case's timeout budget.
+const shippingReferences = new Map();
+
+function shippingReference(strokes, options = {}) {
+  const key = JSON.stringify([strokes, options]);
+  if (!shippingReferences.has(key))
+    shippingReferences.set(key, renderShippingReference(strokes, options));
+  return shippingReferences.get(key);
+}
+
 // The reference rolls shipping texels, avoiding the native renderer's four translated SVG Uses.
-async function shippingReference(
+async function renderShippingReference(
   strokes,
-  { phaseShiftPx = 0, flat = false, extraWidthPx = 0 } = {}
+  { phaseShiftPx = 0, flat = false, extraWidthPx = 0 }
 ) {
-  const owner = createShippingCrayonOracle();
   const children = [];
   for (const [strokeIndex, stroke] of strokes.entries()) {
     const start = stroke.points[0];
@@ -123,8 +137,13 @@ async function shippingReference(
     const passes = crayonPasses(stroke, stroke.width);
     if (passes.length !== 1) throw new Error('Phase oracle requires one deposition pass');
     const shapes = [];
-    for (let band = 0; band < owner.crayonPassCount(); band++) {
-      const tile = shippingCrayonTile(owner, paletteHex(stroke.color), passes[0].seed, band);
+    for (let band = 0; band < shippingOwner.crayonPassCount(); band++) {
+      const tile = shippingCrayonTile(
+        shippingOwner,
+        paletteHex(stroke.color),
+        passes[0].seed,
+        band
+      );
       const rolled = new Uint8ClampedArray(tile.pixels.length);
       for (let y = 0; y < tile.height; y++) {
         for (let x = 0; x < tile.width; x++) {
@@ -165,7 +184,7 @@ async function shippingReference(
           )
         )
       );
-      const width = stroke.width * owner.crayonPassWidthScale(band) + extraWidthPx;
+      const width = stroke.width * shippingOwner.crayonPassWidthScale(band) + extraWidthPx;
       shapes.push(
         createElement(Rect, {
           key: band,
@@ -187,7 +206,7 @@ async function shippingReference(
     children.push(
       createElement(
         G,
-        { key: `top-${strokeIndex}`, opacity: 1 - owner.crayonColorMix() },
+        { key: `top-${strokeIndex}`, opacity: 1 - shippingOwner.crayonColorMix() },
         ...shapes
       )
     );
