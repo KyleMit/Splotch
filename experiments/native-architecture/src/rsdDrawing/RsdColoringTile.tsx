@@ -5,7 +5,7 @@ import type { ArtOrientation } from '../drawing/paperSpace';
 import type { PaperTheme } from '../drawing/theme';
 import { DRAWING_BRAND } from '../drawing/theme';
 import { rgba } from './colorMix';
-import { COVER_CAPTION_HEIGHT_PX, PAGE_TILE_ASPECT, TILE_ART_INSET_PX } from './coloringGrid';
+import { COVER_CAPTION_HEIGHT_PX, TILE_ART_INSET_PX, tileHeight } from './coloringGrid';
 import { RsdPressable } from './RsdPressable';
 import { tapPoint, type TapPoint } from './tapZone';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
@@ -45,7 +45,7 @@ export function RsdColoringTile({
   onPress: (point: TapPoint | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const height = tile.shape === 'cover' ? width : width / PAGE_TILE_ASPECT[tile.shape];
+  const height = tileHeight(tile.shape, width);
   const artBottom = tile.shape === 'cover' ? COVER_CAPTION_HEIGHT_PX : TILE_ART_INSET_PX;
   return (
     <RsdPressable

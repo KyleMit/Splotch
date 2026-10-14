@@ -133,16 +133,16 @@ describe('the native palette bar', () => {
       expect(painted.indexOf(swatch), swatch.getAttribute('aria-label')).toBeGreaterThan(rail);
   });
 
-  it('keeps the raised strip under the bottom inset over the plate shadow it continues', async () => {
+  // The plate runs through the bottom inset to the screen's edge itself (shipping's column does),
+  // so no second box continues it there for a shadow to seam. Negative control: a strip beside the
+  // plate fails here.
+  it('runs the raised plate alone through the bottom inset, leaving no seam', async () => {
     records.dimensions = { width: 1180, height: 820, scale: 1, fontScale: 1 };
     records.insets = { top: 0, right: 0, bottom: INSET_BOTTOM_PX, left: 0 };
     await mountToolbar(toolbarScreen());
-    const bar = hostOf(byTestId('rsd-palette-bar'));
-    const [plate, strip] = hostChildren(bar).map(({ element }) => element);
-    expect(hostOf(plate).props.testID).toBe('rsd-palette-plate');
-    expect(hostOf(strip).style.height).toBe(INSET_BOTTOM_PX);
-    const painted = paintOrder(bar).map(({ element }) => element);
-    expect(painted.indexOf(strip)).toBeGreaterThan(painted.indexOf(plate));
+    const children = hostChildren(hostOf(byTestId('rsd-palette-bar')));
+    expect(children.map(({ props }) => props.testID)).toEqual(['rsd-palette-plate']);
+    expect(children[0].style).toMatchObject({ position: 'relative', flexGrow: 1 });
   });
 
   // A blended view makes Android draw its whole parent, the drawing layout with its ink,
