@@ -230,9 +230,9 @@ describe('RSD Parent Center section', () => {
     expect(policyNote('externalLinks')).toBeNull();
   });
 
-  it("keeps a failed AI-disable save pending and retryable after the queued What's New stamp writes", async () => {
+  it("keeps a failed policy save pending and retryable after the queued What's New stamp writes", async () => {
     let stored = null;
-    let rejectDisable;
+    let rejectSave;
     const storage = {
       read: vi.fn(async () => stored),
       write: vi.fn(async (next) => {
@@ -240,35 +240,42 @@ describe('RSD Parent Center section', () => {
       }),
     };
     const owner = await openParentCenter(storage);
-    // The AI switch lives in Settings › AI Art; Parent Center keeps only its save and retry.
+    // The AI switch, its save and its retry live in Settings › AI Art.
     expect(host.querySelector(AI_SWITCH)).toBeNull();
-    await act(async () => owner.setAiEnabled(true));
-    expect(owner.port.consent().enabled).toBe(true);
-    expect(JSON.parse(stored)).toMatchObject({ aiEnabled: true, whatsNewSeen: null });
     storage.write.mockImplementationOnce(
       () =>
         new Promise((_resolve, reject) => {
-          rejectDisable = reject;
+          rejectSave = reject;
         })
     );
     await act(async () => {
-      void owner.setAiEnabled(false);
+      void owner.setPolicy('feedback', 'session');
     });
     expect(owner.getState().settings.status).toBe('saving');
     await act(async () => owner.settings.markWhatsNewSeen());
+    expect(storage.write).toHaveBeenCalledTimes(1);
+    await act(async () => rejectSave(new Error('disk full')));
     expect(storage.write).toHaveBeenCalledTimes(2);
-    await act(async () => rejectDisable(new Error('disk full')));
-    expect(storage.write).toHaveBeenCalledTimes(3);
-    expect(JSON.parse(stored)).toMatchObject({ aiEnabled: true, whatsNewSeen: WHATS_NEW_STAMP });
-    expect(owner.getState().settings).toMatchObject({
-      status: 'ready',
-      aiEnabled: true,
-      saved: false,
-    });
+    expect(JSON.parse(stored)).toMatchObject({ whatsNewSeen: WHATS_NEW_STAMP });
+    expect(JSON.parse(stored).parentPolicies.feedback).toBe('always');
+    expect(owner.getState().settings).toMatchObject({ status: 'ready', saved: false });
     expect(host.textContent).toContain('Parent Center choices were not saved');
     await clickText('Retry saving Parent Center choices');
-    expect(JSON.parse(stored)).toMatchObject({ aiEnabled: false, whatsNewSeen: WHATS_NEW_STAMP });
-    expect(owner.getState().settings).toMatchObject({ aiEnabled: false, saved: true });
+    expect(JSON.parse(stored).parentPolicies.feedback).toBe('session');
+    expect(owner.getState().settings).toMatchObject({ saved: true });
+  });
+
+  it('leaves a failed AI Art switch save to its own section', async () => {
+    const storage = {
+      read: vi.fn(async () => null),
+      write: vi.fn(async () => {
+        throw new Error('disk full');
+      }),
+    };
+    const owner = await openParentCenter(storage);
+    await act(async () => owner.setAiEnabled(true));
+    expect(owner.settings.aiSaveFailed()).toBe(true);
+    expect(host.textContent).not.toContain('Retry saving Parent Center choices');
   });
 });
 

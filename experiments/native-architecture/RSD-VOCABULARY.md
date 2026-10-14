@@ -253,21 +253,23 @@ Create AI Images switch sits over the three-step explainer while it is off, and 
 and the Customize AI Style and Auto-Save AI Images switches once it is on. On the phone the
 drilled-in page claims shipping's stable card height (`aiSettings` in `modalGeometry.ts`).
 
-The switch stays a Parent Center choice, as it was when it lived in that section: it applies at once
-only while Parent Center's controls are editable, and otherwise raises the Parent Center check first
-(`toggleAi` in `createDrawingProduct.ts`). Shipping asks for no check there. Saving or forgetting a
-key or access code goes through the AI owner's `setup` and `removeCredential`, which keep the
-generation check in front and verify a credential with the server before the vault keeps it. The one
-field tells a key from a code by shipping's prefixes (`ai/credentialKind.ts`, reading
-`web/src/lib/ai/keyFormat.ts`), and a refusal shows the server's own words. Settings reads which
-credential is saved, and the free allowance while AI is on, through the owner's `inspect`, which
-sends no drawing and so asks for no check; it waits out a generation in flight, whose vault lease a
-read would end.
+As in shipping, nothing in this section asks for a grown-up check. The switch (`toggleAi` in
+`createDrawingProduct.ts`) is stored beside the Parent Center policies, but it saves with its own
+copy, and a failed save keeps its retry in this section (`aiSaveFailed` / `retryAiSave` on the
+settings owner); Parent Center's retry covers only its policies. Saving or forgetting a key or
+access code goes through the AI owner's `setup` and `removeCredential` while AI is on. The server
+verifies a credential before the vault keeps it, and turning AI off, a Parent Center change or
+leaving the app drops a change in flight. Generating, reporting, external links and feedback keep
+their checks. The one field tells a key from a code by shipping's prefixes (`ai/credentialKind.ts`,
+reading `web/src/lib/ai/keyFormat.ts`), and a refusal shows the server's own words. Settings reads
+which credential is saved, and the free allowance while AI is on, through the owner's `inspect`; it
+waits out a generation in flight, whose vault lease a read would end.
 
 The two feature switches persist in settings schema 15 at shipping's defaults (customization on,
 auto-save off); every earlier record migrates to them. The AI sheet does not read them yet.
-`tools/tests/native-ai-settings.test.mjs` reads the copy, defaults, geometry and illustrations back
-from shipping and drives the owner, the schema and the gated switch;
+`tools/tests/native-ai-settings-drift.test.mjs` reads the copy, defaults, geometry and illustrations
+back from shipping; `tools/tests/native-ai-settings.test.mjs` drives the owner, the schema, and the
+switch and key save that ask for no check while a send still does;
 `tools/migration/tests/rsd-native-ai-settings.test.mjs` mounts the section through the released
 native renderer.
 

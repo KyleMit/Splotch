@@ -20,7 +20,7 @@ import { RsdSettingCard } from './RsdSettingCard';
 import { RsdStatusMessage, type MessageStatus } from './RsdStatusMessage';
 import { brandColors, colors, dimensions, fonts } from './tokens.css';
 
-// AiKeyManager.svelte's literals, local for the StyleX web compile; native-ai-settings.test.mjs
+// AiKeyManager.svelte's literals, local for the StyleX web compile; native-ai-settings-drift.test.mjs
 // reads each back from that source.
 const INTRO_BOTTOM_PX = 12;
 const INTRO_LINE_HEIGHT = 1.5;

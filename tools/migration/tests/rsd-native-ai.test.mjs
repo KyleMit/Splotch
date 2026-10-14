@@ -164,7 +164,7 @@ function useCaller(drawing) {
     audioMessage: '',
   };
 }
-// The key goes in through Settings › AI Art, behind the same grown-up check a send asks for.
+// The key goes in through Settings › AI Art.
 async function saveKeyFromSettings() {
   await click('Close');
   await click('Settings');
@@ -173,23 +173,22 @@ async function saveKeyFromSettings() {
   const save = [...host.querySelectorAll('button')].find((node) => node.textContent === 'Save');
   expect(save?.disabled).toBe(false);
   await act(async () => save.click());
-  expect(caller.aiVaultWrite).not.toHaveBeenCalled();
-  await solve();
+  // As in shipping, saving a key asks for no grown-up check; the server still verifies it first.
+  expect(host.textContent).not.toContain('Grown-Ups Only');
+  expect(caller.aiSend.mock.calls.some(([request]) => request.path === '/api/verify-key')).toBe(
+    true
+  );
   expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'sk-fixture-key');
   expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
   expect(host.textContent).toContain('Your key works and has been accepted!');
 }
-// Settings' AI Art switch is a Parent Center choice: with Parent Center locked again it waits for
-// the grown-up check before AI turns on.
+// Settings › AI Art's switch turns AI on with no grown-up check, as shipping's does; the send
+// below still asks for one.
 async function sendDrawing() {
-  await act(async () => caller.product.owner.openParentCenter());
-  expect(caller.aiSend).not.toHaveBeenCalled();
-  await solve();
-  await click('Back');
+  await click('Settings');
   await openAiArt();
   await click('Create AI Images');
-  expect(caller.product.state.settings.aiEnabled).toBe(false);
-  await solve();
+  expect(host.textContent).not.toContain('Grown-Ups Only');
   expect(caller.product.state.settings.aiEnabled).toBe(true);
   await click('Close');
   await click('AI picture');

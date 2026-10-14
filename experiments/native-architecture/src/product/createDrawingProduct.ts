@@ -88,22 +88,10 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       gate.invalidate();
       notify();
     },
+    // Settings › AI Art's master switch, which, as in shipping, asks for no grown-up check: a
+    // drawing still waits behind the generation check before it is sent.
     async setAiEnabled(aiEnabled: boolean) {
-      if (!editable()) return;
-      await settings.setParentPreferences({ ...preferences, aiEnabled });
-    },
-    // Settings › AI Art's master switch. Turning AI on or off is a Parent Center choice in this
-    // app, so the switch applies at once only while Parent Center's controls are editable, and
-    // otherwise waits behind that same grown-up check.
-    toggleAi(aiEnabled: boolean) {
-      if (editable()) {
-        void settings.setParentPreferences({ ...preferences, aiEnabled });
-        return;
-      }
-      port.request('parentCenter', (proof) => {
-        if (proof.valid() && settings.canEditParent())
-          void settings.setParentPreferences({ ...preferences, aiEnabled });
-      });
+      if (!disposed) await settings.setAiEnabled(aiEnabled);
     },
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
       if (!editable()) return;

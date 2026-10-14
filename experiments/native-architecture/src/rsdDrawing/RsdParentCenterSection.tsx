@@ -254,7 +254,8 @@ function SaveStatus({
   owner: DrawingProductOwner;
   settings: SoundSettingsState;
 }) {
-  const failed = settings.status === 'ready' && !settings.saved;
+  // A failed AI Art switch keeps its retry in its own section.
+  const failed = settings.status === 'ready' && !settings.saved && !owner.settings.aiSaveFailed();
   if (!failed) return <RsdVisuallyHidden live>{settings.message}</RsdVisuallyHidden>;
   return (
     <html.div style={styles.failure}>

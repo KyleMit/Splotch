@@ -7,6 +7,8 @@ import { AI_AUTO_SAVE_HELP, AI_SETTINGS_COPY as COPY } from '../settings/aiSetti
 import type { SoundSettingsState } from '../settings/soundSettings';
 import { RsdAiKeyManager } from './RsdAiKeyManager';
 import { RsdAiValueProp } from './RsdAiValueProp';
+import { RsdButton } from './RsdButton';
+import { RsdStatusMessage } from './RsdStatusMessage';
 import { RsdSettingCard, RsdSettingGroup } from './RsdSettingCard';
 import { RsdToggleRow } from './RsdToggleRow';
 import { dimensions } from './tokens.css';
@@ -14,7 +16,15 @@ import { dimensions } from './tokens.css';
 const styles = css.create({
   stack: { display: 'flex', flexDirection: 'column', gap: dimensions.space4 },
   enabled: { display: 'flex', flexDirection: 'column', gap: dimensions.space5 },
+  failure: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: dimensions.space2,
+  },
 });
+
+export const AI_SAVE_RETRY = 'Retry saving the AI Art choice';
 
 const AUTO_SAVE_HELP = Platform.OS === 'web' ? AI_AUTO_SAVE_HELP.web : AI_AUTO_SAVE_HELP.native;
 
@@ -22,6 +32,10 @@ export type AiSettingsRoute = {
   owner: NativeAiOwner | null;
   state: AiState | null;
   onToggle: (enabled: boolean) => void;
+  // Native persistence is asynchronous where shipping's is not, so a switch that failed to save
+  // keeps its failure and retry here, beside the switch.
+  saveFailed: boolean;
+  onRetrySave: () => void;
   onOpenKeysPage: () => void;
 };
 
@@ -59,6 +73,14 @@ export function RsdAiSettingsSection({
           />
         </RsdSettingCard>
       </RsdSettingGroup>
+      {ai.saveFailed ? (
+        <html.div style={styles.failure}>
+          <RsdStatusMessage status="error">{settings.message}</RsdStatusMessage>
+          <RsdButton size="sm" onPress={ai.onRetrySave}>
+            {AI_SAVE_RETRY}
+          </RsdButton>
+        </html.div>
+      ) : null}
       {enabled ? (
         <html.div style={styles.enabled}>
           <RsdAiKeyManager owner={ai.owner} state={state} onOpenKeysPage={ai.onOpenKeysPage} />

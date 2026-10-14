@@ -96,7 +96,9 @@ export function RsdSettingsRoute({
       ai={{
         owner: aiOwner,
         state: product.ai.state,
-        onToggle: (enabled) => owner?.toggleAi(enabled),
+        onToggle: (enabled) => void owner?.setAiEnabled(enabled),
+        saveFailed: owner?.settings.aiSaveFailed() ?? false,
+        onRetrySave: () => void owner?.settings.retryAiSave(),
         onOpenKeysPage: () => openOutside(owner, 'openAiKeys'),
       }}
     />

@@ -1,6 +1,6 @@
 // Settings › AI Art's two feature switches (shipping settings/AiFeatureToggles.svelte), stored
 // with the other drawing choices from settings schema 15. The defaults are shipping's
-// settings.svelte.ts fallbacks; native-ai-settings.test.mjs reads them back from that source.
+// settings.svelte.ts fallbacks; native-ai-settings-drift.test.mjs reads them back from that source.
 export type AiPreferences = Readonly<{
   aiCustomizationEnabled: boolean;
   autoSaveAiEnabled: boolean;

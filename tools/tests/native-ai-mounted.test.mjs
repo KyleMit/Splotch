@@ -181,7 +181,7 @@ it.each([
     { code: 'fixture-code' },
   ],
 ])(
-  'mounts the %s credential caller and hides the secret before its explicit verification challenge',
+  'mounts the %s credential caller, verifies it with no grown-up check and keeps it',
   async (kind, choice, label, secret, path, body) => {
     await open();
     files.aiSend.mockImplementation(
@@ -201,16 +201,15 @@ it.each([
     const beforeRequests = files.aiSend.mock.calls.length;
     const beforeVault = files.aiVaultRead.mock.calls.length;
     await screen.click('Verify and save credential');
-    expect(files.aiSend).toHaveBeenCalledTimes(beforeRequests);
-    expect(files.aiVaultRead).toHaveBeenCalledTimes(beforeVault);
-    expect(files.aiVaultWrite).not.toHaveBeenCalled();
-    expect(screen.dialog().getAttribute('aria-label')).toBe('Grown-ups only');
+    // As in shipping, a credential change asks for no grown-up check; the server verifies it first.
+    await vi.waitFor(() => expect(files.aiVaultWrite).toHaveBeenCalled());
+    expect(files.aiSend.mock.calls.length).toBeGreaterThan(beforeRequests);
+    expect(files.aiVaultRead.mock.calls.length).toBeGreaterThanOrEqual(beforeVault);
     expect(screen.container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(screen.container.textContent).not.toContain('Grown-ups only');
     expect(
       [...screen.container.querySelectorAll('input')].every((field) => field.value !== secret)
     ).toBe(true);
-    await solve();
-    expect(screen.container.querySelector('[aria-label="AI access code"]').value).toBe('');
     expect(files.aiSend.mock.calls.find(([request]) => request.path === path)[0]).toMatchObject({
       path,
       body: JSON.stringify(body),

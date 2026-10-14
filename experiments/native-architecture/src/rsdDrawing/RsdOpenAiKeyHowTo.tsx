@@ -8,7 +8,7 @@ import { RsdExternalMark } from './RsdExternalMark';
 import { RsdTextLink } from './RsdTextLink';
 import { colors, dimensions } from './tokens.css';
 
-// OpenAiKeyHowTo.svelte's literals, local for the StyleX web compile; native-ai-settings.test.mjs
+// OpenAiKeyHowTo.svelte's literals, local for the StyleX web compile; native-ai-settings-drift.test.mjs
 // reads each back from that source.
 const HOWTO_BOTTOM_PX = 14;
 const SUMMARY_PADDING_PX = { block: 10, inline: 12 } as const;

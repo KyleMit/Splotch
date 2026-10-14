@@ -233,27 +233,44 @@ export class AiSession {
   inspect = async () => {
     if (this.disposed || this.active || this.unresolved()) return;
     this.active = true;
-    const current = () => !this.disposed;
     this.update({ busy: true, checking: true });
     try {
-      const { byok, managed } = await this.readSaved(current);
-      if (byok || managed) {
-        this.update({ credential: byok ? 'byok' : 'managed', remaining: null });
-        return;
-      }
-      this.update({ credential: 'free' });
-      if (!this.deps.parent?.consent().enabled) return;
-      this.update({ remaining: null });
-      const id = await this.deps.vault.installationId();
-      if (!current() || !isInstallationId(id)) return;
-      const reply = await this.grantRequest(id);
-      if (current() && reply.kind === 'grant') this.update({ remaining: reply.remaining });
+      await this.readStatus(() => !this.disposed);
     } catch {
       this.update({ credential: 'unavailable', saved: null, remaining: null });
     } finally {
       this.active = false;
       this.update({ busy: false, checking: false });
     }
+  };
+  private readStatus = async (current: () => boolean) => {
+    const { byok, managed } = await this.readSaved(current);
+    if (byok || managed) {
+      this.update({ credential: byok ? 'byok' : 'managed', remaining: null });
+      return;
+    }
+    this.update({ credential: 'free' });
+    if (!this.deps.parent?.consent().enabled) return;
+    this.update({ remaining: null });
+    const id = await this.deps.vault.installationId();
+    if (!current() || !isInstallationId(id)) return;
+    const reply = await this.grantRequest(id);
+    if (current() && reply.kind === 'grant') this.update({ remaining: reply.remaining });
+  };
+  // Saving or forgetting a credential is the parent's own act in Settings › AI Art, as in shipping,
+  // so it waits for no grown-up check: only for AI to be on. Turning AI off, a Parent Center change
+  // or leaving the app ends it. Without a parent port the sheet's own check still stands.
+  private credentialChange = () => {
+    const parent = this.deps.parent;
+    if (!parent) {
+      const proof = this.authorization;
+      return this.state.authorized
+        ? () => this.state.authorized && proof === this.authorization && !this.disposed
+        : null;
+    }
+    const { enabled, epoch } = parent.consent();
+    if (!enabled) return null;
+    return () => !this.disposed && parent.consent().enabled && parent.consent().epoch === epoch;
   };
   private resultCount = 0;
   private report = (result: AiCredentialOutcome) => {
@@ -332,8 +349,9 @@ export class AiSession {
     bytes: Uint8Array;
     mime: AiMime;
   } | null = null;
-  private setupAuthorized = async (kind: CredentialKind, value: string) => {
-    if (!this.state.authorized || !this.consented() || this.active || this.unresolved()) return;
+  setup = async (kind: CredentialKind, value: string) => {
+    const current = this.credentialChange();
+    if (!current || this.active || this.unresolved()) return;
     if (this.state.retryAt > Date.now()) {
       this.report({ kind, outcome: 'throttled', detail: AI_THROTTLED_MESSAGE });
       return;
@@ -342,50 +360,31 @@ export class AiSession {
       this.report({ kind, outcome: 'invalid', detail: null });
       return;
     }
-    const proof = this.authorization;
     this.active = true;
-    this.update({
-      busy: true,
-    });
+    this.update({ busy: true });
     try {
       const reply = await requestAi(
         this.deps.transport,
         {
           path: kind === 'byok' ? '/api/verify-key' : '/api/verify-access-code',
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(
-            kind === 'byok'
-              ? {
-                  apiKey: value,
-                }
-              : {
-                  code: value,
-                }
-          ),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(kind === 'byok' ? { apiKey: value } : { code: value }),
         },
         () => {}
       );
+      if (!current()) return;
       if (reply.kind !== 'verified') {
         this.update({ retryAt: reply.kind === 'failure' ? (reply.retryAt ?? 0) : 0 });
         this.report(credentialRefusal(kind, reply));
         return;
       }
-      if (
-        !this.state.authorized ||
-        !this.consented() ||
-        proof !== this.authorization ||
-        this.disposed
-      )
-        return;
       const verified = kind === 'managed' ? reply.accessCode : value;
       if (!validCredential(verified)) throw new Error('Invalid credential');
+      this.credential = null;
       await this.deps.vault.write(kind, verified);
-      if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
-      await this.refreshCredential();
-      if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
+      if (!current()) return;
+      await this.readStatus(current);
       this.report({ kind, outcome: 'accepted' });
     } catch {
       this.credential = null;
@@ -393,49 +392,27 @@ export class AiSession {
       this.report({ kind, outcome: 'saveFailed' });
     } finally {
       this.active = false;
-      this.update({
-        busy: false,
-      });
+      this.update({ busy: false });
     }
   };
-  setup = async (kind: CredentialKind, value: string) => {
-    if (!this.deps.parent) return this.setupAuthorized(kind, value);
-    if (this.active || this.unresolved()) return;
-    this.protect(() => {
-      void this.setupAuthorized(kind, value);
-    });
-  };
-  private removeAuthorized = async (kind: CredentialKind) => {
-    if (!this.state.authorized || !this.consented() || this.active || this.unresolved()) return;
-    const proof = this.authorization;
+  removeCredential = async (kind: CredentialKind) => {
+    const current = this.credentialChange();
+    if (!current || this.active || this.unresolved()) return;
     this.active = true;
     this.credential = null;
-    this.update({
-      busy: true,
-      credential: 'unavailable',
-    });
+    this.update({ busy: true, credential: 'unavailable' });
     try {
       await this.deps.vault.remove(kind);
-      if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
-      await this.refreshCredential();
-      if (!this.state.authorized || proof !== this.authorization || !this.consented()) return;
+      if (!current()) return;
+      await this.readStatus(current);
       this.report({ kind, outcome: 'forgotten' });
     } catch {
       this.update({ saved: null });
       this.report({ kind, outcome: 'forgetFailed' });
     } finally {
       this.active = false;
-      this.update({
-        busy: false,
-      });
+      this.update({ busy: false });
     }
-  };
-  removeCredential = async (kind: CredentialKind) => {
-    if (!this.deps.parent) return this.removeAuthorized(kind);
-    if (this.active || this.unresolved()) return;
-    this.protect(() => {
-      void this.removeAuthorized(kind);
-    });
   };
   getState = () => this.state;
   hasHeldResult = () => this.heldBytes !== null;

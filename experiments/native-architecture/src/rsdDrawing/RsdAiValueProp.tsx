@@ -11,7 +11,7 @@ import { styles as controlStyles } from './controls';
 import { RsdIcon } from './RsdIcon';
 import { brandColors, colors, dimensions } from './tokens.css';
 
-// AiValueProp.svelte's literals, local for the StyleX web compile; native-ai-settings.test.mjs
+// AiValueProp.svelte's literals, local for the StyleX web compile; native-ai-settings-drift.test.mjs
 // reads each back from that source.
 const STEP_GAP_PX = 10;
 const IMAGE_ASPECT = 278 / 213;

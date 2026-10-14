@@ -10,7 +10,7 @@ import step3Dark from '../../assets/ai-value-prop/step-3.dark.webp';
 export type AiValuePropStep = 1 | 2 | 3;
 
 // The shipping web/static/ai-value-prop illustrations, bundled byte for byte
-// (native-ai-settings.test.mjs compares them).
+// (native-ai-settings-drift.test.mjs compares them).
 const steps = {
   1: { light: step1Light, dark: step1Dark },
   2: { light: step2Light, dark: step2Dark },

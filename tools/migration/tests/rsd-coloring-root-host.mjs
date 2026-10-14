@@ -153,7 +153,14 @@ export function nativeSettingsProps(owner, state) {
     feedback: null,
     onOpenHostedPage() {},
     downloadedBooks: 0,
-    ai: { owner: null, state: null, onToggle() {}, onOpenKeysPage() {} },
+    ai: {
+      owner: null,
+      state: null,
+      onToggle() {},
+      saveFailed: false,
+      onRetrySave() {},
+      onOpenKeysPage() {},
+    },
   };
 }
 

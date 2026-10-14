@@ -3,7 +3,7 @@ import { FREE_LIMIT, type CredentialKind } from '../ai/contract';
 
 // The shipping Settings › AI Art copy: settings/aiSettingsCopy.ts, AiKeyManager.svelte,
 // AiValueProp.svelte and OpenAiKeyHowTo.svelte. aiSettingsCopy.ts reads a web build flag, so this
-// module carries the strings rather than importing them; native-ai-settings.test.mjs reads each one
+// module carries the strings rather than importing them; native-ai-settings-drift.test.mjs reads each one
 // back from those sources.
 
 export const AI_SETTINGS_COPY = {

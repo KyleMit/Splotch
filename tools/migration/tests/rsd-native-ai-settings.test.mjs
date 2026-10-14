@@ -1,7 +1,10 @@
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { host, mount, records, root, checkedSwitch } from './rsd-native-selection-host.mjs';
-import { RsdAiSettingsSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiSettingsSection.tsx';
+import {
+  AI_SAVE_RETRY,
+  RsdAiSettingsSection,
+} from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiSettingsSection.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import {
   AI_AUTO_SAVE_HELP,
@@ -24,10 +27,18 @@ const IDLE = {
   recovery: null,
 };
 
-function props({ aiEnabled = true, state = IDLE, owner = aiOwner(), handlers = {} } = {}) {
+function props({
+  aiEnabled = true,
+  state = IDLE,
+  owner = aiOwner(),
+  handlers = {},
+  saveFailed = false,
+  message = '',
+} = {}) {
   return {
     settings: {
       status: 'ready',
+      message,
       aiEnabled,
       aiCustomizationEnabled: true,
       autoSaveAiEnabled: false,
@@ -37,6 +48,8 @@ function props({ aiEnabled = true, state = IDLE, owner = aiOwner(), handlers = {
       owner,
       state,
       onToggle: handlers.onToggle ?? vi.fn(),
+      saveFailed,
+      onRetrySave: handlers.onRetrySave ?? vi.fn(),
       onOpenKeysPage: handlers.onOpenKeysPage ?? vi.fn(),
     },
     onAiCustomizationChange: handlers.onAiCustomizationChange ?? vi.fn(),
@@ -91,6 +104,20 @@ describe('Settings › AI Art', () => {
       expect(control(label), label).toBeNull();
     await press(AI_SETTINGS_COPY.create);
     expect(onToggle).toHaveBeenCalledExactlyOnceWith(true);
+  });
+
+  it('keeps a failed switch save and its retry beside the switch', async () => {
+    const onRetrySave = vi.fn();
+    const message = 'The AI Art choice was not saved. AI stays as it was. Retry saving.';
+    await show(props({ aiEnabled: false, handlers: { onRetrySave } }));
+    // Negative control: a saved switch shows no failure.
+    expect(control(AI_SAVE_RETRY)).toBeNull();
+    await rerender(
+      props({ aiEnabled: false, saveFailed: true, message, handlers: { onRetrySave } })
+    );
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(message);
+    await press(AI_SAVE_RETRY);
+    expect(onRetrySave).toHaveBeenCalledOnce();
   });
 
   it.each([
