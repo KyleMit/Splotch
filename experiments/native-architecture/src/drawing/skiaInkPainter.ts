@@ -109,10 +109,9 @@ function drawShape(
     return;
   }
   const { start, segments } = smoothStroke(points, lead);
-  const path = Skia.Path.Make();
-  path.moveTo(start.x, start.y);
-  for (const segment of segments) path.quadTo(segment.cx, segment.cy, segment.x, segment.y);
-  canvas.drawPath(path, paint);
+  const builder = Skia.PathBuilder.Make().moveTo(start.x, start.y);
+  for (const segment of segments) builder.quadTo(segment.cx, segment.cy, segment.x, segment.y);
+  canvas.drawPath(builder.detach(), paint);
 }
 
 // Page art contain-fitted and centered on the paper, as PageOutline places it.

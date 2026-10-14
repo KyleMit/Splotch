@@ -1,0 +1,34 @@
+diff --git a/Libraries/StyleSheet/processBackgroundImage.js b/Libraries/StyleSheet/processBackgroundImage.js
+index 36f67b2217c20a5871cf4defa83d7fc27211ac1e..8983de48c8bb5d5782ec702c74af1e57e564a94e 100644
+--- a/Libraries/StyleSheet/processBackgroundImage.js
++++ b/Libraries/StyleSheet/processBackgroundImage.js
+@@ -190,7 +190,28 @@ export default function processBackgroundImage(
+     }
+   }
+ 
+-  return result;
++  return result.map(withEndpointPositions);
++}
++
++// CSS places a first color stop with no position at 0% and a last one at 100%. Stating those
++// keeps React Native Android's stop parser from logging each null position as an unsupported
++// radius type; the gradient it draws is the same.
++function withEndpointPositions(
++  gradient: ParsedBackgroundImageValue,
++): ParsedBackgroundImageValue {
++  const stops = gradient.colorStops;
++  const last = stops.length - 1;
++  if (last < 0 || (stops[0].position != null && stops[last].position != null)) {
++    return gradient;
++  }
++  return {
++    ...gradient,
++    colorStops: stops.map((stop, index) =>
++      stop.position == null && (index === 0 || index === last)
++        ? {...stop, position: index === 0 ? '0%' : '100%'}
++        : stop,
++    ),
++  };
+ }
+ 
+ function processColorStops(bgImage: BackgroundImageValue): ReadonlyArray<{
