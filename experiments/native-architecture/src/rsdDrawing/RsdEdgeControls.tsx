@@ -22,7 +22,7 @@ import { NativeDrawingLayout, type PaletteLayout } from './NativeScrollAreas';
 import { RsdActionsPanel, useFlyoutSlot } from './RsdActionsPanel';
 import { RsdFullscreenToggle } from './RsdFullscreenToggle';
 import { useFullscreen } from '../platform/useFullscreen';
-import { ToolbarSkin } from './toolbarSkin';
+import { InertRegion, ToolbarSkin } from './toolbarSkin';
 import type { PanelGlass } from './bareGlassLayout';
 import { drawerOpenStorage } from '../platform/drawerOpen';
 
@@ -74,6 +74,7 @@ function useRememberedDrawer() {
 // The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
 // and the overlay that reads the drawer state, never the strokes on the paper.
 export function RsdEdgeLayout({
+  covered,
   paintsDisabled,
   buttonScale,
   resizing,
@@ -82,6 +83,8 @@ export function RsdEdgeLayout({
   paperOverlay,
   ...controls
 }: Controls & {
+  // A dialog is open over the chrome, which stays at full strength and inert (InertRegion).
+  covered: boolean;
   paintsDisabled: boolean;
   // Button Size, live while its slider is dragged.
   buttonScale: number;
@@ -100,13 +103,14 @@ export function RsdEdgeLayout({
   const [actionButtonSize, setActionButtonSize] = useState<number | null>(null);
   const [drawerChosen, setDrawerChosen] = useRememberedDrawer();
   const drawerOpen = drawerChosen || resizing;
-  const slot = useFlyoutSlot(drawerOpen, disabled, screen.drawing);
-  const fullscreen = useFullscreen(!disabled);
+  const blocked = disabled || covered;
+  const slot = useFlyoutSlot(drawerOpen, blocked, screen.drawing);
+  const fullscreen = useFullscreen(!blocked);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
-    // The button stays live through a stroke, but its activation plays the clear before the
-    // command can refuse, so the gesture itself waits for the lift.
-    disabled: disabled || screen.drawing,
+    // The button stays live through a stroke and under a dialog, but its activation plays the
+    // clear before the command can refuse, so the gesture itself waits.
+    disabled: blocked || screen.drawing,
     drawing: screen.history.drawing,
     // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
     onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),
@@ -114,67 +118,69 @@ export function RsdEdgeLayout({
   });
   return (
     <ToolbarSkin.Provider value={toolbarStyle}>
-      <NativeDrawingLayout
-        bareGlass={
-          bare
-            ? {
-                open: slot.flyout,
-                expanded: drawerOpen,
-                panel: panelGlass,
-                fullscreen: fullscreen.supported,
-              }
-            : null
-        }
-        palette={(layout) => (
-          <RsdPalette
-            screen={screen}
-            sound={sound}
-            layout={layout}
-            actionButtonSize={actionButtonSize}
-            disabled={paintsDisabled}
-          />
-        )}
-        clearUnderlay={(offset) => (
-          <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
-        )}
-        clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
-        actionsPanel={(area, viewport) => (
-          <RsdActionsPanel
-            {...controls}
-            ink={ink}
-            area={area}
-            viewport={viewport}
-            open={drawerOpen}
-            buttonScale={buttonScale}
-            onToggle={() => setDrawerChosen(!drawerOpen)}
-            slot={slot}
-            onGlass={bare ? setPanelGlass : undefined}
-            onButtonSize={setActionButtonSize}
-          />
-        )}
-        capturePress={slot.capturePress}
-        settings={
-          <RsdIconButton
-            skin="corner"
-            label="Settings"
-            icon="settings"
-            onPress={() => {
-              if (!disabled) screen.openSettings();
-            }}
-          />
-        }
-        status={status}
-        overlays={
-          <>
-            <View pointerEvents="box-none" style={paperLayer.fill}>
-              <RsdFullscreenToggle fullscreen={fullscreen} />
-            </View>
-            {paperOverlay(drawerOpen)}
-          </>
-        }
-      >
-        {children}
-      </NativeDrawingLayout>
+      <InertRegion.Provider value={covered}>
+        <NativeDrawingLayout
+          bareGlass={
+            bare
+              ? {
+                  open: slot.flyout,
+                  expanded: drawerOpen,
+                  panel: panelGlass,
+                  fullscreen: fullscreen.supported,
+                }
+              : null
+          }
+          palette={(layout) => (
+            <RsdPalette
+              screen={screen}
+              sound={sound}
+              layout={layout}
+              actionButtonSize={actionButtonSize}
+              disabled={paintsDisabled}
+            />
+          )}
+          clearUnderlay={(offset) => (
+            <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
+          )}
+          clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
+          actionsPanel={(area, viewport) => (
+            <RsdActionsPanel
+              {...controls}
+              ink={ink}
+              area={area}
+              viewport={viewport}
+              open={drawerOpen}
+              buttonScale={buttonScale}
+              onToggle={() => setDrawerChosen(!drawerOpen)}
+              slot={slot}
+              onGlass={bare ? setPanelGlass : undefined}
+              onButtonSize={setActionButtonSize}
+            />
+          )}
+          capturePress={slot.capturePress}
+          settings={
+            <RsdIconButton
+              skin="corner"
+              label="Settings"
+              icon="settings"
+              onPress={() => {
+                if (!disabled) screen.openSettings();
+              }}
+            />
+          }
+          status={status}
+          overlays={
+            <>
+              <View pointerEvents="box-none" style={paperLayer.fill}>
+                <RsdFullscreenToggle fullscreen={fullscreen} />
+              </View>
+              {paperOverlay(drawerOpen)}
+            </>
+          }
+        >
+          {children}
+        </NativeDrawingLayout>
+      </InertRegion.Provider>
     </ToolbarSkin.Provider>
   );
 }

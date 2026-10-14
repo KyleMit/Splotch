@@ -2,6 +2,7 @@ import type { Brush } from '../drawing/brushes';
 import { STROKE_WIDTHS, type StrokeWidth } from '../drawing/strokeWidth';
 import { RsdFlyoutMenu } from './RsdFlyoutMenu';
 import { RsdIconButton, type FlyoutScale } from './RsdIconButton';
+import { RsdOptionOutline } from './optionOutline';
 import type { LayoutAxis } from './edgeLayout';
 import { inkKeyline } from './inkKeyline';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
@@ -44,6 +45,7 @@ export function RsdBrushMenu({
         <RsdIconButton
           key={brush}
           skin="flyout"
+          Outline={RsdOptionOutline}
           base={placement.base}
           scale={placement.scale}
           icon={BRUSH_MENU_OPTIONS[brush].icon}
@@ -86,6 +88,7 @@ export function RsdStrokeWidthMenu({
         <RsdIconButton
           key={width}
           skin="flyout"
+          Outline={RsdOptionOutline}
           base={placement.base}
           scale={placement.scale}
           pinnedIconPx={erasing ? ERASER_PREVIEW_PX : undefined}

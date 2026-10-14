@@ -29,6 +29,8 @@ import {
   COLOR_MENU_SWATCH_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/colorMenuLayout.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+import { RsdOptionOutline } from '../../../experiments/native-architecture/src/rsdDrawing/optionOutline.tsx';
 import { filteredMarkup } from '../../../experiments/native-architecture/src/rsdDrawing/greyed.ts';
 
 const read = (path) => readFileSync(join(import.meta.dirname, '../../../', path), 'utf8');
@@ -366,28 +368,68 @@ describe('flat skins', () => {
     );
   });
 
-  it('outlines the selected flat menu option in the strong text ink instead of a brand ring', async () => {
-    const option = h(RsdIconButton, {
-      skin: 'flyout',
-      icon: 'size-brush-3',
-      label: 'Size 3',
-      base: 60,
-      scale: 1,
-      ink: '#ab71e1',
-      selection: 'radio',
-      selected: true,
-      onPress: vi.fn(),
-    });
-    await mount(flat(option));
-    expect(control('Size 3').style).toMatchObject({
-      borderWidth: 0,
-      backgroundColor: 'transparent',
-    });
-    const outlines = () =>
-      host.views.filter((props) => JSON.stringify(props.style.filter ?? '').includes('drop'));
-    expect(JSON.stringify(outlines().at(-1)?.style.filter)).toContain(themes.light.textStrong);
-    host.views.length = 0;
-    await mount(option);
-    expect(outlines()).toEqual([]);
-  });
+  // Shipping chains four drop shadows; iOS drops every drop-shadow() filter, so the native option
+  // draws what they leave instead: the glyph's silhouette in the outline ink at each step of a
+  // three-by-three grid, corners included, under the glyph.
+  it.each([
+    ['a plain ink', '#ab71e1', undefined],
+    ['a keylined white ink', '#ffffff', 'white'],
+  ])(
+    'outlines the selected flat menu option in the strong text ink without a filter, with %s',
+    async (_, ink, keyline) => {
+      const option = (selected) =>
+        h(RsdIconButton, {
+          skin: 'flyout',
+          Outline: RsdOptionOutline,
+          icon: 'size-brush-3',
+          label: 'Size 3',
+          base: 60,
+          scale: 1,
+          ink,
+          keyline,
+          selection: 'radio',
+          selected,
+          onPress: vi.fn(),
+        });
+      const glyphs = () =>
+        [...view().querySelectorAll('svg[data-xml]')].map((node) => node.dataset.xml);
+      const outlines = () => host.views.filter((props) => props.testID === 'option-outline');
+      await mount(flat(option(true)));
+      await vi.waitFor(() =>
+        expect(glyphs().at(-1)).toContain(NATIVE_DEFERRED_ICONS['size-brush-3'].light.slice(0, 40))
+      );
+      expect(control('Size 3').style).toMatchObject({
+        borderWidth: 0,
+        backgroundColor: 'transparent',
+      });
+      expect(host.views.filter((props) => props.style.filter !== undefined)).toEqual([]);
+      const steps = [-BARE_OPTION_OUTLINE_PX, 0, BARE_OPTION_OUTLINE_PX];
+      const grid = steps.flatMap((left) => steps.map((top) => [left, top]));
+      expect(
+        outlines()
+          .slice(-grid.length + 1)
+          .map(({ style }) => [style.position, style.left, style.top])
+      ).toEqual(
+        grid.filter(([left, top]) => left || top).map(([left, top]) => ['absolute', left, top])
+      );
+      const [glyph, ...silhouettes] = glyphs().reverse();
+      expect(silhouettes).toHaveLength(grid.length - 1);
+      const outline = themes.light.textStrong;
+      for (const silhouette of silhouettes) {
+        expect(silhouette.match(/#[0-9a-f]{3,6}\b|currentColor/gi)).toEqual(
+          glyph.match(/#[0-9a-f]{3,6}\b|currentColor/gi).map(() => outline)
+        );
+        expect(silhouette.replaceAll(outline, '')).toBe(
+          glyph.replace(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi, '')
+        );
+      }
+      // Negative controls: an unselected flat option and a selected raised one draw no outline.
+      host.views.length = 0;
+      await mount(flat(option(false)));
+      expect(outlines()).toEqual([]);
+      await mount(option(true));
+      expect(outlines()).toEqual([]);
+      expect(glyphs()).toHaveLength(1);
+    }
+  );
 });

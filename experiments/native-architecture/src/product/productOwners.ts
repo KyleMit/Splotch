@@ -44,7 +44,7 @@ export function createProductOwners(
     async prepare() {
       const current = screenRef.current;
       const surface = current.surface.current;
-      if (!surface || current.disabled || current.drawing)
+      if (!surface || current.disabled || current.dialogOpen || current.drawing)
         throw new Error('Lift your finger before preparing an AI picture.');
       const release = surface.lockInput();
       try {

@@ -256,7 +256,10 @@ it('mounts the shared color picker outside Paint colors and writes through the e
     expect(open).toHaveBeenCalledOnce();
     const picker = host.querySelector('[aria-label="Color Picker"]');
     expect(picker).not.toBeNull();
-    expect(host.querySelector('[aria-label="More colors"]').disabled).toBe(true);
+    // Shipping's modal leaves the swatch behind it at full strength and out of reach.
+    expect(host.querySelector('[aria-label="More colors"]').disabled).toBe(false);
+    await act(async () => host.querySelector('[aria-label="More colors"]').click());
+    expect(open).toHaveBeenCalledOnce();
     await act(async () => picker.querySelector('[aria-label="#E63946"]').click());
     expect(setColor).toHaveBeenCalledExactlyOnceWith('#E63946');
     expect(caller.sound.settings.selectedColor).toBe('#E63946');
