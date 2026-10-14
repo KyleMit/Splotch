@@ -119,3 +119,26 @@ export function backHandlerPort(records) {
     },
   };
 }
+
+// The platform the records name.
+export function platformPort(records) {
+  return {
+    get OS() {
+      return records.os;
+    },
+    constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
+    select: (values) => values.ios ?? values.native ?? values.default,
+  };
+}
+
+// The device's accessibility settings as the records hold them, and every announcement it is asked
+// to speak.
+export function accessibilityPort(records) {
+  return {
+    isReduceMotionEnabled: async () => records.reduceMotion,
+    isReduceTransparencyEnabled: async () => records.reduceTransparency,
+    addEventListener: () => ({ remove() {} }),
+    announceForAccessibility: (text) => records.announcements.push(text),
+    announceForAccessibilityWithOptions: (text) => records.announcements.push(text),
+  };
+}

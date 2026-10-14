@@ -142,7 +142,9 @@ vi.mock('react-native', () => {
     Easing: { linear: (t) => t, bezier: () => (t) => t },
     AccessibilityInfo: {
       isReduceMotionEnabled: files.motionRead,
+      isReduceTransparencyEnabled: async () => false,
       addEventListener(event, listener) {
+        if (event === 'reduceTransparencyChanged') return { remove() {} };
         if (files.motionListenError) throw files.motionListenError;
         if (event !== 'reduceMotionChanged') throw new Error('Unexpected accessibility event');
         files.motionListeners.add(listener);
@@ -183,6 +185,10 @@ vi.mock('react-native', () => {
     },
     Image: ({ source, accessibilityLabel }) =>
       createElement('img', { src: source?.uri, alt: accessibilityLabel }),
+    requireNativeComponent:
+      () =>
+      ({ testID }) =>
+        createElement('div', { 'data-testid': testID }),
     ActivityIndicator: () => null,
     Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
       createElement('button', {

@@ -38,6 +38,7 @@ import { RsdAiSettingsSection, type AiSettingsRoute } from './RsdAiSettingsSecti
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
+import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 
 type NativeSoundSettingsDialogProps = {
   // The section Settings opens on, rather than the hub: AI Art when the AI Image Button needs setup.
@@ -254,13 +255,14 @@ function SaveStatus({
 }: Pick<NativeSoundSettingsDialogProps, 'settings' | 'notice' | 'onRetry'>) {
   // A see-through dialog shows only the control being dragged.
   if (useDialogSeeThrough()) return null;
+  // Shipping's Settings show nothing for a save, so one in flight or done is only announced; a
+  // failed one, which shipping's synchronous storage never meets, stays on screen with its retry.
+  if (settings.status !== 'ready' || settings.saved)
+    return <RsdVisuallyHidden live>{notice}</RsdVisuallyHidden>;
   return (
     <>
-      {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
       {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-      {settings.status === 'ready' && !settings.saved ? (
-        <RsdAction label="Try saving settings again" onClick={onRetry} />
-      ) : null}
+      <RsdAction label="Try saving settings again" onClick={onRetry} />
     </>
   );
 }

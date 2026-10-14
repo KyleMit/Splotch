@@ -16,6 +16,9 @@ export const MODAL_SCRIM_BLUR_PX = 4;
 // The shipping no-blur backdrop (prefers-reduced-transparency): a slightly deeper dim stands in
 // for the frosting wherever the scrim cannot blur.
 export const MODAL_SCRIM_PLAIN = 'rgba(0, 0, 0, 0.7)';
+// app.css's coarse-pointer rule: the Coloring Book Picker keeps the plain dim on a touch screen,
+// where its frosted backdrop was measured to cost frames.
+export type TouchBackdrop = 'frosted' | 'plain';
 
 export const MODAL_GUTTER_MIN_PX = 16;
 export const MODAL_CONTROL_SIZE_PX = 48;
@@ -192,7 +195,7 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
   };
 }
 
-type Bezier = readonly [number, number, number, number];
+export type Bezier = readonly [number, number, number, number];
 
 // dialogFlyFromOrigin: the card leaves the opener small, pulls back toward it, and lands through a
 // decaying overshoot. `reach` scales the opener offset; each keyframe's easing runs to the next.

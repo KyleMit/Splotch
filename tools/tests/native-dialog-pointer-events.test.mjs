@@ -27,6 +27,11 @@ vi.mock('react-strict-dom', async () => {
   };
 });
 vi.mock('react-native', () => import('react-native-web'));
+// The web build resolves ModalScrim to its web file; Vitest resolves the native one.
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+);
 vi.mock('react-native-safe-area-context', () => ({
   initialWindowMetrics: null,
   SafeAreaProvider: ({ children }) => children,
