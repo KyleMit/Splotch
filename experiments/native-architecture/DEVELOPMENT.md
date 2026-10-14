@@ -82,12 +82,23 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
   stylesheet's local `url()` sources, so the gate registers the `@fontsource-variable/quicksand`
   faces itself (`shippingFont.web.tsx`) and renders at once, swapping the font in as the shipping
   app does; the precache carries their WOFF2 files.
-* **Android and iOS** cannot register WOFF2, so the gate loads the 400, 600 and 700 static faces
-  from `@expo-google-fonts/quicksand` through `expo-font` and renders once they register (or, if
-  they fail, in the system font). Each face is its own family, so
+* **Android and iOS** cannot register WOFF2, so the gate loads the 400, 500, 600 and 700 static
+  faces from `@expo-google-fonts/quicksand` through `expo-font` and renders once they register (or,
+  if they fail, in the system font). Each face is its own family, so
   `src/platform/nativeFontFamilies.ts` picks the family from the weight and sets the weight itself
   back to normal: Android resolves a weight of 700 or more on a registered family to a system bold
   face. `fontTheme.native.ts` applies the same faces to the RSD tokens.
+* **Android** pads each text's line box out to the face's tallest glyph unless the text sets
+  `includeFontPadding: false`, a style React Strict DOM drops.
+  `patches/react-strict-dom@0.0.54.patch` sets it on every RSD text, so a line is the face's ascent
+  plus descent, as Chromium's `line-height: normal` is.
+* **Shipping's hub rows** (`HubList.svelte`) are `<button>`s that never inherit the page font, so a
+  WebView sets them in the system face, which `src/rsdDrawing/hubRowFace.native.ts` names as
+  `system-ui`. iOS resolves that family itself; Android rounds an unregistered family to regular or
+  bold, so `MainApplication.kt` registers `system-ui` as the system typeface and the semibold title
+  keeps its weight (`tools/migration/tests/native-system-face.test.mjs` binds the two names). The
+  web build keeps the app font there: `src/strict.css` hands every form control the page font, and
+  that unlayered rule outranks the layered StyleX style that would revert it.
 
 `tools/tests/native-shipping-font.test.mjs` fails when the web faces drift from the package
 stylesheet, a family stops matching the static package's exports, another weight is bundled, an RSD

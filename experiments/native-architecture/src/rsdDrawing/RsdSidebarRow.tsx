@@ -1,7 +1,8 @@
 import { css, html } from 'react-strict-dom';
-import { brandColors, colors, dimensions, fonts, motion } from './tokens.css';
+import { brandColors, colors, dimensions, fonts } from './tokens.css';
 import { RsdActivityDot } from './RsdActivityDot';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
+import { sidebarRowFade } from './sidebarRowFade';
 import { DRAWING_SCALE } from '../drawing/theme';
 
 // The shipping SidebarToc.svelte row; rsd-native-settings-rows.test.mjs reads each from that
@@ -35,17 +36,21 @@ const styles = css.create({
     // The leading edge belongs to the track, so it never rounds.
     borderTopRightRadius: dimensions.radiusSm,
     borderBottomRightRadius: dimensions.radiusSm,
-    backgroundColor: { default: 'transparent', ':hover': colors.surfaceHover },
-    color: { default: colors.textSoft, ':hover': colors.textStrong },
+    // Under (hover: hover), which React Native never matches, as a touch WebView never does.
+    backgroundColor: {
+      default: 'transparent',
+      '@media (hover: hover)': { default: 'transparent', ':hover': colors.surfaceHover },
+    },
+    color: {
+      default: colors.textSoft,
+      '@media (hover: hover)': { default: colors.textSoft, ':hover': colors.textStrong },
+    },
     fontSize: dimensions.fontSizeSm,
     fontFamily: fonts.semiboldFamily,
     fontWeight: fonts.semiboldWeight,
     lineHeight: LINE_HEIGHT,
     textAlign: 'left',
     cursor: 'pointer',
-    transitionProperty: 'backgroundColor, color',
-    transitionDuration: motion.durationFast,
-    transitionTimingFunction: 'ease',
   },
   // A reading position, not a selection: a soft wash and a thickened segment rather than a
   // filled pill. --brand-text on --brand-wash clears AA; --brand carries the textless segment.
@@ -83,6 +88,7 @@ export function RsdSidebarRow({
       data-testid="sidebar-row"
       style={[
         styles.row,
+        sidebarRowFade.row,
         active && styles.active,
         active && styles.activePadding(ACTIVE_PADDING_LEFT_PX),
       ]}

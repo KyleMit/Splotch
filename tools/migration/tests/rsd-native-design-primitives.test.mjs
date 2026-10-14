@@ -366,6 +366,36 @@ it.each(['light', 'dark'])(
   }
 );
 
+// Chromium sizes a line from the font's ascent and descent. Android pads a text to the face's
+// tallest glyph unless it opts out (patches/react-strict-dom@0.0.54.patch), which set every line
+// of Quicksand about an eighth of an em taller than shipping's.
+it.each([
+  ['android', false],
+  ['ios', undefined],
+])('lays %s text out with font padding %s', async (os, padding) => {
+  native.os = os;
+  await render(
+    h(html.div, null, h(html.p, null, 'A paragraph'), h(html.div, null, 'A bare string'))
+  );
+  const texts = [...container.querySelectorAll('span')].map((node) => [
+    node.textContent,
+    read(node).style.includeFontPadding,
+  ]);
+  expect(texts).toEqual([
+    ['A paragraph', padding],
+    ['A bare string', padding],
+  ]);
+});
+
+// iOS would otherwise ink the indicator by the system appearance rather than the paper beneath it.
+it.each([
+  ['light', 'black'],
+  ['dark', 'white'],
+])('inks the %s scroll indicator to stand out on its surface', async (mode, indicator) => {
+  await render(h(RsdScrollCue, null, h(html.p, null, 'Long help text')), mode);
+  expect(native.scroll.indicatorStyle).toBe(indicator);
+});
+
 it.each(['light', 'dark'])(
   'fades the %s scroll end in the surface until the content end is reached',
   async (mode) => {

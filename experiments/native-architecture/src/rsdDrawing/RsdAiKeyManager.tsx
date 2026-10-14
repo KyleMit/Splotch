@@ -142,15 +142,17 @@ function inputValue(event: unknown): string | null {
     : null;
 }
 
+// Views, not shipping's <p>: React Native lays a text's children out inline, which set the lock
+// against the note's first word and wrapped the note under it.
 function StorageNote({ active }: { active: boolean }) {
   const ink = useDrawingTheme().successText;
   return (
-    <html.p style={[styles.note, active && styles.activeNote]}>
-      <html.span aria-hidden style={styles.noteIcon}>
+    <html.div style={[styles.note, active && styles.activeNote]}>
+      <html.div aria-hidden style={styles.noteIcon}>
         <RsdIcon name="lock" size={NOTE_ICON_PX} ink={ink} muted={false} />
-      </html.span>
+      </html.div>
       <html.span style={styles.noteText}>{KEY_STORAGE}</html.span>
-    </html.p>
+    </html.div>
   );
 }
 

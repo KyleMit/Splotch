@@ -146,6 +146,20 @@ describe('Settings › AI Art', () => {
     expect(text()).toContain(KEY_STORAGE_NOTE.ios);
   });
 
+  // A text lays its children out inline, so a lock inside one would touch the note's first word.
+  it('sets the key storage lock in its own column beside the note', async () => {
+    await show(props());
+    const note = [...host.querySelectorAll('span')].find(
+      (node) => node.textContent === KEY_STORAGE_NOTE.ios
+    );
+    expect(note, 'storage note').toBeDefined();
+    const row = note.parentElement;
+    expect(row.tagName).toBe('DIV');
+    const lock = [...row.children].find((child) => child !== note);
+    expect(lock.tagName).toBe('DIV');
+    expect(lock.querySelector('svg')).not.toBeNull();
+  });
+
   it('holds the feature switches below the key manager and routes each to its owner', async () => {
     const onAiCustomizationChange = vi.fn();
     const onAutoSaveAiChange = vi.fn();
