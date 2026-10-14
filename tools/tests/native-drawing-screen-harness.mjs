@@ -333,6 +333,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
           refreshGeometry: vi.fn(),
           lockInput: files.lock,
           capturePng: files.capture,
+          exportPng: files.capture,
           captureInk: files.ink,
         }),
         []

@@ -42,7 +42,7 @@ export function useDrawingMenu(
       close();
     },
     show() {
-      if (screen.disabled || lease.current || phase !== 'closed') return;
+      if (screen.disabled || screen.drawing || lease.current || phase !== 'closed') return;
       try {
         if (!screen.surface.current) throw new Error('The drawing paper is not ready.');
         lease.current = screen.surface.current.lockInput();

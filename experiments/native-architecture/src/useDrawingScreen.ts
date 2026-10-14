@@ -82,13 +82,14 @@ export function useDrawingScreen() {
       drawing || busy || preparing || pagePickerOpen || command.current || rendererFault.current,
     report,
   });
+  // A stroke leaves the chrome live, as shipping's does. The paper's responder keeps every touch
+  // until the lift, but a keyboard or assistive press still lands: whatever opens a surface or runs
+  // a command refuses to start mid-stroke, while a paint, brush or width choice applies to the next
+  // contact, as a second finger's does in shipping. Disabling the chrome for a stroke would fade
+  // every control and re-mount it on the UI thread at each stroke start and lift, which costs the
+  // canvas frames.
   const disabled =
-    drawing ||
-    busy ||
-    preparing ||
-    pagePickerOpen ||
-    settings.sheetOpen ||
-    brushes.state.status !== 'ready';
+    busy || preparing || pagePickerOpen || settings.sheetOpen || brushes.state.status !== 'ready';
 
   const commandsBlocked = () =>
     command.current ||
@@ -219,8 +220,12 @@ function createColoringPageActions(
   replacementGuard: () => () => boolean
 ) {
   return {
-    setPagePickerOpen: (open: boolean) =>
-      setPickerOpen(open && history.coloringBookEnabled.current),
+    // Opening waits for the lift and for any running command, as every other command does;
+    // closing is always allowed.
+    setPagePickerOpen(open: boolean) {
+      if (open && blocked()) return;
+      setPickerOpen(open && history.coloringBookEnabled.current);
+    },
     setColoringBookEnabled(enabled: boolean) {
       history.applyColoringBookEnabled(enabled);
       if (!enabled) setPickerOpen(false);
