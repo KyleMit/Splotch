@@ -48,6 +48,15 @@ export const SHIPPING = {
   cardPaddingX: shippingPx(settingsModalSource, /\.setting\) \{[^}]*?padding: \d+px (\d+)px/),
   groupGap: shippingPx(settingsModalSource, /\.setting-group\) \{[^}]*?margin-bottom: (\d+)px/),
 };
+// The hub row is a <button> that sets no font family of its own, so a WebView draws its text in
+// the UA's control face rather than the app font.
+export const SHIPPING_HUB_ROW_KEEPS_UA_FACE = !/\.hub-row \{[^}]*?font(?:-family)?:/.test(
+  hubListSource
+);
+// The scale token the hub title's weight names, as the key tokens.ts gives it.
+export const SHIPPING_HUB_TITLE_WEIGHT = hubListSource
+  .match(/\.hub-title \{[^}]*?font-weight: var\(--(font-weight-\w+)\)/)[1]
+  .replace(/-(\w)/g, (_, letter) => letter.toUpperCase());
 export const SHIPPING_THUMB_FACE = toggleSwitchSource.match(
   /\.toggle-switch-thumb \{[^}]*?background: (\w+);/
 )[1];

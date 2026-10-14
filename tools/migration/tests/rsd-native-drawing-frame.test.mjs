@@ -16,7 +16,10 @@ import {
   MORE_COLORS_POP_SCALE,
   PALETTE_FLOWS,
   SELECTION_RING_GAP_PX,
+  SELECTION_RING_SEAM_PX,
   SELECTION_RING_WIDTH_PX,
+  SELECTION_SEAM_OVERLAP_PX,
+  columnEndClearance,
   paletteSlots,
   selectionRingColor,
 } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
@@ -37,6 +40,10 @@ import {
   TOUCH_TARGET,
 } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  EDGE_INSET_PX,
+  actionPanelLayout,
+} from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import {
   SELECTION_RING_GAP_PX as SHIPPING_RING_GAP_PX,
   SELECTION_RING_WIDTH_PX as SHIPPING_RING_WIDTH_PX,
@@ -108,6 +115,31 @@ describe('the shipping palette geometry', () => {
       PALETTE_FLOWS.column.shadow,
       PALETTE_FLOWS.row.shadow,
     ]);
+  });
+
+  // Negative control: a column that pads its end by the flow's own 12px, or by the inset alone,
+  // leaves More colors off the Brush Button's centre line.
+  it('pads the column end as --palette-bottom does, centring More colors on the Brush Button', () => {
+    const formula =
+      /--palette-bottom:\s*max\(\s*0px,\s*calc\((\d+)px \+ var\(--action-btn-size\) \/ 2 - (\d+)px \+ var\(--safe-area-bottom\)\)\s*\);/.exec(
+        PALETTE_STYLE
+      );
+    expect(formula).not.toBeNull();
+    const [panelInset, halfSwatch] = formula.slice(1).map(Number);
+    expect(panelInset).toBe(EDGE_INSET_PX);
+    expect(halfSwatch).toBe(PALETTE_FLOWS.column.swatchPx / 2);
+    expect(declaration(PALETTE_STYLE, 'padding')).toContain(
+      `${PALETTE_FLOWS.column.endPaddingPx}px ${PALETTE_FLOWS.column.crossStartPaddingPx}px var(--palette-bottom)`
+    );
+    for (const [button, inset] of [
+      [60, 20],
+      [72, 0],
+      [44, 34],
+      [20, 0],
+    ])
+      expect(columnEndClearance(button, inset), `${button} over ${inset}`).toBe(
+        Math.max(0, panelInset + button / 2 - halfSwatch + inset)
+      );
   });
 
   it('keeps the swatch press, the More colors pop and the Selection Ring widths', () => {
@@ -219,17 +251,42 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   expect(drawn((style) => style.backgroundColor === blue)).toEqual([
     expect.objectContaining({ width: inner, height: inner, borderRadius: inner / 2 }),
   ]);
+  // The ring's visible band, the shipping 4px spread less the 1px seam, comes from one box.
   expect(drawn((style) => style.borderColor === ring)).toEqual([
     expect.objectContaining({
       position: 'absolute',
       top: -SELECTION_RING_WIDTH_PX,
       width: TOUCH_TARGET + 2 * SELECTION_RING_WIDTH_PX,
-      borderWidth: SELECTION_RING_WIDTH_PX,
+      borderWidth: SELECTION_RING_WIDTH_PX - SELECTION_RING_SEAM_PX,
     }),
   ]);
-  expect(drawn((style) => style.borderColor === surface && style.borderWidth === 1)).toEqual([
-    expect.objectContaining({ position: 'absolute', top: -1, width: TOUCH_TARGET + 2 }),
+  const seamReach = SELECTION_RING_SEAM_PX + SELECTION_SEAM_OVERLAP_PX;
+  expect(drawn((style) => style.borderColor === surface && style.position === 'absolute')).toEqual([
+    expect.objectContaining({
+      top: -seamReach,
+      width: TOUCH_TARGET + 2 * seamReach,
+      borderWidth: SELECTION_RING_SEAM_PX + 2 * SELECTION_SEAM_OVERLAP_PX,
+    }),
   ]);
+  // Seam and ring snap to the pixel grid as separate circles, about a pixel apart on Android's
+  // fractional densities. Negative control: a seam drawn over a 4px ring and sharing its inner
+  // edge bares that edge as a second arc on one side, and fails the ordering and reach below.
+  const styles = records.props.map((entry) => flatStyle(entry.style));
+  const seamAt = styles.findIndex((style) => style.borderColor === surface && style.position);
+  const ringAt = styles.findIndex((style) => style.borderColor === ring);
+  expect(seamAt).toBeGreaterThanOrEqual(0);
+  expect(seamAt).toBeLessThan(ringAt);
+  const edge = TOUCH_TARGET / 2;
+  const band = (style) => {
+    const outer = style.width / 2;
+    return { outer, inner: outer - style.borderWidth };
+  };
+  const [seam, ringBand] = [band(styles[seamAt]), band(styles[ringAt])];
+  expect(ringBand.inner - edge).toBe(SELECTION_RING_SEAM_PX);
+  expect(seam.outer - ringBand.inner).toBeGreaterThanOrEqual(SELECTION_SEAM_OVERLAP_PX);
+  expect(edge - seam.inner).toBeGreaterThanOrEqual(SELECTION_SEAM_OVERLAP_PX);
+  expect(seam.inner).toBeGreaterThan(inner / 2);
+  expect(SELECTION_SEAM_OVERLAP_PX).toBeGreaterThanOrEqual(1);
   const selectedNode = host.querySelector('button');
   expect(selectedNode.getAttribute('role')).toBe('radio');
   expect(selectedNode.getAttribute('aria-label')).toBe('Blue paint');
@@ -280,7 +337,8 @@ describe('the mounted drawing screen frame', () => {
   // The bottom inset alone comes out of the column's trim length: shipping's last swatch overruns
   // into the home indicator there, and More colors never trims.
   it('trims by the viewport less the bottom inset, not a bar an inset shortened, and clips the overrun', async () => {
-    const [width, height, insetTop, insetBottom] = [1180, 820, 24, 20];
+    // An iPad Pro 11-inch on iPadOS 26: its 32px status bar shortens the bar past the flow.
+    const [width, height, insetTop, insetBottom] = [1210, 834, 32, 20];
     viewport(width, height);
     records.insets = { top: insetTop, right: 0, bottom: insetBottom, left: 0 };
     await mountToolbar(toolbarScreen());
@@ -292,32 +350,57 @@ describe('the mounted drawing screen frame', () => {
     expect(paintLabels()).toHaveLength(
       shippingPaintCount(shippingLadder('max-height'), height - insetBottom)
     );
+    // The overrun keeps every swatch whole at the shipping gap: the paint group never shrinks to
+    // slide More colors over the last paint. Negative control: a shrinkable group fails here.
     expect(resolved((props) => props.testID === 'rsd-palette-plate')).toMatchObject({
       overflow: 'hidden',
+      gap: PALETTE_FLOWS.column.gapPx,
     });
+    expect(
+      resolved(
+        (props) =>
+          (props.role ?? props.accessibilityRole) === 'radiogroup' &&
+          props.accessibilityLabel === 'Paint colors'
+      )
+    ).toMatchObject({ flexShrink: 0, gap: PALETTE_FLOWS.column.gapPx });
   });
 
-  // Negative control: a column that lets its swatches run to the screen's edge puts More colors
-  // under the home indicator.
-  it('keeps the landscape column clear of the bottom inset, its surface running on beneath', async () => {
-    const insetBottom = 34;
-    viewport(1180, 820);
+  // Negative control: a column that stops its plate at the inset and continues in a separate
+  // strip shows a seam where the strip's shadow meets the plate, and pads More colors off the
+  // Brush Button's centre line.
+  it('runs the landscape column plate to the screen edge, centring More colors on the Brush Button', async () => {
+    const [width, height, insetBottom, buttonScale] = [1180, 820, 34, 130];
+    viewport(width, height);
     records.insets = { top: 0, right: 0, bottom: insetBottom, left: 0 };
     await mountToolbar(toolbarScreen());
-    // The records keep every render's props; the strip is read from one render of the settled
-    // screen, after the AI allowance check has re-rendered it.
+    // Button Size goes through the real settings owner, as the Settings stepper sends it.
+    await act(async () => caller.product.sound.owner.settings.setButtonScale(buttonScale));
+    // The records keep every render's props; the plate is read from one render of the settled
+    // screen, after the AI allowance check and the panel's size report have re-rendered it.
     records.props.length = 0;
     await act(async () => root.render(createElement(RsdDrawingScreen)));
-    const strip = drawn(
-      (style) =>
-        style.height === insetBottom && style.backgroundColor === DRAWING_THEMES.light.surface
-    );
-    expect(strip).toEqual([
-      expect.objectContaining({
-        width: PALETTE_FLOWS.column.extentPx,
-        boxShadow: PALETTE_FLOWS.column.shadow,
-      }),
-    ]);
+    expect(
+      drawn(
+        (style) =>
+          style.height === insetBottom && style.backgroundColor === DRAWING_THEMES.light.surface
+      )
+    ).toEqual([]);
+    // The six drawer tools of the toolbar fixture, at Button Size 130%.
+    const { size } = actionPanelLayout({
+      area: { width, height: height - insetBottom },
+      viewport: { width, height },
+      scale: buttonScale / 100,
+      count: 6,
+      leg: 2,
+      open: false,
+      bottomInset: insetBottom,
+    });
+    expect(size).not.toBe(PALETTE_FLOWS.column.swatchPx);
+    expect(resolved((props) => props.testID === 'rsd-palette-plate')).toMatchObject({
+      paddingTop: PALETTE_FLOWS.column.endPaddingPx,
+      paddingBottom: columnEndClearance(size, insetBottom),
+      overflow: 'hidden',
+    });
   });
 
   it('sits More colors on a raised disc of the bar surface, its honeycomb inside the ring band', async () => {
@@ -340,7 +423,10 @@ describe('the mounted drawing screen frame', () => {
       records.props
         .map((props) => flat(props.style) ?? {})
         .filter(
-          (style) => style.position === 'absolute' && style.borderWidth === SELECTION_RING_WIDTH_PX
+          (style) =>
+            style.position === 'absolute' &&
+            style.top === -SELECTION_RING_WIDTH_PX &&
+            style.borderWidth === SELECTION_RING_WIDTH_PX - SELECTION_RING_SEAM_PX
         );
     expect(ringed().map((style) => style.borderColor)).toEqual([
       selectionRingColor(paintAppearance('Purple', 'light').hex),

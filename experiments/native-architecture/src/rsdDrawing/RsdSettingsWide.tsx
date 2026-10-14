@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
-import { useDrawingTheme } from '../drawing/DrawingAppearance';
+import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import {
   navRevealOffset,
@@ -113,6 +113,7 @@ function SettingsToc({
   onSelect: (id: NativeSettingsSectionId) => void;
 }) {
   const border = useDrawingTheme().border;
+  const indicatorStyle = useScrollIndicatorStyle();
   const reduced = useReduceMotion();
   const nav = useRef<ScrollView>(null);
   const [extent, setExtent] = useState<ScrollExtent>(AT_REST);
@@ -134,6 +135,7 @@ function SettingsToc({
     <html.div style={[styles.nav, hidden && styles.seeThroughHidden]}>
       <ScrollView
         ref={nav}
+        indicatorStyle={indicatorStyle}
         scrollEventThrottle={NAV_REPORT_INTERVAL_MS}
         onScroll={({ nativeEvent }) => update({ offset: nativeEvent.contentOffset.y })}
         onLayout={({ nativeEvent }) => update({ viewport: nativeEvent.layout.height })}

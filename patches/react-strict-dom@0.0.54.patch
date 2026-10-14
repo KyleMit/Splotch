@@ -1,38 +1,8 @@
---- a/dist/types/styles.d.ts
-+++ b/dist/types/styles.d.ts
-@@ -18,7 +18,7 @@
- type TStyleX = typeof $$IMPORT_TYPEOF_1$$;
- export type Style = InlineStyles;
- export type Styles = StyleXArray<
--  StyleXStyles | Theme<VarGroup<{ readonly [$$Key$$: string]: unknown }>>
-+  StyleXStyles | Theme<VarGroup<{}>>
- >;
- export type IStyleX = Readonly<{
-   create: TStyleX['create'];
---- a/dist/web/index.d.ts
-+++ b/dist/web/index.d.ts
-@@ -16,9 +16,14 @@
- } from '@stylexjs/stylex';
- import * as html from './html';
- import * as css from '@stylexjs/stylex';
--type StyleTheme<V, T> = Theme<V, T>;
--type StyleVars<T> = VarGroup<T>;
--type Styles<T> = StyleXStyles<T>;
--type StylesWithout<T> = StyleXStylesWithout<T>;
-+type TStyleX = typeof css;
-+type StyleObject = Exclude<
-+  Parameters<TStyleX['create']>[0][string],
-+  (...args: never[]) => unknown
-+>;
-+type StyleTheme<V extends VarGroup<{}>, T extends symbol> = Theme<V, T>;
-+type StyleVars<T extends { [key: string]: unknown }> = VarGroup<T>;
-+type Styles<T extends StyleObject> = StyleXStyles<T>;
-+type StylesWithout<T extends StyleObject> = StyleXStylesWithout<T>;
- export type { StaticStyles, StyleTheme, StyleVars, Styles, StylesWithout };
- export { css, html };
+diff --git a/dist/native/index.d.ts b/dist/native/index.d.ts
+index 427cd0e84ab1bdeeb62f287f80aedcb17791d572..1e6414ec4f2ea6b8e285c741f10d4afc07b50285 100644
 --- a/dist/native/index.d.ts
 +++ b/dist/native/index.d.ts
-@@ -20,10 +20,14 @@
+@@ -20,10 +20,14 @@ import * as React from 'react';
  import * as compat from './compat';
  import * as html from './html';
  import { ProvideViewportScale } from './modules/ContextViewportScale';
@@ -51,3 +21,63 @@
  type ProviderValue = Readonly<{ [$$Key$$: string]: string | number }>;
  type ProviderProps = Readonly<{
    children: React.ReactNode;
+diff --git a/dist/native/index.js b/dist/native/index.js
+index ffbf4fb06609055c270df01fa0843b34c254a0d8..7c3a63c1af4e065a78ea8f996dfe5e3fb134c627 100644
+--- a/dist/native/index.js
++++ b/dist/native/index.js
+@@ -2381,6 +2381,9 @@ function TextString(props) {
+     withInheritedStyle: true,
+     withTextStyle: true
+   });
++  if (Platform.OS === 'android') {
++    nativeProps.style.includeFontPadding = false;
++  }
+   return jsx(Text, {
+     ...nativeProps,
+     children: children
+@@ -3081,6 +3084,9 @@ function createStrictDOMTextComponent(tagName, defaultProps) {
+     nativeProps.style = Object.assign(nativeProps.style, disableUserSelect ? {
+       userSelect: 'none'
+     } : null);
++    if (Platform.OS === 'android') {
++      nativeProps.style.includeFontPadding = false;
++    }
+     if (nativeProps.animated === true) {
+       NativeComponent = Animated.Text;
+     }
+diff --git a/dist/types/styles.d.ts b/dist/types/styles.d.ts
+index f3451cf766770ce460a18ed774f9ca1002b956de..b3423d5ffa1df3c319cf738517ad5ee66e2c5b53 100644
+--- a/dist/types/styles.d.ts
++++ b/dist/types/styles.d.ts
+@@ -18,7 +18,7 @@ import type * as $$IMPORT_TYPEOF_1$$ from '@stylexjs/stylex';
+ type TStyleX = typeof $$IMPORT_TYPEOF_1$$;
+ export type Style = InlineStyles;
+ export type Styles = StyleXArray<
+-  StyleXStyles | Theme<VarGroup<{ readonly [$$Key$$: string]: unknown }>>
++  StyleXStyles | Theme<VarGroup<{}>>
+ >;
+ export type IStyleX = Readonly<{
+   create: TStyleX['create'];
+diff --git a/dist/web/index.d.ts b/dist/web/index.d.ts
+index 79878921cce558434dfcc067688e0a678e5a9f80..1c0ee2ea5c8e1fb024424b463370b3c98c47f7a2 100644
+--- a/dist/web/index.d.ts
++++ b/dist/web/index.d.ts
+@@ -16,9 +16,14 @@ import type {
+ } from '@stylexjs/stylex';
+ import * as html from './html';
+ import * as css from '@stylexjs/stylex';
+-type StyleTheme<V, T> = Theme<V, T>;
+-type StyleVars<T> = VarGroup<T>;
+-type Styles<T> = StyleXStyles<T>;
+-type StylesWithout<T> = StyleXStylesWithout<T>;
++type TStyleX = typeof css;
++type StyleObject = Exclude<
++  Parameters<TStyleX['create']>[0][string],
++  (...args: never[]) => unknown
++>;
++type StyleTheme<V extends VarGroup<{}>, T extends symbol> = Theme<V, T>;
++type StyleVars<T extends { [key: string]: unknown }> = VarGroup<T>;
++type Styles<T extends StyleObject> = StyleXStyles<T>;
++type StylesWithout<T extends StyleObject> = StyleXStylesWithout<T>;
+ export type { StaticStyles, StyleTheme, StyleVars, Styles, StylesWithout };
+ export { css, html };
