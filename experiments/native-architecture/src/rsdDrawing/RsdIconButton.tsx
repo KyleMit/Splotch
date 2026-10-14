@@ -4,6 +4,7 @@ import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
+import { paintedTile } from './paintedTile';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
@@ -189,7 +190,8 @@ const styles = css.create({
       ':active': `scale(${BARE_TILE_PRESS_SCALE})`,
     },
   },
-  bareTileDisabled: { filter: BARE_TILE_DISABLED_FILTER, transform: 'scale(1)', cursor: 'auto' },
+  bareTileDisabled: { transform: 'scale(1)', cursor: 'auto' },
+  bareTileWashed: { filter: BARE_TILE_DISABLED_FILTER },
   outlined: (size: number, filter: string) => ({ width: size, height: size, filter }),
   // app.css's .free-count on the AI Image Button's corner.
   badge: (offset: number, size: number, padding: number) => ({
@@ -238,7 +240,15 @@ export const BUSY_TURN_MS = 1000;
 // picture is still being made.
 export const CALM_BUSY_TURN_MS = 2400;
 
-function SpinningIcon({ size, muted }: { size: number; muted: boolean }) {
+function SpinningIcon({
+  size,
+  muted,
+  filter,
+}: {
+  size: number;
+  muted: boolean;
+  filter: string | undefined;
+}) {
   const reduced = useReduceMotion();
   const turn = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -259,7 +269,7 @@ function SpinningIcon({ size, muted }: { size: number; muted: boolean }) {
   const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <Animated.View style={{ transform: [{ rotate }] }}>
-      <RsdIcon name="loading" size={size} ink={undefined} muted={muted} />
+      <RsdIcon name="loading" size={size} ink={undefined} muted={muted} filter={filter} />
     </Animated.View>
   );
 }
@@ -372,7 +382,7 @@ export function RsdIconButton(props: IconButtonProps) {
   const keylineSource = props.skin === 'corner' ? undefined : props.keyline;
   const keyline = useKeylineColor(keylineSource);
   const bare = useBareToolbar();
-  const { textStrong, paper } = useDrawingTheme();
+  const theme = useDrawingTheme();
   const { icon, label, onPress } = props;
   if (props.skin === 'corner') {
     return (
@@ -404,6 +414,11 @@ export function RsdIconButton(props: IconButtonProps) {
   const badge = skin === 'tile' ? (props.badge ?? null) : null;
   const brandInk = skin === 'flyout' && selected && !bare ? DRAWING_BRAND : undefined;
   const glyphPx = iconSize(props, face, bare);
+  // Shipping's open-menu grey outranks a parked flat tile's wash.
+  const paint = paintedTile(
+    dimmed ? FLYOUT_OPEN_TILE_FILTER : disabled && bare ? BARE_TILE_DISABLED_FILTER : undefined,
+    theme
+  );
   const glyph = (
     <RsdIcon
       name={icon}
@@ -411,7 +426,7 @@ export function RsdIconButton(props: IconButtonProps) {
       ink={ink ?? brandInk}
       muted={disabled && !bare}
       keyline={keyline}
-      grey={dimmed}
+      filter={paint.filter}
     />
   );
   return (
@@ -438,6 +453,7 @@ export function RsdIconButton(props: IconButtonProps) {
               skin === 'tile' && styles.bareTile,
               expanded && styles.bareTileExpanded,
               disabled && styles.bareTileDisabled,
+              disabled && !paint.filter && styles.bareTileWashed,
               dimmed && styles.tileDimmed,
             ]
           : [
@@ -454,9 +470,11 @@ export function RsdIconButton(props: IconButtonProps) {
       onClick={onPress}
     >
       {bare && skin === 'flyout' && selected ? (
-        <html.div style={styles.outlined(glyphPx, outlineFilter(textStrong))}>{glyph}</html.div>
+        <html.div style={styles.outlined(glyphPx, outlineFilter(theme.textStrong))}>
+          {glyph}
+        </html.div>
       ) : busy ? (
-        <SpinningIcon size={glyphPx} muted={disabled && !bare} />
+        <SpinningIcon size={glyphPx} muted={disabled && !bare} filter={paint.filter} />
       ) : (
         glyph
       )}
@@ -466,7 +484,8 @@ export function RsdIconButton(props: IconButtonProps) {
           data-testid="free-count"
           style={[
             styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX),
-            bare && styles.bareBadge(paper),
+            paint.badge,
+            bare && styles.bareBadge(paint.ring),
           ]}
         >
           {badge}

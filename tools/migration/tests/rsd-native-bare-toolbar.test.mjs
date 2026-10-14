@@ -29,6 +29,7 @@ import {
   COLOR_MENU_SWATCH_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/colorMenuLayout.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { filteredMarkup } from '../../../experiments/native-architecture/src/rsdDrawing/greyed.ts';
 
 const read = (path) => readFileSync(join(import.meta.dirname, '../../../', path), 'utf8');
 const styleBlock = (source) => /<style>([\s\S]*)<\/style>/.exec(source)[1];
@@ -243,6 +244,18 @@ it('gives the glass the Color Menu its trim order keeps, and the custom swatch',
 
 const TILE_PX = 60;
 const flat = (element) => h(ToolbarSkin.Provider, { value: 'bare' }, element);
+// Shipping's parked flat wash, grayscale(1) contrast(0.55) brightness(1.2), over the colors such a
+// tile paints, each as Chromium's own filter renders it.
+const WASHED = {
+  light: { iconInk: '#595959', brandSolid: '#858585', onBrand: '#ededed', paper: '#ebebeb' },
+  dark: { iconInk: '#d7d7d7', brandSolid: '#898989', onBrand: '#ededed', paper: '#5a5a5a' },
+};
+// The trash glyph's #ee6202 orange through the same wash.
+const WASHED_GLYPH_ORANGE = '#959595';
+const markupColors = () => markup().match(/#[0-9a-f]{6}\b/gi) ?? [];
+const isGrey = (hex) => hex.slice(1, 3) === hex.slice(3, 5) && hex.slice(3, 5) === hex.slice(5, 7);
+const badgeStyle = () =>
+  [...host.texts, ...host.views].findLast((props) => props.testID === 'free-count')?.style;
 
 describe('flat skins', () => {
   it.each(['light', 'dark'])(
@@ -275,26 +288,82 @@ describe('flat skins', () => {
     }
   );
 
-  it('washes a parked flat tile out in full ink rather than fading it', async () => {
-    const undo = (disabled) =>
+  it.each(['light', 'dark'])(
+    'paints the wash of a parked flat %s tile into its own colors instead of a filter',
+    async (mode) => {
+      const undo = (disabled) =>
+        h(RsdIconButton, {
+          skin: 'tile',
+          // A startup glyph, so its markup is in hand without the deferred icon chunk.
+          icon: 'settings',
+          label: 'Undo',
+          size: TILE_PX,
+          disabled,
+          onPress: vi.fn(),
+        });
+      await mount(flat(undo(true)), { mode });
+      const style = control('Undo').style;
+      expect(style.opacity).toBe(1);
+      // iOS drops grayscale() and paints brightness() over the whole face, a white rounded tile.
+      expect(style.filter).toBeUndefined();
+      expect(markup()).toBe(
+        NATIVE_ICONS.settings[mode].replaceAll('currentColor', WASHED[mode].iconInk)
+      );
+      // Negative controls: a live flat tile keeps its full ink, and a parked raised one fades.
+      await mount(flat(undo(false)), { mode });
+      expect(markup()).toBe(
+        NATIVE_ICONS.settings[mode].replaceAll('currentColor', themes[mode].iconInk)
+      );
+      await mount(undo(true), { mode });
+      expect(control('Undo').style.opacity).not.toBe(1);
+    }
+  );
+
+  it('greys every color of a full-color glyph on a parked flat tile', async () => {
+    const trash = (disabled) =>
       h(RsdIconButton, {
         skin: 'tile',
-        // A startup glyph, so its markup is in hand without the deferred icon chunk.
-        icon: 'settings',
-        label: 'Undo',
+        icon: 'trash-closed',
+        label: 'Clear',
         size: TILE_PX,
         disabled,
         onPress: vi.fn(),
       });
-    await mount(flat(undo(true)));
-    const style = control('Undo').style;
-    expect(style.opacity).toBe(1);
-    expect(JSON.stringify(style.filter)).toContain('contrast');
-    expect(markup()).toBe(
-      NATIVE_ICONS.settings.light.replaceAll('currentColor', themes.light.iconInk)
+    await mount(flat(trash(false)));
+    expect(markupColors().some((hex) => !isGrey(hex))).toBe(true);
+    await mount(flat(trash(true)));
+    expect(markupColors().length).toBeGreaterThan(0);
+    expect(markupColors().every(isGrey)).toBe(true);
+    expect(markupColors()).toContain(WASHED_GLYPH_ORANGE);
+  });
+
+  it.each(['light', 'dark'])("washes a parked flat %s tile's badge with it", async (mode) => {
+    const ai = (disabled) =>
+      h(RsdIconButton, {
+        skin: 'tile',
+        icon: 'settings',
+        label: 'Create AI image',
+        size: TILE_PX,
+        badge: 3,
+        disabled,
+        onPress: vi.fn(),
+      });
+    await mount(flat(ai(true)), { mode });
+    expect(badgeStyle()).toMatchObject({
+      backgroundColor: WASHED[mode].brandSolid,
+      color: WASHED[mode].onBrand,
+    });
+    expect(JSON.stringify(badgeStyle().boxShadow)).toContain(WASHED[mode].paper);
+    // Negative control: a live flat tile's badge keeps the brand and the paper ring.
+    await mount(flat(ai(false)), { mode });
+    expect(badgeStyle().backgroundColor).not.toBe(WASHED[mode].brandSolid);
+    expect(JSON.stringify(badgeStyle().boxShadow)).not.toContain(WASHED[mode].paper);
+  });
+
+  it('refuses a tile filter it cannot paint rather than leaving the tile in full color', () => {
+    expect(() => filteredMarkup(NATIVE_ICONS.settings.light, 'grayscale(1) opacity(0.35)')).toThrow(
+      'opacity(0.35)'
     );
-    await mount(undo(true));
-    expect(control('Undo').style.opacity).not.toBe(1);
   });
 
   it('outlines the selected flat menu option in the strong text ink instead of a brand ring', async () => {
