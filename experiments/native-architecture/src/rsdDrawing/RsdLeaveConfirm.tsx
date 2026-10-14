@@ -1,46 +1,21 @@
-import { html } from 'react-strict-dom';
 import { useLeaveConfirm } from '../platform/BrowserBack';
-import { LEAVE_CONFIRM_COPY } from '../product/systemBack';
-import { ModalShell } from './ModalShell';
-import { useDialogTitleId } from './dialogScope';
+import { RsdLeaveConfirmCard } from './drawingSheets';
+import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useModalPresence } from './useModalPresence';
-import { RsdAction, styles } from './controls';
 
+// Leave Splotch? asks only on a Back that would leave ink behind, so its card loads on first use.
 export function RsdLeaveConfirm() {
   const { open, stay, leave } = useLeaveConfirm();
   const presence = useModalPresence(open || null);
   if (!presence.shown) return null;
-  const closing = !presence.visible;
-  const choose = (choice: () => void) => () => {
-    if (!closing) choice();
-  };
-  // The shipping confirmation card has no close control: its two choices are the way out, and
-  // Keep drawing comes first so a stray press or switch-access activation stays.
   return (
-    <ModalShell
-      visible={presence.visible}
-      onDismiss={presence.dismissed}
-      label={LEAVE_CONFIRM_COPY.title}
-      size="confirm"
-      onClose={stay}
-      header={null}
-    >
-      <html.div style={styles.dialogContent}>
-        <LeaveTitle />
-        <html.p>{LEAVE_CONFIRM_COPY.body}</html.p>
-        <html.div style={styles.row}>
-          <RsdAction label={LEAVE_CONFIRM_COPY.stay} disabled={closing} onClick={choose(stay)} />
-          <RsdAction label={LEAVE_CONFIRM_COPY.leave} disabled={closing} onClick={choose(leave)} />
-        </html.div>
-      </html.div>
-    </ModalShell>
-  );
-}
-
-function LeaveTitle() {
-  return (
-    <html.h1 id={useDialogTitleId()} style={styles.boldText}>
-      {LEAVE_CONFIRM_COPY.title}
-    </html.h1>
+    <RsdSurfaceBoundary onClose={stay}>
+      <RsdLeaveConfirmCard
+        visible={presence.visible}
+        onDismiss={presence.dismissed}
+        stay={stay}
+        leave={leave}
+      />
+    </RsdSurfaceBoundary>
   );
 }

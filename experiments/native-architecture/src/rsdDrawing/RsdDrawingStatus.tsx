@@ -17,9 +17,6 @@ export const FAILURE_REANNOUNCE_GAP_MS = 150;
 
 // Shipping's generic failure heading; a refused save brings its own.
 export const FAILURE_HEADING = 'Something went wrong';
-// Words for a renderer fault whose error has already given way to a later notice.
-const RENDERER_FAILURE_DETAIL = 'Your picture is still here. Try again to show it.';
-
 function retryAction(label: string, disabled: boolean, onPress: () => void): FailureBannerAction {
   return { id: 'retry', label, variant: 'brand', busy: false, disabled, onPress };
 }
@@ -56,8 +53,8 @@ function saveBanner(
   return { key: 'save', ...copy, onDismiss: saveFailure.dismiss, actions };
 }
 
-// Failures, by type, in the order the banner stacks them. A renderer fault's error is the one
-// `screen.failure` holds, so it shows once, with the Retry that clears it. A minimized AI run's
+// Failures, by type, in the order the banner stacks them. A renderer fault shows on the Error
+// Screen instead, so the error `screen.failure` holds for it stays off the banner. A minimized AI run's
 // waiting polaroid owns the top of the paper and is the way back to a picture already paid for,
 // so the Save Failure Banner waits for it (SaveFailureBanner.svelte).
 function failureBanners(
@@ -67,14 +64,6 @@ function failureBanners(
 ): FailureBannerModel[] {
   const banners: FailureBannerModel[] = [];
   const { failure, recovery } = screen;
-  if (recovery.failed)
-    banners.push({
-      key: 'renderer',
-      heading: FAILURE_HEADING,
-      detail: failure?.kind === 'error' ? failure.detail : RENDERER_FAILURE_DETAIL,
-      onDismiss: null,
-      actions: [retryAction('Retry drawing', recovery.retryDisabled, recovery.retry)],
-    });
   if (draft.state.status === 'failed')
     banners.push({
       key: 'draft',

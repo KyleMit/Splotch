@@ -24,7 +24,11 @@ const styles = css.create({
   row: { flexDirection: 'row' },
   column: { flexDirection: 'column' },
   radius: (radius: number) => ({ borderRadius: radius }),
+  spacing: (padding: number, gap: number) => ({ padding, gap }),
 });
+
+// A menu whose options are not action tiles spaces them its own way: the Color Menu's swatch row.
+export type FlyoutMenuSpacing = Readonly<{ paddingPx: number; gapPx: number }>;
 
 function flyoutMenuRadius(scale: FlyoutScale) {
   return flyoutOptionSize(scale) * ACTION_TILE_RADIUS_RATIO + FLYOUT_MENU_PADDING_PX;
@@ -35,17 +39,24 @@ export function RsdFlyoutMenu({
   direction,
   base,
   scale,
+  spacing,
   children,
 }: FlyoutScale & {
   label: string;
   direction: 'row' | 'column';
+  spacing?: FlyoutMenuSpacing;
   children: ReactNode;
 }) {
   return (
     <html.div
       role="group"
       aria-label={label}
-      style={[styles.menu, styles[direction], styles.radius(flyoutMenuRadius({ base, scale }))]}
+      style={[
+        styles.menu,
+        styles[direction],
+        styles.radius(flyoutMenuRadius({ base, scale })),
+        spacing && styles.spacing(spacing.paddingPx, spacing.gapPx),
+      ]}
     >
       {children}
     </html.div>

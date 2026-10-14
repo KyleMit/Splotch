@@ -29,27 +29,34 @@ leaves alone (`paletteGeometry.ts`). It measures its own length and shows as man
 full size, by the shipping ladder's formula, trimming by the shipping trim order
 (`PALETTE_TRIM_ORDER`, drift-guarded by `tools/tests/native-drawing-tokens.test.mjs`; the geometry
 and ladder by `tools/migration/tests/rsd-native-drawing-frame.test.mjs`); remembered custom paints
-go first, and the selected paint always keeps a swatch. Shipping hides the bar on phone landscape
-and moves color into the Actions Panel; the native bar stays until that panel is ported. Compact
-paint radios retain their full accessible names, checked state, visible selected treatment and
-actual paint colors. Paint radios are raised, round, text-free swatches (`RsdSwatch.tsx`) whose
-selected state is the shipping Selection Ring: a band of the bar surface inside the edge, a
-one-pixel surface seam and a 4px ring a shade off the paint (`selectionRingColor`, shipping's
-`getRingColor`). More colors is the honeycomb on a raised surface disc. Settings is the muted
-`RsdIconButton` corner skin. Toolbar actions are icon buttons drawn from the shipping icon set
-through `RsdIcon` (react-native-svg `SvgXml` on every platform, fed by the generated
-`icons.generated.ts`); each keeps its former text as its accessible name. Status messages have no
-visible strip: `RsdDrawingStatus` speaks routine notices from an `RsdVisuallyHidden` live region
-over the paper. Failures, told apart by type rather than wording (a save the photo library refused,
-an action's error, a renderer fault, a failed draft), show in `RsdFailureBanner`: the shipping Save
-Failure Banner's card, placement, copy and Dismiss, plus the Retry a fault needs, loaded on first
-use on web. The paper area and sheet wear the shipping handmade-paper grain (`PaperTexture`, a
-memoized tile that ink never re-renders) with no border, and a sheet presented smaller than its area
-sits lifted on a flat `paperMargin` with the float shadow. `NativePaper` fills the paper area behind
-the floating edge controls and contain-fits the fixed logical paper into it, centered, the way the
-shipping app presents a rotation-locked paper (ADR-0050); the paper keeps its fixed aspect, so a
-portrait phone shows it full width with margins above and below. These allocations require native
-geometry and visual verification; source flex bounds alone do not establish usable paper space.
+go first, and the selected paint always keeps a swatch. On a landscape phone (shipping's
+`PHONE_LANDSCAPE_QUERY`, through `isPhoneLandscapeViewport`) the bar gives its strip back to the
+paper and the Actions Panel carries the shipping Color Button (`RsdColorButton.tsx`): the loaded ink
+as an `ink-splotch` on an action tile, centred on the paper while the drawer is closed and topping
+the L's leg while it is open, gliding between the two. A vertical swipe on it folds the drawer, as
+shipping's `colorFoldGesture` does. It opens the Color Menu (`RsdColorMenu.tsx`, in the flyout chunk
+on the web): the landscape palette's flat paint swatches and the honeycomb in one row, trimmed by
+shipping's container-query ladder to the room beside the button (`colorMenuLayout.ts`, held rung for
+rung by `tools/migration/tests/rsd-native-color-control.test.mjs`). Compact paint radios retain
+their full accessible names, checked state, visible selected treatment and actual paint colors.
+Paint radios are raised, round, text-free swatches (`RsdSwatch.tsx`) whose selected state is the
+shipping Selection Ring: a band of the bar surface inside the edge, a one-pixel surface seam and a
+4px ring a shade off the paint (`selectionRingColor`, shipping's `getRingColor`). More colors is the
+honeycomb on a raised surface disc. Settings is the muted `RsdIconButton` corner skin. Toolbar
+actions are icon buttons drawn from the shipping icon set through `RsdIcon` (react-native-svg
+`SvgXml` on every platform, fed by the generated `icons.generated.ts`); each keeps its former text
+as its accessible name. Status messages have no visible strip: `RsdDrawingStatus` speaks routine
+notices from an `RsdVisuallyHidden` live region over the paper. Failures, told apart by type rather
+than wording (a save the photo library refused, an action's error, a renderer fault, a failed
+draft), show in `RsdFailureBanner`: the shipping Save Failure Banner's card, placement, copy and
+Dismiss, plus the Retry a fault needs, loaded on first use on web. The paper area and sheet wear the
+shipping handmade-paper grain (`PaperTexture`, a memoized tile that ink never re-renders) with no
+border, and a sheet presented smaller than its area sits lifted on a flat `paperMargin` with the
+float shadow. `NativePaper` fills the paper area behind the floating edge controls and contain-fits
+the fixed logical paper into it, centered, the way the shipping app presents a rotation-locked paper
+(ADR-0050); the paper keeps its fixed aspect, so a portrait phone shows it full width with margins
+above and below. These allocations require native geometry and visual verification; source flex
+bounds alone do not establish usable paper space.
 
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The

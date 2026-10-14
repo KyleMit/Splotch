@@ -10,7 +10,10 @@ export type DrawingDraftState = Readonly<{
 export function createDrawingDraft(
   session: DrawingSession,
   storage: DrawingDraftStorage,
-  prepare: (drawing: Drawing) => Promise<void>
+  prepare: (drawing: Drawing) => Promise<void>,
+  // A launch after Start over: it never adopts the stored draft, which may still hold the picture
+  // the restart left, and stores its own blank page over it instead.
+  fresh = false
 ) {
   const initial = session.getSnapshot();
   const listeners = new Set<() => void>();
@@ -64,7 +67,10 @@ export function createDrawingDraft(
     const owner = generation;
     publish({ status: 'loading', message: 'Recovering your current picture…' });
     try {
-      const drawing = decodeDrawingDraft(await storage.read());
+      // The read is the storage's ownership claim (the web writer's baseline and its cross-tab
+      // check), so a fresh launch still makes it; it only declines the picture it returns.
+      const stored = await storage.read();
+      const drawing = fresh ? null : decodeDrawingDraft(stored);
       if (!isCurrent(owner)) return;
       if (drawing && !changed && session.getSnapshot() === initial) {
         await prepare(drawing);
@@ -79,6 +85,7 @@ export function createDrawingDraft(
         }
       }
       loaded = true;
+      if (fresh) pending ??= session.currentDrawing();
       publish({ status: 'ready', message: '' });
       await flush();
     } catch {
@@ -120,6 +127,13 @@ export function createDrawingDraft(
         pending = session.currentDrawing();
         await flush();
       }
+    },
+    // Leaves a blank page as the stored draft, so a restart comes back to a fresh drawing as
+    // shipping's does. A write still in flight lands first, so it cannot overwrite the blank.
+    async discard() {
+      pending = null;
+      await writing;
+      await storage.write(encodeDrawingDraft(createHistory().drawing));
     },
     dispose() {
       generation += 1;

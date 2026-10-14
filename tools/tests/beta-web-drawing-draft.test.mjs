@@ -11,7 +11,10 @@ import {
 } from '../../experiments/native-architecture/src/platform/drawingDraftRecords.web.ts';
 import { createDrawingDraft } from '../../experiments/native-architecture/src/product/createDrawingDraft.ts';
 import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
-import { encodeDrawingDraft } from '../../experiments/native-architecture/src/product/drawingDraft.ts';
+import {
+  decodeDrawingDraft,
+  encodeDrawingDraft,
+} from '../../experiments/native-architecture/src/product/drawingDraft.ts';
 import {
   addStroke,
   emptyDrawing,
@@ -147,6 +150,49 @@ afterEach(async () => {
   for (const close of disk.connections) close();
   await Promise.resolve();
   vi.unstubAllGlobals();
+});
+
+describe("Start over's fresh launch on the web writer", () => {
+  const stroke = (history) =>
+    addStroke(
+      history,
+      { brush: 'pen', color: 'Purple', width: 8, points: [{ x: 10, y: 20 }] },
+      canonicalPaper()
+    );
+  async function launch(fresh) {
+    const session = createDrawingSession();
+    const draft = createDrawingDraft(session, owner(), async () => {}, fresh);
+    coordinators.push(draft);
+    await draft.start();
+    return { session, draft };
+  }
+
+  // Negative control: a fresh launch that skips the writer's read never gets its baseline, so the
+  // blank page and every stroke after it fail with "Recover the current draft before saving".
+  it('takes ownership without the old picture, saves new strokes, and a normal reload keeps them', async () => {
+    const before = await launch(false);
+    before.session.setHistory(stroke);
+    await vi.waitFor(() =>
+      expect(decodeDrawingDraft(disk.rows.get('legacy').snapshot)?.strokes).toHaveLength(1)
+    );
+    before.draft.dispose();
+
+    const fresh = await launch(true);
+    await vi.waitFor(() => expect(disk.rows.get('legacy').snapshot).toBe(snapshot()));
+    expect(fresh.draft.getSnapshot().status).toBe('ready');
+    expect(fresh.session.currentDrawing().strokes).toEqual([]);
+    fresh.session.setHistory(stroke);
+    await vi.waitFor(() =>
+      expect(decodeDrawingDraft(disk.rows.get('legacy').snapshot)?.strokes).toHaveLength(1)
+    );
+    expect(fresh.draft.getSnapshot().status).toBe('ready');
+    const saved = disk.rows.get('legacy').snapshot;
+    fresh.draft.dispose();
+
+    const reload = await launch(false);
+    await vi.waitFor(() => expect(reload.draft.getSnapshot().status).toBe('ready'));
+    expect(encodeDrawingDraft(reload.session.currentDrawing())).toBe(saved);
+  });
 });
 
 describe('beta browser current-draft ownership', () => {
