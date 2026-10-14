@@ -12,7 +12,7 @@ import {
   type ForwardedRef,
 } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import Svg, { G } from 'react-native-svg';
+import { Svg, G } from '../platform/svg';
 import {
   planInk,
   sameStrokes,

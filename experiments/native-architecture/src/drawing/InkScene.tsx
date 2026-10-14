@@ -1,7 +1,7 @@
 import { useInkPaper } from './InkPaper';
 import { paperSize, semanticWidth } from './paperSpace';
 import { useId, type ReactNode } from 'react';
-import { Defs, G, Image, Mask, Rect } from 'react-native-svg';
+import { Defs, G, Image, Mask, Rect } from '../platform/svg';
 import type { InkCheckpoint } from './checkpoints';
 import { Ink, InkArtwork } from './Ink';
 import type { Stroke } from './model';

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Svg, Path } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import { Animated } from '../platform/animated';
 import { ModalShell } from './ModalShell';

@@ -1,5 +1,5 @@
 import { createContext, useContext, useId } from 'react';
-import Svg, { Circle, ClipPath, Defs, Ellipse, G, Image, Path, Rect } from 'react-native-svg';
+import { Svg, Circle, ClipPath, Defs, Ellipse, G, Image, Path, Rect } from '../platform/svg';
 import { bundledFill, bundledOutline } from './bundledBookAssets';
 import { useBundledPageOutlines } from './bundledOutlines';
 import { bookFillPlacement, viewBoxFrame } from './bookFill';

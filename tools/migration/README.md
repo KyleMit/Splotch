@@ -18,13 +18,14 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
 * `gen-native-icons.mjs` generates the native icon registry from every shipping SVG in
   `web/src/lib/icons` and its `deferred/` subdirectory, resolving themed parts and page tokens per
   theme and re-inking through `currentColor` exactly the icons outside the shipping `COLOR_ICONS`.
-  `NATIVE_STARTUP_ICONS` (the toolbar and Parental Gate keypad) go in
+  `NATIVE_STARTUP_ICONS` (the icons the drawing screen mounts with) go in
   `experiments/native-architecture/src/rsdDrawing/icons.generated.ts`; every other icon goes in
   `icons.deferred.generated.ts` and Splotchy in `splotchy.generated.ts`, both lazily imported by
   `iconRegistry.ts`. `--check` verifies all three and `tools/tests/native-icons.test.mjs` runs that
   check, so adding, renaming or changing a shipping icon fails until you rerun
-  `node tools/migration/gen-native-icons.mjs`. Move a name into `NATIVE_STARTUP_ICONS` only when a
-  startup surface renders it.
+  `node tools/migration/gen-native-icons.mjs`. Move a name into `NATIVE_STARTUP_ICONS` only when the
+  drawing screen renders it as it mounts; the web export prewarms the deferred module after first
+  paint, and a lazy sheet opens only once it has arrived (ADR-0179).
 * `gen-native-branding.mjs` copies the shipping launcher icon, adaptive icon, splash, and launch
   screen (the `@capacitor/assets` output under `android/app/src/main/res` and `ios/App/App`) into
   the native Android and iOS projects, removing stale copies; `--check` verifies them and

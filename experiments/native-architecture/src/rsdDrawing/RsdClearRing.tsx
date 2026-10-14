@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
+import { Svg, Circle, Defs, Path, RadialGradient, Stop } from '../platform/svg';
 import { createClearRingContours } from '../../../../web/src/lib/components/clearRingContours';
 import { dockCenterFromTopRight, type ClearDock } from '../clear/clearDock';
 

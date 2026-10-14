@@ -77,8 +77,8 @@ describe('native icon registry generated from the shipping icon set', () => {
 
   it('resolves every themed part per theme and keeps fixed palettes unthemed', () => {
     const handle = iconPart('--icon-brush-magic-handle');
-    expect(NATIVE_ICONS['brush-magic'].light).toContain(`fill="${handle.light}"`);
-    expect(NATIVE_ICONS['brush-magic'].dark).toContain(`fill="${handle.dark}"`);
+    expect(NATIVE_DEFERRED_ICONS['brush-magic'].light).toContain(`fill="${handle.light}"`);
+    expect(NATIVE_DEFERRED_ICONS['brush-magic'].dark).toContain(`fill="${handle.dark}"`);
     const night = iconPart('--icon-appearance-night');
     expect(NATIVE_DEFERRED_ICONS.appearance.dark).toContain(`fill="${night.dark}"`);
     for (const theme of ['light', 'dark']) {

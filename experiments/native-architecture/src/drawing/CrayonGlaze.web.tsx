@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { G } from 'react-native-svg';
+import { G } from '../platform/svg';
 import { CRAYON_COLOR_MIX } from './crayon';
 import type { paintAppearance } from './palette';
 

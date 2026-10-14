@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import { Defs, FeBlend, FeComposite, Filter, G } from 'react-native-svg';
+import { Defs, FeBlend, FeComposite, Filter, G } from '../platform/svg';
 import { CRAYON_COLOR_MIX } from './crayon';
 import { useInkPaper } from './InkPaper';
 import { paperSize } from './paperSpace';

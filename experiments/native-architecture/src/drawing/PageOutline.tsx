@@ -3,7 +3,7 @@ import { OfflineBookOutline } from '../offlineLibrary/artwork';
 import { BundledBookOutline } from './BundledBookArtwork';
 import { useBundledPageOutlines } from './bundledOutlines';
 import { isFarmPageId } from './bundledBooks';
-import { G, Path } from 'react-native-svg';
+import { G, Path } from '../platform/svg';
 import { COLORING_PAGES, type PageId } from './pages';
 import { PAPER_THEMES } from './theme';
 import { useInkAppearance } from './InkAppearance';

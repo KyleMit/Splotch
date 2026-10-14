@@ -5,7 +5,7 @@ import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/r
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { actionPanelLayout } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import { BRUSH_MENU_OPTIONS } from '../../../experiments/native-architecture/src/rsdDrawing/brushMenuOptions.ts';
-import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 
 // The edge-control screen the toolbar and Button Size suites mount.
 export function toolbarScreen(overrides = {}) {
@@ -106,7 +106,7 @@ export function heldBrushLabel() {
   const xml = host.querySelector('[aria-label="Brushes"] svg[data-xml]')?.dataset.xml;
   const path = (markup) => markup.match(/\bd="([^"]+)"/)?.[1];
   const held = Object.values(BRUSH_MENU_OPTIONS).find(
-    ({ icon }) => xml && xml.includes(path(NATIVE_ICONS[icon].light))
+    ({ icon }) => xml && xml.includes(path(NATIVE_DEFERRED_ICONS[icon].light))
   );
   return held && `Brush: ${held.label}`;
 }

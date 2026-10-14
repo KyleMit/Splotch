@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { StyleSheet } from 'react-native';
-import Svg, { Circle, G, Path } from 'react-native-svg';
+import { Svg, Circle, G, Path } from '../platform/svg';
 import {
   ERASER_FILL_OPACITY,
   ERASER_GLOW_OPACITY,

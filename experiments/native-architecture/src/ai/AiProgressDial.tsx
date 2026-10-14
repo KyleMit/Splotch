@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Animated, Easing } from '../platform/animated';
-import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
+import { Svg, Circle, Defs, Path, RadialGradient, Stop } from '../platform/svg';
 import { dialColors } from '../../../../web/src/lib/ai/dialColors';
 import { CALM_FADE_MS } from '../../../../web/src/lib/motionDurations';
 import type { AiProgress } from './aiProgress';

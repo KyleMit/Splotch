@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
-import Svg, { Polygon } from 'react-native-svg';
+import { Svg, Polygon } from '../platform/svg';
 import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppearance';
 import type { CustomColor } from '../drawing/palette';
 import { HEX_GRID_GEOMETRY } from '../../../../web/src/lib/design/trimGeometry';

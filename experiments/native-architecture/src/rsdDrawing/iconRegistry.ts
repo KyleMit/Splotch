@@ -1,4 +1,5 @@
 import { createLazyExport, useLazyValue } from '../lazyExport';
+import { DEFERRED_ICON_WARMUP } from './deferredIconWarmup';
 import {
   NATIVE_ICONS,
   type NativeDeferredIconName,
@@ -15,6 +16,21 @@ const splotchy = createLazyExport<string>(() =>
   import('./splotchy.generated').then((module) => module.NATIVE_SPLOTCHY)
 );
 const DEFERRED_ICONS_DESCRIPTION = 'Deferred icon chunk';
+
+function logFailedLoad(error: unknown) {
+  console.error(`${DEFERRED_ICONS_DESCRIPTION} failed to load:`, error);
+}
+
+DEFERRED_ICON_WARMUP.then(() => deferredIcons.load()).catch(logFailedLoad);
+
+// Settles once the deferred icons are in, or their load has failed and been forgotten, so a lazy
+// surface can open with its icons painted; a failure leaves each icon to retry when it mounts.
+export function deferredIconsSettled(): Promise<void> {
+  return deferredIcons.load().then(
+    () => undefined,
+    () => undefined
+  );
+}
 
 function isStartupIcon(name: NativeIconName): name is NativeStartupIconName {
   return Object.hasOwn(NATIVE_ICONS, name);

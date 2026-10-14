@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState, type ReactNode, type Ref } from 'react';
 import { StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Svg, Path } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { RsdIcon } from './RsdIcon';

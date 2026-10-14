@@ -3,7 +3,7 @@ import { pageArtTransform, paperSize, semanticWidth, textureScale } from './pape
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineMagicFill } from '../offlineLibrary/artwork';
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
-import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use, Image } from 'react-native-svg';
+import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use, Image } from '../platform/svg';
 import { paintAppearance, paletteHex } from './palette';
 import { BundledMagicFill } from './BundledBookArtwork';
 import { isFarmPageId } from './bundledBooks';
