@@ -13,7 +13,13 @@ function solve(gate) {
   gate.input(String(x * y));
   gate.answer();
 }
-async function fixture({ grant = () => new Response(GRANT), stored = null } = {}) {
+const picture = () =>
+  new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } });
+async function fixture({
+  grant = () => new Response(GRANT),
+  stored = null,
+  generate = picture,
+} = {}) {
   const product = createDrawingProduct({ read: async () => null, write: async () => {} }, () => {});
   await product.settings.load();
   product.openParentCenter();
@@ -25,8 +31,11 @@ async function fixture({ grant = () => new Response(GRANT), stored = null } = {}
   const transport = vi.fn(async (request) =>
     request.path === '/api/free-generation-grant'
       ? grant()
-      : new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } })
+      : request.path === '/api/generate-image'
+        ? generate()
+        : picture()
   );
+  const report = vi.fn(async () => new Response('{"ok":true}', { status: 200 }));
   const prepare = vi.fn(async () => ({
     bytes: rgbaPng(4, 3, 255),
     originalId: 'picture-1-fixture',
@@ -39,9 +48,15 @@ async function fixture({ grant = () => new Response(GRANT), stored = null } = {}
     transport,
     prepare,
     admit: async () => {},
+    problems: {
+      platform: 'web',
+      transport: report,
+      device: () => ({ platform: 'Android' }),
+      offline: () => false,
+    },
   });
   const settled = () => vi.waitFor(() => expect(owner.getState().busy).toBe(false));
-  return { product, owner, storage: boundary.aiStorage, transport, prepare, settled };
+  return { product, owner, storage: boundary.aiStorage, transport, prepare, settled, report };
 }
 
 it('checks the free allowance without asking a grown-up and without reading the drawing', async () => {
@@ -150,4 +165,119 @@ it('reopens a run left waiting before a reload on the result card and checks on 
       f.transport.mock.calls.some(([request]) => request.path === '/api/generation-result')
     ).toBe(true)
   );
+});
+
+// Through the gate to the prompt, then a picked style.
+async function sendStyle(f, onSetup = vi.fn()) {
+  f.owner.start(onSetup);
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.owner.getState()).toMatchObject({ open: true, view: 'prompt' }));
+  f.owner.pickStyle('Clay');
+  await f.settled();
+  return onSetup;
+}
+const ticket = () =>
+  new Response(JSON.stringify({ ok: true, jobId: 'b'.repeat(64), pollAfterMs: 60_000 }), {
+    status: 202,
+  });
+
+it('releases a minimized run held past its server window when it is shown again, and asks again for a new one', async () => {
+  const f = await fixture({ generate: ticket });
+  await sendStyle(f);
+  expect(f.owner.getState().journal.phase).toBe('pending');
+  f.owner.minimize();
+  const now = Date.now();
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(now + JOB_TTL_MS + 1);
+  try {
+    f.owner.start(vi.fn());
+    await vi.waitFor(() => expect(f.owner.getState().journal.phase).toBe('failed'));
+    expect(f.owner.getState().minimized).toBe(false);
+    expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
+    f.product.openParentCenter();
+    f.product.gate.dismiss();
+    f.product.closeParentCenter();
+    f.owner.retry();
+    expect(f.product.gate.getState()).toMatchObject({ open: true, feature: 'ai' });
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+it('brings back a finished picture nobody dismissed, and offers the prompt once it is closed', async () => {
+  const createdAt = Date.now() - 60_000;
+  const journal = Object.freeze({
+    version: 1,
+    id: createdAt,
+    createdAt,
+    style: 'Clay',
+    originalId: 'picture-1-fixture',
+    phase: 'result',
+    jobId: 'b'.repeat(64),
+    result: { uri: 'file:///fixture/ai.png', mime: 'image/png' },
+  });
+  const f = await fixture({ stored: { kind: 'native', receipt: { kind: 'prepared', journal } } });
+  f.owner.start(vi.fn());
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
+  expect(f.owner.getState().view).toBe('result');
+  expect(aiResultPhase(f.owner.getState())).toMatchObject({
+    kind: 'result',
+    picture: { uri: 'file:///fixture/ai.png' },
+  });
+  f.owner.dismiss();
+  f.owner.start(vi.fn());
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
+  expect(f.owner.getState().view).toBe('prompt');
+});
+
+it.each([
+  [
+    'used up',
+    () =>
+      new Response(
+        JSON.stringify({ ok: false, code: 'FREE_GRANT_EXHAUSTED', error: 'Used up', remaining: 0 }),
+        { status: 403 }
+      ),
+  ],
+  ['unavailable', () => new Response('{"ok":false,"error":"No key"}', { status: 503 })],
+])(
+  'sends a grown-up to Settings when the free allowance is %s, as shipping does',
+  async (_, reply) => {
+    const f = await fixture({ generate: reply });
+    const onSetup = await sendStyle(f);
+    expect(onSetup).toHaveBeenCalledOnce();
+    expect(f.owner.getState().open).toBe(false);
+  }
+);
+
+it('reports a failed run behind the report check with its bounded details and no drawing', async () => {
+  const f = await fixture({
+    generate: () => new Response('{"ok":false,"error":"Upstream down"}', { status: 502 }),
+  });
+  await sendStyle(f);
+  expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
+  f.owner.reportProblem();
+  expect(f.product.gate.getState()).toMatchObject({ open: true, feature: 'imageReport' });
+  expect(f.owner.getState().problem.phase).toBe('gating');
+  solve(f.product.gate);
+  const confirm = f.owner.getState().problem;
+  expect(confirm.phase).toBe('confirm');
+  expect(confirm.rows).toEqual([
+    { label: 'Error', value: '502 · /api/generate-image' },
+    { label: 'Message', value: 'That picture did not finish. Your original drawing is saved.' },
+    { label: 'Attempts', value: '1 in a row' },
+    { label: 'App version', value: expect.stringMatching(/ \(web\)$/) },
+    { label: 'Art style', value: 'Clay' },
+  ]);
+  await f.owner.sendProblemReport();
+  const [body] = f.report.mock.calls[0];
+  expect(body.kind).toBe('bug');
+  expect(body.message).toContain('Error: 502 · /api/generate-image');
+  expect(body).not.toHaveProperty('device');
+  expect(JSON.stringify(body)).not.toMatch(/data:image|installation|aaaaaaaa/);
+  expect(f.owner.getState().problem).toEqual({
+    phase: 'success',
+    message: 'Thanks. Your problem report was sent to our private support tracker.',
+  });
 });

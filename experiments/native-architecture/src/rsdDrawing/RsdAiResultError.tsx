@@ -38,7 +38,7 @@ export function RsdAiResultError({
 }) {
   if (reason === 'safety') return <SafetyRefusal owner={owner} state={state} />;
   return (
-    <RsdAiErrorCard reason={reason} onTryAgain={owner.retry} onKeepDrawing={owner.close}>
+    <RsdAiErrorCard reason={reason} onTryAgain={owner.retry} onKeepDrawing={owner.dismiss}>
       {children}
     </RsdAiErrorCard>
   );

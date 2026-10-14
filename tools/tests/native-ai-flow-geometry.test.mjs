@@ -21,6 +21,7 @@ import * as parts from '../../experiments/native-architecture/src/rsdDrawing/Rsd
 import * as errorCard from '../../experiments/native-architecture/src/rsdDrawing/RsdAiResultError.tsx';
 import * as result from '../../experiments/native-architecture/src/rsdDrawing/RsdAiResult.tsx';
 import * as report from '../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
+import * as problem from '../../experiments/native-architecture/src/rsdDrawing/RsdAiProblemReport.tsx';
 import * as iconButton from '../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import * as polaroid from '../../experiments/native-architecture/src/ai/AiWaitingPolaroid.tsx';
 
@@ -397,5 +398,16 @@ it('badges and spins the AI Image Button and pins the waiting print where shippi
 
   expect(SHIPPING.generation).toContain(
     `export const AI_FAILURE_RETRY_LIMIT = ${AI_FAILURE_RETRY_LIMIT};`
+  );
+});
+
+it('lays out the problem report diagnostics as shipping does', () => {
+  expect(declaration(rule(SHIPPING.report, '.ai-report-diagnostics dl'), 'line-height')).toBe(
+    `${problem.DIAGNOSTICS_LINE_HEIGHT}`
+  );
+  const note = rule(SHIPPING.report, '.ai-report-diagnostics p');
+  expect(declaration(note, 'line-height')).toBe(`${problem.DIAGNOSTICS_NOTE_LINE_HEIGHT}`);
+  expect(declaration(note, 'padding')).toBe(
+    `var(--space-1) var(--space-3) ${problem.DIAGNOSTICS_NOTE_BOTTOM_PX}px`
   );
 });

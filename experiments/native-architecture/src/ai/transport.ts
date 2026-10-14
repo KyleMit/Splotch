@@ -76,12 +76,14 @@ export type AiReply =
       message: string;
       reportToken: string | null;
       retryAt?: never;
+      status?: number;
     }
   | {
       kind: 'failure';
       reason: 'exhausted' | 'unavailable' | 'expired' | 'rejected' | 'server' | 'invalid';
       message: string;
       retryAt?: number;
+      status?: number;
     }
   | { kind: 'unknown'; message: string };
 export function aiUrl(request: AiRequest) {
@@ -182,7 +184,9 @@ export async function parseAiResponse(
     Object.keys(raw).sort().join(',') === 'accessCode,ok'
   )
     return { kind: 'verified', accessCode: raw.accessCode };
-  return parseAiFailure(raw, response, poll, now);
+  const reply = parseAiFailure(raw, response, poll, now);
+  // The HTTP status rides along for the problem report a grown-up can send about a failure.
+  return reply.kind === 'failure' ? { ...reply, status: response.status } : reply;
 }
 function parseAiFailure(
   raw: Record<string, unknown>,

@@ -11,6 +11,7 @@ export const AI_RESULT_COPY = {
   disclosure: 'AI-generated picture',
   reportPictureLabel: 'Report this picture',
   reportPicture: 'Report',
+  reportProblem: 'Report a problem',
   safetySub: "That picture didn't work — try drawing something different!",
   grownUps: 'For grown-ups',
   reportRefusal: 'Report this refusal',

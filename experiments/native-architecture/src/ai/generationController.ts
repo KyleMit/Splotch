@@ -5,6 +5,8 @@ import type { AiJournal, AiResult } from './journal';
 import { AiRecoverySession } from './recoverySession';
 import { bytesBase64 } from './base64';
 export class NativeAiController extends AiRecoverySession {
+  // Where a run goes when only a grown-up's setup can fix it; the flow sends it to Settings.
+  protected needsSetup = () => {};
   private collectImage = async (
     journal: AiJournal,
     reply: Extract<
@@ -83,6 +85,11 @@ export class NativeAiController extends AiRecoverySession {
           await this.persist({ ...journal, phase: 'failed', result: null });
         this.update({
           failures: this.state.failures + 1,
+          failure: {
+            status: null,
+            endpoint: poll ? '/api/generation-result' : '/api/generate-image',
+            message: 'The picture that came back could not be opened.',
+          },
           message:
             'This AI picture could not be safely opened. Your original drawing is saved. A generation will not be retried automatically.',
         });
@@ -159,30 +166,7 @@ export class NativeAiController extends AiRecoverySession {
       });
       this.schedule(reply.kind === 'pending' ? reply.delayMs : POLL_INTERVAL_MS);
     } else if (reply.kind === 'failure') {
-      if (reply.reason === 'expired' && this.ambiguous.has(id)) {
-        this.update({
-          message:
-            'A previous reply is still uncertain. Keep this app open; the attempt stays held until its server retention window ends.',
-        });
-        return;
-      }
-      if (reply.reason === 'safety') {
-        this.reports.refuse(id, reply.reportToken);
-        this.update({ refusal: { id }, message: reply.message, failures: 0 });
-      } else this.update({ failures: this.state.failures + 1 });
-      await this.persist({
-        ...journal,
-        phase: 'failed',
-      });
-      this.update({
-        message: reply.message,
-        retryAt: reply.retryAt ?? 0,
-        ...(reply.reason === 'exhausted'
-          ? { remaining: 0 }
-          : reply.reason === 'unavailable' && this.credential?.kind === 'free'
-            ? { remaining: null }
-            : {}),
-      });
+      await this.settleFailure(id, journal, reply, poll);
     } else if (reply.kind === 'unknown') {
       this.ambiguous.add(id);
       await this.persist({
@@ -193,6 +177,54 @@ export class NativeAiController extends AiRecoverySession {
         message: reply.message,
       });
     }
+  };
+  private settleFailure = async (
+    id: number,
+    journal: AiJournal,
+    reply: Extract<AiReply, { kind: 'failure' }>,
+    poll: boolean
+  ) => {
+    if (reply.reason === 'expired' && this.ambiguous.has(id)) {
+      this.update({
+        message:
+          'A previous reply is still uncertain. Keep this app open; the attempt stays held until its server retention window ends.',
+      });
+      return;
+    }
+    if (reply.reason === 'safety') {
+      this.reports.refuse(id, reply.reportToken);
+      this.update({ refusal: { id }, message: reply.message, failures: 0 });
+    } else
+      this.update({
+        failures: this.state.failures + 1,
+        failure: {
+          status: reply.status ?? null,
+          endpoint: poll ? '/api/generation-result' : '/api/generate-image',
+          message: reply.message,
+        },
+      });
+    await this.persist({
+      ...journal,
+      phase: 'failed',
+    });
+    this.update({
+      message: reply.message,
+      retryAt: reply.retryAt ?? 0,
+      ...(reply.reason === 'exhausted'
+        ? { remaining: 0 }
+        : reply.reason === 'unavailable' && this.credential?.kind === 'free'
+          ? { remaining: null, availability: 'unavailable' }
+          : {}),
+    });
+    // A free allowance that is used up or unavailable is not a failure a retry can fix:
+    // shipping closes the card and opens the AI settings, where a grown-up can add a key.
+    if (
+      reply.reason === 'exhausted' ||
+      (reply.reason === 'unavailable' &&
+        reply.retryAt === undefined &&
+        this.credential?.kind === 'free')
+    )
+      this.needsSetup();
   };
   private currentGenerationPermission = (proof: number) =>
     this.state.authorized && this.consented() && proof === this.authorization && !this.disposed;
@@ -217,6 +249,7 @@ export class NativeAiController extends AiRecoverySession {
       message: 'Saving your original drawing…',
       heldResult: null,
       refusal: null,
+      failure: null,
     });
     let uploadStarted = false;
     try {
@@ -279,6 +312,13 @@ export class NativeAiController extends AiRecoverySession {
     } catch {
       this.update({
         failures: this.state.failures + 1,
+        failure: {
+          status: null,
+          endpoint: '/api/generate-image',
+          message: uploadStarted
+            ? 'The request did not finish.'
+            : 'The drawing could not be saved before sending.',
+        },
         ...(this.state.attempt?.kind === 'starting' ? { attempt: { kind: 'stopped' } } : {}),
         message: uploadStarted
           ? 'That did not finish. Your original drawing is still here. A sent generation will not be retried automatically.'
@@ -310,9 +350,7 @@ export class NativeAiController extends AiRecoverySession {
     )
       return;
     if (Date.now() - journal.createdAt >= JOB_TTL_MS) {
-      this.update({
-        message: 'The server retention window has ended. Your saved original is still here.',
-      });
+      await this.releaseHeld(journal);
       return;
     }
     if (Date.now() - this.pollStarted >= POLL_TIMEOUT_MS) {

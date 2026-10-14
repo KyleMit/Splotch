@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
 import {
@@ -33,6 +34,12 @@ export function createProductOwners(
     transport: aiTransport,
     admit: admitAiImage,
     parent,
+    problems: {
+      platform: Platform.OS,
+      transport: feedbackTransport,
+      device: feedbackDevice,
+      offline: feedbackOffline,
+    },
     async prepare() {
       const current = screenRef.current;
       const surface = current.surface.current;

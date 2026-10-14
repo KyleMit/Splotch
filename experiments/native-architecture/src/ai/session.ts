@@ -11,6 +11,7 @@ import { requestAi } from './transport';
 import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
 import type { ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
+import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
 import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
 import { aiJournalWaiting } from './uiState';
@@ -45,6 +46,7 @@ export class AiSession {
     });
   }
   protected reports: ReturnType<typeof createAiReportOwner>;
+  protected problems: AiProblemReport | null = null;
   protected listeners = new Set<() => void>();
   protected disposed = false;
   protected recoveryUncertain = false;
@@ -89,6 +91,8 @@ export class AiSession {
   protected state: AiState = {
     view: 'prompt',
     attempt: null,
+    failure: null,
+    problem: null,
     availability: 'loading',
     failures: 0,
     open: false,
@@ -152,7 +156,7 @@ export class AiSession {
     this.writing = work;
     return work;
   };
-  private readCredential = async (permitted: () => boolean): Promise<AiCredential> => {
+  protected readCredential = async (permitted: () => boolean): Promise<AiCredential> => {
     const changed = () => new Error('AI authorization changed.');
     const byok = await this.deps.vault.read('byok');
     if (!permitted()) throw changed();
@@ -170,7 +174,7 @@ export class AiSession {
     if (!isInstallationId(id)) throw new Error('Installation grant unavailable.');
     return { kind: 'free', installationId: id };
   };
-  private applyCredential = async (credential: AiCredential, permitted: () => boolean) => {
+  protected applyCredential = async (credential: AiCredential, permitted: () => boolean) => {
     this.credential = credential;
     this.update({ credential: credential.kind });
     if (credential.kind !== 'free') {
@@ -215,25 +219,7 @@ export class AiSession {
     });
     await this.applyCredential(await this.readCredential(permitted), permitted);
   };
-  private availabilityCheck = 0;
-  // What the AI Image Button shows before anyone taps it: which credential is saved and, on the
-  // free tier, how many pictures are left. Reading that is not sending a drawing, so no grown-up
-  // is asked, as shipping requests its free grant whenever AI image creation is on.
-  checkAvailability = async () => {
-    if (this.disposed || this.active || this.state.open) return;
-    const check = ++this.availabilityCheck;
-    const permitted = () =>
-      !this.disposed && check === this.availabilityCheck && !this.active && !this.state.open;
-    this.update({ availability: 'loading' });
-    try {
-      const credential = await this.readCredential(permitted);
-      if (permitted()) await this.applyCredential(credential, permitted);
-    } catch {
-      if (!permitted()) return;
-      this.credential = null;
-      this.update({ credential: 'unavailable', remaining: null, availability: 'unavailable' });
-    }
-  };
+  protected availabilityCheck = 0;
   private holdRecovery = (receipt: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt) => {
     this.recoveryUncertain = receipt.kind === 'recovery-request';
     this.credential = null;
@@ -441,6 +427,7 @@ export class AiSession {
   };
   close = () => {
     this.reports.cancel();
+    this.problems?.reset();
     this.authorization += 1;
     this.parentProof = null;
     this.deps.parent?.cancel('ai');

@@ -1,16 +1,12 @@
 import { useEffect } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
-import { DRAWING_ON_BRAND } from '../drawing/theme';
 import type { NativeFeedbackOwner, NativeFeedbackState } from '../feedback/feedback';
 import { MAX_REPORT_MESSAGE_LENGTH, REPORT_KINDS } from '../feedback/report';
 import { MESSAGE_PROMPT_BY_KIND, REPORT_FORM_COPY } from '../feedback/reportFormCopy';
 import { useNativeFeedbackState } from '../feedback/useNativeFeedback';
-import { styles as controlStyles } from './controls';
+import { DeviceCheckbox, DeviceDetails } from './RsdDeviceOptIn';
 import { RsdButton } from './RsdButton';
-import { RsdDisclosure } from './RsdDisclosure';
-import { RsdIcon } from './RsdIcon';
-import { RsdPressable } from './RsdPressable';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { RsdSegmentedPicker } from './RsdSegmentedPicker';
 import { RsdStatusMessage } from './RsdStatusMessage';
@@ -23,24 +19,10 @@ const INTRO_BOTTOM_PX = 12;
 const INTRO_LINE_HEIGHT = 1.5;
 const FIELD_GAP_PX = 12;
 const DEVICE_GAP_PX = 10;
-const CHECK_GAP_PX = 10;
-const CHECK_LINE_HEIGHT = 1.4;
-const CHECKBOX_PX = 18;
-const CHECKBOX_TOP_PX = 1;
 const PRIVACY_PULL_PX = 2;
 const PRIVACY_LINE_HEIGHT = 1.45;
-const DEVICE_SUMMARY_PADDING_PX = { block: 8, inline: 12 } as const;
-const DEVICE_LIST_PADDING_PX = { inline: 12, bottom: 4 } as const;
-const DEVICE_LIST_LINE_HEIGHT = 1.7;
-const DEVICE_NOTE_PADDING_PX = { top: 4, inline: 12, bottom: 10 } as const;
-const DEVICE_NOTE_LINE_HEIGHT = 1.4;
-const DEVICE_EMPTY_BOTTOM_PX = 8;
-// The browser checkbox's own box: a hairline frame with slightly rounded corners, and a tick
-// inset a little inside the brand fill once checked.
-const CHECKBOX_RADIUS_PX = 3;
 // ReportFields.svelte's (max-width: 400px): below it the kind picker tightens its track.
 const TIGHT_PICKER_MAX_WIDTH_PX = 400;
-const CHECKBOX_TICK_PX = 14;
 // The .report-textarea skin. The field is React Strict DOM's own textarea rather than the shared
 // RsdTextArea, whose React Native Web TextInput the color picker's chunk also loads: a module two
 // web chunks share is hoisted onto the startup path.
@@ -97,83 +79,6 @@ const styles = css.create({
     '::placeholder': { color: colors.textSoft },
   },
   device: { display: 'flex', flexDirection: 'column', gap: DEVICE_GAP_PX },
-  check: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: CHECK_GAP_PX,
-    margin: 0,
-    padding: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    textAlign: 'left',
-    cursor: 'pointer',
-  },
-  box: {
-    boxSizing: 'border-box',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: CHECKBOX_PX,
-    height: CHECKBOX_PX,
-    marginTop: CHECKBOX_TOP_PX,
-    borderRadius: CHECKBOX_RADIUS_PX,
-    borderWidth: dimensions.borderWidth,
-    borderStyle: 'solid',
-    borderColor: colors.textSoft,
-    backgroundColor: colors.surface,
-  },
-  boxChecked: { borderColor: colors.brandSolid, backgroundColor: colors.brandSolid },
-  checkText: {
-    flexShrink: 1,
-    fontSize: dimensions.fontSizeSm,
-    color: colors.text,
-    lineHeight: CHECK_LINE_HEIGHT,
-  },
-  why: { color: colors.textSoft },
-  details: { backgroundColor: colors.surface },
-  detailsSummary: {
-    paddingTop: DEVICE_SUMMARY_PADDING_PX.block,
-    paddingBottom: DEVICE_SUMMARY_PADDING_PX.block,
-    paddingLeft: DEVICE_SUMMARY_PADDING_PX.inline,
-    paddingRight: DEVICE_SUMMARY_PADDING_PX.inline,
-    fontSize: dimensions.fontSizeSm,
-    color: colors.brandText,
-  },
-  detailsMark: { fontSize: dimensions.fontSizeSm },
-  rows: {
-    margin: 0,
-    paddingTop: 0,
-    paddingLeft: DEVICE_LIST_PADDING_PX.inline,
-    paddingRight: DEVICE_LIST_PADDING_PX.inline,
-    paddingBottom: DEVICE_LIST_PADDING_PX.bottom,
-    listStyle: 'none',
-  },
-  row: {
-    fontSize: dimensions.fontSizeXs,
-    color: colors.textSoft,
-    lineHeight: DEVICE_LIST_LINE_HEIGHT,
-  },
-  empty: {
-    margin: 0,
-    paddingTop: 0,
-    paddingLeft: DEVICE_LIST_PADDING_PX.inline,
-    paddingRight: DEVICE_LIST_PADDING_PX.inline,
-    paddingBottom: DEVICE_EMPTY_BOTTOM_PX,
-    fontSize: dimensions.fontSizeXs,
-    color: colors.textSoft,
-  },
-  note: {
-    margin: 0,
-    paddingTop: DEVICE_NOTE_PADDING_PX.top,
-    paddingLeft: DEVICE_NOTE_PADDING_PX.inline,
-    paddingRight: DEVICE_NOTE_PADDING_PX.inline,
-    paddingBottom: DEVICE_NOTE_PADDING_PX.bottom,
-    fontSize: dimensions.fontSizeXs,
-    color: colors.textSoft,
-    lineHeight: DEVICE_NOTE_LINE_HEIGHT,
-  },
   privacy: {
     marginTop: -PRIVACY_PULL_PX,
     marginBottom: 0,
@@ -184,61 +89,6 @@ const styles = css.create({
   submit: { alignSelf: 'flex-start' },
   status: { marginTop: dimensions.space3 },
 });
-
-// The device opt-in, drawn as the browser draws shipping's checkbox in the brand accent: a real
-// checkbox for assistive technology, the whole row its label.
-function DeviceCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
-  return (
-    <RsdPressable
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-label={`${REPORT_FORM_COPY.includeDevice} ${REPORT_FORM_COPY.includeDeviceWhy}`}
-      style={styles.check}
-      onClick={onToggle}
-    >
-      <html.div aria-hidden style={[styles.box, checked && styles.boxChecked]}>
-        {checked ? (
-          <RsdIcon name="check" size={CHECKBOX_TICK_PX} ink={DRAWING_ON_BRAND} muted={false} />
-        ) : null}
-      </html.div>
-      <html.span aria-hidden style={styles.checkText}>
-        {`${REPORT_FORM_COPY.includeDevice} `}
-        <html.span style={styles.why}>{REPORT_FORM_COPY.includeDeviceWhy}</html.span>
-      </html.span>
-    </RsdPressable>
-  );
-}
-
-function DeviceDetails({ owner }: { owner: NativeFeedbackOwner }) {
-  const rows = owner.deviceRows();
-  return (
-    <RsdDisclosure
-      summary={
-        <html.span style={controlStyles.semiboldText}>{REPORT_FORM_COPY.deviceSummary}</html.span>
-      }
-      style={styles.details}
-      summaryStyle={styles.detailsSummary}
-      markStyle={styles.detailsMark}
-    >
-      <html.div>
-        {rows.length ? (
-          <html.ul style={styles.rows}>
-            {rows.map((row) => (
-              <html.li key={row.label} style={styles.row}>
-                <html.span style={controlStyles.semiboldText}>{`${row.label}:`}</html.span>
-                {` ${row.value}`}
-              </html.li>
-            ))}
-          </html.ul>
-        ) : (
-          <html.p style={styles.empty}>{REPORT_FORM_COPY.deviceGathering}</html.p>
-        )}
-        <html.p style={styles.note}>{REPORT_FORM_COPY.deviceNote}</html.p>
-      </html.div>
-    </RsdDisclosure>
-  );
-}
 
 // What the parent hears after Send report: the shipping thanks on success, else the delivery's
 // own account of what happened, which says whether the report may already have arrived.
@@ -320,7 +170,7 @@ function ReportFields({
             checked={state.draft.includeDevice}
             onToggle={() => owner.setIncludeDevice(!state.draft.includeDevice)}
           />
-          {state.draft.includeDevice ? <DeviceDetails owner={owner} /> : null}
+          {state.draft.includeDevice ? <DeviceDetails rows={owner.deviceRows()} /> : null}
         </html.div>
       ) : null}
       <html.p style={styles.privacy}>{REPORT_FORM_COPY.privacy}</html.p>

@@ -27,6 +27,7 @@ import { fontTheme } from './fontTheme';
 import { ModalStage } from './ModalShell';
 import { RsdAiReportConfirm, RsdAiReportStatus, aiReportSettled } from './RsdAiImageReport';
 import { RsdAiResultError } from './RsdAiResultError';
+import { RsdAiProblemConfirm, RsdAiProblemStatus, aiProblemSettled } from './RsdAiProblemReport';
 import {
   RsdAiDisclosure,
   RsdAiDownload,
@@ -121,7 +122,7 @@ export function RsdAiResult({
   const leave = () => {
     if (exiting) return;
     if (generating) owner.minimize();
-    else owner.close();
+    else owner.dismiss();
   };
   return (
     <>
@@ -147,6 +148,7 @@ export function RsdAiResult({
         />
       </ModalStage>
       <RsdAiReportConfirm owner={owner} report={state.report} />
+      <RsdAiProblemConfirm owner={owner} problem={state.problem} />
     </>
   );
 }
@@ -189,7 +191,7 @@ function ResultCard({
   const settled = aiReportSettled(state.report);
   const download = useDownload(exiting, onKept);
   return (
-    <SendOff exiting={exiting} shiftY={frame.shiftY} onDone={owner.close}>
+    <SendOff exiting={exiting} shiftY={frame.shiftY} onDone={owner.dismiss}>
       <html.div
         data-testid="ai-result-card"
         style={[
@@ -214,6 +216,7 @@ function ResultCard({
         >
           {phase.kind === 'error' ? (
             <RsdAiResultError owner={owner} state={state} reason={phase.reason}>
+              <RsdAiProblemStatus owner={owner} problem={state.problem} />
               {state.recovery ? (
                 <AiRecoveryActions owner={owner} state={state} waiting={aiJournalWaiting(state)} />
               ) : null}
@@ -241,11 +244,19 @@ function ResultCard({
           )}
         </html.div>
         {revealed && result && !settled ? (
-          <Fades hidden={exiting} strip>
+          <Fades hidden={exiting} strip="center">
             <RsdAiDisclosure
               disabled={!run?.submitted}
               onReport={() => owner.reportPicture(result.uri)}
             />
+          </Fades>
+        ) : null}
+        {phase.kind === 'error' &&
+        phase.reason !== 'safety' &&
+        state.problem &&
+        !aiProblemSettled(state.problem) ? (
+          <Fades hidden={exiting} strip="end">
+            <RsdAiDisclosure kind="problem" disabled={false} onReport={owner.reportProblem} />
           </Fades>
         ) : null}
       </html.div>
@@ -332,15 +343,23 @@ function SendOff({
 // the Download's place stays as the polaroid's thick bottom edge.
 function Fades({
   hidden,
-  strip = false,
+  strip,
   children,
 }: {
   hidden: boolean;
-  strip?: boolean;
+  // A strip hangs under the card: centered for the picture's disclosure, at the right edge for
+  // Report a problem, as shipping's .problem strip sits.
+  strip?: 'center' | 'end';
   children: ReactNode;
 }) {
   return (
-    <html.div style={[strip ? styles.stripSlot : styles.fadeSlot, hidden && styles.faded]}>
+    <html.div
+      style={[
+        strip ? styles.stripSlot : styles.fadeSlot,
+        strip === 'end' && styles.stripEnd,
+        hidden && styles.faded,
+      ]}
+    >
       {children}
     </html.div>
   );
@@ -398,5 +417,6 @@ const styles = css.create({
     flexDirection: 'column',
     alignItems: 'center',
   },
+  stripEnd: { alignItems: 'flex-end' },
   faded: { opacity: 0, pointerEvents: 'none' },
 });

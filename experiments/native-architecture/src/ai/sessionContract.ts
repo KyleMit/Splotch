@@ -12,13 +12,24 @@ import type {
 import type { AiImageAdmission } from './imageAdmission';
 import type { ParentOperationPort } from '../parentCenter/parentPolicy';
 import type { AiReportState } from './reportContract';
+import type { AiProblemState, AiProblemTransport } from './problemReport';
 // The run the AI Result card shows: one being prepared before its journal exists, the journal it
 // became, or one that stopped before it had a journal.
 type AiAttempt =
   | Readonly<{ kind: 'starting'; startedAt: number }>
   | Readonly<{ kind: 'journal'; id: number }>
   | Readonly<{ kind: 'stopped' }>;
+// What went wrong in the last run that failed, bounded to what a problem report may carry: the
+// HTTP status when there was a reply, the endpoint, and the app's own words for the failure.
+export type AiFailureDetails = Readonly<{
+  status: number | null;
+  endpoint: '/api/generate-image' | '/api/generation-result';
+  message: string;
+}>;
 export type AiState = Readonly<{
+  failure: AiFailureDetails | null;
+  // The grown-up's problem report about the last failure; null where the app cannot send one.
+  problem: AiProblemState | null;
   // Which surface an open owner shows on the RSD screen: the AI Style Prompt or the AI Result.
   view: 'prompt' | 'result';
   attempt: AiAttempt | null;
@@ -61,4 +72,5 @@ export type AiSessionDependencies = {
   prepare: () => Promise<PreparedAiDrawing>;
   admit: AiImageAdmission;
   parent?: ParentOperationPort;
+  problems?: AiProblemTransport;
 };

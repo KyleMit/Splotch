@@ -69,13 +69,18 @@ export function RsdAiDownload({ onPress }: { onPress: () => void }) {
 }
 
 // The fine print hanging under the card: the picture is AI-made, and grown-ups can report it.
+// After a server failure the strip offers only Report a problem, hanging under the card's right
+// edge as shipping's .problem strip does.
 export function RsdAiDisclosure({
+  kind = 'picture',
   disabled,
   onReport,
 }: {
+  kind?: 'picture' | 'problem';
   disabled: boolean;
   onReport: () => void;
 }) {
+  const picture = kind === 'picture';
   const m = AI_RESULT_METRICS;
   return (
     <html.div
@@ -84,13 +89,17 @@ export function RsdAiDisclosure({
         styles.strip(m.reportStripGap, m.reportStripHeight, DISCLOSURE_PADDING_PX),
       ]}
     >
-      <html.span>{AI_RESULT_COPY.disclosure}</html.span>
-      <html.span aria-hidden style={styles.separator}>
-        ·
-      </html.span>
+      {picture ? (
+        <>
+          <html.span>{AI_RESULT_COPY.disclosure}</html.span>
+          <html.span aria-hidden style={styles.separator}>
+            ·
+          </html.span>
+        </>
+      ) : null}
       <RsdPressable
         type="button"
-        aria-label={AI_RESULT_COPY.reportPictureLabel}
+        aria-label={picture ? AI_RESULT_COPY.reportPictureLabel : AI_RESULT_COPY.reportProblem}
         disabled={disabled}
         aria-disabled={disabled}
         style={[
@@ -100,7 +109,9 @@ export function RsdAiDisclosure({
         onClick={onReport}
       >
         <FlagIcon disabled={disabled} />
-        <html.span>{AI_RESULT_COPY.reportPicture}</html.span>
+        <html.span>
+          {picture ? AI_RESULT_COPY.reportPicture : AI_RESULT_COPY.reportProblem}
+        </html.span>
       </RsdPressable>
     </html.div>
   );

@@ -433,3 +433,33 @@ it(
   },
   GATED_FLOW_TIMEOUT_MS
 );
+
+it(
+  'reports a failed run from the error card behind the report check, sending no drawing',
+  async () => {
+    reply(() => new Response('{"ok":false,"error":"Upstream down"}', { status: 502 }));
+    caller.feedbackSend.mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+    useCaller();
+    await sendDrawing();
+    await settle(() => expect(host.textContent).toContain("Hmm, that didn't work"));
+    await click('Report a problem');
+    expect(modal('Grown-Ups Only')).not.toBeNull();
+    await solve();
+    const confirm = modal('Report this problem');
+    expect(confirm.textContent).toContain('What will be sent');
+    expect(confirm.textContent).toContain('Error: 502 · /api/generate-image');
+    expect(confirm.textContent).toContain('Not sent: the drawing, names, accounts, or location.');
+    await press('Send report');
+    const [body] = caller.feedbackSend.mock.calls.at(-1);
+    expect(body.kind).toBe('bug');
+    expect(body).not.toHaveProperty('device');
+    expect(JSON.stringify(body)).not.toContain('data:image');
+    await settle(() =>
+      expect(host.textContent).toContain(
+        'Thanks. Your problem report was sent to our private support tracker.'
+      )
+    );
+    expect(labelled('Report a problem')).toBeNull();
+  },
+  GATED_FLOW_TIMEOUT_MS
+);

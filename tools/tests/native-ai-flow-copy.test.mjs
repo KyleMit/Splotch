@@ -12,6 +12,11 @@ import {
   AI_REPORT_REVIEW_HOURS,
 } from '../../experiments/native-architecture/src/ai/reportContract.ts';
 import { aiButtonFace } from '../../experiments/native-architecture/src/ai/uiState.ts';
+import {
+  AI_PROBLEM_REPORT_COPY,
+  MAX_FAILURE_MESSAGE_LENGTH,
+  problemReportRows,
+} from '../../experiments/native-architecture/src/ai/problemReport.ts';
 
 vi.mock('react-native', () => ({}));
 
@@ -144,4 +149,26 @@ it('parks the wand on a blank page or a run in flight, but never a minimized one
   });
   expect(aiButtonFace({ ...ready, credential: 'managed' }, false).badge).toBeNull();
   expect(aiButtonFace({ ...ready, availability: 'unavailable' }, false).badge).toBeNull();
+});
+
+it('words the problem report and lists its rows as shipping does', () => {
+  for (const [key, text] of Object.entries(AI_PROBLEM_REPORT_COPY))
+    expect(`${SHIPPING.report} ${SHIPPING.disclosure}`, key).toContain(text);
+  const rows = web('lib/ai/failureReport.ts');
+  expect(rows).toContain(`const MAX_ERROR_MESSAGE_LENGTH = ${MAX_FAILURE_MESSAGE_LENGTH};`);
+  const native = problemReportRows(null, 2, null, 'web');
+  for (const { label, value } of native) {
+    expect(rows).toContain(`label: '${label}'`);
+    expect(value).toBeTruthy();
+  }
+  expect(native.map(({ value }) => value).slice(0, 3)).toEqual([
+    'Picture generation failed',
+    'No error details available.',
+    '2 in a row',
+  ]);
+  expect(rows).toContain("'Picture generation failed'");
+  expect(rows).toContain("'No error details available.'");
+  expect(rows).toContain('in a row');
+  expect(rows).toContain("style ?? 'Default'");
+  expect(rows).toContain("failure.status ?? 'No response'");
 });
