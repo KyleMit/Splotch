@@ -19,6 +19,8 @@ const themedStyles = createDrawingStyles((palette) =>
     // Shipping paints the drawing screen's safe-area strips with the palette bar's surface, so
     // the top band reads as an extension of the bar.
     drawing: { flex: 1, backgroundColor: palette.surface },
+    // The flat style prints its bar on the paper, so the strips are paper too.
+    flatDrawing: { flex: 1, backgroundColor: palette.paper },
     overlay: { flex: 1, backgroundColor: 'transparent' },
   })
 );
@@ -34,13 +36,18 @@ export function NativeFrame({
   edges,
 }: {
   children: ReactNode;
-  variant?: 'screen' | 'drawing' | 'overlay';
+  variant?: 'screen' | 'drawing' | 'flatDrawing' | 'overlay';
   // Painted over the safe-area strips the frame's padding leaves (the drawing screen's Notch Band),
   // in this frame's own inset coordinates.
   edges?: ReactNode;
 }) {
   const styles = useDrawingStyles(themedStyles);
-  const frame = { screen: styles.frame, drawing: styles.drawing, overlay: styles.overlay }[variant];
+  const frame = {
+    screen: styles.frame,
+    drawing: styles.drawing,
+    flatDrawing: styles.flatDrawing,
+    overlay: styles.overlay,
+  }[variant];
   const origin = useModalOrigin();
   return (
     <SafeAreaProvider
@@ -52,7 +59,7 @@ export function NativeFrame({
       <SafeAreaView
         testID="rsd-safe-area-frame"
         mode="padding"
-        edges={variant === 'drawing' ? PAPER_EDGES : ALL_EDGES}
+        edges={variant === 'drawing' || variant === 'flatDrawing' ? PAPER_EDGES : ALL_EDGES}
         style={frame}
         onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
       >

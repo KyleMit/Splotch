@@ -2,7 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { paletteSlots } from './paletteGeometry';
+import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
+import { RsdGlassPanes, RsdMarginRules, RsdRailGlass } from './bareGlass';
+import type { BareGlass } from './bareGlassLayout';
 import {
   EDGE_INSET_PX,
   isPhoneLandscapeViewport,
@@ -29,6 +31,9 @@ const docks = StyleSheet.create({
   clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
   controls: { position: 'absolute', top: 0, right: 0, left: 0 },
+  // The flat style prints the bar over the paper, which runs under it to the frame's edge.
+  floatingRow: { position: 'absolute', top: 0, right: 0, left: 0 },
+  floatingColumn: { position: 'absolute', top: 0, bottom: 0, left: 0 },
 });
 
 type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -68,6 +73,7 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
 // layout, as the shipping Clear Button docks to the screen rather than the paper. Every press
 // anywhere in the layout passes through capturePress first, without being claimed.
 export function NativeDrawingLayout({
+  bareGlass,
   palette,
   clearUnderlay,
   clearOverlay,
@@ -78,6 +84,8 @@ export function NativeDrawingLayout({
   overlays,
   children,
 }: {
+  // The flat Button style's glass, or null for the raised style, whose bar sits beside the paper.
+  bareGlass: BareGlass | null;
   palette: (layout: PaletteLayout) => ReactNode;
   clearUnderlay: (offset: AreaOffset) => ReactNode;
   clearOverlay: ReactNode;
@@ -109,7 +117,15 @@ export function NativeDrawingLayout({
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
   const paperArea = area ?? window;
-  const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
+  const phoneLandscape = isPhoneLandscapeViewport(window);
+  // The flat bar floats over the paper, so the controls keep the place the raised bar leaves them.
+  const rail = bareGlass && !phoneLandscape ? PALETTE_FLOWS[axis].extentPx : 0;
+  const railTop = axis === 'row' ? rail : 0;
+  const railLeft = axis === 'column' ? rail : 0;
+  const controlArea = {
+    width: paperArea.width - railLeft,
+    height: paperArea.height - insetBottom - railTop,
+  };
   return (
     <View
       testID="rsd-drawing-layout"
@@ -120,10 +136,14 @@ export function NativeDrawingLayout({
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
       ]}
     >
-      {isPhoneLandscapeViewport(window) ? null : (
+      {phoneLandscape ? null : (
         <View
           testID="rsd-palette-bar"
-          style={[drawingScreenStyles.paletteBar, docks.palette]}
+          style={[
+            drawingScreenStyles.paletteBar,
+            docks.palette,
+            bareGlass && (axis === 'row' ? docks.floatingRow : docks.floatingColumn),
+          ]}
           onLayout={({ nativeEvent }) => {
             const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
             setMeasured((previous) =>
@@ -133,6 +153,7 @@ export function NativeDrawingLayout({
             );
           }}
         >
+          {bareGlass ? <RsdRailGlass axis={axis} /> : null}
           {palette({
             axis,
             slots: paletteSlots(viewportLength - endInset, axis),
@@ -141,6 +162,7 @@ export function NativeDrawingLayout({
           })}
         </View>
       )}
+      {rail > 0 ? <RsdMarginRules axis={axis} /> : null}
       <View
         testID="rsd-canvas-column"
         style={drawingScreenStyles.canvasColumn}
@@ -152,11 +174,17 @@ export function NativeDrawingLayout({
           onLayout={boxSetter(setArea)}
         >
           {children}
+          {bareGlass ? (
+            <RsdGlassPanes
+              space={{ width: paperArea.width, height: paperArea.height, insetBottom }}
+              glass={bareGlass}
+            />
+          ) : null}
           {clearUnderlay(areaOffset(root, column, area))}
           <View
             testID="rsd-controls-inset"
             pointerEvents="box-none"
-            style={[docks.controls, { bottom: insetBottom }]}
+            style={[docks.controls, { top: railTop, left: railLeft, bottom: insetBottom }]}
           >
             {overlays}
             <View testID="rsd-settings-dock" style={docks.settings}>

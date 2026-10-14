@@ -11,6 +11,7 @@ import {
   selectionRingColor,
 } from './paletteGeometry';
 import { colors, dimensions, motion } from './tokens.css';
+import { useBareToolbar } from './toolbarSkin';
 
 // Shipping presses a swatch down to this scale. Local because the StyleX web compile resolves only
 // local constants inside css.create; rsd-native-drawing-frame.test.mjs holds it to shipping.
@@ -41,6 +42,9 @@ const styles = css.create({
   disc: (size: number) => ({ width: size, height: size, borderRadius: size / 2 }),
   fill: (backgroundColor: string) => ({ backgroundColor }),
   surface: { backgroundColor: colors.surface },
+  // The flat style's palette sits on the paper itself, so its bands and seams are paper.
+  paper: { backgroundColor: colors.paper },
+  bare: { backgroundColor: 'transparent', boxShadow: 'none' },
   ring: (inset: number, size: number, borderWidth: number) => ({
     boxSizing: 'border-box',
     position: 'absolute',
@@ -56,10 +60,20 @@ const styles = css.create({
   ringColor: (borderColor: string) => ({ borderColor }),
   seamColor: { borderColor: colors.surface },
   floatSeamColor: { borderColor: colors.floatSurface },
+  paperSeamColor: { borderColor: colors.paper },
   disabled: { opacity: dimensions.disabledOpacity },
 });
 
-// The seam is the surface the swatch sits on: the palette bar's, or a flyout card's.
+// The seam is the surface the swatch sits on: the palette bar's, a flyout card's, or the paper a
+// flat palette or menu is printed on.
+export type RingSurface = 'surface' | 'floatSurface' | 'paper';
+
+const SEAMS = {
+  surface: styles.seamColor,
+  floatSurface: styles.floatSeamColor,
+  paper: styles.paperSeamColor,
+} satisfies Record<RingSurface, unknown>;
+
 export function SelectionRing({
   size,
   color,
@@ -67,7 +81,7 @@ export function SelectionRing({
 }: {
   size: number;
   color: string;
-  surface?: 'surface' | 'floatSurface';
+  surface?: RingSurface;
 }) {
   const ring = size + 2 * SELECTION_RING_WIDTH_PX;
   const seam = size + 2 * SELECTION_RING_SEAM_PX;
@@ -83,10 +97,7 @@ export function SelectionRing({
       />
       <html.div
         aria-hidden
-        style={[
-          styles.ring(-SELECTION_RING_SEAM_PX, seam, SELECTION_RING_SEAM_PX),
-          surface === 'surface' ? styles.seamColor : styles.floatSeamColor,
-        ]}
+        style={[styles.ring(-SELECTION_RING_SEAM_PX, seam, SELECTION_RING_SEAM_PX), SEAMS[surface]]}
       />
     </>
   );
@@ -106,6 +117,7 @@ export function RsdPaintAction({
   onClick: () => void;
 }) {
   const { hex } = paintAppearance(color, useDrawingAppearance());
+  const bare = useBareToolbar();
   const inner = size - 2 * SELECTION_RING_GAP_PX;
   return (
     <RsdPressable
@@ -118,7 +130,7 @@ export function RsdPaintAction({
       style={[
         styles.swatch,
         styles.disc(size),
-        selected ? styles.surface : styles.fill(hex),
+        selected ? (bare ? styles.paper : styles.surface) : styles.fill(hex),
         disabled && styles.disabled,
       ]}
       onClick={onClick}
@@ -126,7 +138,11 @@ export function RsdPaintAction({
       {selected ? (
         <>
           <html.div aria-hidden style={[styles.disc(inner), styles.fill(hex)]} />
-          <SelectionRing size={size} color={selectionRingColor(hex)} />
+          <SelectionRing
+            size={size}
+            color={selectionRingColor(hex)}
+            surface={bare ? 'paper' : 'surface'}
+          />
         </>
       ) : null}
     </RsdPressable>
@@ -143,13 +159,19 @@ export function RsdMoreColorsSwatch({
   onClick: () => void;
 }) {
   const icon = (size - 2 * SELECTION_RING_GAP_PX) / MORE_COLORS_POP_SCALE;
+  const bare = useBareToolbar();
   return (
     <RsdPressable
       type="button"
       aria-label="More colors"
       aria-disabled={disabled}
       disabled={disabled}
-      style={[styles.swatch, styles.disc(size), styles.surface, disabled && styles.disabled]}
+      style={[
+        styles.swatch,
+        styles.disc(size),
+        bare ? styles.bare : styles.surface,
+        disabled && styles.disabled,
+      ]}
       onClick={onClick}
     >
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />

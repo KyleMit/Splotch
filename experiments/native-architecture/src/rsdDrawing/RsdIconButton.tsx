@@ -7,6 +7,7 @@ import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
+import { useBareToolbar } from './toolbarSkin';
 import { brandColors, colors, dimensions, fonts, motion, shadows } from './tokens.css';
 
 // The app.css chrome values that no design token carries. They stay in this module because the
@@ -39,6 +40,16 @@ export const FLYOUT_OPTION_PADDING_PX = 7;
 export const FLYOUT_OPTION_PRESS_SCALE = 0.92;
 // Black reads against every pen color and both papers.
 export const WHITE_INK_KEYLINE = '#000';
+// The flat (bare) Button style: ink printed on the paper with no face of its own. The icon keeps a
+// tenth of the button as padding; a press sinks it, an open menu's button and a hovered one lift,
+// and a parked one washes out instead of fading. A flat menu's selected option is outlined in the
+// strong text ink, one drop shadow this far out on each side.
+export const BARE_TILE_PADDING_SHARE = 10;
+export const BARE_TILE_PRESS_SCALE = 0.9;
+export const BARE_TILE_LIFT_SCALE = 1.08;
+export const BARE_TILE_DISABLED_FILTER = 'grayscale(1) contrast(0.55) brightness(1.2)';
+export const BARE_OPTION_OUTLINE_PX = 2;
+export const BARE_BADGE_RING_PX = 2;
 
 // The shipping icon-button skins: .corner-button, the Actions Panel's .action-button tile and
 // .flyout-option. Hover is web-only, under (hover: hover), which React Native never matches. Every
@@ -157,6 +168,29 @@ const styles = css.create({
     borderRadius: size * ACTION_TILE_RADIUS_RATIO,
   }),
   turn: (degrees: number) => ({ transform: `rotate(${degrees}deg)` }),
+  bare: { borderWidth: 0, backgroundColor: 'transparent', boxShadow: 'none' },
+  bareTile: {
+    opacity: 1,
+    transform: {
+      default: 'scale(1)',
+      ':active': `scale(${BARE_TILE_PRESS_SCALE})`,
+      '@media (hover: hover)': {
+        default: 'scale(1)',
+        ':hover': `scale(${BARE_TILE_LIFT_SCALE})`,
+        ':active': `scale(${BARE_TILE_PRESS_SCALE})`,
+      },
+    },
+    transitionProperty: 'transform, filter',
+    transitionTimingFunction: motion.easeGlide,
+  },
+  bareTileExpanded: {
+    transform: {
+      default: `scale(${BARE_TILE_LIFT_SCALE})`,
+      ':active': `scale(${BARE_TILE_PRESS_SCALE})`,
+    },
+  },
+  bareTileDisabled: { filter: BARE_TILE_DISABLED_FILTER, transform: 'scale(1)', cursor: 'auto' },
+  outlined: (size: number, filter: string) => ({ width: size, height: size, filter }),
   // app.css's .free-count on the AI Image Button's corner.
   badge: (offset: number, size: number, padding: number) => ({
     boxSizing: 'border-box',
@@ -179,7 +213,20 @@ const styles = css.create({
     lineHeight: 1,
     boxShadow: shadows.shadowControl,
   }),
+  // A flat badge sits on the paper, ringed in paper to lift it off the ink beneath.
+  bareBadge: (paper: string) => ({ boxShadow: `0 0 0 ${BARE_BADGE_RING_PX}px ${paper}` }),
 });
+
+function outlineFilter(ink: string) {
+  return [
+    `${BARE_OPTION_OUTLINE_PX}px 0`,
+    `-${BARE_OPTION_OUTLINE_PX}px 0`,
+    `0 ${BARE_OPTION_OUTLINE_PX}px`,
+    `0 -${BARE_OPTION_OUTLINE_PX}px`,
+  ]
+    .map((offset) => `drop-shadow(${offset} 0 ${ink})`)
+    .join(' ');
+}
 
 // The AI Image Button's .free-count badge and its .loading spin; native-ai-flow-geometry.test.mjs
 // reads each back from AiImageButton.svelte and app.css.
@@ -228,13 +275,24 @@ export function flyoutOptionSize({ base, scale }: FlyoutScale) {
   return Math.max(base, FLYOUT_OPTION_MIN_BASE_PX) * scale;
 }
 
+// A flat face has no border, so its icon takes the border's room too.
+function faceBorderPx(bare: boolean) {
+  return bare ? 0 : ACTION_TILE_BORDER_PX;
+}
+
 function faceGeometry(
   props:
-    | { skin: 'tile'; size: number; padding?: number }
-    | ({ skin: 'flyout'; pinnedIconPx?: number } & FlyoutScale)
+    | { skin: 'tile'; size: number; padding?: number; iconPx?: number }
+    | ({ skin: 'flyout'; pinnedIconPx?: number } & FlyoutScale),
+  bare: boolean
 ) {
-  if (props.skin === 'tile')
-    return { size: props.size, padding: props.padding ?? props.size / ACTION_TILE_PADDING_SHARE };
+  if (props.skin === 'tile') {
+    const { size, iconPx } = props;
+    if (iconPx !== undefined)
+      return { size, padding: Math.max(0, (size - 2 * faceBorderPx(bare) - iconPx) / 2) };
+    if (bare) return { size, padding: size / BARE_TILE_PADDING_SHARE };
+    return { size, padding: props.padding ?? size / ACTION_TILE_PADDING_SHARE };
+  }
   const size = flyoutOptionSize(props);
   if (props.pinnedIconPx === undefined)
     return { size, padding: FLYOUT_OPTION_PADDING_PX * props.scale };
@@ -245,9 +303,10 @@ function faceGeometry(
 // while the option has room for it and is contained once Button Size shrinks the option.
 function iconSize(
   props: { skin: 'tile' } | { skin: 'flyout'; pinnedIconPx?: number },
-  { size, padding }: { size: number; padding: number }
+  { size, padding }: { size: number; padding: number },
+  bare: boolean
 ) {
-  const room = size - 2 * (padding + ACTION_TILE_BORDER_PX);
+  const room = size - 2 * (padding + faceBorderPx(bare));
   return props.skin === 'flyout' && props.pinnedIconPx !== undefined
     ? Math.min(props.pinnedIconPx, room)
     : room;
@@ -280,7 +339,10 @@ export type IconButtonProps = Common &
         size: number;
         // The face's padding when it is not a sixth of the face: shipping pads by a sixth of the
         // size-class step, which the panel caps the face below, and a landscape phone by 6px.
+        // A flat face pads by a tenth of itself instead.
         padding?: number;
+        // An icon held at this size, centred, in place of a padding share: the Color Button's.
+        iconPx?: number;
         disabled?: boolean;
         expanded?: boolean;
         dimmed?: boolean;
@@ -309,6 +371,8 @@ function useKeylineColor(keyline: InkKeyline | undefined) {
 export function RsdIconButton(props: IconButtonProps) {
   const keylineSource = props.skin === 'corner' ? undefined : props.keyline;
   const keyline = useKeylineColor(keylineSource);
+  const bare = useBareToolbar();
+  const { textStrong, paper } = useDrawingTheme();
   const { icon, label, onPress } = props;
   if (props.skin === 'corner') {
     return (
@@ -331,14 +395,24 @@ export function RsdIconButton(props: IconButtonProps) {
     );
   }
   const { skin, ink, selection, selected = false } = props;
-  const face = faceGeometry(props);
+  const face = faceGeometry(props, bare);
   const { size, padding } = face;
   const disabled = skin === 'tile' && props.disabled === true;
   const expanded = skin === 'tile' ? props.expanded : undefined;
   const dimmed = skin === 'tile' && props.dimmed === true;
   const busy = skin === 'tile' && props.busy === true;
   const badge = skin === 'tile' ? (props.badge ?? null) : null;
-  const brandInk = skin === 'flyout' && selected ? DRAWING_BRAND : undefined;
+  const brandInk = skin === 'flyout' && selected && !bare ? DRAWING_BRAND : undefined;
+  const glyphPx = iconSize(props, face, bare);
+  const glyph = (
+    <RsdIcon
+      name={icon}
+      size={glyphPx}
+      ink={ink ?? brandInk}
+      muted={disabled && !bare}
+      keyline={keyline}
+    />
+  );
   return (
     <RsdPressable
       type="button"
@@ -349,34 +423,46 @@ export function RsdIconButton(props: IconButtonProps) {
       aria-disabled={disabled}
       aria-busy={busy || undefined}
       disabled={disabled}
-      style={[
-        styles.base,
-        styles[skin],
-        styles.face(size, padding),
-        skin === 'tile' && selected && styles.tileSelected,
-        skin === 'flyout' && selected && styles.flyoutSelected,
-        disabled && styles.tileDisabled,
-        dimmed && styles.tileDimmed,
-        dimmed && disabled && styles.tileDimmedDisabled,
-      ]}
+      style={
+        bare
+          ? [
+              styles.base,
+              styles[skin],
+              styles.face(size, padding),
+              styles.bare,
+              skin === 'tile' && styles.bareTile,
+              expanded && styles.bareTileExpanded,
+              disabled && styles.bareTileDisabled,
+              dimmed && styles.tileDimmed,
+            ]
+          : [
+              styles.base,
+              styles[skin],
+              styles.face(size, padding),
+              skin === 'tile' && selected && styles.tileSelected,
+              skin === 'flyout' && selected && styles.flyoutSelected,
+              disabled && styles.tileDisabled,
+              dimmed && styles.tileDimmed,
+              dimmed && disabled && styles.tileDimmedDisabled,
+            ]
+      }
       onClick={onPress}
     >
-      {busy ? (
-        <SpinningIcon size={iconSize(props, face)} muted={disabled} />
+      {bare && skin === 'flyout' && selected ? (
+        <html.div style={styles.outlined(glyphPx, outlineFilter(textStrong))}>{glyph}</html.div>
+      ) : busy ? (
+        <SpinningIcon size={glyphPx} muted={disabled && !bare} />
       ) : (
-        <RsdIcon
-          name={icon}
-          size={iconSize(props, face)}
-          ink={ink ?? brandInk}
-          muted={disabled}
-          keyline={keyline}
-        />
+        glyph
       )}
       {badge !== null ? (
         <html.span
           aria-hidden
           data-testid="free-count"
-          style={styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX)}
+          style={[
+            styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX),
+            bare && styles.bareBadge(paper),
+          ]}
         >
           {badge}
         </html.span>

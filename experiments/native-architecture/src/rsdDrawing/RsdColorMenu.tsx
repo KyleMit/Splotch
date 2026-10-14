@@ -19,6 +19,7 @@ import {
   selectionRingColor,
 } from './paletteGeometry';
 import { colors, motion } from './tokens.css';
+import { useBareToolbar } from './toolbarSkin';
 
 // ColorMenu.svelte's press feedback; local for the StyleX web compile, and held to the shipping
 // rule by rsd-native-color-control.test.mjs.
@@ -49,6 +50,7 @@ const styles = css.create({
   },
   fill: (backgroundColor: string) => ({ backgroundColor }),
   surface: { backgroundColor: colors.floatSurface },
+  paper: { backgroundColor: colors.paper },
   clear: { backgroundColor: 'transparent' },
   row: (gap: number) => ({ display: 'flex', flexDirection: 'row', alignItems: 'center', gap }),
 });
@@ -67,6 +69,7 @@ function PaintOption({
   onPick: () => void;
 }) {
   const { hex } = paintAppearance(label, useDrawingAppearance());
+  const bare = useBareToolbar();
   return (
     <RsdPressable
       type="button"
@@ -78,7 +81,7 @@ function PaintOption({
       style={[
         styles.option(COLOR_MENU_SWATCH_PX),
         styles.press,
-        ringed ? styles.surface : styles.fill(hex),
+        ringed ? (bare ? styles.paper : styles.surface) : styles.fill(hex),
       ]}
       onClick={onPick}
     >
@@ -88,7 +91,7 @@ function PaintOption({
           <SelectionRing
             size={COLOR_MENU_SWATCH_PX}
             color={selectionRingColor(hex)}
-            surface="floatSurface"
+            surface={bare ? 'paper' : 'floatSurface'}
           />
         </>
       ) : null}
@@ -108,6 +111,7 @@ function MoreColorsOption({
   onCustom: () => void;
 }) {
   const icon = INNER_PX / (custom ? 1 : MORE_COLORS_POP_SCALE);
+  const bare = useBareToolbar();
   return (
     <RsdPressable
       type="button"
@@ -119,7 +123,11 @@ function MoreColorsOption({
     >
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />
       {custom ? (
-        <SelectionRing size={COLOR_MENU_SWATCH_PX} color={custom} surface="floatSurface" />
+        <SelectionRing
+          size={COLOR_MENU_SWATCH_PX}
+          color={custom}
+          surface={bare ? 'paper' : 'floatSurface'}
+        />
       ) : null}
     </RsdPressable>
   );

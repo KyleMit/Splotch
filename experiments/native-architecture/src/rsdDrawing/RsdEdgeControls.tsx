@@ -16,6 +16,9 @@ import { RsdClearUnderlay } from './clearSurfaces';
 import { NativeDrawingLayout, type PaletteLayout } from './NativeScrollAreas';
 import { RsdActionsPanel, useFlyoutSlot } from './RsdActionsPanel';
 import { RsdFullscreenToggle } from './RsdFullscreenToggle';
+import { useFullscreen } from '../platform/useFullscreen';
+import { ToolbarSkin } from './toolbarSkin';
+import type { PanelGlass } from './bareGlassLayout';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -54,9 +57,13 @@ export function RsdEdgeLayout({
   paperOverlay: (drawerOpen: boolean) => ReactNode;
 }) {
   const { screen, sound, disabled } = controls;
+  const { toolbarStyle } = sound.settings;
+  const bare = toolbarStyle === 'bare';
+  const [panelGlass, setPanelGlass] = useState<PanelGlass | null>(null);
   const [drawerChosen, setDrawerChosen] = useState(false);
   const drawerOpen = drawerChosen || resizing;
   const slot = useFlyoutSlot(drawerOpen, disabled);
+  const fullscreen = useFullscreen(!disabled);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
     disabled,
@@ -66,49 +73,62 @@ export function RsdEdgeLayout({
     sound: sound.owner?.clear ?? null,
   });
   return (
-    <NativeDrawingLayout
-      palette={(layout) => (
-        <RsdPalette screen={screen} sound={sound} layout={layout} disabled={paintsDisabled} />
-      )}
-      clearUnderlay={(offset) => (
-        <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
-      )}
-      clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
-      actionsPanel={(area, viewport) => (
-        <RsdActionsPanel
-          {...controls}
-          ink={ink}
-          area={area}
-          viewport={viewport}
-          open={drawerOpen}
-          buttonScale={buttonScale}
-          onToggle={() => setDrawerChosen(!drawerOpen)}
-          slot={slot}
-        />
-      )}
-      capturePress={slot.capturePress}
-      settings={
-        <RsdIconButton
-          skin="corner"
-          label="Settings"
-          icon="settings"
-          onPress={() => {
-            if (!disabled) screen.openSettings();
-          }}
-        />
-      }
-      status={status}
-      overlays={
-        <>
-          <View pointerEvents="box-none" style={paperLayer.fill}>
-            <RsdFullscreenToggle blocked={disabled} />
-          </View>
-          {paperOverlay(drawerOpen)}
-        </>
-      }
-    >
-      {children}
-    </NativeDrawingLayout>
+    <ToolbarSkin.Provider value={toolbarStyle}>
+      <NativeDrawingLayout
+        bareGlass={
+          bare
+            ? {
+                open: slot.flyout,
+                expanded: drawerOpen,
+                panel: panelGlass,
+                fullscreen: fullscreen.supported,
+              }
+            : null
+        }
+        palette={(layout) => (
+          <RsdPalette screen={screen} sound={sound} layout={layout} disabled={paintsDisabled} />
+        )}
+        clearUnderlay={(offset) => (
+          <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
+        )}
+        clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
+        actionsPanel={(area, viewport) => (
+          <RsdActionsPanel
+            {...controls}
+            ink={ink}
+            area={area}
+            viewport={viewport}
+            open={drawerOpen}
+            buttonScale={buttonScale}
+            onToggle={() => setDrawerChosen(!drawerOpen)}
+            slot={slot}
+            onGlass={bare ? setPanelGlass : undefined}
+          />
+        )}
+        capturePress={slot.capturePress}
+        settings={
+          <RsdIconButton
+            skin="corner"
+            label="Settings"
+            icon="settings"
+            onPress={() => {
+              if (!disabled) screen.openSettings();
+            }}
+          />
+        }
+        status={status}
+        overlays={
+          <>
+            <View pointerEvents="box-none" style={paperLayer.fill}>
+              <RsdFullscreenToggle fullscreen={fullscreen} />
+            </View>
+            {paperOverlay(drawerOpen)}
+          </>
+        }
+      >
+        {children}
+      </NativeDrawingLayout>
+    </ToolbarSkin.Provider>
   );
 }
 
@@ -133,6 +153,8 @@ const paletteStyles = css.create({
     overflow: 'hidden',
   }),
   surface: { backgroundColor: colors.surface },
+  // The flat style prints the swatches on the paper: the plate keeps its geometry, not its face.
+  bare: { backgroundColor: 'transparent', boxShadow: 'none' },
   flow: (column: boolean, gap: number) => ({
     display: 'flex',
     flexDirection: column ? 'column' : 'row',
@@ -152,7 +174,8 @@ function RsdPalette({
   layout: PaletteLayout;
   disabled: boolean;
 }) {
-  const { selectedColor, customColors } = sound.settings;
+  const { selectedColor, customColors, toolbarStyle } = sound.settings;
+  const face = toolbarStyle === 'bare' ? paletteStyles.bare : paletteStyles.surface;
   const column = layout.axis === 'column';
   const flow = PALETTE_FLOWS[layout.axis];
   const paints = visiblePaints(customColors, selectedColor, layout.slots - 1);
@@ -166,7 +189,7 @@ function RsdPalette({
           column
             ? paletteStyles.columnExtent(flow.extentPx)
             : paletteStyles.rowExtent(flow.extentPx),
-          paletteStyles.surface,
+          face,
           paletteStyles.flow(column, spacing),
         ]}
       >
@@ -201,7 +224,7 @@ function RsdPalette({
           style={[
             paletteStyles.columnExtent(flow.extentPx),
             paletteStyles.insetStrip(layout.endInset, flow.shadow),
-            paletteStyles.surface,
+            face,
           ]}
         />
       ) : null}
