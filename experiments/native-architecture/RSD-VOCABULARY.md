@@ -72,8 +72,10 @@ drawer, its open menu and the Settings corner, computed by shipping's own
 `web/src/lib/glassPaneGeometry.ts` from the size the Actions Panel reports (`bareGlassLayout.ts`).
 On the web the glass loads from its own chunk (`bareGlass.web.ts`) and only the first paint waits
 for it; the native renderers have no backdrop blur or CSS masks, so their rail is shipping's opaque
-no-blur fallback, their rules print unmasked, and they draw no panes.
-`rsd-native-bare-toolbar.test.mjs` holds every value to the shipping sources.
+no-blur fallback and their rules print unmasked. Their panes nine-slice each of shipping's shapes
+into plain gradient views (`glassPaneTiles.ts`), in one color that passes as much of the ink as
+shipping's grain over its tint (`glassPaneInk.ts`): they fade the ink but neither blur it nor carry
+the grain. `rsd-native-bare-toolbar.test.mjs` holds every value to the shipping sources.
 
 Two native rules govern the flat bar. React Native paints a `position: static` child (React Strict
 DOM's default) before every positioned sibling, so the palette plate is positioned, as shipping's

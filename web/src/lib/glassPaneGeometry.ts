@@ -16,7 +16,7 @@ const FEATHER_SIGMA_PX = 24;
 const COMPACT_FEATHER_SIGMA_PX = 12;
 // Three sigma, where the blurred mask is effectively transparent, so the
 // pane's own box never shows as an edge.
-const FEATHER_REACH_SIGMAS = 3;
+export const FEATHER_REACH_SIGMAS = 3;
 const FEATHER_CURVE_SAMPLES = 16;
 const INFLATE_PX = 14;
 const BLEED_PX = 44;
@@ -26,7 +26,7 @@ const CORNER_DEPTH_PX = 78;
 const FULLSCREEN_DEPTH_PX = 70;
 const FULLSCREEN_RADIUS_PX = 18;
 
-interface Rect {
+export interface Rect {
   x: number;
   y: number;
   width: number;
@@ -36,6 +36,9 @@ interface Rect {
 export interface Pane extends Rect {
   mask: string;
 }
+// One pane before its mask is drawn: the shapes it unites, the box that clips it, and the blur
+// that feathers them.
+export type PaneShape = Readonly<{ rects: readonly Rect[]; clip: Rect; sigma: number }>;
 
 // The phone-landscape Color Menu's row: its swatch, gap and padding (both ends together), and the
 // most swatches it holds.
@@ -84,19 +87,28 @@ function normalCdf(z: number): number {
 // Remaps the blur's alpha so the glass is solid up to the controls (the
 // INFLATE_PX margin inside each shape) and eases out from there; the quadratic
 // ease-out meets the solid region with zero slope so no crease marks the seam.
-function featherCurve(sigma: number): string {
+function featherTable(sigma: number): number[] {
   const solidAlpha = normalCdf(INFLATE_PX / sigma);
   return Array.from({ length: FEATHER_CURVE_SAMPLES + 1 }, (_, i) => {
     const ramp = Math.min(1, i / FEATHER_CURVE_SAMPLES / solidAlpha);
     return +(1 - (1 - ramp) ** 2).toFixed(3);
-  }).join(' ');
+  });
+}
+
+// The mask's alpha `distance` px inside one straight shape edge (negative outside it), read
+// through the feather table as feFuncA interpolates it, for a renderer that draws no SVG mask.
+export function edgeFeather(distance: number, sigma: number): number {
+  const table = featherTable(sigma);
+  const position = normalCdf(distance / sigma) * FEATHER_CURVE_SAMPLES;
+  const index = Math.min(FEATHER_CURVE_SAMPLES - 1, Math.floor(position));
+  return table[index] + (position - index) * (table[index + 1] - table[index]);
 }
 
 function rectangle(left: number, top: number, right: number, bottom: number, radius = 0): Rect {
   return { x: left, y: top, width: right - left, height: bottom - top, radius };
 }
 
-function glassPane(rects: Rect[], clip: Rect, sigma: number): Pane {
+function glassPane({ rects, clip, sigma }: PaneShape): Pane {
   const reach = FEATHER_REACH_SIGMAS * sigma;
   const x = Math.max(clip.x, Math.min(...rects.map((r) => r.x)) - reach);
   const y = Math.max(clip.y, Math.min(...rects.map((r) => r.y)) - reach);
@@ -113,7 +125,7 @@ function glassPane(rects: Rect[], clip: Rect, sigma: number): Pane {
         `<rect x="${r.x - x}" y="${r.y - y}" width="${r.width}" height="${r.height}" rx="${r.radius ?? 0}"/>`
     )
     .join('');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}"><feGaussianBlur stdDeviation="${sigma}"/><feComponentTransfer><feFuncA type="table" tableValues="${featherCurve(sigma)}"/></feComponentTransfer></filter><g filter="url(#f)" fill="black">${shapes}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}"><feGaussianBlur stdDeviation="${sigma}"/><feComponentTransfer><feFuncA type="table" tableValues="${featherTable(sigma).join(' ')}"/></feComponentTransfer></filter><g filter="url(#f)" fill="black">${shapes}</g></svg>`;
   return { x, y, width, height, mask: `url("data:image/svg+xml,${encodeURIComponent(svg)}")` };
 }
 
@@ -170,7 +182,11 @@ function fullscreenCornerGlass(safe: Readonly<SafeAreaInsets>): Rect {
   );
 }
 
-export function glassPanes(layout: GlassPaneLayout, open: OpenFlyout, expanded: boolean): Pane[] {
+export function glassPaneShapes(
+  layout: GlassPaneLayout,
+  open: OpenFlyout,
+  expanded: boolean
+): PaneShape[] {
   const { width, height, safe, compact, orientation, count, size, panelInset } = layout;
   const { railWidth, railHeight, buttonGap, toggleSize: toggle } = layout;
   if (!width || !height) return [];
@@ -265,7 +281,11 @@ export function glassPanes(layout: GlassPaneLayout, open: OpenFlyout, expanded: 
     if (layout.fullscreen) strip.push(fullscreenCornerGlass(safe));
   }
   const sigma = compact ? COMPACT_FEATHER_SIGMA_PX : FEATHER_SIGMA_PX;
-  const panes = strip.length ? [glassPane(strip, clip, sigma)] : [];
-  if (!compact) panes.push(glassPane([gear], clip, sigma));
-  return panes;
+  const shapes: PaneShape[] = strip.length ? [{ rects: strip, clip, sigma }] : [];
+  if (!compact) shapes.push({ rects: [gear], clip, sigma });
+  return shapes;
+}
+
+export function glassPanes(layout: GlassPaneLayout, open: OpenFlyout, expanded: boolean): Pane[] {
+  return glassPaneShapes(layout, open, expanded).map(glassPane);
 }
