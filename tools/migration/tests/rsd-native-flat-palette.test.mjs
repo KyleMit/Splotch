@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { host, records } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
+import { themes } from '../../../web/src/lib/design/tokens.ts';
+import { MARGIN_RULE_INKS } from '../../../experiments/native-architecture/src/rsdDrawing/marginRuleInk.ts';
 
 // React Native's Fabric paint order over the recorded hosts, as sliceChildShadowNodeViewPairs.cpp
 // and ViewShadowNode.cpp compute it: a static child mounts before every positioned sibling, a
@@ -141,5 +143,53 @@ describe('the native palette bar', () => {
     expect(hostOf(strip).style.height).toBe(INSET_BOTTOM_PX);
     const painted = paintOrder(bar).map(({ element }) => element);
     expect(painted.indexOf(strip)).toBeGreaterThan(painted.indexOf(plate));
+  });
+
+  // A blended view makes Android draw its whole parent, the drawing layout with its ink,
+  // offscreen on every frame.
+  it('prints its margin rules without a blended view', async () => {
+    await mountFlat(390, 844);
+    const blended = records.props
+      .map((props) => flat(props.style) ?? {})
+      .filter((style) => (style.mixBlendMode ?? 'normal') !== 'normal');
+    expect(blended).toEqual([]);
+    expect(
+      records.props.filter((props) =>
+        String(flat(props.style)?.experimental_backgroundImage).includes(
+          MARGIN_RULE_INKS.light.first.rgb
+        )
+      ).length
+    ).toBeGreaterThanOrEqual(2);
+  });
+});
+
+const channels = (hex) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16) / 255);
+const BLENDS = {
+  multiply: (paper, ink) => paper * ink,
+  screen: (paper, ink) => paper + ink - paper * ink,
+};
+const CHANNEL_TOLERANCE = 1 / 255;
+
+describe('the pre-blended margin rule ink', () => {
+  it.each(['light', 'dark'])('lays the %s rules over the paper as shipping blends them', (mode) => {
+    const theme = themes[mode];
+    const paper = channels(theme.paper);
+    const ink = channels(theme.ruleInk);
+    const blend = BLENDS[theme.ruleBlend];
+    for (const [rule, opacity] of [
+      [MARGIN_RULE_INKS[mode].first, Number(theme.ruleOpacity)],
+      [MARGIN_RULE_INKS[mode].second, Number(theme.ruleSecondaryOpacity)],
+    ]) {
+      const bytes = rule.rgb.split(' ').map(Number);
+      expect(bytes.every((byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255)).toBe(true);
+      const color = bytes.map((byte) => byte / 255);
+      expect(rule.alpha).toBeGreaterThan(0);
+      expect(rule.alpha).toBeLessThanOrEqual(opacity);
+      paper.forEach((p, channel) => {
+        const shipping = p + opacity * (blend(p, ink[channel]) - p);
+        const native = p + rule.alpha * (color[channel] - p);
+        expect(Math.abs(native - shipping)).toBeLessThanOrEqual(CHANNEL_TOLERANCE);
+      });
+    }
   });
 });

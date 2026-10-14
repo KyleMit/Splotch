@@ -4,8 +4,8 @@ import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { PaperTexture } from '../drawing/PaperTexture';
 import type { BareGlass } from './bareGlassLayout';
 import type { GlassSpace } from './bareGlassSpace';
-import { BARE_GLASS_THEMES } from './bareGlassTheme';
 import { MARGIN_RULE_GAP_PX, MARGIN_RULE_INK_STOPS, MARGIN_RULE_WIDTH_PX } from './bareGlassStyle';
+import { MARGIN_RULE_INKS } from './marginRuleInk';
 import type { LayoutAxis } from './edgeLayout';
 import { PALETTE_FLOWS } from './paletteGeometry';
 
@@ -36,21 +36,24 @@ export function RsdRailGlass({ axis }: { axis: LayoutAxis }) {
   );
 }
 
-// The rail's printed edge, beside the paper in the layout's own stacking context so the blend
-// reaches the ink. The rules print without the fiber mask, which needs CSS masking.
+// The rail's printed edge, over the paper beside the bar. The rules print without the fiber mask,
+// which needs CSS masking, and in their blend's pre-mixed ink (marginRuleInk.ts).
 export function RsdMarginRules({ axis }: { axis: LayoutAxis }) {
-  const theme = BARE_GLASS_THEMES[useDrawingAppearance()];
+  const inks = MARGIN_RULE_INKS[useDrawingAppearance()];
   const [from, to] = MARGIN_RULE_INK_STOPS;
   const across = axis === 'column' ? '90deg' : '180deg';
-  const ink = theme.ruleInk;
   const insets = useSafeAreaInsets();
-  const rule = (second: boolean): ViewStyle => ({
-    experimental_backgroundImage: `linear-gradient(${across}, transparent, ${ink} ${from}%, ${ink} ${to}%, transparent)`,
-    mixBlendMode: theme.ruleBlend,
-    opacity: second ? theme.ruleSecondaryOpacity : theme.ruleOpacity,
-    ...(second &&
-      (axis === 'column' ? { marginLeft: MARGIN_RULE_GAP_PX } : { marginTop: MARGIN_RULE_GAP_PX })),
-  });
+  const rule = (second: boolean): ViewStyle => {
+    const { rgb, alpha } = second ? inks.second : inks.first;
+    const [clear, ink] = [`rgb(${rgb} / 0)`, `rgb(${rgb} / ${alpha})`];
+    return {
+      experimental_backgroundImage: `linear-gradient(${across}, ${clear}, ${ink} ${from}%, ${ink} ${to}%, ${clear})`,
+      ...(second &&
+        (axis === 'column'
+          ? { marginLeft: MARGIN_RULE_GAP_PX }
+          : { marginTop: MARGIN_RULE_GAP_PX })),
+    };
+  };
   const reach =
     axis === 'column' ? { top: -insets.top } : { left: -insets.left, right: -insets.right };
   return (
