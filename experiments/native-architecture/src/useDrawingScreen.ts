@@ -82,13 +82,12 @@ export function useDrawingScreen() {
       drawing || busy || preparing || pagePickerOpen || command.current || rendererFault.current,
     report,
   });
+  // A stroke leaves the chrome live, as shipping's does: every command refuses a mid-stroke start
+  // through its own `blocked` check, and the paper's responder keeps every other touch until the
+  // stroke lifts. Disabling the chrome for a stroke would fade every control and re-mount it on the
+  // UI thread at each stroke start and lift, which costs the canvas frames.
   const disabled =
-    drawing ||
-    busy ||
-    preparing ||
-    pagePickerOpen ||
-    settings.sheetOpen ||
-    brushes.state.status !== 'ready';
+    busy || preparing || pagePickerOpen || settings.sheetOpen || brushes.state.status !== 'ready';
 
   const commandsBlocked = () =>
     command.current ||
