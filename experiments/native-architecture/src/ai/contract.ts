@@ -31,8 +31,6 @@ export const AI_DISCLOSURE =
   'With your permission, Splotch sends this drawing and its art style to splotch.art and OpenAI to make a new picture. The connection reveals your IP address. Background drawings and finished pictures can remain on our server for up to 20 minutes until collected. Your original drawing stays on this device.';
 export const AI_WAIT_NOTICE =
   'Keep drawing while your picture finishes. Closing this panel stops polling, not a generation already sent. Open AI picture again to collect it. Splotch never retries a generation automatically.';
-export const AI_MINIMIZED_WAIT_NOTICE =
-  'Keep drawing while your picture finishes. Closing this panel keeps checking: the picture shows in the corner of your paper when it is ready. Splotch never retries a generation automatically.';
 export function isAiStyle(value: unknown): value is AiStyle {
   return AI_STYLES.some((style) => style === value);
 }

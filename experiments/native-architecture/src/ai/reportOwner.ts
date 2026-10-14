@@ -99,7 +99,12 @@ class AiReportOwner {
       return { ...original, target: this.target };
     throw new Error('AI reporting evidence does not match this report.');
   };
-  prepare = async (id: number, drawing: Uint8Array, style: AiStyle, credential: AiCredential) => {
+  prepare = async (
+    id: number,
+    drawing: Uint8Array,
+    style: AiStyle | null,
+    credential: AiCredential
+  ) => {
     const ticket = this.epoch;
     if (!drawing.length || drawing.length > MAX_AI_REPORT_BYTES) return;
     const original = drawing.slice();

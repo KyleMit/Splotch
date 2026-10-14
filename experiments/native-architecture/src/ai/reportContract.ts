@@ -25,13 +25,14 @@ type AiReportEvidence =
 export type AiReportContext = {
   id: number;
   drawing: Uint8Array;
-  style: AiStyle;
+  // Null for a run sent with no style, which the report sends as an empty style.
+  style: AiStyle | null;
   credential: AiCredentialReference;
   installationId: string | null;
   evidence: AiReportEvidence | null;
   used: boolean;
 };
-export type AiReportPreview = { drawing: string; style: AiStyle } & (
+export type AiReportPreview = { drawing: string; style: AiStyle | null } & (
   | { target: Extract<AiReportTarget, { kind: 'picture' }>; output: string }
   | { target: Extract<AiReportTarget, { kind: 'false-positive-refusal' }>; output?: never }
 );
@@ -110,7 +111,7 @@ export function reportMultipart(context: AiReportContext) {
     );
   chunks.push(
     encoder.encode(
-      `--${boundary}\r\nContent-Disposition: form-data; name="${field.style}"\r\n\r\n${context.style}\r\n--${boundary}--\r\n`
+      `--${boundary}\r\nContent-Disposition: form-data; name="${field.style}"\r\n\r\n${context.style ?? ''}\r\n--${boundary}--\r\n`
     )
   );
   const body = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.length, 0));

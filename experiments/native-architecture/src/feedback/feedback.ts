@@ -90,7 +90,7 @@ function routeDelivery(
 
 // What the device-details disclosure lists: the rows a bug report would attach, or none when the
 // device cannot describe itself.
-function describeFeedbackDevice(device: () => DeviceInfo) {
+export function describeFeedbackDevice(device: () => DeviceInfo) {
   try {
     return describeDeviceInfo(sanitizeDeviceInfo(device()));
   } catch {

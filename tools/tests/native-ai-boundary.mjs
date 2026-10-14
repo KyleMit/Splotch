@@ -23,6 +23,7 @@ export function nativeAiBoundary() {
       write: vi.fn(async () => {}),
       remove: vi.fn(async () => {}),
     },
+    aiDismissal: { read: async () => null, write: async () => {} },
     aiStorage: {
       prepare: vi.fn(async (next, _, bytes) => {
         journal = next;

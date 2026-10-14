@@ -12,9 +12,10 @@ import { credentialRefusal, type AiCredentialOutcome } from './credentialResult'
 import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
 import type { ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
+import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
 import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
-import { aiJournalWaiting } from './uiState';
+import { AI_FLOW_IDLE, aiJournalWaiting } from './uiState';
 export type { AiState, PreparedAiDrawing } from './sessionContract';
 export class AiSession {
   protected deps: AiSessionDependencies;
@@ -46,6 +47,7 @@ export class AiSession {
     });
   }
   protected reports: ReturnType<typeof createAiReportOwner>;
+  protected problems: AiProblemReport | null = null;
   protected listeners = new Set<() => void>();
   protected disposed = false;
   protected recoveryUncertain = false;
@@ -88,6 +90,7 @@ export class AiSession {
     })
   );
   protected state: AiState = {
+    ...AI_FLOW_IDLE,
     open: false,
     minimized: false,
     authorized: false,
@@ -157,10 +160,16 @@ export class AiSession {
     const permitted = () =>
       this.state.authorized && proof === this.authorization && !this.disposed && this.consented();
     if (!permitted()) throw new Error('AI authorization changed.');
+    // The allowance inspect() or a send already read this session stands: a tap reads the saved
+    // credential, never the grant a second time.
+    const known =
+      this.state.credential === 'free' && this.state.availability === 'ready'
+        ? this.state.remaining
+        : null;
     this.credential = null;
     this.update({
       credential: 'unavailable',
-      remaining: null,
+      ...(known === null ? { remaining: null, availability: 'loading' } : {}),
     });
     const { byok, managed } = await this.readSaved(permitted);
     if (byok)
@@ -184,16 +193,18 @@ export class AiSession {
     }
     this.update({
       credential: this.credential.kind,
+      ...(this.credential.kind === 'free' ? {} : { availability: 'ready' }),
     });
-    if (this.credential.kind === 'free') {
+    if (this.credential.kind === 'free' && known !== null)
+      this.update({ remaining: known, availability: 'ready' });
+    else if (this.credential.kind === 'free') {
       const reply = await this.grantRequest(this.credential.installationId);
       if (!permitted()) return;
       if (reply.kind === 'grant')
-        this.update({
-          remaining: reply.remaining,
-        });
+        this.update({ remaining: reply.remaining, availability: 'ready' });
       else
         this.update({
+          availability: 'unavailable',
           message:
             reply.kind === 'failure' || reply.kind === 'unknown'
               ? reply.message
@@ -233,11 +244,20 @@ export class AiSession {
   inspect = async () => {
     if (this.disposed || this.active || this.unresolved()) return;
     this.active = true;
-    this.update({ busy: true, checking: true });
+    this.update({
+      busy: true,
+      checking: true,
+      ...(this.state.availability === 'ready' ? {} : { availability: 'loading' }),
+    });
     try {
       await this.readStatus(() => !this.disposed);
     } catch {
-      this.update({ credential: 'unavailable', saved: null, remaining: null });
+      this.update({
+        credential: 'unavailable',
+        saved: null,
+        remaining: null,
+        availability: 'unavailable',
+      });
     } finally {
       this.active = false;
       this.update({ busy: false, checking: false });
@@ -246,7 +266,11 @@ export class AiSession {
   private readStatus = async (current: () => boolean) => {
     const { byok, managed } = await this.readSaved(current);
     if (byok || managed) {
-      this.update({ credential: byok ? 'byok' : 'managed', remaining: null });
+      this.update({
+        credential: byok ? 'byok' : 'managed',
+        remaining: null,
+        availability: 'ready',
+      });
       return;
     }
     this.update({ credential: 'free' });
@@ -255,7 +279,9 @@ export class AiSession {
     const id = await this.deps.vault.installationId();
     if (!current() || !isInstallationId(id)) return;
     const reply = await this.grantRequest(id);
-    if (current() && reply.kind === 'grant') this.update({ remaining: reply.remaining });
+    if (!current()) return;
+    if (reply.kind === 'grant') this.update({ remaining: reply.remaining, availability: 'ready' });
+    else this.update({ availability: 'unavailable' });
   };
   // Saving or forgetting a credential is the parent's own act in Settings › AI Art, as in shipping,
   // so it waits for no grown-up check: only for AI to be on. Turning AI off, a Parent Center change
@@ -424,6 +450,7 @@ export class AiSession {
   };
   close = () => {
     this.reports.cancel();
+    this.problems?.reset();
     this.authorization += 1;
     this.parentProof = null;
     this.deps.parent?.cancel('ai');
@@ -432,6 +459,8 @@ export class AiSession {
       open: false,
       minimized: false,
       authorized: false,
+      view: 'prompt',
+      attempt: null,
     });
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
