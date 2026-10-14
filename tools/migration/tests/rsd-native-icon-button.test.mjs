@@ -15,7 +15,11 @@ import {
 } from './rsd-native-button-host.mjs';
 import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { RsdFlyoutMenu } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFlyoutMenu.tsx';
-import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { NATIVE_ICONS as STARTUP_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+
+// The drawer's tools draw from the deferred module, which the native apps resolve at launch.
+const NATIVE_ICONS = { ...STARTUP_ICONS, ...NATIVE_DEFERRED_ICONS };
 
 describe('RsdIconButton', () => {
   const TILE_PX = 60;

@@ -2,7 +2,7 @@ import { InkPaperScope } from './InkPaper';
 import { paperSize, samePaper } from './paperSpace';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import type Svg from 'react-native-svg';
+import type { Svg } from '../platform/svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { InkPlan, InkCheckpoint } from './checkpoints';
 import { PNG_TIMEOUT_MS } from './svgCapture';

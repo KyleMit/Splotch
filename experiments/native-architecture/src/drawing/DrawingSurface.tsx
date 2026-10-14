@@ -16,7 +16,7 @@ import {
   type RefObject,
 } from 'react';
 import { PanResponder, PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Svg from 'react-native-svg';
+import { Svg } from '../platform/svg';
 import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';

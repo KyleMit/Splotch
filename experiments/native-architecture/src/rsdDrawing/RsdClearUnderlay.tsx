@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Animated, Easing } from '../platform/animated';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Svg, Defs, RadialGradient, Rect, Stop } from '../platform/svg';
 import {
   CLEAR_SHEET_CURVE,
   CLEAR_SHEET_DURATION_MS,

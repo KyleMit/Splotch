@@ -1,5 +1,5 @@
 import { css, html } from 'react-strict-dom';
-import { SvgXml } from 'react-native-svg';
+import { SvgXml } from '../platform/svg';
 import { dimensions, fonts, stepNumberMix } from './tokens.css';
 import { DRAWING_BRAND } from '../drawing/theme';
 import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppearance';

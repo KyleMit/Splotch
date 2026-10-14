@@ -1,7 +1,7 @@
 import { drawingPaper, paperSize, samePaper } from './paperSpace';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { Image, Rect, type Svg } from 'react-native-svg';
+import { Image, Rect, type Svg } from '../platform/svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
 import type { InkPlan } from './checkpoints';

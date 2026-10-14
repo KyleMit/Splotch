@@ -16,7 +16,11 @@ import { ACTION_TILE_DISABLED_OPACITY } from '../../../experiments/native-archit
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { NATIVE_ICONS as STARTUP_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
+import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
+
+// The drawer's tools draw from the deferred module, which the native apps resolve at launch.
+const NATIVE_ICONS = { ...STARTUP_ICONS, ...NATIVE_DEFERRED_ICONS };
 import { paletteSlots } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import {
   PALETTE_COLORS,

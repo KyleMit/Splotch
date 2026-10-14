@@ -17,29 +17,22 @@ export const NATIVE_SPLOTCHY_TARGET = `${NATIVE_ICON_DIR}splotchy.generated.ts`;
 const SPLOTCHY = 'splotchy';
 const DEFERRED_SPECIFIER = `./${basename(NATIVE_DEFERRED_ICONS_TARGET, '.ts')}`;
 
-// The icons the native startup path renders (the drawing toolbar and the Parental Gate keypad).
-// Every other shipping icon ships in the lazily imported deferred module, as ADR-0164 keeps
-// web/src/lib/icons/deferred/ off the shipping startup path.
+// The icons the drawing screen mounts with, painted or one press away: More colors and the folded
+// palette's ink, the Clear control with its coachmark, the settings gear, the drawer toggle, and
+// the Fullscreen Toggle a phone browser shows in the corner. Every other shipping icon ships in
+// the lazily imported deferred module, as ADR-0164 keeps web/src/lib/icons/deferred/ off the
+// shipping startup path; the web export prewarms it in the background after first paint, and a
+// sheet opens with it (ADR-0179).
 export const NATIVE_STARTUP_ICONS = [
-  'undo',
-  'brush-pen',
-  'brush-crayon',
-  'brush-magic',
-  'brush-eraser',
+  'more-colors',
+  'ink-splotch',
   'trash-closed',
   'trash-open',
   'swipe-down',
   'settings',
-  'camera',
-  'shapes',
-  'wand-stars',
-  'more-colors',
-  'ink-splotch',
-  'parent-center',
-  'controls',
   'chevron-right',
-  'backspace',
-  'check',
+  'fullscreen',
+  'fullscreen-exit',
 ];
 
 const THEMES = ['light', 'dark'];

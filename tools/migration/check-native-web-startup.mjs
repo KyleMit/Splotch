@@ -16,15 +16,16 @@ export const REACT_NATIVE_WEB_FLOOR_BYTES = 323_984;
 // its app code were as lean as the shipping app's.
 export const NATIVE_WEB_STARTUP_TARGET_BYTES =
   MAX_STARTUP_JS_CSS_BYTES + REACT_NATIVE_WEB_FLOOR_BYTES;
-// The reviewed 2026-10-13 startup is 993,619 bytes, after the bundled Farm images became hashed
+// The reviewed 2026-10-13 startup is 877,862 bytes, after the bundled Farm images became hashed
 // assets, each page's line art and every on-request sheet moved into lazy chunks, Reanimated left
 // the web bundle, the app's Animated stopped importing React Native Web's animated list components,
-// and feedback, AI generation and recovery, and the offline library began loading after the
-// drawing screen paints. That is 144,635 bytes over NATIVE_WEB_STARTUP_TARGET_BYTES, mostly the
-// startup icon set and react-native-svg. The 21,381 bytes of headroom stay below the smallest of
-// those moves (the offline library controller, 24,471 bytes) and the AI sheet, so undoing any of
-// them fails; consuming the headroom is the cue to take the next lever, not to raise the number.
-export const MAX_NATIVE_WEB_STARTUP_BYTES = 1_015_000;
+// feedback, AI generation and recovery, and the offline library began loading after the drawing
+// screen paints, the startup icon set shrank to the icons the screen mounts with, and
+// react-native-svg left the web bundle (platform/svg.web.ts). That is 28,878 bytes over
+// NATIVE_WEB_STARTUP_TARGET_BYTES. The 12,138 bytes of headroom stay below the smallest of those
+// moves (the offline library controller, 24,471 bytes), so undoing any of them fails; consuming
+// the headroom is the cue to take the next lever, not to raise the number.
+export const MAX_NATIVE_WEB_STARTUP_BYTES = 890_000;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(

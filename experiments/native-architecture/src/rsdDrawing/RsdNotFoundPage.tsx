@@ -5,7 +5,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { SvgXml } from 'react-native-svg';
+import { SvgXml } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import { PHONE_MAX_WIDTH_PX } from '../../../../web/src/lib/breakpoints';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
