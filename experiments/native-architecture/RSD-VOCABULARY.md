@@ -353,10 +353,9 @@ the hexagon shape, as the shipping `:hover` does; touch shows no hover.
 
 Each hexagon is a button named by its color; `RsdPressable` gives its native host the button role
 when a caller names none, since that host renders as a div. Its pointer events are off so every
-press reaches the grid, and a keyboard or screen-reader activation presses the button directly.
-React Native Web's `box-none` layer above the card turns pointer events back on for the web, so a
-web pointer's trailing click (`detail` of 1 or more) is dropped, as shipping's `handleHexClick`
-drops it.
+press reaches the grid, and a keyboard or screen-reader activation presses the button directly. A
+pointer's click (`detail` of 1 or more) that does reach a hexagon is dropped, as shipping's
+`handleHexClick` drops it.
 
 On the web the picker is its own lazily loaded chunk (`drawingSheets.web.ts`). The legacy
 `DrawingScreen` also loads it on first open, so its react-native-web suites need the React Strict
