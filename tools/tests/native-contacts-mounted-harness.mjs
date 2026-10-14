@@ -78,13 +78,20 @@ vi.mock('react-native', () => ({
     addEventListener: () => ({ remove() {} }),
   },
   Platform: { OS: 'android' },
+  // Android's SVG capture returns exactly the pixels it was asked for, so a decoded capture
+  // reports the grid of the request that produced it.
   Image: ({ source, onLoad }) => {
-    useEffect(
-      () => onLoad({ nativeEvent: { source: { uri: source.uri, width: 1024, height: 768 } } }),
-      [source.uri]
-    );
+    useEffect(() => {
+      const { width, height } = sdk.captures.at(-1)?.options ?? { width: 1024, height: 768 };
+      onLoad({ nativeEvent: { source: { uri: source.uri, width, height } } });
+    }, [source.uri]);
     return null;
   },
+}));
+// The saved picture's compositor paints through Skia's native module, which Node cannot load;
+// native-picture-export.test.mjs covers what it paints.
+vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
+  composePicture: async (layer) => layer,
 }));
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);

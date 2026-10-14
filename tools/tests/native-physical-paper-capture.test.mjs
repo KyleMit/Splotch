@@ -23,6 +23,8 @@ const state = vi.hoisted(() => ({
   autoNativeTiles: true,
   autoSvgTiles: true,
   platform: { OS: 'web' },
+  pixelRatio: 1,
+  composed: [],
 }));
 vi.mock('react-native', async () => {
   const { nativeRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
@@ -32,6 +34,12 @@ vi.mock('react-native-svg', async () => {
   const { svgRasterSdk } = await import('./native-raster-sdk-fixture.mjs');
   return svgRasterSdk(state);
 });
+vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
+  composePicture: async (layer, picture) => {
+    state.composed.push({ layer, picture });
+    return `composed:${layer}`;
+  },
+}));
 vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes }) =>
     createElement('div', {
@@ -49,6 +57,9 @@ beforeEach(() => {
   state.captures.length = 0;
   state.nativeImages.length = 0;
   state.svgTiles.length = 0;
+  state.composed.length = 0;
+  state.platform.OS = 'web';
+  state.pixelRatio = 1;
   frames = new Map();
   let next = 0;
   vi.stubGlobal('requestAnimationFrame', (callback) => {
@@ -182,5 +193,87 @@ describe('snapshot paper ownership through asynchronous capture', () => {
     expect(state.captures[1]).toMatchObject({ ...grid, viewBox: '0 0 567 1024' });
     await act(async () => state.captures[1].callback('portrait-picture'));
     await expect(request.promise).resolves.toBe('portrait-picture');
+    expect(state.composed).toEqual([]);
+  });
+});
+
+describe('the saved picture', () => {
+  // The 390x844 phone's paper: a 519x1024 sheet that shipping saves at 780x1538 on a 1x screen.
+  const phonePaper = adoptPaper(390, 769, 1);
+  const sheet = { width: 519, height: 1024 };
+
+  async function exportPicture(paper, theme = 'light') {
+    const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
+    const request = createPngCapture().begin(drawing);
+    const packet = {
+      id: 1,
+      request,
+      kind: 'export',
+      plan: { paper, checkpoint: null, strokes: [pen], prefix: [pen], needsCheckpoint: false },
+      appearance: { pageId: 'blank', theme },
+      isCurrent: () => true,
+    };
+    await act(async () => root.render(fixture(createElement(PictureCapture, { packet }), paper)));
+    await flush();
+    return request;
+  }
+
+  async function finishOutput(layer) {
+    await flush();
+    expect(state.captures).toHaveLength(2);
+    expect(host.querySelector('[data-paper-fill]')).toBeNull();
+    await act(async () => state.captures[1].callback(layer));
+  }
+
+  it.each([
+    ['light', '#fcfbf8'],
+    ['dark', '#211f29'],
+  ])(
+    'rasterizes both web passes at the shipping grid and composes them over the %s paper',
+    async (theme, paper) => {
+      const grid = { width: 780, height: 1538 };
+      const request = await exportPicture(phonePaper, theme);
+      expect(state.captures[0].options).toEqual(grid);
+      expect(state.captures[0]).toMatchObject({ ...sheet, viewBox: '0 0 519 1024' });
+      await act(async () => state.captures[0].callback('ink'));
+      await finishOutput('ink-and-outline');
+      expect(state.captures[1].options).toEqual(grid);
+      await expect(request.promise).resolves.toBe('composed:ink-and-outline');
+      expect(state.composed).toEqual([
+        { layer: 'ink-and-outline', picture: { size: grid, scale: 2, paper } },
+      ]);
+    }
+  );
+
+  it('keeps react-native-svg on iOS at the sheet it draws and composes at the screen scale', async () => {
+    state.platform.OS = 'ios';
+    state.pixelRatio = 3;
+    const request = await exportPicture(adoptPaper(390, 769, 3));
+    expect(state.captures[0].options).toEqual(sheet);
+    await act(async () => state.captures[0].callback('ink'));
+    await finishOutput('screen-scale-layer');
+    expect(state.captures[1].options).toEqual(sheet);
+    await expect(request.promise).resolves.toBe('composed:screen-scale-layer');
+    expect(state.composed[0].picture).toMatchObject({
+      size: { width: 1170, height: 2307 },
+      scale: 3,
+    });
+  });
+
+  it('decodes the Android ink pass at the shipping grid before composing', async () => {
+    state.platform.OS = 'android';
+    state.pixelRatio = 2.625;
+    const request = await exportPicture(adoptPaper(411.4286, 805.7143, 2.625));
+    const grid = { width: 1080, height: 2114 };
+    expect(state.captures[0].options).toEqual(grid);
+    await act(async () => state.captures[0].callback('ink'));
+    const decoded = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
+    await act(async () =>
+      decoded.onLoad({ nativeEvent: { source: { uri: decoded.source.uri, ...grid } } })
+    );
+    await finishOutput('android-layer');
+    expect(state.captures[1].options).toEqual(grid);
+    await expect(request.promise).resolves.toBe('composed:android-layer');
+    expect(state.composed[0].picture).toMatchObject({ size: grid, scale: 2.625 });
   });
 });
