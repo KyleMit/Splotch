@@ -10,6 +10,7 @@ import {
   imageGrid,
 } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
 import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
+import { AI_OUTPUT_FIXTURES } from '../../web/tests/artifacts/ai-output-fixtures.ts';
 import { pngChunk, pngFromZlib, rgbaPng } from './native-png-fixtures.mjs';
 const fixtures = new Map();
 const current = () => true;
@@ -20,6 +21,9 @@ beforeAll(async () => {
     ['rgba', 4, 'png', {}],
     ['baseline', 3, 'jpeg', { progressive: false }],
     ['gray', 1, 'jpeg', { progressive: false }],
+    ['progressive', 3, 'jpeg', { progressive: true }],
+    ['mozjpeg', 3, 'jpeg', { mozjpeg: true }],
+    ['grayProgressive', 1, 'jpeg', { progressive: true }],
     ['lossy', 3, 'webp', {}],
     ['lossless', 4, 'webp', { lossless: true }],
     ['alpha', 4, 'webp', { lossless: false }],
@@ -32,7 +36,18 @@ beforeAll(async () => {
     fixtures.set(name, { bytes, mime: `image/${format}` });
   }
 });
-it.each(['rgb', 'rgba', 'baseline', 'gray', 'lossy', 'lossless', 'alpha'])(
+it.each([
+  'rgb',
+  'rgba',
+  'baseline',
+  'gray',
+  'progressive',
+  'mozjpeg',
+  'grayProgressive',
+  'lossy',
+  'lossless',
+  'alpha',
+])(
   'admits complete controlled provider-format %s bytes and returns their exact bounded grid',
   async (name) => {
     const { bytes, mime } = fixtures.get(name);
@@ -61,7 +76,7 @@ it.each([
     )
   ).rejects.toThrow();
 });
-it.each(['rgba', 'baseline', 'lossy', 'lossless'])(
+it.each(['rgba', 'baseline', 'progressive', 'lossy', 'lossless'])(
   'rejects truncated and trailing %s data instead of accepting a header',
   async (name) => {
     const { bytes, mime } = fixtures.get(name);
@@ -151,28 +166,121 @@ it('rejects result dimensions and pixel budgets before decoded allocation', asyn
   expect(MAX_AI_IMAGE_PIXELS).toBe(4194304);
   expect(MAX_AI_DECODED_BYTES).toBe(16777216);
 });
-function jpegScan(bytes) {
+function jpegSegments(bytes) {
+  const segments = [];
   let offset = 2;
-  while (offset < bytes.length) {
+  while (bytes[offset + 1] !== 0xd9) {
     const marker = bytes[offset + 1],
-      size = bytes.readUInt16BE(offset + 2);
-    if (marker === 0xda) return offset + 2 + size;
-    offset += 2 + size;
+      end = offset + 2 + bytes.readUInt16BE(offset + 2);
+    segments.push({ marker, offset, end });
+    offset = end;
+    if (marker === 0xda)
+      while (bytes[offset] !== 255 || !bytes[offset + 1] || (bytes[offset + 1] & 0xf8) === 0xd0)
+        offset++;
   }
-  throw new Error('Fixture has no scan');
+  return segments;
 }
-it('rejects JPEG damaged entropy, unsupported progressive encoding and invalid quantization', async () => {
+const admits = (bytes) =>
+  resultImageGrid(bytes, 'image/jpeg', current).then(
+    () => true,
+    () => false
+  );
+it.each(Object.entries(AI_OUTPUT_FIXTURES))(
+  'admits the committed progressive %s provider output at its exact canvas',
+  async (_, path) => {
+    const bytes = readFileSync(path);
+    const { width, height, isProgressive } = await sharp(bytes).metadata();
+    expect(isProgressive).toBe(true);
+    expect(await resultImageGrid(bytes, 'image/jpeg', current)).toEqual({ width, height });
+  }
+);
+it('rejects a JPEG header without a scan, markers spliced into entropy data and invalid quantization', async () => {
   const { bytes } = fixtures.get('baseline'),
     damaged = Buffer.from(bytes),
     quantization = Buffer.from(bytes);
-  const scan = jpegScan(bytes);
-  damaged[scan] = 255;
-  damaged[scan + 1] = 0xc0;
+  const scan = jpegSegments(bytes).find((segment) => segment.marker === 0xda);
+  const headerOnly = Buffer.concat([bytes.subarray(0, scan.offset), Buffer.of(255, 0xd9)]);
+  damaged[scan.end] = 255;
+  damaged[scan.end + 1] = 0xc0;
   const table = quantization.indexOf(Buffer.from([255, 219]));
   quantization[table + 5] = 0;
-  const progressive = await sharp(bytes).jpeg({ progressive: true }).toBuffer();
-  for (const candidate of [damaged, quantization, progressive])
+  for (const candidate of [headerOnly, damaged, quantization])
     await expect(resultImageGrid(candidate, 'image/jpeg', current)).rejects.toThrow();
+});
+it('rejects progressive scans that break the band, approximation or table rules', async () => {
+  const { bytes } = fixtures.get('progressive');
+  const scans = jpegSegments(bytes).filter((segment) => segment.marker === 0xda);
+  const dc = scans.find((scan) => bytes[scan.end - 3] === 0),
+    ac = scans.find((scan) => bytes[scan.end - 3] > 0 && bytes[scan.end - 1] === 0x10);
+  const mutate = (scan, index, value) => {
+    const copy = Buffer.from(bytes);
+    copy[scan.end - index] = value;
+    return copy;
+  };
+  expect(await admits(bytes)).toBe(true);
+  for (const candidate of [
+    mutate(dc, 2, 63),
+    mutate(ac, 1, 0x20),
+    mutate(ac, 1, 0x0e),
+    mutate(ac, 2, bytes[ac.end - 3] - 1),
+    mutate(ac, 4, 3),
+  ])
+    expect(await admits(candidate)).toBe(false);
+});
+function restartJpeg(interval, marker) {
+  const segment = (code, body) => Buffer.of(255, code, 0, body.length + 2, ...body);
+  const table = (selector) => [selector, 1, ...Array(15).fill(0), 0];
+  return Buffer.concat([
+    Buffer.of(255, 0xd8),
+    segment(0xdb, [0, ...Array(64).fill(1)]),
+    segment(0xc0, [8, 0, 8, 0, 16, 1, 1, 0x11, 0]),
+    segment(0xc4, [...table(0x00), ...table(0x10)]),
+    segment(0xdd, [0, interval]),
+    segment(0xda, [1, 1, 0, 0, 63, 0]),
+    Buffer.of(0x3f, 255, marker, 0x3f, 255, 0xd9),
+  ]);
+}
+it('admits in-sequence restart markers and rejects undeclared or out-of-sequence ones', async () => {
+  const valid = restartJpeg(1, 0xd0);
+  await sharp(valid, { failOn: 'warning' }).raw().toBuffer();
+  expect(await resultImageGrid(valid, 'image/jpeg', current)).toEqual({ width: 16, height: 8 });
+  for (const candidate of [restartJpeg(0, 0xd0), restartJpeg(1, 0xd1)])
+    expect(await admits(candidate)).toBe(false);
+});
+it('admits exactly the JPEG frame types both native decoders admit', async () => {
+  const frames = [...Array(16).keys()]
+    .map((index) => 0xc0 + index)
+    .filter((marker) => ![0xc4, 0xc8, 0xcc].includes(marker));
+  const withFrame = (bytes, marker) => {
+    const copy = Buffer.from(bytes);
+    copy[jpegSegments(bytes).find((segment) => frames.includes(segment.marker)).offset + 1] =
+      marker;
+    return copy;
+  };
+  const admitted = [];
+  for (const marker of frames)
+    if (
+      (await admits(withFrame(fixtures.get('baseline').bytes, marker))) ||
+      (await admits(withFrame(fixtures.get('progressive').bytes, marker)))
+    )
+      admitted.push(marker);
+  const root = new URL('../../experiments/native-architecture/', import.meta.url);
+  const native = (path, pattern) =>
+    readFileSync(new URL(path, root), 'utf8')
+      .match(pattern)[1]
+      .split(',')
+      .map(Number)
+      .filter((marker) => frames.includes(marker));
+  expect(admitted).toEqual([0xc0, 0xc1, 0xc2]);
+  expect(
+    native(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      /check\(marker in setOf\(([^)]*)\)/
+    )
+  ).toEqual(admitted);
+  expect(
+    native('ios/HelloWorld/SplotchAIEnvironment.swift', /require\(\[([^\]]*)\]\.contains\(marker\)/)
+  ).toEqual(admitted);
 });
 it('rejects WebP inconsistent RIFF lengths, animation and oversized frame dimensions', async () => {
   const { bytes } = fixtures.get('lossy'),
