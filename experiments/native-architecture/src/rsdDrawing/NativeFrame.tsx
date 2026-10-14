@@ -9,6 +9,7 @@ import {
   initialWindowMetrics,
   SafeAreaProvider,
   SafeAreaView,
+  type Edge,
 } from 'react-native-safe-area-context';
 import { useModalOrigin } from './modalOrigin';
 
@@ -22,12 +23,21 @@ const themedStyles = createDrawingStyles((palette) =>
   })
 );
 
+const ALL_EDGES: readonly Edge[] = ['top', 'right', 'bottom', 'left'];
+// The drawing paper runs under the bottom inset (the home indicator) as shipping's canvas does;
+// NativeDrawingLayout lifts the controls clear of it (docs/SAFE-AREA.md).
+const PAPER_EDGES: readonly Edge[] = ['top', 'right', 'left'];
+
 export function NativeFrame({
   children,
   variant = 'screen',
+  edges,
 }: {
   children: ReactNode;
   variant?: 'screen' | 'drawing' | 'overlay';
+  // Painted over the safe-area strips the frame's padding leaves (the drawing screen's Notch Band),
+  // in this frame's own inset coordinates.
+  edges?: ReactNode;
 }) {
   const styles = useDrawingStyles(themedStyles);
   const frame = { screen: styles.frame, drawing: styles.drawing, overlay: styles.overlay }[variant];
@@ -42,12 +52,13 @@ export function NativeFrame({
       <SafeAreaView
         testID="rsd-safe-area-frame"
         mode="padding"
-        edges={['top', 'right', 'bottom', 'left']}
+        edges={variant === 'drawing' ? PAPER_EDGES : ALL_EDGES}
         style={frame}
         onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
       >
         {children}
       </SafeAreaView>
+      {edges}
     </SafeAreaProvider>
   );
 }

@@ -1,9 +1,11 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
+import { useStartOver } from '../product/DrawingSession';
 import {
   RsdAiResult,
   RsdAiStylePrompt,
   RsdColorPicker,
   RsdColoringBookPicker,
+  RsdErrorScreen,
   RsdParentGateSheet,
   RsdSettingsRoute,
 } from './drawingSheets';
@@ -14,12 +16,12 @@ import { useAiAvailability } from '../product/useAiAvailability';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { darkTheme } from './tokens.css';
+import { colors, darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
-import { DEFAULT_APPEARANCE } from '../settings/appearance';
+import { bootAppearance } from '../platform/bootAppearance';
 import { useEffect, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { html } from 'react-strict-dom';
+import { css, html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -30,6 +32,8 @@ import { RsdPolaroidFlight } from './polaroidFlightSurface';
 import { RsdInstallBanner } from './installBannerSurface';
 import { RsdEdgeLayout } from './RsdEdgeControls';
 import { RsdLeaveConfirm } from './RsdLeaveConfirm';
+import { RsdNotchBand } from './notchBandSurface';
+import { paintAppearance } from '../drawing/palette';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
@@ -76,13 +80,11 @@ export function RsdDrawingScreen() {
     sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading';
   useDrawingPainted(!loading);
   return (
-    <DrawingAppearanceProvider
-      preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
-    >
+    <DrawingAppearanceProvider preference={loading ? bootAppearance() : sound.settings.appearance}>
       <ModalOriginProvider>
         <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
           {loading ? (
-            <RsdDrawingLoading />
+            <RsdDrawingFirstPaint />
           ) : (
             <RsdDrawingContent
               screen={screen}
@@ -168,12 +170,19 @@ function RsdModalSheets({
   );
 }
 
-function RsdDrawingLoading() {
+const firstPaint = css.create({
+  paper: { flexGrow: 1, backgroundColor: colors.paper },
+});
+
+// Shipping has no loading screen: its page paints at once and its boot script has the theme right
+// before then. Until the settings arrive the drawing screen paints its frame and a bare paper in
+// the theme the shell booted with; the controls join when the choices they show are known.
+function RsdDrawingFirstPaint() {
   const theme = useDrawingAppearance();
   return (
-    <NativeFrame>
-      <html.div style={[styles.screen, fontTheme, theme === 'dark' && darkTheme]}>
-        <html.span>Loading drawing settings…</html.span>
+    <NativeFrame variant="drawing">
+      <html.div style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}>
+        <html.div style={firstPaint.paper} />
       </html.div>
     </NativeFrame>
   );
@@ -195,6 +204,7 @@ function RsdDrawingContent({
   onModalDismissed: () => void;
 }) {
   const theme = useDrawingAppearance();
+  const startOver = useStartOver();
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
@@ -224,7 +234,15 @@ function RsdDrawingContent({
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
-      <NativeFrame variant="drawing">
+      <NativeFrame
+        variant="drawing"
+        edges={
+          <RsdNotchBand
+            ink={paintAppearance(sound.settings.selectedColor, theme).hex}
+            eraser={screen.brush === 'eraser'}
+          />
+        }
+      >
         <html.div
           data-layoutconformance="strict"
           style={[styles.screen, styles.fullBleed, fontTheme, theme === 'dark' && darkTheme]}
@@ -266,6 +284,11 @@ function RsdDrawingContent({
           />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
+          {screen.recovery.failed ? (
+            <RsdSurfaceBoundary>
+              <RsdErrorScreen onRestart={startOver} />
+            </RsdSurfaceBoundary>
+          ) : null}
         </html.div>
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}

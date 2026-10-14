@@ -73,6 +73,9 @@ function expectNoFooter() {
     expect(host.querySelector(`[aria-label="${label}"]`), label).toBeNull();
 }
 
+const choiceButton = (text) =>
+  [...dialog().querySelectorAll('button')].find((button) => button.textContent === text);
+
 function labelledTitle() {
   const id = dialog().getAttribute('aria-labelledby');
   expect(id).toBeTruthy();
@@ -366,10 +369,21 @@ it('asks Leave Splotch? on a confirm card whose two choices are its only way out
   expect(dialog()).toBeNull();
   await act(async () => [...records.backListeners].forEach((listener) => listener()));
   expect(labelledTitle().textContent).toBe(LEAVE_CONFIRM_COPY.title);
+  expect(dialog().textContent).toContain(LEAVE_CONFIRM_COPY.body);
   expect(frameControls()).toEqual([]);
   expect(host.querySelector('[aria-label="Close"]')).toBeNull();
   expect(surface().width).toBe(336);
-  await click(LEAVE_CONFIRM_COPY.stay);
+  const choices = [...dialog().querySelectorAll('button')];
+  expect(choices.map((choice) => choice.textContent)).toEqual([
+    LEAVE_CONFIRM_COPY.stay,
+    LEAVE_CONFIRM_COPY.leave,
+  ]);
+  // Shipping's brand Keep drawing beside a wash Leave, both the lg Button.
+  expect(choices.map((choice) => choice.dataset.nativeBackground)).toEqual([
+    DRAWING_THEMES.light.brandSolid,
+    DRAWING_THEMES.light.brandWash,
+  ]);
+  await act(async () => choices[0].click());
   expect(dialog()).toBeNull();
   expect(records.exits).toBe(0);
 });
@@ -432,9 +446,9 @@ it('cannot leave the app from the Leave Splotch? card once Keep drawing has clos
   await act(async () => [...records.backListeners].forEach((listener) => listener()));
   const held = holdNextExit();
   try {
-    await click(LEAVE_CONFIRM_COPY.stay);
+    await act(async () => choiceButton(LEAVE_CONFIRM_COPY.stay).click());
     expect(dialog()).not.toBeNull();
-    const leave = host.querySelector(`[aria-label="${LEAVE_CONFIRM_COPY.leave}"]`);
+    const leave = choiceButton(LEAVE_CONFIRM_COPY.leave);
     expect(leave.disabled).toBe(true);
     await act(async () => leave.click());
     expect(records.exits).toBe(0);

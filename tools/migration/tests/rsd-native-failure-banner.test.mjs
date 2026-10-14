@@ -98,29 +98,6 @@ describe('the Save Failure Banner on the drawing screen', () => {
     expect(banners()).toEqual([]);
   });
 
-  it('shows a renderer fault in the banner with the Retry that clears it', async () => {
-    const retry = vi.fn();
-    const detail = 'The drawing paper stopped drawing.';
-    await mountToolbar(
-      toolbarScreen({
-        notice: detail,
-        failure: { kind: 'error', detail },
-        recovery: { failed: true, retryDisabled: false, retry },
-      })
-    );
-    expect(banners()).toEqual([`${FAILURE_HEADING}${detail}Retry drawing`]);
-    const [banner] = bannerNodes();
-    expect(banner.closest('[data-testid="rsd-canvas-area"]')).not.toBeNull();
-    expect(banner.querySelector('[aria-label="Dismiss"]')).toBeNull();
-    const retryButton = [...banner.querySelectorAll('*')].find(
-      (node) => node.textContent === 'Retry drawing' && node.getAttribute('role') === 'button'
-    );
-    await act(async () => retryButton.click());
-    expect(retry).toHaveBeenCalledOnce();
-    expect(records.announcements).toContain(`${FAILURE_HEADING}. ${detail}`);
-    expect(spoken(detail)).toEqual({ announced: 1, regions: 1 });
-  });
-
   it('speaks a failed draft once, from the banner, with its Retry', async () => {
     const message = 'Your current picture could not be saved.';
     await mountToolbar(

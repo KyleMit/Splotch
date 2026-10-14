@@ -21,6 +21,9 @@ vi.mock(
   () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
 );
 vi.mock('react-native-svg', () => ({ SvgXml: () => null }));
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
 vi.mock('react-strict-dom', () => ({
   html: Object.fromEntries(
     ['div', 'span', 'button'].map((tag) => [

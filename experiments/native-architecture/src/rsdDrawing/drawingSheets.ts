@@ -7,5 +7,7 @@ export { RsdAiStylePrompt } from './RsdAiStylePrompt';
 export { RsdAiResult } from './RsdAiResult';
 export { RsdColorPicker } from './RsdColorPicker';
 export { RsdColoringBookPicker } from './RsdColoringBookPicker';
+export { RsdErrorScreen } from './RsdErrorScreen';
 export { RsdFailureBanner } from './RsdFailureBanner';
+export { RsdLeaveConfirmCard } from './RsdLeaveConfirmCard';
 export { RsdParentGateSheet } from './RsdParentGateSheet';

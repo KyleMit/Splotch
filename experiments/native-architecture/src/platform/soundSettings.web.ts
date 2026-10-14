@@ -1,5 +1,5 @@
 import type { SoundSettingsStorage } from '../settings/soundSettings';
-const SOUND_SETTINGS_KEY = 'splotch-candidate:sound-v1';
+export const SOUND_SETTINGS_KEY = 'splotch-candidate:sound-v1';
 
 export const soundSettingsStorage: SoundSettingsStorage = {
   async read() {

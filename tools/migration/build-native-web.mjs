@@ -14,6 +14,9 @@ import {
 } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { CACHE_BUST_VERSION_PARAM } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { SERVICE_WORKER_PATH } from '../../experiments/native-architecture/src/platform/serviceWorkerPath.ts';
+import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
+import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
+import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
@@ -26,6 +29,10 @@ const ASSETS_PLACEHOLDER = '%sveltekit.assets%';
 // Expo's build-identity file is read by its own tooling, never by the app.
 const EXPORT_METADATA_FILE = 'metadata.json';
 export const APP_SHELL_FILE = 'index.html';
+// What a static host answers any other path with (Netlify, GitHub Pages and most others look for
+// it): the app shell itself, which shows shipping's not-found page off the drawing route
+// (src/platform/appPath.web.ts). Only the host fetches it, so it stays out of the precache.
+export const NOT_FOUND_FILE = '404.html';
 
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish (the shipping value).
@@ -54,9 +61,45 @@ export function manifestIconAssets(manifest) {
   return manifest.icons.map((icon) => icon.src.replace(/^\//, ''));
 }
 
+const VIEWPORT_META = /<meta name="viewport" content="[^"]*"\s*\/?>/;
+
+// Shipping's viewport lets the page run under the status bar, notch and home indicator
+// (viewport-fit=cover, ADR-0026), so the safe-area insets reach NativeFrame and the Notch Band
+// on the web as they do in the native apps.
+export function withShippingViewport(indexHtml, appHtml) {
+  const viewport = VIEWPORT_META.exec(appHtml)?.[0];
+  if (!viewport) throw new Error('The shipping app.html no longer declares a viewport.');
+  if (!VIEWPORT_META.test(indexHtml)) throw new Error('The export has no viewport to replace.');
+  return indexHtml.replace(VIEWPORT_META, viewport);
+}
+
 export function withInstallHeadTags(indexHtml, tags) {
   if (!indexHtml.includes('</head>')) throw new Error('The export has no </head> to extend.');
   return indexHtml.replace('</head>', `${tags.join('\n')}\n</head>`);
+}
+
+// Shipping paints its prerendered page in the visitor's theme before any script loads (app.html's
+// boot script). The export's document is empty until the bundle mounts, so it paints the paper
+// instead: in the system theme, or in the Light or Dark choice saved in the drawing settings,
+// which the script stamps for the drawing screen's first frame to read (bootAppearance.web.ts).
+export function bootThemeHeadTags({
+  settingsKey = SOUND_SETTINGS_KEY,
+  themes = DRAWING_THEMES,
+} = {}) {
+  const stamped = (theme) => `[${BOOT_THEME_ATTRIBUTE}=${theme}]`;
+  const style = [
+    `html{background:${themes.light.paper}}`,
+    `@media (prefers-color-scheme:dark){html:not(${stamped('light')}){background:${themes.dark.paper}}}`,
+    `html${stamped('dark')}{background:${themes.dark.paper}}`,
+  ].join('');
+  const script = [
+    '(function(){try{',
+    `var s=JSON.parse(localStorage.getItem(${JSON.stringify(settingsKey)}));`,
+    'var a=s&&s.appearance;',
+    `if(a==='light'||a==='dark')document.documentElement.setAttribute(${JSON.stringify(BOOT_THEME_ATTRIBUTE)},a)`,
+    '}catch(e){}})();',
+  ].join('');
+  return [`<style>${style}</style>`, `<script>${script}</script>`];
 }
 
 function exportWebBundle(outputDir) {
@@ -78,7 +121,13 @@ function copyShippingInstallAssets(outputDir) {
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
   const indexPath = join(outputDir, APP_SHELL_FILE);
-  writeFileSync(indexPath, withInstallHeadTags(readFileSync(indexPath, 'utf8'), tags));
+  writeFileSync(
+    indexPath,
+    withShippingViewport(
+      withInstallHeadTags(readFileSync(indexPath, 'utf8'), [...tags, ...bootThemeHeadTags()]),
+      appHtml
+    )
+  );
 }
 
 export function subresourceIntegrity(bytes) {
@@ -145,6 +194,7 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
   if (!existsSync(join(outputDir, APP_SHELL_FILE)))
     throw new Error(`Expo exported no ${APP_SHELL_FILE} into ${outputDir}`);
   copyShippingInstallAssets(outputDir);
+  copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
     nativeWebServiceWorkerConfig(outputDir, shell)

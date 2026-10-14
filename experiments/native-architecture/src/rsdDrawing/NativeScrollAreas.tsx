@@ -1,10 +1,23 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { paletteSlots } from './paletteGeometry';
-import { EDGE_INSET_PX, type AreaOffset, type AreaSize, type LayoutAxis } from './edgeLayout';
+import {
+  EDGE_INSET_PX,
+  isPhoneLandscapeViewport,
+  type AreaOffset,
+  type AreaSize,
+  type LayoutAxis,
+} from './edgeLayout';
 
-export type PaletteLayout = Readonly<{ axis: LayoutAxis; slots: number; length: number }>;
+// endInset is the bar's length past the bottom inset, which the column's swatches stay clear of.
+export type PaletteLayout = Readonly<{
+  axis: LayoutAxis;
+  slots: number;
+  length: number;
+  endInset: number;
+}>;
 
 // The shipping palette (--z-palette) stacks over the paper, so its plate's shadow falls on it,
 // and over the Clear Button, its accept ring and coachmark.
@@ -15,6 +28,7 @@ const docks = StyleSheet.create({
   // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
   clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
+  controls: { position: 'absolute', top: 0, right: 0, left: 0 },
 });
 
 type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -45,7 +59,8 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
   };
 }
 
-// The shipping arrangement: colors along the top edge (the left edge in landscape), Clear docked to
+// The shipping arrangement: colors along the top edge (the left edge in landscape, and none on a
+// landscape phone, whose Actions Panel carries the Color Button instead), Clear docked to
 // the right screen edge, Settings in the bottom-right corner and the Actions Panel in the
 // bottom-left one, all floating over a paper area that takes the rest of the screen. The panel
 // places itself inside that area (edgeLayout.ts), sized against the area and the window. The
@@ -60,6 +75,7 @@ export function NativeDrawingLayout({
   settings,
   status,
   capturePress,
+  overlays,
   children,
 }: {
   palette: (layout: PaletteLayout) => ReactNode;
@@ -69,20 +85,31 @@ export function NativeDrawingLayout({
   settings: ReactNode;
   status: ReactNode;
   capturePress: () => boolean;
+  // Floats over the paper with the controls, clear of the bottom inset.
+  overlays: ReactNode;
+  // The paper, which runs under the bottom inset.
   children: ReactNode;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const window = useWindowDimensions();
   const axis = window.width > window.height ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
+  // Shipping's paper runs under the home indicator while its controls sit clear of it; the frame
+  // leaves the bottom inset unpadded (NativeFrame) and the controls take it back here.
+  const insetBottom = useSafeAreaInsets().bottom;
+  const endInset = axis === 'column' ? insetBottom : 0;
   // Shipping trims by the viewport's own length, insets included, and clips what an inset
-  // shortens the bar by; only the spacing follows the bar's measured length.
+  // shortens the bar by; only the spacing follows the bar's measured length. The landscape column
+  // alone trims short of the bottom inset: there shipping's own last swatch overruns into the home
+  // indicator (safe-area-matrix.spec.ts), and More colors, which never trims, must stay reachable.
   const viewportLength = axis === 'row' ? window.width : window.height;
   const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
   const [area, setArea] = useState<Box>();
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
+  const paperArea = area ?? window;
+  const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
   return (
     <View
       testID="rsd-drawing-layout"
@@ -93,18 +120,27 @@ export function NativeDrawingLayout({
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
       ]}
     >
-      <View
-        testID="rsd-palette-bar"
-        style={[drawingScreenStyles.paletteBar, docks.palette]}
-        onLayout={({ nativeEvent }) => {
-          const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
-          setMeasured((previous) =>
-            previous?.axis === axis && previous.length === next ? previous : { axis, length: next }
-          );
-        }}
-      >
-        {palette({ axis, slots: paletteSlots(viewportLength, axis), length })}
-      </View>
+      {isPhoneLandscapeViewport(window) ? null : (
+        <View
+          testID="rsd-palette-bar"
+          style={[drawingScreenStyles.paletteBar, docks.palette]}
+          onLayout={({ nativeEvent }) => {
+            const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
+            setMeasured((previous) =>
+              previous?.axis === axis && previous.length === next
+                ? previous
+                : { axis, length: next }
+            );
+          }}
+        >
+          {palette({
+            axis,
+            slots: paletteSlots(viewportLength - endInset, axis),
+            length,
+            endInset,
+          })}
+        </View>
+      )}
       <View
         testID="rsd-canvas-column"
         style={drawingScreenStyles.canvasColumn}
@@ -117,11 +153,18 @@ export function NativeDrawingLayout({
         >
           {children}
           {clearUnderlay(areaOffset(root, column, area))}
-          <View testID="rsd-settings-dock" style={docks.settings}>
-            {settings}
+          <View
+            testID="rsd-controls-inset"
+            pointerEvents="box-none"
+            style={[docks.controls, { bottom: insetBottom }]}
+          >
+            {overlays}
+            <View testID="rsd-settings-dock" style={docks.settings}>
+              {settings}
+            </View>
+            {actionsPanel(controlArea, window)}
+            {status}
           </View>
-          {actionsPanel(area ?? window, window)}
-          {status}
         </View>
       </View>
       <View testID="rsd-clear-overlay" pointerEvents="box-none" style={docks.clearOverlay}>

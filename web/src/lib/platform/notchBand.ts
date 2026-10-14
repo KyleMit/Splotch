@@ -20,7 +20,8 @@
 import { isLightColor } from '../colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
-import type { Orientation, Platform } from './index';
+import type { Orientation } from '../breakpoints';
+import type { Platform } from './platformName';
 // The module namespace is injected by the native-only dynamic import.
 import type { SystemBars, SystemBarsStyle, SystemBarType } from '@capacitor/core';
 
