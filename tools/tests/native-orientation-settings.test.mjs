@@ -34,8 +34,14 @@ const VERSION_7 = {
   strokeWidthControlEnabled: true,
 };
 const VERSION_8 = { ...VERSION_7, version: 8, orientation: 'landscape' };
-// Schema 12 reads the loud level as the volume that plays at its gain, with both sources on.
-const { soundLevel: _soundLevel7, ...VERSION_7_CHOICES } = VERSION_7;
+// Schema 12 reads the loud level as the volume that plays at its gain, with both sources on, and
+// schema 16 drops the paint.
+const {
+  soundLevel: _soundLevel7,
+  selectedColor: _paint7,
+  customColors: _paints7,
+  ...VERSION_7_CHOICES
+} = VERSION_7;
 const MIGRATED_7 = {
   ...VERSION_7_CHOICES,
   soundVolume: 100,
@@ -65,7 +71,7 @@ describe('persisted orientation choice', () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_7))).toEqual({
       ...MIGRATED_7,
       parentPolicies: MIGRATED_POLICIES,
-      version: 15,
+      version: 16,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -97,7 +103,7 @@ describe('persisted orientation choice', () => {
       });
     if (version >= 6) Object.assign(old, { coloringBookEnabled: true });
     expect(parseSoundSettings(JSON.stringify(old))).toMatchObject({
-      version: 15,
+      version: 16,
       orientation: 'portrait',
     });
   });
@@ -111,7 +117,7 @@ describe('persisted orientation choice', () => {
       expect(JSON.parse(f.stored())).toEqual({
         ...MIGRATED_7,
         parentPolicies: MIGRATED_POLICIES,
-        version: 15,
+        version: 16,
         orientation: choice,
         saveOnDeleteEnabled: false,
         buttonScale: 100,

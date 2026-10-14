@@ -8,7 +8,7 @@ import { PaintColors } from '../../experiments/native-architecture/src/drawing/P
 import { RsdColorPicker } from '../../experiments/native-architecture/src/rsdDrawing/RsdColorPicker.tsx';
 import { hexPickerLayout } from '../../experiments/native-architecture/src/rsdDrawing/hexPicker.ts';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
-import { AppState, Dimensions } from 'react-native';
+import { Dimensions } from 'react-native';
 import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 
 const platform = vi.hoisted(() => ({
@@ -83,13 +83,7 @@ async function pickerOpened() {
   return document.querySelector('[role="dialog"][aria-label="Color Picker"]');
 }
 
-async function chooseWithPendingWrite() {
-  let resolve, reject;
-  const promise = new Promise((yes, no) => {
-    resolve = yes;
-    reject = no;
-  });
-  platform.write.mockReturnValueOnce(promise);
+async function chooseFromPicker() {
   const host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -105,7 +99,7 @@ async function chooseWithPendingWrite() {
   const hexagon = picker.querySelector('button');
   const chosen = hexagon.getAttribute('aria-label');
   await act(async () => hexagon.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-  return { host, opener, chosen, resolve, reject };
+  return { host, opener, chosen };
 }
 
 describe('custom color controls through installed React Native Web', () => {
@@ -152,16 +146,10 @@ describe('custom color controls through installed React Native Web', () => {
     await act(async () => selected.click());
     expect(changed).not.toHaveBeenCalled();
   });
-  it('keeps initial focus and ignores an unrelated paint save under StrictMode', async () => {
+  it('keeps initial focus through a paint tap under StrictMode, which saves nothing', async () => {
     const outside = document.createElement('button');
     document.body.append(outside);
     outside.focus();
-    let finish;
-    platform.write.mockReturnValueOnce(
-      new Promise((resolve) => {
-        finish = resolve;
-      })
-    );
     const host = document.createElement('div');
     document.body.append(host);
     root = createRoot(host);
@@ -174,86 +162,26 @@ describe('custom color controls through installed React Native Web', () => {
         .querySelector('[aria-label="Blue paint"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
     );
-    expect(platform.write).toHaveBeenCalledTimes(1);
-    const opener = host.querySelector('[aria-label="More colors"]');
-    expect(opener.disabled).toBe(true);
-    expect(document.activeElement).toBe(outside);
-    await act(async () => finish());
-    expect(opener.disabled).toBe(false);
+    expect(host.querySelector('[aria-label="Blue paint"]').getAttribute('aria-pressed')).toBe(
+      'true'
+    );
+    expect(platform.write).not.toHaveBeenCalled();
+    expect(host.querySelector('[aria-label="More colors"]').disabled).toBe(false);
     expect(document.activeElement).toBe(outside);
   });
-  it.each([
-    ['resolve', false],
-    ['reject', true],
-  ])('restores focus after the picked color delayed write %s', async (completion, failed) => {
-    const pending = await chooseWithPendingWrite();
-    expect(platform.write).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(platform.write.mock.calls[0][0]).selectedColor).toBe(pending.chosen);
+  it('returns focus to More colors as the picked color closes the picker, saving nothing', async () => {
+    const picked = await chooseFromPicker();
     expect(document.querySelector('[aria-label="Color Picker"]')).toBeNull();
-    expect(pending.opener.disabled).toBe(true);
-    expect(document.activeElement).not.toBe(pending.opener);
     expect(platform.release).toHaveBeenCalledTimes(1);
-    await act(async () => pending[completion](new Error('write unavailable')));
-    expect(pending.opener.disabled).toBe(false);
-    expect(document.activeElement).toBe(pending.opener);
-    expect(pending.host.textContent.includes('could not be saved')).toBe(failed);
+    expect(platform.write).not.toHaveBeenCalled();
+    expect(picked.opener.disabled).toBe(false);
+    expect(document.activeElement).toBe(picked.opener);
+    expect(
+      picked.host
+        .querySelector(`[aria-label="Custom paint ${picked.chosen}"]`)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
   });
-  it.each(['focus', 'pointer', 'modal', 'background'])(
-    'does not steal focus after intervening %s during the real color write',
-    async (interruption) => {
-      const listeners = new Set();
-      const subscribe = AppState.addEventListener.bind(AppState);
-      vi.spyOn(AppState, 'addEventListener').mockImplementation((name, listener) => {
-        listeners.add(listener);
-        const subscription = subscribe(name, listener);
-        return {
-          remove() {
-            listeners.delete(listener);
-            subscription.remove();
-          },
-        };
-      });
-      const pending = await chooseWithPendingWrite();
-      const tools = pending.host.querySelector('[aria-label="Drawing tools"]');
-      expect(tools).not.toBeNull();
-      const interrupt = {
-        focus: async () => act(async () => tools.focus()),
-        pointer: async () =>
-          act(async () => tools.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))),
-        modal: async () => {
-          await act(async () =>
-            tools.dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
-          );
-          const settings = document.querySelector('[aria-label="Settings"]');
-          expect(settings).not.toBeNull();
-          await act(async () =>
-            settings.dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
-          );
-          expect(document.querySelector('[aria-label="Close Settings"]')).not.toBeNull();
-          expect(tools.disabled).toBe(true);
-          expect(tools.tabIndex).toBe(-1);
-        },
-        background: async () =>
-          act(async () => listeners.forEach((listener) => listener('background'))),
-      };
-      await interrupt[interruption]();
-      const focused = document.activeElement;
-      await act(async () => pending.resolve());
-      expect(document.activeElement).toBe(focused);
-      expect(document.activeElement).not.toBe(pending.opener);
-      if (interruption === 'modal') {
-        await act(async () =>
-          document
-            .querySelector('[aria-label="Close Settings"]')
-            .dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
-        );
-      }
-      expect(pending.opener.disabled).toBe(false);
-      expect(document.activeElement).not.toBe(pending.opener);
-      expect(platform.write).toHaveBeenCalledTimes(1);
-      expect(JSON.parse(platform.write.mock.calls[0][0]).selectedColor).toBe(pending.chosen);
-    }
-  );
   it('uses the actual modal focus trap and named hexagon buttons, picks only on a pointerless click and restores focus on close', async () => {
     const chosen = vi.fn();
     const closed = vi.fn();
@@ -359,9 +287,9 @@ it.each(['light', 'dark'])(
 );
 
 it.each(['light', 'dark'])(
-  'keeps semantic Black through a closed Color Picker and saves a picked hexagon in %s',
+  'starts on Purple over a record that saved Black, and keeps a picked hexagon for the session only, in %s',
   async (appearance) => {
-    let stored = JSON.stringify({
+    const stored = JSON.stringify({
       version: 4,
       soundEnabled: false,
       strokeWidth: 'medium',
@@ -371,37 +299,25 @@ it.each(['light', 'dark'])(
       appearance,
     });
     platform.read.mockImplementation(async () => stored);
-    platform.write.mockImplementation(async (snapshot) => {
-      stored = snapshot;
-    });
     const host = document.createElement('div');
     document.body.append(host);
     root = createRoot(host);
+    const pressed = (label) =>
+      host.querySelector(`[aria-label="${label}"]`)?.getAttribute('aria-pressed');
     await act(async () => root.render(createElement(DrawingScreen)));
-    const open = async () => {
-      await act(async () => host.querySelector('[aria-label="More colors"]').click());
-      return pickerOpened();
-    };
-    let modal = await open();
-    await act(async () => {
-      modal.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
-    });
-    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
-    expect(JSON.parse(stored)).toMatchObject({ selectedColor: 'Black', customColors: [] });
-    expect(host.querySelector('[aria-label="Black paint"]').getAttribute('aria-pressed')).toBe(
-      'true'
-    );
-    modal = await open();
-    const hexagon = modal.querySelector('button');
+    expect(pressed('Purple paint')).toBe('true');
+    expect(pressed('Black paint')).toBe('false');
+    await act(async () => host.querySelector('[aria-label="More colors"]').click());
+    const hexagon = (await pickerOpened()).querySelector('button');
     const literal = hexagon.getAttribute('aria-label');
     await act(async () => hexagon.click());
-    expect(JSON.parse(stored)).toMatchObject({ selectedColor: literal, customColors: [literal] });
+    expect(pressed(`Custom paint ${literal}`)).toBe('true');
+    expect(platform.write).not.toHaveBeenCalled();
     await act(async () => root.unmount());
     root = createRoot(host);
     await act(async () => root.render(createElement(DrawingScreen)));
-    expect(
-      host.querySelector(`[aria-label="Custom paint ${literal}"]`).getAttribute('aria-pressed')
-    ).toBe('true');
+    expect(pressed('Purple paint')).toBe('true');
+    expect(host.querySelector(`[aria-label="Custom paint ${literal}"]`)).toBeNull();
   }
 );
 

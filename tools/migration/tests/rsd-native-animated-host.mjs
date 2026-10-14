@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 // A synchronous stand-in for React Native's Animated: every timing lands on its
 // target at once and loops never tick, so mounted RSD tests observe end states.
 class Value {
@@ -8,9 +10,28 @@ class Value {
     this.value = value;
   }
   stopAnimation() {}
-  interpolate() {
-    return new Value(0);
+  interpolate(config) {
+    const interpolation = new Value(0);
+    interpolation.restsAt = config?.outputRange?.at(-1);
+    return interpolation;
   }
+}
+
+// What a Fabric host view shows of its style. An animated value moves the view on the native side
+// and leaves it at rest there, while a React commit changes only a prop whose value differs from
+// the last one React committed, so a static value equal to that one never replaces it.
+export function useShownStyle(style) {
+  const shown = useRef({});
+  const committed = useRef({});
+  const flat = Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
+  for (const [key, value] of Object.entries(flat)) {
+    if (value instanceof Value) shown.current[key] = value.restsAt ?? value.value;
+    else if (committed.current[key] !== value) {
+      committed.current[key] = value;
+      shown.current[key] = value;
+    }
+  }
+  return shown.current;
 }
 
 class ValueXY {

@@ -38,6 +38,8 @@ const choices = {
   selectedColor: '#123ABC',
   customColors: ['#123ABC'],
 };
+// What a record keeps of those choices once read: no launch restores the paint.
+const { selectedColor: _paint, customColors: _paints, ...kept } = choices;
 function fixture(snapshot = null) {
   const changes = [];
   const storage = { read: vi.fn(async () => snapshot), write: vi.fn(async () => {}) };
@@ -60,9 +62,9 @@ describe('persisted candidate drawing appearance', () => {
     { version: 4, ...choices, appearance: 'system' },
   ])('defaults an older candidate record to System without losing its choices: $version', (old) => {
     const parsed = parseSoundSettings(JSON.stringify(old));
-    const { version: _version, ...retained } = old;
+    const { version: _version, selectedColor: _p, customColors: _c, ...retained } = old;
     expect(parsed).toMatchObject({
-      version: 15,
+      version: 16,
       appearance: 'system',
       ...retained,
       ...currentDefaults,
@@ -79,7 +81,7 @@ describe('persisted candidate drawing appearance', () => {
         parentPolicies: policiesBeforeLinks,
       });
       expect(parseSoundSettings(snapshot)).toEqual({
-        version: 15,
+        version: 16,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -91,13 +93,13 @@ describe('persisted candidate drawing appearance', () => {
         screenshotEnabled: true,
         aiCustomizationEnabled: true,
         autoSaveAiEnabled: false,
-        ...choices,
+        ...kept,
         appearance,
         ...currentDefaults,
       });
       const f = fixture(snapshot);
       await f.owner.load();
-      expect(f.changes.at(-1)).toMatchObject({ ...choices, appearance, saved: true });
+      expect(f.changes.at(-1)).toMatchObject({ ...kept, appearance, saved: true });
       expect(f.storage.write).not.toHaveBeenCalled();
     }
   );
@@ -115,7 +117,7 @@ describe('persisted candidate drawing appearance', () => {
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
     const writing = f.owner.setAppearance('dark');
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', ...choices, appearance: 'dark' });
+    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', ...kept, appearance: 'dark' });
     await f.owner.setAppearance('light');
     expect(f.storage.write).toHaveBeenCalledTimes(1);
     save.reject(new Error('disk full'));
@@ -124,8 +126,8 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.changes.at(-1).message).toContain('could not be saved');
     await f.owner.retrySave();
     const exact = JSON.stringify({
-      version: 15,
-      ...choices,
+      version: 16,
+      ...kept,
       appearance: 'dark',
       ...currentDefaults,
       ...ACCESSIBILITY_DEFAULTS,
@@ -168,7 +170,7 @@ describe('persisted candidate drawing appearance', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.owner.setAppearance('dark');
     expect(JSON.parse(f.storage.write.mock.calls[0][0])).toEqual({
-      version: 15,
+      version: 16,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -180,7 +182,7 @@ describe('persisted candidate drawing appearance', () => {
       screenshotEnabled: true,
       aiCustomizationEnabled: true,
       autoSaveAiEnabled: false,
-      ...choices,
+      ...kept,
       appearance: 'dark',
       ...currentDefaults,
     });
