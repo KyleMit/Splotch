@@ -44,6 +44,11 @@ export const PALETTE_FLOWS = {
 export const SELECTION_RING_WIDTH_PX = 4;
 export const SELECTION_RING_GAP_PX = 4;
 export const SELECTION_RING_SEAM_PX = 1;
+// The seam and ring are separate circles, and each snaps to the pixel grid on its own: about a
+// pixel apart at Android's fractional densities, which bared a sliver of the ring's inner edge as
+// a second arc. The seam reaches this far past both edges it meets, under the ring and into the
+// swatch's own surface band, so no snapping exposes either.
+export const SELECTION_SEAM_OVERLAP_PX = 1;
 // The honeycomb rests at the content box divided by the pop it takes when ringed.
 export const MORE_COLORS_POP_SCALE = 1.12;
 

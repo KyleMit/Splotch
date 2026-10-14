@@ -16,7 +16,9 @@ import {
   MORE_COLORS_POP_SCALE,
   PALETTE_FLOWS,
   SELECTION_RING_GAP_PX,
+  SELECTION_RING_SEAM_PX,
   SELECTION_RING_WIDTH_PX,
+  SELECTION_SEAM_OVERLAP_PX,
   columnEndClearance,
   paletteSlots,
   selectionRingColor,
@@ -249,17 +251,42 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   expect(drawn((style) => style.backgroundColor === blue)).toEqual([
     expect.objectContaining({ width: inner, height: inner, borderRadius: inner / 2 }),
   ]);
+  // The ring's visible band, the shipping 4px spread less the 1px seam, comes from one box.
   expect(drawn((style) => style.borderColor === ring)).toEqual([
     expect.objectContaining({
       position: 'absolute',
       top: -SELECTION_RING_WIDTH_PX,
       width: TOUCH_TARGET + 2 * SELECTION_RING_WIDTH_PX,
-      borderWidth: SELECTION_RING_WIDTH_PX,
+      borderWidth: SELECTION_RING_WIDTH_PX - SELECTION_RING_SEAM_PX,
     }),
   ]);
-  expect(drawn((style) => style.borderColor === surface && style.borderWidth === 1)).toEqual([
-    expect.objectContaining({ position: 'absolute', top: -1, width: TOUCH_TARGET + 2 }),
+  const seamReach = SELECTION_RING_SEAM_PX + SELECTION_SEAM_OVERLAP_PX;
+  expect(drawn((style) => style.borderColor === surface && style.position === 'absolute')).toEqual([
+    expect.objectContaining({
+      top: -seamReach,
+      width: TOUCH_TARGET + 2 * seamReach,
+      borderWidth: SELECTION_RING_SEAM_PX + 2 * SELECTION_SEAM_OVERLAP_PX,
+    }),
   ]);
+  // Seam and ring snap to the pixel grid as separate circles, about a pixel apart on Android's
+  // fractional densities. Negative control: a seam drawn over a 4px ring and sharing its inner
+  // edge bares that edge as a second arc on one side, and fails the ordering and reach below.
+  const styles = records.props.map((entry) => flatStyle(entry.style));
+  const seamAt = styles.findIndex((style) => style.borderColor === surface && style.position);
+  const ringAt = styles.findIndex((style) => style.borderColor === ring);
+  expect(seamAt).toBeGreaterThanOrEqual(0);
+  expect(seamAt).toBeLessThan(ringAt);
+  const edge = TOUCH_TARGET / 2;
+  const band = (style) => {
+    const outer = style.width / 2;
+    return { outer, inner: outer - style.borderWidth };
+  };
+  const [seam, ringBand] = [band(styles[seamAt]), band(styles[ringAt])];
+  expect(ringBand.inner - edge).toBe(SELECTION_RING_SEAM_PX);
+  expect(seam.outer - ringBand.inner).toBeGreaterThanOrEqual(SELECTION_SEAM_OVERLAP_PX);
+  expect(edge - seam.inner).toBeGreaterThanOrEqual(SELECTION_SEAM_OVERLAP_PX);
+  expect(seam.inner).toBeGreaterThan(inner / 2);
+  expect(SELECTION_SEAM_OVERLAP_PX).toBeGreaterThanOrEqual(1);
   const selectedNode = host.querySelector('button');
   expect(selectedNode.getAttribute('role')).toBe('radio');
   expect(selectedNode.getAttribute('aria-label')).toBe('Blue paint');
@@ -396,7 +423,10 @@ describe('the mounted drawing screen frame', () => {
       records.props
         .map((props) => flat(props.style) ?? {})
         .filter(
-          (style) => style.position === 'absolute' && style.borderWidth === SELECTION_RING_WIDTH_PX
+          (style) =>
+            style.position === 'absolute' &&
+            style.top === -SELECTION_RING_WIDTH_PX &&
+            style.borderWidth === SELECTION_RING_WIDTH_PX - SELECTION_RING_SEAM_PX
         );
     expect(ringed().map((style) => style.borderColor)).toEqual([
       selectionRingColor(paintAppearance('Purple', 'light').hex),
