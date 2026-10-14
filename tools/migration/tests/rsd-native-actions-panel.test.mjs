@@ -71,6 +71,13 @@ function expanded(label) {
     .expanded;
 }
 
+const iconColors = (label) =>
+  button(label)
+    .querySelector('svg')
+    .dataset.xml.match(/#[0-9a-f]{3,6}\b/gi)
+    .map((hex) => (hex.length === 4 ? `#${[...hex.slice(1)].map((d) => d + d).join('')}` : hex));
+const isGrey = (hex) => hex.slice(1, 3) === hex.slice(3, 5) && hex.slice(3, 5) === hex.slice(5, 7);
+
 function propsOf(testID) {
   return records.props.findLast((props) => props.testID === testID);
 }
@@ -123,7 +130,12 @@ describe('Brush and Stroke Width flyouts', () => {
       FLYOUT_OPEN_TILE_FILTER
     );
     expect(resolved((props) => props.accessibilityLabel === 'Brushes').filter).toBeUndefined();
+    // iOS's renderer drops a grayscale filter, so the greyed tile's icon is painted grey itself.
+    expect(iconColors('Undo').length).toBeGreaterThan(0);
+    expect(iconColors('Undo').every(isGrey)).toBe(true);
+    expect(iconColors('Brushes').some((hex) => !isGrey(hex))).toBe(true);
     await act(async () => button('Eraser').click());
+    expect(iconColors('Undo').some((hex) => !isGrey(hex))).toBe(true);
     expect(setBrush).toHaveBeenCalledExactlyOnceWith('eraser');
     expect(host.querySelector('[aria-label="Brush Menu"]')).toBeNull();
     expect(resolved((props) => props.accessibilityLabel === 'Undo').filter).toBeUndefined();

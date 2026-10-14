@@ -24,3 +24,17 @@ export function mixSrgb(first: string, percent: number, second: string): string 
   const weight = percent / 100;
   return `#${from.map((value, index) => hexByte(value * weight + to[index] * (1 - weight))).join('')}`;
 }
+
+// CSS grayscale(1): each sRGB channel becomes the color's luma, by the Filter Effects matrix.
+const GRAYSCALE_LUMA = [0.2126, 0.7152, 0.0722] as const;
+const MARKUP_HEX_COLOR = /#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi;
+
+export function grayscale(hex: string): string {
+  const luma = channels(hex).reduce((sum, value, index) => sum + value * GRAYSCALE_LUMA[index], 0);
+  return `#${hexByte(luma).repeat(3)}`;
+}
+
+// Icon markup with grayscale(1) applied to each of its colors, which are all hex.
+export function grayscaleMarkup(markup: string): string {
+  return markup.replace(MARKUP_HEX_COLOR, (hex) => grayscale(hex));
+}
