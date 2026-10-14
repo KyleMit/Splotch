@@ -14,3 +14,36 @@ textarea {
 input[readonly] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
+/* Shipping's keyboard focus ring (app.css :focus-visible), which React Strict DOM cannot style.
+   Outside StyleX's cascade layers, these rules win over any compiled style. An outline follows the
+   focused element's own radius. The data-focus-ring marks (rsdDrawing/focusRing.ts) place it where
+   a control's ring is not its own box, as shipping's ToggleSwitch, Slider, Disclosure,
+   AiImagePrompt and blob controls do; their values are held to shipping by
+   tools/tests/native-focus-ring.test.mjs. */
+:focus-visible,
+[data-focus-ring='part']:focus-visible [data-focus-ring-part='ring'] {
+  outline: 2px solid #ab71e1;
+  outline-offset: 2px;
+}
+
+[data-focus-ring='part']:focus-visible {
+  outline: none;
+}
+
+[data-focus-ring='part']:focus-visible [data-focus-ring-part='halo'] {
+  border-color: #ab71e1;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #ab71e1 35%, transparent);
+}
+
+[data-focus-ring='inset']:focus-visible {
+  outline-offset: -2px;
+}
+
+[data-focus-ring='radiusBlob1']:focus-visible {
+  border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%;
+}
+
+[data-focus-ring='radiusBlob2']:focus-visible {
+  border-radius: 45% 55% 48% 52% / 55% 45% 58% 42%;
+}

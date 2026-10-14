@@ -10,6 +10,7 @@ import { DialogHeader } from './DialogHeader';
 import { ModalShell } from './ModalShell';
 import { useDialogTitleId } from './dialogScope';
 import { AI_PROMPT_LAYOUTS, aiPromptColumns, aiPromptStep } from './aiPromptGeometry';
+import { focusRingHost, focusRingPart } from './focusRing';
 import { MODAL_GUTTER_MIN_PX, modalFrame } from './modalGeometry';
 import { RsdPressable } from './RsdPressable';
 import { styles as controlStyles } from './controls';
@@ -107,6 +108,7 @@ function StyleOption({
   const cutout = hasPunchedBackground(style);
   return (
     <RsdPressable
+      {...focusRingHost('part')}
       type="button"
       aria-label={style}
       style={styles.option(width, AI_STYLE_THUMB_GAP_PX)}
@@ -117,6 +119,7 @@ function StyleOption({
       onPointerLeave={() => setHovered(false)}
     >
       <html.div
+        {...focusRingPart('halo')}
         style={[
           styles.thumb(width, AI_STYLE_THUMB_BORDER_PX, `scale(${AI_STYLE_PRESSED_SCALE})`),
           !cutout && styles.plate,

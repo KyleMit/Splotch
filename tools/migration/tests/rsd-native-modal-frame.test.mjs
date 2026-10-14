@@ -117,6 +117,10 @@ it('frames the dialog as a card over the scrim, named by its header title, with 
   const backdrop = records.props.findLast((props) => props.testID === 'modal-backdrop');
   expect(backdrop['aria-hidden']).toBe(true);
   expect(backdrop.onPress).toBeUndefined();
+  const card = records.props.findLast((props) => props.testID === 'modal-card');
+  const stage = records.props.findLast((props) => props.children?.props?.testID === 'modal-card');
+  expect(stage.pointerEvents).toBe('box-none');
+  expect(card.pointerEvents).toBe('auto');
   expectNoFooter();
 });
 

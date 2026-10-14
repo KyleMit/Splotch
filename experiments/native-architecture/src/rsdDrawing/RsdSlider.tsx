@@ -7,6 +7,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { css, html } from 'react-strict-dom';
+import { focusRingHostView, focusRingPart } from './focusRing';
 import type { NativeIconName } from './icons.generated';
 import { RsdIcon } from './RsdIcon';
 import {
@@ -203,8 +204,9 @@ function RsdSlider({
       onResponderTerminationRequest={() => false}
       onBlur={() => setActive(false)}
       {...webProps}
+      {...focusRingHostView('part')}
     >
-      <html.div style={styles.track}>
+      <html.div {...focusRingPart('ring')} style={styles.track}>
         <html.div style={[styles.fill, styles.fillWidth(percent)]} />
         {snapPercent === null ? null : (
           <html.div style={[styles.notch, styles.notchAt(snapPercent)]} />

@@ -38,7 +38,7 @@ export function toolbarScreen(overrides = {}) {
 // The AI Image Button's name once the free allowance has answered with every picture left.
 export const AI_BUTTON = 'Create AI image, 10 free left';
 
-export async function mountToolbar(screen) {
+export async function mountToolbar(screen, settings = {}) {
   caller.aiSend.mockImplementation(async (request) =>
     request.path === '/api/free-generation-grant'
       ? new Response('{"ok":true,"remaining":10,"limit":10}')
@@ -56,6 +56,7 @@ export async function mountToolbar(screen) {
       strokeWidth: 'medium',
       eraserWidth: 'medium',
       aiEnabled: true,
+      ...settings,
     },
   };
   await mount(createElement(RsdDrawingScreen));

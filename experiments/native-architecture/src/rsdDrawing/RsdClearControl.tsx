@@ -3,6 +3,7 @@ import { Animated } from '../platform/animated';
 import type { ClearDock } from '../clear/clearDock';
 import type { ClearControl } from '../clear/useClearGesture';
 import { clearActivationProps } from '../platform/clearActivation';
+import { focusRingHostView } from './focusRing';
 import { ACCEPT_RING, RsdClearRing, ringFrame } from './RsdClearRing';
 import { RsdClearCoachmark } from './clearSurfaces';
 import { RsdClearFace } from './RsdClearFace';
@@ -27,6 +28,7 @@ function RsdClearButton({ control, disabled }: { control: ClearControl; disabled
       pointerEvents={clearing ? 'none' : 'auto'}
       {...control.responder}
       {...clearActivationProps(control.activate)}
+      {...focusRingHostView('part')}
       style={{
         width: dock.size,
         height: dock.size,

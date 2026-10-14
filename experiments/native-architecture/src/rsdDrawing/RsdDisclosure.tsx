@@ -1,5 +1,6 @@
 import { useState, type ComponentProps, type ReactElement } from 'react';
 import { css, html } from 'react-strict-dom';
+import { focusRingHost } from './focusRing';
 import { colors, dimensions, motion } from './tokens.css';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 
@@ -68,7 +69,9 @@ export function RsdDisclosure({
   const reduceMotion = useReduceMotion();
   return (
     <html.div style={[styles.panel, style]}>
+      {/* The panel clips what spills past its border, so the summary's ring is drawn inside. */}
       <html.button
+        {...focusRingHost('inset')}
         aria-expanded={open}
         style={[styles.summary, summaryStyle]}
         onClick={() => setOpen((current) => !current)}
