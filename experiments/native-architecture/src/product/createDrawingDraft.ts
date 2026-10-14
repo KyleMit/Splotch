@@ -11,8 +11,8 @@ export function createDrawingDraft(
   session: DrawingSession,
   storage: DrawingDraftStorage,
   prepare: (drawing: Drawing) => Promise<void>,
-  // A launch after Start over: it never reads the stored draft back, which may still hold the
-  // picture the restart left, and stores its own blank page over it instead.
+  // A launch after Start over: it never adopts the stored draft, which may still hold the picture
+  // the restart left, and stores its own blank page over it instead.
   fresh = false
 ) {
   const initial = session.getSnapshot();
@@ -67,7 +67,10 @@ export function createDrawingDraft(
     const owner = generation;
     publish({ status: 'loading', message: 'Recovering your current picture…' });
     try {
-      const drawing = fresh ? null : decodeDrawingDraft(await storage.read());
+      // The read is the storage's ownership claim (the web writer's baseline and its cross-tab
+      // check), so a fresh launch still makes it; it only declines the picture it returns.
+      const stored = await storage.read();
+      const drawing = fresh ? null : decodeDrawingDraft(stored);
       if (!isCurrent(owner)) return;
       if (drawing && !changed && session.getSnapshot() === initial) {
         await prepare(drawing);

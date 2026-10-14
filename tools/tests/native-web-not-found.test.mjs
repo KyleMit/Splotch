@@ -7,9 +7,12 @@ import {
 import { APP_SHELL_FILE, NOT_FOUND_FILE } from '../migration/build-native-web.mjs';
 import { nativeWebPrecacheProblems } from '../migration/check-native-web-precache.mjs';
 import {
+  FRESH_START_PARAM,
   reloadApp,
   takeFreshStart,
 } from '../../experiments/native-architecture/src/platform/appRestart.web.ts';
+import { AI_ACCESS_TOKEN_PARAM } from '../../web/src/lib/inviteLink.ts';
+import { CACHE_BUST_VERSION_PARAM } from '../../web/src/lib/pwa/versionEndpoint.ts';
 
 const PATHS = ['/', '/index.html', '/does-not-exist', '/changelog', '/index.htm', '/a/'];
 
@@ -51,24 +54,62 @@ describe("the web export's unknown paths", () => {
 });
 
 describe("the web export's restart", () => {
-  // Negative control: a reload with no fresh mark reads the stored picture back.
-  it("reloads the app root as shipping's Start over does, marking that one load fresh", () => {
+  // A browser that refuses session storage outright, which the fresh mark must not depend on.
+  const refusingStorage = {
+    getItem() {
+      throw new Error('Storage is disabled');
+    },
+    setItem() {
+      throw new Error('Storage is disabled');
+    },
+    removeItem() {
+      throw new Error('Storage is disabled');
+    },
+  };
+  function browserAt(href) {
     const assigned = [];
-    const session = new Map();
-    globalThis.location = { assign: (url) => assigned.push(url) };
-    globalThis.sessionStorage = {
-      getItem: (key) => session.get(key) ?? null,
-      setItem: (key, value) => session.set(key, value),
-      removeItem: (key) => session.delete(key),
+    const replaced = [];
+    globalThis.sessionStorage = refusingStorage;
+    globalThis.history = {
+      state: { guard: true },
+      replaceState: (state, _title, url) => replaced.push({ state, url }),
     };
-    try {
-      expect(takeFreshStart()).toBe(false);
-      expect(reloadApp()).toBe(true);
-      expect(assigned).toEqual(['/']);
-      expect(takeFreshStart()).toBe(true);
-      expect(takeFreshStart()).toBe(false);
-    } finally {
-      delete globalThis.sessionStorage;
-    }
+    globalThis.location = { href, assign: (url) => assigned.push(url) };
+    return { assigned, replaced };
+  }
+  afterEach(() => {
+    delete globalThis.sessionStorage;
+    delete globalThis.history;
+  });
+
+  // Negative control: a mark kept in session storage is lost here, and the reload reads the
+  // stored picture back.
+  it("reloads the app root as shipping's Start over does, marked fresh in its URL", () => {
+    const browser = browserAt('https://splotch.test/');
+    expect(reloadApp()).toBe(true);
+    expect(browser.assigned).toEqual([`/?${FRESH_START_PARAM}=1`]);
+    browserAt(`https://splotch.test${browser.assigned[0]}`);
+    expect(takeFreshStart()).toBe(true);
+  });
+
+  it('takes the mark out of the address once, keeping an invite and the history state', () => {
+    const browser = browserAt(
+      `https://splotch.test/?${FRESH_START_PARAM}=1&${AI_ACCESS_TOKEN_PARAM}=abc#top`
+    );
+    expect(takeFreshStart()).toBe(true);
+    expect(browser.replaced).toEqual([
+      { state: { guard: true }, url: `/?${AI_ACCESS_TOKEN_PARAM}=abc#top` },
+    ]);
+    browserAt(`https://splotch.test/?${AI_ACCESS_TOKEN_PARAM}=abc`);
+    expect(takeFreshStart()).toBe(false);
+  });
+
+  it('never meets the drawing route, the worker route, invites or the cache bust', () => {
+    expect(FRESH_START_PARAM).not.toBe(AI_ACCESS_TOKEN_PARAM);
+    expect(FRESH_START_PARAM).not.toBe(CACHE_BUST_VERSION_PARAM);
+    const url = new URL(`/?${FRESH_START_PARAM}=1`, 'https://splotch.test');
+    expect(isAppShellNavigation({ request: { mode: 'navigate' }, url })).toBe(true);
+    globalThis.location = { pathname: url.pathname };
+    expect(isDrawingPath()).toBe(true);
   });
 });
