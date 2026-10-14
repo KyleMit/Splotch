@@ -279,7 +279,8 @@ describe('flat skins', () => {
     const undo = (disabled) =>
       h(RsdIconButton, {
         skin: 'tile',
-        icon: 'undo',
+        // A startup glyph, so its markup is in hand without the deferred icon chunk.
+        icon: 'settings',
         label: 'Undo',
         size: TILE_PX,
         disabled,
@@ -289,7 +290,9 @@ describe('flat skins', () => {
     const style = control('Undo').style;
     expect(style.opacity).toBe(1);
     expect(JSON.stringify(style.filter)).toContain('contrast');
-    expect(markup()).toBe(NATIVE_ICONS.undo.light.replaceAll('currentColor', themes.light.iconInk));
+    expect(markup()).toBe(
+      NATIVE_ICONS.settings.light.replaceAll('currentColor', themes.light.iconInk)
+    );
     await mount(undo(true));
     expect(control('Undo').style.opacity).not.toBe(1);
   });
