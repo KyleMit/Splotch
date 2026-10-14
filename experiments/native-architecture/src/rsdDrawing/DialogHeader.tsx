@@ -8,6 +8,7 @@ import { RsdPressable } from './RsdPressable';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions, motion } from './tokens.css';
 import { blobPath } from './blob';
+import { focusRingHost } from './focusRing';
 import {
   MODAL_CLOSE_BORDER_PX,
   MODAL_CLOSE_INSET_PX,
@@ -65,6 +66,7 @@ export function HeaderControl({
       : { fill: lit ? palette.brandWashHover : palette.brandWash };
   return (
     <RsdPressable
+      {...focusRingHost(shape)}
       type="button"
       aria-label={label}
       aria-disabled={disabled}

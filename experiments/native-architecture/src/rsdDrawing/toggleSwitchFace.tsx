@@ -1,5 +1,6 @@
 import { css, html } from 'react-strict-dom';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
+import { focusRingPart } from './focusRing';
 import { RsdIcon } from './RsdIcon';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import type { NativeIconName } from './icons.generated';
@@ -100,6 +101,7 @@ const faceStyles = css.create({
 export function SwitchTrack({ checked, hovered }: { checked: boolean; hovered: boolean }) {
   return (
     <html.div
+      {...focusRingPart('ring')}
       aria-hidden
       data-testid="toggle-switch-track"
       style={[

@@ -139,9 +139,18 @@ const paletteStyles = css.create({
   columnExtent: (extent: number) => ({ width: extent }),
   rowExtent: (extent: number) => ({ height: extent }),
   // The landscape column's surface continues under the bottom inset, where no swatch may sit.
-  insetStrip: (height: number, shadow: string) => ({ flexShrink: 0, height, boxShadow: shadow }),
+  // Positioned like the plate, so it still paints after it and covers the plate's shadow.
+  insetStrip: (height: number, shadow: string) => ({
+    position: 'relative',
+    flexShrink: 0,
+    height,
+    boxShadow: shadow,
+  }),
   plate: (flow: PaletteFlow, column: boolean) => ({
     boxSizing: 'border-box',
+    // Positioned, as shipping's .color-palette is. React Native paints a static child before
+    // every positioned sibling, so a static plate would sit under the flat style's rail glass.
+    position: 'relative',
     flexGrow: 1,
     paddingTop: column ? flow.endPaddingPx : flow.crossStartPaddingPx,
     paddingBottom: column ? flow.endPaddingPx : flow.crossEndPaddingPx,

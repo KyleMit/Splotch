@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host } from './rsd-native-selection-host.mjs';
+import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
@@ -12,6 +13,9 @@ const PURPLE = paletteHex('Purple');
 // An iPhone's Dynamic Island inset, and a bezel iPad's plain status bar.
 const NOTCH_INSET_PX = 59;
 const STATUS_BAR_INSET_PX = 24;
+// A hole-punch Android phone's camera cutout: its status bar in portrait, one side in landscape.
+const ANDROID_CUTOUT_INSET_PX = 42;
+const LANDSCAPE = { width: 874, height: 402 };
 
 // The band's strips are the absolute fills NativeFrame mounts after its padded safe-area view.
 function strips() {
@@ -35,11 +39,15 @@ function painted() {
 const statusBars = () =>
   [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar);
 
-async function mountWith({ insets, dimensions, os = 'ios', brush = 'crayon' }) {
+// The band's own status bar: the theme's carries no visibility.
+const bandStatusBar = () =>
+  records.props.findLast((props) => 'hidden' in props && 'barStyle' in props);
+
+async function mountWith({ insets, dimensions, os = 'ios', brush = 'crayon', settings }) {
   records.insets = { top: 0, right: 0, bottom: 0, left: 0, ...insets };
   if (dimensions) records.dimensions = { scale: 1, fontScale: 1, ...dimensions };
   records.os = os;
-  await mountToolbar(toolbarScreen({ brush }));
+  await mountToolbar(toolbarScreen({ brush }), settings);
 }
 
 describe('the Notch Band', () => {
@@ -47,6 +55,29 @@ describe('the Notch Band', () => {
     await mountWith({ insets: { top: NOTCH_INSET_PX } });
     expect(painted()).toEqual([{ backgroundColor: PURPLE, height: NOTCH_INSET_PX }]);
     expect(statusBars().at(-1)).toBe('dark-content');
+  });
+
+  // Shipping's SystemBars call follows the band's color, so a bright band in the dark theme keeps
+  // dark icons once shipping has measured its inset.
+  it('picks status icons that read on the band, not on the dark theme', async () => {
+    await mountWith({
+      insets: { top: NOTCH_INSET_PX },
+      settings: { appearance: 'dark', selectedColor: 'Blue' },
+    });
+    expect(painted()).toEqual([{ backgroundColor: paletteHex('Blue'), height: NOTCH_INSET_PX }]);
+    expect(statusBars()).toEqual(['light-content', 'dark-content']);
+  });
+
+  it('tints the Android portrait status bar with the selected color and keeps it shown', async () => {
+    await mountWith({
+      insets: { top: ANDROID_CUTOUT_INSET_PX },
+      os: 'android',
+      settings: { selectedColor: 'Green' },
+    });
+    expect(painted()).toEqual([
+      { backgroundColor: paletteHex('Green'), height: ANDROID_CUTOUT_INSET_PX },
+    ]);
+    expect(bandStatusBar()).toMatchObject({ barStyle: 'dark-content', hidden: false });
   });
 
   it("paints the paper's color while the eraser is held", async () => {
@@ -65,7 +96,7 @@ describe('the Notch Band', () => {
   it('paints both landscape sides when the insets cannot say which holds the cutout', async () => {
     await mountWith({
       insets: { left: NOTCH_INSET_PX, right: NOTCH_INSET_PX },
-      dimensions: { width: 874, height: 402 },
+      dimensions: LANDSCAPE,
     });
     expect(painted()).toEqual([
       { backgroundColor: PURPLE, width: NOTCH_INSET_PX, side: 'left' },
@@ -73,10 +104,35 @@ describe('the Notch Band', () => {
     ]);
   });
 
+  // Android reports one side's inset, the cutout's, so the display rotation names the side.
+  it.each([
+    [Orientation.LANDSCAPE_RIGHT, 'left'],
+    [Orientation.LANDSCAPE_LEFT, 'right'],
+  ])('paints the Android landscape cutout where rotation %s turns it', async (rotation, side) => {
+    displayOrientation.current = rotation;
+    await mountWith({
+      insets: { [side]: ANDROID_CUTOUT_INSET_PX },
+      dimensions: LANDSCAPE,
+      os: 'android',
+    });
+    await vi.waitFor(() =>
+      expect(painted()).toEqual([{ backgroundColor: PURPLE, width: ANDROID_CUTOUT_INSET_PX, side }])
+    );
+  });
+
+  it('leaves a one-sided landscape inset unpainted while the rotation names no side', async () => {
+    displayOrientation.current = Orientation.UNKNOWN;
+    await mountWith({
+      insets: { left: ANDROID_CUTOUT_INSET_PX },
+      dimensions: LANDSCAPE,
+      os: 'android',
+    });
+    expect(painted()).toEqual([]);
+  });
+
   it('hides the Android status bar in landscape, as shipping reclaims the top edge', async () => {
-    await mountWith({ dimensions: { width: 874, height: 402 }, os: 'android' });
-    const bar = records.props.findLast((props) => 'hidden' in props && 'barStyle' in props);
-    expect(bar?.hidden).toBe(true);
+    await mountWith({ dimensions: LANDSCAPE, os: 'android' });
+    expect(bandStatusBar()?.hidden).toBe(true);
     expect(caller.screen.brush).toBe('crayon');
   });
 

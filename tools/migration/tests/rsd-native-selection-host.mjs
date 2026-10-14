@@ -6,7 +6,7 @@ import { createSoundSettings } from '../../../experiments/native-architecture/sr
 import { PROTECTED_PARENT_POLICIES } from '../../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { orientationCalls } from './rsd-orientation-port.mjs';
+import { displayOrientation, Orientation, orientationCalls } from './rsd-orientation-port.mjs';
 import './rsd-native-settings-hub-mocks.mjs';
 
 const caller = vi.hoisted(() => {
@@ -441,6 +441,7 @@ afterEach(async () => {
   caller.capturePng = null;
   caller.deviceLocked = false;
   orientationCalls.length = 0;
+  displayOrientation.current = Orientation.PORTRAIT_UP;
 });
 
 async function expandControls() {

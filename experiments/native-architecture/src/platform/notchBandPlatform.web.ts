@@ -1,6 +1,6 @@
 // The shipping layout module's screen.orientation.angle, which says which side a landscape cutout
-// is on when the insets cannot.
-export function orientationAngle() {
+// is on when the insets cannot. Read on each render: the band renders again on every resize.
+export function useOrientationAngle() {
   return typeof screen === 'undefined' ? 0 : (screen.orientation?.angle ?? 0);
 }
 

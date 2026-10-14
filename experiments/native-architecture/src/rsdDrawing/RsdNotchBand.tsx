@@ -8,7 +8,7 @@ import {
 } from '../../../../web/src/lib/platform/notchBand';
 import type { Platform as ShippingPlatform } from '../../../../web/src/lib/platform/platformName';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
-import { orientationAngle, setThemeColor } from '../platform/notchBandPlatform';
+import { setThemeColor, useOrientationAngle } from '../platform/notchBandPlatform';
 import { motion } from './tokens.css';
 
 // The shipping NotchBand.svelte strips. The fill eases on the web alone, as shipping's CSS does;
@@ -73,6 +73,7 @@ export function RsdNotchBand({ ink, eraser }: { ink: string; eraser: boolean }) 
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const { paper } = useDrawingTheme();
+  const angle = useOrientationAngle();
   const band = computeNotchBandState({
     platform: shippingPlatform(),
     native: Platform.OS !== 'web',
@@ -80,7 +81,7 @@ export function RsdNotchBand({ ink, eraser }: { ink: string; eraser: boolean }) 
     insetTop: insets.top,
     insetLeft: insets.left,
     insetRight: insets.right,
-    orientationAngle: orientationAngle(),
+    orientationAngle: angle,
     activeColor: ink,
     eraser,
     paperColor: paper,

@@ -64,14 +64,21 @@ options, the flyout card and More colors lose their faces (`RsdIconButton`, `Rsd
 `RsdSwatch`), Selection Ring bands and seams take the paper, and the palette bar floats over a paper
 that runs under it while the controls keep the place the raised bar leaves them. Shipping's
 `BareToolbarPaper.svelte` and `GlassPanes.svelte` become `RsdBareGlass`: the rail glass inside the
-bar, the two printed margin rules beside the paper in the layout's own stacking context (inside the
-bar's their blend could not reach the ink), and the feathered panes under the drawer, its open menu
-and the Settings corner, computed by shipping's own `web/src/lib/glassPaneGeometry.ts` from the size
-the Actions Panel reports (`bareGlassLayout.ts`). On the web the glass loads from its own chunk
-(`bareGlass.web.ts`) and only the first paint waits for it; the native renderers have no backdrop
-blur or CSS masks, so their rail is shipping's opaque no-blur fallback, their rules print unmasked,
-and they draw no panes. `rsd-native-bare-toolbar.test.mjs` holds every value to the shipping
-sources.
+bar, the two printed margin rules beside it over the paper, and the feathered panes under the
+drawer, its open menu and the Settings corner, computed by shipping's own
+`web/src/lib/glassPaneGeometry.ts` from the size the Actions Panel reports (`bareGlassLayout.ts`).
+On the web the glass loads from its own chunk (`bareGlass.web.ts`) and only the first paint waits
+for it; the native renderers have no backdrop blur or CSS masks, so their rail is shipping's opaque
+no-blur fallback, their rules print unmasked, and they draw no panes.
+`rsd-native-bare-toolbar.test.mjs` holds every value to the shipping sources.
+
+Two native rules govern the flat bar. React Native paints a `position: static` child (React Strict
+DOM's default) before every positioned sibling, so the palette plate is positioned, as shipping's
+`.color-palette` is, to print its swatches over the rail glass. And a view with `mixBlendMode` makes
+Android render its whole parent offscreen on every frame (for the margin rules, the drawing layout
+with its ink), so the native rules print their blend pre-mixed against the paper
+(`marginRuleInk.ts`): exact over the paper, close over ink. `rsd-native-flat-palette.test.mjs`
+replays Fabric's paint order over the mounted bar and holds the pre-mixed ink to the shipping blend.
 
 Every shared action supplies both `disabled` and the explicit boolean `aria-disabled`. The released
 native renderer maps the latter into accessibility state, including false after true. The
@@ -202,9 +209,32 @@ for Reanimated, option and icon sizes, the slider's disc, track, shadows and not
 breakpoint) are exported as `PICKER_METRICS` and `SLIDER_METRICS` and read against the Svelte
 sources by `tools/migration/tests/rsd-native-segmented-picker.test.mjs` and
 `rsd-native-slider.test.mjs`. Not ported: the shipping `inputName` native-form radios (React Native
-has no form submission), the keyboard focus ring (React Strict DOM has no `outline` or
-`:focus-visible`). Arrow-key roving and slider keys reach the option cell and slider host through
-react-native-web's key events; a hardware keyboard on Android or iOS is unverified.
+has no form submission). The keyboard focus ring is the web export's global rule (Keyboard focus
+ring below); the slider host marks its track to wear it. Arrow-key roving and slider keys reach the
+option cell and slider host through react-native-web's key events; a hardware keyboard on Android or
+iOS is unverified.
+
+## Keyboard focus ring
+
+React Strict DOM styles neither `outline` nor `:focus-visible`, so the web export draws shipping's
+ring (`app.css` `:focus-visible`: a 2px `--brand` outline, offset 2px, keyboard focus only) from
+global rules in `src/strict.css`. They sit outside StyleX's cascade layers, so they win over any
+compiled style. An outline follows the focused element's own radius, so most controls need nothing.
+A control whose ring is not its own box marks where it goes with `focusRing.ts`, as shipping's
+per-component focus rules do:
+
+* `focusRingHost('part')` on the control and `focusRingPart('ring')` on the shape it shows: the
+  toggle switch track (shipping's `::before`), the slider track, the device checkbox box and the
+  docked Clear face. A React Native view takes `focusRingHostView`, which react-native-web writes
+  out through `dataSet`.
+* `focusRingPart('halo')`: the AI style cover takes shipping's brand border and halo instead.
+* `focusRingHost('inset')`: the disclosure summary, whose panel clips an outside ring.
+* `focusRingHost(shape)`: a control that paints a blob as a path (the dialog Back and Close, and so
+  the parental gate's and the banners' close) rounds its ring to the full elliptical blob.
+
+`tools/tests/native-focus-ring.test.mjs` holds each value to the shipping stylesheets and mounts the
+shared controls against `strict.css`, failing when one loses its ring or its shape. The native
+renderers drop the marks; what a hardware keyboard shows on Android or iOS is unverified.
 
 ## Settings rows
 
@@ -364,10 +394,9 @@ the hexagon shape, as the shipping `:hover` does; touch shows no hover.
 
 Each hexagon is a button named by its color; `RsdPressable` gives its native host the button role
 when a caller names none, since that host renders as a div. Its pointer events are off so every
-press reaches the grid, and a keyboard or screen-reader activation presses the button directly.
-React Native Web's `box-none` layer above the card turns pointer events back on for the web, so a
-web pointer's trailing click (`detail` of 1 or more) is dropped, as shipping's `handleHexClick`
-drops it.
+press reaches the grid, and a keyboard or screen-reader activation presses the button directly. A
+pointer's click (`detail` of 1 or more) that does reach a hexagon is dropped, as shipping's
+`handleHexClick` drops it.
 
 On the web the picker is its own lazily loaded chunk (`drawingSheets.web.ts`). The legacy
 `DrawingScreen` also loads it on first open, so its react-native-web suites need the React Strict
