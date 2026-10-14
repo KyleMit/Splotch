@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import {
   SHIPPING,
+  SHIPPING_HUB_ROW_KEEPS_UA_FACE,
+  SHIPPING_HUB_TITLE_WEIGHT,
   SHIPPING_STRONG_TRACKING,
   SHIPPING_THUMB_FACE,
   SHIPPING_TRACKING,
@@ -86,6 +88,10 @@ vi.mock('react-native', async () => {
     __host: View,
   };
 });
+vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/hubRowFace.ts',
+  () => import('../../../experiments/native-architecture/src/rsdDrawing/hubRowFace.native.ts')
+);
 vi.mock(
   '../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.ts',
   () => import('../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.native.ts')
@@ -445,6 +451,21 @@ describe('RsdHubRow', () => {
       expect(style(subtitle.parentElement).gap).toBe(SHIPPING.hubTextGap);
     }
   );
+
+  // The face shipping's unreset <button> takes in a WebView: San Francisco on iOS, Roboto on Android.
+  it('sets the title and subtitle in the system face, the title at the shipping weight', async () => {
+    expect(SHIPPING_HUB_ROW_KEEPS_UA_FACE).toBe(true);
+    await render(hubRow());
+    const subtitle = byTestId('hub-subtitle');
+    const title = subtitle.previousElementSibling;
+    expect(title.textContent).toBe('Sound');
+    expect(style(title)).toMatchObject({
+      fontFamily: 'system-ui',
+      fontWeight: scale[SHIPPING_HUB_TITLE_WEIGHT],
+    });
+    expect(style(subtitle).fontFamily).toBe('system-ui');
+    expect(style(subtitle).fontWeight).toBeUndefined();
+  });
 
   it('shows the activity dot only while the section has news, and says so', async () => {
     await render(hubRow());

@@ -88,6 +88,9 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
   `src/platform/nativeFontFamilies.ts` picks the family from the weight and sets the weight itself
   back to normal: Android resolves a weight of 700 or more on a registered family to a system bold
   face. `fontTheme.native.ts` applies the same faces to the RSD tokens.
+* **Shipping's hub rows** (`HubList.svelte`) are `<button>`s that never inherit the page font, so a
+  WebView sets them in the system face. `src/rsdDrawing/hubRowFace.ts` reverts the web row to the
+  browser's control face, and `hubRowFace.native.ts` names `system-ui`.
 
 `tools/tests/native-shipping-font.test.mjs` fails when the web faces drift from the package
 stylesheet, a family stops matching the static package's exports, another weight is bundled, an RSD

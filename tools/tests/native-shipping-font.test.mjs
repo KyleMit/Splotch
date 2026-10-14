@@ -261,11 +261,14 @@ describe('RSD font tokens', () => {
     const [file, code] = rsdFiles().find(([, text]) => heading.test(text));
     const bareHeading = code.replace(heading, '<html.h1>');
     expect(() => assertRsdWeightsUseFontTokens([[file, bareHeading]])).toThrow();
-    const hubRow = read('src/rsdDrawing/RsdHubRow.tsx');
-    const literalWeight = hubRow.replace('fontWeight: fonts.semiboldWeight', "fontWeight: '600'");
-    expect(literalWeight).not.toBe(hubRow);
+    const sidebarRow = read('src/rsdDrawing/RsdSidebarRow.tsx');
+    const literalWeight = sidebarRow.replace(
+      'fontWeight: fonts.semiboldWeight',
+      "fontWeight: '600'"
+    );
+    expect(literalWeight).not.toBe(sidebarRow);
     expect(() =>
-      assertRsdWeightsUseFontTokens([['rsdDrawing/RsdHubRow.tsx', literalWeight]])
+      assertRsdWeightsUseFontTokens([['rsdDrawing/RsdSidebarRow.tsx', literalWeight]])
     ).toThrow();
   });
 });

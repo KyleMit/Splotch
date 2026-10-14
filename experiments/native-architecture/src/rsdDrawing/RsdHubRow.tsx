@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { css, html } from 'react-strict-dom';
 import { landFocus } from './landFocus';
-import { colors, dimensions, fonts, motion } from './tokens.css';
+import { colors, dimensions, motion } from './tokens.css';
+import { hubRowFace } from './hubRowFace';
 import { RsdActivityDot } from './RsdActivityDot';
 import { LineClampBox } from './lineClampBox';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
@@ -69,8 +70,6 @@ const styles = css.create({
   title: {
     color: colors.textStrong,
     fontSize: dimensions.fontSizeMd,
-    fontFamily: fonts.semiboldFamily,
-    fontWeight: fonts.semiboldWeight,
   },
   // Wraps rather than ellipsizing on one line: the summary says what a section does.
   subtitle: {
@@ -123,13 +122,18 @@ export function RsdHubRow({
   const name = [title, subtitle, ...(unseen ? ['new'] : [])].join(', ');
   return (
     <html.div data-testid="hub-tile" style={styles.tile}>
-      <html.button ref={body} aria-label={name} style={styles.row} onClick={onOpen}>
+      <html.button
+        ref={body}
+        aria-label={name}
+        style={[styles.row, hubRowFace.row]}
+        onClick={onOpen}
+      >
         <html.div style={styles.icon}>
           <RsdSectionIcon icon={icon} size={ICON_PX} ink={theme.brandText} />
           <RsdActivityDot unseen={unseen} surface="surface2" />
         </html.div>
         <html.div style={styles.text}>
-          <html.span style={styles.title}>{title}</html.span>
+          <html.span style={[styles.title, hubRowFace.title]}>{title}</html.span>
           <html.span data-testid="hub-subtitle" style={styles.subtitle}>
             <LineClampBox lines={SUBTITLE_LINES}>{subtitle}</LineClampBox>
           </html.span>
