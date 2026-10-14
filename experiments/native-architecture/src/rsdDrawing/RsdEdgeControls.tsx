@@ -24,6 +24,7 @@ import { RsdFullscreenToggle } from './RsdFullscreenToggle';
 import { useFullscreen } from '../platform/useFullscreen';
 import { ToolbarSkin } from './toolbarSkin';
 import type { PanelGlass } from './bareGlassLayout';
+import { drawerOpenStorage } from '../platform/drawerOpen';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -39,6 +40,36 @@ type Controls = {
 const paperLayer = StyleSheet.create({
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
 });
+
+// Shipping's drawerOpen default (BOOL_SETTINGS in settings.svelte.ts): a first launch starts with
+// the Tool Drawer closed. rsd-native-drawer-open.test.mjs reads it from shipping.
+const DEFAULT_DRAWER_OPEN = false;
+
+// Shipping's readBool: only the two spellings writeBool writes count, and an unreadable store or
+// any other value is the default.
+function storedDrawerOpen() {
+  try {
+    const stored = drawerOpenStorage.read();
+    return stored === 'true' || (stored !== 'false' && DEFAULT_DRAWER_OPEN);
+  } catch {
+    return DEFAULT_DRAWER_OPEN;
+  }
+}
+
+// The drawer a child last opened or closed, as shipping remembers it across launches. Read while
+// the layout first renders, so a cold start shows the remembered drawer without opening it.
+function useRememberedDrawer() {
+  const [open, setOpen] = useState(storedDrawerOpen);
+  const choose = (next: boolean) => {
+    try {
+      drawerOpenStorage.write(next ? 'true' : 'false');
+    } catch {
+      /* As shipping's writeBool: the drawer still turns, and only the next launch loses it. */
+    }
+    setOpen(next);
+  };
+  return [open, choose] as const;
+}
 
 // The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
 // and the overlay that reads the drawer state, never the strokes on the paper.
@@ -67,7 +98,7 @@ export function RsdEdgeLayout({
   const [panelGlass, setPanelGlass] = useState<PanelGlass | null>(null);
   // The Actions Panel's button size, which the landscape column centres More colors on.
   const [actionButtonSize, setActionButtonSize] = useState<number | null>(null);
-  const [drawerChosen, setDrawerChosen] = useState(false);
+  const [drawerChosen, setDrawerChosen] = useRememberedDrawer();
   const drawerOpen = drawerChosen || resizing;
   const slot = useFlyoutSlot(drawerOpen, disabled, screen.drawing);
   const fullscreen = useFullscreen(!disabled);

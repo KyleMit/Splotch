@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { displayOrientation, Orientation, orientationCalls } from './rsd-orientation-port.mjs';
 import './rsd-native-settings-hub-mocks.mjs';
+import './rsd-native-launch-stores.mjs';
 
 const caller = vi.hoisted(() => {
   let journal = null;
@@ -128,9 +129,6 @@ vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts'
       caller.settingsStorage ? caller.settingsStorage.read() : caller.initialSettings,
     write: async (snapshot) => caller.settingsStorage?.write(snapshot),
   },
-}));
-vi.mock('../../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
-  brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));
 // The device lock answers what a case sets; a case that sets nothing sees no lock.
 vi.mock('../../../experiments/native-architecture/src/platform/deviceLock.ts', () => ({
