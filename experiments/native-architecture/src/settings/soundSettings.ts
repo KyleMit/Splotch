@@ -34,8 +34,10 @@ import {
   DEFAULT_SOUND_SOURCE_SETTINGS,
   DEFAULT_WIDTH_SETTINGS,
   parseSoundSettings,
+  sessionPaint,
   snapshot,
   type Choices,
+  type ColorSettings,
   type SoundSettings,
   type SoundSettingsState,
   type SoundSettingsStorage,
@@ -74,13 +76,12 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 15,
+    version: 16,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
-    ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
     appearance: DEFAULT_APPEARANCE,
     toolbarStyle: DEFAULT_TOOLBAR_STYLE,
@@ -92,7 +93,7 @@ function defaultSoundSettings(): SoundSettings {
   };
 }
 
-function unreadSoundSettingsState(): SoundSettingsState {
+function unreadSoundSettingsState(paint: ColorSettings): SoundSettingsState {
   return {
     status: 'ready',
     coloringBookEnabled: false,
@@ -100,7 +101,7 @@ function unreadSoundSettingsState(): SoundSettingsState {
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
     ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
-    ...DEFAULT_COLOR_SETTINGS,
+    ...paint,
     aiEnabled: false,
     parentPolicies: PROTECTED_PARENT_POLICIES,
     appearance: DEFAULT_APPEARANCE,
@@ -154,11 +155,18 @@ function createMetadataWriter(
     publish({ status: 'saving', ...choices, message });
     try {
       await storage.write(JSON.stringify(snapshot(choices)));
-      if (saved || hasPendingParent()) publish({ status: 'ready', ...choices, saved, message });
-      else publish({ status: 'ready', ...choices, saved: true, message: '' });
+      const settled = { ...choices, ...sessionPaint(getState()) };
+      if (saved || hasPendingParent()) publish({ status: 'ready', ...settled, saved, message });
+      else publish({ status: 'ready', ...settled, saved: true, message: '' });
     } catch {
       const failure = saved ? SETTINGS_SAVE_FAILED_MESSAGE : message;
-      publish({ status: 'ready', ...choices, saved: false, message: failure });
+      publish({
+        status: 'ready',
+        ...choices,
+        ...sessionPaint(getState()),
+        saved: false,
+        message: failure,
+      });
     }
   };
 }
@@ -310,21 +318,18 @@ function createDrawingPreferenceActions({
       }
       await persist({ ...snapshot(state), ...choices });
     },
-    async setColor(selectedColor: PaintColor) {
+    // Never written, so a pick lands even while another choice saves.
+    setColor(selectedColor: PaintColor) {
       const state = getState();
-      if (isDisposed() || state.status !== 'ready') return;
+      if (isDisposed() || state.status === 'loading') return;
       if (!isPaintColor(selectedColor)) throw new Error('Paint color is invalid.');
-      const choices = {
+      publish({
+        ...state,
         selectedColor,
         customColors: isCustomColor(selectedColor)
           ? rememberColor(state.customColors, selectedColor)
           : state.customColors,
-      };
-      if (hasReadFailed()) {
-        publish({ ...state, ...choices });
-        return;
-      }
-      await persist({ ...snapshot(state), ...choices });
+      });
     },
     async setAppearance(appearance: AppearancePreference) {
       const state = getState();
@@ -402,14 +407,15 @@ export function createSoundSettings(
     readFailed = false;
     parent.clearPending();
     const { version: _version, ...choices } = settings;
-    publish({ status: 'saving', ...choices, message: '' });
+    publish({ status: 'saving', ...choices, ...sessionPaint(state), message: '' });
     try {
       await storage.write(JSON.stringify(settings));
-      publish({ status: 'ready', ...choices, saved: true, message: '' });
+      publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
     } catch {
       publish({
         status: 'ready',
         ...choices,
+        ...sessionPaint(state),
         saved: false,
         message: SETTINGS_SAVE_FAILED_MESSAGE,
       });
@@ -439,10 +445,10 @@ export function createSoundSettings(
         const stored = await storage.read();
         const settings = stored === null ? defaultSoundSettings() : parseSoundSettings(stored);
         const { version: _version, ...choices } = settings;
-        publish({ status: 'ready', ...choices, saved: true, message: '' });
+        publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
       } catch {
         readFailed = true;
-        publish(unreadSoundSettingsState());
+        publish(unreadSoundSettingsState(sessionPaint(state)));
       }
       await metadata.flushMetadata();
     },
@@ -479,7 +485,7 @@ export function createSoundSettings(
             : parseSoundSettings(stored);
         const { version: _version, ...choices } = next;
         readFailed = false;
-        publish({ status: 'ready', ...choices, saved: true, message: '' });
+        publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
       } catch {
         publish({
           ...state,

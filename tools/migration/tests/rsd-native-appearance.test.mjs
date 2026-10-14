@@ -125,7 +125,7 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 15,
+    version: 16,
     orientation: 'portrait',
     saveOnDeleteEnabled: false,
     buttonScale: 100,
@@ -147,8 +147,6 @@ it('hydrates before usable controls and persists appearance through the real RSD
     soundEnabled: false,
     strokeWidth: 'thin',
     eraserWidth: 'thick',
-    selectedColor: 'Purple',
-    customColors: [],
     appearance: 'dark',
     aiEnabled: false,
     parentPolicies: {
@@ -208,7 +206,6 @@ it.each(['light', 'dark'])(
     let update = () => {};
     const { owner } = createPickerCaller(() => update());
     await owner.load();
-    await owner.setColor('Black');
     await owner.setAppearance(appearance);
     caller.screen.disabled = false;
     function Screen() {
@@ -226,6 +223,7 @@ it.each(['light', 'dark'])(
       records.props.findLast((props) => props.testID === 'color-picker-card').style;
     try {
       await mount(createElement(Screen));
+      await act(async () => owner.setColor('Black'));
       const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
       await click('More colors');
       expect(
@@ -326,7 +324,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo wh
   await click('Coloring book');
   expect(host.textContent).not.toContain('Grown-Ups Only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 15,
+    version: 16,
     coloringBookEnabled: false,
     aiEnabled: false,
   });

@@ -13,7 +13,6 @@ import {
 } from './appearance';
 import { DEFAULT_STROKE_WIDTH, isStrokeWidth, type StrokeWidth } from '../drawing/strokeWidth';
 import {
-  DEFAULT_COLOR_SETTINGS,
   MAX_CUSTOM_COLORS,
   isCustomColor,
   isPaintColor,
@@ -49,7 +48,8 @@ export type AccessibilitySettings = Readonly<{
   reduceMotion: ReduceMotionPreference;
   whatsNewSeen: string | null;
 }>;
-type ColorSettings = Readonly<{
+// The paint is session state, as in shipping: every launch starts on DEFAULT_COLOR_SETTINGS.
+export type ColorSettings = Readonly<{
   selectedColor: PaintColor;
   customColors: readonly CustomColor[];
 }>;
@@ -61,7 +61,6 @@ export type SoundSourceSettings = Readonly<{
 }>;
 export type Choices = WidthSettings &
   DrawingControlPreferences &
-  ColorSettings &
   ParentPreferences &
   AccessibilitySettings &
   PencilSettings &
@@ -75,7 +74,7 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 15 }>;
+export type SoundSettings = Choices & Readonly<{ version: 16 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
@@ -94,8 +93,8 @@ export type SoundSettingsState =
         saveOnDeleteEnabled: boolean;
         message: string;
       })
-  | (Choices & { status: 'saving'; message: string })
-  | (Choices & { status: 'ready'; saved: boolean; message: string });
+  | (Choices & ColorSettings & { status: 'saving'; message: string })
+  | (Choices & ColorSettings & { status: 'ready'; saved: boolean; message: string });
 export type SoundSettingsStorage = {
   read: () => Promise<string | null>;
   write: (snapshot: string) => Promise<void>;
@@ -153,6 +152,10 @@ function migrateSoundSourceSettings(hasSoundLevel: boolean, value: object): Soun
   };
 }
 
+export function sessionPaint({ selectedColor, customColors }: ColorSettings): ColorSettings {
+  return { selectedColor, customColors };
+}
+
 function canonical<T>(settings: T, snapshot: string): T {
   if (JSON.stringify(settings) !== snapshot)
     throw new Error('Sound settings are not in the saved format.');
@@ -171,7 +174,11 @@ function readParentPreferences(value: unknown) {
   if (typeof aiEnabled !== 'boolean') throw new Error('Parent Center settings are invalid.');
   if (
     'version' in value &&
-    (value.version === 12 || value.version === 13 || value.version === 14 || value.version === 15)
+    (value.version === 12 ||
+      value.version === 13 ||
+      value.version === 14 ||
+      value.version === 15 ||
+      value.version === 16)
   ) {
     if (!isParentPolicies(parentPolicies)) throw new Error('Parent Center settings are invalid.');
     return { aiEnabled, parentPolicies: orderedParentPolicies(parentPolicies) };
@@ -192,11 +199,12 @@ function readParentPreferences(value: unknown) {
 function readStoredParentSettings(
   value: object & { version: unknown },
   widths: WidthSettings & { soundEnabled: boolean },
-  colors: ColorSettings,
+  storedPaint: ColorSettings | null,
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const aiStyled = value.version === 15;
+  const paintless = value.version === 16;
+  const aiStyled = paintless || value.version === 15;
   const drawered = aiStyled || value.version === 14;
   const sourced = drawered || value.version === 13;
   const linksPolicy = sourced || value.version === 12;
@@ -241,7 +249,7 @@ function readStoredParentSettings(
     {
       version: value.version,
       ...widths,
-      ...colors,
+      ...storedPaint,
       appearance,
       ...parent,
       ...(value.version === 5 ? {} : { coloringBookEnabled }),
@@ -267,9 +275,8 @@ function readStoredParentSettings(
     snapshot
   );
   return {
-    version: 15,
+    version: 16,
     ...widths,
-    ...colors,
     appearance,
     ...parent,
     parentPolicies: availablePolicies(
@@ -294,16 +301,15 @@ function readStoredParentSettings(
 }
 
 function migrateLegacyChoices(
-  choices: Partial<WidthSettings & ColorSettings & { appearance: AppearancePreference }> & {
+  choices: Partial<WidthSettings & { appearance: AppearancePreference }> & {
     soundEnabled: boolean;
   }
 ): SoundSettings {
   return {
-    version: 15,
+    version: 16,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
-    ...DEFAULT_COLOR_SETTINGS,
     appearance: DEFAULT_APPEARANCE,
     toolbarStyle: DEFAULT_TOOLBAR_STYLE,
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -315,6 +321,23 @@ function migrateLegacyChoices(
     ...DEFAULT_AI_PREFERENCES,
     ...choices,
   };
+}
+
+// Versions 3 to 15 also saved the paint. It is still validated, so the record stays strict, and
+// then dropped.
+function readStoredPaint(value: object): ColorSettings {
+  if (
+    !('selectedColor' in value) ||
+    !isPaintColor(value.selectedColor) ||
+    !('customColors' in value) ||
+    !Array.isArray(value.customColors) ||
+    value.customColors.length > MAX_CUSTOM_COLORS ||
+    !value.customColors.every(isCustomColor) ||
+    new Set(value.customColors).size !== value.customColors.length ||
+    (isCustomColor(value.selectedColor) && !value.customColors.includes(value.selectedColor))
+  )
+    throw new Error('Paint settings are invalid.');
+  return { selectedColor: value.selectedColor, customColors: value.customColors };
 }
 
 export function parseSoundSettings(snapshot: string): SoundSettings {
@@ -339,7 +362,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 12 &&
       value.version !== 13 &&
       value.version !== 14 &&
-      value.version !== 15) ||
+      value.version !== 15 &&
+      value.version !== 16) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -364,52 +388,26 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
     canonical({ version: 2, ...widths }, snapshot);
     return migrateLegacyChoices(widths);
   }
-  if (
-    (value.version !== 3 &&
-      value.version !== 4 &&
-      value.version !== 5 &&
-      value.version !== 6 &&
-      value.version !== 7 &&
-      value.version !== 8 &&
-      value.version !== 9 &&
-      value.version !== 10 &&
-      value.version !== 11 &&
-      value.version !== 12 &&
-      value.version !== 13 &&
-      value.version !== 14 &&
-      value.version !== 15) ||
-    !('selectedColor' in value) ||
-    !isPaintColor(value.selectedColor) ||
-    !('customColors' in value) ||
-    !Array.isArray(value.customColors) ||
-    value.customColors.length > MAX_CUSTOM_COLORS ||
-    !value.customColors.every(isCustomColor) ||
-    new Set(value.customColors).size !== value.customColors.length ||
-    (isCustomColor(value.selectedColor) && !value.customColors.includes(value.selectedColor))
-  )
-    throw new Error('Paint settings are invalid.');
-  const colors = { selectedColor: value.selectedColor, customColors: value.customColors };
+  const storedPaint = value.version === 16 ? null : readStoredPaint(value);
   if (value.version === 3) {
-    canonical({ version: 3, ...widths, ...colors }, snapshot);
-    return migrateLegacyChoices({ ...widths, ...colors });
+    canonical({ version: 3, ...widths, ...storedPaint }, snapshot);
+    return migrateLegacyChoices(widths);
   }
   if (!('appearance' in value) || !isAppearancePreference(value.appearance))
     throw new Error('Appearance choice is invalid.');
   if (value.version === 4) {
-    canonical({ version: 4, ...widths, ...colors, appearance: value.appearance }, snapshot);
-    return migrateLegacyChoices({ ...widths, ...colors, appearance: value.appearance });
+    canonical({ version: 4, ...widths, ...storedPaint, appearance: value.appearance }, snapshot);
+    return migrateLegacyChoices({ ...widths, appearance: value.appearance });
   }
-  return readStoredParentSettings(value, widths, colors, value.appearance, snapshot);
+  return readStoredParentSettings(value, widths, storedPaint, value.appearance, snapshot);
 }
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 15,
+    version: 16,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
-    selectedColor: state.selectedColor,
-    customColors: state.customColors,
     appearance: state.appearance,
     aiEnabled: state.aiEnabled,
     parentPolicies: orderedParentPolicies(state.parentPolicies),
