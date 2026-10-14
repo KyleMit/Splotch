@@ -219,8 +219,14 @@ function press(props) {
 }
 vi.mock('react-native', async () => {
   const React = await import('react');
-  const { animatedPort, appStatePort, backHandlerPort, easingPort } =
-    await import('./rsd-native-animated-host.mjs');
+  const {
+    accessibilityPort,
+    animatedPort,
+    appStatePort,
+    backHandlerPort,
+    easingPort,
+    platformPort,
+  } = await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
       records.props.push(props);
@@ -276,23 +282,8 @@ vi.mock('react-native', async () => {
         props.children
       );
     }),
-    Platform: {
-      get OS() {
-        return records.os;
-      },
-      get Version() {
-        return records.androidApi;
-      },
-      constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
-      select: (values) => values.ios ?? values.native ?? values.default,
-    },
-    AccessibilityInfo: {
-      isReduceMotionEnabled: async () => records.reduceMotion,
-      isReduceTransparencyEnabled: async () => records.reduceTransparency,
-      addEventListener: () => ({ remove() {} }),
-      announceForAccessibility: (text) => records.announcements.push(text),
-      announceForAccessibilityWithOptions: (text) => records.announcements.push(text),
-    },
+    Platform: platformPort(records),
+    AccessibilityInfo: accessibilityPort(records),
     Animated: animatedPort(View, Text),
     Easing: easingPort,
     useWindowDimensions: () => records.dimensions,

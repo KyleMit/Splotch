@@ -23,6 +23,11 @@ import { RsdAiStylePrompt } from '../../experiments/native-architecture/src/rsdD
 // and attributes its web build emits. The ring itself is src/strict.css, applied by happy-dom's
 // cascade to whichever element the browser would focus.
 vi.mock('react-native', async () => import('react-native-web'));
+// The web build resolves ModalScrim to its web file; Vitest resolves the native one.
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+);
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/RsdPressable.tsx',
   () => import('../../experiments/native-architecture/src/rsdDrawing/RsdPressable.web.tsx')
