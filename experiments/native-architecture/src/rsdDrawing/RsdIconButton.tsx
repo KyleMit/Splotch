@@ -4,7 +4,7 @@ import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
-import { grayscale } from './colorMix';
+import { greyedColor } from './greyed';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
@@ -466,7 +466,7 @@ export function RsdIconButton(props: IconButtonProps) {
           style={[
             styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX),
             bare && styles.bareBadge(paper),
-            dimmed && styles.greyBadge(grayscale(brandSolid)),
+            dimmed && styles.greyBadge(greyedColor(brandSolid)),
           ]}
         >
           {badge}

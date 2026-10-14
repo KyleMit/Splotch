@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { SvgXml } from '../platform/svg';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES } from '../drawing/theme';
-import { grayscaleMarkup } from './colorMix';
+import { greyedMarkup } from './greyed';
 import { useNativeIconMarkup } from './iconRegistry';
 import type { NativeIconName } from './icons.generated';
 
@@ -61,7 +61,7 @@ export function RsdIcon({
     if (!markup) return EMPTY_ICON_MARKUP;
     const ringed = keyline ? keylinedMarkup(markup, keyline, size) : markup;
     const inked = ringed.replaceAll('currentColor', color);
-    return grey ? grayscaleMarkup(inked) : inked;
+    return grey ? greyedMarkup(inked) : inked;
   }, [markup, color, keyline, size, grey]);
   return <SvgXml xml={xml} width={size} height={size} />;
 }
