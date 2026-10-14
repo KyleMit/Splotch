@@ -21,7 +21,7 @@ import { useReduceMotion } from '../drawing/useReduceMotion';
 import { isUnsaved, type UnsavedOutcome } from '../export/pictureSave';
 import type { PictureFormat } from '../export/pictureFilename';
 import type { KeptAiPicture } from '../ai/keepAiPicture';
-import type { AiAutoSave } from '../product/useAiAutoSave';
+import type { AiAutoSave } from '../ai/aiAutoSave';
 import { DialogHeader } from './DialogHeader';
 import { fontTheme } from './fontTheme';
 import { ModalStage } from './ModalShell';

@@ -19,6 +19,7 @@ async function fixture({
   grant = () => new Response(GRANT),
   stored = null,
   generate = picture,
+  dismissal = undefined,
 } = {}) {
   const product = createDrawingProduct({ read: async () => null, write: async () => {} }, () => {});
   await product.settings.load();
@@ -48,6 +49,7 @@ async function fixture({
     transport,
     prepare,
     admit: async () => {},
+    dismissal,
     problems: {
       platform: 'web',
       transport: report,
@@ -228,8 +230,8 @@ it('releases a minimized run held past its server window when it is shown again,
   }
 });
 
-it('brings back a finished picture nobody dismissed, and offers the prompt once it is closed', async () => {
-  const createdAt = Date.now() - 60_000;
+it('brings back a finished picture nobody dismissed past the server window, and remembers its close across a reload', async () => {
+  const createdAt = Date.now() - JOB_TTL_MS - 60_000;
   const journal = Object.freeze({
     version: 1,
     id: createdAt,
@@ -240,7 +242,15 @@ it('brings back a finished picture nobody dismissed, and offers the prompt once 
     jobId: 'b'.repeat(64),
     result: { uri: 'file:///fixture/ai.png', mime: 'image/png' },
   });
-  const f = await fixture({ stored: { kind: 'native', receipt: { kind: 'prepared', journal } } });
+  const saved = { id: null };
+  const dismissal = {
+    read: async () => saved.id,
+    write: async (id) => {
+      saved.id = id;
+    },
+  };
+  const stored = { kind: 'native', receipt: { kind: 'prepared', journal } };
+  const f = await fixture({ stored, dismissal });
   f.owner.start({ onSetup: vi.fn(), customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
@@ -250,10 +260,12 @@ it('brings back a finished picture nobody dismissed, and offers the prompt once 
     picture: { uri: 'file:///fixture/ai.png' },
   });
   f.owner.dismiss();
-  f.owner.start({ onSetup: vi.fn(), customize: true });
-  solve(f.product.gate);
-  await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
-  expect(f.owner.getState().view).toBe('prompt');
+  expect(saved.id).toBe(String(createdAt));
+  const reloaded = await fixture({ stored, dismissal });
+  reloaded.owner.start({ onSetup: vi.fn(), customize: true });
+  solve(reloaded.product.gate);
+  await vi.waitFor(() => expect(reloaded.owner.getState().open).toBe(true));
+  expect(reloaded.owner.getState().view).toBe('prompt');
 });
 
 it.each([
@@ -304,5 +316,24 @@ it('reports a failed run behind the report check with its bounded details and no
   expect(f.owner.getState().problem).toEqual({
     phase: 'success',
     message: 'Thanks. Your problem report was sent to our private support tracker.',
+  });
+});
+it('names no art style in a problem report for a run sent with style choice off', async () => {
+  const f = await fixture({
+    generate: () => new Response('{"ok":false,"error":"Upstream down"}', { status: 502 }),
+  });
+  f.owner.start({ onSetup: vi.fn(), customize: false });
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.prepare).toHaveBeenCalledOnce());
+  await f.settled();
+  expect(aiResultPhase(f.owner.getState())).toEqual({
+    kind: 'error',
+    reason: 'retry',
+  });
+  f.owner.reportProblem();
+  solve(f.product.gate);
+  expect(f.owner.getState().problem.rows).toContainEqual({
+    label: 'Art style',
+    value: 'Default',
   });
 });

@@ -5,10 +5,6 @@ import type { AiJournal } from './journal';
 import type { AiSessionDependencies, AiState } from './sessionContract';
 import { createAiProblemReport, problemReportRows } from './problemReport';
 
-// A finished picture nobody has dismissed (it landed while the app was away, or before a reload)
-// comes back on the next wand tap for as long as the server would have kept it.
-const RESTORE_RESULT_WINDOW_MS = JOB_TTL_MS;
-
 function expired(journal: AiJournal) {
   return Date.now() - journal.createdAt >= JOB_TTL_MS;
 }
@@ -40,8 +36,10 @@ export class NativeAiFlow extends NativeAiController {
     this.reports.cancel();
     this.update({ minimized: true });
   };
-  // Runs whose result card was closed on purpose, so their picture is not offered again.
-  private dismissed = new Set<number>();
+  // The run whose result card was closed on purpose, so its picture is not offered again. Only the
+  // latest run is ever offered, so one id is enough.
+  private dismissedId: number | null = null;
+  private dismissalRead = false;
   protected needsSetup = () => {
     const setup = this.onSetup;
     this.close();
@@ -68,6 +66,7 @@ export class NativeAiFlow extends NativeAiController {
   private begin = async (onSetup: () => void, customize: boolean) => {
     const proof = this.authorization;
     await this.load();
+    await this.readDismissal();
     const permitted = () => proof === this.authorization && this.consented() && !this.disposed;
     if (!permitted()) return;
     const journal = this.state.journal;
@@ -99,17 +98,33 @@ export class NativeAiFlow extends NativeAiController {
     this.update({ open: true, minimized: false, view: 'result', attempt: null });
     this.run();
   };
+  // A finished picture nobody dismissed (it landed while the app was away, or before a reload)
+  // comes back on the next wand tap however long ago it was made: the server's retention bounds
+  // collecting it, not the copy already kept here, as shipping keeps a collected picture until its
+  // card is closed.
   private undismissedResult = () => {
     const journal = this.state.journal;
     const picture = this.state.heldResult ?? journal?.result;
-    if (!journal || !picture || this.dismissed.has(journal.id)) return null;
-    return Date.now() - journal.createdAt < RESTORE_RESULT_WINDOW_MS ? journal : null;
+    if (!journal || !picture || journal.id === this.dismissedId) return null;
+    return journal;
+  };
+  // An unreadable record offers the picture again rather than hiding one nobody closed.
+  private readDismissal = async () => {
+    if (this.dismissalRead || !this.deps.dismissal) return;
+    const raw = await this.deps.dismissal.read().catch(() => undefined);
+    if (raw === undefined) return;
+    this.dismissalRead = true;
+    const id = Number(raw);
+    if (this.dismissedId === null && Number.isSafeInteger(id) && id > 0) this.dismissedId = id;
   };
   // The result card's own close, Keep drawing and send-off: the run is done with, so its picture
   // is not brought back by the next wand tap.
   dismiss = () => {
     const journal = this.state.journal;
-    if (journal && this.state.attempt?.kind === 'journal') this.dismissed.add(journal.id);
+    if (journal && this.state.attempt?.kind === 'journal') {
+      this.dismissedId = journal.id;
+      void this.deps.dismissal?.write(String(journal.id)).catch(() => {});
+    }
     this.close();
   };
   // Report a problem: the last failure's bounded details go to a grown-up's confirmation.
@@ -119,7 +134,7 @@ export class NativeAiFlow extends NativeAiController {
       problemReportRows(
         this.state.failure,
         this.state.failures,
-        this.state.style,
+        this.styled ? this.state.style : null,
         this.problemPlatform
       )
     );

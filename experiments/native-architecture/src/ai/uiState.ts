@@ -131,10 +131,10 @@ const MINIMIZED_RUN_LABELS: Record<AiCornerFace, string> = {
 
 function aiButtonLabel(state: AiState | null) {
   if (state?.open && state.minimized) return MINIMIZED_RUN_LABELS[aiCornerFace(state)];
-  if (!state || state.availability !== 'ready')
-    return !state || state.availability === 'loading'
-      ? 'Checking AI image availability'
-      : 'AI image unavailable';
+  if (!state || !aiReady(state))
+    return state?.availability === 'unavailable'
+      ? 'AI image unavailable'
+      : 'Checking AI image availability';
   if (hasCredential(state) || state.remaining === null) return 'Create AI image';
   return state.remaining > 0 ? `Create AI image, ${state.remaining} free left` : 'Set up AI image';
 }
@@ -149,6 +149,12 @@ export type AiButtonFace = Readonly<{
   badge: number | null;
 }>;
 
+// The owner takes no tap while inspect() reads the allowance, so the button says Checking then, as
+// shipping's does while its grant request is in flight.
+function aiReady(state: AiState | null) {
+  return !!state && state.availability === 'ready' && !state.checking;
+}
+
 // The shipping AI Image Button's states (AiImageButton.svelte). A minimized run is the one time a
 // generation is in flight and the button is live: it is what shows that run again, so neither the
 // generation nor an empty canvas can disable it.
@@ -159,7 +165,7 @@ export function aiButtonFace(state: AiState | null, canvasEmpty: boolean): AiBut
     !minimized &&
     state.view === 'result' &&
     aiResultPhase(state).kind === 'generating';
-  const usable = !!state && state.availability === 'ready';
+  const usable = aiReady(state);
   return {
     label: aiButtonLabel(state),
     disabled: !minimized && (!usable || canvasEmpty || busy),

@@ -77,6 +77,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
     write: caller.aiVaultWrite,
     remove: async () => {},
   },
+  aiDismissal: { read: async () => null, write: async () => {} },
   aiStorage: {
     prepare: caller.aiPrepare,
     readPreparedUpload: caller.aiReadPreparedUpload,

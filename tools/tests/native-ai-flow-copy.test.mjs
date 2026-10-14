@@ -151,6 +151,23 @@ it('parks the wand on a blank page or a run in flight, but never a minimized one
   expect(aiButtonFace({ ...ready, availability: 'unavailable' }, false).badge).toBeNull();
 });
 
+it('says Checking and takes no tap while the allowance is being read again', () => {
+  const checking = {
+    open: false,
+    minimized: false,
+    view: 'prompt',
+    attempt: null,
+    availability: 'ready',
+    checking: true,
+    credential: 'free',
+    remaining: 3,
+  };
+  expect(aiButtonFace(checking, false)).toMatchObject({
+    label: 'Checking AI image availability',
+    disabled: true,
+  });
+});
+
 it('words the problem report and lists its rows as shipping does', () => {
   for (const [key, text] of Object.entries(AI_PROBLEM_REPORT_COPY))
     expect(`${SHIPPING.report} ${SHIPPING.disclosure}`, key).toContain(text);

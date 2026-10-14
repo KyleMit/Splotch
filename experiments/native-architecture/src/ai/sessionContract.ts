@@ -87,4 +87,11 @@ export type AiSessionDependencies = {
   admit: AiImageAdmission;
   parent?: ParentOperationPort;
   problems?: AiProblemTransport;
+  // Where the id of the last finished picture whose card was closed outlives the app, so that
+  // picture is not offered again; owners without it forget a dismissal on reload.
+  dismissal?: AiDismissalStore;
+};
+export type AiDismissalStore = {
+  read(): Promise<string | null>;
+  write(id: string): Promise<void>;
 };

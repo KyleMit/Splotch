@@ -2,7 +2,7 @@ import { css, html } from 'react-strict-dom';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../../../../web/src/lib/ai/loadingCopy';
 import { scale } from '../../../../web/src/lib/design/tokens';
 import { AI_AUTO_SAVE_COPY, AI_RESULT_COPY } from '../ai/aiResultCopy';
-import type { AiAutoSave } from '../product/useAiAutoSave';
+import type { AiAutoSave } from '../ai/aiAutoSave';
 import { AI_RESULT_METRICS } from '../ai/aiResultGeometry';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';

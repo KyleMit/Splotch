@@ -1,7 +1,7 @@
 // The wand's routes into Settings › AI Art, and what the AI Art switches do to a run.
 import { expect, it } from 'vitest';
 import { act } from 'react';
-import { caller, host } from './rsd-native-selection-host.mjs';
+import { caller, host, records } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import {
@@ -156,6 +156,25 @@ it(
       )
     );
     expect(host.textContent).not.toContain('Saved to your photos');
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'keeps a known allowance on a return to the foreground instead of asking for it again',
+  async () => {
+    reply(pictureReply);
+    useCaller();
+    await enableAi();
+    await settle(() => expect(labelled(WAND)).not.toBeNull());
+    const grants = () =>
+      caller.aiSend.mock.calls.filter(([request]) => request.path === '/api/free-generation-grant');
+    const before = grants().length;
+    await act(async () => {
+      for (const listener of records.appStateListeners) listener('active');
+    });
+    expect(grants()).toHaveLength(before);
+    expect(labelled(WAND).disabled).toBe(false);
   },
   GATED_FLOW_TIMEOUT_MS
 );
