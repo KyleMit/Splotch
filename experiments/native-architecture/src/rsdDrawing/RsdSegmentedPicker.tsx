@@ -293,9 +293,9 @@ function OptionBody<T extends string>({
   return (
     <>
       {option.icon ? (
-        <html.span style={styles.iconSlot}>
+        <html.div style={styles.iconSlot}>
           <RsdIcon name={option.icon} size={ICON_PX[variant]} ink={ink} muted={false} />
-        </html.span>
+        </html.div>
       ) : null}
       {labels === 'shown' ? (
         <html.span style={variant === 'chip' && styles.chipLabel}>{option.label}</html.span>
@@ -377,7 +377,8 @@ const styles = css.create({
     paddingBlock: dimensions.space1,
     paddingInline: COLUMN_OPTION_PADDING_INLINE_PX,
   },
-  // A web flex item shrinks by default, which squeezed a wide glyph beside a long label.
+  // A web flex item shrinks by default, which squeezed a wide glyph beside a long label. A view, not
+  // a span: React Native sits a view nested in text on the text's baseline, above the label's centre.
   iconSlot: { display: 'flex', flexShrink: 0 },
   segmentOption: {
     justifyContent: 'center',
