@@ -40,8 +40,13 @@ async function click(label) {
   expect(node.disabled, label).toBe(false);
   await act(async () => node.click());
 }
+// The window frame paints once: Android draws every full-screen layer on every frame, so the
+// padded view inside it adds none of its own. Negative control: a frame color on the padded view
+// fails lastFrame's check.
 function lastFrame() {
-  return records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
+  const inset = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
+  expect(inset.style.backgroundColor).toBeUndefined();
+  return records.props.findLast((props) => props.testID === 'rsd-window-insets');
 }
 
 function lastSurface() {

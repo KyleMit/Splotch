@@ -14,10 +14,13 @@ export function NativePaper({
   screen,
   sound,
   menuOpen,
+  lifted,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
   menuOpen: boolean;
+  // A sheet lifted off the margin wears its own grain; one that fills the slot shows the slot's.
+  lifted: boolean;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const [space, setSpace] = useState({ width: 0, height: 0 });
@@ -52,7 +55,7 @@ export function NativePaper({
             sound.settings.status === 'loading'
           }
           sound={sound.owner?.contacts ?? null}
-          underlay={paperGrain}
+          underlay={lifted ? paperGrain : null}
           {...screen.recovery.callbacks}
         />
       </View>

@@ -176,10 +176,11 @@ async function rotate(slot, frame) {
 
 // The RSD screen's paper owner, mounted on its own because the RSD screen needs
 // the react-strict-dom renderer this suite does not load.
-function RsdPaper() {
+// The slot (RsdPaperSlot) decides whether the sheet is lifted off its margin; the test plays it.
+function RsdPaper({ lifted = false }) {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
-  return createElement(NativePaper, { screen, sound, menuOpen: false });
+  return createElement(NativePaper, { screen, sound, menuOpen: false, lifted });
 }
 
 beforeEach(() => {
@@ -251,21 +252,27 @@ it.each([
   }
 );
 
-// The sheet's grain: the shipping paper texture beneath the ink, on the sheet itself, so a
-// rotated sheet lifted off its margin keeps it.
-function grainUnderInk() {
+// The sheet's own grain: the shipping paper texture beneath the ink, on the sheet itself.
+function sheetGrain() {
   const ink = host.querySelector('[data-testid="drawing-paper"]');
   expect(ink).not.toBeNull();
-  const grain = ink.parentElement.querySelector(':scope > [data-testid="paper-texture"]');
+  return ink.parentElement.querySelector(':scope > [data-testid="paper-texture"]');
+}
+
+function grainUnderInk() {
+  const grain = sheetGrain();
   expect(grain, 'grain on the sheet').not.toBeNull();
+  const ink = host.querySelector('[data-testid="drawing-paper"]');
   expect(grain.compareDocumentPosition(ink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(grain.querySelector('img').dataset.resizeMode).toBe('repeat');
 }
 
-it('lays the RSD sheet grain under the ink and keeps it through a rotation', async () => {
+// A sheet that fills the slot shows the slot's grain through it and paints none of its own; a
+// rotation that lifts it off the margin gives it its own.
+it('lays the RSD sheet grain under the ink once a rotation lifts the sheet', async () => {
   await act(async () => root.render(createElement(RsdPaper)));
   await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
-  grainUnderInk();
+  expect(sheetGrain(), 'a sheet that fills the slot').toBeNull();
   await stroke(
     PORTRAIT_FRAME,
     [
@@ -274,6 +281,7 @@ it('lays the RSD sheet grain under the ink and keeps it through a rotation', asy
     ],
     100
   );
+  await act(async () => root.render(createElement(RsdPaper, { lifted: true })));
   await rotate(LANDSCAPE_SLOT, LANDSCAPE_FRAME);
   expect(sdk.sized.at(-1).width).toBeCloseTo(FITTED_WIDTH, 9);
   grainUnderInk();

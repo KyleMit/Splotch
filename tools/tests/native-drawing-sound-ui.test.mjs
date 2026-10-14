@@ -290,7 +290,8 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(ui.dialog().dataset.statusTranslucent).toBe('true');
     expect(ui.dialog().dataset.navigationTranslucent).toBe('true');
-    expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(2);
+    // The frame paints once, on its provider; the padded view inside it paints nothing.
+    expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(1);
     expect(ui.dialog().querySelector('[data-background="#1a1922"]')).toBeNull();
     expect(JSON.parse(sound.write.mock.calls.at(-1)[0])).toMatchObject({
       appearance: 'dark',
@@ -325,7 +326,7 @@ describe('live drawing sound owner and Settings screen', () => {
       const theme = appearance.toLowerCase();
       {
         expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe(theme);
-        expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(2);
+        expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(1);
         expect(ui.dialog().querySelector('[data-background="#1a1922"]')).toBeNull();
         expect(ui.dialog().querySelector('[data-background="#f1efeb"]')).toBeNull();
         expect(ui.dialog().dataset.statusTranslucent).toBe('true');

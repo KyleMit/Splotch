@@ -1,7 +1,6 @@
 import { InkPaperScope } from './InkPaper';
 import { drawingPaper, presentedPaperSize, type PaperReference } from './paperSpace';
 import { useDrawingAppearance } from './DrawingAppearance';
-import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import {
   forwardRef,
   useCallback,
@@ -21,7 +20,7 @@ import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
-import { PageOutline } from './PageOutline';
+import { PageOutline, pageHasOutline } from './PageOutline';
 import type { RasterInkHandle } from './RasterInk';
 import { InkLayer } from './InkLayer';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
@@ -50,7 +49,8 @@ export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
-  // Painted on the paper beneath the ink: the drawing screen's paper grain.
+  // What the paper shows beneath the ink, in place of a plain sheet: the drawing screen's paper
+  // grain, or null where the slot around a sheet that fills it already wears that grain.
   underlay?: ReactNode;
 };
 
@@ -75,7 +75,6 @@ function useLiveDraft() {
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
   function DrawingSurface(props, ref) {
-    const styles = useDrawingStyles(themedStyles);
     const theme = useDrawingAppearance();
     const appearance = useMemo<InkAppearance>(
       () => ({ pageId: props.drawing.pageId, theme }),
@@ -139,7 +138,14 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
       <InkPaperScope.Provider value={paperReference}>
         <InkAppearanceScope.Provider value={appearance}>
           <View style={styles.container}>
-            <View style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}>
+            <View
+              style={[
+                styles.paper,
+                props.underlay === undefined && {
+                  backgroundColor: PAPER_THEMES[appearance.theme].paper,
+                },
+              ]}
+            >
               {props.underlay}
               <View
                 ref={paper}
@@ -166,16 +172,19 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                     props.onRendererFault(error);
                   }}
                 />
-                <Svg
-                  width="100%"
-                  height="100%"
-                  viewBox={`0 0 ${presented.width} ${presented.height}`}
-                  preserveAspectRatio="xMidYMid meet"
-                  pointerEvents="none"
-                  style={StyleSheet.absoluteFill}
-                >
-                  <PageOutline pageId={props.drawing.pageId} size={presented} />
-                </Svg>
+                {/* react-native-svg paints a full-paper bitmap on Android even when it is empty. */}
+                {pageHasOutline(props.drawing.pageId) ? (
+                  <Svg
+                    width="100%"
+                    height="100%"
+                    viewBox={`0 0 ${presented.width} ${presented.height}`}
+                    preserveAspectRatio="xMidYMid meet"
+                    pointerEvents="none"
+                    style={StyleSheet.absoluteFill}
+                  >
+                    <PageOutline pageId={props.drawing.pageId} size={presented} />
+                  </Svg>
+                ) : null}
                 <PointerHalos feed={halos} />
               </View>
             </View>
@@ -345,15 +354,8 @@ function useSurfaceCapture(
   return { captureLock, commandLock, preemptBackground };
 }
 
-const themedStyles = createDrawingStyles((palette) =>
-  StyleSheet.create({
-    container: { width: '100%', height: '100%' },
-    inkPlane: { width: '100%', height: '100%' },
-    paper: {
-      width: '100%',
-      height: '100%',
-      overflow: 'hidden',
-      backgroundColor: palette.paper,
-    },
-  })
-);
+const styles = StyleSheet.create({
+  container: { width: '100%', height: '100%' },
+  inkPlane: { width: '100%', height: '100%' },
+  paper: { width: '100%', height: '100%', overflow: 'hidden' },
+});
