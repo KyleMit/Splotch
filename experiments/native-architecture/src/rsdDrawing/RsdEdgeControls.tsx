@@ -69,11 +69,13 @@ export function RsdEdgeLayout({
   const [actionButtonSize, setActionButtonSize] = useState<number | null>(null);
   const [drawerChosen, setDrawerChosen] = useState(false);
   const drawerOpen = drawerChosen || resizing;
-  const slot = useFlyoutSlot(drawerOpen, disabled);
+  const slot = useFlyoutSlot(drawerOpen, disabled, screen.drawing);
   const fullscreen = useFullscreen(!disabled);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
-    disabled,
+    // The button stays live through a stroke, but its activation plays the clear before the
+    // command can refuse, so the gesture itself waits for the lift.
+    disabled: disabled || screen.drawing,
     drawing: screen.history.drawing,
     // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
     onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),

@@ -43,9 +43,9 @@ const docks = StyleSheet.create({
 // on the paper still draws. The layout's root asks first and the menu's own boxes answer later
 // in the same capture pass, so the close waits until the pass has run. Escape and a pick close it
 // through `close`, which hands keyboard focus back to the menu's button, as shipping's
-// closeFlyout({ restoreFocus: true }) does.
-export function useFlyoutSlot(open: boolean, disabled: boolean) {
-  const [flyout, setFlyout] = useState<OpenFlyout>(null);
+// closeFlyout({ restoreFocus: true }) does. A menu opens only between strokes; closing never waits.
+export function useFlyoutSlot(open: boolean, disabled: boolean, drawing: boolean) {
+  const [flyout, setOpenFlyout] = useState<OpenFlyout>(null);
   const inside = useRef(false);
   // The landscape phone's Color Menu opens beside its own button, drawer open or not, and leaving
   // that layout closes it, as shipping's panel does. The slot outlives every panel that renders
@@ -53,7 +53,7 @@ export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const colorButton = isPhoneLandscapeViewport(useWindowDimensions());
   const staleColor = flyout === 'color' && !colorButton;
   useEffect(() => {
-    if (staleColor) setFlyout(null);
+    if (staleColor) setOpenFlyout(null);
   }, [staleColor]);
   const shown = !disabled && !staleColor && (open || flyout === 'color') ? flyout : null;
   const live = useRef(shown);
@@ -63,12 +63,14 @@ export function useFlyoutSlot(open: boolean, disabled: boolean) {
   function close() {
     const current = live.current;
     if (current) refocusFlyoutTrigger(menu.current, triggers.current[current]);
-    setFlyout(null);
+    setOpenFlyout(null);
   }
   useFlyoutEscape(shown !== null, close);
   return {
     flyout: shown,
-    setFlyout,
+    setFlyout(next: OpenFlyout) {
+      if (next === null || !drawing) setOpenFlyout(next);
+    },
     close,
     menu,
     triggers,
@@ -76,7 +78,7 @@ export function useFlyoutSlot(open: boolean, disabled: boolean) {
       inside.current = false;
       if (live.current)
         queueMicrotask(() => {
-          if (!inside.current) setFlyout(null);
+          if (!inside.current) setOpenFlyout(null);
         });
       return false;
     },
@@ -239,12 +241,13 @@ function panelTools(context: ToolContext): Tool[] {
           disabled={disabled || ai.disabled}
           busy={ai.busy}
           badge={ai.badge}
-          onPress={() =>
+          onPress={() => {
+            if (screen.drawing) return;
             product.ai.owner?.start({
               onSetup: screen.openAiSettings,
               customize: sound.settings.aiCustomizationEnabled,
-            })
-          }
+            });
+          }}
         />
       ),
     });
