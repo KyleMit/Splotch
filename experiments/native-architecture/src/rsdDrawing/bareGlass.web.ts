@@ -39,18 +39,25 @@ export const RsdGlassPanes = deferredGlass<ComponentProps<typeof Panes>>(
 
 const loaded = () => glass.current() !== undefined;
 
+// How long the first paint waits on the glass. A precached chunk arrives within a frame or two; past
+// this a stalled network would be leaving a child at a blank page, so the controls show and the
+// glass joins them when it arrives.
+export const BARE_GLASS_HOLD_MS = 1000;
+
 // Shipping's boot script prints the flat chrome before its first paint, so the drawing screen holds
 // its controls until the glass has arrived rather than showing them a beat before their margin. A
-// failed load lets the controls through: the glass retries as it mounts.
+// failed or stalled load lets the controls through: the glass retries as it mounts.
 export function useBareGlassReady(bare: boolean) {
   const ready = useSyncExternalStore(glass.subscribe, loaded);
-  const [failed, setFailed] = useState(false);
+  const [released, setReleased] = useState(false);
   useEffect(() => {
     if (!bare || ready) return;
+    const deadline = setTimeout(() => setReleased(true), BARE_GLASS_HOLD_MS);
     glass.load().catch((error: unknown) => {
       console.error(`${DESCRIPTION} failed to load:`, error);
-      setFailed(true);
+      setReleased(true);
     });
+    return () => clearTimeout(deadline);
   }, [bare, ready]);
-  return !bare || ready || failed;
+  return !bare || ready || released;
 }

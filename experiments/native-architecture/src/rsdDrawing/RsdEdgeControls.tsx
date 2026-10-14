@@ -16,6 +16,7 @@ import { RsdClearUnderlay } from './clearSurfaces';
 import { NativeDrawingLayout, type PaletteLayout } from './NativeScrollAreas';
 import { RsdActionsPanel, useFlyoutSlot } from './RsdActionsPanel';
 import { RsdFullscreenToggle } from './RsdFullscreenToggle';
+import { useFullscreen } from '../platform/useFullscreen';
 import { ToolbarSkin } from './toolbarSkin';
 import type { PanelGlass } from './bareGlassLayout';
 
@@ -62,6 +63,7 @@ export function RsdEdgeLayout({
   const [drawerChosen, setDrawerChosen] = useState(false);
   const drawerOpen = drawerChosen || resizing;
   const slot = useFlyoutSlot(drawerOpen, disabled);
+  const fullscreen = useFullscreen(!disabled);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
     disabled,
@@ -73,7 +75,16 @@ export function RsdEdgeLayout({
   return (
     <ToolbarSkin.Provider value={toolbarStyle}>
       <NativeDrawingLayout
-        bareGlass={bare ? { open: slot.flyout, expanded: drawerOpen, panel: panelGlass } : null}
+        bareGlass={
+          bare
+            ? {
+                open: slot.flyout,
+                expanded: drawerOpen,
+                panel: panelGlass,
+                fullscreen: fullscreen.supported,
+              }
+            : null
+        }
         palette={(layout) => (
           <RsdPalette screen={screen} sound={sound} layout={layout} disabled={paintsDisabled} />
         )}
@@ -109,7 +120,7 @@ export function RsdEdgeLayout({
         overlays={
           <>
             <View pointerEvents="box-none" style={paperLayer.fill}>
-              <RsdFullscreenToggle blocked={disabled} />
+              <RsdFullscreenToggle fullscreen={fullscreen} />
             </View>
             {paperOverlay(drawerOpen)}
           </>

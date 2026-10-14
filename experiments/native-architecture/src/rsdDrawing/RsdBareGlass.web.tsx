@@ -6,7 +6,6 @@ import handmadePaper from '../../assets/paper/handmade-paper.webp';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES } from '../drawing/theme';
 import { useReducedTransparency } from '../platform/reducedTransparency.web';
-import { fullscreenSupported } from '../platform/useFullscreen.web';
 import type { BareGlass } from './bareGlassLayout';
 import {
   FULLSCREEN_GLASS_MASK,
@@ -153,7 +152,7 @@ export function RsdMarginRules({ axis }: { axis: LayoutAxis }) {
 // and under every control, and the corner of glass behind the Fullscreen Toggle beside the rail.
 export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: BareGlass }) {
   const strip = useGlass('glassStrip', STRIP_GLASS_BLUR_PX);
-  const fullscreen = fullscreenSupported();
+  const { fullscreen } = glass;
   const layout: GlassPaneLayout | null = glass.panel
     ? glassPaneLayout(space, glass.panel, fullscreen)
     : null;

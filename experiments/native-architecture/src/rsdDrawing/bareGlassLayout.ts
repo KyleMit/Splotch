@@ -21,6 +21,9 @@ export type BareGlass = Readonly<{
   open: OpenFlyout;
   expanded: boolean;
   panel: PanelGlass | null;
+  // Whether the Fullscreen Toggle shows, as its owner decided it, so the glass behind the toggle
+  // stays with it while the browser is in fullscreen.
+  fullscreen: boolean;
 }>;
 
 function samePanel(previous: PanelGlass | null, next: PanelGlass) {

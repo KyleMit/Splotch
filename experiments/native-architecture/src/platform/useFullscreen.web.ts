@@ -20,11 +20,6 @@ function fullscreenApi() {
   );
 }
 
-// Whether the Fullscreen Toggle shows here, for chrome laid out around it.
-export function fullscreenSupported() {
-  return offeredHere() && fullscreenApi();
-}
-
 export function useFullscreen(enabled: boolean) {
   const [state, setState] = useState({
     supported: false,
