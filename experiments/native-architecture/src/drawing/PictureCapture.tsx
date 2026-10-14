@@ -1,6 +1,6 @@
-import { drawingPaper, paperSize, samePaper } from './paperSpace';
+import { drawingPaper, paperSize, samePaper, type PaperSize } from './paperSpace';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from '../platform/svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
@@ -11,15 +11,38 @@ import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
 import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { DecodedPng } from './DecodedPng';
+import { pictureExport, type PictureExport } from './pictureExport';
 
+// The ink alone; the picture on its paper at the paper's size (what AI is sent); or the saved
+// picture, which keeps the shipping export's grid, paper color and grain.
+type PictureKind = 'ink' | 'picture' | 'export';
 export type PictureRequest = Readonly<{
   id: number;
   request: PngCaptureRequest;
-  kind: 'ink' | 'picture';
+  kind: PictureKind;
   plan: InkPlan;
   appearance: InkAppearance;
   isCurrent: () => boolean;
 }>;
+
+// The pixel grid the capture rasterizes, and the saved picture it composes into, if any.
+type CaptureTarget = Readonly<{ raster: PaperSize; exported: PictureExport | null }>;
+
+// react-native-svg on iOS draws the view box into the view's laid-out bounds at the screen scale,
+// whatever size is requested (RNSVGSvgView drawRect), so there the capture keeps the paper's size
+// and composing scales it; Android and the web rasterize the view box into exactly the requested
+// pixels.
+function captureTarget(packet: PictureRequest): CaptureTarget {
+  const size = paperSize(packet.plan.paper);
+  if (packet.kind !== 'export') return { raster: size, exported: null };
+  const exported = pictureExport(packet.plan.paper, packet.appearance.theme, PixelRatio.get());
+  return { raster: Platform.OS === 'ios' ? size : exported.size, exported };
+}
+
+function composeExport(layer: string, exported: PictureExport | null): Promise<string> {
+  if (!exported) return Promise.resolve(layer);
+  return import('./pictureCompose').then(({ composePicture }) => composePicture(layer, exported));
+}
 
 export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const ink = useRef<Svg>(null);
@@ -32,6 +55,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const current = useRef(true);
   const request = packet.request;
   const size = paperSize(packet.plan.paper);
+  const [target] = useState(() => captureTarget(packet));
   if (!samePaper(packet.plan.paper, drawingPaper(request.drawing)))
     throw new Error('The captured paper reference does not match the picture.');
 
@@ -43,7 +67,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       request.cancel('The picture changed before capture finished.');
       return;
     }
-    if (kind === 'ink' && packet.kind === 'picture') setBase64(pixels);
+    if (kind === 'ink' && packet.kind !== 'ink') setBase64(pixels);
     else request.complete(pixels);
   }
   function loaded() {
@@ -56,7 +80,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       fail(new Error('The picture changed before capture finished.'));
       return;
     }
-    const job = captures.capture(ink.current, size);
+    const job = captures.capture(ink.current, target.raster);
     void job.promise.then((pixels) => accept(pixels, 'ink')).catch(fail);
     return () => job.cancel();
   }, [ready, base64, captures]);
@@ -67,8 +91,11 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       fail(new Error('The picture changed before capture finished.'));
       return;
     }
-    const job = captures.capture(output.current, size);
-    void job.promise.then((pixels) => accept(pixels, 'picture')).catch(fail);
+    const job = captures.capture(output.current, target.raster);
+    void job.promise
+      .then((pixels) => composeExport(pixels, target.exported))
+      .then((pixels) => accept(pixels, 'picture'))
+      .catch(fail);
     return () => job.cancel();
   }, [imageLoaded, outlineReady, captures]);
 
@@ -88,7 +115,9 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   return (
     <InkAppearanceScope.Provider value={packet.appearance}>
       <View style={[styles.capture, size, { left: -size.width * 2 }]} pointerEvents="none">
-        {base64 ? <DecodedPng base64={base64} size={size} onLoad={loaded} onError={fail} /> : null}
+        {base64 ? (
+          <DecodedPng base64={base64} size={target.raster} onLoad={loaded} onError={fail} />
+        ) : null}
         {!base64 ? (
           <FixedInkCapture
             plan={packet.plan}
@@ -104,11 +133,13 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
             viewBox={`0 0 ${size.width} ${size.height}`}
             preserveAspectRatio="xMidYMid meet"
           >
-            <Rect
-              width={size.width}
-              height={size.height}
-              fill={PAPER_THEMES[packet.appearance.theme].paper}
-            />
+            {target.exported ? null : (
+              <Rect
+                width={size.width}
+                height={size.height}
+                fill={PAPER_THEMES[packet.appearance.theme].paper}
+              />
+            )}
             <Image
               href={`data:image/png;base64,${base64}`}
               x={0}
