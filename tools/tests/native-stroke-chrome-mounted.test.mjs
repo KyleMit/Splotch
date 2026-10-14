@@ -1,23 +1,39 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { expect, it } from 'vitest';
-import { owner, touch, event, send, settle } from './native-contacts-mounted-harness.mjs';
+import { owner, sdk, touch, event, send, settle } from './native-contacts-mounted-harness.mjs';
+
+const call = (action) => act(async () => action());
 
 // Shipping keeps its chrome live through a stroke, so the screen's disabled flag stays clear while
-// a contact holds the paper; the commands themselves still refuse to start until the lift.
-it('leaves the chrome enabled while a stroke holds the paper and refuses commands until the lift', async () => {
+// a contact holds the paper. A keyboard or assistive press can still reach the chrome then, so
+// every screen action that opens a surface or runs a command refuses until the lift; closing a
+// surface never waits. Paint, brush and width choices stay live for the next contact, which
+// native-canonical-contacts-mounted.test.mjs holds.
+it('leaves the chrome enabled while a stroke holds the paper and holds every opening and command until the lift', async () => {
   await settle();
   expect(owner.disabled).toBe(false);
+  await call(() => owner.setPagePickerOpen(true));
+  expect(owner.pagePickerOpen).toBe(true);
 
   await send('onPanResponderGrant', event([touch(0, 10, 20)]));
   expect(owner.drawing).toBe(true);
-  expect(owner.disabled).toBe(false);
 
-  await act(async () => owner.openSettings());
+  await call(() => owner.setPagePickerOpen(false));
+  expect(owner.pagePickerOpen).toBe(false);
+  expect(owner.disabled).toBe(false);
+  await call(() => owner.setPagePickerOpen(true));
+  expect(owner.pagePickerOpen).toBe(false);
+  await call(() => owner.openColorPicker());
+  expect(owner.colorPickerOpen).toBe(false);
+  await call(() => owner.openSettings());
   expect(owner.settingsOpen).toBe(false);
   const held = owner.history;
-  await act(async () => owner.undo());
+  await call(() => owner.undo());
+  await call(() => owner.clear(false));
+  await call(() => owner.save());
   expect(owner.history).toBe(held);
+  expect(sdk.captures).toHaveLength(0);
 
   await send('onPanResponderEnd', event([], [touch(0, 30, 40, 200)]), false);
   await settle();
@@ -25,6 +41,9 @@ it('leaves the chrome enabled while a stroke holds the paper and refuses command
   expect(owner.disabled).toBe(false);
   expect(owner.history.drawing.strokes).toHaveLength(1);
 
-  await act(async () => owner.openSettings());
+  await call(() => owner.setPagePickerOpen(true));
+  expect(owner.pagePickerOpen).toBe(true);
+  await call(() => owner.setPagePickerOpen(false));
+  await call(() => owner.openSettings());
   expect(owner.settingsOpen).toBe(true);
 });

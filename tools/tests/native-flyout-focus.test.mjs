@@ -50,7 +50,7 @@ let root;
 let host;
 
 function Panel() {
-  const slot = useFlyoutSlot(true, false);
+  const slot = useFlyoutSlot(true, false, false);
   return createElement(RsdActionsPanel, {
     screen: {
       brush: 'pen',
