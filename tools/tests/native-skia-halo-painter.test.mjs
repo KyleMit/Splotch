@@ -6,28 +6,26 @@ import {
   haloPose,
 } from '../../experiments/native-architecture/src/drawing/haloModel.ts';
 
-const runtime = vi.hoisted(async () => {
+// Awaited so this import settles before the static imports start: a concurrent import can take
+// Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.
+const runtime = await vi.hoisted(async () => {
   const { createRequire } = await import('node:module');
   return { skia: null, require: createRequire(import.meta.url) };
 });
 
 // Skia's own web API over CanvasKit stands in for its native module, which Node cannot load.
-vi.mock('@shopify/react-native-skia', async () => {
-  const state = await runtime;
-  return {
-    ...state.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
-    get Skia() {
-      return state.skia;
-    },
-  };
-});
+vi.mock('@shopify/react-native-skia', () => ({
+  ...runtime.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
+  get Skia() {
+    return runtime.skia;
+  },
+}));
 
 let skia;
 beforeAll(async () => {
-  const state = await runtime;
-  const CanvasKitInit = state.require('canvaskit-wasm');
-  const { JsiSkApi } = state.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
-  state.skia = skia = JsiSkApi(await CanvasKitInit());
+  const CanvasKitInit = runtime.require('canvaskit-wasm');
+  const { JsiSkApi } = runtime.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
+  runtime.skia = skia = JsiSkApi(await CanvasKitInit());
 });
 
 // Halos are drawn magnified so a 1px mark spans whole pixels clear of its antialiased edges.

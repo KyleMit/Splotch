@@ -12,29 +12,27 @@ import { LEGACY_PAPER } from '../../experiments/native-architecture/src/drawing/
 // from the pointer's pen, laid down by the shared op painter (paintOpShape). Native's side is
 // the SVG path string the web ink draws and the Skia path the native painter draws.
 
-const runtime = vi.hoisted(async () => {
+// Awaited so this import settles before the static imports start: a concurrent import can take
+// Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.
+const runtime = await vi.hoisted(async () => {
   const { createRequire } = await import('node:module');
   return { skia: null, require: createRequire(import.meta.url) };
 });
 
 // Skia's own web API over CanvasKit stands in for its native module, which Node cannot load.
-vi.mock('@shopify/react-native-skia', async () => {
-  const state = await runtime;
-  return {
-    ...state.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
-    get Skia() {
-      return state.skia;
-    },
-  };
-});
+vi.mock('@shopify/react-native-skia', () => ({
+  ...runtime.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
+  get Skia() {
+    return runtime.skia;
+  },
+}));
 
 let PathVerb;
 beforeAll(async () => {
-  const state = await runtime;
-  const CanvasKitInit = state.require('canvaskit-wasm');
-  const { JsiSkApi } = state.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
-  state.skia = JsiSkApi(await CanvasKitInit());
-  ({ PathVerb } = state.require('@shopify/react-native-skia/lib/commonjs/skia/types'));
+  const CanvasKitInit = runtime.require('canvaskit-wasm');
+  const { JsiSkApi } = runtime.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
+  runtime.skia = JsiSkApi(await CanvasKitInit());
+  ({ PathVerb } = runtime.require('@shopify/react-native-skia/lib/commonjs/skia/types'));
 });
 
 // Sparse input: each leg arrives as three samples, as a fast mouse or finger delivers it.
