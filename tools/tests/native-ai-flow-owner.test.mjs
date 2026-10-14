@@ -265,7 +265,7 @@ it('reports a failed run behind the report check with its bounded details and no
   expect(confirm.phase).toBe('confirm');
   expect(confirm.rows).toEqual([
     { label: 'Error', value: '502 · /api/generate-image' },
-    { label: 'Message', value: 'That picture did not finish. Your original drawing is saved.' },
+    { label: 'Message', value: 'Upstream down' },
     { label: 'Attempts', value: '1 in a row' },
     { label: 'App version', value: expect.stringMatching(/ \(web\)$/) },
     { label: 'Art style', value: 'Clay' },

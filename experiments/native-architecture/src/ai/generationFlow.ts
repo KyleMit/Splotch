@@ -7,7 +7,7 @@ import { createAiProblemReport, problemReportRows } from './problemReport';
 
 // A finished picture nobody has dismissed (it landed while the app was away, or before a reload)
 // comes back on the next wand tap for as long as the server would have kept it.
-export const RESTORE_RESULT_WINDOW_MS = JOB_TTL_MS;
+const RESTORE_RESULT_WINDOW_MS = JOB_TTL_MS;
 
 function expired(journal: AiJournal) {
   return Date.now() - journal.createdAt >= JOB_TTL_MS;

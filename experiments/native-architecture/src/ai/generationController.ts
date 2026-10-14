@@ -200,7 +200,7 @@ export class NativeAiController extends AiRecoverySession {
         failure: {
           status: reply.status ?? null,
           endpoint: poll ? '/api/generation-result' : '/api/generate-image',
-          message: reply.message,
+          message: reply.detail ?? reply.message,
         },
       });
     await this.persist({

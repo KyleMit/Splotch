@@ -84,6 +84,7 @@ export type AiReply =
       message: string;
       retryAt?: number;
       status?: number;
+      detail?: string;
     }
   | { kind: 'unknown'; message: string };
 export function aiUrl(request: AiRequest) {
@@ -185,8 +186,13 @@ export async function parseAiResponse(
   )
     return { kind: 'verified', accessCode: raw.accessCode };
   const reply = parseAiFailure(raw, response, poll, now);
-  // The HTTP status rides along for the problem report a grown-up can send about a failure.
-  return reply.kind === 'failure' ? { ...reply, status: response.status } : reply;
+  // The HTTP status, and for anything but a refusal the server's own words, ride along for the
+  // problem report a grown-up can send about a failure; the child sees only the app's message. A
+  // refusal's provider reason is never kept.
+  if (reply.kind !== 'failure') return reply;
+  return reply.reason === 'safety'
+    ? { ...reply, status: response.status }
+    : { ...reply, status: response.status, detail: String(raw.error) };
 }
 function parseAiFailure(
   raw: Record<string, unknown>,
