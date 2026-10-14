@@ -3,6 +3,10 @@ package art.splotch.migration.probe
 import android.os.Build
 import android.os.Bundle
 
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -17,6 +21,24 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+    hideNavigationBar()
+  }
+
+  // The system restores the bar after the keyboard or a dialog takes focus.
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+    super.onWindowFocusChanged(hasFocus)
+    if (hasFocus) hideNavigationBar()
+  }
+
+  // Shipping's MainActivity: the navigation bar stays hidden so the paper runs to the screen edge
+  // and small fingers do not navigate away; a swipe brings it back for a moment. While it is hidden
+  // under swipe-to-reveal, Android also holds back its edge Back gesture, so a drag that starts on
+  // the Clear bin where it overhangs the screen edge clears the page instead of asking to leave.
+  private fun hideNavigationBar() {
+    WindowCompat.getInsetsController(window, window.decorView).run {
+      hide(WindowInsetsCompat.Type.navigationBars())
+      systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
   }
 
   /**
