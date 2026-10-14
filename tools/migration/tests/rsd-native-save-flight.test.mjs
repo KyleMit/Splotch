@@ -58,7 +58,7 @@ beforeEach(async () => {
   library.saves = [];
   library.pending = null;
   captures = 0;
-  caller.capturePng = () => {
+  caller.exportPng = () => {
     captures += 1;
     return `png-${captures}`;
   };

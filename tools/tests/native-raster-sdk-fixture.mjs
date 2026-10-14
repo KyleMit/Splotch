@@ -3,6 +3,7 @@ import { createElement, forwardRef, useEffect, useImperativeHandle } from 'react
 export function nativeRasterSdk(state, tileWidth) {
   return {
     Platform: state.platform,
+    PixelRatio: { get: () => state.pixelRatio ?? 1 },
     Image: (props) => {
       state.nativeImages.push(props);
       useEffect(() => {
@@ -35,7 +36,7 @@ export function svgRasterSdk(state) {
       return createElement('div', { 'data-svg-width': width }, children);
     }),
     G: ({ children, opacity }) => createElement('div', { 'data-opacity': opacity }, children),
-    Rect: () => null,
+    Rect: ({ fill }) => createElement('div', { 'data-paper-fill': fill }),
     Image: (props) => {
       state.svgTiles.push(props);
       useEffect(() => {

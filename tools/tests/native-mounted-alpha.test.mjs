@@ -92,11 +92,17 @@ vi.mock('react-native', () => {
     },
     useWindowDimensions: () => sdk.metrics,
     Platform: { OS: 'android' },
+    PixelRatio: { get: () => sdk.metrics.scale },
+    // A decoded PNG reports its own grid, read from its IHDR chunk.
     Image: ({ source, onLoad }) => {
-      useEffect(
-        () => onLoad({ nativeEvent: { source: { uri: source.uri, width: 1024, height: 768 } } }),
-        [source.uri]
-      );
+      useEffect(() => {
+        const png = /^data:image\/png;base64,(.+)$/.exec(source.uri);
+        const bytes = png ? Buffer.from(png[1], 'base64') : null;
+        const grid = bytes
+          ? { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
+          : { width: 1024, height: 768 };
+        onLoad({ nativeEvent: { source: { uri: source.uri, ...grid } } });
+      }, [source.uri]);
       return null;
     },
     View,
@@ -122,6 +128,11 @@ vi.mock('react-native', () => {
     },
   };
 });
+// The saved picture's compositor paints through Skia's native module, which Node cannot load;
+// native-picture-export.test.mjs covers what it paints.
+vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
+  composePicture: async (layer) => layer,
+}));
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);
   return {
@@ -371,11 +382,14 @@ describe('mounted actual native Clear and decoder ownership', () => {
   it('keeps the mounted imperative handle stable across command and packet rerenders', async () => {
     await openHook();
     const handle = state.surface.current;
+    let saving;
     await act(async () => {
-      void state.save();
+      saving = state.save();
     });
     await frames();
     await decodeSettles();
+    // The saved picture's compositor loads on first use, so the save settles after its import.
+    await act(async () => saving);
     expect(state.surface.current).toBe(handle);
     await act(async () => {
       void state.clear();
