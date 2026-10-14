@@ -19,7 +19,7 @@ export async function capturePicture(
   surface: DrawingSurfaceHandle | null
 ): Promise<string | null> {
   try {
-    return (await surface?.capturePng(drawing)) || null;
+    return (await surface?.exportPng(drawing)) || null;
   } catch {
     return null;
   }

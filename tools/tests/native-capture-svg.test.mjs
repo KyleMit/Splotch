@@ -243,6 +243,19 @@ describe('owned web fixed-grid SVG snapshot lifecycle', () => {
     expect(() => ref.current.toDataURL(vi.fn(), DIMENSIONS)).toThrow('not ready');
   });
 
+  it('rasterizes its fixed grid into a saved picture larger than the grid', () => {
+    const serialized = vi.spyOn(XMLSerializer.prototype, 'serializeToString');
+    const callback = vi.fn();
+    const grids = [];
+    draw.mockImplementation(() => grids.push([canvases.at(-1).width, canvases.at(-1).height]));
+    ref.current.toDataURL(callback, { width: 1537, height: 1153 });
+    const source = serialized.mock.results[0].value;
+    expect(source).toContain('viewBox="0 0 1024 768" width="1537" height="1153"');
+    images.at(-1).onload();
+    expect(grids).toEqual([[1537, 1153]]);
+    expect(callback).toHaveBeenCalledExactlyOnceWith('aW5r');
+  });
+
   async function renderFill(href) {
     await act(async () =>
       root.render(
