@@ -316,3 +316,28 @@ it(
   },
   POLL_TEST_TIMEOUT_MS
 );
+
+// Settings › AI Art reads the allowance for display, which enables Send; the send itself loads the
+// credential under its own check rather than waiting for Check AI allowance.
+it(
+  'sends straight after Settings has read the allowance, with no Check AI allowance first',
+  async () => {
+    pendingGeneration(() => pictureReply());
+    useCaller(emptyDrawing());
+    await mount(createElement(RsdDrawingScreen));
+    await expandControls();
+    await click('Settings');
+    await openAiArt();
+    await click('Create AI Images');
+    await vi.waitFor(() => expect(host.textContent).toContain('10 free AI creations left.'));
+    await click('Close');
+    await click('AI picture');
+    const generations = () =>
+      caller.aiSend.mock.calls.filter(([request]) => request.path === '/api/generate-image');
+    await click('Send drawing for AI');
+    expect(generations()).toHaveLength(0);
+    await solve();
+    await vi.waitFor(() => expect(generations()).toHaveLength(1));
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
