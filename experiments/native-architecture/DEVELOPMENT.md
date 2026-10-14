@@ -93,8 +93,9 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
   `patches/react-strict-dom@0.0.54.patch` sets it on every RSD text, so a line is the face's ascent
   plus descent, as Chromium's `line-height: normal` is.
 * **Shipping's hub rows** (`HubList.svelte`) are `<button>`s that never inherit the page font, so a
-  WebView sets them in the system face. `src/rsdDrawing/hubRowFace.ts` reverts the web row to the
-  browser's control face, and `hubRowFace.native.ts` names `system-ui`.
+  WebView sets them in the system face, which `src/rsdDrawing/hubRowFace.native.ts` names as
+  `system-ui`. The web build keeps the app font there: `src/strict.css` hands every form control the
+  page font, and that unlayered rule outranks the layered StyleX style that would revert it.
 
 `tools/tests/native-shipping-font.test.mjs` fails when the web faces drift from the package
 stylesheet, a family stops matching the static package's exports, another weight is bundled, an RSD
