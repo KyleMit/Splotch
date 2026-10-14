@@ -4,7 +4,6 @@ import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
-import { greyedColor } from './greyed';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
@@ -216,8 +215,6 @@ const styles = css.create({
   }),
   // A flat badge sits on the paper, ringed in paper to lift it off the ink beneath.
   bareBadge: (paper: string) => ({ boxShadow: `0 0 0 ${BARE_BADGE_RING_PX}px ${paper}` }),
-  // The open menu's greyed tile greys its badge too, where the renderer has no grayscale filter.
-  greyBadge: (backgroundColor: string) => ({ backgroundColor }),
 });
 
 function outlineFilter(ink: string) {
@@ -375,7 +372,7 @@ export function RsdIconButton(props: IconButtonProps) {
   const keylineSource = props.skin === 'corner' ? undefined : props.keyline;
   const keyline = useKeylineColor(keylineSource);
   const bare = useBareToolbar();
-  const { textStrong, paper, brandSolid } = useDrawingTheme();
+  const { textStrong, paper } = useDrawingTheme();
   const { icon, label, onPress } = props;
   if (props.skin === 'corner') {
     return (
@@ -466,7 +463,6 @@ export function RsdIconButton(props: IconButtonProps) {
           style={[
             styles.badge(BADGE_OFFSET_PX, BADGE_SIZE_PX, BADGE_PADDING_PX),
             bare && styles.bareBadge(paper),
-            dimmed && styles.greyBadge(greyedColor(brandSolid)),
           ]}
         >
           {badge}

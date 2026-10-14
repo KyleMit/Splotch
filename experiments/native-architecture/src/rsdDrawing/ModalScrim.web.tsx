@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import type { Animated } from 'react-native';
-import { useMediaQuery } from '../platform/mediaQuery.web';
 import { useReducedTransparency } from '../platform/reducedTransparency.web';
 import {
   MODAL_SCRIM_BLUR_PX,
@@ -24,8 +23,10 @@ type ModalScrimProps = {
 // fades its ::backdrop: under a fading ancestor, Chromium keeps that ancestor as the filter's
 // backdrop root once the fade lands, and the canvas behind stays dimmed but unblurred.
 export function ModalScrim({ opacity, touchBackdrop }: ModalScrimProps) {
-  const touch = useMediaQuery(COARSE_POINTER_QUERY);
-  const plain = useReducedTransparency() || (touch && touchBackdrop === 'plain');
+  // Read as the dialog opens: a screen does not trade its pointer while one is up.
+  const plain =
+    useReducedTransparency() ||
+    (touchBackdrop === 'plain' && matchMedia(COARSE_POINTER_QUERY).matches);
   const blur = plain ? 'none' : `blur(${MODAL_SCRIM_BLUR_PX}px)`;
   const scrim = useRef<HTMLDivElement>(null);
   useEffect(() => {
