@@ -150,6 +150,7 @@ export function RsdMarginRules({ axis }: { axis: LayoutAxis }) {
 
 // The feathered panes behind the drawer, its open menu and the Settings corner, laid over the paper
 // and under every control, and the corner of glass behind the Fullscreen Toggle beside the rail.
+// They hold shipping's viewport coordinates, from the layout's corner rather than the paper area's.
 export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: BareGlass }) {
   const strip = useGlass('glassStrip', STRIP_GLASS_BLUR_PX);
   const { fullscreen } = glass;
@@ -158,7 +159,17 @@ export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: Bare
     : null;
   const panes = layout ? glassPanes(layout, glass.open, glass.expanded) : [];
   return (
-    <>
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        pointerEvents: 'none',
+        top: -space.paperTop,
+        left: -space.paperLeft,
+        width: space.width,
+        height: space.height,
+      }}
+    >
       {panes.map((pane, index) => (
         <div
           key={index}
@@ -195,6 +206,6 @@ export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: Bare
           }}
         />
       ) : null}
-    </>
+    </div>
   );
 }

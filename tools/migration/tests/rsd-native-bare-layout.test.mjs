@@ -2,7 +2,6 @@ import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
-import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
 
 const RESTING_GLASS = { open: null, expanded: false, panel: null };
@@ -31,37 +30,51 @@ function layoutElement(seen, bareGlass) {
 const props = (testID) => flat(records.props.findLast((found) => found.testID === testID).style);
 const rail = () => host.querySelector('[data-testid="rsd-rail-glass"]');
 
+// Shipping keeps the palette bar in the flow in both Button styles: the flat bar loses its face,
+// not its strip, so a style switch never resizes the paper under a drawing and a sheet adopted in
+// one style shows unlifted in the other. The flat glass panes keep shipping's viewport coordinates.
 it.each([
-  ['portrait', { width: 402, height: 874 }, 'row', 'top'],
-  ['landscape', { width: 1180, height: 820 }, 'column', 'left'],
+  ['portrait', { width: 402, height: 874 }, 'top'],
+  ['landscape', { width: 1180, height: 820 }, 'left'],
 ])(
-  'prints the %s flat bar over the paper and keeps the controls where the raised bar leaves them',
-  async (_, dimensions, axis, edge) => {
+  'keeps the %s flat bar in the flow, so the paper area matches the raised one',
+  async (_, dimensions, edge) => {
     records.dimensions = { ...dimensions, scale: 1, fontScale: 1 };
-    const raised = {};
-    await mount(layoutElement(raised, null));
-    // Negative control: the raised bar takes its strip in the flow, and no glass prints.
-    expect(props('rsd-palette-bar').position).not.toBe('absolute');
-    expect(rail()).toBeNull();
-    const extent = PALETTE_FLOWS[axis].extentPx;
     const area = { width: 1000, height: 700 };
     const box = (width, height) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height } } });
-    await act(async () =>
-      records.props
-        .findLast((found) => found.testID === 'rsd-canvas-area')
-        .onLayout(box(area.width, area.height))
-    );
+    const measureArea = () =>
+      act(async () =>
+        records.props
+          .findLast((found) => found.testID === 'rsd-canvas-area')
+          .onLayout(box(area.width, area.height))
+      );
+    const raised = {};
+    await mount(layoutElement(raised, null));
+    await measureArea();
+    await act(async () => root.render(layoutElement(raised, null)));
+    expect(rail()).toBeNull();
+    const raisedLayout = {
+      bar: props('rsd-palette-bar'),
+      controls: props('rsd-controls-inset'),
+    };
     const seen = {};
     await act(async () => root.render(layoutElement(seen, RESTING_GLASS)));
-    expect(props('rsd-palette-bar').position).toBe('absolute');
-    expect(props('rsd-controls-inset')[edge]).toBe(extent);
-    expect(seen.area).toEqual(
-      axis === 'row'
-        ? { width: area.width, height: area.height - extent }
-        : { width: area.width - extent, height: area.height }
-    );
     const bar = host.querySelector('[data-testid="rsd-palette-bar"]');
     expect(bar.contains(rail())).toBe(true);
+    expect(props('rsd-palette-bar').position).not.toBe('absolute');
+    expect(props('rsd-palette-bar')).toEqual(raisedLayout.bar);
+    expect(props('rsd-controls-inset')).toEqual(raisedLayout.controls);
+    expect(props('rsd-controls-inset')[edge]).toBe(0);
+    expect(seen.area).toEqual(raised.area);
+    expect(seen.area).toEqual(area);
+    // The paper follows the bar in the layout's flow, inside the area the bar leaves.
+    const layout = host.querySelector('[data-testid="rsd-drawing-layout"]');
+    const order = [...layout.children].map((node) => node.dataset.testid);
+    expect(order.indexOf('rsd-palette-bar')).toBeLessThan(order.indexOf('rsd-canvas-column'));
+    expect(
+      host.querySelector('[data-testid="rsd-canvas-area"] [data-paper]'),
+      'paper in the area'
+    ).not.toBeNull();
   }
 );
 
