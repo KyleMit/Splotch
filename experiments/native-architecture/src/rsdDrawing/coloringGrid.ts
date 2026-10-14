@@ -1,3 +1,4 @@
+import { trailingRowCutHeight } from '../../../../web/src/lib/actions/scrollCue';
 import type { ArtOrientation } from '../drawing/paperSpace';
 import {
   CARD_HEIGHT_CAP_FRACTION,
@@ -6,6 +7,7 @@ import {
   COLORING_PADDING_PX,
   COLORING_PHONE_MAX_WIDTH_PX,
   MODAL_CONTROL_SIZE_PX,
+  type ModalFrame,
 } from './modalGeometry';
 
 // ColoringBook.svelte's Book Grid and Coloring Page Grid. The shipping media queries read the
@@ -32,6 +34,7 @@ export const PAGE_TILE_ASPECT: Record<ArtOrientation, number> = {
 
 type Window = { width: number; height: number };
 export type GridLayout = { columns: number; gap: number; maxWidth: number | null };
+export type TileShape = ArtOrientation | 'cover';
 
 function coloringGridGap(window: Window) {
   return window.width <= COLORING_PHONE_MAX_WIDTH_PX
@@ -102,4 +105,39 @@ export function tileWidth(layout: GridLayout, available: number) {
 
 export function coloringTitleCompact(window: Window) {
   return window.width <= COLORING_NARROW_MAX_WIDTH_PX;
+}
+
+// A cover tile is square; a page tile takes its art's aspect.
+export function tileHeight(shape: TileShape, width: number) {
+  return shape === 'cover' ? width : width / PAGE_TILE_ASPECT[shape];
+}
+
+// ColoringBook.svelte's cutTrailingRow: the card budgets its height so the fold lands inside a
+// row of tiles rather than between two, the half-cut tile signalling that the grid goes on. The
+// grid starts under the header and the body's top inset; null leaves the frame's cap standing.
+export function trailingRowCardHeight({
+  frame,
+  headerHeight,
+  layout,
+  tile,
+  tileCount,
+}: {
+  frame: Pick<ModalFrame, 'maxHeight' | 'body'>;
+  headerHeight: number;
+  layout: GridLayout;
+  tile: number;
+  tileCount: number;
+}) {
+  const rowCount = Math.ceil(tileCount / layout.columns);
+  const gridTop = headerHeight + frame.body.top;
+  const gridHeight = rowCount * tile + Math.max(0, rowCount - 1) * layout.gap;
+  const contentHeight = gridTop + gridHeight + frame.body.bottom;
+  return trailingRowCutHeight({
+    gridTop,
+    rowHeight: tile,
+    rowGap: layout.gap,
+    rowCount,
+    viewportHeight: Math.min(frame.maxHeight, contentHeight),
+    contentHeight,
+  });
 }

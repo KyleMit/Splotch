@@ -13,7 +13,8 @@ import {
   type LayoutAxis,
 } from './edgeLayout';
 
-// endInset is the bar's length past the bottom inset, which the column's swatches stay clear of.
+// endInset is the bottom safe-area inset under the landscape column's far end, which its trim
+// leaves out and its end clearance stands above.
 export type PaletteLayout = Readonly<{
   axis: LayoutAxis;
   slots: number;

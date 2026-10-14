@@ -8,6 +8,7 @@ import {
   SELECTION_RING_GAP_PX,
   SELECTION_RING_SEAM_PX,
   SELECTION_RING_WIDTH_PX,
+  SELECTION_SEAM_OVERLAP_PX,
   selectionRingColor,
 } from './paletteGeometry';
 import { colors, dimensions, motion } from './tokens.css';
@@ -21,7 +22,7 @@ export const SWATCH_PRESS_SCALE = 0.9;
 // that a press sinks. Selected, a band of the bar surface steps in from the edge and a ring a
 // shade off the paint sits outside it, over a one-pixel seam of the surface. Both are drawn as
 // boxes rather than one stacked box-shadow so each layer takes its color the same way on every
-// renderer.
+// renderer: the seam underneath, the ring's visible width over it.
 const styles = css.create({
   swatch: {
     boxSizing: 'border-box',
@@ -83,21 +84,31 @@ export function SelectionRing({
   color: string;
   surface?: RingSurface;
 }) {
-  const ring = size + 2 * SELECTION_RING_WIDTH_PX;
-  const seam = size + 2 * SELECTION_RING_SEAM_PX;
+  const seamReach = SELECTION_RING_SEAM_PX + SELECTION_SEAM_OVERLAP_PX;
   return (
     <>
       <html.div
         aria-hidden
-        data-selection-ring={color}
         style={[
-          styles.ring(-SELECTION_RING_WIDTH_PX, ring, SELECTION_RING_WIDTH_PX),
-          styles.ringColor(color),
+          styles.ring(
+            -seamReach,
+            size + 2 * seamReach,
+            SELECTION_RING_SEAM_PX + 2 * SELECTION_SEAM_OVERLAP_PX
+          ),
+          SEAMS[surface],
         ]}
       />
       <html.div
         aria-hidden
-        style={[styles.ring(-SELECTION_RING_SEAM_PX, seam, SELECTION_RING_SEAM_PX), SEAMS[surface]]}
+        data-selection-ring={color}
+        style={[
+          styles.ring(
+            -SELECTION_RING_WIDTH_PX,
+            size + 2 * SELECTION_RING_WIDTH_PX,
+            SELECTION_RING_WIDTH_PX - SELECTION_RING_SEAM_PX
+          ),
+          styles.ringColor(color),
+        ]}
       />
     </>
   );

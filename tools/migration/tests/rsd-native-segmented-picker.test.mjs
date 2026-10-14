@@ -278,6 +278,8 @@ describe('segment thumb', () => {
     expect([light.minWidth, light.minHeight]).toEqual([48, 48]);
     const icons = options().map((button) => button.querySelector('svg'));
     expect(icons.map((icon) => icon.getAttribute('width'))).toEqual(['16', '16', '16']);
+    // Beside the label rather than inside a text, which would set the icon on the label's baseline.
+    expect(icons.map((icon) => icon.closest('span'))).toEqual([null, null, null]);
     expect(await iconXml('Light')).toContain('fill="#fff"');
     expect(await iconXml('Dark')).toContain(`fill="${themes.light.iconInk}"`);
   });
