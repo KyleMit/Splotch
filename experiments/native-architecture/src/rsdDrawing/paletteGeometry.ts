@@ -1,4 +1,4 @@
-import type { LayoutAxis } from './edgeLayout';
+import { EDGE_INSET_PX, type LayoutAxis } from './edgeLayout';
 
 // The shipping Color Palette's flow, per axis: a portrait row of 55px swatches or a landscape
 // column of 60px ones, each a fixed size the Button Size slider leaves alone. The candidate
@@ -54,12 +54,26 @@ export function paletteSlots(length: number, axis: LayoutAxis) {
   return Math.max(0, Math.floor((length - 2 * endPaddingPx + gapPx) / (swatchPx + gapPx)));
 }
 
-// Shipping spreads the swatches it keeps across the whole bar (space-between); the spacing is
-// stated outright so the paint group and More colors share it.
-export function paletteSpacing(length: number, axis: LayoutAxis, count: number) {
+// Shipping's --palette-bottom: the landscape column runs to the screen's bottom edge and pads its
+// far end so More colors centres on the Brush Button, which sits one edge inset above the bottom
+// safe-area inset. rsd-native-drawing-frame.test.mjs reads the formula from ColorPalette.svelte.
+export function columnEndClearance(actionButtonPx: number, insetBottom: number) {
+  const half = PALETTE_FLOWS.column.swatchPx / 2;
+  return Math.max(0, EDGE_INSET_PX + actionButtonPx / 2 - half + insetBottom);
+}
+
+// Shipping spreads the swatches it keeps across the whole bar (space-between) inside its end
+// paddings; the spacing is stated outright so the paint group and More colors share it. A flow
+// longer than the bar keeps the gap and overruns the far padding, as shipping's grid does.
+export function paletteSpacing(
+  length: number,
+  axis: LayoutAxis,
+  count: number,
+  endClearance: number
+) {
   const { swatchPx, gapPx, endPaddingPx } = PALETTE_FLOWS[axis];
   if (count < 2) return gapPx;
-  return Math.max(gapPx, (length - 2 * endPaddingPx - count * swatchPx) / (count - 1));
+  return Math.max(gapPx, (length - endPaddingPx - endClearance - count * swatchPx) / (count - 1));
 }
 
 const DARK_SWATCH_BRIGHTNESS = 0.2;
