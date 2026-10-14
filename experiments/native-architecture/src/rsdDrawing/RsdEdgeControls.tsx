@@ -216,7 +216,7 @@ function RsdPalette({
               disabled={disabled}
               onClick={() => {
                 screen.selectInkBrush();
-                void sound.owner?.settings.setColor(color);
+                sound.owner?.settings.setColor(color);
               }}
             />
           ))}

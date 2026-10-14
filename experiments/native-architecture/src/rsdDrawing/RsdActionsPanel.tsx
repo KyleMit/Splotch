@@ -501,7 +501,7 @@ function RsdColorControl({
             disabled={paintsDisabled}
             onPick={(color) => {
               screen.selectInkBrush();
-              void sound.owner?.settings.setColor(color);
+              sound.owner?.settings.setColor(color);
               close();
             }}
             onCustom={() => {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host } from './rsd-native-selection-host.mjs';
 import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
@@ -43,11 +44,13 @@ const statusBars = () =>
 const bandStatusBar = () =>
   records.props.findLast((props) => 'hidden' in props && 'barStyle' in props);
 
-async function mountWith({ insets, dimensions, os = 'ios', brush = 'crayon', settings }) {
+// The paint is session state: every launch starts on Purple, so another color is a pick.
+async function mountWith({ insets, dimensions, os = 'ios', brush = 'crayon', settings, color }) {
   records.insets = { top: 0, right: 0, bottom: 0, left: 0, ...insets };
   if (dimensions) records.dimensions = { scale: 1, fontScale: 1, ...dimensions };
   records.os = os;
   await mountToolbar(toolbarScreen({ brush }), settings);
+  if (color) await act(async () => caller.product.sound.owner.settings.setColor(color));
 }
 
 describe('the Notch Band', () => {
@@ -62,7 +65,8 @@ describe('the Notch Band', () => {
   it('picks status icons that read on the band, not on the dark theme', async () => {
     await mountWith({
       insets: { top: NOTCH_INSET_PX },
-      settings: { appearance: 'dark', selectedColor: 'Blue' },
+      settings: { appearance: 'dark' },
+      color: 'Blue',
     });
     expect(painted()).toEqual([{ backgroundColor: paletteHex('Blue'), height: NOTCH_INSET_PX }]);
     expect(statusBars()).toEqual(['light-content', 'dark-content']);
@@ -72,7 +76,7 @@ describe('the Notch Band', () => {
     await mountWith({
       insets: { top: ANDROID_CUTOUT_INSET_PX },
       os: 'android',
-      settings: { selectedColor: 'Green' },
+      color: 'Green',
     });
     expect(painted()).toEqual([
       { backgroundColor: paletteHex('Green'), height: ANDROID_CUTOUT_INSET_PX },

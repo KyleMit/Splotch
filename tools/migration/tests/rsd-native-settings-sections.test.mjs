@@ -354,14 +354,14 @@ function holdNextWrite(storage) {
 
 it('keeps the first Apple Pencil detection that lands while another choice is saving', async () => {
   const settings = await pencilScreen();
-  const finishColor = holdNextWrite(settings.storage);
+  const finishVolume = holdNextWrite(settings.storage);
   const owner = caller.product.sound.owner.settings;
-  await act(async () => void owner.setColor('Blue'));
+  await act(async () => void owner.setSoundVolume(73));
   expect(caller.product.sound.settings.status).toBe('saving');
   await pencilDoubleTap();
   expect(brushLabel()).toBe('Brush: Eraser');
-  await finishColor();
-  expect(settings.stored()).toMatchObject({ selectedColor: 'Blue', applePencilSeen: true });
+  await finishVolume();
+  expect(settings.stored()).toMatchObject({ soundVolume: 73, applePencilSeen: true });
   expect(caller.product.sound.settings).toMatchObject({ applePencilSeen: true, saved: true });
   await openToolDrawerSettings();
   checkedSwitch(button(PENCIL_ERASER_LABEL), true);

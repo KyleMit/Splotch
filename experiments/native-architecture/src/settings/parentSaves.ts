@@ -6,6 +6,7 @@ import {
 } from '../parentCenter/parentPolicy';
 import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import {
+  sessionPaint,
   snapshot,
   type SoundSettings,
   type SoundSettingsState,
@@ -62,15 +63,27 @@ export function createParentSaves({
     if (state.status !== 'ready' || hasReadFailed()) return;
     pending = settings;
     const { version: _version, ...choices } = snapshot(state);
-    publish({ status: 'saving', ...choices, message: copy.saving });
+    publish({ status: 'saving', ...choices, ...sessionPaint(state), message: copy.saving });
     try {
       // Through snapshot, so the policies land in their saved order however the caller built them.
       await storage.write(JSON.stringify(snapshot(settings)));
       const { version: _nextVersion, ...next } = settings;
       pending = null;
-      publish({ status: 'ready', ...next, saved: true, message: copy.saved });
+      publish({
+        status: 'ready',
+        ...next,
+        ...sessionPaint(getState()),
+        saved: true,
+        message: copy.saved,
+      });
     } catch {
-      publish({ status: 'ready', ...choices, saved: false, message: copy.failed });
+      publish({
+        status: 'ready',
+        ...choices,
+        ...sessionPaint(getState()),
+        saved: false,
+        message: copy.failed,
+      });
     }
     await flushMetadata();
   }

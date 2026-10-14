@@ -21,6 +21,8 @@ const CURRENT = {
   },
   coloringBookEnabled: false,
 };
+// What a read keeps of CURRENT: no launch restores the paint.
+const { selectedColor: _paint, customColors: _paints, ...CURRENT_KEPT } = CURRENT;
 // Version 7 predates the external-links policy, which reads back at the native default.
 const MIGRATED_POLICIES = { ...CURRENT.parentPolicies, externalLinks: 'always' };
 const CONTROLS = [
@@ -46,7 +48,8 @@ const VERSION_11 = {
   applePencilSeen: false,
 };
 const DRAWER_FIELDS = ['toolDrawerEnabled', 'screenshotEnabled'];
-// The version 13 record the current owner would have written, in its saved key order.
+// The version 13 record the current owner would have written, in its saved key order, where the
+// paint followed the widths.
 async function version13Record() {
   const f = fixture();
   await f.owner.load();
@@ -54,7 +57,12 @@ async function version13Record() {
   const current = JSON.parse(f.stored());
   for (const field of [...DRAWER_FIELDS, 'aiCustomizationEnabled', 'autoSaveAiEnabled'])
     delete current[field];
-  return { ...current, version: 13 };
+  const paint = Object.entries({ selectedColor: _paint, customColors: _paints });
+  return Object.fromEntries(
+    Object.entries({ ...current, version: 13 }).flatMap((entry) =>
+      entry[0] === 'eraserWidth' ? [entry, ...paint] : [entry]
+    )
+  );
 }
 function fixture(snapshot = JSON.stringify(CURRENT)) {
   let stored = snapshot;
@@ -72,18 +80,19 @@ function fixture(snapshot = JSON.stringify(CURRENT)) {
 describe('parent drawing control preferences', () => {
   it('migrates a version 13 record to a shown drawer and camera, keeping its choices', async () => {
     const version13 = await version13Record();
+    const { selectedColor: _p, customColors: _c, ...kept } = version13;
     expect(parseSoundSettings(JSON.stringify(version13))).toEqual({
-      ...version13,
-      version: 15,
+      ...kept,
+      version: 16,
       toolDrawerEnabled: true,
       screenshotEnabled: true,
       aiCustomizationEnabled: true,
       autoSaveAiEnabled: false,
     });
   });
-  it('carries a version 11 record through every step to version 15', () => {
+  it('carries a version 11 record through every step to version 16', () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_11))).toMatchObject({
-      version: 15,
+      version: 16,
       undoButtonEnabled: false,
       toolDrawerEnabled: true,
       screenshotEnabled: true,
@@ -100,9 +109,10 @@ describe('parent drawing control preferences', () => {
       expect(() => parseSoundSettings(JSON.stringify({ ...version13, [field]: false }))).toThrow(
         'not in the saved format'
       );
+      const { selectedColor: _p, customColors: _c, ...kept } = version13;
       const current = {
-        ...version13,
-        version: 15,
+        ...kept,
+        version: 16,
         toolDrawerEnabled: true,
         screenshotEnabled: true,
         aiCustomizationEnabled: true,
@@ -125,7 +135,7 @@ describe('parent drawing control preferences', () => {
       };
       const f = fixture(JSON.stringify({ ...CURRENT, ...extensions }));
       await f.owner.load();
-      const { version: _version, ...choices } = CURRENT;
+      const { version: _version, ...choices } = CURRENT_KEPT;
       expect(f.changes.at(-1)).toMatchObject({
         ...choices,
         parentPolicies: MIGRATED_POLICIES,
@@ -163,9 +173,9 @@ describe('parent drawing control preferences', () => {
       await f.owner.retrySave();
       expect(f.storage.write.mock.calls[1]).toEqual(f.storage.write.mock.calls[0]);
       expect(parseSoundSettings(f.stored())).toEqual({
-        ...CURRENT,
+        ...CURRENT_KEPT,
         parentPolicies: MIGRATED_POLICIES,
-        version: 15,
+        version: 16,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
