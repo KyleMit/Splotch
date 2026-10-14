@@ -64,8 +64,8 @@ bounds alone do not establish usable paper space.
 The Settings › Appearance Button style reaches the chrome through `ToolbarSkin` (`toolbarSkin.ts`),
 as shipping's `html[data-toolbar]`. Flat (`'bare'`) prints the controls on the paper: tiles, flyout
 options, the flyout card and More colors lose their faces (`RsdIconButton`, `RsdFlyoutMenu`,
-`RsdSwatch`), Selection Ring bands and seams take the paper, and the palette bar floats over a paper
-that runs under it while the controls keep the place the raised bar leaves them. Shipping's
+`RsdSwatch`), Selection Ring bands and seams take the paper, and the palette bar keeps its strip in
+the flow, as shipping's does, so a style switch never resizes the paper under a drawing. Shipping's
 `BareToolbarPaper.svelte` and `GlassPanes.svelte` become `RsdBareGlass`: the rail glass inside the
 bar, the two printed margin rules beside it over the paper, and the feathered panes under the
 drawer, its open menu and the Settings corner, computed by shipping's own
