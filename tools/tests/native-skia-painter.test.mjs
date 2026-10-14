@@ -60,6 +60,25 @@ function alphaAt(surface, x, y) {
   })[3];
 }
 
+// Skia warns once per deprecated method per process, so this must paint before any other test.
+it('builds stroke paths without the deprecated SkPath mutators', () => {
+  const warn = vi.spyOn(console, 'warn');
+  const surface = skia.Surface.Make(SIZE, SIZE);
+  const curve = [
+    { x: 4, y: 4 },
+    { x: 32, y: 60 },
+    { x: 60, y: 4 },
+  ];
+  paintStroke(
+    surface.getCanvas(),
+    { brush: 'pen', color: 'Red', width: 8, points: curve },
+    context
+  );
+  expect(warn.mock.calls.flat().filter((message) => /deprecated/.test(message))).toEqual([]);
+  expect(alphaAt(surface, 4, 4)).toBe(255);
+  warn.mockRestore();
+});
+
 it('keeps recently decoded textures and evicts beyond its limit', () => {
   const uris = Array.from({ length: DECODED_IMAGE_LIMIT + 1 }, (_, index) => solidPngUri(index));
   const first = decodeDataUriImage(uris[0]);
