@@ -1,5 +1,6 @@
 import type { TextStyle } from 'react-native';
 import type * as Regular from '@expo-google-fonts/quicksand/400Regular';
+import type * as Medium from '@expo-google-fonts/quicksand/500Medium';
 import type * as SemiBold from '@expo-google-fonts/quicksand/600SemiBold';
 import type * as Bold from '@expo-google-fonts/quicksand/700Bold';
 
@@ -8,10 +9,12 @@ import type * as Bold from '@expo-google-fonts/quicksand/700Bold';
 // type below checks. Only the weights the app draws text in are bundled.
 export const NATIVE_FONT_FAMILIES = {
   regular: 'Quicksand_400Regular',
+  medium: 'Quicksand_500Medium',
   semibold: 'Quicksand_600SemiBold',
   bold: 'Quicksand_700Bold',
 } as const satisfies {
   regular: keyof typeof Regular;
+  medium: keyof typeof Medium;
   semibold: keyof typeof SemiBold;
   bold: keyof typeof Bold;
 };
@@ -37,10 +40,11 @@ const NAMED_FONT_WEIGHTS: Record<NamedFontWeight, number> = {
   black: 900,
 };
 
-// CSS font matching against the bundled faces: a weight up to 500 takes the regular
-// face, a heavier one the nearest face at or above it, else the boldest.
+// CSS font matching against the bundled faces: a weight up to 400 takes the regular face,
+// a heavier one the nearest face at or above it, else the boldest.
+const REGULAR_FACE_WEIGHT = 400;
+const MEDIUM_FACE_WEIGHT = 500;
 const SEMIBOLD_FACE_WEIGHT = 600;
-const LIGHTEST_HEAVY_WEIGHT = 500;
 
 function isNamedFontWeight(weight: FontWeight): weight is NamedFontWeight {
   return typeof weight === 'string' && Object.hasOwn(NAMED_FONT_WEIGHTS, weight);
@@ -53,7 +57,8 @@ function numericFontWeight(weight: TextStyle['fontWeight']) {
 
 export function nativeFontFace(weight: TextStyle['fontWeight']): NativeFontFace {
   const numeric = numericFontWeight(weight);
-  if (numeric <= LIGHTEST_HEAVY_WEIGHT) return 'regular';
+  if (numeric <= REGULAR_FACE_WEIGHT) return 'regular';
+  if (numeric <= MEDIUM_FACE_WEIGHT) return 'medium';
   return numeric <= SEMIBOLD_FACE_WEIGHT ? 'semibold' : 'bold';
 }
 
@@ -66,14 +71,13 @@ export function nativeFontStyle(weight: TextStyle['fontWeight']) {
   } as const;
 }
 
-// The RSD font tokens on Android and iOS, applied as a theme over the web stack. The
-// medium weight takes the regular face: no 500 face is bundled.
+// The RSD font tokens on Android and iOS, applied as a theme over the web stack.
 export const NATIVE_RSD_FONTS = {
   family: NATIVE_FONT_FAMILIES.regular,
   boldFamily: NATIVE_FONT_FAMILIES.bold,
   boldWeight: 'normal',
   semiboldFamily: NATIVE_FONT_FAMILIES.semibold,
   semiboldWeight: 'normal',
-  mediumFamily: NATIVE_FONT_FAMILIES.regular,
+  mediumFamily: NATIVE_FONT_FAMILIES.medium,
   mediumWeight: 'normal',
 } as const;

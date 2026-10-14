@@ -29,6 +29,12 @@ export function DrawingStatusBar() {
   return <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />;
 }
 
+// iOS inks a scroll indicator by the system appearance, so a dark paper under a light system drew
+// a dark indicator on its dark surface. A WebView's indicator follows the page's own scheme.
+export function useScrollIndicatorStyle() {
+  return useDrawingAppearance() === 'dark' ? 'white' : 'black';
+}
+
 export function useDrawingTheme(): DrawingTheme {
   return DRAWING_THEMES[useDrawingAppearance()];
 }

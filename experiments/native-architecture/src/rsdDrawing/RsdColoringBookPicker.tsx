@@ -14,8 +14,9 @@ import type { PaperTheme } from '../drawing/theme';
 import { BUNDLED_BOOKS, STARTER_BOOK_ID, isFarmPageId } from '../drawing/bundledBooks';
 import { BUNDLED_FARM_COVERS, BUNDLED_FARM_SELECTORS } from '../drawing/bundledFarm/pickerImages';
 import { COLORING_PAGES, pageLabel, type PageId } from '../drawing/pages';
-import { ModalShell } from './ModalShell';
+import { ModalShell, useModalFrame } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
+import { RsdColoringScroll } from './RsdColoringScroll';
 import { RsdColoringTile } from './RsdColoringTile';
 import { ACTIVE_PAGE_NAME_HIDDEN_MAX_WIDTH_PX, RsdActivePageChip } from './RsdActivePageChip';
 import { MODAL_GUTTER_MIN_PX, modalFrame } from './modalGeometry';
@@ -23,7 +24,9 @@ import {
   bookGridLayout,
   coloringTitleCompact,
   pageGridLayout,
+  tileHeight,
   tileWidth,
+  trailingRowCardHeight,
   type GridLayout,
 } from './coloringGrid';
 import { armTapZone, insideTapZone, type TapPoint } from './tapZone';
@@ -107,6 +110,15 @@ function useGridWidth() {
   };
 }
 
+// The header's laid-out height, which the trailing-row cut counts the grid's top from.
+function useHeaderHeight() {
+  const [height, setHeight] = useState<number | null>(null);
+  return {
+    height,
+    onLayout: (event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height),
+  };
+}
+
 // The shipping Coloring Book Picker (ColoringBook.svelte): a modal card whose header carries the
 // Active Page Chip, over the Book Grid, or over one book's Coloring Page Grid with Back in the
 // header. With only the starter book it opens straight to that book's pages. The page art follows
@@ -140,6 +152,8 @@ export function RsdColoringBookPicker({
   // finger. Each swap guards the spot it was tapped at (tapZone.ts), as shipping's swapView does.
   const swapZone = useRef<ReturnType<typeof armTapZone>>(null);
   const grid = useGridWidth();
+  const header = useHeaderHeight();
+  const frame = useModalFrame('coloring');
   const guarded = (point: TapPoint | null) => insideTapZone(swapZone.current, point, Date.now());
   function swap(bookId: string | null, point: TapPoint | null) {
     swapZone.current = armTapZone(point, Date.now());
@@ -158,6 +172,16 @@ export function RsdColoringBookPicker({
     ? pageGridLayout(grid.window, orientation)
     : bookGridLayout(grid.window, books.length);
   const size = tileWidth(layout, grid.width);
+  const heightBudget =
+    header.height === null
+      ? null
+      : trailingRowCardHeight({
+          frame,
+          headerHeight: header.height,
+          layout,
+          tile: tileHeight(active ? orientation : 'cover', size),
+          tileCount: active ? active.pages.length : books.length,
+        });
   return (
     <ModalShell
       visible={visible}
@@ -166,47 +190,53 @@ export function RsdColoringBookPicker({
       size="coloring"
       touchBackdrop="plain"
       onClose={onClose}
+      scrolls={false}
+      heightBudget={heightBudget}
       header={
-        <DialogHeader
-          title={active ? active.label : BOOK_GRID_TITLE}
-          titleSize={coloringTitleCompact(grid.window) ? 'md' : 'xl'}
-          onBack={active && listsBooks ? (point) => swap(null, point) : undefined}
-          actions={chip}
-          onClose={onClose}
-        />
+        <View testID="coloring-picker-header" onLayout={header.onLayout}>
+          <DialogHeader
+            title={active ? active.label : BOOK_GRID_TITLE}
+            titleSize={coloringTitleCompact(grid.window) ? 'md' : 'xl'}
+            onBack={active && listsBooks ? (point) => swap(null, point) : undefined}
+            actions={chip}
+            onClose={onClose}
+          />
+        </View>
       }
     >
-      <View onLayout={grid.onLayout}>
-        <html.div style={[styles.grid(layout.gap), styles.width(gridWidth(layout, size))]}>
-          {active
-            ? active.pages.map((page) => (
-                <RsdColoringTile
-                  key={page.pageId}
-                  shape={orientation}
-                  image={page.image}
-                  width={size}
-                  accessibleName={`${page.label} coloring page`}
-                  onPress={(point) => {
-                    if (!guarded(point)) onChoose(page.pageId);
-                  }}
-                />
-              ))
-            : books.map((book) => (
-                <RsdColoringTile
-                  key={book.id}
-                  shape="cover"
-                  label={book.label}
-                  theme={theme}
-                  image={book.cover}
-                  width={size}
-                  accessibleName={`${book.label} coloring book`}
-                  onPress={(point) => {
-                    if (!guarded(point)) swap(book.id, point);
-                  }}
-                />
-              ))}
-        </html.div>
-      </View>
+      <RsdColoringScroll>
+        <View onLayout={grid.onLayout}>
+          <html.div style={[styles.grid(layout.gap), styles.width(gridWidth(layout, size))]}>
+            {active
+              ? active.pages.map((page) => (
+                  <RsdColoringTile
+                    key={page.pageId}
+                    shape={orientation}
+                    image={page.image}
+                    width={size}
+                    accessibleName={`${page.label} coloring page`}
+                    onPress={(point) => {
+                      if (!guarded(point)) onChoose(page.pageId);
+                    }}
+                  />
+                ))
+              : books.map((book) => (
+                  <RsdColoringTile
+                    key={book.id}
+                    shape="cover"
+                    label={book.label}
+                    theme={theme}
+                    image={book.cover}
+                    width={size}
+                    accessibleName={`${book.label} coloring book`}
+                    onPress={(point) => {
+                      if (!guarded(point)) swap(book.id, point);
+                    }}
+                  />
+                ))}
+          </html.div>
+        </View>
+      </RsdColoringScroll>
     </ModalShell>
   );
 }

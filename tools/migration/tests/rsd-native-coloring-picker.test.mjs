@@ -22,6 +22,7 @@ import {
 import { FARM_PAGE_IDS } from '../../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { COLORING_PAGES } from '../../../experiments/native-architecture/src/drawing/pages.ts';
 import { scale } from '../../../web/src/lib/design/tokens.ts';
+import { trailingRowCutHeight } from '../../../web/src/lib/actions/scrollCue.ts';
 import {
   CARD_HEIGHT_CAP_FRACTION,
   COLORING_HEADER_GAP_PX,
@@ -29,6 +30,7 @@ import {
   COLORING_NARROW_MAX_WIDTH_PX,
   COLORING_PADDING_PX,
   COLORING_PHONE_MAX_WIDTH_PX,
+  MODAL_CONTROL_SIZE_PX,
   MODAL_SCRIM_PLAIN,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import {
@@ -66,6 +68,8 @@ const space = catalogPack('space', 'full');
 const owner = createOfflineLibrary({ uri: (path) => `file:///private/library/${path}` }, 'full');
 const PHONE = { width: 390, height: 844, scale: 1, fontScale: 1 };
 const TABLET_LANDSCAPE = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
+// The iPhone 17 Pro, where shipping's cut shortens the starter book's card.
+const IPHONE = { width: 402, height: 874, scale: 1, fontScale: 1 };
 const FARM_PAGE_NAMES = FARM_PAGE_IDS.map(
   (pageId) => `${COLORING_PAGES[pageId].label} coloring page`
 );
@@ -163,6 +167,47 @@ describe('the Coloring Book Picker', () => {
     expect(host.querySelector('[data-testid="modal-backdrop-blur"]')).toBeNull();
     const scrim = records.props.findLast((props) => props.testID === 'modal-scrim');
     expect(flat(scrim.style).backgroundColor).toBe(MODAL_SCRIM_PLAIN);
+  });
+
+  // Shipping's cutTrailingRow budgets the card so its fold lands half a tile into a row, and its
+  // ScrollCue fades that row. Negative control: a card left at the 85% cap folds between two rows
+  // here, its last whole row reading as the end of the book, and without the cue the cut row
+  // ends in a hard edge.
+  it('cuts the card through a row of tiles and fades the cut row, as shipping does', async () => {
+    records.dimensions = IPHONE;
+    await mount(picker({}).tree);
+    const header = COLORING_PADDING_PX.phoneBlock + MODAL_CONTROL_SIZE_PX + COLORING_HEADER_GAP_PX;
+    const card = () =>
+      flat(records.props.findLast((props) => props.testID === 'modal-surface').style);
+    const cap = IPHONE.height * CARD_HEIGHT_CAP_FRACTION;
+    expect(card().maxHeight).toBeCloseTo(cap);
+    const headerBox = records.props.findLast((props) => props.testID === 'coloring-picker-header');
+    await act(async () =>
+      headerBox.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 370, height: header } } })
+    );
+    const tile = tileBox('Cat coloring page');
+    const gap = COLORING_GRID_GAP_PX.phone;
+    const rows = Math.ceil(FARM_PAGE_IDS.length / PAGE_GRID_COLUMNS.phonePortrait);
+    const cut = trailingRowCutHeight({
+      gridTop: header,
+      rowHeight: tile.height,
+      rowGap: gap,
+      rowCount: rows,
+      viewportHeight: cap,
+      contentHeight:
+        header + rows * tile.height + (rows - 1) * gap + COLORING_PADDING_PX.phoneBlock,
+    });
+    expect(cut).toBeLessThan(cap);
+    expect(card().maxHeight).toBe(cut);
+    const intoRow = (cut - header) % (tile.height + gap);
+    expect(intoRow).toBeCloseTo(tile.height / 2);
+    expect(host.querySelector('[data-testid="scroll-cue"]')).not.toBeNull();
+    expect(records.viewports.at(-1).contentContainerStyle).toMatchObject({
+      paddingTop: 0,
+      paddingBottom: COLORING_PADDING_PX.phoneBlock,
+      paddingLeft: COLORING_PADDING_PX.phoneInline,
+      paddingRight: COLORING_PADDING_PX.phoneInline,
+    });
   });
 
   it('shows landscape paper wide tiles two to a row', async () => {
