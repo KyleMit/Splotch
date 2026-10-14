@@ -94,8 +94,11 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
   plus descent, as Chromium's `line-height: normal` is.
 * **Shipping's hub rows** (`HubList.svelte`) are `<button>`s that never inherit the page font, so a
   WebView sets them in the system face, which `src/rsdDrawing/hubRowFace.native.ts` names as
-  `system-ui`. The web build keeps the app font there: `src/strict.css` hands every form control the
-  page font, and that unlayered rule outranks the layered StyleX style that would revert it.
+  `system-ui`. iOS resolves that family itself; Android rounds an unregistered family to regular or
+  bold, so `MainApplication.kt` registers `system-ui` as the system typeface and the semibold title
+  keeps its weight (`tools/migration/tests/native-system-face.test.mjs` binds the two names). The
+  web build keeps the app font there: `src/strict.css` hands every form control the page font, and
+  that unlayered rule outranks the layered StyleX style that would revert it.
 
 `tools/tests/native-shipping-font.test.mjs` fails when the web faces drift from the package
 stylesheet, a family stops matching the static package's exports, another weight is bundled, an RSD
