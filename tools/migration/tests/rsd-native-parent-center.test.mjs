@@ -399,9 +399,12 @@ describe('RSD Parental Gate card', () => {
   it('heads the challenge with the mascot, the shipping title and paint-daub operands', async () => {
     await openGateOnFixedProblem();
     const modal = host.querySelector(GATE_MODAL);
-    const header = modal.querySelector('[role="header"]');
-    expect(header.querySelector('[role="heading"]').textContent).toBe(PARENT_GATE_COPY.title);
+    const heading = modal.querySelector('[role="heading"]');
+    expect(heading.textContent).toBe(PARENT_GATE_COPY.title);
+    const header = heading.parentElement.parentElement;
     expect(header.firstElementChild.tagName).toBe('svg');
+    // React Native's role vocabulary has no `header`; Fabric logs and drops it.
+    expect(header.hasAttribute('role')).toBe(false);
     expect(modal.textContent).toContain(PARENT_GATE_COPY.managingSubtitle);
     const equation = modal.querySelector('[role="img"]');
     expect(equation.getAttribute('aria-label')).toBe('What is 6 times 6?');
