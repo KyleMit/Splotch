@@ -7,7 +7,6 @@ import {
   isParentModeAvailable,
 } from '../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
 import {
-  PARENT_CENTER_AI_COPY,
   PARENT_CENTER_COPY,
   PARENT_HELP,
   PARENT_LABELS,
@@ -162,7 +161,6 @@ const MEASURED = {
   problem: web('lib/components/ParentalGateProblem.svelte'),
   keypad: web('lib/components/ParentalGateKeypad.svelte'),
   footer: web('lib/components/ParentalGateManageFooter.svelte'),
-  aiCopy: web('lib/components/settings/aiSettingsCopy.ts'),
 };
 // The gate's media steps, as each shipping stylesheet spells them.
 const STEP_QUERIES = {
@@ -268,13 +266,5 @@ describe('Grown-Ups Only and Parent Center measures against shipping', () => {
     expect(MEASURED.section).toContain(`--policy-copy-min: ${POLICY_COPY_MIN_PX}px;`);
     expect(MEASURED.section).toContain(`--policy-modes-column: ${POLICY_MODES_COLUMN_PX}px;`);
     expect(MEASURED.section).toContain(`@container (min-width: ${POLICY_MATRIX_MIN_WIDTH_PX}px)`);
-  });
-
-  it("words the AI switch as shipping's AI Art section does", () => {
-    expect(MEASURED.aiCopy).toContain(
-      `export const AI_CREATE_LABEL = '${PARENT_CENTER_AI_COPY.label}';`
-    );
-    expect(MEASURED.aiCopy).toContain(`off: '${PARENT_CENTER_AI_COPY.help.off}',`);
-    expect(MEASURED.aiCopy).toContain(`on: '${PARENT_CENTER_AI_COPY.help.on}',`);
   });
 });

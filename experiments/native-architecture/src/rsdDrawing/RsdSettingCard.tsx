@@ -21,6 +21,8 @@ const styles = css.create({
     borderRadius: dimensions.radiusLg,
     backgroundColor: colors.surface2,
   },
+  // AiKeyManager.svelte's master switch card drops its bottom padding.
+  flushEnd: { paddingBottom: 0 },
   kept: { backgroundColor: colors.surface, boxShadow: SEE_THROUGH_CARD_SHADOW },
   hidden: { visibility: 'hidden' },
 });
@@ -47,16 +49,22 @@ export function RsdSettingGroup({ children }: { children: ReactNode }) {
 // dialog is see-through only the card that holds the dragged control stays, lifted off the screen.
 export function RsdSettingCard({
   keptSeeThrough = false,
+  flushEnd = false,
   children,
 }: {
   keptSeeThrough?: boolean;
+  flushEnd?: boolean;
   children: ReactNode;
 }) {
   const seeThrough = useDialogSeeThrough();
   return (
     <html.div
       data-testid="setting-card"
-      style={[styles.card, seeThrough && (keptSeeThrough ? styles.kept : styles.hidden)]}
+      style={[
+        styles.card,
+        flushEnd && styles.flushEnd,
+        seeThrough && (keptSeeThrough ? styles.kept : styles.hidden),
+      ]}
     >
       {children}
     </html.div>

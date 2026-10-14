@@ -11,6 +11,18 @@ async function click(label) {
   expect(node.disabled).toBe(false);
   await act(async () => node.click());
 }
+async function openAiArt() {
+  const row = host.querySelector('[aria-label^="AI Art, "]');
+  expect(row, 'AI Art row').not.toBeNull();
+  await act(async () => row.click());
+}
+// Settings reads the free allowance on its own once AI is on, as shipping does; nothing else may
+// have gone out before a send.
+function onlyAllowanceChecks() {
+  return caller.aiSend.mock.calls.every(
+    ([request]) => request.path === '/api/free-generation-grant'
+  );
+}
 async function input(label, value) {
   const props = records.props.findLast((item) => item.accessibilityLabel === label);
   expect(props, label).toBeDefined();
@@ -109,13 +121,7 @@ it.each(['picture', 'decode-rejection', 'refusal'])(
     ).toBe(!rejectDecode);
     expect(caller.screen.history.drawing).toBe(drawing);
     if (!rejectDecode) await reviewReport();
-    await click('Use my OpenAI key');
-    await input('OpenAI API key', 'fixture-key');
-    await click('Verify and save credential');
-    expect(caller.aiVaultWrite).not.toHaveBeenCalled();
-    await solve();
-    expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'fixture-key');
-    expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
+    await saveKeyFromSettings();
   },
   GATED_FLOW_TIMEOUT_MS
 );
@@ -158,19 +164,39 @@ function useCaller(drawing) {
     audioMessage: '',
   };
 }
-// Settings' Parent Center section opens it through this owner method.
+// The key goes in through Settings › AI Art.
+async function saveKeyFromSettings() {
+  await click('Close');
+  await click('Settings');
+  await openAiArt();
+  await input('OpenAI API Key', 'sk-fixture-key');
+  const save = [...host.querySelectorAll('button')].find((node) => node.textContent === 'Save');
+  expect(save?.disabled).toBe(false);
+  await act(async () => save.click());
+  // As in shipping, saving a key asks for no grown-up check; the server still verifies it first.
+  expect(host.textContent).not.toContain('Grown-Ups Only');
+  expect(caller.aiSend.mock.calls.some(([request]) => request.path === '/api/verify-key')).toBe(
+    true
+  );
+  expect(caller.aiVaultWrite).toHaveBeenCalledWith('byok', 'sk-fixture-key');
+  expect(caller.aiSend.mock.calls.at(-1)[0].path).toBe('/api/free-generation-grant');
+  expect(host.textContent).toContain('Your key works and has been accepted!');
+}
+// Settings › AI Art's switch turns AI on with no grown-up check, as shipping's does; the send
+// below still asks for one.
 async function sendDrawing() {
-  await act(async () => caller.product.owner.openParentCenter());
-  expect(caller.aiSend).not.toHaveBeenCalled();
-  await solve();
+  await click('Settings');
+  await openAiArt();
   await click('Create AI Images');
+  expect(host.textContent).not.toContain('Grown-Ups Only');
+  expect(caller.product.state.settings.aiEnabled).toBe(true);
   await click('Close');
   await click('AI picture');
-  expect(caller.aiSend).not.toHaveBeenCalled();
+  expect(onlyAllowanceChecks()).toBe(true);
   await click('Check AI allowance');
   expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
   expect(records.dismissals).toContain('AI picture');
-  expect(caller.aiSend).not.toHaveBeenCalled();
+  expect(onlyAllowanceChecks()).toBe(true);
   await solve();
   expect(host.querySelector('[aria-label="Sticker AI style"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Save held recovery request"]')).toBeNull();
@@ -289,4 +315,29 @@ it(
     expect(labelled('Open AI picture')).not.toBeNull();
   },
   POLL_TEST_TIMEOUT_MS
+);
+
+// Settings › AI Art reads the allowance for display, which enables Send; the send itself loads the
+// credential under its own check rather than waiting for Check AI allowance.
+it(
+  'sends straight after Settings has read the allowance, with no Check AI allowance first',
+  async () => {
+    pendingGeneration(() => pictureReply());
+    useCaller(emptyDrawing());
+    await mount(createElement(RsdDrawingScreen));
+    await expandControls();
+    await click('Settings');
+    await openAiArt();
+    await click('Create AI Images');
+    await vi.waitFor(() => expect(host.textContent).toContain('10 free AI creations left.'));
+    await click('Close');
+    await click('AI picture');
+    const generations = () =>
+      caller.aiSend.mock.calls.filter(([request]) => request.path === '/api/generate-image');
+    await click('Send drawing for AI');
+    expect(generations()).toHaveLength(0);
+    await solve();
+    await vi.waitFor(() => expect(generations()).toHaveLength(1));
+  },
+  GATED_FLOW_TIMEOUT_MS
 );

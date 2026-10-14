@@ -70,7 +70,13 @@ const GATE_CONTENT: Record<keyof typeof GATE_MAX_WIDTH_PX, Box> = {
 // Settings is the shipping Settings card; a sheet is that card's phone shell, which every RN
 // sheet without a shipping card of its own wears; the coloring card is the Coloring Book
 // Picker's; the gate and confirm cards are the narrow boundary cards.
-export type ModalSize = 'settings' | 'sheet' | 'coloring' | 'gate' | 'confirm';
+// SettingsModal.ai.css: the phone AI Art page claims one stable card height, so the card does not
+// jump when its master switch swaps the short explainer for the longer setup form; the enabled
+// form scrolls inside it.
+const AI_SECTION_CARD_HEIGHT_PX = 604;
+
+// `aiSettings` is Settings drilled into AI Art.
+export type ModalSize = 'settings' | 'aiSettings' | 'sheet' | 'coloring' | 'gate' | 'confirm';
 
 export type ModalFrame = {
   width: number;
@@ -162,7 +168,12 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
   return {
     width: fitWidth(window, gutter, SETTINGS_SHELL_MAX_WIDTH_PX[shell]),
     maxHeight: cap,
-    height: shell === 'wide' ? Math.min(cap, WIDE_CARD_HEIGHT_CEILING_PX) : null,
+    height:
+      shell === 'wide'
+        ? Math.min(cap, WIDE_CARD_HEIGHT_CEILING_PX)
+        : size === 'aiSettings' && shell === 'phone'
+          ? Math.min(cap, AI_SECTION_CARD_HEIGHT_PX)
+          : null,
     header: shell === 'compact' ? SETTINGS_COMPACT_HEADER : SETTINGS_HEADER[step],
     body: SETTINGS_SCROLL[step],
   };

@@ -33,6 +33,7 @@ import {
 } from './reduceMotion';
 import { isWhatsNewSeen } from './whatsNew';
 import { DEFAULT_PENCIL_SETTINGS, readPencilSettings, type PencilSettings } from './pencilEraser';
+import { DEFAULT_AI_PREFERENCES, readAiPreferences, type AiPreferences } from './aiPreferences';
 import {
   readLegacyParentPreferences,
   isParentPolicies,
@@ -65,6 +66,7 @@ export type Choices = WidthSettings &
   AccessibilitySettings &
   PencilSettings &
   SoundSourceSettings &
+  AiPreferences &
   Readonly<{
     soundEnabled: boolean;
     appearance: AppearancePreference;
@@ -73,7 +75,7 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 14 }>;
+export type SoundSettings = Choices & Readonly<{ version: 15 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
@@ -81,7 +83,8 @@ export type SoundSettingsState =
       ParentPreferences &
       AccessibilitySettings &
       PencilSettings &
-      SoundSourceSettings & {
+      SoundSourceSettings &
+      AiPreferences & {
         status: 'loading';
         soundEnabled: false;
         appearance: AppearancePreference;
@@ -168,7 +171,7 @@ function readParentPreferences(value: unknown) {
   if (typeof aiEnabled !== 'boolean') throw new Error('Parent Center settings are invalid.');
   if (
     'version' in value &&
-    (value.version === 12 || value.version === 13 || value.version === 14)
+    (value.version === 12 || value.version === 13 || value.version === 14 || value.version === 15)
   ) {
     if (!isParentPolicies(parentPolicies)) throw new Error('Parent Center settings are invalid.');
     return { aiEnabled, parentPolicies: orderedParentPolicies(parentPolicies) };
@@ -193,8 +196,9 @@ function readStoredParentSettings(
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
-  const current = value.version === 14;
-  const sourced = current || value.version === 13;
+  const aiStyled = value.version === 15;
+  const drawered = aiStyled || value.version === 14;
+  const sourced = drawered || value.version === 13;
   const linksPolicy = sourced || value.version === 12;
   const pencilled = linksPolicy || value.version === 11;
   const accessible = pencilled || value.version === 10;
@@ -232,6 +236,7 @@ function readStoredParentSettings(
     ? readAccessibilitySettings(value)
     : DEFAULT_ACCESSIBILITY_SETTINGS;
   const pencil = pencilled ? readPencilSettings(value) : DEFAULT_PENCIL_SETTINGS;
+  const ai = aiStyled ? readAiPreferences(value) : DEFAULT_AI_PREFERENCES;
   canonical(
     {
       version: value.version,
@@ -251,17 +256,18 @@ function readStoredParentSettings(
       ...(accessible ? accessibility : {}),
       ...(pencilled ? pencil : {}),
       ...(sourced ? { toolbarStyle } : {}),
-      ...(current
+      ...(drawered
         ? {
             toolDrawerEnabled: controls.toolDrawerEnabled,
             screenshotEnabled: controls.screenshotEnabled,
           }
         : {}),
+      ...(aiStyled ? ai : {}),
     },
     snapshot
   );
   return {
-    version: 14,
+    version: 15,
     ...widths,
     ...colors,
     appearance,
@@ -283,6 +289,7 @@ function readStoredParentSettings(
     ...accessibility,
     ...pencil,
     toolbarStyle,
+    ...ai,
   };
 }
 
@@ -292,7 +299,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 14,
+    version: 15,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -305,6 +312,7 @@ function migrateLegacyChoices(
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
     ...choices,
   };
 }
@@ -330,7 +338,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 11 &&
       value.version !== 12 &&
       value.version !== 13 &&
-      value.version !== 14) ||
+      value.version !== 14 &&
+      value.version !== 15) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -367,7 +376,8 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 11 &&
       value.version !== 12 &&
       value.version !== 13 &&
-      value.version !== 14) ||
+      value.version !== 14 &&
+      value.version !== 15) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -394,7 +404,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 14,
+    version: 15,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -419,5 +429,7 @@ export function snapshot(state: Choices): SoundSettings {
     toolbarStyle: state.toolbarStyle,
     toolDrawerEnabled: state.toolDrawerEnabled,
     screenshotEnabled: state.screenshotEnabled,
+    aiCustomizationEnabled: state.aiCustomizationEnabled,
+    autoSaveAiEnabled: state.autoSaveAiEnabled,
   };
 }

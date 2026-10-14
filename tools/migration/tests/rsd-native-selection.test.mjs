@@ -303,7 +303,7 @@ it.each([
       await act(async () => on.click());
       expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
       expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-        version: 14,
+        version: 15,
         [property]: false,
         aiEnabled: false,
       });
@@ -338,7 +338,7 @@ it('turns Auto-Save on Delete on through the released native switch, off by defa
     await act(async () => toggle.click());
     expect(host.querySelector('[aria-label="Auto-Save on Delete"]').dataset.checked).toBe('true');
     expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-      version: 14,
+      version: 15,
       saveOnDeleteEnabled: true,
     });
   } finally {

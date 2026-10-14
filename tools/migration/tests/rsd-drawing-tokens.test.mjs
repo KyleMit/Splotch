@@ -339,7 +339,7 @@ it(
 
 it.each([
   [
-    'src/rsdDrawing/RsdAiSheet.tsx',
+    'src/rsdDrawing/RsdAiStyleChoices.tsx',
     'TOUCH_TARGET',
     '../drawing/theme',
     'minHeight: dimensions.touchTarget',

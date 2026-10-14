@@ -367,6 +367,7 @@ describe('native Settings info sections against their shipping sources', () => {
       privacy: `${SITE_ORIGIN}/privacy`,
       changelog: `${SITE_ORIGIN}/changelog`,
       github: GITHUB_REPO_URL,
+      openAiKeys: 'https://platform.openai.com/api-keys',
     });
     const shippingIcons = /RELEASE_SECTION_ICONS = (\{[^}]*\})/.exec(SHIPPING.releaseSections)?.[1];
     expect(constant(NATIVE.whatsNewOwner, 'RELEASE_SECTION_ICONS')).toEqual(

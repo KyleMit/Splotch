@@ -6,9 +6,8 @@ import { ModalShell } from './ModalShell';
 import { RsdButton } from './RsdButton';
 import { RsdConfirmCard } from './RsdConfirmCard';
 import { RsdSegmentedPicker } from './RsdSegmentedPicker';
-import { RsdSettingCard, RsdSettingGroup } from './RsdSettingCard';
+import { RsdSettingCard } from './RsdSettingCard';
 import { RsdStatusMessage } from './RsdStatusMessage';
-import { RsdToggleRow } from './RsdToggleRow';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 import { useModalPresence } from './useModalPresence';
 import { styles as controlStyles } from './controls';
@@ -27,7 +26,6 @@ import {
   POLICY_MODES_COLUMN_PX,
 } from '../parentCenter/parentCenterMetrics';
 import {
-  PARENT_CENTER_AI_COPY,
   PARENT_CENTER_COPY,
   PARENT_HELP,
   PARENT_LABELS,
@@ -76,7 +74,6 @@ export function RsdParentCenterSection({ owner }: { owner: DrawingProductOwner }
           </html.div>
         </View>
         <ModeNotes />
-        <AiSwitch owner={owner} settings={settings} disabled={disabled} />
         <SaveStatus owner={owner} settings={settings} />
       </html.section>
       <UnprotectedConfirm owner={owner} open={state.confirmNever} />
@@ -248,38 +245,6 @@ function ModeNotes() {
   );
 }
 
-function AiSwitch({
-  owner,
-  settings,
-  disabled,
-}: {
-  owner: DrawingProductOwner;
-  settings: SoundSettingsState;
-  disabled: boolean;
-}) {
-  return (
-    <html.div style={styles.aiGroup}>
-      <RsdSettingGroup>
-        <RsdSettingCard>
-          <RsdToggleRow
-            icon="wand-stars"
-            label={PARENT_CENTER_AI_COPY.label}
-            id="aiImageToggle"
-            checked={settings.aiEnabled}
-            disabled={disabled}
-            help={
-              settings.aiEnabled ? PARENT_CENTER_AI_COPY.help.on : PARENT_CENTER_AI_COPY.help.off
-            }
-            onToggle={(next) => {
-              void owner.setAiEnabled(next);
-            }}
-          />
-        </RsdSettingCard>
-      </RsdSettingGroup>
-    </html.div>
-  );
-}
-
 // Native persistence is asynchronous where shipping's is not, so a failed save stays on screen with
 // its retry; a save in flight or done is only announced.
 function SaveStatus({
@@ -289,7 +254,8 @@ function SaveStatus({
   owner: DrawingProductOwner;
   settings: SoundSettingsState;
 }) {
-  const failed = settings.status === 'ready' && !settings.saved;
+  // A failed AI Art switch keeps its retry in its own section.
+  const failed = settings.status === 'ready' && !settings.saved && !owner.settings.aiSaveFailed();
   if (!failed) return <RsdVisuallyHidden live>{settings.message}</RsdVisuallyHidden>;
   return (
     <html.div style={styles.failure}>
@@ -453,7 +419,6 @@ const styles = css.create({
   strong: {
     color: colors.textStrong,
   },
-  aiGroup: { marginTop: dimensions.space6 },
   failure: {
     display: 'flex',
     flexDirection: 'column',

@@ -1,16 +1,9 @@
-import { useState } from 'react';
 import { css, html } from 'react-strict-dom';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { RsdAction, styles } from './controls';
-import { colors, dimensions } from './tokens.css';
-import {
-  CREDENTIAL_KINDS,
-  AI_DISCLOSURE,
-  AI_MINIMIZED_WAIT_NOTICE,
-  MAX_CREDENTIAL_CHARACTERS,
-  type CredentialKind,
-} from '../ai/contract';
+import { dimensions } from './tokens.css';
+import { AI_DISCLOSURE, AI_MINIMIZED_WAIT_NOTICE } from '../ai/contract';
 import { aiCanGenerate, aiJournalWaiting, aiRun, type AiRun } from '../ai/uiState';
 import type { AiProgressOwner } from '../ai/aiProgress';
 import { RsdAiRunPolaroid } from './RsdAiRunPolaroid';
@@ -23,19 +16,6 @@ import { AiRecoveryActions } from '../ai/AiRecoveryActions';
 import { CurrentDrawingPreview } from '../ai/CurrentDrawingPreview';
 import type { Drawing } from '../drawing/model';
 import type { ArtworkMap } from '../offlineLibrary/artworkContext';
-function inputValue(event: unknown) {
-  if (
-    !event ||
-    typeof event !== 'object' ||
-    !('target' in event) ||
-    !event.target ||
-    typeof event.target !== 'object' ||
-    !('value' in event.target) ||
-    typeof event.target.value !== 'string'
-  )
-    return null;
-  return event.target.value;
-}
 export function RsdAiSheet({
   owner,
   state,
@@ -140,7 +120,6 @@ export function RsdAiSheet({
             <html.span aria-live="polite">{state.message}</html.span>
             <AiRefusalReportAction owner={owner} state={state} />
             <AiPictures owner={owner} state={state} framed={!!framed} onOpen={viewer.open} />
-            <AiCredentialSetup owner={owner} state={state} />
           </>
         ) : null}
       </html.div>
@@ -236,87 +215,6 @@ function AiPictures({
     </>
   );
 }
-function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
-  const [kind, setKind] = useState<CredentialKind>('managed');
-  const [value, setValue] = useState('');
-  const waiting = aiJournalWaiting(state);
-  return (
-    <>
-      <html.h2 style={styles.boldText}>AI service setup</html.h2>
-      <html.span>
-        A credential check sends your code to Splotch, or your OpenAI key through Splotch to OpenAI.
-        A key check makes a small provider request. Saved credentials stay in this device’s secure
-        storage. OpenAI charges your account for generations using your key.
-      </html.span>
-      <html.div role="radiogroup" aria-label="AI credential kind" style={styles.row}>
-        {CREDENTIAL_KINDS.map((next) => (
-          <RsdAction
-            key={next}
-            label={next === 'managed' ? 'Use access code' : 'Use my OpenAI key'}
-            selection="radio"
-            selected={kind === next}
-            disabled={state.busy || waiting || !!state.recovery}
-            onClick={() => {
-              setValue('');
-              setKind(next);
-            }}
-          />
-        ))}
-      </html.div>
-      <html.input
-        aria-label={kind === 'managed' ? 'AI access code' : 'OpenAI API key'}
-        type="password"
-        autoComplete="off"
-        value={value}
-        maxLength={MAX_CREDENTIAL_CHARACTERS}
-        disabled={state.busy || waiting || !!state.recovery}
-        onChange={(event: unknown) => {
-          const next = inputValue(event);
-          if (next !== null) setValue(next);
-        }}
-        style={aiStyles.input}
-      />
-      <RsdAction
-        label="Verify and save credential"
-        disabled={state.busy || waiting || !!state.recovery || !value}
-        onClick={() => {
-          const pending = value;
-          setValue('');
-          void owner.setup(kind, pending);
-        }}
-      />
-      <RsdAction
-        label="Remove access code"
-        disabled={state.busy || waiting || !!state.recovery}
-        onClick={() => {
-          void owner.removeCredential('managed');
-        }}
-      />
-      <RsdAction
-        label="Remove OpenAI key"
-        disabled={state.busy || waiting || !!state.recovery}
-        onClick={() => {
-          void owner.removeCredential('byok');
-        }}
-      />
-      <RsdAction
-        label="Refresh AI availability"
-        disabled={state.busy || waiting || !!state.recovery}
-        onClick={() => {
-          void owner.refresh();
-        }}
-      />
-    </>
-  );
-}
 const aiStyles = css.create({
-  input: {
-    minHeight: dimensions.touchTarget,
-    padding: dimensions.space3,
-    borderRadius: dimensions.radiusMd,
-    color: colors.text,
-    backgroundColor: colors.paper,
-    fontSize: dimensions.fontSizeMd,
-  },
   image: { width: '100%', height: dimensions.aiResultHeight, objectFit: 'contain' },
 });
