@@ -204,7 +204,6 @@ const records = vi.hoisted(() => ({
   backListeners: new Set(),
   exits: 0,
   os: 'ios',
-  androidApi: 36,
   settingsOpened: 0,
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
@@ -427,7 +426,6 @@ afterEach(async () => {
   records.backListeners.clear();
   records.exits = 0;
   records.os = 'ios';
-  records.androidApi = 36;
   records.settingsOpened = 0;
   caller.capturePng = null;
   caller.deviceLocked = false;

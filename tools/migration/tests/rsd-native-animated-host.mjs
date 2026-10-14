@@ -99,14 +99,11 @@ export function backHandlerPort(records) {
   };
 }
 
-// The platform the records name: its OS, and on Android the API level that gates RenderEffect.
+// The platform the records name.
 export function platformPort(records) {
   return {
     get OS() {
       return records.os;
-    },
-    get Version() {
-      return records.androidApi;
     },
     constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
     select: (values) => values.ios ?? values.native ?? values.default,

@@ -2,11 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { Animated } from '../platform/animated';
-import {
-  BackdropBlur,
-  backdropBlurAvailable,
-  type BackdropBlurTransition,
-} from '../platform/backdropBlur';
+import { BackdropBlur, backdropBlurs, type BackdropBlurTransition } from '../platform/backdropBlur';
 import { useReducedTransparency } from '../platform/reducedTransparency';
 import {
   CSS_EASE,
@@ -48,15 +44,15 @@ function useBlurTransition(visible: boolean, seeThrough: boolean): BackdropBlurT
   );
 }
 
-// The shipping frosted backdrop: a native blur of the screen behind, under the dim the scrim fades.
-// Where the device cannot blur, the reader asked for less transparency, or the dialog keeps a
-// blur-less backdrop on a touch screen, it takes shipping's plain, deeper dim instead.
+// The shipping frosted backdrop: its dim, over a native blur of the screen behind where shipping's
+// platform draws one. Where the reader asked for less transparency, or the dialog keeps a blur-less
+// backdrop on a touch screen, it takes shipping's plain, deeper dim instead.
 export function ModalScrim({ opacity, visible, seeThrough, touchBackdrop }: ModalScrimProps) {
-  const plain = useReducedTransparency() || touchBackdrop === 'plain' || !backdropBlurAvailable();
+  const plain = useReducedTransparency() || touchBackdrop === 'plain';
   const blur = useBlurTransition(visible, seeThrough);
   return (
     <>
-      {plain ? null : <BackdropBlur blur={blur} />}
+      {plain || !backdropBlurs() ? null : <BackdropBlur blur={blur} />}
       <Animated.View
         testID="modal-scrim"
         pointerEvents="none"

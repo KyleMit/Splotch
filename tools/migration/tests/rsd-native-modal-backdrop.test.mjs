@@ -63,15 +63,12 @@ describe('the dialog backdrop', () => {
     expect(blur()).toMatchObject({ radius: MODAL_SCRIM_BLUR_PX, theme: 'dark' });
   });
 
-  it.each([
-    [31, true],
-    [30, false],
-  ])('blurs on Android API %i: %s', async (api, blurs) => {
+  // Shipping's Android WebView draws the frosted dim and none of its blur.
+  it('dims with the frosted tint and no blur on Android, as shipping does there', async () => {
     records.os = 'android';
-    records.androidApi = api;
     await mount(dialog());
-    expect(blur() !== undefined).toBe(blurs);
-    expect(scrimColor()).toBe(blurs ? MODAL_SCRIM_FROSTED : MODAL_SCRIM_PLAIN);
+    expect(blur()).toBeUndefined();
+    expect(scrimColor()).toBe(MODAL_SCRIM_FROSTED);
   });
 
   it('keeps the plain dim with no blur when the reader asked for less transparency', async () => {

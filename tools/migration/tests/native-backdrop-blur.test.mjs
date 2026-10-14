@@ -9,10 +9,6 @@ const JS = read('src/platform/backdropBlur.tsx');
 const SWIFT = read('ios/HelloWorld/SplotchBackdropBlur.swift');
 const OBJC = read('ios/HelloWorld/SplotchBackdropBlur.m');
 const PROJECT = read('ios/HelloWorld.xcodeproj/project.pbxproj');
-const KOTLIN = read('android/app/src/main/java/art/splotch/migration/probe/SplotchBackdropBlur.kt');
-const APPLICATION = read(
-  'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt'
-);
 
 const sorted = (values) => [...new Set(values)].sort();
 const jsKeys = () =>
@@ -22,13 +18,11 @@ const jsKeys = () =>
     )
   );
 
-// The blur view's name and its one prop cross from TypeScript into Swift and Kotlin, which share
-// no code with it, so each side is read here.
+// The blur view's name and its one prop cross from TypeScript into Swift, which shares no code
+// with it, so each side is read here.
 describe('the native backdrop blur view', () => {
-  it('is registered under the name the JavaScript requires, on both platforms', () => {
+  it('is registered under the name the JavaScript requires', () => {
     const name = JS.match(/requireNativeComponent<[^>]*>\(\s*'(\w+)'/)[1];
-    expect(KOTLIN).toContain(`override fun getName() = "${name}"`);
-    expect(APPLICATION).toContain('add(SplotchBackdropBlurPackage())');
     expect(OBJC).toContain(`RCT_EXTERN_MODULE(${name}Manager, RCTViewManager)`);
     expect(OBJC).toContain('RCT_EXPORT_VIEW_PROPERTY(blur, NSDictionary)');
     expect(SWIFT).toContain(`@objc(${name}Manager)`);
@@ -40,9 +34,6 @@ describe('the native backdrop blur view', () => {
     expect(jsKeys()).toEqual(['durationMs', 'easing', 'radius', 'theme']);
     const swift = sorted([...SWIFT.matchAll(/blur\?\["(\w+)"\]/g)].map((match) => match[1]));
     expect(swift).toEqual(jsKeys());
-    const kotlin = sorted([...KOTLIN.matchAll(/hasKey\("(\w+)"\)/g)].map((match) => match[1]));
-    // Android's RenderEffect blur carries no tint, so it has no use for the paper theme.
-    expect(kotlin).toEqual(jsKeys().filter((key) => key !== 'theme'));
   });
 
   it('keeps an iOS blur style for every paper theme', () => {

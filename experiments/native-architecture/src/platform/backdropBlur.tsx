@@ -2,11 +2,8 @@ import { Platform, StyleSheet, requireNativeComponent, type ViewProps } from 're
 import type { PaperTheme } from '../drawing/theme';
 import type { Bezier } from '../rsdDrawing/modalGeometry';
 
-// RenderEffect, which the Android view blurs with, arrived in Android 12.
-const ANDROID_RENDER_EFFECT_API = 31;
-
-// Blur to `radius`, a CSS blur() length, over `durationMs` on the CSS cubic-bezier `easing`. iOS
-// tints its blur, and picks the tint that suits the paper `theme`.
+// Blur to `radius`, a CSS blur() length, over `durationMs` on the CSS cubic-bezier `easing`, in the
+// tint that suits the paper `theme`.
 export type BackdropBlurTransition = Readonly<{
   radius: number;
   durationMs: number;
@@ -14,16 +11,16 @@ export type BackdropBlurTransition = Readonly<{
   theme: PaperTheme;
 }>;
 
-// SplotchBackdropBlur (ios/HelloWorld/SplotchBackdropBlur.swift, android .../SplotchBackdropBlur.kt).
+// SplotchBackdropBlur (ios/HelloWorld/SplotchBackdropBlur.swift).
 const NativeBackdropBlur = requireNativeComponent<ViewProps & { blur: BackdropBlurTransition }>(
   'SplotchBackdropBlur'
 );
 
-export function backdropBlurAvailable() {
-  return (
-    Platform.OS === 'ios' ||
-    (Platform.OS === 'android' && Number(Platform.Version) >= ANDROID_RENDER_EFFECT_API)
-  );
+// Where shipping's dialog backdrop blurs. Its iOS WebView draws the backdrop-filter; its Android
+// WebView draws only the dim, which device captures of shipping show leaving the screen behind
+// sharp.
+export function backdropBlurs() {
+  return Platform.OS === 'ios';
 }
 
 // Blurs whatever lies behind the modal it is mounted in, for as long as that modal is open.

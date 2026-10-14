@@ -290,16 +290,16 @@ contents and the other sections, and the drawer opens. React Strict DOM maps `vi
 zero opacity natively, so each hidden piece hides itself rather than an ancestor hiding everything
 below it.
 
-Every dialog's scrim is shipping's frosted backdrop. On the web it is the CSS `backdrop-filter`
-itself (`ModalScrim.web.tsx`); natively the modal mounts `SplotchBackdropBlur`
-(`platform/backdropBlur.tsx` and the Swift and Kotlin views of that name) under the dim. iOS holds a
-`UIVisualEffectView` part-way through its effect, so the style's blur and tint scale down to the CSS
-radius; Android puts a `RenderEffect` blur on the window beneath the modal's, the activity's or the
-dialog it is stacked over. The blur fades with the scrim, drops at once with a see-through dialog,
-and exists only while a dialog is open. Below Android 12, under iOS Reduce Transparency, and for the
-Coloring Book Picker on a touch screen (shipping's coarse-pointer rule) the scrim takes shipping's
-plain, deeper dim instead. `tools/migration/tests/native-backdrop-blur.test.mjs` holds the native
-views' name and keys to the JavaScript.
+Every dialog's scrim is shipping's frosted backdrop, as each platform's shipping WebView draws it.
+On the web it is the CSS `backdrop-filter` itself (`ModalScrim.web.tsx`). On iOS the modal mounts
+`SplotchBackdropBlur` (`platform/backdropBlur.tsx` and the Swift view of that name) under the dim: a
+`UIVisualEffectView` held part-way through its effect, so the style's blur and tint scale down to
+the CSS radius. The blur fades with the scrim, drops at once with a see-through dialog, and exists
+only while a dialog is open. Shipping's Android WebView draws the dim and no blur, so Android takes
+the frosted dim alone. Under iOS Reduce Transparency, and for the Coloring Book Picker on a touch
+screen (shipping's coarse-pointer rule), the scrim takes shipping's plain, deeper dim instead.
+`tools/migration/tests/native-backdrop-blur.test.mjs` holds the native view's name and keys to the
+JavaScript.
 
 The Volume, its two sources and Button style persist in settings schema 13. A schema 12 or earlier
 record's quiet, medium or loud level becomes the volume that plays at the same gain (25, 50, 100),
