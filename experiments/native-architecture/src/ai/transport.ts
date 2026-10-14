@@ -185,7 +185,7 @@ export async function parseAiResponse(
     Object.keys(raw).sort().join(',') === 'accessCode,ok'
   )
     return { kind: 'verified', accessCode: raw.accessCode };
-  const reply = parseAiFailure(raw, response, poll, now);
+  const reply = parseAiFailure(raw, response, poll, now, VERIFY_PATHS.includes(request.path));
   // The HTTP status, and for anything but a refusal the server's own words, ride along for the
   // problem report a grown-up can send about a failure; the child sees only the app's message. A
   // refusal's provider reason is never kept.
@@ -194,11 +194,14 @@ export async function parseAiResponse(
     ? { ...reply, status: response.status }
     : { ...reply, status: response.status, detail: String(raw.error) };
 }
+const VERIFY_PATHS: readonly AiRequest['path'][] = ['/api/verify-key', '/api/verify-access-code'];
+export const AI_THROTTLED_MESSAGE = 'Too many attempts. Please wait before trying again.';
 function parseAiFailure(
   raw: Record<string, unknown>,
   response: AiResponse,
   poll: boolean,
-  now: number
+  now: number,
+  verify: boolean
 ): AiReply {
   if (
     raw.ok !== false ||
@@ -230,7 +233,7 @@ function parseAiFailure(
           kind: 'failure',
           reason: 'unavailable',
           retryAt: now + retryDelay(response, now),
-          message: 'Too many attempts. Please wait before trying again.',
+          message: AI_THROTTLED_MESSAGE,
         };
   if (response.status === 422)
     return {
@@ -239,6 +242,12 @@ function parseAiFailure(
       reportToken: imageReportToken(response.headers.get(REPORT_TOKEN_HEADER)),
       message: "Let's try drawing something else! Your original is still here.",
     };
+  // A credential check's refusal is worded by the server, as shipping's Settings shows it: a key
+  // OpenAI turned down, an unrecognized code, or a check that got no answer.
+  if (verify && response.status === 503 && raw.code === 'KEY_CHECK_UNAVAILABLE')
+    return { kind: 'failure', reason: 'unavailable', message: raw.error };
+  if (verify && (response.status === 200 || response.status === 400))
+    return { kind: 'failure', reason: 'rejected', message: raw.error };
   if (response.status === 403 && raw.code === 'FREE_GRANT_EXHAUSTED' && raw.remaining === 0)
     return {
       kind: 'failure',

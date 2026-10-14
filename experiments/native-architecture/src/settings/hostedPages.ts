@@ -9,6 +9,8 @@ export const HOSTED_PAGES = {
   privacy: `${SITE_ORIGIN}/privacy`,
   changelog: `${SITE_ORIGIN}/changelog`,
   github: GITHUB_REPO_URL,
+  // Settings › AI Art's how-to sends a parent here to make a key (OpenAiKeyHowTo.svelte).
+  openAiKeys: 'https://platform.openai.com/api-keys',
 } as const;
 
 export type HostedPage = keyof typeof HOSTED_PAGES;

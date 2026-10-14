@@ -34,6 +34,7 @@ import { RsdParentCenterLock } from './RsdParentCenterLock';
 import { RsdColoringSection } from './RsdColoringSection';
 import { RsdToolDrawerSection } from './RsdToolDrawerSection';
 import { RsdSavingSection } from './RsdSavingSection';
+import { RsdAiSettingsSection, type AiSettingsRoute } from './RsdAiSettingsSection';
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
@@ -57,6 +58,8 @@ type NativeSoundSettingsDialogProps = {
   onToolbarStyleChange: (style: ToolbarStyle) => void;
   onOrientationChange: (orientation: OrientationChoice) => void;
   onColoringBookChange: (enabled: boolean) => void;
+  onAiCustomizationChange: (enabled: boolean) => void;
+  onAutoSaveAiChange: (enabled: boolean) => void;
   // Lifted to the drawing screen, whose edge controls preview the size while it is dragged.
   buttonScale: SliderDraft;
   // Lifted to the drawing screen with the audio owner it previews through.
@@ -72,7 +75,7 @@ type NativeSoundSettingsDialogProps = {
   // Opens a page outside the app; the route holds it behind the external-links check.
   onOpenHostedPage: (page: HostedPage) => void;
   downloadedBooks: number;
-  ai: SectionSummaryContext['ai'];
+  ai: AiSettingsRoute;
   visible?: boolean;
   onDismiss?: () => void;
 };
@@ -121,7 +124,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     settings,
     brushes: props.brushState,
     downloadedBooks: props.downloadedBooks,
-    ai: props.ai,
+    ai: props.ai.state,
   };
   const unseen = useSectionActivity(context);
   const openSection = (section: NativeSettingsSectionId) => {
@@ -145,7 +148,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       seeThrough={props.buttonScale.active}
       onDismiss={onDismiss}
       label={pageLabel(subpage ?? HUB)}
-      size="settings"
+      size={subpage?.section === 'ai' ? 'aiSettings' : 'settings'}
       onClose={subpage ? back : onClose}
       scrolls={false}
       header={
@@ -361,9 +364,16 @@ function SettingsSection(props: SectionProps) {
           onColoringBookChange={onColoringBookChange}
         />
       );
-    // AI Art has no native section body yet.
     case 'ai':
-      return null;
+      return (
+        <RsdAiSettingsSection
+          settings={settings}
+          busy={busy}
+          ai={props.ai}
+          onAiCustomizationChange={props.onAiCustomizationChange}
+          onAutoSaveAiChange={props.onAutoSaveAiChange}
+        />
+      );
     case 'feedback':
       return <RsdFeedbackSection owner={props.feedback} />;
     case 'saving':

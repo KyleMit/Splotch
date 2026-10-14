@@ -332,11 +332,18 @@ export class NativeAiController extends AiRecoverySession {
     }
     return true;
   };
+  // Settings reads the saved credential for display only. A send without a credential this
+  // session has loaded loads it, with any held journal or recovery, under the send's own check.
+  protected loadThenGenerate = async () => {
+    if (!this.state.authorized) return false;
+    if (!this.credential) await this.load();
+    return this.generateAuthorized();
+  };
   generate = async () => {
-    if (!this.deps.parent) return this.generateAuthorized();
+    if (!this.deps.parent) return this.loadThenGenerate();
     if (this.active || this.unresolved()) return;
     this.protect(() => {
-      void this.generateAuthorized();
+      void this.loadThenGenerate();
     });
   };
   private poll = async () => {

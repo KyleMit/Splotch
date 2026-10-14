@@ -75,7 +75,7 @@ describe('root Parent Center policy and lifetime', () => {
     const current = parseSoundSettings(JSON.stringify(old));
     expect(current).toEqual({
       ...old,
-      version: 14,
+      version: 15,
       saveOnDeleteEnabled: false,
       buttonScale: 100,
       reduceMotion: 'system',
@@ -85,6 +85,8 @@ describe('root Parent Center policy and lifetime', () => {
       toolbarStyle: 'buttons',
       toolDrawerEnabled: true,
       screenshotEnabled: true,
+      aiCustomizationEnabled: true,
+      autoSaveAiEnabled: false,
       coloringBookEnabled: true,
       soundVolume: 50,
       drawingSoundEnabled: true,
@@ -121,7 +123,7 @@ describe('root Parent Center policy and lifetime', () => {
       };
       const migrated = parseSoundSettings(JSON.stringify(old));
       expect(migrated).toMatchObject({
-        version: 14,
+        version: 15,
         aiEnabled: true,
         parentPolicies: {
           ai: 'never',
@@ -159,7 +161,7 @@ describe('root Parent Center policy and lifetime', () => {
     await f.owner.setPolicy('imageReport', 'session');
     const stored = f.storage.write.mock.calls[0][0];
     expect(parseSoundSettings(stored)).toMatchObject({
-      version: 14,
+      version: 15,
       parentPolicies: { ...ALWAYS, imageReport: 'session' },
     });
     const current = JSON.parse(stored);
@@ -218,20 +220,20 @@ describe('root Parent Center policy and lifetime', () => {
     expect(report).toHaveBeenCalledOnce();
     f.owner.dispose();
   });
-  it('requires Parent Center authorization and confirmed persistence before enabling AI or relaxing a policy', async () => {
+  it('requires Parent Center authorization and confirmed persistence before relaxing a policy', async () => {
     const f = productFixture();
     await f.owner.settings.load();
-    await f.owner.setAiEnabled(true);
+    const policy = () => f.owner.getState().settings.parentPolicies.feedback;
+    await f.owner.setPolicy('feedback', 'session');
     expect(f.storage.write).not.toHaveBeenCalled();
     f.owner.openParentCenter();
     solve(f.owner.gate);
     const write = pending();
     f.storage.write.mockReturnValueOnce(write.promise);
-    const work = f.owner.setAiEnabled(true);
-    expect(f.owner.port.consent().enabled).toBe(false);
+    const work = f.owner.setPolicy('feedback', 'session');
     write.reject(new Error('disk full'));
     await work;
-    expect(f.owner.port.consent().enabled).toBe(false);
+    expect(policy()).toBe('always');
     f.owner.closeParentCenter();
     await f.owner.settings.retrySave();
     expect(f.storage.write).toHaveBeenCalledTimes(1);
@@ -240,7 +242,7 @@ describe('root Parent Center policy and lifetime', () => {
     f.owner.openParentCenter();
     solve(f.owner.gate);
     await f.owner.retryParentSave();
-    expect(f.owner.port.consent().enabled).toBe(true);
+    expect(policy()).toBe('session');
     await f.owner.setPolicy('parentCenter', 'never');
     expect(f.owner.getState().confirmNever).toBe(true);
     expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('always');

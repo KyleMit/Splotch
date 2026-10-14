@@ -19,20 +19,16 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
-import { PARENT_PLATFORM } from '../platform/parentPlatform';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
 import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
-import {
-  isParentPolicies,
-  arePoliciesAvailable,
-  PROTECTED_PARENT_POLICIES,
-  type ParentPreferences,
-} from '../parentCenter/parentPolicy';
+import { PROTECTED_PARENT_POLICIES } from '../parentCenter/parentPolicy';
 import { isButtonScale } from './buttonSize';
 import { isReduceMotionPreference, type ReduceMotionPreference } from './reduceMotion';
 import { WHATS_NEW_STAMP } from './whatsNew';
 import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
+import { DEFAULT_AI_PREFERENCES, createAiActions } from './aiPreferences';
+import { createParentSaves } from './parentSaves';
 import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
   DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -71,13 +67,14 @@ export function initialSoundSettingsState(): SoundSettingsState {
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
     message: '',
   };
 }
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 14,
+    version: 15,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -91,6 +88,7 @@ function defaultSoundSettings(): SoundSettings {
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
   };
 }
 
@@ -111,6 +109,7 @@ function unreadSoundSettingsState(): SoundSettingsState {
     saveOnDeleteEnabled: DEFAULT_SAVE_ON_DELETE_ENABLED,
     ...DEFAULT_ACCESSIBILITY_SETTINGS,
     ...DEFAULT_PENCIL_SETTINGS,
+    ...DEFAULT_AI_PREFERENCES,
     saved: false,
     message:
       'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
@@ -380,22 +379,11 @@ function createPreferenceActions(context: PreferenceActionContext) {
     ...createDrawingPreferenceActions(context),
     ...createSoundActions(choose),
     ...createPencilActions(choose),
+    ...createAiActions(choose),
     ...createAccessibilityActions(choose),
     setToolbarStyle: (toolbarStyle: ToolbarStyle) =>
       choose({ toolbarStyle }, isToolbarStyle(toolbarStyle), 'Button style choice is invalid.'),
   };
-}
-
-const PARENT_SAVE_FAILED_MESSAGE =
-  'Parent Center choices were not saved. Previous protection is still active. Retry saving.';
-
-// A Parent Center choice the platform's store rules forbid never reaches storage.
-function isSavableParentPreferences(choices: ParentPreferences) {
-  return (
-    typeof choices.aiEnabled === 'boolean' &&
-    isParentPolicies(choices.parentPolicies) &&
-    arePoliciesAvailable(choices.parentPolicies, PARENT_PLATFORM)
-  );
 }
 
 export function createSoundSettings(
@@ -405,7 +393,6 @@ export function createSoundSettings(
   let state = initialSoundSettingsState();
   let disposed = false;
   let readFailed = false;
-  let pendingParent: SoundSettings | null = null;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
     state = next;
@@ -413,7 +400,7 @@ export function createSoundSettings(
   }
   async function persist(settings: SoundSettings) {
     readFailed = false;
-    pendingParent = null;
+    parent.clearPending();
     const { version: _version, ...choices } = settings;
     publish({ status: 'saving', ...choices, message: '' });
     try {
@@ -429,23 +416,6 @@ export function createSoundSettings(
     }
     await metadata.flushMetadata();
   }
-  async function persistParent(settings: SoundSettings) {
-    if (state.status !== 'ready' || readFailed) return;
-    const previous = snapshot(state);
-    pendingParent = settings;
-    const { version: _version, ...choices } = previous;
-    publish({ status: 'saving', ...choices, message: 'Saving Parent Center choices…' });
-    try {
-      // Through snapshot, so the policies land in their saved order however the caller built them.
-      await storage.write(JSON.stringify(snapshot(settings)));
-      const { version: _nextVersion, ...next } = settings;
-      pendingParent = null;
-      publish({ status: 'ready', ...next, saved: true, message: 'Parent Center choices saved.' });
-    } catch {
-      publish({ status: 'ready', ...choices, saved: false, message: PARENT_SAVE_FAILED_MESSAGE });
-    }
-    await metadata.flushMetadata();
-  }
   const actionContext: PreferenceActionContext = {
     getState: () => state,
     isDisposed: () => disposed,
@@ -453,9 +423,14 @@ export function createSoundSettings(
     publish,
     persist,
   };
+  const parent = createParentSaves({
+    storage,
+    ...actionContext,
+    flushMetadata: () => metadata.flushMetadata(),
+  });
   const metadata = createMetadataActions({
     ...actionContext,
-    persistMetadata: createMetadataWriter(storage, actionContext, () => pendingParent !== null),
+    persistMetadata: createMetadataWriter(storage, actionContext, parent.hasPending),
   });
   return {
     async load() {
@@ -475,7 +450,11 @@ export function createSoundSettings(
     ...metadata.actions,
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;
-      if (pendingParent) {
+      if (parent.aiSavePending()) {
+        await parent.retryAiSave();
+        return;
+      }
+      if (parent.hasPending()) {
         publish({ ...state, message: 'Open Parent Center to retry saving its choices.' });
         return;
       }
@@ -485,19 +464,11 @@ export function createSoundSettings(
       }
       await persist(snapshot(state));
     },
-    async setParentPreferences(choices: ParentPreferences) {
-      if (disposed || state.status !== 'ready' || readFailed) return;
-      if (!isSavableParentPreferences(choices)) throw new Error('Parent Center choice is invalid.');
-      await persistParent({ ...snapshot(state), ...choices });
-    },
-    async retryParentSave() {
-      if (disposed || state.status !== 'ready' || !pendingParent || readFailed) return;
-      await persistParent({
-        ...snapshot(state),
-        aiEnabled: pendingParent.aiEnabled,
-        parentPolicies: pendingParent.parentPolicies,
-      });
-    },
+    setParentPreferences: parent.setParentPreferences,
+    setAiEnabled: parent.setAiEnabled,
+    retryAiSave: parent.retryAiSave,
+    aiSaveFailed: parent.aiSaveFailed,
+    retryParentSave: parent.retryParentSave,
     async retryRead() {
       if (disposed || state.status !== 'ready' || !readFailed) return;
       try {

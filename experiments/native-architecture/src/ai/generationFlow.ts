@@ -95,24 +95,6 @@ export class NativeAiFlow extends NativeAiController {
     if (journal && this.state.attempt?.kind === 'journal') this.dismissed.add(journal.id);
     this.close();
   };
-  // What the AI Image Button shows before anyone taps it: which credential is saved and, on the
-  // free tier, how many pictures are left. Reading that is not sending a drawing, so no grown-up
-  // is asked, as shipping requests its free grant whenever AI image creation is on.
-  checkAvailability = async () => {
-    if (this.disposed || this.active || this.state.open) return;
-    const check = ++this.availabilityCheck;
-    const permitted = () =>
-      !this.disposed && check === this.availabilityCheck && !this.active && !this.state.open;
-    this.update({ availability: 'loading' });
-    try {
-      const credential = await this.readCredential(permitted);
-      if (permitted()) await this.applyCredential(credential, permitted);
-    } catch {
-      if (!permitted()) return;
-      this.credential = null;
-      this.update({ credential: 'unavailable', remaining: null, availability: 'unavailable' });
-    }
-  };
   // Report a problem: the last failure's bounded details go to a grown-up's confirmation.
   reportProblem = () => {
     if (!this.state.open || this.state.view !== 'result') return;
@@ -145,7 +127,7 @@ export class NativeAiFlow extends NativeAiController {
     const go = () => {
       this.problems?.reset();
       this.update({ attempt: { kind: 'starting', startedAt: Date.now() }, minimized: false });
-      void this.generateAuthorized().then(() => {
+      void this.loadThenGenerate().then(() => {
         if (this.state.attempt?.kind === 'starting') this.update({ attempt: { kind: 'stopped' } });
       });
     };

@@ -26,6 +26,14 @@ export type AiFailureDetails = Readonly<{
   endpoint: '/api/generate-image' | '/api/generation-result';
   message: string;
 }>;
+// What became of a credential saved or forgotten from Settings › AI Art. Each is numbered, so a
+// section shows only the outcomes of its own visit; the server's own words come with a refusal.
+export type AiCredentialResult = Readonly<
+  { id: number; kind: CredentialKind } & (
+    | { outcome: 'invalid' | 'checkUnavailable' | 'throttled'; detail: string | null }
+    | { outcome: 'accepted' | 'unreachable' | 'saveFailed' | 'forgotten' | 'forgetFailed' }
+  )
+>;
 export type AiState = Readonly<{
   failure: AiFailureDetails | null;
   // The grown-up's problem report about the last failure; null where the app cannot send one.
@@ -48,6 +56,12 @@ export type AiState = Readonly<{
   busy: boolean;
   remaining: number | null;
   credential: 'free' | CredentialKind | 'unavailable';
+  // The saved credential as Settings shows it: the key masked to its last four characters, or the
+  // access code; null with neither.
+  saved: string | null;
+  // Settings' own read of the saved credential and the free allowance is in flight.
+  checking: boolean;
+  credentialResult: AiCredentialResult | null;
   journal: AiJournal | null;
   recovery: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt | null;
   heldResult: AiResult | null;

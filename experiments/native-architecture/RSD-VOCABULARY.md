@@ -252,6 +252,34 @@ the way. `audio/soundGates.ts` gates drawing sound on Sound and Drawing, and the
 Sound and Deleting, as shipping's `canPlayDrawingSound` and `canPlayDeleteSound` do. Button style is
 stored and chosen here; the flat toolbar's rendering is not ported yet.
 
+## Settings › AI Art
+
+`RsdAiSettingsSection` ports shipping's `AiKeyManager.svelte` with `RsdAiValueProp`
+(`AiValueProp.svelte`), `RsdAiKeyManager` and `RsdOpenAiKeyHowTo` (`OpenAiKeyHowTo.svelte`). The
+Create AI Images switch sits over the three-step explainer while it is off, and over the key manager
+and the Customize AI Style and Auto-Save AI Images switches once it is on. On the phone the
+drilled-in page claims shipping's stable card height (`aiSettings` in `modalGeometry.ts`).
+
+As in shipping, nothing in this section asks for a grown-up check. The switch (`toggleAi` in
+`createDrawingProduct.ts`) is stored beside the Parent Center policies, but it saves with its own
+copy, and a failed save keeps its retry in this section (`aiSaveFailed` / `retryAiSave` on the
+settings owner); Parent Center's retry covers only its policies. Saving or forgetting a key or
+access code goes through the AI owner's `setup` and `removeCredential` while AI is on. The server
+verifies a credential before the vault keeps it, and turning AI off, a Parent Center change or
+leaving the app drops a change in flight. Generating, reporting, external links and feedback keep
+their checks. The one field tells a key from a code by shipping's prefixes (`ai/credentialKind.ts`,
+reading `web/src/lib/ai/keyFormat.ts`), and a refusal shows the server's own words. Settings reads
+which credential is saved, and the free allowance while AI is on, through the owner's `inspect`; it
+waits out a generation in flight, whose vault lease a read would end.
+
+The two feature switches persist in settings schema 15 at shipping's defaults (customization on,
+auto-save off); every earlier record migrates to them. The AI sheet does not read them yet.
+`tools/tests/native-ai-settings-drift.test.mjs` reads the copy, defaults, geometry and illustrations
+back from shipping; `tools/tests/native-ai-settings.test.mjs` drives the owner, the schema, and the
+switch and key save that ask for no check while a send still does;
+`tools/migration/tests/rsd-native-ai-settings.test.mjs` mounts the section through the released
+native renderer.
+
 ## Design primitives
 
 `src/rsdDrawing/` ports the small shipping primitives in `web/src/lib/components/design/` and the

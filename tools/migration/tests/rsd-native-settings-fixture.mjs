@@ -7,7 +7,7 @@ import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/se
 
 // The stored settings, drawing screen and Settings queries the RSD Settings suites share.
 const CURRENT_SETTINGS = {
-  version: 14,
+  version: 15,
   soundEnabled: false,
   strokeWidth: 'medium',
   eraserWidth: 'medium',
@@ -38,6 +38,8 @@ const CURRENT_SETTINGS = {
   toolbarStyle: 'buttons',
   toolDrawerEnabled: true,
   screenshotEnabled: true,
+  aiCustomizationEnabled: true,
+  autoSaveAiEnabled: false,
 };
 
 export function storedSettings(overrides = {}) {

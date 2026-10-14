@@ -8,3 +8,9 @@ select,
 textarea {
   font-family: inherit;
 }
+
+/* A saved credential reads in the design tokens' mono face, as shipping's
+   .access-code-input[readonly] does; the rule above would hand it the app font. */
+input[readonly] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

@@ -13,9 +13,9 @@ export function useAiAvailability(
   const enabled = settings.status !== 'loading' && settings.aiEnabled;
   useEffect(() => {
     if (!owner || !enabled) return;
-    void owner.checkAvailability();
+    void owner.inspect();
     const subscription = AppState.addEventListener('change', (next) => {
-      if (next === 'active') void owner.checkAvailability();
+      if (next === 'active') void owner.inspect();
     });
     return () => subscription.remove();
   }, [owner, enabled]);

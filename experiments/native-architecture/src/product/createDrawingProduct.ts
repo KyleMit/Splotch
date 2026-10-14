@@ -88,9 +88,10 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       gate.invalidate();
       notify();
     },
+    // Settings › AI Art's master switch, which, as in shipping, asks for no grown-up check: a
+    // drawing still waits behind the generation check before it is sent.
     async setAiEnabled(aiEnabled: boolean) {
-      if (!editable()) return;
-      await settings.setParentPreferences({ ...preferences, aiEnabled });
+      if (!disposed) await settings.setAiEnabled(aiEnabled);
     },
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
       if (!editable()) return;

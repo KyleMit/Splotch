@@ -52,7 +52,8 @@ async function version13Record() {
   await f.owner.load();
   await f.owner.setUndoButtonEnabled(false);
   const current = JSON.parse(f.stored());
-  for (const field of DRAWER_FIELDS) delete current[field];
+  for (const field of [...DRAWER_FIELDS, 'aiCustomizationEnabled', 'autoSaveAiEnabled'])
+    delete current[field];
   return { ...current, version: 13 };
 }
 function fixture(snapshot = JSON.stringify(CURRENT)) {
@@ -73,23 +74,27 @@ describe('parent drawing control preferences', () => {
     const version13 = await version13Record();
     expect(parseSoundSettings(JSON.stringify(version13))).toEqual({
       ...version13,
-      version: 14,
+      version: 15,
       toolDrawerEnabled: true,
       screenshotEnabled: true,
+      aiCustomizationEnabled: true,
+      autoSaveAiEnabled: false,
     });
   });
-  it('carries a version 11 record through every step to version 14', () => {
+  it('carries a version 11 record through every step to version 15', () => {
     expect(parseSoundSettings(JSON.stringify(VERSION_11))).toMatchObject({
-      version: 14,
+      version: 15,
       undoButtonEnabled: false,
       toolDrawerEnabled: true,
       screenshotEnabled: true,
+      aiCustomizationEnabled: true,
+      autoSaveAiEnabled: false,
       toolbarStyle: 'buttons',
       parentPolicies: MIGRATED_POLICIES,
     });
   });
   it.each(DRAWER_FIELDS)(
-    'rejects %s in a version 13 record and its absence from a version 14 one',
+    'rejects %s in a version 13 record and its absence from a current one',
     async (field) => {
       const version13 = await version13Record();
       expect(() => parseSoundSettings(JSON.stringify({ ...version13, [field]: false }))).toThrow(
@@ -97,9 +102,11 @@ describe('parent drawing control preferences', () => {
       );
       const current = {
         ...version13,
-        version: 14,
+        version: 15,
         toolDrawerEnabled: true,
         screenshotEnabled: true,
+        aiCustomizationEnabled: true,
+        autoSaveAiEnabled: false,
       };
       expect(parseSoundSettings(JSON.stringify({ ...current, [field]: false }))).toMatchObject({
         [field]: false,
@@ -158,7 +165,7 @@ describe('parent drawing control preferences', () => {
       expect(parseSoundSettings(f.stored())).toEqual({
         ...CURRENT,
         parentPolicies: MIGRATED_POLICIES,
-        version: 14,
+        version: 15,
         saveOnDeleteEnabled: false,
         buttonScale: 100,
         reduceMotion: 'system',
@@ -168,6 +175,8 @@ describe('parent drawing control preferences', () => {
         toolbarStyle: 'buttons',
         toolDrawerEnabled: true,
         screenshotEnabled: true,
+        aiCustomizationEnabled: true,
+        autoSaveAiEnabled: false,
         orientation: 'portrait',
         soundVolume: 50,
         drawingSoundEnabled: true,

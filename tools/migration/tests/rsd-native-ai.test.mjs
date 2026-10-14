@@ -117,14 +117,22 @@ function useCaller(drawing = emptyDrawing(), overrides = {}) {
     audioMessage: '',
   };
 }
-// Parent Center's AI switch is the master control; the drawer carries the wand only once it is on.
+async function openAiArt() {
+  const row = host.querySelector('[aria-label^="AI Art, "]');
+  expect(row, 'AI Art row').not.toBeNull();
+  await act(async () => row.click());
+}
+// Settings › AI Art's switch is the master control, with no grown-up check, as shipping's is; the
+// drawer carries the wand only once it is on.
 async function enableAi() {
   await mount(createElement(RsdDrawingScreen));
   await expandControls();
   expect(host.querySelector('[aria-label^="Create AI image"]')).toBeNull();
-  await act(async () => caller.product.owner.openParentCenter());
-  await solve();
+  await click('Settings');
+  await openAiArt();
   await click('Create AI Images');
+  expect(host.textContent).not.toContain('Grown-Ups Only');
+  expect(caller.product.state.settings.aiEnabled).toBe(true);
   await click('Close');
 }
 const drawingRequests = () =>

@@ -29,6 +29,10 @@ export function soundSettingsActions(sound: Sound) {
       void sound.owner?.settings.setToolbarStyle(style),
     onOrientationChange: (orientation: Parameters<SettingsOwner['setOrientation']>[0]) =>
       void sound.owner?.settings.setOrientation(orientation),
+    onAiCustomizationChange: (enabled: boolean) =>
+      void sound.owner?.settings.setAiCustomizationEnabled(enabled),
+    onAutoSaveAiChange: (enabled: boolean) =>
+      void sound.owner?.settings.setAutoSaveAiEnabled(enabled),
     onColoringBookChange: (enabled: boolean) =>
       void sound.owner?.settings.setColoringBookEnabled(enabled),
     onReduceMotionChange: (preference: Parameters<SettingsOwner['setReduceMotion']>[0]) =>

@@ -62,7 +62,7 @@ async function fixture({
 it('checks the free allowance without asking a grown-up and without reading the drawing', async () => {
   const f = await fixture();
   expect(f.owner.getState().availability).toBe('loading');
-  await f.owner.checkAvailability();
+  await f.owner.inspect();
   expect(f.owner.getState()).toMatchObject({
     availability: 'ready',
     credential: 'free',
@@ -79,7 +79,7 @@ it('checks the free allowance without asking a grown-up and without reading the 
 
 it('marks the allowance unavailable when the grant cannot be read', async () => {
   const f = await fixture({ grant: () => new Response('{"ok":false}', { status: 503 }) });
-  await f.owner.checkAvailability();
+  await f.owner.inspect();
   expect(f.owner.getState().availability).toBe('unavailable');
 });
 
