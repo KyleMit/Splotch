@@ -227,6 +227,79 @@ it('rejects progressive scans that break the band, approximation or table rules'
   ])
     expect(await admits(candidate)).toBe(false);
 });
+it('rejects a DC scan claiming the AC band, a component coded twice, and AC before its DC', async () => {
+  const portrait = readFileSync(AI_OUTPUT_FIXTURES.portrait),
+    gray = fixtures.get('gray').bytes;
+  const segments = jpegSegments(portrait),
+    scans = segments.flatMap((segment, index) => (segment.marker === 0xda ? [index] : []));
+  const dcStart = segments.find((segment) => segment.marker === 0xc4).offset,
+    acStart = segments[scans[0] + 1].offset,
+    acEnd = segments[scans[1] + 1].offset;
+  const wideDc = Buffer.from(portrait.subarray(0, acStart));
+  wideDc[segments[scans[0]].end - 2] = 63;
+  const grayScan = jpegSegments(gray).find((segment) => segment.marker === 0xda).offset,
+    grayData = gray.subarray(grayScan, gray.length - 2);
+  for (const candidate of [
+    Buffer.concat([wideDc, Buffer.of(255, 0xd9)]),
+    Buffer.concat([gray.subarray(0, grayScan), grayData, grayData, Buffer.of(255, 0xd9)]),
+    Buffer.concat([
+      portrait.subarray(0, dcStart),
+      portrait.subarray(acStart, acEnd),
+      portrait.subarray(dcStart, acStart),
+      portrait.subarray(acEnd),
+    ]),
+  ])
+    expect(await admits(candidate)).toBe(false);
+});
+function entropySpans(bytes) {
+  const segments = jpegSegments(bytes);
+  return segments.flatMap((segment, index) =>
+    segment.marker === 0xda
+      ? [{ start: segment.end, end: segments[index + 1]?.offset ?? bytes.length - 2 }]
+      : []
+  );
+}
+const withEndOfImage = (bytes, length) =>
+  Buffer.concat([bytes.subarray(0, length), Buffer.of(255, 0xd9)]);
+it.each([
+  ['baseline', 1024, 768, { progressive: false }],
+  ['progressive', 512, 384, { progressive: true }],
+  ['progressive 4:4:4', 512, 384, { progressive: true, chromaSubsampling: '4:4:4' }],
+  ['mozjpeg', 512, 384, { mozjpeg: true }],
+  ['gray progressive', 512, 384, { progressive: true }, true],
+])(
+  'walks every block of a %s provider picture and rejects it cut inside any scan before an intact EOI',
+  async (_, width, height, options, gray = false) => {
+    const source = sharp(readFileSync(AI_OUTPUT_FIXTURES.landscape)).resize(width, height, {
+      fit: 'fill',
+    });
+    const bytes = await (gray ? source.grayscale() : source).jpeg(options).toBuffer();
+    await sharp(bytes, { failOn: 'warning' }).raw().toBuffer();
+    expect(await resultImageGrid(bytes, 'image/jpeg', current)).toEqual({ width, height });
+    for (const span of entropySpans(bytes))
+      for (const length of [span.start + 1, Math.floor((span.start + span.end) / 2)]) {
+        const cut = withEndOfImage(bytes, length);
+        await expect(sharp(cut, { failOn: 'warning' }).raw().toBuffer()).rejects.toThrow();
+        expect(await admits(cut)).toBe(false);
+      }
+  }
+);
+it.each(Object.entries(AI_OUTPUT_FIXTURES))(
+  'rejects the committed %s output cut inside a middle or the last scan, or without its last scan, before an intact EOI',
+  async (_, path) => {
+    const bytes = readFileSync(path),
+      spans = entropySpans(bytes);
+    const middle = spans[Math.floor(spans.length / 2)],
+      last = spans.at(-1);
+    for (const length of [
+      middle.start + 1,
+      Math.floor((middle.start + middle.end) / 2),
+      Math.floor((last.start + last.end) / 2),
+      spans.at(-2).end,
+    ])
+      expect(await admits(withEndOfImage(bytes, length))).toBe(false);
+  }
+);
 function restartJpeg(interval, marker) {
   const segment = (code, body) => Buffer.of(255, code, 0, body.length + 2, ...body);
   const table = (selector) => [selector, 1, ...Array(15).fill(0), 0];
