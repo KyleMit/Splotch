@@ -193,6 +193,7 @@ vi.mock('react-native-svg', async () => {
 const records = vi.hoisted(() => ({
   scheme: 'light',
   reduceMotion: false,
+  reduceTransparency: false,
   dismissals: [],
   props: [],
   viewports: [],
@@ -203,6 +204,7 @@ const records = vi.hoisted(() => ({
   backListeners: new Set(),
   exits: 0,
   os: 'ios',
+  androidApi: 36,
   settingsOpened: 0,
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
@@ -278,11 +280,15 @@ vi.mock('react-native', async () => {
       get OS() {
         return records.os;
       },
+      get Version() {
+        return records.androidApi;
+      },
       constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
       select: (values) => values.ios ?? values.native ?? values.default,
     },
     AccessibilityInfo: {
       isReduceMotionEnabled: async () => records.reduceMotion,
+      isReduceTransparencyEnabled: async () => records.reduceTransparency,
       addEventListener: () => ({ remove() {} }),
       announceForAccessibility: (text) => records.announcements.push(text),
       announceForAccessibilityWithOptions: (text) => records.announcements.push(text),
@@ -325,6 +331,7 @@ vi.mock('react-native', async () => {
       getSize: (_uri, done) => queueMicrotask(() => done(1024, 768)),
     }),
     TextInput: host('input'),
+    requireNativeComponent: () => host('div'),
     experimental_LayoutConformance: View,
   };
 });
@@ -417,6 +424,7 @@ afterEach(async () => {
   caller.library = null;
   records.scheme = 'light';
   records.reduceMotion = false;
+  records.reduceTransparency = false;
   records.dismissals.length = 0;
   caller.sound = null;
   caller.screen = null;
@@ -428,6 +436,7 @@ afterEach(async () => {
   records.backListeners.clear();
   records.exits = 0;
   records.os = 'ios';
+  records.androidApi = 36;
   records.settingsOpened = 0;
   caller.capturePng = null;
   caller.deviceLocked = false;

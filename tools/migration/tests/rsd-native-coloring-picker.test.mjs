@@ -29,6 +29,7 @@ import {
   COLORING_NARROW_MAX_WIDTH_PX,
   COLORING_PADDING_PX,
   COLORING_PHONE_MAX_WIDTH_PX,
+  MODAL_SCRIM_PLAIN,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import {
   BOOK_GRID_COLUMNS,
@@ -154,6 +155,14 @@ describe('the Coloring Book Picker', () => {
     expect(tileBox('Cat coloring page')).toMatchObject({ width: 167, height: 250.5 });
     await press('Dog coloring page');
     expect(onChoose).toHaveBeenCalledExactlyOnceWith('farm/dog');
+  });
+
+  // app.css drops the picker's backdrop blur on a coarse pointer, which every native screen is.
+  it('dims the screen behind with the plain scrim and no blur', async () => {
+    await mount(picker({}).tree);
+    expect(host.querySelector('[data-testid="modal-backdrop-blur"]')).toBeNull();
+    const scrim = records.props.findLast((props) => props.testID === 'modal-scrim');
+    expect(flat(scrim.style).backgroundColor).toBe(MODAL_SCRIM_PLAIN);
   });
 
   it('shows landscape paper wide tiles two to a row', async () => {

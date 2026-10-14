@@ -24,6 +24,7 @@ class MainApplication : Application(), ReactApplication {
           add(SplotchLibraryPackage())
           add(SplotchDeviceLockPackage())
           add(SplotchAIEnvironmentPackage())
+          add(SplotchBackdropBlurPackage())
         }
     )
   }
