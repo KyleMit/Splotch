@@ -20,10 +20,11 @@ import {
 } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import {
-  Canvas,
-  Image as SkiaImage,
-  Picture,
+  FilterMode,
+  MipmapMode,
   Skia,
+  SkiaPictureView,
+  fitRects,
   type SkCanvas,
   type SkImage,
   type SkPicture,
@@ -248,7 +249,8 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
   const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}`;
   const committed = useCommittedLayer(props.strokes, size, context, key);
   const draftPicture = useDraftPicture(drafts, size, context);
-  const failure = committed.error ?? draftPicture.error;
+  const scene = useInkScene(committed.value, draftPicture.value, size);
+  const failure = committed.error ?? draftPicture.error ?? scene.error;
   const ready = size !== null && bookFill.ready && failure === null;
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -278,23 +280,48 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
         );
       }}
     >
-      {size ? (
-        <Canvas style={StyleSheet.absoluteFill}>
-          {committed.value ? (
-            <SkiaImage
-              image={committed.value}
-              x={0}
-              y={0}
-              width={size.width}
-              height={size.height}
-            />
-          ) : null}
-          {draftPicture.value ? <Picture picture={draftPicture.value} /> : null}
-        </Canvas>
+      {scene.value ? (
+        <SkiaPictureView picture={scene.value} style={StyleSheet.absoluteFill} />
       ) : null}
     </View>
   );
 });
+
+// The committed raster contain-fitted to the plane and the strokes in progress over it, as one
+// picture: the view draws it as soon as it arrives, once. A Skia Canvas element tree would
+// re-record on the UI thread and draw twice for each change (once on commit, once after it).
+function useInkScene(
+  committed: SkImage | null,
+  draft: SkPicture | null,
+  size: Size | null
+): Rendered<SkPicture> {
+  return useMemo(() => {
+    if (!size) return { value: null, error: null };
+    try {
+      const recorder = Skia.PictureRecorder();
+      const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
+      if (committed) {
+        const { src, dst } = fitRects(
+          'contain',
+          { x: 0, y: 0, width: committed.width(), height: committed.height() },
+          { x: 0, y: 0, width: size.width, height: size.height }
+        );
+        canvas.drawImageRectOptions(
+          committed,
+          src,
+          dst,
+          FilterMode.Linear,
+          MipmapMode.None,
+          Skia.Paint()
+        );
+      }
+      if (draft) canvas.drawPicture(draft);
+      return { value: recorder.finishRecordingAsPicture(), error: null };
+    } catch (error) {
+      return { value: null, error };
+    }
+  }, [committed, draft, size]);
+}
 
 const styles = StyleSheet.create({
   scene: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
