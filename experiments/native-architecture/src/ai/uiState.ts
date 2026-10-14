@@ -13,6 +13,16 @@ export function aiCanGenerate(state: AiState) {
   );
 }
 
+// What the AI Image Button, the prompt and the result card start from before any read or run.
+export const AI_FLOW_IDLE = {
+  view: 'prompt',
+  attempt: null,
+  failure: null,
+  problem: null,
+  availability: 'loading',
+  failures: 0,
+} as const satisfies Partial<AiState>;
+
 export function aiJournalWaiting(state: AiState) {
   return !!state.journal && !['result', 'failed'].includes(state.journal.phase);
 }

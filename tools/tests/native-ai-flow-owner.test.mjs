@@ -83,10 +83,20 @@ it('marks the allowance unavailable when the grant cannot be read', async () => 
   expect(f.owner.getState().availability).toBe('unavailable');
 });
 
+it('sends with the allowance the wand already read, asking the server for it once', async () => {
+  const f = await fixture();
+  await f.owner.inspect();
+  await sendStyle(f);
+  expect(aiResultPhase(f.owner.getState()).kind).toBe('result');
+  expect(
+    f.transport.mock.calls.filter(([request]) => request.path === '/api/free-generation-grant')
+  ).toHaveLength(1);
+});
+
 it('asks a grown-up at the wand, then opens the style prompt and sends a picked style without asking again', async () => {
   const f = await fixture();
   const onSetup = vi.fn();
-  f.owner.start(onSetup);
+  f.owner.start({ onSetup, customize: true });
   expect(f.product.gate.getState()).toMatchObject({ open: true, feature: 'ai' });
   expect(f.owner.getState().open).toBe(false);
   solve(f.product.gate);
@@ -106,10 +116,25 @@ it('asks a grown-up at the wand, then opens the style prompt and sends a picked 
   expect(aiResultPhase(f.owner.getState()).kind).toBe('result');
 });
 
+it('skips the style prompt with style choice off and sends no style, as shipping does', async () => {
+  const f = await fixture();
+  f.owner.start({ onSetup: vi.fn(), customize: false });
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.prepare).toHaveBeenCalledOnce());
+  expect(f.owner.getState()).toMatchObject({ open: true, view: 'result' });
+  expect(f.product.gate.getState().open).toBe(false);
+  await f.settled();
+  const generate = f.transport.mock.calls.find(
+    ([request]) => request.path === '/api/generate-image'
+  );
+  expect(generate[0].query).toBeUndefined();
+  expect(aiResultPhase(f.owner.getState()).kind).toBe('result');
+});
+
 it('sends a grown-up to Settings instead of the prompt when no free picture is left', async () => {
   const f = await fixture({ grant: () => new Response('{"ok":true,"remaining":0,"limit":10}') });
   const onSetup = vi.fn();
-  f.owner.start(onSetup);
+  f.owner.start({ onSetup, customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(onSetup).toHaveBeenCalledOnce());
   expect(f.owner.getState().open).toBe(false);
@@ -131,7 +156,7 @@ it('releases an attempt held past its server window when the wand is next tapped
   const f = await fixture({
     stored: { kind: 'native', receipt: { kind: 'prepared', journal } },
   });
-  f.owner.start(vi.fn());
+  f.owner.start({ onSetup: vi.fn(), customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
   expect(f.storage.write).toHaveBeenCalledWith(expect.objectContaining({ phase: 'failed' }));
@@ -153,7 +178,7 @@ it('reopens a run left waiting before a reload on the result card and checks on 
   const f = await fixture({
     stored: { kind: 'native', receipt: { kind: 'prepared', journal } },
   });
-  f.owner.start(vi.fn());
+  f.owner.start({ onSetup: vi.fn(), customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
   expect(f.owner.getState()).toMatchObject({
@@ -169,7 +194,7 @@ it('reopens a run left waiting before a reload on the result card and checks on 
 
 // Through the gate to the prompt, then a picked style.
 async function sendStyle(f, onSetup = vi.fn()) {
-  f.owner.start(onSetup);
+  f.owner.start({ onSetup, customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(f.owner.getState()).toMatchObject({ open: true, view: 'prompt' }));
   f.owner.pickStyle('Clay');
@@ -189,7 +214,7 @@ it('releases a minimized run held past its server window when it is shown again,
   const now = Date.now();
   const clock = vi.spyOn(Date, 'now').mockReturnValue(now + JOB_TTL_MS + 1);
   try {
-    f.owner.start(vi.fn());
+    f.owner.start({ onSetup: vi.fn(), customize: true });
     await vi.waitFor(() => expect(f.owner.getState().journal.phase).toBe('failed'));
     expect(f.owner.getState().minimized).toBe(false);
     expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
@@ -216,7 +241,7 @@ it('brings back a finished picture nobody dismissed, and offers the prompt once 
     result: { uri: 'file:///fixture/ai.png', mime: 'image/png' },
   });
   const f = await fixture({ stored: { kind: 'native', receipt: { kind: 'prepared', journal } } });
-  f.owner.start(vi.fn());
+  f.owner.start({ onSetup: vi.fn(), customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
   expect(f.owner.getState().view).toBe('result');
@@ -225,7 +250,7 @@ it('brings back a finished picture nobody dismissed, and offers the prompt once 
     picture: { uri: 'file:///fixture/ai.png' },
   });
   f.owner.dismiss();
-  f.owner.start(vi.fn());
+  f.owner.start({ onSetup: vi.fn(), customize: true });
   solve(f.product.gate);
   await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
   expect(f.owner.getState().view).toBe('prompt');

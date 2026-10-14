@@ -79,13 +79,7 @@ const AI_SECTION_CARD_HEIGHT_PX = 604;
 
 // `aiSettings` is Settings drilled into AI Art.
 export type ModalSize =
-  | 'settings'
-  | 'aiSettings'
-  | 'sheet'
-  | 'coloring'
-  | 'gate'
-  | 'confirm'
-  | 'aiPrompt';
+  'settings' | 'aiSettings' | 'sheet' | 'coloring' | 'gate' | 'confirm' | 'aiPrompt';
 
 export type ModalFrame = {
   width: number;

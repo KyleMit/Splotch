@@ -30,6 +30,16 @@ export class NativeAiFlow extends NativeAiController {
       this.state = { ...this.state, problem: { phase: 'idle' } };
     }
   }
+  // A run still being sent tucks into the corner too, not only one the server has taken.
+  override minimize = () => {
+    if (
+      !this.state.open ||
+      !(aiJournalWaiting(this.state) || this.state.attempt?.kind === 'starting')
+    )
+      return;
+    this.reports.cancel();
+    this.update({ minimized: true });
+  };
   // Runs whose result card was closed on purpose, so their picture is not offered again.
   private dismissed = new Set<number>();
   protected needsSetup = () => {
@@ -43,7 +53,8 @@ export class NativeAiFlow extends NativeAiController {
   // waiting before a reload reopens, an attempt held past its server retention is released, and
   // the AI Style Prompt opens, or, with no credential and no free picture left, `onSetup` sends
   // the grown-up to the AI Art settings instead.
-  start = (onSetup: () => void) => {
+  // With style choice off (`customize`), the run starts with no style instead, as shipping's does.
+  start = ({ onSetup, customize }: { onSetup: () => void; customize: boolean }) => {
     this.onSetup = onSetup;
     if (this.state.minimized) {
       this.restore();
@@ -51,10 +62,10 @@ export class NativeAiFlow extends NativeAiController {
     }
     if (!this.deps.parent || this.active || this.state.open) return;
     this.protect(() => {
-      void this.begin(onSetup);
+      void this.begin(onSetup, customize);
     });
   };
-  private begin = async (onSetup: () => void) => {
+  private begin = async (onSetup: () => void, customize: boolean) => {
     const proof = this.authorization;
     await this.load();
     const permitted = () => proof === this.authorization && this.consented() && !this.disposed;
@@ -80,7 +91,13 @@ export class NativeAiFlow extends NativeAiController {
       onSetup();
       return;
     }
-    this.update({ open: true, minimized: false, view: 'prompt', attempt: null });
+    if (customize) {
+      this.update({ open: true, minimized: false, view: 'prompt', attempt: null });
+      return;
+    }
+    this.styled = false;
+    this.update({ open: true, minimized: false, view: 'result', attempt: null });
+    this.run();
   };
   private undismissedResult = () => {
     const journal = this.state.journal;
@@ -114,6 +131,7 @@ export class NativeAiFlow extends NativeAiController {
   // A style chosen on the AI Style Prompt starts the run at once, and the AI Result takes over.
   pickStyle = (style: AiStyle) => {
     if (!this.state.open || this.state.view !== 'prompt' || this.active) return;
+    this.styled = true;
     this.update({ style, view: 'result' });
     this.run();
   };

@@ -1,7 +1,8 @@
 import { css, html } from 'react-strict-dom';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../../../../web/src/lib/ai/loadingCopy';
 import { scale } from '../../../../web/src/lib/design/tokens';
-import { AI_RESULT_COPY } from '../ai/aiResultCopy';
+import { AI_AUTO_SAVE_COPY, AI_RESULT_COPY } from '../ai/aiResultCopy';
+import type { AiAutoSave } from '../product/useAiAutoSave';
 import { AI_RESULT_METRICS } from '../ai/aiResultGeometry';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { RsdIcon } from './RsdIcon';
@@ -66,6 +67,22 @@ export function RsdAiDownload({ onPress }: { onPress: () => void }) {
       <html.span>{AI_RESULT_COPY.download}</html.span>
     </RsdPressable>
   );
+}
+
+// shipping's autoSaveFooter: nothing while the save runs, the saved caption once it landed, and
+// the Download button with no auto-save or after one that did not land.
+export function aiAutoSaveFooter(
+  autoSave: AiAutoSave | null
+): { kind: 'saved'; caption: string } | { kind: 'downloadButton' } | null {
+  if (!autoSave) return { kind: 'downloadButton' };
+  if (autoSave.status === 'saving') return null;
+  if (autoSave.status === 'photos' || autoSave.status === 'downloads')
+    return { kind: 'saved', caption: AI_AUTO_SAVE_COPY[autoSave.status] };
+  return { kind: 'downloadButton' };
+}
+
+export function RsdAiSavedCaption({ caption }: { caption: string }) {
+  return <html.p style={[controlStyles.boldText, styles.saved]}>{`✓ ${caption}`}</html.p>;
 }
 
 // The fine print hanging under the card: the picture is AI-made, and grown-ups can report it.
@@ -135,6 +152,7 @@ const styles = css.create({
     paddingRight: dimensions.space2,
     textAlign: 'center',
   }),
+  saved: { margin: 0, color: colors.successText, fontSize: dimensions.fontSizeSm },
   captionTitle: { margin: 0, color: colors.text, fontSize: dimensions.fontSizeLg },
   captionSubtitle: { margin: 0, color: colors.textSoft, fontSize: dimensions.fontSizeSm },
   pill: (height: number, padding: number) => ({

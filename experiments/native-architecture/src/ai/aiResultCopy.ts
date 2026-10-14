@@ -17,6 +17,12 @@ export const AI_RESULT_COPY = {
   reportRefusal: 'Report this refusal',
 } as const;
 
+// The caption that stands in for Download once auto-save has kept the picture (autoSaveCopy.ts).
+export const AI_AUTO_SAVE_COPY = {
+  photos: 'Saved to your photos',
+  downloads: 'Downloaded',
+} as const;
+
 export const AI_ERROR_CARD_COPY = {
   retry: {
     title: "Hmm, that didn't work",

@@ -14,7 +14,6 @@ import { AI_RESULT_COPY } from '../ai/aiResultCopy';
 import { aiResultFrame, type AiResultMode } from '../ai/aiResultGeometry';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import type { AiResult } from '../ai/journal';
-import { keepAiPicture } from '../ai/keepAiPicture';
 import { aiResultPhase, aiRun, aiJournalWaiting } from '../ai/uiState';
 import { useAiProgress } from '../ai/useAiProgress';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -22,6 +21,7 @@ import { useReduceMotion } from '../drawing/useReduceMotion';
 import { isUnsaved, type UnsavedOutcome } from '../export/pictureSave';
 import type { PictureFormat } from '../export/pictureFilename';
 import type { KeptAiPicture } from '../ai/keepAiPicture';
+import type { AiAutoSave } from '../product/useAiAutoSave';
 import { DialogHeader } from './DialogHeader';
 import { fontTheme } from './fontTheme';
 import { ModalStage } from './ModalShell';
@@ -29,8 +29,10 @@ import { RsdAiReportConfirm, RsdAiReportStatus, aiReportSettled } from './RsdAiI
 import { RsdAiResultError } from './RsdAiResultError';
 import { RsdAiProblemConfirm, RsdAiProblemStatus, aiProblemSettled } from './RsdAiProblemReport';
 import {
+  aiAutoSaveFooter,
   RsdAiDisclosure,
   RsdAiDownload,
+  RsdAiSavedCaption,
   RsdAiKeepDrawing,
   RsdAiLoadingCaption,
 } from './RsdAiResultParts';
@@ -106,6 +108,8 @@ export function RsdAiResult({
   visible,
   onDismiss,
   onSaveFailed,
+  autoSaveEnabled,
+  autoSave,
 }: {
   owner: NativeAiOwner;
   state: AiState;
@@ -114,6 +118,9 @@ export function RsdAiResult({
   onDismiss: () => void;
   // A Download that did not land, for the Save Failure Banner and its Try again.
   onSaveFailed: (outcome: UnsavedOutcome, base64: string | null, format: PictureFormat) => void;
+  autoSaveEnabled: boolean;
+  // Where this run's auto-save put the picture; null when none ran.
+  autoSave: AiAutoSave | null;
 }) {
   const dial = useAiProgress(progress);
   const phase = aiResultPhase(state);
@@ -138,6 +145,8 @@ export function RsdAiResult({
           phase={phase}
           dial={dial}
           exiting={exiting}
+          autoSaveEnabled={autoSaveEnabled}
+          autoSave={autoSave}
           onLeave={leave}
           onKept={(kept) => {
             // A save that did not land keeps the picture on the card rather than sending it off
@@ -159,6 +168,8 @@ function ResultCard({
   phase,
   dial,
   exiting,
+  autoSaveEnabled,
+  autoSave,
   onLeave,
   onKept,
 }: {
@@ -167,6 +178,8 @@ function ResultCard({
   phase: ReturnType<typeof aiResultPhase>;
   dial: AiProgress;
   exiting: boolean;
+  autoSaveEnabled: boolean;
+  autoSave: AiAutoSave | null;
   onLeave: () => void;
   onKept: (kept: KeptAiPicture) => void;
 }) {
@@ -186,10 +199,12 @@ function ResultCard({
     insets,
     aspect,
     mode: resultMode(phase, waiting),
+    autosave: autoSaveEnabled,
     naturalWidth: decoded && decoded.src === sizerSrc ? decoded.width : null,
   });
   const settled = aiReportSettled(state.report);
   const download = useDownload(exiting, onKept);
+  const footer = aiAutoSaveFooter(autoSave);
   return (
     <SendOff exiting={exiting} shiftY={frame.shiftY} onDone={owner.dismiss}>
       <html.div
@@ -235,7 +250,11 @@ function ResultCard({
               {revealed && result ? (
                 <Fades hidden={exiting}>
                   <html.div style={styles.footer}>
-                    <RsdAiDownload onPress={() => void download(result)} />
+                    {footer?.kind === 'saved' ? (
+                      <RsdAiSavedCaption caption={footer.caption} />
+                    ) : footer?.kind === 'downloadButton' ? (
+                      <RsdAiDownload onPress={() => void download(result)} />
+                    ) : null}
                     <RsdAiReportStatus owner={owner} report={state.report} />
                   </html.div>
                 </Fades>
@@ -291,6 +310,7 @@ function useDownload(exiting: boolean, onKept: (kept: KeptAiPicture) => void) {
   return async (picture: AiResult) => {
     if (exiting || saving.current === picture.uri) return;
     saving.current = picture.uri;
+    const { keepAiPicture } = await import('../ai/keepAiPicture');
     const kept = await keepAiPicture(picture);
     if (saving.current === picture.uri) saving.current = null;
     onKept(kept);

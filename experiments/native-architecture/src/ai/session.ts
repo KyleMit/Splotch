@@ -15,7 +15,7 @@ import { createAiReportOwner } from './reportOwner';
 import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
 import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
-import { aiJournalWaiting } from './uiState';
+import { AI_FLOW_IDLE, aiJournalWaiting } from './uiState';
 export type { AiState, PreparedAiDrawing } from './sessionContract';
 export class AiSession {
   protected deps: AiSessionDependencies;
@@ -90,12 +90,7 @@ export class AiSession {
     })
   );
   protected state: AiState = {
-    view: 'prompt',
-    attempt: null,
-    failure: null,
-    problem: null,
-    availability: 'loading',
-    failures: 0,
+    ...AI_FLOW_IDLE,
     open: false,
     minimized: false,
     authorized: false,
@@ -165,11 +160,16 @@ export class AiSession {
     const permitted = () =>
       this.state.authorized && proof === this.authorization && !this.disposed && this.consented();
     if (!permitted()) throw new Error('AI authorization changed.');
+    // The allowance inspect() or a send already read this session stands: a tap reads the saved
+    // credential, never the grant a second time.
+    const known =
+      this.state.credential === 'free' && this.state.availability === 'ready'
+        ? this.state.remaining
+        : null;
     this.credential = null;
     this.update({
       credential: 'unavailable',
-      remaining: null,
-      availability: 'loading',
+      ...(known === null ? { remaining: null, availability: 'loading' } : {}),
     });
     const { byok, managed } = await this.readSaved(permitted);
     if (byok)
@@ -195,14 +195,13 @@ export class AiSession {
       credential: this.credential.kind,
       ...(this.credential.kind === 'free' ? {} : { availability: 'ready' }),
     });
-    if (this.credential.kind === 'free') {
+    if (this.credential.kind === 'free' && known !== null)
+      this.update({ remaining: known, availability: 'ready' });
+    else if (this.credential.kind === 'free') {
       const reply = await this.grantRequest(this.credential.installationId);
       if (!permitted()) return;
       if (reply.kind === 'grant')
-        this.update({
-          remaining: reply.remaining,
-          availability: 'ready',
-        });
+        this.update({ remaining: reply.remaining, availability: 'ready' });
       else
         this.update({
           availability: 'unavailable',
@@ -267,7 +266,11 @@ export class AiSession {
   private readStatus = async (current: () => boolean) => {
     const { byok, managed } = await this.readSaved(current);
     if (byok || managed) {
-      this.update({ credential: byok ? 'byok' : 'managed', remaining: null, availability: 'ready' });
+      this.update({
+        credential: byok ? 'byok' : 'managed',
+        remaining: null,
+        availability: 'ready',
+      });
       return;
     }
     this.update({ credential: 'free' });
@@ -463,11 +466,7 @@ export class AiSession {
     this.timer = null;
   };
   minimize = () => {
-    if (
-      !this.state.open ||
-      !(aiJournalWaiting(this.state) || this.state.attempt?.kind === 'starting')
-    )
-      return;
+    if (!this.state.open || !aiJournalWaiting(this.state)) return;
     this.reports.cancel();
     this.update({ minimized: true });
   };

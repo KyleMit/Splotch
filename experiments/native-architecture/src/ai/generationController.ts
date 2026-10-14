@@ -7,6 +7,9 @@ import { bytesBase64 } from './base64';
 export class NativeAiController extends AiRecoverySession {
   // Where a run goes when only a grown-up's setup can fix it; the flow sends it to Settings.
   protected needsSetup = () => {};
+  // Whether this run carries a style. With style choice off, shipping sends none and the server
+  // uses its base prompt; the journal still records the last style for its own format.
+  protected styled = true;
   private collectImage = async (
     journal: AiJournal,
     reply: Extract<
@@ -290,14 +293,15 @@ export class NativeAiController extends AiRecoverySession {
         await this.persist({ ...receipt.journal, phase: 'failed' });
         return true;
       }
-      await this.reports.prepare(id, upload, receipt.journal.style, credential);
+      const style = this.styled ? receipt.journal.style : null;
+      await this.reports.prepare(id, upload, style, credential);
       if (!this.currentGenerationPermission(proof)) return true;
       uploadStarted = true;
       const reply = await requestAi(
         this.deps.transport,
         {
           path: '/api/generate-image',
-          query: `style=${encodeURIComponent(receipt.journal.style)}`,
+          ...(style ? { query: `style=${encodeURIComponent(style)}` } : {}),
           method: 'POST',
           headers: {
             ...credentialHeaders(credential),

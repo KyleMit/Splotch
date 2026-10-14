@@ -234,6 +234,27 @@ it('budgets the AI Result card from the shipping custom properties', () => {
   expect(SHIPPING.appCss).toContain('--report-strip-gap: var(--space-4);');
   expect(px(scale.space4)).toBe(m.reportStripGap);
   expect(SHIPPING.appCss).toContain('--report-strip-tap: var(--touch-target-min);');
+  expect(declaration(card, '--result-autosave-footer-reserve')).toBe(
+    `${m.autosaveFooterReserve}px`
+  );
+});
+
+it('reserves the saved caption footer while auto-save is on, but not over the waiting pill', () => {
+  const frame = (mode, autosave) =>
+    aiResultFrame({
+      window: { width: 600, height: 500 },
+      insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      aspect: 0.75,
+      mode,
+      autosave,
+      naturalWidth: null,
+    });
+  const plain = frame('picture', false).stage.height;
+  const autosaved = frame('picture', true).stage.height;
+  const m = AI_RESULT_METRICS;
+  const loadingReserve = 2 * m.contentPadding + m.contentGap + m.loadingCaptionHeight + m.sizingAir;
+  expect(autosaved - plain).toBe(loadingReserve - m.autosaveFooterReserve);
+  expect(frame('waiting', true).stage.height).toBe(frame('waiting', false).stage.height);
 });
 
 it('fits the AI Result card the way the shipping calc() chain resolves', () => {
@@ -244,6 +265,7 @@ it('fits the AI Result card the way the shipping calc() chain resolves', () => {
     insets,
     aspect: 0.75,
     mode: 'picture',
+    autosave: false,
     naturalWidth: null,
   });
   expect(phone.width).toBe(370);
@@ -256,6 +278,7 @@ it('fits the AI Result card the way the shipping calc() chain resolves', () => {
     insets,
     aspect: 4 / 3,
     mode: 'waiting',
+    autosave: false,
     naturalWidth: 512,
   });
   expect(tablet.stage.width).toBe(512);
@@ -266,6 +289,7 @@ it('fits the AI Result card the way the shipping calc() chain resolves', () => {
       insets,
       aspect: 1,
       mode: 'serverError',
+      autosave: false,
       naturalWidth: null,
     }).width
   ).toBe(400);

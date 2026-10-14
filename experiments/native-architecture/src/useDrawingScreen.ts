@@ -285,6 +285,8 @@ function useDrawingSettings({
   report: (error: unknown) => void;
 }) {
   const [sheet, setSheet] = useState<'settings' | 'colors' | null>(null);
+  // Settings › AI Art, where a grown-up sets up the AI picture, opens there rather than the hub.
+  const [settingsSection, setSettingsSection] = useState<'ai' | null>(null);
   useEffect(() => () => settingsLease.current?.(), [settingsLease]);
   function openSheet(next: 'settings' | 'colors') {
     if (blocked() || settingsLease.current) return;
@@ -305,7 +307,15 @@ function useDrawingSettings({
     sheetOpen: sheet !== null,
     settingsOpen: sheet === 'settings',
     colorPickerOpen: sheet === 'colors',
-    openSettings: () => openSheet('settings'),
+    settingsSection,
+    openSettings: () => {
+      setSettingsSection(null);
+      openSheet('settings');
+    },
+    openAiSettings: () => {
+      setSettingsSection('ai');
+      openSheet('settings');
+    },
     closeSettings: closeSheet,
     openColorPicker: () => openSheet('colors'),
     closeColorPicker: closeSheet,

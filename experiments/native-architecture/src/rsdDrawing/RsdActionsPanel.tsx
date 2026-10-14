@@ -238,7 +238,12 @@ function panelTools(context: ToolContext): Tool[] {
           disabled={disabled || ai.disabled}
           busy={ai.busy}
           badge={ai.badge}
-          onPress={() => product.ai.owner?.start(screen.openSettings)}
+          onPress={() =>
+            product.ai.owner?.start({
+              onSetup: screen.openAiSettings,
+              customize: sound.settings.aiCustomizationEnabled,
+            })
+          }
         />
       ),
     });

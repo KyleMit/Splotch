@@ -40,6 +40,8 @@ import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
 
 type NativeSoundSettingsDialogProps = {
+  // The section Settings opens on, rather than the hub: AI Art when the AI Image Button needs setup.
+  initialSection: 'ai' | null;
   settings: SoundSettingsState;
   brushState: BrushPreferencesState;
   onBrushAvailabilityChange: (brush: OptionalBrush, enabled: boolean) => void;
@@ -113,7 +115,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   const busy = settings.status !== 'ready' || !visible;
   const shell = settingsShell(useWindowDimensions());
   const { unlocked } = props.parentCenter;
-  const { page, setPage, sectionTitle } = useSettingsPage(unlocked);
+  const { page, setPage, sectionTitle } = useSettingsPage(unlocked, props.initialSection);
   const toggles = useHubToggles({
     busy,
     soundEnabled: settings.soundEnabled,
@@ -265,8 +267,14 @@ function SaveStatus({
 
 // The page the phone shell shows. A solved Parent Center check lands on its section wherever it
 // was raised from, and each move lands focus on the section heading that replaced the control.
-function useSettingsPage(parentCenterUnlocked: boolean) {
-  const [page, setPage] = useState<SettingsPage>(parentCenterUnlocked ? PARENT_CENTER_PAGE : HUB);
+function useSettingsPage(parentCenterUnlocked: boolean, initialSection: 'ai' | null) {
+  const [page, setPage] = useState<SettingsPage>(
+    parentCenterUnlocked
+      ? PARENT_CENTER_PAGE
+      : initialSection
+        ? { kind: 'section', section: initialSection }
+        : HUB
+  );
   const sectionTitle = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (page.kind === 'section') landFocus(sectionTitle.current);

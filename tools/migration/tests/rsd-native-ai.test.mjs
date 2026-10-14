@@ -1,159 +1,34 @@
+import { expect, it } from 'vitest';
+import { act } from 'react';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { caller, records, host, mount, expandControls } from './rsd-native-selection-host.mjs';
-import { act, createElement } from 'react';
-import { expect, it, vi } from 'vitest';
+import { caller, records, host } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
-import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
-
-const save = vi.hoisted(() => ({ outcome: 'photos', calls: [] }));
-vi.mock('../../../experiments/native-architecture/src/platform/pictureSave.ts', () => ({
-  pictureSave: {
-    save: async (base64, format) => {
-      save.calls.push({ base64, format });
-      return save.outcome;
-    },
-  },
-}));
-vi.mock('../../../experiments/native-architecture/src/platform/aiPictureBase64.ts', () => ({
-  aiPictureBase64: async (picture) => `bytes-of:${picture.uri}`,
-}));
-
-const labelled = (label) => host.querySelector(`[aria-label="${label}"]`);
-const testId = (id) => host.querySelector(`[data-testid="${id}"]`);
-const modal = (label) => host.querySelector(`[data-native-modal="${label}"]`);
-async function click(label) {
-  const node = labelled(label);
-  expect(node, label).not.toBeNull();
-  expect(node.disabled, label).toBe(false);
-  await act(async () => node.click());
-}
-// A design Button is named by its label, which the caller reads as its text.
-async function press(text) {
-  const node = [...host.querySelectorAll('button')].find((button) => button.textContent === text);
-  expect(node, text).toBeDefined();
-  expect(node.disabled, text).toBe(false);
-  await act(async () => node.click());
-}
-async function settle(check) {
-  await act(() => vi.waitFor(check));
-}
-// Each solved check holds its "Unlocked!" card in real time before its destination shows, and a
-// full send-and-report run solves up to three.
-const GATED_FLOW_TIMEOUT_MS = 15_000;
-// The dial's done-ramp closes a sixth of the remaining gap each frame, so it
-// needs about forty frames; this is several times that at happy-dom's frame rate.
-const REVEAL_RAMP_WAIT_MS = 2000;
-// One poll interval (POLL_INTERVAL_MS) and a margin for the poll to settle.
-const POLL_WAIT_MS = 3500;
-const POLL_TEST_TIMEOUT_MS = 15_000;
-const WAND = 'Create AI image, 10 free left';
-const WAITING_LABEL = 'Your picture is being made — tap to watch';
-const READY_LABEL = 'Your picture is ready — tap to see it';
-const GRANT = '{"ok":true,"remaining":10,"limit":10}';
-
-function pictureReply() {
-  return new Response(rgbaPng(2, 2, 255), {
-    headers: { 'Content-Type': 'image/png', 'X-Report-Token': 'fixture-report-proof' },
-  });
-}
-function reply(generate, grant = () => new Response(GRANT), poll = pictureReply) {
-  vi.clearAllMocks();
-  save.calls.length = 0;
-  save.outcome = 'photos';
-  caller.aiAdmit.mockResolvedValue(undefined);
-  caller.aiSend.mockImplementation(async (request) =>
-    request.path === '/api/free-generation-grant'
-      ? grant()
-      : request.path === '/api/report-image'
-        ? new Response('{"ok":true,"reportId":"17-00000000-0000-0000-0000-000000000001"}')
-        : request.path === '/api/generate-image'
-          ? generate()
-          : poll()
-  );
-}
-function useCaller(drawing = emptyDrawing(), overrides = {}) {
-  caller.screen = {
-    notice: '',
-    drawing: false,
-    disabled: false,
-    brush: 'marker',
-    history: { undo: [], drawing },
-    currentDrawing: () => drawing,
-    surface: {
-      current: {
-        lockInput: () => () => {},
-        capturePng: async () => rgbaPng(1024, 768, 255).toString('base64'),
-      },
-    },
-    inkVisible: true,
-    recovery: { failed: false },
-    pictures: null,
-    pagePickerOpen: false,
-    settingsOpen: false,
-    colorPickerOpen: false,
-    saveFailure: {
-      outcome: null,
-      pictureCount: 0,
-      retrying: false,
-      retry: async () => {},
-      dismiss() {},
-      report: vi.fn(),
-    },
-    ...overrides,
-  };
-  caller.sound = {
-    settings: {
-      status: 'ready',
-      soundEnabled: false,
-      appearance: 'dark',
-      selectedColor: 'Purple',
-      customColors: [],
-      strokeWidth: 'medium',
-      eraserWidth: 'medium',
-    },
-    owner: null,
-    audioMessage: '',
-  };
-}
-async function openAiArt() {
-  const row = host.querySelector('[aria-label^="AI Art, "]');
-  expect(row, 'AI Art row').not.toBeNull();
-  await act(async () => row.click());
-}
-// Settings › AI Art's switch is the master control, with no grown-up check, as shipping's is; the
-// drawer carries the wand only once it is on.
-async function enableAi() {
-  await mount(createElement(RsdDrawingScreen));
-  await expandControls();
-  expect(host.querySelector('[aria-label^="Create AI image"]')).toBeNull();
-  await click('Settings');
-  await openAiArt();
-  await click('Create AI Images');
-  expect(host.textContent).not.toContain('Grown-Ups Only');
-  expect(caller.product.state.settings.aiEnabled).toBe(true);
-  await click('Close');
-}
-const drawingRequests = () =>
-  caller.aiSend.mock.calls.filter(([request]) => request.path !== '/api/free-generation-grant');
-
-// The wand asks a grown-up at the tap, as shipping does, and the AI Style Prompt follows.
-async function openPrompt() {
-  await settle(() => expect(labelled(WAND)).not.toBeNull());
-  await click(WAND);
-  expect(modal('Grown-Ups Only')).not.toBeNull();
-  expect(caller.aiRead).not.toHaveBeenCalled();
-  await solve();
-  expect(modal('Pick a style')).not.toBeNull();
-}
-async function sendDrawing(style = 'Sticker') {
-  await enableAi();
-  await openPrompt();
-  expect(drawingRequests()).toHaveLength(0);
-  await click(style);
-  expect(host.querySelector(GATE_MODAL)).toBeNull();
-}
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  save,
+  labelled,
+  testId,
+  modal,
+  click,
+  press,
+  settle,
+  GATED_FLOW_TIMEOUT_MS,
+  REVEAL_RAMP_WAIT_MS,
+  POLL_WAIT_MS,
+  POLL_TEST_TIMEOUT_MS,
+  WAITING_LABEL,
+  GRANT,
+  READY_LABEL,
+  pictureReply,
+  reply,
+  useCaller,
+  enableAi,
+  drawingRequests,
+  openPrompt,
+  sendDrawing,
+  finishedPicture,
+} from './rsd-native-ai-fixture.mjs';
 
 it(
   'gates the wand at the tap, then picks a style from the covers and sends it at once',
@@ -219,24 +94,19 @@ it.each([
   GATED_FLOW_TIMEOUT_MS
 );
 
-async function finishedPicture() {
-  reply(pictureReply);
-  useCaller();
-  await sendDrawing();
-  await settle(() => expect(labelled('Report this picture')).not.toBeNull());
-}
-
 it(
   'downloads the picture through the screenshot save path and sends the card off',
   async () => {
     await finishedPicture();
     await press('Download');
-    expect(save.calls).toEqual([
-      {
-        base64: 'bytes-of:file:///owned/rsd-ai.png',
-        format: { baseName: 'splotch-ai', mime: 'image/png' },
-      },
-    ]);
+    await settle(() =>
+      expect(save.calls).toEqual([
+        {
+          base64: 'bytes-of:file:///owned/rsd-ai.png',
+          format: { baseName: 'splotch-ai', mime: 'image/png' },
+        },
+      ])
+    );
     expect(caller.screen.saveFailure.report).not.toHaveBeenCalled();
     await settle(() => expect(modal('AI Result')).toBeNull());
   },
@@ -249,10 +119,12 @@ it(
     await finishedPicture();
     save.outcome = 'denied';
     await press('Download');
-    expect(caller.screen.saveFailure.report).toHaveBeenCalledWith(
-      'denied',
-      'bytes-of:file:///owned/rsd-ai.png',
-      { baseName: 'splotch-ai', mime: 'image/png' }
+    await settle(() =>
+      expect(caller.screen.saveFailure.report).toHaveBeenCalledWith(
+        'denied',
+        'bytes-of:file:///owned/rsd-ai.png',
+        { baseName: 'splotch-ai', mime: 'image/png' }
+      )
     );
     expect(modal('AI Result')).not.toBeNull();
   },
@@ -396,50 +268,6 @@ it(
     expect(host.textContent).toContain('Download');
   },
   POLL_TEST_TIMEOUT_MS
-);
-
-it.each([
-  ['checks the allowance', () => new Promise(() => {}), 'Checking AI image availability', true],
-  [
-    'finds no allowance',
-    () => new Response('{"ok":false}', { status: 503 }),
-    'AI image unavailable',
-    true,
-  ],
-  ['counts the free pictures left', () => new Response(GRANT), WAND, false],
-])(
-  'labels the wand while it %s, as shipping does',
-  async (_, grant, label, disabled) => {
-    reply(pictureReply, grant);
-    useCaller();
-    await enableAi();
-    await settle(() => expect(labelled(label)).not.toBeNull());
-    expect(labelled(label).disabled).toBe(disabled);
-    const badge = labelled(label).querySelector('[data-testid="free-count"]');
-    expect(badge?.textContent ?? null).toBe(label === 'AI image unavailable' ? null : '10');
-  },
-  GATED_FLOW_TIMEOUT_MS
-);
-
-it(
-  'parks the wand on a blank page, and sends a grown-up to Settings when no picture is left',
-  async () => {
-    reply(pictureReply, () => new Response('{"ok":true,"remaining":0,"limit":10}'));
-    useCaller(emptyDrawing(), { inkVisible: false });
-    await enableAi();
-    await settle(() => expect(labelled('Set up AI image')).not.toBeNull());
-    expect(labelled('Set up AI image').disabled).toBe(true);
-    caller.screen = { ...caller.screen, inkVisible: true };
-    await act(async () => caller.product.owner.openParentCenter());
-    await solve();
-    await click('Close');
-    await click('Set up AI image');
-    await solve();
-    expect(caller.screen.settingsOpen).toBe(true);
-    expect(modal('Pick a style')).toBeNull();
-    expect(drawingRequests()).toHaveLength(0);
-  },
-  GATED_FLOW_TIMEOUT_MS
 );
 
 it(

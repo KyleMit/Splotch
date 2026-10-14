@@ -72,7 +72,7 @@ export function AiPictureReport({
               ? `The original drawing, original art style, exact instruction and authenticated refusal reason go to a grown-up at Splotch in a private report. ${AI_REPORT_HANDLING_NOTICE}`
               : `The original drawing, AI picture, original art style and exact instruction go to a grown-up at Splotch in a private report. ${AI_REPORT_HANDLING_NOTICE}`}
           </Text>
-          <Text style={styles.text}>{`Original style: ${report.preview.style}`}</Text>
+          <Text style={styles.text}>{`Original style: ${report.preview.style ?? 'Default'}`}</Text>
           <Image
             accessibilityLabel="Original drawing to report"
             source={{ uri: report.preview.drawing }}

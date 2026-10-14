@@ -13,6 +13,7 @@ import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
 import { aiSheetShown } from '../ai/uiState';
 import { useAiAvailability } from '../product/useAiAvailability';
+import { useAiAutoSave } from '../product/useAiAutoSave';
 import { RsdPaperSlot } from './RsdPaperSlot';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -131,6 +132,8 @@ function RsdModalSheets({
   gate: ParentGateView | null;
 }) {
   const dismissed = route.dismissed;
+  const autoSaveEnabled = product.sound.settings.autoSaveAiEnabled;
+  const autoSave = useAiAutoSave(product.ai.state, autoSaveEnabled, screen.saveFailure.report);
   return (
     <>
       {product.owner && gate && route.shown === 'gate' ? (
@@ -163,6 +166,8 @@ function RsdModalSheets({
             visible={route.visible}
             onDismiss={dismissed}
             onSaveFailed={screen.saveFailure.report}
+            autoSaveEnabled={autoSaveEnabled}
+            autoSave={autoSave}
           />
         </RsdSurfaceBoundary>
       ) : null}

@@ -19,6 +19,8 @@ export const AI_RESULT_METRICS = {
   gutterRampFrom: 390,
   gutterRamp: 0.14,
   minWidth: 340,
+  // --result-autosave-footer-reserve: the saved caption's footer.
+  autosaveFooterReserve: 95,
   safetyWidth: 560,
   serverErrorWidth: 400,
   reportStripHeight: 26,
@@ -50,12 +52,15 @@ export function aiResultFrame({
   insets,
   aspect,
   mode,
+  autosave,
   naturalWidth,
 }: {
   window: Size;
   insets: Insets;
   aspect: number;
   mode: AiResultMode;
+  // Auto-save is on, so the footer reserves the saved caption's room.
+  autosave: boolean;
   // The decoded picture's own width, which the stage never draws past; null before it decodes.
   naturalWidth: number | null;
 }): AiResultFrame {
@@ -74,7 +79,11 @@ export function aiResultFrame({
   const maxHeight = window.height - top - bottom;
   const loadingReserve = 2 * m.contentPadding + m.contentGap + m.loadingCaptionHeight + m.sizingAir;
   const footerReserve =
-    mode === 'waiting' ? loadingReserve + m.contentGap + m.keepDrawingHeight : loadingReserve;
+    mode === 'waiting'
+      ? loadingReserve + m.contentGap + m.keepDrawingHeight
+      : autosave
+        ? m.autosaveFooterReserve
+        : loadingReserve;
   const stageMaxHeight = maxHeight - footerReserve;
   const maxWidth = window.width - 2 * side;
   const inlinePadding = 2 * m.contentPadding;
