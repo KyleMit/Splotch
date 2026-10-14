@@ -395,6 +395,7 @@ const styles = css.create({
     left: 0,
     right: 0,
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
   },
   faded: { opacity: 0, pointerEvents: 'none' },

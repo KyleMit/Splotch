@@ -304,6 +304,10 @@ describe('the mounted drawing screen frame', () => {
     viewport(1180, 820);
     records.insets = { top: 0, right: 0, bottom: insetBottom, left: 0 };
     await mountToolbar(toolbarScreen());
+    // The records keep every render's props; the strip is read from one render of the settled
+    // screen, after the AI allowance check has re-rendered it.
+    records.props.length = 0;
+    await act(async () => root.render(createElement(RsdDrawingScreen)));
     const strip = drawn(
       (style) =>
         style.height === insetBottom && style.backgroundColor === DRAWING_THEMES.light.surface
