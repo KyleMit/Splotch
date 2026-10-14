@@ -224,7 +224,7 @@ Measured one lever at a time on the same base (`origin/codex/native-migration` a
 | Warm-up behind the background idle gate              | 876,232       | +82     | 3.14 s / 3.14 s                |
 | Fullscreen Toggle icons in the startup set           | 877,863       | +1,631  | 2.69 s / 2.69 s                |
 | Review: the native apps resolve the icons at launch  | 877,862       | −1      |                                |
-| The AI flow (PR 2869) merged                         | 894,104       | +16,242 | LCPMERGED                |
+| The AI flow (PR 2869) merged                         | 894,104       | +16,242 | 2.70 s / 2.68 s                |
 
 The LCP column is Lighthouse's simulated first visit on a local brotli server, the median of two or
 three runs. The entry fell from 223.0 KB to 199.1 KB over the wire, but LCP moved only with the last
@@ -233,10 +233,14 @@ the prewarm, then the Fullscreen Toggle's own icons, which Lighthouse's mobile e
 
 Screenshots of the export before and after, at 390×844 and 1366×1024 in light and dark, are
 pixel-identical at first paint, with the drawer open, with the brush flyout open, in Settings, and
-after a pen and a crayon stroke. The AI flow added the same 16,242 bytes it adds to the old path, 6,828 of them in Expo's
-`__common` chunk. The remaining 45,120 bytes over the target have no single large owner. The
-largest app modules left on the path are the startup icons (14 KB), the sound settings with their
-codec (16 KB) and the contact responder (8 KB).
+after a pen and a crayon stroke. On the merged base, with splotch.art's `/api` mocked, so are the AI
+button in the drawer, the style prompt and the result; each frame of the animated waiting dial
+matches a baseline frame. The AI flow added the same 16,242 bytes it adds to the old path, 6,828 of
+them in Expo's `__common` chunk. Its merged base without this cut measures 1,013,494 bytes, a 225.2
+KB entry over the wire and 3.15 s LCP on phone and tablet; with the cut, 894,104 bytes, 201.0 KB and
+2.7 s. The remaining 45,120 bytes over the target have no single large owner. The largest app
+modules left on the path are the startup icons (14 KB), the sound settings with their codec (16 KB)
+and the contact responder (8 KB).
 
 ## Consequences
 
