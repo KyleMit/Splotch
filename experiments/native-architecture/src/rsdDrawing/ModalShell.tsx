@@ -246,10 +246,19 @@ type ModalShellProps = Omit<ModalStageProps, 'labelledBy'> & {
   header: ReactNode;
   // false: the body lays out its own scrollers, inset by useDialogBody, as Settings' shells do.
   scrolls?: boolean;
+  // A height the card budgets under its frame's cap: the Coloring Book Picker's fold through a row.
+  heightBudget?: number | null;
 };
 
 // The shipping .modal-shell card: a header over a scrolling body, sized by the card it ports.
-export function ModalShell({ size, header, scrolls = true, children, ...stage }: ModalShellProps) {
+export function ModalShell({
+  size,
+  header,
+  scrolls = true,
+  heightBudget = null,
+  children,
+  ...stage
+}: ModalShellProps) {
   const titleId = useId();
   return (
     <ModalStage {...stage} labelledBy={titleId}>
@@ -260,6 +269,7 @@ export function ModalShell({ size, header, scrolls = true, children, ...stage }:
         seeThrough={stage.seeThrough ?? false}
         header={header}
         scrolls={scrolls}
+        heightBudget={heightBudget}
       >
         {children}
       </ModalCard>
@@ -267,7 +277,8 @@ export function ModalShell({ size, header, scrolls = true, children, ...stage }:
   );
 }
 
-function useModalFrame(size: ModalSize): ModalFrame {
+// The card's frame for this window, its height capped inside the safe area.
+export function useModalFrame(size: ModalSize): ModalFrame {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const gutter = Math.max(MODAL_GUTTER_MIN_PX, insets.left, insets.right);
@@ -285,6 +296,7 @@ function ModalCard({
   seeThrough,
   header,
   scrolls,
+  heightBudget,
   children,
 }: {
   size: ModalSize;
@@ -293,12 +305,15 @@ function ModalCard({
   seeThrough: boolean;
   header: ReactNode;
   scrolls: boolean;
+  heightBudget: number | null;
   children: ReactNode;
 }) {
   const theme = useDrawingAppearance();
   const frame = useModalFrame(size);
   const { body } = frame;
   const fit = frame.height === null ? layout.hug : layout.fill;
+  const maxHeight =
+    heightBudget === null ? frame.maxHeight : Math.min(frame.maxHeight, heightBudget);
   return (
     <html.div
       data-testid="modal-surface"
@@ -306,7 +321,7 @@ function ModalCard({
       style={[
         fontTheme,
         theme === 'dark' && darkTheme,
-        styles.card(frame.width, frame.maxHeight),
+        styles.card(frame.width, maxHeight),
         frame.height !== null && styles.height(frame.height),
         seeThrough && styles.seeThrough,
       ]}
