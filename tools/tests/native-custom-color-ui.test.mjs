@@ -45,6 +45,11 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', ()
   };
 });
 vi.mock('react-native', () => import('react-native-web'));
+// The web build resolves ModalScrim to its web file; Vitest resolves the native one.
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/ModalScrim.web.tsx')
+);
 // The Color Picker is a React Strict DOM surface; its web build emits these plain elements.
 vi.mock('react-strict-dom', async () => (await import('./native-rsd-web-stub.mjs')).rsdWebStub());
 vi.mock(

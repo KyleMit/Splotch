@@ -163,8 +163,15 @@ copy, and gates, persisted as `orientation` in settings schema 8, and applies it
   back releases the lock.
 * **Web** (its `.web.ts` split) keeps the shipping gate — a coarse pointer plus fullscreen — and
   requests the lock again on every fullscreen entry.
+* **iOS** rotates through `requestGeometryUpdate` alone, as `@capacitor/screen-orientation` does;
+  `patches/expo-screen-orientation@57.0.2.patch` keeps the `UIDevice` orientation setter, which
+  UIKit rejects from iOS 26, on the pre-iOS 16 path.
+* **Dialogs** (`ModalShell`) declare every orientation, so the app's lock decides theirs. React
+  Native's iPhone modal default, portrait only, vetoes a Landscape lock chosen in an open Settings.
 
 Its tests are `tools/tests/native-orientation-settings.test.mjs`,
 `tools/tests/native-orientation-web.test.mjs`,
-`tools/migration/tests/rsd-native-orientation.test.mjs`, and
-`tools/tests/native-paper-rotation-mounted.test.mjs`, which turns the paper with a drawing on it.
+`tools/migration/tests/rsd-native-orientation.test.mjs`,
+`tools/tests/native-paper-rotation-mounted.test.mjs`, which turns the paper with a drawing on it,
+`tools/tests/native-runtime-warning-patches.test.mjs` for the iOS patch, and
+`tools/migration/tests/rsd-native-modal-frame.test.mjs` for the dialog orientations.

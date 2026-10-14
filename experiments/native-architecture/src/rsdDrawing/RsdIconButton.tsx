@@ -411,6 +411,7 @@ export function RsdIconButton(props: IconButtonProps) {
       ink={ink ?? brandInk}
       muted={disabled && !bare}
       keyline={keyline}
+      grey={dimmed}
     />
   );
   return (

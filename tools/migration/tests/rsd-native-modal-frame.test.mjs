@@ -12,7 +12,7 @@ import { RsdLeaveConfirm } from '../../../experiments/native-architecture/src/rs
 import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
 import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
 import { blobPath } from '../../../experiments/native-architecture/src/rsdDrawing/blob.ts';
-import { MODAL_SCRIM_PLAIN } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
+import { MODAL_SCRIM_FROSTED } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
@@ -109,7 +109,7 @@ it('frames the dialog as a card over the scrim, named by its header title, with 
   });
   const scrim = records.props.findLast((props) => props.testID === 'modal-scrim');
   expect(Object.assign({}, ...[scrim.style].flat())).toMatchObject({
-    backgroundColor: MODAL_SCRIM_PLAIN,
+    backgroundColor: MODAL_SCRIM_FROSTED,
   });
   expect(scrim.pointerEvents).toBe('none');
   expect(host.querySelector('[data-testid="modal-body"] [aria-label="Marker"]')).not.toBeNull();
@@ -122,6 +122,13 @@ it('frames the dialog as a card over the scrim, named by its header title, with 
   expect(stage.pointerEvents).toBe('box-none');
   expect(card.pointerEvents).toBe('auto');
   expectNoFooter();
+});
+
+it('leaves the dialog orientation to the app rotation lock', async () => {
+  await mount(sheet());
+  expect(modalProps().supportedOrientations).toEqual(
+    expect.arrayContaining(['portrait', 'landscape'])
+  );
 });
 
 it.each([

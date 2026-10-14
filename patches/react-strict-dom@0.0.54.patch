@@ -22,7 +22,7 @@ index 427cd0e84ab1bdeeb62f287f80aedcb17791d572..1e6414ec4f2ea6b8e285c741f10d4afc
  type ProviderProps = Readonly<{
    children: React.ReactNode;
 diff --git a/dist/native/index.js b/dist/native/index.js
-index ffbf4fb06609055c270df01fa0843b34c254a0d8..7c3a63c1af4e065a78ea8f996dfe5e3fb134c627 100644
+index ffbf4fb06609055c270df01fa0843b34c254a0d8..29a2b6de964e7124b46d1e44b04e801ccc5e011e 100644
 --- a/dist/native/index.js
 +++ b/dist/native/index.js
 @@ -2381,6 +2381,9 @@ function TextString(props) {
@@ -35,7 +35,16 @@ index ffbf4fb06609055c270df01fa0843b34c254a0d8..7c3a63c1af4e065a78ea8f996dfe5e3f
    return jsx(Text, {
      ...nativeProps,
      children: children
-@@ -3081,6 +3084,9 @@ function createStrictDOMTextComponent(tagName, defaultProps) {
+@@ -2836,8 +2839,6 @@ function createStrictDOMComponent(tagName, defaultProps) {
+     }
+     if (tagName === 'button') {
+       nativeProps.role ??= 'button';
+-    } else if (tagName === 'header') {
+-      nativeProps.role ??= 'header';
+     } else if (tagName === 'li') {
+       nativeProps.role ??= 'listitem';
+     } else if (tagName === 'ol' || tagName === 'ul') {
+@@ -3081,6 +3082,9 @@ function createStrictDOMTextComponent(tagName, defaultProps) {
      nativeProps.style = Object.assign(nativeProps.style, disableUserSelect ? {
        userSelect: 'none'
      } : null);

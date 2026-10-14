@@ -12,28 +12,26 @@ import {
 import { COLORING_FILLS } from '../../experiments/native-architecture/src/drawing/pages.ts';
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 
-const runtime = vi.hoisted(async () => {
+// Awaited so this import settles before the static imports start: a concurrent import can take
+// Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.
+const runtime = await vi.hoisted(async () => {
   const { createRequire } = await import('node:module');
   return { skia: null, require: createRequire(import.meta.url) };
 });
 
 // Skia's own web API over CanvasKit stands in for its native module, which Node cannot load.
-vi.mock('@shopify/react-native-skia', async () => {
-  const state = await runtime;
-  return {
-    ...state.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
-    get Skia() {
-      return state.skia;
-    },
-  };
-});
+vi.mock('@shopify/react-native-skia', () => ({
+  ...runtime.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
+  get Skia() {
+    return runtime.skia;
+  },
+}));
 
 let skia;
 beforeAll(async () => {
-  const state = await runtime;
-  const CanvasKitInit = state.require('canvaskit-wasm');
-  const { JsiSkApi } = state.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
-  state.skia = skia = JsiSkApi(await CanvasKitInit());
+  const CanvasKitInit = runtime.require('canvaskit-wasm');
+  const { JsiSkApi } = runtime.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
+  runtime.skia = skia = JsiSkApi(await CanvasKitInit());
 });
 
 const SIZE = 64;
@@ -59,6 +57,25 @@ function alphaAt(surface, x, y) {
     alphaType: 2,
   })[3];
 }
+
+// Skia warns once per deprecated method per process, so this must paint before any other test.
+it('builds stroke paths without the deprecated SkPath mutators', () => {
+  const warn = vi.spyOn(console, 'warn');
+  const surface = skia.Surface.Make(SIZE, SIZE);
+  const curve = [
+    { x: 4, y: 4 },
+    { x: 32, y: 60 },
+    { x: 60, y: 4 },
+  ];
+  paintStroke(
+    surface.getCanvas(),
+    { brush: 'pen', color: 'Red', width: 8, points: curve },
+    context
+  );
+  expect(warn.mock.calls.flat().filter((message) => /deprecated/.test(message))).toEqual([]);
+  expect(alphaAt(surface, 4, 4)).toBe(255);
+  warn.mockRestore();
+});
 
 it('keeps recently decoded textures and evicts beyond its limit', () => {
   const uris = Array.from({ length: DECODED_IMAGE_LIMIT + 1 }, (_, index) => solidPngUri(index));

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Animated, Easing } from '../platform/animated';
 import {
@@ -30,6 +30,7 @@ import {
   modalFrame,
   type ModalFrame,
   type ModalSize,
+  type TouchBackdrop,
 } from './modalGeometry';
 
 type Phase = 'entering' | 'open' | 'exiting' | 'gone';
@@ -38,6 +39,15 @@ type Motion = ReturnType<typeof createMotion>;
 type Keyframe = { at: number; easing: readonly [number, number, number, number] | null };
 
 const ignore = () => {};
+
+// The app's rotation lock decides the dialog's orientation, as it decides the shipping page's. A
+// modal left at React Native's iPhone default, portrait only, shares no orientation with a
+// Landscape lock, so UIKit refuses the rotation and logs an exception.
+const FOLLOW_APP_ORIENTATION: ComponentProps<typeof Modal>['supportedOrientations'] = [
+  'portrait',
+  'portrait-upside-down',
+  'landscape',
+];
 
 function createMotion() {
   return {
@@ -165,6 +175,7 @@ type ModalStageProps = {
   visible: boolean;
   // The scrim and card surface clear so the screen behind shows (useDialogSeeThrough).
   seeThrough?: boolean;
+  touchBackdrop?: TouchBackdrop;
   label: string;
   labelledBy?: string;
   onClose: () => void;
@@ -178,6 +189,7 @@ type ModalStageProps = {
 export function ModalStage({
   visible,
   seeThrough = false,
+  touchBackdrop = 'frosted',
   label,
   labelledBy,
   onClose,
@@ -194,6 +206,7 @@ export function ModalStage({
       navigationBarTranslucent
       visible={presented}
       animationType="none"
+      supportedOrientations={FOLLOW_APP_ORIENTATION}
       accessibilityLabel={label}
       aria-labelledby={labelledBy}
       onRequestClose={visible ? onClose : ignore}
@@ -207,7 +220,12 @@ export function ModalStage({
         >
           {/* Hidden rather than unmounted: the web scrim follows its fade only while mounted. */}
           <View style={[layout.cover, seeThrough && layout.clear]} pointerEvents="none">
-            <ModalScrim opacity={motion.scrim} />
+            <ModalScrim
+              opacity={motion.scrim}
+              visible={visible}
+              seeThrough={seeThrough}
+              touchBackdrop={touchBackdrop}
+            />
           </View>
           {/* A responder rather than a Pressable: React Native Web makes every enabled Pressable a
               tab stop, and its Modal focuses the first one, which would put an unnamed scrim
