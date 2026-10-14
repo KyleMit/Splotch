@@ -217,15 +217,17 @@ function press(props) {
 }
 vi.mock('react-native', async () => {
   const React = await import('react');
-  const { animatedPort, appStatePort, backHandlerPort, easingPort } =
+  const { animatedPort, appStatePort, backHandlerPort, easingPort, useShownStyle } =
     await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
       records.props.push(props);
+      const shown = useShownStyle(props.style);
       return React.createElement(
         tag,
         {
           ref,
+          'data-shown-opacity': shown.opacity,
           role: props.role ?? props.accessibilityRole,
           id: props.nativeID,
           'aria-label': props.accessibilityLabel,
