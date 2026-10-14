@@ -86,6 +86,10 @@ vi.mock('react-native', async () => {
     __host: View,
   };
 });
+vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.ts',
+  () => import('../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.native.ts')
+);
 vi.mock('react-native/Libraries/Text/TextAncestor', async () => {
   const React = await import('react');
   return { default: React.createContext(false) };
@@ -522,6 +526,18 @@ describe('RsdSidebarRow', () => {
         backgroundColor: themes[theme].brandWash,
       });
       expect(labelInk()).toBe(themes[theme].brandText);
+    }
+  );
+
+  // A section change re-renders both rows in place: the one it leaves and the one it reaches.
+  it.each(['light', 'dark'])(
+    'paints the %s label ink of a row whose reading position moves in place',
+    async (theme) => {
+      await render(sidebarRow(), { theme });
+      await render(sidebarRow({ active: true }), { theme });
+      expect(labelInk()).toBe(themes[theme].brandText);
+      await render(sidebarRow({ active: false }), { theme });
+      expect(labelInk()).toBe(themes[theme].textSoft);
     }
   );
 
