@@ -10,6 +10,7 @@ import {
   HALO_OUT_MS,
   haloPose,
 } from '../../experiments/native-architecture/src/drawing/haloModel.ts';
+import { HELD_CLOCK_MS } from '../../experiments/native-architecture/src/drawing/PointerHalos.tsx';
 
 const native = vi.hoisted(() => ({
   handlers: null,
@@ -245,7 +246,11 @@ describe('native Skia Pointer Halos', () => {
     const canvasRenders = native.canvasRenders;
     send('onPanResponderGrant', event([touch(0, 10, 20)]));
     expect(painted().shown).toMatchObject([{ halo: { kind: 'ring', x: 10, y: 20 } }]);
-    expect(native.timings).toMatchObject([{ duration: HALO_IN_MS, reduceMotion: 'never' }]);
+    // The clock runs for as long as the contact is down, past the grow-in, so the halo layer
+    // redraws on every frame of the stroke. Negative control: a clock that runs only to the
+    // grow-in's end (HALO_IN_MS) fails here.
+    expect(HELD_CLOCK_MS).toBeGreaterThan(HALO_IN_MS);
+    expect(native.timings).toMatchObject([{ duration: HELD_CLOCK_MS, reduceMotion: 'never' }]);
     const { shown, now } = painted();
     expect(haloPose(shown[0], now, false)).toEqual({ scale: 1, opacity: 1 });
 
@@ -255,6 +260,8 @@ describe('native Skia Pointer Halos', () => {
 
     send('onPanResponderMove', event([touch(0, 50, 60, 200)], undefined, { 0: 100 }));
     expect(painted().shown).toMatchObject([{ halo: { x: 50, y: 60 }, lifting: false }]);
+    // A move inside the held clock's span leaves the running clock alone.
+    expect(native.timings).toHaveLength(1);
     const lift = event([], [touch(0, 50, 60, 300)], { 0: 100 });
     send('onPanResponderEnd', lift);
     send('onPanResponderRelease', lift);
@@ -274,11 +281,13 @@ describe('native Skia Pointer Halos', () => {
     await mountSurface();
     send('onPanResponderGrant', event([touch(0, 10, 20)]));
     expect(painted()).toMatchObject({ reduced: true, shown: [{ halo: { x: 10, y: 20 } }] });
+    // The held clock keeps the layer drawing each frame; the reduced pose never reads it.
+    expect(native.timings).toMatchObject([{ duration: HELD_CLOCK_MS }]);
     const lift = event([], [touch(0, 10, 20, 300)], { 0: 100 });
     send('onPanResponderEnd', lift);
     send('onPanResponderRelease', lift);
     expect(painted().shown).toEqual([]);
-    expect(native.timings).toEqual([]);
+    expect(native.timings).toHaveLength(1);
   });
 
   // Positive control for the render probe: the web halos animate through React state, and the
