@@ -19,6 +19,10 @@ export function usePageOutlineReady(pageId: PageId): boolean {
   return farmPage === null || outlines !== undefined;
 }
 
+export function pageHasOutline(pageId: PageId): boolean {
+  return isOfflinePageId(pageId) || isFarmPageId(pageId) || COLORING_PAGES[pageId].paths.length > 0;
+}
+
 // Every page's art frame sits contain-fitted and centered on the paper (pageArtTransform).
 export function PageOutline({ pageId, size }: { pageId: PageId; size: PaperSize }) {
   const { theme } = useInkAppearance();

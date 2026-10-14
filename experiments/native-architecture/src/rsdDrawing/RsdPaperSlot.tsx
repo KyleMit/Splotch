@@ -43,7 +43,9 @@ const styles = css.create({
 export function RsdPaperSlot({
   ai,
   ...paper
-}: ComponentProps<typeof NativePaper> & { ai: ReturnType<typeof useDrawingProduct>['ai'] }) {
+}: Omit<ComponentProps<typeof NativePaper>, 'lifted'> & {
+  ai: ReturnType<typeof useDrawingProduct>['ai'];
+}) {
   const { paperMargin } = useDrawingTheme();
   const [space, setSpace] = useState({ width: 0, height: 0 });
   const run = ai.state?.open && ai.state.minimized ? aiRun(ai.state) : null;
@@ -69,7 +71,7 @@ export function RsdPaperSlot({
       ) : (
         <PaperTexture />
       )}
-      <NativePaper {...paper} />
+      <NativePaper {...paper} lifted={lifted} />
       {run && ai.owner && ai.state ? (
         <View testID="rsd-paper-corner" style={paperCorner}>
           <RsdSurfaceBoundary>

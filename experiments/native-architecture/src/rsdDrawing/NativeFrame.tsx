@@ -22,6 +22,9 @@ const themedStyles = createDrawingStyles((palette) =>
     // The flat style prints its bar on the paper, so the strips are paper too.
     flatDrawing: { flex: 1, backgroundColor: palette.paper },
     overlay: { flex: 1, backgroundColor: 'transparent' },
+    // The provider paints the frame; a second coat on the padded view is a full-screen fill
+    // Android draws again on every frame.
+    inset: { flex: 1 },
   })
 );
 
@@ -60,7 +63,7 @@ export function NativeFrame({
         testID="rsd-safe-area-frame"
         mode="padding"
         edges={variant === 'drawing' || variant === 'flatDrawing' ? PAPER_EDGES : ALL_EDGES}
-        style={frame}
+        style={styles.inset}
         onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
       >
         {children}

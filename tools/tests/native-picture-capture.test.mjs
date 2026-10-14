@@ -78,6 +78,7 @@ vi.mock(
 );
 
 vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', () => ({
+  pageHasOutline: () => true,
   PageOutline: ({ pageId }) => createElement('div', { 'data-page': pageId }),
   usePageOutlineReady: () => true,
 }));

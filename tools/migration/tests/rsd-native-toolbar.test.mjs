@@ -362,7 +362,13 @@ it('floats the edge controls over a paper area that fills the rest of the screen
   expect(host.querySelector('[data-testid="rsd-palette-bar"] [data-paper]')).toBeNull();
   // The status lies over the paper rather than claiming a strip of the screen.
   expect(area.querySelector('[data-status]')).not.toBeNull();
-  expect(records.props.findLast((props) => props.testID === 'rsd-canvas-area').style.flex).toBe(1);
+  // The paper slot paints the whole area, so the area paints nothing beneath it: Android would
+  // draw that occluded fill on every frame. Negative control: a paper color here fails.
+  expect(records.props.findLast((props) => props.testID === 'rsd-canvas-area').style).toEqual({
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
+  });
   const bar = () => records.props.findLast((props) => props.testID === 'rsd-palette-bar');
   // An inset shortens the bar, not the viewport the shipping ladder counts from.
   await act(async () => bar().onLayout({ nativeEvent: { layout: { width: 300, height: 75 } } }));

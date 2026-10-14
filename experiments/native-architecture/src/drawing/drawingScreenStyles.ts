@@ -28,7 +28,7 @@ const themedStyles = createDrawingStyles((palette) =>
     fullBleedLandscape: { flexDirection: 'row' },
     paletteBar: { flexGrow: 0, flexShrink: 0 },
     canvasColumn: { flex: 1, minWidth: 0, minHeight: 0 },
-    canvasArea: { flex: 1, minWidth: 0, minHeight: 0, backgroundColor: palette.paper },
+    canvasArea: { flex: 1, minWidth: 0, minHeight: 0 },
     workspace: {
       flex: 1,
       minWidth: 0,
