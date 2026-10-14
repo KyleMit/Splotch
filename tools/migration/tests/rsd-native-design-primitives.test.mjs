@@ -366,6 +366,15 @@ it.each(['light', 'dark'])(
   }
 );
 
+// iOS would otherwise ink the indicator by the system appearance rather than the paper beneath it.
+it.each([
+  ['light', 'black'],
+  ['dark', 'white'],
+])('inks the %s scroll indicator to stand out on its surface', async (mode, indicator) => {
+  await render(h(RsdScrollCue, null, h(html.p, null, 'Long help text')), mode);
+  expect(native.scroll.indicatorStyle).toBe(indicator);
+});
+
 it.each(['light', 'dark'])(
   'fades the %s scroll end in the surface until the content end is reached',
   async (mode) => {

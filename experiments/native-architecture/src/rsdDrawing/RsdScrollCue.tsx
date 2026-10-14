@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode, type Ref } from 'react';
 import { ScrollView, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { motion } from './tokens.css';
-import { useDrawingTheme } from '../drawing/DrawingAppearance';
+import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
 import { rgba } from './colorMix';
 import { useDialogSeeThrough } from './dialogScope';
 
@@ -79,6 +79,7 @@ export function RsdScrollCue({
   onUserScroll?: () => void;
 }) {
   const surface = useDrawingTheme().surface;
+  const indicatorStyle = useScrollIndicatorStyle();
   const seeThrough = useDialogSeeThrough();
   const extent = useRef(AT_REST);
   const [atEnd, setAtEnd] = useState(true);
@@ -98,6 +99,7 @@ export function RsdScrollCue({
     >
       <ScrollView
         ref={scrollRef}
+        indicatorStyle={indicatorStyle}
         scrollEventThrottle={SCROLL_REPORT_INTERVAL_MS}
         contentContainerStyle={
           inset && {
