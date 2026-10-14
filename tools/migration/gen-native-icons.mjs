@@ -34,6 +34,7 @@ export const NATIVE_STARTUP_ICONS = [
   'shapes',
   'wand-stars',
   'more-colors',
+  'ink-splotch',
   'parent-center',
   'controls',
   'chevron-right',

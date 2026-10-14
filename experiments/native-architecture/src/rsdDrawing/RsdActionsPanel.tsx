@@ -1,17 +1,20 @@
-import { useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { refocusFlyoutTrigger, useFlyoutEscape } from '../platform/flyoutFocus';
 import { RsdIconButton } from './RsdIconButton';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
-import { RsdBrushMenu, RsdStrokeWidthMenu } from './toolFlyouts';
+import { RsdBrushMenu, RsdColorMenu, RsdStrokeWidthMenu } from './toolFlyouts';
+import { RsdColorButton } from './RsdColorButton';
 import { inkKeyline } from './inkKeyline';
 import {
   actionPanelLayout,
   DRAWER_CHEVRON_TURN_DEG,
   flyoutPlacement,
+  isPhoneLandscapeViewport,
   type ActionPanelLayout,
   type AreaSize,
 } from './edgeLayout';
@@ -21,7 +24,7 @@ import { drawerControlShown } from '../settings/drawingControlPreferences';
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
 type Product = ReturnType<typeof useDrawingProduct>;
-type FlyoutName = 'brush' | 'stroke';
+type FlyoutName = 'brush' | 'stroke' | 'color';
 export type OpenFlyout = FlyoutName | null;
 
 const PERCENT = 100;
@@ -42,7 +45,15 @@ const docks = StyleSheet.create({
 export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const [flyout, setFlyout] = useState<OpenFlyout>(null);
   const inside = useRef(false);
-  const shown = open && !disabled ? flyout : null;
+  // The landscape phone's Color Menu opens beside its own button, drawer open or not, and leaving
+  // that layout closes it, as shipping's panel does. The slot outlives every panel that renders
+  // the button, so a rotation back never finds the menu still open.
+  const colorButton = isPhoneLandscapeViewport(useWindowDimensions());
+  const staleColor = flyout === 'color' && !colorButton;
+  useEffect(() => {
+    if (staleColor) setFlyout(null);
+  }, [staleColor]);
+  const shown = !disabled && !staleColor && (open || flyout === 'color') ? flyout : null;
   const live = useRef(shown);
   live.current = shown;
   const menu = useRef<View>(null);
@@ -273,9 +284,11 @@ export function RsdActionsPanel({
   slot: ReturnType<typeof useFlyoutSlot>;
 }) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
+  const insets = useSafeAreaInsets();
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
-  // Shipping's data-no-actions: with no control left to show, the chevron goes too.
-  if (tools.length === 0) return null;
+  // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
+  // landscape phone keeps its Color Button, which no Settings section owns.
+  const noActions = tools.length === 0;
   const scale = buttonScale / PERCENT;
   const layout = actionPanelLayout({
     area,
@@ -284,14 +297,29 @@ export function RsdActionsPanel({
     count: tools.length,
     leg: tools.filter((tool) => tool.key === 'brush' || tool.key === 'stroke').length,
     open,
+    bottomInset: insets.bottom,
   });
   const trigger = tools.findIndex((tool) => tool.key === flyout);
   const placement =
     trigger < 0 ? null : flyoutPlacement(layout.mode, layout.tools[trigger], layout.size, viewport);
   const menu = placement ? { base: layout.base, scale, direction: placement.direction } : null;
   const tool = flyout === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
+  if (noActions && !layout.color) return null;
   return (
     <>
+      <RsdColorControl
+        screen={screen}
+        sound={sound}
+        disabled={disabled}
+        ink={ink}
+        area={area}
+        viewport={viewport}
+        layout={layout}
+        scale={scale}
+        open={open}
+        slot={slot}
+        onToggle={onToggle}
+      />
       {open
         ? tools.map((item, index) => (
             <View
@@ -343,20 +371,130 @@ export function RsdActionsPanel({
           )}
         </View>
       ) : null}
-      <View testID="rsd-drawer-dock" style={[docks.slot, layout.toggle]}>
-        <RsdIconButton
-          skin="corner"
-          icon="chevron-right"
-          label={open ? 'Collapse controls' : 'Expand controls'}
-          expanded={open}
+      {noActions ? null : (
+        <DrawerChevron
+          layout={layout}
+          open={open}
           dimmed={flyout !== null}
-          turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
           onPress={() => {
             setFlyout(null);
             onToggle();
           }}
         />
-      </View>
+      )}
+    </>
+  );
+}
+
+// The muted corner chevron that opens and closes the drawer, turned toward where it will move.
+function DrawerChevron({
+  layout,
+  open,
+  dimmed,
+  onPress,
+}: {
+  layout: ActionPanelLayout;
+  open: boolean;
+  dimmed: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <View testID="rsd-drawer-dock" style={[docks.slot, layout.toggle]}>
+      <RsdIconButton
+        skin="corner"
+        icon="chevron-right"
+        label={open ? 'Collapse controls' : 'Expand controls'}
+        expanded={open}
+        dimmed={dimmed}
+        turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
+        onPress={onPress}
+      />
+    </View>
+  );
+}
+
+// The landscape phone's Color Button and the Color Menu it opens, which take the palette bar's place
+// there. The flyout slot closes the menu when the layout goes.
+function RsdColorControl({
+  screen,
+  sound,
+  disabled,
+  ink,
+  area,
+  viewport,
+  layout,
+  scale,
+  open,
+  slot,
+  onToggle,
+}: {
+  screen: Screen;
+  sound: Sound;
+  disabled: boolean;
+  ink: string;
+  area: AreaSize;
+  viewport: AreaSize;
+  layout: ActionPanelLayout;
+  scale: number;
+  open: boolean;
+  slot: ReturnType<typeof useFlyoutSlot>;
+  onToggle: () => void;
+}) {
+  const { flyout, setFlyout, markInside, close, menu, triggers } = slot;
+  const place = layout.color;
+  if (!place) return null;
+  const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  const expanded = flyout === 'color';
+  const placement = expanded ? flyoutPlacement(layout.mode, place, layout.size, viewport) : null;
+  return (
+    <>
+      <RsdColorButton
+        place={place}
+        size={layout.size}
+        ink={ink}
+        expanded={expanded}
+        dimmed={flyout !== null && !expanded}
+        disabled={paintsDisabled}
+        drawerOpen={open}
+        foldable={layout.tools.length > 0}
+        slotRef={(node) => {
+          triggers.current.color = node;
+        }}
+        onCapture={expanded ? markInside : undefined}
+        onToggle={() => setFlyout(expanded ? null : 'color')}
+        onFold={() => {
+          setFlyout(null);
+          onToggle();
+        }}
+      />
+      {placement ? (
+        <View
+          ref={menu}
+          testID="rsd-tool-flyout"
+          style={[docks.flyout, { left: placement.left, bottom: placement.bottom }]}
+          onStartShouldSetResponderCapture={markInside}
+        >
+          <RsdColorMenu
+            base={layout.base}
+            scale={scale}
+            areaWidth={area.width}
+            buttonSize={layout.size}
+            selected={sound.settings.selectedColor}
+            erasing={screen.brush === 'eraser'}
+            disabled={paintsDisabled}
+            onPick={(color) => {
+              screen.selectInkBrush();
+              void sound.owner?.settings.setColor(color);
+              close();
+            }}
+            onCustom={() => {
+              screen.selectInkBrush();
+              close();
+              screen.openColorPicker();
+            }}
+          />
+        </View>
+      ) : null}
     </>
   );
 }

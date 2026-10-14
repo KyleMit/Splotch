@@ -98,23 +98,31 @@ export function RsdEdgeLayout({
         />
       }
       status={status}
+      overlays={
+        <>
+          <View pointerEvents="box-none" style={paperLayer.fill}>
+            <RsdFullscreenToggle blocked={disabled} />
+          </View>
+          {paperOverlay(drawerOpen)}
+        </>
+      }
     >
       {children}
-      <View pointerEvents="box-none" style={paperLayer.fill}>
-        <RsdFullscreenToggle blocked={disabled} />
-      </View>
-      {paperOverlay(drawerOpen)}
     </NativeDrawingLayout>
   );
 }
 
 // The shipping Color Palette's plate: the bar surface with a soft shadow cast onto the paper.
 const paletteStyles = css.create({
+  // The web style compiler rejects an undefined value at every render, so the declared extent
+  // goes on whichever axis the flow crosses through a style of its own.
+  columnExtent: (extent: number) => ({ width: extent }),
+  rowExtent: (extent: number) => ({ height: extent }),
+  // The landscape column's surface continues under the bottom inset, where no swatch may sit.
+  insetStrip: (height: number, shadow: string) => ({ flexShrink: 0, height, boxShadow: shadow }),
   plate: (flow: PaletteFlow, column: boolean) => ({
     boxSizing: 'border-box',
     flexGrow: 1,
-    width: column ? flow.extentPx : undefined,
-    height: column ? undefined : flow.extentPx,
     paddingTop: column ? flow.endPaddingPx : flow.crossStartPaddingPx,
     paddingBottom: column ? flow.endPaddingPx : flow.crossEndPaddingPx,
     paddingLeft: column ? flow.crossStartPaddingPx : flow.endPaddingPx,
@@ -148,40 +156,55 @@ function RsdPalette({
   const column = layout.axis === 'column';
   const flow = PALETTE_FLOWS[layout.axis];
   const paints = visiblePaints(customColors, selectedColor, layout.slots - 1);
-  const spacing = paletteSpacing(layout.length, layout.axis, paints.length + 1);
+  const spacing = paletteSpacing(layout.length - layout.endInset, layout.axis, paints.length + 1);
   return (
-    <html.div
-      data-testid="rsd-palette-plate"
-      style={[
-        paletteStyles.plate(flow, column),
-        paletteStyles.surface,
-        paletteStyles.flow(column, spacing),
-      ]}
-    >
+    <>
       <html.div
-        role="radiogroup"
-        aria-label="Paint colors"
-        style={paletteStyles.flow(column, spacing)}
+        data-testid="rsd-palette-plate"
+        style={[
+          paletteStyles.plate(flow, column),
+          column
+            ? paletteStyles.columnExtent(flow.extentPx)
+            : paletteStyles.rowExtent(flow.extentPx),
+          paletteStyles.surface,
+          paletteStyles.flow(column, spacing),
+        ]}
       >
-        {paints.map((color) => (
-          <RsdPaintAction
-            key={color}
-            color={color}
-            size={flow.swatchPx}
-            selected={color === selectedColor}
-            disabled={disabled}
-            onClick={() => {
-              screen.selectInkBrush();
-              void sound.owner?.settings.setColor(color);
-            }}
-          />
-        ))}
+        <html.div
+          role="radiogroup"
+          aria-label="Paint colors"
+          style={paletteStyles.flow(column, spacing)}
+        >
+          {paints.map((color) => (
+            <RsdPaintAction
+              key={color}
+              color={color}
+              size={flow.swatchPx}
+              selected={color === selectedColor}
+              disabled={disabled}
+              onClick={() => {
+                screen.selectInkBrush();
+                void sound.owner?.settings.setColor(color);
+              }}
+            />
+          ))}
+        </html.div>
+        <RsdMoreColorsSwatch
+          size={flow.swatchPx}
+          disabled={disabled}
+          onClick={screen.openColorPicker}
+        />
       </html.div>
-      <RsdMoreColorsSwatch
-        size={flow.swatchPx}
-        disabled={disabled}
-        onClick={screen.openColorPicker}
-      />
-    </html.div>
+      {layout.endInset > 0 ? (
+        <html.div
+          aria-hidden
+          style={[
+            paletteStyles.columnExtent(flow.extentPx),
+            paletteStyles.insetStrip(layout.endInset, flow.shadow),
+            paletteStyles.surface,
+          ]}
+        />
+      ) : null}
+    </>
   );
 }

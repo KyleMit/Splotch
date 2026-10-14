@@ -67,7 +67,7 @@ it.each([
   ['src/ProbeApp.tsx', '<RsdDrawingScreen />', '<DrawingScreen />', 'Mounted RSD screen'],
   [
     'src/ProbeApp.tsx',
-    '<ShippingFontGate>\n        <RsdDrawingScreen />\n      </ShippingFontGate>',
+    '<ShippingFontGate>\n          <RsdDrawingScreen />\n        </ShippingFontGate>',
     '<RsdDrawingScreen />',
     'Font-gated screen',
   ],

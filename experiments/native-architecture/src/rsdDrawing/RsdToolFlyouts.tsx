@@ -7,6 +7,8 @@ import { inkKeyline } from './inkKeyline';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
 import type { NativeIconName } from './icons.generated';
 
+export { RsdColorMenu } from './RsdColorMenu';
+
 // The eraser previews are holes at the eraser's true pixel size: the unscaled 60px option less
 // its two 2px borders, so the icon's 56-unit viewBox maps one to one.
 export const ERASER_PREVIEW_PX = 56;

@@ -22,6 +22,7 @@ import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDr
 import {
   APP_SHELL_FILE,
   NATIVE_WEB_EXPORT_DIR,
+  NOT_FOUND_FILE,
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
   subresourceIntegrity,
@@ -31,9 +32,13 @@ import { isMain, runMain } from '../lib/proc.mjs';
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
-// Served by the export but never fetched by the page: the worker itself, and Expo's
-// build-identity file.
-const UNFETCHED_EXPORT_FILES = new Set([NATIVE_WEB_SERVICE_WORKER, 'metadata.json']);
+// Served by the export but never fetched by the page: the worker itself, Expo's build-identity
+// file and the host's not-found answer.
+const UNFETCHED_EXPORT_FILES = new Set([
+  NATIVE_WEB_SERVICE_WORKER,
+  'metadata.json',
+  NOT_FOUND_FILE,
+]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';
 const PRECACHE_ENTRY = new RegExp(

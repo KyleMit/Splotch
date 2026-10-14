@@ -62,14 +62,22 @@ const owner = probe.program.body.find(
 assert.ok(owner, 'Exported ProbeApp');
 const returns = owner.body.body.filter((node) => node.type === 'ReturnStatement');
 assert.equal(returns.length, 1, 'ProbeApp has one return');
-assert.equal(returns[0].argument?.type, 'JSXElement', 'Mounted drawing session');
+assert.ok(imported(probe, './product/AppRestart', 'AppRestartRoot'), 'App restart root import');
+assert.equal(returns[0].argument?.type, 'JSXElement', 'Mounted app root');
 assert.equal(
   returns[0].argument.openingElement.name.name,
+  'AppRestartRoot',
+  'Restartable app root'
+);
+const elementChildren = (node) => node.children.filter((child) => child.type === 'JSXElement');
+const sessions = elementChildren(returns[0].argument);
+assert.equal(sessions.length, 1, 'App root has one drawing session');
+assert.equal(
+  sessions[0].openingElement.name.name,
   'DrawingSessionProvider',
   'Mounted drawing session'
 );
-const elementChildren = (node) => node.children.filter((child) => child.type === 'JSXElement');
-const fontGates = elementChildren(returns[0].argument);
+const fontGates = elementChildren(sessions[0]);
 assert.equal(fontGates.length, 1, 'Drawing session has one font gate');
 assert.equal(fontGates[0].openingElement.name.name, 'ShippingFontGate', 'Font-gated screen');
 const mountedScreens = elementChildren(fontGates[0]);

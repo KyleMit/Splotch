@@ -102,7 +102,12 @@ function displayFontSize(value) {
   const [, min, viewportWidthPercent, offset, max] = match;
   return {
     bounds: { fontSizeDisplayMin: `${min}px`, fontSizeDisplayMax: `${max}px` },
-    fluid: { viewportWidthPercent: Number(viewportWidthPercent), offsetPx: Number(offset) },
+    fluid: {
+      viewportWidthPercent: Number(viewportWidthPercent),
+      offsetPx: Number(offset),
+      minPx: Number(min),
+      maxPx: Number(max),
+    },
   };
 }
 

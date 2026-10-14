@@ -145,6 +145,8 @@ export const dimensions = css.defineVars({
 export const fontSizeDisplayFluid = {
   viewportWidthPercent: 3.2,
   offsetPx: 17,
+  minPx: 34,
+  maxPx: 46,
 } as const;
 
 // The full elliptical shipping blobs, as percentages of the box, for shapes drawn as paths.
