@@ -1,5 +1,6 @@
 import { css, html } from 'react-strict-dom';
 import { CLEAR_DOCK_OVERHANG_PX, type ClearDock } from '../clear/clearDock';
+import { focusRingPart } from './focusRing';
 import { RsdIcon } from './RsdIcon';
 import { fixedColors } from './tokens.css';
 import { styles } from './controls';
@@ -77,6 +78,7 @@ export function RsdClearFace({
   const docked = state === 'docked';
   return (
     <html.div
+      {...focusRingPart('ring')}
       data-testid={state === 'ghost' ? 'rsd-clear-ghost-face' : 'rsd-clear-face'}
       style={[
         faceStyles.face,

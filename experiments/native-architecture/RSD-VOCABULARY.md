@@ -202,9 +202,32 @@ for Reanimated, option and icon sizes, the slider's disc, track, shadows and not
 breakpoint) are exported as `PICKER_METRICS` and `SLIDER_METRICS` and read against the Svelte
 sources by `tools/migration/tests/rsd-native-segmented-picker.test.mjs` and
 `rsd-native-slider.test.mjs`. Not ported: the shipping `inputName` native-form radios (React Native
-has no form submission), the keyboard focus ring (React Strict DOM has no `outline` or
-`:focus-visible`). Arrow-key roving and slider keys reach the option cell and slider host through
-react-native-web's key events; a hardware keyboard on Android or iOS is unverified.
+has no form submission). The keyboard focus ring is the web export's global rule (Keyboard focus
+ring below); the slider host marks its track to wear it. Arrow-key roving and slider keys reach the
+option cell and slider host through react-native-web's key events; a hardware keyboard on Android or
+iOS is unverified.
+
+## Keyboard focus ring
+
+React Strict DOM styles neither `outline` nor `:focus-visible`, so the web export draws shipping's
+ring (`app.css` `:focus-visible`: a 2px `--brand` outline, offset 2px, keyboard focus only) from
+global rules in `src/strict.css`. They sit outside StyleX's cascade layers, so they win over any
+compiled style. An outline follows the focused element's own radius, so most controls need nothing.
+A control whose ring is not its own box marks where it goes with `focusRing.ts`, as shipping's
+per-component focus rules do:
+
+* `focusRingHost('part')` on the control and `focusRingPart('ring')` on the shape it shows: the
+  toggle switch track (shipping's `::before`), the slider track, the device checkbox box and the
+  docked Clear face. A React Native view takes `focusRingHostView`, which react-native-web writes
+  out through `dataSet`.
+* `focusRingPart('halo')`: the AI style cover takes shipping's brand border and halo instead.
+* `focusRingHost('inset')`: the disclosure summary, whose panel clips an outside ring.
+* `focusRingHost(shape)`: a control that paints a blob as a path (the dialog Back and Close, and so
+  the parental gate's and the banners' close) rounds its ring to the full elliptical blob.
+
+`tools/tests/native-focus-ring.test.mjs` holds each value to the shipping stylesheets and mounts the
+shared controls against `strict.css`, failing when one loses its ring or its shape. The native
+renderers drop the marks; what a hardware keyboard shows on Android or iOS is unverified.
 
 ## Settings rows
 
