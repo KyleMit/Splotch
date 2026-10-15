@@ -93,22 +93,28 @@ describe('persisted Coloring Book master', () => {
     expect(f.storage.write).toHaveBeenCalledOnce();
     expect(parseSoundSettings(f.storage.write.mock.calls[0][0]).coloringBookEnabled).toBe(false);
   });
-  it('retains the exact failed write for retry and suppresses a concurrent writer', async () => {
+  it('serializes a concurrent choice and retains the exact failed write for retry', async () => {
     const f = settingsFixture();
     await f.owner.load();
     const write = deferred();
     f.storage.write.mockReturnValueOnce(write.promise);
     const saving = f.owner.setColoringBookEnabled(false);
-    await f.owner.setEnabled(true);
+    const queued = f.owner.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledOnce();
+    expect(f.state()).toMatchObject({ coloringBookEnabled: false, soundEnabled: true });
     write.resolve();
-    await saving;
+    await Promise.all([saving, queued]);
+    expect(f.storage.write).toHaveBeenCalledTimes(2);
+    expect(parseSoundSettings(f.storage.write.mock.calls[1][0])).toMatchObject({
+      coloringBookEnabled: false,
+      soundEnabled: true,
+    });
     f.storage.write.mockRejectedValueOnce(new Error('disk full'));
     await f.owner.setColoringBookEnabled(true);
-    const exact = f.storage.write.mock.calls[1][0];
+    const exact = f.storage.write.mock.calls[2][0];
     expect(f.state()).toMatchObject({ coloringBookEnabled: true, saved: false });
     await f.owner.retrySave();
-    expect(f.storage.write.mock.calls[2][0]).toBe(exact);
+    expect(f.storage.write.mock.calls[3][0]).toBe(exact);
   });
   it('rejects a missing, nonboolean, extra or malformed new setting', async () => {
     const f = settingsFixture();

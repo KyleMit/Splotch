@@ -38,6 +38,60 @@ async function idle() {
 }
 
 describe('the screen’s visible-ink scan', () => {
+  it('gives the real paper up after capture while Photos still writes', async () => {
+    await contact('pen', 10);
+    let finish;
+    sdk.save.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    sdk.hold = true;
+    await act(async () => void owner.save());
+    await settle();
+    for (let layer = 0; layer < 2; layer += 1) {
+      const { callback, options } = sdk.captures.at(-1);
+      await act(async () =>
+        callback(rgbaPng(options.width, options.height, 255).toString('base64'))
+      );
+      await settle();
+    }
+    expect(sdk.save).toHaveBeenCalledOnce();
+    expect(owner.busy).toBe(false);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await contact('pen', 200);
+    expect(owner.history.drawing.strokes).toHaveLength(2);
+    await act(async () => finish('photos'));
+  });
+
+  it('clears known ink without a capture and admits the next contact immediately', async () => {
+    await contact('pen', 10);
+    const previous = owner.history.drawing;
+    const captures = sdk.captures.length;
+    sdk.hold = true;
+    await act(async () => void owner.clear(false));
+    expect(sdk.captures).toHaveLength(captures);
+    expect(owner.busy).toBe(false);
+    expect(owner.disabled).toBe(false);
+    expect(owner.history.drawing.strokes).toHaveLength(0);
+    expect(owner.history.undo.at(-1)).toBe(previous);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await contact('pen', 200);
+    expect(owner.history.drawing.strokes).toHaveLength(1);
+  });
+
+  it('clears a scanned blank page without another capture or an extra undo step', async () => {
+    await contact('pen', 10);
+    await contact('eraser', 10);
+    sdk.hold = true;
+    await idle();
+    await act(async () => sdk.captures.at(-1).callback(blankPaper()));
+    await act(async () => vi.advanceTimersByTimeAsync(EMPTY_SCAN_IDLE_MS));
+    expect(owner.inkVisible).toBe(false);
+    const captures = sdk.captures.length;
+    const undo = owner.history.undo;
+    await act(async () => void owner.clear(false));
+    expect(sdk.captures).toHaveLength(captures);
+    expect(owner.history.drawing.strokes).toHaveLength(0);
+    expect(owner.history.undo).toBe(undo);
+  });
+
   it('reads a page the eraser wiped as blank once the child stops', async () => {
     await contact('pen', 10);
     expect(owner.inkVisible).toBe(true);

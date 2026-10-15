@@ -219,9 +219,7 @@ function button(label) {
   );
 }
 function toolsButton() {
-  return [...host.querySelectorAll('button')].find(
-    (node) => node.getAttribute('aria-label') === 'Drawing tools'
-  );
+  return button('Drawing tools');
 }
 async function openTools() {
   const opener = toolsButton();
@@ -285,7 +283,8 @@ describe('mounted actual native Clear and decoder ownership', () => {
     expect(await saved()).toEqual(fixture);
     await click('Clear');
     expect(button('Save picture')).toBeUndefined();
-    expect(toolsButton().disabled).toBe(true);
+    expect(toolsButton().disabled).toBe(false);
+    expect(sdk.responders.at(-1).onStartShouldSetPanResponder()).toBe(false);
     await frames();
     await decodeSettles();
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));

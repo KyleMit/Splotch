@@ -1,8 +1,6 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { rgbaPng } from './native-png-fixtures.mjs';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
@@ -12,7 +10,6 @@ import {
   UNTOUCHED_SETTINGS,
 } from './native-drawing-screen-harness.mjs';
 
-const SCREEN_SETUP_BUDGET_MS = 2000;
 let screen;
 async function openTools() {
   if (screen.button('Pen')) return;
@@ -253,6 +250,8 @@ describe('drawing width controls', () => {
 describe('Clear observation refusal', () => {
   it.each(['Clear'])('retains history and rainbow when %s observation fails', async (action) => {
     await drawStroke();
+    await menuClick('Eraser');
+    await drawStroke();
     const original = screen.paper();
     files.ink.mockResolvedValueOnce('ink-observation-input');
     await menuClick(action);
@@ -262,6 +261,8 @@ describe('Clear observation refusal', () => {
     expect(screen.container.textContent).toContain(
       'Picture capture returned an invalid or unsupported PNG.'
     );
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes.map(({ brush }) => brush)).toEqual(['pen']);
     await screen.click('Undo');
     expect(JSON.parse(screen.paper()).strokes).toEqual([]);
     expect(JSON.parse(screen.paper()).rainbow).toBe(0);
@@ -343,45 +344,27 @@ describe('coloring-page controls through the real drawing screen', () => {
     expect(screen.paper()).toBe(original);
   });
 
-  it(
-    'preserves the selected page through Clear and restores blank selection atomically with Undo',
-    async () => {
-      await menuClick('Coloring pages');
-      await screen.click('Little turtle');
-      await drawStroke();
-      const painted = screen.paper();
-      let finishInk;
-      files.ink.mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            finishInk = resolve;
-          })
-      );
-      await menuClick('Clear');
-      expect(screen.button('Draw fixture stroke').disabled).toBe(true);
-      expect(screen.button('Drawing tools').disabled).toBe(true);
-      await act(async () => finishInk(rgbaPng(1024, 768, 255).toString('base64')));
-      await vi.waitFor(
-        async () => {
-          await act(async () => {});
-          expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(1, 'turtle'));
-        },
-        { timeout: PNG_TIMEOUT_MS }
-      );
-      expect(screen.button('Draw fixture stroke').disabled).toBe(false);
-      await openTools();
-      expect(screen.button('Clear').disabled).toBe(false);
-      await screen.click('Keep drawing');
-      await screen.click('Undo');
-      expect(screen.paper()).toBe(painted);
-      await menuClick('Coloring pages');
-      await screen.click('Blank paper');
-      expect(JSON.parse(screen.paper())).toEqual({ ...JSON.parse(painted), pageId: 'blank' });
-      await screen.click('Undo');
-      expect(screen.paper()).toBe(painted);
-    },
-    PNG_TIMEOUT_MS + SCREEN_SETUP_BUDGET_MS
-  );
+  it('preserves the selected page through Clear and restores blank selection atomically with Undo', async () => {
+    await menuClick('Coloring pages');
+    await screen.click('Little turtle');
+    await drawStroke();
+    const painted = screen.paper();
+    await menuClick('Clear');
+    expect(files.ink).not.toHaveBeenCalled();
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(1, 'turtle'));
+    expect(screen.button('Draw fixture stroke').disabled).toBe(false);
+    expect(screen.button('Drawing tools').disabled).toBe(false);
+    await openTools();
+    expect(screen.button('Clear').disabled).toBe(false);
+    await screen.click('Keep drawing');
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(painted);
+    await menuClick('Coloring pages');
+    await screen.click('Blank paper');
+    expect(JSON.parse(screen.paper())).toEqual({ ...JSON.parse(painted), pageId: 'blank' });
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(painted);
+  });
 
   it('recodes the real open picker previews with the system theme and preserves ink', async () => {
     await drawStroke();

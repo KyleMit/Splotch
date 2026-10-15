@@ -78,15 +78,20 @@ describe('owned ink observation request', () => {
       new URL('../../experiments/native-architecture/src/useDrawingScreen.ts', import.meta.url),
       'utf8'
     );
-    expect(caller.indexOf('observations.current?.begin(isCurrent)')).toBeLessThan(
-      caller.indexOf('await owner?.captureInk')
-    );
+    const clear = caller.slice(caller.indexOf('async function clearCurrentPicture'));
+    const observedClear = clear.slice(clear.indexOf('await runCommand(async () => {'));
+    const prepare = observedClear.indexOf('observations.current?.begin(isCurrent,');
+    const capture = observedClear.indexOf('await owner?.captureInk');
+    expect(prepare).toBeGreaterThanOrEqual(0);
+    expect(capture).toBeGreaterThan(prepare);
     expect(caller).toContain('historyRef.current === snapshot');
     expect(caller).toContain('surface.current === owner');
     expect(caller).toMatch(/mounted\.current\s*&&\s*command\.current\s*&&\s*!blocked\(\)/);
-    expect(caller.indexOf('if (!isCurrent())')).toBeLessThan(
-      caller.indexOf('setHistory(clearDrawing(snapshot, empty))')
-    );
+    const guard = observedClear.indexOf('if (!isCurrent())');
+    const commit = observedClear.indexOf('clearSnapshot(snapshot, empty)');
+    expect(guard).toBeGreaterThanOrEqual(0);
+    expect(commit).toBeGreaterThan(guard);
+    expect(caller).toContain('setHistory(clearDrawing(snapshot, empty))');
     expect(caller).toContain('observation?.cancel()');
     // The `surface.current === owner` guard needs a handle that keeps its identity across renders;
     // native-picture-capture.test.mjs holds the mounted surface to that.

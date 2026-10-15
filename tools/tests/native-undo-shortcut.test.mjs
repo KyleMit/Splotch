@@ -175,7 +175,7 @@ describe('drawing screen web Undo admission', () => {
     expect(screen.button('Show Undo button').getAttribute('aria-checked')).toBe('false');
     expect(screen.button('Show drawing width controls').getAttribute('aria-checked')).toBe('false');
   });
-  it('disables both Settings switches during a serialized save and a retained closing sheet', async () => {
+  it('keeps Settings choices live during a serialized save and disables a retained closing sheet', async () => {
     await screen.menuClick('Settings');
     let finish;
     files.settingsWrite.mockReturnValueOnce(
@@ -184,10 +184,17 @@ describe('drawing screen web Undo admission', () => {
       })
     );
     await screen.click('Show Undo button');
-    expect(screen.button('Show Undo button').disabled).toBe(true);
-    expect(screen.button('Show drawing width controls').disabled).toBe(true);
+    expect(screen.button('Show Undo button').disabled).toBe(false);
+    expect(screen.button('Show drawing width controls').disabled).toBe(false);
+    await screen.click('Show drawing width controls');
+    expect(screen.button('Show drawing width controls').getAttribute('aria-checked')).toBe('false');
     expect(files.settingsWrite).toHaveBeenCalledOnce();
     await act(async () => finish());
+    expect(files.settingsWrite).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(files.settingsWrite.mock.calls[1][0])).toMatchObject({
+      undoButtonEnabled: false,
+      strokeWidthControlEnabled: false,
+    });
     expect(screen.button('Show drawing width controls').disabled).toBe(false);
     files.retainClosingModal = true;
     files.platform = 'ios';

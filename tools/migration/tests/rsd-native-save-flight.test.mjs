@@ -132,6 +132,22 @@ function ranges(keyframes) {
 }
 
 describe('the save polaroid', () => {
+  it('keeps the paper and chrome live while the captured picture writes to Photos', async () => {
+    let finish;
+    library.pending = new Promise((resolve) => (finish = resolve));
+    await drawAndSave();
+    expect(library.saves).toEqual(['png-1']);
+    expect(host.querySelector('[aria-label="Draw RSD fixture stroke"]').disabled).toBe(false);
+    for (const label of ['Stroke width', 'Save screenshot', 'Settings'])
+      expect(host.querySelector(`[aria-label="${label}"]`).disabled, label).toBe(false);
+    const before = caller.paper.strokes.length;
+    await click('[aria-label="Draw RSD fixture stroke"]');
+    expect(caller.paper.strokes).toHaveLength(before + 1);
+    library.pending = null;
+    await act(async () => finish('photos'));
+    expect(banners()).toEqual([]);
+  });
+
   it('flies the captured picture out of the Save screenshot button and says nothing about it', async () => {
     await drawAndSave();
     await vi.waitFor(() => expect(overlay()).not.toBeNull());

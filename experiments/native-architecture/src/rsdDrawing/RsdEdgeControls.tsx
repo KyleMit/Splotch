@@ -108,7 +108,7 @@ export function RsdEdgeLayout({
   const clear = useClearGesture({
     // The button stays live through a stroke and under a dialog, but its activation plays the
     // clear before the command can refuse, so the gesture itself waits.
-    disabled: blocked || screen.drawing,
+    disabled: blocked || screen.drawing || screen.commandBusy,
     drawing: screen.history.drawing,
     // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
     onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),

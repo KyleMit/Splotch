@@ -391,7 +391,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(loop.setVolume).toHaveBeenLastCalledWith(0.2);
     expect(ui.container.textContent).not.toContain('Drawing sound is unavailable');
   });
-  it('waits for settings before the first usable drawing frame and blocks writes while saving', async () => {
+  it('waits for settings before the first usable frame and keeps choices made during a write', async () => {
     const read = pending();
     sound.scheme = 'dark';
     sound.read.mockReturnValueOnce(read.promise);
@@ -406,9 +406,13 @@ describe('live drawing sound owner and Settings screen', () => {
     const write = pending();
     sound.write.mockReturnValueOnce(write.promise);
     await ui.click('Drawing sound');
-    expect(ui.switch().disabled).toBe(true);
-    expect(ui.dialog().textContent).toContain('Saving settings');
+    expect(ui.switch().disabled).toBe(false);
+    await ui.click('Drawing sound');
+    expect(ui.switch().checked).toBe(false);
+    expect(sound.write).toHaveBeenCalledOnce();
     await act(async () => write.resolve());
+    expect(sound.write).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(sound.write.mock.calls[1][0]).soundEnabled).toBe(false);
     expect(ui.switch().disabled).toBe(false);
   });
   it('respects initial background state and releases on AppState backgrounding', async () => {
