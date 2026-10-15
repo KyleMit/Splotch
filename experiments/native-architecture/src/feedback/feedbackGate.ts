@@ -10,14 +10,9 @@ import {
 // Candidate import isolation is enforced by native-feedback-contract.test.mjs, which pins these to parentalGate.svelte.ts.
 export const GATE_OPERAND_MIN = 3;
 export const GATE_OPERAND_MAX = 9;
-export const GATE_ANSWER_MAX_LENGTH = String(GATE_OPERAND_MAX * GATE_OPERAND_MAX).length;
+const GATE_ANSWER_MAX_LENGTH = String(GATE_OPERAND_MAX * GATE_OPERAND_MAX).length;
 export const FEEDBACK_GATE_MODES = ['always', 'session', 'never'] as const;
 export type FeedbackGateMode = (typeof FEEDBACK_GATE_MODES)[number];
-export const FEEDBACK_GATE_LABELS: Record<FeedbackGateMode, string> = {
-  always: 'Every time',
-  session: 'Per session',
-  never: 'Never',
-};
 export type FeedbackGateState = Readonly<{
   open: boolean;
   x: number;

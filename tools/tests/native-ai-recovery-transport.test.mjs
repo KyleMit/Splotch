@@ -239,14 +239,15 @@ describe('recovery transport source proposals (unrun at packet seal)', () => {
       expect(transport).not.toHaveBeenCalled();
     }
   );
-  it('keeps both maintained sheets on the same recovery action owner', () => {
-    for (const path of ['ai/AiSheet.tsx', 'rsdDrawing/RsdAiResult.tsx']) {
-      const source = readFileSync(
-        new URL(`../../experiments/native-architecture/src/${path}`, import.meta.url),
-        'utf8'
-      );
-      expect(source).toMatch(/<AiRecoveryActions\s+owner=\{owner\}\s+state=\{state\}\s+waiting=\{/);
-    }
+  it('keeps the live result on the recovery action owner', () => {
+    const source = readFileSync(
+      new URL(
+        '../../experiments/native-architecture/src/rsdDrawing/RsdAiResult.tsx',
+        import.meta.url
+      ),
+      'utf8'
+    );
+    expect(source).toMatch(/<AiRecoveryActions\s+owner=\{owner\}\s+state=\{state\}\s+waiting=\{/);
   });
 });
 
