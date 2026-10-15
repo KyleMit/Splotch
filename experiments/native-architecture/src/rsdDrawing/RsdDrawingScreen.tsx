@@ -45,8 +45,8 @@ import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
+import { usePWAUpdates } from '../platform/serviceWorker';
 import { useParentGateCard, type ParentGateView } from '../parentCenter/useParentGateCard';
-
 import type { AppPage } from '../information/appPages';
 import { RsdInformationPage } from './informationSurface';
 
@@ -62,6 +62,13 @@ function useSettledMessage(message: string, drawing: boolean) {
 export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
   const screen = useDrawingScreen();
   const product = useDrawingProduct(screen);
+  usePWAUpdates(
+    {
+      canvasEmpty: !screen.inkVisible && !screen.drawing,
+      strokes: screen.committedStrokes,
+    },
+    page === 'drawing'
+  );
   const informationOpen = page !== 'drawing';
   const [drawingVisited, setDrawingVisited] = useState(!informationOpen);
   if (!informationOpen && !drawingVisited) setDrawingVisited(true);
@@ -189,7 +196,7 @@ function RsdModalSheets({
   return (
     <>
       {product.owner && gate && route.shown === 'gate' ? (
-        <RsdSurfaceBoundary onClose={product.owner.gate.dismiss}>
+        <RsdSurfaceBoundary onClose={product.owner.gate.dismiss} onDismiss={dismissed}>
           <RsdParentGateSheet
             owner={product.owner}
             state={gate.state}
@@ -200,7 +207,7 @@ function RsdModalSheets({
         </RsdSurfaceBoundary>
       ) : null}
       {product.ai.owner && route.shown === 'aiPrompt' ? (
-        <RsdSurfaceBoundary onClose={product.ai.owner.close}>
+        <RsdSurfaceBoundary onClose={product.ai.owner.close} onDismiss={dismissed}>
           <RsdAiStylePrompt
             visible={route.visible}
             onPick={product.ai.owner.pickStyle}
@@ -210,7 +217,7 @@ function RsdModalSheets({
         </RsdSurfaceBoundary>
       ) : null}
       {product.ai.owner && product.ai.state && route.shown === 'aiResult' ? (
-        <RsdSurfaceBoundary onClose={product.ai.owner.close}>
+        <RsdSurfaceBoundary onClose={product.ai.owner.close} onDismiss={dismissed}>
           <RsdAiResult
             owner={product.ai.owner}
             state={product.ai.state}
@@ -369,7 +376,7 @@ function RsdDrawingContent({
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}
         {route.shown === 'settings' ? (
-          <RsdSurfaceBoundary onClose={screen.closeSettings}>
+          <RsdSurfaceBoundary onClose={screen.closeSettings} onDismiss={onModalDismissed}>
             <RsdSettingsRoute
               screen={screen}
               sound={sound}
@@ -397,7 +404,10 @@ function RsdScreenSheets({ screen }: { screen: Screen }) {
   return (
     <>
       {pagePicker.shown ? (
-        <RsdSurfaceBoundary onClose={() => screen.setPagePickerOpen(false)}>
+        <RsdSurfaceBoundary
+          onClose={() => screen.setPagePickerOpen(false)}
+          onDismiss={pagePicker.dismissed}
+        >
           <RsdColoringBookPicker
             selected={screen.history.drawing.pageId}
             orientation={artOrientation(
@@ -420,7 +430,7 @@ function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound })
   const picker = useModalPresence(screen.colorPickerOpen || null);
   if (!picker.shown) return null;
   return (
-    <RsdSurfaceBoundary onClose={screen.closeColorPicker}>
+    <RsdSurfaceBoundary onClose={screen.closeColorPicker} onDismiss={picker.dismissed}>
       <RsdColorPicker
         visible={picker.visible}
         customColor={sound.settings.customColors[0]}

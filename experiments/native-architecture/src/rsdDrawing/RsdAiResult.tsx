@@ -307,7 +307,7 @@ function useDownload(exiting: boolean, onKept: (kept: KeptAiPicture) => void) {
     if (exiting || saving.current === picture.uri) return;
     saving.current = picture.uri;
     const { keepAiPicture } = await import('../ai/keepAiPicture');
-    const kept = await keepAiPicture(picture);
+    const kept = await keepAiPicture(picture, { allowPrompt: true });
     if (saving.current === picture.uri) saving.current = null;
     onKept(kept);
   };

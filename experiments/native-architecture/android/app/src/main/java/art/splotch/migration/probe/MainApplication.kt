@@ -27,6 +27,7 @@ class MainApplication : Application(), ReactApplication {
           add(SplotchDeviceLockPackage())
           add(SplotchGateKeyboardPackage())
           add(SplotchAIEnvironmentPackage())
+          add(SplotchPhotoLibraryPackage())
         }
     )
   }

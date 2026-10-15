@@ -160,8 +160,9 @@ function clearEffects(context: Context): ClearGestureEffects {
       }
     },
     follow(offset, progress, isReached) {
+      owner.current.sound?.update(progress);
       values.drag.setValue(offset);
-      values.progress.setValue(progress);
+      values.progress.setValue(Math.min(progress, 1));
       markReached(context, isReached);
     },
     threshold: impactThreshold,

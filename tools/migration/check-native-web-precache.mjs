@@ -26,18 +26,21 @@ import {
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
   subresourceIntegrity,
+  webVersionHeadTag,
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
+import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
-// Served by the export but never fetched by the page: the worker itself, Expo's build-identity
-// file and the host's not-found answer.
+// The version endpoint must reach the network; the worker, build identity and host's not-found
+// answer are not page assets.
 const UNFETCHED_EXPORT_FILES = new Set([
   NATIVE_WEB_SERVICE_WORKER,
   'metadata.json',
   NOT_FOUND_FILE,
+  VERSION_JSON_FILENAME,
 ]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';
@@ -241,6 +244,15 @@ export function checkNativeWebPrecache({
   );
   const precacheBytes = present.reduce((total, url) => total + statSync(onDisk(url)).size, 0);
   const indexHtml = readFileSync(join(exportDir, APP_SHELL_FILE));
+  const version = JSON.parse(readFileSync(join(exportDir, VERSION_JSON_FILENAME), 'utf8'));
+  if (
+    typeof version?.version !== 'string' ||
+    !version.version ||
+    !indexHtml.toString('utf8').includes(webVersionHeadTag(version.version))
+  )
+    throw new Error('The app shell and version endpoint must carry the same web build version.');
+  if (precacheEntries.some(({ url }) => url === VERSION_JSON_FILENAME))
+    throw new Error('The version endpoint must stay out of the precache.');
   const shellReferences = shellAssetReferences(indexHtml.toString('utf8'));
   const problems = nativeWebPrecacheProblems({
     precacheEntries,

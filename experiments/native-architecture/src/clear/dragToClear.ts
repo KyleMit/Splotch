@@ -145,7 +145,7 @@ export function createClearGesture(
       }
       const distance = Math.hypot(dx, dy);
       const reached = distance >= drag.radius;
-      effects.follow({ x: dx, y: dy }, Math.min(distance / drag.radius, 1), reached);
+      effects.follow({ x: dx, y: dy }, distance / drag.radius, reached);
       if (reached && !drag.reached) effects.threshold();
       drag.reached = reached;
     },

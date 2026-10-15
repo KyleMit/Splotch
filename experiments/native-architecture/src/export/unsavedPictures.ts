@@ -7,9 +7,7 @@ function recognizedPicture(value: unknown): value is HeldPicture {
   if (
     typeof picture.pngBase64 !== 'string' ||
     picture.pngBase64.length === 0 ||
-    (picture.outcome !== 'denied' &&
-      picture.outcome !== 'failed' &&
-      picture.outcome !== 'unavailable')
+    (picture.outcome !== 'denied' && picture.outcome !== 'failed')
   )
     return false;
   if (picture.format === undefined) return true;

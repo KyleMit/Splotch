@@ -1,11 +1,12 @@
 import type { AiResult } from './journal';
 import type { KeptAiPicture } from './keepAiPicture';
 import type { PictureFormat } from '../export/pictureFilename';
+import type { AiAutoSave as ShippingAiAutoSave } from '../../../../web/src/lib/ai/autoSaveCopy';
 import { isUnsaved, type PictureSaveOutcome, type UnsavedOutcome } from '../export/pictureSave';
 
 // Where an auto-saved run's picture went, which the AI Result's footer reports instead of its
 // Download, as shipping's setAiAutoSave records it.
-export type AiAutoSave = Readonly<{ status: 'saving' }> | Readonly<{ status: PictureSaveOutcome }>;
+export type AiAutoSave = ShippingAiAutoSave;
 
 const PNG_DATA_PREFIX = 'data:image/png;base64,';
 
@@ -28,7 +29,7 @@ export function createAiAutoSave(deps: {
     started.add(id);
     deps.publish(id, { status: 'saving' });
     const kept = await deps.keep(picture);
-    deps.publish(id, { status: kept.outcome });
+    deps.publish(id, typeof kept.outcome === 'object' ? kept.outcome : { status: kept.outcome });
     if (isUnsaved(kept.outcome)) deps.report(kept.outcome, kept.base64, kept.format);
     const drawing = submitted.startsWith(PNG_DATA_PREFIX)
       ? submitted.slice(PNG_DATA_PREFIX.length)

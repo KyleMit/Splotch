@@ -3,7 +3,6 @@ import './strict.css';
 import { createElement, StrictMode } from 'react';
 import { registerRootComponent } from './platform/registerRoot';
 import { ProbeApp } from './ProbeApp';
-import { registerServiceWorker } from './platform/serviceWorker';
 import { startLaunchInvites } from './platform/launchInvites';
 
 void startLaunchInvites();
@@ -16,4 +15,3 @@ function StrictProbeApp() {
   return createElement(StrictMode, null, createElement(ProbeApp));
 }
 registerRootComponent(__DEV__ ? StrictProbeApp : ProbeApp);
-registerServiceWorker();

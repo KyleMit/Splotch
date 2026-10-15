@@ -31,7 +31,7 @@ function event(touches, changedTouches = touches, starts = {}) {
     },
   };
 }
-async function fixture(brush = 'pen') {
+async function fixture(brush = 'pen', width = 1024, pixelRatio = 1) {
   vi.useFakeTimers();
   const loop = { start: vi.fn(), setVolume: vi.fn(), stop: vi.fn(), dispose: vi.fn() };
   const failure = vi.fn();
@@ -56,9 +56,9 @@ async function fixture(brush = 'pen') {
       onError: failure,
       sound,
     }),
-    () => ({ width: 1024, height: 768, pageX: 0, pageY: 0 }),
+    () => ({ width, height: width * 0.75, pageX: 0, pageY: 0 }),
     vi.fn(),
-    () => 1
+    () => pixelRatio
   );
   let sequence = 0;
   function send(phase, next) {
@@ -205,7 +205,7 @@ describe('joint admitted contact sound lifecycle', () => {
     expect(f.loop.stop).toHaveBeenCalledTimes(stopped + 1);
     f.finish();
   });
-  it('rejects backward and nonfinite samples and lets stillness quiet all stationary contacts', async () => {
+  it('rejects invalid samples and holds the last gain while every contact is stationary', async () => {
     const f = await fixture();
     const a = f.sound.begin({ x: 10, y: 20 }, 100);
     const b = f.sound.begin({ x: 900, y: 700 }, 100);
@@ -217,7 +217,7 @@ describe('joint admitted contact sound lifecycle', () => {
     b.sample({ x: NaN, y: 700 }, 300);
     expect(f.loop.setVolume).toHaveBeenCalledTimes(calls);
     await vi.advanceTimersByTimeAsync(100);
-    expect(f.loop.setVolume).toHaveBeenLastCalledWith(0);
+    expect(f.loop.setVolume).toHaveBeenLastCalledWith(0.2);
     a.end();
     b.end();
     expect(f.loop.stop).toHaveBeenCalledOnce();
@@ -225,3 +225,21 @@ describe('joint admitted contact sound lifecycle', () => {
     f.finish();
   });
 });
+
+it.each([
+  [1024, 2],
+  [512, 1],
+])(
+  'measures actual contact sound in backing pixels at width%s and scale%s',
+  async (width, pixelRatio) => {
+    const f = await fixture('pen', width, pixelRatio);
+    f.start([touch(0, 10, 20, 100)]);
+    await Promise.resolve();
+    f.send('move', event([touch(0, 19, 20, 200)], undefined, { 0: 100 }));
+    expect(f.loop.setVolume.mock.calls.at(-1)[0]).toBeCloseTo(
+      (0.2 * ((9 * pixelRatio) / 100)) / 0.45
+    );
+    f.send('end', event([], [touch(0, 19, 20, 200)], { 0: 100 }));
+    f.finish();
+  }
+);

@@ -1,19 +1,83 @@
 import { SOUND_VOLUME_DEFAULT, soundVolumeGain } from '../settings/soundVolume';
+import {
+  clearLadderStep,
+  clearLadderFrequency,
+  CLEAR_CANCEL_NOTES,
+  CLEAR_CANCEL_STEP_SEMITONES,
+  CLEAR_CANCEL_SPACING_MS,
+  CLEAR_CANCEL_GAIN_MULTIPLIER,
+} from '../../../../web/src/lib/audio/clearSoundNotes';
 
 type ClearPageTurn = { play(volume: number): void; dispose(): void };
-export type ClearPageTurnLoader = (signal: AbortSignal) => Promise<ClearPageTurn>;
+type ClearNotePlayer = (frequency: number, volume: number) => void;
+export type ClearPageTurnLoader = (
+  signal: AbortSignal,
+  publishNotes: (play: ClearNotePlayer) => void
+) => Promise<ClearPageTurn>;
 
 // The shipping page turn plays at unit gain scaled by the parent's volume
 // (web/src/lib/audio/clearSound.ts); native-clear-projection.test.mjs pins the literal.
 export const CLEAR_PAGE_TURN_GAIN = 1;
+// Native players stop at unity; the unclipped PCM asset carries Loud's gain before attenuation.
+export const CLEAR_PAGE_TURN_ASSET_GAIN = 2;
 
 type Resource =
   | { status: 'idle' }
   | { status: 'loading'; request: AbortController }
   | { status: 'ready'; turn: ClearPageTurn };
 
-// The page turn that closes a committed clear. The clip loads when a drag begins, as the shipping
-// gesture does, so a release usually finds it ready; a commit that beats the load plays it the
+function createClearGestureSound(
+  canPlay: () => boolean,
+  note: (frequency: number, gain?: number) => void
+) {
+  let active = false;
+  let lastStep = -1;
+  let lastFrequency = 0;
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  function stop() {
+    active = false;
+    lastStep = -1;
+    lastFrequency = 0;
+    for (const timer of timers) clearTimeout(timer);
+    timers.clear();
+  }
+  return {
+    stop,
+    start() {
+      stop();
+      active = canPlay();
+    },
+    update(progress: number) {
+      if (!active || !canPlay()) return;
+      const step = clearLadderStep(Math.max(progress, 0));
+      lastFrequency = clearLadderFrequency(step);
+      if (step === lastStep) return;
+      lastStep = step;
+      note(lastFrequency);
+    },
+    cancel() {
+      const unwind = active && canPlay() && lastStep >= 0;
+      const frequency = lastFrequency;
+      stop();
+      if (!unwind) return;
+      for (let index = 1; index <= CLEAR_CANCEL_NOTES; index += 1) {
+        const timer = setTimeout(
+          () => {
+            timers.delete(timer);
+            note(
+              frequency * 2 ** ((-CLEAR_CANCEL_STEP_SEMITONES * index) / 12),
+              CLEAR_CANCEL_GAIN_MULTIPLIER
+            );
+          },
+          (index - 1) * CLEAR_CANCEL_SPACING_MS
+        );
+        timers.add(timer);
+      }
+    },
+  };
+}
+
+// The page turn that closes a committed clear. A commit that beats the load plays it the
 // moment it arrives. A failed load is silent and retried by the next gesture: the sound is polish,
 // never a reason for Clear to fail.
 export function createClearSound(load: ClearPageTurnLoader) {
@@ -21,12 +85,25 @@ export function createClearSound(load: ClearPageTurnLoader) {
   let foreground = true;
   let volume = SOUND_VOLUME_DEFAULT;
   let requested = false;
+  let notes: ClearNotePlayer | null = null;
   let resource: Resource = { status: 'idle' };
 
   const canPlay = () => enabled && foreground;
+  const gesture = createClearGestureSound(canPlay, note);
+
+  function note(frequency: number, gain = 1) {
+    if (!canPlay() || notes === null) return;
+    try {
+      notes(frequency, soundVolumeGain(volume) * gain);
+    } catch {
+      release();
+    }
+  }
 
   function release() {
     requested = false;
+    gesture.stop();
+    notes = null;
     const old = resource;
     resource = { status: 'idle' };
     if (old.status === 'loading') old.request.abort();
@@ -47,7 +124,10 @@ export function createClearSound(load: ClearPageTurnLoader) {
     if (resource.status !== 'idle' || !canPlay()) return;
     const request = new AbortController();
     resource = { status: 'loading', request };
-    void load(request.signal)
+    void load(request.signal, (play) => {
+      if (!request.signal.aborted && resource.status === 'loading' && resource.request === request)
+        notes = play;
+    })
       .then((turn) => {
         if (request.signal.aborted || resource.status !== 'loading') {
           turn.dispose();
@@ -57,24 +137,31 @@ export function createClearSound(load: ClearPageTurnLoader) {
         playIfReady();
       })
       .catch(() => {
-        if (resource.status === 'loading' && resource.request === request)
+        if (resource.status === 'loading' && resource.request === request) {
+          notes = null;
           resource = { status: 'idle' };
+        }
       });
   }
 
   return {
+    prepare,
     start() {
       requested = false;
+      gesture.start();
       prepare();
     },
+    update: gesture.update,
     commit() {
       if (!canPlay()) return;
+      gesture.stop();
       requested = true;
       prepare();
       playIfReady();
     },
     cancel() {
       requested = false;
+      gesture.cancel();
     },
     setVolume(next: number) {
       volume = next;

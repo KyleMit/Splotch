@@ -42,12 +42,12 @@ export const AI_SETTINGS_COPY = {
     ' via an access code — AI art is on us, no API key needed. Forget the code any time to remove it.',
 } as const;
 
-// The auto-save help names where the pictures go: the native apps save to the photo library, the
-// web export downloads them (it has no folder picker, so shipping's chosen-folder half never
-// applies).
+// The auto-save help names the destinations this platform offers.
 export const AI_AUTO_SAVE_HELP = {
   native: 'Saves each AI picture and the drawing behind it to your photos',
   web: 'Saves each AI picture and the drawing behind it to your downloads',
+  webFolder:
+    'Saves each AI picture and the drawing behind it to your downloads, or to your chosen folder',
 } as const;
 
 export function freeCreationsLeft(remaining: number) {

@@ -7,24 +7,53 @@ export const photos = {
   permission: 'granted',
   permissionRequests: [],
   created: [],
+  nativeCalls: [],
   createError: null,
   onCreate: null,
   files: new Map(),
   deleted: [],
+  nativeOutcome: 'photos',
+  nativeAvailable: true,
+  beforeNativeRead: null,
   reset() {
     this.os = 'ios';
     this.androidApi = 33;
     this.permission = 'granted';
     this.permissionRequests.length = 0;
     this.created.length = 0;
+    this.nativeCalls.length = 0;
     this.createError = null;
     this.onCreate = null;
     this.files.clear();
     this.deleted.length = 0;
+    this.nativeOutcome = 'photos';
+    this.nativeAvailable = true;
+    this.beforeNativeRead = null;
   },
 };
 
 export const reactNativeModule = {
+  NativeModules: {
+    get SplotchPhotoLibrary() {
+      return photos.nativeAvailable
+        ? {
+            async save(uri, displayName, mime, album) {
+              await photos.beforeNativeRead?.();
+              const entry = {
+                via: 'SplotchPhotoLibrary.save',
+                filePath: uri,
+                album,
+                displayName,
+                mime,
+              };
+              photos.nativeCalls.push({ ...entry, base64: photos.files.get(uri) });
+              if (photos.nativeOutcome === 'photos') record(entry);
+              return photos.nativeOutcome;
+            },
+          }
+        : undefined;
+    },
+  },
   Platform: {
     get OS() {
       return photos.os;

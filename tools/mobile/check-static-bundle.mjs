@@ -70,8 +70,8 @@ export const WEB_ONLY_MODULE_MARKERS = [
   {
     feature: 'service-worker registration',
     marker: '/sw.js',
-    sourcePath: 'web/src/lib/pwa/updates.ts',
-    sourceNeedle: ".register('/sw.js')",
+    sourcePath: 'web/src/lib/pwa/versionEndpoint.ts',
+    sourceNeedle: "export const SERVICE_WORKER_PATH = '/sw.js'",
   },
   // The link-preview card is inert in a WebView, and a card the stripper
   // removed from the HTML would come straight back on hydration if the

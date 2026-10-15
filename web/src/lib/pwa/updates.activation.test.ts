@@ -5,7 +5,7 @@
 // cache-bust in updates.test.ts.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createPWAUpdates, ACTIVATION_RECOVERY_MS, WAITING_SETTLE_MS } from './updates';
+import { createPWAUpdates, ACTIVATION_RECOVERY_MS, WAITING_SETTLE_MS } from './updates.svelte';
 import {
   CURRENT_VERSION,
   NEWER_VERSION,

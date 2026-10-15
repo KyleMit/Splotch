@@ -1,13 +1,10 @@
-import clearPageTurn from '../audio/clear-page-turn.mp3';
+import clearPageTurn from '../audio/clear-page-turn-amplified.wav';
 import { AUDIO_LOAD_TIMEOUT_MS } from '../audio/drawingAudio';
-import type { ClearPageTurnLoader } from '../audio/pageTurnSound';
+import { CLEAR_PAGE_TURN_ASSET_GAIN, type ClearPageTurnLoader } from '../audio/pageTurnSound';
 import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
 
-// A native player's volume stops at unity, so the Loud level's doubled gain plays at full volume
-// here where the web's gain node can amplify it.
 const MAX_PLAYER_VOLUME = 1;
 
-// expo-audio loads with the first drag rather than with the drawing screen.
 export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   const { createAudioPlayer, setAudioModeAsync } = await import('expo-audio');
   await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
@@ -16,10 +13,26 @@ export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   const player = createAudioPlayer(clearPageTurn, { keepAudioSessionActive: false });
   let subscription: { remove: () => void } | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
+  let disposed = false;
   function dispose() {
+    if (disposed) return;
+    disposed = true;
     if (timeout !== null) clearTimeout(timeout);
-    subscription?.remove();
-    player.remove();
+    // Expo's remove drops the registry entry; release tears down the native player.
+    for (const cleanup of [
+      () => subscription?.remove(),
+      () => {
+        player.volume = 0;
+      },
+      () => player.remove(),
+      () => player.release(),
+    ]) {
+      try {
+        cleanup();
+      } catch {
+        // Audio teardown must not turn a completed Clear into an error.
+      }
+    }
   }
   try {
     await new Promise<void>((resolve, reject) => {
@@ -43,7 +56,7 @@ export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   if (timeout !== null) clearTimeout(timeout);
   return {
     play(volume) {
-      player.volume = Math.min(volume, MAX_PLAYER_VOLUME);
+      player.volume = Math.min(volume / CLEAR_PAGE_TURN_ASSET_GAIN, MAX_PLAYER_VOLUME);
       void player.seekTo(0).catch(() => {});
       player.play();
     },

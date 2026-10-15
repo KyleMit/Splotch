@@ -1,8 +1,9 @@
 import { webAssetUri } from './webAsset';
 import clearPageTurn from '../audio/clear-page-turn.mp3';
 import type { ClearPageTurnLoader } from '../audio/pageTurnSound';
+import { playClearNote } from '../../../../web/src/lib/audio/clearSoundNotes';
 
-export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
+export const loadClearPageTurn: ClearPageTurnLoader = async (signal, publishNotes) => {
   const context = new AudioContext();
   // Suspended WebKit contexts can reject resume while waiting for a later real activation.
   const resume = () => {
@@ -10,6 +11,10 @@ export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   };
   try {
     resume();
+    publishNotes((frequency, volume) => {
+      resume();
+      playClearNote(context, frequency, volume);
+    });
     const response = await fetch(webAssetUri(clearPageTurn), { signal });
     if (!response.ok) throw new Error('Clear sound could not be loaded.');
     const buffer = await context.decodeAudioData(await response.arrayBuffer());

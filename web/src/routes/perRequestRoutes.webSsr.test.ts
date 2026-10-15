@@ -21,6 +21,7 @@ import { freeGenerationsState } from '$lib/state/freeGenerations.svelte';
 import { fullscreenState } from '$lib/state/fullscreen.svelte';
 import { installState } from '$lib/state/install.svelte';
 import { layoutState } from '$lib/state/layout.svelte';
+import { pwaUpdates } from '$lib/pwa/updates.svelte';
 import { networkState } from '$lib/state/network.svelte';
 import { parentalGateState } from '$lib/state/parentalGate.svelte';
 import { saveFailureState } from '$lib/state/saveFailure.svelte';
@@ -101,6 +102,7 @@ const OBSERVERS: Record<string, () => unknown> = {
   fullscreenState: () => readGetters(fullscreenState),
   installState: () => [readGetters(installState), installState.installPromptStage()],
   layoutState: () => readGetters(layoutState),
+  pwaUpdates: () => readGetters(pwaUpdates),
   networkState: () => readGetters(networkState),
   parentalGateState: () => readGetters(parentalGateState),
   saveFailureState: () => readGetters(saveFailureState),

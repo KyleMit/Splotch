@@ -3,3 +3,8 @@ declare module '*.mp3' {
   const source: number | string | { uri: string; width: number; height: number };
   export { source as default };
 }
+
+declare module '*.wav' {
+  const source: number | string | { uri: string; width: number; height: number };
+  export { source as default };
+}

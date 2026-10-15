@@ -1,4 +1,5 @@
-import type { AiAutoSave } from '$lib/state/aiGeneration.svelte';
+import type { SaveResult } from '../saveNaming';
+export type AiAutoSave = { status: 'saving' } | SaveResult;
 
 type AutoSaveFooter = { kind: 'saved'; caption: string } | { kind: 'downloadButton' } | null;
 

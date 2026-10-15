@@ -250,7 +250,7 @@ describe('RSD font tokens', () => {
     );
     expect(screenRoots.length).toBeGreaterThan(0);
     for (const root of screenRoots) expect(root).toContain('fontTheme');
-    const shell = read('src/rsdDrawing/ModalShell.tsx');
+    const shell = read('src/rsdDrawing/ModalShellContent.tsx');
     expect(shell.match(/style=\{\[\s*fontTheme,[^\]]*styles\.card\(/g)).toHaveLength(1);
     expect(shell.slice(shell.indexOf('  card: ('))).toMatch(/^[^}]*fontFamily: fonts\.family,/);
   });

@@ -1,13 +1,10 @@
 import { Component, Fragment, type ReactNode } from 'react';
-import { html } from 'react-strict-dom';
-import { ModalShell } from './ModalShell';
-import { DialogHeader } from './DialogHeader';
-import { RsdAction, styles } from './controls';
+import { RsdSurfaceFailure } from './RsdSurfaceFailure';
 
 export const SURFACE_FAILURE_LABEL = 'Did not load';
 export const SURFACE_FAILURE_MESSAGE = 'This did not load. Check your connection and try again.';
 
-type Props = { onClose?: () => void; children: ReactNode };
+type Props = { onClose?: () => void; onDismiss?: () => void; children: ReactNode };
 type State = { failed: boolean; closing: boolean; closed: boolean; attempt: number };
 
 // A surface the drawing screen opens on request loads its own chunk on web (drawingSheets.web.ts),
@@ -34,26 +31,24 @@ export class RsdSurfaceBoundary extends Component<Props, State> {
     this.props.onClose?.();
   };
 
-  private dismissed = () => this.setState({ closed: true });
+  private dismissed = () => {
+    this.setState({ closed: true });
+    this.props.onDismiss?.();
+  };
 
   render() {
     if (this.state.closed) return null;
     if (!this.state.failed)
       return <Fragment key={this.state.attempt}>{this.props.children}</Fragment>;
     return (
-      <ModalShell
+      <RsdSurfaceFailure
         visible={!this.state.closing}
         label={SURFACE_FAILURE_LABEL}
-        size="confirm"
+        message={SURFACE_FAILURE_MESSAGE}
         onClose={this.close}
         onDismiss={this.dismissed}
-        header={<DialogHeader title={SURFACE_FAILURE_LABEL} titleSize="xl" onClose={this.close} />}
-      >
-        <html.div style={styles.dialogContent}>
-          <html.span aria-live="polite">{SURFACE_FAILURE_MESSAGE}</html.span>
-          <RsdAction label="Try again" onClick={this.retry} />
-        </html.div>
-      </ModalShell>
+        onRetry={this.retry}
+      />
     );
   }
 }

@@ -4,6 +4,7 @@ import {
   drawingPaper,
   paperContactPoint,
   presentedPaperSize,
+  textureScale,
   type AdoptedPaper,
   type PaperReference,
   type PaperSize,
@@ -194,10 +195,14 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INPUT_INTERRUPTED_MESSAGE);
-      const sample = this.paperSample(point, frame, this.input.paper());
+      const paper = this.input.paper();
+      const sample = this.paperSample(point, frame, paper);
       this.input.sample(touch.identifier, sample, true);
       const contact = this.contacts.get(touch.identifier);
-      if (audible) contact?.sound?.sample(sample, touch.timestamp);
+      if (audible) {
+        const texel = textureScale(paper);
+        contact?.sound?.sample({ x: sample.x / texel, y: sample.y / texel }, touch.timestamp);
+      }
       if (contact?.admission.kind === 'accepted') Object.assign(contact.admission.halo, point);
     } catch (error) {
       this.current().onError(error);
@@ -220,7 +225,8 @@ class ContactResponder {
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INPUT_INTERRUPTED_MESSAGE);
       const adoption = this.adoption(frame);
-      const sample = this.paperSample(point, frame, adoption ?? this.contactPaper());
+      const paper = adoption ?? this.contactPaper();
+      const sample = this.paperSample(point, frame, paper);
       const width = style.brush === 'eraser' ? style.eraserWidth : style.strokeWidth;
       this.input.start(
         touch.identifier,
@@ -240,7 +246,9 @@ class ContactResponder {
           ...point,
         },
       };
-      contact.sound = current.sound?.begin(sample, touch.timestamp) ?? null;
+      const texel = textureScale(paper);
+      contact.sound =
+        current.sound?.begin({ x: sample.x / texel, y: sample.y / texel }, touch.timestamp) ?? null;
     } catch (error) {
       if (contact.admission.kind === 'guarded') contact.admission = { kind: 'ignored' };
       this.current().onError(error);

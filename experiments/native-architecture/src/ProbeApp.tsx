@@ -6,18 +6,21 @@ import { useSyncExternalStore } from 'react';
 import { currentAppPage, subscribeAppPage } from './platform/appPath';
 import { RsdNotFoundPage } from './rsdDrawing/notFoundSurface';
 import { RsdScreenBoundary } from './rsdDrawing/RsdScreenBoundary';
+import { AppSurfaceRoot } from './platform/AppSurfaceRoot';
 
 export function ProbeApp() {
   const page = useSyncExternalStore(subscribeAppPage, currentAppPage);
   return (
-    <AppRestartRoot>
-      <DrawingSessionProvider>
-        <ShippingFontGate>
-          <RsdScreenBoundary>
-            {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}
-          </RsdScreenBoundary>
-        </ShippingFontGate>
-      </DrawingSessionProvider>
-    </AppRestartRoot>
+    <AppSurfaceRoot active={page === 'drawing'}>
+      <AppRestartRoot>
+        <DrawingSessionProvider>
+          <ShippingFontGate>
+            <RsdScreenBoundary>
+              {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}
+            </RsdScreenBoundary>
+          </ShippingFontGate>
+        </DrawingSessionProvider>
+      </AppRestartRoot>
+    </AppSurfaceRoot>
   );
 }
