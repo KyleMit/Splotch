@@ -11,7 +11,10 @@ import {
 } from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceBoundary.tsx';
 import { RsdSurfaceFailure as WebSurfaceFailure } from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceFailure.web.tsx';
 
-vi.mock('react-native', () => ({ useWindowDimensions: () => ({ width: 390, height: 844 }) }));
+vi.mock('react-native', async () => ({
+  ...(await import('react-native-web')),
+  useWindowDimensions: () => ({ width: 390, height: 844 }),
+}));
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx', () => ({
   useDrawingAppearance: () => 'light',
 }));
@@ -267,4 +270,39 @@ it('keeps a camera glyph and its focused button through a decorative chunk failu
   expect(host.querySelector('[data-testid="camera-glyph"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Save screenshot"]')).toBe(button);
   expect(document.activeElement).toBe(button);
+});
+
+it('plays the remaining first shutter cue when its real web component mounts from a delayed chunk', async () => {
+  const { Animated } = await import('react-native');
+  const { RsdCameraFeedback } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/RsdCameraFeedback.tsx');
+  const { CAMERA_CAPTURE_MS } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+  const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
+  const timing = vi.spyOn(Animated, 'timing').mockReturnValue({ start() {}, stop() {} });
+  let finish;
+  const Cue = deferredLayer(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    'The screenshot capture cue',
+    (props) => props.children
+  );
+  const feedback = { id: 1, kind: 'capture', startedAt: 0, reduced: false };
+  const render = (key) =>
+    createElement(Cue, { key, feedback }, createElement('span', null, 'camera'));
+  await act(async () => root.render(render('first')));
+  expect(host.textContent).toBe('camera');
+  expect(timing).not.toHaveBeenCalled();
+  clock.mockReturnValue(CAMERA_CAPTURE_MS / 2);
+  await act(async () => finish(RsdCameraFeedback));
+  expect(timing).toHaveBeenCalledOnce();
+  expect(timing.mock.calls[0][1]).toMatchObject({
+    duration: CAMERA_CAPTURE_MS / 2,
+    useNativeDriver: true,
+  });
+  clock.mockReturnValue(CAMERA_CAPTURE_MS + 1);
+  await act(async () => root.render(render('remounted')));
+  expect(timing).toHaveBeenCalledOnce();
 });

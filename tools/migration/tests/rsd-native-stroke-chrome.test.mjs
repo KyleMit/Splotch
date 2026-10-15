@@ -144,6 +144,14 @@ it("retains a closing Brush Menu inert until shipping's exit completes", async (
   expect(
     records.props.findLast((props) => props.testID === 'rsd-flyout-motion').pointerEvents
   ).toBe('none');
+  const wrapper = records.props.findLast((props) => props.testID === 'rsd-tool-flyout');
+  expect(wrapper.pointerEvents).toBe('none');
+  expect(wrapper.onStartShouldSetResponderCapture).toBeUndefined();
+  expect(
+    records.props
+      .findLast((props) => props.testID === 'rsd-drawing-layout')
+      .onStartShouldSetResponderCapture()
+  ).toBe(false);
   expect(finish).toBeTypeOf('function');
   await act(async () => finish({ finished: true }));
   expect(host.querySelector('[aria-label="Brush Menu"]')).toBeNull();
@@ -195,4 +203,14 @@ it("blooms only the chosen paint on shipping's main and trail clocks", async () 
   await act(async () => paint.click());
   expect(clocks()).toHaveLength(4);
   timing.mockRestore();
+});
+
+it('opens landscape-phone flyouts horizontally from the trigger edge', async () => {
+  records.dimensions = LANDSCAPE_PHONE;
+  await mountToolbar(toolbarScreen());
+  await expandControls();
+  await act(async () => button('Brushes').click());
+  const motion = records.props.findLast((props) => props.testID === 'rsd-flyout-motion');
+  expect(motion.style.transformOrigin).toEqual([0, '100%', 0]);
+  expect(motion.style.transform[0].translateX).not.toBe(0);
 });

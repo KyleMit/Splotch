@@ -25,13 +25,22 @@ export function keyframeTimeline(
   progress: Animated.Value,
   keyframes: readonly Timed[],
   durationMs: number,
-  delayMs = 0
+  delayMs = 0,
+  elapsedMs = 0
 ) {
+  const elapsed = Math.min(Math.max(0, elapsedMs), durationMs);
+  const start = elapsed / durationMs;
+  const curve = keyframeEasing(keyframes);
+  const from = curve(start);
+  if (elapsed > 0) progress.setValue(from);
   return Animated.timing(progress, {
     toValue: 1,
-    duration: durationMs,
+    duration: durationMs - elapsed,
     ...(delayMs > 0 ? { delay: delayMs } : {}),
-    easing: keyframeEasing(keyframes),
+    easing:
+      elapsed > 0 && elapsed < durationMs
+        ? (time) => (curve(start + (1 - start) * time) - from) / (1 - from)
+        : curve,
     useNativeDriver: true,
   });
 }

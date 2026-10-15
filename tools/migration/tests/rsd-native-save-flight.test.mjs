@@ -451,6 +451,7 @@ describe('the Save Failure Banner', () => {
 });
 
 it('plays the shutter cue when capture starts before the PNG settles', async () => {
+  vi.spyOn(performance, 'now').mockReturnValue(0);
   let finishCapture;
   caller.exportPng = () =>
     new Promise((resolve) => {
@@ -467,7 +468,33 @@ it('plays the shutter cue when capture starts before the PNG settles', async () 
 });
 
 it('drops the shutter squash under Reduce Motion', async () => {
+  vi.spyOn(performance, 'now').mockReturnValue(0);
   records.reduceMotion = true;
   await drawAndSave();
   expect(timings.some((config) => config.duration === 460)).toBe(false);
 });
+
+it('does not replay a finished shutter event after the drawer remounts', async () => {
+  const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
+  await drawAndSave();
+  const shots = () => timings.filter((config) => config.duration === 460);
+  expect(shots()).toHaveLength(1);
+  clock.mockReturnValue(1000);
+  await click('[aria-label="Collapse controls"]');
+  await click('[aria-label="Expand controls"]');
+  expect(shots()).toHaveLength(1);
+});
+
+it.each([false, true])(
+  "keeps the shutter event's reduced stamp when Reduce Motion changes from %s",
+  async (reduced) => {
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+    records.reduceMotion = reduced;
+    await drawAndSave();
+    const shots = () => timings.filter((config) => config.duration === 460);
+    expect(shots()).toHaveLength(reduced ? 0 : 1);
+    await act(async () => caller.product.sound.owner.settings.setReduceMotion('reduce'));
+    await act(async () => caller.product.sound.owner.settings.setReduceMotion('full'));
+    expect(shots()).toHaveLength(reduced ? 0 : 1);
+  }
+);

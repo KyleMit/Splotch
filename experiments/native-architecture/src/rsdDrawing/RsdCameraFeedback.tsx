@@ -1,6 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated } from '../platform/animated';
-import { useReduceMotion } from '../drawing/useReduceMotion';
 import type { ScreenshotFeedback } from '../useSavePicture';
 import { keyframeTimeline, keyframeValue } from './keyframeMotion';
 
@@ -13,20 +12,26 @@ export function RsdCameraFeedback({
   feedback: ScreenshotFeedback | null;
   children: ReactNode;
 }) {
-  const reduced = useReduceMotion();
   const progress = useRef(new Animated.Value(1)).current;
-  const id = feedback?.id;
-  const kind = feedback?.kind;
   useEffect(() => {
-    if (kind !== 'capture' || reduced) {
+    const elapsedMs =
+      feedback?.kind === 'capture' ? performance.now() - feedback.startedAt : CAMERA_CAPTURE_MS;
+    if (feedback?.kind !== 'capture' || feedback.reduced || elapsedMs >= CAMERA_CAPTURE_MS) {
       progress.setValue(1);
       return;
     }
     progress.setValue(0);
-    const capture = keyframeTimeline(progress, CAMERA_CAPTURE_KEYFRAMES, CAMERA_CAPTURE_MS);
+    // The event clock survives drawer remounts and a delayed web chunk; neither starts a new cue.
+    const capture = keyframeTimeline(
+      progress,
+      CAMERA_CAPTURE_KEYFRAMES,
+      CAMERA_CAPTURE_MS,
+      0,
+      elapsedMs
+    );
     capture.start();
     return () => capture.stop();
-  }, [id, kind, reduced, progress]);
+  }, [feedback, progress]);
   const rotate = keyframeValue(
     progress,
     CAMERA_CAPTURE_KEYFRAMES,

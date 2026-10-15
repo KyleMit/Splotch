@@ -9,6 +9,7 @@ import { RsdIconButton } from './RsdIconButton';
 import { useDrawerOpening } from './RsdDrawerCascade';
 import { RsdDrawerTools, type DrawerTool as Tool } from './RsdDrawerTools';
 import { useModalPresence } from './useModalPresence';
+import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useReportPanelGlass, type ReportPanelGlass } from './bareGlassLayout';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
 import { RsdBrushMenu, RsdColorMenu, RsdStrokeWidthMenu } from './toolFlyouts';
@@ -106,6 +107,7 @@ type ToolContext = {
   ink: string;
   flyout: OpenFlyout;
   setFlyout: (next: OpenFlyout) => void;
+  reduced: boolean;
 };
 
 // The Brush Button: a menu of every shown brush, or with one optional brush a switch for it.
@@ -208,7 +210,7 @@ function panelTools(context: ToolContext): Tool[] {
           captureFeedback={screen.screenshotFeedback}
           disabled={disabled || !screen.inkVisible}
           onPress={() => {
-            void screen.save();
+            void screen.save(context.reduced);
           }}
         />
       ),
@@ -263,6 +265,7 @@ type ActionsPanelProps = {
   area: AreaSize;
   viewport: AreaSize;
   open: boolean;
+  chosenOpen: boolean;
   // Button Size, live while its slider is dragged.
   buttonScale: number;
   onToggle: () => void;
@@ -276,6 +279,19 @@ type ActionsPanelProps = {
 
 // The drawer of drawing tools in the paper area's bottom-left corner, with its chevron after the
 // tools, and the Brush and Stroke Width menus that pop beside their buttons.
+function useActionPanelSize(
+  size: number,
+  area: AreaSize,
+  viewport: AreaSize,
+  count: number,
+  onButtonSize: ActionsPanelProps['onButtonSize'],
+  onScaleCeiling: ActionsPanelProps['onScaleCeiling']
+) {
+  useEffect(() => onButtonSize(size), [onButtonSize, size]);
+  const ceiling = actionButtonScaleCeiling(area, viewport, count);
+  useEffect(() => onScaleCeiling(ceiling), [onScaleCeiling, ceiling]);
+}
+
 export function RsdActionsPanel({
   screen,
   sound,
@@ -285,6 +301,7 @@ export function RsdActionsPanel({
   area,
   viewport,
   open,
+  chosenOpen,
   buttonScale,
   onToggle,
   slot,
@@ -294,11 +311,9 @@ export function RsdActionsPanel({
 }: ActionsPanelProps) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot } = slot;
   const insets = useSafeAreaInsets();
-  const cascade = useDrawerOpening(open, screen.drawing);
-  const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
-  // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
-  // landscape phone keeps its Color Button, which no Settings section owns.
-  const noActions = tools.length === 0;
+  const cascade = useDrawerOpening(chosenOpen, screen.drawing);
+  const reduced = useReduceMotion();
+  const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout, reduced });
   const scale = buttonScale / PERCENT;
   const layout = actionPanelLayout({
     area,
@@ -310,9 +325,7 @@ export function RsdActionsPanel({
     bottomInset: insets.bottom,
   });
   useReportPanelGlass(onGlass, layout, scale, tools, screen.availableBrushes.length);
-  useEffect(() => onButtonSize(layout.size), [onButtonSize, layout.size]);
-  const ceiling = actionButtonScaleCeiling(area, viewport, tools.length);
-  useEffect(() => onScaleCeiling(ceiling), [onScaleCeiling, ceiling]);
+  useActionPanelSize(layout.size, area, viewport, tools.length, onButtonSize, onScaleCeiling);
   const menuPresence = useModalPresence(flyout === 'color' ? null : flyout);
   const shownMenu = menuPresence.shown;
   const trigger = tools.findIndex((tool) => tool.key === shownMenu);
@@ -323,11 +336,13 @@ export function RsdActionsPanel({
     visible: menuPresence.visible,
     onExited: menuPresence.dismissed,
     motionless: screen.drawing,
-    portrait: viewport.width <= viewport.height,
-    originX: viewport.width <= viewport.height ? 0 : layout.size / 2,
+    portrait: layout.mode !== 'row',
+    originX: layout.mode === 'row' ? layout.size / 2 : 0,
   };
   const tool = shownMenu === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
-  if (noActions && !layout.color) return null;
+  // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
+  // landscape phone keeps its Color Button, which no Settings section owns.
+  if (tools.length === 0 && !layout.color) return null;
   return (
     <>
       <RsdColorControl
@@ -357,8 +372,9 @@ export function RsdActionsPanel({
         <View
           ref={menuSlot}
           testID="rsd-tool-flyout"
+          pointerEvents={menuPresence.visible ? 'auto' : 'none'}
           style={[docks.flyout, { left: placement.left, bottom: placement.bottom }]}
-          onStartShouldSetResponderCapture={markInside}
+          onStartShouldSetResponderCapture={menuPresence.visible ? markInside : undefined}
         >
           {shownMenu === 'brush' ? (
             <RsdBrushMenu
@@ -389,7 +405,7 @@ export function RsdActionsPanel({
           )}
         </View>
       ) : null}
-      {noActions ? null : (
+      {tools.length === 0 ? null : (
         <DrawerChevron
           layout={layout}
           open={open}

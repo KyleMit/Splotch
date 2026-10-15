@@ -3,8 +3,16 @@ import { join } from 'node:path';
 import { act } from 'react';
 import { expect, it, vi } from 'vitest';
 import { scale } from '../../../web/src/lib/design/tokens.ts';
-import { expandControls, host, root, records, caller } from './rsd-native-selection-host.mjs';
+import {
+  expandControls,
+  host,
+  root,
+  records,
+  caller,
+  openSettingsSection,
+} from './rsd-native-selection-host.mjs';
 import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import './rsd-native-settings-hub-mocks.mjs';
 import { drawerStore } from './rsd-native-launch-stores.mjs';
 import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 
@@ -147,5 +155,26 @@ it("keeps shipping's stagger slots when intervening drawer tools are hidden", as
   });
   const delays = cascadeTimings(timing).map((config) => config.delay);
   expect(delays).toEqual(indices.map((index) => index * stagger));
+  timing.mockRestore();
+});
+
+it('force-opens the drawer for Button Size without the user-toggle cascade', async () => {
+  const source = readFileSync(
+    join(REPO_ROOT, 'web/src/lib/components/ActionsPanel.svelte'),
+    'utf8'
+  );
+  expect(source).toContain('drawerOpening = next && !isStrokeActive();');
+  await mountToolbar(toolbarScreen({ settingsOpen: true, dialogOpen: true }));
+  await openSettingsSection('Accessibility');
+  const timing = vi.spyOn(Animated, 'timing');
+  const slider = () =>
+    records.props.findLast(
+      (props) => props.role === 'slider' && props['aria-label'] === 'Button Size'
+    );
+  await act(async () => slider().onResponderGrant({ nativeEvent: { identifier: 1, pageX: 100 } }));
+  expect(drawerTiles().length).toBeGreaterThan(0);
+  expect(cascadeTimings(timing)).toEqual([]);
+  await act(async () => slider().onResponderRelease());
+  expectDrawer(false);
   timing.mockRestore();
 });

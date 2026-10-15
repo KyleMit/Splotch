@@ -66,12 +66,12 @@ export function RsdDrawerCascade({
   );
 }
 
-export function useDrawerOpening(open: boolean, drawing: boolean) {
-  const [lastOpen, setLastOpen] = useState(open);
+export function useDrawerOpening(chosenOpen: boolean, drawing: boolean) {
+  const [lastOpen, setLastOpen] = useState(chosenOpen);
   const [opening, setOpening] = useState(false);
-  if (lastOpen !== open) {
-    setLastOpen(open);
-    setOpening(open && !drawing);
+  if (lastOpen !== chosenOpen) {
+    setLastOpen(chosenOpen);
+    setOpening(chosenOpen && !drawing);
   }
   const finish = useCallback(() => setOpening(false), []);
   return { opening: opening && !drawing, finish };

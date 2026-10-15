@@ -166,6 +166,7 @@ export function RsdEdgeLayout({
               area={area}
               viewport={viewport}
               open={drawerOpen}
+              chosenOpen={drawerChosen}
               buttonScale={buttonScale}
               onToggle={() => setDrawerChosen(!drawerOpen)}
               slot={slot}

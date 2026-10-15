@@ -343,6 +343,13 @@ it("squashes the camera through shipping's exact capture keyframes", async () =>
     easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
   }));
   expect(CAMERA_CAPTURE_KEYFRAMES).toEqual(frames);
+  const feedback = read('web/src/lib/drawing/screenshotFeedback.ts');
+  expect(feedback).toMatch(
+    /stampMotionAtStart\(button\);\s*button\.classList\.add\(CAPTURE_FEEDBACK_CLASS\)/
+  );
+  expect(read('web/src/lib/platform/reducedMotion.ts')).toContain(
+    'node.toggleAttribute(START_REDUCED_MOTION_ATTRIBUTE, prefersReducedMotion());'
+  );
 });
 
 it("blooms paint rings on shipping's independent scale and opacity clocks", async () => {
@@ -387,4 +394,36 @@ it("blooms paint rings on shipping's independent scale and opacity clocks", asyn
       source
     );
   expect(Number(trailWidth?.[1])).toBe(motion.SWATCH_BLOOM_TRAIL_WIDTH_PX);
+});
+
+it("keeps the landscape-phone flyout entrance on shipping's horizontal axis", () => {
+  const prelude = '@media (orientation: landscape) and (max-height: 599.98px)';
+  const phone = [
+    ...css.matchAll(/@media \(orientation: landscape\) and \(max-height: 599\.98px\)/g),
+  ]
+    .map(({ index }) => block(prelude, css.slice(index)))
+    .find((body) => body.includes('.actions-panel .flyout-menu {'));
+  expect(phone).toBeDefined();
+  const menu = block('.actions-panel .flyout-menu', phone);
+  expect(declaration(menu, 'transform-origin')).toBe('0 100%');
+  expect(declaration(menu, '--flyout-from-x')).toBe('-6px');
+  expect(declaration(menu, '--flyout-from-y')).toBe('0px');
+  const panel = read('experiments/native-architecture/src/rsdDrawing/RsdActionsPanel.tsx');
+  expect(panel).toContain("portrait: layout.mode !== 'row'");
+  expect(panel).toContain("originX: layout.mode === 'row' ? layout.size / 2 : 0");
+});
+
+it('resumes the camera keyframe clock at its elapsed phase without replaying the beginning', async () => {
+  const { CAMERA_CAPTURE_MS, CAMERA_CAPTURE_KEYFRAMES } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+  const value = { setValue: vi.fn() };
+  const full = keyframeTimeline({}, CAMERA_CAPTURE_KEYFRAMES, CAMERA_CAPTURE_MS);
+  const elapsed = CAMERA_CAPTURE_MS / 2;
+  const resumed = keyframeTimeline(value, CAMERA_CAPTURE_KEYFRAMES, CAMERA_CAPTURE_MS, 0, elapsed);
+  const from = full.easing(elapsed / CAMERA_CAPTURE_MS);
+  expect(value.setValue).toHaveBeenCalledExactlyOnceWith(from);
+  expect(resumed.duration).toBe(CAMERA_CAPTURE_MS - elapsed);
+  for (const phase of [0, 0.2, 0.6, 1]) {
+    expect(from + (1 - from) * resumed.easing(phase)).toBeCloseTo(full.easing(0.5 + 0.5 * phase));
+  }
 });
