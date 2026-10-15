@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useWindowDimensions, type ScrollView } from 'react-native';
 import { INFORMATION_TOP_ID, type AppPage } from '../information/appPages';
 import releases from '../../../../web/src/lib/releases.json';
@@ -28,16 +28,20 @@ export function useInformationPageScroll(page: Exclude<AppPage, 'drawing'>) {
     },
     [park]
   );
+  const currentJump = useRef(jump);
+  useLayoutEffect(() => {
+    currentJump.current = jump;
+  }, [jump]);
   const resumeDeepLink = useCallback(() => {
     if (
       pending.current &&
       bodyOffset.current !== null &&
       sections.current[pending.current] !== undefined
     ) {
-      jump(pending.current);
+      currentJump.current(pending.current);
       pending.current = null;
     }
-  }, [jump]);
+  }, []);
   useEffect(() => {
     const fragment = informationFragmentAtLaunch();
     pending.current =

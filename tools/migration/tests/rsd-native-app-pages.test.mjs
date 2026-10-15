@@ -211,7 +211,8 @@ it('jumps the current Changelog footer directly to its measured latest release',
   });
 });
 
-it('retains an older contents anchor across a reading-park width change and later layout', async () => {
+it('keeps the reader’s scrolled position across a reading-park width change and later layout', async () => {
+  records.journalHostProps = true;
   useCaller();
   await mount(createElement(ProbeApp));
   await act(async () => openAppPage('privacy'));
@@ -245,15 +246,74 @@ it('retains an older contents anchor across a reading-park width change and late
   });
   expect(informationFragmentAtLaunch()).toBe(older.id);
   scroll.scrollTo.mockClear();
+  await act(async () =>
+    records.viewports
+      .findLast((props) => props.testID === 'information-page-scroll')
+      .onScroll({
+        nativeEvent: { contentOffset: { y: 3200 } },
+      })
+  );
+  expect(scroll.scrollTo).not.toHaveBeenCalled();
   records.dimensions = { ...records.dimensions, width: PAGE_FRAMED_MAX_WIDTH_PX + 1 };
   await act(async () => root.render(createElement(ProbeApp)));
-  expect(scroll.scrollTo).toHaveBeenCalledExactlyOnceWith({
-    y: 200 + 1600 - PRIVACY_LAYOUT.stickyTop,
-    animated: false,
-  });
+  expect(scroll.scrollTo).not.toHaveBeenCalled();
   await act(async () => layout('information-page-body', 240));
   expect(informationFragmentAtLaunch()).toBe(older.id);
   await act(async () => layout(`changelog-position-${older.id}`, 1800));
-  expect(scroll.scrollTo).toHaveBeenCalledOnce();
+  await act(async () => layout(`changelog-position-${releases[0].id}`, 700));
+  expect(scroll.scrollTo).not.toHaveBeenCalled();
   expect(informationFragmentAtLaunch()).toBe(older.id);
+  const currentLatestLink = [...host.querySelectorAll('[role="link"]')].find(
+    (node) => node.textContent === "What's new"
+  );
+  expect(currentLatestLink).toBeDefined();
+  const pagePadding = JSON.parse(
+    scroll.firstElementChild.getAttribute('data-committed-props')
+  ).style;
+  expect(pagePadding.paddingTop).toBeTypeOf('number');
+  await act(async () => currentLatestLink.click());
+  expect(scroll.scrollTo).toHaveBeenCalledExactlyOnceWith({
+    y: 240 + pagePadding.paddingTop + 700 - PRIVACY_LAYOUT.stickyTop,
+    animated: false,
+  });
 });
+
+it.each([
+  { first: 'body', second: 'section' },
+  { first: 'section', second: 'body' },
+])(
+  'finishes a pending footer arrival with the current park after $first then $second layout',
+  async ({ first, second }) => {
+    records.dimensions = { ...records.dimensions, width: PAGE_FRAMED_MAX_WIDTH_PX + 1 };
+    useCaller();
+    await mount(createElement(ProbeApp));
+    await act(async () => openAppPage('privacy'));
+    const latestLink = [...host.querySelectorAll('[role="link"]')].find(
+      (node) => node.textContent === "What's new"
+    );
+    expect(latestLink).toBeDefined();
+    await act(async () => latestLink.click());
+    const scroll = host.querySelector('[data-testid="information-page-scroll"]');
+    scroll.scrollTo = vi.fn();
+    records.dimensions = { ...records.dimensions, width: 402 };
+    await act(async () => root.render(createElement(ProbeApp)));
+    expect(scroll.scrollTo).not.toHaveBeenCalled();
+    const layout = (id, y) =>
+      records.props
+        .findLast((props) => props.testID === id)
+        .onLayout({
+          nativeEvent: { layout: { x: 0, y, width: 350, height: 2000 } },
+        });
+    const measure = {
+      body: () => layout('information-page-body', 200),
+      section: () => layout(`changelog-position-${releases[0].id}`, 600),
+    };
+    await act(async () => measure[first]());
+    expect(scroll.scrollTo).not.toHaveBeenCalled();
+    await act(async () => measure[second]());
+    expect(scroll.scrollTo).toHaveBeenCalledExactlyOnceWith({
+      y: 200 + 600 - PRIVACY_LAYOUT.compactPark,
+      animated: false,
+    });
+  }
+);
