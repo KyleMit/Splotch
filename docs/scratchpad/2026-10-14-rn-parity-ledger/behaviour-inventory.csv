@@ -1,0 +1,356 @@
+surface,slice,group,behaviour,specs,rn,evidence,likely,differ
+drawing,engine,,A finger stroke paints; a tap leaves a round dot,"engine-smoke, engine-edge-swipe","native-skia-painter, native-canonical-contacts-mounted",RN test or code,N,N
+drawing,engine,,Strokes are midpoint-smoothed quadratics; corners/tips survive rebuilds,engine-resize,native-stroke-smoothing,RN test or code,N,N
+drawing,engine,,Fast scribbles keep intermediate samples (coalesced events),engine-resize (zigzag),none found,none found,Y,"Y — RN samples one point per touch event, drops moves <1 paper unit"
+drawing,engine,,Five simultaneous fingers each paint their own line,multitouch,"native-canonical-contacts-mounted, native-eraser-contacts",RN test or code,N,N
+"undo, clear and save",engine,,A multi-finger gesture undoes as one step,"multitouch, flows-tile-history","native-canonical-contacts-mounted, native-stroke-widths",RN test or code,N,N
+drawing,engine,,Pinch/spread on the paper never zooms,multitouch,none found,none found,partial,N native; Y-risk RN-web (no touch-action:none / gesture preventDefault on paper)
+drawing,engine,,Upward swipe from a guarded edge (OS gesture) leaves no ink; sideways/tap at edge still draws; phone-landscape short edges; tablet bottom inset,engine-edge-swipe,none found,none found,Y,Y — no guard; OS-cancelled touch commits its partial ink (contactResponder.interrupt)
+drawing,engine,,A touch within 100 ms of a colour change is ignored; Pen bypasses,engine-pointer-recovery,none found,none found,Y,Y — no debounce
+drawing,engine,,A pointer resumed far away after an idle gap draws no connecting line,engine-pointer-recovery,none found,none found,N,N native (UIKit); possible on RN-web
+drawing,engine,,Down-less/merged Pencil streams still paint; Pencil hover never paints,engine-pointer-recovery,none (n/a),none found,N,N native
+"undo, clear and save",engine,,Pencil leaving and re-entering an edge resumes with fresh geometry in one undo group,"engine-pointer-recovery, flows-tile-history",none found,none found,Y,Y — off-paper samples clamp to the paper edge (line drawn along the edge)
+drawing,engine,,Canvas cancels touch stream so iPadOS Scribble releases Pencil strokes,engine-pointer-recovery,none,none found,partial,N native; Y-risk RN-web Safari
+"undo, clear and save",engine,,A stroke in progress survives a mid-stroke resize and undoes as one unit,engine-resize,"native-eraser-contacts-mounted (""settles a cohort once on geometry invalidation"")",RN test or code,Y,Y — RN ends the stroke on any geometry refresh; the still-down finger stops drawing
+drawing,engine,,Drawing survives resize/context reset/resume silently,engine-resize,native-drawing-recovery,RN test or code,Y,Y — RN renderer fault shows Error Screen + Retry
+"undo, clear and save",engine,,Rotating with ink presents the locked paper (fit) until undo empties it; empty rotation adopts,"engine-rotation, engine-undo",native-paper-rotation-mounted,RN test or code,N,N (except erase-to-blank keeps RN paper locked)
+drawing,engine,,System bars / small layout shrink crops the page (window); hiding restores exactly; layout-only grow keeps paper,"engine-system-bars, engine-layout-resize",none found,none found,Y,"Y — RN always contain-fits → shrunk, lifted sheet (matches reported Flat→Raised lift)"
+drawing,engine,,Drawing persists across teardown/remount; held pointer cannot paint after remount,engine-lifecycle,native-drawing-session,RN test or code,N,N
+"undo, clear and save",engine,,Canvas accepts strokes before hydration; pre-hydration ink/undo kept,"early-boot, engine-fallback-replay",none (n/a),none found,Y,"Y — RN refuses touches until brush prefs, sound settings, draft and ink readiness load"
+"undo, clear and save",engine,,Undo button enables on a stroke and reverts it,flows-undo-persistence,"native-undo-shortcut, rsd-native-actions-panel",RN test or code,N,N
+"undo, clear and save",engine,,"Ctrl/Cmd+Z undoes, also with the Undo button hidden, no cue",flows-undo-persistence,native-undo-shortcut,RN test or code,Y,"Y — no-op on RN iOS/Android (hardware keyboard); RN-web (RSD) blocked during a stroke, busy/preparing, any product modal, or with empty history"
+"undo, clear and save",engine,,"Ctrl/Cmd+Z inside a dialog text field edits text, not the drawing",dialog-undo,native-undo-shortcut,RN test or code,N,N
+"undo, clear and save",engine,,Undo at end of history replays the unavailable cue (also reduced motion),flows-undo-persistence,none (RN disables the button),none found,Y,Y
+"undo, clear and save",engine,,Undo ghost drifts toward the Undo button and fades; icon spins; new stroke cancels; double undo; crayon ghost owns only its pixels,drawing-motion,none found,none found,Y,Y — missing
+"undo, clear and save",engine,,Undo while a stroke is in progress undoes the previous step and keeps the live stroke,engine-undo,"native-eraser-contacts-mounted (""refuses a command during either active contact"")",RN test or code,Y,Y — RN refuses silently
+"undo, clear and save",engine,,Clearing is undoable; blank-page clear and clear-after-erase-to-blank record no undo,engine-undo,"native-mounted-alpha, native-eraser-composition",RN test or code,N,N
+"undo, clear and save",engine,,Clear during an in-flight stroke wipes ink (drag-to-clear releases pointers),engine-undo,RsdEdgeControls (gesture disabled while drawing),RN test or code,Y,Y — refused until lift
+"undo, clear and save",engine,,Twenty undo steps retained; pathological strokes shorten depth within budget,flows-tile-history,none found,none found,Y,"Y — 50 steps, shrinking with picture size"
+drawing,engine,,No limit on strokes/points per picture,(design),"native-eraser-contacts (""reserves the remaining legal stroke and point capacity""), native-drawing-interactions",RN test or code,Y,"Y — 1000 strokes / 100k points then ""This picture is full"" banner"
+"undo, clear and save",engine,,"Eraser removes pixels, re-scans empty on stroke end; partial erase stays non-empty; undo of eraser restores pixels",engine-eraser,"native-ink-visibility, native-ink-scan-mounted, native-stroke-width-output",RN test or code,N,N (RN blank threshold stricter)
+drawing,engine,,Eraser never erases the coloring-page art,(design; overlay above canvas),PageOutline above InkLayer,RN test or code,N,N
+drawing,engine,,Eraser removes Magic strokes; later colours override,flows-magic-brush,"native-brush-output, native-skia-painter",RN test or code,N,N
+drawing,engine,,Clearing a blank page still gives Magic a new picture,engine-undo,"native-eraser-composition (""advances once per successful Clear"")",RN test or code,N,N
+drawing,engine,,Magic ink drawn before its fill decodes is kept and revealed later; clearing/erasing it settles blank,"engine-undo, engine-export, flows-magic-supersession",native-raster-ink (prepares before admitting input),RN test or code,Y,Y — RN refuses input (and dims chrome) until fill/ink ready
+drawing,engine,,"Crayon keeps paper tooth, builds without muddying; colours mix subtractively",engine-crayon,"native-crayon-fidelity, native-crayon-grain, native-brush-output",RN test or code,N,N
+drawing,engine,,One back-and-forth gesture builds like separate strokes,engine-crayon,"native-brush-output, native-crayon-phase",RN test or code,N,N (minor constant diffs; no 64-move checkpoint)
+"undo, clear and save",engine,,Crayon survives remount and undoes cleanly; interleaved eraser cannot resurrect wax,engine-crayon,"native-brush-output, native-canonical-contacts-mounted",RN test or code,N,N
+drawing,engine,,"Magic always available; reveals page fills only, no outlines",flows-magic-brush,"native-brush-output, native-coloring-master-output",RN test or code,N,N
+drawing,engine,,Magic paints the letterbox margin with the extended edge colour,flows-magic-brush,bookFill.ts imports magicSheetEdges,RN test or code,N,N
+drawing,engine,,Rotation-lock letterbox margin is not drawable,flows-magic-brush,native-paper-rotation-mounted,RN test or code,N,N
+drawing,engine,,Magic on a blank page reveals a rainbow,flows-magic-brush,"native-brush-output (""renders a spatial rainbow"")",RN test or code,Y,"Y — deterministic, narrower rainbow family, first is always index 0"
+drawing,engine,,Changing/removing the page or theme recodes Magic ink; undo restores page and ink,"flows-magic-recode, flows-magic-supersession","native-brush-output, native-drawing-screen",RN test or code,N,N
+drawing,engine,,Picking a page is an undo step only when Magic ink exists,flows-magic-recode (implicit),"native-drawing-screen (""retains paint through one page-change history entry"")",RN test or code,Y,"Y — RN always records it (""Undo brings your picture back"")"
+"undo, clear and save",engine,,Undoing a page change after Coloring book is off leaves no page,flows-coloring-book-off-undo,native-coloring-master-mounted,RN test or code,N,N
+drawing,engine,,Canonical SVG overlays reveal with Magic across themes and export,flows-vector-overlays,"native-starter-book, native-coloring-master-output",RN test or code,N,N
+drawing,engine,,Page art lands with fade + slight scale; lifts off when removed; hidden until decoded,(DrawingCanvas.svelte),none found,none found,Y,Y — RN art appears/disappears instantly
+drawing,engine,,One optional brush = direct toggle; menu lists Pen + enabled; none removes control; disabling active → Pen,flows-optional-brushes,"native-brush-preferences, rsd-native-tool-drawer-settings",RN test or code,N,N
+drawing,engine,,Hiding Eraser/drawer hides the Pencil gesture setting; double-tap never selects a hidden Eraser,flows-optional-brushes,native-pencil-double-tap,RN test or code,N,N
+drawing,engine,,Pencil double-tap flips ink brush ↔ eraser with a haptic,(unit),native-pencil-double-tap,RN test or code,N,N
+drawing,engine,,Pen and eraser keep independent sizes across reload,flows-undo-persistence,"native-stroke-widths, native-undo-shortcut",RN test or code,N,N (storage keys differ → upgrade resets)
+drawing,engine,,"Picked brush persists, stamped pre-paint; eraser never restored",flows-undo-persistence,native-brush-preferences,RN test or code,Y,Y (minor) — RN shows Pen + dimmed chrome until async load
+drawing,engine,,Stroke-width control shows Magic faces across reload,flows-magic-brush,RsdToolFlyouts SIZE_ICONS (no test found),RN test or code,N,N
+drawing,engine,,Colour does not persist (Purple at launch),(design),soundSettingsCodec sessionPaint,RN test or code,N,N
+drawing,engine,,Drawn ink keeps its colour across a theme switch,(design: ops store hex),native-appearance-paint (asserts the opposite),RN test or code,Y,Y — RN re-themes semantic Black to white on dark
+drawing,engine,,A swatch/palette press with a second finger ends the live stroke and picks the colour,(ColorPalette/ColorSwatch releaseAllPointers),none found,none found,Y,Y — native: chrome presses rejected while the paper holds the responder; web: stroke continues in old colour
+drawing,engine,,A drawing ring per finger sized to the stroke; rainbow ring for Magic; eraser bubble,halo-lift,"native-pointer-halos, native-skia-halo-painter",RN test or code,partial,"partial — RN eraser bubble per contact, no hover bubble"
+drawing,engine,,Halo lifts off when its stroke ends during grow-in; released under reduced motion,"halo-lift, drawing-motion","native-pointer-halos, native-skia-halos",RN test or code,N,N
+drawing,engine,,Flyouts open from the trigger with staggered arrivals; brush face rolls; drawer cascades; live strokes suppress them,drawing-motion,none found in RsdFlyoutMenu/RsdToolFlyouts/RsdActionsPanel (chrome slice),none found,Y,likely Y
+drawing,engine,,Flyouts can open mid-stroke,"drawing-motion (""live strokes suppress … motion"")",RsdActionsPanel useFlyoutSlot (`!drawing`),RN test or code,Y,Y (minor)
+"undo, clear and save",engine,,Clear sends the page off as a sheet and stays undoable,drawing-motion,"native-clear-projection, rsd-native-clear",RN test or code,N,N
+"undo, clear and save",engine,,Export started before a clear still captures; appearance-coherent camera export across a theme switch,engine-export,"native-picture-export, native-picture-capture",RN test or code,partial,partial Y — RN cancels a capture on appearance change and refuses mid-stroke
+drawing,engine,,"First frame: themed Black swatch, paper wherever the sheet has not reached",first-paint,"rsd-native-paper-grain, check-native-web-startup",RN test or code,?,other slice; partial
+drawing,engine,,Store replay seam / work counters / tile fold internals,"store-drawing-replay, drawing-work-counters, flows-tile-history",n/a,RN test or code,N,not-needed (harness/perf)
+drawing,engine,,Picture lives only in memory; relaunch opens a blank page with no coloring page,(design),"native-drawing-draft, native-drawing-session, beta-web-drawing-draft",RN test or code,Y,Y — RN restores the last picture
+palette and colour picker,chrome,Palette and picker,Tapping a swatch loads that ink and paints with it,flows-palette-rendering,"rsd-native-toolbar, native-custom-color-output",RN test or code,N,N
+palette and colour picker,chrome,Palette and picker,Same 15 colours and order; Purple at launch; colour and custom colour not kept across relaunch,"(palette.ts, colors.svelte.ts)","native-drawing-tokens, native-custom-colors",RN test or code,N,N
+palette and colour picker,chrome,Palette and picker,Black paints white on dark paper and follows a live theme switch,flows-palette-rendering,native-appearance-paint,RN test or code,partial,N for the selected ink; **Y** for already-drawn ink (D16)
+palette and colour picker,chrome,Palette and picker,Selected swatch ringed in a ±10% shade of itself,"flows-palette-rendering, phone-landscape-toolbar",rsd-native-drawing-frame,RN test or code,N,N
+palette and colour picker,chrome,Palette and picker,Ring hides while the eraser is held,(ColorPalette/ColorMenu),rsd-native-color-control (menu only),RN test or code,Y,**Y** on the RN bar (D12)
+palette and colour picker,chrome,Palette and picker,A pick plays a ring bloom and a springy release,"(ColorSwatch, pressRelease)",none,none found,Y,**Y** (D10)
+palette and colour picker,chrome,Palette and picker,Picking a colour while erasing or using magic returns to the last ink brush,flows-palette-brush,native-brush-preferences,RN test or code,partial,N for swatches; **Y** for the bar's More colors (D2)
+palette and colour picker,chrome,Palette and picker,"Custom swatch: one tap selects it (last custom ink, ringed) and opens the picker; dismissing leaves nothing ringed",phone-landscape-toolbar,rsd-native-color-control (menu ring),RN test or code,Y,**Y** on the RN bar (D2)
+palette and colour picker,chrome,Palette and picker,Only one custom colour; the palette's swatch set never changes when one is picked,palette-trim,"native-custom-colors, rsd-native-toolbar (both assert RN's 6-paint memory)",RN test or code,Y,**Y** (D1)
+palette and colour picker,chrome,Palette and picker,"Palette shows as many swatches as fit, by fixed rank; phone landscape hides the bar",palette-trim,"rsd-native-drawing-frame (count ladder), rsd-native-color-control",RN test or code,Y,**Y** with custom paints (D1); **Y** on iPad landscape with a bottom inset (D11)
+palette and colour picker,chrome,Palette and picker,Picker: a drag highlights and the lift picks once; a gap tap snaps to the nearest hexagon; keyboard activation works,flows-palette-brush,rsd-native-color-picker,RN test or code,N,"N (two-finger case differs, low)"
+palette and colour picker,chrome,Palette and picker,Picker grid trims rows and columns per viewport; large tablet grows swatches,picker-trim,rsd-native-color-picker,RN test or code,N,N
+palette and colour picker,chrome,Palette and picker,"A pick closes the picker; scrim, Escape and Back close without picking",flows-palette-brush,rsd-native-color-picker,RN test or code,N,N
+palette and colour picker,chrome,Palette and picker,A double tap on the opener does not immediately close the new dialog (launch zone),(modalDialog/launchGuard),none,none found,Y,**Y** (D5)
+palette and colour picker,chrome,Palette and picker,Touching the palette mid-stroke picks the colour and ends the stroke,brush-ring,rsd-native-stroke-chrome (asserts RN's opposite),RN test or code,Y,**Y** (D3)
+palette and colour picker,chrome,Palette and picker,Scribble guard on stylus taps,flows-palette-brush (5 tests),none,none found,N,not-needed-on-RN (WebView-only iPadOS Scribble)
+palette and colour picker,chrome,Phone-landscape Color Button and Color Menu,L-shaped toolbar fits a short phone; canvas stays full width,phone-landscape-toolbar,"rsd-native-color-control, rsd-native-bare-layout",RN test or code,N,N
+palette and colour picker,chrome,Phone-landscape Color Button and Color Menu,Menu pick loads the ink and closes; custom option ringed in the custom ink; rings hide while erasing,phone-landscape-toolbar,rsd-native-color-control,RN test or code,N,N
+palette and colour picker,chrome,Phone-landscape Color Button and Color Menu,Drawing dismisses the menu; swipe folds the drawer; rotating upright closes it; it survives every control being off,phone-landscape-toolbar,"rsd-native-stroke-chrome, rsd-native-color-control, rsd-native-tool-drawer-settings",RN test or code,N,N
+palette and colour picker,chrome,Phone-landscape Color Button and Color Menu,Menu trims to whole swatches; custom kept; final set in the first frame,phone-landscape-toolbar,rsd-native-color-control (ladder),RN test or code,N,N
+palette and colour picker,chrome,Phone-landscape Color Button and Color Menu,Dismissing the first custom picker leaves its option unpressed,phone-landscape-toolbar,none,none found,?,unclear (the RN menu selects ink but never a custom swatch)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Drawer closed on first launch; open state kept across relaunch,flows-undo-persistence,"rsd-native-drawer-open, drawerOpen",RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","Tools in order: Brush, Stroke, Coloring, Camera, AI, Undo; chevron after them; Settings separate",actions-panel-layout,rsd-native-toolbar,RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","AI button hidden offline, so the others resize",actions-panel-layout,none,none found,Y,**Y** (D21; AI slice)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","Drawer open cascades, close collapses, chevron turn animates",flows-actions-panel,none,none found,Y,**Y** (D10)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Brush and Stroke menus pop in and fold away,"(app.css flyout-shell, flyoutExit)",none,none found,Y,**Y** (D10)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",An open menu greys the other tiles (0.35) and the chevron (0.2),bare-toolbar,rsd-native-actions-panel,RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Escape and keyboard pick restore focus; second trigger tap closes; outside press closes without being swallowed,flows-actions-panel,"native-flyout-focus, rsd-native-actions-panel",RN test or code,N,N (no Escape on RN native)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","Menus, drawer, Undo and Settings respond while another finger or a palm is on the paper","(BrushMenu ""motionless"", releaseAllPointers)",rsd-native-stroke-chrome (asserts RN refuses),RN test or code,Y,**Y** (D3)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","Toolbar keeps its look while a dialog is open, during a save or clear, and after a settings write",(ActionsPanel settings-covered only),rsd-native-drawer-style-switch (asserts RN fades),RN test or code,Y,**Y** (D4)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Brush control: none / toggle / menu of Pen + enabled brushes; disabling the held brush returns to Pen,flows-optional-brushes,"native-brush-preferences, rsd-native-toolbar",RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Brush face rolls in on a pick,(BrushButtonFaces),none,none found,Y,**Y** (D10)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Picked brush (never the eraser) kept across relaunch,flows-undo-persistence,native-brush-preferences,RN test or code,partial,N on relaunch; **Y** on upgrade (D15)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","Pen and eraser widths independent and kept; five sizes ""Size N"" / ""Eraser size N""",flows-undo-persistence,"native-stroke-widths, rsd-native-actions-panel",RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts","Stroke trigger shows the brush glyph in the ink, keylined for white and near-black",flows-magic-brush,rsd-native-actions-panel,RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Undo reverts a stroke; Ctrl/Cmd+Z works with the button hidden,flows-undo-persistence,"rsd-native-toolbar, native-undo-shortcut",RN test or code,N,"N (RN refuses mid-stroke, low)"
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Undo at end of history shakes and flashes (flash only under reduced motion),flows-undo-persistence,none,none found,Y,**Y** (D7)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Undo icon winds back; undone ink ghosts toward the button,"(app.css undo-spin, inkMotion)",none,none found,Y,**Y** (D7)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Tool Drawer switch hides only its own tools; chevron goes only when nothing is left,"flows-undo-persistence, flows-actions-panel",rsd-native-tool-drawer-settings,RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",A corrupt stored setting falls back to its own default only,flows-undo-persistence,native-control-preferences (asserts whole-record rejection),RN test or code,Y,**Y** (D20)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",First paint already shows the persisted toolbar,"actions-panel-layout, first-paint",bareGlassHold.web,RN test or code,Y,**Y** (RN shows bare paper until settings load; low)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Six-button landscape row stops short of Settings at every Button Size,actions-panel-layout,rsd-native-button-size,RN test or code,N,N
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",Button Size scales drawer tiles only; a drag force-opens the drawer; ceiling adapts to the screen,bare-toolbar,rsd-native-button-size,RN test or code,partial,N for scaling; **Y** for the ceiling (D21)
+"drawer, flyouts and tools",chrome,"Tool Drawer, Actions Panel and flyouts",A menu open behind a keyboard Settings session does not come back,flows-optional-brushes,none,none found,Y,**Y** (low; `RsdActionsPanel.tsx:58` keeps the flyout state)
+"drawer, flyouts and tools",chrome,Toolbar style (Raised / Flat),Default Raised; choice kept across relaunch,bare-toolbar,"native-sound-sources, native-settings-sections",RN test or code,partial,N on relaunch; **Y** on upgrade (D15)
+"drawer, flyouts and tools",chrome,Toolbar style (Raised / Flat),Switching style keeps ink and coloring art at the same screen pixels,"bare-toolbar, bare-toolbar-paper",none,none found,Y,**Y** (D13)
+"drawer, flyouts and tools",chrome,Toolbar style (Raised / Flat),Switching keeps HUD controls in place,bare-toolbar,rsd-native-bare-layout,RN test or code,N,N
+"drawer, flyouts and tools",chrome,Toolbar style (Raised / Flat),"Flat: frosted panes under the drawer, menus and Settings corner; frosted rail",bare-toolbar,rsd-native-bare-toolbar (web),RN test or code,Y,**Y** on iOS and Android (D14)
+"drawer, flyouts and tools",chrome,Toolbar style (Raised / Flat),"Flat glass shrinks, fades between controls, hides stale panes during rotation; halos stay above the glass",bare-toolbar,"bareGlassFullscreen.web, bareGlassHold.web",RN test or code,Y,**Y** on native (no panes); **Y** on web for halo order and stale panes (low)
+"drawer, flyouts and tools",chrome,Toolbar style (Raised / Flat),Flat disabled Undo stays transparent when pressed,bare-toolbar,rsd-native-bare-toolbar,RN test or code,N,N
+"undo, clear and save",chrome,Clear,Drag past the accept ring (0.4 × short side) clears; releasing short springs back,"clear-ring, drawing-motion-clear","rsd-native-clear, native-clear-projection",RN test or code,N,N
+"undo, clear and save",chrome,Clear,Rising water-drop notes while dragging; three falling notes on a short release,(clearSound ladder),none,none found,Y,**Y** (D2)
+"undo, clear and save",chrome,Clear,One Medium haptic per outward crossing; page-turn sound on commit at the sound volume,"(dragToClear, clearSound)","rsd-native-clear, native-clear-sound",RN test or code,N,N (native volume capped above 50: D19)
+"undo, clear and save",chrome,Clear,Departing page flies into the dock; none under reduced motion,drawing-motion-clear,rsd-native-clear,RN test or code,N,"N (RN flies a sheet for an erased-blank page, low)"
+"undo, clear and save",chrome,Clear,Clear committed across a rotation flies into the new dock,drawing-motion-clear,none,none found,?,unclear
+"undo, clear and save",chrome,Clear,"Triple tap or a 500ms hold shows the wordless coachmark; no memory, shows again later",clear-tutorial,"rsd-native-clear, native-clear-projection",RN test or code,N,N
+"undo, clear and save",chrome,Clear,Cleared button cannot re-arm from the release point,clear-tutorial,rsd-native-clear,RN test or code,N,N
+"undo, clear and save",chrome,Clear,Clear works with a hand on the paper (it ends the strokes),(dragToClear `releaseAllPointers`),rsd-native-stroke-chrome (asserts RN refuses),RN test or code,Y,**Y** (D3)
+"undo, clear and save",chrome,Clear,The page clears at once and drawing resumes immediately,"(engine clearCanvas, synchronous)",none,none found,Y,"**Y** (D4, D6)"
+"undo, clear and save",chrome,Clear,Clearing with the eraser held returns to the last ink; Magic stays,(resetToolAfterClear),native-brush-preferences,RN test or code,N,N
+"undo, clear and save",chrome,Clear,Undo during the flight restores the ink at once,drawing-motion,none,none found,Y,**Y** (low)
+"undo, clear and save",chrome,Clear,Auto-Save on Delete (default off): save and clear both happen; a failed save offers Try again,"save-failure-announcement, engine-export",native-save-to-photos-mounted (asserts RN keeps the drawing),RN test or code,Y,**Y** (D6)
+"undo, clear and save",chrome,Save Picture and polaroid,Camera on by default; Saving switch; disabled on a blank page,flows-screenshot,"rsd-native-toolbar, rsd-native-tool-drawer-settings",RN test or code,N,N
+"undo, clear and save",chrome,Save Picture and polaroid,Camera squashes on capture,"flows-screenshot, reduce-motion",none,none found,Y,**Y** (D7)
+"undo, clear and save",chrome,Save Picture and polaroid,A burst of taps shares one save; then a 4s cooldown; refused taps shake,flows-screenshot,none,none found,Y,**Y** (D8)
+"undo, clear and save",chrome,Save Picture and polaroid,Drawing continues while a save runs,(screenshot.ts),none,none found,Y,**Y** (D4)
+"undo, clear and save",chrome,Save Picture and polaroid,Polaroid flies from the camera (flash; fade under reduced motion); a failed save takes it back,flows-screenshot,"native-polaroid-flight, rsd-native-save-flight",RN test or code,N,N (starts later on RN)
+"undo, clear and save",chrome,Save Picture and polaroid,Saves land in Pictures/Splotch on every supported Android,(PhotoLibraryPlugin),"native-photo-library (asserts RN ""unavailable"" below Android 11)",RN test or code,Y,**Y** (D9)
+"undo, clear and save",chrome,Save Picture and polaroid,"Save Failure Banner copy, gated Open Settings, Try again with the same bytes, re-announce",save-failure-announcement,"rsd-native-save-flight, native-save-failure",RN test or code,N,N
+"undo, clear and save",chrome,Save Picture and polaroid,An unsaved picture's banner survives a relaunch,save-failure-announcement,none,none found,Y,**Y** (D9)
+accessibility,chrome,Icons and primitives,"Icons come from the shipping SVG set, with the colour-icon opt-out",flows-icons,native-icons,RN test or code,N,N
+accessibility,chrome,Icons and primitives,"button-states, touch-targets, page-short-viewport, text-contrast","(styleguide, feedback page, contrast harness)","rsd-native-button, rsd-native-design-primitives",RN test or code,?,outside this slice
+settings,settings,Shell & navigation,Settings opens ungated; only operations are gated,flows-parental-gate,native-parent-center-mounted,RN test or code,N,N
+settings,settings,Shell & navigation,Phone hub drills into a section; Back returns to hub,"settings-hub, settings-accessibility","mig/rsd-native-settings-sections, rsd-native-modal-frame",RN test or code,N,N
+settings,settings,Shell & navigation,Drill-in focuses heading; Back refocuses its row; Close gets first focus,settings-hub,"native-settings-focus, native-modal-focus",RN test or code,N,N
+settings,settings,Shell & navigation,Escape / scrim / system Back / browser Back from a drilled section close Settings,"flows-settings (dialog plumbing), dialogBack",RsdSettingsDialog routes them to hub Back,RN test or code,Y,**Y** (D4)
+settings,settings,Shell & navigation,Phone drill-in header leaves title room beside Back (light/dark),flows-settings,mig/modal-geometry (sizes),RN test or code,N,N (weak)
+settings,settings,Shell & navigation,Tablet: TOC beside one continuous pane,flows-settings,mig/rsd-native-settings-layouts,RN test or code,N,N
+settings,settings,Shell & navigation,Shortest sidebar viewport reaches every section,flows-settings,none (impl nav ScrollView),none found,N,N (weak)
+settings,settings,Shell & navigation,"Reopen resets pane to top, first row active and in view",flows-settings,mig/rsd-native-settings-layouts,RN test or code,N,N
+settings,settings,Shell & navigation,"AI-button ""set up AI"" deep link lands on AI Art in both shells",(aiImage.ts / ui.svelte),phone only; wide ignores `initialSection`,RN test or code,Y,**Y** (D14)
+settings,settings,Shell & navigation,"TOC jump scrolls pane (not card), glides; reduced motion = one step",settings-toc,mig/rsd-native-settings-layouts (reduced path untested),RN test or code,N,N
+settings,settings,Shell & navigation,Scrollspy reading line 120–140 px; bottom elects last; elected row revealed in nav,settings-toc,mig/rsd-native-settings-layouts,RN test or code,N,N
+settings,settings,Shell & navigation,"Seen tracking: landing seen, scrolled-to seen, distant jump leaves passed sections unseen","settings-toc, sectionsSeen",What's New only,RN test or code,Y,**Y** (D1)
+settings,settings,Shell & navigation,Activity dots from session 6 on every unseen/restamped section,"settings-hub, sessionCounters, sectionsSeen","tests/native-settings-sections (session 6), RsdSettingsHub whatsnew-only",RN test or code,Y,**Y** (D1)
+settings,settings,Shell & navigation,"Session counter: once per launch, saturates, clamps corrupt",sessionCounters,tests/native-settings-sections,RN test or code,N,N
+settings,settings,Shell & navigation,Parent Center unlock does not carry over to a reopen,settings-toc,mig/rsd-native-settings-layouts,RN test or code,N,N
+settings,settings,Mount / prewarm / perf,"Staged pane fill, above-fold first frame, busy until filled, jump to unmounted section lands",settings-mount,none (RN mounts all sections),none found,Y,Y (strategy; perf not UX)
+settings,settings,Mount / prewarm / perf,Idle prewarm; quick reopen paints clean; compact prewarm without wide pane,"settings-mount, settings-shell",none,none found,Y,Y (perf)
+settings,settings,Mount / prewarm / perf,Wide card opens at settled height; clamps to sidebar ceiling,settings-mount,mig/modal-geometry,RN test or code,N,N (weak)
+settings,settings,Scroll cue / scrollbar,"Scroll cue present from opening frame (fresh, prewarmed, reopened at bottom)",settings-scroll-cue-opening,none (impl RsdScrollCue),none found,Y,Y (weak)
+settings,settings,Scroll cue / scrollbar,Compact shell cues cropped toggles; roomy pane uncued,scroll-cue,mig/rsd-native-settings-layouts (geometry),RN test or code,N,N (weak)
+settings,settings,Scroll cue / scrollbar,"Hub/pane cue to foot of card/pane, stands down at end; sidebar edge shades",scroll-cue,mig/rsd-native-design-primitives (generic),RN test or code,Y,Y (weak)
+settings,settings,Scroll cue / scrollbar,Fade follows padding change on resize,scroll-cue,none,none found,Y,Y
+settings,settings,Scroll cue / scrollbar,Fade inset leaves classic scrollbar visible; rounded picker corners,"scrollbar-chrome, scrollCue.gutter",none (no gutter logic),none found,Y,**Y** (web-only)
+settings,settings,Scroll cue / scrollbar,"Cue arms on overflow, retires at end, re-observes resize",scrollCue.test,"mig/rsd-native-design-primitives, tests/native-design-primitives-drift",RN test or code,N,N (weak)
+settings,settings,Pinch text zoom,Two-finger pinch enlarges Settings text 1–3×; mouse pinch ignored,"settings-zoom, pinchTextZoom",none,none found,Y,**Y** (D9)
+settings,settings,Pinch text zoom,Pinch swallows trailing click; lifted-outside finger ends pinch; one-finger drag scrolls,settings-zoom,none,none found,Y,**Y** (D9)
+settings,settings,Pinch text zoom,Zoom kept across TOC jump; reset on drill-in and close,settings-zoom,none,none found,Y,**Y** (D9)
+settings,settings,Pinch text zoom,Parent-facing inputs ≥16 px (no iOS focus zoom),settings-zoom,impl fontSizeMd inputs,RN test or code,N,N
+settings,settings,Hub rows,Inline switches only on Night Mode and Sound,settings-hub,"mig/rsd-native-settings-sections, tests/native-settings-sections",RN test or code,N,N
+settings,settings,Hub rows,Hub switch acts without leaving list,settings-hub,mig/rsd-native-settings-sections,RN test or code,N,N
+settings,settings,Hub rows,Night Mode switch writes `system` when OS already matches,appearance.svelte unit,none; RN pins light/dark,none found,Y,**Y** (D3)
+settings,settings,Hub rows,Switch hit target answers at its edges; tap beside changes neither,settings-hub,none,none found,Y,Y (weak)
+settings,settings,Hub rows,"Night Mode switch themes app, matches Appearance picker",settings-hub,mig/rsd-native-settings-sections,RN test or code,N,N
+settings,settings,Hub rows,Sound subtitle names single source / empty mix,settings-hub,mig/rsd-native-settings-section-bodies,RN test or code,N,N
+settings,settings,Hub rows,Hub summaries clamp to two lines,settings-phone-labels,tests/native-settings-rows-web,RN test or code,N,N
+settings,settings,Hub rows,"Tool Drawer row names the switch when off; AI row ""Turned off""",settings-hub,"mig/rsd-native-tool-drawer-settings, rsd-native-settings-sections",RN test or code,N,N
+settings,settings,Sections,"Theme picker one tab stop, arrows move selection",flows-settings,mig/rsd-native-segmented-picker,RN test or code,N,N
+settings,settings,Sections,Sound: one volume; mute hides and remembers sources,flows-settings,"mig/rsd-native-settings-section-bodies, native-sound-settings",RN test or code,N,N
+settings,settings,Sections,Volume clamped 0–100; invalid → normal,settings.svelte,"native-sound-sources, native-sound-settings",RN test or code,N,N
+settings,settings,Sections,Button Size only in Accessibility,settings-accessibility,tests/native-settings-sections,RN test or code,N,N
+settings,settings,Sections,Button Size ceiling = what the screen fits; stored larger value shown clamped,ButtonSizeSetting / actionButtonLayout,none; RN fixed 70–130,none found,Y,**Y** (D7)
+settings,settings,Sections,Button Size live preview through see-through Settings; one write on release,"settings.svelte, settings-shell",mig/rsd-native-settings-section-bodies,RN test or code,N,N
+settings,settings,Sections,Rotating mid-drag releases preview; Escape mid-drag keeps drag,settings-shell,none,none found,Y,Y
+settings,settings,Sections,Live preview keeps Action Panel timing; Night Mode doesn't animate panel behind Settings,settings-shell,none,none found,Y,Y (weak)
+settings,settings,Sections,"Reduce Motion three-way, matching device follows device",settings.svelte,"tests/native-settings-sections, mig/rsd-native-settings-sections",RN test or code,N,N
+settings,settings,Sections,Raised/Flat persists,settings.toolbar,mig/rsd-native-settings-section-bodies,RN test or code,N,N
+settings,settings,Sections,"Drawing Tools rows↔chips by width, focus kept across swap",settings-phone-labels,"mig/rsd-native-tool-drawer-settings, native-tool-drawer-focus",RN test or code,N,N
+settings,settings,Sections,"Camera toggle in Saving, not Tool Drawer",settings-hub,mig/rsd-native-tool-drawer-settings,RN test or code,N,N
+settings,settings,Sections,"Saving ""Save drawings to"" folder row (desktop Chromium)",settings-phone-labels,none (deliberately omitted),none found,Y,**Y** (web-only)
+settings,settings,Sections,Settings rows never dim while a choice saves,"(implicit, sync storage)",RN `busy` dims all rows during writes,RN test or code,Y,**Y** (D11)
+settings,settings,Sections,AI Art setup hidden until master on; off explains feature,settings-hub,mig/rsd-native-ai-settings,RN test or code,N,N
+settings,settings,Sections,AI card keeps height while switch reveals setup,settings-hub,none,none found,Y,Y (weak)
+settings,settings,Sections,Key stays locked with storage-specific message on secure-save failure,flows-settings,"native-ai-settings, mig/rsd-native-ai-settings",RN test or code,N,N
+settings,settings,Sections,Only the current key verification persists across close/reopen,flows-settings,none (nearest native-ai-settings),none found,Y,Y (weak)
+settings,settings,Sections,"Key masked, access code in full, key wins",settings.svelte,"mig/rsd-native-ai-settings, native-ai-settings-drift",RN test or code,N,N
+settings,settings,Sections,AI off by default,settings.svelte,"native-parent-center, parentDefaults",RN test or code,N,N
+settings,settings,Sections,Persist per key; reload keeps live value on missing/invalid; System theme follows OS,settings.svelte,"tests/native-settings-sections, native-appearance-settings, mig/rsd-native-appearance",RN test or code,N,"N (storage format differs, D12)"
+settings,settings,Compact / orientation / install,"Landscape phone: quick toggles, orientation lock, portrait pointer",settings-quick-toggles,mig/rsd-native-settings-layouts,RN test or code,N,N
+settings,settings,Compact / orientation / install,Orientation locks a side or releases to Auto,"settings-quick-toggles, settings.svelte","mig/rsd-native-orientation, native-orientation-settings",RN test or code,N,N (RN forgets last side on Auto; invisible)
+settings,settings,Compact / orientation / install,Quick-toggle changes carry into portrait Settings,settings-quick-toggles,mig/rsd-native-settings-layouts (shared owner),RN test or code,N,N (weak)
+settings,settings,Compact / orientation / install,No orientation picker with mouse-primary pointer,settings-quick-toggles,native-orientation-web,RN test or code,N,N
+settings,settings,Compact / orientation / install,Lock-incapable device gets mini About cell,settings-quick-toggles,none (impl present),none found,N,N (weak)
+settings,settings,Compact / orientation / install,Install section shows only this platform's steps,settings-install,native-web-install-drift (copy only),RN test or code,N,N (weak)
+settings,settings,Compact / orientation / install,iOS outside Safari sent to Safari; iPad Share location,settings-install,copy drift only (impl present),RN test or code,N,N (weak)
+settings,settings,What's New / About,"What's New: current release, date nested under ""Updates"", pre-generated label","flows-settings, settings-whats-new-outline",rsd-native-settings-info,RN test or code,N,N
+settings,settings,What's New / About,"""See all releases"" opens in-app changelog, no gate",flows-settings,rsd-native-settings-info pins gate → hosted page,RN test or code,Y,**Y** (D5)
+settings,settings,What's New / About,"About → Privacy opens bundled page, no gate",flows-settings,rsd-native-settings-info pins gate → hosted page,RN test or code,Y,**Y** (D5)
+parental gate and Parent Center,settings,Grown-Ups Only card,Gated action opens fresh 3–9 × 3–9 problem,parentalGate,mig/rsd-native-parent-center,RN test or code,N,N
+parental gate and Parent Center,settings,Grown-Ups Only card,One dab per digit; overflow digit or early Check = wrong; Delete removes digit,"ParentalGateProblem.ssr, parentalGate",mig/rsd-native-parent-center,RN test or code,N,N
+parental gate and Parent Center,settings,Grown-Ups Only card,"Wrong answer: clear input, shake, new problem, error that clears after 2.2 s; input ignored during shake","flows-parental-gate, parentalGate","mig/rsd-native-parent-center, native-parent-center-mounted, native-parent-center",RN test or code,partial,partial **Y**: RN error never clears (D8a)
+parental gate and Parent Center,settings,Grown-Ups Only card,Hardware keyboard digits / Backspace / Enter,flows-parental-gate(-lockout),"none; RN asserts ""no device keyboard""",none found,Y,**Y** (D8c)
+parental gate and Parent Center,settings,Grown-Ups Only card,"Success ""Unlocked!"" with no close; Escape/scrim can't dismiss; destination runs once after close","flows-parental-gate-escape, parentalGate",mig/rsd-native-parent-center (hold); RN runs destination before hold,RN test or code,partial,partial **Y** (D8b)
+parental gate and Parent Center,settings,Grown-Ups Only card,Closing the card discards attempt,"flows-parental-gate, parentalGate","native-parent-center-mounted, rsd-native-settings-info",RN test or code,N,N
+parental gate and Parent Center,settings,Grown-Ups Only card,Lockout after 3 misses; doubling to cap; solve resets; quiet period forgets; shared across features/dismissals,"flows-parental-gate-lockout, parentalGate.lockout","mig/rsd-native-parent-center, native-parent-center, native-feedback-controller",RN test or code,N,N
+parental gate and Parent Center,settings,Grown-Ups Only card,Countdown rounds up s→min; wall clock; backwards clock capped,flows-parental-gate-lockout,native-parent-center-mounted,RN test or code,N,N
+parental gate and Parent Center,settings,Grown-Ups Only card,"Lockout announced at start/reopen/end, not per tick",parentalGate.lockout,native-parent-center-mounted,RN test or code,N,N (150 ms delay absent)
+parental gate and Parent Center,settings,Grown-Ups Only card,Card fits; landscape keypad beside problem,flows-parental-gate-lockout,"mig/rsd-native-parent-center, native-parent-center-parity",RN test or code,N,N
+parental gate and Parent Center,settings,Grown-Ups Only card,Mashing never solves,parentalGate.mash,native-parent-center-mash,RN test or code,N,N
+parental gate and Parent Center,settings,Footer → Parent Center,"Footer retargets, keeps problem, one solve lands in Parent Center","flows-parental-gate, parentalGate","mig/rsd-native-parent-center, native-parent-center, mig/rsd-native-settings-layouts",RN test or code,N,N
+parental gate and Parent Center,settings,Footer → Parent Center,Footer hands straight over when PC is Never,flows-parental-gate,impl `retarget`→`bypass`,RN test or code,N,N (weak)
+parental gate and Parent Center,settings,Footer → Parent Center,Footer works over Settings; PC challenge names destination,flows-parental-gate,native-parent-center-mounted,RN test or code,N,N
+parental gate and Parent Center,settings,Footer → Parent Center,Footer ≥44 px target,flows-parental-gate,native-parent-center-parity,RN test or code,N,N
+parental gate and Parent Center,settings,Footer → Parent Center,Unlocking PC focuses its heading after the challenge closes,settings-hub,none (impl useSettingsPage),none found,Y,Y (weak)
+parental gate and Parent Center,settings,Policies,Every time asks each use; Never skips,parentalGate,"native-parent-center, native-feedback-controller",RN test or code,N,N
+parental gate and Parent Center,settings,Policies,Per session asks once per feature per launch,"flows-parental-gate, parentalGate",rsd-native-settings-info,RN test or code,N,N
+parental gate and Parent Center,settings,Policies,Every-time solve doesn't satisfy later Per session; policy change re-arms,parentalGate,none; RN violates,none found,Y,**Y** (D2)
+parental gate and Parent Center,settings,Policies,Web build ships all checks Never,flows-parent-center,parentDefaults.web.ts,RN test or code,N,N
+parental gate and Parent Center,settings,Policies,"Stored modes reload, garbage rejected, legacy AI migrated",parentalGate,native-parent-center (RN has own migrations; none from shipping keys),RN test or code,N,N (D12)
+parental gate and Parent Center,settings,Policies,AI button gated; solve opens prompt,flows-parental-gate,native-parent-center-mounted,RN test or code,N,N
+parental gate and Parent Center,settings,Policies,External links: Every time / Per session,flows-parental-gate,"rsd-native-settings-info, native-parent-center-ios-links",RN test or code,N,N
+parental gate and Parent Center,settings,Policies,Bundled privacy page gates its provider-terms link,flows-parental-gate,none (no privacy page in RN),none found,Y,**Y**
+parental gate and Parent Center,settings,Policies,"iOS: Never unavailable for links, explained",flows-parent-center,"native-parent-center-ios-links, mig/rsd-native-parent-center",RN test or code,N,N
+parental gate and Parent Center,settings,Policies,Feedback send waits for its gate,flows-parental-gate,"native-feedback-controller, rsd-native-feedback",RN test or code,N,N
+parental gate and Parent Center,settings,Policies,AI picture/refusal reports use image-report gate,flows-parental-gate,"native-ai-picture-report, native-ai-refusal-report",RN test or code,N,N
+parental gate and Parent Center,settings,Policies,Backgrounding the app leaves Parent Center unlocked and an open card open,(no handler),RN `background()` re-locks / invalidates,RN test or code,Y,**Y** (D10)
+parental gate and Parent Center,settings,Parent Center,Gated before controls appear (hub row; wide lock card),flows-parent-center,mig/rsd-native-parent-center,RN test or code,N,N
+parental gate and Parent Center,settings,Parent Center,Every policy persists,flows-parent-center,"mig/rsd-native-parent-center, native-parent-center",RN test or code,N,N
+parental gate and Parent Center,settings,Parent Center,Phone stacked cards; wide matrix; radio marks,"flows-parent-center, parent-center-design",mig/rsd-native-parent-center,RN test or code,N,N
+parental gate and Parent Center,settings,Parent Center,PC Never asks first; Cancel keeps; confirm shows standing warning surviving relaunch,flows-parent-center-warning,mig/rsd-native-parent-center,RN test or code,N,N
+parental gate and Parent Center,settings,Parent Center,Re-picking Never while already Never asks nothing,"flows-parent-center-warning, parentalGate",none; RN reopens confirm (D13f),none found,Y,**Y**
+parental gate and Parent Center,settings,Parent Center,Other modes change without warning,flows-parent-center-warning,native-parent-center-parity,RN test or code,N,N
+parental gate and Parent Center,settings,Parent Center,Warning keyboard reachable/dismissable,flows-parent-center-warning,rsd-native-modal-frame (generic),RN test or code,N,N (weak)
+parental gate and Parent Center,settings,Parent Center,PC reached from /privacy hydrates settings; close refocuses link,privacy-parent-center,none (no privacy route),none found,Y,**Y** (D5)
+settings,settings,Feedback in Settings,Device info only on bug opt-in; preview lists rows sent,"flows-settings, report.test","native-feedback-settings-form, native-feedback-controller",RN test or code,N,"N (but rows differ, D6)"
+settings,settings,Feedback in Settings,Idea hides device opt-in; empty message never sends,"feedback, report.test","native-feedback-controller, native-feedback-settings-form",RN test or code,N,N
+settings,settings,Feedback in Settings,In-flight report survives reopen; late reply doesn't clobber new draft; second send doesn't cancel first,"flows-settings, flows-settings-report","native-feedback-controller, native-feedback-settings-form",RN test or code,N,N
+settings,settings,Feedback in Settings,Choosing a kind doesn't move pane scroll,flows-settings,none,none found,Y,Y (weak)
+settings,settings,Feedback in Settings,Failure shows server's stated reason,"reportClient.test, ReportForm",native-feedback-transport pins the opposite,RN test or code,Y,**Y** (D6)
+settings,settings,Feedback in Settings,"Device info sanitized (order, labels, strip, emoji-safe cap)",deviceReport.test,native-feedback-contract,RN test or code,N,N
+settings,settings,Feedback in Settings,Wire format of feedback/AI reports,reportClient.test,"native-feedback-adapters/transport, native-ai-picture-report",RN test or code,N,N
+settings,settings,Standalone pages (web route set),"/feedback page (no-JS form, email fallback, keeps draft, thank-you)",feedback,none (no route in RN export),none found,Y,**Y**
+settings,settings,Standalone pages (web route set),"/changelog page (prerendered, rail, deep links, relative dates)","changelog, scroll-cue",none (RsdNotFoundPage),none found,Y,**Y**
+settings,settings,Standalone pages (web route set),Sign-up page / feedback form scroll cues,scroll-cue,none,none found,Y,**Y**
+settings,settings,Dialog plumbing,Close after exit animation; mid-exit reopen clean; leaving content inert,modalDialog,"rsd-native-modal-frame, useModalPresence",RN test or code,N,N (weak)
+settings,settings,Dialog plumbing,Controls outside the border box take taps,modalDialog,native-dialog-pointer-events,RN test or code,N,N
+settings,settings,Dialog plumbing,Focus returns to opener on close,"modalDialog, privacy-parent-center",native-modal-focus,RN test or code,N,N
+AI Art,ai,,"AI off by default; off-state explainer, no setup controls",flows-ai (explains the off feature),"rsd-native-ai-settings, native-ai-settings-drift",RN test or code,N,N
+AI Art,ai,,"Fresh install requests no allowance, no canvas action",flows-ai (fresh installation),"native-ai-settings (""asks for no allowance while AI is off"")",RN test or code,N,N
+AI Art,ai,,Wand badge shows free count from first paint,flows-ai,native-ai-flow-copy (labels only),RN test or code,Y,"Y: no persisted hint, shows 10 until grant"
+AI Art,ai,,AI button hidden while offline,none (Vitest actionButtonLayout/network),none found,none found,Y,Y: RN never hides it
+AI Art,ai,,Visible return retries a failed allowance,flows-ai (returning to the visible app),none named (useAiAvailability AppState),none found,N,N
+AI Art,ai,,Wand -> parental gate -> style prompt,flows-ai,native-ai-flow-owner,RN test or code,N,N
+AI Art,ai,,"Customization off -> direct generation, no style",flows-ai (phone toolbar generates directly),native-ai-flow-owner,RN test or code,N,N
+AI Art,ai,,No credential and 0 free -> AI Settings,flows-ai (exhausted free installation),native-ai-flow-owner,RN test or code,N,N
+AI Art,ai,,"Save key / access code (verify first, mask, storage note)",(Vitest AiKeyManager),"rsd-native-ai-settings, native-ai-generation",RN test or code,N,N
+AI Art,ai,,"Retired Gemini key named, never sent",(Vitest),rsd-native-ai-settings,RN test or code,N,N
+AI Art,ai,,"Invite link `?ai_access_token=` saves code, AI stays off (web)",flows-ai (access-code invite),inviteLinks.web,RN test or code,N,"N (web); native: RN adds dormant universal-link capture, shipping ignores"
+AI Art,ai,,Saved key survives app upgrade / legacy plaintext migration,"flows-ai (migrated BYO key), secure-storage-*",none found,none found,Y,Y (§2)
+AI Art,ai,,Unreadable secret can be replaced,secure-storage-hydration,none found,none found,Y,Y (RN write reads old record first and fails)
+AI Art,ai,,"Upload: drawing at >=2x, WebP when encodable",ai-result (uploads the live canvas),native-ai-transport (capture bounds),RN test or code,Y,Y: RN 1x PNG
+AI Art,ai,,"Dial, loading copy, reveal, confetti","ai-result, ai-result-layout","native-ai-flow-geometry, native-ai-progress",RN test or code,N,N (minor dial restart)
+AI Art,ai,,"Minimize to polaroid, restore without gate",ai-minimize,"native-ai-flow-copy, native-ai-mounted",RN test or code,partial,"N in session; Y after background / Parent Center (polaroid gone, gate again)"
+AI Art,ai,,"Picture arriving while minimized shows ""ready""",ai-minimize,native-ai-flow-copy,RN test or code,N,N
+AI Art,ai,,A run killed with the app is gone; next tap starts fresh,none (implicit),"native-ai-flow-owner (""reopens a run left waiting before a reload"")",RN test or code,Y,Y: RN restores pending runs and undismissed results after relaunch
+AI Art,ai,,Download -> Photos / download; failure -> banner; send-off,"ai-result, save-failure-announcement","native-ai-download-web, native-ai-flow-geometry",RN test or code,N,N (web chosen-folder caption missing)
+AI Art,ai,,"Auto-save AI picture + drawing, dedupe",ai-result-layout (saveMode),native-ai-auto-save,RN test or code,Y,Y: drawing copy resolution; toggle-after-arrival saves
+AI Art,ai,,Pinch-zoom revealed result,ai-result (pinch-zooms),none in product (native-ai-picture-viewer tests dead view),none found,Y,Y
+AI Art,ai,,"Try again resends the same drawing; 2 failures -> ""Still not working""; counter resets on close","ai-error, failure-paths",native-ai-flow-copy,RN test or code,Y,Y
+AI Art,ai,,"Timeout / 5xx / bare 502 -> retry card, can generate at once",failure-paths (stalled provider),"native-ai-generation (""keeps an unknown timeout"")",RN test or code,Y,Y: RN holds up to 20 min
+AI Art,ai,,429 on start -> retry card,generate-image (server side),native-ai-transport (Retry-After),RN test or code,Y,Y
+AI Art,ai,,Poll past 240 s -> retry card,(Vitest aiGenerationPoll),none found,none found,Y,Y
+AI Art,ai,,Free exhausted / daily limit mid-run -> close + AI Settings,none (Vitest aiImage),native-ai-flow-owner (setup path),RN test or code,N,N
+AI Art,ai,,Safety refusal card + refusal report,"ai-result (safety refusal), ai-report (refusal)",native-ai-refusal-ui/-report/-generation,RN test or code,N,"N, but the report send can differ (next row)"
+AI Art,ai,,Picture report: gate -> confirm -> send; failure -> Try again,ai-report,native-ai-picture-report,RN test or code,Y,Y: CSRF without Origin; unknown => no retry
+AI Art,ai,,Problem report diagnostics,ai-error (previewed diagnostics),native-ai-flow-copy,RN test or code,N,N
+AI Art,ai,,Close returns focus to AI button,ai-result-a11y,none found,none found,?,? (not checked)
+coloring picker and pages,platform,coloring,"8 books × 6 pages; Farm first, then catalog order",flows-coloring-book-picker,"native-offline-catalog, native-starter-book",RN test or code,N,N
+coloring picker and pages,platform,coloring,Fresh install opens Farm pages with no Back,coloring-pack-download:95,rsd-native-coloring-picker:146,RN test or code,N,N
+coloring picker and pages,platform,coloring,Extra books start downloading on the 3rd stroke or on picker open (web); at boot (native),"coloring-pack-download-gate:136,161",native-offline-library:494 (picker-only engage),RN test or code,Y,**Y**: RN needs the picker opened every session
+coloring picker and pages,platform,coloring,"Unknown connection (Safari, Firefox, desktop Chrome) downloads by default",coloring-pack-download-gate:83-117,beta-web-offline-library:274,RN test or code,Y,**Y**: RN treats it as metered and waits forever
+coloring picker and pages,platform,coloring,Save-Data / cellular / 2g blocks new downloads; installed books kept,coloring-pack-download-gate:83-117,beta-web-offline-library,RN test or code,Y,**Y**: RN ignores 2g
+coloring picker and pages,platform,coloring,Downloads continue in the background / after termination (native),none,native-offline-library:423 asserts pause,RN test or code,Y,**Y**
+coloring picker and pages,platform,coloring,Drawing never interrupts a download,none,"controller.ts:123,212-216 aborts per stroke",RN test or code,Y,**Y**
+coloring picker and pages,platform,coloring,"Coloring off: button hidden, page cleared, storage line ""unavailable while off""","coloring-pack-download-gate:32,63-65",native-coloring-master:66,RN test or code,Y,**Y**: RN still inventories and shows counts
+coloring picker and pages,platform,coloring,Remove downloaded pictures restores the single-book picker and clears the applied page; next launch re-downloads,coloring-pack-download:132,"native-offline-policy-r1:257, rsd-native-coloring-picker:334",RN test or code,Y,**Y**: RN keeps the page and stays off across relaunches
+coloring picker and pages,platform,coloring,Toggle off keeps books; undo after off leaves no page,coloring-pack-download:178; flows-coloring-book-off-undo:20,rsd-native-coloring-settings:87; native-coloring-master:127-152,RN test or code,N,N
+coloring picker and pages,platform,coloring,Picker opened before the first scan shows no Back until reopen,coloring-pack-download:340-405,rsd-native-coloring-picker:352 expects Back,RN test or code,Y,**Y**
+coloring picker and pages,platform,coloring,Active-page chip shows thumbnail + name; tap clears with undo,flows-coloring-book-active-page:115-242,rsd-native-coloring-picker:304-324,RN test or code,N,mostly N; RN chip may lack a thumbnail
+coloring picker and pages,platform,coloring,Dark covers use chalk thumbs (invert + screen blend),flows-coloring-book-theme:10,none,none found,Y,**Y?** iOS RN filter support unverified
+coloring picker and pages,platform,coloring,"Grid columns, orphan rule, tap-burst guard, scroll cue",flows-coloring-book-picker:56-237; flows-coloring-scroll-cue*,"rsd-native-coloring-picker, rsd-native-coloring-scroll",RN test or code,N,N
+coloring picker and pages,platform,coloring,Phone downloads compact tier,none,fullLibrary.ts:6 always full,RN test or code,Y,"**Y** (bytes, MB shown)"
+"undo, clear and save",platform,save,"iOS camera roll, add-only prompt, same usage string",(unit imageSave.test.ts),"native-photo-library:40-51,128-135",RN test or code,N,N
+"undo, clear and save",platform,save,Android 11+ `Pictures/Splotch`,(unit androidGallery.test.ts),"native-photo-library:53-62,98-102",RN test or code,N,N
+"undo, clear and save",platform,save,"Android 10 saves with no prompt; Android 7–9 prompts, else falls back to app media",none (Java),native-photo-library:64-76 asserts 'unavailable',RN test or code,Y,**Y**
+"undo, clear and save",platform,save,"Denied → platform copy, Open Settings (behind gate), Try again",save-failure-announcement,rsd-native-save-flight:231-282; rsd-native-failure-banner:128-152,RN test or code,N,N
+"undo, clear and save",platform,save,Banner announced via a live region; re-announced 150 ms after a repeat failure,save-failure-announcement,rsd-native-save-flight:364-376,RN test or code,N,N
+"undo, clear and save",platform,save,Held pictures survive relaunch (incl. iOS kill after a Photos permission change),"(unit unsavedPictureStore, saveFailure.durableRestore)",none,none found,Y,**Y**
+"undo, clear and save",platform,save,Save-on-delete clears at once and saves in the background; a failure is held for retry,save-failure-announcement (failSaveOnDelete),native-save-to-photos-mounted:177-190 asserts the picture stays,RN test or code,Y,**Y**
+"undo, clear and save",platform,save,Camera tap burst shares one save; 4 s cooldown; shake on suppression,flows-screenshot:46-135,none,none found,Y,**Y**
+"undo, clear and save",platform,save,"Web download filename `splotch-YYYY-MM-DD_HH-MM-SS.png`; export scale max(DPR,2); paper colour + grain",flows-screenshot:140,native-picture-save-web:68-82; native-picture-export,RN test or code,N,N
+"undo, clear and save",platform,save,Desktop Chromium saves silently into a chosen folder,(unit folderSave.test.ts),none,none found,Y,**Y** (missing)
+"install, update and offline",platform,install,"Banner after 3 strokes; mode, stage and copy per OS; iOS share-arrow flips on rotate","install-banner, install-banner-layout, install-preview","native-web-install-policy, rsd-native-install-banner, native-web-install-drift",RN test or code,N,N
+"install, update and offline",platform,install,Banner suppressed while the AI chip is minimized or a save-failure banner is up,(InstallBanner.svelte:65-72),none,none found,Y,**Y**
+"install, update and offline",platform,install,Banner hidden while the drawer is open; auto-clear after 5 strokes; re-prompts at sessions 5 and 10,"install-banner, install-banner-layout","rsd-native-install-banner, native-web-install-policy",RN test or code,N,N (RN also hides under pickers and modals)
+"install, update and offline",platform,install,Settings install guide per OS; native lock guide (Guided Access / pinning status),settings-install,"native-web-install-drift, native-device-lock",RN test or code,N,N
+"install, update and offline",platform,install,Banner and SW absent in native apps,(static bundle checks),native-web-service-worker,RN test or code,N,N
+"install, update and offline",platform,update,SW registers after the stroke gate + idle; skipped under Save-Data,pwa-registration,native-web-service-worker pins window-load registration,RN test or code,Y,**Y**
+"install, update and offline",platform,update,Hourly/visibility/focus update checks; silent activation; reload at hidden edge on a blank canvas,(updates.*.test.ts),none,none found,Y,**Y** (missing)
+"install, update and offline",platform,offline,AI button hidden while offline; last state stamped at first paint,"(actionButtonLayout, network tests)",none,none found,Y,**Y**
+"install, update and offline",platform,offline,Free-grant fetch retried on reconnect,(freeGenerations tests),useAiAvailability (AppState only),RN test or code,Y,**Y**
+error and recovery (incl. Back),platform,error,"Root render crash shows Error Screen ""Oops!"" with Start over; inline fallback if its chunk fails","error-screen, failure-paths",none (no root boundary),none found,Y,**Y**
+error and recovery (incl. Back),platform,error,Lost canvas context restored silently,engine-lifecycle,"rsd-native-error-screen, native-drawing-recovery (legacy)",RN test or code,Y,**Y**: RN routes renderer errors to Error Screen and Start over blanks the draft
+error and recovery (incl. Back),platform,error,"Tab title ""Oops! · Splotch""",error-screen,none,none found,Y,**Y** (web)
+error and recovery (incl. Back),platform,error,"Denied storage keeps drawing, undo and settings defaults working",failure-paths,none for RsdDrawingScreen,none found,Y,"**Y**: RN turns sound, coloring and AI off"
+error and recovery (incl. Back),platform,Back,Web Back closes top dialog; nested dialogs; refresh retires entries,web-back,beta-browser-back,RN test or code,N,N
+error and recovery (incl. Back),platform,Back,Web drawing guard when standalone/fullscreen/minimal-ui or coarse pointer,web-back,beta-browser-back (standalone only),RN test or code,partial,slight
+error and recovery (incl. Back),platform,Back,"Android Back: dialog → close; empty → background; ink → ""Leave Splotch?""",(systemBackHandler tests),native-system-back-mounted (legacy screen),RN test or code,N,N
+error and recovery (incl. Back),platform,Back,Android Back in a phone Settings section closes all of Settings,"(dialogBack, modalDialog tests)",none,none found,Y,**Y**: RN returns to the hub
+error and recovery (incl. Back),platform,Back,Back during cold boot is held up to 10 s,none,none,none found,Y,**Y**: RN backgrounds the app
+error and recovery (incl. Back),platform,Back,Erased-to-blank canvas leaves without asking,none,model.ts:376-378,RN test or code,Y,**Y**
+drawing,platform,platform,Wake lock held while drawing,(wakeLock.test.ts),none,none found,Y,**Y**
+drawing,platform,platform,Long-press context menu and callout blocked,"(contextMenuGuard, app.css)",none,none found,Y,**Y** (RN web)
+drawing,platform,platform,Ctrl/Cmd+Z undo with a hardware keyboard (incl. native WebView),dialog-undo,native-undo-shortcut (web only),RN test or code,Y,**Y** on native
+drawing,platform,platform,Escape closes flyout or dialog,flows-parental-gate-escape,native-flyout-focus (web),RN test or code,Y,**Y** on native
+orientation and safe areas,platform,orientation,Picker only where a lock applies (native phone; web touch + fullscreen),orientation-picker,"rsd-native-orientation, native-orientation-web",RN test or code,N,N (RN re-gates live)
+orientation and safe areas,platform,orientation,Portrait/Landscape single-direction lock; Android Auto = SENSOR overriding the OS lock; iOS Auto = unlock + caption,"orientation-picker, orientation-lock-fullscreen","rsd-native-orientation, native-orientation-settings",RN test or code,N,N
+orientation and safe areas,platform,orientation,Tablet-size first launch defaults to Landscape,(settings default),native-orientation-settings (web only),RN test or code,Y,**Y** on native (RN portrait)
+orientation and safe areas,platform,orientation,Dialogs follow the app's lock on iOS,n/a (HTML),rsd-native-modal-frame,RN test or code,N,N (fixed)
+orientation and safe areas,platform,safe area,Notch band edges/threshold/paper colour; Android landscape hides the status bar,"safe-area-matrix, capacitor-safe-area",rsd-native-notch-band (shared fn),RN test or code,N,N
+orientation and safe areas,platform,safe area,Status bar re-hidden after resume,(notchBandReentry.test.ts),none,none found,Y,**Y**
+orientation and safe areas,platform,safe area,Status-bar icon style with no band follows the system theme,none,rsd-native-notch-band asserts the app theme,RN test or code,Y,**Y**
+orientation and safe areas,platform,bars,"Nav bar hidden, swipe-to-reveal, re-hidden on focus; edge-to-edge + contrast scrim",engine-system-bars,native-system-bars,RN test or code,N,"N (activity); Modal windows partly (Android 11, IME)"
+orientation and safe areas,platform,bars,Bottom/side edge swipes discarded as OS gestures,engine-edge-swipe,none,none found,Y,**Y**
+orientation and safe areas,platform,bars,No theme flash at cold start; window background colour,(app.html boot),native-web-shell-head (web),RN test or code,Y,**Y** on native
+orientation and safe areas,platform,bars,Fullscreen toggle only in an Android browser tab,(fullscreen.svelte.test),fullscreen.web.test,RN test or code,N,N
+accessibility,platform,a11y,"Dialog accessible names (""Settings"" always)",a11y:376-445,ModalShell label,RN test or code,Y,**Y**: RN uses the section heading on phone subpages
+accessibility,platform,a11y,"Swatch labels (""Custom Color"", ""Purple"", dark-mode Black reads ""White"")",a11y:400,none,none found,Y,"**Y**: ""More colors"", ""Purple paint"", ""Black paint"""
+accessibility,platform,a11y,Option state as aria-pressed buttons,a11y,none,none found,Y,**Y**: RN radio/aria-checked in a named group
+accessibility,platform,a11y,Focus returns to the opener after a dialog closes,ai-result-a11y:46-59,native-modal-focus (web only),RN test or code,Y,**Y** on native
+accessibility,platform,a11y,Touch targets ≥ 48px,touch-targets,modal-geometry (52),RN test or code,N,N
+accessibility,platform,a11y,Button Size max = screen-fit ceiling,settings-accessibility,native-settings-sections,RN test or code,Y,**Y**: RN fixed 130
+accessibility,platform,motion,Reduce Motion: OS + in-app toggle (`system`/`reduce`/`full`),reduce-motion,native-reduce-motion(-mounted),RN test or code,N,N (imported rule)
+accessibility,platform,motion,"Covered cues: undo spin/ghost, unavailable shake, drawer travel, flyout exit, section reveal","reduce-motion:83-133,436; reduce-motion-scoped-cues",none,none found,Y,**Y**: cues absent on RN
+sounds and haptics,platform,sound,"Pencil scratch: random take, speed-scaled gain, same MP3s",(unit drawingSound),"native-audio-projection, native-sound-gates",RN test or code,Y,"**Y** (speed units, stillness fade, first-stroke latency)"
+sounds and haptics,platform,sound,Clear drag pentatonic bubbles + cancel unwind,(unit clearSound),none,none found,Y,**Y** (missing)
+sounds and haptics,platform,sound,Page turn on clear commit; volume up to 2×,(unit clearSound),"native-clear-sound, native-clear-projection",RN test or code,Y,**Y** on native above 50%
+sounds and haptics,platform,sound,iOS ringer/silent switch mutes sound,none,none,none found,Y,**Y**: RN playsInSilentMode=true
+sounds and haptics,platform,sound,"Defaults: sound on, both sources on, volume 50; preview while dragging",—,"native-sound-sources, native-volume-preview",RN test or code,N,N
+sounds and haptics,platform,haptics,Medium impact on clear threshold and pencil eraser toggle; 15 ms web vibrate; no setting,—,"native-clear-sound, native-clear-projection",RN test or code,N,N
+drawing,platform,pencil,Apple Pencil double-tap toggles eraser; row revealed after first double-tap,(unit pencilEraser),native-pencil-double-tap,RN test or code,N,N

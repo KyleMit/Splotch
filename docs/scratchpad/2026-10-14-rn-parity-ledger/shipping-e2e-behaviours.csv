@@ -1,0 +1,788 @@
+surface,spec,line,title
+accessibility,a11y.spec.ts,65,/privacy has no serious accessibility violations
+accessibility,a11y.spec.ts,71,/changelog has no serious accessibility violations
+accessibility,a11y.spec.ts,83,/beta has no serious accessibility violations on the ${tab} tab
+accessibility,a11y.spec.ts,98,/feedback has no serious accessibility violations
+accessibility,a11y.spec.ts,108,/design has no serious accessibility violations
+accessibility,a11y.spec.ts,126,/admin logged out has no serious accessibility violations
+accessibility,a11y.spec.ts,133,/admin logged in has no serious accessibility violations
+accessibility,a11y.spec.ts,156,/admin copy actions name their code and announce the copy
+accessibility,a11y.spec.ts,181,Settings has no serious accessibility violations
+accessibility,a11y.spec.ts,189,the false-positive refusal confirmation has no serious accessibility violations
+accessibility,a11y.spec.ts,200,the locked Parent Center card has no serious accessibility violations
+accessibility,a11y.spec.ts,214,the parental gate has no serious accessibility violations
+accessibility,a11y.spec.ts,242,the active Settings nav item holds WCAG AA contrast
+accessibility,a11y.spec.ts,261,the admin sign-in placeholder holds WCAG AA contrast in ${colorScheme} mode
+accessibility,a11y.spec.ts,282,the parental gate operand digits hold WCAG AA large-text contrast
+accessibility,a11y.spec.ts,299,Parent Center matrix rings hold non-text contrast in ${colorScheme} mode
+accessibility,a11y.spec.ts,318,Parent Center segmented labels hold contrast in ${colorScheme} mode
+accessibility,a11y.spec.ts,440,"the ""${dialog.name}"" dialog has its accessible name"
+accessibility,a11y.spec.ts,458,"the ""${dialog.name}"" dialog text holds WCAG AA contrast in ${colorScheme} mode"
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,130,opted-in AI button paints without moving the drawer when ${scenario.name}
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,190,offline status leaves no gap in the first painted row (cached ${cached})
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,231,a changed network state replaces the stored first-paint guess
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,268,AI-only drawer paints its count before the grant arrives
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,308,a usable AI button stays hidden with the closed drawer
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,332,${viewport.name} Actions Panel first paint matches hydrated geometry
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,366,${viewport.name} Actions Panel first paint matches hydrated geometry
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,394,${configuration.name} first paint matches hydrated geometry
+"drawer, flyouts and tools",actions-panel-layout.spec.ts,420,${viewport.name} six-button row clears the Settings Button
+web-only pages (not in RN scope),admin-login.spec.ts,30,web /admin rejects a wrong key
+web-only pages (not in RN scope),admin-login.spec.ts,36,"web /admin signs in, fails closed without durable tokens, and signs out"
+web-only pages (not in RN scope),admin-login.spec.ts,63,web /admin signing out discards an unsent code draft
+web-only pages (not in RN scope),admin-login.spec.ts,81,web /admin a copy left pending at sign-out cannot mark the next session copied
+web-only pages (not in RN scope),admin.spec.ts,79,web /admin ledger keeps its rows usable across viewport widths
+web-only pages (not in RN scope),admin.spec.ts,198,web /admin chevron press feedback beats hover on a hover-capable pointer
+web-only pages (not in RN scope),admin.spec.ts,253,web /admin closing the reveal removes its actions from the tab order immediately
+web-only pages (not in RN scope),admin.spec.ts,323,web /admin re-copying a cell restarts its Copied feedback window
+web-only pages (not in RN scope),admin.spec.ts,342,web /admin surfaces a network failure instead of failing silently
+web-only pages (not in RN scope),admin.spec.ts,360,web /admin SSR response carries the site security headers
+web-only pages (not in RN scope),admin.spec.ts,382,the admin token list JSON is never stored either
+web-only pages (not in RN scope),admin.spec.ts,397,web prerender emits a hash-based script policy that complements the platform header
+AI Art,ai-error.spec.ts,13,${theme} ${viewport.width}: first and repeated failures fit and preserve the drawing
+AI Art,ai-error.spec.ts,57,"sends only previewed diagnostics, device opt-in ${device}"
+AI Art,ai-error.spec.ts,86,requires the configured parental gate before preview or send
+AI Art,ai-error.spec.ts,102,a rejected report offers another confirmation without losing the generation retry
+AI Art,ai-error.spec.ts,132,keeps the close control reachable after scrolling report feedback
+AI Art,ai-error.spec.ts,168,safety refusal stays centered without a report strip at ${viewport.width}
+AI Art,ai-minimize.spec.ts,40,"goes to the polaroid, and the polaroid brings it back"
+AI Art,ai-minimize.spec.ts,55,"says how to leave, rather than leaving it to the X"
+AI Art,ai-minimize.spec.ts,68,is what the Magic Button reveals while it is still running
+AI Art,ai-minimize.spec.ts,90,"comes back to the picture, not to a dial catching up to it"
+AI Art,ai-minimize.spec.ts,107,keeps the run where it got to while it waited
+AI Art,ai-minimize.spec.ts,127,stops calling the picture unfinished once it is finished
+AI Art,ai-minimize.spec.ts,146,says the run failed rather than promising a picture that is not coming
+AI Art,ai-minimize.spec.ts,168,never wiggles itself off the top of the screen
+AI Art,ai-minimize.spec.ts,214,keeps its polaroid above the chrome it is pinned beside
+AI Art,ai-minimize.spec.ts,250,leaves every color on the palette uncovered
+AI Art,ai-report.spec.ts,49,confirms and sends an AI picture report from the result
+AI Art,ai-report.spec.ts,101,cancelling the report confirmation returns to an untouched result
+AI Art,ai-report.spec.ts,133,dismissing the confirmation with ${dismissal} hands focus back to Report
+AI Art,ai-report.spec.ts,159,a report send that never settles times out into the retry state
+AI Art,ai-report.spec.ts,200,a report whose response body stalls times out into the retry state
+AI Art,ai-report.spec.ts,233,the confirmation stays up through repeated Escape presses while sending
+AI Art,ai-report.spec.ts,259,reports a free-tier picture with the signed report token
+AI Art,ai-report.spec.ts,292,confirms and sends a free-tier false-positive refusal report
+AI Art,ai-report.spec.ts,343,cancelling a refusal report restores focus at ${viewport.width}×${viewport.height}
+AI Art,ai-report.spec.ts,383,a failed refusal report offers an in-place retry without another generation
+AI Art,ai-result-a11y.spec.ts,28,"the status announces the picture being made, then that it is ready"
+AI Art,ai-result-a11y.spec.ts,36,the status announces a failed picture
+AI Art,ai-result-a11y.spec.ts,46,closing the result returns focus to the AI button
+AI Art,ai-result-a11y.spec.ts,59,closing the result with the drawer folded focuses the drawer toggle
+AI Art,ai-result-disclosure.spec.ts,9,paints the strip on backdrop colors in ${colorScheme} mode
+AI Art,ai-result-disclosure.spec.ts,47,disclosure text and glyphs keep full opacity in ${colorScheme}
+AI Art,ai-result-layout.spec.ts,65,keeps loading and reveal geometry stable on ${viewport.label}${saveMode}
+AI Art,ai-result-layout.spec.ts,118,anchors the disclosure strip below the result card on ${viewport.label}
+AI Art,ai-result-layout.spec.ts,141,draws the picture at the full height its band allows
+AI Art,ai-result-layout.spec.ts,179,frames the card in a ${screen.label}-sized gutter
+AI Art,ai-result-layout.spec.ts,217,clears the display's safe areas on a notched phone while ${state}
+AI Art,ai-result-layout.spec.ts,254,keeps result content inside the card at ${viewport.width}×${viewport.height}
+AI Art,ai-result.spec.ts,78,uploads the live canvas as a non-empty image POST
+AI Art,ai-result.spec.ts,96,the preview blur writes far fewer filters than frames it spans
+AI Art,ai-result.spec.ts,135,plays the dial and reveals the result image
+AI Art,ai-result.spec.ts,175,reserves the picture area while the first preview image decodes
+AI Art,ai-result.spec.ts,205,reserves a minimized result while its image decodes
+AI Art,ai-result.spec.ts,240,caps the loading dial once the stage outgrows it
+AI Art,ai-result.spec.ts,254,shows the error state
+AI Art,ai-result.spec.ts,264,shows the safety refusal state
+AI Art,ai-result.spec.ts,283,"the revealed result pinch-zooms, and a lone finger passes through"
+AI Art,ai-result.spec.ts,345,reflects the stage element’s real rendered height
+AI Art,ai-result.spec.ts,360,declares the height on a fresh .ai-stage after an error-then-retry
+AI Art,ai-result.spec.ts,381,cuts the confetti hole a clearance wider than the dial on ${label}
+"drawer, flyouts and tools",bare-toolbar-bundle.spec.ts,5,Bare glass ships a prefixed dynamic mask for the Chromium browser floor
+"drawer, flyouts and tools",bare-toolbar-paper.spec.ts,18,switching from ${initial} at ${layout.width}px preserves ink and coloring art on screen
+"drawer, flyouts and tools",bare-toolbar-paper.spec.ts,91,bare rail glass and margin rules at ${layout.width}px cover the clear feedback like the buttons palette
+"drawer, flyouts and tools",bare-toolbar.spec.ts,61,Bare ${layout.name} ${theme} at ${scale}% covers the controls and open menus
+"drawer, flyouts and tools",bare-toolbar.spec.ts,101,Button style choice persists and switching keeps an existing drawing
+"drawer, flyouts and tools",bare-toolbar.spec.ts,124,Switching toolbar styles keeps the ${layout.name} HUD controls in place
+"drawer, flyouts and tools",bare-toolbar.spec.ts,155,Buttons palette reaches the landscape edges and aligns its custom swatch with the actions
+"drawer, flyouts and tools",bare-toolbar.spec.ts,169,Landscape palette keeps its edge padding at the smallest button size
+"drawer, flyouts and tools",bare-toolbar.spec.ts,193,Buttons toolbar dims other actions when the ${name} flyout opens
+"drawer, flyouts and tools",bare-toolbar.spec.ts,204,Buttons toolbar dims other actions when the compact color flyout opens
+"drawer, flyouts and tools",bare-toolbar.spec.ts,214,Bare ${layout.name} shrinks its glass when drawing controls are disabled
+"drawer, flyouts and tools",bare-toolbar.spec.ts,255,Bare compact color menu keeps its swatches and dismissal
+"drawer, flyouts and tools",bare-toolbar.spec.ts,268,Bare unavailable Undo stays transparent while pressed in ${theme}
+"drawer, flyouts and tools",bare-toolbar.spec.ts,294,Bare compact fullscreen shares one pane with the toolbar
+"drawer, flyouts and tools",bare-toolbar.spec.ts,370,Bare compact glass fades out between separate controls
+"drawer, flyouts and tools",bare-toolbar.spec.ts,383,Bare compact L leaves the canvas open beyond its row and above its column
+"drawer, flyouts and tools",bare-toolbar.spec.ts,402,Bare hides stale pane geometry until rotation layout settles
+"drawer, flyouts and tools",bare-toolbar.spec.ts,416,Bare brush and eraser footprints remain above the glass
+web-only pages (not in RN scope),beta.spec.ts,31,short screens open on the ${platform} steps and keep the other platform reachable
+web-only pages (not in RN scope),beta.spec.ts,58,short desktop viewports disclose the beta introduction and preserve its picker
+web-only pages (not in RN scope),beta.spec.ts,82,"the Android tab links to the group, the opt-in page, the listing, and /feedback"
+web-only pages (not in RN scope),beta.spec.ts,106,the iOS tab swaps in the TestFlight steps and records itself in the URL
+web-only pages (not in RN scope),beta.spec.ts,134,?os= opens the platform the link names
+web-only pages (not in RN scope),beta.spec.ts,147,gets the TestFlight steps without asking
+web-only pages (not in RN scope),beta.spec.ts,157,gets the Google Play steps
+web-only pages (not in RN scope),beta.spec.ts,172,${deprecated} redirects to the ${platform} tab
+web-only pages (not in RN scope),beta.spec.ts,180,the tabs hug the left on a sheet and split the content width on a phone
+web-only pages (not in RN scope),beta.spec.ts,235,the tabs clear the 44px touch floor at every width
+web-only pages (not in RN scope),beta.spec.ts,257,only the live tab carries the underline segment
+web-only pages (not in RN scope),beta.spec.ts,291,the feedback address is shown in full and reaches the form
+web-only pages (not in RN scope),beta.spec.ts,305,the support address is absent from the served HTML and added after hydration
+web-only pages (not in RN scope),beta.spec.ts,328,short screens keep the hash links as the platform chooser
+web-only pages (not in RN scope),beta.spec.ts,338,both platforms read as stacked sections and the picker stands down
+web-only pages (not in RN scope),beta.spec.ts,352,a jump link filters to the platform it names
+web-only pages (not in RN scope),beta.spec.ts,378,paints the detected platform with no client bundle at all
+web-only pages (not in RN scope),beta.spec.ts,389,the troubleshooting summary drops only its middle clause on phones
+web-only pages (not in RN scope),beta.spec.ts,401,the troubleshooting panel starts collapsed on both tabs
+web-only pages (not in RN scope),beta.spec.ts,419,the masthead crayon strip renders every palette hue it names
+web-only pages (not in RN scope),beta.spec.ts,470,the step inks clear 4.5:1 on the wash they sit on in ${colorScheme} mode
+web-only pages (not in RN scope),beta.spec.ts,503,the troubleshooting chevron clears the 3:1 non-text minimum in ${colorScheme} mode
+web-only pages (not in RN scope),beta.spec.ts,528,night step digits match heading brightness on lifted discs for ${platform}
+web-only pages (not in RN scope),beta.spec.ts,564,selected text clears 4.5:1 on the highlight in ${colorScheme} mode
+web-only pages (not in RN scope),brand-mark.spec.ts,23,shows only its suffix on one line beside the back link on a phone
+web-only pages (not in RN scope),brand-mark.spec.ts,34,shows the whole mark on a desktop
+web-only pages (not in RN scope),brand-mark.spec.ts,47,a mark with no suffix keeps its name on a phone
+palette and colour picker,brush-ring.spec.ts,10,"drawing shows a brush impact ring, rainbow-flavored for the magic brush"
+palette and colour picker,brush-ring.spec.ts,62,"the brush ring transform is written once per frame, not once per input"
+palette and colour picker,brush-ring.spec.ts,133,a palette press mid-stroke removes the live brush ring
+palette and colour picker,brush-ring.spec.ts,216,an adopted down-less pen stream still grows a brush ring
+palette and colour picker,brush-ring.spec.ts,230,a down-less pen stream adopted from a UI control still grows a brush ring
+"drawer, flyouts and tools",button-states.spec.ts,7,the complete state matrix and sizes render without hydration
+"drawer, flyouts and tools",button-states.spec.ts,24,disabled variants use neutral colors and ignore hover and press
+"drawer, flyouts and tools",button-states.spec.ts,73,"busy auto-plays on visibility, hands back control, and can replay"
+"drawer, flyouts and tools",button-states.spec.ts,114,busy ring stops animating for reduced motion
+"drawer, flyouts and tools",button-states.spec.ts,122,changing the preview theme gives its busy specimen one auto-play
+"drawer, flyouts and tools",button-states.spec.ts,136,button matrix fits a narrow phone without making its previews interactive
+orientation and safe areas,capacitor-safe-area.spec.ts,24,Capacitor ${scenario.name} insets take precedence over env()
+orientation and safe areas,capacitor-safe-area.spec.ts,57,removing Capacitor insets restores the web env() fallback
+settings,changelog.spec.ts,17,short screens compress the hero and open on release content
+settings,changelog.spec.ts,34,short desktop viewports disclose the changelog introduction
+settings,changelog.spec.ts,41,the changelog lede keeps its closing phrase together
+settings,changelog.spec.ts,56,the changelog renders every release with its notes
+settings,changelog.spec.ts,71,the changelog table of contents links to every release
+settings,changelog.spec.ts,83,the contents rail marks the release being read
+settings,changelog.spec.ts,106,the contents collapses behind one row so the newest release clears the fold
+settings,changelog.spec.ts,130,the contents row counts the releases at the hero and names the one being read
+settings,changelog.spec.ts,154,picking a release from the contents lands it clear of the pinned row
+settings,changelog.spec.ts,193,parks its release clear of the pinned contents row
+settings,changelog.spec.ts,209,the complete changelog is present in prerendered HTML
+settings,changelog.spec.ts,227,"the open contents panel scrolls inside itself, bottom edge on screen"
+settings,changelog.spec.ts,237,a panel opened below its pin scrolls the row into it
+settings,changelog.spec.ts,249,an initial folded link opens and lands at ${viewport.width}px
+settings,changelog.spec.ts,269,the older fold opens from keyboard and hands focus into the revealed history
+settings,changelog.spec.ts,284,"rail, hash and history navigation reveal and land before highlighting"
+settings,changelog.spec.ts,318,hydration fills relative dates while prerendered placeholders stay empty
+settings,changelog.spec.ts,338,the tape and active highlighter text hold AA contrast in ${colorScheme}
+settings,changelog.spec.ts,391,rapid fragment changes leave only the latest arrival and reduced motion keeps it still
+settings,changelog.spec.ts,438,forced colors keep both changelog chevrons visible against the system canvas
+settings,changelog.spec.ts,458,picking the current rail release repeats arrival without adding a history entry
+settings,changelog.spec.ts,504,relative release dates follow the reader calendar at a UTC boundary
+"undo, clear and save",clear-ring.spec.ts,14,the pen ring stays aligned across clear states at ${viewport.width}px in ${colorScheme}
+"undo, clear and save",clear-ring.spec.ts,131,the reduced-motion tutorial shows the same continuous pen contour
+"undo, clear and save",clear-ring.spec.ts,165,the animated tutorial switches the pen contour at its ready phase
+"undo, clear and save",clear-tutorial.spec.ts,14,triple-tapping the clear button reveals the coachmark
+"undo, clear and save",clear-tutorial.spec.ts,45,the cleared button cannot re-arm its ring from the release point
+"undo, clear and save",clear-tutorial.spec.ts,87,the hidden coachmark runs no animation; the revealed one does
+coloring picker and pages,coloring-pack-download-gate.spec.ts,32,a saved disabled setting blocks pack boot until coloring books are enabled
+coloring picker and pages,coloring-pack-download-gate.spec.ts,83,books already downloaded show in the picker on a ${name} connection without new downloads
+coloring picker and pages,coloring-pack-download-gate.spec.ts,119,a visit nobody engages with downloads no coloring packs
+coloring picker and pages,coloring-pack-download-gate.spec.ts,136,the stroke that settles the child in starts the downloads
+coloring picker and pages,coloring-pack-download-gate.spec.ts,161,opening the coloring picker starts the downloads
+coloring picker and pages,coloring-pack-download.spec.ts,95,a fresh install opens the Farm pages directly before packs arrive
+coloring picker and pages,coloring-pack-download.spec.ts,132,removing downloaded books restores single-book page previews
+coloring picker and pages,coloring-pack-download.spec.ts,178,the Coloring section toggle clears the page but keeps downloaded books
+coloring picker and pages,coloring-pack-download.spec.ts,212,finishing a download keeps the open page grid stable
+coloring picker and pages,coloring-pack-download.spec.ts,251,a book that finishes downloading while the picker is open joins at the next open
+coloring picker and pages,coloring-pack-download.spec.ts,286,books landing during a held press move neither the header nor the chip
+coloring picker and pages,coloring-pack-download.spec.ts,348,an open that beats the installed-book scan shows the starter book's pages until it closes (${viewport.name})
+"install, update and offline",csp.spec.ts,25,inline hash coverage ignores script data blocks and external scripts
+"install, update and offline",csp.spec.ts,50,every prerendered app document authorizes its inline scripts without unsafe-inline
+"install, update and offline",csp.spec.ts,78,production CSP helper preserves the SSR nonce policy while adding the platform policy
+web-only pages (not in RN scope),design-foundations.spec.ts,19,keyboard focus follows the controls' shapes in ${theme}
+web-only pages (not in RN scope),design-foundations.spec.ts,51,warning semantics and ink remain readable in ${theme}
+web-only pages (not in RN scope),design-foundations.spec.ts,87,rule labels keep heading semantics and section rhythm in ${theme}
+web-only pages (not in RN scope),design-foundations.spec.ts,123,an unsupported relational selector leaves basic keyboard focus intact
+web-only pages (not in RN scope),design-foundations.spec.ts,138,dialog header keeps back flat and separates its title in ${theme}
+web-only pages (not in RN scope),design-foundations.spec.ts,191,styleguide prose keeps tokens whole and uses body contrast in ${theme}
+web-only pages (not in RN scope),design-foundations.spec.ts,212,swatch stacks clip their last row to rounded corners in ${theme}
+web-only pages (not in RN scope),design-navigation.spec.ts,17,the ${theme} choice persists across reloads and drawing-page visits
+web-only pages (not in RN scope),design-navigation.spec.ts,37,settings icons and borderless status banners follow the ${theme} theme
+web-only pages (not in RN scope),design-navigation.spec.ts,67,"every contents link lands on exactly one section, and every section is linked"
+web-only pages (not in RN scope),design-navigation.spec.ts,85,every primitive has a direct link under its own contents group
+web-only pages (not in RN scope),design-navigation.spec.ts,118,page scrolling keeps the sidebar entry visible without moving focus or feeding back
+web-only pages (not in RN scope),design-navigation.spec.ts,161,the retained primitives link clears the sticky header at ${width}px
+web-only pages (not in RN scope),design-navigation.spec.ts,185,manual sidebar browsing lasts until the active section changes or the viewport resizes
+web-only pages (not in RN scope),design.spec.ts,20,theme picker exposes and updates its selected state
+web-only pages (not in RN scope),design.spec.ts,49,the theme toggle and chip values adopt the applied dark theme
+web-only pages (not in RN scope),design.spec.ts,79,the header theme options keep their names with the labels collapsed on ${device}
+web-only pages (not in RN scope),design.spec.ts,112,every color chip paints a real fill
+web-only pages (not in RN scope),design.spec.ts,144,the disclosure chevron rotates open
+web-only pages (not in RN scope),design.spec.ts,177,the scroll cue specimens show the state each one is captioned with
+web-only pages (not in RN scope),design.spec.ts,224,the styleguide lays settings rows out on the modal’s icon column
+web-only pages (not in RN scope),design.spec.ts,249,the row counts the sections at the hero and names the one being read
+web-only pages (not in RN scope),design.spec.ts,275,"the open panel fits the viewport it is pinned in, all the way to its last row"
+web-only pages (not in RN scope),design.spec.ts,299,the last row stays reachable when the list outruns the panel
+web-only pages (not in RN scope),design.spec.ts,325,picking a section from the panel lands it clear of the header
+web-only pages (not in RN scope),design.spec.ts,355,activating a row from the keyboard leaves focus on the collapsed row
+web-only pages (not in RN scope),design.spec.ts,382,a deep link parks its heading clear of the sticky header on ${label}
+web-only pages (not in RN scope),design.spec.ts,401,the styleguide never scrolls sideways on a ${width}px phone viewport
+web-only pages (not in RN scope),design.spec.ts,418,"the padded scroll cue specimen fades to the edge of its box, not to the padding above it"
+web-only pages (not in RN scope),design.spec.ts,437,the wrapped scroll cue specimen retires at its own content end
+web-only pages (not in RN scope),design.spec.ts,456,"the open contents panel scrolls inside itself, bottom edge on screen"
+"undo, clear and save",dialog-undo.spec.ts,12,Ctrl/Cmd+Z edits report text without undoing the drawing behind the dialog
+"undo, clear and save",drawing-motion-clear.spec.ts,7,drag-clear sheet stays visible above the paper wash
+"undo, clear and save",drawing-motion-clear.spec.ts,71,a clear committed across an orientation change flies into the new dock
+drawing,drawing-motion.spec.ts,9,flyout origin follows the trigger at ${viewport.width} by ${viewport.height}
+drawing,drawing-motion.spec.ts,27,flyouts replay staggered arrivals and unmount on close
+drawing,drawing-motion.spec.ts,44,"a stroke size pick presses its trigger, even re-picking the same size"
+drawing,drawing-motion.spec.ts,56,a halo still lifting is released when reduced motion cancels its exit
+drawing,drawing-motion.spec.ts,117,reduced motion skips all five effects
+drawing,drawing-motion.spec.ts,145,brush face rolls only for a changed explicit menu pick
+drawing,drawing-motion.spec.ts,159,undo retires ink immediately beneath a shrinking overlay and drawing cancels it
+drawing,drawing-motion.spec.ts,200,the undo ghost holds its first keyframe until the frame that painted it has landed
+drawing,drawing-motion.spec.ts,243,a second undo before the first ghost has faded still runs and cleans up
+drawing,drawing-motion.spec.ts,266,crayon undo ghost carries only the pixels the undone stroke owned
+drawing,drawing-motion.spec.ts,312,clear sends the page off as a sheet while clearing history and still permits undo
+drawing,drawing-motion.spec.ts,346,drawer buttons cascade only on open and retain disabled styling
+drawing,drawing-motion.spec.ts,372,enabling reduced motion retires an open drawer cascade without replaying it
+drawing,drawing-motion.spec.ts,395,an automatic eraser reset cancels the face roll and does not replay it
+drawing,drawing-motion.spec.ts,409,"live strokes suppress new flyout, face, and undo motion"
+drawing,drawing-motion.spec.ts,428,a second swatch press replays the release once the first has settled
+drawing,drawing-work-counters.spec.ts,96,drawing work stays inside deterministic counter ceilings
+drawing,early-boot.spec.ts,18,hydration adopts the pre-hydration canvas instead of replacing it
+drawing,engine-crayon.spec.ts,55,crayon strokes keep paper tooth and build up without muddying
+drawing,engine-crayon.spec.ts,71,crossing crayon colours mix subtractively
+drawing,engine-crayon.spec.ts,109,one back-and-forth gesture builds up like separate crayon strokes
+drawing,engine-crayon.spec.ts,146,a crayon stroke survives remount exactly and undoes cleanly
+drawing,engine-crayon.spec.ts,172,an eraser interleaved mid-gesture cannot resurrect erased wax
+drawing,engine-edge-swipe.spec.ts,19,in portrait a touch swiping up from the bottom edge is discarded as the OS gesture
+drawing,engine-edge-swipe.spec.ts,42,a touch starting at the bottom edge but moving sideways still draws
+drawing,engine-edge-swipe.spec.ts,62,an upward touch that starts above the bottom band draws normally
+drawing,engine-edge-swipe.spec.ts,78,a stationary tap at a guarded edge still leaves a dot
+drawing,engine-edge-swipe.spec.ts,96,a stroke commits when a discarded edge swipe is what ends the group
+drawing,engine-edge-swipe.spec.ts,125,a trailing pointercancel for an already-discarded pointer completes nothing
+drawing,engine-edge-swipe.spec.ts,157,"in phone landscape the guard moves to the short side edges, not the long bottom"
+drawing,engine-edge-swipe.spec.ts,199,in tablet landscape a reported bottom inset additionally guards the long bottom
+drawing,engine-eraser.spec.ts,3,the eraser removes pixels and re-scans empty on stroke end
+drawing,engine-eraser.spec.ts,27,erasing only part of the drawing leaves the canvas non-empty
+drawing,engine-eraser.spec.ts,55,undoing an eraser stroke replays the erased pixels back
+drawing,engine-export.spec.ts,87,an export started just before a clear still captures the drawing (save-on-delete race)
+drawing,engine-export.spec.ts,120,prepared export cancellation releases its bitmap ownership exactly once
+drawing,engine-export.spec.ts,139,cancellation closes tiled export bitmap ownership exactly once
+drawing,engine-export.spec.ts,278,a held camera press preserves the complete appearance captured before an OS switch
+drawing,engine-export.spec.ts,299,a camera press during pending themed art retains coherent Magic ink and overlay
+drawing,engine-export.spec.ts,353,a deferred page fill fallback captures the incoming page appearance before its overlay settles
+drawing,engine-export.spec.ts,414,a new Magic stroke after a ${idleBrush} empty-paper material resize retains export appearance ownership
+drawing,engine-fallback-replay.spec.ts,11,"pre-hydration ink and undo state, forced replacement=${replaceCanvas}"
+drawing,engine-layout-resize.spec.ts,26,the paper follows a canvas that layout grows after the resize settled
+drawing,engine-lifecycle.spec.ts,11,the harness boots the template-owned tiled renderer
+drawing,engine-lifecycle.spec.ts,27,the drawing persists across teardown + re-init (client-side navigation)
+drawing,engine-lifecycle.spec.ts,53,a pointer held through teardown cannot keep painting after remount
+drawing,engine-pointer-recovery.spec.ts,5,a pointer resumed far away after an idle gap does not draw a connecting line
+drawing,engine-pointer-recovery.spec.ts,30,a color change debounces the immediately-following touch/mouse stroke
+drawing,engine-pointer-recovery.spec.ts,62,a pen pointer bypasses the color-change debounce
+drawing,engine-pointer-recovery.spec.ts,85,a pen contact stream whose pointerdown was merged away still paints
+drawing,engine-pointer-recovery.spec.ts,113,pen hover moves (tip not touching) never paint
+drawing,engine-pointer-recovery.spec.ts,148,a merged pen stream still targeted at a UI control paints once over the canvas
+drawing,engine-pointer-recovery.spec.ts,178,a pen edge return resumes fresh geometry inside one undo group
+drawing,engine-pointer-recovery.spec.ts,211,a pen that never returns closes its undo group on window ${liftType}
+drawing,engine-pointer-recovery.spec.ts,277,a pen drag that started with a delivered pointerdown on UI never paints
+drawing,engine-pointer-recovery.spec.ts,310,the canvas cancels its touch stream so iPadOS Scribble releases pen strokes
+drawing,engine-pointer-recovery.spec.ts,320,a hovering mouse leaving an idle canvas completes nothing
+drawing,engine-resize.spec.ts,25,resizeTo rejects a box it would not rebuild for
+drawing,engine-resize.spec.ts,35,"a dense zigzag survives a resize, repainted from tiled history"
+drawing,engine-resize.spec.ts,56,a back-and-forth scribble keeps its full extent after a rebuild (tip fidelity)
+drawing,engine-resize.spec.ts,89,a sharp corner stays sharp and in place after a rebuild (corner fidelity)
+drawing,engine-resize.spec.ts,112,the drawing survives a canvas resize (virtual-canvas preservation)
+drawing,engine-resize.spec.ts,131,a stroke in progress survives a mid-stroke resize and undoes as one unit
+drawing,engine-resize.spec.ts,175,a resume that beats the layout pass leaves the canvas drawable
+drawing,engine-resize.spec.ts,203,a drawing survives a resume that beats the layout pass
+drawing,engine-resize.spec.ts,238,a resume rebuilds live tiles whose canvas state was reset while hidden
+drawing,engine-resize.spec.ts,281,a reset context plus stale resume geometry replays retained history once
+drawing,engine-rotation.spec.ts,6,the live paper keeps its compositor promotion
+drawing,engine-rotation.spec.ts,11,rotating with ink CSS-presents the locked tiled paper until undo empties it
+drawing,engine-rotation.spec.ts,43,rotating an empty canvas adopts the new viewport without letterboxing
+drawing,engine-smoke.spec.ts,49,"the app boots: canvas, palette, and Settings Button render"
+drawing,engine-smoke.spec.ts,61,${viewport.name} Actions Panel first paint matches hydration
+drawing,engine-smoke.spec.ts,89,a pointer stroke puts ink on the canvas
+drawing,engine-smoke.spec.ts,100,Settings dialog opens and closes
+drawing,engine-smoke.spec.ts,108,"touch or standalone Back closes Settings, consumes one drawing guard, then navigates"
+drawing,engine-smoke.spec.ts,151,the Color Picker dialog opens and commits a color
+drawing,engine-system-bars.spec.ts,103,revealing the system bars crops the page instead of shifting it under the ink
+drawing,engine-system-bars.spec.ts,122,hiding the system bars again restores the page exactly
+drawing,engine-system-bars.spec.ts,139,clearing the canvas frees the windowed paper to the visible viewport
+drawing,engine-system-bars.spec.ts,154,a layout-only grow keeps the inked paper and moves ink and art together
+drawing,engine-undo.spec.ts,14,"undo of a clear after a blank rotation paints once, not once per history replay"
+drawing,engine-undo.spec.ts,61,undo with an unmeasured canvas box repaints when the box returns
+drawing,engine-undo.spec.ts,81,undo preserves a stroke that is still in progress
+drawing,engine-undo.spec.ts,110,clearing the canvas is itself undoable
+drawing,engine-undo.spec.ts,129,undo on an unchanged paper skips the resize path
+drawing,engine-undo.spec.ts,156,undo restores the recorded paper after a blank rotation
+drawing,engine-undo.spec.ts,184,undo does not reveal stale pixels after an erase-to-empty command
+drawing,engine-undo.spec.ts,218,a clear during an in-flight stroke does not resurrect wiped ink
+drawing,engine-undo.spec.ts,249,clearing a blank page records no undo step
+drawing,engine-undo.spec.ts,280,clearing a blank page still gives the magic brush a new picture
+drawing,engine-undo.spec.ts,317,clearing right after erasing to blank records no undo step
+drawing,engine-undo.spec.ts,345,clearing magic ink that has not revealed yet still clears it
+drawing,engine-undo.spec.ts,386,erasing magic ink before it reveals still settles to a blank page
+error and recovery,error-screen.spec.ts,7,an unknown route responds with the friendly page and its own head without JavaScript
+error and recovery,error-screen.spec.ts,26,a missing privacy path keeps all sibling footer links
+error and recovery,error-screen.spec.ts,41,the missing page recovers through ${label}
+error and recovery,error-screen.spec.ts,50,the primary recovery link opens a working drawing
+error and recovery,error-screen.spec.ts,68,the ${colorScheme} missing page wraps compact links at 320px
+error and recovery,error-screen.spec.ts,94,short screens compact the static decorative mark
+error and recovery,error-screen.spec.ts,106,a hydration crash caught by the root boundary retitles the tab
+error and recovery,error-screen.spec.ts,113,standalone page glyphs retain their bounded canonical geometry in both themes and forced colors
+error and recovery,failure-paths.spec.ts,17,an offline PWA session preserves the drawing through supported client navigation
+error and recovery,failure-paths.spec.ts,67,an offline ${launch.name} boots even when the cached page is from a different build
+error and recovery,failure-paths.spec.ts,108,"a stalled provider lets the child keep drawing, then recovers after failure"
+error and recovery,failure-paths.spec.ts,156,denied browser storage still leaves drawing and undo usable
+error and recovery,failure-paths.spec.ts,187,a render crash still offers a restart when the error screen chunk cannot load
+settings,feedback.spec.ts,30,the feedback page renders the shell and the report form
+settings,feedback.spec.ts,40,feedback steps retain list semantics and readable blob numerals in ${colorScheme}
+settings,feedback.spec.ts,63,the privacy contact stays inside Splotch and points to the feedback page
+settings,feedback.spec.ts,75,the kind picker swaps the prompt and hides the device opt-in for an idea
+settings,feedback.spec.ts,94,"the kind picker is a real radio group, so it submits without JavaScript"
+settings,feedback.spec.ts,110,a narrow phone keeps each kind option on one line
+settings,feedback.spec.ts,131,opting into device info fills the hidden field the form action reads
+settings,feedback.spec.ts,147,"the message field is required, so an empty report never reaches the server"
+settings,feedback.spec.ts,157,"the failure state explains itself, offers email, and keeps what was typed"
+settings,feedback.spec.ts,188,the support address reaches no document a crawler could fetch
+settings,feedback.spec.ts,196,the private-report thank-you is a GET with no issue link
+settings,feedback.spec.ts,211,"Back from the drawing app renders the feedback page again, not just its URL"
+settings,feedback.spec.ts,229,Send another starts an empty report after sending a ${kind}
+settings,feedback.spec.ts,265,"Back from the thank-you opens an empty form, not the report just sent"
+settings,feedback.spec.ts,300,an enhanced delivery failure retains the report draft and device choice
+drawing,first-paint.spec.ts,52,the prerendered Black swatch already wears the theme ink
+drawing,first-paint.spec.ts,64,hydration leaves the Black swatch fill as prerendered
+drawing,first-paint.spec.ts,88,the Black swatch follows a chosen ${chosen} theme on a ${system} system
+drawing,first-paint.spec.ts,110,waits for the last toolbar control in the markup
+drawing,first-paint.spec.ts,136,names the last toolbar control in the markup as its target
+drawing,first-paint.spec.ts,154,draws the Flat toolbar rule without a request
+drawing,first-paint.spec.ts,164,shows paper wherever the sheet has yet to reach
+drawing,first-paint.spec.ts,178,the palette carries exactly one themed swatch
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,14,Escape closes an Actions Panel flyout and restores focus to its trigger
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,33,a keyboard pick closes the flyout and restores focus to its trigger
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,51,${rotationSignal} cancels an in-flight action drawer transition
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,71,the drawer motion marker clears when a state change starts no transition
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,85,switching the tool drawer off behind Settings leaves the open drawer where it is
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,131,a trigger tap that opens a flyout focuses it for Escape restoration
+"drawer, flyouts and tools",flows-actions-panel.spec.ts,150,a second tap on the trigger closes the flyout and restores focus to it
+AI Art,flows-ai.spec.ts,44,the phone toolbar generates directly when style customization is disabled
+AI Art,flows-ai.spec.ts,61,a fresh installation does not fetch an AI allowance or show the canvas action
+AI Art,flows-ai.spec.ts,72,returning to the visible app recovers a failed free allowance
+AI Art,flows-ai.spec.ts,106,an access-code invite saves the credential without enabling AI
+AI Art,flows-ai.spec.ts,124,AI Settings explains the off feature without mounting its setup controls
+AI Art,flows-ai.spec.ts,135,the off explanation reuses a known exhausted allowance
+AI Art,flows-ai.spec.ts,149,an exhausted free installation keeps the AI affordance and opens BYOK setup
+AI Art,flows-ai.spec.ts,175,a migrated BYO key reveals the AI button on the next launch
+AI Art,flows-ai.spec.ts,208,the AI button posts the drawing and reveals the generated result
+AI Art,flows-ai.spec.ts,258,a cutout style cover carries no plate of its own
+coloring picker and pages,flows-coloring-book-active-page.spec.ts,42,paper presentation residency starts on picker demand and survives clear
+coloring picker and pages,flows-coloring-book-active-page.spec.ts,67,an active page leaves the book grid geometry unchanged
+coloring picker and pages,flows-coloring-book-active-page.spec.ts,115,the active-page chip identifies the page in both picker views
+coloring picker and pages,flows-coloring-book-active-page.spec.ts,147,keeps book-picker and page-grid headings readable
+coloring picker and pages,flows-coloring-book-active-page.spec.ts,176,is a full-size right-aligned keyboard action before the close button
+coloring picker and pages,flows-coloring-book-active-page.spec.ts,210,shows danger feedback while pressed and clears immediately on release
+coloring picker and pages,flows-coloring-book-off-undo.spec.ts,20,undoing a page change after Coloring book is switched off leaves the paper without a page
+coloring picker and pages,flows-coloring-book-picker.spec.ts,56,no viewport draws a cover smaller than four columns would
+coloring picker and pages,flows-coloring-book-picker.spec.ts,69,a tablet held upright spends its height on bigger covers
+coloring picker and pages,flows-coloring-book-picker.spec.ts,81,a repeat tap where the launch button sat does not dismiss the just-opened modal
+coloring picker and pages,flows-coloring-book-picker.spec.ts,112,a repeat tap on a book cover does not pick the page that lands under it
+coloring picker and pages,flows-coloring-book-picker.spec.ts,182,a touch tap's trailing click does not drill the picker into the cover under the finger
+coloring picker and pages,flows-coloring-book-theme.spec.ts,10,book covers use chalk thumbnails in dark mode
+coloring picker and pages,flows-coloring-book.spec.ts,23,an early coloring request mounts before unrelated idle overlays
+coloring picker and pages,flows-coloring-book.spec.ts,46,choosing a coloring page sets the canvas overlay
+coloring picker and pages,flows-coloring-book.spec.ts,119,selects responsive raster picker art and uses canonical canvas SVG
+coloring picker and pages,flows-coloring-book.spec.ts,147,does not refetch the canonical SVG when exporting the displayed page
+coloring picker and pages,flows-coloring-book.spec.ts,173,prefetches the canonical SVG for the locked orientation after rotation
+coloring picker and pages,flows-coloring-book.spec.ts,211,keeps canonical cover and canvas SVG sources with responsive picker art
+coloring picker and pages,flows-coloring-book.spec.ts,238,a selected page stays hidden while browser-selected art decodes
+coloring picker and pages,flows-coloring-book.spec.ts,289,a save during overlay decode omits the overlay instead of capturing a thumbnail
+coloring picker and pages,flows-coloring-book.spec.ts,342,a newly applied page cannot paint the previous page fill while its art decodes
+coloring picker and pages,flows-coloring-book.spec.ts,393,a theme sibling keeps the registered coloring art visible while it decodes
+coloring picker and pages,flows-coloring-book.spec.ts,446,rotating with ink keeps the same coloring page art until the canvas is blank
+coloring picker and pages,flows-coloring-book.spec.ts,476,rotating the viewport swaps the coloring overlay to the matching art
+coloring picker and pages,flows-coloring-scroll-cue-resize.spec.ts,21,keeps the picker on screen when only the viewport height shrinks
+coloring picker and pages,flows-coloring-scroll-cue.spec.ts,43,"cuts the trailing row and fades it, then retires both at the bottom"
+coloring picker and pages,flows-coloring-scroll-cue.spec.ts,74,"fades to the foot of the dialog, not to a padding above it"
+coloring picker and pages,flows-coloring-scroll-cue.spec.ts,95,re-evaluates the cues when the page grid replaces the book grid
+coloring picker and pages,flows-coloring-scroll-cue.spec.ts,124,leaves a grid that fits uncut and uncued
+"drawer, flyouts and tools",flows-icons.spec.ts,12,an icon composes its caller class with the color-icon tint opt-out
+drawing,flows-magic-brush.spec.ts,120,the magic brush is always available and paints the coloring page colors
+drawing,flows-magic-brush.spec.ts,173,"the magic brush reveals fills only, never the fill outlines (no double lines)"
+drawing,flows-magic-brush.spec.ts,251,the magic brush paints the letterbox margin by extending the edge colour
+drawing,flows-magic-brush.spec.ts,283,the rotation-lock letterbox margin stays outside the drawable paper
+drawing,flows-magic-brush.spec.ts,323,the magic brush reveals a rainbow gradient when no coloring page is applied
+drawing,flows-magic-brush.spec.ts,375,the eraser removes magic-brush strokes and later colors override them
+drawing,flows-magic-brush.spec.ts,429,the stroke-width control keeps its magic faces across a reload
+drawing,flows-magic-recode.spec.ts,55,changing the coloring page recodes magic ink and undo restores the page and ink
+drawing,flows-magic-recode.spec.ts,84,removing the coloring page recodes magic ink and undo restores the page and ink
+drawing,flows-magic-recode.spec.ts,110,changing theme recodes existing magic ink to the themed fill
+drawing,flows-magic-supersession.spec.ts,50,superseding a pending Magic page preserves both page Undo pixel owners
+drawing,flows-optional-brushes.spec.ts,18,one optional brush becomes a direct button that toggles against Pen
+drawing,flows-optional-brushes.spec.ts,46,the brush flyout contains Pen and only enabled optional brushes
+drawing,flows-optional-brushes.spec.ts,62,no optional brushes removes the brush control
+drawing,flows-optional-brushes.spec.ts,82,disabling the active optional brush in Settings returns to Pen
+drawing,flows-optional-brushes.spec.ts,95,hiding Eraser or the Tool Drawer hides its Apple Pencil gesture setting
+drawing,flows-optional-brushes.spec.ts,123,a brush menu open under a keyboard Settings session does not return once its brushes come back
+palette and colour picker,flows-palette-brush.spec.ts,31,palette colors and custom hexagons activate from the keyboard
+palette and colour picker,flows-palette-brush.spec.ts,81,pointer exploration still snaps a hexagon gap and commits the highlighted color
+palette and colour picker,flows-palette-brush.spec.ts,129,a tap that lands in a hexagon gap snaps to the nearest swatch
+palette and colour picker,flows-palette-brush.spec.ts,167,a pen stroke shortly after a pen tap on a swatch still paints
+palette and colour picker,flows-palette-brush.spec.ts,236,the palette leaves finger touch taps uncancelled (Scribble guard scope)
+palette and colour picker,flows-palette-brush.spec.ts,256,a stylus tap on a color-picker hexagon has its touch stream cancelled (Scribble guard)
+palette and colour picker,flows-palette-brush.spec.ts,270,a stylus tap on an action button has its touch stream cancelled (Scribble guard)
+palette and colour picker,flows-palette-brush.spec.ts,283,"action buttons activate on a pointer press alone, without a synthesized click (Scribble guard)"
+palette and colour picker,flows-palette-brush.spec.ts,309,picking a color exits eraser mode
+palette and colour picker,flows-palette-brush.spec.ts,323,picking a palette color closes an open Brush Menu
+palette and colour picker,flows-palette-brush.spec.ts,338,selecting the eraser repeatedly keeps it selected
+palette and colour picker,flows-palette-brush.spec.ts,354,the eraser bubble tracks the pointer and hides on leave or brush switch
+palette and colour picker,flows-palette-brush.spec.ts,405,the eraser bubble writes at most one position per painted frame
+palette and colour picker,flows-palette-brush.spec.ts,463,a press supersedes an eraser move still waiting on the frame
+palette and colour picker,flows-palette-rendering.spec.ts,100,selecting a palette color activates it and paints in that color
+palette and colour picker,flows-palette-rendering.spec.ts,121,selected Black ink follows live theme changes without changing swatches
+palette and colour picker,flows-palette-rendering.spec.ts,170,the crayon brush lays textured strokes that build up in the full app
+palette and colour picker,flows-palette-rendering.spec.ts,198,the default pen lays solid ink with no crayon buildup
+palette and colour picker,flows-palette-rendering.spec.ts,216,a crayon stroke previews at its true colour MID-stroke in dark mode
+parental gate and parent center,flows-parent-center-warning.spec.ts,15,cancelling the warning leaves the Parent Center check as it was
+parental gate and parent center,flows-parent-center-warning.spec.ts,40,confirming the warning turns the check off and leaves a standing warning
+parental gate and parent center,flows-parent-center-warning.spec.ts,63,the standing warning survives a relaunch and asks nothing of the mode it is on
+parental gate and parent center,flows-parent-center-warning.spec.ts,90,the other Parent Center modes change without a warning
+parental gate and parent center,flows-parent-center-warning.spec.ts,109,the warning is reachable and dismissable from the keyboard alone
+parental gate and parent center,flows-parent-center.spec.ts,29,the web build ships every grown-up check off
+parental gate and parent center,flows-parent-center.spec.ts,43,Parent Center is gated before its controls appear and persists every feature policy
+parental gate and parent center,flows-parent-center.spec.ts,110,Parent Center card toggles fit a small mobile screen without horizontal scrolling
+parental gate and parent center,flows-parent-center.spec.ts,128,Parent Center reads as a mode matrix once the settings pane is wide enough
+parental gate and parent center,flows-parent-center.spec.ts,162,iOS explains why external links cannot use Never without changing the policy
+parental gate and parent center,flows-parental-gate-escape.spec.ts,9,the success card survives repeated Escape presses
+parental gate and parent center,flows-parental-gate-lockout.spec.ts,40,"an answer typed on a freshly opened card is checked by Enter, not closed"
+parental gate and parent center,flows-parental-gate-lockout.spec.ts,54,repeated wrong answers pause the keypad until the lockout ends
+parental gate and parent center,flows-parental-gate-lockout.spec.ts,86,a reopened card counts down from the time actually left
+parental gate and parent center,flows-parental-gate-lockout.spec.ts,118,${label} holds the whole card on screen
+parental gate and parent center,flows-parental-gate.spec.ts,48,Settings opens directly — entry is not the gate (ADR-0094)
+parental gate and parent center,flows-parental-gate.spec.ts,54,"a gated action points at Parent Center, and one solve lands there"
+parental gate and parent center,flows-parental-gate.spec.ts,74,the keyboard keeps the card after the footer retargets it
+parental gate and parent center,flows-parental-gate.spec.ts,108,the footer holds the minimum touch target where its text stops wrapping
+parental gate and parent center,flows-parental-gate.spec.ts,122,the footer hands straight over when Parent Center asks for no check of its own
+parental gate and parent center,flows-parental-gate.spec.ts,145,the footer reaches Parent Center from a gate raised over Settings itself
+parental gate and parent center,flows-parental-gate.spec.ts,166,the Parent Center challenge names its destination instead of offering the trip
+parental gate and parent center,flows-parental-gate.spec.ts,178,the AI button is gated; solving opens the AI prompt
+parental gate and parent center,flows-parental-gate.spec.ts,192,the success card cannot be dismissed away from its destination
+parental gate and parent center,flows-parental-gate.spec.ts,206,"a wrong answer clears the input, shows the error, and regenerates the problem"
+parental gate and parent center,flows-parental-gate.spec.ts,232,closing the gate discards the attempt without unlocking
+parental gate and parent center,flows-parental-gate.spec.ts,246,Per session asks once for AI and asks again after a relaunch
+parental gate and parent center,flows-parental-gate.spec.ts,266,external links inside Settings follow the Every time policy
+parental gate and parent center,flows-parental-gate.spec.ts,288,the bundled privacy page gates its provider terms link
+parental gate and parent center,flows-parental-gate.spec.ts,307,external links can skip a second gate only within a solved session
+parental gate and parent center,flows-parental-gate.spec.ts,337,sending feedback waits for its parental gate before posting
+parental gate and parent center,flows-parental-gate.spec.ts,364,reporting an AI picture waits for its own parental gate before confirming
+parental gate and parent center,flows-parental-gate.spec.ts,414,reporting a safety refusal uses the AI-report parental gate before confirming
+drawing,flows-resume-layout.spec.ts,63,the production live tiles recover a real layout that arrives after the resume
+drawing,flows-resume-layout.spec.ts,87,a drawing and its undo survive a resume that beats the layout pass
+"undo, clear and save",flows-screenshot.spec.ts,28,the screenshot button is gated on the canvas being non-empty
+"undo, clear and save",flows-screenshot.spec.ts,46,a burst of screenshot taps shares one save before allowing the next
+"undo, clear and save",flows-screenshot.spec.ts,140,downloads a PNG through the matched-scale worker path
+"undo, clear and save",flows-screenshot.spec.ts,159,suppresses the polaroid flash for reduced motion
+"undo, clear and save",flows-screenshot.spec.ts,181,shows the polaroid on the 1x path
+settings,flows-settings-report.spec.ts,34,a report sent before reopening Settings leaves the new draft in place
+settings,flows-settings-report.spec.ts,48,a second report sent after reopening Settings leaves the first to land
+settings,flows-settings.spec.ts,40,the Settings table of contents drives one continuous pane (tablet layout)
+settings,flows-settings.spec.ts,124,choosing a feedback kind leaves the settings panel where it was
+settings,flows-settings.spec.ts,151,the theme picker is one tab stop and the arrow keys move the selection
+settings,flows-settings.spec.ts,185,Sound keeps one volume and remembers the enabled sources across master mute
+settings,flows-settings.spec.ts,213,the shortest sidebar viewport can still reach every section
+settings,flows-settings.spec.ts,238,reopening a scrolled sidebar lands back on the active row
+settings,flows-settings.spec.ts,269,What's New formats the current release date without runtime locale initialization
+settings,flows-settings.spec.ts,300,What's New opens the internal changelog without a parental gate
+settings,flows-settings.spec.ts,314,About opens the bundled privacy policy without a parental gate
+settings,flows-settings.spec.ts,328,an API key stays locked with storage-specific feedback when secure saving fails
+settings,flows-settings.spec.ts,356,only the current API key verification can persist across a close and reopen
+settings,flows-settings.spec.ts,408,Settings sends the collected device info with a bug report
+settings,flows-settings.spec.ts,439,reopening Settings mid-submit leaves the sent report to land
+settings,flows-settings.spec.ts,490,phone drill-in header gives the title room beside back in ${colorScheme}
+drawing,flows-tile-history.spec.ts,97,a tiled ${brush} edge return keeps fresh geometry in one undo command
+drawing,flows-tile-history.spec.ts,120,tiled history folds its old prefix and retains twenty undo steps
+drawing,flows-tile-history.spec.ts,198,tiled undo patches rebuild after the live canvas resizes
+drawing,flows-tile-history.spec.ts,230,twenty large sweeping strokes retain the advertised undo depth within budget
+drawing,flows-tile-history.spec.ts,273,pathological strokes shorten undo depth before exceeding the patch budget
+"undo, clear and save",flows-undo-persistence.spec.ts,11,the undo button enables on a stroke and reverts it
+"undo, clear and save",flows-undo-persistence.spec.ts,53,Ctrl+Z undoes the last stroke from the keyboard
+"undo, clear and save",flows-undo-persistence.spec.ts,73,the end-of-history cue still plays with reduced motion enabled
+"undo, clear and save",flows-undo-persistence.spec.ts,95,"Ctrl+Z still undoes while the button is hidden, and plays no cue"
+"undo, clear and save",flows-undo-persistence.spec.ts,130,pen and eraser keep independent stroke sizes that persist across reload
+"undo, clear and save",flows-undo-persistence.spec.ts,169,"a persisted-open drawer, with a control toggled off, is correct at first paint"
+"undo, clear and save",flows-undo-persistence.spec.ts,199,a corrupt default-on setting stays enabled before and after hydration
+"undo, clear and save",flows-undo-persistence.spec.ts,229,a single optional brush has its direct-button face at first paint
+"undo, clear and save",flows-undo-persistence.spec.ts,250,first-paint sizing excludes the brush control when no optional brush is enabled
+"undo, clear and save",flows-undo-persistence.spec.ts,274,an Actions Panel with no enabled actions is absent from first paint onward
+"undo, clear and save",flows-undo-persistence.spec.ts,310,"the tool drawer switch hides only its own tools, at first paint and after"
+"undo, clear and save",flows-undo-persistence.spec.ts,344,the chevron leaves only once every section has hidden its buttons
+"undo, clear and save",flows-undo-persistence.spec.ts,370,the picked brush persists across a reload and stamps the brush face pre-paint
+"undo, clear and save",flows-undo-persistence.spec.ts,403,the stroke flyout clears the Settings Button on a phone
+"undo, clear and save",flows-undo-persistence.spec.ts,433,the stroke flyout stays on-screen after rotating to landscape
+"undo, clear and save",flows-undo-persistence.spec.ts,448,the drawer open state persists across a reload
+drawing,flows-vector-overlays.spec.ts,48,a canonical catalog SVG reveals with Magic across themes
+drawing,flows-vector-overlays.spec.ts,92,a dark canonical SVG decodes and exports through the live app
+AI Art,generate-image.spec.ts,43,rejects an oversized upload with 413
+AI Art,generate-image.spec.ts,50,rejects an oversized upload with an unsupported type with 415
+AI Art,generate-image.spec.ts,57,rejects an unsupported image type with 415
+AI Art,generate-image.spec.ts,63,returns the authorization error wire shape for an invalid managed token
+AI Art,generate-image.spec.ts,71,"lets a normal-sized, allowed upload past the guards"
+AI Art,generate-image.spec.ts,102,still accepts the legacy multipart contract (shipped native clients)
+AI Art,generate-image.spec.ts,120,throttles a managed token hammered in a burst
+AI Art,generate-image.spec.ts,154,throttles BYOK requests per IP after a generous burst
+drawing,halo-lift.spec.ts,40,the ${halo.label} lifts off when its stroke ends during the grow-in
+drawing,halo-lift.spec.ts,134,the ${halo.label} is released when reduced motion lands in the handoff
+web-only pages (not in RN scope),helpers.spec.ts,5,dragStroke rejects empty strokes before mouse input
+"install, update and offline",install-banner-layout.spec.ts,40,both banner states fit the safe area and leave corner controls reachable
+"install, update and offline",install-banner-layout.spec.ts,101,manual instructions collapse and update when the device rotates
+"install, update and offline",install-banner-layout.spec.ts,116,corner controls work while instructions are open
+"install, update and offline",install-banner-layout.spec.ts,129,drawing while the drawer is ${initiallyOpen ? 'persisted open' : 'opened over the banner'} preserves the install prompt
+"install, update and offline",install-banner-layout.spec.ts,164,the empty dock band passes a stroke through to the drawing canvas
+"install, update and offline",install-banner-layout.spec.ts,181,dismissal persists after reopening the app
+"install, update and offline",install-banner-layout.spec.ts,204,the one-tap button invokes the captured install prompt
+"install, update and offline",install-banner-layout.spec.ts,215,Android without a captured prompt keeps its browser-menu instructions
+"install, update and offline",install-banner.spec.ts,70,the install banner parts after five additional strokes
+"install, update and offline",install-banner.spec.ts,101,the fifth qualifying session re-shows the banner with return-aware copy
+"install, update and offline",install-banner.spec.ts,137,the final re-prompt points parents back to Settings
+"install, update and offline",install-preview.spec.ts,36,the icon shadow follows the effective appearance preference
+"install, update and offline",install-preview.spec.ts,69,shows the decorative home-screen preview beside the unchanged prompt
+"install, update and offline",install-preview.spec.ts,116,the returning preview and expanded help clear the palette and leave corner controls reachable
+"install, update and offline",install-preview.spec.ts,153,the preview remains decoded and its label uses system text ink
+"install, update and offline",install-preview.spec.ts,174,the actual service-worker precache serves the preview icon offline
+drawing,multitouch.spec.ts,41,five simultaneous touch pointers each paint an independent line
+drawing,multitouch.spec.ts,69,a five-pointer gesture snapshots once and undoes as a single unit
+drawing,multitouch.spec.ts,87,a pinch/spread across five pointers does not zoom or scale the canvas
+orientation and safe areas,orientation-lock-fullscreen.spec.ts,46,entering fullscreen applies the portrait lock the tab refused
+orientation and safe areas,orientation-lock-fullscreen.spec.ts,62,re-entering fullscreen locks again after leaving released it
+orientation and safe areas,orientation-picker.spec.ts,49,every Orientation label fits a ${width}px portrait phone
+orientation and safe areas,orientation-picker.spec.ts,60,the Orientation picker stacks only when its track is too narrow
+orientation and safe areas,orientation-picker.spec.ts,68,the tablet pane keeps each icon beside its label
+orientation and safe areas,orientation-picker.spec.ts,79,the compact Orientation picker fills its quick-toggle cell
+orientation and safe areas,orientation-picker.spec.ts,97,a plain browser tab offers no Orientation picker
+orientation and safe areas,orientation-picker.spec.ts,110,the web picker says Auto follows the device rotation setting
+web-only pages (not in RN scope),page-footer.spec.ts,11,final sections remain active at maximum scroll on ${viewport.width}×${viewport.height}
+web-only pages (not in RN scope),page-footer.spec.ts,41,the ${route} footer identifies its section without linking to itself
+web-only pages (not in RN scope),page-footer.spec.ts,51,the footer release link scrolls to the newest public release
+web-only pages (not in RN scope),page-footer.spec.ts,61,the ${colorScheme} footer fits a 320px phone with readable links
+web-only pages (not in RN scope),page-footer.spec.ts,85,forced colors preserve the footer rule and current marker
+web-only pages (not in RN scope),page-footer.spec.ts,104,the final visible release is active while older history stays folded on ${viewport.width}×${viewport.height}
+"drawer, flyouts and tools",page-short-viewport.spec.ts,15,the complete first field fits at ${viewport.width}×${viewport.height}
+"drawer, flyouts and tools",page-short-viewport.spec.ts,53,the disclosure remains accessible in both states
+"drawer, flyouts and tools",page-short-viewport.spec.ts,77,"the introduction can be opened, closed, and read after rotation"
+"drawer, flyouts and tools",page-short-viewport.spec.ts,103,the document fade retires at content end
+"drawer, flyouts and tools",page-short-viewport.spec.ts,113,${route} keeps the introduction readable without JavaScript
+"drawer, flyouts and tools",page-short-viewport.spec.ts,127,portrait keeps its display heading and visible introduction
+"drawer, flyouts and tools",page-short-viewport.spec.ts,137,narrow short windows retain the phone reading width
+"drawer, flyouts and tools",page-short-viewport.spec.ts,149,the introduction stays readable until the disclosure is interactive
+web-only pages (not in RN scope),page.spec.ts,24,home page renders the drawing canvas
+web-only pages (not in RN scope),page.spec.ts,34,viewport meta permits browser zoom (no user-scalable=no / maximum-scale)
+web-only pages (not in RN scope),page.spec.ts,57,the drawing route is an app surface (no zoom/scroll/selection) via the flag
+web-only pages (not in RN scope),page.spec.ts,70,"non-canvas routes are normal documents by default (/privacy, /admin)"
+web-only pages (not in RN scope),page.spec.ts,87,client-side nav off the drawing route drops the app-surface locks (effect cleanup)
+web-only pages (not in RN scope),page.spec.ts,113,a cold visit keeps the start label across client navigation between pages
+web-only pages (not in RN scope),page.spec.ts,130,"a visit from the canvas offers the way back, through a reload"
+web-only pages (not in RN scope),page.spec.ts,148,"the masthead fits one row at ${width}px reading ""${label}"""
+web-only pages (not in RN scope),page.spec.ts,178,${path} previews its own committed page image
+web-only pages (not in RN scope),page.spec.ts,204,theme-color follows the OS when storage is unavailable under production CSP
+web-only pages (not in RN scope),page.spec.ts,234,"the drawing route hands theme-color back on client-side nav, and takes it again (${label})"
+web-only pages (not in RN scope),page.spec.ts,281,Back to the drawing app after ${name} strips its launch parameter renders the canvas
+web-only pages (not in RN scope),page.spec.ts,300,drawing survives a real-route remount and the fresh tiled canvas accepts more ink
+web-only pages (not in RN scope),page.spec.ts,329,link-preview meta tags are present and match the real OG image
+web-only pages (not in RN scope),page.spec.ts,374,${path} carries its own link-preview card
+palette and colour picker,palette-trim.spec.ts,71,portrait ${caseTitle(trimCase)}
+palette and colour picker,palette-trim.spec.ts,88,landscape ${caseTitle(trimCase)}
+palette and colour picker,palette-trim.spec.ts,99,portrait full row
+palette and colour picker,palette-trim.spec.ts,104,narrow portrait (trimmed)
+palette and colour picker,palette-trim.spec.ts,109,tall landscape (core and bonus swatches)
+parental gate and parent center,parent-center-design.spec.ts,15,every matrix selection nests inside its track on a portrait tablet
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,38,L-shaped tools fit a 906 by ${height} phone and leave the canvas full width
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,70,enlarged buttons leave the fullscreen corner clear
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,83,draws in the reclaimed left strip and dismisses colors when drawing starts
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,98,retains colors when every optional action is disabled
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,120,"colors select ink, dismiss, and restore keyboard focus"
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,137,compact colors use the portrait palette swatch spacing
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,148,compact selected color uses the palette selection ring
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,164,compact custom color centers its icon inside its color ring
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,193,dismissing the first custom picker leaves its swatch unpressed
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,207,flyout owners share one open menu and custom colors open the full picker
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,226,brush and width flyout options receive taps without drawing underneath
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,246,disabling every optional control centers colors despite a saved open drawer
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,275,swipes fold and restore without opening colors or drawing beneath the gesture
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,297,rotation restores portrait palette and closes the landscape color flyout
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,308,color remains available with the tool drawer switched off
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,320,narrow phones show only whole swatches and keep custom colors in view
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,345,the color menu paints its final swatch set in its first frame
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,364,"an open color menu adapts to width, safe areas, and enlarged controls"
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,390,landscape tablets retain the palette and existing toolbar
+"drawer, flyouts and tools",phone-landscape-toolbar.spec.ts,397,browser chrome does not switch a CSS tablet into the phone toolbar
+palette and colour picker,picker-trim.spec.ts,117,${label} (${w}×${h} → ${rows}×${cols})
+palette and colour picker,picker-trim.spec.ts,133,large tablet ${orientation} grows the swatches rather than the backdrop
+palette and colour picker,picker-trim.spec.ts,147,honeycomb fits the width cap at every column-ladder rung
+palette and colour picker,picker-trim.spec.ts,165,honeycomb offsets alternate at every height-ladder rung
+parental gate and parent center,privacy-parent-center.spec.ts,43,Parent Center reached from privacy hydrates its persisted settings
+parental gate and parent center,privacy-parent-center.spec.ts,68,closing Parent Center with ${name} returns focus to the link that opened it
+web-only pages (not in RN scope),privacy.spec.ts,28,the contents rail links every section by its own heading
+web-only pages (not in RN scope),privacy.spec.ts,52,copying a section link preserves the reading position and navigation history
+web-only pages (not in RN scope),privacy.spec.ts,90,section links fall back to fragment navigation when the clipboard is ${clipboard}
+web-only pages (not in RN scope),privacy.spec.ts,111,a rejected recopy navigates to a section already named in the URL
+web-only pages (not in RN scope),privacy.spec.ts,134,the desktop section-link hit area stays outside the contents rail
+web-only pages (not in RN scope),privacy.spec.ts,144,section links reveal on keyboard focus with a full size focus ring
+web-only pages (not in RN scope),privacy.spec.ts,161,section links remain visible after headings without overflowing
+web-only pages (not in RN scope),privacy.spec.ts,177,the contents rail marks the section being read
+web-only pages (not in RN scope),privacy.spec.ts,208,the contents row counts the sections at the top and names the one being read
+web-only pages (not in RN scope),privacy.spec.ts,227,picking a section from the contents lands it clear of the pinned row
+web-only pages (not in RN scope),privacy.spec.ts,259,the complete policy is present in prerendered HTML
+web-only pages (not in RN scope),privacy.spec.ts,280,"the open contents panel scrolls inside itself, bottom edge on screen"
+web-only pages (not in RN scope),privacy.spec.ts,290,a panel opened below its pin scrolls the row into it
+web-only pages (not in RN scope),privacy.spec.ts,304,an outbound link never strands its external mark on a line of its own
+web-only pages (not in RN scope),privacy.spec.ts,339,copying a sentence leaves out the external mark but its link still announces it
+web-only pages (not in RN scope),privacy.spec.ts,364,the policy revision date is beside the title above the fold at ${viewport.width}px
+web-only pages (not in RN scope),privacy.spec.ts,379,the contact section offers a full size feedback link after its policy paragraph
+web-only pages (not in RN scope),privacy.spec.ts,397,the wide rail stays pinned while all eight sections become active
+web-only pages (not in RN scope),proof-sheet-history.spec.ts,25,the bare proof-sheet hub preserves the page before it in history
+web-only pages (not in RN scope),proof-sheet-history.spec.ts,38,the tab strip exposes ARIA tab semantics
+web-only pages (not in RN scope),proof-sheet-history.spec.ts,60,the hub draws a category from the data embedded in its sheet
+"install, update and offline",pwa-registration.spec.ts,69,the service worker registers only after the stroke-count gate passes
+"install, update and offline",pwa-registration.spec.ts,109,a repeat visit is controlled by the service worker with no stroke gate
+"install, update and offline",pwa-registration.spec.ts,134,activating the service worker deletes the page cache earlier workers wrote
+"install, update and offline",pwa-registration.spec.ts,179,the service worker imports its page-cache cleanup under a content-hashed name
+"install, update and offline",pwa-registration.spec.ts,194,an old cached page still opens offline
+"install, update and offline",pwa-registration.spec.ts,215,serves canonical precache bytes for offline DPR 1 and DPR 3 page previews
+accessibility,reduce-motion-scoped-cues.spec.ts,37,Reduce Motion ${trigger.name}
+accessibility,reduce-motion-scoped-cues.spec.ts,56,a selected color's completed ring stays settled when Reduce Motion turns ${initiallyReduced ? 'off' : 'on'}
+accessibility,reduce-motion-scoped-cues.spec.ts,93,"the saved caption ${trigger.name} in, the branch the download button hides"
+accessibility,reduce-motion-scoped-cues.spec.ts,111,a visible AI ${branch} cue does not replay when Reduce Motion turns ${initiallyReduced ? 'off' : 'on'}
+accessibility,reduce-motion.spec.ts,171,the switch reduces every covered cue while the OS has no preference
+accessibility,reduce-motion.spec.ts,204,the OS preference reduces the same cues and the switch reads as on
+accessibility,reduce-motion.spec.ts,220,"turning the switch off overrides a reduce-motion OS, across a reload"
+accessibility,reduce-motion.spec.ts,277,changing Reduce Motion leaves open Settings still in ${layout.name}
+accessibility,reduce-motion.spec.ts,312,a returning device is stamped before hydration
+accessibility,reduce-motion.spec.ts,333,"a live OS switch restamps in system mode, on a route with no appearance state"
+accessibility,reduce-motion.spec.ts,349,"the parental gate fades in, raised over Settings, under the switch"
+accessibility,reduce-motion.spec.ts,436,a settings section's JS reveal follows ${trigger.name}
+accessibility,reduce-motion.spec.ts,460,the drawer and the launch guard still work with Reduce Motion on
+orientation and safe areas,safe-area-matrix.spec.ts,141,${profile.id} · ${orientation}
+orientation and safe areas,safe-area-matrix.spec.ts,279,${scenario.name} palette first paint matches hydration
+"undo, clear and save",save-failure-announcement.spec.ts,143,a failure after the background mount writes into the region that was already there
+"undo, clear and save",save-failure-announcement.spec.ts,167,a failure open before the banner mounts lands in a region created empty
+"undo, clear and save",save-failure-announcement.spec.ts,205,a retry that fails again empties the region and writes the same words back
+settings,scroll-cue.spec.ts,75,"fades the steps that run past the fold, then stands down at the foot"
+settings,scroll-cue.spec.ts,95,"fades to the foot of the viewport, not to the sheet inside it"
+settings,scroll-cue.spec.ts,112,leaves an unscrolled page uncued
+settings,scroll-cue.spec.ts,131,"cues the toggles it crops, then stands down at the end of them"
+settings,scroll-cue.spec.ts,145,fades to the foot of a pane that pads only its sides
+settings,scroll-cue.spec.ts,154,leaves a pane that fits uncued
+settings,scroll-cue.spec.ts,171,"cues the hub sections below the card, then stands down at the last one"
+settings,scroll-cue.spec.ts,191,"fades to the foot of the card, not to the padding above it"
+settings,scroll-cue.spec.ts,200,leaves a drilled-in section that fits uncued
+settings,scroll-cue.spec.ts,213,cues the content pane and stands down at the last section
+settings,scroll-cue.spec.ts,229,"fades to the foot of the pane, not to the padding above it"
+settings,scroll-cue.spec.ts,238,leaves the sidebar to the edge shades it already paints
+settings,scroll-cue.spec.ts,272,cues ${label} while it runs past the fold
+settings,scroll-cue.spec.ts,290,fades ${label} to the foot of the viewport
+settings,scroll-cue.spec.ts,326,leaves the submit button reachable under the fade
+settings,scroll-cue.spec.ts,361,Settings fade covers changed padding immediately at ${viewport.width}px
+settings,scrollbar-chrome.spec.ts,65,the picker keeps its rounded corners under a classic scrollbar
+settings,scrollbar-chrome.spec.ts,94,the Settings fade leaves the scrollbar visible at ${viewport.width}px
+settings,scrollbar-chrome.spec.ts,116,the Settings fade leaves a horizontal scrollbar visible at ${viewport.width}px
+AI Art,secure-storage-connection.spec.ts,23,an API key saves after the browser closes the secure-storage connection
+AI Art,secure-storage-connection.spec.ts,54,a replacement API key saved after the database is deleted survives a reload
+AI Art,secure-storage-connection.spec.ts,89,a save paused across a deletion and another tab save fails instead of overwriting
+AI Art,secure-storage-hydration.spec.ts,14,a key submitted after a failed credential hydration reports the save failure
+AI Art,secure-storage-hydration.spec.ts,55,a key stays present when a failed hydration makes forget refuse the write
+settings,settings-accessibility.spec.ts,9,Accessibility drills in from the phone hub with the Button Size slider
+settings,settings-accessibility.spec.ts,19,the Button Size slider lives in Accessibility alone
+settings,settings-hub.spec.ts,17,Settings hub drills into a section and back (phone layout)
+settings,settings-hub.spec.ts,41,"drilling into a section focuses its heading, and Back refocuses its row"
+settings,settings-hub.spec.ts,55,unlocking Parent Center focuses its heading once the challenge has closed
+settings,settings-hub.spec.ts,74,the sixth session reveals dots only for sections not read during the quiet period
+settings,settings-hub.spec.ts,133,the hub carries inline switches only on the rows that lead it
+settings,settings-hub.spec.ts,153,a hub switch acts on its setting without leaving the list
+settings,settings-hub.spec.ts,171,the Sound hub subtitle names a single enabled source and an empty mix
+settings,settings-hub.spec.ts,186,AI Art reports its off state in the phone hub
+settings,settings-hub.spec.ts,194,AI Art removes setup controls from the phone DOM until its master switch is on
+settings,settings-hub.spec.ts,216,the phone AI Art card keeps its height while the master switch reveals setup
+settings,settings-hub.spec.ts,236,the hub Night Mode switch themes the app and matches the Appearance picker
+settings,settings-hub.spec.ts,269,the hub switch answers its ${edge} target edge without changing Sound
+settings,settings-hub.spec.ts,298,a tap ${side} the hub switch target leaves both switches alone
+settings,settings-hub.spec.ts,315,the Tool Drawer row names the switch rather than a tool count while it is off
+settings,settings-hub.spec.ts,334,"the camera button toggle lives in Saving, not the Tool Drawer"
+settings,settings-install.spec.ts,24,is shown the iOS steps alone
+settings,settings-install.spec.ts,44,is sent to the Share button in the Safari toolbar
+settings,settings-install.spec.ts,56,is sent to Safari before the steps that describe it
+settings,settings-install.spec.ts,68,is shown the Android steps alone
+settings,settings-install.spec.ts,82,is shown desktop guidance instead of either mobile checklist
+settings,settings-mount.spec.ts,77,the pane fills a section at a time rather than all at once
+settings,settings-mount.spec.ts,93,the opening frame already holds the above-the-fold prefix
+settings,settings-mount.spec.ts,114,the wide card opens at its settled height and holds it through the fill
+settings,settings-mount.spec.ts,139,the card clamps to the sidebar ceiling and the whole section list shows
+settings,settings-mount.spec.ts,161,idle time prewarms the pane so a first open finds it whole
+settings,settings-mount.spec.ts,186,a quick reopen without requestIdleCallback opens paint-clean
+settings,settings-mount.spec.ts,239,a scroll the moment the pane reports ready keeps the last section elected
+settings,settings-mount.spec.ts,303,the pane reports itself busy until the last section is in
+settings,settings-mount.spec.ts,315,a jump to a section that has not arrived yet still reaches it
+settings,settings-phone-labels.spec.ts,64,hub summaries read in full (${device})
+settings,settings-phone-labels.spec.ts,76,the Drawing Tools list keeps its option names (${device})
+settings,settings-phone-labels.spec.ts,130,a tool keeps focus when the block crosses into the other skin
+settings,settings-phone-labels.spec.ts,152,the save-folder row seats its label and its action without collision
+settings,settings-quick-toggles.spec.ts,15,setting groups space their cards without affecting the compact grid
+settings,settings-quick-toggles.spec.ts,69,landscape phone renders compact quick toggles
+settings,settings-quick-toggles.spec.ts,91,the compact Orientation picker locks either side or releases to Auto
+settings,settings-quick-toggles.spec.ts,111,quick-toggle changes persist into the full portrait Settings
+settings,settings-quick-toggles.spec.ts,155,a desktop browser offers no Orientation picker in either shell
+settings,settings-quick-toggles.spec.ts,182,a lock-incapable device fills the empty quick-toggle slot with a mini About cell
+settings,settings-scroll-cue-opening.spec.ts,9,Settings includes its scroll cue from the opening frame at ${viewport.width}px
+settings,settings-scroll-cue-opening.spec.ts,55,Settings includes its scroll cue when prewarmed
+settings,settings-scroll-cue-opening.spec.ts,66,Settings includes its scroll cue when reopened from the bottom
+settings,settings-shell.spec.ts,5,Settings opens the current shell before pending background prewarming
+settings,settings-shell.spec.ts,37,Settings prewarms the closed compact shell without constructing the wide pane
+settings,settings-shell.spec.ts,91,rotating during a button-size drag releases the unmounted preview
+settings,settings-shell.spec.ts,102,Escape preserves a live button-size drag until pointer release
+settings,settings-shell.spec.ts,111,Night Mode does not animate the Action Panel behind Settings
+settings,settings-shell.spec.ts,134,the live size preview retains Action Panel transition timing
+settings,settings-toc.spec.ts,63,the default section is seen on open and a selected section clears before highlighting
+settings,settings-toc.spec.ts,86,a distant nav jump leaves intermediate sections unseen
+settings,settings-toc.spec.ts,102,scrolling the pane marks the elected section seen
+settings,settings-toc.spec.ts,114,a jump scrolls the pane and never the card itself
+settings,settings-toc.spec.ts,140,scrolling to the very bottom highlights the last section
+settings,settings-toc.spec.ts,153,a highlight the pane elected is scrolled into the column
+settings,settings-toc.spec.ts,169,the scrollspy reading line sits inside the 120-140px band
+settings,settings-toc.spec.ts,208,a jump glides through intermediate scroll positions
+settings,settings-toc.spec.ts,217,a jump under reduced motion lands in one step
+settings,settings-toc.spec.ts,226,a Parent Center jump unlocked after the pane filled does not follow a reopen
+settings,settings-whats-new-outline.spec.ts,33,What's New nests its release date under the wide pane's Updates title
+settings,settings-whats-new-outline.spec.ts,45,What's New nests its release date under the phone drill-in's Updates title
+settings,settings-zoom.spec.ts,238,a two-finger pinch enlarges the pane (and intercepts the gesture)
+settings,settings-zoom.spec.ts,249,"a pinch swallows the trailing click, so it never toggles the control beneath it"
+settings,settings-zoom.spec.ts,276,a one-finger drag actually scrolls the pane (native scrolling survives)
+settings,settings-zoom.spec.ts,310,a pinch finger that lifts outside the pane still reports its lift to the pane
+settings,settings-zoom.spec.ts,327,a scroll after a pinch finger lifted outside the pane scrolls instead of zooming
+settings,settings-zoom.spec.ts,350,a tap after a pinch finger lifted outside the pane is not swallowed
+settings,settings-zoom.spec.ts,369,a non-touch (mouse) pinch is ignored
+settings,settings-zoom.spec.ts,380,a table-of-contents jump keeps the zoom (the wide pane is one document)
+settings,settings-zoom.spec.ts,402,drilling into a phone section resets the zoom
+settings,settings-zoom.spec.ts,424,parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoom)
+settings,settings-zoom.spec.ts,495,the Drawing Tools block stops re-measuring once an enlarged pane settles
+settings,settings-zoom.spec.ts,522,closing the overlay resets the zoom for the next open
+web-only pages (not in RN scope),share-cards.spec.ts,12,${path} renders a complete fixed light share card
+web-only pages (not in RN scope),share-cards.spec.ts,52,share-card harness rejects invalid path ${JSON.stringify(input)}
+"install, update and offline",startup-bundle.spec.ts,82,modules that must register before hydration stay in the prerendered modulepreload list
+"install, update and offline",startup-bundle.spec.ts,95,the save pipeline stays out of the prerendered modulepreload list
+"install, update and offline",startup-bundle.spec.ts,137,the boot-hidden overlay stylesheet stays out of the prerendered head
+"install, update and offline",startup-bundle.spec.ts,151,the overlay CSS markers still identify styles in the client build
+"install, update and offline",startup-bundle.spec.ts,164,the save-module markers still identify code in the client build
+drawing,store-drawing-replay.spec.ts,42,the store replay seam commits an engine-rendered stroke without a live pointer
+drawing,store-drawing-replay.spec.ts,71,pointer and engine replay render the same compiled scene
+accessibility,text-contrast.spec.ts,8,a translucent overlay painted over the text fails as unmeasurable
+accessibility,text-contrast.spec.ts,19,a fill positioned beneath a label is measured as its ground
+accessibility,touch-targets.spec.ts,30,shared button and picker variants keep both target axes in compact ${viewport.name}
+accessibility,touch-targets.spec.ts,61,a short button label and compressed filled picker keep their width floor
+accessibility,touch-targets.spec.ts,76,hub switch targets occupy separate rows and remain keyboard operable
+accessibility,touch-targets.spec.ts,121,Settings close and switches fit compact ${viewport.name}
+accessibility,touch-targets.spec.ts,131,portrait Appearance choices keep both target axes
+accessibility,touch-targets.spec.ts,143,the shared Button accepts its lower target edge and ignores a touch below it
+"install, update and offline",web-back.spec.ts,62,desktop Back closes the top dialog before navigating normally
+"install, update and offline",web-back.spec.ts,77,dialog controls remove their entries across repeated open and close cycles
+"install, update and offline",web-back.spec.ts,94,native dialog closes remove their entries across repeated open and close cycles
+"install, update and offline",web-back.spec.ts,111,Back closes nested dialogs from the top down
+"install, update and offline",web-back.spec.ts,145,a dialog unmounted while open leaves no stray Back layer
+"install, update and offline",web-back.spec.ts,165,refreshing with a dialog open retires its stale history entry
+"install, update and offline",web-back.spec.ts,179,direct privacy entry keeps ordinary browser history
+"install, update and offline",web-back.spec.ts,189,in-app navigation restores an open dialog without adding a stray layer
+"install, update and offline",web-back.spec.ts,218,"closes a dialog, consumes the drawing guard once, then navigates normally"
+"install, update and offline",web-back.spec.ts,242,standalone display mode guards a drawing even with a fine pointer
+"install, update and offline",web-back.spec.ts,266,desktop tabs do not add a drawing guard
