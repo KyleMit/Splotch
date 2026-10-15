@@ -50,6 +50,10 @@ const files = vi.hoisted(() => ({
   dismissModal: null,
 }));
 
+vi.mock('../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
+  useOnline: () => true,
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/ai.ts', () => ({
   aiTransport: files.aiSend,
   admitAiImage: files.aiAdmit,

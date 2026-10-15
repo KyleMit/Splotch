@@ -493,6 +493,19 @@ describe('the compact shell', () => {
   });
 });
 describe('Parent Center in the wide shell', () => {
+  it('lands a tablet AI setup link on the AI Art section', async () => {
+    HTMLElement.prototype.scrollTo = scrollTo;
+    openSettings(TABLET);
+    caller.screen.settingsSection = 'ai';
+    await mount(createElement(RsdDrawingScreen));
+    await layOutPane(300, 600);
+    const index = PANE_SECTIONS.findIndex(({ id }) => id === 'ai');
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      y: WIDE_SHELL.pane.top + index * (300 + WIDE_SHELL.sectionGap) - SECTION_JUMP_INSET_PX,
+      animated: false,
+    });
+  });
+
   const parentCenterOffset = (sectionHeight) =>
     WIDE_SHELL.pane.top +
     PANE_SECTIONS.findIndex(({ id }) => id === 'parentCenter') *

@@ -33,6 +33,7 @@ import type { Halo } from './haloModel';
 
 export type DrawingSurfaceHandle = {
   capturePng: (snapshot: Drawing) => Promise<string>;
+  captureAiPng: (snapshot: Drawing) => Promise<string>;
   // The saved picture: the shipping export's pixel grid, paper color and grain.
   exportPng: (snapshot: Drawing) => Promise<string>;
   captureInk: (snapshot: Drawing) => Promise<string>;
@@ -334,6 +335,7 @@ function useSurfaceCapture(
     ref,
     () => ({
       capturePng: (snapshot) => capture(snapshot, 'picture'),
+      captureAiPng: (snapshot) => capture(snapshot, 'ai'),
       exportPng: (snapshot) => capture(snapshot, 'export'),
       captureInk: (snapshot) => capture(snapshot, 'ink'),
       refreshGeometry,

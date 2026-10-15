@@ -24,7 +24,7 @@ const COLLECT_POINTS = [
   'reference-before-status',
   'native-status',
 ];
-const LIFETIMES = ['background', 'master off', 'dispose'];
+const LIFETIMES = ['master off', 'dispose'];
 const cleanups = [];
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup();
@@ -158,8 +158,7 @@ async function fixture(restored = false) {
     solve(product.gate);
   };
   const revoke = async (lifetime) => {
-    if (lifetime === 'background') product.background();
-    else if (lifetime === 'dispose') owner.dispose();
+    if (lifetime === 'dispose') owner.dispose();
     else {
       product.openParentCenter();
       solve(product.gate);

@@ -17,6 +17,7 @@ import { soundSettingsStorage } from '../platform/soundSettings';
 import { initialSoundSettingsState, type SoundSettingsState } from '../settings/soundSettings';
 import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import { openAppSettings } from '../platform/appSettings';
+import { useOnline } from '../platform/useOnline';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
@@ -153,6 +154,7 @@ function useScreenFollowsSettings(
 }
 
 export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
+  const online = useOnline();
   const screenRef = useRef(screen);
   screenRef.current = screen;
   const [, update] = useState(0);
@@ -193,7 +195,6 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       ticker.setForeground(foreground);
       if (!foreground) {
         product.background();
-        attached?.ai.close();
         attached?.feedback.close();
         contacts.interrupt();
       } else {
@@ -241,7 +242,6 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const parentCenterOpen = services?.product.getState().parentCenterOpen ?? false;
   useEffect(() => {
     if (parentCenterOpen) {
-      owners?.ai.close();
       owners?.feedback.close();
     }
   }, [owners, parentCenterOpen]);
@@ -265,7 +265,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
         : null,
     },
     feedback: { owner: owners?.feedback ?? null, state: owners?.feedback.getState() ?? null },
-    ai: { owner: owners?.ai ?? null, state: aiState, progress: aiProgress },
+    ai: { owner: owners?.ai ?? null, state: aiState, progress: aiProgress, online },
     owner: services?.product ?? null,
     state: services?.product.getState() ?? null,
     // Settings is outside the app, so it sits behind the same gate as every other way out.

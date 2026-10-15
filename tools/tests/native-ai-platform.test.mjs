@@ -1,5 +1,8 @@
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { fetch as nativeFetch } from 'expo/fetch';
+import { Platform } from 'react-native';
 import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
 const fixture = vi.hoisted(() => ({
   files: new Map(),
@@ -14,6 +17,7 @@ const fixture = vi.hoisted(() => ({
 }));
 vi.mock('expo/fetch', () => ({ fetch: vi.fn() }));
 vi.mock('react-native', () => ({
+  Platform: { OS: 'ios' },
   NativeModules: {
     SplotchAIEnvironment: {
       installationId: fixture.id,
@@ -94,6 +98,7 @@ import {
   aiVault,
   aiStorage,
   admitAiImage,
+  aiTransport,
 } from '../../experiments/native-architecture/src/platform/ai.ts';
 const journal = {
   version: 1,
@@ -119,6 +124,23 @@ beforeEach(async () => {
   );
   await aiStorage.read();
   fixture.storage.mockClear();
+});
+it.each([
+  ['ios', 'capacitor://localhost'],
+  ['android', 'https://localhost'],
+])('sends the shipping trusted Origin on %s AI reports', async (platform, origin) => {
+  Platform.OS = platform;
+  const config = await readFile(new URL('../../web/svelte.config.js', import.meta.url), 'utf8');
+  const trusted = config.match(/trustedOrigins: \[([^\]]+)\]/)[1];
+  expect(trusted).toContain(`'${origin}'`);
+  await aiTransport(
+    { path: '/api/report-image', method: 'POST', headers: { 'X-Report-Token': 'proof' } },
+    new AbortController().signal
+  );
+  expect(nativeFetch.mock.calls.at(-1)[1].headers).toEqual({
+    Origin: origin,
+    'X-Report-Token': 'proof',
+  });
 });
 it('uses strict native secure readback for writes and removals, with no fallback on an ambiguous outcome', async () => {
   fixture.write.mockResolvedValue(true);

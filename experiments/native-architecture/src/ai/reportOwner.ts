@@ -28,8 +28,15 @@ import {
   type RecoveryReportProof,
 } from './recoveryReport';
 import type { AiRecoveryRequestReceipt, AiRecoveryTerminalConfirmation } from './journal';
+import { NETWORK_ERROR_MESSAGE } from '../../../../web/src/lib/latestRequest';
+import { reportFailureMessage } from '../../../../web/src/lib/reportReply';
 
 const AI_REPORT_PREPARE_TIMEOUT_MS = 2000;
+function sameReportTarget(left: AiReportTarget, right: AiReportTarget) {
+  return left.kind === 'picture'
+    ? right.kind === 'picture' && left.uri === right.uri
+    : right.kind === 'false-positive-refusal' && left.id === right.id;
+}
 type ReportDependencies = {
   vault: AiReferencedVault;
   parent?: ParentOperationPort;
@@ -256,6 +263,17 @@ class AiReportOwner {
       });
       return;
     }
+    if (
+      this.target &&
+      sameReportTarget(this.target, target) &&
+      this.selected &&
+      !this.selected.used &&
+      this.current()
+    ) {
+      this.confirmationReady = true;
+      this.deps.publish({ phase: 'confirm', preview: this.preview(this.selected) });
+      return;
+    }
     this.cancel();
     this.target = target;
     const context =
@@ -357,35 +375,36 @@ class AiReportOwner {
           'Content-Type': multipart.contentType,
           ...(context.evidence.token ? { [REPORT_TOKEN_HEADER]: context.evidence.token } : {}),
         },
-        pending.signal
+        pending.signal,
+        reportFailureMessage(context.evidence.kind)
       );
       if (ticket !== this.epoch || !this.current()) return;
       if (reply.kind === 'success')
         this.deps.publish({ phase: 'success', target, reportId: reply.reportId });
       else {
-        if (reply.kind === 'failure') {
-          context.used = false;
-          this.retryAt = reply.retryAt;
-        }
+        context.used = false;
+        this.retryAt = reply.retryAt;
         this.deps.publish({
-          phase: reply.kind === 'failure' ? 'error' : 'unknown',
+          phase: 'error',
           target,
           message: reply.message,
           retryAt: this.retryAt,
         });
       }
     } catch (error) {
-      if (ticket === this.epoch && this.current())
+      if (ticket === this.epoch && this.current()) {
+        context.used = false;
         this.deps.publish({
-          phase: sent ? 'unknown' : 'error',
+          phase: 'error',
           target,
           retryAt: 0,
           message: sent
-            ? 'The report outcome is unknown. It will not be sent again automatically.'
+            ? NETWORK_ERROR_MESSAGE
             : error instanceof Error
               ? error.message
               : 'AI reporting is unavailable. Nothing was sent.',
         });
+      }
     } finally {
       clearTimeout(timeout);
       if (this.controller === pending) this.controller = null;

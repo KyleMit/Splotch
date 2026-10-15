@@ -1,5 +1,9 @@
 import { afterEach, expect, vi } from 'vitest';
 
+vi.mock('../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
+  useOnline: () => true,
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
   brushPreferencesStorage: { read: async () => null, write: async () => {} },
 }));

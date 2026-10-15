@@ -13,9 +13,7 @@ import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { DecodedPng } from './DecodedPng';
 import { pictureExport, type PictureExport } from './pictureExport';
 
-// The ink alone; the picture on its paper at the paper's size (what AI is sent); or the saved
-// picture, which keeps the shipping export's grid, paper color and grain.
-type PictureKind = 'ink' | 'picture' | 'export';
+type PictureKind = 'ink' | 'picture' | 'ai' | 'export';
 export type PictureRequest = Readonly<{
   id: number;
   request: PngCaptureRequest;
@@ -34,14 +32,20 @@ type CaptureTarget = Readonly<{ raster: PaperSize; exported: PictureExport | nul
 // pixels.
 function captureTarget(packet: PictureRequest): CaptureTarget {
   const size = paperSize(packet.plan.paper);
-  if (packet.kind !== 'export') return { raster: size, exported: null };
+  if (packet.kind === 'ink' || packet.kind === 'picture') return { raster: size, exported: null };
   const exported = pictureExport(packet.plan.paper, packet.appearance.theme, PixelRatio.get());
   return { raster: Platform.OS === 'ios' ? size : exported.size, exported };
 }
 
-function composeExport(layer: string, exported: PictureExport | null): Promise<string> {
+function composeExport(
+  layer: string,
+  exported: PictureExport | null,
+  includePaperTexture: boolean
+): Promise<string> {
   if (!exported) return Promise.resolve(layer);
-  return import('./pictureCompose').then(({ composePicture }) => composePicture(layer, exported));
+  return import('./pictureCompose').then(({ composePicture }) =>
+    composePicture(layer, exported, includePaperTexture)
+  );
 }
 
 export function PictureCapture({ packet }: { packet: PictureRequest }) {
@@ -101,7 +105,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
     }
     const job = captures.capture(output.current, target.raster);
     void job.promise
-      .then((pixels) => composeExport(pixels, target.exported))
+      .then((pixels) => composeExport(pixels, target.exported, packet.kind === 'export'))
       .then((pixels) => accept(pixels, 'picture'))
       .catch(fail);
     return () => job.cancel();

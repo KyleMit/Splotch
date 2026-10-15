@@ -261,21 +261,23 @@ it('rejects changed original credential returned at final report readback', asyn
   expect(f.owner.getState().report.phase).toBe('error');
   expect(f.transport).not.toHaveBeenCalled();
 });
-it('does not resend an unknown recovery report after duplicate settlement and close', async () => {
+it('allows explicit retry of a failed recovery report after duplicate settlement and close', async () => {
   const f = reportingFixture();
   await refuse(f);
   const id = f.latest().journal.id;
-  f.transport.mockResolvedValueOnce(new Response('{"ok":true}'));
+  f.transport.mockResolvedValueOnce(new Response('{}'));
   f.owner.reportRefusal(id);
   f.confirm();
   await f.owner.sendPictureReport();
-  expect(f.owner.getState().report.phase).toBe('unknown');
+  expect(f.owner.getState().report.phase).toBe('error');
   await f.start('collectRecovery');
   f.owner.cancelPictureReport();
   f.owner.reportRefusal(id);
+  expect(f.owner.getState().report.phase).toBe('gating');
+  f.confirm();
   await f.owner.sendPictureReport();
-  expect(f.owner.getState().report.phase).toBe('unavailable');
-  expect(f.transport).toHaveBeenCalledOnce();
+  expect(f.owner.getState().report.phase).toBe('success');
+  expect(f.transport).toHaveBeenCalledTimes(2);
 });
 it('cannot reconstruct report proof from a restarted terminal receipt', async () => {
   const f = reportingFixture();

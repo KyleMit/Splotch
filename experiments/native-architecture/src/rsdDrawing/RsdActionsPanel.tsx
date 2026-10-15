@@ -228,7 +228,7 @@ function panelTools(context: ToolContext): Tool[] {
         />
       ),
     });
-  if (sound.settings.aiEnabled) {
+  if (sound.settings.aiEnabled && product.ai.online) {
     const ai = aiButtonFace(product.ai.state, !screen.inkVisible);
     tools.push({
       key: 'ai',

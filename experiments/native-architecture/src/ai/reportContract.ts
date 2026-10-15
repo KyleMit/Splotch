@@ -40,7 +40,7 @@ export type AiReportState =
   | { phase: 'idle' }
   | { phase: 'gating'; target: AiReportTarget }
   | { phase: 'confirm' | 'sending'; preview: AiReportPreview }
-  | { phase: 'success'; target: AiReportTarget; reportId: string }
+  | { phase: 'success'; target: AiReportTarget; reportId: string | null }
   | {
       phase: 'error' | 'unknown' | 'unavailable';
       target: AiReportTarget;

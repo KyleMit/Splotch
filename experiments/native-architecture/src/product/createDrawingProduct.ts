@@ -116,7 +116,6 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       await settings.retryParentSave();
     },
     background() {
-      consentEpoch += 1;
       parentCenterOpen = false;
       confirmNever = false;
       gate.invalidate();

@@ -5,12 +5,19 @@ import { URL as NodeURL } from 'node:url';
 import { files } from './native-drawing-screen-harness.mjs';
 import { createAiReportOwner } from '../../experiments/native-architecture/src/ai/reportOwner.ts';
 import {
+  narrowReportReply,
+  reportFailureMessage,
+  REPORT_TIMEOUT_MESSAGE,
+} from '../../web/src/lib/reportReply.ts';
+import { NETWORK_ERROR_MESSAGE } from '../../web/src/lib/latestRequest.ts';
+import {
   reportMultipart,
   MAX_AI_REPORT_BYTES,
   imageReportToken,
   AI_REPORT_FIELDS,
   AI_REPORT_REVIEW_HOURS,
   AI_REPORT_RETENTION_DAYS,
+  AI_REPORT_TIMEOUT_MS,
 } from '../../experiments/native-architecture/src/ai/reportContract.ts';
 
 const URI = 'file:///owned/session-result.png';
@@ -183,16 +190,87 @@ it('refuses a replacement installation identity before sending original evidence
   expect(state.message).toContain('Nothing was sent');
 });
 
-it('never resends an ambiguous report without a strict acknowledgement', async () => {
+it.each([
+  [200, {}, 'Could not send your picture report.'],
+  [
+    403,
+    { error: 'Cross-site POST form submissions are forbidden' },
+    'Cross-site POST form submissions are forbidden',
+  ],
+  [502, { ok: false, error: 'The report could not be saved.' }, 'The report could not be saved.'],
+])(
+  'lets a parent retry an unsuccessful %s report without solving the gate again',
+  async (status, body, message) => {
+    await prepare();
+    owner.request(URI);
+    releaseGate({ valid: () => true });
+    transport.mockResolvedValueOnce(response(status, body));
+    await owner.send();
+    const shipping = narrowReportReply(body);
+    expect(message).toBe(
+      shipping && !shipping.ok ? shipping.error : reportFailureMessage('picture')
+    );
+    expect(state).toMatchObject({ phase: 'error', message });
+    owner.request(URI);
+    expect(state.phase).toBe('confirm');
+    expect(parent.request).toHaveBeenCalledOnce();
+    await owner.send();
+    expect(state.phase).toBe('success');
+    expect(transport).toHaveBeenCalledTimes(2);
+  }
+);
+
+it('keeps a network failure available for an explicit retry', async () => {
+  await prepare();
+  owner.request(URI);
+  releaseGate({ valid: () => true });
+  transport.mockRejectedValueOnce(new Error('offline'));
+  await owner.send();
+  expect(state).toMatchObject({ phase: 'error', message: NETWORK_ERROR_MESSAGE });
+  owner.request(URI);
+  expect(state.phase).toBe('confirm');
+  expect(parent.request).toHaveBeenCalledOnce();
+  await owner.send();
+  expect(state.phase).toBe('success');
+});
+
+it('uses shipping fallback copy for a non-JSON server failure', async () => {
+  await prepare();
+  owner.request(URI);
+  releaseGate({ valid: () => true });
+  transport.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }));
+  await owner.send();
+  expect(state).toMatchObject({ phase: 'error', message: reportFailureMessage('picture') });
+  owner.request(URI);
+  expect(state.phase).toBe('confirm');
+});
+
+it('accepts the same generic success acknowledgement as shipping', async () => {
   await prepare();
   owner.request(URI);
   releaseGate({ valid: () => true });
   transport.mockResolvedValueOnce(response(200, { ok: true }));
   await owner.send();
-  expect(state.phase).toBe('unknown');
+  expect(state).toMatchObject({ phase: 'success', reportId: null });
+});
+
+it('releases a report deadline into the shipping timeout message and retry', async () => {
+  await prepare();
   owner.request(URI);
-  expect(state.phase).toBe('unavailable');
-  expect(transport).toHaveBeenCalledOnce();
+  releaseGate({ valid: () => true });
+  vi.useFakeTimers();
+  try {
+    transport.mockImplementationOnce(() => new Promise(() => {}));
+    const sending = owner.send();
+    await vi.advanceTimersByTimeAsync(AI_REPORT_TIMEOUT_MS);
+    await sending;
+    expect(state).toMatchObject({ phase: 'error', message: REPORT_TIMEOUT_MESSAGE });
+    owner.request(URI);
+    expect(state.phase).toBe('confirm');
+    expect(parent.request).toHaveBeenCalledOnce();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it('pins multipart fields and private handling promises to the hosted API contract', async () => {

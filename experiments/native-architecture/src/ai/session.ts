@@ -10,7 +10,6 @@ import { credentialHeaders, maskSecret, validCredential, type AiCredential } fro
 import { AI_THROTTLED_MESSAGE, requestAi } from './transport';
 import { credentialRefusal, type AiCredentialOutcome } from './credentialResult';
 import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
-import type { ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
 import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
@@ -57,15 +56,10 @@ export class AiSession {
   protected active = false;
   protected pollStarted = 0;
   protected authorization = 0;
-  private parentProof: ParentProof | null = null;
   private consentEpoch = -1;
   protected consented = () => {
     const consent = this.deps.parent?.consent();
-    return (
-      !this.disposed &&
-      (!consent ||
-        (consent.enabled && consent.epoch === this.consentEpoch && !!this.parentProof?.valid()))
-    );
+    return !this.disposed && (!consent || (consent.enabled && consent.epoch === this.consentEpoch));
   };
   protected protect = (action: () => void) => {
     const parent = this.deps.parent;
@@ -76,7 +70,6 @@ export class AiSession {
     if (!parent.consent().enabled) return;
     parent.request('ai', (proof) => {
       if (!proof.valid() || !parent.consent().enabled || this.disposed) return;
-      this.parentProof = proof;
       this.consentEpoch = parent.consent().epoch;
       this.authorization += 1;
       this.update({ authorized: true });
@@ -454,7 +447,6 @@ export class AiSession {
     this.reports.cancel();
     this.problems?.reset();
     this.authorization += 1;
-    this.parentProof = null;
     this.deps.parent?.cancel('ai');
     this.gate.dismiss();
     this.runDrawing = null;
@@ -497,7 +489,6 @@ export class AiSession {
   dispose = () => {
     this.reports.dispose();
     this.authorization += 1;
-    this.parentProof = null;
     this.deps.parent?.cancel('ai');
     this.disposed = true;
     this.gate.dismiss();

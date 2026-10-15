@@ -10,6 +10,7 @@ import { RsdStatusMessage } from './RsdStatusMessage';
 import { useModalPresence } from './useModalPresence';
 import { colors, dimensions } from './tokens.css';
 import { styles as controlStyles } from './controls';
+import { REPORT_RECEIVED_MESSAGE } from '../../../../web/src/lib/reportReply';
 
 // AiImageReport.svelte's thumbnail literals; native-ai-flow-geometry.test.mjs reads them back.
 export const REPORT_THUMB_SINGLE_MAX_PX = 144;
@@ -34,7 +35,9 @@ export function RsdAiReportStatus({
   if (report.phase === 'success')
     return (
       <html.div style={styles.status}>
-        <RsdStatusMessage status="success">{aiReportReceived(report.reportId)}</RsdStatusMessage>
+        <RsdStatusMessage status="success">
+          {report.reportId === null ? REPORT_RECEIVED_MESSAGE : aiReportReceived(report.reportId)}
+        </RsdStatusMessage>
       </html.div>
     );
   if (report.phase !== 'error' && report.phase !== 'unknown' && report.phase !== 'unavailable')

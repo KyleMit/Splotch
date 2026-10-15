@@ -158,6 +158,9 @@ importers:
       eslint-plugin-svelte:
         specifier: ^3.23.0
         version: 3.23.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(svelte@5.57.1(@typescript-eslint/types@8.71.0))(ts-node@10.9.2(@types/node@22.20.4)(typescript@6.0.3))
+      expo-network:
+        specifier: ~57.0.2
+        version: 57.0.2(expo@57.0.26)(react@19.2.3)
       fit-curve:
         specifier: ^0.2.0
         version: 0.2.0
@@ -4185,6 +4188,12 @@ packages:
     resolution: {integrity: sha512-ssnwz3ZuIgCbZj5A3J6NlhQrXZojg+BjkeWrOWqVJhyMHlV/A/cRT7s986chKku97BFt6ucmDu6/BCzrV45Wcw==}
     peerDependencies:
       react-native: '*'
+
+  expo-network@57.0.2:
+    resolution: {integrity: sha512-BfK1kdftZcM6o9o1FAG7/y0l6vWX0n8td0M5lwkvaMeRXZ9LkRwOi9CQXwvsMTQGQiPwtQXgwiAze13cqjt75g==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
 
   expo-screen-orientation@57.0.2:
     resolution: {integrity: sha512-9wIa/dU561fidHYChkg6LIDAcYr8uMBa8fOws1Km9/slaF3N/a2kgcy0TUZWvNIe7at3r4g2kVva9vRBJBkaEQ==}
@@ -11541,6 +11550,11 @@ snapshots:
   expo-modules-jsi@57.1.1(react-native@0.86.3(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)):
     dependencies:
       react-native: 0.86.3(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)
+
+  expo-network@57.0.2(expo@57.0.26)(react@19.2.3):
+    dependencies:
+      expo: 57.0.26(bd99edbf4b603890d1694d38caf6a486)
+      react: 19.2.3
 
   expo-screen-orientation@57.0.2(patch_hash=d4057e612fef647d45c88aef18ef6b04df9413ae26039bf729b340fe7e71cc74)(expo@57.0.26)(react-native@0.86.3(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)):
     dependencies:

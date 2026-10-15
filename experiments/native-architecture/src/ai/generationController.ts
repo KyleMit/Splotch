@@ -11,6 +11,7 @@ import type { AiJournal, AiResult } from './journal';
 import type { AiFailureDetails } from './sessionContract';
 import { AiRecoverySession } from './recoverySession';
 import { bytesBase64 } from './base64';
+import { encodeAiUpload } from '../platform/aiUpload';
 export class NativeAiController extends AiRecoverySession {
   // Where a run goes when only a grown-up's setup can fix it; the flow sends it to Settings.
   protected needsSetup = () => {};
@@ -253,6 +254,7 @@ export class NativeAiController extends AiRecoverySession {
       }
       const style = this.styled ? receipt.journal.style : null;
       await this.reports.prepare(id, upload, style, credential);
+      const encoded = await encodeAiUpload(upload);
       if (!this.currentGenerationPermission(proof)) return true;
       uploadStarted = true;
       const reply = await requestAi(
@@ -263,10 +265,10 @@ export class NativeAiController extends AiRecoverySession {
           method: 'POST',
           headers: {
             ...credentialHeaders(credential),
-            'Content-Type': 'image/png',
+            'Content-Type': encoded.mime,
             'X-Async-Generation': '1',
           },
-          body: upload,
+          body: encoded.bytes,
         },
         () => {}
       );
