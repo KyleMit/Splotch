@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, StrictMode, useEffect, useRef, useState } from 'react';
+import { act, createElement, StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
@@ -8,6 +8,10 @@ import {
   UNADOPTED_PAPER,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
+import {
+  DrawingSessionProvider,
+  useDrawingHistory,
+} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 import {
   SvgUndoGhostLayer,
   useSvgUndoGhostPlan,
@@ -168,35 +172,33 @@ const committed = [
   ]),
 ];
 
-function render(drafts, strokes = committed, undoGhost = null, reference = paper) {
-  act(() =>
-    root.render(
+function DrawingInk({ reference = paper, ...props }) {
+  return createElement(
+    ReduceMotionPreferenceProvider,
+    { preference: 'full' },
+    createElement(
+      InkPaperScope.Provider,
+      { value: reference },
       createElement(
-        ReduceMotionPreferenceProvider,
-        { preference: 'full' },
-        createElement(
-          InkPaperScope.Provider,
-          { value: reference },
-          createElement(
-            InkAppearanceScope.Provider,
-            { value: { pageId: 'blank', theme: 'light' } },
-            createElement(SkiaInk, {
-              strokes,
-              undoGhost,
-              paperFrame: { ...PLANE, pageX: 0, pageY: 0 },
-              drafts,
-              brush: 'pen',
-              color: 'Green',
-              onBusy: vi.fn(),
-              onError: (error) => {
-                throw error;
-              },
-            })
-          )
-        )
+        InkAppearanceScope.Provider,
+        { value: { pageId: 'blank', theme: 'light' } },
+        createElement(SkiaInk, {
+          ...props,
+          paperFrame: { ...PLANE, pageX: 0, pageY: 0 },
+          brush: 'pen',
+          color: 'Green',
+          onBusy: () => {},
+          onError: (error) => {
+            throw error;
+          },
+        })
       )
     )
   );
+}
+
+function render(drafts, strokes = committed, undoGhost = null, reference = paper) {
+  act(() => root.render(createElement(DrawingInk, { strokes, drafts, undoGhost, reference })));
 }
 
 beforeEach(() => {
@@ -330,75 +332,72 @@ it('disposes an interrupted ghost once and cancels its pending paint frames', as
   expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
 });
 
-it('keeps a newly accepted ghost through StrictMode replay and releases it after completion', async () => {
-  const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
-  const after = { ...before, paper: UNADOPTED_PAPER, strokes: [] };
-  let commands;
-  function Owner() {
-    const [history, publish] = useState({ drawing: before, undo: [after] });
-    const historyRef = useRef(history);
-    historyRef.current = history;
-    const surface = useRef({ lockInput: () => () => {} });
-    const command = useRef(false);
-    commands = useUndoAction({
-      historyRef,
-      surface,
-      command,
-      setHistory: (next) => {
-        historyRef.current = next;
-        publish(next);
+it.each(['keyboard', 'button'])(
+  'keeps the real history owner’s %s Undo ghost through StrictMode replay and releases it after completion',
+  async (kind) => {
+    const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
+    const after = { ...before, paper: UNADOPTED_PAPER, strokes: [] };
+    let commands;
+    let historyOwner;
+    function Owner() {
+      historyOwner = useDrawingHistory();
+      const { history, historyRef, setHistory } = historyOwner;
+      const surface = useRef({ lockInput: () => () => {} });
+      const command = useRef(false);
+      commands = useUndoAction({
+        historyRef,
+        surface,
+        command,
+        setHistory,
+        blocked: () => false,
+        inputActive: () => false,
+        setNotice: () => {},
+        report: (error) => {
+          throw error;
+        },
+      });
+      return createElement(DrawingInk, {
+        strokes: history.drawing.strokes,
+        undoGhost: commands.undoGhost,
+        reference: drawingPaper(history.drawing),
+      });
+    }
+    const session = createElement(DrawingSessionProvider, null, createElement(Owner));
+    await act(async () => root.render(createElement(StrictMode, null, session)));
+    await act(async () => historyOwner.setHistory({ drawing: before, undo: [after] }));
+    expect(historyOwner.historyRef.current.drawing).toBe(before);
+    let measured;
+    commands.undoTile.current = {
+      measure: (complete) => {
+        measured = complete;
       },
-      blocked: () => false,
-      inputActive: () => false,
-      setNotice: () => {},
-      report: (error) => {
-        throw error;
-      },
+    };
+    await act(async () => {
+      if (kind === 'keyboard') commands.undo(false, null);
+      else commands.undoFromButton(false);
     });
-    return createElement(
-      InkPaperScope.Provider,
-      { value: drawingPaper(history.drawing) },
-      createElement(
-        InkAppearanceScope.Provider,
-        { value: { pageId: 'blank', theme: 'light' } },
-        createElement(SkiaInk, {
-          strokes: history.drawing.strokes,
-          undoGhost: commands.undoGhost,
-          paperFrame: { ...PLANE, pageX: 0, pageY: 0 },
-          brush: 'pen',
-          color: 'Green',
-          onBusy: () => {},
-          onError: (error) => {
-            throw error;
-          },
-        })
-      )
-    );
+    expect(typeof measured).toBe(kind === 'button' ? 'function' : 'undefined');
+    expect(historyOwner.historyRef.current.drawing).toBe(kind === 'button' ? before : after);
+    await act(async () => {
+      await Promise.resolve();
+      measured?.(0, 0, 60, 60, 200, 300);
+    });
+    expect(historyOwner.historyRef.current.drawing).toBe(after);
+    expect(commands.undoGhost).not.toBeNull();
+    expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
+    expect(skia.ghosts.length).toBeGreaterThan(0);
+    for (const ghost of skia.ghosts)
+      expect(ghost).toMatchObject({ before: { kind: 'ink' }, after: null });
+    paintFrame();
+    expect(commands.undoGhost).not.toBeNull();
+    paintFrame();
+    await act(async () => {});
+    expect(commands.undoGhost).toBeNull();
+    expect(commands.undoFeedback.id).toBe(1);
+    expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
+    expect(skia.frames.size).toBe(0);
   }
-  await act(async () =>
-    root.render(
-      createElement(
-        StrictMode,
-        null,
-        createElement(ReduceMotionPreferenceProvider, { preference: 'full' }, createElement(Owner))
-      )
-    )
-  );
-  await act(async () => commands.undo(false, null));
-  expect(commands.undoGhost).not.toBeNull();
-  expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
-  expect(skia.ghosts.length).toBeGreaterThan(0);
-  for (const ghost of skia.ghosts)
-    expect(ghost).toMatchObject({ before: { kind: 'ink' }, after: null });
-  paintFrame();
-  expect(commands.undoGhost).not.toBeNull();
-  paintFrame();
-  await act(async () => {});
-  expect(commands.undoGhost).toBeNull();
-  expect(commands.undoFeedback.id).toBe(1);
-  expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
-  expect(skia.frames.size).toBe(0);
-});
+);
 
 it.each(['prefix', 'exact-after', 'wrong-paper', 'wrong-prefix'])(
   'owns the complete SVG ghost scenes and only their required pigments with a %s checkpoint',
