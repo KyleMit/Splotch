@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, Profiler, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +14,8 @@ import {
 import { HELD_CLOCK_MS } from '../../experiments/native-architecture/src/drawing/PointerHalos.tsx';
 
 const native = vi.hoisted(() => ({
-  handlers: null,
+  input: null,
+  sequence: 0,
   reduced: false,
   canvasRenders: 0,
   picture: null,
@@ -21,30 +23,33 @@ const native = vi.hoisted(() => ({
   timings: [],
 }));
 
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: {
-    isReduceMotionEnabled: async () => native.reduced,
-    addEventListener: () => ({ remove() {} }),
-  },
-  useColorScheme: () => 'light',
-  findNodeHandle: (target) => target,
-  PanResponder: {
-    create(handlers) {
-      native.handlers ??= handlers;
-      return { panHandlers: {} };
-    },
-  },
-  StyleSheet: { create: (styles) => styles, absoluteFill: {} },
-  View: forwardRef(({ children }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children }, ref) => {
     useImperativeHandle(ref, () => ({
       measure(callback) {
         callback(0, 0, 1024, 768, 40, 800);
       },
     }));
     return createElement('div', null, children);
-  }),
-}));
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: {
+      isReduceMotionEnabled: async () => native.reduced,
+      addEventListener: () => ({ remove() {} }),
+    },
+    useColorScheme: () => 'light',
+    findNodeHandle: (target) => target,
+    StyleSheet: { create: (styles) => styles, absoluteFill: {} },
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            native.input = emit;
+          })
+        : View,
+  };
+});
 
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);
@@ -157,11 +162,19 @@ function event(touches, changedTouches = touches, starts = {}) {
   };
 }
 
-function send(callback, input) {
-  act(() => {
-    native.handlers[callback](input);
-    if (callback === 'onPanResponderGrant') native.handlers.onPanResponderStart(input);
+function send(phase, value) {
+  const previous = native.lastEvent;
+  const input = value ?? {
+    ...previous,
+    nativeEvent: { ...previous.nativeEvent, changedTouches: previous.nativeEvent.touches },
+  };
+  const packet = paperInputPacket(phase, input, native.sequence++, {
+    width: 1104,
+    height: 1608,
+    bottomInset: 0,
   });
+  native.lastEvent = input;
+  if (packet) act(() => native.input({ nativeEvent: packet }));
 }
 
 function painted() {
@@ -221,7 +234,8 @@ beforeEach(() => {
   });
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   Object.assign(native, {
-    handlers: null,
+    input: null,
+    sequence: 0,
     reduced: false,
     canvasRenders: 0,
     picture: null,
@@ -244,7 +258,7 @@ describe('native Skia Pointer Halos', () => {
   it('follow, grow in and lift off without rendering the drawing surface', async () => {
     await mountSurface();
     const canvasRenders = native.canvasRenders;
-    send('onPanResponderGrant', event([touch(0, 10, 20)]));
+    send('start', event([touch(0, 10, 20)]));
     expect(painted().shown).toMatchObject([{ halo: { kind: 'ring', x: 10, y: 20 } }]);
     // The clock runs for as long as the contact is down, past the grow-in, so the halo layer
     // redraws on every frame of the stroke. Negative control: a clock that runs only to the
@@ -258,13 +272,13 @@ describe('native Skia Pointer Halos', () => {
     runFrames();
     expect(commits).toBe(settled);
 
-    send('onPanResponderMove', event([touch(0, 50, 60, 200)], undefined, { 0: 100 }));
+    send('move', event([touch(0, 50, 60, 200)], undefined, { 0: 100 }));
     expect(painted().shown).toMatchObject([{ halo: { x: 50, y: 60 }, lifting: false }]);
     // A move inside the held clock's span leaves the running clock alone.
     expect(native.timings).toHaveLength(1);
     const lift = event([], [touch(0, 50, 60, 300)], { 0: 100 });
-    send('onPanResponderEnd', lift);
-    send('onPanResponderRelease', lift);
+    send('end', lift);
+    send('end', lift);
     expect(painted().shown).toMatchObject([{ halo: { x: 50, y: 60 }, lifting: true }]);
     expect(native.timings.at(-1)).toMatchObject({ duration: HALO_OUT_MS });
     const lifted = painted();
@@ -279,13 +293,13 @@ describe('native Skia Pointer Halos', () => {
   it('shows and drops a halo at once under reduced motion', async () => {
     native.reduced = true;
     await mountSurface();
-    send('onPanResponderGrant', event([touch(0, 10, 20)]));
+    send('start', event([touch(0, 10, 20)]));
     expect(painted()).toMatchObject({ reduced: true, shown: [{ halo: { x: 10, y: 20 } }] });
     // The held clock keeps the layer drawing each frame; the reduced pose never reads it.
     expect(native.timings).toMatchObject([{ duration: HELD_CLOCK_MS }]);
     const lift = event([], [touch(0, 10, 20, 300)], { 0: 100 });
-    send('onPanResponderEnd', lift);
-    send('onPanResponderRelease', lift);
+    send('end', lift);
+    send('end', lift);
     expect(painted().shown).toEqual([]);
     expect(native.timings).toHaveLength(1);
   });

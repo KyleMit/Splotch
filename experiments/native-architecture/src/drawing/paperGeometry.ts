@@ -37,20 +37,18 @@ export function paperLocation(touch: { pageX: number; pageY: number }, frame: Pa
   return { x: touch.pageX - frame.pageX, y: touch.pageY - frame.pageY };
 }
 
-export function createPaperGeometry(interrupt: () => void) {
+export function createPaperGeometry() {
   let frame: PaperFrame | null = null;
   let generation = 0;
   return {
     current: () => frame,
     refresh(measure: MeasurePaper) {
-      interrupt();
-      frame = null;
       const requested = ++generation;
       let completed = false;
       measure((next) => {
         if (requested !== generation || completed) return;
         completed = true;
-        frame = next;
+        if (next) frame = next;
       });
     },
     clear() {

@@ -78,6 +78,8 @@ const iconColors = (label) =>
     .map((hex) => (hex.length === 4 ? `#${[...hex.slice(1)].map((d) => d + d).join('')}` : hex));
 const isGrey = (hex) => hex.slice(1, 3) === hex.slice(3, 5) && hex.slice(3, 5) === hex.slice(5, 7);
 
+const pressEvent = { nativeEvent: { touches: [], changedTouches: [] } };
+
 function propsOf(testID) {
   return records.props.findLast((props) => props.testID === testID);
 }
@@ -85,8 +87,8 @@ function propsOf(testID) {
 // A press the layout's root sees first, then, when it lands on the open menu, the menu's own box.
 async function press({ inside }) {
   await act(async () => {
-    propsOf('rsd-drawing-layout').onStartShouldSetResponderCapture();
-    if (inside) propsOf('rsd-tool-flyout').onStartShouldSetResponderCapture();
+    propsOf('rsd-drawing-layout').onStartShouldSetResponderCapture(pressEvent);
+    if (inside) propsOf('rsd-tool-flyout').onStartShouldSetResponderCapture(pressEvent);
     await Promise.resolve();
   });
 }
@@ -171,7 +173,7 @@ describe('Brush and Stroke Width flyouts', () => {
     await mountToolbar(toolbarScreen());
     await expandControls();
     await act(async () => button('Brushes').click());
-    expect(propsOf('rsd-drawing-layout').onStartShouldSetResponderCapture()).toBe(false);
+    expect(propsOf('rsd-drawing-layout').onStartShouldSetResponderCapture(pressEvent)).toBe(false);
     await press({ inside: true });
     expect(host.querySelector('[aria-label="Brush Menu"]')).not.toBeNull();
     await press({ inside: false });

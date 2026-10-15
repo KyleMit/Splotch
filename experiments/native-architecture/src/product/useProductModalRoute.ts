@@ -38,15 +38,13 @@ export function useProductModalRoute(
   routeRef.current = route;
   const callbackRef = useRef(onDismissed);
   callbackRef.current = onDismissed;
-  useEffect(() => {
-    setRoute((current) =>
-      current.shown === target
-        ? current
-        : current.shown === 'none'
-          ? { shown: target, closing: false, epoch: current.epoch + 1 }
-          : { ...current, closing: true }
+  if (route.shown !== target && !route.closing) {
+    setRoute(
+      route.shown === 'none'
+        ? { shown: target, closing: false, epoch: route.epoch + 1 }
+        : { ...route, closing: true }
     );
-  }, [target]);
+  }
   // Bound to the route it was rendered with, so a dismissal reported for an earlier epoch's dialog
   // is ignored.
   const dismissed = useCallback(() => {

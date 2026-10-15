@@ -5,6 +5,7 @@ import type { PresentedFrame } from '../drawing/paperPresentation';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
+import { useSecondTouchRoutes } from './secondTouchPress';
 
 const paperGrain = <PaperTexture />;
 
@@ -23,6 +24,7 @@ export function NativePaper({
   frame: PresentedFrame;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
+  const contacts = useSecondTouchRoutes();
   return (
     <View
       style={drawingScreenStyles.workspace}
@@ -40,6 +42,7 @@ export function NativePaper({
           ref={screen.surface}
           drawing={screen.history.drawing}
           currentDrawing={screen.currentDrawing}
+          isChromeTouch={contacts?.containsPoint}
           color={sound.settings.selectedColor}
           brush={screen.brush}
           strokeWidth={sound.settings.strokeWidth}

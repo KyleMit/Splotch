@@ -9,6 +9,7 @@ import {
   touch,
   event,
   send,
+  deliver,
   settle,
   open,
 } from './native-contacts-mounted-harness.mjs';
@@ -19,10 +20,10 @@ describe('canonical raster contact admission and mixed chronology', () => {
     const initial = await open({ ...legacyDrawing(), strokes: [marker] });
     const before = owner.history;
     sdk.soundStop.mockClear();
-    await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+    await send('start', event([touch(0, 10, 20)]));
     await act(async () => owner.setBrush('eraser'));
     await send(
-      'onPanResponderStart',
+      'start',
       event([touch(0, 30, 40, 200), touch(1, 80, 90, 200)], [touch(1, 80, 90, 200)], { 0: 100 }),
       false
     );
@@ -30,9 +31,8 @@ describe('canonical raster contact admission and mixed chronology', () => {
     expect(sdk.captures).toHaveLength(0);
     expect(sdk.soundStop).not.toHaveBeenCalled();
     expect(owner.currentDrawing()).toBe(initial);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
     await send(
-      'onPanResponderEnd',
+      'end',
       event([touch(0, 50, 60, 300)], [touch(1, 100, 110, 300)], { 0: 100, 1: 200 }),
       false
     );
@@ -40,7 +40,7 @@ describe('canonical raster contact admission and mixed chronology', () => {
     expect(sdk.captures).toHaveLength(0);
     expect(sdk.soundStop).not.toHaveBeenCalled();
     expect(owner.currentDrawing()).toBe(initial);
-    await send('onPanResponderEnd', event([], [touch(0, 70, 80, 400)], { 0: 100 }), false);
+    await send('end', event([], [touch(0, 70, 80, 400)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes.map(({ brush }) => brush)).toEqual([
       'marker',
       'pen',
@@ -52,16 +52,16 @@ describe('canonical raster contact admission and mixed chronology', () => {
 
   it('keeps mixed overlapping contact styles and complete erase chronology in one actual Undo unit', async () => {
     const initial = owner.currentDrawing();
-    await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+    await send('start', event([touch(0, 10, 20)]));
     await act(async () => owner.setBrush('eraser'));
     await send(
-      'onPanResponderStart',
+      'start',
       event([touch(0, 30, 40, 200), touch(1, 80, 90, 200)], [touch(1, 80, 90, 200)], { 0: 100 }),
       false
     );
     await act(async () => owner.setBrush('pen'));
     await send(
-      'onPanResponderStart',
+      'start',
       event(
         [touch(0, 40, 50, 300), touch(1, 90, 100, 300), touch(2, 100, 120, 300)],
         [touch(2, 100, 120, 300)],
@@ -71,7 +71,7 @@ describe('canonical raster contact admission and mixed chronology', () => {
     );
     await act(async () => owner.setBrush('eraser'));
     await send(
-      'onPanResponderStart',
+      'start',
       event(
         [
           touch(0, 50, 60, 400),
@@ -86,12 +86,11 @@ describe('canonical raster contact admission and mixed chronology', () => {
     );
     await settle();
     expect(sdk.captures).toHaveLength(0);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
     expect(sdk.soundStop).not.toHaveBeenCalled();
     expect(host.querySelectorAll('[data-mask="true"]')).toHaveLength(2);
     expect(owner.currentDrawing()).toBe(initial);
     await send(
-      'onPanResponderEnd',
+      'end',
       event(
         [touch(0, 60, 70, 500)],
         [touch(1, 110, 120, 500), touch(2, 140, 160, 500), touch(3, 160, 180, 500)],
@@ -101,7 +100,7 @@ describe('canonical raster contact admission and mixed chronology', () => {
     );
     expect(owner.currentDrawing()).toBe(initial);
     expect(sdk.soundStop).not.toHaveBeenCalled();
-    await send('onPanResponderEnd', event([], [touch(0, 70, 80, 600)], { 0: 100 }), false);
+    await send('end', event([], [touch(0, 70, 80, 600)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes.map(({ brush }) => brush)).toEqual([
       'pen',
       'eraser',
@@ -117,20 +116,20 @@ describe('canonical raster contact admission and mixed chronology', () => {
 
   it('rejects next contact against synchronously published history before parent rerender', async () => {
     const before = owner.history.drawing;
-    await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+    await send('start', event([touch(0, 10, 20)]));
     await act(async () => {
-      sdk.handlers.onPanResponderEnd(event([], [touch(0, 30, 40, 200)], { 0: 100 }));
+      deliver('end', event([], [touch(0, 30, 40, 200)], { 0: 100 }));
       expect(owner.currentDrawing()).not.toBe(before);
       expect(owner.history.drawing).toBe(before);
-      expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(false);
       const next = event([touch(1, 50, 60, 300)]);
-      sdk.handlers.onPanResponderGrant(next);
-      sdk.handlers.onPanResponderStart(next);
+      deliver('start', next);
     });
     expect(owner.history.drawing.strokes).toHaveLength(1);
-    await send('onPanResponderEnd', event([], [touch(1, 70, 80, 400)], { 1: 300 }), false);
+    await send('end', event([], [touch(1, 70, 80, 400)], { 1: 300 }), false);
     expect(owner.history.drawing.strokes).toHaveLength(1);
     await settle();
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await send('start', event([touch(2, 90, 100, 500)]));
+    await send('end', event([], [touch(2, 110, 120, 600)], { 2: 500 }));
+    expect(owner.history.drawing.strokes).toHaveLength(2);
   });
 });

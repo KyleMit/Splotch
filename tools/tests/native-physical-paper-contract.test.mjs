@@ -138,13 +138,15 @@ describe('drawing-level physical paper reference', () => {
   it('enforces exact v7 wire keys, canonical new widths and adopted nonempty records', () => {
     const drawing = { ...emptyDrawing(), paper: adoptPaper(342, 256.5, 1), strokes: [pen, crayon] };
     expect(parseDrawing(JSON.parse(JSON.stringify(drawing)))).toEqual(drawing);
+    const offPaper = { ...drawing, strokes: [{ ...pen, points: [{ x: 1025, y: -1 }] }] };
+    expect(parseDrawing(JSON.parse(JSON.stringify(offPaper)))).toEqual(offPaper);
     for (const bad of [
       { ...drawing, extra: true },
       { ...drawing, paper: { kind: 'unadopted' } },
       { ...drawing, strokes: [{ ...crayon, width: 34 }] },
       { ...drawing, strokes: [{ ...pen, brush: 'marker' }] },
       { ...drawing, strokes: [{ ...pen, width: 23 }] },
-      { ...drawing, strokes: [{ ...pen, points: [{ x: 1025, y: 400 }] }] },
+      { ...drawing, strokes: [{ ...pen, points: [{ x: Number.NaN, y: 400 }] }] },
     ])
       expect(() => parseDrawing(bad)).toThrow();
     expect(() => addStrokes(createHistory(drawing), [{ ...crayon, width: 34 }])).toThrow('width');

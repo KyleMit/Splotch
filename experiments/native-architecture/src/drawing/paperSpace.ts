@@ -204,8 +204,8 @@ export function paperContactPoint(
   if (![x, y].every(Number.isFinite)) throw new Error('The drawing paper is not ready.');
   const { scale, left, top } = paperView(width, height, size);
   return {
-    x: Math.round(Math.max(0, Math.min(size.width, (x - left) / scale)) * 100) / 100,
-    y: Math.round(Math.max(0, Math.min(size.height, (y - top) / scale)) * 100) / 100,
+    x: Math.round(((x - left) / scale) * 100) / 100,
+    y: Math.round(((y - top) / scale) * 100) / 100,
   };
 }
 

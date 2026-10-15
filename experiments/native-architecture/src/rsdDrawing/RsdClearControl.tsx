@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import { useRef, useState } from 'react';
 import { Animated } from '../platform/animated';
 import type { ClearDock } from '../clear/clearDock';
 import type { ClearControl } from '../clear/useClearGesture';
@@ -7,6 +8,7 @@ import { focusRingHostView } from './focusRing';
 import { ACCEPT_RING, RsdClearRing, ringFrame } from './RsdClearRing';
 import { RsdClearCoachmark } from './clearSurfaces';
 import { RsdClearFace } from './RsdClearFace';
+import { nativePressFrame, useSecondTouchTarget } from './secondTouchPress';
 
 const DELETE_READY_SCALE = 1.1;
 const LIFT_SQUASH = 0.07;
@@ -19,8 +21,27 @@ function dockFrame(dock: ClearDock) {
 // into a full disc that follows the finger, and past the accept ring it turns alarm red and glows.
 function RsdClearButton({ control, disabled }: { control: ClearControl; disabled: boolean }) {
   const { values, dragging, reached, clearing, dock } = control;
+  const host = useRef<View | null>(null);
+  const current = useRef({ control, disabled });
+  current.current = { control, disabled };
+  const [target] = useState(() => ({
+    bounds: () =>
+      current.current.disabled || current.current.control.clearing
+        ? null
+        : nativePressFrame(host.current),
+    start: (event: Parameters<typeof control.responder.onTouchStart>[0], identifier: string) =>
+      current.current.control.responder.onTouchStart(event, identifier),
+    move: (event: Parameters<typeof control.responder.onTouchMove>[0]) =>
+      current.current.control.responder.onTouchMove(event),
+    end: (event: Parameters<typeof control.responder.onTouchEnd>[0]) =>
+      current.current.control.responder.onTouchEnd(event),
+    cancel: () => current.current.control.responder.onTouchCancel(),
+    priority: 'clear' as const,
+  }));
+  useSecondTouchTarget(target);
   return (
     <Animated.View
+      ref={host}
       accessible
       accessibilityRole="button"
       accessibilityLabel="Clear drawing"

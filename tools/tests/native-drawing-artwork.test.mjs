@@ -1,6 +1,11 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
-import { legacyDrawing, adoptedDrawing } from './native-paper-fixtures.mjs';
+import {
+  legacyDrawing,
+  adoptedDrawing,
+  createPaperInputView,
+  paperInputPacket,
+} from './native-paper-fixtures.mjs';
 import {
   act,
   createElement,
@@ -29,24 +34,8 @@ import { DRAWING_THEME } from '../../experiments/native-architecture/src/drawing
 
 const responder = vi.hoisted(() => ({ current: null, scheme: 'light', busy: true, errors: [] }));
 
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: createAccessibilityInfoFixture(),
-  useColorScheme: () => responder.scheme,
-  PanResponder: {
-    create: (handlers) => {
-      responder.current = handlers;
-      return { panHandlers: {} };
-    },
-  },
-  Platform: { OS: 'ios' },
-  findNodeHandle: (owner) => owner,
-  StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
-  Image: ({ source, onLoad }) => {
-    useEffect(() => onLoad?.(), [source.uri]);
-    return null;
-  },
-  View: forwardRef(({ children, onLayout, testID, style }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children, onLayout, testID, style }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
@@ -58,8 +47,27 @@ vi.mock('react-native', () => ({
       { 'data-testid': testID, 'data-hidden-artwork': hidden ? 'true' : undefined },
       children
     );
-  }),
-}));
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
+    useColorScheme: () => responder.scheme,
+    Platform: { OS: 'ios' },
+    findNodeHandle: (owner) => owner,
+    StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
+    Image: ({ source, onLoad }) => {
+      useEffect(() => onLoad?.(), [source.uri]);
+      return null;
+    },
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            responder.current = emit;
+          })
+        : View,
+  };
+});
 
 vi.mock(
   '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
@@ -319,9 +327,24 @@ describe('coloring outlines over live and exported paint', () => {
   it('keeps committed and draft crossings visible on the live paper', async () => {
     mount();
     const first = touch(512, 100);
-    act(() => responder.current.onPanResponderGrant(first));
-    act(() => responder.current.onPanResponderStart(first));
-    act(() => responder.current.onPanResponderMove(touch(512, 650, 200)));
+    act(() =>
+      responder.current({
+        nativeEvent: paperInputPacket('start', first, 0, {
+          width: 1024,
+          height: 768,
+          bottomInset: 0,
+        }),
+      })
+    );
+    act(() =>
+      responder.current({
+        nativeEvent: paperInputPacket('move', touch(512, 650, 200), 1, {
+          width: 1024,
+          height: 768,
+          bottomInset: 0,
+        }),
+      })
+    );
     const svg = liveArtwork();
     const image = await sharp(Buffer.from(svg.outerHTML))
       .raw()

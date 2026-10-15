@@ -90,3 +90,99 @@ it('binds both native receivers to the same key event contract', () => {
   expect(android).toContain('KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> "submit"');
   expect(ios).toContain('? "delete" : input == "\\r" ? "submit" : input');
 });
+
+it('binds drawing and modal shortcut receivers to the same native view and event contract', () => {
+  const read = (path) =>
+    readFileSync(
+      resolve(import.meta.dirname, '../../experiments/native-architecture', path),
+      'utf8'
+    );
+  const android = read(
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchGateKeyboard.kt'
+  );
+  const ios = read('ios/HelloWorld/SplotchGateKeyboard.swift');
+  const bridge = read('ios/HelloWorld/SplotchGateKeyboard.m');
+  const adapter = read('src/platform/KeyboardScope.tsx');
+  expect(adapter).toContain("requireNativeComponent<ReceiverProps>('SplotchShortcutKeyboard')");
+  expect(android).toContain('override fun getName() = "SplotchShortcutKeyboard"');
+  const shortcut = android.slice(
+    android.indexOf('class ShortcutKeyboardView'),
+    android.indexOf('class SplotchShortcutKeyboardManager')
+  );
+  expect(shortcut).toContain('override fun dispatchKeyEvent(event: KeyEvent): Boolean');
+  expect(shortcut).not.toContain('override fun onKeyDown');
+  expect(shortcut).toContain(
+    'event.action == KeyEvent.ACTION_UP && consumedKeys.remove(event.keyCode)'
+  );
+  expect(shortcut).toContain('event.action != KeyEvent.ACTION_DOWN');
+  expect(shortcut).toContain('super.dispatchKeyEvent(event)');
+  expect(shortcut).toContain('rootView.findFocus() !is EditText');
+  expect(shortcut).toContain('event.isCtrlPressed || event.isMetaPressed');
+  expect(shortcut).not.toContain('repeatCount');
+  expect(ios).toContain('@objc(SplotchShortcutKeyboardManager)');
+  expect(bridge).toContain('RCT_EXPORT_VIEW_PROPERTY(onShortcutKey, RCTDirectEventBlock)');
+  expect(android).toContain('SHORTCUT_KEY_EVENT to mapOf("registrationName" to "onShortcutKey")');
+  for (const name of ['shortcutScope', 'shortcutsEnabled']) {
+    expect(adapter).toContain(`${name}=`);
+    expect(android).toContain(`@ReactProp(name = "${name}"`);
+    expect(bridge).toContain(`RCT_EXPORT_VIEW_PROPERTY(${name},`);
+  }
+  for (const key of ['undo', 'escape']) {
+    expect(adapter).toContain(`key !== '${key}'`);
+    expect(android).toContain(`return "${key}"`);
+    expect(ios).toContain(`"${key}"`);
+  }
+});
+
+it("keeps shortcut capture visually transparent like shipping's window listener", () => {
+  const shipping = readFileSync(
+    resolve(import.meta.dirname, '../../web/src/lib/boot/undoShortcut.ts'),
+    'utf8'
+  );
+  const android = readFileSync(
+    resolve(
+      import.meta.dirname,
+      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchGateKeyboard.kt'
+    ),
+    'utf8'
+  );
+  const shortcut = android.slice(
+    android.indexOf('class ShortcutKeyboardView'),
+    android.indexOf('class SplotchShortcutKeyboardManager')
+  );
+  const initialization = shortcut.match(/init \{([\s\S]*?)\n {2}\}/)?.[1];
+  expect(shipping).toContain("window.addEventListener('keydown', onKeyDown)");
+  expect(shipping).not.toMatch(/\.focus\(/);
+  expect(initialization).toContain('isFocusable = true');
+  expect(initialization).toContain('isFocusableInTouchMode = true');
+  expect(initialization).toContain(
+    'if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) defaultFocusHighlightEnabled = false'
+  );
+});
+
+it('restores Android shortcut capture when a modal window returns', () => {
+  const shipping = readFileSync(
+    resolve(import.meta.dirname, '../../web/src/lib/actions/actionPanelEvents.ts'),
+    'utf8'
+  );
+  const android = readFileSync(
+    resolve(
+      import.meta.dirname,
+      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchGateKeyboard.kt'
+    ),
+    'utf8'
+  );
+  const shortcut = android.slice(
+    android.indexOf('class ShortcutKeyboardView'),
+    android.indexOf('class SplotchShortcutKeyboardManager')
+  );
+  expect(shipping).toContain("document.addEventListener('keydown', escape)");
+  expect(shipping).toContain("if (event.key === 'Escape' && current.wrapper())");
+  expect(shortcut).toContain('override fun onWindowFocusChanged(hasWindowFocus: Boolean)');
+  expect(shortcut).toMatch(
+    /super\.onWindowFocusChanged\(hasWindowFocus\)\s+if \(hasWindowFocus\) focusWhenAvailable\(\)/
+  );
+  expect(shortcut).toContain(
+    'isAttachedToWindow && shortcutsEnabled && !hasFocus() && rootView.findFocus() !is EditText'
+  );
+});
