@@ -26,7 +26,7 @@ export class RsdScreenBoundary extends Component<{ children: ReactNode }, State>
   render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <RsdSurfaceBoundary>
+      <RsdSurfaceBoundary onClose={this.restart}>
         <RsdCrashScreen onRestart={this.restart} />
       </RsdSurfaceBoundary>
     );

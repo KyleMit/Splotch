@@ -46,7 +46,15 @@ const registrations = entry.program.body
   .map((node) => node.expression);
 assert.equal(registrations.length, 1, 'Exactly one registration');
 assert.equal(registrations[0].arguments.length, 1, 'Registration arity');
-assert.equal(registrations[0].arguments[0].name, 'ProbeApp', 'Canonical registration');
+const registeredRoot = registrations[0].arguments[0];
+assert.equal(registeredRoot.type, 'ConditionalExpression', 'Canonical registration mode');
+assert.equal(registeredRoot.test.name, '__DEV__', 'Canonical registration development flag');
+assert.equal(
+  registeredRoot.consequent.name,
+  'StrictProbeApp',
+  'Canonical registration development root'
+);
+assert.equal(registeredRoot.alternate.name, 'ProbeApp', 'Canonical registration release root');
 const probe = parse('src/ProbeApp.tsx');
 assert.ok(
   imported(probe, './rsdDrawing/RsdDrawingScreen', 'RsdDrawingScreen'),
@@ -83,8 +91,15 @@ assert.equal(
 const fontGates = elementChildren(sessions[0]);
 assert.equal(fontGates.length, 1, 'Drawing session has one font gate');
 assert.equal(fontGates[0].openingElement.name.name, 'ShippingFontGate', 'Font-gated screen');
-const mountedScreens = elementChildren(fontGates[0]);
-assert.equal(mountedScreens.length, 1, 'Font gate has one screen');
+const boundaries = elementChildren(fontGates[0]);
+assert.equal(boundaries.length, 1, 'Font gate has one screen boundary');
+assert.equal(
+  boundaries[0].openingElement.name.name,
+  'RsdScreenBoundary',
+  'Mounted screen boundary'
+);
+const mountedScreens = elementChildren(boundaries[0]);
+assert.equal(mountedScreens.length, 1, 'Screen boundary has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');

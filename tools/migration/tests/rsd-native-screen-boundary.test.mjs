@@ -27,12 +27,28 @@ vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () =
   },
 }));
 
+const fallback = vi.hoisted(() => ({ fails: false }));
+vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/drawingSheets.ts',
+  async (load) => {
+    const sheets = await load();
+    return {
+      ...sheets,
+      RsdCrashScreen: (props) => {
+        if (fallback.fails) throw new Error('The crash-screen chunk did not load.');
+        return createElement(sheets.RsdCrashScreen, props);
+      },
+    };
+  }
+);
+
 const RENDER_FAULT = new Error('A drawing screen render failed.');
 const STROKES_BEFORE_FAULT = 2;
 let drafts;
 let errors;
 
 beforeEach(() => {
+  fallback.fails = false;
   caller.realScreen = true;
   caller.settingsStorage = {
     read: vi.fn(async () => '{"version":1,"soundEnabled":false}'),
@@ -99,4 +115,23 @@ it('shows the Error Screen for a render error and brings back the session it hel
 
   await act(async () => caller.liveScreen.undo());
   expect(caller.liveScreen.history.drawing.strokes).toHaveLength(STROKES_BEFORE_FAULT);
+});
+
+it('returns to the held session when the crash screen fails to load and its fallback closes', async () => {
+  await mount(createElement(ProbeApp));
+  await settle();
+  await act(async () => paper().click());
+  const held = caller.liveScreen.history;
+  fallback.fails = true;
+  caller.paperRender.mockImplementation(() => {
+    throw RENDER_FAULT;
+  });
+  await act(async () => paper().click());
+  expect(host.textContent).toContain('Did not load');
+  expect(paper()).toBeNull();
+  caller.paperRender.mockImplementation(() => {});
+  await act(async () => host.querySelector('[aria-label="Close"]').click());
+  await settle();
+  expect(paper()).not.toBeNull();
+  expect(caller.liveScreen.history.undo).toHaveLength(held.undo.length + 1);
 });

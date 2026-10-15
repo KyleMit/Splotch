@@ -10,9 +10,8 @@ void startLaunchInvites();
 // Every launch counts toward the Settings activity dots, not only those that open Settings; the
 // counter loads off the startup path.
 void import('./platform/settingsSessions').then(({ settingsSessions }) => settingsSessions.load());
-// Development builds run under StrictMode, which repeats every effect's cleanup and setup as it
-// mounts, so an owner that cannot start again after its cleanup fails at once
-// (rsd-native-strict-root.test.mjs runs the root that way).
+// StrictMode repeats effect cleanup and setup to expose owners that cannot restart after cleanup.
+// native-entry-strict-mode.test.mjs pins the registration; rsd-native-strict-root.test.mjs mounts it.
 function StrictProbeApp() {
   return createElement(StrictMode, null, createElement(ProbeApp));
 }

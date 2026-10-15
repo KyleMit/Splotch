@@ -19,6 +19,7 @@ const SHEET_MOUNTERS = [
   'rsdDrawing/RsdPaperSlot.tsx',
   'rsdDrawing/RsdDrawingStatus.tsx',
   'rsdDrawing/RsdLeaveConfirm.tsx',
+  'rsdDrawing/RsdScreenBoundary.tsx',
 ];
 const SHEETS = 'rsdDrawing/drawingSheets.ts';
 // The one chunk the AI and feedback surfaces share with their owners (ADR-0179).

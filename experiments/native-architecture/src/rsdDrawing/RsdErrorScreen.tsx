@@ -9,7 +9,7 @@ import { fontTheme } from './fontTheme';
 import { RsdButton } from './RsdButton';
 import { RsdIcon } from './RsdIcon';
 import { styles as controlStyles } from './controls';
-import { colors, darkTheme, dimensions } from './tokens.css';
+import { colors, darkTheme, dimensions, fonts } from './tokens.css';
 
 // ErrorScreen.svelte's copy and the literals it writes beside its tokens. Local because the StyleX
 // web compile resolves only local constants inside css.create; rsd-native-error-screen.test.mjs
@@ -39,6 +39,7 @@ const styles = css.create({
     gap: dimensions.space4,
     padding: dimensions.space6,
     textAlign: 'center',
+    fontFamily: fonts.family,
     backgroundColor: colors.appBg,
     color: colors.textStrong,
   },
