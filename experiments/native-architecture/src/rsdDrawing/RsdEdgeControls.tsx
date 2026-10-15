@@ -266,6 +266,7 @@ function RsdPalette({
   return (
     <html.div
       data-testid="rsd-palette-plate"
+      onPointerDown={(event: { preventDefault(): void }) => event.preventDefault()}
       style={[
         paletteStyles.plate(flow, column, endClearance),
         column ? paletteStyles.columnExtent(flow.extentPx) : paletteStyles.rowExtent(flow.extentPx),

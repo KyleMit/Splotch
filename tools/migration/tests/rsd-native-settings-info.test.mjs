@@ -23,9 +23,13 @@ vi.mock('../../../experiments/native-architecture/src/settings/hostedPages.ts', 
   openHostedPage: vi.fn(),
 }));
 
-vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
-  openAppPage: vi.fn(),
-}));
+vi.mock(
+  '../../../experiments/native-architecture/src/platform/appPath.ts',
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    openAppPage: vi.fn(),
+  })
+);
 
 const POLICIES = {
   ai: 'always',

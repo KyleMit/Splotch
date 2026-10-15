@@ -19,6 +19,10 @@ vi.mock(
   () => import('../../../experiments/native-architecture/src/platform/appPath.web.ts')
 );
 vi.mock(
+  '../../../experiments/native-architecture/src/platform/informationFragment.ts',
+  () => import('../../../experiments/native-architecture/src/platform/informationFragment.web.ts')
+);
+vi.mock(
   '../../../experiments/native-architecture/src/platform/BrowserBack.tsx',
   () => import('../../../experiments/native-architecture/src/platform/BrowserBack.web.tsx')
 );
