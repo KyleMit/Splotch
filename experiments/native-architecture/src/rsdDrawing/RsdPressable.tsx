@@ -1,7 +1,8 @@
-import type { ComponentProps } from 'react';
+import { useContext, type ComponentProps } from 'react';
 import { Pressable, type PressableProps } from 'react-native';
 import { Animated } from '../platform/animated';
 import { compat, type html } from 'react-strict-dom';
+import { InertRegion } from './toolbarSkin';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -20,15 +21,22 @@ type ResolvedProps = PressableProps & {
 // sliding off, on cancellation and on release, and press-in again on sliding back. A native
 // host has no form to submit, so the button's type is dropped. The host renders as a div, which
 // carries no implicit role natively, so a caller that names none gets the button role a web
-// <button> implies.
+// <button> implies. Inside an inert region the press is dropped (InertRegion).
 export function RsdPressable({
   children,
   type: _formType,
   role = 'button',
+  onClick,
   ...props
 }: ComponentProps<typeof html.button>) {
+  const inert = useContext(InertRegion);
   return (
-    <compat.native<ResolvedProps> {...props} role={role} as="div">
+    <compat.native<ResolvedProps>
+      {...props}
+      onClick={inert ? undefined : onClick}
+      role={role}
+      as="div"
+    >
       {({ animated, onPointerDown, onPointerUp, onPointerCancel, ...resolved }) => {
         const Host = animated ? AnimatedPressable : Pressable;
         return (

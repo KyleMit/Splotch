@@ -32,9 +32,6 @@ const docks = StyleSheet.create({
   clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
   controls: { position: 'absolute', top: 0, right: 0, left: 0 },
-  // The flat style prints the bar over the paper, which runs under it to the frame's edge.
-  floatingRow: { position: 'absolute', top: 0, right: 0, left: 0 },
-  floatingColumn: { position: 'absolute', top: 0, bottom: 0, left: 0 },
 });
 
 type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -119,14 +116,13 @@ export function NativeDrawingLayout({
   const [column, setColumn] = useState<Box>();
   const paperArea = area ?? window;
   const phoneLandscape = isPhoneLandscapeViewport(window);
-  // The flat bar floats over the paper, so the controls keep the place the raised bar leaves them.
+  // Both Button styles keep the palette bar in the flow, as shipping's do, so a style switch never
+  // resizes the paper under a drawing. The flat bar's glass is shipping's, laid out over the whole
+  // layout, which reaches past the paper area by the bar.
   const rail = bareGlass && !phoneLandscape ? PALETTE_FLOWS[axis].extentPx : 0;
   const railTop = axis === 'row' ? rail : 0;
   const railLeft = axis === 'column' ? rail : 0;
-  const controlArea = {
-    width: paperArea.width - railLeft,
-    height: paperArea.height - insetBottom - railTop,
-  };
+  const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
   return (
     <View
       testID="rsd-drawing-layout"
@@ -140,11 +136,7 @@ export function NativeDrawingLayout({
       {phoneLandscape ? null : (
         <View
           testID="rsd-palette-bar"
-          style={[
-            drawingScreenStyles.paletteBar,
-            docks.palette,
-            bareGlass && (axis === 'row' ? docks.floatingRow : docks.floatingColumn),
-          ]}
+          style={[drawingScreenStyles.paletteBar, docks.palette]}
           onLayout={({ nativeEvent }) => {
             const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
             setMeasured((previous) =>
@@ -177,7 +169,13 @@ export function NativeDrawingLayout({
           {children}
           {bareGlass ? (
             <RsdGlassPanes
-              space={{ width: paperArea.width, height: paperArea.height, insetBottom }}
+              space={{
+                width: paperArea.width + railLeft,
+                height: paperArea.height + railTop,
+                insetBottom,
+                paperTop: railTop,
+                paperLeft: railLeft,
+              }}
               glass={bareGlass}
             />
           ) : null}
@@ -185,7 +183,7 @@ export function NativeDrawingLayout({
           <View
             testID="rsd-controls-inset"
             pointerEvents="box-none"
-            style={[docks.controls, { top: railTop, left: railLeft, bottom: insetBottom }]}
+            style={[docks.controls, { bottom: insetBottom }]}
           >
             {overlays}
             <View testID="rsd-settings-dock" style={docks.settings}>

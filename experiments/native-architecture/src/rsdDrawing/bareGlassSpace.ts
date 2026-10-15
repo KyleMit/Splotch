@@ -14,9 +14,16 @@ const COLOR_MENU_DROPPED_COLORS = 4;
 const CUSTOM_SLOTS = 1;
 const ROW = PALETTE_FLOWS.row;
 
-// The flat layout's paper area: the whole layout, from the frame's top-left corner to the bottom of
-// the screen, whose bottom inset the controls sit clear of.
-export type GlassSpace = Readonly<{ width: number; height: number; insetBottom: number }>;
+// The whole flat layout, shipping's viewport, from the frame's top-left corner to the bottom of the
+// screen, whose bottom inset the controls sit clear of; and where the paper area that holds the
+// glass starts inside it, past the palette bar.
+export type GlassSpace = Readonly<{
+  width: number;
+  height: number;
+  insetBottom: number;
+  paperTop: number;
+  paperLeft: number;
+}>;
 
 // Shipping's glass geometry in the paper area's coordinates. The frame has already taken the top
 // and side insets, so only the bottom one remains.

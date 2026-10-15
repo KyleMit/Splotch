@@ -18,7 +18,7 @@ const VIEW_BOX = /viewBox="([^"]+)"/;
 // The shipping keyline strokes each currentColor path behind its fill (paint-order: stroke) at a
 // fixed screen width (non-scaling-stroke). react-native-svg supports neither, so a stroke-only
 // copy goes under each ink path, its width converted into the icon's own units.
-function keylinedMarkup(markup: string, keyline: string, size: number) {
+export function keylinedMarkup(markup: string, keyline: string, size: number) {
   const [, , width = size, height = size] = (VIEW_BOX.exec(markup)?.[1] ?? '')
     .trim()
     .split(/[\s,]+/)
