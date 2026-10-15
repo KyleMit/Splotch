@@ -34,8 +34,9 @@ function layoutElement(seen, bareGlass, paper = adoptPaper(1000, 700, 1), depart
       status: createElement('output', { 'data-status': true }),
       overlays: createElement('div', { 'data-overlay': true }),
     },
-    (frame) => {
+    (frame, space) => {
       seen.paperFrame = frame;
+      seen.paperSpace = space;
       return createElement('div', { 'data-paper': true });
     }
   );
@@ -45,11 +46,12 @@ const props = (testID) => flat(records.props.findLast((found) => found.testID ==
 const rail = () => host.querySelector('[data-testid="rsd-rail-glass"]');
 
 it.each([
-  ['portrait', { width: 402, height: 874 }, 'top'],
-  ['landscape', { width: 1180, height: 820 }, 'left'],
+  ['portrait', { width: 402, height: 874 }, 'top', 0],
+  ['landscape', { width: 1180, height: 820 }, 'left', 84],
+  ['large tablet', { width: 1366, height: 1024 }, 'left', 84],
 ])(
   'floats the %s flat bar over the paper, as shipping ColorPalette does',
-  async (_, dimensions, edge) => {
+  async (_, dimensions, edge, controlsLeft) => {
     records.dimensions = { ...dimensions, scale: 1, fontScale: 1 };
     const area = { width: 1000, height: 700 };
     const box = (width, height) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height } } });
@@ -75,10 +77,13 @@ it.each([
     expect(raisedLayout.bar.position).not.toBe('absolute');
     expect(props('rsd-palette-bar')).toMatchObject({ position: 'absolute', top: 0, left: 0 });
     expect(props('rsd-palette-bar')[edge === 'top' ? 'right' : 'bottom']).toBe(0);
-    expect(props('rsd-controls-inset')).toEqual(raisedLayout.controls);
-    expect(props('rsd-controls-inset')[edge]).toBe(0);
-    expect(seen.area).toEqual(raised.area);
-    expect(seen.area).toEqual(area);
+    expect(props('rsd-controls-inset')).toEqual({
+      ...raisedLayout.controls,
+      left: controlsLeft,
+    });
+    expect(seen.area).toEqual({ width: area.width - controlsLeft, height: area.height });
+    expect(seen.paperSpace).toEqual(area);
+    expect(seen.paperFrame).toEqual(raised.paperFrame);
     const layout = host.querySelector('[data-testid="rsd-drawing-layout"]');
     const order = [...layout.children].map((node) => node.dataset.testid);
     expect(order.indexOf('rsd-palette-bar')).toBeLessThan(order.indexOf('rsd-canvas-column'));
@@ -91,10 +96,13 @@ it.each([
 
 it('hands the landscape phone its whole paper, with no rail to print', async () => {
   records.dimensions = { width: 874, height: 402, scale: 1, fontScale: 1 };
-  await mount(layoutElement({}, RESTING_GLASS));
+  const seen = {};
+  await mount(layoutElement(seen, RESTING_GLASS));
   expect(host.querySelector('[data-testid="rsd-palette-bar"]')).toBeNull();
   expect(rail()).toBeNull();
   expect(props('rsd-controls-inset')).toMatchObject({ top: 0, left: 0 });
+  expect(seen.area).toEqual({ width: 874, height: 402 });
+  expect(seen.paperSpace).toEqual(seen.area);
 });
 
 it('shares the retained paper frame with Clear after the Flat bar releases its column', async () => {
