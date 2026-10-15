@@ -163,18 +163,23 @@ describe('drawing policy at the sole history writer', () => {
   });
 });
 it('fences a late transfer after master-off without changing durable auto-download policy', async () => {
+  const files = new Map();
+  const pack = catalogPack(OFFLINE_BOOKS[0].id, 'full');
   const entered = deferred();
   const finish = deferred();
   let transferSignal;
   const platform = {
     environment: async () => ({ online: true, metered: false, freeBytes: 1e9 }),
     list: async () => [],
-    read: async () => null,
-    write: vi.fn(async () => {}),
+    read: async (path) => files.get(path) ?? null,
+    write: vi.fn(async (path, bytes) => files.set(path, bytes)),
     move: vi.fn(async () => {}),
     remove: vi.fn(async () => {}),
     uri: (path) => path,
-    verify: async () => false,
+    verify: async (path, expected) => {
+      const bytes = files.get(path);
+      return !!bytes && bytes.length === expected.bytes && digest(bytes) === expected.sha256;
+    },
     download: vi.fn(async (_path, _file, signal) => {
       transferSignal = signal;
       entered.resolve();
@@ -194,7 +199,10 @@ it('fences a late transfer after master-off without changing durable auto-downlo
   finish.resolve();
   await owner.settled();
   expect(owner.snapshot().installed).toEqual([]);
-  expect(platform.write).not.toHaveBeenCalled();
+  expect(platform.write).toHaveBeenCalledExactlyOnceWith(
+    `staging-${packDirectory(pack)}/identity.json`,
+    new TextEncoder().encode(JSON.stringify(pack.files))
+  );
   expect(platform.move).not.toHaveBeenCalled();
   owner.dispose();
 });

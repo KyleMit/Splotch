@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
   changePage,
+  clearColoringOverlay,
   addStrokes,
   hasDrawingInk,
   clearDrawing,
@@ -15,7 +16,6 @@ import {
   type Stroke,
   type Drawing,
 } from './drawing/model';
-import { savedColoringPageIds } from './platform/drawingFiles';
 import { capturePicture, savePicture } from './keepPicture';
 import { isUnsaved, type UnsavedOutcome } from './export/pictureSave';
 import { usePolaroidFlights, useSaveFailure, useSaveAction } from './useSavePicture';
@@ -70,7 +70,8 @@ export function useDrawingScreen() {
   const saveFailure = useSaveFailure();
   const flights = usePolaroidFlights();
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
-  const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
+  const [committedStrokes, setCommittedStrokes] = useState(0);
+  const library = useColoringLibrary(setHistory, drawing, pagePickerOpen, committedStrokes);
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
@@ -89,8 +90,6 @@ export function useDrawingScreen() {
       busy || rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
 
-  // Strokes committed since this screen opened; the install banner waits on them.
-  const [committedStrokes, setCommittedStrokes] = useState(0);
   // Whether the page shows ink: the screenshot camera's blank state.
   const ink = useVisibleInk(history.drawing, !drawing, scanEmpty);
   useBlankPaper(history, setHistory, drawing, ink.visible);
@@ -275,17 +274,20 @@ function createColoringPageActions(
   };
 }
 
-function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pickerOpen: boolean) {
-  const state = useOfflineLibrary(drawing, pickerOpen);
+function useColoringLibrary(
+  setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
+  drawing: boolean,
+  pickerOpen: boolean,
+  committedStrokes: number
+) {
+  const state = useOfflineLibrary(drawing, pickerOpen, committedStrokes);
   return {
     owner: offlineLibrary,
     state,
-    remove: () =>
-      offlineLibrary.remove(async () => [
-        ...(await savedColoringPageIds()),
-        historyRef.current.drawing.pageId,
-        ...historyRef.current.undo.map((entry) => entry.pageId),
-      ]),
+    remove: async () => {
+      await offlineLibrary.remove();
+      if (offlineLibrary.snapshot().status === 'ready') setHistory(clearColoringOverlay);
+    },
   };
 }
 

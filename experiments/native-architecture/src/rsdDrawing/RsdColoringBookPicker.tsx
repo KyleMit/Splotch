@@ -140,9 +140,7 @@ export function RsdColoringBookPicker({
 }) {
   const theme = useDrawingAppearance();
   const books = usePickerBooks(theme, orientation);
-  const listsBooks = books.length >= 2;
-  // An open that starts in the one book's pages stays there when the launch inventory lists
-  // more books mid-open; Back then leads to them.
+  const [listsBooks] = useState(() => books.length >= 2);
   const [activeBookId, setActiveBookId] = useState<string | null>(() =>
     listsBooks ? null : books[0].id
   );

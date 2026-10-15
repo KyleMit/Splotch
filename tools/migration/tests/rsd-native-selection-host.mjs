@@ -38,7 +38,6 @@ const caller = vi.hoisted(() => {
     sound: null,
     menu: null,
     aiAdmit: vi.fn().mockResolvedValue(undefined),
-    saveOriginal: vi.fn(async () => ({ id: 'picture-1-fixture' })),
     aiPrepare: vi.fn(async (next, _, bytes) => {
       journal = next;
       upload = bytes.slice();
@@ -69,6 +68,9 @@ const caller = vi.hoisted(() => {
 vi.mock('../../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
   useOnline: () => caller.online,
 }));
+vi.mock('../../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+  subscribeNetworkReturn: () => () => {},
+}));
 vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   aiTransport: caller.aiSend,
   admitAiImage: caller.aiAdmit,
@@ -92,10 +94,6 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
     retain: caller.aiRetain,
     pictures: async () => [],
   },
-}));
-vi.mock('../../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: caller.saveOriginal,
-  savedColoringPageIds: async () => [],
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
   feedbackTransport: caller.feedbackSend,
@@ -359,7 +357,7 @@ beforeEach(() => {
     },
     'full'
   );
-  caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove(async () => []) };
+  caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove() };
 });
 async function mount(element) {
   const settings = caller.sound?.settings;

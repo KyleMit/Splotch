@@ -7,6 +7,8 @@ import {
 } from '../../experiments/native-architecture/src/offlineLibrary/snapshot.ts';
 import { encodeLibraryText } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
 import { OFFLINE_BOOKS } from '../../experiments/native-architecture/src/offlineLibrary/books.generated.ts';
+import { afterDrawingPaint } from '../../experiments/native-architecture/src/product/afterDrawingPaint.ts';
+import { drawingPaint } from '../../experiments/native-architecture/src/product/drawingPaint.ts';
 
 const OFFLINE_PAGE = `offline:${OFFLINE_BOOKS[0].id}:${OFFLINE_BOOKS[0].pages[0].slug}:${'a'.repeat(64)}`;
 
@@ -53,10 +55,6 @@ function recordingController() {
     retryStalled: record('retryStalled'),
     setPolicy: vi.fn(async (...args) => record('setPolicy')(...args)),
     openPage: vi.fn(async (...args) => record('openPage')(...args)),
-    withSavedArtwork: vi.fn(async (pageId, action) => {
-      calls.push(['withSavedArtwork', pageId]);
-      return action();
-    }),
     remove: vi.fn(async () => record('remove')()),
     cover: (pack, dark) => `cover:${pack.id}:${dark}`,
     selector: (pack, page, orientation, dark) =>
@@ -69,11 +67,58 @@ function deferredFixture() {
   const chunk = deferred();
   const idle = deferred();
   const load = vi.fn(() => chunk.promise);
-  const library = createDeferredLibrary(load, () => idle.promise);
+  const library = createDeferredLibrary(
+    load,
+    () => idle.promise,
+    async () => true
+  );
   return { controller, chunk, idle, load, library };
 }
 
 describe('the offline library on web before its controller loads', () => {
+  it('holds a first web visit until engagement, then loads at idle', async () => {
+    const controller = recordingController();
+    const firstIdle = deferred();
+    const engagedIdle = deferred();
+    const idle = vi
+      .fn()
+      .mockReturnValueOnce(firstIdle.promise)
+      .mockReturnValue(engagedIdle.promise);
+    const load = vi.fn(async () => controller);
+    const library = createDeferredLibrary(load, idle, async () => false);
+    library.setFeatureEnabled(true);
+    const initialized = library.initialize();
+    firstIdle.resolve();
+    await initialized;
+    expect(load).not.toHaveBeenCalled();
+    expect(library.snapshot()).toMatchObject({ status: 'ready', inventoried: true, installed: [] });
+    library.engage();
+    await flush();
+    expect(load).not.toHaveBeenCalled();
+    engagedIdle.resolve();
+    await flush();
+    expect(load).toHaveBeenCalledOnce();
+    expect(controller.calls).toContainEqual(['engage']);
+  });
+
+  it('resumes a repeat web visit with existing pack storage at idle without picker engagement', async () => {
+    const controller = recordingController();
+    const idle = deferred();
+    const load = vi.fn(async () => controller);
+    const library = createDeferredLibrary(
+      load,
+      () => idle.promise,
+      async () => true
+    );
+    const initialized = library.initialize();
+    await flush();
+    expect(load).not.toHaveBeenCalled();
+    idle.resolve();
+    await initialized;
+    expect(controller.calls).toContainEqual(['engage']);
+    expect(controller.initialize).toHaveBeenCalledOnce();
+  });
+
   it('reports the controller’s loading snapshot and fetches nothing for settings alone', async () => {
     const { load, library } = deferredFixture();
 
@@ -109,6 +154,7 @@ describe('the offline library on web before its controller loads', () => {
       ['setFeatureEnabled', true],
       ['setActive', true],
       ['setDrawing', true],
+      ['engage'],
       ['initialize'],
     ]);
     expect(library.snapshot()).toBe(controller.snapshot());
@@ -120,23 +166,17 @@ describe('the offline library on web before its controller loads', () => {
   });
 
   it.each([
-    ['engaging the picker', (library) => library.engage(), ['engage']],
     [
       'opening an offline page',
       (library) => library.openPage(OFFLINE_PAGE),
       ['openPage', OFFLINE_PAGE],
     ],
     [
-      'saving over offline artwork',
-      (library) => library.withSavedArtwork(OFFLINE_PAGE, async () => {}),
-      ['withSavedArtwork', OFFLINE_PAGE],
-    ],
-    [
       'changing the policy',
       (library) => library.setPolicy(false, true),
       ['setPolicy', false, true],
     ],
-    ['removing books', (library) => library.remove(async () => []), ['remove']],
+    ['removing books', (library) => library.remove(), ['remove']],
   ])('loads the controller at once for %s', async (_name, act, expected) => {
     const { controller, chunk, load, library } = deferredFixture();
     library.setFeatureEnabled(true);
@@ -151,8 +191,9 @@ describe('the offline library on web before its controller loads', () => {
   });
 
   it('forwards every later call straight to the loaded controller', async () => {
-    const { controller, chunk, library } = deferredFixture();
+    const { controller, chunk, idle, library } = deferredFixture();
     library.engage();
+    idle.resolve();
     chunk.resolve(controller);
     await flush();
     controller.calls.length = 0;
@@ -176,11 +217,16 @@ describe('the offline library on web before its controller loads', () => {
       .fn()
       .mockReturnValueOnce(failure.promise)
       .mockReturnValueOnce(Promise.resolve(controller));
-    const library = createDeferredLibrary(load, async () => {});
+    const library = createDeferredLibrary(
+      load,
+      async () => {},
+      async () => true
+    );
 
     library.retryStalled();
     expect(load).not.toHaveBeenCalled();
     library.engage();
+    await flush();
     failure.reject(new Error('chunk unavailable'));
     await flush();
     expect(library.snapshot()).toMatchObject({
@@ -205,7 +251,8 @@ describe('the offline library on web before its controller loads', () => {
     const idle = deferred();
     const library = createDeferredLibrary(
       async () => createOfflineLibrary(platform, 'full'),
-      () => idle.promise
+      () => idle.promise,
+      async () => true
     );
 
     const initialized = library.initialize();
@@ -231,7 +278,8 @@ describe('the offline library on web before its controller loads', () => {
       .mockResolvedValue(null);
     const library = createDeferredLibrary(
       async () => createOfflineLibrary(memoryPlatform(read), 'full'),
-      async () => {}
+      async () => {},
+      async () => true
     );
     library.setFeatureEnabled(true);
 
@@ -263,3 +311,29 @@ function memoryPlatform(read) {
     dispose() {},
   };
 }
+
+it('holds native boot work until the drawing has painted and a native idle callback runs', async () => {
+  let enterIdle;
+  const idle = vi.fn((callback) => {
+    enterIdle = callback;
+    return 1;
+  });
+  vi.stubGlobal('requestIdleCallback', idle);
+  try {
+    let completed = false;
+    const waiting = afterDrawingPaint().then(() => {
+      completed = true;
+    });
+    await flush();
+    expect(idle).not.toHaveBeenCalled();
+    drawingPaint.mark();
+    await flush();
+    expect(idle).toHaveBeenCalledOnce();
+    expect(completed).toBe(false);
+    enterIdle();
+    await waiting;
+    expect(completed).toBe(true);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

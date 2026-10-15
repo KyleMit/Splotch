@@ -1,23 +1,24 @@
 import type { Directory, File } from 'expo-file-system';
 import { NativeModules } from 'react-native';
-import { approvedAssetUrl, type PackFile } from '../offlineLibrary/manifest';
-import {
-  LibraryFault,
-  requireDownloadNetwork,
-  type LibraryPlatform,
-  type LibraryEnvironment,
-} from '../offlineLibrary/contract';
+import { approvedAssetUrl, parsePack } from '../offlineLibrary/manifest';
+import { LibraryFault, type LibraryBackgroundPlatform } from '../offlineLibrary/contract';
 
 interface NativeLibraryBridge {
   environment(): Promise<unknown>;
   verify(uri: string, bytes: number, sha256: string): Promise<unknown>;
+  install(pack: string, identity: string, allowMetered: boolean): Promise<unknown>;
+  cancelAll(): Promise<unknown>;
 }
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 function isBridge(value: unknown): value is NativeLibraryBridge {
   return (
-    record(value) && typeof value.environment === 'function' && typeof value.verify === 'function'
+    record(value) &&
+    typeof value.environment === 'function' &&
+    typeof value.verify === 'function' &&
+    typeof value.install === 'function' &&
+    typeof value.cancelAll === 'function'
   );
 }
 const safePath = (path: string) =>
@@ -36,6 +37,10 @@ function bridge() {
   return candidate;
 }
 
+async function cancelNativeInstallations(native: NativeLibraryBridge) {
+  if ((await native.cancelAll()) !== true) throw storageUnavailable();
+}
+
 async function nativeEnvironment() {
   const result = await bridge().environment();
   if (
@@ -49,90 +54,7 @@ async function nativeEnvironment() {
   return { rootUri: result.rootUri, online: result.online, metered: result.metered };
 }
 
-export const LIBRARY_FILE_TIMEOUT_MS = 60_000;
-function transferSignal(signal: AbortSignal) {
-  const controller = new AbortController();
-  const cancel = () =>
-    controller.abort(new LibraryFault('cancelled', 'Coloring download cancelled.'));
-  if (signal.aborted) cancel();
-  else signal.addEventListener('abort', cancel, { once: true });
-  const timer = setTimeout(
-    () =>
-      controller.abort(
-        new LibraryFault('unavailable', 'The coloring download timed out. Try again.')
-      ),
-    LIBRARY_FILE_TIMEOUT_MS
-  );
-  return {
-    signal: controller.signal,
-    finish() {
-      clearTimeout(timer);
-      signal.removeEventListener('abort', cancel);
-    },
-  };
-}
-
-async function downloadFile(
-  handle: ReturnType<File['open']>,
-  expected: PackFile,
-  signal: AbortSignal,
-  allowMetered: boolean,
-  environment: () => Promise<Pick<LibraryEnvironment, 'online' | 'metered'>>,
-  progress: (bytes: number) => void
-) {
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
-  const transfer = transferSignal(signal);
-  try {
-    requireDownloadNetwork(await environment(), allowMetered);
-    const url = approvedAssetUrl(expected.downloadPath);
-    const { fetch } = await import('expo/fetch');
-    const response = await fetch(url, {
-      signal: transfer.signal,
-      redirect: 'error',
-      credentials: 'omit',
-    });
-    if (!response.ok || response.url !== url || !response.body)
-      throw new LibraryFault(
-        'unavailable',
-        'This coloring book could not be downloaded. Try again later.'
-      );
-    const length = response.headers.get('content-length');
-    const encoding = response.headers.get('content-encoding');
-    if (
-      length !== null &&
-      (!encoding || encoding === 'identity') &&
-      Number(length) !== expected.bytes
-    )
-      throw new LibraryFault(
-        'corrupt',
-        'The coloring download has changed. Please try again later.'
-      );
-    reader = response.body.getReader();
-    let total = 0;
-    while (true) {
-      const chunk = await reader.read();
-      if (transfer.signal.aborted)
-        throw (
-          transfer.signal.reason ?? new LibraryFault('cancelled', 'Coloring download cancelled.')
-        );
-      if (chunk.done) break;
-      requireDownloadNetwork(await environment(), allowMetered);
-      total += chunk.value.byteLength;
-      if (total > expected.bytes)
-        throw new LibraryFault('corrupt', 'The coloring download is larger than expected.');
-      handle.writeBytes(chunk.value);
-      progress(total);
-    }
-    if (total !== expected.bytes)
-      throw new LibraryFault('corrupt', 'The coloring download is incomplete.');
-  } finally {
-    transfer.finish();
-    await reader?.cancel().catch(() => undefined);
-    handle.close();
-  }
-}
-
-export function createLibraryPlatform(): LibraryPlatform {
+export function createLibraryPlatform(): LibraryBackgroundPlatform {
   let root: Directory | null = null;
   let rootUri: string | null = null;
   let filesystem: typeof import('expo-file-system') | null = null;
@@ -200,23 +122,46 @@ export function createLibraryPlatform(): LibraryPlatform {
     async verify(path, expected) {
       return (await bridge().verify(file(path).uri, expected.bytes, expected.sha256)) === true;
     },
-    async download(path: string, expected: PackFile, signal, allowMetered, progress) {
-      ensureParent(path);
-      const destination = file(path);
-      destination.create({ overwrite: true });
-      if (!filesystem) throw storageUnavailable();
-      return downloadFile(
-        destination.open(filesystem.FileMode.WriteOnly),
-        expected,
-        signal,
-        allowMetered,
-        async () => {
-          const result = await nativeEnvironment();
-          if (result.rootUri !== rootUri) throw storageUnavailable();
-          return result;
-        },
-        progress
-      );
+    async installPack(pack, signal, allowMetered, progress) {
+      const snapshot = parsePack(pack);
+      for (const asset of snapshot.files) approvedAssetUrl(asset.downloadPath);
+      if (signal.aborted) throw new LibraryFault('cancelled', 'Coloring download cancelled.');
+      const native = bridge();
+      let cancellation: Promise<void> | null = null;
+      const cancel = () => {
+        cancellation ??= cancelNativeInstallations(native);
+        void cancellation.catch(() => undefined);
+      };
+      signal.addEventListener('abort', cancel, { once: true });
+      try {
+        const completed = await native.install(
+          JSON.stringify(snapshot),
+          JSON.stringify(snapshot.files),
+          allowMetered
+        );
+        if (signal.aborted) throw new LibraryFault('cancelled', 'Coloring download cancelled.');
+        if (completed !== true) throw storageUnavailable();
+        progress(snapshot.bytes);
+      } catch (error) {
+        if (signal.aborted) throw new LibraryFault('cancelled', 'Coloring download cancelled.');
+        if (record(error) && error.code === 'library_metered')
+          throw new LibraryFault(
+            'metered',
+            'Waiting for Wi-Fi. You can allow mobile data for coloring downloads.'
+          );
+        if (record(error) && error.code === 'library_storage_full')
+          throw new LibraryFault(
+            'storage-full',
+            'There is not enough free space for this coloring book.'
+          );
+        throw error;
+      } finally {
+        signal.removeEventListener('abort', cancel);
+        await cancellation;
+      }
+    },
+    async cancelInstallations() {
+      await cancelNativeInstallations(bridge());
     },
     dispose() {},
   };

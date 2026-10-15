@@ -1,7 +1,7 @@
 import {
   COMPACT_COLORING_PACK_MAX_EDGE_PX,
   COMPACT_COLORING_PACK_SHORT_EDGE_PX,
-} from '../state/books.ts';
+} from './imageTiers.ts';
 
 export const COLORING_PACK_RESOLUTIONS = ['compact', 'full'] as const;
 export type ColoringPackResolution = (typeof COLORING_PACK_RESOLUTIONS)[number];

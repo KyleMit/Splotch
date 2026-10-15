@@ -7,6 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
 import { useOnline } from '../../experiments/native-architecture/src/platform/useOnline.ts';
 import { useOnline as useWebOnline } from '../../experiments/native-architecture/src/platform/useOnline.web.ts';
+import { subscribeNetworkReturn } from '../../experiments/native-architecture/src/platform/networkReturn.ts';
 
 const sdk = vi.hoisted(() => ({
   stored: null,
@@ -114,4 +115,22 @@ it('declares the native network module where Expo autolinking reads it', () => {
     'utf8'
   );
   expect(pods).toContain(`- ExpoNetwork (${version})`);
+});
+
+it('retries coloring downloads on native connectivity return and network changes until unsubscribed', () => {
+  const retry = vi.fn();
+  const unsubscribe = subscribeNetworkReturn(retry);
+  expect(sdk.listen).toHaveBeenCalledOnce();
+  expect(sdk.read).not.toHaveBeenCalled();
+  sdk.listener({ isConnected: false });
+  sdk.listener({ isConnected: undefined });
+  expect(retry).not.toHaveBeenCalled();
+  sdk.listener({ isConnected: true, type: 'CELLULAR' });
+  sdk.listener({ isConnected: true, type: 'WIFI' });
+  expect(retry).toHaveBeenCalledTimes(2);
+  expect(sdk.stored).toBe('false');
+  unsubscribe();
+  expect(sdk.remove).toHaveBeenCalledOnce();
+  sdk.listener({ isConnected: true });
+  expect(retry).toHaveBeenCalledTimes(2);
 });

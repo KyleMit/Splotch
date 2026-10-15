@@ -29,17 +29,10 @@ const sdk = vi.hoisted(() => ({
   load: true,
   imageLoads: [],
   responders: [],
-  save: vi.fn(),
 }));
 
-// Save picture is this suite's probe of the current drawing; the photo library copy it also
-// makes is covered by native-save-to-photos-mounted.test.mjs.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
   photoLibrary: null,
-}));
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: sdk.save,
-  savedColoringPageIds: async () => [],
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(),
@@ -178,7 +171,6 @@ beforeEach(() => {
   sdk.load = true;
   sdk.hold = false;
   sdk.png = paintedPng;
-  sdk.save.mockResolvedValue(undefined);
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++sdk.next;
     sdk.frames.set(id, callback);

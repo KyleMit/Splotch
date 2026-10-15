@@ -1,10 +1,18 @@
-import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename } from 'node:fs/promises';
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { canonicalPaper } from './native-paper-fixtures.mjs';
+import {
+  addStroke,
+  changePage,
+  createHistory,
+  strokeStyle,
+  undoDrawing,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 import { join, dirname } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
 import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
 import {
@@ -13,82 +21,12 @@ import {
 } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  savePicture,
-  savedColoringPageIds,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
 function createEnabledOfflineLibrary(...args) {
   const owner = createOfflineLibrary(...args);
   owner.setFeatureEnabled(true);
   return owner;
 }
-
-const savedConsumer = vi.hoisted(() => ({ root: '', owner: null }));
-vi.mock('../../experiments/native-architecture/src/offlineLibrary/runtime.ts', () => ({
-  offlineLibrary: {
-    withSavedArtwork: (...args) => savedConsumer.owner.withSavedArtwork(...args),
-    openPage: (...args) => savedConsumer.owner.openPage(...args),
-  },
-}));
-vi.mock('expo-file-system', () => {
-  const pathOf = (value) =>
-    typeof value === 'string' ? value.replace(/^file:\/\//, '') : value.path;
-  class Directory {
-    constructor(parent, ...parts) {
-      this.path = join(pathOf(parent), ...parts);
-    }
-    create() {
-      fs.mkdirSync(this.path, { recursive: true });
-    }
-    list() {
-      return fs.readdirSync(this.path).map((name) => new File(this, name));
-    }
-  }
-  class File {
-    constructor(parent, ...parts) {
-      this.path = join(pathOf(parent), ...parts);
-    }
-    get uri() {
-      return `file://${this.path}`;
-    }
-    get name() {
-      return this.path.split('/').at(-1);
-    }
-    get exists() {
-      return fs.existsSync(this.path);
-    }
-    get size() {
-      return fs.statSync(this.path).size;
-    }
-    create() {
-      fs.writeFileSync(this.path, '');
-    }
-    write(value) {
-      fs.writeFileSync(this.path, value);
-    }
-    async text() {
-      return fs.readFileSync(this.path, 'utf8');
-    }
-    move(destination) {
-      fs.renameSync(this.path, destination.path);
-      this.path = destination.path;
-    }
-    delete() {
-      fs.unlinkSync(this.path);
-    }
-  }
-  return {
-    Directory,
-    File,
-    Paths: {
-      get document() {
-        return savedConsumer.root;
-      },
-    },
-  };
-});
 
 const staticRoot = new URL('../../web/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -165,7 +103,6 @@ async function diskPlatform() {
 }
 beforeEach(async () => {
   scratch = await diskPlatform();
-  savedConsumer.root = scratch.root;
 });
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -175,7 +112,7 @@ const dinosaur = catalogPack('dinosaur', 'full');
 
 describe('R1 real controller and disk regression controls', () => {
   it.each([false, true])(
-    'resumes verified staging after drawing and rechecks tampered bytes: %s',
+    'resumes verified staging after cancellation and rechecks tampered bytes: %s',
     async (tamper) => {
       const owner = createEnabledOfflineLibrary(scratch.platform, 'full');
       const counts = new Map();
@@ -183,7 +120,7 @@ describe('R1 real controller and disk regression controls', () => {
       scratch.platform.download = async (...args) => {
         counts.set(args[1].downloadPath, (counts.get(args[1].downloadPath) ?? 0) + 1);
         await download(...args);
-        if (scratch.state.downloads === 60) owner.setDrawing(true);
+        if (scratch.state.downloads === 60) owner.cancel();
       };
       await owner.initialize();
       owner.engage();
@@ -194,7 +131,7 @@ describe('R1 real controller and disk regression controls', () => {
       expect(fs.existsSync(staging)).toBe(true);
       const first = dinosaur.files[0];
       if (tamper) await writeFile(join(staging, 'files', first.path.split('/').at(-1)), 'corrupt');
-      owner.setDrawing(false);
+      owner.retry();
       await owner.settled();
       expect(owner.snapshot().installed).toHaveLength(7);
       expect(scratch.state.downloads).toBe(518 + Number(tamper));
@@ -211,7 +148,7 @@ describe('R1 real controller and disk regression controls', () => {
     const download = scratch.platform.download;
     scratch.platform.download = async (...args) => {
       await download(...args);
-      if (scratch.state.downloads === 60) owner.setDrawing(true);
+      if (scratch.state.downloads === 60) owner.cancel();
     };
     await owner.initialize();
     owner.engage();
@@ -220,19 +157,19 @@ describe('R1 real controller and disk regression controls', () => {
       LIBRARY_STORAGE_RESERVE_BYTES +
       dinosaur.bytes -
       dinosaur.files.slice(0, 60).reduce((bytes, file) => bytes + file.bytes, 0);
-    owner.setDrawing(false);
+    owner.retry();
     await owner.settled();
     expect(owner.snapshot().installed.some((pack) => pack.revision === dinosaur.revision)).toBe(
       true
     );
   });
 
-  it('discards interrupted verified staging on a fresh controller launch without claiming restored jobs', async () => {
+  it('resumes interrupted verified staging on a fresh controller without redownloading valid files', async () => {
     const owner = createEnabledOfflineLibrary(scratch.platform, 'full');
     const download = scratch.platform.download;
     scratch.platform.download = async (...args) => {
       await download(...args);
-      if (scratch.state.downloads === 60) owner.setDrawing(true);
+      if (scratch.state.downloads === 60) owner.cancel();
     };
     await owner.initialize();
     owner.engage();
@@ -240,58 +177,71 @@ describe('R1 real controller and disk regression controls', () => {
     owner.dispose();
     const fresh = createEnabledOfflineLibrary(scratch.platform, 'full');
     await fresh.initialize();
-    expect((await readdir(scratch.root)).some((name) => name.startsWith('staging-'))).toBe(false);
+    expect((await readdir(scratch.root)).some((name) => name.startsWith('staging-'))).toBe(true);
     fresh.engage();
     await fresh.settled();
     expect(fresh.snapshot().installed).toHaveLength(7);
-    expect(scratch.state.downloads).toBe(60 + 518);
+    expect(scratch.state.downloads).toBe(518);
   });
 
-  it('shows only the current revision after compact to full relaunch while saved and live old artwork survives', async () => {
+  it('resolves real superseded artwork after same-session Magic page Undo and removes pinned files explicitly', async () => {
+    const store = createLibraryStore(scratch.platform);
+    const compact = catalogPack('dinosaur', 'compact');
+    await store.install(compact, new AbortController().signal, false, () => {});
+    const oldId = offlinePageId(compact, 'trex');
+    const oldArt = await store.openPage(oldId);
+    let history = changePage(createHistory(), oldId);
+    history = addStroke(
+      history,
+      { ...strokeStyle('magic', 'Blue', history.drawing), points: [{ x: 512, y: 384 }] },
+      canonicalPaper()
+    );
+    const original = history.drawing;
+    expect(await store.inventory([dinosaur])).toEqual([]);
+    await store.install(dinosaur, new AbortController().signal, false, () => {});
+    const replacementId = offlinePageId(dinosaur, 'stegosaurus');
+    await store.openPage(replacementId);
+    history = changePage(history, replacementId);
+    expect(history.drawing.strokes).toBe(original.strokes);
+    expect((await store.inventory([dinosaur])).map((pack) => pack.revision)).toEqual([
+      dinosaur.revision,
+    ]);
+    history = undoDrawing(history);
+    expect(history.drawing).toBe(original);
+    const restored = await store.openPage(history.drawing.pageId);
+    expect(restored).toEqual(oldArt);
+    const bytes = await readFile(fileURLToPath(restored.portrait.dark.fill));
+    const expected = compact.files.find((file) => file.path.endsWith('/trex-tall.night.webp'));
+    expect(bytes.length).toBe(expected.bytes);
+    expect(digest(bytes)).toBe(expected.sha256);
+    await store.remove();
+    expect(fs.existsSync(join(scratch.root, packDirectory(compact)))).toBe(false);
+    expect(fs.existsSync(join(scratch.root, packDirectory(dinosaur)))).toBe(false);
+    await expect(store.openPage(oldId)).rejects.toMatchObject({ code: 'corrupt' });
+  });
+
+  it('prunes superseded opened revisions on fresh inventory and keeps the current complete tier offline', async () => {
     const compact = catalogPack('dinosaur', 'compact');
     const store = createLibraryStore(scratch.platform);
     await store.install(compact, new AbortController().signal, false, () => {});
     const oldId = offlinePageId(compact, 'trex');
-    const liveId = offlinePageId(compact, 'stegosaurus');
-    const oldArt = await store.openPage(oldId);
-    const liveArt = await store.openPage(liveId);
-    const compactOwner = createEnabledOfflineLibrary(scratch.platform, 'compact');
-    savedConsumer.owner = compactOwner;
-    await compactOwner.initialize();
-    const drawing = emptyDrawing(0, oldId);
-    const picture = await savePicture(drawing);
-    const full = createEnabledOfflineLibrary(scratch.platform, 'full');
-    await full.initialize();
-    expect(full.snapshot()).toMatchObject({ installed: [], retainedBytes: compact.bytes });
-    full.engage();
-    await full.settled();
-    expect(
-      full
-        .snapshot()
-        .installed.filter((pack) => pack.id === 'dinosaur')
-        .map((pack) => pack.revision)
-    ).toEqual([dinosaur.revision]);
+    await store.openPage(oldId);
+    await store.install(dinosaur, new AbortController().signal, false, () => {});
+    expect(fs.existsSync(join(scratch.root, packDirectory(compact)))).toBe(true);
     const fresh = createEnabledOfflineLibrary(scratch.platform, 'full');
-    savedConsumer.owner = fresh;
     scratch.state.online = false;
     await fresh.initialize();
     fresh.engage();
     await fresh.settled();
-    expect(fresh.snapshot().installed).toHaveLength(7);
-    expect(
-      fresh
-        .snapshot()
-        .installed.filter((pack) => pack.id === 'dinosaur')
-        .map((pack) => pack.revision)
-    ).toEqual([dinosaur.revision]);
-    expect(await readSavedNativePicture(picture.id)).toEqual(drawing);
-    await fresh.openPage(oldId);
-    expect(fresh.snapshot().artwork[oldId]).toEqual(oldArt);
-    await fresh.openPage(liveId);
-    expect(fresh.snapshot().artwork[liveId]).toEqual(liveArt);
-    await fresh.remove(async () => [...(await savedColoringPageIds()), liveId]);
-    expect(fresh.snapshot()).toMatchObject({ installed: [], retainedBytes: compact.bytes });
-    expect(await store.openPage(oldId)).toEqual(oldArt);
-    expect(await store.openPage(liveId)).toEqual(liveArt);
+    expect(fresh.snapshot().installed).toEqual([dinosaur]);
+    expect(fs.existsSync(join(scratch.root, packDirectory(compact)))).toBe(false);
+    await expect(fresh.openPage(oldId)).rejects.toMatchObject({ code: 'corrupt' });
+    const currentId = offlinePageId(dinosaur, 'trex');
+    await fresh.openPage(currentId);
+    expect(fresh.snapshot().artwork[currentId]).toBeDefined();
+    expect(scratch.state.downloads).toBe(148);
+    await fresh.remove();
+    expect(fresh.snapshot().installed).toEqual([]);
+    expect(fs.existsSync(join(scratch.root, packDirectory(dinosaur)))).toBe(false);
   });
 });

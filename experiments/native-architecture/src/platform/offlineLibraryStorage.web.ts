@@ -199,3 +199,14 @@ export class WebLibraryStorage {
     this.disposed = true;
   }
 }
+
+export async function hasColoringPackStorage(): Promise<boolean> {
+  const storage = new WebLibraryStorage();
+  try {
+    return (await storage.list()).some((path) => /^(?:staging-)?[a-z]+-[a-f0-9]{64}$/.test(path));
+  } catch {
+    return false;
+  } finally {
+    storage.dispose();
+  }
+}

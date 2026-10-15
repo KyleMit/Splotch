@@ -8,10 +8,6 @@ import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing
 const root = fileURLToPath(new URL('../../', import.meta.url));
 export const BUNDLED_FARM_DIR = `${root}experiments/native-architecture/src/drawing/bundledFarm/`;
 const SOURCE_DIR = `${root}web/static/coloring/farm/`;
-// Both orientations' Magic fills come from the compact pack's screen-sized tier (ADR-0103):
-// the canonical full-size pair of fills does not fit the native web precache budget
-// (MAX_NATIVE_WEB_PRECACHE_BYTES) beside the tall line art.
-export const BUNDLED_FARM_FILL_DIR = `${root}web/static/coloring/max-1152px/farm/`;
 // The native apps decode every bundled image from these data URIs, offline and without an asset
 // lookup; the web export resolves the same files as hashed Metro assets instead, so they stay out
 // of the startup script (images.web.ts).
@@ -111,8 +107,7 @@ export function bundledFarmImageFiles() {
   return {
     pages: perPage((slug) =>
       oriented(
-        (orientationSlug, theme) =>
-          `${BUNDLED_FARM_FILL_DIR}${slug}-${orientationSlug}.${THEMES[theme].fill}`
+        (orientationSlug, theme) => `${SOURCE_DIR}${slug}-${orientationSlug}.${THEMES[theme].fill}`
       )
     ),
     // The picker shows the thumbnails cut to the paper's own orientation, as shipping does.

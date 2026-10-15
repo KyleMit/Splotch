@@ -5,9 +5,34 @@ import {
 } from '../offlineLibrary/contract';
 import { approvedAssetUrl, MAX_PACK_FILE_BYTES, type PackFile } from '../offlineLibrary/manifest';
 import { sha256Hex } from '../../../../web/src/lib/digestHex';
+import { scheduleIdle } from '../../../../web/src/lib/idle';
 
 export const LIBRARY_FILE_TIMEOUT_MS = 60_000;
 const DIGEST = /^[a-f0-9]{64}$/;
+export function waitForLibraryIdle(signal: AbortSignal, drawing: () => boolean): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let cancel = () => {};
+    const abort = () => {
+      cancel();
+      signal.removeEventListener('abort', abort);
+      reject(new LibraryFault('cancelled', 'Coloring download cancelled.'));
+    };
+    const enter = () => {
+      if (signal.aborted) return abort();
+      if (drawing()) {
+        cancel = scheduleIdle(enter);
+        return;
+      }
+      signal.removeEventListener('abort', abort);
+      resolve();
+    };
+    if (signal.aborted) abort();
+    else {
+      signal.addEventListener('abort', abort, { once: true });
+      cancel = scheduleIdle(enter);
+    }
+  });
+}
 export function requireLibraryFile(file: PackFile): void {
   if (
     !Number.isSafeInteger(file.bytes) ||

@@ -5,6 +5,7 @@
 
 import type { Orientation } from '../platform';
 import type { ResolvedTheme } from '../theme';
+import { RESPONSIVE_COLORING_TIERS } from '../coloringPacks/imageTiers.ts';
 import { resolveColoringAssetUrl } from '../coloringPacks/assetResolver.ts';
 import { createBookCatalog, type PageOverrides } from './bookCatalog.ts';
 
@@ -55,30 +56,6 @@ export interface Book {
 }
 
 const COLORING_ROOT = '/coloring';
-const RESPONSIVE_COLORING_TIERS = {
-  overlay: {
-    directory: 'max-1152px',
-    maxEdgePx: 1152,
-    widths: {
-      portrait: { candidate: 768, source: 1024 },
-      landscape: { candidate: 1152, source: 1536 },
-    },
-  },
-  thumbnail: {
-    directory: 'max-240px',
-    maxEdgePx: 240,
-    widths: {
-      cover: { candidate: 240, source: 400 },
-      selector: { portrait: 160, landscape: 240 } as const satisfies Record<
-        BookOrientation,
-        number
-      >,
-    },
-  },
-} as const;
-export const COMPACT_COLORING_PACK_MAX_EDGE_PX = RESPONSIVE_COLORING_TIERS.overlay.maxEdgePx;
-export const COMPACT_COLORING_PACK_SHORT_EDGE_PX =
-  RESPONSIVE_COLORING_TIERS.overlay.widths.portrait.candidate;
 export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [
   ...new Set(
     Object.values(RESPONSIVE_COLORING_TIERS).map((tier) => `${COLORING_ROOT}/${tier.directory}`)

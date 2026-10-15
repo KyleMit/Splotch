@@ -1,5 +1,4 @@
-import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   addStrokes,
   createHistory,
@@ -8,20 +7,7 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
-import { savePicture } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 import { legacyDrawing } from './native-paper-fixtures.mjs';
-
-const MAX_SAVE_BYTES = 8 * 1024 * 1024;
-
-function storageFixture() {
-  const values = new Map();
-  const storage = {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: vi.fn((key, value) => values.set(key, value)),
-  };
-  vi.stubGlobal('localStorage', storage);
-  return { values, storage };
-}
 
 function contactedDrawing(frame) {
   const initial = emptyDrawing(3, 'flower');
@@ -36,69 +22,53 @@ function contactedDrawing(frame) {
   return history.drawing;
 }
 
-afterEach(() => vi.unstubAllGlobals());
-
-describe('web actual adapter physical paper storage', () => {
+describe('physical paper drawing format', () => {
   it.each([
     { width: 342, height: 256.5, pixelRatio: 1 },
     { width: 760, height: 570, pixelRatio: 3 },
-  ])(
-    'reopens adopted v7 contact paper and exact widths at %j under the save limit',
-    async (frame) => {
-      const { values } = storageFixture();
-      const drawing = contactedDrawing(frame);
-      const before = JSON.stringify(drawing);
-      const saved = await savePicture(drawing);
-      const reopened = await readSavedWebPicture(saved.id);
-      expect(reopened).toEqual(drawing);
-      expect(reopened.version).toBe(7);
-      expect(reopened.paper).toEqual({
-        kind: 'adopted',
-        cssWidth: frame.width,
-        cssHeight: frame.height,
-        backingScale: Math.min(frame.pixelRatio, 2),
-      });
-      expect(reopened.strokes.map(({ width }) => width)).toEqual([22, 4]);
-      expect(JSON.stringify(drawing)).toBe(before);
-      expect([...values.values()]).toEqual([JSON.stringify(parseDrawing(drawing))]);
-      expect(Buffer.byteLength(before)).toBeLessThan(MAX_SAVE_BYTES);
-    }
-  );
+  ])('round-trips adopted v7 contact paper and exact widths at %j', async (frame) => {
+    const drawing = contactedDrawing(frame);
+    const before = JSON.stringify(drawing);
+    const reopened = parseDrawing(JSON.parse(JSON.stringify(drawing)));
+    expect(reopened).toEqual(drawing);
+    expect(reopened.version).toBe(7);
+    expect(reopened.paper).toEqual({
+      kind: 'adopted',
+      cssWidth: frame.width,
+      cssHeight: frame.height,
+      backingScale: Math.min(frame.pixelRatio, 2),
+    });
+    expect(reopened.strokes.map(({ width }) => width)).toEqual([22, 4]);
+    expect(JSON.stringify(drawing)).toBe(before);
+  });
 
   it.each(['unadopted-ink', 'foreign-paper-key'])(
-    'rejects malformed current paper %s without publishing storage',
+    'rejects malformed current paper %s',
     async (fault) => {
-      const { values, storage } = storageFixture();
       const drawing = contactedDrawing({ width: 342, height: 256.5, pixelRatio: 1 });
       const paper =
         fault === 'unadopted-ink' ? { kind: 'unadopted' } : { ...drawing.paper, extra: true };
-      await expect(savePicture({ ...drawing, paper })).rejects.toThrow();
-      expect(storage.setItem).not.toHaveBeenCalled();
-      expect(values.size).toBe(0);
+      expect(() => parseDrawing({ ...drawing, paper })).toThrow();
     }
   );
 
-  it('rejects a different paper adoption without publishing storage', () => {
-    const { values, storage } = storageFixture();
+  it('rejects a different paper adoption', () => {
     const drawing = contactedDrawing({ width: 342, height: 256.5, pixelRatio: 1 });
     expect(() =>
       addStrokes(createHistory(drawing), [drawing.strokes[0]], adoptPaper(760, 570, 1))
     ).toThrow();
-    expect(storage.setItem).not.toHaveBeenCalled();
-    expect(values.size).toBe(0);
   });
 
   it('reopens legacy v5 without adding paper or rewriting canonical width and seed', async () => {
-    const { values } = storageFixture();
     const drawing = {
       ...legacyDrawing(),
       strokes: [
         { brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [{ x: 200, y: 300 }] },
       ],
     };
-    const saved = await savePicture(drawing);
-    expect(await readSavedWebPicture(saved.id)).toEqual(drawing);
+    const before = JSON.stringify(drawing);
+    expect(parseDrawing(JSON.parse(before))).toEqual(drawing);
+    expect(JSON.stringify(drawing)).toBe(before);
     expect(Object.hasOwn(parseDrawing(drawing), 'paper')).toBe(false);
-    expect([...values.values()]).toEqual([JSON.stringify(parseDrawing(drawing))]);
   });
 });

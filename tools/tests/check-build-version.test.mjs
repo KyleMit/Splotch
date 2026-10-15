@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -108,4 +109,24 @@ describe('buildVersionProblems', () => {
 
     expect(buildVersionProblems(output)).toEqual(['Client version.json does not exist']);
   });
+});
+
+it('imports the build-version CLI and coloring catalog with Node type stripping', () => {
+  const entry = new URL('../check-build-version.mjs', import.meta.url).href;
+  const catalog = new URL('../../web/src/lib/state/books.ts', import.meta.url).href;
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--experimental-strip-types',
+      '--disable-warning=ExperimentalWarning',
+      '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON',
+      '--input-type=module',
+      '-e',
+      `await import(${JSON.stringify(entry)}); await import(${JSON.stringify(catalog)})`,
+    ],
+    { encoding: 'utf8' }
+  );
+  expect(result.stderr).toBe('');
+  expect(result.status).toBe(0);
+  expect(result.stdout).toBe('');
 });

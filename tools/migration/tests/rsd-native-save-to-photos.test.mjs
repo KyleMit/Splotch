@@ -5,9 +5,8 @@ import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/r
 import { PNG_TIMEOUT_MS } from '../../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
-import * as drawingFiles from '../../../experiments/native-architecture/src/platform/drawingFiles.ts';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { photos } from '../../tests/native-photo-library-port.mjs';
+import { photos, fileSystemModule } from '../../tests/native-photo-library-port.mjs';
 
 vi.mock('expo-media-library', () =>
   import('../../tests/native-photo-library-port.mjs').then((port) => port.mediaLibraryModule)
@@ -48,7 +47,11 @@ const SETTINGS_V9 = (saveOnDeleteEnabled) =>
     saveOnDeleteEnabled,
   });
 
-let privateWrite;
+let files;
+function expectNoModelCopies() {
+  const parts = files.mock.calls.flat().map((part) => (typeof part === 'string' ? part : part.uri));
+  expect(parts.some((part) => part.includes('splotch-pictures'))).toBe(false);
+}
 async function mountWith(settings) {
   caller.realScreen = true;
   caller.settingsStorage = { read: async () => settings, write: vi.fn(async () => {}) };
@@ -85,7 +88,7 @@ beforeEach(() => {
   records.os = 'android';
   caller.exportPng = vi.fn(async () => EXPORTED_PNG);
   caller.captureInk = vi.fn(async () => INKED_PAPER);
-  privateWrite = vi.spyOn(drawingFiles, 'savePicture');
+  files = vi.spyOn(fileSystemModule, 'File');
 });
 afterEach(() => {
   caller.exportPng = null;
@@ -101,7 +104,8 @@ describe('canonical Save screenshot to Photos', () => {
       const drawing = caller.liveScreen.history.drawing;
       await save();
       await settle(() => expect(photos.created).toHaveLength(1));
-      expect(privateWrite).not.toHaveBeenCalled();
+      expect(files).toHaveBeenCalled();
+      expectNoModelCopies();
       expect(caller.exportPng).toHaveBeenCalledWith(drawing);
       expect(photos.permissionRequests).toEqual([[true]]);
       expect(photos.created).toEqual([
@@ -124,7 +128,7 @@ describe('canonical Save screenshot to Photos', () => {
       await settle(() => expect(host.textContent).toContain(shipping.detail));
       expect(host.textContent).toContain(shipping.heading);
       expect(host.textContent).not.toContain('Pictures');
-      expect(privateWrite).not.toHaveBeenCalled();
+      expectNoModelCopies();
       expect(caller.exportPng).toHaveBeenCalledWith(drawing);
       expect(photos.created).toEqual([]);
     },
@@ -148,7 +152,7 @@ describe('canonical Auto-Save on Delete', () => {
       expect(strokesWhenSaved).toBe(0);
       expect(photos.created.map(({ base64 }) => base64)).toEqual([EXPORTED_PNG]);
       expect(caller.exportPng).toHaveBeenCalledWith(drawing);
-      expect(privateWrite).not.toHaveBeenCalled();
+      expectNoModelCopies();
       expect(host.textContent).not.toContain('saved');
     },
     SAVE_TEST_TIMEOUT_MS
@@ -190,7 +194,7 @@ describe('canonical Auto-Save on Delete', () => {
       await clear();
       await settle(() => expect(strokesOnPaper()).toBe(0));
       expect(photos.created).toEqual([]);
-      expect(privateWrite).not.toHaveBeenCalled();
+      expectNoModelCopies();
       expect(caller.exportPng).not.toHaveBeenCalled();
     },
     SAVE_TEST_TIMEOUT_MS
@@ -206,7 +210,7 @@ describe('canonical Auto-Save on Delete', () => {
       await clear();
       await settle(() => expect(caller.liveScreen.history.drawing).toEqual(emptyDrawing(1)));
       expect(photos.created).toEqual([]);
-      expect(privateWrite).not.toHaveBeenCalled();
+      expectNoModelCopies();
     },
     SAVE_TEST_TIMEOUT_MS
   );

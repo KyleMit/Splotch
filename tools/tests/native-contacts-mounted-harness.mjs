@@ -12,6 +12,10 @@ import {
   useDrawingHistory,
 } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 
+vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+  subscribeNetworkReturn: () => () => {},
+}));
+
 const sdk = vi.hoisted(() => ({
   handlers: null,
   frames: new Map(),
@@ -126,10 +130,6 @@ vi.mock('react-native-svg', () => {
 // covers what it does with it.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
   photoLibrary: { save: sdk.save },
-}));
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: vi.fn(),
-  savedColoringPageIds: async () => [],
 }));
 
 const PAPER_TARGET = 101;
