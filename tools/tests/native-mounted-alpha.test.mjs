@@ -33,8 +33,8 @@ const sdk = vi.hoisted(() => ({
   save: vi.fn(),
 }));
 
-// Save picture is this suite's probe of the current drawing; the photo library copy it also
-// makes is covered by native-save-to-photos-mounted.test.mjs.
+// This suite observes the current drawing through its save port.
+// rsd-native-save-to-photos.test.mjs covers the live photo-library handoff.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
   photoLibrary: null,
 }));

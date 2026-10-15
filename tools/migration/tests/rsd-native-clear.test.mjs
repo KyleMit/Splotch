@@ -368,8 +368,8 @@ it("clears through VoiceOver's default activation once, however many paths repor
   expect(caller.screen.clear).toHaveBeenCalledTimes(2);
 });
 
-// screen.clear(true) keeps the picture before it wipes the paper; native-save-to-photos-mounted
-// pins that order on the real screen. Here the drag and the activation must take that path.
+// rsd-native-save-to-photos.test.mjs pins capture before Clear on the live screen.
+// This suite checks that drag and activation reach that same Auto-Save command.
 it.each([true, false])(
   'commits a drag-clear through the Auto-Save on Delete clear path when the setting is %s',
   async (saveOnDelete) => {

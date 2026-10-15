@@ -127,8 +127,7 @@ vi.mock('react-native-svg', () => {
   };
 });
 
-// The photo library receives each saved picture's PNG; native-save-to-photos-mounted.test.mjs
-// covers what it does with it.
+// The live photo-library save and retry behavior is covered by rsd-native-save-to-photos.test.mjs.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
   photoLibrary: { save: sdk.save },
 }));
