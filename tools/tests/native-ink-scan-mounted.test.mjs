@@ -128,6 +128,7 @@ describe('the screen’s visible-ink scan', () => {
     }
     expect(sdk.save).toHaveBeenCalledOnce();
     expect(owner.history.drawing.strokes).toHaveLength(0);
+    const replacementRainbow = owner.history.drawing.rainbow;
     expect(owner.history.undo.at(-1)).toBe(previous);
     expect(owner.busy).toBe(false);
     expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
@@ -141,7 +142,7 @@ describe('the screen’s visible-ink scan', () => {
     expect(owner.history.drawing.strokes).toHaveLength(0);
     await act(async () => owner.undo());
     await settle();
-    expect(owner.history.drawing).toBe(previous);
+    expect(owner.history.drawing).toEqual({ ...previous, rainbow: replacementRainbow });
   });
 
   it('clears known ink without a capture and admits the next contact immediately', async () => {
@@ -158,6 +159,41 @@ describe('the screen’s visible-ink scan', () => {
     expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
     await contact('pen', 200);
     expect(owner.history.drawing.strokes).toHaveLength(1);
+  });
+
+  it('retains a scanned ink verdict through Clear Undo and clears again without capturing or locking', async () => {
+    await contact('pen', 10);
+    await contact('pen', 300);
+    await contact('eraser', 10);
+    sdk.hold = true;
+    await idle();
+    const { callback, options } = sdk.captures.at(-1);
+    await act(async () => callback(rgbaPng(options.width, options.height, 255).toString('base64')));
+    await act(async () => vi.advanceTimersByTimeAsync(EMPTY_SCAN_IDLE_MS));
+    await settle();
+    const previous = owner.history.drawing;
+    const random = vi.spyOn(Math, 'random').mockReturnValue(previous.rainbow === 7 ? 0.24 : 0.71);
+    try {
+      const before = sdk.captures.length;
+      await act(async () => void owner.clear(false));
+      expect(sdk.captures).toHaveLength(before);
+      expect(owner.busy).toBe(false);
+      sdk.hold = false;
+      await act(async () => owner.undo());
+      await settle();
+      expect(owner.busy).toBe(false);
+      expect(owner.history.drawing).not.toBe(previous);
+      expect(owner.history.drawing.strokes).toBe(previous.strokes);
+      const captures = sdk.captures.length;
+      sdk.hold = true;
+      await act(async () => void owner.clear(false));
+      expect(sdk.captures).toHaveLength(captures);
+      expect(owner.busy).toBe(false);
+      expect(owner.history.drawing.strokes).toHaveLength(0);
+      expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    } finally {
+      random.mockRestore();
+    }
   });
 
   it('clears a scanned blank page without another capture or an extra undo step', async () => {

@@ -1,8 +1,9 @@
-import { createHistory, type History } from '../drawing/model';
+import { createHistory, emptyDrawing, type History } from '../drawing/model';
+import { pickRainbow } from '../drawing/brushes';
 import { coloringBookHistory, DEFAULT_COLORING_BOOK_ENABLED } from '../settings/coloringBook';
 
 export function createDrawingSession() {
-  let history = createHistory();
+  let history = createHistory(emptyDrawing(pickRainbow()));
   let coloringBookEnabled = DEFAULT_COLORING_BOOK_ENABLED;
   const listeners = new Set<() => void>();
 

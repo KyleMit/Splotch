@@ -108,7 +108,10 @@ describe('canonical shared stroke widths', () => {
     expect(history.drawing.strokes.map(({ width }) => width)).toEqual([4, 28]);
     const snapshot = JSON.stringify(history.drawing);
     const cleared = clearDrawing(history, false);
-    expect(undoDrawing(cleared).drawing).toBe(history.drawing);
+    expect(undoDrawing(cleared).drawing).toEqual({
+      ...history.drawing,
+      rainbow: cleared.drawing.rainbow,
+    });
     const reopened = parseDrawing(JSON.parse(snapshot));
     expect(reopened).toEqual(history.drawing);
     expect(commitDrawing(cleared, reopened).drawing.strokes.map(({ width }) => width)).toEqual([

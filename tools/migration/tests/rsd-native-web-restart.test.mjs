@@ -46,7 +46,7 @@ describe("the web export's Start over", () => {
       );
     }
     await mount(createElement(Process));
-    expect(app.history.drawing).toEqual(emptyDrawing());
+    expect(app.history.drawing).toEqual(emptyDrawing(app.history.drawing.rainbow));
     await act(async () =>
       app.setHistory((history) =>
         addStroke(
@@ -61,7 +61,7 @@ describe("the web export's Start over", () => {
     await act(async () => replace({ launch: 0, screen: 1 }));
     expect(app.history).toBe(sameSession);
     await act(async () => replace({ launch: 1, screen: 0 }));
-    expect(app.history).toEqual(createHistory());
+    expect(app.history).toEqual(createHistory(emptyDrawing(app.history.drawing.rainbow)));
   });
 
   it('reloads to a blank page even when session storage refuses', async () => {
@@ -90,7 +90,7 @@ describe("the web export's Start over", () => {
     await act(async () => root.unmount());
     history.replaceState(null, '', assigned[0]);
     await mount(page());
-    expect(app.history.drawing).toEqual(emptyDrawing());
+    expect(app.history.drawing).toEqual(emptyDrawing(app.history.drawing.rainbow));
     expect(location.search).toBe('');
   });
 });

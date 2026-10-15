@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef } from 'react';
-import type { Drawing } from './model';
+import { drawingInkIdentity, type Drawing } from './model';
 
 // Shipping's idleEmptyScan.ts EMPTY_SCAN_IDLE_MS: the eraser's "is the page blank now?" pixel scan
 // waits until the child has stopped this long, so it never lands in the frames of a scribble.
@@ -35,12 +35,13 @@ export function useVisibleInk(drawing: Drawing, idle: boolean, scanEmpty: EmptyS
   const [lifts, changed] = useReducer((count: number) => count + 1, 0);
   const verdict = inkVerdict(drawing);
   useEffect(() => {
-    if (!idle || !awaiting.current.has(drawing) || answers.current.has(drawing)) return;
+    const identity = drawingInkIdentity(drawing);
+    if (!idle || !awaiting.current.has(drawing) || answers.current.has(identity)) return;
     let live = true;
     let timer: ReturnType<typeof setTimeout>;
     function settle(visible: boolean) {
       awaiting.current.delete(drawing);
-      answers.current.set(drawing, visible);
+      answers.current.set(identity, visible);
       changed();
     }
     function wait() {
@@ -65,11 +66,14 @@ export function useVisibleInk(drawing: Drawing, idle: boolean, scanEmpty: EmptyS
     };
   }, [drawing, idle, lifts]);
   return {
-    visible: verdict === 'scan' ? (answers.current.get(drawing) ?? true) : verdict === 'inked',
+    visible:
+      verdict === 'scan'
+        ? (answers.current.get(drawingInkIdentity(drawing)) ?? true)
+        : verdict === 'inked',
     empty(snapshot: Drawing): boolean | undefined {
       const known = inkVerdict(snapshot);
       if (known !== 'scan') return known === 'blank';
-      const visible = answers.current.get(snapshot);
+      const visible = answers.current.get(drawingInkIdentity(snapshot));
       return visible === undefined ? undefined : !visible;
     },
     erased(lifted: Drawing) {
