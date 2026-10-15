@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useRef } from 'react';
-import { Linking, Modal, Platform, type ScrollView } from 'react-native';
+import { Fragment, useEffect } from 'react';
+import { Linking, Modal, Platform } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
@@ -12,6 +12,7 @@ import privacy from '../information/privacy.generated.json';
 import { RELEASE_NOTES } from '../settings/whatsNew';
 import { useParentGateCard } from '../parentCenter/useParentGateCard';
 import { RsdPageSheet } from './RsdNotFoundPage';
+import { useInformationPageScroll } from './useInformationPageScroll';
 import { RsdPrivacyContent } from './RsdPrivacyContent';
 import { RsdInformationFooter } from './RsdInformationFooter';
 import { RsdReleaseBlocks } from './RsdWhatsNewSection';
@@ -105,16 +106,11 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
   const gate = useParentGateCard(state?.gate ?? null);
   const card = useModalPresence(gate?.open ? gate : null);
   const parentCenter = useModalPresence(state?.parentCenterOpen ? true : null);
-  const scroll = useRef<ScrollView>(null);
-  const bodyOffset = useRef(0);
-  const sections = useRef<Record<string, number>>({});
+  const reading = useInformationPageScroll(page);
   useDialogBack(true, () => openAppPage('drawing'));
   const onLink = (href: string) => {
     if (href.startsWith('#')) {
-      scroll.current?.scrollTo({
-        y: bodyOffset.current + (sections.current[href.slice(1)] ?? 0),
-        animated: false,
-      });
+      reading.jump(href.slice(1));
       return;
     }
     if (href === '/feedback') {
@@ -141,18 +137,16 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
           origin: '',
         })}
         lede={PAGE_LEDES[page]}
-        scrollRef={scroll}
-        onBodyOffset={(offset) => {
-          bodyOffset.current = offset;
-        }}
+        scrollRef={reading.scroll}
+        onBodyOffset={reading.onBodyOffset}
+        onScroll={reading.onScroll}
       >
         {page === 'privacy' ? (
           <RsdPrivacyContent
             policy={policy}
             onLink={onLink}
-            onSectionLayout={(id, y) => {
-              sections.current[id] = y;
-            }}
+            onSectionLayout={reading.onSectionLayout}
+            scrollY={reading.offset}
           />
         ) : page === 'changelog' ? (
           <Changelog />

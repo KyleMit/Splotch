@@ -29,9 +29,7 @@ it('renders every shipping privacy paragraph and gates only the links that leave
     for (const block of section.blocks)
       expect(host.textContent).toContain(block.spans.map(({ text }) => text).join(''));
   }
-  const hosting = [...host.querySelectorAll('[role="heading"]')].find(
-    (node) => node.textContent === 'Hosting and downloads'
-  ).parentElement;
+  const hosting = host.querySelector('[data-testid="privacy-section-hosting"]');
   expect(hosting.querySelectorAll('[role="listitem"]')).toHaveLength(2);
   const policyLink = [...host.querySelectorAll('[role="link"]')].find((node) =>
     node.textContent.includes('OpenAI Services Agreement')

@@ -66,21 +66,12 @@ const styles = css.create({
   label: { flexShrink: 1 },
 });
 
-// One row of the wide Settings sidebar (SidebarToc.svelte's button rows): the section's icon
-// with its activity dot and its label, marked as the reading position while its section is.
-export function RsdSidebarRow({
-  icon,
-  label,
-  unseen,
-  active,
-  onSelect,
-}: {
-  icon: SectionIconName;
-  label: string;
-  unseen: boolean;
-  active: boolean;
-  onSelect: () => void;
-}) {
+// SidebarToc.svelte's button row, marked as the reading position while its section is.
+type SidebarRowProps = { label: string; active: boolean; onSelect: () => void } & (
+  { icon: SectionIconName; unseen: boolean } | { icon?: never; unseen?: never }
+);
+
+export function RsdSidebarRow({ icon, label, unseen, active, onSelect }: SidebarRowProps) {
   return (
     <html.button
       aria-label={unseen ? `${label}, new` : label}
@@ -94,10 +85,12 @@ export function RsdSidebarRow({
       ]}
       onClick={onSelect}
     >
-      <html.div style={styles.icon}>
-        <RsdSectionIcon icon={icon} size={ICON_PX} ink={undefined} />
-        <RsdActivityDot unseen={unseen} surface="surface" />
-      </html.div>
+      {icon ? (
+        <html.div style={styles.icon}>
+          <RsdSectionIcon icon={icon} size={ICON_PX} ink={undefined} />
+          <RsdActivityDot unseen={unseen} surface="surface" />
+        </html.div>
+      ) : null}
       <html.span style={styles.label}>{label}</html.span>
     </html.button>
   );

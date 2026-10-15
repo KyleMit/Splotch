@@ -19,6 +19,7 @@ export const DRAWING_THEME = {
   iconInk: '#1f1f1f',
   iconMuted: '#737373',
   successText: '#2e7d4f',
+  successWash: '#e9f7ec',
   darkInkKeyline: 'transparent',
 } as const;
 
@@ -52,6 +53,7 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
     successText: '#8bcfa4',
+    successWash: '#24382b',
     darkInkKeyline: '#e9e7f0',
   },
 };

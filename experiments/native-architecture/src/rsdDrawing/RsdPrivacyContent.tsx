@@ -1,9 +1,16 @@
-import { View } from 'react-native';
+import { useRef, useState } from 'react';
+import { View, useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
-import { HIGHLIGHTS } from '../../../../web/src/routes/privacy/contents';
+import { HIGHLIGHTS, SECTIONS, SPY_LINE_PX } from '../../../../web/src/routes/privacy/contents';
 import { paletteHex } from '../drawing/palette';
 import type privacy from '../information/privacy.generated.json';
 import { RsdList } from './RsdList';
+import { RsdSidebarRow } from './RsdSidebarRow';
+import { RsdPrivacyHeading } from './RsdPrivacyHeading';
+import { RsdVisuallyHidden } from './RsdVisuallyHidden';
+import { usePrivacySectionLinks } from './usePrivacySectionLinks';
+import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
+import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { RsdDisclosure } from './RsdDisclosure';
 import { RsdRuleLabel } from './RsdRuleLabel';
@@ -29,12 +36,6 @@ const styles = css.create({
     borderTopColor: colors.border,
   },
   first: { paddingTop: 0, borderTopWidth: 0 },
-  heading: {
-    marginTop: 0,
-    marginBottom: dimensions.space2,
-    color: colors.textStrong,
-    fontSize: dimensions.fontSizeLg,
-  },
   paragraph: {
     marginTop: 0,
     marginBottom: dimensions.space3,
@@ -157,15 +158,116 @@ function PolicyBlocks({
   );
 }
 
-export function RsdPrivacyContent({
-  policy,
-  onLink,
-  onSectionLayout,
-}: {
+type PrivacyContentProps = {
   policy: Policy;
   onLink: (href: string) => void;
   onSectionLayout: (id: string, y: number) => void;
-}) {
+  scrollY: number;
+};
+
+function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyContentProps) {
+  const wide = useWindowDimensions().width > PAGE_FRAMED_MAX_WIDTH_PX;
+  const links = usePrivacySectionLinks(onLink);
+  const [geometry, setGeometry] = useState({ top: 0, height: 0, railHeight: 0 });
+  const positions = useRef<Record<string, number>>({});
+  const top = useRef(0);
+  const active =
+    SECTIONS.findLast(
+      ({ id }) => (positions.current[id] ?? Infinity) + geometry.top <= scrollY + SPY_LINE_PX
+    )?.id ?? SECTIONS[0].id;
+  const railOffset = Math.max(
+    0,
+    Math.min(
+      scrollY + PRIVACY_LAYOUT.stickyTop - geometry.top,
+      geometry.height - geometry.railHeight
+    )
+  );
+  return (
+    <>
+      {!wide ? (
+        <RsdDisclosure
+          summary={`${policy.sections.length} sections`}
+          style={styles.disclosure}
+          summaryStyle={styles.disclosureSummary}
+        >
+          <html.nav aria-label="Privacy policy contents">
+            {policy.sections.map((section) => (
+              <RsdTextLink
+                key={section.id}
+                onPress={() => onLink(`#${section.id}`)}
+                style={styles.paragraph}
+              >
+                {section.title}
+              </RsdTextLink>
+            ))}
+          </html.nav>
+        </RsdDisclosure>
+      ) : null}
+      <RsdVisuallyHidden live>{links.announcement}</RsdVisuallyHidden>
+      <View
+        testID="privacy-details"
+        style={{ flexDirection: wide ? 'row' : 'column', gap: PRIVACY_LAYOUT.railGap }}
+        onLayout={({ nativeEvent }) => {
+          const { y, height } = nativeEvent.layout;
+          top.current = y;
+          setGeometry((old) => ({ ...old, top: y, height }));
+          for (const [id, offset] of Object.entries(positions.current))
+            onSectionLayout(id, y + offset);
+        }}
+      >
+        {wide ? (
+          <View
+            testID="privacy-contents-rail"
+            style={{
+              width: PRIVACY_LAYOUT.railWidth,
+              transform: [{ translateY: railOffset }],
+              alignSelf: 'flex-start',
+            }}
+            onLayout={({ nativeEvent }) =>
+              setGeometry((old) => ({ ...old, railHeight: nativeEvent.layout.height }))
+            }
+          >
+            <html.nav aria-label="Privacy policy contents">
+              {SECTIONS.map((section) => (
+                <RsdSidebarRow
+                  key={section.id}
+                  label={section.label}
+                  active={active === section.id}
+                  onSelect={() => onLink(`#${section.id}`)}
+                />
+              ))}
+            </html.nav>
+          </View>
+        ) : null}
+        <View testID="privacy-reading-column" style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
+          {policy.sections.map((section, index) => (
+            <View
+              key={section.id}
+              testID={`privacy-section-${section.id}`}
+              onLayout={({ nativeEvent }) => {
+                positions.current[section.id] = nativeEvent.layout.y;
+                onSectionLayout(section.id, top.current + nativeEvent.layout.y);
+              }}
+            >
+              <html.section style={[styles.section, index === 0 && styles.first]}>
+                <RsdPrivacyHeading
+                  section={SECTIONS[index]}
+                  copied={links.copied === section.id}
+                  wide={wide}
+                  onCopy={() => void links.copy(SECTIONS[index].id)}
+                />
+                <PolicyBlocks blocks={section.blocks} onLink={onLink} />
+              </html.section>
+            </View>
+          ))}
+        </View>
+      </View>
+    </>
+  );
+}
+
+export function RsdPrivacyContent(props: PrivacyContentProps) {
+  const { policy } = props;
   return (
     <>
       <html.p style={[styles.paragraph, styles.muted]}>{policy.updated}</html.p>
@@ -182,34 +284,7 @@ export function RsdPrivacyContent({
         ))}
       </html.div>
       <RsdRuleLabel>The details</RsdRuleLabel>
-      <RsdDisclosure
-        summary={`${policy.sections.length} sections`}
-        style={styles.disclosure}
-        summaryStyle={styles.disclosureSummary}
-      >
-        <html.nav aria-label="Privacy policy contents">
-          {policy.sections.map((section) => (
-            <RsdTextLink
-              key={section.id}
-              onPress={() => onLink(`#${section.id}`)}
-              style={styles.paragraph}
-            >
-              {section.title}
-            </RsdTextLink>
-          ))}
-        </html.nav>
-      </RsdDisclosure>
-      {policy.sections.map((section, index) => (
-        <View
-          key={section.id}
-          onLayout={({ nativeEvent }) => onSectionLayout(section.id, nativeEvent.layout.y)}
-        >
-          <html.section style={[styles.section, index === 0 && styles.first]}>
-            <html.h3 style={[controlStyles.boldText, styles.heading]}>{section.title}</html.h3>
-            <PolicyBlocks blocks={section.blocks} onLink={onLink} />
-          </html.section>
-        </View>
-      ))}
+      <PrivacyDetails {...props} />
     </>
   );
 }

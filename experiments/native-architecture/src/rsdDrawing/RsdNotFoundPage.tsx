@@ -241,6 +241,8 @@ function BrandMark({ phone }: { phone: boolean }) {
   );
 }
 
+const PAGE_SCROLL_REPORT_MS = 16;
+
 export function RsdPageSheet({
   title,
   lede,
@@ -248,6 +250,7 @@ export function RsdPageSheet({
   scrollRef,
   onBodyOffset,
   backLabel = NOT_FOUND_COPY.startDrawing,
+  onScroll,
 }: {
   title: string;
   lede: string;
@@ -255,6 +258,7 @@ export function RsdPageSheet({
   scrollRef?: Ref<ScrollView>;
   onBodyOffset?: (y: number) => void;
   backLabel?: BackLabel;
+  onScroll?: (y: number) => void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -282,7 +286,14 @@ export function RsdPageSheet({
             bottom: FRAMED_PAGE_PADDING_PX,
           };
   return (
-    <ScrollView ref={scrollRef} style={scroll.fill} contentContainerStyle={scroll.content}>
+    <ScrollView
+      testID="information-page-scroll"
+      ref={scrollRef}
+      style={scroll.fill}
+      contentContainerStyle={scroll.content}
+      scrollEventThrottle={PAGE_SCROLL_REPORT_MS}
+      onScroll={({ nativeEvent }) => onScroll?.(nativeEvent.contentOffset.y)}
+    >
       <html.main
         style={[
           styles.page,
@@ -319,6 +330,7 @@ export function RsdPageSheet({
             <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>{lede}</html.p>
           </html.div>
           <View
+            testID="information-page-body"
             onLayout={({ nativeEvent }) =>
               onBodyOffset?.(nativeEvent.layout.y + page.top + insets.top)
             }
