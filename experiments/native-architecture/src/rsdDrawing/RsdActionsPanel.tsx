@@ -511,6 +511,7 @@ function RsdColorControl({
             areaWidth={area.width}
             buttonSize={layout.size}
             selected={sound.settings.selectedColor}
+            activeSwatch={sound.settings.activeSwatch}
             erasing={screen.brush === 'eraser'}
             disabled={disabled}
             onPick={(color) => {
@@ -520,6 +521,7 @@ function RsdColorControl({
             }}
             onCustom={() => {
               screen.selectInkBrush();
+              sound.owner?.settings.selectCustomPaint();
               close();
               screen.openColorPicker();
             }}

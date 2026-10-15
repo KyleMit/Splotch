@@ -192,7 +192,7 @@ it('cancels paper-routed chrome presses on moved bounds, slide-out, cancellation
 it('ignores a departed layout release instead of changing its paint choice', async () => {
   const finishInput = vi.fn();
   await mountToolbar(toolbarScreen({ drawing: true, finishInput }));
-  const paint = button('Blue paint');
+  const paint = button('Blue');
   paint.getBoundingClientRect = () => ({ x: 0, y: 0, width: 60, height: 60 });
   paint.measureInWindow = (done) => done(0, 0, 60, 60);
   const choose = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
@@ -218,12 +218,12 @@ it('finishes held ink on palette press-down even when the paint press is cancell
   const finishInput = vi.fn();
   await mountToolbar(toolbarScreen({ drawing: true, finishInput }));
   const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
-  const blue = records.props.findLast((props) => props.accessibilityLabel === 'Blue paint');
+  const blue = records.props.findLast((props) => props.accessibilityLabel === 'Blue');
   await act(async () => blue.onPressIn?.());
   expect(finishInput).toHaveBeenCalledTimes(1);
   await act(async () => blue.onPressOut?.());
   expect(setColor).not.toHaveBeenCalled();
-  const more = records.props.findLast((props) => props.accessibilityLabel === 'More colors');
+  const more = records.props.findLast((props) => props.accessibilityLabel === 'Custom Color');
   await act(async () => more.onPressIn?.());
   expect(finishInput).toHaveBeenCalledTimes(2);
   await act(async () => more.onPressOut?.());
@@ -236,7 +236,7 @@ it('keeps flyouts, palette and Clear live during a stroke while AI waits for the
   await expandControls();
   const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
   const startAi = vi.spyOn(caller.product.ai.owner, 'start').mockImplementation(() => {});
-  for (const label of ['Blue paint', 'Brushes', 'Stroke width', AI_BUTTON, 'Undo'])
+  for (const label of ['Blue', 'Brushes', 'Stroke width', AI_BUTTON, 'Undo'])
     expect(button(label).disabled, label).toBe(false);
   expect(
     records.props.findLast((props) => props.accessibilityLabel === 'Clear drawing')
@@ -251,7 +251,7 @@ it('keeps flyouts, palette and Clear live during a stroke while AI waits for the
   expect(startAi).not.toHaveBeenCalled();
   await act(async () => activateClear());
   expect(caller.screen.clear).toHaveBeenCalledTimes(1);
-  await act(async () => button('Blue paint').click());
+  await act(async () => button('Blue').click());
   expect(setColor).toHaveBeenCalledExactlyOnceWith('Blue');
 
   await setDrawing(false);

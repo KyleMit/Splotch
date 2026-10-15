@@ -15,7 +15,7 @@ import { emptyDrawing } from '../../../experiments/native-architecture/src/drawi
 // A closing dialog's exit runs on real timers here; the gate also holds its Unlocked! card.
 const DIALOG_EXIT_WAIT_MS = PARENT_GATE_SUCCESS_HOLD_MS + 2000;
 const LAYOUT = '[data-testid="rsd-drawing-layout"]';
-const PAINT = 'Blue paint';
+const PAINT = 'Blue';
 const DIALOGS = {
   Settings: {
     open: () => rerender({ dialogOpen: true, settingsOpen: true }),
@@ -80,7 +80,7 @@ async function pressEveryControl() {
     'Save screenshot',
     AI_BUTTON,
     'Undo',
-    'More colors',
+    'Custom Color',
     'Settings',
   ]) {
     await act(async () => chrome(label).click());
@@ -131,7 +131,7 @@ it.each(['buttons', 'bare'].flatMap((style) => Object.keys(DIALOGS).map((name) =
     await act(async () => chrome('Brushes').click());
     expect(host.querySelector('[aria-label="Brush Menu"]')).not.toBeNull();
     await act(async () => chrome('Brushes').click());
-    for (const label of ['Coloring books', 'Save screenshot', 'Undo', 'More colors', 'Settings'])
+    for (const label of ['Coloring books', 'Save screenshot', 'Undo', 'Custom Color', 'Settings'])
       await act(async () => chrome(label).click());
     await act(async () => chrome(AI_BUTTON).click());
     await act(async () => activateClear());

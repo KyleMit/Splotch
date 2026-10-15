@@ -30,7 +30,8 @@ const SHIPPING = {
 const NATIVE = {
   install: native('rsdDrawing/RsdInstallGuide.tsx'),
   // The form and the device opt-in it shares with the AI problem report.
-  feedback: native('rsdDrawing/RsdFeedbackSection.tsx') + native('rsdDrawing/RsdDeviceOptIn.tsx'),
+  feedback:
+    native('rsdDrawing/RsdFeedbackSection.tsx') + native('rsdDrawing/RsdDeviceOptInContent.tsx'),
   picker: native('rsdDrawing/RsdSegmentedPicker.tsx'),
   about: native('rsdDrawing/RsdAboutSection.tsx'),
   whatsNew: native('rsdDrawing/RsdWhatsNewSection.tsx'),

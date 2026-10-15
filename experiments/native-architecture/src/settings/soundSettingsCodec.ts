@@ -16,8 +16,7 @@ import {
   MAX_CUSTOM_COLORS,
   isCustomColor,
   isPaintColor,
-  type CustomColor,
-  type PaintColor,
+  type ColorSettings,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
 import { PARENT_PLATFORM } from '../platform/parentPlatform';
@@ -48,11 +47,7 @@ export type AccessibilitySettings = Readonly<{
   reduceMotion: ReduceMotionPreference;
   whatsNewSeen: string | null;
 }>;
-// The paint is session state, as in shipping: every launch starts on DEFAULT_COLOR_SETTINGS.
-export type ColorSettings = Readonly<{
-  selectedColor: PaintColor;
-  customColors: readonly CustomColor[];
-}>;
+export type { ColorSettings } from '../drawing/palette';
 // How loud sound plays and which of the two sources make it; the master switch stays separate.
 export type SoundSourceSettings = Readonly<{
   soundVolume: number;
@@ -160,8 +155,12 @@ function migrateSoundSourceSettings(hasSoundLevel: boolean, value: object): Soun
   };
 }
 
-export function sessionPaint({ selectedColor, customColors }: ColorSettings): ColorSettings {
-  return { selectedColor, customColors };
+export function sessionPaint({
+  selectedColor,
+  customColors,
+  activeSwatch,
+}: ColorSettings): ColorSettings {
+  return { selectedColor, customColors, activeSwatch };
 }
 
 function canonical<T>(settings: T, snapshot: string): T {
@@ -207,7 +206,7 @@ function readParentPreferences(value: unknown) {
 function readStoredParentSettings(
   value: object & { version: unknown },
   widths: WidthSettings & { soundEnabled: boolean },
-  storedPaint: ColorSettings | null,
+  storedPaint: Pick<ColorSettings, 'selectedColor' | 'customColors'> | null,
   appearance: AppearancePreference,
   snapshot: string
 ): SoundSettings {
@@ -333,7 +332,7 @@ function migrateLegacyChoices(
 
 // Versions 3 to 15 also saved the paint. It is still validated, so the record stays strict, and
 // then dropped.
-function readStoredPaint(value: object): ColorSettings {
+function readStoredPaint(value: object): Pick<ColorSettings, 'selectedColor' | 'customColors'> {
   if (
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||

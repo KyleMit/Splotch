@@ -1,6 +1,12 @@
 import { css, html } from 'react-strict-dom';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { paintAppearance, paintLabel, type PaintColor } from '../drawing/palette';
+import {
+  CUSTOM_COLOR_LABEL,
+  paintAppearance,
+  paintLabel,
+  type CustomPaintSelection,
+  type PaintColor,
+} from '../drawing/palette';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
 import {
@@ -100,7 +106,6 @@ export function SelectionRing({
       />
       <html.div
         aria-hidden
-        data-selection-ring={color}
         style={[
           styles.ring(
             -SELECTION_RING_WIDTH_PX,
@@ -129,14 +134,15 @@ export function RsdPaintAction({
   onClick: () => void;
   onPressBegin?: () => void;
 }) {
-  const { hex } = paintAppearance(color, useDrawingAppearance());
+  const theme = useDrawingAppearance();
+  const { hex } = paintAppearance(color, theme);
   const bare = useBareToolbar();
   const inner = size - 2 * SELECTION_RING_GAP_PX;
   return (
     <RsdPressable
       type="button"
       role="radio"
-      aria-label={paintLabel(color)}
+      aria-label={paintLabel(color, theme)}
       aria-checked={selected}
       aria-disabled={disabled}
       disabled={disabled}
@@ -165,21 +171,23 @@ export function RsdPaintAction({
 
 export function RsdMoreColorsSwatch({
   size,
+  custom,
   disabled,
   onClick,
   onPressBegin,
 }: {
   size: number;
+  custom: CustomPaintSelection;
   disabled: boolean;
   onClick: () => void;
   onPressBegin?: () => void;
 }) {
-  const icon = (size - 2 * SELECTION_RING_GAP_PX) / MORE_COLORS_POP_SCALE;
+  const icon = (size - 2 * SELECTION_RING_GAP_PX) / (custom?.color ? 1 : MORE_COLORS_POP_SCALE);
   const bare = useBareToolbar();
   return (
     <RsdPressable
       type="button"
-      aria-label="More colors"
+      aria-label={CUSTOM_COLOR_LABEL}
       aria-disabled={disabled}
       disabled={disabled}
       style={[
@@ -192,6 +200,9 @@ export function RsdMoreColorsSwatch({
       onPressBegin={onPressBegin}
     >
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />
+      {custom?.color ? (
+        <SelectionRing size={size} color={custom.color} surface={bare ? 'paper' : 'surface'} />
+      ) : null}
     </RsdPressable>
   );
 }
