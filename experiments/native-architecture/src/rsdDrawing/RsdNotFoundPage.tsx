@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, type ReactNode, type Ref } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, useRef, type ReactNode, type Ref, type RefObject } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView } from '../platform/ScrollView';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -262,11 +263,7 @@ export function RsdPageSheet({
   onScroll?: (y: number) => void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    const restore = retainFocus();
-    landFocus(titleRef.current);
-    return restore;
-  }, [title]);
+
   const theme = useDrawingAppearance();
   const window = useWindowDimensions();
   // PageShell runs under the status bar, notch and home indicator, and pads every breakpoint's
@@ -295,54 +292,73 @@ export function RsdPageSheet({
       scrollEventThrottle={PAGE_SCROLL_REPORT_MS}
       onScroll={({ nativeEvent }) => onScroll?.(nativeEvent.contentOffset.y)}
     >
-      <html.main
-        style={[
-          styles.page,
-          phone ? styles.plain : styles.ground,
-          styles.pagePadding(
-            page.top + insets.top,
-            page.side + insets.right,
-            page.bottom + insets.bottom,
-            page.side + insets.left
-          ),
-          fontTheme,
-          theme === 'dark' && darkTheme,
-        ]}
-      >
-        <html.div
+      <PageSheetFocus title={title} titleRef={titleRef}>
+        <html.main
           style={[
-            styles.sheet,
-            !phone && styles.card,
-            styles.sheetPadding(sheet.top, side, sheet.bottom),
+            styles.page,
+            phone ? styles.plain : styles.ground,
+            styles.pagePadding(
+              page.top + insets.top,
+              page.side + insets.right,
+              page.bottom + insets.bottom,
+              page.side + insets.left
+            ),
+            fontTheme,
+            theme === 'dark' && darkTheme,
           ]}
         >
-          <html.div style={styles.topbar}>
-            <BackLink label={backLabel} />
-            <BrandMark phone={phone} />
-          </html.div>
-          <html.div style={styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide'])}>
-            <html.h1
-              ref={titleRef}
-              data-page-heading
-              tabIndex={-1}
-              style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}
-            >
-              {title}
-            </html.h1>
-            <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>{lede}</html.p>
-          </html.div>
-          <View
-            testID="information-page-body"
-            onLayout={({ nativeEvent }) =>
-              onBodyOffset?.(nativeEvent.layout.y + page.top + insets.top)
-            }
+          <html.div
+            style={[
+              styles.sheet,
+              !phone && styles.card,
+              styles.sheetPadding(sheet.top, side, sheet.bottom),
+            ]}
           >
-            {children}
-          </View>
-        </html.div>
-      </html.main>
+            <html.div style={styles.topbar}>
+              <BackLink label={backLabel} />
+              <BrandMark phone={phone} />
+            </html.div>
+            <html.div style={styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide'])}>
+              <html.h1
+                ref={titleRef}
+                data-page-heading
+                tabIndex={-1}
+                style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}
+              >
+                {title}
+              </html.h1>
+              <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>{lede}</html.p>
+            </html.div>
+            <View
+              testID="information-page-body"
+              onLayout={({ nativeEvent }) =>
+                onBodyOffset?.(nativeEvent.layout.y + page.top + insets.top)
+              }
+            >
+              {children}
+            </View>
+          </html.div>
+        </html.main>
+      </PageSheetFocus>
     </ScrollView>
   );
+}
+
+function PageSheetFocus({
+  title,
+  titleRef,
+  children,
+}: {
+  title: string;
+  titleRef: RefObject<HTMLHeadingElement | null>;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    const restore = retainFocus();
+    landFocus(titleRef.current);
+    return restore;
+  }, [title, titleRef]);
+  return children;
 }
 
 export function RsdNotFoundPage() {

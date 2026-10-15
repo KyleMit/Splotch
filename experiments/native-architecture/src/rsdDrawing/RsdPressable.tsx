@@ -138,6 +138,7 @@ export function RsdPressable({
   children,
   type: _formType,
   role = 'button',
+  'aria-pressed': pressed,
   onClick,
   onPressBegin,
   ...props
@@ -151,7 +152,15 @@ export function RsdPressable({
       as="div"
     >
       {(resolved) => (
-        <NativePressable {...resolved} onPressBegin={inert ? undefined : onPressBegin}>
+        <NativePressable
+          {...resolved}
+          accessibilityState={
+            typeof pressed === 'boolean'
+              ? { ...resolved.accessibilityState, selected: pressed }
+              : resolved.accessibilityState
+          }
+          onPressBegin={inert ? undefined : onPressBegin}
+        >
           {children}
         </NativePressable>
       )}

@@ -238,7 +238,8 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   };
   await render(true);
   const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue');
-  expect(props.accessibilityState.checked).toBe(true);
+  expect(props.accessibilityState.checked).toBeUndefined();
+  expect(props.accessibilityState.selected).toBeUndefined();
   expect(swatchStyle()).toMatchObject({
     boxSizing: 'border-box',
     width: TOUCH_TARGET,
@@ -288,7 +289,7 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   expect(seam.inner).toBeGreaterThan(inner / 2);
   expect(SELECTION_SEAM_OVERLAP_PX).toBeGreaterThanOrEqual(1);
   const selectedNode = host.querySelector('button');
-  expect(selectedNode.getAttribute('role')).toBe('radio');
+  expect(selectedNode.getAttribute('role')).toBe('button');
   expect(selectedNode.getAttribute('aria-label')).toBe('Blue');
   expect(selectedNode.textContent).toBe('');
   await act(async () => selectedNode.click());
@@ -296,7 +297,7 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   await render(false);
   const unselectedNode = host.querySelector('button');
   expect(unselectedNode).toBe(selectedNode);
-  expect(unselectedNode.dataset.checked).toBe('false');
+  expect(unselectedNode.dataset.checked).toBeUndefined();
   expect(swatchStyle().backgroundColor).toBe(blue);
   expect(drawn((style) => style.borderColor === ring)).toEqual([]);
   expect(drawn((style) => style.position === 'absolute')).toEqual([]);
@@ -356,13 +357,10 @@ describe('the mounted drawing screen frame', () => {
       overflow: 'hidden',
       gap: PALETTE_FLOWS.column.gapPx,
     });
-    expect(
-      resolved(
-        (props) =>
-          (props.role ?? props.accessibilityRole) === 'radiogroup' &&
-          props.accessibilityLabel === 'Paint colors'
-      )
-    ).toMatchObject({ flexShrink: 0, gap: PALETTE_FLOWS.column.gapPx });
+    expect(resolved((props) => props.testID === 'rsd-palette-paints')).toMatchObject({
+      flexShrink: 0,
+      gap: PALETTE_FLOWS.column.gapPx,
+    });
   });
 
   // Negative control: a column that stops its plate at the inset and continues in a separate

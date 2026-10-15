@@ -402,14 +402,10 @@ function flat(style) {
   return Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean).map(flat)) : style;
 }
 
-function corners(style) {
-  return [
-    style.borderTopLeftRadius,
-    style.borderTopRightRadius,
-    style.borderBottomRightRadius,
-    style.borderBottomLeftRadius,
-  ];
-}
+const corners = (style) =>
+  ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(
+    (corner) => style[`border${corner}Radius`]
+  );
 
 it.each([
   ['portrait', { width: 402, height: 874 }, 0, { top: 90, size: 60, icon: 38 }],
@@ -525,4 +521,19 @@ it('flies the departing page into the docked tab from the paper area it sits in'
   expect(byTestID('rsd-clear-sheet').transformOrigin).toBe(
     `${origin.x - frame.left}px ${origin.y - frame.top}px`
   );
+});
+
+it("reveals Clear's opacity and scale on shipping's separate clocks", async () => {
+  const { Animated } =
+    await import('../../../experiments/native-architecture/src/platform/animated.ts');
+  const timing = vi.spyOn(Animated, 'timing');
+  await mountClear();
+  timing.mockClear();
+  await press();
+  const reveal = timing.mock.calls
+    .map(([, config]) => config)
+    .filter((config) => config.toValue === 1 && config.useNativeDriver);
+  expect(reveal.map((config) => config.duration)).toEqual([200, 300, 90, 90]);
+  expect(reveal.slice(-2).map((config) => config.delay ?? 0)).toEqual([0, 90]);
+  timing.mockRestore();
 });

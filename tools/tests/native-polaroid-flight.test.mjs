@@ -10,9 +10,11 @@ import {
   POLAROID_FLASH_KEYFRAMES,
   POLAROID_FRAME,
   POLAROID_SHOW_KEYFRAMES,
+} from '../../experiments/native-architecture/src/rsdDrawing/polaroidFlight.ts';
+import {
   keyframeTimeline,
   keyframeValue,
-} from '../../experiments/native-architecture/src/rsdDrawing/polaroidFlight.ts';
+} from '../../experiments/native-architecture/src/rsdDrawing/keyframeMotion.ts';
 import { POLAROID_FLIGHT_MS } from '../../web/src/lib/drawing/screenshotTiming.ts';
 import { polaroidCssSize } from '../../web/src/lib/drawing/polaroidGeometry.ts';
 import { scale, zIndex } from '../../web/src/lib/design/tokens.ts';
@@ -37,14 +39,14 @@ const css = read('web/src/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
 const native = read('experiments/native-architecture/src/rsdDrawing/RsdPolaroidFlight.tsx');
 
 // The body of the first block whose prelude is `prelude`, braces balanced.
-function block(prelude) {
-  const start = css.indexOf(`${prelude} {`);
+function block(prelude, source = css) {
+  const start = source.indexOf(`${prelude} {`);
   expect(start, prelude).toBeGreaterThanOrEqual(0);
   let depth = 0;
-  for (let index = css.indexOf('{', start); index < css.length; index++) {
-    if (css[index] === '{') depth += 1;
-    if (css[index] === '}') depth -= 1;
-    if (depth === 0) return css.slice(css.indexOf('{', start) + 1, index);
+  for (let index = source.indexOf('{', start); index < source.length; index++) {
+    if (source[index] === '{') depth += 1;
+    if (source[index] === '}') depth -= 1;
+    if (depth === 0) return source.slice(source.indexOf('{', start) + 1, index);
   }
   throw new Error(`Unclosed ${prelude}`);
 }
@@ -86,8 +88,8 @@ function transform(value) {
 }
 
 // Each keyframe offset of an @keyframes rule, with the declarations its block sets.
-function keyframes(name) {
-  const body = block(`@keyframes ${name}`);
+function keyframes(name, source = css) {
+  const body = block(`@keyframes ${name}`, source);
   return [...body.matchAll(/([\d%,\s]+)\{([^}]*)\}/g)].flatMap(([, offsets, declarations]) =>
     offsets
       .split(',')
@@ -243,4 +245,185 @@ describe('the keyframe timeline', () => {
       extrapolate: 'clamp',
     });
   });
+});
+
+describe('the native flyout shell against app.css', () => {
+  it("uses shipping's complete transform and opacity keyframe tracks", async () => {
+    const { FLYOUT_ENTER_MS, FLYOUT_ENTER_POSE_KEYFRAMES, FLYOUT_ENTER_FADE_KEYFRAMES } =
+      await import('../../experiments/native-architecture/src/rsdDrawing/flyoutKeyframes.ts');
+    expect(declaration(block('.flyout-menu'), 'animation')).toBe(
+      `flyout-shell ${FLYOUT_ENTER_MS}ms linear both`
+    );
+    const frames = keyframes('flyout-shell');
+    const pose = frames
+      .filter(({ declarations }) => declaration(declarations, 'transform'))
+      .map(({ at, declarations }) => ({
+        at,
+        scale: transform(declaration(declarations, 'transform')).scale,
+        easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
+      }));
+    expect(
+      FLYOUT_ENTER_POSE_KEYFRAMES.map(({ at, scale, easing }) => ({ at, scale, easing }))
+    ).toEqual(pose);
+    const opacity = frames
+      .filter(({ declarations }) => declaration(declarations, 'opacity') !== undefined)
+      .map(({ at, declarations }) => ({
+        at,
+        opacity: Number(declaration(declarations, 'opacity')),
+        easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
+      }));
+    expect(FLYOUT_ENTER_FADE_KEYFRAMES).toEqual(opacity);
+    const offsetPx = Number(
+      declaration(block('.flyout-menu'), '--flyout-from-y').replace('px', '')
+    );
+    expect(FLYOUT_ENTER_POSE_KEYFRAMES.map(({ offsetPx }) => offsetPx)).toEqual([offsetPx, 0, 0]);
+  });
+});
+
+it("uses shipping's drawer cascade start pose and fixed tool slots", () => {
+  const drawer = read('experiments/native-architecture/src/rsdDrawing/RsdDrawerCascade.tsx');
+  const pose = declaration(block('@keyframes btn-cascade'), 'transform');
+  const x = Number(/translateX\((-?[\d.]+)px\)/.exec(pose)[1]);
+  const size = transform(pose).scale;
+  expect(drawer).toContain(`const DRAWER_CASCADE_FROM_X_PX = ${x};`);
+  expect(drawer).toContain(`const DRAWER_CASCADE_FROM_SCALE = ${size};`);
+  const panel = read('experiments/native-architecture/src/rsdDrawing/RsdDrawerTools.tsx');
+  const names = {
+    brush: 'BrushControl',
+    stroke: 'StrokeControl',
+    camera: 'ScreenshotButton',
+    ai: 'AiImageButton',
+    undo: 'UndoButton',
+  };
+  for (const [key, name] of Object.entries(names)) {
+    const source = read(`web/src/lib/components/${name}.svelte`);
+    const [, index] = /style:--i=["{](\d+)/.exec(source);
+    expect(panel).toMatch(new RegExp(`${key}: ${index}(?:[, }])`));
+  }
+});
+
+it("deals flyout options on shipping's offsets, curve and stagger", async () => {
+  const {
+    FLYOUT_OPTION_KEYFRAMES,
+    FLYOUT_OPTION_ENTER_MS,
+    FLYOUT_OPTION_DELAY_MS,
+    FLYOUT_OPTION_STAGGER_MS,
+  } = await import('../../experiments/native-architecture/src/rsdDrawing/flyoutKeyframes.ts');
+  const frames = keyframes('flyout-option').map(({ at, declarations }) => {
+    const pose = declaration(declarations, 'transform');
+    return {
+      at,
+      y: Number(/translateY\((-?[\d.]+)px\)/.exec(pose)?.[1] ?? 0),
+      rotate: Number(/rotate\((-?[\d.]+)deg\)/.exec(pose)?.[1] ?? 0),
+      opacity: Number(declaration(declarations, 'opacity') ?? 1),
+      easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
+    };
+  });
+  expect(FLYOUT_OPTION_KEYFRAMES).toEqual(frames);
+  const options = block('.flyout-menu > button');
+  expect(declaration(options, 'animation')).toBe(
+    `flyout-option ${FLYOUT_OPTION_ENTER_MS}ms linear backwards`
+  );
+  expect(declaration(options, 'animation-delay')).toBe(
+    `calc(${FLYOUT_OPTION_DELAY_MS}ms + var(--i) * var(--stagger))`
+  );
+  expect(declaration(block('.flyout-menu'), '--stagger')).toBe(`${FLYOUT_OPTION_STAGGER_MS}ms`);
+});
+
+it("squashes the camera through shipping's exact capture keyframes", async () => {
+  const { CAMERA_CAPTURE_MS, CAMERA_CAPTURE_KEYFRAMES } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+  expect(declaration(block(".screenshot-capture-feedback [data-icon='camera']"), 'animation')).toBe(
+    `screenshot-capture ${CAMERA_CAPTURE_MS}ms linear`
+  );
+  const frames = keyframes('screenshot-capture').map(({ at, declarations }) => ({
+    at,
+    scale: transform(declaration(declarations, 'transform')).scale,
+    rotate: transform(declaration(declarations, 'transform')).rotate,
+    easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
+  }));
+  expect(CAMERA_CAPTURE_KEYFRAMES).toEqual(frames);
+  const feedback = read('web/src/lib/drawing/screenshotFeedback.ts');
+  expect(feedback).toMatch(
+    /stampMotionAtStart\(button\);\s*button\.classList\.add\(CAPTURE_FEEDBACK_CLASS\)/
+  );
+  expect(read('web/src/lib/platform/reducedMotion.ts')).toContain(
+    'node.toggleAttribute(START_REDUCED_MOTION_ATTRIBUTE, prefersReducedMotion());'
+  );
+});
+
+it("blooms paint rings on shipping's independent scale and opacity clocks", async () => {
+  const motion =
+    await import('../../experiments/native-architecture/src/rsdDrawing/swatchKeyframes.ts');
+  const source = read('web/src/lib/components/ColorSwatch.svelte');
+  const glide = bezier(scale.easeGlide);
+  const ring = (name, field) =>
+    keyframes(name, source)
+      .filter(
+        ({ declarations }) =>
+          declaration(declarations, field === 'scale' ? 'transform' : 'opacity') !== undefined
+      )
+      .map(({ at, declarations }) => ({
+        at,
+        [field]:
+          field === 'scale'
+            ? transform(declaration(declarations, 'transform')).scale
+            : Number(declaration(declarations, 'opacity')),
+        easing: glide,
+      }));
+  expect(motion.SWATCH_BLOOM_SCALE_KEYFRAMES).toEqual(ring('swatch-ring-expand', 'scale'));
+  expect(motion.SWATCH_BLOOM_FADE_KEYFRAMES).toEqual(ring('swatch-ring-expand', 'opacity'));
+  expect(motion.SWATCH_TRAIL_SCALE_KEYFRAMES).toEqual(ring('swatch-ring-trail', 'scale'));
+  expect(motion.SWATCH_TRAIL_FADE_KEYFRAMES).toEqual(ring('swatch-ring-trail', 'opacity'));
+  expect(
+    declaration(
+      block('.color-swatch.ring-animate:not(.gradient-swatch)::before', source),
+      'animation'
+    )
+  ).toBe(`swatch-ring-expand ${motion.SWATCH_BLOOM_MS}ms var(--ease-glide) forwards`);
+  expect(
+    declaration(
+      block('.color-swatch.ring-animate:not(.gradient-swatch)::after', source),
+      'animation'
+    )
+  ).toBe(
+    `swatch-ring-trail ${motion.SWATCH_BLOOM_TRAIL_MS}ms ${motion.SWATCH_BLOOM_TRAIL_DELAY_MS}ms var(--ease-glide) forwards`
+  );
+  const trailWidth =
+    /\.color-swatch:not\(\.gradient-swatch\)::after\s*\{\s*border-width:\s*([\d.]+)px;/.exec(
+      source
+    );
+  expect(Number(trailWidth?.[1])).toBe(motion.SWATCH_BLOOM_TRAIL_WIDTH_PX);
+});
+
+it("keeps the landscape-phone flyout entrance on shipping's horizontal axis", () => {
+  const prelude = '@media (orientation: landscape) and (max-height: 599.98px)';
+  const phone = [
+    ...css.matchAll(/@media \(orientation: landscape\) and \(max-height: 599\.98px\)/g),
+  ]
+    .map(({ index }) => block(prelude, css.slice(index)))
+    .find((body) => body.includes('.actions-panel .flyout-menu {'));
+  expect(phone).toBeDefined();
+  const menu = block('.actions-panel .flyout-menu', phone);
+  expect(declaration(menu, 'transform-origin')).toBe('0 100%');
+  expect(declaration(menu, '--flyout-from-x')).toBe('-6px');
+  expect(declaration(menu, '--flyout-from-y')).toBe('0px');
+  const panel = read('experiments/native-architecture/src/rsdDrawing/RsdActionsPanel.tsx');
+  expect(panel).toContain("portrait: layout.mode !== 'row'");
+  expect(panel).toContain("originX: layout.mode === 'row' ? layout.size / 2 : 0");
+});
+
+it('resumes the camera keyframe clock at its elapsed phase without replaying the beginning', async () => {
+  const { CAMERA_CAPTURE_MS, CAMERA_CAPTURE_KEYFRAMES } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/cameraKeyframes.ts');
+  const value = { setValue: vi.fn() };
+  const full = keyframeTimeline({}, CAMERA_CAPTURE_KEYFRAMES, CAMERA_CAPTURE_MS);
+  const elapsed = CAMERA_CAPTURE_MS / 2;
+  const resumed = keyframeTimeline(value, CAMERA_CAPTURE_KEYFRAMES, CAMERA_CAPTURE_MS, 0, elapsed);
+  const from = full.easing(elapsed / CAMERA_CAPTURE_MS);
+  expect(value.setValue).toHaveBeenCalledExactlyOnceWith(from);
+  expect(resumed.duration).toBe(CAMERA_CAPTURE_MS - elapsed);
+  for (const phase of [0, 0.2, 0.6, 1]) {
+    expect(from + (1 - from) * resumed.easing(phase)).toBeCloseTo(full.easing(0.5 + 0.5 * phase));
+  }
 });

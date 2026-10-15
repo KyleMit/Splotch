@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 
-function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions, attribute }) {
+function validateBrushSources({ parse, babel, toolbarToggles, toolbarConditions, attribute }) {
   const unwrap = (node) => {
     while (['TSAsExpression', 'TSSatisfiesExpression', 'TSNonNullExpression'].includes(node?.type))
       node = node.expression;
@@ -46,7 +46,7 @@ function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions
     node.object.computed &&
     identifier(node.object.object, table) &&
     expectedBrush(node.object.property);
-  function assertToolbarSwitch(node, prefix) {
+  function assertToolbarToggle(node, prefix) {
     assert.ok(toolbarSelected(expressionValue(node, 'selected')), prefix + ' state owner');
     assert.ok(
       brushLabel(expressionValue(node, 'label'), controlBrush, 'BRUSH_MENU_OPTIONS'),
@@ -180,8 +180,8 @@ function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions
     ['Crayon', 'Magic Brush', 'Eraser'],
     'RSD optional brush labels'
   );
-  assert.equal(toolbarSwitches.length, 1, 'RSD optional toolbar switch count');
-  assertToolbarSwitch(toolbarSwitches[0], 'RSD optional toolbar switch');
+  assert.equal(toolbarToggles.length, 1, 'RSD optional toolbar toggle count');
+  assertToolbarToggle(toolbarToggles[0], 'RSD optional toolbar toggle');
   const toolbarCondition = toolbarConditions[0];
   assert.ok(
     toolbarCondition?.type === 'BinaryExpression' &&
@@ -192,7 +192,7 @@ function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions
       identifier(toolbarCondition.left.property, 'kind') &&
       toolbarCondition.right.type === 'StringLiteral' &&
       toolbarCondition.right.value === 'toggle',
-    'RSD optional toolbar switch branch'
+    'RSD optional toolbar toggle branch'
   );
 
   const settingsMounts = [];
@@ -213,20 +213,19 @@ function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions
       'RSD brush settings mount owner: ' + prop
     );
 
-  function assertTransformedBrushSwitches(ast, file) {
+  function assertTransformedBrushToggles(ast, file) {
     if (file !== 'src/rsdDrawing/RsdActionsPanel.tsx') return;
-    const transformedSwitches = [];
+    const transformedToggles = [];
     babel.traverse(ast, {
       ObjectExpression({ node }) {
-        const selection = expressionValue(node, 'selection');
-        if (selection?.type === 'StringLiteral' && selection.value === 'switch')
-          transformedSwitches.push(node);
+        if (brushLabel(expressionValue(node, 'label'), controlBrush, 'BRUSH_MENU_OPTIONS'))
+          transformedToggles.push(node);
       },
     });
-    assert.equal(transformedSwitches.length, 1, 'RSD transformed optional toolbar switch count');
-    assertToolbarSwitch(transformedSwitches[0], 'RSD transformed optional toolbar switch');
+    assert.equal(transformedToggles.length, 1, 'RSD transformed optional toolbar toggle count');
+    assertToolbarToggle(transformedToggles[0], 'RSD transformed optional toolbar toggle');
   }
-  return { optionalBrushes, optionalLabels, assertTransformedBrushSwitches };
+  return { optionalBrushes, optionalLabels, assertTransformedBrushToggles };
 }
 
 module.exports = { validateBrushSources };

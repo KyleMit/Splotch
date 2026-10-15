@@ -12,6 +12,8 @@ import { AI_BUTTON, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fix
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { adoptedDrawing, canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import { FLYOUT_EXIT_MS } from '../../../web/src/lib/motionDurations.ts';
 
 const PORTRAIT_PHONE = { width: 402, height: 874, scale: 1, fontScale: 1 };
 const LANDSCAPE_PHONE = { width: 740, height: 360, scale: 1, fontScale: 1 };
@@ -363,4 +365,94 @@ it('routes native Escape while a flyout option holds focus', async () => {
   const receiver = records.props.findLast((props) => props.testID === 'drawing-keyboard-scope');
   await act(async () => receiver.onShortcutKey({ nativeEvent: { key: 'escape' } }));
   expect(host.querySelector('[aria-label="Brush Menu"]')).toBeNull();
+});
+
+it("retains a closing Brush Menu inert until shipping's exit completes", async () => {
+  await mountToolbar(toolbarScreen());
+  await expandControls();
+  await act(async () => button('Brushes').click());
+  const original = Animated.timing;
+  let finish;
+  const timing = vi.spyOn(Animated, 'timing').mockImplementation((value, config) => {
+    if (config.duration !== FLYOUT_EXIT_MS || config.toValue !== 0) return original(value, config);
+    return {
+      start(done) {
+        finish = done;
+      },
+      stop() {},
+    };
+  });
+  await act(async () => button('Brushes').click());
+  expect(host.querySelector('[aria-label="Brush Menu"]')).not.toBeNull();
+  expect(
+    records.props.findLast((props) => props.testID === 'rsd-flyout-motion').pointerEvents
+  ).toBe('none');
+  const wrapper = records.props.findLast((props) => props.testID === 'rsd-tool-flyout');
+  expect(wrapper.pointerEvents).toBe('none');
+  expect(wrapper.onStartShouldSetResponderCapture).toBeUndefined();
+  expect(
+    records.props
+      .findLast((props) => props.testID === 'rsd-drawing-layout')
+      .onStartShouldSetResponderCapture()
+  ).toBe(false);
+  expect(finish).toBeTypeOf('function');
+  await act(async () => finish({ finished: true }));
+  expect(host.querySelector('[aria-label="Brush Menu"]')).toBeNull();
+  timing.mockRestore();
+});
+
+it('retires an interrupted drawer cascade when a stroke begins', async () => {
+  await mountToolbar(toolbarScreen());
+  const original = Animated.timing;
+  const timing = vi.spyOn(Animated, 'timing').mockImplementation((value, config) => {
+    if (typeof config.delay !== 'number') return original(value, config);
+    return { start() {}, stop() {} };
+  });
+  await expandControls();
+  const scheduled = () =>
+    timing.mock.calls
+      .map(([, config]) => config)
+      .filter((config) => typeof config.delay === 'number');
+  const first = scheduled().length;
+  expect(first).toBeGreaterThan(0);
+  await setDrawing(true);
+  await setDrawing(false);
+  expect(scheduled()).toHaveLength(first);
+  timing.mockRestore();
+});
+
+it("blooms only the chosen paint on shipping's main and trail clocks", async () => {
+  await mountToolbar(toolbarScreen());
+  const timing = vi.spyOn(Animated, 'timing');
+  timing.mockClear();
+  const paint = host.querySelectorAll('[data-testid="rsd-palette-paints"] button')[1];
+  await act(async () => paint.click());
+  expect(
+    records.props.findLast((props) => props.accessibilityLabel === paint.getAttribute('aria-label'))
+      .accessibilityState.checked
+  ).toBeUndefined();
+  expect(caller.sound.settings.activeSwatch).toBe(paint.getAttribute('aria-label'));
+  const clocks = () =>
+    timing.mock.calls
+      .map(([, config]) => config)
+      .filter((config) => [620, 700].includes(config.duration));
+  expect(clocks().map((config) => [config.duration, config.delay])).toEqual([
+    [620, undefined],
+    [620, undefined],
+    [700, 90],
+    [700, 90],
+  ]);
+  await act(async () => paint.click());
+  expect(clocks()).toHaveLength(4);
+  timing.mockRestore();
+});
+
+it('opens landscape-phone flyouts horizontally from the trigger edge', async () => {
+  records.dimensions = LANDSCAPE_PHONE;
+  await mountToolbar(toolbarScreen());
+  await expandControls();
+  await act(async () => button('Brushes').click());
+  const motion = records.props.findLast((props) => props.testID === 'rsd-flyout-motion');
+  expect(motion.style.transformOrigin).toEqual([0, '100%', 0]);
+  expect(motion.style.transform[0].translateX).not.toBe(0);
 });

@@ -1,3 +1,4 @@
+import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { drawingPaper } from '../drawing/paperSpace';
 import { StyleSheet, View } from 'react-native';
@@ -6,7 +7,12 @@ import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { customPaintSelection, paintAppearance, visiblePaints } from '../drawing/palette';
+import {
+  customPaintSelection,
+  paintAppearance,
+  visiblePaints,
+  type PaintColor,
+} from '../drawing/palette';
 import { RsdIconButton } from './RsdIconButton';
 import { RsdMoreColorsSwatch, RsdPaintAction } from './RsdSwatch';
 import {
@@ -159,6 +165,7 @@ export function RsdEdgeLayout({
               area={area}
               viewport={viewport}
               open={drawerOpen}
+              chosenOpen={drawerChosen}
               buttonScale={buttonScale}
               onToggle={() => setDrawerChosen(!drawerOpen)}
               slot={slot}
@@ -244,6 +251,10 @@ function RsdPalette({
   disabled: boolean;
 }) {
   const { activeSwatch, toolbarStyle } = sound.settings;
+  const reduced = useReduceMotion();
+  const [confirmation, setConfirmation] = useState<{ paint: PaintColor; reduced: boolean } | null>(
+    null
+  );
   const face = toolbarStyle === 'bare' ? paletteStyles.bare : paletteStyles.surface;
   const column = layout.axis === 'column';
   const flow = PALETTE_FLOWS[layout.axis];
@@ -263,8 +274,8 @@ function RsdPalette({
       ]}
     >
       <html.div
-        role="radiogroup"
-        aria-label="Paint colors"
+        // Geometry tests identify the paint row independently of its accessibility semantics.
+        data-testid="rsd-palette-paints"
         style={[paletteStyles.flow(column, spacing), paletteStyles.group]}
       >
         {paints.map((color) => (
@@ -273,11 +284,17 @@ function RsdPalette({
             color={color}
             size={flow.swatchPx}
             selected={screen.brush !== 'eraser' && color === activeSwatch}
+            bloom={confirmation?.paint === color ? confirmation : null}
             disabled={disabled}
             onPressBegin={screen.finishInput}
             onClick={() => {
               screen.selectInkBrush();
               sound.owner?.settings.setColor(color);
+              setConfirmation((current) =>
+                current?.paint === color && current.reduced === reduced
+                  ? current
+                  : { paint: color, reduced }
+              );
             }}
           />
         ))}

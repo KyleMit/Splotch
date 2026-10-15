@@ -22,6 +22,8 @@ import {
 } from './rsd-native-settings-fixture.mjs';
 import { heldBrushLabel as brushLabel } from './rsd-native-toolbar-fixture.mjs';
 import { act, createElement } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -82,7 +84,12 @@ it('lists every shipping section in order with its icon tile and shipping status
     `About, Version ${WHATS_NEW_STAMP}`,
   ]);
   await openSettingsSection('Accessibility');
-  expect(host.querySelector('[data-native-modal="Accessibility"]')).not.toBeNull();
+  const settingsName = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/SettingsModal.svelte'),
+    'utf8'
+  ).match(/aria-label="([^"]+)"/)[1];
+  expect(host.querySelector('[role="dialog"]').getAttribute('aria-label')).toBe(settingsName);
+  expect(host.querySelector('[role="heading"]').textContent).toBe('Accessibility');
   expect(hubRows()).toEqual([]);
   await click('Back');
   expect(hubRows()).toHaveLength(listed.length);
@@ -200,7 +207,7 @@ it('drills into Feedback from its hub row, as into every other section', async (
   await act(async () => hubRow('Feedback').click());
   expect(caller.screen.closeSettings).not.toHaveBeenCalled();
   expect(caller.product.feedback.state.open).toBe(false);
-  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
   expect(host.querySelector('[data-native-modal="Send Feedback"]')).toBeNull();
   await click('Back');
   expect(hubRow('Feedback')).toBeDefined();
@@ -211,7 +218,7 @@ it('drills into an AI Art page from its hub row', async () => {
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('AI Art');
-  expect(host.querySelector('[data-native-modal="AI Art"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
   await click('Back');
   expect(hubRow('AI Art')).toBeDefined();
 });
@@ -260,7 +267,7 @@ it.each([
     await mount(createElement(RsdDrawingScreen));
     expect(dottedRows()).toEqual([`${WHATS_NEW}, ${SECTION_SUBTITLES.whatsnew}, new`]);
     await act(async () => hubRow(WHATS_NEW).click());
-    expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
+    expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
     const [current, ...earlier] = RELEASE_NOTES;
     expect(host.textContent).toContain(current.dateLabel);
     expect(host.textContent).toContain(current.sections[0].blocks[0].text);
@@ -316,7 +323,7 @@ it("keeps the What's New stamp when the section opens while another choice is st
   await click('Back');
   expect(dottedRows()).toHaveLength(1);
   await openSettingsSection(WHATS_NEW);
-  expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
   expect(settings.storage.write).toHaveBeenCalledOnce();
   await act(async () => finishWrite());
   expect(settings.storage.write).toHaveBeenCalledOnce();

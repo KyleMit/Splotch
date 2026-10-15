@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView } from '../platform/ScrollView';
 import { Animated, Easing } from '../platform/animated';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';

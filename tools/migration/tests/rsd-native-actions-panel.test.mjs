@@ -60,9 +60,9 @@ function button(label) {
 }
 
 function options(menu) {
-  return [...host.querySelectorAll(`[aria-label="${menu}"] [role="radio"]`)].map((node) => ({
+  return [...host.querySelectorAll(`[aria-label="${menu}"] [role="button"]`)].map((node) => ({
     label: node.getAttribute('aria-label'),
-    checked: node.dataset.checked === 'true',
+    checked: node.dataset.selected === 'true',
   }));
 }
 

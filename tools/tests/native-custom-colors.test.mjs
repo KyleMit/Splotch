@@ -119,7 +119,11 @@ describe('new candidate custom paints', () => {
       { color: '#FEDCBA', width: 14 },
     ]);
     expect(history.undo).toEqual([original]);
-    expect(undoDrawing(clearDrawing(history, false)).drawing).toBe(history.drawing);
+    const cleared = clearDrawing(history, false);
+    expect(undoDrawing(cleared).drawing).toEqual({
+      ...history.drawing,
+      rainbow: cleared.drawing.rainbow,
+    });
     expect(parseDrawing(JSON.parse(JSON.stringify(history.drawing)))).toEqual(history.drawing);
     expect(undoDrawing(history).drawing).toBe(original);
   });

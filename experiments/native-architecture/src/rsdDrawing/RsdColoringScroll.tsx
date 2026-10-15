@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { ScrollView, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { ScrollView } from '../platform/ScrollView';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { rgba } from './colorMix';

@@ -50,7 +50,7 @@ function viewport({ width, height }) {
 const colorsButton = () => host.querySelector('[aria-label="Colors"][role="button"]');
 const colorMenu = () => host.querySelector('[role="group"][aria-label="Colors"]');
 const menuPaints = () =>
-  [...colorMenu().querySelectorAll('[role="radio"]')].map((node) =>
+  [...colorMenu().firstElementChild.querySelectorAll('button')].map((node) =>
     node.getAttribute('aria-label')
   );
 const expanded = () =>
@@ -109,7 +109,7 @@ describe('the landscape phone Color Button and Color Menu', () => {
     viewport(LANDSCAPE_PHONE);
     await mountToolbar(toolbarScreen());
     expect(host.querySelector('[data-testid="rsd-palette-bar"]')).toBeNull();
-    expect(host.querySelector('[aria-label="Paint colors"]')).toBeNull();
+    expect(host.querySelector('[data-testid="rsd-palette-paints"]')).toBeNull();
     expect(expanded()).toBe(false);
     expect(colorsButton().querySelector('svg[data-xml]').dataset.xml).toContain('fill="#AB71E1"');
     const size = PHONE_TOOLBAR_BUTTON_PX;
@@ -137,11 +137,14 @@ describe('the landscape phone Color Button and Color Menu', () => {
   it('keeps the palette bar, with no Color Button, in portrait', async () => {
     viewport(PORTRAIT_PHONE);
     await mountToolbar(toolbarScreen());
-    expect(host.querySelector('[aria-label="Paint colors"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="rsd-palette-paints"]')).not.toBeNull();
     expect(colorsButton()).toBeNull();
   });
 
   it('opens a swatch flyout whose pick loads the ink and closes it', async () => {
+    const shipping = read('web/src/lib/components/ColorMenu.svelte');
+    expect(shipping).toContain('aria-pressed={ringed}');
+    expect(shipping).toContain('aria-pressed={customRinged}');
     viewport(LANDSCAPE_PHONE);
     const screen = toolbarScreen({ brush: 'pen' });
     await mountToolbar(screen);
@@ -151,7 +154,12 @@ describe('the landscape phone Color Button and Color Menu', () => {
     expect(menuPaints()).toEqual(shippingMenuRanks(room));
     expect(menuPaints()).toHaveLength(9);
     const purple = colorMenu().querySelector('[aria-label="Purple"]');
-    expect(purple.dataset.checked).toBe('true');
+    expect(purple.getAttribute('role')).toBe('button');
+    expect(purple.hasAttribute('data-checked')).toBe(false);
+    expect(purple.dataset.selected).toBe('true');
+    for (const button of colorMenu().querySelectorAll('button'))
+      expect(button.dataset.selected).toBe(String(button === purple));
+    expect(purple.childElementCount).toBe(3);
     expect(colorMenu().querySelector('[aria-label="Custom Color"]')).not.toBeNull();
     await act(async () => colorMenu().querySelector('[aria-label="Blue"]').click());
     expect(screen.selectInkBrush).toHaveBeenCalledOnce();
@@ -175,8 +183,28 @@ describe('the landscape phone Color Button and Color Menu', () => {
     viewport(LANDSCAPE_PHONE);
     await mountToolbar(toolbarScreen({ brush: 'eraser' }));
     await act(async () => colorsButton().click());
-    expect(colorMenu().querySelectorAll('[data-checked="true"]')).toHaveLength(0);
+    const paints = colorMenu().firstElementChild;
+    expect([...paints.children].filter((node) => node.childElementCount > 0)).toHaveLength(0);
+    for (const button of colorMenu().querySelectorAll('button'))
+      expect(button.dataset.selected).toBe('false');
   });
+
+  it.each(['light', 'dark'])(
+    'exposes a loaded custom paint as pressed in %s',
+    async (appearance) => {
+      viewport(LANDSCAPE_PHONE);
+      await mountToolbar(toolbarScreen({ brush: 'pen' }), { appearance });
+      await act(async () => caller.product.sound.owner.settings.setColor('#123ABC'));
+      await act(async () => colorsButton().click());
+      const custom = colorMenu().querySelector('[aria-label="Custom Color"]');
+      expect(custom.dataset.selected).toBe('true');
+      for (const button of colorMenu().querySelectorAll('button')) {
+        expect(button.getAttribute('role')).toBe('button');
+        expect(button.hasAttribute('data-checked')).toBe(false);
+        expect(button.dataset.selected).toBe(String(button === custom));
+      }
+    }
+  );
 
   it('folds the drawer out on a swipe up and away on a swipe down, leaving taps to the menu', async () => {
     viewport(LANDSCAPE_PHONE);

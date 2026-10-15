@@ -9,6 +9,12 @@ import { createSaveFailure } from './export/saveFailure';
 import { capturePicture, savePicture } from './keepPicture';
 import { unsavedPictureStore } from './platform/unsavedPictures';
 
+export type ScreenshotFeedback = Readonly<
+  { id: number } & (
+    { kind: 'capture'; startedAt: number; reduced: boolean } | { kind: 'unavailable' }
+  )
+>;
+
 // One save's polaroid: the captured PNG it shows, the paper it was drawn on, and whether the
 // save failed under it, which takes it back mid-flight.
 export type PolaroidFlight = Readonly<{
@@ -37,6 +43,14 @@ export function useSaveFailure() {
 // The polaroid the Save screenshot button sends up, starting from that button's tile.
 export function usePolaroidFlights() {
   const [flight, setFlight] = useState<PolaroidFlight | null>(null);
+  const [feedback, setFeedback] = useState<ScreenshotFeedback | null>(null);
+  const cue = useCallback((kind: ScreenshotFeedback['kind'], reduced = false) => {
+    const startedAt = kind === 'capture' ? performance.now() : 0;
+    setFeedback((previous) => {
+      const id = (previous?.id ?? 0) + 1;
+      return kind === 'capture' ? { id, kind, startedAt, reduced } : { id, kind };
+    });
+  }, []);
   const nextId = useRef(0);
   const cameraTile = useRef<View>(null);
   // The flight finishes through `land`, so it keeps one identity for the flight's lifetime.
@@ -46,6 +60,8 @@ export function usePolaroidFlights() {
   );
   return {
     flight,
+    feedback,
+    cue,
     cameraTile,
     land,
     launch(pngBase64: string, paper: PaperSize) {
@@ -79,7 +95,7 @@ export function useSaveAction({
     active: null,
     cooldownUntil: 0,
   }).current;
-  async function save() {
+  async function save(reduced: boolean) {
     const capture: { started: boolean; pngBase64: string | null; flight: number | null } = {
       started: false,
       pngBase64: null,
@@ -87,6 +103,7 @@ export function useSaveAction({
     };
     await runCommand(async () => {
       capture.started = true;
+      flights.cue('capture', reduced);
       const drawing = historyRef.current.drawing;
       capture.pngBase64 = await capturePicture(drawing, surface.current);
       if (capture.pngBase64) {
@@ -103,12 +120,19 @@ export function useSaveAction({
       return;
     }
     if (capture.flight !== null) flights.discard(capture.flight);
+    flights.cue('unavailable');
     reportSaveFailure(outcome, capture.pngBase64);
   }
-  return () => {
-    if (state.active) return state.active;
-    if (performance.now() < state.cooldownUntil) return Promise.resolve();
-    state.active = save().finally(() => {
+  return (reduced: boolean) => {
+    if (state.active) {
+      flights.cue('unavailable');
+      return state.active;
+    }
+    if (performance.now() < state.cooldownUntil) {
+      flights.cue('unavailable');
+      return Promise.resolve();
+    }
+    state.active = save(reduced).finally(() => {
       state.active = null;
     });
     return state.active;
