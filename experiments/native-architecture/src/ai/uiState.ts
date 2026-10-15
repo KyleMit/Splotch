@@ -76,8 +76,8 @@ export function aiRun(state: AiState): AiRun | null {
 }
 
 // Why the AI Result shows no picture: a refusal guides the child to draw something else; `retry`
-// offers Try again; `rest` is shipping's repeated-failure card, which this app also shows for an
-// attempt it holds rather than sends twice and for a server that asked it to wait.
+// offers Try again; `rest` is shipping's repeated-failure card, which this app also shows while a
+// saved recovery record or a throttled allowance check holds the wand.
 export type AiErrorReason = 'safety' | 'retry' | 'rest';
 export type AiResultPhase =
   | Readonly<{ kind: 'generating' }>
@@ -106,7 +106,7 @@ export function aiResultPhase(state: AiState): AiResultPhase {
       kind: 'error',
       reason: state.refusal?.id === journal.id ? 'safety' : failedReason(state),
     };
-  // A reply that never settled is held, not resent: the run waits for its server window.
+  // A run neither sending nor waiting on a ticket has nothing left to collect.
   return state.busy || journal.jobId ? { kind: 'generating' } : { kind: 'error', reason: 'rest' };
 }
 
