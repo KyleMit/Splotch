@@ -43,7 +43,7 @@ const ignore = () => {};
 // The app's rotation lock decides the dialog's orientation, as it decides the shipping page's. A
 // modal left at React Native's iPhone default, portrait only, shares no orientation with a
 // Landscape lock, so UIKit refuses the rotation and logs an exception.
-const FOLLOW_APP_ORIENTATION: ComponentProps<typeof Modal>['supportedOrientations'] = [
+export const FOLLOW_APP_ORIENTATION: ComponentProps<typeof Modal>['supportedOrientations'] = [
   'portrait',
   'portrait-upside-down',
   'landscape',

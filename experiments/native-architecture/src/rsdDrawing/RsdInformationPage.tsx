@@ -19,7 +19,7 @@ import { RsdFeedbackSection } from './RsdFeedbackSection';
 import { RsdParentGateSheet } from './RsdParentGateSheet';
 import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { useModalPresence } from './useModalPresence';
-import { ModalShell } from './ModalShell';
+import { FOLLOW_APP_ORIENTATION, ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
@@ -213,7 +213,7 @@ export function RsdInformationPage({
       visible
       animationType="none"
       accessibilityLabel="Information page"
-      supportedOrientations={['portrait', 'portrait-upside-down', 'landscape']}
+      supportedOrientations={FOLLOW_APP_ORIENTATION}
       onRequestClose={() => openAppPage('drawing')}
     >
       {content}
