@@ -355,11 +355,12 @@ it('routes native Undo to committed drawing history and refuses it under Setting
 });
 
 it('routes native Escape while a flyout option holds focus', async () => {
-  await mountToolbar(toolbarScreen());
+  await mountToolbar(toolbarScreen({ brush: 'pen' }));
   await expandControls();
   await act(async () => button('Brushes').click());
-  const option = host.querySelector('[aria-label="Brush Menu"] [role="radio"]');
+  const option = host.querySelector('[aria-label="Brush Menu"] button[aria-label="Pen"]');
   expect(option).not.toBeNull();
+  expect(option.dataset.selected).toBe('true');
   option.focus();
   expect(document.activeElement).toBe(option);
   const receiver = records.props.findLast((props) => props.testID === 'drawing-keyboard-scope');
@@ -390,10 +391,13 @@ it("retains a closing Brush Menu inert until shipping's exit completes", async (
   const wrapper = records.props.findLast((props) => props.testID === 'rsd-tool-flyout');
   expect(wrapper.pointerEvents).toBe('none');
   expect(wrapper.onStartShouldSetResponderCapture).toBeUndefined();
+  const paper = { identifier: 1, pageX: 200, pageY: 200, timestamp: 100 };
   expect(
     records.props
       .findLast((props) => props.testID === 'rsd-drawing-layout')
-      .onStartShouldSetResponderCapture()
+      .onStartShouldSetResponderCapture({
+        nativeEvent: { touches: [paper], changedTouches: [paper] },
+      })
   ).toBe(false);
   expect(finish).toBeTypeOf('function');
   await act(async () => finish({ finished: true }));

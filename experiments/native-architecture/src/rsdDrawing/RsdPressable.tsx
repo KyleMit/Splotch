@@ -154,6 +154,7 @@ export function RsdPressable({
       {(resolved) => (
         <NativePressable
           {...resolved}
+          // The released RSD renderer omits aria-pressed; native buttons expose it as selected.
           accessibilityState={
             typeof pressed === 'boolean'
               ? { ...resolved.accessibilityState, selected: pressed }

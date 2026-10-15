@@ -17,6 +17,7 @@ vi.mock(
   '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
   () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
 );
+vi.mock(
   '../../experiments/native-architecture/src/platform/bootAppearance.ts',
   () => import('../../experiments/native-architecture/src/platform/bootAppearance.web.ts')
 );

@@ -187,7 +187,11 @@ describe('the screen’s visible-ink scan', () => {
       expect(sdk.captures).toHaveLength(captures);
       expect(owner.busy).toBe(false);
       expect(owner.history.drawing.strokes).toHaveLength(0);
-      expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+      await send('start', event([touch(0, 200, 20, 300)]), false);
+      expect(owner.drawing).toBe(true);
+      await send('end', event([], [touch(0, 240, 60, 400)], { 0: 300 }), false);
+      expect(owner.history.drawing.strokes).toHaveLength(1);
+      expect(sdk.captures).toHaveLength(captures);
     } finally {
       random.mockRestore();
     }
