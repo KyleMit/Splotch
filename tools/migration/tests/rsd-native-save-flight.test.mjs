@@ -222,6 +222,7 @@ describe('the Save Failure Banner', () => {
     await vi.waitFor(() => expect(host.querySelector('[data-native-modal]')).toBeNull(), {
       timeout: DIALOG_EXIT_WAIT_MS,
     });
+    await act(async () => {});
   }
 
   async function leaveGate() {

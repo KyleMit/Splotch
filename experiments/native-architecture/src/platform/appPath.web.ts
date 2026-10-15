@@ -8,6 +8,9 @@ export function isDrawingPath() {
   return DRAWING_PATHS.includes(location.pathname);
 }
 
+// Answers the title it replaced, so a screen can hand it back.
 export function setDocumentTitle(title: string) {
+  const previous = document.title;
   document.title = title;
+  return previous;
 }

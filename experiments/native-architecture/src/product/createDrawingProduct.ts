@@ -115,6 +115,10 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
       if (!editable()) return;
       await settings.retryParentSave();
     },
+    async resetSavedSettings() {
+      if (disposed || !parentCenterOpen) return;
+      await settings.resetSavedSettings();
+    },
     background() {
       parentCenterOpen = false;
       confirmNever = false;

@@ -38,6 +38,9 @@ export function soundSettingsActions(sound: Sound) {
     onReduceMotionChange: (preference: Parameters<SettingsOwner['setReduceMotion']>[0]) =>
       void sound.owner?.settings.setReduceMotion(preference),
     onWhatsNewSeen: () => void sound.owner?.settings.markWhatsNewSeen(),
-    onRetry: () => void sound.owner?.settings.retrySave(),
+    onRetry:
+      sound.owner?.settings.retryCanRecover() === false
+        ? null
+        : () => void sound.owner?.settings.retrySave(),
   };
 }

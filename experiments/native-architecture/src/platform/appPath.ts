@@ -3,4 +3,7 @@ export function isDrawingPath() {
   return true;
 }
 
-export function setDocumentTitle(_title: string) {}
+// Answers the title it replaced, so a screen can hand it back.
+export function setDocumentTitle(_title: string) {
+  return '';
+}
