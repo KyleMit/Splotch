@@ -1,3 +1,4 @@
+import { useColorScheme } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { dimensions } from './tokens.css';
 import { RsdHubRow, type HubToggle } from './RsdHubRow';
@@ -12,6 +13,7 @@ import {
   type SectionSummaryContext,
 } from '../settings/settingsSections';
 import { whatsNewUnseen } from '../settings/whatsNew';
+import { quickToggleAppearance, type AppearancePreference } from '../settings/appearance';
 
 const SESSION_COUNT_DESCRIPTION = 'Settings session count';
 
@@ -24,9 +26,10 @@ const styles = css.create({
 
 export type HubToggles = Partial<Record<NativeSettingsSectionId, HubToggle>>;
 
-// Night Mode flips the resolved theme, as shipping's does: on System it pins the opposite choice,
-// and the three-way choice stays in the Appearance section. Both wait out a pending save, as the
-// section controls do: the settings owner drops a choice made before the last one is written.
+// Night Mode flips the resolved theme, as shipping's does, writing the loosest preference that
+// gives it, and the three-way choice stays in the Appearance section. Both wait out a pending save,
+// as the section controls do: the settings owner drops a choice made before the last one is
+// written.
 export function useHubToggles({
   busy,
   soundEnabled,
@@ -36,15 +39,17 @@ export function useHubToggles({
   busy: boolean;
   soundEnabled: boolean;
   onSoundToggle: () => void;
-  onAppearanceChange: (appearance: 'light' | 'dark') => void;
+  onAppearanceChange: (appearance: AppearancePreference) => void;
 }): { appearance: HubToggle; sound: HubToggle } {
   const night = useDrawingAppearance() === 'dark';
+  const system = useColorScheme() === 'dark' ? 'dark' : 'light';
   return {
     appearance: {
       id: 'hubNightToggle',
       label: 'Night Mode',
       checked: night,
-      onToggle: (next) => onAppearanceChange(next ? 'dark' : 'light'),
+      onToggle: (next) =>
+        onAppearanceChange(quickToggleAppearance(next ? 'dark' : 'light', system)),
       thumbIcon: night ? 'theme-dark' : 'theme-light',
       disabled: busy,
     },

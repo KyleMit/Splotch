@@ -109,6 +109,31 @@ it('answers Night Mode and Sound with switches on their hub rows and no others',
   expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
 });
 
+// Shipping's setResolvedTheme: a quick toggle writes System when the device already shows the
+// look it asks for, so a light-device parent who turns Night Mode on and back off is on System.
+it('writes the loosest preference from the Night Mode switch', async () => {
+  records.scheme = 'light';
+  const settings = storedSettings({ appearance: 'system' });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Night Mode');
+  expect(settings.stored().appearance).toBe('dark');
+  await click('Night Mode');
+  checkedSwitch(button('Night Mode'), false);
+  expect(settings.stored().appearance).toBe('system');
+});
+
+it('lets a dark device take Night Mode back to System from a light pin', async () => {
+  records.scheme = 'dark';
+  const settings = storedSettings({ appearance: 'light' });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  checkedSwitch(button('Night Mode'), false);
+  await click('Night Mode');
+  checkedSwitch(button('Night Mode'), true);
+  expect(settings.stored().appearance).toBe('system');
+});
+
 it('holds both hub switches while a hub choice saves, so a second tap is never dropped', async () => {
   const settings = storedSettings({ soundEnabled: true });
   const finishNight = holdNextWrite(settings.storage);
