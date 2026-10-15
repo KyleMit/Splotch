@@ -63,21 +63,11 @@ function held(journal, reference, intent = 'prepared', revision = 1, expiry = { 
     }),
   });
 }
-async function fixture(restored = false) {
+async function fixture(prepared = false) {
   const product = createDrawingProduct({ read: async () => null, write: async () => {} }, () => {});
   await product.settings.load();
   const reference = Object.freeze({ kind: 'free', reference: 'b'.repeat(64) });
-  const journal = {
-    version: 1,
-    id: 1,
-    createdAt: 1700000000000,
-    style: 'Magical',
-    originalId: 'picture-1-fixture',
-    phase: 'unknown',
-    jobId: null,
-    result: null,
-  };
-  let saved = restored ? held(journal, reference, 'committed', 2) : null;
+  let saved = null;
   const vault = {
     read: vi.fn(async () => null),
     write: vi.fn(async () => {}),
@@ -152,6 +142,14 @@ async function fixture(restored = false) {
   owner.refresh();
   solve(product.gate);
   await vi.waitFor(() => expect(owner.getState().busy).toBe(false));
+  if (prepared) {
+    await owner.prepareRecovery();
+    solve(product.gate);
+    await vi.waitFor(() => expect(owner.getState().busy).toBe(false));
+    for (const service of [vault, storage]) {
+      for (const method of Object.values(service)) method.mockClear();
+    }
+  }
   wire.request.mockClear();
   const start = async (operation) => {
     await owner[operation]();

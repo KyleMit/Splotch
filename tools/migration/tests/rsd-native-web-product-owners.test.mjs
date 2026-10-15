@@ -1,4 +1,3 @@
-import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import { caller, host, mount, expandControls } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
@@ -125,20 +124,15 @@ it('requests feedback and AI only after the screen has painted, and attaches the
   expect(caller.product.feedback.state.policyReady).toBe(true);
 });
 
-it('still recovers a generation left pending before the reload', async () => {
+it('opens a fresh AI prompt after reload without recovering an abandoned generation', async () => {
   vi.clearAllMocks();
   caller.aiRead.mockResolvedValue(pendingAttempt());
-  caller.aiSend.mockImplementation(async (request) =>
-    request.path === '/api/free-generation-grant'
-      ? new Response('{"ok":true,"remaining":9,"limit":10}')
-      : new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } })
-  );
+  caller.aiSend.mockResolvedValue(new Response('{"ok":true,"remaining":9,"limit":10}'));
   useCaller();
   await mount(createElement(RsdDrawingScreen));
   await arrive();
   await expandControls();
 
-  // The wand reopens the waiting run once a grown-up has answered, and checks on it at once.
   const wand = 'Create AI image, 9 free left';
   await act(() =>
     vi.waitFor(() => expect(host.querySelector(`[aria-label="${wand}"]`)).not.toBeNull())
@@ -146,15 +140,22 @@ it('still recovers a generation left pending before the reload', async () => {
   expect(caller.aiRead).not.toHaveBeenCalled();
   await click(wand);
   await solve();
-  expect(caller.aiRead).toHaveBeenCalled();
-  await act(() => vi.waitFor(() => expect(caller.aiRetain).toHaveBeenCalledOnce()));
-
-  const poll = caller.aiSend.mock.calls.find(
-    ([request]) => request.path === '/api/generation-result'
+  await act(() =>
+    vi.waitFor(() =>
+      expect(host.querySelector('[data-native-modal="Pick a style"]')).not.toBeNull()
+    )
   );
-  expect(poll?.[0].query).toBe(`job=${JOB_ID}`);
-  expect(caller.aiRetain).toHaveBeenCalledOnce();
+  expect(caller.product.ai.owner.getState()).toMatchObject({
+    open: true,
+    view: 'prompt',
+    journal: null,
+    recovery: null,
+    heldResult: null,
+  });
+  expect(caller.aiRead).not.toHaveBeenCalled();
+  expect(caller.aiRetain).not.toHaveBeenCalled();
   expect(
-    host.querySelector('[data-native-modal="AI Result"] [aria-label="Your AI picture"]')
-  ).not.toBeNull();
+    caller.aiSend.mock.calls.some(([request]) => request.path === '/api/generation-result')
+  ).toBe(false);
+  expect(host.querySelector('[data-native-modal="AI Result"]')).toBeNull();
 });

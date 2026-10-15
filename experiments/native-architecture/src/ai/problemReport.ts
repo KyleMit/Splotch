@@ -7,6 +7,7 @@ import { truncateCodeUnits } from '../feedback/truncate';
 import type { ParentOperationPort } from '../parentCenter/parentPolicy';
 import type { AiStyle } from './contract';
 import type { AiFailureDetails } from './sessionContract';
+import { REPORT_RECEIVED_MESSAGE, reportFailureMessage } from '../../../../web/src/lib/reportReply';
 
 // Shipping's failureReport.ts cap on the error message a problem report carries;
 // native-ai-problem-report.test.mjs reads it back.
@@ -17,8 +18,8 @@ const PROBLEM_REPORT_KIND: ReportKind = 'bug';
 export const AI_PROBLEM_REPORT_COPY = {
   title: 'Report this problem',
   copy: 'The error below and your app version go to a grown-up at Splotch in our private support tracker.',
-  sent: 'Thanks. Your problem report was sent to our private support tracker.',
-  failed: 'Could not send your problem report.',
+  sent: REPORT_RECEIVED_MESSAGE,
+  failed: reportFailureMessage('generation-error'),
   whatIsSent: 'What will be sent',
   notSent: 'Not sent: the drawing, names, accounts, or location.',
   retry: 'Retry report',

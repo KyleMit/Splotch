@@ -47,9 +47,9 @@ export class NativeAiFlow extends NativeAiController {
   };
   // The AI Image Button. A run waiting in the corner claims the tap and is shown again without a
   // second check, since the grown-up already answered one to start it. Otherwise a grown-up
-  // answers first, as shipping asks at the tap, before anything is read or sent: a run left
-  // waiting before a reload reopens, an attempt held past its server retention is released, and
-  // the AI Style Prompt opens, or, with no credential and no free picture left, `onSetup` sends
+  // answers first, as shipping asks at the tap, before anything is read or sent: an attempt held
+  // past its server retention is released, and the AI Style Prompt opens, or, with no credential
+  // and no free picture left, `onSetup` sends
   // the grown-up to the AI Art settings instead.
   // With style choice off (`customize`), the run starts with no style instead, as shipping's does.
   start = ({ onSetup, customize }: { onSetup: () => void; customize: boolean }) => {
@@ -98,7 +98,7 @@ export class NativeAiFlow extends NativeAiController {
     this.update({ open: true, minimized: false, view: 'result', attempt: null });
     this.run();
   };
-  // A finished picture nobody dismissed (it landed while the app was away, or before a reload)
+  // A finished picture nobody dismissed (it landed while the app was in the background)
   // comes back on the next wand tap however long ago it was made: the server's retention bounds
   // collecting it, not the copy already kept here, as shipping keeps a collected picture until its
   // card is closed.

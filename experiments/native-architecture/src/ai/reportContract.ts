@@ -41,7 +41,7 @@ export type AiReportState =
   | { phase: 'confirm' | 'sending'; preview: AiReportPreview }
   | { phase: 'success'; target: AiReportTarget; reportId: string | null }
   | {
-      phase: 'error' | 'unknown' | 'unavailable';
+      phase: 'error' | 'unavailable';
       target: AiReportTarget;
       message: string;
       retryAt: number;

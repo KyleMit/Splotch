@@ -12,6 +12,7 @@ import {
   AI_REPORT_REVIEW_HOURS,
 } from '../../experiments/native-architecture/src/ai/reportContract.ts';
 import { aiButtonFace } from '../../experiments/native-architecture/src/ai/uiState.ts';
+import { REPORT_RECEIVED_MESSAGE, reportFailureMessage } from '../../web/src/lib/reportReply.ts';
 import {
   AI_PROBLEM_REPORT_COPY,
   MAX_FAILURE_MESSAGE_LENGTH,
@@ -169,7 +170,10 @@ it('says Checking and takes no tap while the allowance is being read again', () 
 });
 
 it('words the problem report and lists its rows as shipping does', () => {
-  for (const [key, text] of Object.entries(AI_PROBLEM_REPORT_COPY))
+  const { sent, failed, ...copy } = AI_PROBLEM_REPORT_COPY;
+  expect(sent).toBe(REPORT_RECEIVED_MESSAGE);
+  expect(failed).toBe(reportFailureMessage('generation-error'));
+  for (const [key, text] of Object.entries(copy))
     expect(`${SHIPPING.report} ${SHIPPING.disclosure}`, key).toContain(text);
   const rows = web('lib/ai/failureReport.ts');
   expect(rows).toContain(`const MAX_ERROR_MESSAGE_LENGTH = ${MAX_FAILURE_MESSAGE_LENGTH};`);

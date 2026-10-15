@@ -40,8 +40,7 @@ export function RsdAiReportStatus({
         </RsdStatusMessage>
       </html.div>
     );
-  if (report.phase !== 'error' && report.phase !== 'unknown' && report.phase !== 'unavailable')
-    return null;
+  if (report.phase !== 'error' && report.phase !== 'unavailable') return null;
   return (
     <html.div style={styles.status}>
       <RsdStatusMessage status="error">{report.message}</RsdStatusMessage>
