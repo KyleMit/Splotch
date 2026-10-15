@@ -37,6 +37,7 @@ import { RsdLeaveConfirm } from './RsdLeaveConfirm';
 import { RsdNotchBand } from './notchBandSurface';
 import { paintAppearance } from '../drawing/palette';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
+import { DrawingKeyboardScope } from '../platform/KeyboardScope';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { BUTTON_SCALE_MAX, controlSize } from '../settings/buttonSize';
@@ -120,15 +121,23 @@ export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
             {loading ? (
               <RsdDrawingFirstPaint />
             ) : (
-              <RsdDrawingContent
-                screen={screen}
-                sound={sound}
-                product={product}
-                route={route}
-                gate={gate}
-                onModalDismissed={dismissed}
-                informationPage={informationPage}
-              />
+              <DrawingKeyboardScope
+                enabled={
+                  !informationPage &&
+                  !screen.dialogOpen &&
+                  !isProductModalBlocked(route.shown, product)
+                }
+              >
+                <RsdDrawingContent
+                  screen={screen}
+                  sound={sound}
+                  product={product}
+                  route={route}
+                  gate={gate}
+                  onModalDismissed={dismissed}
+                  informationPage={informationPage}
+                />
+              </DrawingKeyboardScope>
             )}
             <RsdModalSheets screen={screen} product={product} route={route} gate={gate} />
             <RsdLeaveConfirm />

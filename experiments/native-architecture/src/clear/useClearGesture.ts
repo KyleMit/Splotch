@@ -35,7 +35,8 @@ export type ClearSheet = Readonly<{ id: number; drawing: Drawing; startedAt: num
 
 type Owner = {
   disabled: boolean;
-  drawing: Drawing;
+  currentDrawing: () => Drawing;
+  onBegin?: () => void;
   onClear: () => Promise<void>;
   sound: ClearSound | null;
 };
@@ -189,6 +190,7 @@ function clearEffects(context: Context): ClearGestureEffects {
       // A drag that starts while the last one's ring is fading keeps its own ring.
       context.cancel(context.ringHide.current);
       context.ringHide.current = null;
+      owner.current.onBegin?.();
       owner.current.sound?.start();
       set.dragging(true);
       set.ringShown(true);
@@ -208,7 +210,8 @@ function clearEffects(context: Context): ClearGestureEffects {
     },
     threshold: impactThreshold,
     commit() {
-      const { drawing, onClear, sound } = owner.current;
+      const { onClear, sound } = owner.current;
+      const drawing = owner.current.currentDrawing();
       sound?.commit();
       const flooded = context.reached.current;
       letGo(context);
@@ -245,28 +248,72 @@ function useLatest<Value>(value: Value) {
 function clearResponder(
   gesture: ClearGesture,
   disabled: boolean,
-  finger: { current: string | null }
+  finger: { current: string | null },
+  rawFinger: { current: string | null }
 ) {
+  const grant = (
+    event: GestureResponderEvent,
+    identifier = String(event.nativeEvent.identifier)
+  ) => {
+    finger.current = identifier;
+    const at = fingerPoint(event, finger.current);
+    if (at) gesture.down(at);
+  };
+  const release = (event: GestureResponderEvent) => {
+    const at = fingerPoint(event, finger.current);
+    finger.current = null;
+    rawFinger.current = null;
+    if (at) gesture.up(at);
+    else gesture.terminate();
+  };
   return {
     onStartShouldSetResponder: () => !disabled && gesture.accepts(),
     onResponderTerminationRequest: () => false,
-    onResponderGrant: (event: GestureResponderEvent) => {
-      finger.current = String(event.nativeEvent.identifier);
-      const at = fingerPoint(event, finger.current);
-      if (at) gesture.down(at);
-    },
+    onResponderGrant: grant,
     onResponderMove: (event: GestureResponderEvent) => {
       const at = fingerPoint(event, finger.current);
       if (at) gesture.move(at);
     },
-    onResponderRelease: (event: GestureResponderEvent) => {
-      const at = fingerPoint(event, finger.current);
-      finger.current = null;
-      if (at) gesture.up(at);
-      else gesture.terminate();
-    },
+    onResponderRelease: release,
     onResponderTerminate: () => {
       finger.current = null;
+      rawFinger.current = null;
+      gesture.terminate();
+    },
+    onTouchStart: (
+      event: GestureResponderEvent,
+      identifier = String(event.nativeEvent.identifier)
+    ) => {
+      if (
+        disabled ||
+        finger.current !== null ||
+        event.nativeEvent.touches.length < 2 ||
+        !gesture.accepts()
+      )
+        return;
+      rawFinger.current = identifier;
+      grant(event, identifier);
+    },
+    onTouchMove: (event: GestureResponderEvent) => {
+      if (rawFinger.current === null) return;
+      const at = fingerPoint(event, rawFinger.current);
+      if (at) gesture.move(at);
+    },
+    onTouchEnd: (event: GestureResponderEvent) => {
+      if (
+        rawFinger.current === null ||
+        !event.nativeEvent.changedTouches.some(
+          (touch) => String(touch.identifier) === rawFinger.current
+        ) ||
+        event.nativeEvent.touches.some((touch) => String(touch.identifier) === rawFinger.current)
+      )
+        return;
+      release(event);
+    },
+    onTouchCancel: () => {
+      if (rawFinger.current === null) return;
+      finger.current = null;
+      rawFinger.current = null;
       gesture.terminate();
     },
   };
@@ -294,6 +341,7 @@ export function useClearGesture(owner: Owner) {
   const [timers] = useState(() => new Set<Timer>());
   const ringHide = useRef<Timer | null>(null);
   const finger = useRef<string | null>(null);
+  const rawFinger = useRef<string | null>(null);
   const reachedNow = useRef(false);
   const sheets = useRef(0);
   const context: Context = {
@@ -378,7 +426,7 @@ export function useClearGesture(owner: Owner) {
     radius: radius.current,
     dock: clearDock(window, insets.top),
     finishSheet,
-    responder: clearResponder(gesture, owner.disabled, finger),
+    responder: clearResponder(gesture, owner.disabled, finger, rawFinger),
     activate: () => {
       if (!owner.disabled) gesture.activate();
     },

@@ -5,28 +5,26 @@ import {
   forwardRef,
   useCallback,
   useLayoutEffect,
-  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
   useState,
   type ForwardedRef,
   type ReactNode,
-  type RefObject,
 } from 'react';
-import { PanResponder, PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Svg } from '../platform/svg';
 import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
 import { PageOutline, pageHasOutline } from './PageOutline';
-import type { RasterInkHandle } from './RasterInk';
 import { InkLayer } from './InkLayer';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
-import { createPngCapture, type PngCaptureRequest } from './interactions';
+import { useSurfacePackets } from './useSurfacePackets';
+import { PaperInputView } from './PaperInputView';
 import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
@@ -37,7 +35,8 @@ export type DrawingSurfaceHandle = {
   // The saved picture: the shipping export's pixel grid, paper color and grain.
   exportPng: (snapshot: Drawing) => Promise<string>;
   captureInk: (snapshot: Drawing) => Promise<string>;
-  lockInput: () => () => void;
+  lockInput: (mode?: 'command' | 'undo') => () => void;
+  finishInput: () => void;
   // A lease for work the child never asked for. Any foreground claim on the paper (a fresh
   // contact, lockInput) ends it first, ending its capture and calling onPreempt; it is refused
   // while anything else holds the paper.
@@ -85,10 +84,9 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     propsRef.current = props;
     const paper = useRef<View>(null);
     const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
-    const geometry = useRef(createPaperGeometry(() => inputRef.current?.resize())).current;
+    const geometry = useRef(createPaperGeometry()).current;
     const { draft, halos, show } = useLiveDraft();
     const paperReference = draft.paper ?? drawingPaper(props.drawing);
-    const raster = useRef<RasterInkHandle>(null);
     const input = useRef(
       createContactResponder(
         () => ({
@@ -117,23 +115,25 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     }, [geometry]);
     const [presented, layoutPlane] = usePresentedPaper(paperReference, refreshGeometry);
     const [packet, setPacket] = useState<PictureRequest | null>(null);
-    const { captureLock, commandLock, preemptBackground } = useSurfaceCapture(
-      input,
-      ref,
-      setPacket,
-      raster,
-      props.drawing,
-      appearance,
-      refreshGeometry
-    );
+    const { captureLock, commandLock, preemptBackground, raster, attachRaster, resume } =
+      useSurfaceCapture(
+        input,
+        ref,
+        setPacket,
+        props.drawing,
+        props.currentDrawing,
+        appearance,
+        refreshGeometry
+      );
     useLayoutEffect(() => {
+      input.attach();
       refreshGeometry();
       return () => {
         input.detach();
         geometry.clear();
       };
     }, [input, geometry, refreshGeometry]);
-    const responder = useRef(createSurfaceResponder(input, preemptBackground)).current;
+    useLayoutEffect(() => input.observeInputStyle(), [input, props.color, props.brush]);
 
     return (
       <InkPaperScope.Provider value={paperReference}>
@@ -148,26 +148,27 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
               ]}
             >
               {props.underlay}
-              <View
+              <PaperInputView
                 ref={paper}
                 accessibilityLabel="Drawing paper"
                 testID="drawing-paper"
                 style={styles.inkPlane}
-                pointerEvents="box-only"
                 onLayout={layoutPlane}
-                {...responder.panHandlers}
-                onTouchEnd={(event) => input.endRaw(event)}
-                onTouchCancel={() => input.interrupt()}
+                onClaim={preemptBackground}
+                onInput={(value) => input.receiveInput(value)}
               >
                 {/* Committed ink holds Magic colors; appearance changes must replay semantic strokes. */}
                 <InkLayer
                   key={`${appearance.pageId}:${appearance.theme}`}
-                  ref={raster}
+                  ref={attachRaster}
                   strokes={props.drawing.strokes}
                   drafts={draft.strokes}
                   brush={props.brush}
                   color={props.color}
-                  onBusy={props.onPreparingChange}
+                  onBusy={(busy) => {
+                    props.onPreparingChange(busy);
+                    if (!busy) resume();
+                  }}
                   onError={(error) => {
                     input.detach();
                     props.onRendererFault(error);
@@ -187,7 +188,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   </Svg>
                 ) : null}
                 <PointerHalos feed={halos} />
-              </View>
+              </PaperInputView>
             </View>
             {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
           </View>
@@ -213,89 +214,24 @@ function usePresentedPaper(paper: PaperReference, refreshGeometry: () => void) {
   return [presentedPaperSize(paper, plane), layout] as const;
 }
 
-// A new touch is a foreground claim: it ends background work on the paper before asking whether
-// the paper can take it.
-function createSurfaceResponder(
-  input: ReturnType<typeof createContactResponder>,
-  preemptBackground: () => void
-) {
-  const admit = () => {
-    preemptBackground();
-    return input.ready();
-  };
-  return PanResponder.create({
-    onStartShouldSetPanResponder: admit,
-    onMoveShouldSetPanResponder: admit,
-    onPanResponderGrant: (event) => input.grant(event),
-    onPanResponderStart: (event) => input.start(event),
-    onPanResponderMove: (event) => input.move(event),
-    onPanResponderEnd: (event) => input.end(event),
-    onPanResponderRelease: (event) => input.release(event),
-    onPanResponderTerminate: () => input.interrupt(),
-    onPanResponderTerminationRequest: () => false,
-    onShouldBlockNativeResponder: () => true,
-  });
-}
-
 function useSurfaceCapture(
   input: ReturnType<typeof createContactResponder>,
   ref: ForwardedRef<DrawingSurfaceHandle>,
   setPacket: (packet: PictureRequest | null) => void,
-  raster: RefObject<RasterInkHandle | null>,
   drawing: Drawing,
+  currentDrawing: () => Drawing,
   appearance: InkAppearance,
   refreshGeometry: () => void
 ) {
-  const captures = useRef(createPngCapture()).current;
-  const captureLock = useRef<PngCaptureRequest | null>(null);
   const commandLock = useRef<Lease | null>(null);
-
-  const currentAppearance = useRef(appearance);
-  currentAppearance.current = appearance;
-  const captureAppearance = useRef<InkAppearance | null>(null);
-  const currentDrawing = useRef(drawing);
-  currentDrawing.current = drawing;
-  const mounted = useRef(true);
-  const nextId = useRef(1);
-
-  const capture = useCallback(
-    async (snapshot: Drawing, kind: PictureRequest['kind']) => {
-      if (input.hasActive()) throw new Error('Lift your finger before capturing the picture.');
-      const lease = commandLock.current;
-      if (!lease || currentDrawing.current !== snapshot || !raster.current)
-        throw new Error('The current drawing paper is not ready to capture.');
-      const plan = raster.current.readyPlan(snapshot.strokes);
-      const request = captures.begin(snapshot);
-      captureLock.current = request;
-      const capturedAppearance = currentAppearance.current;
-      captureAppearance.current = capturedAppearance;
-      setPacket({
-        id: nextId.current++,
-        request,
-        kind,
-        plan,
-        appearance: capturedAppearance,
-        isCurrent: () =>
-          captureLock.current === request &&
-          commandLock.current === lease &&
-          currentDrawing.current === snapshot &&
-          currentAppearance.current === capturedAppearance,
-      });
-      return request.promise.finally(() => {
-        if (captureLock.current !== request) return;
-        captureLock.current = null;
-        captureAppearance.current = null;
-        if (mounted.current) setPacket(null);
-      });
-    },
-    [input, raster, captures, setPacket]
-  );
-
-  useEffect(() => {
-    const request = captureLock.current;
-    if (request && (request.drawing !== drawing || captureAppearance.current !== appearance))
-      request.cancel('The picture changed before capture finished.');
-  }, [drawing, appearance]);
+  const { capture, captureLock, raster, attachRaster, resume, cancel } = useSurfacePackets({
+    inputActive: () => input.hasActive(),
+    currentDrawing,
+    drawing,
+    appearance,
+    commandLock,
+    setPacket,
+  });
 
   // A capture belongs to the lease it was taken under, so ending the lease ends its capture at
   // once, rather than leaving it to block the next claim's.
@@ -303,14 +239,9 @@ function useSurfaceCapture(
     (lease: Lease) => {
       if (commandLock.current !== lease) return;
       commandLock.current = null;
-      const request = captureLock.current;
-      if (!request) return;
-      captureLock.current = null;
-      captureAppearance.current = null;
-      request.cancel('The picture changed before capture finished.');
-      if (mounted.current) setPacket(null);
+      cancel();
     },
-    [setPacket]
+    [cancel]
   );
 
   const claim = useCallback(
@@ -339,9 +270,13 @@ function useSurfaceCapture(
       exportPng: (snapshot) => capture(snapshot, 'export'),
       captureInk: (snapshot) => capture(snapshot, 'ink'),
       refreshGeometry,
-      lockInput() {
+      finishInput() {
         preemptBackground();
-        if (input.hasActive() || commandLock.current)
+        input.finishInput();
+      },
+      lockInput(mode = 'command') {
+        preemptBackground();
+        if ((mode === 'command' && input.hasActive()) || commandLock.current)
           throw new Error('Finish drawing before using this control.');
         return claim(null);
       },
@@ -351,18 +286,10 @@ function useSurfaceCapture(
         return claim(onPreempt);
       },
     }),
-    [capture, claim, input, preemptBackground, refreshGeometry]
+    [capture, captureLock, claim, input, preemptBackground, refreshGeometry]
   );
 
-  useEffect(
-    () => () => {
-      mounted.current = false;
-      captureLock.current?.cancel('Picture capture was cancelled.');
-    },
-    [input]
-  );
-
-  return { captureLock, commandLock, preemptBackground };
+  return { captureLock, commandLock, preemptBackground, raster, attachRaster, resume };
 }
 
 const styles = StyleSheet.create({

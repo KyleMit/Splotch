@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import './native-feedback-drawing-fixture.mjs';
 import {
@@ -16,7 +17,8 @@ import { useDrawingScreen } from '../../experiments/native-architecture/src/useD
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 
 const sdk = vi.hoisted(() => ({
-  handlers: null,
+  input: null,
+  sequence: 0,
   loads: [],
   contentChanges: 0,
   frame: [0, 0, 1024, 768, 40, 800],
@@ -43,56 +45,59 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: createAccessibilityInfoFixture(),
-  useColorScheme: () => 'light',
-  ActivityIndicator: () => null,
-  Modal: () => null,
-  Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
-    createElement(
-      'button',
-      { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
-      children
-    ),
-  Text: ({ children }) => createElement('span', null, children),
-  SafeAreaView: ({ children }) => createElement('div', null, children),
-  Switch: () => null,
-  ScrollView: ({ children, onContentSizeChange }) => {
-    const content = useRef(null),
-      previous = useRef(null);
-    useLayoutEffect(() => {
-      const text = content.current.textContent;
-      if (previous.current !== null && text !== previous.current) {
-        sdk.contentChanges += 1;
-        onContentSizeChange?.(1024, text.length);
-      }
-      previous.current = text;
-    });
-    return createElement('div', { ref: content }, children);
-  },
-  AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
-  useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
-  Platform: { OS: 'android' },
-  Image: () => null,
-  Dimensions: {
-    get: () => ({ width: 1024, height: 768, scale: 1 }),
-    addEventListener: () => ({ remove() {} }),
-  },
-  findNodeHandle: (value) => value,
-  View: forwardRef(({ children }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(...sdk.frame) }));
     return createElement('div', null, children);
-  }),
-  PanResponder: {
-    create: (handlers) => {
-      sdk.handlers = handlers;
-      return { panHandlers: {} };
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
+    useColorScheme: () => 'light',
+    ActivityIndicator: () => null,
+    Modal: () => null,
+    Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
+      createElement(
+        'button',
+        { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
+        children
+      ),
+    Text: ({ children }) => createElement('span', null, children),
+    SafeAreaView: ({ children }) => createElement('div', null, children),
+    Switch: () => null,
+    ScrollView: ({ children, onContentSizeChange }) => {
+      const content = useRef(null),
+        previous = useRef(null);
+      useLayoutEffect(() => {
+        const text = content.current.textContent;
+        if (previous.current !== null && text !== previous.current) {
+          sdk.contentChanges += 1;
+          onContentSizeChange?.(1024, text.length);
+        }
+        previous.current = text;
+      });
+      return createElement('div', { ref: content }, children);
     },
-  },
-  StatusBar: () => null,
-  StyleSheet: { create: (styles) => styles, absoluteFill: {} },
-}));
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+    Platform: { OS: 'android' },
+    Image: () => null,
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: 1 }),
+      addEventListener: () => ({ remove() {} }),
+    },
+    findNodeHandle: (value) => value,
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            sdk.input = emit;
+          })
+        : View,
+    StatusBar: () => null,
+    StyleSheet: { create: (styles) => styles, absoluteFill: {} },
+  };
+});
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);
   const empty = () => null;
@@ -117,7 +122,13 @@ vi.mock('react-native-svg', () => {
 function Paper() {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
-  return createElement(NativePaper, { screen, sound, menuOpen: false, lifted: false });
+  return createElement(NativePaper, {
+    screen,
+    sound,
+    menuOpen: false,
+    lifted: false,
+    frame: { left: 0, top: 0, width: sdk.frame[2], height: sdk.frame[3] },
+  });
 }
 const TARGET = 101;
 function event(x, y, timestamp, ended = false) {
@@ -139,16 +150,19 @@ function event(x, y, timestamp, ended = false) {
     },
   };
 }
-async function send(name, x, y, timestamp, ended = false) {
-  await act(async () => {
-    const input = event(x, y, timestamp, ended);
-    sdk.handlers[name](input);
-    if (name === 'onPanResponderGrant') sdk.handlers.onPanResponderStart(input);
+async function send(phase, x, y, timestamp, ended = false) {
+  const packet = paperInputPacket(phase, event(x, y, timestamp, ended), sdk.sequence++, {
+    width: 1104,
+    height: 1608,
+    bottomInset: 0,
   });
+  if (packet) await act(async () => sdk.input({ nativeEvent: packet }));
 }
+
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  sdk.handlers = null;
+  sdk.input = null;
+  sdk.sequence = 0;
   sdk.loads.length = 0;
   sdk.contentChanges = 0;
   sdk.frame = [0, 0, 1024, 768, 40, 800];
@@ -161,16 +175,18 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
 });
-it('continues to settle a cohort on a genuine paper-frame invalidation', async () => {
-  await send('onPanResponderGrant', 10, 20, 100);
-  await send('onPanResponderMove', 30, 40, 200);
+it('retains the live cohort through a measured paper-frame change', async () => {
+  await send('start', 10, 20, 100);
+  await send('move', 30, 40, 200);
   sdk.frame = [0, 0, 900, 700, 40, 800];
   await act(async () => owner.surface.current.refreshGeometry());
-  await send('onPanResponderMove', 200, 200, 300);
-  await send('onPanResponderEnd', 400, 400, 400, true);
+  await send('move', 200, 200, 300);
+  await send('end', 400, 400, 400, true);
   expect(owner.history.drawing.strokes[0].points).toEqual([
     { x: 10, y: 20 },
     { x: 30, y: 40 },
+    { x: 227.56, y: 213.33 },
+    { x: 455.11, y: 440.89 },
   ]);
   expect(owner.history.undo).toHaveLength(1);
 });

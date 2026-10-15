@@ -1,3 +1,4 @@
+import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import './native-feedback-drawing-fixture.mjs';
@@ -27,7 +28,13 @@ const PORTRAIT_FRAME = [0, 0, 390, 704, 0, 100];
 const FITTED_WIDTH = (LANDSCAPE_SLOT.height * 390) / 704;
 const LANDSCAPE_FRAME = [0, 0, FITTED_WIDTH, 300, (LANDSCAPE_SLOT.width - FITTED_WIDTH) / 2, 40];
 
-const sdk = vi.hoisted(() => ({ handlers: null, frame: null, layouts: new Set(), sized: [] }));
+const sdk = vi.hoisted(() => ({
+  input: null,
+  sequence: 0,
+  frame: null,
+  layouts: new Set(),
+  sized: [],
+}));
 let owner, root, host;
 vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (original) => {
   const actual = await original();
@@ -55,32 +62,8 @@ vi.mock(
 vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
   (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
 );
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: createAccessibilityInfoFixture(),
-  useColorScheme: () => 'light',
-  ActivityIndicator: () => null,
-  Modal: () => null,
-  Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
-    createElement(
-      'button',
-      { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
-      children
-    ),
-  Text: ({ children }) => createElement('span', null, children),
-  SafeAreaView: ({ children }) => createElement('div', null, children),
-  Switch: () => null,
-  ScrollView: ({ children }) => createElement('div', null, children),
-  AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
-  useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
-  Platform: { OS: 'ios' },
-  Image: ({ resizeMode }) => createElement('img', { 'data-resize-mode': resizeMode }),
-  Dimensions: {
-    get: () => ({ width: 390, height: 844, scale: 1 }),
-    addEventListener: () => ({ remove() {} }),
-  },
-  findNodeHandle: (value) => value,
-  View: forwardRef(({ children, onLayout, style, testID }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children, onLayout, style, testID }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(...sdk.frame) }));
     // The paper host is the one View styled with only its fitted size.
     if (
@@ -96,16 +79,43 @@ vi.mock('react-native', () => ({
       return () => sdk.layouts.delete(onLayout);
     }, [onLayout]);
     return createElement('div', { 'data-testid': testID }, children);
-  }),
-  PanResponder: {
-    create: (handlers) => {
-      sdk.handlers = handlers;
-      return { panHandlers: {} };
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
+    useColorScheme: () => 'light',
+    ActivityIndicator: () => null,
+    Modal: () => null,
+    Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
+      createElement(
+        'button',
+        { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
+        children
+      ),
+    Text: ({ children }) => createElement('span', null, children),
+    SafeAreaView: ({ children }) => createElement('div', null, children),
+    Switch: () => null,
+    ScrollView: ({ children }) => createElement('div', null, children),
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
+    Platform: { OS: 'ios' },
+    Image: ({ resizeMode }) => createElement('img', { 'data-resize-mode': resizeMode }),
+    Dimensions: {
+      get: () => ({ width: 390, height: 844, scale: 1 }),
+      addEventListener: () => ({ remove() {} }),
     },
-  },
-  StatusBar: () => null,
-  StyleSheet: { create: (styles) => styles, absoluteFill: {} },
-}));
+    findNodeHandle: (value) => value,
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            sdk.input = emit;
+          })
+        : View,
+    StatusBar: () => null,
+    StyleSheet: { create: (styles) => styles, absoluteFill: {} },
+  };
+});
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);
   const empty = () => null;
@@ -158,13 +168,17 @@ async function stroke(frame, points, start) {
       ended,
       start
     );
-  await act(async () => {
-    sdk.handlers.onPanResponderGrant(at(0));
-    sdk.handlers.onPanResponderStart(at(0));
-  });
-  for (let index = 1; index < points.length; index++)
-    await act(async () => sdk.handlers.onPanResponderMove(at(index)));
-  await act(async () => sdk.handlers.onPanResponderEnd(at(points.length - 1, true)));
+  const send = async (phase, index, ended = false) => {
+    const packet = paperInputPacket(phase, at(index, ended), sdk.sequence++, {
+      width: 390,
+      height: 844,
+      bottomInset: 34,
+    });
+    if (packet) await act(async () => sdk.input({ nativeEvent: packet }));
+  };
+  await send('start', 0);
+  for (let index = 1; index < points.length; index++) await send('move', index);
+  await send('end', points.length - 1, true);
 }
 async function rotate(slot, frame) {
   sdk.frame = frame;
@@ -197,7 +211,8 @@ function RsdPaper({ lifted = false }) {
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  sdk.handlers = null;
+  sdk.input = null;
+  sdk.sequence = 0;
   sdk.layouts.clear();
   sdk.sized.length = 0;
   sdk.frame = PORTRAIT_FRAME;

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
-import { legacyDrawing } from './native-paper-fixtures.mjs';
+import { legacyDrawing, createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,21 +12,10 @@ import {
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-const native = vi.hoisted(() => ({ handlers: null, paper: null, layout: null }));
+const native = vi.hoisted(() => ({ input: null, sequence: 0, layout: null }));
 
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: createAccessibilityInfoFixture(),
-  useColorScheme: () => 'light',
-  findNodeHandle: (target) => target,
-  PanResponder: {
-    create(handlers) {
-      native.handlers ??= handlers;
-      return { panHandlers: {} };
-    },
-  },
-  StyleSheet: { create: (styles) => styles },
-  View: forwardRef(({ children, onLayout, onTouchEnd, onTouchCancel }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children, onLayout }, ref) => {
     useImperativeHandle(ref, () => ({
       measure(callback) {
         callback(0, 0, 1024, 768, 40, 800);
@@ -34,11 +23,24 @@ vi.mock('react-native', () => ({
     }));
     if (onLayout) {
       native.layout = onLayout;
-      native.paper = { onTouchEnd, onTouchCancel };
     }
     return createElement('div', null, children);
-  }),
-}));
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
+    useColorScheme: () => 'light',
+    findNodeHandle: (target) => target,
+    StyleSheet: { create: (styles) => styles },
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            native.input = emit;
+          })
+        : View,
+  };
+});
 
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);
@@ -98,27 +100,36 @@ function event(touches, changedTouches = touches, starts = {}) {
   };
 }
 
-function send(callback, input) {
-  act(() => {
-    native.handlers[callback](input);
-    if (callback === 'onPanResponderGrant') native.handlers.onPanResponderStart(input);
+function send(phase, value) {
+  const previous = native.lastEvent;
+  const input = value ?? {
+    ...previous,
+    nativeEvent: { ...previous.nativeEvent, changedTouches: previous.nativeEvent.touches },
+  };
+  const packet = paperInputPacket(phase, input, native.sequence++, {
+    width: 1104,
+    height: 1608,
+    bottomInset: 0,
   });
+  native.lastEvent = input;
+  if (packet) act(() => native.input({ nativeEvent: packet }));
 }
 
-function raw(callback, touches, changedTouches = touches) {
-  act(() =>
-    native.paper[callback]?.({
-      currentTarget: PAPER_TARGET,
-      nativeEvent: { touches, changedTouches, target: PAPER_TARGET },
-    })
+function terminal(phase, touches, changedTouches = touches) {
+  const starts = Object.fromEntries(
+    Object.entries(native.lastEvent?.touchHistory?.touchBank ?? {}).map(([id, entry]) => [
+      id,
+      entry.startTimeStamp,
+    ])
   );
+  send(phase, event(touches, changedTouches, starts));
 }
 
 function partialRelease() {
-  send('onPanResponderGrant', event([touch(0, 10, 20), touch(1, 80, 90)]));
+  send('start', event([touch(0, 10, 20), touch(1, 80, 90)]));
   const partial = event([touch(1, 80, 90, 200)], [touch(0, 30, 40, 200)], { 0: 100, 1: 100 });
-  send('onPanResponderEnd', partial);
-  send('onPanResponderRelease', partial);
+  send('end', partial);
+  send('end', partial);
 }
 
 let root;
@@ -127,8 +138,9 @@ let props;
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  native.handlers = null;
-  native.paper = null;
+  native.input = null;
+  native.sequence = 0;
+  native.lastEvent = null;
   native.layout = null;
   container = globalThis.document.createElement('div');
   globalThis.document.body.append(container);
@@ -161,25 +173,25 @@ function haloTransforms() {
   );
 }
 
-describe('raw terminal events after Fabric releases its responder', () => {
-  it('drops the halo of a raw-ended contact while a still contact keeps its own', () => {
-    send('onPanResponderGrant', event([touch(0, 10, 20), touch(1, 30, 40), touch(2, 50, 60)]));
+describe('native paper terminal packets', () => {
+  it('drops the halo of a ended contact while a still contact keeps its own', () => {
+    send('start', event([touch(0, 10, 20), touch(1, 30, 40), touch(2, 50, 60)]));
     expect(haloTransforms()).toHaveLength(3);
     const partial = event([touch(1, 30, 40, 200), touch(2, 50, 60, 200)], [touch(0, 10, 20, 200)], {
       0: 100,
       1: 100,
       2: 100,
     });
-    send('onPanResponderEnd', partial);
-    send('onPanResponderRelease', partial);
+    send('end', partial);
+    send('end', partial);
     expect(haloTransforms()).toHaveLength(2);
-    raw('onTouchEnd', [touch(2, 50, 60, 300)], [touch(1, 30, 40, 300)]);
+    terminal('end', [touch(2, 50, 60, 300)], [touch(1, 30, 40, 300)]);
     expect(haloTransforms()).toEqual(['translate(50 60) scale(1)']);
-    raw('onTouchEnd', [], [touch(2, 50, 60, 400)]);
+    terminal('end', [], [touch(2, 50, 60, 400)]);
     expect(haloTransforms()).toEqual([]);
   });
 
-  it('commits the stationary survivor without a move, regrant or responder terminal callback', () => {
+  it('commits the stationary survivor without another move or any responder callback', () => {
     const baseline = {
       ...legacyDrawing(),
       strokes: [{ color: 'Blue', brush: 'pencil', width: 7, points: [{ x: 1, y: 2 }] }],
@@ -193,7 +205,7 @@ describe('raw terminal events after Fabric releases its responder', () => {
     partialRelease();
     expect(props.onCohort).not.toHaveBeenCalled();
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
-    raw('onTouchEnd', [], [touch(1, 80, 90, 300)]);
+    terminal('end', [], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(history.drawing.strokes.slice(1).map(({ points }) => points)).toEqual([
       [
@@ -208,62 +220,62 @@ describe('raw terminal events after Fabric releases its responder', () => {
     expect(props.onError).not.toHaveBeenCalled();
   });
 
-  it('waits through partial raw lifts until every remaining touch has lifted', () => {
-    send('onPanResponderGrant', event([touch(0, 10, 20), touch(1, 30, 40), touch(2, 50, 60)]));
+  it('waits through partial native lifts until every remaining touch has lifted', () => {
+    send('start', event([touch(0, 10, 20), touch(1, 30, 40), touch(2, 50, 60)]));
     const partial = event([touch(1, 30, 40, 200), touch(2, 50, 60, 200)], [touch(0, 10, 20, 200)], {
       0: 100,
       1: 100,
       2: 100,
     });
-    send('onPanResponderEnd', partial);
-    send('onPanResponderRelease', partial);
-    raw('onTouchEnd', [touch(1, 30, 40, 200), touch(2, 50, 60, 200)], [touch(0, 10, 20, 200)]);
-    raw('onTouchEnd', [touch(2, 50, 60, 300)], [touch(1, 30, 40, 300)]);
+    send('end', partial);
+    send('end', partial);
+    terminal('end', [touch(1, 30, 40, 200), touch(2, 50, 60, 200)], [touch(0, 10, 20, 200)]);
+    terminal('end', [touch(2, 50, 60, 300)], [touch(1, 30, 40, 300)]);
     expect(props.onCohort).not.toHaveBeenCalled();
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
-    raw('onTouchEnd', [], [touch(2, 50, 60, 400)]);
+    terminal('end', [], [touch(2, 50, 60, 400)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0]).toHaveLength(3);
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
   });
 
-  it('flushes a raw cancellation after partial release without adopting its unproven coordinates', () => {
+  it('flushes a native cancellation after a partial lift without appending its coordinates', () => {
     partialRelease();
-    raw('onTouchCancel', [touch(1, 500, 600, 300)], [touch(1, 500, 600, 300)]);
+    terminal('cancel', [touch(1, 500, 600, 300)], [touch(1, 500, 600, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0][1].points).toEqual([{ x: 80, y: 90 }]);
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
-    raw('onTouchEnd', [], [touch(1, 500, 600, 300)]);
-    send('onPanResponderTerminate');
+    terminal('end', [], [touch(1, 500, 600, 300)]);
+    send('cancel');
     act(() => root.render(null));
     expect(props.onCohort).toHaveBeenCalledTimes(1);
   });
 
   it('ends accepted ink when only an ignored control-origin contact remains', () => {
     const control = touch(2, -80, 900);
-    send('onPanResponderGrant', event([touch(0, 10, 20), touch(1, 80, 90), control]));
+    send('start', event([touch(0, 10, 20), touch(1, 80, 90), control]));
     const partial = event(
       [touch(1, 80, 90, 200), touch(2, -80, 900, 200)],
       [touch(0, 30, 40, 200)],
       { 0: 100, 1: 100, 2: 100 }
     );
-    send('onPanResponderEnd', partial);
-    send('onPanResponderRelease', partial);
-    raw('onTouchEnd', [touch(2, -80, 900, 300)], [touch(1, 80, 90, 300)]);
+    send('end', partial);
+    send('end', partial);
+    terminal('end', [touch(2, -80, 900, 300)], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0]).toHaveLength(2);
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
-    raw('onTouchEnd', [], [touch(2, 700, 710, 400)]);
+    terminal('end', [], [touch(2, 700, 710, 400)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
   });
 
-  it('does not duplicate a responder commit when the same final end bubbles afterward', () => {
-    send('onPanResponderGrant', event([touch(0, 10, 20)]));
+  it('does not duplicate a cohort commit when a final packet repeats', () => {
+    send('start', event([touch(0, 10, 20)]));
     const final = event([], [touch(0, 30, 40, 200)], { 0: 100 });
-    send('onPanResponderEnd', final);
-    send('onPanResponderRelease', final);
-    raw('onTouchEnd', [], final.nativeEvent.changedTouches);
-    raw('onTouchCancel', [], final.nativeEvent.changedTouches);
+    send('end', final);
+    send('end', final);
+    terminal('end', [], final.nativeEvent.changedTouches);
+    terminal('cancel', [], final.nativeEvent.changedTouches);
     act(() => root.render(null));
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0][0].points).toEqual([
@@ -273,14 +285,14 @@ describe('raw terminal events after Fabric releases its responder', () => {
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
   });
 
-  it('leaves a raw-first web terminal event to its held responder so the endpoint is retained', () => {
-    send('onPanResponderGrant', event([touch(0, 10, 20)]));
+  it('accepts a final packet without waiting for a responder callback and preserves its endpoint', () => {
+    send('start', event([touch(0, 10, 20)]));
     const final = event([], [touch(0, 30, 40, 200)], { 0: 100 });
-    raw('onTouchEnd', [], final.nativeEvent.changedTouches);
-    expect(props.onCohort).not.toHaveBeenCalled();
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
-    send('onPanResponderEnd', final);
-    send('onPanResponderRelease', final);
+    terminal('end', [], final.nativeEvent.changedTouches);
+    expect(props.onCohort).toHaveBeenCalledTimes(1);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    send('end', final);
+    send('end', final);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0][0].points).toEqual([
       { x: 10, y: 20 },
@@ -289,25 +301,32 @@ describe('raw terminal events after Fabric releases its responder', () => {
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
   });
 
-  it('closes only proven ink at a raw final lift and never admits a raw changed contact', () => {
+  it('keeps a known contact endpoint and refuses an ended contact with no start', () => {
     partialRelease();
-    raw('onTouchEnd', [], [touch(1, 500, 600, 300), touch(2, 700, 710, 300)]);
+    terminal('end', [], [touch(1, 500, 600, 300), touch(2, 700, 710, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0].map(({ points }) => points)).toEqual([
       [
         { x: 10, y: 20 },
         { x: 30, y: 40 },
       ],
-      [{ x: 80, y: 90 }],
+      [
+        { x: 80, y: 90 },
+        { x: 500, y: 600 },
+      ],
     ]);
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
   });
 
-  it('does not duplicate geometry invalidation when a raw final end arrives afterward', () => {
+  it('retains the remaining contact through layout and commits its terminal packet only once', () => {
     partialRelease();
     act(() => native.layout({ nativeEvent: { layout: { width: 1024, height: 768 } } }));
+    expect(props.onCohort).not.toHaveBeenCalled();
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
+    terminal('end', [], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
-    raw('onTouchEnd', [], [touch(1, 80, 90, 300)]);
+    expect(props.onCohort.mock.calls[0][0]).toHaveLength(2);
+    terminal('end', [], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
   });

@@ -3,7 +3,7 @@ import { act, createElement, forwardRef, useEffect, useImperativeHandle } from '
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
-import { adoptedDrawing } from './native-paper-fixtures.mjs';
+import { adoptedDrawing, createPaperInputView } from './native-paper-fixtures.mjs';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
@@ -12,24 +12,32 @@ import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/
 // layer under the strokes costs GPU time for as long as a stroke is drawn.
 const views = vi.hoisted(() => ({ styles: [] }));
 
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: createAccessibilityInfoFixture(),
-  useColorScheme: () => 'light',
-  PanResponder: { create: () => ({ panHandlers: {} }) },
-  Platform: { OS: 'android' },
-  findNodeHandle: (owner) => owner,
-  StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
-  Image: () => null,
-  View: forwardRef(({ children, onLayout, testID, style }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children, onLayout, testID, style }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
     }, [onLayout]);
     views.styles.push(Object.assign({}, ...[style].flat(Infinity).filter(Boolean)));
     return createElement('div', { 'data-testid': testID }, children);
-  }),
-}));
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
+    useColorScheme: () => 'light',
+    Platform: { OS: 'android' },
+    findNodeHandle: (owner) => owner,
+    StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
+    Image: () => null,
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            views.input = emit;
+          })
+        : View,
+  };
+});
 
 vi.mock(
   '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',

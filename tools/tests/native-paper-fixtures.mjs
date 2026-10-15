@@ -1,3 +1,4 @@
+import { createElement, forwardRef } from 'react';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   adoptPaper,
@@ -19,4 +20,34 @@ export function adoptedDrawing(frame, rainbow = 0, pageId = 'blank') {
 
 export function canonicalPaper() {
   return adoptPaper(1024, 768, 1);
+}
+
+export function createPaperInputView(View, record) {
+  return forwardRef(function PaperInputViewPort({ onPaperInput, ...props }, ref) {
+    record(onPaperInput);
+    return createElement(View, { ...props, ref });
+  });
+}
+
+export function paperInputPacket(phase, event, sequence, viewport) {
+  const active = event.nativeEvent.touches;
+  const changed = event.nativeEvent.changedTouches.filter(
+    (touch) => phase !== 'end' || !active.some((item) => item.identifier === touch.identifier)
+  );
+  if (!changed.length && phase !== 'cancel') return null;
+  const contacts = new Map(
+    [...active, ...changed].map((touch) => [String(touch.identifier), touch])
+  );
+  return {
+    phase,
+    sequence,
+    viewport,
+    changed: changed.map((touch) => String(touch.identifier)),
+    contacts: [...contacts.values()].map((touch) => ({
+      identifier: String(touch.identifier),
+      startedAt: event.touchHistory?.touchBank[touch.identifier]?.startTimeStamp ?? touch.timestamp,
+      tool: touch.tool ?? 'touch',
+      samples: [{ pageX: touch.pageX, pageY: touch.pageY, timestamp: touch.timestamp }],
+    })),
+  };
 }

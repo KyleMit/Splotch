@@ -6,6 +6,7 @@ import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { visitInformationFragment } from '../platform/informationFragment';
 import { useDialogBack } from '../platform/BrowserBack';
+import { ModalKeyboardScope } from '../platform/KeyboardScope';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { AppPage } from '../information/appPages';
 import privacy from '../information/privacy.generated.json';
@@ -153,6 +154,7 @@ export function RsdInformationPage({
   drawingVisited,
   standalone,
 }: InformationPageProps) {
+  const close = () => openAppPage('drawing');
   useEffect(() => {
     const previous = setDocumentTitle(
       `${page === 'feedback' ? 'Send Feedback' : PAGE_TITLES[page]} · Splotch`
@@ -180,9 +182,11 @@ export function RsdInformationPage({
       animationType="none"
       accessibilityLabel="Information page"
       supportedOrientations={FOLLOW_APP_ORIENTATION}
-      onRequestClose={() => openAppPage('drawing')}
+      onRequestClose={close}
     >
-      {content}
+      <ModalKeyboardScope enabled={standalone} onEscape={close}>
+        {content}
+      </ModalKeyboardScope>
     </Modal>
   ) : (
     content

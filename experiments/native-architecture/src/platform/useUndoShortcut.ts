@@ -1,1 +1,5 @@
-export function useUndoShortcut(_undo: () => void, _enabled: boolean): void {}
+import { useKeyboardCommand } from './KeyboardScope';
+
+export function useUndoShortcut(undo: () => void, enabled: boolean) {
+  useKeyboardCommand('undo', enabled, undo);
+}

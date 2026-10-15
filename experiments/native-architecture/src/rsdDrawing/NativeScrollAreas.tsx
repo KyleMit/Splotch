@@ -21,6 +21,7 @@ import {
   type AreaSize,
   type LayoutAxis,
 } from './edgeLayout';
+import { useSecondTouchLayout, SecondTouchRouteScope } from './secondTouchPress';
 
 // endInset is the bottom safe-area inset under the landscape column's far end, which its trim
 // leaves out and its end clearance stands above.
@@ -63,6 +64,10 @@ function areaOffset(root: Box | undefined, column: Box | undefined, area: Box | 
     top: column.y + area.y,
     right: root.width - (column.x + area.x + area.width),
   };
+}
+
+function insetControlsArea(area: AreaSize, left: number, bottom: number): AreaSize {
+  return { width: area.width - left, height: area.height - bottom };
 }
 
 function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined) => void) {
@@ -201,6 +206,7 @@ export function NativeDrawingLayout({
   children,
 }: NativeDrawingLayoutProps) {
   const drawingScreenStyles = useDrawingScreenStyles();
+  const { contacts, handlers } = useSecondTouchLayout(capturePress);
   const window = useWindowDimensions();
   const axis = window.width > window.height ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
@@ -240,15 +246,12 @@ export function NativeDrawingLayout({
   );
   const controlsLeftPx =
     bareGlass && axis === 'column' && !phoneLandscape ? PALETTE_FLOWS.column.extentPx : 0;
-  const controlArea = {
-    width: paperArea.width - controlsLeftPx,
-    height: paperArea.height - insetBottom,
-  };
-  return (
+  const controlArea = insetControlsArea(paperArea, controlsLeftPx, insetBottom);
+  const content = (
     <View
       testID="rsd-drawing-layout"
       onLayout={boxSetter(setRoot)}
-      onStartShouldSetResponderCapture={capturePress}
+      {...handlers}
       style={[
         drawingScreenStyles.fullBleed,
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
@@ -316,4 +319,5 @@ export function NativeDrawingLayout({
       </View>
     </View>
   );
+  return <SecondTouchRouteScope value={contacts}>{content}</SecondTouchRouteScope>;
 }

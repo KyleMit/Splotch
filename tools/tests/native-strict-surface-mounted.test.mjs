@@ -40,14 +40,14 @@ async function launch(strict) {
     strokes: owner.history.drawing.strokes.length,
     undo: owner.history.undo.length,
   };
-  await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+  await send('start', event([touch(0, 10, 20)]));
   for (let move = 1; move <= MOVES; move += 1)
     await send(
-      'onPanResponderMove',
+      'move',
       event([touch(0, 10 + move * 9, 20 + move * 9, 100 + move * FRAME_MS)], undefined, { 0: 100 }),
       false
     );
-  await send('onPanResponderEnd', event([], [touch(0, 60, 70, 300)], { 0: 100 }), false);
+  await send('end', event([], [touch(0, 60, 70, 300)], { 0: 100 }), false);
   await settle();
   const drawn = {
     strokes: owner.history.drawing.strokes.length,

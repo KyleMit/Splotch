@@ -127,6 +127,7 @@ export function RsdPaintAction({
   disabled,
   bloom,
   onClick,
+  onPressBegin,
 }: {
   color: PaintColor;
   size: number;
@@ -134,6 +135,7 @@ export function RsdPaintAction({
   disabled: boolean;
   bloom: { reduced: boolean } | null;
   onClick: () => void;
+  onPressBegin?: () => void;
 }) {
   const theme = useDrawingAppearance();
   const { hex } = paintAppearance(color, theme);
@@ -152,6 +154,7 @@ export function RsdPaintAction({
         disabled && styles.disabled,
       ]}
       onClick={onClick}
+      onPressBegin={onPressBegin}
     >
       {bloom ? (
         <RsdSwatchBloom size={size} color={selectionRingColor(hex)} reduced={bloom.reduced} />
@@ -175,11 +178,13 @@ export function RsdMoreColorsSwatch({
   custom,
   disabled,
   onClick,
+  onPressBegin,
 }: {
   size: number;
   custom: CustomPaintSelection;
   disabled: boolean;
   onClick: () => void;
+  onPressBegin?: () => void;
 }) {
   const icon = (size - 2 * SELECTION_RING_GAP_PX) / (custom?.color ? 1 : MORE_COLORS_POP_SCALE);
   const bare = useBareToolbar();
@@ -196,6 +201,7 @@ export function RsdMoreColorsSwatch({
         disabled && styles.disabled,
       ]}
       onClick={onClick}
+      onPressBegin={onPressBegin}
     >
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />
       {custom?.color ? (

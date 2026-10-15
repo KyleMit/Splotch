@@ -1,5 +1,7 @@
-// Android and iOS have no Escape key to close a flyout and no keyboard focus to hand back; the web
-// build does both (flyoutFocus.web.ts).
-export function useFlyoutEscape(_active: boolean, _onEscape: () => void) {}
+import { useKeyboardCommand } from './KeyboardScope';
+
+export function useFlyoutEscape(active: boolean, onEscape: () => void) {
+  useKeyboardCommand('escape', active, onEscape);
+}
 
 export function refocusFlyoutTrigger(_menu: unknown, _trigger: unknown) {}
