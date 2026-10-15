@@ -40,9 +40,8 @@ export function useDrawingScreen() {
   const { history, historyRef, setHistory, currentDrawing } = historyOwner;
   const brushes = useBrushPreferences();
   const brush = brushes.state.brush;
-  const brushActions = brushPreferenceActions(brushes);
   const [preparing, setPreparing] = useState(false);
-  const [drawing, setDrawing] = useBackAwareDrawingState();
+  const { drawing, setDrawing, isDrawing } = useDrawingActivity();
   const [commandBusy, setBusy] = useState(false);
   const busy = commandBusy || historyOwner.draftState.status === 'loading';
   const messages = useDrawingMessages();
@@ -53,21 +52,24 @@ export function useDrawingScreen() {
   const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
+  const brushActions = brushPreferenceActions(brushes, () => surface.current?.finishInput());
   const rendererFault = useRef(false);
   const visibleInk = useRef<ReturnType<typeof useVisibleInk> | null>(null);
 
-  const { command, runCommand, scanEmpty, ...surfaceActions } = useSurfaceCommands({
-    historyRef,
-    setHistory,
-    surface,
-    setBusy,
-    ...messages,
-    reportSaveFailure: saveFailure.report,
-    afterClear: () => brushes.owner.current?.resetAfterClear(),
-    knownEmpty: (drawing) => visibleInk.current?.empty(drawing),
-    blocked: () =>
-      busy || rendererFault.current || preparing || drawing || settingsLease.current !== null,
-  });
+  const { command, runCommand, scanEmpty, commandsBlocked, ...surfaceActions } = useSurfaceCommands(
+    {
+      historyRef,
+      setHistory,
+      surface,
+      setBusy,
+      ...messages,
+      reportSaveFailure: saveFailure.report,
+      afterClear: () => brushes.owner.current?.resetAfterClear(),
+      knownEmpty: (drawing) => visibleInk.current?.empty(drawing),
+      inputActive: isDrawing,
+      blocked: () => busy || rendererFault.current || preparing || settingsLease.current !== null,
+    }
+  );
 
   // Strokes committed since this screen opened; the install banner waits on them.
   const [committedStrokes, setCommittedStrokes] = useState(0);
@@ -82,29 +84,16 @@ export function useDrawingScreen() {
   const settings = useDrawingSettings({
     surface,
     settingsLease,
-    blocked: () =>
-      drawing || busy || preparing || pagePickerOpen || command.current || rendererFault.current,
+    blocked: () => commandsBlocked() || pagePickerOpen,
     report,
   });
-  // A stroke leaves the chrome live, as shipping's does. The paper's responder keeps every touch
-  // until the lift, but a keyboard or assistive press still lands: whatever opens a surface or runs
-  // a command refuses to start mid-stroke, while a paint, brush or width choice applies to the next
-  // contact, as a second finger's does in shipping. Disabling the chrome for a stroke would fade
-  // every control and re-mount it on the UI thread at each stroke start and lift, which costs the
-  // canvas frames.
+  // Chrome stays live during a stroke: Undo changes committed ink, and a paint pick or Clear
+  // finishes the live cohort before the next action. Dialogs and capture wait for the lift.
   const disabled =
     historyOwner.draftState.status === 'loading' || preparing || brushes.state.status !== 'ready';
   // A dialog leaves the chrome at full strength under its scrim, as shipping's modal leaves the
   // page: the chrome is held rather than disabled while one is open.
   const dialogOpen = pagePickerOpen || settings.sheetOpen;
-
-  const commandsBlocked = () =>
-    command.current ||
-    rendererFault.current ||
-    preparing ||
-    drawing ||
-    busy ||
-    settingsLease.current !== null;
 
   const coloring = createColoringPageActions(
     historyOwner,
@@ -144,7 +133,9 @@ export function useDrawingScreen() {
     history,
     brush,
     ...brushActions,
+    finishInput: () => surface.current?.finishInput(),
     drawing,
+    isDrawing,
     setDrawing,
     busy: busy || preparing || brushes.state.status !== 'ready',
     commandBusy,
@@ -179,6 +170,20 @@ export function useDrawingScreen() {
   };
 }
 
+function useDrawingActivity() {
+  const [drawing, setDrawingState] = useBackAwareDrawingState();
+  const current = useRef(drawing);
+  current.current = drawing;
+  return {
+    drawing,
+    isDrawing: () => current.current,
+    setDrawing(next: boolean) {
+      current.current = next;
+      setDrawingState(next);
+    },
+  };
+}
+
 function createCohortCommit(
   historyRef: RefObject<History>,
   setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
@@ -197,7 +202,10 @@ function createCohortCommit(
   };
 }
 
-function brushPreferenceActions(brushes: ReturnType<typeof useBrushPreferences>) {
+function brushPreferenceActions(
+  brushes: ReturnType<typeof useBrushPreferences>,
+  finishInput: () => void
+) {
   return {
     setBrush: (next: Brush) => brushes.owner.current?.selectBrush(next),
     brushPreferences: brushes.state,
@@ -210,7 +218,10 @@ function brushPreferenceActions(brushes: ReturnType<typeof useBrushPreferences>)
       const owner = brushes.owner.current;
       if (owner && owner.getState().brush !== 'pen') owner.selectBrush('pen');
     },
-    selectInkBrush: () => brushes.owner.current?.selectInkBrush(),
+    selectInkBrush() {
+      finishInput();
+      brushes.owner.current?.selectInkBrush();
+    },
     toggleEraser: () => (brushes.owner.current ? toggleEraser(brushes.owner.current) : false),
     setBrushAvailable: (next: OptionalBrush, enabled: boolean) =>
       brushes.owner.current?.setAvailable(next, enabled),
@@ -337,6 +348,20 @@ function useDrawingSettings({
   };
 }
 
+type SurfaceCommandOptions = {
+  historyRef: RefObject<History>;
+  setHistory: (next: History | ((current: History) => History)) => void;
+  surface: RefObject<DrawingSurfaceHandle | null>;
+  setBusy: (busy: boolean) => void;
+  setNotice: (notice: string) => void;
+  reportSaveFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void;
+  report: (error: unknown) => void;
+  blocked: () => boolean;
+  afterClear: () => void;
+  knownEmpty: (drawing: Drawing) => boolean | undefined;
+  inputActive: () => boolean;
+};
+
 function useSurfaceCommands({
   historyRef,
   setHistory,
@@ -348,22 +373,15 @@ function useSurfaceCommands({
   blocked,
   afterClear,
   knownEmpty,
-}: {
-  historyRef: RefObject<History>;
-  setHistory: (next: History | ((current: History) => History)) => void;
-  surface: RefObject<DrawingSurfaceHandle | null>;
-  setBusy: (busy: boolean) => void;
-  setNotice: (notice: string) => void;
-  reportSaveFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void;
-  report: (error: unknown) => void;
-  blocked: () => boolean;
-  afterClear: () => void;
-  knownEmpty: (drawing: Drawing) => boolean | undefined;
-}) {
+  inputActive,
+}: SurfaceCommandOptions) {
   const command = useRef(false);
   const { mounted, observations, scanObservations } = useInkObservers();
+  function commandsBlocked() {
+    return command.current || blocked() || inputActive();
+  }
   async function runCommand(action: () => Promise<void>) {
-    if (command.current || blocked()) return;
+    if (commandsBlocked()) return;
     let release: (() => void) | undefined;
     try {
       if (!surface.current) throw new Error('The drawing paper is not ready.');
@@ -386,7 +404,7 @@ function useSurfaceCommands({
     if (command.current || blocked()) return;
     let release: (() => void) | undefined;
     try {
-      release = surface.current?.lockInput();
+      release = surface.current?.lockInput('undo');
       setHistory(undoDrawing);
       setNotice('');
     } catch (error) {
@@ -404,6 +422,7 @@ function useSurfaceCommands({
 
   async function clearCurrentPicture(keepInked: boolean) {
     if (command.current || blocked()) return;
+    surface.current?.finishInput();
     const snapshot = historyRef.current;
     const empty = knownEmpty(snapshot.drawing);
     if (!keepInked && empty !== undefined) {
@@ -452,6 +471,7 @@ function useSurfaceCommands({
   return {
     command,
     runCommand,
+    commandsBlocked,
     scanEmpty: createEmptyScan({
       command,
       mounted,

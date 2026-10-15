@@ -104,14 +104,13 @@ export function RsdEdgeLayout({
   const [drawerChosen, setDrawerChosen] = useRememberedDrawer();
   const drawerOpen = drawerChosen || resizing;
   const blocked = disabled || covered;
-  const slot = useFlyoutSlot(drawerOpen, blocked, screen.drawing);
+  const slot = useFlyoutSlot(drawerOpen, blocked);
   const fullscreen = useFullscreen(!blocked);
   const ink = paintAppearance(sound.settings.selectedColor, useDrawingAppearance()).hex;
   const clear = useClearGesture({
-    // The button stays live through a stroke and under a dialog, but its activation plays the
-    // clear before the command can refuse, so the gesture itself waits.
-    disabled: blocked || screen.drawing || screen.commandBusy,
-    drawing: screen.history.drawing,
+    disabled: blocked || screen.commandBusy,
+    currentDrawing: screen.currentDrawing,
+    onBegin: screen.finishInput,
     // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
     onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),
     sound: sound.owner?.clear ?? null,
@@ -265,6 +264,7 @@ function RsdPalette({
             size={flow.swatchPx}
             selected={color === selectedColor}
             disabled={disabled}
+            onPressBegin={screen.finishInput}
             onClick={() => {
               screen.selectInkBrush();
               sound.owner?.settings.setColor(color);
@@ -276,6 +276,7 @@ function RsdPalette({
         size={flow.swatchPx}
         disabled={disabled}
         onClick={screen.openColorPicker}
+        onPressBegin={screen.finishInput}
       />
     </html.div>
   );

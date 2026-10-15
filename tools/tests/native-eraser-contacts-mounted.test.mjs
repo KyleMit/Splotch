@@ -119,13 +119,14 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     expect(owner.history.drawing.strokes).toHaveLength(1);
   });
 
-  it('settles a cohort once on geometry invalidation and ignores stale or repeated measurements', async () => {
+  it('keeps a cohort through layout measurements and ignores stale, repeated or empty geometry', async () => {
     await twoContacts();
+    const before = owner.history;
     sdk.autoMeasure = false;
     await act(async () => owner.surface.current.refreshGeometry());
     const stale = sdk.measurements.at(-1);
-    expect(owner.history.drawing.strokes).toHaveLength(2);
-    const completed = owner.history;
+    expect(owner.history).toBe(before);
+    expect(owner.drawing).toBe(true);
     await act(async () => owner.surface.current.refreshGeometry());
     const latest = sdk.measurements.at(-1);
     await act(async () => {
@@ -133,9 +134,19 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       stale(0, 0, 1024, 768, 0, 0);
       latest(0, 0, 1024, 768, 0, 0);
     });
+    await act(async () => owner.surface.current.refreshGeometry());
+    await act(async () => sdk.measurements.at(-1)(0, 0, 0, 0, 0, 0));
     await send('onPanResponderMove', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
     await send('onPanResponderEnd', event([], [touch(0, 110, 120, 500)], { 0: 100 }), false);
-    expect(owner.history).toBe(completed);
+    expect(owner.history.drawing.strokes).toHaveLength(2);
+    expect(owner.history.undo).toHaveLength(1);
+    expect(owner.history.drawing.strokes[0].points).toEqual([
+      { x: 10, y: 20 },
+      { x: 30, y: 40 },
+      { x: 50, y: 60 },
+      { x: 90, y: 200 },
+      { x: 110, y: 220 },
+    ]);
     await send('onPanResponderGrant', event([touch(1, 60, 80, 600)]));
     await send('onPanResponderEnd', event([], [touch(1, 80, 100, 700)], { 1: 600 }), false);
     expect(owner.history.drawing.strokes.at(-1).points).toEqual([
@@ -200,17 +211,18 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
   });
 
-  it('refuses Settings during an admitted cohort and silences on measured geometry invalidation', async () => {
+  it('refuses Settings during an admitted cohort and keeps its sound through layout refresh', async () => {
     await twoContacts();
     await act(async () => owner.openSettings());
     expect(owner.settingsOpen).toBe(false);
+    const before = owner.history;
     await act(async () => owner.surface.current.refreshGeometry());
-    expect(sdk.soundStop).toHaveBeenCalledOnce();
-    const completed = owner.history;
-    const samples = sdk.soundVolume.mock.calls.length;
+    expect(sdk.soundStop).not.toHaveBeenCalled();
     await send('onPanResponderMove', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
-    expect(sdk.soundVolume).toHaveBeenCalledTimes(samples);
-    expect(owner.history).toBe(completed);
+    expect(owner.drawing).toBe(true);
+    expect(owner.history).toBe(before);
+    await send('onPanResponderEnd', event([], [touch(0, 110, 120, 500)], { 0: 100 }), false);
+    expect(sdk.soundStop).toHaveBeenCalledOnce();
   });
 
   it('refreshes only on changed scroll offsets and translates web document coordinates', () => {

@@ -120,12 +120,14 @@ export function RsdPaintAction({
   selected,
   disabled,
   onClick,
+  onPressBegin,
 }: {
   color: PaintColor;
   size: number;
   selected: boolean;
   disabled: boolean;
   onClick: () => void;
+  onPressBegin?: () => void;
 }) {
   const { hex } = paintAppearance(color, useDrawingAppearance());
   const bare = useBareToolbar();
@@ -145,6 +147,7 @@ export function RsdPaintAction({
         disabled && styles.disabled,
       ]}
       onClick={onClick}
+      onPressBegin={onPressBegin}
     >
       {selected ? (
         <>
@@ -164,10 +167,12 @@ export function RsdMoreColorsSwatch({
   size,
   disabled,
   onClick,
+  onPressBegin,
 }: {
   size: number;
   disabled: boolean;
   onClick: () => void;
+  onPressBegin?: () => void;
 }) {
   const icon = (size - 2 * SELECTION_RING_GAP_PX) / MORE_COLORS_POP_SCALE;
   const bare = useBareToolbar();
@@ -184,6 +189,7 @@ export function RsdMoreColorsSwatch({
         disabled && styles.disabled,
       ]}
       onClick={onClick}
+      onPressBegin={onPressBegin}
     >
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />
     </RsdPressable>

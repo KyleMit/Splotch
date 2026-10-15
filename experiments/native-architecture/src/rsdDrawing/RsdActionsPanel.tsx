@@ -44,8 +44,8 @@ const docks = StyleSheet.create({
 // on the paper still draws. The layout's root asks first and the menu's own boxes answer later
 // in the same capture pass, so the close waits until the pass has run. Escape and a pick close it
 // through `close`, which hands keyboard focus back to the menu's button, as shipping's
-// closeFlyout({ restoreFocus: true }) does. A menu opens only between strokes; closing never waits.
-export function useFlyoutSlot(open: boolean, disabled: boolean, drawing: boolean) {
+// closeFlyout({ restoreFocus: true }) does.
+export function useFlyoutSlot(open: boolean, disabled: boolean) {
   const [flyout, setOpenFlyout] = useState<OpenFlyout>(null);
   const inside = useRef(false);
   // The landscape phone's Color Menu opens beside its own button, drawer open or not, and leaving
@@ -70,7 +70,7 @@ export function useFlyoutSlot(open: boolean, disabled: boolean, drawing: boolean
   return {
     flyout: shown,
     setFlyout(next: OpenFlyout) {
-      if (next === null || !drawing) setOpenFlyout(next);
+      setOpenFlyout(next);
     },
     close,
     menu,
@@ -243,7 +243,7 @@ function panelTools(context: ToolContext): Tool[] {
           busy={ai.busy}
           badge={ai.badge}
           onPress={() => {
-            if (screen.drawing) return;
+            if (screen.isDrawing()) return;
             product.ai.owner?.start({
               onSetup: screen.openAiSettings,
               customize: sound.settings.aiCustomizationEnabled,
@@ -489,7 +489,10 @@ function RsdColorControl({
           triggers.current.color = node;
         }}
         onCapture={expanded ? markInside : undefined}
-        onToggle={() => setFlyout(expanded ? null : 'color')}
+        onToggle={() => {
+          screen.finishInput();
+          setFlyout(expanded ? null : 'color');
+        }}
         onFold={() => {
           setFlyout(null);
           onToggle();

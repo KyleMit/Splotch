@@ -307,7 +307,7 @@ function readStyle(
   throw new Error('This saved picture contains an invalid brush.');
 }
 
-function readPoint(point: unknown, size: PaperSize): Point {
+function readPoint(point: unknown, size: PaperSize | null): Point {
   if (
     !record(point) ||
     !exactKeys(point, ['x', 'y']) ||
@@ -315,10 +315,7 @@ function readPoint(point: unknown, size: PaperSize): Point {
     typeof point.y !== 'number' ||
     !Number.isFinite(point.x) ||
     !Number.isFinite(point.y) ||
-    point.x < 0 ||
-    point.x > size.width ||
-    point.y < 0 ||
-    point.y > size.height
+    (size !== null && (point.x < 0 || point.x > size.width || point.y < 0 || point.y > size.height))
   )
     throw new Error('This saved picture contains an invalid point.');
   return { x: point.x, y: point.y };
@@ -362,7 +359,9 @@ export function parseDrawing(value: unknown): Drawing {
     return {
       ...style,
       width: actualWidth,
-      points: item.points.map((point: unknown) => readPoint(point, size)),
+      points: item.points.map((point: unknown) =>
+        readPoint(point, format === 'paper' ? null : size)
+      ),
     };
   });
   if (paper.kind !== 'legacy') {

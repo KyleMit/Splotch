@@ -26,6 +26,7 @@ export type ContactDrawingProps = {
   strokeWidth: StrokeWidth;
   eraserWidth: StrokeWidth;
   disabled: boolean;
+  isChromeTouch?: (touch: NativeTouchEvent) => boolean;
   onCohort: (strokes: readonly Stroke[], paper: PaperReference) => void;
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
@@ -264,6 +265,7 @@ class ContactResponder {
         !lifetime.starting ||
         this.paperTarget === null ||
         touch.target !== this.paperTarget ||
+        this.current().isChromeTouch?.(touch) ||
         !insidePaper(touch, this.frame(), this.contactSize())
       )
         continue;
@@ -473,7 +475,7 @@ class ContactResponder {
     this.current().onDrawingChange(false);
   }
 
-  resize() {
+  finishInput() {
     this.flushGrant(new Set(), true);
     this.startBatch = null;
     this.lastStartEvent = null;

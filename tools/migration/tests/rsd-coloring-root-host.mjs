@@ -37,6 +37,9 @@ export function drawingScreenPort(actual, caller, projectHistory) {
       draftState: { status: 'session', message: '' },
       retryDraft: async () => {},
       selectInkBrush() {},
+      currentDrawing: () => caller.screen.history.drawing,
+      isDrawing: () => caller.screen.drawing,
+      finishInput() {},
       saveFailure: {
         outcome: null,
         pictureCount: 0,
@@ -78,6 +81,7 @@ export function paperPort(React, strokeStyle, caller) {
       screen.surface,
       () => ({
         lockInput: () => () => {},
+        finishInput() {},
         refreshGeometry() {},
         // A save's photo library copy; what the library does with it is the test's port.
         exportPng: async (drawing) => caller.exportPng?.(drawing) ?? 'cmVhbC1wbmc=',

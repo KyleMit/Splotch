@@ -76,23 +76,32 @@ describe('a picture takes the shape of the paper area it is first drawn in', () 
     );
   });
 
-  it('round-trips a portrait picture and bounds its points by its own shape', () => {
+  it('round-trips finite off-paper ink without changing its adopted shape', () => {
     const paper = adoptPaper(PORTRAIT.width, PORTRAIT.height, 3);
-    const strokes = [{ ...pen, points: [{ x: 567, y: 1024 }] }];
+    const strokes = [
+      {
+        ...pen,
+        points: [
+          { x: -30, y: 1024.01 },
+          { x: 568, y: 10 },
+        ],
+      },
+    ];
     const drawing = addStrokes(createHistory(), strokes, paper).drawing;
     const wire = JSON.parse(JSON.stringify(drawing));
     expect(wire.version).toBe(7);
     expect(wire.paper).toEqual({ kind: 'adopted', cssWidth: 390, cssHeight: 704, backingScale: 2 });
     expect(parseDrawing(wire)).toEqual(drawing);
-    expect(() =>
-      parseDrawing({ ...wire, strokes: [{ ...pen, points: [{ x: 568, y: 10 }] }] })
-    ).toThrow('point');
-    expect(() =>
-      parseDrawing({ ...wire, strokes: [{ ...pen, points: [{ x: 10, y: 1024.01 }] }] })
-    ).toThrow('point');
+    for (const invalid of [NaN, Infinity, -Infinity])
+      expect(() =>
+        parseDrawing({ ...wire, strokes: [{ ...pen, points: [{ x: invalid, y: 10 }] }] })
+      ).toThrow('point');
     expect(() => parseDrawing({ ...wire, version: 6 })).toThrow('supported');
     const landscape = { ...wire, paper: { ...wire.paper, cssWidth: 704, cssHeight: 390 } };
-    expect(() => parseDrawing(landscape)).toThrow('point');
+    expect(parseDrawing(landscape).strokes).toEqual(strokes);
+    expect(() => parseDrawing({ version: 5, pageId: 'blank', rainbow: 0, strokes })).toThrow(
+      'point'
+    );
   });
 });
 
@@ -164,7 +173,7 @@ describe('contacts on a portrait paper', () => {
     });
     expect(drawing.strokes[0].points).toEqual([
       { x: 283.5, y: 512 },
-      { x: 567, y: 1024 },
+      { x: 567.14, y: 1024 },
     ]);
   });
 
@@ -178,7 +187,7 @@ describe('contacts on a portrait paper', () => {
     expect(f.history().drawing.paper).toBe(f.history().undo.at(-1).paper);
     expect(f.history().drawing.strokes[1].points).toEqual([
       { x: 283.5, y: 512 },
-      { x: 0, y: 0 },
+      { x: -0.14, y: 0 },
     ]);
   });
 
@@ -187,6 +196,19 @@ describe('contacts on a portrait paper', () => {
     expect(containsPaperPoint(195, 352, 390, 704, size)).toBe(true);
     expect(containsPaperPoint(10, 352, 844 * 0.5, 704, size)).toBe(false);
     expect(paperContactPoint(195, 352, 390, 704, size)).toEqual({ x: 283.5, y: 512 });
+  });
+
+  it('retains an admitted movement outside the paper instead of drawing along its edge', () => {
+    const frame = { current: { ...PORTRAIT, pageX: 0, pageY: 100 } };
+    const f = responder(frame);
+    f.stroke('a', [195, 452], [-30, 850], 1);
+    expect(f.history().drawing.strokes[0].points).toEqual([
+      { x: 283.5, y: 512 },
+      { x: -43.77, y: 1090.91 },
+    ]);
+    expect(parseDrawing(f.history().drawing)).toEqual(f.history().drawing);
+    f.stroke('outside', [-30, 452], [100, 452], 10);
+    expect(f.history().drawing.strokes).toHaveLength(1);
   });
 });
 

@@ -13,7 +13,7 @@ function createModalOrigin() {
   let last: (Point & { at: number }) | null = null;
   let zone: ReturnType<typeof armTapZone> = null;
   return {
-    record(event: GestureResponderEvent) {
+    record(event: { nativeEvent: Pick<GestureResponderEvent['nativeEvent'], 'pageX' | 'pageY'> }) {
       last = { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY, at: Date.now() };
       return false;
     },

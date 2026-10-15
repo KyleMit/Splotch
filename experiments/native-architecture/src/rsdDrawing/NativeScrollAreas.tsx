@@ -12,6 +12,7 @@ import {
   type AreaSize,
   type LayoutAxis,
 } from './edgeLayout';
+import { useSecondTouchLayout, SecondTouchRouteScope } from './secondTouchPress';
 
 // endInset is the bottom safe-area inset under the landscape column's far end, which its trim
 // leaves out and its end clearance stands above.
@@ -97,6 +98,7 @@ export function NativeDrawingLayout({
   children: ReactNode;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
+  const { contacts, handlers } = useSecondTouchLayout(capturePress);
   const window = useWindowDimensions();
   const axis = window.width > window.height ? 'column' : 'row';
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
@@ -123,11 +125,11 @@ export function NativeDrawingLayout({
   const railTop = axis === 'row' ? rail : 0;
   const railLeft = axis === 'column' ? rail : 0;
   const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
-  return (
+  const content = (
     <View
       testID="rsd-drawing-layout"
       onLayout={boxSetter(setRoot)}
-      onStartShouldSetResponderCapture={capturePress}
+      {...handlers}
       style={[
         drawingScreenStyles.fullBleed,
         axis === 'column' && drawingScreenStyles.fullBleedLandscape,
@@ -199,4 +201,5 @@ export function NativeDrawingLayout({
       </View>
     </View>
   );
+  return <SecondTouchRouteScope value={contacts}>{content}</SecondTouchRouteScope>;
 }
