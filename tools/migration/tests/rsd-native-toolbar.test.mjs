@@ -85,7 +85,7 @@ it('renders every toolbar action as a named icon button that calls its owner', a
     ['Coloring books', 'shapes', () => caller.screen.setPagePickerOpen],
     ['Save screenshot', 'camera', () => caller.screen.save],
     [AI_BUTTON, 'wand-stars', () => openAi],
-    ['Undo', 'undo', () => caller.screen.undo],
+    ['Undo', 'undo', () => caller.screen.undoFromButton],
     ['Clear drawing', 'trash-closed', () => caller.screen.clear],
     ['Settings', 'settings', () => caller.screen.openSettings],
   ];
@@ -137,7 +137,7 @@ it('keeps the toolbar disabled boundary and the lone optional brush button', asy
   expect(caller.screen.clear).not.toHaveBeenCalled();
   expect(caller.screen.save).not.toHaveBeenCalled();
   expect(caller.screen.openSettings).not.toHaveBeenCalled();
-  expect(caller.screen.undo).not.toHaveBeenCalled();
+  expect(caller.screen.undoFromButton).not.toHaveBeenCalled();
   expect(caller.screen.setPagePickerOpen).not.toHaveBeenCalled();
   caller.screen.disabled = false;
   await act(async () => root.render(createElement(RsdDrawingScreen)));

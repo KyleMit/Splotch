@@ -427,3 +427,47 @@ it('resumes the camera keyframe clock at its elapsed phase without replaying the
     expect(from + (1 - from) * resumed.easing(phase)).toBeCloseTo(full.easing(0.5 + 0.5 * phase));
   }
 });
+
+it("winds Undo through shipping's exact anticipation, turns, curves and duration", async () => {
+  const { UNDO_SPIN_MS, UNDO_SPIN_KEYFRAMES } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/undoKeyframes.ts');
+  expect(declaration(block('.undo-firing'), 'animation')).toBe(
+    `undo-spin ${UNDO_SPIN_MS}ms linear`
+  );
+  const frames = keyframes('undo-spin').map(({ at, declarations }) => ({
+    at,
+    rotate: transform(declaration(declarations, 'transform')).rotate,
+    easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
+  }));
+  expect(UNDO_SPIN_KEYFRAMES).toEqual(frames);
+  expect(declaration(block('.undo-firing[data-start-reduced-motion]'), 'animation')).toBe('none');
+  expect(read('web/src/lib/components/UndoButton.svelte')).toContain(
+    '{#key canvasState.undoCount}'
+  );
+});
+
+it("fades the removed ink through shipping's scale, drift, duration and curve", async () => {
+  const {
+    UNDO_GHOST_AA_PAD_PX,
+    UNDO_GHOST_MS,
+    UNDO_GHOST_SCALE,
+    UNDO_GHOST_DRIFT_FRACTION,
+    UNDO_GHOST_EASE,
+  } = await import('../../experiments/native-architecture/src/drawing/undoGhostGeometry.ts');
+  const shippingPad = /export const AA_PAD_PX = ([\d.]+);/.exec(
+    read('web/src/lib/drawing/opGeometry.ts')
+  );
+  expect(shippingPad).not.toBeNull();
+  expect(UNDO_GHOST_AA_PAD_PX).toBe(Number(shippingPad[1]));
+  expect(declaration(block('.undo-ink-motion'), 'animation')).toBe(
+    `undo-ink ${UNDO_GHOST_MS}ms var(--ease-glide) forwards paused`
+  );
+  const last = keyframes('undo-ink').at(-1).declarations;
+  expect(transform(declaration(last, 'transform')).scale).toBe(UNDO_GHOST_SCALE);
+  expect(declaration(last, 'opacity')).toBe('0');
+  expect(UNDO_GHOST_EASE).toEqual(bezier(scale.easeGlide));
+  expect(read('web/src/lib/drawing/inkMotion.ts')).toContain(
+    `const UNDO_INK_DRIFT_FRACTION = ${UNDO_GHOST_DRIFT_FRACTION};`
+  );
+  expect(declaration(block(':root[data-reduce-motion] .undo-ink-motion'), 'display')).toBe('none');
+});

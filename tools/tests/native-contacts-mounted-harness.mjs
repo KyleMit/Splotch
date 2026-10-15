@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
+import { useDrawingUndoShortcut } from '../../experiments/native-architecture/src/product/useDrawingUndoShortcut.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
@@ -19,6 +20,7 @@ vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', (
 
 const sdk = vi.hoisted(() => ({
   input: null,
+  shortcut: null,
   sequence: 0,
   frames: new Map(),
   nextFrame: 0,
@@ -53,7 +55,8 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 vi.mock('react-native', () => {
-  const View = forwardRef(({ children, style }, ref) => {
+  const View = forwardRef(({ children, style, onShortcutKey }, ref) => {
+    if (onShortcutKey) sdk.shortcut = onShortcutKey;
     useImperativeHandle(ref, () => ({
       measure(complete) {
         sdk.measurements.push(complete);
@@ -142,6 +145,7 @@ function Consumer() {
   sdk.screenRenders += 1;
   historyOwner = useDrawingHistory();
   owner = useDrawingScreen();
+  useDrawingUndoShortcut(owner, false);
   const sound = useDrawingSound();
   return createElement(DrawingSurface, {
     sound: sound.owner?.contacts ?? null,
@@ -233,6 +237,7 @@ beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
   sdk.input = null;
+  sdk.shortcut = null;
   sdk.sequence = 0;
   sdk.frames.clear();
   sdk.captures.length = 0;

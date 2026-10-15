@@ -24,6 +24,7 @@ const DRAWER_CASCADE_INDEX = {
 function triggerRef(triggers: Slot['triggers'], key: DrawerTool['key'], screen: Screen) {
   // The save polaroid flies out of the Save screenshot button's tile.
   if (key === 'camera') return screen.cameraTile;
+  if (key === 'undo') return screen.undoTile;
   if (key !== 'brush' && key !== 'stroke') return undefined;
   return (node: View | null) => {
     triggers.current[key] = node;

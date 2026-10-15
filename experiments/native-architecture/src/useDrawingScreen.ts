@@ -11,7 +11,6 @@ import {
   hasDrawingInk,
   clearDrawing,
   emptyDrawing,
-  undoDrawing,
   type History,
   type Stroke,
   type Drawing,
@@ -33,6 +32,7 @@ import { useRendererRecovery } from './useRendererRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
 import { useVisibleInk } from './drawing/inkVisibility';
 import { createEmptyScan, useInkObservers } from './drawingScan';
+import { useUndoAction } from './useUndoAction';
 
 function useBlankPaper(
   history: History,
@@ -420,19 +420,16 @@ function useSurfaceCommands({
     }
   }
 
-  function undo() {
-    if (command.current || blocked() || historyRef.current.undo.length === 0) return;
-    let release: (() => void) | undefined;
-    try {
-      release = surface.current?.lockInput('undo');
-      setHistory(undoDrawing);
-      setNotice('');
-    } catch (error) {
-      report(error);
-    } finally {
-      release?.();
-    }
-  }
+  const undo = useUndoAction({
+    historyRef,
+    setHistory,
+    surface,
+    command,
+    blocked,
+    inputActive,
+    setNotice,
+    report,
+  });
 
   function clearSnapshot(snapshot: History, empty: boolean) {
     setHistory(clearDrawing(snapshot, empty));
@@ -500,7 +497,7 @@ function useSurfaceCommands({
       historyRef,
       blocked,
     }),
-    undo,
+    ...undo,
     clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
 }
