@@ -435,6 +435,7 @@ describe('the pnpm version bump', () => {
 // ROOT is two folders above tools/lib/proc.mjs, so the copies run the real cut
 // against the scratch checkout, end to end.
 const RELEASE_SCRIPTS = [
+  'web/src/lib/releaseHistoryPolicy.ts',
   'tools/lib/html.mjs',
   'tools/lib/proc.mjs',
   'tools/release/cut-release.mjs',

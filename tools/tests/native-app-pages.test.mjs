@@ -8,6 +8,10 @@ import {
   privacySectionAtLaunch,
   replacePrivacyFragment,
 } from '../../experiments/native-architecture/src/platform/privacySectionLink.web.ts';
+import {
+  informationFragmentAtLaunch,
+  visitInformationFragment,
+} from '../../experiments/native-architecture/src/platform/informationFragment.web.ts';
 import { sectionUrl } from '../../web/src/routes/privacy/sectionLink.ts';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createBrowserAppPages } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
@@ -110,4 +114,16 @@ it('pins privacy reading rail and section parking geometry to the shipping page'
   expect(shell).toContain(`--page-rail-gutter: ${PRIVACY_LAYOUT.railGap}px;`);
   expect(Number.parseFloat(scale.space6)).toBe(PRIVACY_LAYOUT.stickyTop);
   expect(policy).toContain(`--section-park: ${PRIVACY_LAYOUT.compactPark}px;`);
+});
+
+it('records a reading jump as a reversible fragment while preserving the held page history marker', () => {
+  history.replaceState({ held: 'settings' }, '', '/changelog');
+  const length = history.length;
+  visitInformationFragment('release-1-0-0');
+  expect(location.hash).toBe('#release-1-0-0');
+  expect(informationFragmentAtLaunch()).toBe('release-1-0-0');
+  expect(history.state).toEqual({ held: 'settings' });
+  expect(history.length).toBe(length + 1);
+  visitInformationFragment('release-1-0-0');
+  expect(history.length).toBe(length + 1);
 });

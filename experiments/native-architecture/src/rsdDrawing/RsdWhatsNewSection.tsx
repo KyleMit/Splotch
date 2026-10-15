@@ -76,7 +76,7 @@ const styles = css.create({
 });
 
 // Consecutive list items share one list; each paragraph stands alone.
-function blockRuns(blocks: readonly ReleaseBlock[]) {
+export function releaseBlockRuns(blocks: readonly ReleaseBlock[]) {
   const runs: { kind: ReleaseBlock['kind']; texts: string[] }[] = [];
   for (const { kind, text } of blocks) {
     const last = runs.at(-1);
@@ -86,7 +86,7 @@ function blockRuns(blocks: readonly ReleaseBlock[]) {
   return runs;
 }
 
-export function RsdReleaseBlocks({
+function RsdReleaseBlocks({
   blocks,
   fontSizePx = NOTES_FONT_PX,
   lineHeight = ITEM_LINE_HEIGHT,
@@ -96,7 +96,7 @@ export function RsdReleaseBlocks({
   lineHeight?: number;
 }) {
   const theme = useDrawingTheme();
-  return blockRuns(blocks).map((run, index) =>
+  return releaseBlockRuns(blocks).map((run, index) =>
     run.kind === 'item' ? (
       <RsdList
         key={index}

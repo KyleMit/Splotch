@@ -1,3 +1,4 @@
+export const INFORMATION_TOP_ID = 'top';
 export const APP_PAGE_PATHS = {
   drawing: '/',
   privacy: '/privacy',

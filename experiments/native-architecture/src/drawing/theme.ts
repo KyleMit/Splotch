@@ -1,6 +1,10 @@
 // The candidate import boundary excludes shipping web source; native-drawing-tokens.test.mjs pins this projection.
 export const DRAWING_THEME = {
   surface: '#ffffff',
+  surface2: '#f8f8f8',
+  tapeStrength: '100%',
+  tapeInk: '#333',
+  squiggleStrength: '100%',
   surfaceHover: '#f5f5f5',
   border: '#e0e0e0',
   borderWarm: '#ddd6cc',
@@ -35,6 +39,10 @@ export const DRAWING_THEMES: Record<PaperTheme, DrawingTheme> = {
   light: DRAWING_THEME,
   dark: {
     surface: '#23232b',
+    surface2: '#2d2d37',
+    tapeStrength: '45%',
+    tapeInk: '#f4f1ea',
+    squiggleStrength: '70%',
     surfaceHover: '#33333e',
     border: '#3d3d49',
     borderWarm: '#3d3d49',

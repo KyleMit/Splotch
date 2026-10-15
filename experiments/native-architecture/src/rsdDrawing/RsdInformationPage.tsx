@@ -4,6 +4,7 @@ import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-c
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
+import { visitInformationFragment } from '../platform/informationFragment';
 import { useDialogBack } from '../platform/BrowserBack';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { AppPage } from '../information/appPages';
@@ -64,7 +65,9 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
   useDialogBack(true, () => openAppPage('drawing'));
   const onLink = (href: string) => {
     if (href.startsWith('#')) {
-      reading.jump(href.slice(1));
+      const id = href.slice(1);
+      visitInformationFragment(id);
+      reading.jump(id);
       return;
     }
     if (href === '/feedback') {
@@ -103,7 +106,11 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
             scrollY={reading.offset}
           />
         ) : page === 'changelog' ? (
-          <RsdReleaseHistory />
+          <RsdReleaseHistory
+            scrollY={reading.offset}
+            onSectionLayout={reading.onSectionLayout}
+            onLink={onLink}
+          />
         ) : (
           <RsdFeedbackSection owner={feedback.owner} />
         )}
@@ -152,6 +159,7 @@ export function RsdInformationPage({
     <DrawingAppearanceProvider preference={product.state?.settings?.appearance ?? bootAppearance()}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <PageContent
+          key={page}
           page={page}
           product={product}
           drawingVisited={drawingVisited}

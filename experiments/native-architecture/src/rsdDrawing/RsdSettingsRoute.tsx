@@ -121,3 +121,4 @@ export function RsdSettingsRoute({
 }
 
 export { RsdInformationPage } from './RsdInformationPage';
+export { RsdNotFoundPage } from './RsdNotFoundPage';

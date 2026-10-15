@@ -1,3 +1,4 @@
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { caller, records, host, mount, checkedSwitch } from './rsd-native-selection-host.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { hubSessions, sectionVisits } from './rsd-native-settings-hub-mocks.mjs';

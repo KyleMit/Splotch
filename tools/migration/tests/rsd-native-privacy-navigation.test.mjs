@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { PAGE_CONTENTS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPageContents.tsx';
 import { PRIVACY_LINK_GEOMETRY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyHeading.tsx';
 import { scale } from '../../../web/src/lib/design/tokens.ts';
 import { RsdPrivacyContent } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyContent.tsx';
@@ -67,24 +68,67 @@ it('pins the desktop contents beside the reading column and tracks the section c
   expect(props('privacy-contents-rail').style.transform).toEqual([{ translateY: 1600 }]);
 });
 
-it('keeps compact contents as the existing closed disclosure with the same section jumps', async () => {
+it('keeps compact contents closed, collapses before measuring a picked jump, and pins its readout while scrolling', async () => {
   records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
   const jump = vi.fn();
   await mount(content(0, jump));
   expect(host.querySelector('[data-testid="privacy-contents-rail"]')).toBeNull();
-  const disclosure = [...host.querySelectorAll('button')].find((node) =>
-    node.textContent.startsWith('8 sections')
-  );
+  const disclosure = host.querySelector('[aria-label="Privacy policy contents, 8 sections"]');
   expect(
     records.props.findLast((entry) => entry.accessibilityState?.expanded !== undefined)
       .accessibilityState.expanded
   ).toBe(false);
-  expect(disclosure.textContent).toContain('8 sections');
+  expect(disclosure.textContent).toContain('Contents');
+  expect(disclosure.textContent).toContain('8');
+  expect(disclosure.textContent).toContain('sections');
   await act(async () => disclosure.click());
   const nav = host.querySelector('[aria-label="Privacy policy contents"]');
-  expect(nav.querySelectorAll('[role="link"]')).toHaveLength(8);
-  await act(async () => nav.querySelectorAll('[role="link"]')[5].click());
+  expect(nav.querySelectorAll('[data-testid="sidebar-row"]')).toHaveLength(SECTIONS.length);
+  await act(async () => nav.querySelectorAll('[data-testid="sidebar-row"]')[5].click());
+  expect(host.querySelector('[aria-label="Privacy policy contents"]')).toBeNull();
+  expect(jump).not.toHaveBeenCalled();
+  await act(async () => {
+    layout('privacy-details', 400, 2000);
+    layout('page-contents-disclosure', 300, 86);
+    SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
+  });
   expect(jump).toHaveBeenCalledWith('#hosting');
+  await act(async () => root.render(content(700, jump)));
+  expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 400 }]);
+  expect(
+    host.querySelector('[aria-label="Privacy policy contents, Making an AI picture"]')
+  ).not.toBeNull();
+});
+
+it('renders the shipping metadata row and compact contents geometry', async () => {
+  const policy = readFileSync(
+    join(import.meta.dirname, '../../../web/src/routes/privacy/+page.svelte'),
+    'utf8'
+  );
+  const toc = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/nav/TocDisclosure.svelte'),
+    'utf8'
+  );
+  expect(policy).toContain('gap: 10px;');
+  expect(policy).toContain('margin: calc(-1 * var(--space-4)) 0 var(--space-6);');
+  expect(toc).toContain(`--toc-row-height: ${PAGE_CONTENTS.row}px;`);
+  expect(toc).toContain(`--toc-shell-border-width: ${PAGE_CONTENTS.border}px;`);
+  expect(toc).toContain(`--toc-panel-min: ${PAGE_CONTENTS.panelMin}px;`);
+  expect(toc).toContain(`width: ${PAGE_CONTENTS.count}px;`);
+  expect(toc).toContain(`height: ${PAGE_CONTENTS.mark}px;`);
+  await mount(content(0));
+  const meta = records.props.findLast((entry) => entry.testID === 'privacy-updated');
+  expect(meta.style).toMatchObject({
+    gap: 10,
+    marginTop: -Number.parseFloat(scale.space4),
+    marginBottom: Number.parseFloat(scale.space6),
+  });
+  const shell = records.props.findLast((entry) => entry.testID === 'page-contents-shell');
+  expect(shell.style).toMatchObject({
+    borderWidth: 2,
+    borderRadius: Number.parseFloat(scale.radiusMd),
+  });
+  expect(host.textContent).toContain(privacy.native.updated);
 });
 
 it('copies a canonical section link, updates the fragment and clears its visible and spoken confirmation', async () => {

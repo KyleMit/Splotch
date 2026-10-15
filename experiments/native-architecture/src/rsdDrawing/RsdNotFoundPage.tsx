@@ -164,6 +164,7 @@ const styles = css.create({
     color: colors.textStrong,
     fontSize,
     lineHeight: H1_LINE_HEIGHT,
+    outlineWidth: 0,
     letterSpacing: fontSize * H1_TRACKING_EM,
   }),
   lede: (fontSize: number) => ({

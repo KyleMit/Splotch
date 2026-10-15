@@ -45,6 +45,10 @@ it('renders every shipping privacy paragraph and gates only the links that leave
 it('renders the complete bundled release history, newest first', async () => {
   useCaller();
   await mount(createElement(RsdDrawingScreen, { page: 'changelog' }));
+  const older = [...host.querySelectorAll('button')].find((node) =>
+    node.textContent.includes('older releases')
+  );
+  await act(async () => older.click());
   const headings = [...host.querySelectorAll('[role="heading"]')].map((node) => node.textContent);
   expect(headings.filter((title) => title.startsWith('Version '))).toEqual(
     RELEASE_NOTES.map(({ version }) => `Version ${version}`)

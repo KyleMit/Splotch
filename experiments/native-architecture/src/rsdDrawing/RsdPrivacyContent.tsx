@@ -1,7 +1,14 @@
 import { useRef, useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
+import { Svg, Path } from '../platform/svg';
+import { blobPath } from './blob';
 import { css, html } from 'react-strict-dom';
-import { HIGHLIGHTS, SECTIONS, SPY_LINE_PX } from '../../../../web/src/routes/privacy/contents';
+import {
+  HIGHLIGHTS,
+  SECTIONS,
+  SPY_LINE_PX,
+  type SectionId,
+} from '../../../../web/src/routes/privacy/contents';
 import { paletteHex } from '../drawing/palette';
 import type privacy from '../information/privacy.generated.json';
 import { RsdList } from './RsdList';
@@ -12,15 +19,18 @@ import { usePrivacySectionLinks } from './usePrivacySectionLinks';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
-import { RsdDisclosure } from './RsdDisclosure';
+import { RsdPageContents } from './RsdPageContents';
 import { RsdRuleLabel } from './RsdRuleLabel';
-import { RsdTextLink } from './RsdTextLink';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
 
 type Policy = typeof privacy.native;
 type Block = Policy['sections'][number]['blocks'][number];
 type Span = { text: string; href?: string; strong?: boolean; italic?: boolean };
+const UPDATED_MARK_PX = 10;
+const UPDATED_TOP_PULL_PX = 16;
+const UPDATED_LINE_HEIGHT = 1.62;
+const UPDATED_MARK_PATH = blobPath('radiusBlob1', UPDATED_MARK_PX, UPDATED_MARK_PX);
 const POLICY_LINE_HEIGHT = 1.6;
 const POLICY_FONT_PX = 16;
 const POLICY_LIST_INDENT_EM = 1.2;
@@ -43,7 +53,21 @@ const styles = css.create({
     color: colors.text,
     lineHeight: POLICY_LINE_HEIGHT,
   },
-  muted: { color: colors.textSoft },
+  updated: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: UPDATED_MARK_PX,
+    marginTop: -UPDATED_TOP_PULL_PX,
+    marginBottom: dimensions.space6,
+  },
+  updatedText: {
+    margin: 0,
+    color: colors.text,
+    fontSize: dimensions.fontSizeSm,
+    lineHeight: UPDATED_LINE_HEIGHT,
+  },
+  updatedDot: { flexShrink: 0, width: UPDATED_MARK_PX, height: UPDATED_MARK_PX },
   link: { color: colors.brandText, textDecorationLine: 'underline', cursor: 'pointer' },
   italic: { fontStyle: 'italic' },
   summary: {
@@ -76,8 +100,6 @@ const styles = css.create({
     backgroundColor,
   }),
   flush: { marginBottom: 0, flexShrink: 1 },
-  disclosure: { marginTop: dimensions.space5, marginBottom: dimensions.space4 },
-  disclosureSummary: { padding: dimensions.space3 },
 });
 
 function PolicySpans({
@@ -168,7 +190,16 @@ type PrivacyContentProps = {
 function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyContentProps) {
   const wide = useWindowDimensions().width > PAGE_FRAMED_MAX_WIDTH_PX;
   const links = usePrivacySectionLinks(onLink);
-  const [geometry, setGeometry] = useState({ top: 0, height: 0, railHeight: 0 });
+  const [geometry, setGeometry] = useState({
+    top: 0,
+    height: 0,
+    railHeight: 0,
+    contentsTop: 0,
+    contentsHeight: 0,
+    measured: false,
+  });
+  const [contentsOpen, setContentsOpen] = useState(false);
+  const pendingJump = useRef<SectionId | null>(null);
   const positions = useRef<Record<string, number>>({});
   const top = useRef(0);
   const active =
@@ -185,23 +216,33 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
   return (
     <>
       {!wide ? (
-        <RsdDisclosure
-          summary={`${policy.sections.length} sections`}
-          style={styles.disclosure}
-          summaryStyle={styles.disclosureSummary}
-        >
-          <html.nav aria-label="Privacy policy contents">
-            {policy.sections.map((section) => (
-              <RsdTextLink
-                key={section.id}
-                onPress={() => onLink(`#${section.id}`)}
-                style={styles.paragraph}
-              >
-                {section.title}
-              </RsdTextLink>
-            ))}
-          </html.nav>
-        </RsdDisclosure>
+        <RsdPageContents
+          items={SECTIONS}
+          label="Privacy policy contents"
+          noun="sections"
+          active={active}
+          entered={geometry.measured && scrollY + SPY_LINE_PX >= geometry.top}
+          open={contentsOpen}
+          offset={Math.max(
+            0,
+            Math.min(
+              scrollY - geometry.contentsTop,
+              geometry.top + geometry.height - geometry.contentsTop - geometry.contentsHeight
+            )
+          )}
+          onToggle={() => setContentsOpen((value) => !value)}
+          onSelect={(id) => {
+            pendingJump.current = id;
+            setContentsOpen(false);
+          }}
+          onLayout={({ nativeEvent }) =>
+            setGeometry((old) => ({
+              ...old,
+              contentsTop: nativeEvent.layout.y,
+              contentsHeight: nativeEvent.layout.height,
+            }))
+          }
+        />
       ) : null}
       <RsdVisuallyHidden live>{links.announcement}</RsdVisuallyHidden>
       <View
@@ -210,9 +251,13 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
         onLayout={({ nativeEvent }) => {
           const { y, height } = nativeEvent.layout;
           top.current = y;
-          setGeometry((old) => ({ ...old, top: y, height }));
+          setGeometry((old) => ({ ...old, top: y, height, measured: true }));
           for (const [id, offset] of Object.entries(positions.current))
             onSectionLayout(id, y + offset);
+          if (pendingJump.current) {
+            onLink(`#${pendingJump.current}`);
+            pendingJump.current = null;
+          }
         }}
       >
         {wide ? (
@@ -270,7 +315,14 @@ export function RsdPrivacyContent(props: PrivacyContentProps) {
   const { policy } = props;
   return (
     <>
-      <html.p style={[styles.paragraph, styles.muted]}>{policy.updated}</html.p>
+      <html.div data-testid="privacy-updated" style={styles.updated}>
+        <html.div aria-hidden data-testid="privacy-updated-dot" style={styles.updatedDot}>
+          <Svg width={UPDATED_MARK_PX} height={UPDATED_MARK_PX}>
+            <Path d={UPDATED_MARK_PATH} fill={paletteHex('Purple')} />
+          </Svg>
+        </html.div>
+        <html.p style={[controlStyles.semiboldText, styles.updatedText]}>{policy.updated}</html.p>
+      </html.div>
       <RsdRuleLabel>The short version</RsdRuleLabel>
       <html.div style={styles.summary}>
         {HIGHLIGHTS.map(({ label, lead, body }, index) => (
