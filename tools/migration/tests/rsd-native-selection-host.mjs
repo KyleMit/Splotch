@@ -163,16 +163,7 @@ vi.mock(
     };
   }
 );
-vi.mock(
-  '../../../experiments/native-architecture/src/useDrawingMenu.ts',
-  async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-      useDrawingMenu: (screen) =>
-        caller.realScreen ? actual.useDrawingMenu(screen) : (caller.menu ?? { open: false }),
-    };
-  }
-);
+
 vi.mock('../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx', async () => {
   const React = await import('react');
   const { strokeStyle } =

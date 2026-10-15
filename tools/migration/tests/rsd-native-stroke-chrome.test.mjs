@@ -95,3 +95,29 @@ it('keeps the landscape phone Color Menu shut through a stroke and lets it close
   await act(async () => colors().click());
   expect(menu()).toBeNull();
 });
+
+it('defers actual drawing-audio failure and recovery banners until the stroke lifts', async () => {
+  const loads = [];
+  caller.drawingLoop = () => new Promise((resolve, reject) => loads.push({ resolve, reject }));
+  try {
+    await mountToolbar(toolbarScreen(), { soundEnabled: true });
+    const audio = caller.product.sound.owner.audio;
+    await setDrawing(true);
+    await act(async () => audio.begin({ x: 10, y: 20 }, 100));
+    await act(async () => loads[0].reject(new Error('Audio load failed')));
+    expect(host.textContent).not.toContain('Drawing sound is unavailable');
+    await setDrawing(false);
+    expect(host.textContent).toContain('Drawing sound is unavailable');
+    await setDrawing(true);
+    await act(async () => audio.begin({ x: 10, y: 20 }, 200));
+    await act(async () =>
+      loads[1].resolve({ start() {}, stop() {}, setVolume() {}, dispose() {} })
+    );
+    await act(async () => audio.sample({ x: 60, y: 20 }, 300));
+    expect(host.textContent).toContain('Drawing sound is unavailable');
+    await setDrawing(false);
+    expect(host.textContent).not.toContain('Drawing sound is unavailable');
+  } finally {
+    caller.drawingLoop = null;
+  }
+});
