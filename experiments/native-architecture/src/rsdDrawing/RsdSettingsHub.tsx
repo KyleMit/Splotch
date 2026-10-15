@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+import { sectionsSeen } from '../platform/sectionsSeen';
 import { useColorScheme } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { dimensions } from './tokens.css';
@@ -12,7 +14,6 @@ import {
   type NativeSettingsSectionId,
   type SectionSummaryContext,
 } from '../settings/settingsSections';
-import { whatsNewUnseen } from '../settings/whatsNewStamp';
 import { quickToggleAppearance, type AppearancePreference } from '../settings/appearance';
 
 const SESSION_COUNT_DESCRIPTION = 'Settings session count';
@@ -65,16 +66,17 @@ export function useHubToggles({
   };
 }
 
-function sectionUnseen(id: NativeSettingsSectionId, context: SectionSummaryContext) {
-  return id === 'whatsnew' && whatsNewUnseen(context.settings.whatsNewSeen);
-}
+const NO_SUBSCRIPTION = () => () => {};
 
-// Whether a section carries its activity dot: content changed since the parent last opened it,
-// from the sixth session on. The hub rows and the wide sidebar rows both ask this.
-export function useSectionActivity(context: SectionSummaryContext) {
+export function useSectionActivity() {
   const sessions = useLazyValue(settingsSessions, (count) => count, SESSION_COUNT_DESCRIPTION);
-  const dots = activityDotsShown(sessions);
-  return (id: NativeSettingsSectionId) => dots && sectionUnseen(id, context);
+  const seen = useLazyValue(sectionsSeen, (owner) => owner, 'Settings section stamps');
+  useSyncExternalStore(seen?.subscribe ?? NO_SUBSCRIPTION, () => seen?.snapshot());
+  return {
+    unseen: (id: NativeSettingsSectionId) =>
+      activityDotsShown(sessions) && (seen?.unseen(id) ?? false),
+    markSeen: (id: NativeSettingsSectionId) => seen?.markSeen(id),
+  };
 }
 
 // The shipping phone hub (HubList.svelte): one tile per section with its icon and live status, a

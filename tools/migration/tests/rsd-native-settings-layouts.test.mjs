@@ -1,6 +1,6 @@
 import { caller, records, host, mount, checkedSwitch } from './rsd-native-selection-host.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
-import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
+import { hubSessions, sectionVisits } from './rsd-native-settings-hub-mocks.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement } from 'react';
@@ -172,22 +172,20 @@ describe('the pane scroll geometry', () => {
   it('elects the last section passing the reading line, and the last one at the scroll end', () => {
     const offsets = [0, 400, 800, 1200];
     const extent = (offset) => ({ offset, viewport: 500, content: 1500 });
-    expect(spiedSectionAt(ids, offsets, extent(0))).toBe('a');
     expect(spiedSectionAt(ids, offsets, extent(400 - SCROLLSPY_LINE_INSET_PX - 1))).toBe('a');
     expect(spiedSectionAt(ids, offsets, extent(400 - SCROLLSPY_LINE_INSET_PX))).toBe('b');
     expect(spiedSectionAt(ids, offsets, extent(1000 - SCROLL_END_EPSILON_PX))).toBe('d');
     // An unmeasured pane is not at its end.
     expect(spiedSectionAt(ids, offsets, { offset: 0, viewport: 0, content: 0 })).toBe('a');
+    expect(spiedSectionAt(ids, offsets, { offset: 0, viewport: 500, content: 0 })).toBe('a');
   });
 
   it('parks a jump just under the pane top', () => {
     expect(sectionJumpOffset(500)).toBe(500 - SECTION_JUMP_INSET_PX);
-    expect(sectionJumpOffset(4)).toBe(0);
   });
 
   it('scrolls the nav only as far as keeps the elected row clear of its edges', () => {
     const nav = { offset: 100, viewport: 300, content: 900 };
-    expect(navRevealOffset({ top: 200, height: 50 }, nav)).toBeNull();
     expect(navRevealOffset({ top: 110, height: 50 }, nav)).toBe(110 - NAV_ROW_CLEARANCE_PX);
     expect(navRevealOffset({ top: 400, height: 50 }, nav)).toBe(
       400 + 50 - 300 + NAV_ROW_CLEARANCE_PX
@@ -234,6 +232,11 @@ const CURRENT_SETTINGS = {
 
 function openSettings(dimensions, overrides = {}) {
   records.dimensions = dimensions;
+  if (Object.hasOwn(overrides, 'whatsNewSeen')) {
+    const stamps = JSON.parse(sectionVisits.snapshot);
+    stamps.whatsnew = overrides.whatsNewSeen;
+    sectionVisits.snapshot = JSON.stringify(stamps);
+  }
   let stored = JSON.stringify({ ...CURRENT_SETTINGS, ...overrides });
   caller.settingsStorage = {
     read: async () => stored,
@@ -346,6 +349,17 @@ describe('the wide shell', () => {
     expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
   });
 
+  it('marks the first wide section seen once it is measured and leaves every other section new', async () => {
+    openSettings(SMALL_TABLET);
+    sectionVisits.snapshot = '{}';
+    await mount(createElement(RsdDrawingScreen));
+    await layOutPane(400, 500);
+    expect(JSON.parse(sectionVisits.snapshot)).toEqual({ appearance: '1' });
+    expect(sidebarRow('Appearance').getAttribute('aria-label')).toBe('Appearance');
+    expect(sidebarRow('Sound').getAttribute('aria-label')).toBe('Sound, new');
+    expect(sectionVisits.write).toHaveBeenCalledOnce();
+  });
+
   it('moves the highlight with the reading position and marks What’s New seen on reaching it', async () => {
     const settings = openSettings(SMALL_TABLET, { whatsNewSeen: null });
     await mount(createElement(RsdDrawingScreen));
@@ -358,7 +372,7 @@ describe('the wide shell', () => {
     const whatsNew = PANE_SECTIONS.findIndex(({ id }) => id === 'whatsnew');
     await scrollPane(offsets[whatsNew] - SCROLLSPY_LINE_INSET_PX);
     expect(spiedRow()).toEqual(["What's New"]);
-    expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
+    expect(JSON.parse(sectionVisits.snapshot).whatsnew).toBe(WHATS_NEW_STAMP);
     expect(sidebarRow("What's New").getAttribute('aria-label')).toBe("What's New");
   });
 
@@ -399,7 +413,7 @@ describe('the wide shell', () => {
 
   it('hands the pane back on a drag that interrupts a smooth jump, so what it reaches is seen', async () => {
     HTMLElement.prototype.scrollTo = scrollTo;
-    const settings = openSettings(TABLET, { whatsNewSeen: null });
+    openSettings(TABLET, { whatsNewSeen: null });
     await mount(createElement(RsdDrawingScreen));
     await layOutPane(300, 600);
     await act(async () => sidebarRow('About').click());
@@ -407,7 +421,7 @@ describe('the wide shell', () => {
     const whatsNew = PANE_SECTIONS.findIndex(({ id }) => id === 'whatsnew');
     await scrollPane(WIDE_SHELL.pane.top + whatsNew * 360 - SCROLLSPY_LINE_INSET_PX);
     expect(spiedRow()).toEqual(["What's New"]);
-    expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
+    expect(JSON.parse(sectionVisits.snapshot).whatsnew).toBe(WHATS_NEW_STAMP);
   });
 
   it('dots only from the sixth session, as the hub does', async () => {

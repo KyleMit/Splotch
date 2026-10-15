@@ -218,6 +218,17 @@ function PaneSection({
   );
 }
 
+function useMarkSeen(onSeen: (id: NativeSettingsSectionId) => void) {
+  const seenInitial = useRef(false);
+  return {
+    seenInitial,
+    markSeen(id: NativeSettingsSectionId) {
+      seenInitial.current = true;
+      onSeen(id);
+    },
+  };
+}
+
 // The shipping tablet Settings (WideShell.svelte): a table of contents beside one continuously
 // scrolling pane that stacks every section. The table of contents marks where the reading
 // position is rather than a page, and a row jumps the pane to its section.
@@ -251,6 +262,7 @@ export function RsdSettingsWide({
   const paneIds = sections.map((section) => section.id);
   const [spied, setSpied] = useState<NativeSettingsSectionId>(paneIds[0]);
   const spiedNow = useRef(spied);
+  const { seenInitial, markSeen } = useMarkSeen(onSeen);
   const pane = useRef<ScrollView>(null);
   const paneExtent = useRef<ScrollExtent>(AT_REST);
   const sectionHeights = useHeights();
@@ -273,7 +285,7 @@ export function RsdSettingsWide({
     landed.current = landing;
     if (lockedJump.current === landing) return;
     jumpTarget.current = null;
-    onSeen(landing);
+    markSeen(landing);
     pane.current?.scrollTo({
       y: sectionJumpOffset(stacked[at]),
       animated: false,
@@ -287,10 +299,12 @@ export function RsdSettingsWide({
     const next = spiedSectionAt(paneIds, stacked, paneExtent.current);
     const inFlight = jumpTarget.current;
     if (next === inFlight || next === paneIds[paneIds.length - 1]) jumpTarget.current = null;
-    if (next === spiedNow.current) return;
-    spiedNow.current = next;
-    setSpied(next);
-    if (!inFlight) onSeen(next);
+    const changed = next !== spiedNow.current;
+    if (changed) {
+      spiedNow.current = next;
+      setSpied(next);
+    }
+    if (!inFlight && (changed || !seenInitial.current)) markSeen(next);
   };
 
   const jump = (id: NativeSettingsSectionId) => {
@@ -301,7 +315,7 @@ export function RsdSettingsWide({
     }
     const stacked = offsets();
     if (!stacked) return;
-    onSeen(id);
+    markSeen(id);
     jumpTarget.current = reduced ? null : id;
     pane.current?.scrollTo({
       y: sectionJumpOffset(stacked[paneIds.indexOf(id)]),

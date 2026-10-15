@@ -112,7 +112,7 @@ function pageLabel(page: SettingsPage) {
 // returned to. A tablet shows the sections beside a table of contents, and a landscape phone the
 // quick toggles only. A rotation re-picks the shell live.
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
-  const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
+  const { settings, notice, onRetry, onClose, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
   const shell = settingsShell(useWindowDimensions());
   const { unlocked } = props.parentCenter;
@@ -129,13 +129,16 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     downloadedBooks: props.downloadedBooks,
     ai: props.ai.state,
   };
-  const unseen = useSectionActivity(context);
+  const { unseen, markSeen } = useSectionActivity();
+  useEffect(() => {
+    if (visible && shell === 'phone' && page.kind === 'section') markSeen(page.section);
+  }, [visible, shell, page, markSeen]);
   const openSection = (section: NativeSettingsSectionId) => {
     if (section === 'parentCenter' && !unlocked) {
       props.parentCenter.onUnlock();
       return;
     }
-    if (section === 'whatsnew') onWhatsNewSeen();
+    markSeen(section);
     setPage({ kind: 'section', section });
   };
   const back = () => {
@@ -188,7 +191,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
             <SettingsSection {...props} section={section} busy={busy} wide />
           )}
           onSeen={(section) => {
-            if (section === 'whatsnew') onWhatsNewSeen();
+            markSeen(section);
           }}
           locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
           landing={unlocked ? 'parentCenter' : null}

@@ -7,7 +7,7 @@ import {
   checkedSwitch,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
-import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
+import { hubSessions, sectionVisits } from './rsd-native-settings-hub-mocks.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import {
   button,
@@ -86,6 +86,30 @@ it('lists every shipping section in order with its icon tile and shipping status
   expect(hubRows()).toEqual([]);
   await click('Back');
   expect(hubRows()).toHaveLength(listed.length);
+});
+
+it('dots every unseen section and clears each dot when that section is visited', async () => {
+  storedSettings({
+    parentPolicies: {
+      ai: 'never',
+      imageReport: 'never',
+      externalLinks: 'never',
+      feedback: 'never',
+      parentCenter: 'never',
+    },
+  });
+  sectionVisits.snapshot = '{}';
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  expect(dottedRows()).toHaveLength(NATIVE_SETTINGS_SECTIONS.length);
+  for (const { id, label, contentStamp } of NATIVE_SETTINGS_SECTIONS) {
+    await act(async () => hubRow(label).click());
+    expect(JSON.parse(sectionVisits.snapshot)[id], id).toBe(contentStamp);
+    await click('Back');
+    expect(hubRow(label).getAttribute('aria-label'), id).not.toMatch(/, new$/);
+  }
+  expect(dottedRows()).toEqual([]);
+  expect(sectionVisits.write).toHaveBeenCalledTimes(NATIVE_SETTINGS_SECTIONS.length);
 });
 
 it('answers Night Mode and Sound with switches on their hub rows and no others', async () => {
@@ -243,12 +267,13 @@ it.each([
     expect(host.textContent).toContain(current.sections[0].blocks[0].text);
     for (const release of earlier) expect(host.textContent).not.toContain(release.dateLabel);
     expect(host.textContent).toContain(WHATS_NEW_COPY.allReleases);
-    expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
+    expect(JSON.parse(sectionVisits.snapshot).whatsnew).toBe(WHATS_NEW_STAMP);
     await click('Back');
     expect(dottedRows()).toEqual([]);
-    expect(settings.storage.write).toHaveBeenCalledOnce();
+    expect(sectionVisits.write).toHaveBeenCalledOnce();
+    expect(settings.storage.write).not.toHaveBeenCalled();
     await openSettingsSection(WHATS_NEW);
-    expect(settings.storage.write).toHaveBeenCalledOnce();
+    expect(sectionVisits.write).toHaveBeenCalledOnce();
   }
 );
 
@@ -295,11 +320,12 @@ it("keeps the What's New stamp when the section opens while another choice is st
   expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
   expect(settings.storage.write).toHaveBeenCalledOnce();
   await act(async () => finishWrite());
-  expect(settings.storage.write).toHaveBeenCalledTimes(2);
-  expect(settings.stored()).toMatchObject({
+  expect(settings.storage.write).toHaveBeenCalledOnce();
+  expect(caller.product.sound.settings).toMatchObject({
     reduceMotion: 'reduce',
-    whatsNewSeen: WHATS_NEW_STAMP,
+    whatsNewSeen: null,
   });
+  expect(JSON.parse(sectionVisits.snapshot).whatsnew).toBe(WHATS_NEW_STAMP);
   await click('Back');
   expect(dottedRows()).toEqual([]);
 });
