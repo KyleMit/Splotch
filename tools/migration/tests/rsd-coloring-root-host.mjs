@@ -80,7 +80,12 @@ export function paperPort(React, strokeStyle, caller) {
         lockInput: () => () => {},
         refreshGeometry() {},
         // A save's photo library copy; what the library does with it is the test's port.
-        exportPng: async () => caller.exportPng?.() ?? 'cmVhbC1wbmc=',
+        exportPng: async (drawing) => caller.exportPng?.(drawing) ?? 'cmVhbC1wbmc=',
+        captureInk: async (drawing) => {
+          if (!caller.captureInk)
+            throw new Error('Pixel observation is outside this caller fixture.');
+          return caller.captureInk(drawing);
+        },
       }),
       []
     );

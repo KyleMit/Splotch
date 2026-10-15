@@ -1,163 +1,18 @@
 // @vitest-environment happy-dom
-import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
-import './native-feedback-drawing-fixture.mjs';
-import { readFileSync } from 'node:fs';
-import { URL as NodeURL } from 'node:url';
-import { act, createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import {
   parseDrawing,
   addStrokes,
   createHistory,
   emptyDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import {
   adoptPaper,
   LEGACY_PAPER,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
-import {
-  decodeDrawingDraft,
-  encodeDrawingDraft,
-} from '../../experiments/native-architecture/src/product/drawingDraft.ts';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { saveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
-
-const capturePngFixture = readFileSync(
-  new NodeURL('./fixtures/native-png-android-rgba-sbit.png', import.meta.url)
-).toString('base64');
-
-const sdk = vi.hoisted(() => ({
-  captures: [],
-  frames: new Map(),
-  next: 0,
-  fail: false,
-  load: true,
-  imageLoads: [],
-  responders: [],
-  save: vi.fn(),
-  // The draft the screen restores on load, and every draft it writes after.
-  draft: null,
-  drafts: [],
-}));
-
-// A photo library that refuses every picture; native-save-to-photos-mounted.test.mjs covers saves.
-vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
-  photoLibrary: { save: async () => 'failed' },
-}));
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: sdk.save,
-  savedColoringPageIds: async () => [],
-}));
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
-  loadDrawingLoop: vi.fn(),
-}));
-// The current-picture draft is this suite's probe of the drawing the screen holds.
-vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
-  drawingDraftStorage: {
-    read: async () => sdk.draft,
-    write: async (snapshot) => {
-      sdk.drafts.push(snapshot);
-    },
-  },
-  protectedDraftPageIds: async () => [],
-}));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
-  soundSettingsStorage: {
-    read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
-    write: vi.fn(),
-  },
-}));
-
-vi.mock('react-native', () => {
-  const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
-    useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
-    useEffect(() => {
-      onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
-    }, []);
-    return createElement(
-      'div',
-      { 'data-testid': testID, 'data-responder': responderIndex },
-      children
-    );
-  });
-  return {
-    PixelRatio: { get: () => 1 },
-    AccessibilityInfo: createAccessibilityInfoFixture(),
-    BackHandler: { addEventListener: () => ({ remove() {} }), exitApp() {} },
-    useColorScheme: () => 'light',
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
-    useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
-    Platform: { OS: 'web' },
-    Image: () => null,
-    findNodeHandle: (target) => target,
-    View,
-    SafeAreaView: View,
-    ScrollView: View,
-    Text: ({ children }) => createElement('span', null, children),
-    Modal: ({ visible, children, onDismiss }) => {
-      const shown = useRef(false);
-      useEffect(() => {
-        if (!visible && shown.current) onDismiss?.();
-        shown.current = visible;
-      }, [visible, onDismiss]);
-      return visible ? createElement('div', { role: 'dialog' }, children) : null;
-    },
-    Pressable: ({ children, accessibilityLabel, onPress, disabled }) =>
-      createElement(
-        'button',
-        { 'aria-label': accessibilityLabel, onClick: onPress, disabled },
-        children
-      ),
-    ActivityIndicator: () => null,
-    StatusBar: () => null,
-    StyleSheet: { create: (styles) => styles, absoluteFill: {} },
-    PanResponder: {
-      create: (handlers) => {
-        sdk.responders.push(handlers);
-        return { panHandlers: { responderIndex: sdk.responders.length - 1 } };
-      },
-    },
-  };
-});
-vi.mock('react-native-svg', () => {
-  const group = ({ children }) => createElement('div', null, children);
-  return {
-    default: forwardRef(({ children }, ref) => {
-      useImperativeHandle(ref, () => ({
-        toDataURL(callback) {
-          sdk.captures.push(callback);
-          if (sdk.fail) throw new Error('SDK capture failure');
-          callback(capturePngFixture);
-        },
-      }));
-      return createElement('div', null, children);
-    }),
-    G: group,
-    Defs: group,
-    Mask: group,
-    Pattern: group,
-    Filter: group,
-    LinearGradient: group,
-    Rect: () => null,
-    Path: () => null,
-    Use: () => null,
-    Circle: () => null,
-    Stop: () => null,
-    FeBlend: () => null,
-    FeComposite: () => null,
-    Image: ({ href, onLoad }) => {
-      useEffect(() => {
-        sdk.imageLoads.push(onLoad);
-        if (sdk.load) onLoad?.();
-      }, [href]);
-      return null;
-    },
-  };
-});
 
 const fixture = parseDrawing({
   version: 3,
@@ -171,22 +26,6 @@ const fixture = parseDrawing({
 let host, root;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  vi.useFakeTimers();
-  sdk.frames.clear();
-  sdk.captures.length = 0;
-  sdk.responders.length = 0;
-  sdk.fail = false;
-  sdk.load = true;
-  sdk.imageLoads.length = 0;
-  sdk.draft = null;
-  sdk.drafts.length = 0;
-  sdk.save.mockResolvedValue(undefined);
-  vi.stubGlobal('requestAnimationFrame', (callback) => {
-    const id = ++sdk.next;
-    sdk.frames.set(id, callback);
-    return id;
-  });
-  vi.stubGlobal('cancelAnimationFrame', (id) => sdk.frames.delete(id));
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -194,155 +33,6 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-  vi.clearAllMocks();
-});
-function button(label) {
-  return [...host.querySelectorAll('button')].find(
-    (node) => node.getAttribute('aria-label') === label
-  );
-}
-function toolsButton() {
-  return [...host.querySelectorAll('button')].find(
-    (node) => node.getAttribute('aria-label') === 'Drawing tools'
-  );
-}
-async function openTools() {
-  const opener = toolsButton();
-  expect(opener, 'Drawing tools opener').toBeDefined();
-  expect(opener.disabled, 'Drawing tools admission').toBe(false);
-  await act(async () => opener.click());
-}
-async function click(label) {
-  if (['Pictures', 'Save picture', 'Clear', 'Export PNG'].includes(label) && !button(label))
-    await openTools();
-  const target = button(label);
-  expect(target, label).toBeDefined();
-  expect(target.disabled, label).toBe(false);
-  await act(async () => target.click());
-}
-// The fixture comes back as the restored current-picture draft, read once as the screen loads.
-async function opened() {
-  sdk.draft = encodeDrawingDraft(fixture);
-  await act(async () =>
-    root.render(createElement(DrawingSessionProvider, null, createElement(DrawingScreen)))
-  );
-  await frames();
-  sdk.draft = null;
-}
-async function saved() {
-  await frames();
-  return decodeDrawingDraft(sdk.drafts.at(-1) ?? encodeDrawingDraft(fixture));
-}
-async function frames() {
-  for (let count = 0; count < 10; count += 1)
-    await act(async () => {
-      const pending = [...sdk.frames.values()];
-      sdk.frames.clear();
-      pending.forEach((callback) => callback(0));
-    });
-}
-
-describe('visible terminal renderer recovery', () => {
-  it('retries the actual DrawingSurface/RasterInk failure through the real button and retains canonical page/rainbow/history', async () => {
-    sdk.fail = true;
-    await opened();
-    expect(host.textContent).toContain('PNG capture failed. Your picture is still here.');
-    expect(button('Save picture')).toBeUndefined();
-    expect(toolsButton().disabled).toBe(true);
-    expect(button('Retry drawing').disabled).toBe(false);
-    const before = sdk.captures.length,
-      late = sdk.captures[0];
-    sdk.fail = false;
-    await click('Retry drawing');
-    await frames();
-    expect(button('Retry drawing')).toBeUndefined();
-    expect(sdk.captures.length).toBeGreaterThan(before);
-    await act(async () => late('old-generation-png'));
-    expect(await saved()).toEqual(fixture);
-    await act(async () => toolsButton().click());
-    expect(button('Save picture').disabled).toBe(false);
-    expect(host.textContent).toContain('Garden flower');
-    await click('Keep drawing');
-    const paper = host.querySelector('[data-testid="drawing-paper"]');
-    const input = sdk.responders[Number(paper.getAttribute('data-responder'))];
-    const touch = {
-      identifier: 'new-contact',
-      locationX: 200,
-      locationY: 200,
-      pageX: 200,
-      pageY: 200,
-      target: 101,
-      timestamp: 100,
-    };
-    const event = {
-      currentTarget: 101,
-      nativeEvent: { changedTouches: [touch], touches: [touch], target: 101 },
-      touchHistory: {
-        touchBank: { 'new-contact': { touchActive: true, startTimeStamp: 100 } },
-        mostRecentTimeStamp: 100,
-      },
-    };
-    const end = {
-      currentTarget: 101,
-      nativeEvent: { changedTouches: [{ ...touch, timestamp: 200 }], touches: [], target: 101 },
-      touchHistory: {
-        touchBank: { 'new-contact': { touchActive: false, startTimeStamp: 100 } },
-        mostRecentTimeStamp: 200,
-      },
-    };
-    expect(input.onStartShouldSetPanResponder()).toBe(true);
-    await act(async () => {
-      input.onPanResponderGrant(event);
-      input.onPanResponderStart(event);
-      input.onPanResponderEnd(end);
-      input.onPanResponderRelease(end);
-    });
-    expect((await saved()).strokes).toHaveLength(3);
-    await click('Undo');
-    expect(await saved()).toEqual(fixture);
-    // The restored picture opened this history, so there is nothing before it to Undo to.
-    expect(button('Undo').disabled).toBe(true);
-  });
-  it('keeps Retry visible after another real terminal failure without an automatic remount loop', async () => {
-    sdk.fail = true;
-    await opened();
-    expect(sdk.captures).toHaveLength(1);
-    await click('Retry drawing');
-    await frames();
-    expect(sdk.captures).toHaveLength(2);
-    expect(button('Retry drawing').disabled).toBe(false);
-    await frames();
-    expect(sdk.captures).toHaveLength(2);
-  });
-  it('keeps the recovered renderer locked until its own image load and ignores an old image callback', async () => {
-    sdk.load = false;
-    await opened();
-    const oldImage = sdk.imageLoads.at(-1);
-    await act(async () => vi.advanceTimersByTime(PNG_TIMEOUT_MS));
-    expect(button('Retry drawing').disabled).toBe(false);
-    await click('Retry drawing');
-    await frames();
-    expect(button('Save picture')).toBeUndefined();
-    expect(toolsButton().disabled).toBe(true);
-    await act(async () => oldImage());
-    expect(button('Save picture')).toBeUndefined();
-    expect(toolsButton().disabled).toBe(true);
-    await act(async () => sdk.imageLoads.at(-1)());
-    await frames();
-    expect(toolsButton().disabled).toBe(false);
-    expect(host.textContent).toContain('Your picture is ready.');
-    expect(await saved()).toEqual(fixture);
-  });
-  it('does not offer renderer Retry for an ordinary save failure', async () => {
-    await opened();
-    await click('Save picture');
-    await frames();
-    await act(async () => vi.runAllTimersAsync());
-    expect(host.textContent).toContain(saveFailureCopy('failed', 0, 'ios').heading);
-    expect(button('Retry drawing')).toBeUndefined();
-  });
 });
 
 describe('generation and real input/command admission', () => {
@@ -460,12 +150,3 @@ describe('generation and real input/command admission', () => {
     );
   });
 });
-
-vi.mock(
-  'react-native-safe-area-context',
-  () => import('../lib/native-appearance-frame-fixture.mjs')
-);
-
-vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
-  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
-);

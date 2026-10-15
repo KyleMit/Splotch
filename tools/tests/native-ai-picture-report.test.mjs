@@ -2,7 +2,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { URL as NodeURL } from 'node:url';
-import { files } from './native-drawing-screen-harness.mjs';
 import { createAiReportOwner } from '../../experiments/native-architecture/src/ai/reportOwner.ts';
 import {
   narrowReportReply,
@@ -64,7 +63,7 @@ beforeEach(() => {
     parent,
     vault,
     transport,
-    admit: files.aiAdmit,
+    admit: vi.fn(async () => {}),
     current: (target) => allowed && target.kind === 'picture' && target.uri === URI,
     publish: (next) => {
       state = next;
