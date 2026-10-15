@@ -193,7 +193,7 @@ export async function verifyWebAiState(state: WebAiState): Promise<void> {
       (await sha256Hex(new Uint8Array(upload).buffer)) !== receipt.inputDigest
     )
       invalidAiStorage();
-    await admitAiImage(upload, 'image/png');
+    await admitAiImage(upload, 'image/png', 'original');
     if (receipt.journal.result) {
       const bytes = resultAiBytes(receipt.journal.result.uri, receipt.journal.result.mime);
       if (

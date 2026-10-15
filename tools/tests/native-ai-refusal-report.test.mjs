@@ -188,23 +188,26 @@ it('suppresses sending after parent consent changes during credential readback',
   expect(state.phase).toBe('idle');
   expect(transport).not.toHaveBeenCalled();
 });
-it('keeps unknown sends consumed across close, duplicate refusal settlement and recreation', async () => {
+it('keeps failed refusal reports retryable after closing and checking again', async () => {
   await prepare();
   owner.requestRefusal(ID);
   releaseGate({ valid: () => true });
-  transport.mockResolvedValueOnce(response(200, { ok: true }));
+  transport.mockResolvedValueOnce(response(200, {}));
   await owner.send();
-  expect(state.phase).toBe('unknown');
+  expect(state.phase).toBe('error');
   owner.cancel();
   expect(owner.refuse(ID, TOKEN)).toBe(true);
   owner.requestRefusal(ID);
-  expect(state.phase).toBe('unavailable');
+  expect(state.phase).toBe('gating');
+  releaseGate({ valid: () => true });
+  await owner.send();
+  expect(state.phase).toBe('success');
   owner.dispose();
   owner = fixture();
   owner.requestRefusal(ID);
   await owner.send();
   expect(state.phase).toBe('unavailable');
-  expect(transport).toHaveBeenCalledOnce();
+  expect(transport).toHaveBeenCalledTimes(2);
 });
 
 it('suppresses late acknowledgement after close without making the refusal report reusable', async () => {

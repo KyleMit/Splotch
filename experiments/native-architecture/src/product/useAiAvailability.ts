@@ -9,9 +9,10 @@ import type { SoundSettingsState } from '../settings/soundSettingsCodec';
 // retryOnVisibleReturn does.
 export function useAiAvailability(
   owner: NativeAiOwner | null,
-  settings: Pick<SoundSettingsState, 'status' | 'aiEnabled'>
+  settings: Pick<SoundSettingsState, 'status' | 'aiEnabled'>,
+  online: boolean
 ) {
-  const enabled = settings.status !== 'loading' && settings.aiEnabled;
+  const enabled = online && settings.status !== 'loading' && settings.aiEnabled;
   useEffect(() => {
     if (!owner || !enabled) return;
     void owner.inspect();

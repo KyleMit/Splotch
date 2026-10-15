@@ -32,11 +32,13 @@ const caller = vi.hoisted(() => {
     screen: null,
     library: null,
     product: null,
+    online: true,
     initialSettings: null,
     settingsStorage: null,
     sound: null,
     menu: null,
     aiAdmit: vi.fn().mockResolvedValue(undefined),
+    saveOriginal: vi.fn(async () => ({ id: 'picture-1-fixture' })),
     aiPrepare: vi.fn(async (next, _, bytes) => {
       journal = next;
       upload = bytes.slice();
@@ -64,6 +66,9 @@ const caller = vi.hoisted(() => {
     clearSound: { load: vi.fn(), play: vi.fn() },
   };
 });
+vi.mock('../../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
+  useOnline: () => caller.online,
+}));
 vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   aiTransport: caller.aiSend,
   admitAiImage: caller.aiAdmit,
@@ -89,7 +94,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   },
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: async () => ({ id: 'picture-1-fixture' }),
+  savePicture: caller.saveOriginal,
   savedColoringPageIds: async () => [],
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
@@ -101,9 +106,8 @@ vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () 
 vi.mock(
   '../../../experiments/native-architecture/src/useDrawingScreen.ts',
   async (importOriginal) => {
-    const actual = await importOriginal();
     const { drawingScreenPort } = await import('./rsd-coloring-root-host.mjs');
-    return drawingScreenPort(actual, caller, coloringBookHistory);
+    return drawingScreenPort(await importOriginal(), caller, coloringBookHistory);
   }
 );
 vi.mock('../../../experiments/native-architecture/src/offlineLibrary/runtime.ts', async () => {
@@ -198,10 +202,6 @@ vi.mock('react-native-safe-area-context', async () => {
   return safeAreaPort(await import('react'), records);
 });
 // A click is a press: a Pressable's onPress, or a responder's release once it would be granted.
-function press(props) {
-  props.onPress?.({ nativeEvent: {} });
-  if (props.onStartShouldSetResponder?.()) props.onResponderRelease?.({ nativeEvent: {} });
-}
 vi.mock('react-native', async () => {
   const React = await import('react');
   const {
@@ -211,6 +211,8 @@ vi.mock('react-native', async () => {
     backHandlerPort,
     easingPort,
     platformPort,
+    pressNative,
+    imagePort,
     useShownStyle,
     committedHostProps,
   } = await import('./rsd-native-animated-host.mjs');
@@ -243,7 +245,7 @@ vi.mock('react-native', async () => {
             : props.onChangeText
               ? (event) => props.onChangeText(event.target.value)
               : undefined,
-          onClick: props.disabled ? undefined : () => press(props),
+          onClick: props.disabled ? undefined : () => pressNative(props),
         },
         props.children
       );
@@ -278,6 +280,7 @@ vi.mock('react-native', async () => {
     Animated: animatedPort(View, Text),
     Easing: easingPort,
     useWindowDimensions: () => records.dimensions,
+    PixelRatio: { get: () => records.dimensions.scale },
     Dimensions: {
       get: () => records.dimensions,
       addEventListener: (_type, listener) => {
@@ -309,9 +312,7 @@ vi.mock('react-native', async () => {
           );
     },
     // Every picture the fixtures hand out reads as a landscape drawing's size.
-    Image: Object.assign(host('div'), {
-      getSize: (_uri, done) => queueMicrotask(() => done(1024, 768)),
-    }),
+    Image: imagePort(host('div')),
     TextInput: host('input'),
     requireNativeComponent: () => host('div'),
     experimental_LayoutConformance: View,
@@ -329,6 +330,7 @@ let root, host;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   caller.product = null;
+  caller.online = true;
   caller.paperRender.mockClear();
   caller.haptic.mockClear();
   caller.clearSound.load.mockClear();

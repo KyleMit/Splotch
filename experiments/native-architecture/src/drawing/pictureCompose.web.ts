@@ -51,10 +51,14 @@ function paintPaper(
 }
 
 // The captured ink and line art, stretched onto the saved picture's grid over its paper.
-export async function composePicture(layerBase64: string, picture: PictureExport) {
+export async function composePicture(
+  layerBase64: string,
+  picture: PictureExport,
+  includePaperTexture = true
+) {
   const [layer, texture] = await Promise.all([
     decodeImage(`${PNG_PREFIX}${layerBase64}`),
-    loadGrain(),
+    includePaperTexture ? loadGrain() : Promise.resolve(null),
   ]);
   const canvas = document.createElement('canvas');
   try {

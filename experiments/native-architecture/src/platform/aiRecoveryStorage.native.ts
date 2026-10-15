@@ -136,7 +136,7 @@ class NativeRecoveryStorage implements AiRecoveryStorage {
         recoveryDigest(bytes) !== next.inputDigest
       )
         invalidRecovery();
-      await admitAiImage(bytes, 'image/png');
+      await admitAiImage(bytes, 'image/png', 'original');
       return new Uint8Array(bytes);
     });
   }

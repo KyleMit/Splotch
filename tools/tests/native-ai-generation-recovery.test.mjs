@@ -2,7 +2,13 @@ import { withCredentialLeases } from '../../experiments/native-architecture/src/
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-const INSTALLATION = 'a'.repeat(64);
+import {
+  POLL_INTERVAL_MS,
+  POLL_TIMEOUT_MS,
+} from '../../experiments/native-architecture/src/ai/contract.ts';
+const INSTALLATION = 'a'.repeat(64),
+  JOB = 'b'.repeat(64);
+const image = () => new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } });
 function fixture() {
   let journal = null;
   let recovery = null;
@@ -203,66 +209,6 @@ it('stops an authorized credential refresh between secure reads when the visit c
   f.owner.dispose();
 });
 
-it.each(['prepared', 'committed'])(
-  'holds restored recovery intent %s before credential reads, timers, legacy release or requests',
-  async (intent) => {
-    const f = fixture();
-    const journal = {
-      version: 1,
-      id: 1,
-      createdAt: 1,
-      style: 'Magical',
-      originalId: 'picture-1-fixture',
-      phase: 'unknown',
-      jobId: null,
-      result: null,
-    };
-    const receipt = {
-      kind: 'recovery-held',
-      journal,
-      nonce: 'c'.repeat(64),
-      revision: 1,
-      originalRevision: 1,
-      originalDigest: 'd'.repeat(64),
-      inputDigest: 'e'.repeat(64),
-      inputLength: 1,
-      resultDigest: null,
-      resultLength: null,
-      recovery: {
-        version: 2,
-        protocol: 'splotch-ai-recovery-v1',
-        id: 'a'.repeat(64),
-        credential: { kind: 'free', reference: 'b'.repeat(64) },
-        expiry: { kind: 'unknown' },
-        intent,
-      },
-    };
-    f.storage.read.mockResolvedValue({ kind: 'recovery-held', receipt });
-    await f.open();
-    expect(f.owner.getState().recovery).toBe(receipt);
-    expect(f.owner.getState().journal).toBeNull();
-    vi.useFakeTimers();
-    vi.setSystemTime(9000000000000);
-    await f.owner.generate();
-    f.owner.resume();
-    f.owner.releaseExpired();
-    await f.owner.setup('byok', 'fixture-key');
-    await f.owner.removeCredential('managed');
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(f.transport).not.toHaveBeenCalled();
-    expect(f.vault.read).not.toHaveBeenCalled();
-    expect(f.vault.installationId).not.toHaveBeenCalled();
-    expect(f.vault.write).not.toHaveBeenCalled();
-    expect(f.vault.remove).not.toHaveBeenCalled();
-    expect(f.storage.prepare).not.toHaveBeenCalled();
-    expect(f.storage.readPreparedUpload).not.toHaveBeenCalled();
-    expect(f.storage.write).not.toHaveBeenCalled();
-    expect(f.storage.retain).not.toHaveBeenCalled();
-    expect(f.owner.getState().recovery).toBe(receipt);
-    f.owner.dispose();
-  }
-);
-
 it('explicitly creates a native held recovery request and confirms intent without any recovery or legacy upload', async () => {
   const f = fixture();
   await f.open();
@@ -343,3 +289,45 @@ it('holds an unknown native create outcome until confirmed readback and refuses 
   expect(f.vault.remove).not.toHaveBeenCalled();
   f.owner.dispose();
 });
+
+it.each(['deadline', 'reply'])(
+  'shows the retry card when persisting a poll %s failure fails',
+  async (failure) => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.owner.open();
+    const gate = f.owner.getState().gate;
+    f.owner.gateInput(String(gate.x * gate.y));
+    f.owner.gateAnswer();
+    await vi.advanceTimersByTimeAsync(0);
+    f.post.mockImplementation((request) =>
+      Promise.resolve(
+        request.path === '/api/generation-result' && failure === 'reply'
+          ? new Response(JSON.stringify({ error: 'Generation failed.' }), { status: 500 })
+          : new Response(JSON.stringify({ ok: true, jobId: JOB, pollAfterMs: POLL_INTERVAL_MS }), {
+              status: 202,
+            })
+      )
+    );
+    await f.owner.generate();
+    const write = f.storage.write.getMockImplementation();
+    f.storage.write.mockImplementation((journal) =>
+      journal.phase === 'failed' ? Promise.reject(new Error('disk full')) : write(journal)
+    );
+    await vi.advanceTimersByTimeAsync(
+      failure === 'deadline' ? POLL_TIMEOUT_MS + POLL_INTERVAL_MS : POLL_INTERVAL_MS
+    );
+    expect(f.owner.getState()).toMatchObject({
+      journal: { phase: 'failed' },
+      busy: false,
+      failures: 1,
+    });
+    const posts = f.post.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2);
+    expect(f.post).toHaveBeenCalledTimes(posts);
+    f.post.mockImplementation(async () => image());
+    await f.owner.generate();
+    expect(f.owner.getState().journal.phase).toBe('result');
+    f.owner.dispose();
+  }
+);

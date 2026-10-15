@@ -1,6 +1,16 @@
 import { createAccessibilityInfoFixture } from './native-accessibility-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 
+export function installCaptureFrames(state, vi) {
+  state.frames.clear();
+  vi.stubGlobal('requestAnimationFrame', (callback) => {
+    const id = ++state.nextFrame;
+    state.frames.set(id, callback);
+    return id;
+  });
+  vi.stubGlobal('cancelAnimationFrame', (id) => state.frames.delete(id));
+}
+
 export function nativeCaptureSdk(state, crayonTilePx) {
   return {
     useColorScheme: () => state.scheme,

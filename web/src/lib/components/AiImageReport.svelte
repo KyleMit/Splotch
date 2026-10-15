@@ -17,6 +17,11 @@
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
   import { attachesDevice, type ReportKind } from '$lib/report';
   import { postFeedbackReport, postImageReport, readReportReply } from '$lib/reportClient';
+  import {
+    reportFailureMessage,
+    REPORT_TIMEOUT_MESSAGE,
+    REPORT_RECEIVED_MESSAGE,
+  } from '$lib/reportReply';
 
   // What this report's phase adds. The run's own inputs (the drawing, its style
   // and the failure count) are read from aiGenerationState below.
@@ -31,7 +36,6 @@
 
   let { kind = 'picture', failure = null, outputUrl, reportToken, report }: Props = $props();
 
-  const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
   // The kind a problem report files as. Its fields offer the device opt-in and
   // its send attaches the snapshot by the same rule, `attachesDevice`.
   const PROBLEM_REPORT_KIND: ReportKind = 'bug';
@@ -52,13 +56,7 @@
   // the holder to be state rather than the plain `let` a top-level bind uses.
   let fields = $state<ReportFields>();
   const refusal = $derived(kind === 'false-positive-refusal');
-  const sendFailedMessage = $derived(
-    problem
-      ? 'Could not send your problem report.'
-      : refusal
-        ? 'Could not send your refusal report.'
-        : 'Could not send your picture report.'
-  );
+  const sendFailedMessage = $derived(reportFailureMessage(kind));
 
   let message = $state('');
   let controller: AbortController | null = null;
@@ -146,7 +144,7 @@
         message =
           'reportId' in reply
             ? `Thanks. We'll review it within ${reviewHours} hours. Keep this report reference if you want it deleted sooner: ${reply.reportId}`
-            : 'Thanks. Your problem report was sent to our private support tracker.';
+            : REPORT_RECEIVED_MESSAGE;
       } else {
         report.fail();
         message = reply && !reply.ok ? reply.error : sendFailedMessage;

@@ -1,6 +1,7 @@
 import { apiUrl } from '$lib/api';
 import { GENERATION_JOB_PARAM } from '$lib/apiParams';
 import { GENERATION_POLL_INTERVAL_MS, GENERATION_POLL_TIMEOUT_MS } from '$lib/ai/limits';
+import { AI_POLL_TIMEOUT_MESSAGE, AI_POLL_TIMEOUT_STATUS } from '$lib/ai/generationFailures';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 
 // Collecting a generation the server handed to its background worker (ADR-0115).
@@ -31,8 +32,8 @@ const timedOut = (): SettledGeneration => ({
   // again", which is the right offer here: the picture didn't arrive, and the
   // same drawing is worth another go.
   kind: 'error',
-  status: 504,
-  detail: 'The creation did not arrive in time',
+  status: AI_POLL_TIMEOUT_STATUS,
+  detail: AI_POLL_TIMEOUT_MESSAGE,
 });
 
 /**

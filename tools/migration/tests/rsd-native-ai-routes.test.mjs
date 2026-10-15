@@ -23,6 +23,41 @@ import {
   sendDrawing,
 } from './rsd-native-ai-fixture.mjs';
 
+it(
+  'retains an AI original only in its pruned attempt journal',
+  async () => {
+    reply(pictureReply);
+    useCaller();
+    await sendDrawing();
+    await settle(() => expect(caller.aiPrepare).toHaveBeenCalledOnce());
+    expect(caller.saveOriginal).not.toHaveBeenCalled();
+    const [journal, originalModel, png] = caller.aiPrepare.mock.calls[0];
+    expect(journal.originalId).toMatch(/^picture-\d+-[a-z0-9]+$/);
+    expect(JSON.parse(originalModel)).toEqual(caller.screen.currentDrawing());
+    expect(png).toBeInstanceOf(Uint8Array);
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'hides the AI image control offline and checks the allowance when connectivity returns',
+  async () => {
+    reply(pictureReply);
+    caller.online = false;
+    useCaller();
+    await enableAi();
+    expect(host.querySelector('[aria-label*="AI image"]')).toBeNull();
+    caller.aiSend.mockClear();
+    caller.online = true;
+    await act(async () => caller.product.owner.openParentCenter());
+    await solve();
+    await click('Close');
+    await settle(() => expect(labelled(WAND)).not.toBeNull());
+    expect(caller.aiSend.mock.calls[0][0].path).toBe('/api/free-generation-grant');
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
 it.each([
   ['checks the allowance', () => new Promise(() => {}), 'Checking AI image availability', true],
   [
@@ -175,6 +210,28 @@ it(
     });
     expect(grants()).toHaveLength(before);
     expect(labelled(WAND).disabled).toBe(false);
+  },
+  GATED_FLOW_TIMEOUT_MS
+);
+
+it(
+  'keeps a ready AI result card across background and foreground',
+  async () => {
+    reply(pictureReply);
+    useCaller();
+    await sendDrawing();
+    await settle(() => expect(labelled('Report this picture')).not.toBeNull());
+    const before = drawingRequests().length;
+    await act(async () => {
+      for (const listener of records.appStateListeners) listener('background');
+    });
+    expect(caller.product.ai.state.open).toBe(true);
+    await act(async () => {
+      for (const listener of records.appStateListeners) listener('active');
+    });
+    expect(modal('AI Result')).not.toBeNull();
+    expect(labelled('Report this picture')).not.toBeNull();
+    expect(drawingRequests()).toHaveLength(before);
   },
   GATED_FLOW_TIMEOUT_MS
 );

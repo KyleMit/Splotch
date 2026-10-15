@@ -50,7 +50,8 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
       value.jobId !== null ||
       value.result !== null ||
       (current &&
-        (!['result', 'failed'].includes(current.journal.phase) || value.id <= current.journal.id))
+        ((recovery && !['result', 'failed'].includes(current.journal.phase)) ||
+          value.id <= current.journal.id))
     )
       invalidAiStorage();
     validateAiOriginalModel(originalModel, 'current');
@@ -62,7 +63,7 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
       new TextDecoder('utf-8', { fatal: true }).decode(model) !== originalModel
     )
       invalidAiStorage();
-    await admitAiImage(bytes, 'image/png');
+    await admitAiImage(bytes, 'image/png', 'original');
     const base = {
       kind: 'prepared',
       journal: value,
@@ -78,8 +79,9 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
     const receipt = recovery
       ? parseRecoveryHeldReceipt({ ...base, kind: 'recovery-held', recovery })
       : parseNativeReceipt(base);
+    const kept = recovery ? this.owner.attempts() : [];
     return this.owner.commit([
-      ...this.owner.attempts(),
+      ...kept,
       { receipt, originalModel, originalLength: model.length, upload: bytesBase64(bytes) },
     ]);
   }

@@ -1,4 +1,4 @@
-const UPLOAD_WEBP_QUALITY = 0.85;
+export const UPLOAD_WEBP_QUALITY = 0.85;
 
 // No API reports canvas encode capability directly; the spec-mandated PNG
 // fallback for an unsupported type IS the feature signal, so a 1×1 probe

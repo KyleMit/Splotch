@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { drawingScreen, storedSettings } from './rsd-native-settings-fixture.mjs';
+import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import {
   DRAWING_BRAND,
   DRAWING_SCALE,
@@ -33,7 +34,6 @@ import {
   NATIVE_SETTINGS_SECTIONS,
   sectionHeading,
 } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
 import { SECTION_JUMP_INSET_PX } from '../../../web/src/lib/components/settings/paneScroll.ts';
 
@@ -196,71 +196,10 @@ describe('the pane scroll geometry', () => {
   });
 });
 
-const CURRENT_SETTINGS = {
-  version: 15,
-  soundEnabled: true,
-  strokeWidth: 'medium',
-  eraserWidth: 'medium',
-  selectedColor: 'Purple',
-  customColors: [],
-  appearance: 'light',
-  aiEnabled: false,
-  parentPolicies: {
-    ai: 'always',
-    imageReport: 'always',
-    externalLinks: 'always',
-    feedback: 'always',
-    parentCenter: 'always',
-  },
-  coloringBookEnabled: true,
-  soundVolume: 50,
-  drawingSoundEnabled: true,
-  deleteSoundEnabled: true,
-  undoButtonEnabled: true,
-  strokeWidthControlEnabled: true,
-  orientation: 'portrait',
-  saveOnDeleteEnabled: false,
-  buttonScale: 100,
-  reduceMotion: 'system',
-  whatsNewSeen: WHATS_NEW_STAMP,
-  pencilEraserEnabled: true,
-  applePencilSeen: false,
-  toolbarStyle: 'buttons',
-  toolDrawerEnabled: true,
-  screenshotEnabled: true,
-  aiCustomizationEnabled: true,
-  autoSaveAiEnabled: false,
-};
-
 function openSettings(dimensions, overrides = {}) {
   records.dimensions = dimensions;
-  let stored = JSON.stringify({ ...CURRENT_SETTINGS, ...overrides });
-  caller.settingsStorage = {
-    read: async () => stored,
-    write: vi.fn(async (next) => {
-      stored = next;
-    }),
-  };
-  caller.screen = {
-    notice: '',
-    drawing: false,
-    disabled: false,
-    brush: 'pen',
-    brushControl: { kind: 'menu', brushes: ['pen', 'crayon'] },
-    availableBrushes: ['pen', 'crayon'],
-    history: { undo: [], drawing: emptyDrawing() },
-    recovery: { failed: false },
-    pictures: null,
-    pagePickerOpen: false,
-    settingsOpen: true,
-    colorPickerOpen: false,
-    closeSettings: vi.fn(),
-    closeColorPicker: vi.fn(),
-    openColorPicker: vi.fn(),
-    selectInkBrush: vi.fn(),
-  };
-  caller.sound = { settings: { status: 'loading' }, owner: null, audioMessage: '' };
-  return { storage: caller.settingsStorage, stored: () => JSON.parse(stored) };
+  drawingScreen();
+  return storedSettings({ soundEnabled: true, ...overrides });
 }
 
 function holdNextWrite(storage) {
@@ -504,6 +443,19 @@ describe('the compact shell', () => {
   });
 });
 describe('Parent Center in the wide shell', () => {
+  it('lands a tablet AI setup link on the AI Art section', async () => {
+    HTMLElement.prototype.scrollTo = scrollTo;
+    openSettings(TABLET);
+    caller.screen.settingsSection = 'ai';
+    await mount(createElement(RsdDrawingScreen));
+    await layOutPane(300, 600);
+    const index = PANE_SECTIONS.findIndex(({ id }) => id === 'ai');
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      y: WIDE_SHELL.pane.top + index * (300 + WIDE_SHELL.sectionGap) - SECTION_JUMP_INSET_PX,
+      animated: false,
+    });
+  });
+
   const parentCenterOffset = (sectionHeight) =>
     WIDE_SHELL.pane.top +
     PANE_SECTIONS.findIndex(({ id }) => id === 'parentCenter') *

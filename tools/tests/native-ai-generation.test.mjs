@@ -1,7 +1,16 @@
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-import { REQUEST_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
+import {
+  POLL_INTERVAL_MS,
+  POLL_TIMEOUT_MS,
+  REQUEST_TIMEOUT_MS,
+} from '../../experiments/native-architecture/src/ai/contract.ts';
+import {
+  AI_POLL_TIMEOUT_MESSAGE,
+  AI_POLL_TIMEOUT_STATUS,
+  AI_TIMEOUT_MESSAGE,
+} from '../../web/src/lib/ai/generationFailures.ts';
 const INSTALLATION = 'a'.repeat(64),
   JOB = 'b'.repeat(64);
 const image = () =>
@@ -201,7 +210,7 @@ describe('native hosted AI operation ownership', () => {
     expect(f.prepare).toHaveBeenCalledOnce();
     f.owner.dispose();
   });
-  it('keeps an unknown timeout and collects a transport that resolves late without another POST', async () => {
+  it('fails a start that times out so it can be sent again at once, and drops its late reply, as shipping aborts it', async () => {
     vi.useFakeTimers();
     const f = fixture();
     f.owner.open();
@@ -211,15 +220,25 @@ describe('native hosted AI operation ownership', () => {
     await vi.advanceTimersByTimeAsync(0);
     const work = f.owner.generate();
     await vi.advanceTimersByTimeAsync(0);
+    const late = f.takeFinish();
     expect(f.post).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
     await work;
-    expect(f.owner.getState().journal.phase).toBe('unknown');
-    await f.owner.generate();
-    expect(f.post).toHaveBeenCalledOnce();
-    f.finish(image());
+    expect(f.owner.getState()).toMatchObject({
+      journal: { phase: 'failed' },
+      failures: 1,
+      failure: { status: null, endpoint: '/api/generate-image', message: AI_TIMEOUT_MESSAGE },
+    });
+    late(image());
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.owner.getState().journal.phase).toBe('result');
+    expect(f.storage.retain).not.toHaveBeenCalled();
+    expect(f.owner.getState().journal.phase).toBe('failed');
+    const again = f.owner.generate();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.post).toHaveBeenCalledTimes(2);
+    f.finish(image());
+    await again;
+    expect(f.owner.getState()).toMatchObject({ journal: { phase: 'result' }, failures: 0 });
     f.owner.dispose();
   });
   it('cancels permission while preparation is pending without uploading', async () => {
@@ -283,38 +302,57 @@ describe('native hosted AI operation ownership', () => {
   });
 });
 
-it('retains a late earlier result after a parent releases an expired attempt', async () => {
+it("gives up waiting at the poll deadline with a retry card, and drops that run's late poll once a new run owns the card", async () => {
   vi.useFakeTimers();
   const f = fixture();
   f.owner.open();
-  let gate = f.owner.getState().gate;
+  const gate = f.owner.getState().gate;
   f.owner.gateInput(String(gate.x * gate.y));
   f.owner.gateAnswer();
   await vi.advanceTimersByTimeAsync(0);
-  const first = f.owner.generate();
-  await vi.advanceTimersByTimeAsync(0);
-  const finishFirst = f.takeFinish();
-  await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
-  await first;
-  const oldId = f.owner.getState().journal.id;
-  await vi.advanceTimersByTimeAsync(20 * 60 * 1000);
-  f.owner.releaseExpired();
-  gate = f.owner.getState().gate;
-  f.owner.gateInput(String(gate.x * gate.y));
-  f.owner.gateAnswer();
-  await vi.advanceTimersByTimeAsync(0);
-  expect(f.owner.getState().journal.phase).toBe('failed');
+  const polls = [];
+  f.post.mockImplementation((request) =>
+    request.path === '/api/generation-result'
+      ? new Promise((resolve) => polls.push(resolve))
+      : Promise.resolve(
+          new Response(JSON.stringify({ ok: true, jobId: JOB, pollAfterMs: 3000 }), {
+            status: 202,
+          })
+        )
+  );
+  await f.owner.generate();
+  const firstId = f.owner.getState().journal.id;
+  await vi.advanceTimersByTimeAsync(POLL_TIMEOUT_MS + REQUEST_TIMEOUT_MS + POLL_INTERVAL_MS);
+  expect(f.owner.getState()).toMatchObject({
+    journal: { id: firstId, phase: 'failed' },
+    failures: 1,
+    failure: {
+      status: AI_POLL_TIMEOUT_STATUS,
+      endpoint: '/api/generation-result',
+      message: AI_POLL_TIMEOUT_MESSAGE,
+    },
+  });
+  const posts = f.post.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 10);
+  expect(f.post).toHaveBeenCalledTimes(posts);
+  let finishSecond;
+  f.post.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finishSecond = resolve;
+      })
+  );
   const second = f.owner.generate();
   await vi.advanceTimersByTimeAsync(0);
-  const nextId = f.owner.getState().journal.id;
-  expect(nextId).not.toBe(oldId);
-  finishFirst(image());
+  const secondId = f.owner.getState().journal.id;
+  expect(secondId).not.toBe(firstId);
+  polls.at(-1)(image());
   await vi.advanceTimersByTimeAsync(0);
-  expect(f.owner.getState().journal.id).toBe(nextId);
-  f.finish(image());
+  expect(f.storage.retain).not.toHaveBeenCalled();
+  finishSecond(image());
   await second;
-  expect(f.storage.retain).toHaveBeenCalledWith(oldId, expect.any(Uint8Array), 'image/png');
-  expect(f.post).toHaveBeenCalledTimes(2);
+  expect(f.storage.retain).toHaveBeenCalledOnce();
+  expect(f.storage.retain).toHaveBeenCalledWith(secondId, expect.any(Uint8Array), 'image/png');
   f.owner.dispose();
 });
 it('keeps secure removal ambiguous and ignores verification that finishes after parent permission closes', async () => {

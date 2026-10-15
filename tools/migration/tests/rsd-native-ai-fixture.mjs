@@ -1,10 +1,12 @@
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { caller, host, mount, expandControls } from './rsd-native-selection-host.mjs';
+import { caller, host, mount, records, expandControls } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { drawingPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { pictureExport } from '../../../experiments/native-architecture/src/drawing/pictureExport.ts';
 
 const save = vi.hoisted(() => ({ outcome: 'photos', calls: [] }));
 vi.mock('../../../experiments/native-architecture/src/platform/pictureSave.ts', () => ({
@@ -84,6 +86,14 @@ export function useCaller(drawing = emptyDrawing(), overrides = {}) {
       current: {
         lockInput: () => () => {},
         capturePng: async () => rgbaPng(1024, 768, 255).toString('base64'),
+        captureAiPng: async () => {
+          const { width, height } = pictureExport(
+            drawingPaper(drawing),
+            'light',
+            records.dimensions.scale
+          ).size;
+          return rgbaPng(width, height, 255).toString('base64');
+        },
       },
     },
     inkVisible: true,

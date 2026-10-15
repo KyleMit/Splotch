@@ -157,6 +157,11 @@ class SplotchAIJournal(private val context: Context) {
     val bytes = read(File(dir, name), cap)
     check(integer(meta, "bytes") == bytes.size.toLong() && meta.getString("sha256") == digest(bytes))
   }
+  // A new plain run replaces saved attempts, including a run abandoned by another process.
+  private fun dropPreviousAttempts(all: List<File>) {
+    for (dir in all) check(dir.deleteRecursively())
+    fence(root)
+  }
   private fun attempts(): List<File> {
     val entries = root.listFiles() ?: error("Storage unavailable")
     check(entries.size <= maxAttempts + 1)
@@ -519,7 +524,7 @@ class SplotchAIJournal(private val context: Context) {
     j.put("id", id).put("createdAt", created)
     val original = read(File(source, "original.bin"), maxModel); val upload = read(File(source, "upload.bin"), maxUpload)
     originalModel(original, false)
-    SplotchAIImageDecoder.decode(upload, "image/png")
+    SplotchAIImageDecoder.decodeOriginal(upload)
     quota(original.size + upload.size + maxResult + maxJournal * 2L)
     val nonce = ByteArray(32).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
     confirmed.forEach { check(it.getString("nonce") != nonce) }
@@ -682,7 +687,7 @@ class SplotchAIJournal(private val context: Context) {
             val bytes = read(File(dir, "upload.bin"), maxUpload)
             val meta = value.getJSONObject("upload")
             check(integer(meta, "bytes") == bytes.size.toLong() && meta.getString("sha256") == digest(bytes))
-            SplotchAIImageDecoder.decode(bytes, "image/png")
+            SplotchAIImageDecoder.decodeOriginal(bytes)
             check(same(confirm(dir, latest(dir)), value))
             JSONObject().put("receipt", receipt(value)).put("upload", Base64.encodeToString(bytes, Base64.NO_WRAP))
           }
@@ -729,7 +734,9 @@ class SplotchAIJournal(private val context: Context) {
           check(credential.getString("kind") in setOf("free", "managed", "byok") && Regex("[a-f0-9]{64}").matches(credential.getString("reference")))
         }
         val all = attempts()
-        check(all.size < maxAttempts && all.none { unresolved(latest(it)) })
+        if (kind == "prepare") dropPreviousAttempts(all)
+        else check(all.none { unresolved(latest(it)) })
+        check(attempts().size < maxAttempts)
         val original = input.getString("originalModel").toByteArray(Charsets.UTF_8)
         originalModel(original, kind == "importLegacy")
         val upload = if (kind != "importLegacy") decode(input, "upload", maxUpload) else null

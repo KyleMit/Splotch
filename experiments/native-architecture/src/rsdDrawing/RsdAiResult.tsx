@@ -8,13 +8,12 @@ import {
   AI_READY_ANNOUNCEMENT,
 } from '../../../../web/src/lib/ai/loadingCopy';
 import { Animated, Easing } from '../platform/animated';
-import { AiRecoveryActions } from '../ai/AiRecoveryActions';
 import type { AiProgress, AiProgressOwner } from '../ai/aiProgress';
 import { AI_RESULT_COPY } from '../ai/aiResultCopy';
 import { aiResultFrame, type AiResultMode } from '../ai/aiResultGeometry';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import type { AiResult } from '../ai/journal';
-import { aiResultPhase, aiRun, aiJournalWaiting } from '../ai/uiState';
+import { aiResultPhase, aiRun } from '../ai/uiState';
 import { useAiProgress } from '../ai/useAiProgress';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
@@ -232,9 +231,6 @@ function ResultCard({
           {phase.kind === 'error' ? (
             <RsdAiResultError owner={owner} state={state} reason={phase.reason}>
               <RsdAiProblemStatus owner={owner} problem={state.problem} />
-              {state.recovery ? (
-                <AiRecoveryActions owner={owner} state={state} waiting={aiJournalWaiting(state)} />
-              ) : null}
             </RsdAiResultError>
           ) : (
             <>
