@@ -515,3 +515,20 @@ describe('native Clear Button accessible name', () => {
     expect(nativeClearLabel(nativeRenamed)).not.toBe(shippingClearLabel(shipping.button));
   });
 });
+
+it("keeps Clear's ring reveal and emphasis on their shipping curves", () => {
+  const native = read('experiments/native-architecture/src/clear/useClearGesture.ts');
+  expect(shipping.button).toMatch(/opacity var\(--duration-base\) ease,/);
+  expect(shipping.button).toMatch(/transform 0\.3s var\(--ease-pop\),/);
+  const [, curve] = /export const CSS_EASE: Bezier = \[([^\]]+)\]/.exec(
+    read('experiments/native-architecture/src/rsdDrawing/polaroidFlight.ts')
+  );
+  expect(native).toContain(`const CSS_EASE = Easing.bezier(${curve.trim()});`);
+  expect(native).toContain('animateValue(values.ring, 1, EMPHASIS_MS, reduced.current, CSS_EASE);');
+  expect(native).toContain(
+    'animateValue(values.ringScale, 1, RING_REVEAL_MS, reduced.current, EASE_POP);'
+  );
+  expect(native).toContain(
+    'animateValue(values.emphasis, next ? 1 : 0, EMPHASIS_MS, reduced.current, CSS_EASE);'
+  );
+});

@@ -98,6 +98,7 @@ export const DRAWING_SCRIM = scale.scrimPill.replace(
   (_, red: string, green: string, blue: string, alpha: string) =>
     `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`
 );
+export const DRAWING_EASE_POP = [0.34, 1.56, 0.64, 1] as const;
 export const TOUCH_TARGET = 52;
 export const CONTROL_RADIUS = 14;
 export const CONTROL_GAP = 8;

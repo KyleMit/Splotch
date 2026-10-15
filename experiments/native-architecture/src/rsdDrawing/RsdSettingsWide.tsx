@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { SettingsTextZoom } from '../platform/SettingsTextZoom';
 import { scrollSettingsPaneToSection, spiedSettingsSection } from '../platform/settingsPane';
-import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
+import { View, type LayoutChangeEvent } from 'react-native';
+import { ScrollView } from '../platform/ScrollView';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';

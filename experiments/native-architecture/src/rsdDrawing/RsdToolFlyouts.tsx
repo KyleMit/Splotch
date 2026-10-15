@@ -1,6 +1,7 @@
 import type { Brush } from '../drawing/brushes';
 import { STROKE_WIDTHS, type StrokeWidth } from '../drawing/strokeWidth';
 import { RsdFlyoutMenu } from './RsdFlyoutMenu';
+import { RsdFlyoutMotion, RsdFlyoutOption, type FlyoutMotionProps } from './RsdFlyoutMotion';
 import { RsdIconButton, type FlyoutScale } from './RsdIconButton';
 import { RsdOptionOutline } from './optionOutline';
 import type { LayoutAxis } from './edgeLayout';
@@ -30,36 +31,51 @@ export function RsdBrushMenu({
   ink,
   disabled,
   onPick,
+  visible,
+  onExited,
+  motionless,
+  portrait,
+  originX,
   ...placement
-}: Placement & {
-  brushes: readonly Brush[];
-  selected: Brush;
-  ink: string;
-  disabled: boolean;
-  onPick: (brush: Brush) => void;
-}) {
+}: Placement &
+  FlyoutMotionProps & {
+    brushes: readonly Brush[];
+    selected: Brush;
+    ink: string;
+    disabled: boolean;
+    onPick: (brush: Brush) => void;
+  }) {
   const keyline = inkKeyline(ink);
   return (
-    <RsdFlyoutMenu label="Brush Menu" {...placement}>
-      {brushes.map((brush) => (
-        <RsdIconButton
-          key={brush}
-          skin="flyout"
-          Outline={RsdOptionOutline}
-          base={placement.base}
-          scale={placement.scale}
-          icon={BRUSH_MENU_OPTIONS[brush].icon}
-          label={BRUSH_MENU_OPTIONS[brush].label}
-          ink={ink}
-          keyline={keyline}
-          selection="radio"
-          selected={brush === selected}
-          onPress={() => {
-            if (!disabled) onPick(brush);
-          }}
-        />
-      ))}
-    </RsdFlyoutMenu>
+    <RsdFlyoutMotion
+      visible={visible}
+      onExited={onExited}
+      motionless={motionless}
+      portrait={portrait}
+      originX={originX}
+    >
+      <RsdFlyoutMenu label="Brush Menu" {...placement}>
+        {brushes.map((brush, index) => (
+          <RsdFlyoutOption key={brush} index={index} visible={visible} motionless={motionless}>
+            <RsdIconButton
+              skin="flyout"
+              Outline={RsdOptionOutline}
+              base={placement.base}
+              scale={placement.scale}
+              icon={BRUSH_MENU_OPTIONS[brush].icon}
+              label={BRUSH_MENU_OPTIONS[brush].label}
+              ink={ink}
+              keyline={keyline}
+              selection="radio"
+              selected={brush === selected}
+              onPress={() => {
+                if (!disabled) onPick(brush);
+              }}
+            />
+          </RsdFlyoutOption>
+        ))}
+      </RsdFlyoutMenu>
+    </RsdFlyoutMotion>
   );
 }
 
@@ -71,38 +87,53 @@ export function RsdStrokeWidthMenu({
   ink,
   disabled,
   onPick,
+  visible,
+  onExited,
+  motionless,
+  portrait,
+  originX,
   ...placement
-}: Placement & {
-  brush: Brush;
-  selected: StrokeWidth;
-  ink: string;
-  disabled: boolean;
-  onPick: (width: StrokeWidth) => void;
-}) {
+}: Placement &
+  FlyoutMotionProps & {
+    brush: Brush;
+    selected: StrokeWidth;
+    ink: string;
+    disabled: boolean;
+    onPick: (width: StrokeWidth) => void;
+  }) {
   const erasing = brush === 'eraser';
   const icons = SIZE_ICONS[erasing ? 'eraser' : brush === 'magic' ? 'magic' : 'ink'];
   const keyline = erasing ? undefined : inkKeyline(ink);
   return (
-    <RsdFlyoutMenu label="Stroke Width Menu" {...placement}>
-      {STROKE_WIDTHS.map((width, index) => (
-        <RsdIconButton
-          key={width}
-          skin="flyout"
-          Outline={RsdOptionOutline}
-          base={placement.base}
-          scale={placement.scale}
-          pinnedIconPx={erasing ? ERASER_PREVIEW_PX : undefined}
-          icon={icons[index]}
-          label={`${erasing ? 'Eraser size' : 'Size'} ${index + 1}`}
-          ink={ink}
-          keyline={keyline}
-          selection="radio"
-          selected={width === selected}
-          onPress={() => {
-            if (!disabled) onPick(width);
-          }}
-        />
-      ))}
-    </RsdFlyoutMenu>
+    <RsdFlyoutMotion
+      visible={visible}
+      onExited={onExited}
+      motionless={motionless}
+      portrait={portrait}
+      originX={originX}
+    >
+      <RsdFlyoutMenu label="Stroke Width Menu" {...placement}>
+        {STROKE_WIDTHS.map((width, index) => (
+          <RsdFlyoutOption key={width} index={index} visible={visible} motionless={motionless}>
+            <RsdIconButton
+              skin="flyout"
+              Outline={RsdOptionOutline}
+              base={placement.base}
+              scale={placement.scale}
+              pinnedIconPx={erasing ? ERASER_PREVIEW_PX : undefined}
+              icon={icons[index]}
+              label={`${erasing ? 'Eraser size' : 'Size'} ${index + 1}`}
+              ink={ink}
+              keyline={keyline}
+              selection="radio"
+              selected={width === selected}
+              onPress={() => {
+                if (!disabled) onPick(width);
+              }}
+            />
+          </RsdFlyoutOption>
+        ))}
+      </RsdFlyoutMenu>
+    </RsdFlyoutMotion>
   );
 }

@@ -1,20 +1,20 @@
-import { createElement, type ComponentProps, type ComponentType } from 'react';
+import { createElement, type ComponentProps, type ComponentType, type ReactNode } from 'react';
 import { createLazyExport, useLazyValue } from '../lazyExport';
 import type { RsdClearCoachmark as Coachmark } from './RsdClearCoachmark';
 import type { RsdClearUnderlay as Underlay } from './RsdClearUnderlay';
 
-// Neither layer paints anything until a press or drag on Clear, so each chunk loads once the
-// screen has mounted rather than before first paint. Until it arrives, or if it fails to, the
-// drag still clears; only its decoration is missing.
-function deferredLayer<P extends object>(
+// A decorative layer can fail to load without taking its control away. Each chunk begins loading
+// when its mounted consumer needs it; the camera keeps its glyph while its cue loads.
+export function deferredLayer<P extends object>(
   load: () => Promise<ComponentType<P>>,
-  description: string
+  description: string,
+  fallback?: (props: P) => ReactNode
 ) {
   const layer = createLazyExport(load);
   const whole = (loaded: ComponentType<P>) => loaded;
   return function DeferredLayer(props: P) {
     const Loaded = useLazyValue(layer, whole, description);
-    return Loaded ? createElement(Loaded, props) : null;
+    return Loaded ? createElement(Loaded, props) : (fallback?.(props) ?? null);
   };
 }
 
