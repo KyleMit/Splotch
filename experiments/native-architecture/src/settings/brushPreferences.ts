@@ -3,7 +3,7 @@ import { BRUSH_ORDER, DEFAULT_BRUSH, type Brush } from '../drawing/brushes';
 export type OptionalBrush = Exclude<Brush, 'pen'>;
 type InkBrush = Extract<Brush, 'pen' | 'crayon'>;
 type PersistedBrush = Exclude<Brush, 'eraser'>;
-export const OPTIONAL_BRUSHES = ['crayon', 'magic', 'eraser'] as const;
+const OPTIONAL_BRUSHES = ['crayon', 'magic', 'eraser'] as const;
 export type BrushAvailability = Readonly<Record<OptionalBrush, boolean>>;
 export const DEFAULT_BRUSH_AVAILABILITY: BrushAvailability = {
   crayon: true,

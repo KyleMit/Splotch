@@ -201,11 +201,10 @@ describe('canonical Auto-Save on Delete', () => {
       caller.captureInk.mockResolvedValue(BLANK_PAPER);
       await mountWith(SETTINGS_V9(true));
       await click('Draw RSD fixture stroke');
-      const rainbow = caller.liveScreen.history.drawing.rainbow;
       await act(async () => caller.liveScreen.setBrush('eraser'));
       await click('Draw RSD fixture stroke');
       await clear();
-      await settle(() => expect(caller.liveScreen.history.drawing).toEqual(emptyDrawing(rainbow)));
+      await settle(() => expect(caller.liveScreen.history.drawing).toEqual(emptyDrawing(1)));
       expect(photos.created).toEqual([]);
       expect(privateWrite).not.toHaveBeenCalled();
     },

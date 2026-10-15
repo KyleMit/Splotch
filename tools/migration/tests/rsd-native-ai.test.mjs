@@ -44,16 +44,14 @@ it.each(['error', 'unknown', 'unavailable'])(
     );
     expect(host.textContent).toContain('The report did not finish.');
     const review = [...host.querySelectorAll('button')].find(
-      (button) => button.textContent === 'Review report again'
+      (button) => button.textContent === 'Try again'
     );
     expect(review !== undefined).toBe(phase === 'error');
     expect(labelled('Send report')).toBeNull();
     expect(owner.sendPictureReport).not.toHaveBeenCalled();
-    if (review) {
-      await act(async () => review.click());
-      expect(owner.reviewAiReport).toHaveBeenCalledExactlyOnceWith(target);
-      expect(owner.sendPictureReport).not.toHaveBeenCalled();
-    }
+    if (review) await act(async () => review.click());
+    expect(owner.reviewAiReport.mock.calls).toEqual(phase === 'error' ? [[target]] : []);
+    expect(owner.sendPictureReport).not.toHaveBeenCalled();
   }
 );
 

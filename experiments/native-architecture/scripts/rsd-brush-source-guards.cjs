@@ -61,16 +61,14 @@ function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions
       prefix + ' disabled owner'
     );
   }
-  const exportValue = (ast, name) =>
+  const variableValue = (ast, name) =>
     ast.program.body
-      .filter(
-        (node) =>
-          node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration'
-      )
-      .flatMap((node) => node.declaration.declarations)
+      .map((node) => (node.type === 'ExportNamedDeclaration' ? node.declaration : node))
+      .filter((node) => node?.type === 'VariableDeclaration')
+      .flatMap((node) => node.declarations)
       .find((node) => identifier(node.id, name))?.init;
   const brushPreferences = parse('src/settings/brushPreferences.ts');
-  const optionalBrushes = unwrap(exportValue(brushPreferences, 'OPTIONAL_BRUSHES'));
+  const optionalBrushes = unwrap(variableValue(brushPreferences, 'OPTIONAL_BRUSHES'));
   assert.equal(optionalBrushes?.type, 'ArrayExpression', 'RSD optional brush set');
   assert.deepEqual(
     optionalBrushes.elements.map((node) => (node?.type === 'StringLiteral' ? node.value : null)),
@@ -165,7 +163,7 @@ function validateBrushSources({ parse, babel, toolbarSwitches, toolbarConditions
       identifier(menuBrushes.arguments[0], 'availability'),
     'RSD brush control many optional policy'
   );
-  const brushDefinitions = unwrap(exportValue(parse('src/drawing/brushes.ts'), 'BRUSHES'));
+  const brushDefinitions = unwrap(variableValue(parse('src/drawing/brushes.ts'), 'BRUSHES'));
   assert.equal(brushDefinitions?.type, 'ObjectExpression', 'RSD optional brush label definitions');
   const optionalLabels = ['crayon', 'magic', 'eraser'].map((name) => {
     const definition = unwrap(
