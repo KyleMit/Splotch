@@ -16,6 +16,15 @@ import {
 } from '../../../web/src/lib/components/bannerMotion.ts';
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import {
+  drag,
+  lift,
+  mountClear,
+  offset,
+  press,
+  radius,
+  rendered,
+} from './rsd-native-clear-fixture.mjs';
 
 // The photo library's answer to each save, in order, and the PNGs it was handed. A pending answer
 // holds that save until the test settles it.
@@ -132,6 +141,22 @@ function ranges(keyframes) {
 }
 
 describe('the save polaroid', () => {
+  it('keeps the paper and chrome live while the captured picture writes to Photos', async () => {
+    let finish;
+    library.pending = new Promise((resolve) => (finish = resolve));
+    await drawAndSave();
+    expect(library.saves).toEqual(['png-1']);
+    expect(host.querySelector('[aria-label="Draw RSD fixture stroke"]').disabled).toBe(false);
+    for (const label of ['Stroke width', 'Save screenshot', 'Settings'])
+      expect(host.querySelector(`[aria-label="${label}"]`).disabled, label).toBe(false);
+    const before = caller.paper.strokes.length;
+    await click('[aria-label="Draw RSD fixture stroke"]');
+    expect(caller.paper.strokes).toHaveLength(before + 1);
+    library.pending = null;
+    await act(async () => finish('photos'));
+    expect(banners()).toEqual([]);
+  });
+
   it('flies the captured picture out of the Save screenshot button and says nothing about it', async () => {
     await drawAndSave();
     await vi.waitFor(() => expect(overlay()).not.toBeNull());
@@ -187,6 +212,29 @@ describe('the save polaroid', () => {
     expect(overlay()).not.toBeNull();
     expect(timings).toContainEqual(expect.objectContaining({ toValue: 0, duration: 200 }));
   });
+});
+
+it('uncovers fresh ink after Auto-Save Clear while Photos still holds the captured picture', async () => {
+  let finish;
+  library.pending = new Promise((resolve) => (finish = resolve));
+  await mountClear({ saveOnDelete: true, reduceMotion: true, sound: false });
+  await click('[aria-label="Draw RSD fixture stroke"]');
+  await press();
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  await vi.waitFor(() => expect(library.saves).toEqual(['png-1']));
+  expect(caller.paper.strokes).toHaveLength(0);
+  expect(rendered('rsd-clear-cover')).toBe(false);
+  await click('[aria-label="Draw RSD fixture stroke"]');
+  const paper = host.querySelector('[data-testid="rsd-real-history-paper"]');
+  expect(JSON.parse(paper.getAttribute('data-drawing')).strokes).toHaveLength(1);
+  expect(rendered('rsd-clear-cover')).toBe(false);
+  library.pending = null;
+  await act(async () => finish('failed'));
+  await vi.waitFor(() => expect(banners()).toHaveLength(1));
+  expect(caller.paper.strokes).toHaveLength(1);
+  expect(library.saves).toEqual(['png-1']);
+  expect(button('Try again')).toBeDefined();
 });
 
 describe('the Save Failure Banner', () => {

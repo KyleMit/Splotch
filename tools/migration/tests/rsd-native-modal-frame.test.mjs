@@ -7,6 +7,10 @@ import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
 import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import {
+  TAP_ZONE_DURATION_MS,
+  TAP_ZONE_RADIUS_PX,
+} from '../../../experiments/native-architecture/src/rsdDrawing/tapZone.ts';
 import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
@@ -195,6 +199,41 @@ function openerScreen(visible, onDismiss) {
     )
   );
 }
+
+it('swallows only repeated launch touches inside the shipping dead zone', async () => {
+  let now = 1000;
+  const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+  const point = (x = 40, y = 760) => ({ nativeEvent: { pageX: x, pageY: y } });
+  const capture = () =>
+    records.props.findLast(
+      (props) => props.onStartShouldSetResponderCapture && props.testID !== 'rsd-safe-area-frame'
+    ).onStartShouldSetResponderCapture;
+  try {
+    await mount(openerScreen(false));
+    const frame = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
+    frame.onStartShouldSetResponderCapture(point());
+    await act(async () => root.render(openerScreen(true)));
+    expect(capture()(point())).toBe(true);
+    expect(capture()(point(40 + TAP_ZONE_RADIUS_PX, 760))).toBe(true);
+    expect(capture()(point(40 + TAP_ZONE_RADIUS_PX + 1, 760))).toBe(false);
+    now += TAP_ZONE_DURATION_MS - 1;
+    expect(capture()(point())).toBe(true);
+    now += 1;
+    expect(capture()(point())).toBe(false);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+it('leaves a dialog opened without a touch free of launch dead zones', async () => {
+  await mount(openerScreen(true));
+  const stage = records.props.findLast(
+    (props) => props.onStartShouldSetResponderCapture && props.testID !== 'rsd-safe-area-frame'
+  );
+  expect(stage.onStartShouldSetResponderCapture({ nativeEvent: { pageX: 40, pageY: 760 } })).toBe(
+    false
+  );
+});
 
 it.each(['ios', 'android'])(
   'flies in from the opening press, flies back toward it, and reports the dismissal once on %s',

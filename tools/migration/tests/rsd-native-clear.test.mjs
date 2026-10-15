@@ -216,6 +216,20 @@ it('skips the departing page and keeps every cue under reduced motion', async ()
   expect(ghost.style[1].transform[0].translateX).toBeCloseTo(-(radius() * 1.18) / Math.SQRT2);
 });
 
+it('uncovers the next drawing while the cleared page still flies away', async () => {
+  let finish;
+  await mountClear({ clear: vi.fn(() => new Promise((resolve) => (finish = resolve))) });
+  vi.useFakeTimers();
+  await press();
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  expect(rendered('rsd-clear-cover')).toBe(true);
+  await act(async () => finish());
+  expect(rendered('rsd-clear-cover')).toBe(false);
+  expect(everRendered('rsd-clear-sheet')).toBe(true);
+  await settle(CLEAR_SHEET_DURATION_MS);
+});
+
 it('does not fly an empty page', async () => {
   await mountClear({ drawing: emptyDrawing() });
   await press();
@@ -251,7 +265,7 @@ it('never flies or covers an already cleared page when the underlay arrives late
   expect(caller.screen.history.drawing).toBe(nextStroke);
 });
 
-it('expires a page that leaves before the underlay mounts at its own flight deadline', async () => {
+it('leaves fresh ink uncovered when the underlay arrives during the departing page flight', async () => {
   underlayChunk.loaded = false;
   await mountClear();
   vi.useFakeTimers();
@@ -266,8 +280,7 @@ it('expires a page that leaves before the underlay mounts at its own flight dead
   expect(records.props.slice(before).some((props) => props.testID === 'rsd-clear-sheet')).toBe(
     false
   );
-  // The cover stands in for the rest of the original flight, then goes with it.
-  expect(rendered('rsd-clear-cover')).toBe(true);
+  expect(rendered('rsd-clear-cover')).toBe(false);
   await settle(CLEAR_SHEET_DURATION_MS / 2);
   expect(rendered('rsd-clear-cover')).toBe(false);
 });

@@ -13,11 +13,12 @@ import {
   undoDrawing,
   type History,
   type Stroke,
+  type Drawing,
 } from './drawing/model';
 import { savedColoringPageIds } from './platform/drawingFiles';
-import { capturePicture, keepPicture, savePicture } from './keepPicture';
+import { capturePicture, savePicture } from './keepPicture';
 import { isUnsaved, type UnsavedOutcome } from './export/pictureSave';
-import { usePolaroidFlights, useSaveFailure } from './useSavePicture';
+import { usePolaroidFlights, useSaveFailure, useSaveAction } from './useSavePicture';
 import { useDrawingMessages } from './drawingMessages';
 import { useBrushPreferences } from './useBrushPreferences';
 import {
@@ -53,6 +54,7 @@ export function useDrawingScreen() {
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
+  const visibleInk = useRef<ReturnType<typeof useVisibleInk> | null>(null);
 
   const { command, runCommand, scanEmpty, ...surfaceActions } = useSurfaceCommands({
     historyRef,
@@ -62,6 +64,7 @@ export function useDrawingScreen() {
     ...messages,
     reportSaveFailure: saveFailure.report,
     afterClear: () => brushes.owner.current?.resetAfterClear(),
+    knownEmpty: (drawing) => visibleInk.current?.empty(drawing),
     blocked: () =>
       busy || rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
@@ -70,6 +73,7 @@ export function useDrawingScreen() {
   const [committedStrokes, setCommittedStrokes] = useState(0);
   // Whether the page shows ink: the screenshot camera's blank state.
   const ink = useVisibleInk(history.drawing, !drawing, scanEmpty);
+  visibleInk.current = ink;
   const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (strokes) => {
     setCommittedStrokes((total) => total + strokes.length);
     if (strokes.some((stroke) => stroke.brush === 'eraser')) ink.erased(historyRef.current.drawing);
@@ -88,7 +92,8 @@ export function useDrawingScreen() {
   // contact, as a second finger's does in shipping. Disabling the chrome for a stroke would fade
   // every control and re-mount it on the UI thread at each stroke start and lift, which costs the
   // canvas frames.
-  const disabled = busy || preparing || brushes.state.status !== 'ready';
+  const disabled =
+    historyOwner.draftState.status === 'loading' || preparing || brushes.state.status !== 'ready';
   // A dialog leaves the chrome at full strength under its scrim, as shipping's modal leaves the
   // page: the chrome is held rather than disabled while one is open.
   const dialogOpen = pagePickerOpen || settings.sheetOpen;
@@ -110,7 +115,7 @@ export function useDrawingScreen() {
     replacementGuard
   );
 
-  const save = createSave({
+  const save = useSaveAction({
     historyRef,
     surface,
     runCommand,
@@ -142,6 +147,7 @@ export function useDrawingScreen() {
     drawing,
     setDrawing,
     busy: busy || preparing || brushes.state.status !== 'ready',
+    commandBusy,
     setPreparing,
     ...surfaceActions,
     notice: brushes.state.message || notice,
@@ -331,39 +337,6 @@ function useDrawingSettings({
   };
 }
 
-// The polaroid starts as soon as the picture is captured, so the child sees the save answer at
-// once; a save that turns out not to land takes it back, and the parent's explanation and Try
-// again go to the Save Failure Banner with the captured picture. A success says nothing more.
-function createSave({
-  historyRef,
-  surface,
-  runCommand,
-  setNotice,
-  flights,
-  reportSaveFailure,
-}: {
-  historyRef: RefObject<History>;
-  surface: RefObject<DrawingSurfaceHandle | null>;
-  runCommand: (action: () => Promise<void>) => Promise<void>;
-  setNotice: (notice: string) => void;
-  flights: ReturnType<typeof usePolaroidFlights>;
-  reportSaveFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void;
-}) {
-  return () =>
-    runCommand(async () => {
-      const drawing = historyRef.current.drawing;
-      const pngBase64 = await capturePicture(drawing, surface.current);
-      const flight = pngBase64 ? flights.launch(pngBase64, drawingPaperSize(drawing)) : null;
-      const outcome = pngBase64 ? await savePicture(pngBase64) : 'failed';
-      if (!isUnsaved(outcome)) {
-        setNotice('');
-        return;
-      }
-      if (flight !== null) flights.discard(flight);
-      reportSaveFailure(outcome, pngBase64);
-    });
-}
-
 function useSurfaceCommands({
   historyRef,
   setHistory,
@@ -374,6 +347,7 @@ function useSurfaceCommands({
   report,
   blocked,
   afterClear,
+  knownEmpty,
 }: {
   historyRef: RefObject<History>;
   setHistory: (next: History | ((current: History) => History)) => void;
@@ -384,6 +358,7 @@ function useSurfaceCommands({
   report: (error: unknown) => void;
   blocked: () => boolean;
   afterClear: () => void;
+  knownEmpty: (drawing: Drawing) => boolean | undefined;
 }) {
   const command = useRef(false);
   const { mounted, observations, scanObservations } = useInkObservers();
@@ -421,7 +396,24 @@ function useSurfaceCommands({
     }
   }
 
+  function clearSnapshot(snapshot: History, empty: boolean) {
+    setHistory(clearDrawing(snapshot, empty));
+    afterClear();
+    setNotice('Pick a color and draw.');
+  }
+
   async function clearCurrentPicture(keepInked: boolean) {
+    if (command.current || blocked()) return;
+    const snapshot = historyRef.current;
+    const empty = knownEmpty(snapshot.drawing);
+    if (!keepInked && empty !== undefined) {
+      clearSnapshot(snapshot, empty);
+      return;
+    }
+    const save: { requested: boolean; pngBase64: string | null } = {
+      requested: false,
+      pngBase64: null,
+    };
     await runCommand(async () => {
       const snapshot = historyRef.current;
       const owner = surface.current;
@@ -431,33 +423,30 @@ function useSurfaceCommands({
         !blocked() &&
         historyRef.current === snapshot &&
         surface.current === owner;
-      const observation = hasDrawingInk(snapshot.drawing)
+      const known = knownEmpty(snapshot.drawing);
+      const needsScan = known === undefined && hasDrawingInk(snapshot.drawing);
+      const observation = needsScan
         ? observations.current?.begin(isCurrent, drawingPaperSize(snapshot.drawing))
         : null;
       try {
-        const pixels = hasDrawingInk(snapshot.drawing)
-          ? await owner?.captureInk(snapshot.drawing)
-          : null;
-        if (hasDrawingInk(snapshot.drawing) && (!pixels || !observation))
+        const pixels = needsScan ? await owner?.captureInk(snapshot.drawing) : null;
+        if (needsScan && (!pixels || !observation))
           throw new Error('The drawing paper is not ready to check.');
-        const empty = pixels && observation ? await observation.observe(pixels) : true;
+        const empty = known ?? (pixels && observation ? await observation.observe(pixels) : true);
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
-        const saved = keepInked && !empty ? await keepPicture(snapshot.drawing, owner) : null;
-        // No copy stays inside the app, so a picture Auto-Save could not keep stays on the paper.
-        if (saved && isUnsaved(saved.outcome)) {
-          reportSaveFailure(saved.outcome, saved.pngBase64);
-          return;
-        }
-        if (saved !== null && !isCurrent())
-          throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
-        setHistory(clearDrawing(snapshot, empty));
-        afterClear();
-        setNotice('Pick a color and draw.');
+        const keep = keepInked && !empty;
+        const pngBase64 = keep ? await capturePicture(snapshot.drawing, owner) : null;
+        if (!isCurrent())
+          throw new Error('The picture changed before Clear finished. Please try again.');
+        clearSnapshot(snapshot, empty);
+        save.requested = keep;
+        save.pngBase64 = pngBase64;
       } finally {
         observation?.cancel();
       }
     });
+    if (save.requested) saveClearedPicture(save.pngBase64, reportSaveFailure);
   }
 
   return {
@@ -474,4 +463,17 @@ function useSurfaceCommands({
     undo,
     clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
+}
+
+function saveClearedPicture(
+  pngBase64: string | null,
+  reportFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void
+) {
+  if (!pngBase64) {
+    reportFailure('failed', null);
+    return;
+  }
+  void savePicture(pngBase64).then((outcome) => {
+    if (isUnsaved(outcome)) reportFailure(outcome, pngBase64);
+  });
 }

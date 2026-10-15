@@ -75,7 +75,6 @@ function useRememberedDrawer() {
 // and the overlay that reads the drawer state, never the strokes on the paper.
 export function RsdEdgeLayout({
   covered,
-  paintsDisabled,
   buttonScale,
   onScaleCeiling,
   resizing,
@@ -86,7 +85,6 @@ export function RsdEdgeLayout({
 }: Controls & {
   // A dialog is open over the chrome, which stays at full strength and inert (InertRegion).
   covered: boolean;
-  paintsDisabled: boolean;
   // Button Size, live while its slider is dragged.
   buttonScale: number;
   onScaleCeiling: (scale: number) => void;
@@ -112,7 +110,7 @@ export function RsdEdgeLayout({
   const clear = useClearGesture({
     // The button stays live through a stroke and under a dialog, but its activation plays the
     // clear before the command can refuse, so the gesture itself waits.
-    disabled: blocked || screen.drawing,
+    disabled: blocked || screen.drawing || screen.commandBusy,
     drawing: screen.history.drawing,
     // The same clear path as every other Clear, so Auto-Save on Delete keeps the picture first.
     onClear: () => screen.clear(sound.settings.saveOnDeleteEnabled),
@@ -138,7 +136,7 @@ export function RsdEdgeLayout({
               sound={sound}
               layout={layout}
               actionButtonSize={actionButtonSize}
-              disabled={paintsDisabled}
+              disabled={disabled}
             />
           )}
           clearUnderlay={(offset) => (

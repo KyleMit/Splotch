@@ -121,9 +121,7 @@ describe('persisted candidate drawing appearance', () => {
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
     const writing = f.owner.setAppearance('dark');
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', ...kept, appearance: 'dark' });
-    await f.owner.setAppearance('light');
-    expect(f.storage.write).toHaveBeenCalledTimes(1);
+    expect(f.changes.at(-1)).toMatchObject({ status: 'ready', ...kept, appearance: 'dark' });
     save.reject(new Error('disk full'));
     await writing;
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', appearance: 'dark', saved: false });
@@ -206,10 +204,12 @@ describe('persisted candidate drawing appearance', () => {
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
     const writing = f.owner.setAppearance('dark');
+    const published = f.changes.length;
     f.owner.dispose();
-    save.resolve();
+    save.reject(new Error('disk full'));
     await writing;
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', appearance: 'dark' });
+    expect(f.changes).toHaveLength(published);
+    expect(f.changes.at(-1)).toMatchObject({ status: 'ready', appearance: 'dark' });
   });
   it.each([
     ['system', 'dark', 'dark'],

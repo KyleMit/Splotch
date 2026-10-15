@@ -171,7 +171,7 @@ function brushTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolCont
 
 // The Stroke Width Button wears the held brush's line glyph in the active ink; the eraser's needs
 // no keyline, since it carries its own colors.
-function strokeTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolContext): Tool {
+function strokeTool({ screen, disabled, ink, flyout, setFlyout }: ToolContext): Tool {
   return {
     key: 'stroke',
     render: (face) => (
@@ -183,7 +183,7 @@ function strokeTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolCon
         ink={ink}
         keyline={screen.brush === 'eraser' ? undefined : inkKeyline(ink)}
         expanded={flyout === 'stroke'}
-        disabled={disabled || sound.settings.status !== 'ready'}
+        disabled={disabled}
         onPress={() => setFlyout(flyout === 'stroke' ? null : 'stroke')}
       />
     ),
@@ -391,7 +391,7 @@ export function RsdActionsPanel({
               brush={screen.brush}
               selected={tool === 'eraser' ? sound.settings.eraserWidth : sound.settings.strokeWidth}
               ink={ink}
-              disabled={disabled || sound.settings.status !== 'ready'}
+              disabled={disabled}
               onPick={(width) => {
                 void sound.owner?.settings.setWidth(tool, width);
                 close();
@@ -472,7 +472,6 @@ function RsdColorControl({
   const { flyout, setFlyout, markInside, close, menu, triggers } = slot;
   const place = layout.color;
   if (!place) return null;
-  const paintsDisabled = disabled || sound.settings.status !== 'ready';
   const expanded = flyout === 'color';
   const placement = expanded ? flyoutPlacement(layout.mode, place, layout.size, viewport) : null;
   return (
@@ -483,7 +482,7 @@ function RsdColorControl({
         ink={ink}
         expanded={expanded}
         dimmed={flyout !== null && !expanded}
-        disabled={paintsDisabled}
+        disabled={disabled}
         drawerOpen={open}
         foldable={layout.tools.length > 0}
         slotRef={(node) => {
@@ -510,7 +509,7 @@ function RsdColorControl({
             buttonSize={layout.size}
             selected={sound.settings.selectedColor}
             erasing={screen.brush === 'eraser'}
-            disabled={paintsDisabled}
+            disabled={disabled}
             onPick={(color) => {
               screen.selectInkBrush();
               sound.owner?.settings.setColor(color);

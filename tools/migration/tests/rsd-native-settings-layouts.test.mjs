@@ -494,16 +494,27 @@ describe('the compact shell', () => {
     expect(settings.stored().orientation).toBe('landscape');
   });
 
-  it('holds every quick control while a choice saves', async () => {
+  // Shipping stores each choice synchronously, so no quick control dims or refuses for a save.
+  it('keeps every quick control live while a choice saves, and keeps a tap made meanwhile', async () => {
     const settings = openSettings(PHONE_LANDSCAPE);
     const finish = holdNextWrite(settings.storage);
     await mount(createElement(RsdDrawingScreen));
+    const soundWas = caller.product.sound.settings.soundEnabled;
     await act(async () => quick('Sound').click());
-    expect(caller.product.sound.settings.status).toBe('saving');
-    for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(true);
-    expect(host.querySelector('[role="radio"][aria-label="Auto"]').disabled).toBe(true);
-    await finish();
+    expect(settings.storage.write).toHaveBeenCalledOnce();
     for (const label of QUICK_SWITCHES) expect(quick(label).disabled, label).toBe(false);
+    expect(host.querySelector('[role="radio"][aria-label="Auto"]').disabled).toBe(false);
+    await act(async () => quick('Night Mode').click());
+    expect(caller.product.sound.settings).toMatchObject({
+      soundEnabled: !soundWas,
+      appearance: 'dark',
+    });
+    await finish();
+    expect(settings.storage.write).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(settings.storage.write.mock.calls[1][0])).toMatchObject({
+      soundEnabled: !soundWas,
+      appearance: 'dark',
+    });
   });
 });
 describe('Parent Center in the wide shell', () => {
