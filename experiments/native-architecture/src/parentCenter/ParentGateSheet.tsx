@@ -23,16 +23,20 @@ export function ParentGateSheet({
 }) {
   const styles = useDrawingScreenStyles();
   const offset = useParentGateMotion(state);
-  const blocked = state.locked || state.shaking;
+  const blocked = state.locked || state.shaking || state.unlocked;
+  const close = state.unlocked ? () => {} : owner.gate.dismiss;
   return (
     <Modal
       visible={visible}
-      onDismiss={onDismiss}
+      onDismiss={() => {
+        onDismiss?.();
+        owner.gate.closed();
+      }}
       statusBarTranslucent
       navigationBarTranslucent
       animationType="none"
       accessibilityLabel="Grown-ups only"
-      onRequestClose={owner.gate.dismiss}
+      onRequestClose={close}
     >
       <NativeFrame>
         <ScrollView contentContainerStyle={styles.controls} keyboardShouldPersistTaps="handled">
@@ -67,7 +71,7 @@ export function ParentGateSheet({
             />
           ) : null}
           <View>
-            <Action label="Cancel challenge" onPress={owner.gate.dismiss} />
+            <Action label="Cancel challenge" onPress={close} />
           </View>
         </ScrollView>
       </NativeFrame>

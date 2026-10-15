@@ -44,3 +44,8 @@ export function useGateKeyboard(press: (key: ParentGateKey) => void) {
     return () => document.removeEventListener('keydown', listener);
   }, []);
 }
+
+export function GateKeyboard({ onPress }: { onPress: (key: ParentGateKey) => void }) {
+  useGateKeyboard(onPress);
+  return null;
+}

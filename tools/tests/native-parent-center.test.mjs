@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createParentGate,
   PARENT_GATE_SHAKE_MS,
+  PARENT_GATE_SUCCESS_HOLD_MS,
 } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import {
@@ -23,23 +24,26 @@ const ALWAYS = {
   feedback: 'always',
   parentCenter: 'always',
 };
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
 function fixture(policies = ALWAYS) {
-  let clock = 1000;
+  vi.setSystemTime(1000);
   const changes = [];
   const gate = createParentGate(
     () => policies,
     (next) => changes.push(next),
-    () => clock,
+    Date.now,
     () => 0
   );
   return {
     gate,
     changes,
     advance(ms) {
-      clock += ms;
+      vi.advanceTimersByTime(ms);
     },
     setClock(value) {
-      clock = value;
+      vi.setSystemTime(value);
     },
   };
 }
@@ -47,6 +51,8 @@ function solve(gate) {
   const { x, y } = gate.getState();
   gate.input(String(x * y));
   gate.answer();
+  vi.advanceTimersByTime(PARENT_GATE_SUCCESS_HOLD_MS);
+  gate.closed();
 }
 function pending() {
   let resolve;

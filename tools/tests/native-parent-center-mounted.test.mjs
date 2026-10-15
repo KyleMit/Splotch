@@ -1,6 +1,10 @@
 // @vitest-environment happy-dom
 import { act } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import {
+  PARENT_GATE_SUCCESS_HOLD_MS,
+  PARENT_GATE_ERROR_VISIBLE_MS,
+} from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { createScreen, files } from './native-drawing-screen-harness.mjs';
 
 let screen;
@@ -17,8 +21,10 @@ async function solve() {
   expect(match).not.toBeNull();
   await input('Grown-up answer', String(Number(match[1]) * Number(match[2])));
   await screen.click('Check answer');
+  await act(async () => vi.advanceTimersByTimeAsync(PARENT_GATE_SUCCESS_HOLD_MS));
 }
 beforeEach(async () => {
+  vi.useFakeTimers();
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
@@ -185,6 +191,8 @@ it('keeps mounted drawing and an idle challenge timer-free, schedules a wrong-an
   await wrongAnswer();
   expect(vi.getTimerCount()).toBe(1);
   await act(async () => vi.advanceTimersByTimeAsync(400));
+  expect(vi.getTimerCount()).toBe(1);
+  await act(async () => vi.advanceTimersByTimeAsync(PARENT_GATE_ERROR_VISIBLE_MS - 400));
   expect(vi.getTimerCount()).toBe(0);
   await wrongAnswer();
   expect(vi.getTimerCount()).toBe(1);

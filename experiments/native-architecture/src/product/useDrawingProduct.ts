@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
+import { createDrawingProduct } from './createDrawingProduct';
 import { productOwners } from './productOwnersLoader';
 import type { createProductOwners, ProductOwners } from './productOwners';
 import { createDrawingAudio } from '../audio/drawingAudio';
@@ -15,7 +15,6 @@ import { subscribePencilDoubleTap } from '../platform/pencilDoubleTap';
 import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import { initialSoundSettingsState, type SoundSettingsState } from '../settings/soundSettings';
-import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import { openAppSettings } from '../platform/appSettings';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -57,11 +56,7 @@ function useSoundChoices(
   }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
 }
 
-function createProductTicker(
-  product: DrawingProductOwner,
-  feedback: () => NativeFeedbackOwner | null,
-  foreground: boolean
-) {
+function createProductTicker(feedback: () => NativeFeedbackOwner | null, foreground: boolean) {
   let disposed = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let timerDelay: number | null = null;
@@ -71,16 +66,9 @@ function createProductTicker(
     timerDelay = null;
   }
   function reconcile() {
-    const gate = product.gate.getState();
     const report = feedback()?.getState();
-    const gateActive = gate.open && (gate.locked || gate.shaking);
     const reportActive = report?.delivery.status === 'throttled';
-    const delay =
-      !disposed && foreground && (gateActive || reportActive)
-        ? gateActive && gate.shaking
-          ? PARENT_GATE_SHAKE_MS
-          : PRODUCT_TICK_MS
-        : null;
+    const delay = !disposed && foreground && reportActive ? PRODUCT_TICK_MS : null;
     if (timer !== null && timerDelay === delay) return;
     stopTimer();
     if (delay === null) return;
@@ -89,8 +77,6 @@ function createProductTicker(
       timer = null;
       timerDelay = null;
       if (disposed || !foreground) return;
-      const gate = product.gate.getState();
-      if (gate.open && (gate.locked || gate.shaking)) product.gate.tick();
       const owner = feedback();
       if (owner?.getState().delivery.status === 'throttled') owner.deliveryTick();
       reconcile();
@@ -173,7 +159,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     const { product, audio, contacts, clear, preview } = services;
     let attached: ProductOwners | null = null;
     let detachOwners: (() => void) | null = null;
-    const ticker = createProductTicker(product, () => attached?.feedback ?? null, foreground);
+    const ticker = createProductTicker(() => attached?.feedback ?? null, foreground);
     reconcileTimer = ticker.reconcile;
     const attach = (create: typeof createProductOwners) => {
       if (!alive || attached) return;
@@ -238,13 +224,14 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const settings = services?.product.getState().settings ?? initialSoundSettingsState();
   const aiState = owners?.ai.getState() ?? null;
   const aiProgress = useAiProgressOwner(aiState);
-  const parentCenterOpen = services?.product.getState().parentCenterOpen ?? false;
+  const productState = services?.product.getState();
+  const parentCenterOpen = productState?.parentCenterOpen ?? false;
+  const parentCenterGranted =
+    parentCenterOpen ||
+    (productState?.gate.unlocked === true && productState.gate.feature === 'parentCenter');
   useEffect(() => {
-    if (parentCenterOpen) {
-      owners?.ai.close();
-      owners?.feedback.close();
-    }
-  }, [owners, parentCenterOpen]);
+    if (parentCenterGranted) owners?.feedback.close();
+  }, [owners, parentCenterGranted]);
   useSoundChoices(services, settings);
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();

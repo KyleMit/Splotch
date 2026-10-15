@@ -48,6 +48,7 @@ export function DrawingScreen() {
             ? 'ai'
             : 'none';
   const route = useProductModalRoute('platform', target, (outgoing) => {
+    if (outgoing === 'gate') product.owner?.gate.closed();
     if (outgoing === 'settings') {
       screen.closeSettings();
       setSettingsClosing(false);

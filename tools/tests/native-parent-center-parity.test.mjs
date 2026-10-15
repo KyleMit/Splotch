@@ -15,6 +15,7 @@ import {
 import { PARENT_GATE_COPY } from '../../experiments/native-architecture/src/parentCenter/parentGateCopy.ts';
 import {
   PARENT_GATE_ERROR_MESSAGE,
+  PARENT_GATE_ERROR_VISIBLE_MS,
   PARENT_GATE_SUCCESS_HOLD_MS,
 } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import {
@@ -95,6 +96,9 @@ describe('Parent Center policies against parentalGate.svelte.ts', () => {
   it('holds success and words a wrong answer as shipping does', () => {
     expect(SHIPPING.state).toContain(
       `export const GATE_SUCCESS_HOLD_MS = ${PARENT_GATE_SUCCESS_HOLD_MS};`
+    );
+    expect(SHIPPING.state).toContain(
+      `export const GATE_ERROR_VISIBLE_MS = ${PARENT_GATE_ERROR_VISIBLE_MS};`
     );
     expect(SHIPPING.state).toContain(
       `export const GATE_ERROR_MESSAGE = ${literal(PARENT_GATE_ERROR_MESSAGE)};`

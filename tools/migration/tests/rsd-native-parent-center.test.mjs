@@ -8,6 +8,7 @@ import { createDrawingProduct } from '../../../experiments/native-architecture/s
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { RsdParentCenterSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentCenterSection.tsx';
+import { useModalPresence } from '../../../experiments/native-architecture/src/rsdDrawing/useModalPresence.ts';
 import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
@@ -87,13 +88,14 @@ async function choose(feature, mode) {
 
 function GateFixture({ owner }) {
   const view = useParentGateCard(owner.getState().gate);
-  return view?.open
+  const presence = useModalPresence(view?.open ? view : null);
+  return presence.shown
     ? createElement(RsdParentGateSheet, {
         owner,
-        state: view.state,
-        unlocked: view.unlocked,
-        visible: true,
-        onDismiss: () => {},
+        state: presence.shown.state,
+        unlocked: presence.shown.unlocked,
+        visible: presence.visible,
+        onDismiss: presence.dismissed,
       })
     : null;
 }
@@ -429,6 +431,27 @@ describe('RSD Parental Gate card', () => {
     await act(async () => footer.click());
     expect(owner.getState().gate.feature).toBe('parentCenter');
     expect(host.querySelector(GATE_MODAL).textContent).toContain(PARENT_GATE_COPY.managingSubtitle);
+  });
+
+  it('takes native hardware keys only while a challenge is mounted', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(FIXED_OPERAND_RANDOM);
+    const owner = await mountProduct();
+    await click('Parent Center fixture entry');
+    const receiver = records.props.findLast((props) => props.testID === 'parent-gate-keyboard');
+    expect(receiver).toBeDefined();
+    await act(async () => receiver.onGateKey({ nativeEvent: { key: '3' } }));
+    expect(owner.gate.getState().input).toBe('3');
+    await act(async () => receiver.onGateKey({ nativeEvent: { key: 'delete' } }));
+    expect(owner.gate.getState().input).toBe('');
+    await act(async () => {
+      receiver.onGateKey({ nativeEvent: { key: '3' } });
+      receiver.onGateKey({ nativeEvent: { key: '6' } });
+      receiver.onGateKey({ nativeEvent: { key: 'submit' } });
+    });
+    expect(owner.gate.getState().unlocked).toBe(true);
+    expect(host.querySelector('[data-testid="parent-gate-keyboard"]')).toBeNull();
+    expect(() => receiver.onGateKey({ nativeEvent: { key: 'unknown' } })).toThrow('Unrecognized');
+    await finishGateHold();
   });
 
   it('holds the Unlocked card, without a close, before the destination shows', async () => {

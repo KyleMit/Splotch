@@ -22,7 +22,7 @@ import { PARENT_GATE_COPY } from '../parentCenter/parentGateCopy';
 import type { ParentGateState } from '../parentCenter/parentGate';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import { useParentGateMotion } from '../parentCenter/useParentGateMotion';
-import { useGateKeyboard } from '../platform/gateKeyboard';
+import { GateKeyboard } from '../platform/gateKeyboard';
 
 // Operand splats wear crayon hues, not chrome tokens: palette Purple, and the picker's mid-blue
 // because palette Blue misses 3:1 against the white digit (ParentalGateProblem.svelte).
@@ -81,9 +81,12 @@ export function RsdParentGateSheet({
       {unlocked ? (
         <GateSuccess size={size} />
       ) : (
-        <Animated.View style={{ transform: [{ translateX: offset }] }}>
-          <GateChallenge owner={owner} state={state} size={size} />
-        </Animated.View>
+        <>
+          <GateKeyboard onPress={owner.gate.press} />
+          <Animated.View style={{ transform: [{ translateX: offset }] }}>
+            <GateChallenge owner={owner} state={state} size={size} />
+          </Animated.View>
+        </>
       )}
     </ModalShell>
   );
@@ -102,7 +105,6 @@ function GateChallenge({
   // its subtitle and drops the footer offering the trip the parent is already on.
   const managing = state.feature === 'parentCenter';
   const landscape = size === 'phoneLandscape';
-  useGateKeyboard(owner.gate.press);
   const header = <GateHeader size={size} managing={managing} />;
   const problem = <GateProblem state={state} size={size} />;
   const keypad = (
