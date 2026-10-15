@@ -250,6 +250,9 @@ describe('root Parent Center policy and lifetime', () => {
     expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('always');
     await f.owner.setPolicy('parentCenter', 'never', true);
     expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('never');
+    // Re-picking Never once it is already off asks nothing (flows-parent-center-warning.spec.ts).
+    await f.owner.setPolicy('parentCenter', 'never');
+    expect(f.owner.getState().confirmNever).toBe(false);
     f.owner.dispose();
     expect(f.owner.port.consent().enabled).toBe(false);
   });

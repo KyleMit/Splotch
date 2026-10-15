@@ -78,12 +78,18 @@ describe('Parent Center policies against parentalGate.svelte.ts', () => {
           );
   });
 
-  it('asks before Never on Parent Center and nothing else', () => {
-    for (const feature of PARENT_FEATURES)
-      for (const mode of PARENT_MODES)
-        expect(endsParentCenterProtection(feature, mode)).toBe(
-          feature === 'parentCenter' && mode === 'never'
-        );
+  it('asks before Never on Parent Center and nothing else, unless it is already Never', () => {
+    expect(SHIPPING.state).toContain(
+      "return feature === 'parentCenter' && mode === 'never' && !isParentCenterUnprotected();"
+    );
+    for (const current of PARENT_MODES) {
+      const policies = Object.fromEntries(PARENT_FEATURES.map((feature) => [feature, current]));
+      for (const feature of PARENT_FEATURES)
+        for (const mode of PARENT_MODES)
+          expect(endsParentCenterProtection(feature, mode, policies), `${current} ${feature}`).toBe(
+            feature === 'parentCenter' && mode === 'never' && current !== 'never'
+          );
+    }
   });
 
   it('holds success and words a wrong answer as shipping does', () => {

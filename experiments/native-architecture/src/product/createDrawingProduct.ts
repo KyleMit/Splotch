@@ -96,7 +96,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
       if (!editable()) return;
       if (!isParentModeAvailable(feature, mode, PARENT_PLATFORM)) return;
-      if (endsParentCenterProtection(feature, mode) && !confirmed) {
+      if (endsParentCenterProtection(feature, mode, preferences.parentPolicies) && !confirmed) {
         confirmNever = true;
         notify();
         return;

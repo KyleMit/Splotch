@@ -58,10 +58,20 @@ export function availablePolicies(
     parentCenter: pick('parentCenter'),
   };
 }
+// Whether Parent Center itself opens with no check in front of it, which leaves every other
+// policy on the device open to whoever holds it (shipping isParentCenterUnprotected).
+export function isParentCenterUnprotected(policies: ParentPolicies) {
+  return policies.parentCenter === 'never';
+}
 // Never on Parent Center is the one choice that waits for a confirmation: it leaves the checks
-// themselves unprotected.
-export function endsParentCenterProtection(feature: ParentFeature, mode: ParentMode) {
-  return feature === 'parentCenter' && mode === 'never';
+// themselves unprotected. Already unprotected is not a change, so it asks nothing (shipping
+// endsParentCenterProtection).
+export function endsParentCenterProtection(
+  feature: ParentFeature,
+  mode: ParentMode,
+  policies: ParentPolicies
+) {
+  return feature === 'parentCenter' && mode === 'never' && !isParentCenterUnprotected(policies);
 }
 function hasExactPolicies<Feature extends ParentFeature>(
   value: unknown,
