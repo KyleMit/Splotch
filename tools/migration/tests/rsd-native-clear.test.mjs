@@ -2,6 +2,7 @@ import { caller, records, root, host } from './rsd-native-selection-host.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement, useSyncExternalStore } from 'react';
+import { clearLadderFrequency } from '../../../web/src/lib/audio/clearSoundNotes.ts';
 import { afterEach, expect, it, vi } from 'vitest';
 
 // The web export loads the clear underlay from its own chunk (clearSurfaces.web.ts). This gate
@@ -70,6 +71,20 @@ import {
 afterEach(() => {
   underlayChunk.loaded = true;
   vi.useRealTimers();
+});
+
+it('forwards distance beyond the ring to the available bubble player without clipping the wash', async () => {
+  caller.clearSound.notes = 'available';
+  await mountClear();
+  await press();
+  await drag(offset(radius()));
+  await drag(offset(radius() * 2.6));
+  expect(caller.clearSound.note.mock.calls).toEqual([
+    [clearLadderFrequency(9), 1],
+    [clearLadderFrequency(18), 1],
+  ]);
+  await lift(offset(radius() * 2.6));
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
 });
 
 it('leaves the drawing alone when a drag is released short of the accept ring', async () => {

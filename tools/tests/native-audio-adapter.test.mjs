@@ -149,7 +149,7 @@ describe('supported Expo native audio binding', () => {
     expect(f.failure).not.toHaveBeenCalled();
   });
 
-  it('subscribes before replacing the bundled asset and never enables recording or background playback', async () => {
+  it('subscribes before replacing the asset and respects the silent switch without recording or background playback', async () => {
     const f = fixture();
     const loop = await loaded(f);
     expect(native.create).toHaveBeenCalledWith(null, { keepAudioSessionActive: false });
@@ -159,6 +159,7 @@ describe('supported Expo native audio binding', () => {
     expect(native.mode).toHaveBeenCalledWith(
       expect.objectContaining({
         allowsRecording: false,
+        playsInSilentMode: false,
         shouldPlayInBackground: false,
         allowsBackgroundRecording: false,
       })

@@ -2,6 +2,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingProduct } from './createDrawingProduct';
 import { productOwners } from './productOwnersLoader';
+import { afterDrawingPaint } from './afterDrawingPaint';
 import type { createProductOwners, ProductOwners } from './productOwners';
 import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
@@ -53,6 +54,17 @@ function useSoundChoices(
         deleteSoundEnabled,
       });
   }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
+  useEffect(() => {
+    let disposed = false;
+    void afterDrawingPaint().then(() => {
+      if (disposed) return;
+      services?.audio.prepare();
+      services?.clear.prepare();
+    });
+    return () => {
+      disposed = true;
+    };
+  }, [services, soundEnabled, drawingSoundEnabled, deleteSoundEnabled]);
 }
 
 // Feedback and AI report to the product, so they attach to it once their module is loaded: at
@@ -96,6 +108,8 @@ function useScreenFollowsSettings(
 
 export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const online = useOnline();
+  const onlineRef = useRef(online);
+  onlineRef.current = online;
   const screenRef = useRef(screen);
   screenRef.current = screen;
   const [, update] = useState(0);
@@ -116,7 +130,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     let detachOwners: (() => void) | null = null;
     const attach = (create: typeof createProductOwners) => {
       if (!alive || attached) return;
-      attached = create(screenRef, product.port);
+      attached = create(screenRef, product.port, () => onlineRef.current);
       detachOwners = attachProductOwners(attached, publish);
       setOwners(attached);
     };

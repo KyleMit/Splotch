@@ -140,6 +140,27 @@ describe('the Notch Band', () => {
     expect(caller.screen.brush).toBe('crayon');
   });
 
+  it('reasserts the hidden Android landscape bar on resume without a layout change', async () => {
+    await mountWith({ dimensions: LANDSCAPE, os: 'android' });
+    await act(async () => {
+      for (const listener of records.appStateListeners) listener('background');
+    });
+    expect(records.statusBarHidden).toEqual([]);
+    await act(async () => {
+      for (const listener of records.appStateListeners) listener('active');
+    });
+    expect(records.statusBarHidden).toEqual([true]);
+  });
+
+  it('reasserts the shown portrait bar and its cutout icon style on resume', async () => {
+    await mountWith({ insets: { top: ANDROID_CUTOUT_INSET_PX }, os: 'android', color: 'Green' });
+    await act(async () => {
+      for (const listener of records.appStateListeners) listener('active');
+    });
+    expect(records.statusBarHidden).toEqual([false]);
+    expect(records.statusBarStyles).toEqual(['dark-content']);
+  });
+
   it("restates shipping's theme-color selector", () => {
     expect(THEME_COLOR_META_SELECTOR).toBe(SHIPPING_THEME_COLOR_META_SELECTOR);
     const notchBand = readFileSync(

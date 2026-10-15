@@ -93,20 +93,25 @@ it('keeps the last settled Volume when Settings closes before its write can star
 });
 
 function pencilLoop() {
-  const loop = { start: vi.fn(), setVolume: vi.fn(), stop: vi.fn(), dispose: vi.fn() };
-  caller.drawingLoop = vi.fn(async () => loop);
-  return loop;
+  const loops = [];
+  caller.drawingLoop = vi.fn(async () => {
+    const loop = { start: vi.fn(), setVolume: vi.fn(), stop: vi.fn(), dispose: vi.fn() };
+    loops.push(loop);
+    return loop;
+  });
+  return { current: () => loops.at(-1), loops };
 }
 
 const gainAt = (volume) => BASE_SCRATCH_GAIN * (volume / 50);
 
 it('plays the pencil while Volume is dragged, at the gain of the value under the finger, and stops on release', async () => {
-  const loop = pencilLoop();
+  const fixture = pencilLoop();
   const settings = storedSettings({ soundEnabled: true, drawingSoundEnabled: false });
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Sound');
   await grab('Volume');
+  const loop = fixture.current();
   expect(caller.drawingLoop).toHaveBeenCalledOnce();
   // Shipping's preview answers to the Sound switch alone, so it plays with Drawing silenced.
   expect(loop.start).toHaveBeenCalledOnce();
@@ -127,12 +132,13 @@ it('plays the pencil while Volume is dragged, at the gain of the value under the
 });
 
 it('stops the Volume preview when Settings closes or the app leaves mid-drag', async () => {
-  const loop = pencilLoop();
+  const fixture = pencilLoop();
   storedSettings({ soundEnabled: true });
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Sound');
   await grab('Volume');
+  const loop = fixture.current();
   expect(loop.start).toHaveBeenCalledOnce();
   await rerender({ settingsOpen: false });
   expect(host.querySelector('[role="slider"]')).toBeNull();
@@ -150,7 +156,7 @@ it('stops the Volume preview when Settings closes or the app leaves mid-drag', a
 });
 
 it('plays nothing while Volume moves with Sound off', async () => {
-  const loop = pencilLoop();
+  const fixture = pencilLoop();
   storedSettings({ soundEnabled: true });
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
@@ -158,8 +164,13 @@ it('plays nothing while Volume moves with Sound off', async () => {
   // Turning Sound off releases the loaded preview; the slider hides with it, so a held drag is
   // what remains to test.
   await grab('Volume');
+  const loop = fixture.current();
+  expect(fixture.loops).toHaveLength(2);
+  const [prewarmed] = fixture.loops;
+  expect(prewarmed.start).not.toHaveBeenCalled();
   await act(async () => caller.product.sound.owner.settings.setEnabled(false));
   expect(loop.dispose).toHaveBeenCalledOnce();
+  expect(prewarmed.dispose).toHaveBeenCalledOnce();
   caller.drawingLoop.mockClear();
   await act(async () => caller.product.sound.owner.preview.begin(80));
   expect(caller.drawingLoop).not.toHaveBeenCalled();

@@ -18,6 +18,22 @@ import {
 } from '../../web/src/lib/saveNaming.ts';
 import { timestamp } from '../../web/src/lib/savedFile.ts';
 import { saveFailureCopy } from '../../web/src/lib/drawing/saveFailureCopy.ts';
+import { folderSave } from '../../experiments/native-architecture/src/platform/folderSave.web.ts';
+import { browserFolderSave } from '../../experiments/native-architecture/src/platform/browserFolderSaveLoader.ts';
+
+const folderRecords = vi.hoisted(() => new Map());
+vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
+  openDatabase: async () => ({
+    get: async (_store, key) => folderRecords.get(key),
+    put: async (_store, value, key) => {
+      folderRecords.set(key, value);
+    },
+    delete: async (_store, key) => {
+      folderRecords.delete(key);
+    },
+    closed: new Promise(() => {}),
+  }),
+}));
 
 vi.mock('react-native', () => ({ Platform: { OS: 'web' } }));
 // The web export resolves platform/pictureSave to its .web sibling.
@@ -37,8 +53,18 @@ const SAVED_AT = new Date(2026, 9, 13, 9, 5, 7);
 let downloads;
 let blobs;
 let revoked;
+const originalPicker = Object.getOwnPropertyDescriptor(window, 'showDirectoryPicker');
 
-beforeEach(() => {
+beforeEach(async () => {
+  localStorage.clear();
+  folderRecords.clear();
+  Object.defineProperty(window, 'showDirectoryPicker', {
+    configurable: true,
+    value: vi.fn(async () => {
+      throw new DOMException('Cancelled', 'AbortError');
+    }),
+  });
+  await folderSave.clearSaveFolder();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(SAVED_AT);
   downloads = [];
@@ -61,13 +87,109 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  if (originalPicker) Object.defineProperty(window, 'showDirectoryPicker', originalPicker);
+  else delete window.showDirectoryPicker;
 });
+
+function directory(name = 'Drawings') {
+  const files = new Map();
+  const handle = {
+    name,
+    queryPermission: vi.fn(async () => 'granted'),
+    requestPermission: vi.fn(async () => 'granted'),
+    getFileHandle: vi.fn(async (filename, options) => {
+      if (!options?.create && !files.has(filename))
+        throw new DOMException('Missing', 'NotFoundError');
+      if (options?.create && !files.has(filename)) files.set(filename, null);
+      return {
+        createWritable: async () => ({
+          write: async (blob) => {
+            files.set(filename, blob);
+          },
+          close: async () => {},
+        }),
+      };
+    }),
+  };
+  return { handle, files };
+}
 
 function surface(png) {
   return { exportPng: vi.fn(async () => png) };
 }
 
 describe('saving a picture on the web', () => {
+  it('downloads without loading the optional folder module on an unsupported browser', async () => {
+    delete window.showDirectoryPicker;
+    const load = vi.spyOn(browserFolderSave, 'load');
+    expect(await pictureSave.save(PNG)).toBe('downloads');
+    expect(load).not.toHaveBeenCalled();
+    expect(downloads).toHaveLength(1);
+    expect([...new Uint8Array(await blobs[0].arrayBuffer())]).toEqual(PNG_BYTES);
+  });
+
+  it('downloads the exact picture if the optional folder chunk cannot load', async () => {
+    vi.spyOn(browserFolderSave, 'load').mockRejectedValueOnce(new Error('Chunk unavailable.'));
+    expect(await pictureSave.save(PNG)).toBe('downloads');
+    expect(downloads).toHaveLength(1);
+    expect([...new Uint8Array(await blobs[0].arrayBuffer())]).toEqual(PNG_BYTES);
+    expect(revoked).toEqual(['blob:picture-1']);
+  });
+
+  it('writes into the chosen shipping folder without opening the picker again or downloading', async () => {
+    const { handle, files } = directory();
+    window.showDirectoryPicker.mockResolvedValue(handle);
+    expect(await folderSave.chooseSaveFolder()).toBe('Drawings');
+    expect(await pictureSave.save(PNG)).toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
+    expect(window.showDirectoryPicker).toHaveBeenCalledExactlyOnceWith({
+      mode: 'readwrite',
+      startIn: 'pictures',
+    });
+    expect(downloads).toEqual([]);
+    expect(blobs).toEqual([]);
+    const blob = files.get('splotch-2026-10-13_09-05-07.png');
+    expect(blob.type).toBe('image/png');
+    expect([...new Uint8Array(await blob.arrayBuffer())]).toEqual(PNG_BYTES);
+  });
+
+  it('asks to renew folder permission for a deliberate save and falls back silently for an automatic save', async () => {
+    const { handle, files } = directory();
+    window.showDirectoryPicker.mockResolvedValue(handle);
+    await folderSave.chooseSaveFolder();
+    handle.requestPermission.mockClear();
+    handle.queryPermission.mockResolvedValue('prompt');
+    expect(await pictureSave.save(PNG)).toBe('downloads');
+    expect(handle.requestPermission).not.toHaveBeenCalled();
+    expect(files.size).toBe(0);
+    expect(await pictureSave.save(PNG, undefined, { allowPrompt: true })).toEqual({
+      status: 'chosenFolder',
+      folderName: 'Drawings',
+    });
+    expect(handle.requestPermission).toHaveBeenCalledExactlyOnceWith({ mode: 'readwrite' });
+    expect(files.size).toBe(1);
+  });
+
+  it('reserves distinct same-second folder filenames and forgets a missing folder', async () => {
+    const { handle, files } = directory();
+    window.showDirectoryPicker.mockResolvedValue(handle);
+    await folderSave.chooseSaveFolder();
+    expect(await Promise.all([pictureSave.save(PNG), pictureSave.save(PNG)])).toEqual([
+      { status: 'chosenFolder', folderName: 'Drawings' },
+      { status: 'chosenFolder', folderName: 'Drawings' },
+    ]);
+    expect([...files.keys()]).toEqual([
+      'splotch-2026-10-13_09-05-07.png',
+      'splotch-2026-10-13_09-05-07 (1).png',
+    ]);
+    const cleared = vi.fn();
+    folderSave.setSaveFolderClearedListener(cleared);
+    handle.queryPermission.mockRejectedValue(
+      new DOMException('Missing directory', 'NotFoundError')
+    );
+    expect(await pictureSave.save(PNG)).toBe('downloads');
+    expect(await folderSave.getSaveFolderName()).toBeNull();
+    expect(cleared).toHaveBeenCalledOnce();
+  });
   it('downloads the PNG under the shipping file name, then lets the object URL go', async () => {
     expect(await pictureSave.save(PNG)).toBe('downloads');
     expect(downloads).toEqual([

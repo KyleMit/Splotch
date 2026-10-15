@@ -15,7 +15,12 @@ import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
 import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
-import { contentAddressedShell, subresourceIntegrity } from '../migration/build-native-web.mjs';
+import {
+  contentAddressedShell,
+  subresourceIntegrity,
+  webVersionHeadTag,
+} from '../migration/build-native-web.mjs';
+import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const RELEASE_NOTES_BY_VERSION = JSON.parse(
@@ -42,7 +47,8 @@ const COW = '_expo/static/js/web/cow-1.js';
 const CAT_IMAGE = 'assets/__web/static/coloring/farm/cat-wide.selector.1.webp';
 const COW_IMAGE = 'assets/__web/static/coloring/farm/cow-wide.selector.1.webp';
 const CSS = '_expo/static/css/strict-1.css';
-const INDEX = `<html><head><link rel="stylesheet" href="/${CSS}"></head><body><script src="/${ENTRY}" defer></script></body></html>`;
+const BUILT_VERSION = '1.6.1234';
+const INDEX = `<html><head>${webVersionHeadTag(BUILT_VERSION)}<link rel="stylesheet" href="/${CSS}"></head><body><script src="/${ENTRY}" defer></script></body></html>`;
 const ASSETS = {
   'index.html': INDEX,
   [ENTRY]: 'var app={};',
@@ -53,6 +59,7 @@ const ASSETS = {
   [CSS]: 'body{}',
   'site.webmanifest': '{}',
   'metadata.json': '{}',
+  [VERSION_JSON_FILENAME]: JSON.stringify({ version: BUILT_VERSION }),
 };
 const SHELL = contentAddressedShell(INDEX);
 const lookup = (callback, url) =>
@@ -108,6 +115,23 @@ const check = (exportDir, options = {}) =>
 
 it('accepts a complete export whose pinned app shell is first', () => {
   expect(() => check(exportFixture({ urls: COMPLETE }))).not.toThrow();
+});
+
+it('rejects a version endpoint from a different build', () => {
+  expect(() =>
+    check(
+      exportFixture({
+        urls: COMPLETE,
+        assets: { ...ASSETS, [VERSION_JSON_FILENAME]: JSON.stringify({ version: '1.6.1235' }) },
+      })
+    )
+  ).toThrow(/same web build version/);
+});
+
+it('keeps the version endpoint out of the worker cache', () => {
+  expect(() => check(exportFixture({ urls: [...COMPLETE, VERSION_JSON_FILENAME] }))).toThrow(
+    /must stay out of the precache/
+  );
 });
 
 it.each([

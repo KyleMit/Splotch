@@ -4,6 +4,7 @@ import {
   UNSAVED_PICTURE_LIMIT,
   createSaveFailure,
 } from '../../experiments/native-architecture/src/export/saveFailure.ts';
+import { readUnsavedPictures } from '../../experiments/native-architecture/src/export/unsavedPictures.ts';
 
 const browserDisk = vi.hoisted(() => new Map());
 vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
@@ -35,6 +36,13 @@ function owner(save = vi.fn(async () => 'photos')) {
 }
 
 describe('the Save Failure Banner owner', () => {
+  it('rejects obsolete saved outcomes while keeping valid refused pictures', () => {
+    const obsolete = { pngBase64: 'held-png', outcome: 'unavailable' };
+    const valid = { pngBase64: 'valid-png', outcome: 'failed' };
+    expect(readUnsavedPictures([obsolete])).toBeNull();
+    expect(readUnsavedPictures([obsolete, valid])).toEqual([valid]);
+  });
+
   function durableStore(initial = null) {
     let record = structuredClone(initial);
     return {
@@ -191,14 +199,17 @@ describe('the Save Failure Banner owner', () => {
     expect(failure.getState().outcome).toBe('failed');
   });
 
-  it('holds no picture for a gallery this app cannot write to, since every retry would fail', () => {
-    const { failure } = owner();
-    failure.report('unavailable', 'png');
+  it('holds and retries a picture after a native gallery failure', async () => {
+    const { failure, save } = owner();
+    failure.report('failed', 'png');
     expect(failure.getState()).toEqual({
-      outcome: 'unavailable',
-      pictureCount: 0,
+      outcome: 'failed',
+      pictureCount: 1,
       retrying: false,
     });
+    await failure.retry();
+    expect(save).toHaveBeenCalledWith('png', undefined);
+    expect(failure.getState().outcome).toBeNull();
   });
 
   it('clears a picture-less failure seen when a retry started, and keeps one reported during it', async () => {

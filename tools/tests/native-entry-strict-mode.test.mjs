@@ -15,7 +15,6 @@ const { outputText: code } = ts.transpileModule(source, {
 it.each([false, true])('registers the canonical root with development=%s', async (development) => {
   const ProbeApp = () => null;
   const registerRootComponent = vi.fn();
-  const registerServiceWorker = vi.fn();
   const startLaunchInvites = vi.fn();
   const load = vi.fn();
   const modules = {
@@ -24,7 +23,6 @@ it.each([false, true])('registers the canonical root with development=%s', async
     react: { createElement, StrictMode },
     './platform/registerRoot': { registerRootComponent },
     './ProbeApp': { ProbeApp },
-    './platform/serviceWorker': { registerServiceWorker },
     './platform/launchInvites': { startLaunchInvites },
     './platform/settingsSessions': { settingsSessions: { load } },
   };
@@ -43,5 +41,4 @@ it.each([false, true])('registers the canonical root with development=%s', async
   expect(rendered?.type).toBe(development ? StrictMode : ProbeApp);
   expect(development ? rendered.props.children.type : Registered).toBe(ProbeApp);
   expect(startLaunchInvites).toHaveBeenCalledOnce();
-  expect(registerServiceWorker).toHaveBeenCalledOnce();
 });

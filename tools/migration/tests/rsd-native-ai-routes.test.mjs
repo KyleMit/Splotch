@@ -144,10 +144,14 @@ it(
   GATED_FLOW_TIMEOUT_MS
 );
 
-it(
-  'auto-saves the picture and the drawing through the screenshot save path, then says where',
-  async () => {
+it.each([
+  { outcome: 'photos', caption: '✓ Saved to your photos' },
+  { outcome: { status: 'chosenFolder', folderName: 'Drawings' }, caption: '✓ Saved to Drawings' },
+])(
+  'auto-saves the picture and drawing and renders $caption',
+  async ({ outcome, caption }) => {
     reply(pictureReply);
+    save.outcome = outcome;
     useCaller();
     await enableAi({ autoSave: true });
     await openPrompt();
@@ -157,7 +161,7 @@ it(
       base64: 'bytes-of:file:///owned/rsd-ai.png',
       format: { baseName: 'splotch-ai', mime: 'image/png' },
     });
-    expect(host.textContent).toContain('✓ Saved to your photos');
+    await settle(() => expect(host.textContent).toContain(caption));
     expect(save.calls[1].format).toBeUndefined();
     expect(save.calls[1].base64.length).toBeGreaterThan(0);
     expect([...host.querySelectorAll('button')].some((b) => b.textContent === 'Download')).toBe(

@@ -75,7 +75,7 @@ it(
         strokes: 0,
         undo: 0,
         settings: 'ready',
-        listeners: { appState: 2, back: 0, dimensions: 1 },
+        listeners: { appState: 3, back: 0, dimensions: 1 },
       },
       drawn: { strokes: 1, undo: 1 },
       chosen: { settingsWrites: 1, soundEnabled: false },

@@ -1,4 +1,4 @@
-import { pwaUpdates } from '$lib/pwa/updates';
+import { pwaUpdates } from '$lib/pwa/updates.svelte';
 import { initInstallPrompt, recordInstallRepromptSession } from '$lib/state/install.svelte';
 
 // The service worker only exists in the web build; the native apps bundle their
@@ -10,7 +10,7 @@ import { initInstallPrompt, recordInstallRepromptSession } from '$lib/state/inst
 // - web/src/lib/state/install.svelte.ts: beforeinstallprompt
 // - web/src/lib/state/install.svelte.ts: appinstalled
 // - web/src/lib/pwa/updates.ts: controllerchange
-// - web/src/lib/pwa/updates.ts: /sw.js
+// - web/src/lib/pwa/versionEndpoint.ts: /sw.js
 // - web/src/lib/components/page/SocialCard.svelte: twitter:card
 export function initWebOnlyServices(): () => void {
   if (__IS_CAPACITOR__) return () => {};

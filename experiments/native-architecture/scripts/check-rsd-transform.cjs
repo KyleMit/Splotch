@@ -75,13 +75,16 @@ const returns = owner.body.body.filter((node) => node.type === 'ReturnStatement'
 assert.equal(returns.length, 1, 'ProbeApp has one return');
 assert.ok(imported(probe, './product/AppRestart', 'AppRestartRoot'), 'App restart root import');
 assert.equal(returns[0].argument?.type, 'JSXElement', 'Mounted app root');
-assert.equal(
-  returns[0].argument.openingElement.name.name,
-  'AppRestartRoot',
-  'Restartable app root'
-);
 const elementChildren = (node) => node.children.filter((child) => child.type === 'JSXElement');
-const sessions = elementChildren(returns[0].argument);
+assert.ok(
+  imported(probe, './platform/AppSurfaceRoot', 'AppSurfaceRoot'),
+  'App surface owner import'
+);
+assert.equal(returns[0].argument.openingElement.name.name, 'AppSurfaceRoot', 'Drawing app surface');
+const appRoots = elementChildren(returns[0].argument);
+assert.equal(appRoots.length, 1, 'App surface has one restartable root');
+assert.equal(appRoots[0].openingElement.name.name, 'AppRestartRoot', 'Restartable app root');
+const sessions = elementChildren(appRoots[0]);
 assert.equal(sessions.length, 1, 'App root has one drawing session');
 assert.equal(
   sessions[0].openingElement.name.name,
@@ -269,6 +272,8 @@ const files = [
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
   'src/rsdDrawing/ModalShell.tsx',
+  'src/rsdDrawing/ModalShellContent.tsx',
+  'src/rsdDrawing/useModalFrame.ts',
   'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdSettingsRoute.tsx',
@@ -283,7 +288,7 @@ const nativeAdapters = new Set([
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
   'src/rsdDrawing/NativeFrame.tsx',
   'src/rsdDrawing/NativePaper.tsx',
-  'src/rsdDrawing/ModalShell.tsx',
+  'src/rsdDrawing/ModalShellContent.tsx',
   'src/rsdDrawing/RsdColorPicker.tsx',
   'src/rsdDrawing/DialogHeader.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',

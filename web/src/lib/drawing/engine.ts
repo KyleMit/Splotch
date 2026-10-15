@@ -33,6 +33,7 @@ import {
   edgeSwipeDirectionDecided,
   guardedEdgeAt,
   pointerWasResumed,
+  STROKE_SPEED_WINDOW_MS,
   type GuardEdge,
   type Point,
 } from './strokeMath';
@@ -780,7 +781,6 @@ function finishGroupWhenCanvasIdle() {
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
 // reacting to every per-frame jitter.
-const SPEED_WINDOW_MS = 100;
 
 // Start a fresh sliding speed window. The first entry is a zero-distance anchor
 // so the very first move has a span to divide by, and lastTime is realigned to
@@ -974,7 +974,7 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
   const deltaX = last.x - ps.x;
   const deltaY = last.y - ps.y;
   const distance = Math.hypot(deltaX, deltaY);
-  return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
+  return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, STROKE_SPEED_WINDOW_MS);
 }
 
 const rasterQueue = createStrokeRasterQueue<PointerState>({

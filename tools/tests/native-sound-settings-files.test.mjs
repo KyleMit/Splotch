@@ -41,6 +41,9 @@ vi.mock('expo-file-system', () => {
       memory.files.set(this.path, memory.corruptWrite ? 'partial' : snapshot);
     }
     async text() {
+      return this.textSync();
+    }
+    textSync() {
       if (!this.exists) throw new Error('missing file');
       return memory.files.get(this.path);
     }
@@ -60,6 +63,7 @@ vi.mock('expo-file-system', () => {
   return { Directory, File, Paths: { document: 'documents' } };
 });
 import { soundSettingsStorage } from '../../experiments/native-architecture/src/platform/soundSettings.ts';
+import { bootAppearance } from '../../experiments/native-architecture/src/platform/bootAppearance.ts';
 const on = '{"version":1,"soundEnabled":true}';
 const off = '{"version":1,"soundEnabled":false}';
 function pending() {
@@ -78,6 +82,25 @@ beforeEach(() => {
 });
 
 describe('native committed sound settings journal', () => {
+  it.each(['light', 'dark'])(
+    'paints the saved %s choice before asynchronous settings hydration',
+    async (appearance) => {
+      const owner = createSoundSettings(soundSettingsStorage, () => {});
+      await owner.load();
+      await owner.setAppearance(appearance);
+      expect(bootAppearance()).toBe(appearance);
+      memory.files.set('documents/splotch-sound-settings-v1/sound-2.pending', '{incomplete');
+      expect(bootAppearance()).toBe(appearance);
+      owner.dispose();
+    }
+  );
+
+  it('uses System for unreadable settings without discarding the stored record', () => {
+    const path = 'documents/splotch-sound-settings-v1/sound-1.json';
+    memory.files.set(path, '{incomplete');
+    expect(bootAppearance()).toBe('system');
+    expect(memory.files.get(path)).toBe('{incomplete');
+  });
   it('waits for the new move before reporting success and retains the previous snapshot', async () => {
     await soundSettingsStorage.write(on);
     memory.moveGate = pending();

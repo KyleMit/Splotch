@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import type { Drawing } from './drawing/model';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { pictureSave } from './platform/pictureSave';
-import type { PictureSaveOutcome, SaveOs } from './export/pictureSave';
+import type { PictureSaveOutcome, PictureSaveOptions, SaveOs } from './export/pictureSave';
 import type { PictureFormat } from './export/pictureFilename';
 
 export function saveOs(): SaveOs {
@@ -23,10 +23,11 @@ export async function capturePicture(
 
 export async function savePicture(
   pngBase64: string,
-  format?: PictureFormat
+  format?: PictureFormat,
+  options?: PictureSaveOptions
 ): Promise<PictureSaveOutcome> {
   try {
-    return await pictureSave.save(pngBase64, format);
+    return await pictureSave.save(pngBase64, format, options);
   } catch {
     return 'failed';
   }

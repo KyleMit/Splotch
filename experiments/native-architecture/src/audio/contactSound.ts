@@ -1,4 +1,4 @@
-import type { createDrawingAudio } from './drawingAudio';
+import type { createDrawingAudio, AudioSample } from './drawingAudio';
 import type { Point } from '../drawing/model';
 
 export type SoundContact = {
@@ -20,7 +20,7 @@ export function createContactSound(audio: ReturnType<typeof createDrawingAudio>)
   return {
     begin(point: Point, timestamp: number): SoundContact {
       if (disposed || !validSample(point, timestamp)) return { sample() {}, end() {} };
-      let previous = { point, timestamp };
+      let previous: AudioSample = { point, timestamp, samples: [{ t: timestamp, distance: 0 }] };
       const contact: SoundContact = {
         sample(nextPoint, nextTimestamp) {
           if (
@@ -30,7 +30,7 @@ export function createContactSound(audio: ReturnType<typeof createDrawingAudio>)
           )
             return;
           const before = previous;
-          previous = { point: nextPoint, timestamp: nextTimestamp };
+          previous = { point: nextPoint, timestamp: nextTimestamp, samples: before.samples };
           if (nextPoint.x !== before.point.x || nextPoint.y !== before.point.y)
             audio.sample(nextPoint, nextTimestamp, before);
         },

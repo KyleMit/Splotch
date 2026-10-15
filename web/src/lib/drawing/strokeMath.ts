@@ -56,6 +56,8 @@ export interface SpeedSample {
   distance: number;
 }
 
+export const STROKE_SPEED_WINDOW_MS = 100;
+
 // CSS px: the edge band a start touch must fall in to be treated as an
 // OS-gesture candidate, the travel before the inward/cross direction is decided,
 // and the minimum safe-area inset that marks a tablet's landscape long-bottom as
