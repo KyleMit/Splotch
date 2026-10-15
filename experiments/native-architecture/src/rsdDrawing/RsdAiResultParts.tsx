@@ -1,4 +1,5 @@
 import { css, html } from 'react-strict-dom';
+import { autoSaveFooter as shippingAutoSaveFooter } from '../../../../web/src/lib/ai/autoSaveCopy';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../../../../web/src/lib/ai/loadingCopy';
 import { scale } from '../../../../web/src/lib/design/tokens';
 import { AI_AUTO_SAVE_COPY, AI_RESULT_COPY } from '../ai/aiResultCopy';
@@ -76,6 +77,7 @@ export function aiAutoSaveFooter(
 ): { kind: 'saved'; caption: string } | { kind: 'downloadButton' } | null {
   if (!autoSave) return { kind: 'downloadButton' };
   if (autoSave.status === 'saving') return null;
+  if (autoSave.status === 'chosenFolder') return shippingAutoSaveFooter(autoSave);
   if (autoSave.status === 'photos' || autoSave.status === 'downloads')
     return { kind: 'saved', caption: AI_AUTO_SAVE_COPY[autoSave.status] };
   return { kind: 'downloadButton' };

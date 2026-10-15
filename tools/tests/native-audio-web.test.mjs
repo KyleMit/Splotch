@@ -8,6 +8,7 @@ import {
 import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.web.ts';
 import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
 import { webAssetUri } from '../../experiments/native-architecture/src/platform/webAsset.ts';
+import { loadClearPageTurn } from '../../experiments/native-architecture/src/platform/clearSound.web.ts';
 
 const TAKE_SECONDS = 2;
 
@@ -30,9 +31,28 @@ class FakeAudioContext {
   constructor() {
     this.state = 'suspended';
     this.currentTime = 1;
+    this.sampleRate = 44100;
     this.destination = {};
     this.sources = [];
     this.gains = [];
+    this.oscillators = [];
+    this.filters = [];
+    this.createBuffer = vi.fn((_channels, length) => ({
+      getChannelData: () => new Float32Array(length),
+    }));
+    this.createOscillator = vi.fn(() => {
+      const oscillator = {
+        ...node(),
+        frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+      };
+      this.oscillators.push(oscillator);
+      return oscillator;
+    });
+    this.createBiquadFilter = vi.fn(() => {
+      const filter = { ...node(), frequency: { value: 0 }, Q: { value: 0 } };
+      this.filters.push(filter);
+      return filter;
+    });
     this.resume = vi.fn(async () => {
       if (rejectInitialResume) throw new Error('activation required');
       this.state = 'running';
@@ -50,6 +70,7 @@ class FakeAudioContext {
           cancelScheduledValues: vi.fn(),
           setValueAtTime: vi.fn(),
           linearRampToValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
         },
       };
       this.gains.push(gain);
@@ -82,6 +103,33 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
+it('plays shipping bubbles before the page-turn fetch settles', async () => {
+  const fetchGate = pending();
+  fetchSound.mockImplementationOnce(() => fetchGate.promise);
+  const notes = vi.fn();
+  const turnPromise = loadClearPageTurn(new AbortController().signal, notes);
+  expect(notes).toHaveBeenCalledOnce();
+  const playNote = notes.mock.calls[0][0];
+  const context = contexts.at(-1);
+  playNote(262, 0.5);
+  expect(context.oscillators).toHaveLength(1);
+  expect(context.oscillators[0].frequency.setValueAtTime).toHaveBeenCalledWith(262 * 0.86, 1);
+  expect(context.oscillators[0].frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(
+    262 * 1.08,
+    1.11
+  );
+  expect(context.gains[0].gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(0.11, 1.003);
+  expect(context.filters[0].frequency.value).toBe(262 * 3.2);
+  expect(context.filters[0].Q.value).toBe(6);
+  expect(context.sources[0].stop).toHaveBeenCalledWith(1.014);
+  fetchGate.resolve({ ok: true, arrayBuffer: async () => new ArrayBuffer(2) });
+  const turn = await turnPromise;
+  turn.play(2);
+  expect(context.gains.at(-1).gain.value).toBe(2);
+  turn.dispose();
+  expect(context.close).toHaveBeenCalledOnce();
+});
+
 describe('explicit drawing web audio adapter', () => {
   it('loads the owned asset and connects a muted looping source with bounded gain and de-click teardown', async () => {
     const f = fixture();

@@ -16,7 +16,8 @@ import {
   VERSION_JSON_FILENAME,
   SERVICE_WORKER_PATH,
 } from '../../web/src/lib/pwa/versionEndpoint.ts';
-import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
+import { buildMetadataOncePerProcess } from '../../web/buildVersion.ts';
+import { WEB_VERSION_META_NAME } from '../../experiments/native-architecture/src/platform/webVersion.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
 import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
@@ -121,7 +122,11 @@ function exportWebBundle(outputDir) {
   );
 }
 
-function copyShippingInstallAssets(outputDir) {
+export function webVersionHeadTag(appVersion) {
+  return `<meta name=${JSON.stringify(WEB_VERSION_META_NAME)} content=${JSON.stringify(appVersion)}>`;
+}
+
+function copyShippingInstallAssets(outputDir, appVersion) {
   const appHtml = readFileSync(SHIPPING_APP_HTML, 'utf8');
   const tags = shippingInstallHeadTags(appHtml);
   const manifest = JSON.parse(readFileSync(join(WEB_STATIC_DIR, SHIPPING_MANIFEST), 'utf8'));
@@ -131,16 +136,14 @@ function copyShippingInstallAssets(outputDir) {
     SHIPPING_MANIFEST,
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
-  writeFileSync(
-    join(outputDir, VERSION_JSON_FILENAME),
-    JSON.stringify({ version: FEEDBACK_APP_VERSION })
-  );
+  writeFileSync(join(outputDir, VERSION_JSON_FILENAME), JSON.stringify({ version: appVersion }));
   const indexPath = join(outputDir, APP_SHELL_FILE);
   writeFileSync(
     indexPath,
     withShippingViewport(
       withInstallHeadTags(readFileSync(indexPath, 'utf8'), [
         ...tags,
+        webVersionHeadTag(appVersion),
         ...bootThemeHeadTags(),
         bootAppSurfaceHeadTag(),
       ]),
@@ -216,11 +219,12 @@ export function nativeWebServiceWorkerConfig(outputDir, shell) {
 }
 
 export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {}) {
+  const { appVersion } = buildMetadataOncePerProcess({ isCapacitor: false, env: process.env });
   rmSync(outputDir, { recursive: true, force: true });
   exportWebBundle(outputDir);
   if (!existsSync(join(outputDir, APP_SHELL_FILE)))
     throw new Error(`Expo exported no ${APP_SHELL_FILE} into ${outputDir}`);
-  copyShippingInstallAssets(outputDir);
+  copyShippingInstallAssets(outputDir, appVersion);
   copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(

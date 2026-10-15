@@ -39,7 +39,7 @@ function isAndroidPhotoLibrary(value: unknown): value is AndroidPhotoLibrary {
 async function save(base64: string, format: PictureFormat): Promise<PictureSaveOutcome> {
   const android = Platform.OS === 'android';
   const native: unknown = NativeModules?.SplotchPhotoLibrary;
-  if (android && !isAndroidPhotoLibrary(native)) return 'unavailable';
+  if (android && !isAndroidPhotoLibrary(native)) return 'failed';
   const MediaLibrary = android ? null : await mediaModule.load();
   if (MediaLibrary) {
     const permission = await MediaLibrary.requestPermissionsAsync(true);

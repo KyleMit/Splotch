@@ -2,11 +2,16 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { createPWAServiceWorker } from '../../experiments/native-architecture/src/platform/serviceWorker.web.ts';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  createPWAServiceWorker,
+  usePWAUpdates,
+} from '../../experiments/native-architecture/src/platform/serviceWorker.web.ts';
 import { installPrompt as nativeInstallPrompt } from '../../experiments/native-architecture/src/platform/installPrompt.ts';
 import { SERVICE_WORKER_PATH, VERSION_JSON_PATH } from '../../web/src/lib/pwa/versionEndpoint.ts';
-import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
-import { NATIVE_WEB_SERVICE_WORKER } from '../migration/build-native-web.mjs';
+import { WEB_VERSION_META_SELECTOR } from '../../experiments/native-architecture/src/platform/webVersion.ts';
+import { NATIVE_WEB_SERVICE_WORKER, webVersionHeadTag } from '../migration/build-native-web.mjs';
 import {
   makeRegistration,
   makeWorker,
@@ -47,18 +52,21 @@ const nativeSource = (path) =>
   );
 const originalFetch = globalThis.fetch;
 const originalLocation = window.location;
+const BUILT_WEB_VERSION = '1.6.1234';
 let owners;
 beforeEach(() => {
   scheduler.painted = false;
   scheduler.waiters.length = scheduler.quiet.length = scheduler.idle.length = 0;
   owners = [];
   vi.stubGlobal('__DEV__', false);
-  stubDeployedVersion(FEEDBACK_APP_VERSION);
+  document.head.insertAdjacentHTML('beforeend', webVersionHeadTag(BUILT_WEB_VERSION));
+  stubDeployedVersion(BUILT_WEB_VERSION);
   stubReloadableLocation();
   window.location.replace = vi.fn();
 });
 afterEach(() => {
   for (const owner of owners) owner.stop();
+  document.querySelector(WEB_VERSION_META_SELECTOR)?.remove();
   delete navigator.serviceWorker;
   delete navigator.connection;
   restoreDocumentVisibility();
@@ -88,6 +96,38 @@ async function start({ owner }) {
   flush(scheduler.quiet);
   await pending;
 }
+
+it('stops the mounted drawing lifecycle while an information page is open', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const container = stubServiceWorker();
+  scheduler.painted = true;
+  const element = document.createElement('div');
+  document.body.append(element);
+  const root = createRoot(element);
+  function Drawing({ active }) {
+    usePWAUpdates({ canvasEmpty: true, strokes: 0 }, active);
+    return null;
+  }
+  const render = (active) => act(async () => root.render(createElement(Drawing, { active })));
+  try {
+    await render(false);
+    expect(scheduler.quiet).toHaveLength(0);
+    expect(container.getRegistration).not.toHaveBeenCalled();
+    await render(true);
+    await vi.waitFor(() => expect(scheduler.quiet).toHaveLength(1));
+    await render(false);
+    flush(scheduler.quiet);
+    await Promise.resolve();
+    expect(container.getRegistration).not.toHaveBeenCalled();
+    await render(true);
+    await vi.waitFor(() => expect(scheduler.quiet).toHaveLength(1));
+    flush(scheduler.quiet);
+    await vi.waitFor(() => expect(container.getRegistration).toHaveBeenCalled());
+  } finally {
+    await act(async () => root.unmount());
+    element.remove();
+  }
+});
 
 it('registers on the first qualifying stroke at idle after drawing paints', async () => {
   const f = fixture();

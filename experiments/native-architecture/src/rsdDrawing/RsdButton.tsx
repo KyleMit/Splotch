@@ -43,6 +43,8 @@ export type ButtonSize = 'sm' | 'md' | 'lg' | 'hero';
 // driver: one render as the press starts and one as it ends, none per frame.
 const styles = css.create({
   fill: { width: '100%' },
+  pill: { borderRadius: dimensions.radiusPill, minWidth: 0, maxWidth: '100%' },
+  clippedLabel: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   button: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -219,6 +221,7 @@ export function RsdButton({
   busy = false,
   fullWidth = false,
   disabled = false,
+  pill = false,
   onPress,
   icon,
   children,
@@ -228,6 +231,7 @@ export function RsdButton({
   busy?: boolean;
   fullWidth?: boolean;
   disabled?: boolean;
+  pill?: boolean;
   onPress: () => void;
   // A glyph before the label, in the label's ink, which the caller resolves for its variant.
   icon?: ReactNode;
@@ -247,6 +251,7 @@ export function RsdButton({
         fullWidth && styles.fill,
         styles[size],
         styles[variant],
+        pill && styles.pill,
         variant === 'outline' && styles.outlineInset(outline.block, outline.inline),
         variant === 'brand' && size === 'hero' && styles.brandHero,
         busy && styles.busy,
@@ -257,7 +262,7 @@ export function RsdButton({
     >
       {busy ? <BusyRing variant={variant} /> : null}
       {icon}
-      <html.span>{children}</html.span>
+      <html.span style={pill && styles.clippedLabel}>{children}</html.span>
     </RsdPressable>
   );
 }

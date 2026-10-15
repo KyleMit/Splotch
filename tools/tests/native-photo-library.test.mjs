@@ -6,10 +6,8 @@ import {
   photoLibrary,
 } from '../../experiments/native-architecture/src/platform/photoLibrary.ts';
 import { pictureSave as nativePictureSave } from '../../experiments/native-architecture/src/platform/pictureSave.ts';
-import {
-  UNAVAILABLE_DETAIL,
-  saveFailureCopy as nativeSaveFailureCopy,
-} from '../../experiments/native-architecture/src/export/pictureSave.ts';
+import { createSaveFailure } from '../../experiments/native-architecture/src/export/saveFailure.ts';
+import { saveFailureCopy as nativeSaveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 import {
   DEFAULT_SAVE_ON_DELETE_ENABLED,
   SAVE_ON_DELETE_HELP,
@@ -73,14 +71,19 @@ describe('native photo library save', () => {
   it('reports a missing native gallery writer without losing a staged picture', async () => {
     photos.os = 'android';
     photos.nativeAvailable = false;
-    expect(await photoLibrary.save(PNG)).toBe('unavailable');
+    const failure = createSaveFailure(photoLibrary.save, vi.fn());
+    failure.report(await photoLibrary.save(PNG), PNG);
+    expect(failure.getState()).toEqual({ outcome: 'failed', pictureCount: 1, retrying: false });
     expect(photos.permissionRequests).toEqual([]);
     expect(photos.created).toEqual([]);
     expect(photos.files.size).toBe(0);
-    expect(nativeSaveFailureCopy('unavailable', 0, 'android')).toEqual({
-      heading: saveFailureCopy('failed', 0, 'android').heading,
-      detail: UNAVAILABLE_DETAIL,
-    });
+    expect(nativeSaveFailureCopy('failed', 1, 'android')).toEqual(
+      saveFailureCopy('failed', 1, 'android')
+    );
+    photos.nativeAvailable = true;
+    await failure.retry();
+    expect(photos.created).toEqual([expect.objectContaining({ base64: PNG })]);
+    expect(failure.getState().outcome).toBeNull();
   });
 
   it.each(['denied', 'failed'])(
@@ -89,7 +92,8 @@ describe('native photo library save', () => {
       photos.os = 'android';
       photos.nativeOutcome = outcome;
       expect(await photoLibrary.save(PNG)).toBe(outcome);
-      expect(photos.created).toHaveLength(1);
+      expect(photos.nativeCalls).toHaveLength(1);
+      expect(photos.created).toEqual([]);
       expect(photos.files.size).toBe(0);
     }
   );

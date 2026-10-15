@@ -26,6 +26,7 @@ import {
   NATIVE_WEB_SERVICE_WORKER,
   contentAddressedShell,
   subresourceIntegrity,
+  webVersionHeadTag,
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
@@ -243,6 +244,15 @@ export function checkNativeWebPrecache({
   );
   const precacheBytes = present.reduce((total, url) => total + statSync(onDisk(url)).size, 0);
   const indexHtml = readFileSync(join(exportDir, APP_SHELL_FILE));
+  const version = JSON.parse(readFileSync(join(exportDir, VERSION_JSON_FILENAME), 'utf8'));
+  if (
+    typeof version?.version !== 'string' ||
+    !version.version ||
+    !indexHtml.toString('utf8').includes(webVersionHeadTag(version.version))
+  )
+    throw new Error('The app shell and version endpoint must carry the same web build version.');
+  if (precacheEntries.some(({ url }) => url === VERSION_JSON_FILENAME))
+    throw new Error('The version endpoint must stay out of the precache.');
   const shellReferences = shellAssetReferences(indexHtml.toString('utf8'));
   const problems = nativeWebPrecacheProblems({
     precacheEntries,

@@ -12,11 +12,12 @@ export function installAppSurface(): () => void {
   let disposed = false;
   let release = () => {};
   void loadWakeModule()
-    .then(({ activateKeepAwakeAsync, deactivateKeepAwake }) => {
+    .then(async ({ activateKeepAwakeAsync, deactivateKeepAwake }) => {
       if (disposed) return;
       const tag = `SplotchDrawing-${Math.random()}`;
+      await activateKeepAwakeAsync(tag);
       release = () => void deactivateKeepAwake(tag).catch(() => {});
-      void activateKeepAwakeAsync(tag).catch(() => {});
+      if (disposed) release();
     })
     .catch(() => {});
   return () => {

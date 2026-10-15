@@ -4,6 +4,7 @@ import { FREE_LIMIT } from '../ai/contract';
 import type { NativeAiOwner } from '../ai/generation';
 import type { AiState } from '../ai/sessionContract';
 import { AI_AUTO_SAVE_HELP, AI_SETTINGS_COPY as COPY } from '../settings/aiSettingsCopy';
+import { folderSaveSupported } from '../platform/folderSaveSupport';
 import type { SoundSettingsState } from '../settings/soundSettings';
 import { RsdAiKeyManager } from './RsdAiKeyManager';
 import { RsdAiValueProp } from './RsdAiValueProp';
@@ -26,7 +27,12 @@ const styles = css.create({
 
 export const AI_SAVE_RETRY = 'Retry saving the AI Art choice';
 
-const AUTO_SAVE_HELP = Platform.OS === 'web' ? AI_AUTO_SAVE_HELP.web : AI_AUTO_SAVE_HELP.native;
+const AUTO_SAVE_HELP =
+  Platform.OS === 'web'
+    ? folderSaveSupported()
+      ? AI_AUTO_SAVE_HELP.webFolder
+      : AI_AUTO_SAVE_HELP.web
+    : AI_AUTO_SAVE_HELP.native;
 
 export type AiSettingsRoute = {
   owner: NativeAiOwner | null;

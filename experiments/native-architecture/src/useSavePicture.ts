@@ -21,7 +21,13 @@ export type PolaroidFlight = Readonly<{
 // The screen's Save Failure Banner owner; Try again saves through the same platform save.
 export function useSaveFailure() {
   const [, publish] = useReducer((count: number) => count + 1, 0);
-  const [owner] = useState(() => createSaveFailure(savePicture, publish, unsavedPictureStore));
+  const [owner] = useState(() =>
+    createSaveFailure(
+      (base64, format) => savePicture(base64, format, { allowPrompt: true }),
+      publish,
+      unsavedPictureStore
+    )
+  );
   useEffect(() => {
     void owner.restore();
   }, [owner]);
@@ -89,7 +95,9 @@ export function useSaveAction({
       }
     });
     if (!capture.started) return;
-    const outcome = capture.pngBase64 ? await savePicture(capture.pngBase64) : 'failed';
+    const outcome = capture.pngBase64
+      ? await savePicture(capture.pngBase64, undefined, { allowPrompt: true })
+      : 'failed';
     if (!isUnsaved(outcome)) {
       state.cooldownUntil = performance.now() + SCREENSHOT_COOLDOWN_MS;
       return;

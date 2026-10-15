@@ -191,14 +191,17 @@ describe('the Save Failure Banner owner', () => {
     expect(failure.getState().outcome).toBe('failed');
   });
 
-  it('holds no picture for a gallery this app cannot write to, since every retry would fail', () => {
-    const { failure } = owner();
-    failure.report('unavailable', 'png');
+  it('holds and retries a picture after a native gallery failure', async () => {
+    const { failure, save } = owner();
+    failure.report('failed', 'png');
     expect(failure.getState()).toEqual({
-      outcome: 'unavailable',
-      pictureCount: 0,
+      outcome: 'failed',
+      pictureCount: 1,
       retrying: false,
     });
+    await failure.retry();
+    expect(save).toHaveBeenCalledWith('png', undefined);
+    expect(failure.getState().outcome).toBeNull();
   });
 
   it('clears a picture-less failure seen when a retry started, and keeps one reported during it', async () => {

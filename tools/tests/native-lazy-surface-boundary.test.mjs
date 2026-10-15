@@ -8,6 +8,25 @@ import {
   SURFACE_FAILURE_LABEL,
   SURFACE_FAILURE_MESSAGE,
 } from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceBoundary.tsx';
+import { RsdSurfaceFailure as WebSurfaceFailure } from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceFailure.web.tsx';
+
+vi.mock('react-native', () => ({ useWindowDimensions: () => ({ width: 390, height: 844 }) }));
+vi.mock('../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx', () => ({
+  useDrawingAppearance: () => 'light',
+}));
+vi.mock('../../experiments/native-architecture/src/platform/BrowserBack.tsx', () => ({
+  useDialogBack: () => {},
+}));
+vi.mock('../../experiments/native-architecture/src/platform/reducedTransparency.web.ts', () => ({
+  useReducedTransparency: () => false,
+}));
+vi.mock('../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts', () => ({
+  colors: {},
+  darkTheme: {},
+  dimensions: {},
+  fonts: {},
+  shadows: {},
+}));
 
 const background = vi.hoisted(() => ({ painted: false, waiters: [], idle: [] }));
 vi.mock('../../experiments/native-architecture/src/product/drawingPaint.ts', () => ({
@@ -26,6 +45,7 @@ vi.mock('../../web/src/lib/idle.ts', () => ({
 }));
 
 vi.mock('react-strict-dom', () => ({
+  css: { create: (styles) => styles },
   html: Object.fromEntries(
     ['div', 'span'].map((tag) => [tag, ({ style: _style, ...props }) => createElement(tag, props)])
   ),
@@ -82,12 +102,16 @@ function Settings({ notice }) {
 
 // The drawing screen as RsdDrawingScreen composes it: the paper always, and an on-request
 // surface inside its own boundary.
-function screen(Surface, onClose) {
+function screen(Surface, onClose, onDismiss) {
   return createElement(
     'main',
     null,
     createElement('div', { 'data-testid': 'paper' }, 'drawing'),
-    createElement(RsdSurfaceBoundary, { onClose }, createElement(Surface, { notice: 'Settings' }))
+    createElement(
+      RsdSurfaceBoundary,
+      { onClose, onDismiss },
+      createElement(Surface, { notice: 'Settings' })
+    )
   );
 }
 
@@ -143,12 +167,14 @@ it('keeps the drawing screen when a surface chunk fails, then loads it on Try ag
 
 it('closes a failed surface through its owner and leaves the drawing in place', async () => {
   const onClose = vi.fn();
+  const onDismiss = vi.fn();
   const Surface = lazySurface(vi.fn().mockRejectedValue(CHUNK_FAILURE));
-  await act(async () => root.render(screen(Surface, onClose)));
+  await act(async () => root.render(screen(Surface, onClose, onDismiss)));
   await settle();
   expect(button('Keep drawing')).toBeNull();
   await act(async () => button('Close').click());
   expect(onClose).toHaveBeenCalledOnce();
+  expect(onDismiss).toHaveBeenCalledOnce();
   expect(dialog(SURFACE_FAILURE_LABEL)).toBeNull();
   expect(host.querySelector('[data-testid="paper"]').textContent).toBe('drawing');
 });
@@ -175,4 +201,33 @@ it('loads a surface once and renders it at once on every later mount', async () 
   expect(dialog('Drawing settings')).not.toBeNull();
   expect(load).toHaveBeenCalledOnce();
   expect(errors).not.toHaveBeenCalled();
+});
+
+it('keeps web failure recovery available without downloading a modal chunk', async () => {
+  const onClose = vi.fn();
+  const onDismiss = vi.fn();
+  const onRetry = vi.fn();
+  const props = {
+    visible: true,
+    label: SURFACE_FAILURE_LABEL,
+    message: SURFACE_FAILURE_MESSAGE,
+    onClose,
+    onDismiss,
+    onRetry,
+  };
+  await act(async () => root.render(createElement(WebSurfaceFailure, props)));
+  const fallback = host.querySelector('dialog');
+  expect(fallback.open).toBe(true);
+  expect(fallback.textContent).toContain(SURFACE_FAILURE_MESSAGE);
+  await act(async () => button('Try again').click());
+  expect(onRetry).toHaveBeenCalledOnce();
+  const cancel = new Event('cancel', { cancelable: true });
+  await act(async () => fallback.dispatchEvent(cancel));
+  expect(cancel.defaultPrevented).toBe(true);
+  expect(onClose).toHaveBeenCalledOnce();
+  await act(async () =>
+    root.render(createElement(WebSurfaceFailure, { ...props, visible: false }))
+  );
+  expect(fallback.open).toBe(false);
+  expect(onDismiss).toHaveBeenCalledOnce();
 });

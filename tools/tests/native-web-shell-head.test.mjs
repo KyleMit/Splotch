@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import {
   bootAppSurfaceHeadTag,
   bootThemeHeadTags,
@@ -15,6 +17,12 @@ import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawin
 import { installAppSurface } from '../../experiments/native-architecture/src/platform/appSurface.web.ts';
 import { APP_SURFACE_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { installAppSurface as installNativeAppSurface } from '../../experiments/native-architecture/src/platform/appSurface.ts';
+import { AppSurfaceRoot } from '../../experiments/native-architecture/src/platform/AppSurfaceRoot.tsx';
+
+vi.mock('react-native', () => ({
+  StyleSheet: { create: (styles) => styles },
+  View: ({ children, ...props }) => createElement('div', props, children),
+}));
 
 const nativeWake = vi.hoisted(() => ({
   activate: vi.fn(async () => {}),
@@ -48,6 +56,57 @@ function boot(saved) {
 afterEach(() => document.documentElement.removeAttribute(BOOT_THEME_ATTRIBUTE));
 
 describe('the native drawing wake lock', () => {
+  it('acquires on the first lift and releases when drawing leaves the foreground', async () => {
+    nativeWake.activate.mockClear();
+    nativeWake.deactivate.mockClear();
+    const element = document.createElement('div');
+    document.body.append(element);
+    const root = createRoot(element);
+    const render = (active) =>
+      act(async () => root.render(createElement(AppSurfaceRoot, { active }, 'Drawing')));
+    const touch = (type) =>
+      act(async () => element.firstChild.dispatchEvent(new Event(type, { bubbles: true })));
+    try {
+      await render(true);
+      await touch('touchstart');
+      expect(nativeWake.activate).not.toHaveBeenCalled();
+      await touch('touchend');
+      await vi.waitFor(() => expect(nativeWake.activate).toHaveBeenCalledOnce());
+      await touch('touchend');
+      expect(nativeWake.activate).toHaveBeenCalledOnce();
+      const [[tag]] = nativeWake.activate.mock.calls;
+      await render(false);
+      expect(nativeWake.deactivate).toHaveBeenCalledExactlyOnceWith(tag);
+      await touch('touchend');
+      expect(nativeWake.activate).toHaveBeenCalledOnce();
+      await render(true);
+      expect(nativeWake.activate).toHaveBeenCalledOnce();
+      await touch('touchend');
+      await vi.waitFor(() => expect(nativeWake.activate).toHaveBeenCalledTimes(2));
+    } finally {
+      await act(async () => root.unmount());
+      element.remove();
+    }
+    expect(nativeWake.deactivate).toHaveBeenCalledTimes(2);
+  });
+  it('releases an acquisition that settles after its drawing owner unmounts', async () => {
+    let acquired;
+    nativeWake.activate.mockClear().mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          acquired = resolve;
+        })
+    );
+    nativeWake.deactivate.mockClear();
+    const stop = installNativeAppSurface();
+    await vi.waitFor(() => expect(nativeWake.activate).toHaveBeenCalledOnce());
+    const [[tag]] = nativeWake.activate.mock.calls;
+    stop();
+    expect(nativeWake.deactivate).not.toHaveBeenCalled();
+    acquired();
+    await vi.waitFor(() => expect(nativeWake.deactivate).toHaveBeenCalledExactlyOnceWith(tag));
+  });
+
   it('does not acquire a lock after its owner unmounts before the module loads', async () => {
     nativeWake.activate.mockClear();
     nativeWake.deactivate.mockClear();

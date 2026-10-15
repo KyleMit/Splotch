@@ -108,6 +108,8 @@ function useScreenFollowsSettings(
 
 export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const online = useOnline();
+  const onlineRef = useRef(online);
+  onlineRef.current = online;
   const screenRef = useRef(screen);
   screenRef.current = screen;
   const [, update] = useState(0);
@@ -128,7 +130,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     let detachOwners: (() => void) | null = null;
     const attach = (create: typeof createProductOwners) => {
       if (!alive || attached) return;
-      attached = create(screenRef, product.port);
+      attached = create(screenRef, product.port, () => onlineRef.current);
       detachOwners = attachProductOwners(attached, publish);
       setOwners(attached);
     };

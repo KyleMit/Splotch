@@ -1,13 +1,15 @@
 import { createPWAUpdates } from '../../../../web/src/lib/pwa/updates';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
+import { WEB_VERSION_META_SELECTOR } from './webVersion';
 import { SETTLED_IN_STROKES } from '../install/installPolicy';
 import type { PwaDrawingState } from './pwaDrawingState';
 
 export function createWebPWAUpdates(current: () => PwaDrawingState) {
+  const appVersion = document.querySelector<HTMLMetaElement>(WEB_VERSION_META_SELECTOR)?.content;
+  if (!appVersion) throw new Error('The web build has no app version.');
   const updates = createPWAUpdates({
     canvasEmpty: () => current().canvasEmpty,
     isDevelopment: () => __DEV__,
-    appVersion: FEEDBACK_APP_VERSION,
+    appVersion,
   });
   let pending = false;
   let retryAfterStroke: number | null = null;

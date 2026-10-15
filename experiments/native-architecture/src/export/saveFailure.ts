@@ -45,8 +45,6 @@ export function createSaveFailure(
   store?: UnsavedPictureStore
 ) {
   let pictures: readonly HeldPicture[] = [];
-  // A failure that left no picture to hold (a capture that produced nothing, or a gallery this
-  // app cannot write to), which still owes the parent a banner.
   let uncapturedOutcome: UnsavedOutcome | null = null;
   let retrying = false;
   let state = NO_FAILURE;
@@ -122,9 +120,8 @@ export function createSaveFailure(
   return {
     getState: () => state,
     restore: () => enqueue(restoreFromStore).catch(() => undefined),
-    // A gallery this app cannot write to refuses every retry alike, so its picture is not held.
     report(failed: UnsavedOutcome, pngBase64: string | null, format?: PictureFormat) {
-      if (pngBase64 !== null && failed !== 'unavailable') {
+      if (pngBase64 !== null) {
         pictures = withPicture(pictures, { pngBase64, outcome: failed, format });
       } else {
         uncapturedVersion += 1;

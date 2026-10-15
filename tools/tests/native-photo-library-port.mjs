@@ -7,6 +7,7 @@ export const photos = {
   permission: 'granted',
   permissionRequests: [],
   created: [],
+  nativeCalls: [],
   createError: null,
   onCreate: null,
   files: new Map(),
@@ -20,6 +21,7 @@ export const photos = {
     this.permission = 'granted';
     this.permissionRequests.length = 0;
     this.created.length = 0;
+    this.nativeCalls.length = 0;
     this.createError = null;
     this.onCreate = null;
     this.files.clear();
@@ -37,7 +39,15 @@ export const reactNativeModule = {
         ? {
             async save(uri, displayName, mime, album) {
               await photos.beforeNativeRead?.();
-              record({ via: 'SplotchPhotoLibrary.save', filePath: uri, album, displayName, mime });
+              const entry = {
+                via: 'SplotchPhotoLibrary.save',
+                filePath: uri,
+                album,
+                displayName,
+                mime,
+              };
+              photos.nativeCalls.push({ ...entry, base64: photos.files.get(uri) });
+              if (photos.nativeOutcome === 'photos') record(entry);
               return photos.nativeOutcome;
             },
           }

@@ -430,6 +430,10 @@ export function createPWAUpdates(environment: PWAUpdateEnvironment) {
   }
 
   return {
+    // The SSR observer snapshots this browser lifecycle to detect render-time writes.
+    get lifecycleState() {
+      return { initialized, updateReload, updateRegistration };
+    },
     initPWAUpdates,
     registerDeferredServiceWorker: deferredRegistration.registerDeferredServiceWorker,
     checkForUpdates,

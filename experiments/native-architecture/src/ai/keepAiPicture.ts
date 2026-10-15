@@ -1,6 +1,6 @@
 import { savePicture } from '../keepPicture';
 import { AI_IMAGE_BASENAME, type PictureFormat } from '../export/pictureFilename';
-import type { PictureSaveOutcome } from '../export/pictureSave';
+import type { PictureSaveOutcome, PictureSaveOptions } from '../export/pictureSave';
 import { aiPictureBase64 } from '../platform/aiPictureBase64';
 import type { AiResult } from './journal';
 
@@ -15,7 +15,10 @@ export type KeptAiPicture = Readonly<{
 // The AI Result's Download keeps the picture where the Screenshot Button keeps a drawing: the
 // photo library on Android and iOS, a download on the web, as shipping's saveAiResult saves
 // through the same pipeline as every other save.
-export async function keepAiPicture(picture: AiResult): Promise<KeptAiPicture> {
+export async function keepAiPicture(
+  picture: AiResult,
+  options?: PictureSaveOptions
+): Promise<KeptAiPicture> {
   const format = { baseName: AI_IMAGE_BASENAME, mime: picture.mime };
   let base64: string;
   try {
@@ -23,5 +26,5 @@ export async function keepAiPicture(picture: AiResult): Promise<KeptAiPicture> {
   } catch {
     return { outcome: 'failed', base64: null, format };
   }
-  return { outcome: await savePicture(base64, format), base64, format };
+  return { outcome: await savePicture(base64, format, options), base64, format };
 }

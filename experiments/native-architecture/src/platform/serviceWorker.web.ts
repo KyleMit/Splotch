@@ -48,13 +48,14 @@ export function createPWAServiceWorker() {
   };
 }
 
-export function usePWAUpdates({ canvasEmpty, strokes }: PwaDrawingState) {
+export function usePWAUpdates({ canvasEmpty, strokes }: PwaDrawingState, active: boolean) {
   const [serviceWorker] = useState(createPWAServiceWorker);
   useLayoutEffect(() => {
-    serviceWorker.update({ canvasEmpty, strokes });
-  }, [serviceWorker, canvasEmpty, strokes]);
+    if (active) serviceWorker.update({ canvasEmpty, strokes });
+  }, [serviceWorker, active, canvasEmpty, strokes]);
   useEffect(() => {
+    if (!active) return;
     void serviceWorker.start();
     return () => serviceWorker.stop();
-  }, [serviceWorker]);
+  }, [serviceWorker, active]);
 }

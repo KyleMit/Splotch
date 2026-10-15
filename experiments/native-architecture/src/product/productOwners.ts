@@ -14,11 +14,13 @@ import type { useDrawingScreen } from '../useDrawingScreen';
 // with its recovery, storage and vault. productOwnersLoader.ts decides when this module loads.
 export function createProductOwners(
   screenRef: { current: ReturnType<typeof useDrawingScreen> },
-  parent: ParentOperationPort
+  parent: ParentOperationPort,
+  online: () => boolean
 ) {
+  const device = () => feedbackDevice(online());
   const feedback = createNativeFeedback({
     transport: feedbackTransport,
-    device: feedbackDevice,
+    device,
     policyStorage: feedbackPolicyStorage,
     parent,
   });
@@ -32,7 +34,7 @@ export function createProductOwners(
     problems: {
       platform: Platform.OS,
       transport: feedbackTransport,
-      device: feedbackDevice,
+      device,
     },
     async prepare() {
       const current = screenRef.current;

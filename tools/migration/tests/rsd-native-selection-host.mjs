@@ -8,7 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { displayOrientation, Orientation, orientationCalls } from './rsd-orientation-port.mjs';
 import './rsd-native-settings-hub-mocks.mjs';
-import './rsd-native-launch-stores.mjs';
+import { clearSoundPort } from './rsd-native-launch-stores.mjs';
 
 const caller = vi.hoisted(() => {
   let journal = null;
@@ -63,7 +63,9 @@ const caller = vi.hoisted(() => {
     feedbackSend: vi.fn(),
     paperRender: vi.fn(),
     haptic: vi.fn(),
-    clearSound: { load: vi.fn(), play: vi.fn() },
+    get clearSound() {
+      return clearSoundPort;
+    },
   };
 });
 vi.mock('../../../experiments/native-architecture/src/platform/useOnline.ts', () => ({
@@ -120,12 +122,6 @@ vi.mock('../../../experiments/native-architecture/src/platform/drawingAudio.ts',
 });
 vi.mock('../../../experiments/native-architecture/src/platform/clearHaptics.ts', () => ({
   impactThreshold: caller.haptic,
-}));
-vi.mock('../../../experiments/native-architecture/src/platform/clearSound.ts', () => ({
-  loadClearPageTurn: async (signal) => {
-    caller.clearSound.load(signal);
-    return { play: caller.clearSound.play, dispose() {} };
-  },
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
@@ -193,6 +189,7 @@ const records = vi.hoisted(() => ({
   backListeners: new Set(),
   exits: 0,
   os: 'ios',
+  nativeModules: {},
   settingsOpened: 0,
   journalHostProps: false,
   statusBarHidden: [],
@@ -284,6 +281,7 @@ vi.mock('react-native', async () => {
       );
     }),
     Platform: platformPort(records),
+    NativeModules: records.nativeModules,
     AccessibilityInfo: accessibilityPort(records),
     Animated: animatedPort(View, Text),
     Easing: easingPort,
@@ -341,8 +339,6 @@ beforeEach(() => {
   caller.online = true;
   caller.paperRender.mockClear();
   caller.haptic.mockClear();
-  caller.clearSound.load.mockClear();
-  caller.clearSound.play.mockClear();
   caller.realScreen = false;
   caller.paper = null;
   caller.settingsStorage = null;
@@ -421,6 +417,7 @@ afterEach(async () => {
   records.backListeners.clear();
   records.exits = 0;
   records.os = 'ios';
+  for (const key of Object.keys(records.nativeModules)) delete records.nativeModules[key];
   records.settingsOpened = 0;
   records.journalHostProps = false;
   caller.liveScreen = null;

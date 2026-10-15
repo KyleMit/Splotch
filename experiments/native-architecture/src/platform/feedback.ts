@@ -39,7 +39,7 @@ function nativeDevice(): { os: string; device: string; language: string } {
   return { os, device: `Apple ${model}`, language };
 }
 
-export function feedbackDevice(): DeviceInfo {
+export function feedbackDevice(online: boolean): DeviceInfo {
   const screen = Dimensions.get('screen');
   const viewport = Dimensions.get('window');
   return {
@@ -50,6 +50,7 @@ export function feedbackDevice(): DeviceInfo {
     viewport: `${Math.round(viewport.width)} × ${Math.round(viewport.height)}`,
     pixelRatio: String(Math.round(screen.scale * 100) / 100),
     display: 'Native app',
+    online: online ? 'Yes' : 'No',
   };
 }
 

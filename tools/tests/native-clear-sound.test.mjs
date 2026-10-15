@@ -1,6 +1,17 @@
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createClearSound } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
+import {
+  CLEAR_PAGE_TURN_ASSET_GAIN,
+  createClearSound,
+} from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
+import amplifiedClearPageTurn from '../../experiments/native-architecture/src/audio/clear-page-turn-amplified.wav';
+import { describeMp3 } from '../sounds/lib/mp3-stream.mjs';
+import {
+  clearLadderFrequency,
+  CLEAR_CANCEL_SPACING_MS,
+} from '../../web/src/lib/audio/clearSoundNotes.ts';
 
 // React Native's own AbortController, whose signal lacks throwIfAborted(), as on a device.
 const runtimeRequire = createRequire(import.meta.url);
@@ -27,14 +38,14 @@ import {
 } from '../../experiments/native-architecture/src/platform/clearHaptics.web.ts';
 
 function loader() {
-  const turn = { play: vi.fn(), dispose: vi.fn() };
+  const turn = { note: vi.fn(), play: vi.fn(), dispose: vi.fn() };
   let resolve;
-  const load = vi.fn(
-    () =>
-      new Promise((done) => {
-        resolve = () => done(turn);
-      })
-  );
+  const load = vi.fn((_signal, publishNotes) => {
+    publishNotes(turn.note);
+    return new Promise((done) => {
+      resolve = () => done(turn);
+    });
+  });
   return { turn, load, arrive: async () => resolve() };
 }
 
@@ -51,7 +62,57 @@ afterEach(() => {
   audio.mode.mockClear();
 });
 
-describe('native clear page-turn owner', () => {
+describe('shared Clear sound owner', () => {
+  it('plays an available bubble while the page-turn clip is loading and drops it on teardown', async () => {
+    const fixture = loader();
+    const sound = createClearSound(fixture.load);
+    sound.setEnabled(true);
+    sound.start();
+    sound.update(0.5);
+    expect(fixture.turn.note).toHaveBeenCalledExactlyOnceWith(clearLadderFrequency(5), 1);
+    expect(fixture.turn.play).not.toHaveBeenCalled();
+    const publishNotes = fixture.load.mock.calls[0][1];
+    sound.dispose();
+    const stale = vi.fn();
+    publishNotes(stale);
+    sound.update(1);
+    expect(stale).not.toHaveBeenCalled();
+    await fixture.arrive();
+    await Promise.resolve();
+    expect(fixture.turn.dispose).toHaveBeenCalledOnce();
+  });
+
+  it('plays shipping ladder steps beyond the threshold and unwinds a short release', async () => {
+    vi.useFakeTimers();
+    try {
+      const fixture = loader();
+      const sound = createClearSound(fixture.load);
+      sound.setEnabled(true);
+      await ready(sound, fixture);
+      for (const progress of [0, 0.11, 0.11, 0.5, 1, 1.8, 2.6, 2.6, 0.5]) sound.update(progress);
+      expect(fixture.turn.note.mock.calls).toEqual(
+        [0, 1, 5, 9, 14, 18, 5].map((step) => [clearLadderFrequency(step), 1])
+      );
+      fixture.turn.note.mockClear();
+      sound.cancel();
+      await vi.advanceTimersByTimeAsync(CLEAR_CANCEL_SPACING_MS * 2);
+      expect(fixture.turn.note.mock.calls).toEqual(
+        [1, 2, 3].map((index) => [clearLadderFrequency(5) * 2 ** ((-3 * index) / 12), 0.4])
+      );
+      expect(fixture.turn.play).not.toHaveBeenCalled();
+      sound.start();
+      sound.update(0.5);
+      sound.cancel();
+      fixture.turn.note.mockClear();
+      sound.start();
+      await vi.advanceTimersByTimeAsync(CLEAR_CANCEL_SPACING_MS * 3);
+      expect(fixture.turn.note).not.toHaveBeenCalled();
+      sound.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('preloads an allowed page turn without playing before a clear', async () => {
     const fixture = loader();
     const sound = createClearSound(fixture.load);
@@ -164,8 +225,16 @@ describe('native threshold haptic', () => {
 function nativePlayer() {
   const player = {
     isLoaded: false,
+    playing: false,
+    released: false,
     volume: 0,
-    play: vi.fn(),
+    play: vi.fn(() => {
+      player.playing = true;
+    }),
+    release: vi.fn(() => {
+      player.released = true;
+      player.playing = false;
+    }),
     seekTo: vi.fn(async () => {}),
     remove: vi.fn(),
     listener: null,
@@ -179,7 +248,43 @@ function nativePlayer() {
 }
 
 describe('native page-turn player', () => {
-  it('loads in the shared playback mode and plays from the start, capped at unity', async () => {
+  it('holds exactly doubled shipping PCM without clipping or changing its gapless length', () => {
+    const source = readFileSync(
+      new URL('../../web/static/sounds/clear-page-turn.mp3', import.meta.url)
+    );
+    const amplified = readFileSync(
+      new URL(
+        '../../experiments/native-architecture/src/audio/clear-page-turn-amplified.wav',
+        import.meta.url
+      )
+    );
+    // The PCM hash pins LAME's decoded source; the source hash requires re-deriving it when the clip changes.
+    expect(createHash('sha256').update(source).digest('hex')).toBe(
+      '251f811ac6b78867d25d81ff8d6fa512ce0c2dfe8fc1db50432b1a618fddeeb6'
+    );
+    expect(amplified.subarray(0, 44).toString('hex')).toBe(
+      '52494646e0d4010057415645666d7420100000000100020044ac000010b102000400100064617461bcd40100'
+    );
+    const pcm = amplified.subarray(44);
+    const { samples, channels } = describeMp3(source);
+    expect(pcm.length).toBe(samples * channels * 2);
+    const restored = Buffer.alloc(pcm.length);
+    let peak = 0;
+    let reversible = true;
+    for (let offset = 0; offset < pcm.length; offset += 2) {
+      const sample = pcm.readInt16LE(offset);
+      peak = Math.max(peak, Math.abs(sample));
+      reversible &&= sample % CLEAR_PAGE_TURN_ASSET_GAIN === 0;
+      restored.writeInt16LE(sample / CLEAR_PAGE_TURN_ASSET_GAIN, offset);
+    }
+    expect(peak).toBeLessThan(32767);
+    expect(reversible).toBe(true);
+    expect(createHash('sha256').update(restored).digest('hex')).toBe(
+      '95dbac587d1557b3e0acb8f1bedf754b3856b9e49553872129dbb1621a40a397'
+    );
+  });
+
+  it('uses compensated audio to preserve shipping gain through the Loud level', async () => {
     const player = nativePlayer();
     const signal = new NativeAbortController().signal;
     expect(signal.throwIfAborted).toBeUndefined();
@@ -189,14 +294,22 @@ describe('native page-turn player', () => {
     expect(audio.mode).toHaveBeenCalledWith(expect.objectContaining({ playsInSilentMode: false }));
     player.listener({ isLoaded: true, error: null });
     const turn = await pending;
+    expect(audio.create.mock.calls[0][0]).toBe(amplifiedClearPageTurn);
     turn.play(2);
     expect(player.volume).toBe(1);
     expect(player.seekTo).toHaveBeenCalledWith(0);
     expect(player.play).toHaveBeenCalledOnce();
     turn.play(0.5);
-    expect(player.volume).toBe(0.5);
+    expect(player.volume * CLEAR_PAGE_TURN_ASSET_GAIN).toBe(0.5);
+    turn.play(1);
+    expect(player.volume * CLEAR_PAGE_TURN_ASSET_GAIN).toBe(1);
     turn.dispose();
+    turn.dispose();
+    expect(player.playing).toBe(false);
+    expect(player.volume).toBe(0);
+    expect(player.released).toBe(true);
     expect(player.remove).toHaveBeenCalledOnce();
+    expect(player.release).toHaveBeenCalledOnce();
   });
 
   it('refuses a load abandoned before the player exists, on the native signal', async () => {
@@ -214,6 +327,7 @@ describe('native page-turn player', () => {
     request.abort();
     await expect(pending).rejects.toThrow('cancelled');
     expect(player.remove).toHaveBeenCalledOnce();
+    expect(player.released).toBe(true);
     expect(player.play).not.toHaveBeenCalled();
   });
 });

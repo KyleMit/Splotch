@@ -7,7 +7,7 @@ import { emptyDrawing } from '../../../experiments/native-architecture/src/drawi
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
 import * as drawingFiles from '../../../experiments/native-architecture/src/platform/drawingFiles.ts';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { photos } from '../../tests/native-photo-library-port.mjs';
+import { photos, reactNativeModule } from '../../tests/native-photo-library-port.mjs';
 
 vi.mock('expo-media-library', () =>
   import('../../tests/native-photo-library-port.mjs').then((port) => port.mediaLibraryModule)
@@ -83,6 +83,7 @@ const strokesOnPaper = () => caller.liveScreen.history.drawing.strokes.length;
 beforeEach(() => {
   photos.reset();
   records.os = 'android';
+  records.nativeModules.SplotchPhotoLibrary = reactNativeModule.NativeModules.SplotchPhotoLibrary;
   caller.exportPng = vi.fn(async () => EXPORTED_PNG);
   caller.captureInk = vi.fn(async () => INKED_PAPER);
   privateWrite = vi.spyOn(drawingFiles, 'savePicture');
@@ -103,9 +104,13 @@ describe('canonical Save screenshot to Photos', () => {
       await settle(() => expect(photos.created).toHaveLength(1));
       expect(privateWrite).not.toHaveBeenCalled();
       expect(caller.exportPng).toHaveBeenCalledWith(drawing);
-      expect(photos.permissionRequests).toEqual([[true]]);
+      expect(photos.permissionRequests).toEqual([]);
       expect(photos.created).toEqual([
-        expect.objectContaining({ via: 'Album.create', album: 'Splotch', base64: EXPORTED_PNG }),
+        expect.objectContaining({
+          via: 'SplotchPhotoLibrary.save',
+          album: 'Splotch',
+          base64: EXPORTED_PNG,
+        }),
       ]);
       expect(host.textContent).not.toContain('saved');
     },
@@ -156,7 +161,7 @@ describe('canonical Auto-Save on Delete', () => {
   it(
     'clears the paper and reports the captured picture when Photos refuses it',
     async () => {
-      photos.permission = 'denied';
+      photos.nativeOutcome = 'denied';
       await mountWith(SETTINGS_V9(true));
       await click('Draw RSD fixture stroke');
       await clear();
