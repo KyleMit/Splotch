@@ -47,13 +47,6 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   savePicture: vi.fn(),
   listPictures: async () => [],
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => {
-  const storage = { read: async () => null, write: async () => {} };
-  return {
-    drawingDraftStorage: storage,
-    protectedDraftPageIds: async () => [],
-  };
-});
 vi.mock('react-native', () => ({
   PixelRatio: { get: () => 1 },
   AccessibilityInfo: createAccessibilityInfoFixture(),

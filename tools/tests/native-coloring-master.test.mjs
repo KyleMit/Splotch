@@ -146,14 +146,20 @@ describe('drawing policy at the sole history writer', () => {
     expect(coloringBookHistory(history, true)).toBe(history);
   });
   it('clamps a real Undo and saved-model reopen without rewriting their originals', () => {
-    const saved = JSON.stringify(emptyDrawing(4, 'flower'));
-    const history = { drawing: emptyDrawing(4), undo: [parseDrawing(JSON.parse(saved))] };
+    const saved = JSON.stringify({
+      version: 3,
+      pageId: 'flower',
+      rainbow: 4,
+      strokes: [{ brush: 'magic', rainbow: 4, points: [{ x: 10, y: 10 }] }],
+    });
+    const original = parseDrawing(JSON.parse(saved));
+    const history = { drawing: { ...original, pageId: 'blank' }, undo: [original] };
     const undone = coloringBookHistory(undoDrawing(history), false);
     expect(undone.drawing.pageId).toBe('blank');
     const reopened = coloringBookHistory(createHistory(parseDrawing(JSON.parse(saved))), false);
     expect(reopened.drawing.pageId).toBe('blank');
     expect(JSON.parse(saved).pageId).toBe('flower');
-    expect(undoDrawing(history).drawing.pageId).toBe('flower');
+    expect(undoDrawing(history).drawing).toBe(original);
   });
 });
 it('fences a late transfer after master-off without changing durable auto-download policy', async () => {

@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentProps, type ReactNode } from 'react';
+import { drawingPaper } from '../drawing/paperSpace';
 import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
@@ -92,7 +93,7 @@ export function RsdEdgeLayout({
   // resizes is in view.
   resizing: boolean;
   status: ReactNode;
-  children: ReactNode;
+  children: ComponentProps<typeof NativeDrawingLayout>['children'];
   paperOverlay: (drawerOpen: boolean) => ReactNode;
 }) {
   const { screen, sound, disabled } = controls;
@@ -119,6 +120,9 @@ export function RsdEdgeLayout({
     <ToolbarSkin.Provider value={toolbarStyle}>
       <InertRegion.Provider value={covered}>
         <NativeDrawingLayout
+          paper={drawingPaper(screen.history.drawing)}
+          empty={!screen.inkVisible}
+          departingPaper={clear.sheet ? drawingPaper(clear.sheet.drawing) : null}
           bareGlass={
             bare
               ? {
@@ -138,8 +142,14 @@ export function RsdEdgeLayout({
               disabled={disabled}
             />
           )}
-          clearUnderlay={(offset) => (
-            <RsdClearUnderlay control={clear} drawing={screen.history.drawing} offset={offset} />
+          clearUnderlay={(offset, frame, departingFrame) => (
+            <RsdClearUnderlay
+              control={clear}
+              drawing={screen.history.drawing}
+              offset={offset}
+              frame={frame}
+              departingFrame={departingFrame}
+            />
           )}
           clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
           actionsPanel={(area, viewport) => (

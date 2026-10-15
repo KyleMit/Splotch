@@ -1,8 +1,17 @@
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
+import { paletteSlots } from './paletteGeometry';
+import { fittedPaper } from '../drawing/paperGeometry';
+import type { PaperReference } from '../drawing/paperSpace';
+import {
+  INITIAL_PAPER_PRESENTATION,
+  presentPaper,
+  type PresentedFrame,
+  type PaperPresentationState,
+  type PaperPresentationInputs,
+} from '../drawing/paperPresentation';
 import { RsdGlassPanes, RsdMarginRules, RsdRailGlass } from './bareGlass';
 import type { BareGlass } from './bareGlassLayout';
 import {
@@ -29,6 +38,8 @@ const PALETTE_OVER_CLEAR_Z_INDEX = 1;
 
 const docks = StyleSheet.create({
   palette: { zIndex: PALETTE_OVER_CLEAR_Z_INDEX },
+  floatingRow: { position: 'absolute', top: 0, left: 0, right: 0 },
+  floatingColumn: { position: 'absolute', top: 0, bottom: 0, left: 0 },
   // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
   clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
@@ -63,6 +74,110 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
   };
 }
 
+type NativeDrawingLayoutProps = {
+  // The flat Button style's glass, or null for the raised style, whose bar sits beside the paper.
+  bareGlass: BareGlass | null;
+  paper: PaperReference;
+  empty: boolean;
+  departingPaper: PaperReference | null;
+  palette: (layout: PaletteLayout) => ReactNode;
+  clearUnderlay: (
+    offset: AreaOffset,
+    frame: PresentedFrame,
+    departingFrame: PresentedFrame | null
+  ) => ReactNode;
+  clearOverlay: ReactNode;
+  actionsPanel: (area: AreaSize, viewport: AreaSize) => ReactNode;
+  settings: ReactNode;
+  status: ReactNode;
+  capturePress: () => boolean;
+  // Floats over the paper with the controls, clear of the bottom inset.
+  overlays: ReactNode;
+  // The paper, which runs under the bottom inset.
+  children: (frame: PresentedFrame, space: AreaSize) => ReactNode;
+};
+
+function usePresentedPaper(
+  { paper, empty, slot, origin, window, toolbarStyle }: PaperPresentationInputs,
+  departingPaper: PaperReference | null
+) {
+  const inputs = useMemo(
+    () =>
+      ({
+        paper,
+        empty,
+        slot: { width: slot.width, height: slot.height },
+        origin: { x: origin.x, y: origin.y },
+        window: { width: window.width, height: window.height },
+        toolbarStyle,
+      }) as const,
+    [
+      paper,
+      empty,
+      slot.width,
+      slot.height,
+      origin.x,
+      origin.y,
+      window.width,
+      window.height,
+      toolbarStyle,
+    ]
+  );
+  const [presentation, setPresentation] = useState(INITIAL_PAPER_PRESENTATION);
+  const [memory] = useState(() => new WeakMap<PaperReference, PaperPresentationState>());
+  const remembered = presentation.inputs?.paper !== paper ? memory.get(paper) : undefined;
+  const next =
+    presentation.inputs === inputs
+      ? presentation
+      : presentPaper(remembered ?? presentation, inputs);
+  if (next !== presentation) setPresentation(next);
+  const frame = next.frame ?? fittedPaper(slot, paper);
+  useLayoutEffect(() => {
+    if (!empty && paper.kind === 'adopted') memory.set(paper, next);
+  }, [empty, paper, memory, next]);
+  const departingFrame =
+    departingPaper === paper
+      ? frame
+      : departingPaper &&
+        (presentPaper(memory.get(departingPaper) ?? INITIAL_PAPER_PRESENTATION, {
+          ...inputs,
+          paper: departingPaper,
+          empty: false,
+        }).frame ??
+          fittedPaper(slot, departingPaper));
+  return { frame, departingFrame };
+}
+
+function NativePaletteBar({
+  axis,
+  bare,
+  onMeasure,
+  children,
+}: {
+  axis: LayoutAxis;
+  bare: boolean;
+  onMeasure: (length: number) => void;
+  children: ReactNode;
+}) {
+  const drawingScreenStyles = useDrawingScreenStyles();
+  return (
+    <View
+      testID="rsd-palette-bar"
+      style={[
+        drawingScreenStyles.paletteBar,
+        docks.palette,
+        bare && (axis === 'row' ? docks.floatingRow : docks.floatingColumn),
+      ]}
+      onLayout={({ nativeEvent }) =>
+        onMeasure(axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height)
+      }
+    >
+      {bare ? <RsdRailGlass axis={axis} /> : null}
+      {children}
+    </View>
+  );
+}
+
 // The shipping arrangement: colors along the top edge (the left edge in landscape, and none on a
 // landscape phone, whose Actions Panel carries the Color Button instead), Clear docked to
 // the right screen edge, Settings in the bottom-right corner and the Actions Panel in the
@@ -73,6 +188,9 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
 // anywhere in the layout passes through capturePress first, without being claimed.
 export function NativeDrawingLayout({
   bareGlass,
+  paper,
+  empty,
+  departingPaper,
   palette,
   clearUnderlay,
   clearOverlay,
@@ -82,21 +200,7 @@ export function NativeDrawingLayout({
   capturePress,
   overlays,
   children,
-}: {
-  // The flat Button style's glass, or null for the raised style, whose bar sits beside the paper.
-  bareGlass: BareGlass | null;
-  palette: (layout: PaletteLayout) => ReactNode;
-  clearUnderlay: (offset: AreaOffset) => ReactNode;
-  clearOverlay: ReactNode;
-  actionsPanel: (area: AreaSize, viewport: AreaSize) => ReactNode;
-  settings: ReactNode;
-  status: ReactNode;
-  capturePress: () => boolean;
-  // Floats over the paper with the controls, clear of the bottom inset.
-  overlays: ReactNode;
-  // The paper, which runs under the bottom inset.
-  children: ReactNode;
-}) {
+}: NativeDrawingLayoutProps) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const { contacts, handlers } = useSecondTouchLayout(capturePress);
   const window = useWindowDimensions();
@@ -118,12 +222,24 @@ export function NativeDrawingLayout({
   const [column, setColumn] = useState<Box>();
   const paperArea = area ?? window;
   const phoneLandscape = isPhoneLandscapeViewport(window);
-  // Both Button styles keep the palette bar in the flow, as shipping's do, so a style switch never
-  // resizes the paper under a drawing. The flat bar's glass is shipping's, laid out over the whole
-  // layout, which reaches past the paper area by the bar.
-  const rail = bareGlass && !phoneLandscape ? PALETTE_FLOWS[axis].extentPx : 0;
-  const railTop = axis === 'row' ? rail : 0;
-  const railLeft = axis === 'column' ? rail : 0;
+  const { frame, departingFrame } = usePresentedPaper(
+    {
+      paper,
+      empty,
+      slot: paperArea,
+      origin: {
+        x: (root?.x ?? 0) + (column?.x ?? 0) + (area?.x ?? 0),
+        y: (root?.y ?? 0) + (column?.y ?? 0) + (area?.y ?? 0),
+      },
+      window,
+      toolbarStyle: bareGlass ? 'bare' : 'buttons',
+    },
+    departingPaper
+  );
+  const paperNode = useMemo(
+    () => children(frame, { width: paperArea.width, height: paperArea.height }),
+    [children, frame, paperArea.width, paperArea.height]
+  );
   const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
   const content = (
     <View
@@ -136,28 +252,24 @@ export function NativeDrawingLayout({
       ]}
     >
       {phoneLandscape ? null : (
-        <View
-          testID="rsd-palette-bar"
-          style={[drawingScreenStyles.paletteBar, docks.palette]}
-          onLayout={({ nativeEvent }) => {
-            const next = axis === 'row' ? nativeEvent.layout.width : nativeEvent.layout.height;
+        <NativePaletteBar
+          axis={axis}
+          bare={Boolean(bareGlass)}
+          onMeasure={(length) =>
             setMeasured((previous) =>
-              previous?.axis === axis && previous.length === next
-                ? previous
-                : { axis, length: next }
-            );
-          }}
+              previous?.axis === axis && previous.length === length ? previous : { axis, length }
+            )
+          }
         >
-          {bareGlass ? <RsdRailGlass axis={axis} /> : null}
           {palette({
             axis,
             slots: paletteSlots(viewportLength - endInset, axis),
             length,
             endInset,
           })}
-        </View>
+        </NativePaletteBar>
       )}
-      {rail > 0 ? <RsdMarginRules axis={axis} /> : null}
+      {bareGlass && !phoneLandscape ? <RsdMarginRules axis={axis} /> : null}
       <View
         testID="rsd-canvas-column"
         style={drawingScreenStyles.canvasColumn}
@@ -168,20 +280,20 @@ export function NativeDrawingLayout({
           style={drawingScreenStyles.canvasArea}
           onLayout={boxSetter(setArea)}
         >
-          {children}
+          {paperNode}
           {bareGlass ? (
             <RsdGlassPanes
               space={{
-                width: paperArea.width + railLeft,
-                height: paperArea.height + railTop,
+                width: paperArea.width,
+                height: paperArea.height,
                 insetBottom,
-                paperTop: railTop,
-                paperLeft: railLeft,
+                paperTop: 0,
+                paperLeft: 0,
               }}
               glass={bareGlass}
             />
           ) : null}
-          {clearUnderlay(areaOffset(root, column, area))}
+          {clearUnderlay(areaOffset(root, column, area), frame, departingFrame)}
           <View
             testID="rsd-controls-inset"
             pointerEvents="box-none"

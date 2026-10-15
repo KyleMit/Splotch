@@ -155,15 +155,15 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     ]);
   });
 
-  it('refuses old cohort/generation callbacks after actual Retry remount and ignores a late measurement', async () => {
+  it('refuses old cohort/generation callbacks after automatic recovery and ignores a late measurement', async () => {
     const before = owner.history;
     const old = owner.recovery.callbacks;
     sdk.autoMeasure = false;
     await act(async () => owner.surface.current.refreshGeometry());
     const measurement = sdk.measurements.at(-1);
-    await act(async () => old.onRendererFault(new Error('SDK renderer fault')));
     sdk.autoMeasure = true;
-    await act(async () => owner.recovery.retry());
+    await act(async () => old.onRendererFault(new Error('SDK renderer fault')));
+    expect(owner.recovery.generation).toBe(1);
     await settle();
     await act(async () => {
       measurement(0, 0, 1024, 768, 0, 0);

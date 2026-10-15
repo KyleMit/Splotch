@@ -170,7 +170,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                     if (!busy) resume();
                   }}
                   onError={(error) => {
-                    input.silence();
+                    input.detach();
                     props.onRendererFault(error);
                   }}
                 />

@@ -182,6 +182,7 @@ describe('the screen’s visible-ink scan', () => {
     await contact('eraser', 10);
     expect(owner.history.drawing.strokes.map(({ brush }) => brush)).toEqual(['pen', 'eraser']);
     expect(owner.inkVisible).toBe(true);
+    const undo = owner.history.undo;
     sdk.hold = true;
     const captures = sdk.captures.length;
     await idle();
@@ -189,6 +190,9 @@ describe('the screen’s visible-ink scan', () => {
     await act(async () => sdk.captures.at(-1).callback(blankPaper()));
     await act(async () => vi.advanceTimersByTimeAsync(EMPTY_SCAN_IDLE_MS));
     expect(owner.inkVisible).toBe(false);
+    expect(owner.history.drawing.paper.kind).toBe('unadopted');
+    expect(owner.history.drawing.strokes).toEqual([]);
+    expect(owner.history.undo).toBe(undo);
     await act(async () => owner.undo());
     expect(owner.inkVisible).toBe(true);
   });

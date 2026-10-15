@@ -51,7 +51,17 @@ function mount(lifted) {
     },
     owner: null,
   };
-  act(() => root.render(createElement(NativePaper, { screen, sound, menuOpen: false, lifted })));
+  act(() =>
+    root.render(
+      createElement(NativePaper, {
+        screen,
+        sound,
+        menuOpen: false,
+        lifted,
+        frame: { left: 0, top: 0, width: 402, height: 700 },
+      })
+    )
+  );
 }
 
 beforeEach(() => {

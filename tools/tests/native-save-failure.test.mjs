@@ -5,6 +5,16 @@ import {
   createSaveFailure,
 } from '../../experiments/native-architecture/src/export/saveFailure.ts';
 
+const browserDisk = vi.hoisted(() => new Map());
+vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
+  openDatabase: async (database, store) => ({
+    closed: new Promise(() => {}),
+    get: async (_, key) => structuredClone(browserDisk.get(`${database}:${store}:${key}`)),
+    put: async (_, value, key) =>
+      browserDisk.set(`${database}:${store}:${key}`, structuredClone(value)),
+  }),
+}));
+
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
 // A platform save the test settles one call at a time.
@@ -25,6 +35,100 @@ function owner(save = vi.fn(async () => 'photos')) {
 }
 
 describe('the Save Failure Banner owner', () => {
+  function durableStore(initial = null) {
+    let record = structuredClone(initial);
+    return {
+      read: vi.fn(async () => structuredClone(record)),
+      write: vi.fn(async (next) => {
+        record = structuredClone(next);
+      }),
+    };
+  }
+
+  it('restores exact refused picture bytes after the app closes, then removes saved or dismissed records', async () => {
+    const store = durableStore();
+    const first = createSaveFailure(
+      vi.fn(async () => 'denied'),
+      vi.fn(),
+      store
+    );
+    first.report('denied', 'held-png');
+    await first.restore();
+    const save = vi.fn(async () => 'photos');
+    const relaunched = createSaveFailure(save, vi.fn(), store);
+    await relaunched.restore();
+    expect(relaunched.getState()).toMatchObject({ outcome: 'denied', pictureCount: 1 });
+    await relaunched.retry();
+    await relaunched.restore();
+    expect(save).toHaveBeenCalledWith('held-png', undefined);
+    const saved = createSaveFailure(save, vi.fn(), store);
+    await saved.restore();
+    expect(saved.getState().pictureCount).toBe(0);
+    saved.report('failed', 'second-png');
+    saved.dismiss();
+    await saved.restore();
+    const dismissed = createSaveFailure(save, vi.fn(), store);
+    await dismissed.restore();
+    expect(dismissed.getState().pictureCount).toBe(0);
+  });
+
+  it('merges a failure arriving during restore without overwriting the saved record', async () => {
+    let read;
+    const store = durableStore([{ pngBase64: 'old-png', outcome: 'denied' }]);
+    store.read.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          read = resolve;
+        })
+    );
+    const failure = createSaveFailure(vi.fn(), vi.fn(), store);
+    const restoration = failure.restore();
+    await Promise.resolve();
+    failure.report('failed', 'new-png');
+    read([{ pngBase64: 'old-png', outcome: 'denied' }]);
+    await restoration;
+    await failure.restore();
+    expect(failure.getState()).toMatchObject({ outcome: 'denied', pictureCount: 2 });
+    expect(store.write).toHaveBeenLastCalledWith([
+      { pngBase64: 'old-png', outcome: 'denied' },
+      { pngBase64: 'new-png', outcome: 'failed', format: undefined },
+    ]);
+  });
+
+  it('protects an unread record until a later successful restore merges it', async () => {
+    const store = durableStore([{ pngBase64: 'old-png', outcome: 'denied' }]);
+    store.read.mockRejectedValue(new Error('Storage unavailable.'));
+    const failure = createSaveFailure(vi.fn(), vi.fn(), store);
+    failure.report('failed', 'new-png');
+    await failure.restore();
+    expect(store.write).not.toHaveBeenCalled();
+    store.read.mockResolvedValue([{ pngBase64: 'old-png', outcome: 'denied' }]);
+    await failure.restore();
+    failure.report('failed', 'new-png');
+    await failure.restore();
+    expect(failure.getState().pictureCount).toBe(2);
+    expect(store.write).toHaveBeenCalled();
+  });
+
+  it('does not resurrect restored pictures after dismissal during a read', async () => {
+    let finish;
+    const store = durableStore();
+    store.read.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const failure = createSaveFailure(vi.fn(), vi.fn(), store);
+    const restoration = failure.restore();
+    await Promise.resolve();
+    failure.dismiss();
+    finish([{ pngBase64: 'old-png', outcome: 'denied' }]);
+    await restoration;
+    await failure.restore();
+    expect(failure.getState().pictureCount).toBe(0);
+    expect(store.write).toHaveBeenLastCalledWith(null);
+  });
   it('holds a refused picture and retries those exact bytes, not a fresh capture', async () => {
     const { failure, save } = owner(vi.fn(async () => 'photos'));
     failure.report('failed', 'first-png');
@@ -134,4 +238,21 @@ describe('the Save Failure Banner owner', () => {
       `export const UNSAVED_PICTURE_LIMIT = ${UNSAVED_PICTURE_LIMIT};`
     );
   });
+});
+
+it('keeps refused bytes through the browser storage adapter for a new app owner', async () => {
+  const { unsavedPictureStore } =
+    await import('../../experiments/native-architecture/src/platform/unsavedPictures.web.ts');
+  await unsavedPictureStore.write(null);
+  const first = createSaveFailure(vi.fn(), vi.fn(), unsavedPictureStore);
+  first.report('failed', 'web-png');
+  await first.restore();
+  const save = vi.fn(async () => 'downloads');
+  const relaunched = createSaveFailure(save, vi.fn(), unsavedPictureStore);
+  await relaunched.restore();
+  expect(relaunched.getState().pictureCount).toBe(1);
+  await relaunched.retry();
+  await relaunched.restore();
+  expect(save).toHaveBeenCalledWith('web-png', undefined);
+  await expect(unsavedPictureStore.read()).resolves.toBeNull();
 });

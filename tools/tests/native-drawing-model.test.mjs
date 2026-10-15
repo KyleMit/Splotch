@@ -1,5 +1,6 @@
 import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
+import { MAX_UNDO_DEPTH } from '../../web/src/lib/drawing/undoHistory.ts';
 import {
   addStroke,
   appendPoint,
@@ -21,6 +22,28 @@ const firstStroke = {
 };
 
 describe('native development drawing model', () => {
+  it('keeps drawing beyond the former stroke and point caps', () => {
+    const stroke = { ...firstStroke, width: 22 };
+    const manyStrokes = { ...legacyDrawing(), strokes: Array.from({ length: 1000 }, () => stroke) };
+    const added = addStroke(createHistory(manyStrokes), stroke);
+    expect(added.drawing.strokes).toHaveLength(1001);
+    const points = Array.from({ length: 100_001 }, () => ({ x: 10, y: 20 }));
+    const long = addStroke(createHistory(legacyDrawing()), { ...stroke, points });
+    expect(parseDrawing(long.drawing).strokes[0].points).toHaveLength(points.length);
+  });
+
+  it('keeps shipping undo depth even when retained pictures contain many points', () => {
+    const points = Array.from({ length: 100_001 }, () => ({ x: 10, y: 20 }));
+    let history = createHistory(legacyDrawing());
+    for (let count = 0; count <= MAX_UNDO_DEPTH; count += 1) {
+      history = commitDrawing(history, {
+        ...legacyDrawing(),
+        strokes: [{ ...firstStroke, width: 22, points }],
+      });
+    }
+    expect(history.undo).toHaveLength(MAX_UNDO_DEPTH);
+  });
+
   it('commits the final sample even when it falls below the move threshold', () => {
     const points = [{ x: 10, y: 20 }];
     const final = { x: 10.25, y: 20.25 };

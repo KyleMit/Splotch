@@ -34,8 +34,6 @@ export function drawingScreenPort(actual, caller, projectHistory) {
       },
       brushControl: { kind: 'none' },
       availableBrushes: [],
-      draftState: { status: 'session', message: '' },
-      retryDraft: async () => {},
       selectInkBrush() {},
       currentDrawing: () => caller.screen.history.drawing,
       isDrawing: () => caller.screen.drawing,

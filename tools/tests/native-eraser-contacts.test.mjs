@@ -4,7 +4,6 @@ import { createContactCohort } from '../../experiments/native-architecture/src/d
 import {
   addStrokes,
   createHistory,
-  drawingCapacity,
   parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -72,18 +71,18 @@ describe('joint contact cohort canonical ownership', () => {
     expect(input.finish('c')[0]).toEqual({ brush: 'eraser', width: 16, points: [point] });
   });
 
-  it('reserves the remaining legal stroke and point capacity before admitting another contact', () => {
+  it('admits simultaneous contacts beyond the former picture limits', () => {
     const drawing = { ...legacyDrawing(), strokes: Array.from({ length: 999 }, () => marker) };
-    expect(drawingCapacity(drawing).strokes).toBe(1);
     const input = createContactCohort();
     input.start('a', 'Blue', 'pen', point, drawing);
-    expect(() => input.start('b', 'Blue', 'pen', point, drawing)).toThrow('full');
-    expect(input.finish('a')).toHaveLength(1);
+    input.start('b', 'Blue', 'pen', point, drawing);
+    expect(input.finish('a')).toBeNull();
+    expect(input.finish('b')).toHaveLength(2);
     const full = createHistory({
       ...legacyDrawing(),
       strokes: [{ ...marker, points: Array.from({ length: 99999 }, () => point) }],
     });
-    expect(() => addStrokes(full, [marker, marker])).toThrow('full');
+    expect(addStrokes(full, [marker, marker]).drawing.strokes).toHaveLength(3);
     expect(full.undo).toEqual([]);
     expect(full.drawing.strokes[0].points).toHaveLength(99999);
   });
