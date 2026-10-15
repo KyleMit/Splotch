@@ -446,9 +446,7 @@ function useSurfaceCommands({
         observation?.cancel();
       }
     });
-    if (!save.requested) return;
-    const outcome = save.pngBase64 ? await savePicture(save.pngBase64) : 'failed';
-    if (isUnsaved(outcome)) reportSaveFailure(outcome, save.pngBase64);
+    if (save.requested) saveClearedPicture(save.pngBase64, reportSaveFailure);
   }
 
   return {
@@ -465,4 +463,17 @@ function useSurfaceCommands({
     undo,
     clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
+}
+
+function saveClearedPicture(
+  pngBase64: string | null,
+  reportFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void
+) {
+  if (!pngBase64) {
+    reportFailure('failed', null);
+    return;
+  }
+  void savePicture(pngBase64).then((outcome) => {
+    if (isUnsaved(outcome)) reportFailure(outcome, pngBase64);
+  });
 }
