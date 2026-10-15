@@ -128,7 +128,7 @@ describe('bundled Farm book and saved page identity', () => {
       const painted = paintedPage(pageId);
       const cleared = clearDrawing(painted, false);
       expect(cleared.drawing).toEqual(emptyDrawing(9, pageId));
-      expect(undoDrawing(cleared).drawing).toBe(painted.drawing);
+      expect(undoDrawing(cleared).drawing).toEqual({ ...painted.drawing, rainbow: 9 });
       const blank = changePage(painted, 'blank');
       expect(blank.drawing.strokes).toBe(painted.drawing.strokes);
       expect(undoDrawing(blank).drawing).toBe(painted.drawing);

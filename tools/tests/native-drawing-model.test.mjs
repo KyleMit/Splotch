@@ -55,7 +55,7 @@ describe('native development drawing model', () => {
     expect(random).toHaveBeenCalledTimes(generated);
   });
 
-  it('randomly chooses and holds the first rainbow, rerolls on Clear, and restores it on Undo', () => {
+  it('randomly chooses and holds a rainbow while Clear and Undo preserve the replacement for new ink', () => {
     const firstRandom = 0.71;
     const clearRandom = 0.24;
     const random = vi
@@ -74,7 +74,11 @@ describe('native development drawing model', () => {
     const cleared = clearDrawing(inked, false);
     expect(cleared.drawing.rainbow).toBe(Math.floor(clearRandom * MAGIC_GRADIENT_COUNT));
     expect(random).toHaveBeenCalledTimes(2);
-    expect(undoDrawing(cleared).drawing).toBe(inked.drawing);
+    const restored = undoDrawing(cleared);
+    expect(restored.drawing.strokes).toBe(inked.drawing.strokes);
+    expect(restored.drawing.strokes[0].rainbow).toBe(chosen);
+    expect(restored.drawing.rainbow).toBe(cleared.drawing.rainbow);
+    expect(strokeStyle('magic', 'Blue', restored.drawing).rainbow).toBe(cleared.drawing.rainbow);
   });
 
   it('keeps drawing beyond the former stroke and point caps', () => {
@@ -111,7 +115,10 @@ describe('native development drawing model', () => {
     const snapshot = JSON.stringify(original.drawing);
     const cleared = clearDrawing(original, false);
     expect(cleared.drawing.strokes).toEqual([]);
-    expect(undoDrawing(cleared).drawing).toEqual(original.drawing);
+    expect(undoDrawing(cleared).drawing).toEqual({
+      ...original.drawing,
+      rainbow: cleared.drawing.rainbow,
+    });
     const opened = commitDrawing(cleared, parseDrawing(JSON.parse(snapshot)));
     expect(undoDrawing(opened).drawing.strokes).toEqual([]);
     expect(JSON.stringify(original.drawing)).toBe(snapshot);

@@ -30,10 +30,13 @@ const { Svg, Rect } = await import('react-native-svg');
 const { Ink, InkArtwork } =
   await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 
-const RAINBOW_FIXTURE_FRACTION = 0.125;
+const RAINBOW_FIXTURE_VALUES = [0.125, 0.95, 0.25, 0.75, 0.45, 0.55, 0.15, 0.85, 0.35, 0.65, 0.1];
 
 function renderFixtureMarkup(element) {
-  const random = vi.spyOn(Math, 'random').mockReturnValue(RAINBOW_FIXTURE_FRACTION);
+  let index = 0;
+  const random = vi
+    .spyOn(Math, 'random')
+    .mockImplementation(() => RAINBOW_FIXTURE_VALUES[index++ % RAINBOW_FIXTURE_VALUES.length]);
   try {
     return renderToStaticMarkup(element);
   } finally {
@@ -200,6 +203,21 @@ describe('native brush artwork output', () => {
     expect(() => renderToStaticMarkup(createElement(Ink, { stroke }))).toThrow(
       'current paper appearance'
     );
+  });
+
+  it('keeps distinct held rainbow indexes distinct in rendered pixels', async () => {
+    const magic = (rainbow) => ({
+      brush: 'magic',
+      width: 30,
+      rainbow,
+      points: [
+        { x: 100, y: 200 },
+        { x: 900, y: 200 },
+      ],
+    });
+    const first = await pixels([magic(0)]);
+    const other = await pixels([magic(3)]);
+    expect(first.data.equals(other.data)).toBe(false);
   });
 
   it('renders a spatial rainbow and preserves later solid ink in the same composition', async () => {

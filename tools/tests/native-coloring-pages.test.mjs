@@ -52,6 +52,7 @@ describe('native coloring-page composition', () => {
   });
 
   it('keeps ordinary page choices through Undo Clear while retaining Magic page Undo', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.24);
     const original = createHistory({
       ...legacyDrawing(3, 'flower'),
       strokes: [{ brush: 'magic', width: 30, rainbow: 3, points: [{ x: 512, y: 384 }] }],
@@ -63,7 +64,7 @@ describe('native coloring-page composition', () => {
     const restored = undoDrawing(picked);
     expect(restored.drawing.strokes).toBe(original.drawing.strokes);
     expect(restored.drawing.pageId).toBe('sunshine');
-    expect(undoDrawing(restored).drawing).toBe(original.drawing);
+    expect(undoDrawing(restored).drawing).toEqual({ ...original.drawing, rainbow: 2 });
   });
 
   it('retains mixed brush metadata and one page Undo unit through page removal and later ink', () => {
@@ -93,7 +94,7 @@ describe('native coloring-page composition', () => {
     const cleared = clearDrawing(original, false);
     expect(original.drawing.pageId).toBe('flower');
     expect(cleared.drawing).toEqual(emptyDrawing(7, 'flower'));
-    expect(undoDrawing(cleared).drawing).toBe(original.drawing);
+    expect(undoDrawing(cleared).drawing).toEqual({ ...original.drawing, rainbow: 7 });
     const visuallyEmpty = clearDrawing(cleared, true);
     expect(visuallyEmpty.drawing).toEqual(emptyDrawing(2, 'flower'));
     expect(visuallyEmpty.undo).toBe(cleared.undo);

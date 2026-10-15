@@ -132,10 +132,12 @@ export function undoDrawing(history: History): History {
   const restoresMagicPage =
     previous.strokes === current.strokes &&
     current.strokes.some((stroke) => stroke.brush === 'magic');
-  const drawing =
+  const restored =
     restoresMagicPage || previous.pageId === current.pageId
       ? previous
       : { ...previous, pageId: current.pageId };
+  const drawing =
+    restored.rainbow === current.rainbow ? restored : { ...restored, rainbow: current.rainbow };
   return { drawing, undo: history.undo.slice(0, -1) };
 }
 

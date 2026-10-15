@@ -128,6 +128,7 @@ describe('the screen’s visible-ink scan', () => {
     }
     expect(sdk.save).toHaveBeenCalledOnce();
     expect(owner.history.drawing.strokes).toHaveLength(0);
+    const replacementRainbow = owner.history.drawing.rainbow;
     expect(owner.history.undo.at(-1)).toBe(previous);
     expect(owner.busy).toBe(false);
     expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
@@ -141,7 +142,7 @@ describe('the screen’s visible-ink scan', () => {
     expect(owner.history.drawing.strokes).toHaveLength(0);
     await act(async () => owner.undo());
     await settle();
-    expect(owner.history.drawing).toBe(previous);
+    expect(owner.history.drawing).toEqual({ ...previous, rainbow: replacementRainbow });
   });
 
   it('clears known ink without a capture and admits the next contact immediately', async () => {

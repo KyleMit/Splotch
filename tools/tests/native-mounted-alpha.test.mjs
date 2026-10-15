@@ -248,7 +248,7 @@ async function openHook() {
 }
 
 describe('mounted actual native Clear and decoder ownership', () => {
-  it('clears observed ink once and Undo restores exact page/rainbow/drawing identity through rerenders', async () => {
+  it('clears once and Undo restores the old ink and page with the new active rainbow through rerenders', async () => {
     await opened();
     expect(await saved()).toEqual(fixture);
     await clear();
@@ -260,7 +260,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await undo();
     expect(state.busy).toBe(true);
     await frames();
-    expect(await saved()).toEqual(fixture);
+    expect(await saved()).toEqual({ ...fixture, rainbow: 2 });
     expect(sdk.dimensions.size).toBe(0);
   });
   it('clears a visually blank recorded log without adding an Undo entry', async () => {
@@ -421,7 +421,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await undo();
     expect(state.busy).toBe(true);
     await frames();
-    expect(await saved()).toEqual(fixture);
+    expect(await saved()).toEqual({ ...fixture, rainbow: 2 });
   });
   it('rejects a superseded current-drawing capture and allows the same stable owner to capture its replacement', async () => {
     const ref = { current: null },
