@@ -12,10 +12,17 @@ export function useAiProgressOwner(state: AiState | null): AiProgressOwner {
   const [owner] = useState(createAiProgress);
   const run = state ? aiRun(state) : null;
   const presence = presenceOf(state);
+  // The run is re-derived every render, so the dial follows the fields it reads rather than the
+  // object that carries them.
+  const id = run?.id ?? null;
+  const startedAt = run?.startedAt ?? null;
+  const phase = run?.phase ?? null;
   useEffect(() => {
-    owner.follow(run, presence);
-    // The run is re-derived every render; only these fields change what the dial does.
-  }, [owner, run?.id, run?.phase, presence]);
+    owner.follow(
+      id === null || startedAt === null || phase === null ? null : { id, startedAt, phase },
+      presence
+    );
+  }, [owner, id, startedAt, phase, presence]);
   useEffect(() => () => owner.dispose(), [owner]);
   return owner;
 }

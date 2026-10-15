@@ -37,9 +37,10 @@ export function useCrayonTileReadiness(uris: readonly string[], onError: (error:
     (uri) => native.has(uri) && (Platform.OS === 'android' || svg.has(uri))
   );
   useEffect(() => {
-    current.current.active = true;
+    const mounted = current.current;
+    mounted.active = true;
     return () => {
-      current.current.active = false;
+      mounted.active = false;
     };
   }, []);
   useEffect(() => {

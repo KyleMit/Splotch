@@ -476,7 +476,8 @@ spec leans on, and the `*TestHarness.ts` modules that define tests for their cal
 (`tools/tests/blobs-consistency-lint.test.mjs`), and the existing `STORAGE_SEAM_ONLY`
 (`tools/tests/boundary-string-lint.test.mjs`), and `API_HANDLER_WRAPPED`
 (`tools/tests/api-handler-lint.test.mjs`). `WEB_SRC_SYNTAX_RESTRICTIONS` composes the `web/src`
-syntax set once for every block that extends it. The same pattern guards tools: `no-undef`
+syntax set once for every block that extends it. The native candidate's two React hooks rules have
+`tools/tests/native-react-hooks-lint.test.mjs`. The same pattern guards tools: `no-undef`
 (`tools/tests/tools-no-undef-lint.test.mjs`, with a case for each skill tree since PR #2503) and
 `max-lines` (`tools/tests/tools-max-lines-lint.test.mjs`). For CSS,
 `tools/tests/stylelint-config-lint.test.mjs` lints seeded CSS through the config `npm run lint:css`

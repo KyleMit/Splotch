@@ -269,10 +269,11 @@ function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pi
 function useHistoryReplacementGuard() {
   const lifetime = useRef({ active: true, revision: 0 });
   useEffect(() => {
-    lifetime.current.active = true;
+    const mounted = lifetime.current;
+    mounted.active = true;
     return () => {
-      lifetime.current.active = false;
-      lifetime.current.revision += 1;
+      mounted.active = false;
+      mounted.revision += 1;
     };
   }, []);
   return () => {

@@ -309,6 +309,15 @@ describe('mounted canonical output identity', () => {
     release();
   });
 
+  // useDrawingScreen awaits a capture and then asks `surface.current === owner`, so a handle that
+  // changed identity on a later render would abandon a Clear the child had already confirmed.
+  it('keeps one imperative handle across renders with new props and appearance', async () => {
+    await surface({ ...legacyDrawing(), strokes: [marker] });
+    const handle = ref.current;
+    await surface({ ...legacyDrawing(3, 'flower'), strokes: [magic] }, 'dark');
+    expect(ref.current).toBe(handle);
+  });
+
   it('cancels a replaced Drawing and refuses its late callback before allowing current output', async () => {
     const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
