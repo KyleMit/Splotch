@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { SettingsTextZoom } from '../platform/SettingsTextZoom';
 import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
@@ -218,6 +219,15 @@ function PaneSection({
   );
 }
 
+function scaledOffsets(heights: readonly (number | undefined)[], count: number, zoom: number) {
+  return stackedOffsets(
+    heights.map((height) => (height === undefined ? undefined : height * zoom)),
+    count,
+    WIDE_SHELL.pane.top,
+    WIDE_SHELL.sectionGap * zoom
+  );
+}
+
 function useMarkSeen(onSeen: (id: NativeSettingsSectionId) => void) {
   const seenInitial = useRef(false);
   return {
@@ -258,6 +268,7 @@ export function RsdSettingsWide({
   children: ReactNode;
 }) {
   const reduced = useReduceMotion();
+  const [zoom, setZoom] = useState(1);
   const headingId = useId();
   const paneIds = sections.map((section) => section.id);
   const [spied, setSpied] = useState<NativeSettingsSectionId>(paneIds[0]);
@@ -268,13 +279,7 @@ export function RsdSettingsWide({
   const sectionHeights = useHeights();
   // A smooth jump crosses sections the parent did not choose to visit; none of them is seen.
   const jumpTarget = useRef<NativeSettingsSectionId | null>(null);
-  const offsets = () =>
-    stackedOffsets(
-      sectionHeights.heights.current,
-      paneIds.length,
-      WIDE_SHELL.pane.top,
-      WIDE_SHELL.sectionGap
-    );
+  const offsets = () => scaledOffsets(sectionHeights.heights.current, paneIds.length, zoom);
 
   const landed = useRef<NativeSettingsSectionId | null>(null);
   const lockedJump = useRef<NativeSettingsSectionId | null>(null);
@@ -349,19 +354,21 @@ export function RsdSettingsWide({
           elect();
         }}
       >
-        {paneIds.map((id, index) => (
-          <PaneSection
-            key={id}
-            id={id}
-            headingId={`${headingId}-${id}`}
-            following={index > 0}
-            keptSection={keptSection}
-            onLayout={sectionHeights.measure(index, elect)}
-          >
-            {renderSection(id)}
-          </PaneSection>
-        ))}
-        {children}
+        <SettingsTextZoom enabled onZoom={setZoom}>
+          {paneIds.map((id, index) => (
+            <PaneSection
+              key={id}
+              id={id}
+              headingId={`${headingId}-${id}`}
+              following={index > 0}
+              keptSection={keptSection}
+              onLayout={sectionHeights.measure(index, elect)}
+            >
+              {renderSection(id)}
+            </PaneSection>
+          ))}
+          {children}
+        </SettingsTextZoom>
       </RsdScrollCue>
     </html.div>
   );

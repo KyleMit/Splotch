@@ -1,3 +1,4 @@
+import { APP_PAGE_PATHS, appPageAt, type AppPage } from '../information/appPages';
 // The paths the export serves the drawing screen at: the ones the service worker answers with the
 // app shell (appShellRoute.ts's isAppShellNavigation). A host sends every other path the shell as
 // its 404.html (tools/migration/build-native-web.mjs), and the shell shows shipping's not-found
@@ -10,4 +11,10 @@ export function isDrawingPath() {
 
 export function setDocumentTitle(title: string) {
   document.title = title;
+}
+
+export const currentAppPage = () => appPageAt(location.pathname);
+export const subscribeAppPage = () => () => {};
+export function openAppPage(page: AppPage) {
+  location.assign(APP_PAGE_PATHS[page]);
 }

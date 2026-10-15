@@ -10,7 +10,6 @@ import { generateSW } from 'workbox-build';
 import {
   appShellPrecacheUrl,
   createAppShellFallbackPlugin,
-  isAppShellNavigation,
 } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { CACHE_BUST_VERSION_PARAM } from '../../web/src/lib/pwa/versionEndpoint.ts';
 import { SERVICE_WORKER_PATH } from '../../experiments/native-architecture/src/platform/serviceWorkerPath.ts';
@@ -163,6 +162,14 @@ export function pinPrecacheToExport(outputDir, shell) {
   });
 }
 
+// Workbox serializes the matcher, so native-web-not-found.test.mjs pins these paths to APP_PAGE_PATHS.
+export function isNativeAppNavigation({ request, url }) {
+  return (
+    request.mode === 'navigate' &&
+    ['/', '/index.html', '/privacy', '/changelog', '/feedback'].includes(url.pathname)
+  );
+}
+
 export function nativeWebServiceWorkerConfig(outputDir, shell) {
   return {
     globDirectory: outputDir,
@@ -177,7 +184,7 @@ export function nativeWebServiceWorkerConfig(outputDir, shell) {
     clientsClaim: true,
     runtimeCaching: [
       {
-        urlPattern: isAppShellNavigation,
+        urlPattern: isNativeAppNavigation,
         handler: 'NetworkFirst',
         options: {
           networkTimeoutSeconds: NAVIGATION_NETWORK_TIMEOUT_SECONDS,

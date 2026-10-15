@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
-import type { HostedPage } from '../settings/hostedPages';
+import type { SettingsLink } from '../settings/hostedPages';
 import {
   RELEASE_NOTES,
   WHATS_NEW_COPY,
@@ -12,8 +12,6 @@ import { styles as controlStyles } from './controls';
 import { RsdIcon } from './RsdIcon';
 import { RsdList } from './RsdList';
 import { RsdTextLink } from './RsdTextLink';
-import { RsdVisuallyHidden } from './RsdVisuallyHidden';
-import { EXTERNAL_MARK_LABEL } from './RsdExternalMark';
 import { colors, dimensions } from './tokens.css';
 
 // WhatsNewSection.svelte's and ReleaseSectionHeading.svelte's literals, local for the StyleX web
@@ -88,15 +86,23 @@ function blockRuns(blocks: readonly ReleaseBlock[]) {
   return runs;
 }
 
-function ReleaseBody({ blocks }: { blocks: readonly ReleaseBlock[] }) {
+export function RsdReleaseBlocks({
+  blocks,
+  fontSizePx = NOTES_FONT_PX,
+  lineHeight = ITEM_LINE_HEIGHT,
+}: {
+  blocks: readonly ReleaseBlock[];
+  fontSizePx?: number;
+  lineHeight?: number;
+}) {
   const theme = useDrawingTheme();
   return blockRuns(blocks).map((run, index) =>
     run.kind === 'item' ? (
       <RsdList
         key={index}
         ordered={false}
-        fontSizePx={NOTES_FONT_PX}
-        lineHeightPx={NOTES_FONT_PX * ITEM_LINE_HEIGHT}
+        fontSizePx={fontSizePx}
+        lineHeightPx={fontSizePx * lineHeight}
         indentPx={LIST_INDENT_PX}
         gapPx={ITEM_GAP_PX}
         markerColor={theme.text}
@@ -118,7 +124,7 @@ export function RsdWhatsNewSection({
   onOpen,
 }: {
   sectionHeadingLevel: SectionHeadingLevel;
-  onOpen: (page: HostedPage) => void;
+  onOpen: (page: SettingsLink) => void;
 }) {
   const theme = useDrawingTheme();
   const [current] = RELEASE_NOTES;
@@ -153,7 +159,7 @@ export function RsdWhatsNewSection({
                       {section.title}
                     </SectionHeading>
                   </html.div>
-                  <ReleaseBody blocks={section.blocks} />
+                  <RsdReleaseBlocks blocks={section.blocks} />
                 </Fragment>
               );
             })}
@@ -163,7 +169,6 @@ export function RsdWhatsNewSection({
       <html.div style={styles.allReleases}>
         <RsdTextLink onPress={() => onOpen('changelog')} style={styles.allReleasesLink}>
           <html.span style={controlStyles.semiboldText}>{WHATS_NEW_COPY.allReleases}</html.span>
-          <RsdVisuallyHidden>{` ${EXTERNAL_MARK_LABEL}`}</RsdVisuallyHidden>
           <html.div aria-hidden style={styles.chevron}>
             <RsdIcon name="chevron-right" size={CHEVRON_PX} ink={theme.brandText} muted={false} />
           </html.div>

@@ -27,14 +27,12 @@ it('keeps the drawing and history while reading bundled information from Setting
   await screen.click('Help and about');
   expect(screen.dialog().textContent).toContain('Make a picture');
   await screen.click('Privacy');
-  expect(screen.dialog().textContent).toContain('Drawing stays on your device');
+  expect(screen.dialog().textContent).toContain('What stays on your device');
+  expect(screen.dialog().textContent).toContain('A daily cleanup deletes the report after 30 days');
+  expect(screen.dialog().textContent).toContain('There is no generated picture to include.');
   expect(screen.dialog().textContent).toContain(
-    'We review reports within 24 hours and schedule deletion after 30 days by a daily cleanup.'
+    'Nothing is kept unless that final confirmation happens.'
   );
-  expect(screen.dialog().textContent).toContain(
-    'A refusal report includes the authenticated refusal reason, without an AI picture.'
-  );
-  expect(screen.dialog().textContent).toContain('Opening a report or cancelling it sends nothing.');
   await screen.click('Back to help and about');
   await screen.click('What’s new');
   expect(screen.dialog().textContent).toContain(RELEASE_NOTES[0].sections[0].blocks[0].text);

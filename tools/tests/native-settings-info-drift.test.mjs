@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
 import { GITHUB_REPO_URL } from '../../web/src/lib/githubRepo.ts';
 import { HOSTED_PAGES } from '../../experiments/native-architecture/src/settings/hostedPages.ts';
 import {
@@ -365,8 +364,6 @@ describe('native Settings info sections against their shipping sources', () => {
     expect(SHIPPING.about).toContain('<a href="/privacy">');
     expect(SHIPPING.whatsNew).toContain('<a href="/changelog">');
     expect(HOSTED_PAGES).toEqual({
-      privacy: `${SITE_ORIGIN}/privacy`,
-      changelog: `${SITE_ORIGIN}/changelog`,
       github: GITHUB_REPO_URL,
       openAiKeys: 'https://platform.openai.com/api-keys',
     });

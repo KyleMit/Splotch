@@ -12,13 +12,18 @@ import { useModalPresence } from './useModalPresence';
 import type { ParentGateView } from '../parentCenter/useParentGateCard';
 import { soundSettingsActions } from './soundSettingsActions';
 import type { SliderDraft } from './useSliderDraft';
-import { openHostedPage, type HostedPage } from '../settings/hostedPages';
+import { openAppPage } from '../platform/appPath';
+import { openHostedPage, type SettingsLink } from '../settings/hostedPages';
 
 // Every Settings link leaves the app, so each opens only through Parent Center's Viewing external
 // links check, as shipping's parentalGateLink does. The page opens inside the solving tap, with no
 // "Unlocked!" card, which keeps a web export's new tab within that tap's user activation; with no
 // owner, nothing opens.
-function openOutside(owner: DrawingProductOwner | null, page: HostedPage) {
+function openOutside(owner: DrawingProductOwner | null, page: SettingsLink) {
+  if (page === 'privacy' || page === 'changelog') {
+    openAppPage(page);
+    return;
+  }
   owner?.port.request(
     'externalLinks',
     (proof) => {
@@ -100,7 +105,7 @@ export function RsdSettingsRoute({
         ) : null
       }
       feedback={product.feedback.owner}
-      onOpenHostedPage={(page) => openOutside(owner, page)}
+      onOpenPage={(page) => openOutside(owner, page)}
       downloadedBooks={screen.library.state.installed.length}
       ai={{
         owner: aiOwner,

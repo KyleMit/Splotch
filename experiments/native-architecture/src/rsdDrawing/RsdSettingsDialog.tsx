@@ -10,7 +10,7 @@ import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdAboutSection } from './RsdAboutSection';
 import { RsdFeedbackSection } from './RsdFeedbackSection';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
-import type { HostedPage } from '../settings/hostedPages';
+import type { SettingsLink } from '../settings/hostedPages';
 import type { OrientationChoice } from '../settings/orientation';
 import type { ReduceMotionPreference } from '../settings/reduceMotion';
 import {
@@ -22,6 +22,7 @@ import {
 import { RsdSettingsHub, useHubToggles, useSectionActivity } from './RsdSettingsHub';
 import { RsdSettingsWide } from './RsdSettingsWide';
 import { RsdSettingsCompact } from './RsdSettingsCompact';
+import { SettingsTextZoom } from '../platform/SettingsTextZoom';
 import { RsdScrollCue } from './RsdScrollCue';
 import { useDialogBody, useDialogSeeThrough } from './dialogScope';
 import { settingsShell } from './modalGeometry';
@@ -77,7 +78,7 @@ type NativeSoundSettingsDialogProps = {
   gate: ReactNode;
   feedback: NativeFeedbackOwner | null;
   // Opens a page outside the app; the route holds it behind the external-links check.
-  onOpenHostedPage: (page: HostedPage) => void;
+  onOpenPage: (page: SettingsLink) => void;
   downloadedBooks: number;
   ai: AiSettingsRoute;
   visible?: boolean;
@@ -179,7 +180,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       }
     >
       {subpage ? (
-        <PhoneScroll>
+        <PhoneScroll key={subpage.section} enabled={visible}>
           <SettingsSection {...props} section={subpage.section} busy={busy} wide={false} />
           {status}
         </PhoneScroll>
@@ -205,7 +206,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           {status}
         </CompactSettings>
       ) : (
-        <PhoneScroll>
+        <PhoneScroll key="hub" enabled={visible}>
           <RsdSettingsHub
             sections={NATIVE_SETTINGS_SECTIONS}
             context={context}
@@ -304,13 +305,15 @@ function isParentCenter(page: SettingsPage) {
 
 // The phone shell's one scroller, inset by the card's body padding, with its bottom edge fading
 // while more lies below.
-function PhoneScroll({ children }: { children: ReactNode }) {
+function PhoneScroll({ children, enabled }: { children: ReactNode; enabled: boolean }) {
   const body = useDialogBody();
   return (
     <RsdScrollCue
       inset={body && { top: body.top, right: body.inline, bottom: body.bottom, left: body.inline }}
     >
-      <html.div style={controlStyles.dialogContent}>{children}</html.div>
+      <SettingsTextZoom enabled={enabled}>
+        <html.div style={controlStyles.dialogContent}>{children}</html.div>
+      </SettingsTextZoom>
     </RsdScrollCue>
   );
 }
@@ -413,12 +416,9 @@ function SettingsSection(props: SectionProps) {
       return <RsdInstallGuide />;
     case 'whatsnew':
       return (
-        <RsdWhatsNewSection
-          sectionHeadingLevel={props.wide ? 3 : 2}
-          onOpen={props.onOpenHostedPage}
-        />
+        <RsdWhatsNewSection sectionHeadingLevel={props.wide ? 3 : 2} onOpen={props.onOpenPage} />
       );
     case 'about':
-      return <RsdAboutSection onOpen={props.onOpenHostedPage} />;
+      return <RsdAboutSection onOpen={props.onOpenPage} />;
   }
 }

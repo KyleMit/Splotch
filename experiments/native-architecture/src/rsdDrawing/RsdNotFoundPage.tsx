@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, type ReactNode, type Ref } from 'react';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -12,7 +12,7 @@ import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/Draw
 import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
-import { setDocumentTitle } from '../platform/appPath';
+import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { RsdButton } from './RsdButton';
 import { RsdPressable } from './RsdPressable';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
@@ -184,7 +184,7 @@ const styles = css.create({
 });
 
 function startDrawing() {
-  globalThis.location?.assign('/');
+  openAppPage('drawing');
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
@@ -241,7 +241,19 @@ function BrandMark({ phone }: { phone: boolean }) {
   );
 }
 
-function NotFoundSheet() {
+export function RsdPageSheet({
+  title,
+  lede,
+  children,
+  scrollRef,
+  onBodyOffset,
+}: {
+  title: string;
+  lede: string;
+  children: ReactNode;
+  scrollRef?: Ref<ScrollView>;
+  onBodyOffset?: (y: number) => void;
+}) {
   const theme = useDrawingAppearance();
   const window = useWindowDimensions();
   // PageShell runs under the status bar, notch and home indicator, and pads every breakpoint's
@@ -262,7 +274,7 @@ function NotFoundSheet() {
             bottom: FRAMED_PAGE_PADDING_PX,
           };
   return (
-    <ScrollView style={scroll.fill} contentContainerStyle={scroll.content}>
+    <ScrollView ref={scrollRef} style={scroll.fill} contentContainerStyle={scroll.content}>
       <html.main
         style={[
           styles.page,
@@ -290,20 +302,17 @@ function NotFoundSheet() {
           </html.div>
           <html.div style={styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide'])}>
             <html.h1 style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}>
-              {NOT_FOUND_COPY.title}
+              {title}
             </html.h1>
-            <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>
-              {NOT_FOUND_COPY.lede}
-            </html.p>
+            <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>{lede}</html.p>
           </html.div>
-          <html.div style={styles.body}>
-            <html.div aria-hidden style={styles.mark}>
-              <RsdSplotchyIcon size={NOT_FOUND_MARK_PX} />
-            </html.div>
-            <RsdButton variant="brand" size="lg" onPress={startDrawing}>
-              {NOT_FOUND_COPY.startDrawing}
-            </RsdButton>
-          </html.div>
+          <View
+            onLayout={({ nativeEvent }) =>
+              onBodyOffset?.(nativeEvent.layout.y + page.top + insets.top)
+            }
+          >
+            {children}
+          </View>
         </html.div>
       </html.main>
     </ScrollView>
@@ -317,7 +326,16 @@ export function RsdNotFoundPage() {
   return (
     <DrawingAppearanceProvider preference={bootAppearance()}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics} style={scroll.fill}>
-        <NotFoundSheet />
+        <RsdPageSheet title={NOT_FOUND_COPY.title} lede={NOT_FOUND_COPY.lede}>
+          <html.div style={styles.body}>
+            <html.div aria-hidden style={styles.mark}>
+              <RsdSplotchyIcon size={NOT_FOUND_MARK_PX} />
+            </html.div>
+            <RsdButton variant="brand" size="lg" onPress={startDrawing}>
+              {NOT_FOUND_COPY.startDrawing}
+            </RsdButton>
+          </html.div>
+        </RsdPageSheet>
       </SafeAreaProvider>
     </DrawingAppearanceProvider>
   );

@@ -1,7 +1,6 @@
 import { css, html } from 'react-strict-dom';
-import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
-import type { HostedPage } from '../settings/hostedPages';
+import type { SettingsLink } from '../settings/hostedPages';
 import { RsdExternalMark } from './RsdExternalMark';
 import { RsdIcon } from './RsdIcon';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
@@ -72,8 +71,7 @@ const styles = css.create({
 // The shipping About section (AboutSection.svelte): Splotchy and the tagline over a rule, then the
 // Privacy Policy and GitHub links and the version. Both links open outside the app, so both carry
 // the external mark and open through `onOpen`, which holds them behind the external-links check.
-export function RsdAboutSection({ onOpen }: { onOpen: (page: HostedPage) => void }) {
-  const theme = useDrawingTheme();
+export function RsdAboutSection({ onOpen }: { onOpen: (page: SettingsLink) => void }) {
   return (
     <html.section>
       <html.div style={styles.brand}>
@@ -86,7 +84,6 @@ export function RsdAboutSection({ onOpen }: { onOpen: (page: HostedPage) => void
         <html.div style={styles.line}>
           <RsdTextLink onPress={() => onOpen('privacy')} style={styles.privacy}>
             <html.span style={styles.medium}>{ABOUT_COPY.privacy}</html.span>
-            <RsdExternalMark variant="inline" ink={theme.brandText} />
           </RsdTextLink>
         </html.div>
         <RsdTextLink onPress={() => onOpen('github')} style={styles.github}>
