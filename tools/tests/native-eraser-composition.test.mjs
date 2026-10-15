@@ -1,5 +1,5 @@
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addStroke,
   changePage,
@@ -22,6 +22,8 @@ const marker = { brush: 'marker', color: 'Blue', points: [{ x: 40, y: 40 }] };
 const erase = { brush: 'eraser', points: [{ x: 40, y: 40 }] };
 const crayon = { brush: 'crayon', color: 'Yellow', seed: 4294967295, points: [{ x: 50, y: 50 }] };
 const magic = { brush: 'magic', rainbow: 3, points: [{ x: 60, y: 60 }] };
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('joint native drawing and eraser ownership', () => {
   it.each([
@@ -58,7 +60,12 @@ describe('joint native drawing and eraser ownership', () => {
     expect(() => parseDrawing(input)).toThrow();
   });
 
-  it('retains rainbow across page changes and advances once per successful Clear', () => {
+  it('retains rainbow across page changes and randomly repicks on each successful Clear', () => {
+    const random = vi
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0.91)
+      .mockReturnValueOnce(0.11)
+      .mockReturnValueOnce(0.31);
     const initial = createHistory({ ...legacyDrawing(3, 'flower'), strokes: [crayon, magic] });
     const changed = changePage(initial, 'turtle');
     expect(changed.drawing.rainbow).toBe(3);
@@ -69,18 +76,20 @@ describe('joint native drawing and eraser ownership', () => {
     });
     const blankClear = clearDrawing(changed, true);
     expect(blankClear.undo).toBe(changed.undo);
-    expect(blankClear.drawing).toEqual(emptyDrawing(4, 'turtle'));
-    expect(clearDrawing(blankClear, true).drawing.rainbow).toBe(5);
+    expect(blankClear.drawing).toEqual(emptyDrawing(9, 'turtle'));
+    expect(clearDrawing(blankClear, true).drawing.rainbow).toBe(1);
     const visibleClear = clearDrawing(initial, false);
     expect(undoDrawing(visibleClear).drawing).toBe(initial.drawing);
+    expect(random).toHaveBeenCalledTimes(3);
   });
 
   it('clears visually empty recorded operations without adding an undo state', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.71);
     const history = addStroke(addStroke(createHistory(legacyDrawing()), marker), erase);
     const cleared = clearDrawing(history, true);
     expect(cleared.undo).toBe(history.undo);
     expect(cleared.drawing.strokes).toEqual([]);
-    expect(cleared.drawing.rainbow).toBe(1);
+    expect(cleared.drawing.rainbow).toBe(7);
   });
 
   it('accepts more than 1000 alternating operations and plans at most one erase run per stage', () => {

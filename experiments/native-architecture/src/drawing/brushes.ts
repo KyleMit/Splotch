@@ -1,4 +1,8 @@
 import { DEFAULT_STROKE_WIDTH, STROKE_WIDTH_PX } from './strokeWidth';
+import {
+  createRainbowGradient,
+  MAGIC_GRADIENT_COUNT,
+} from '../../../../web/src/lib/drawing/magicSheetGradient';
 
 export const BRUSHES = {
   pen: { label: 'Pen', width: STROKE_WIDTH_PX.pen[DEFAULT_STROKE_WIDTH] },
@@ -12,32 +16,29 @@ export type Brush = (typeof BRUSH_ORDER)[number];
 export type LegacySolidBrush = 'pencil' | 'marker';
 export type StoredBrush = Brush | LegacySolidBrush;
 export const DEFAULT_BRUSH: Brush = 'pen';
-export const MAGIC_RAINBOW_COUNT = 10;
+export const MAGIC_RAINBOW_COUNT = MAGIC_GRADIENT_COUNT;
 export const INITIAL_RAINBOW = 0;
 export const MAX_CRAYON_SEED = 0xffffffff;
 
 type RainbowStop = Readonly<{ offset: number; color: string }>;
 export type Rainbow = Readonly<{ angle: number; stops: readonly RainbowStop[] }>;
 
-const RAINBOW_STOP_COUNT = 7;
-const RAINBOW_HUE_SPAN_DEG = 320;
-const RAINBOW_SATURATION_PERCENT = 84;
-const RAINBOW_LIGHTNESS_PERCENT = 60;
-const RAINBOW_ANGLE_STEP = Math.PI * 0.618;
-const RAINBOW_HUE_STEP_DEG = 137;
+function createRainbowPool() {
+  let pool: readonly Rainbow[] | null = null;
+  return () => {
+    pool ??= Array.from({ length: MAGIC_RAINBOW_COUNT }, () => createRainbowGradient());
+    return pool;
+  };
+}
+
+const rainbowPool = createRainbowPool();
+
+export function pickRainbow() {
+  return Math.floor(Math.random() * MAGIC_RAINBOW_COUNT);
+}
 
 export function rainbow(index: number): Rainbow {
-  return {
-    angle: index * RAINBOW_ANGLE_STEP,
-    stops: Array.from({ length: RAINBOW_STOP_COUNT }, (_, position) => {
-      const offset = position / (RAINBOW_STOP_COUNT - 1);
-      const hue = (index * RAINBOW_HUE_STEP_DEG + offset * RAINBOW_HUE_SPAN_DEG) % 360;
-      return {
-        offset,
-        color: `hsl(${hue}, ${RAINBOW_SATURATION_PERCENT}%, ${RAINBOW_LIGHTNESS_PERCENT}%)`,
-      };
-    }),
-  };
+  return rainbowPool()[index];
 }
 
 export function rainbowLine(index: number, width: number, height: number) {

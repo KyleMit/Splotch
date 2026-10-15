@@ -30,7 +30,10 @@ function picture() {
   return addStroke(changePage(createHistory(), 'flower'), stroke(), canonicalPaper());
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe('native coloring-page composition', () => {
   it('picks a page on blank paper without adding an Undo step', () => {
@@ -85,10 +88,11 @@ describe('native coloring-page composition', () => {
   });
 
   it('keeps the page through new ink and undoable clear', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.71).mockReturnValueOnce(0.24);
     const original = picture();
     const cleared = clearDrawing(original, false);
     expect(original.drawing.pageId).toBe('flower');
-    expect(cleared.drawing).toEqual(emptyDrawing(1, 'flower'));
+    expect(cleared.drawing).toEqual(emptyDrawing(7, 'flower'));
     expect(undoDrawing(cleared).drawing).toBe(original.drawing);
     const visuallyEmpty = clearDrawing(cleared, true);
     expect(visuallyEmpty.drawing).toEqual(emptyDrawing(2, 'flower'));

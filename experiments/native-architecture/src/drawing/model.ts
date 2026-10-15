@@ -3,6 +3,7 @@ import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
 import { isPageId, type PageId } from './pages';
 import {
   INITIAL_RAINBOW,
+  pickRainbow,
   MAGIC_RAINBOW_COUNT,
   MAX_CRAYON_SEED,
   type Brush,
@@ -139,10 +140,7 @@ export function undoDrawing(history: History): History {
 }
 
 export function clearDrawing(history: History, visuallyEmpty: boolean): History {
-  const drawing = emptyDrawing(
-    (history.drawing.rainbow + 1) % MAGIC_RAINBOW_COUNT,
-    history.drawing.pageId
-  );
+  const drawing = emptyDrawing(pickRainbow(), history.drawing.pageId);
   return visuallyEmpty ? { drawing, undo: history.undo } : commitDrawing(history, drawing);
 }
 

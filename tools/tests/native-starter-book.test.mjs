@@ -63,6 +63,7 @@ function paintedPage(pageId) {
 }
 
 afterEach(() => vi.unstubAllGlobals());
+afterEach(() => vi.restoreAllMocks());
 
 describe('bundled Farm book and saved page identity', () => {
   it('exposes the six real Farm pages as one book and retains the original sample identities', () => {
@@ -123,9 +124,10 @@ describe('bundled Farm book and saved page identity', () => {
   it.each(FARM_PAGE_IDS)(
     'preserves %s through Clear and restores its painted composition with Undo',
     (pageId) => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.91);
       const painted = paintedPage(pageId);
       const cleared = clearDrawing(painted, false);
-      expect(cleared.drawing).toEqual(emptyDrawing(4, pageId));
+      expect(cleared.drawing).toEqual(emptyDrawing(9, pageId));
       expect(undoDrawing(cleared).drawing).toBe(painted.drawing);
       const blank = changePage(painted, 'blank');
       expect(blank.drawing.strokes).toBe(painted.drawing.strokes);

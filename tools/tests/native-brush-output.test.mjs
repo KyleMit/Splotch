@@ -30,12 +30,23 @@ const { Svg, Rect } = await import('react-native-svg');
 const { Ink, InkArtwork } =
   await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 
+const RAINBOW_FIXTURE_FRACTION = 0.125;
+
+function renderFixtureMarkup(element) {
+  const random = vi.spyOn(Math, 'random').mockReturnValue(RAINBOW_FIXTURE_FRACTION);
+  try {
+    return renderToStaticMarkup(element);
+  } finally {
+    random.mockRestore();
+  }
+}
+
 async function pixels(
   strokes,
   appearance = { pageId: 'blank', theme: 'light' },
   includeOutline = false
 ) {
-  const svg = renderToStaticMarkup(
+  const svg = renderFixtureMarkup(
     createElement(
       Svg,
       { width: 1024, height: 768, viewBox: '0 0 1024 768' },
