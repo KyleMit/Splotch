@@ -46,7 +46,15 @@ const registrations = entry.program.body
   .map((node) => node.expression);
 assert.equal(registrations.length, 1, 'Exactly one registration');
 assert.equal(registrations[0].arguments.length, 1, 'Registration arity');
-assert.equal(registrations[0].arguments[0].name, 'ProbeApp', 'Canonical registration');
+const registeredRoot = registrations[0].arguments[0];
+assert.equal(registeredRoot.type, 'ConditionalExpression', 'Canonical registration mode');
+assert.equal(registeredRoot.test.name, '__DEV__', 'Canonical registration development flag');
+assert.equal(
+  registeredRoot.consequent.name,
+  'StrictProbeApp',
+  'Canonical registration development root'
+);
+assert.equal(registeredRoot.alternate.name, 'ProbeApp', 'Canonical registration release root');
 const probe = parse('src/ProbeApp.tsx');
 assert.ok(
   imported(probe, './rsdDrawing/RsdDrawingScreen', 'RsdDrawingScreen'),
@@ -83,8 +91,15 @@ assert.equal(
 const fontGates = elementChildren(sessions[0]);
 assert.equal(fontGates.length, 1, 'Drawing session has one font gate');
 assert.equal(fontGates[0].openingElement.name.name, 'ShippingFontGate', 'Font-gated screen');
-const mountedScreens = elementChildren(fontGates[0]);
-assert.equal(mountedScreens.length, 1, 'Font gate has one screen');
+const boundaries = elementChildren(fontGates[0]);
+assert.equal(boundaries.length, 1, 'Font gate has one screen boundary');
+assert.equal(
+  boundaries[0].openingElement.name.name,
+  'RsdScreenBoundary',
+  'Mounted screen boundary'
+);
+const mountedScreens = elementChildren(boundaries[0]);
+assert.equal(mountedScreens.length, 1, 'Screen boundary has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');
@@ -153,15 +168,9 @@ const files = [
   'src/platform/DrawingModal.tsx',
   'src/product/browserBack.ts',
   'src/rsdDrawing/RsdColorPicker.tsx',
-  'src/ColoringPagePicker.tsx',
-  'src/feedback/FeedbackSheet.tsx',
-  'src/parentCenter/ParentGateSheet.tsx',
-  'src/parentCenter/ParentCenterSection.tsx',
-  'src/ai/AiSheet.tsx',
   'src/platform/useFullscreen.ts',
   'src/platform/useFullscreen.web.ts',
   'src/DrawingControls.tsx',
-  'src/DrawingScreen.tsx',
   'src/platform/offlineLibrary.web.ts',
   'src/platform/offlineLibraryStorage.web.ts',
   'src/platform/offlineLibraryTransfer.web.ts',
@@ -181,7 +190,6 @@ const files = [
   'src/settings/soundSettings.ts',
   'src/settings/soundSettingsCodec.ts',
   'src/settings/drawingControlPreferences.ts',
-  'src/settings/DrawingControlChoices.tsx',
   'src/platform/aiImage.web.ts',
   'src/platform/ai.web.ts',
   'src/platform/aiVault.web.ts',
@@ -209,15 +217,10 @@ const files = [
   'src/audio/drawingAudio.ts',
   'src/product/useDrawingProduct.ts',
   'src/useDrawingSound.ts',
-  'src/settings/SoundSettingsSheet.tsx',
   'src/drawing/useCrayonTileReadiness.tsx',
   'src/ai/reportContract.ts',
   'src/ai/reportTransport.ts',
   'src/ai/reportOwner.ts',
-  'src/ai/AiPictureReport.tsx',
-  'src/ai/useAiPictureShare.ts',
-  'src/platform/aiShare.ts',
-  'src/platform/aiShare.web.ts',
   'src/platform/aiOriginalModel.ts',
   'src/useRendererRecovery.ts',
   'src/useDrawingScreen.ts',
@@ -232,8 +235,6 @@ const files = [
   'src/platform/drawingDraft.web.ts',
   'src/platform/drawingDraftOwner.web.ts',
   'src/platform/drawingDraftRecords.web.ts',
-  'src/information/content.ts',
-  'src/information/InformationSection.tsx',
   'src/rsdDrawing/RsdAboutSection.tsx',
   'src/rsdDrawing/RsdWhatsNewSection.tsx',
   'src/rsdDrawing/RsdFeedbackSection.tsx',
@@ -248,14 +249,8 @@ const files = [
   'src/rsdDrawing/RsdAiResultError.tsx',
   'src/rsdDrawing/RsdAiResultStage.tsx',
   'src/rsdDrawing/RsdAiImageReport.tsx',
-  'src/ai/useAiPictureViewer.ts',
-  'src/ai/AiPictureViewport.tsx',
-  'src/ai/CurrentDrawingPreview.tsx',
   'src/ai/AiRecoveryActions.tsx',
-  'src/ai/AiStylePreview.tsx',
   'src/ai/stylePreviewAssets.ts',
-  'src/ai/NativeAiPictureView.tsx',
-  'src/ai/NativeAiStyleChoices.tsx',
   'src/rsdDrawing/RsdDrawingStatus.tsx',
   'src/rsdDrawing/RsdSwatch.tsx',
   'src/rsdDrawing/paletteGeometry.ts',

@@ -15,7 +15,8 @@ than adding new ones, and the 2026-09-29 code-smell burndown (tracking issue #24
 4, 6, 8, and 9 the same way and added evidence to rules 1 and 2. The 2026-09-29 evening burndown
 (tracking issue #2500) extended rules 2, 4, 9, and 10 and added evidence to rules 1, 3, 5, 6, and 8.
 The 2026-10-03 overnight burndown of everything outside `web/` (tracking issue #2650) extended rules
-4, 8, and 9 and added evidence to rules 1, 3, and 10. Enforcement is named by path.
+4, 8, and 9 and added evidence to rules 1, 3, and 10. Enforcement is named by path. The React Native
+candidate's own rules are in [React Native candidate](#react-native-candidate).
 
 ## What earns a rule
 
@@ -946,6 +947,97 @@ regression.
 * `ALLOWED_REFERENCES` (`tools/check-doc-references.mjs`) fails on an entry that stops matching.
 * ADR carve-outs: the engine's module-scope state is ADR-0004's documented exception to the
   `createX()` factory convention. Changing it is an ADR amendment, not a refactor.
+
+## React Native candidate
+
+These rules cover the React Native app under evaluation in `experiments/native-architecture/` (epic
+#2690). Its platform vocabulary, and the adapters named here, are in
+[`RSD-VOCABULARY.md`](../experiments/native-architecture/RSD-VOCABULARY.md).
+
+### Stroke activity stays out of the chrome's props
+
+**Rule.** State lives in the subtree that needs its updates. A stroke changes the paper, and the
+checks that hold a command until the lift may read the stroke flag. A stroke never changes a prop of
+a chrome control it does not concern.
+
+**Earned by.** PR #2890 (#2875). `useDrawingScreen` folded the stroke flag into `disabled`, so every
+stroke start and lift updated the palette, Clear, Settings and the drawer tiles, and re-mounted
+views on the UI thread. Each tile also ran its 0.2 s disabled fade. On the Galaxy S21 FE, janky
+frames fell from 4.56% to 3.31% once the flag came out. Commands still refuse a mid-stroke start
+through their own checks.
+
+**Enforcement.** `tools/migration/tests/rsd-native-stroke-chrome-commits.test.mjs` mounts the real
+screen owner under the real chrome and journals every host prop Fabric would diff. It fails on a
+chrome update or re-mount at a stroke's start, moves or lift, or at an Undo.
+`tools/tests/native-stroke-chrome-mounted.test.mjs` drives real contacts, and fails when a move
+renders the screen owner or the props the chrome reads change. Neither counts the drawing surface's
+own renders: its live draft is what a stroke is meant to change.
+
+### Nothing over the paper composites offscreen on Android
+
+**Rule.** No `mixBlendMode` on a view whose parent holds the paper, and no partial or animated
+opacity on a view that holds it. Opacity elsewhere is fine: dialogs and buttons fade on their own
+layers.
+
+**Earned by.** PR #2887. A blended margin rule made Android save a layer the size of its parent, the
+drawing layout, so every frame of a stroke composited the whole screen through three offscreen
+layers. The flat style drew 18–20% janky frames against shipping's 2.2–2.4%. `marginRuleInk.ts`
+pre-mixes the blend against the paper instead.
+
+**Enforcement.** `tools/migration/tests/rsd-native-flat-palette.test.mjs` fails when any mounted
+host blends, and when a view from the paper slot up to the screen root, or a child of one,
+composites.
+
+### Native gaps in React Strict DOM have one tested workaround each
+
+**Rule.** Write the shared RSD markup, and route each place the native renderers differ through its
+adapter rather than branching at the call site:
+
+* `html.span` is a React Native `Text` on Android and iOS. Nested in a text run, its box is ignored,
+  so a span that needs its box sits beside text.
+* iOS drops a CSS `filter`. A native tile greys through `greyed.ts`, which paints the filter into
+  its own colors.
+* A native `color` transition hands nested text an animated ink it cannot paint. A native row takes
+  its new ink at once (`sidebarRowFade.native.ts`).
+* Fabric mounts a `position: static` child, React Strict DOM's default, before every positioned
+  sibling. A view that must paint over a positioned sibling is positioned itself.
+
+**Earned by.** The drawer's other tiles kept their colour on iOS while a menu was open (PR #2897,
+#2878). Both Settings sidebar rows a section change touched turned black (PR #2889, #2878). The flat
+palette's swatches mounted under the opaque rail glass while still taking taps (PR #2887, #2874).
+
+**Enforcement.** `tools/migration/tests/rsd-native-actions-panel.test.mjs` (the greyed tile),
+`rsd-native-settings-row-faces.test.mjs` (the row ink), and `rsd-native-flat-palette.test.mjs`,
+which replays Fabric's paint order. The span rule is review.
+
+### Key the leaf whose native animated value must reset
+
+**Rule.** When a native-driven animated value has to restart from a new committed style, key the
+leaf view that owns it, so the change mounts a fresh native view. This is not a general remount
+policy: keying a parent re-mounts everything under it.
+
+**Earned by.** PR #2893 (#2886). React Strict DOM runs a disabled tile's fade on the native driver,
+so the faded value lived only on the native view. Switching Button style handed the tile a static
+opacity equal to the one React last committed, so Fabric never sent it, and the tiles stayed faded
+until a restart. `RsdIconButton` keys its face on the Button style.
+
+**Enforcement.** `tools/migration/tests/rsd-native-drawer-style-switch.test.mjs`. The selection host
+(`rsd-native-animated-host.mjs`) models the commit rule: an animated value leaves its resting value
+on the host, and a static value replaces it only when it differs from the last one committed.
+
+### Flattened ink is a picture handed to `SkiaPictureView`
+
+**Rule.** Record full-paper ink, committed strokes under the stroke in progress, into one picture
+and hand it to a `SkiaPictureView`. Small layers that redraw each frame, such as the pointer halos,
+keep a Skia `Canvas`.
+
+**Earned by.** PR #2903 (#2875). The ink layer re-rendered a Skia `Canvas` element tree on every
+stroke update, and RN Skia's reconciler redrew it twice per update, each time blitting the
+full-paper ink on the UI thread. One picture per change cut ink renders from about two per frame to
+under one, and "Slow UI thread" frames per run from 16 to 6.
+
+**Enforcement.** `tools/tests/native-skia-ink-view.test.mjs` fails unless each change hands the ink
+view one picture, committed ink beneath the stroke in progress.
 
 ## Considered and not adopted
 

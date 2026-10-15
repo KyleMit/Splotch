@@ -74,7 +74,15 @@ export type Choices = WidthSettings &
     orientation: OrientationChoice;
     saveOnDeleteEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 16 }>;
+// Compatibility: a build that reads a higher version keeps that record untouched and runs on
+// protected session settings until it is updated, so every bump strands each older install's saved
+// settings. Bump only for a meaningful contract change: a key removed or renamed, a value whose
+// type, range or meaning changes, or a change to what a protection allows. A preference that
+// protects nothing and that an older build may simply not know goes in a store key of its own, as
+// the Tool Drawer's open state does (drawerOpenStorage), and leaves this record and its version
+// alone.
+export const SOUND_SETTINGS_VERSION = 16;
+export type SoundSettings = Choices & Readonly<{ version: typeof SOUND_SETTINGS_VERSION }>;
 export type SoundSettingsState =
   | (WidthSettings &
       DrawingControlPreferences &
@@ -275,7 +283,7 @@ function readStoredParentSettings(
     snapshot
   );
   return {
-    version: 16,
+    version: SOUND_SETTINGS_VERSION,
     ...widths,
     appearance,
     ...parent,
@@ -306,7 +314,7 @@ function migrateLegacyChoices(
   }
 ): SoundSettings {
   return {
-    version: 16,
+    version: SOUND_SETTINGS_VERSION,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...MIGRATED_PARENT_PREFERENCES,
     ...DEFAULT_WIDTH_SETTINGS,
@@ -404,7 +412,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
 
 export function snapshot(state: Choices): SoundSettings {
   return {
-    version: 16,
+    version: SOUND_SETTINGS_VERSION,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { createElement, forwardRef, useRef } from 'react';
 
 // A synchronous stand-in for React Native's Animated: every timing lands on its
 // target at once and loops never tick, so mounted RSD tests observe end states.
@@ -32,6 +32,38 @@ export function useShownStyle(style) {
     }
   }
   return shown.current;
+}
+
+// The props a Fabric commit hands a host view, as one comparable string: its style flattened with
+// each animated value at the value the view shows, and no children or callbacks, which Fabric keeps
+// on the instance rather than diffing as props.
+export function committedHostProps(props) {
+  const { children: _children, style, ...rest } = props;
+  const flat = Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
+  return JSON.stringify({ ...rest, style: flat }, (_key, value) => {
+    if (typeof value === 'function') return undefined;
+    if (value instanceof Value) return value.restsAt ?? value.value;
+    return value;
+  });
+}
+
+// The plain native view React Strict DOM mounts for an element with no handlers.
+export function viewNativeComponentPort(records) {
+  return {
+    default: forwardRef((props, ref) => {
+      records.props.push(props);
+      return createElement(
+        'div',
+        {
+          ref,
+          role: props.role,
+          'aria-label': props.accessibilityLabel,
+          'data-committed-props': records.journalHostProps ? committedHostProps(props) : undefined,
+        },
+        props.children
+      );
+    }),
+  };
 }
 
 class ValueXY {

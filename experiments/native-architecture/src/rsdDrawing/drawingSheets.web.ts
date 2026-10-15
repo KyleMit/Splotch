@@ -24,6 +24,9 @@ export const RsdColoringBookPicker = lazySurface(() =>
 export const RsdErrorScreen = lazySurface(() =>
   import('./RsdErrorScreen').then((module) => module.RsdErrorScreen)
 );
+export const RsdCrashScreen = lazySurface(() =>
+  import('./RsdErrorScreen').then((module) => module.RsdCrashScreen)
+);
 export const RsdFailureBanner = lazySurface(() =>
   import('./RsdFailureBanner').then((module) => module.RsdFailureBanner)
 );
