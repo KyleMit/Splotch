@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { expect, it, vi } from 'vitest';
-import { host, mount } from './rsd-native-selection-host.mjs';
+import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { createDrawingProduct } from '../../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
@@ -80,6 +80,39 @@ it.each(FAILURES)(
       const buttons = [...host.querySelectorAll('button')].map((node) => node.textContent);
       expect(buttons.includes('Read saved settings again')).toBe(retried);
       expect(buttons.includes('Retry saving Parent Center choices')).toBe(retried);
+      expect(storage.write).not.toHaveBeenCalled();
+    } finally {
+      owner.dispose();
+    }
+  }
+);
+
+it.each([402, 1024])(
+  'shows one future-record warning in Parent Center at width %s',
+  async (width) => {
+    records.dimensions = { width, height: 874, scale: 1, fontScale: 1 };
+    const storage = {
+      read: async () => '{"version":17,"futurePreference":true}',
+      write: vi.fn(async () => {}),
+    };
+    const owner = createDrawingProduct(storage, () => {});
+    try {
+      await owner.settings.load();
+      const settings = owner.getState().settings;
+      await mount(
+        createElement(NativeSoundSettingsDialog, {
+          ...nativeSettingsProps(owner.settings, settings),
+          onRetry: null,
+          parentCenter: {
+            unlocked: true,
+            checkDue: false,
+            onUnlock() {},
+            onLeave() {},
+            section: createElement(RsdParentCenterSection, { owner }),
+          },
+        })
+      );
+      expect(visibleText().split(settings.message)).toHaveLength(2);
       expect(storage.write).not.toHaveBeenCalled();
     } finally {
       owner.dispose();

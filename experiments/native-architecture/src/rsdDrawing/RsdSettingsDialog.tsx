@@ -145,7 +145,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   };
   // Only the phone shell drills in; the others show the same sections in place.
   const subpage = shell === 'phone' && page.kind === 'section' ? page : null;
-  const status = <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />;
+  const parentCenterOwnsStatus =
+    props.parentCenter.section !== null &&
+    parentCenterRevealed(props.parentCenter) &&
+    (shell === 'wide' || subpage?.section === 'parentCenter');
+  const status = parentCenterOwnsStatus ? null : (
+    <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />
+  );
   return (
     <ModalShell
       visible={visible}
