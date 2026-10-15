@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
@@ -114,6 +114,54 @@ it.each([402, 1024])(
       );
       expect(visibleText().split(settings.message)).toHaveLength(2);
       expect(storage.write).not.toHaveBeenCalled();
+    } finally {
+      owner.dispose();
+    }
+  }
+);
+
+it.each([402, 1024])(
+  'keeps the ordinary save retry in revealed Parent Center at width %s',
+  async (width) => {
+    records.dimensions = { width, height: 874, scale: 1, fontScale: 1 };
+    let refuse = true;
+    const storage = {
+      read: async () => null,
+      write: vi.fn(async () => {
+        if (refuse) throw new Error('The settings store is unavailable.');
+      }),
+    };
+    const owner = createDrawingProduct(storage, () => {});
+    try {
+      await owner.settings.load();
+      const policies = owner.getState().settings.parentPolicies;
+      await owner.settings.setEnabled(true);
+      const settings = owner.getState().settings;
+      expect(settings.saved).toBe(false);
+      await mount(
+        createElement(NativeSoundSettingsDialog, {
+          ...nativeSettingsProps(owner.settings, settings),
+          ...soundSettingsActions({ owner: { settings: owner.settings }, settings }),
+          parentCenter: {
+            unlocked: true,
+            checkDue: false,
+            onUnlock() {},
+            onLeave() {},
+            section: createElement(RsdParentCenterSection, { owner }),
+          },
+        })
+      );
+      expect(visibleText().split(settings.message)).toHaveLength(2);
+      const retry = host.querySelector('[aria-label="Try saving settings again"]');
+      expect(retry).not.toBeNull();
+      refuse = false;
+      await act(async () => retry.click());
+      expect(storage.write).toHaveBeenCalledTimes(2);
+      expect(owner.getState().settings).toMatchObject({
+        saved: true,
+        soundEnabled: true,
+        parentPolicies: policies,
+      });
     } finally {
       owner.dispose();
     }

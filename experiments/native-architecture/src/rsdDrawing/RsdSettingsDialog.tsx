@@ -149,8 +149,12 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     props.parentCenter.section !== null &&
     parentCenterRevealed(props.parentCenter) &&
     (shell === 'wide' || subpage?.section === 'parentCenter');
-  const status = parentCenterOwnsStatus ? null : (
-    <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />
+  const status = (
+    <SaveStatus
+      settings={settings}
+      notice={parentCenterOwnsStatus ? '' : notice}
+      onRetry={onRetry}
+    />
   );
   return (
     <ModalShell
