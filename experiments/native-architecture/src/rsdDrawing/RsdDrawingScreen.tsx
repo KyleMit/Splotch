@@ -296,7 +296,6 @@ function RsdDrawingContent({
                 screen={screen}
                 notice={notice}
                 soundNotice={soundNotice}
-                blocked={disabled}
                 openAppSettings={product.owner ? product.openAppSettings : null}
                 aiMinimized={product.ai.state?.open === true && product.ai.state.minimized}
               />

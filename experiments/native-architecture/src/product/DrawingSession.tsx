@@ -8,14 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 import { createDrawingSession, type DrawingSession } from './createDrawingSession';
-import type { DrawingDraftState } from './createDrawingDraft';
 import { createHistory } from '../drawing/model';
 import { useAppRestart } from './AppRestart';
 
 const DrawingSessionScope = createContext<DrawingSession | null>(null);
-const SESSION_ONLY_STATE: DrawingDraftState = { status: 'session', message: '' };
-const subscribeSessionOnly = () => () => {};
-const sessionOnlyState = () => SESSION_ONLY_STATE;
 
 export function DrawingSessionProvider({ children }: { children: ReactNode }) {
   const [owner] = useState(createDrawingSession);
@@ -31,7 +27,6 @@ export function useDrawingHistory() {
   const [local] = useState(createDrawingSession);
   const owner = shared ?? local;
   const history = useSyncExternalStore(owner.subscribe, owner.getSnapshot, owner.getSnapshot);
-  const draftState = useSyncExternalStore(subscribeSessionOnly, sessionOnlyState, sessionOnlyState);
   const references = useMemo(
     () => ({
       historyRef: {
@@ -53,8 +48,6 @@ export function useDrawingHistory() {
     setHistory: owner.setHistory,
     currentDrawing: owner.currentDrawing,
     applyColoringBookEnabled: owner.applyColoringBookEnabled,
-    draftState,
-    retryDraft: async () => {},
   };
 }
 

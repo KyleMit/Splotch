@@ -2,17 +2,7 @@ import { act, createElement, StrictMode } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { caller, records, host, mount, root } from './rsd-native-selection-host.mjs';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
-import {
-  decodeDrawingDraft,
-  encodeDrawingDraft,
-} from '../../../experiments/native-architecture/src/product/drawingDraft.ts';
-import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
-
-// The canonical root (index.ts) under React StrictMode, which runs every effect's cleanup and setup
-// once more as it mounts, as development builds do. The first owners' work still in flight then
-// (the stored draft's read, the settings read) must not land, and the second owners must serve
-// the session alone: the draft restored once, a stroke written once, Settings saving once, and
-// every listener released at unmount. The plain root is the baseline each figure is held to.
+// StrictMode repeats mount effects; both launches must retain one session owner and release listeners.
 vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
@@ -20,24 +10,12 @@ vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx'
 const SETTLE_TURNS = 6;
 // Two full launches of the app, each through a stroke and a Settings choice.
 const TWO_LAUNCHES_TIMEOUT_MS = 30_000;
-let drafts;
 
 beforeEach(() => {
   caller.realScreen = true;
   caller.settingsStorage = {
     read: vi.fn(async () => '{"version":1,"soundEnabled":true}'),
     write: vi.fn(async () => {}),
-  };
-  const stored = {
-    ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }),
-    strokes: [{ brush: 'pen', width: 8, color: 'Purple', points: [{ x: 1, y: 1 }] }],
-  };
-  drafts = [encodeDrawingDraft(stored)];
-  caller.draftStorage = {
-    read: vi.fn(async () => drafts.at(-1)),
-    write: vi.fn(async (draft) => {
-      drafts.push(draft);
-    }),
   };
 });
 
@@ -57,8 +35,7 @@ async function click(label) {
   await act(async () => node.click());
 }
 
-// What the session, its draft and its services show through one launch, a stroke, a Settings
-// choice and the unmount.
+// The canonical session and its services through a stroke, a Settings choice and unmount.
 async function launch(strict) {
   const app = createElement(ProbeApp);
   await mount(strict ? createElement(StrictMode, null, app) : app);
@@ -73,8 +50,7 @@ async function launch(strict) {
   await settle();
   const drawn = {
     strokes: caller.liveScreen.history.drawing.strokes.length,
-    draftWrites: caller.draftStorage.write.mock.calls.length,
-    draftStrokes: decodeDrawingDraft(drafts.at(-1)).strokes.length,
+    undo: caller.liveScreen.history.undo.length,
   };
   await click('Settings');
   await settle();
@@ -96,18 +72,16 @@ it(
     const plain = await launch(false);
     expect(plain).toEqual({
       launched: {
-        strokes: 1,
+        strokes: 0,
         undo: 0,
         settings: 'ready',
         listeners: { appState: 2, back: 0, dimensions: 1 },
       },
-      drawn: { strokes: 2, draftWrites: 1, draftStrokes: 2 },
+      drawn: { strokes: 1, undo: 1 },
       chosen: { settingsWrites: 1, soundEnabled: false },
       unmounted: { appState: 0, back: 0, dimensions: 0 },
     });
-    caller.draftStorage.write.mockClear();
     caller.settingsStorage.write.mockClear();
-    drafts.splice(1);
     expect(await launch(true)).toEqual(plain);
   },
   TWO_LAUNCHES_TIMEOUT_MS

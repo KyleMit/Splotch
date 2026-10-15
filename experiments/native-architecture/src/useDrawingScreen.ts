@@ -1,6 +1,5 @@
 import { drawingPaperSize, type PaperReference } from './drawing/paperSpace';
 import { useDrawingHistory } from './product/DrawingSession';
-import { protectedDraftPageIds } from './platform/drawingDraft';
 import { offlineLibrary } from './offlineLibrary/runtime';
 import { useOfflineLibrary } from './offlineLibrary/useOfflineLibrary';
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -64,7 +63,7 @@ export function useDrawingScreen() {
   const [preparing, setPreparing] = useState(false);
   const [drawing, setDrawing] = useBackAwareDrawingState();
   const [commandBusy, setBusy] = useState(false);
-  const busy = commandBusy || historyOwner.draftState.status === 'loading';
+  const busy = commandBusy;
   const messages = useDrawingMessages();
   const { notice, setNotice, report } = messages;
   const saveFailure = useSaveFailure();
@@ -156,8 +155,6 @@ export function useDrawingScreen() {
   return {
     library,
     recovery,
-    draftState: historyOwner.draftState,
-    retryDraft: historyOwner.retryDraft,
     history,
     brush,
     ...brushActions,
@@ -281,7 +278,6 @@ function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pi
     remove: () =>
       offlineLibrary.remove(async () => [
         ...(await savedColoringPageIds()),
-        ...(await protectedDraftPageIds()),
         historyRef.current.drawing.pageId,
         ...historyRef.current.undo.map((entry) => entry.pageId),
       ]),

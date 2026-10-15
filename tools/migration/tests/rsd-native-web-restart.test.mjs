@@ -8,9 +8,6 @@ import {
   useDrawingHistory,
   useStartOver,
 } from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { drawingDraftStorage } from '../../../experiments/native-architecture/src/platform/drawingDraft.ts';
-import { FRESH_START_PARAM } from '../../../experiments/native-architecture/src/platform/appRestart.web.ts';
-import { encodeDrawingDraft } from '../../../experiments/native-architecture/src/product/drawingDraft.ts';
 import {
   createHistory,
   addStroke,
@@ -34,10 +31,6 @@ afterEach(() => {
 
 describe("the web export's Start over", () => {
   it('starts each process blank while retaining ink and Undo across a screen remount', async () => {
-    const read = vi
-      .spyOn(drawingDraftStorage, 'read')
-      .mockResolvedValue(encodeDrawingDraft(emptyDrawing(RAINBOW_IN_USE)));
-    const write = vi.spyOn(drawingDraftStorage, 'write').mockResolvedValue(undefined);
     let app, replace;
     function Probe() {
       app = useDrawingHistory();
@@ -69,8 +62,6 @@ describe("the web export's Start over", () => {
     expect(app.history).toBe(sameSession);
     await act(async () => replace({ launch: 1, screen: 0 }));
     expect(app.history).toEqual(createHistory());
-    expect(read).not.toHaveBeenCalled();
-    expect(write).not.toHaveBeenCalled();
   });
 
   it('reloads to a blank page even when session storage refuses', async () => {
@@ -95,7 +86,7 @@ describe("the web export's Start over", () => {
     await mount(page());
     await act(async () => app.setHistory(createHistory(emptyDrawing(RAINBOW_IN_USE))));
     await act(async () => app.startOver());
-    expect(assigned).toEqual([`/?${FRESH_START_PARAM}=1`]);
+    expect(assigned).toEqual(['/']);
     await act(async () => root.unmount());
     history.replaceState(null, '', assigned[0]);
     await mount(page());

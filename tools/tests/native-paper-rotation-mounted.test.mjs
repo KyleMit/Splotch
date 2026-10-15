@@ -52,10 +52,6 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   savePicture: vi.fn(),
   listPictures: async () => [],
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
-  drawingDraftStorage: { read: async () => null, write: async () => {} },
-  protectedDraftPageIds: async () => [],
-}));
 vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')

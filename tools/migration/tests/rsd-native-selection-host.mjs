@@ -142,13 +142,6 @@ vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.t
     };
   },
 }));
-vi.mock('../../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
-  drawingDraftStorage: {
-    read: async () => caller.draftStorage?.read() ?? null,
-    write: async (draft) => caller.draftStorage?.write(draft),
-  },
-  protectedDraftPageIds: async () => [],
-}));
 vi.mock(
   '../../../experiments/native-architecture/src/product/useDrawingProduct.ts',
   async (importOriginal) => {
@@ -419,7 +412,6 @@ afterEach(async () => {
   records.settingsOpened = 0;
   records.journalHostProps = false;
   caller.liveScreen = null;
-  caller.draftStorage = null;
   caller.exportPng = null;
   caller.deviceLocked = false;
   orientationCalls.length = 0;
