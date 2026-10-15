@@ -101,6 +101,11 @@ class ShortcutKeyboardView(private val reactContext: ThemedReactContext) : React
     focusWhenAvailable()
   }
 
+  override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+    super.onWindowFocusChanged(hasWindowFocus)
+    if (hasWindowFocus) focusWhenAvailable()
+  }
+
   private fun shortcutKey(event: KeyEvent): String? {
     if (!shortcutsEnabled) return null
     if (event.keyCode == KeyEvent.KEYCODE_ESCAPE) return "escape"
