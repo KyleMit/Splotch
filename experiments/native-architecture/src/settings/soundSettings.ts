@@ -416,21 +416,25 @@ export function createSoundSettings(
     onChange(state);
   }
   async function persist(settings: SoundSettings) {
-    readFailure = null;
     parent.clearPending();
     const { version: _version, ...choices } = settings;
     publish({ status: 'saving', ...choices, ...sessionPaint(state), message: '' });
     try {
       await storage.write(JSON.stringify(settings));
+      readFailure = null;
       publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
     } catch {
-      publish({
-        status: 'ready',
-        ...choices,
-        ...sessionPaint(state),
-        saved: false,
-        message: SETTINGS_SAVE_FAILED_MESSAGE,
-      });
+      publish(
+        readFailure
+          ? unreadSoundSettingsState(sessionPaint(state), readFailure)
+          : {
+              status: 'ready',
+              ...choices,
+              ...sessionPaint(state),
+              saved: false,
+              message: SETTINGS_SAVE_FAILED_MESSAGE,
+            }
+      );
     }
     await metadata.flushMetadata();
   }
@@ -450,6 +454,8 @@ export function createSoundSettings(
     ...actionContext,
     persistMetadata: createMetadataWriter(storage, actionContext, parent.hasPending),
   });
+  const canResetSavedSettings = () =>
+    !disposed && state.status === 'ready' && readFailure === 'malformed';
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
@@ -508,8 +514,11 @@ export function createSoundSettings(
       readFailure = null;
       publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
     },
-    // False while the stored record is one this build cannot use: reading it again or saving
-    // over it is no way out, so Settings offers neither.
+    async resetSavedSettings() {
+      if (canResetSavedSettings()) await persist(snapshot(defaultSoundSettings()));
+    },
+    canResetSavedSettings,
+    // Ordinary retries cannot replace an unreadable record without the parent's explicit reset.
     retryCanRecover: () => readFailure !== 'malformed' && readFailure !== 'newer',
     canEditParent: () => !disposed && readFailure === null && state.status === 'ready',
     dispose() {

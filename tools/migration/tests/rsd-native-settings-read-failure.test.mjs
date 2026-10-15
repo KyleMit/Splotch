@@ -1,4 +1,4 @@
-import { act, createElement } from 'react';
+import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
@@ -26,6 +26,12 @@ const FAILURES = [
     },
     'Drawing settings could not be read.',
     true,
+  ],
+  [
+    'an unusable record',
+    async () => '{"version":16,"soundEnabled":"true"}',
+    'Saved drawing settings could not be used.',
+    false,
   ],
 ];
 
@@ -80,7 +86,76 @@ it.each(FAILURES)(
       const buttons = [...host.querySelectorAll('button')].map((node) => node.textContent);
       expect(buttons.includes('Read saved settings again')).toBe(retried);
       expect(buttons.includes('Retry saving Parent Center choices')).toBe(retried);
+      expect(buttons.includes('Reset saved settings')).toBe(owner.settings.canResetSavedSettings());
       expect(storage.write).not.toHaveBeenCalled();
+    } finally {
+      owner.dispose();
+    }
+  }
+);
+
+it.each([402, 1024])(
+  'keeps reset behind the Parent Center check and replaces unusable settings at width %s',
+  async (width) => {
+    records.dimensions = { width, height: 874, scale: 1, fontScale: 1 };
+    let stored = '{"version":16,"soundEnabled":"true"}';
+    const storage = {
+      read: async () => stored,
+      write: vi.fn(async (next) => {
+        stored = next;
+      }),
+    };
+    let refresh = () => {};
+    const owner = createDrawingProduct(storage, () => refresh());
+    try {
+      await owner.settings.load();
+      function Settings() {
+        const [, update] = useState(0);
+        refresh = () => update((value) => value + 1);
+        const state = owner.getState();
+        return createElement(NativeSoundSettingsDialog, {
+          ...nativeSettingsProps(owner.settings, state.settings),
+          ...soundSettingsActions({
+            owner: { settings: owner.settings },
+            settings: state.settings,
+          }),
+          parentCenter: {
+            unlocked: state.parentCenterOpen,
+            checkDue: state.parentCenterCheckDue,
+            onUnlock: owner.openParentCenter,
+            onLeave: owner.closeParentCenter,
+            section: createElement(RsdParentCenterSection, { owner }),
+          },
+        });
+      }
+      await mount(createElement(Settings));
+      const reset = () =>
+        [...host.querySelectorAll('button')].find(
+          (node) => node.textContent === 'Reset saved settings'
+        );
+      expect(reset()).toBeUndefined();
+      await act(async () => owner.openParentCenter());
+      expect(owner.getState().gate.open).toBe(true);
+      expect(reset()).toBeUndefined();
+      expect(storage.write).not.toHaveBeenCalled();
+      await act(async () => {
+        const { x, y } = owner.gate.getState();
+        owner.gate.input(String(x * y));
+        owner.gate.answer();
+      });
+      expect(reset()).toBeDefined();
+      expect(visibleText()).toContain(
+        'Resetting replaces saved settings with their defaults. Your pictures are kept.'
+      );
+      await act(async () => reset().click());
+      expect(storage.write).toHaveBeenCalledOnce();
+      expect(JSON.parse(stored)).toMatchObject({
+        version: 16,
+        soundEnabled: true,
+        aiEnabled: false,
+      });
+      expect(owner.getState().settings.saved).toBe(true);
+      expect(reset()).toBeUndefined();
     } finally {
       owner.dispose();
     }

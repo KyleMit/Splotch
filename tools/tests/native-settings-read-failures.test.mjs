@@ -6,13 +6,12 @@ import {
 } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
 
 // Stored settings that cannot be used fail one of three ways, and each says only what can help:
-// a store that did not answer may answer a second read; a damaged record, or one a newer build
-// wrote, stays as it is however often it is read, so neither offers a retry, and neither is ever
-// written over.
+// a store that did not answer may answer a second read; an unusable record needs an explicit
+// parent-authorized reset, while one a newer build wrote stays untouched.
 const NEWER =
   'A newer version of Splotch saved these settings. Update Splotch to use them. Sound is off, protection stays active, and your choices work for this session.';
 const MALFORMED =
-  'Saved drawing settings are damaged. Sound is off, protection stays active, and your choices work for this session.';
+  'Saved drawing settings could not be used. Sound is off, protection stays active, and your choices work for this session. You can reset saved settings in Parent Center.';
 const UNAVAILABLE =
   'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
 const STILL_UNAVAILABLE =
@@ -76,10 +75,21 @@ async function tryEveryWrite(owner) {
 describe('stored settings this build cannot use', () => {
   // Negative control: classifying every refused record as damaged fails the message here.
   it.each([
-    ['a newer record', 0],
-    ["a newer record past this build's size cap", MAX_SETTINGS_BYTES],
-  ])('keep %s untouched under protection and ask for an update', async (_, padding) => {
-    const record = await newerRecord(padding);
+    ['a newer record', 0, (record) => record],
+    ["a newer record past this build's size cap", MAX_SETTINGS_BYTES, (record) => record],
+    ['a pretty printed newer record', 0, (record) => JSON.stringify(JSON.parse(record), null, 2)],
+    [
+      'a reordered newer record',
+      0,
+      (record) => JSON.stringify({ soundEnabled: true, ...JSON.parse(record) }),
+    ],
+    [
+      'a newer record with an extra leading field',
+      0,
+      (record) => JSON.stringify({ extraFuturePreference: true, ...JSON.parse(record) }),
+    ],
+  ])('keep %s untouched under protection and ask for an update', async (_, padding, format) => {
+    const record = format(await newerRecord(padding));
     const { owner, storage } = product(async () => record);
     await owner.settings.load();
     expect(owner.getState().settings).toMatchObject({
@@ -95,6 +105,9 @@ describe('stored settings this build cannot use', () => {
 
     await tryEveryWrite(owner);
     await owner.settings.retryRead();
+    expect(owner.settings.canResetSavedSettings()).toBe(false);
+    await owner.settings.resetSavedSettings();
+    await owner.resetSavedSettings();
     expect(storage.write).not.toHaveBeenCalled();
     expect(owner.getState().settings).toMatchObject({
       aiEnabled: false,
@@ -106,13 +119,12 @@ describe('stored settings this build cannot use', () => {
     owner.dispose();
   });
 
-  // Negative control: classifying every refused record as newer fails the message here. A record
-  // whose version is not its leading integer is not one any build writes.
+  // Negative control: classifying every refused record as newer fails the message here.
   it.each([
     'not JSON',
     '{"version":16,"soundEnabled":"true"}',
     '{"version":"17","soundEnabled":true}',
-    '{"soundEnabled":true,"version":17}',
+    '{"soundEnabled":true,"version":16}',
     '{"version":0,"soundEnabled":true}',
   ])('keep the damaged record %s untouched under protection, offering no retry', async (record) => {
     const { owner, storage } = product(async () => record);
@@ -130,6 +142,74 @@ describe('stored settings this build cannot use', () => {
     await owner.settings.retryRead();
     expect(storage.write).not.toHaveBeenCalled();
     expect(owner.getState().settings.message).toBe(MALFORMED);
+    owner.dispose();
+  });
+});
+
+describe('an explicit reset of unusable saved settings', () => {
+  it('requires the Parent Center check, saves defaults, and reloads the canonical record', async () => {
+    let stored = '{"version":16,"soundEnabled":"true"}';
+    const storage = {
+      read: async () => stored,
+      write: vi.fn(async (next) => {
+        stored = next;
+      }),
+    };
+    const owner = createDrawingProduct(storage, () => {});
+    await owner.settings.load();
+    expect(owner.settings.canResetSavedSettings()).toBe(true);
+    await owner.settings.setEnabled(false);
+    await owner.settings.setAppearance('dark');
+    await owner.resetSavedSettings();
+    owner.openParentCenter();
+    await owner.resetSavedSettings();
+    expect(storage.write).not.toHaveBeenCalled();
+    solve(owner.gate);
+    await owner.resetSavedSettings();
+    expect(storage.write).toHaveBeenCalledOnce();
+    expect(owner.getState().settings).toMatchObject({
+      saved: true,
+      soundEnabled: true,
+      appearance: 'system',
+      aiEnabled: false,
+      parentPolicies: ALWAYS,
+      message: '',
+    });
+    expect(owner.settings.canResetSavedSettings()).toBe(false);
+    expect(owner.settings.canEditParent()).toBe(true);
+    const reloaded = createDrawingProduct(storage, () => {});
+    await reloaded.settings.load();
+    expect(reloaded.getState().settings).toEqual(owner.getState().settings);
+    reloaded.dispose();
+    owner.dispose();
+  });
+
+  it('keeps protection and the explicit reset after a failed replacement write', async () => {
+    const { owner, storage } = product(async () => 'not JSON');
+    storage.write.mockRejectedValueOnce(new Error('disk full'));
+    await owner.settings.load();
+    owner.openParentCenter();
+    solve(owner.gate);
+    await owner.resetSavedSettings();
+    expect(owner.getState().settings).toMatchObject({
+      saved: false,
+      soundEnabled: false,
+      aiEnabled: false,
+      parentPolicies: ALWAYS,
+      message: MALFORMED,
+    });
+    expect(owner.settings.canEditParent()).toBe(false);
+    expect(owner.settings.canResetSavedSettings()).toBe(true);
+    await owner.settings.retrySave();
+    expect(storage.write).toHaveBeenCalledOnce();
+    owner.background();
+    await owner.resetSavedSettings();
+    expect(storage.write).toHaveBeenCalledOnce();
+    owner.openParentCenter();
+    solve(owner.gate);
+    await owner.resetSavedSettings();
+    expect(storage.write).toHaveBeenCalledTimes(2);
+    expect(owner.getState().settings).toMatchObject({ saved: true, message: '' });
     owner.dispose();
   });
 });

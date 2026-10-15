@@ -260,6 +260,16 @@ function SaveStatus({
   return (
     <html.div style={styles.failure}>
       <RsdStatusMessage status="error">{settings.message}</RsdStatusMessage>
+      {owner.settings.canResetSavedSettings() ? (
+        <html.div style={styles.failure}>
+          <html.p style={styles.soft}>
+            Resetting replaces saved settings with their defaults. Your pictures are kept.
+          </html.p>
+          <RsdButton size="sm" variant="danger" onPress={() => void owner.resetSavedSettings()}>
+            Reset saved settings
+          </RsdButton>
+        </html.div>
+      ) : null}
       {owner.settings.retryCanRecover() ? <SaveRetries owner={owner} /> : null}
     </html.div>
   );

@@ -80,8 +80,7 @@ export type Choices = WidthSettings &
 // type, range or meaning changes, or a change to what a protection allows. A preference that
 // protects nothing and that an older build may simply not know goes in a store key of its own, as
 // the Tool Drawer's open state does (drawerOpenStorage), and leaves this record and its version
-// alone. Every version's canonical record opens with its integer version as the first key, which
-// is how an older build tells a newer record from a damaged one (settingsRead.ts).
+// alone.
 export const SOUND_SETTINGS_VERSION = 16;
 export type SoundSettings = Choices & Readonly<{ version: typeof SOUND_SETTINGS_VERSION }>;
 export type SoundSettingsState =

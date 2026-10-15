@@ -9,24 +9,33 @@ import {
 // wrote, or a newer build wrote it.
 export type SettingsReadFailure = 'unavailable' | 'malformed' | 'newer';
 
-// Reading again recovers only a store that did not answer; a record this build cannot use stays
-// unusable, so its message asks for nothing a retry could do.
+// Reading again recovers only a store that did not answer; an unusable record needs an explicit
+// reset, and a newer record needs an update.
 export const UNREAD_SETTINGS_MESSAGES: Record<SettingsReadFailure, string> = {
   unavailable:
     'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
   malformed:
-    'Saved drawing settings are damaged. Sound is off, protection stays active, and your choices work for this session.',
+    'Saved drawing settings could not be used. Sound is off, protection stays active, and your choices work for this session. You can reset saved settings in Parent Center.',
   newer:
     'A newer version of Splotch saved these settings. Update Splotch to use them. Sound is off, protection stays active, and your choices work for this session.',
 };
 
-// Every version's canonical record opens with its integer version (SOUND_SETTINGS_VERSION).
-const RECORD_VERSION = /^\{"version":(\d+),/;
-
 // Only a record that parseSoundSettings refused comes here.
 function unreadableRecord(snapshot: string): 'malformed' | 'newer' {
-  const version = RECORD_VERSION.exec(snapshot)?.[1];
-  return version !== undefined && Number(version) > SOUND_SETTINGS_VERSION ? 'newer' : 'malformed';
+  try {
+    const value: unknown = JSON.parse(snapshot);
+    return value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      'version' in value &&
+      typeof value.version === 'number' &&
+      Number.isInteger(value.version) &&
+      value.version > SOUND_SETTINGS_VERSION
+      ? 'newer'
+      : 'malformed';
+  } catch {
+    return 'malformed';
+  }
 }
 
 type StoredRead =
