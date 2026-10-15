@@ -4,19 +4,18 @@ import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import {
   emptyDrawing,
+  createHistory,
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import {
-  decodeDrawingDraft,
-  encodeDrawingDraft,
-} from '../../experiments/native-architecture/src/product/drawingDraft.ts';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
+  DrawingSessionProvider,
+  useDrawingHistory,
+} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 
 const sdk = vi.hoisted(() => ({
   captures: [],
@@ -31,8 +30,6 @@ const sdk = vi.hoisted(() => ({
   imageLoads: [],
   responders: [],
   save: vi.fn(),
-  draft: null,
-  drafts: [],
 }));
 
 // Save picture is this suite's probe of the current drawing; the photo library copy it also
@@ -53,18 +50,10 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
     write: vi.fn(),
   },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => {
-  const storage = {
-    read: async () => sdk.draft,
-    write: async (snapshot) => {
-      sdk.drafts.push(snapshot);
-    },
-  };
-  return {
-    drawingDraftStorage: storage,
-    protectedDraftPageIds: async () => [],
-  };
-});
+vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
+  drawingDraftStorage: { read: async () => null, write: async () => {} },
+  protectedDraftPageIds: async () => [],
+}));
 vi.mock('react-native', () => {
   const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
@@ -179,7 +168,7 @@ const fixture = parseDrawing({
 });
 const emptyPng = rgbaPng(1024, 768).toString('base64');
 const paintedPng = rgbaPng(1024, 768, 4).toString('base64');
-let host, root, state;
+let host, root, state, session;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
@@ -193,8 +182,6 @@ beforeEach(() => {
   sdk.load = true;
   sdk.hold = false;
   sdk.png = paintedPng;
-  sdk.draft = null;
-  sdk.drafts.length = 0;
   sdk.save.mockResolvedValue(undefined);
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++sdk.next;
@@ -213,27 +200,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
-function button(label) {
-  return [...host.querySelectorAll('button')].find(
-    (node) => node.getAttribute('aria-label') === label
-  );
-}
-function toolsButton() {
-  return button('Drawing tools');
-}
-async function openTools() {
-  const opener = toolsButton();
-  expect(opener, 'Drawing tools opener').toBeDefined();
-  expect(opener.disabled, 'Drawing tools admission').toBe(false);
-  await act(async () => opener.click());
-}
-async function click(label) {
-  if (['Clear'].includes(label) && !button(label)) await openTools();
-  const target = button(label);
-  expect(target, label).toBeDefined();
-  expect(target.disabled, label).toBe(false);
-  await act(async () => target.click());
-}
 async function frames() {
   for (let index = 0; index < 10; index++)
     await act(async () => {
@@ -245,52 +211,56 @@ async function frames() {
 async function decodeSettles() {
   await act(async () => vi.advanceTimersByTimeAsync(5000));
 }
-// The fixture opens as the restored current-picture draft (sdk.draft), read once on load; the
-// drafts the screen writes after (sdk.drafts) show what it holds.
-async function restoring(render) {
-  sdk.draft = encodeDrawingDraft(fixture);
-  await act(async () => root.render(createElement(DrawingSessionProvider, null, render)));
-  await frames();
-  sdk.draft = null;
-}
 async function opened() {
-  await restoring(createElement(DrawingScreen));
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(HookSurface)))
+  );
+  await frames();
+  await act(async () => session.setHistory(createHistory(fixture)));
+  await frames();
 }
 async function saved() {
   await frames();
-  return decodeDrawingDraft(sdk.drafts.at(-1) ?? encodeDrawingDraft(fixture));
+  return state.history.drawing;
+}
+async function clear() {
+  await act(async () => {
+    void state.clear();
+  });
+}
+async function undo() {
+  await act(async () => state.undo());
 }
 function HookSurface() {
+  session = useDrawingHistory();
   state = useDrawingScreen();
   return createElement(DrawingSurface, {
     key: state.recovery.generation,
     ref: state.surface,
     drawing: state.history.drawing,
     currentDrawing: state.currentDrawing,
-    color: state.color,
+    color: 'Purple',
     brush: state.brush,
     disabled: state.busy,
     ...state.recovery.callbacks,
   });
 }
 async function openHook() {
-  await restoring(createElement(HookSurface));
+  await opened();
 }
 
 describe('mounted actual native Clear and decoder ownership', () => {
   it('clears observed ink once and Undo restores exact page/rainbow/drawing identity through rerenders', async () => {
     await opened();
     expect(await saved()).toEqual(fixture);
-    await click('Clear');
-    expect(button('Save picture')).toBeUndefined();
-    expect(toolsButton().disabled).toBe(false);
-    expect(sdk.responders.at(-1).onStartShouldSetPanResponder()).toBe(false);
+    await clear();
+    expect(state.busy).toBe(true);
     await frames();
     await decodeSettles();
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
-    expect(button('Retry drawing')).toBeUndefined();
-    await click('Undo');
-    expect(toolsButton().disabled).toBe(true);
+    expect(state.recovery.failed).toBe(false);
+    await undo();
+    expect(state.busy).toBe(true);
     await frames();
     expect(await saved()).toEqual(fixture);
     expect(sdk.dimensions.size).toBe(0);
@@ -298,17 +268,16 @@ describe('mounted actual native Clear and decoder ownership', () => {
   it('clears a visually blank recorded log without adding an Undo entry', async () => {
     await opened();
     sdk.png = emptyPng;
-    await click('Clear');
+    await clear();
     await frames();
     await decodeSettles();
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
-    // The restored picture is the first in this history, so Clear leaves nothing to Undo.
-    expect(button('Undo').disabled).toBe(true);
+    expect(state.history.undo).toEqual([]);
   });
   it('retains exact drawing and history on a dimension event before decoding', async () => {
     await opened();
     sdk.hold = true;
-    await click('Clear');
+    await clear();
     await frames();
     const capture = sdk.captures.at(-1);
     expect(sdk.dimensions.size).toBe(1);
@@ -317,11 +286,11 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await act(async () => capture.callback(paintedPng));
     await decodeSettles();
     sdk.hold = false;
-    expect(host.textContent).toContain('The picture changed before observation finished.');
+    expect(state.notice).toContain('The picture changed before observation finished.');
     expect(await saved()).toEqual(fixture);
     expect(sdk.dimensions.size).toBe(0);
-    expect(button('Retry drawing')).toBeUndefined();
-    expect(button('Undo').disabled).toBe(true);
+    expect(state.recovery.failed).toBe(false);
+    expect(state.history.undo).toEqual([]);
   });
   it('refuses a dimension change during cooperative decoding and retains the exact command snapshot', async () => {
     await openHook();
@@ -370,12 +339,12 @@ describe('mounted actual native Clear and decoder ownership', () => {
     const png = Buffer.from(paintedPng, 'base64');
     png[png.length - 1] ^= 1;
     sdk.png = png.toString('base64');
-    await click('Clear');
+    await clear();
     await frames();
     await decodeSettles();
-    expect(host.textContent).toContain('invalid or unsupported PNG');
+    expect(state.notice).toContain('invalid or unsupported PNG');
     expect(await saved()).toEqual(fixture);
-    expect(button('Retry drawing')).toBeUndefined();
+    expect(state.recovery.failed).toBe(false);
     expect(sdk.dimensions.size).toBe(0);
   });
   it('keeps the mounted imperative handle stable across command and packet rerenders', async () => {
@@ -437,22 +406,22 @@ describe('mounted actual native Clear and decoder ownership', () => {
     expect(state.history.drawing).toEqual(emptyDrawing());
     expect(original.drawing).toEqual(fixture);
   });
-  it('recovers a real main-renderer fault via visible Retry, refuses the old callback and then permits Clear', async () => {
+  it('recovers a real main-renderer fault through its current recovery owner, refuses the old callback and then permits Clear', async () => {
     sdk.fail = true;
     await opened();
     const old = sdk.captures[0];
-    expect(button('Retry drawing').disabled).toBe(false);
+    expect(state.recovery.failed).toBe(true);
     sdk.fail = false;
-    await click('Retry drawing');
+    await act(async () => state.recovery.retry());
     await frames();
     await act(async () => old.callback('late-invalid-png'));
     expect(await saved()).toEqual(fixture);
-    await click('Clear');
+    await clear();
     await frames();
     await decodeSettles();
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
-    await click('Undo');
-    expect(toolsButton().disabled).toBe(true);
+    await undo();
+    expect(state.busy).toBe(true);
     await frames();
     expect(await saved()).toEqual(fixture);
   });

@@ -1,18 +1,6 @@
 import type { AiState } from './generation';
 import type { AiResult } from './journal';
 import { FREE_GENERATION_LIMIT } from '../../../../web/src/lib/freeGenerations';
-export function aiCanGenerate(state: AiState) {
-  if (state.recovery) return false;
-  return (
-    state.authorized &&
-    !state.busy &&
-    state.credential !== 'unavailable' &&
-    (state.credential !== 'free' || (state.remaining !== null && state.remaining > 0)) &&
-    (!state.journal || state.journal.phase === 'result' || state.journal.phase === 'failed') &&
-    state.retryAt <= Date.now()
-  );
-}
-
 // What the AI Image Button, the prompt and the result card start from before any read or run.
 export const AI_FLOW_IDLE = {
   view: 'prompt',
