@@ -1,0 +1,1 @@
+export { RsdSwatchBloom } from './RsdSwatchBloom';

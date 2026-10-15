@@ -1,10 +1,7 @@
-import { Animated, Easing } from '../platform/animated';
-
+import type { Bezier } from './keyframeMotion';
 // The app.css polaroid flight, keyframe for keyframe. CSS cannot be imported, so
 // tools/tests/native-polaroid-flight.test.mjs parses app.css and fails when any keyframe, curve,
 // duration or frame literal here diverges from it.
-
-type Bezier = readonly [number, number, number, number];
 
 // `from` scales the offset from the screen's center to the Save screenshot button: 1 is over the
 // button, 0 the center. `easing` runs from this keyframe to the next, as a keyframe's
@@ -76,47 +73,3 @@ export const POLAROID_FRAME = {
   shadow:
     '0 14px 40px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.04)',
 } as const;
-
-type Timed = Readonly<{ at: number; easing: Bezier }>;
-
-// Each keyframe gap under that gap's own curve, as one easing over the whole animation, so a value
-// interpolated linearly over the keyframe offsets traces the CSS animation exactly. One timing
-// rather than a sequence of them: a sequence starts each step a frame after the last one ends,
-// which would leave the flight a frame behind per keyframe.
-function keyframeEasing(keyframes: readonly Timed[]) {
-  const gaps = keyframes.slice(1).map((next, index) => {
-    const from = keyframes[index];
-    const [x1, y1, x2, y2] = from.easing;
-    return { from: from.at, to: next.at, curve: Easing.bezier(x1, y1, x2, y2) };
-  });
-  return (time: number) => {
-    const gap = gaps.find(({ to }) => time <= to) ?? gaps[gaps.length - 1];
-    const span = gap.to - gap.from;
-    return span > 0 ? gap.from + span * gap.curve((time - gap.from) / span) : gap.to;
-  };
-}
-
-export function keyframeTimeline(
-  progress: Animated.Value,
-  keyframes: readonly Timed[],
-  durationMs: number
-) {
-  return Animated.timing(progress, {
-    toValue: 1,
-    duration: durationMs,
-    easing: keyframeEasing(keyframes),
-    useNativeDriver: true,
-  });
-}
-
-export function keyframeValue<K extends Readonly<{ at: number }>>(
-  progress: Animated.Value,
-  keyframes: readonly K[],
-  value: (keyframe: K) => number
-) {
-  return progress.interpolate({
-    inputRange: keyframes.map((keyframe) => keyframe.at),
-    outputRange: keyframes.map(value),
-    extrapolate: 'clamp',
-  });
-}

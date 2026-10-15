@@ -4,6 +4,7 @@ import { Animated, Easing } from '../platform/animated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { impactThreshold } from '../platform/clearHaptics';
 import { clearDock } from './clearDock';
+import { DRAWING_EASE_POP } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { hasDrawingInk, type Drawing } from '../drawing/model';
 import type { ClearSound } from '../audio/pageTurnSound';
@@ -25,7 +26,8 @@ const RING_REVEAL_MS = 300;
 const EMPHASIS_MS = 200;
 // ClearButton.svelte's clear-lift-off squash as the button leaves its dock.
 const LIFT_OFF_MS = 180;
-const EASE_POP = Easing.bezier(0.34, 1.56, 0.64, 1);
+const EASE_POP = Easing.bezier(...DRAWING_EASE_POP);
+const CSS_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 
 // `startedAt` is the Date.now() of the commit, so a renderer that mounts after the flight began
 // can tell it missed the departure.
@@ -52,11 +54,15 @@ function fingerPoint(event: GestureResponderEvent, finger: string | null): Point
 }
 
 function createClearValues() {
+  const liftMotion: { current: ReturnType<typeof Animated.parallel> | null } = { current: null };
   return {
+    liftMotion,
     drag: new Animated.ValueXY({ x: 0, y: 0 }),
     lift: new Animated.Value(0),
+    liftReturn: new Animated.Value(0),
     emphasis: new Animated.Value(0),
     ring: new Animated.Value(0),
+    ringScale: new Animated.Value(0),
     progress: new Animated.Value(0),
     flood: new Animated.Value(0),
   };
@@ -78,7 +84,39 @@ function goHome(drag: Animated.ValueXY, reduced: boolean) {
   }).start();
 }
 
-function fade(value: Animated.Value, toValue: number, duration: number, reduced: boolean) {
+function liftOff(values: ClearValues, reduced: boolean) {
+  values.liftMotion.current?.stop();
+  values.lift.stopAnimation();
+  values.liftReturn.stopAnimation();
+  values.lift.setValue(0);
+  values.liftReturn.setValue(0);
+  if (reduced) return;
+  const halfDuration = LIFT_OFF_MS / 2;
+  values.liftMotion.current = Animated.parallel([
+    Animated.timing(values.lift, {
+      toValue: 1,
+      duration: halfDuration,
+      easing: EASE_POP,
+      useNativeDriver: true,
+    }),
+    Animated.timing(values.liftReturn, {
+      toValue: 1,
+      duration: halfDuration,
+      delay: halfDuration,
+      easing: EASE_POP,
+      useNativeDriver: true,
+    }),
+  ]);
+  values.liftMotion.current.start();
+}
+
+function animateValue(
+  value: Animated.Value,
+  toValue: number,
+  duration: number,
+  reduced: boolean,
+  easing: (time: number) => number
+) {
   value.stopAnimation();
   if (reduced) {
     value.setValue(toValue);
@@ -87,7 +125,7 @@ function fade(value: Animated.Value, toValue: number, duration: number, reduced:
   Animated.timing(value, {
     toValue,
     duration,
-    easing: Easing.linear,
+    easing,
     useNativeDriver: true,
   }).start();
 }
@@ -117,7 +155,7 @@ function markReached({ reached, set, values, reduced }: Context, next: boolean) 
   if (reached.current === next) return;
   reached.current = next;
   set.reached(next);
-  fade(values.emphasis, next ? 1 : 0, EMPHASIS_MS, reduced.current);
+  animateValue(values.emphasis, next ? 1 : 0, EMPHASIS_MS, reduced.current, CSS_EASE);
   values.flood.setValue(next ? FLOOD_COMMITTED_OPACITY : 0);
 }
 
@@ -125,8 +163,14 @@ function letGo(context: Context) {
   const { values, set, reduced, later } = context;
   markReached(context, false);
   set.dragging(false);
+  values.liftMotion.current?.stop();
+  values.lift.stopAnimation();
+  values.lift.setValue(0);
+  values.liftReturn.stopAnimation();
+  values.liftReturn.setValue(0);
   values.progress.setValue(0);
-  fade(values.ring, 0, EMPHASIS_MS, reduced.current);
+  animateValue(values.ring, 0, EMPHASIS_MS, reduced.current, CSS_EASE);
+  animateValue(values.ringScale, 0, RING_REVEAL_MS, reduced.current, EASE_POP);
   context.ringHide.current = later(() => {
     context.ringHide.current = null;
     set.ringShown(false);
@@ -151,11 +195,10 @@ function clearEffects(context: Context): ClearGestureEffects {
       values.progress.setValue(0);
       values.flood.setValue(0);
       values.ring.setValue(0);
-      fade(values.ring, 1, RING_REVEAL_MS, reduced.current);
-      if (!reduced.current) {
-        values.lift.setValue(1);
-        fade(values.lift, 0, LIFT_OFF_MS, false);
-      }
+      values.ringScale.setValue(0);
+      animateValue(values.ring, 1, EMPHASIS_MS, reduced.current, CSS_EASE);
+      animateValue(values.ringScale, 1, RING_REVEAL_MS, reduced.current, EASE_POP);
+      liftOff(values, reduced.current);
     },
     follow(offset, progress, isReached) {
       owner.current.sound?.update(progress);
@@ -171,7 +214,7 @@ function clearEffects(context: Context): ClearGestureEffects {
       letGo(context);
       if (flooded) {
         values.flood.setValue(FLOOD_COMMITTED_OPACITY);
-        fade(values.flood, 0, FLOOD_RELEASE_MS, reduced.current);
+        animateValue(values.flood, 0, FLOOD_RELEASE_MS, reduced.current, Easing.linear);
       }
       set.clearing(true);
       if (!reduced.current && hasDrawingInk(drawing)) {
@@ -304,10 +347,11 @@ export function useClearGesture(owner: Owner) {
   useEffect(
     () => () => {
       gesture.dispose();
+      values.liftMotion.current?.stop();
       for (const timer of timers) clearTimeout(timer);
       timers.clear();
     },
-    [gesture, timers]
+    [gesture, timers, values]
   );
   useEffect(() => {
     if (!coachmark) return;

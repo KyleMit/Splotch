@@ -118,6 +118,13 @@ it.each([
     'aria-checked={props.selected}',
     'RSD pressed button owner',
   ],
+  ['src/rsdDrawing/RsdColorMenu.tsx', 'aria-pressed={ringed}', '', 'RSD pressed paint button'],
+  [
+    'src/rsdDrawing/RsdColorMenu.tsx',
+    'aria-pressed={custom?.color != null}',
+    '',
+    'RSD pressed paint button',
+  ],
   [
     'src/rsdDrawing/NativePaper.tsx',
     "from 'react-native'",

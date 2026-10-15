@@ -192,6 +192,7 @@ export function useDrawingScreen() {
       report: saveFailure.report,
     },
     flight: flights.flight,
+    screenshotFeedback: flights.feedback,
     cameraTile: flights.cameraTile,
     landFlight: flights.land,
   };

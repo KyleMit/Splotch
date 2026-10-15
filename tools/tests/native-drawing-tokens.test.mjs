@@ -16,6 +16,7 @@ import {
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import {
   DRAWING_BRAND,
+  DRAWING_EASE_POP,
   DRAWING_ON_BRAND,
   DRAWING_POLAROID,
   DRAWING_SCALE,
@@ -126,6 +127,20 @@ describe('native drawing token projection', () => {
     expect(PAPER_THEMES).toEqual(expected);
     const changed = await fixtureModule('theme.ts', "paper: '#211f29'", "paper: '#000000'");
     expect(changed.PAPER_THEMES).not.toEqual(expected);
+  });
+
+  it('pins the drawing pop curve without importing the design module at runtime', async () => {
+    const expected = scale.easePop
+      .match(/cubic-bezier\(([^)]+)\)/)[1]
+      .split(',')
+      .map(Number);
+    expect(DRAWING_EASE_POP).toEqual(expected);
+    const changed = await fixtureModule(
+      'theme.ts',
+      '[0.34, 1.56, 0.64, 1]',
+      '[0.3, 1.56, 0.64, 1]'
+    );
+    expect(changed.DRAWING_EASE_POP).not.toEqual(expected);
   });
 
   it('pins the picker scale and compatible scrim to the design token owner', () => {

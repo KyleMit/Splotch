@@ -166,8 +166,12 @@ for (const file of ['RsdSwatch.tsx', 'RsdColorMenu.tsx'])
   babel.traverse(parse('src/rsdDrawing/' + file), {
     JSXOpeningElement({ node }) {
       if (node.name.name !== 'RsdPressable') return;
-      for (const name of ['role', 'aria-checked', 'aria-pressed'])
+      const stateless = file === 'RsdSwatch.tsx';
+      for (const name of stateless
+        ? ['role', 'aria-checked', 'aria-pressed']
+        : ['role', 'aria-checked'])
         assert.equal(attribute(node, name), undefined, 'RSD plain paint button');
+      if (!stateless) assert.ok(attribute(node, 'aria-pressed'), 'RSD pressed paint button');
     },
   });
 let pressedButtons = 0;

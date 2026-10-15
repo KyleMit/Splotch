@@ -8,6 +8,8 @@ import { paintedTile } from './paintedTile';
 import { RsdIcon } from './RsdIcon';
 import type { OptionOutlineProps } from './optionOutline';
 import { RsdPressable } from './RsdPressable';
+import { RsdCameraFeedback } from './cameraFeedbackSurface';
+import type { ScreenshotFeedback } from '../useSavePicture';
 import type { NativeIconName } from './icons.generated';
 import { useBareToolbar } from './toolbarSkin';
 import { brandColors, colors, dimensions, fonts, motion, shadows } from './tokens.css';
@@ -346,6 +348,7 @@ export type IconButtonProps = Common &
         dimmed?: boolean;
         // Turns the icon into the spinning loading glyph while the tile's work runs.
         busy?: boolean;
+        captureFeedback?: ScreenshotFeedback | null;
         // A count pinned to the tile's corner (the AI Image Button's free pictures left).
         badge?: number | null;
       } & FaceInk &
@@ -466,6 +469,8 @@ export function RsdIconButton(props: IconButtonProps) {
         </props.Outline>
       ) : busy ? (
         <SpinningIcon size={glyphPx} muted={disabled && !bare} filter={paint.filter} />
+      ) : props.skin === 'tile' && props.captureFeedback !== undefined ? (
+        <RsdCameraFeedback feedback={props.captureFeedback}>{glyph}</RsdCameraFeedback>
       ) : (
         glyph
       )}

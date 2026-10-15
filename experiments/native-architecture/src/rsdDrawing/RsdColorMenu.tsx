@@ -78,6 +78,7 @@ function PaintOption({
     <RsdPressable
       type="button"
       aria-label={paintLabel(label, theme)}
+      aria-pressed={ringed}
       aria-disabled={disabled}
       disabled={disabled}
       style={[
@@ -118,6 +119,7 @@ function MoreColorsOption({
     <RsdPressable
       type="button"
       aria-label={CUSTOM_COLOR_LABEL}
+      aria-pressed={custom?.color != null}
       aria-disabled={disabled}
       disabled={disabled}
       style={[styles.option(COLOR_MENU_SWATCH_PX), styles.press, styles.clear]}

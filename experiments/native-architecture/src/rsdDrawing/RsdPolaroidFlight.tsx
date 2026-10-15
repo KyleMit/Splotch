@@ -17,10 +17,9 @@ import {
   POLAROID_FLASH_KEYFRAMES,
   POLAROID_FRAME,
   POLAROID_SHOW_KEYFRAMES,
-  keyframeTimeline,
-  keyframeValue,
   type PolaroidKeyframe,
 } from './polaroidFlight';
+import { keyframeTimeline, keyframeValue } from './keyframeMotion';
 import { fixedColors } from './tokens.css';
 
 type Offset = Readonly<{ x: number; y: number }>;
