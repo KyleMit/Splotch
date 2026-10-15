@@ -128,7 +128,6 @@ function brushTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolCont
           label={BRUSH_MENU_OPTIONS[control.brush].label}
           ink={ink}
           keyline={keyline}
-          selection="switch"
           selected={screen.brush === control.brush}
           disabled={disabled}
           onPress={screen.toggleBrush}
@@ -327,8 +326,7 @@ export function RsdActionsPanel({
   useReportPanelGlass(onGlass, layout, scale, tools, screen.availableBrushes.length);
   useActionPanelSize(layout.size, area, viewport, tools.length, onButtonSize, onScaleCeiling);
   const menuPresence = useModalPresence(flyout === 'color' ? null : flyout);
-  const shownMenu = menuPresence.shown;
-  const trigger = tools.findIndex((tool) => tool.key === shownMenu);
+  const trigger = tools.findIndex((tool) => tool.key === menuPresence.shown);
   const placement =
     trigger < 0 ? null : flyoutPlacement(layout.mode, layout.tools[trigger], layout.size, viewport);
   const menu = placement ? { base: layout.base, scale, direction: placement.direction } : null;
@@ -339,7 +337,7 @@ export function RsdActionsPanel({
     portrait: layout.mode !== 'row',
     originX: layout.mode === 'row' ? layout.size / 2 : 0,
   };
-  const tool = shownMenu === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
+  const tool = screen.brush === 'eraser' ? 'eraser' : 'drawing';
   // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
   // landscape phone keeps its Color Button, which no Settings section owns.
   if (tools.length === 0 && !layout.color) return null;
@@ -376,7 +374,7 @@ export function RsdActionsPanel({
           style={[docks.flyout, { left: placement.left, bottom: placement.bottom }]}
           onStartShouldSetResponderCapture={menuPresence.visible ? markInside : undefined}
         >
-          {shownMenu === 'brush' ? (
+          {menuPresence.shown === 'brush' ? (
             <RsdBrushMenu
               {...menu}
               {...menuMotion}
@@ -409,6 +407,7 @@ export function RsdActionsPanel({
         <DrawerChevron
           layout={layout}
           open={open}
+          chosenOpen={chosenOpen}
           dimmed={flyout !== null}
           onPress={() => {
             setFlyout(null);
@@ -424,11 +423,13 @@ export function RsdActionsPanel({
 function DrawerChevron({
   layout,
   open,
+  chosenOpen,
   dimmed,
   onPress,
 }: {
   layout: ActionPanelLayout;
   open: boolean;
+  chosenOpen: boolean;
   dimmed: boolean;
   onPress: () => void;
 }) {
@@ -437,8 +438,8 @@ function DrawerChevron({
       <RsdIconButton
         skin="corner"
         icon="chevron-right"
-        label={open ? 'Collapse controls' : 'Expand controls'}
-        expanded={open}
+        label={chosenOpen ? 'Collapse controls' : 'Expand controls'}
+        expanded={chosenOpen}
         dimmed={dimmed}
         turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
         onPress={onPress}

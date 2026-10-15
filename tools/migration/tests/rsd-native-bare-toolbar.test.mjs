@@ -387,7 +387,6 @@ describe('flat skins', () => {
           scale: 1,
           ink,
           keyline,
-          selection: 'radio',
           selected,
           onPress: vi.fn(),
         });

@@ -115,7 +115,7 @@ it('hydrates before usable controls and persists appearance through the real RSD
   ).toEqual(['light-content', 'light-content']);
   expect(
     records.props
-      .filter((props) => props.accessibilityLabel === 'Appearance' && 'onRequestClose' in props)
+      .filter((props) => props.accessibilityLabel === 'Settings' && 'onRequestClose' in props)
       .at(-1)
   ).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
   expect(

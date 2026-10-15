@@ -179,7 +179,7 @@ it('opens nothing when the grown-up check is closed without being solved', async
   await press(host.querySelector(`${GATE_MODAL} [aria-label="Close"]`));
   expect(gateShown()).toBe(false);
   expect(openHostedPage).not.toHaveBeenCalled();
-  expect(host.querySelector('[data-native-modal="About"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
 });
 
 it('asks once per session under Per session, then opens later links at once', async () => {

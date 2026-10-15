@@ -66,7 +66,6 @@ export function RsdBrushMenu({
               label={BRUSH_MENU_OPTIONS[brush].label}
               ink={ink}
               keyline={keyline}
-              selection="radio"
               selected={brush === selected}
               onPress={() => {
                 if (!disabled) onPick(brush);
@@ -125,7 +124,6 @@ export function RsdStrokeWidthMenu({
               label={`${erasing ? 'Eraser size' : 'Size'} ${index + 1}`}
               ink={ink}
               keyline={keyline}
-              selection="radio"
               selected={width === selected}
               onPress={() => {
                 if (!disabled) onPick(width);

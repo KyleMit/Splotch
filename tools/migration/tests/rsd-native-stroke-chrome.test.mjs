@@ -182,14 +182,13 @@ it("blooms only the chosen paint on shipping's main and trail clocks", async () 
   await mountToolbar(toolbarScreen());
   const timing = vi.spyOn(Animated, 'timing');
   timing.mockClear();
-  const paint = host.querySelectorAll(
-    '[role="radiogroup"][aria-label="Paint colors"] [role="radio"]'
-  )[1];
+  const paint = host.querySelectorAll('[data-testid="rsd-palette-paints"] button')[1];
   await act(async () => paint.click());
   expect(
     records.props.findLast((props) => props.accessibilityLabel === paint.getAttribute('aria-label'))
       .accessibilityState.checked
-  ).toBe(true);
+  ).toBeUndefined();
+  expect(caller.sound.settings.activeSwatch).toBe(paint.getAttribute('aria-label'));
   const clocks = () =>
     timing.mock.calls
       .map(([, config]) => config)

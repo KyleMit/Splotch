@@ -26,6 +26,7 @@ export function RsdPressable({
   children,
   type: _formType,
   role = 'button',
+  'aria-pressed': pressed,
   onClick,
   ...props
 }: ComponentProps<typeof html.button>) {
@@ -40,7 +41,17 @@ export function RsdPressable({
       {({ animated, onPointerDown, onPointerUp, onPointerCancel, ...resolved }) => {
         const Host = animated ? AnimatedPressable : Pressable;
         return (
-          <Host {...resolved} onPressIn={onPointerDown} onPressOut={onPointerUp ?? onPointerCancel}>
+          <Host
+            {...resolved}
+            // The released RSD renderer omits aria-pressed; native buttons expose it as selected.
+            accessibilityState={
+              typeof pressed === 'boolean'
+                ? { ...resolved.accessibilityState, selected: pressed }
+                : resolved.accessibilityState
+            }
+            onPressIn={onPointerDown}
+            onPressOut={onPointerUp ?? onPointerCancel}
+          >
             {children}
           </Host>
         );

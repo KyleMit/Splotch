@@ -177,6 +177,26 @@ it('plays nothing while Volume moves with Sound off', async () => {
   expect(loop.start).toHaveBeenCalledOnce();
 });
 
+it('previews the drawer during a Button Size drag without changing its chosen expanded state', async () => {
+  storedSettings();
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Accessibility');
+  const toggle = () => host.querySelector('[aria-label="Expand controls"]');
+  expect(toggle()).not.toBeNull();
+  await grab('Button Size');
+  expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]').length).toBeGreaterThan(0);
+  expect(toggle()).not.toBeNull();
+  expect(host.querySelector('[aria-label="Collapse controls"]')).toBeNull();
+  expect(
+    records.props.findLast((props) => props.accessibilityLabel === 'Expand controls')
+      .accessibilityState.expanded
+  ).toBe(false);
+  await letGo('Button Size');
+  expect(host.querySelectorAll('[data-testid="rsd-drawer-tool"]')).toHaveLength(0);
+  expect(toggle()).not.toBeNull();
+});
+
 it('clamps Button Size to the live panel ceiling without rewriting a larger saved choice', async () => {
   const settings = storedSettings({ buttonScale: 130 });
   records.dimensions = { width: 320, height: 440, scale: 3, fontScale: 1 };
