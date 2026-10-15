@@ -3,16 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { caller, host, mount } from './rsd-native-selection-host.mjs';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { ERROR_SCREEN_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
-import { decodeDrawingDraft } from '../../../experiments/native-architecture/src/product/drawingDraft.ts';
 import { ERROR_LOG_PREFIX } from '../../../web/src/lib/errorLog.ts';
 
 // Shipping's root render boundary shows the Error Screen for a render error and its Start over
 // renders the page again, and the drawing engine keeps its picture across that. The canonical
 // root's boundary sits under the drawing session to the same end: Start over brings the screen
 // back on the session's own history, Undo included, rather than a fresh launch. Negative controls:
-// the boundary above DrawingSessionProvider comes back on a new session, which recovers the
-// stored picture without its Undo; an Error Screen that keeps its tab title past Start over fails
-// the title check.
+// the boundary above DrawingSessionProvider comes back on an empty session; an Error Screen that
+// keeps its tab title past Start over fails the title check.
 vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
   ShippingFontGate: ({ children }) => children,
 }));
@@ -45,7 +43,6 @@ vi.mock(
 
 const RENDER_FAULT = new Error('A drawing screen render failed.');
 const STROKES_BEFORE_FAULT = 2;
-let drafts;
 let errors;
 
 beforeEach(() => {
@@ -54,13 +51,6 @@ beforeEach(() => {
   caller.settingsStorage = {
     read: vi.fn(async () => '{"version":1,"soundEnabled":false}'),
     write: vi.fn(async () => {}),
-  };
-  drafts = [];
-  caller.draftStorage = {
-    read: vi.fn(async () => drafts.at(-1) ?? null),
-    write: vi.fn(async (draft) => {
-      drafts.push(draft);
-    }),
   };
   errors = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -112,7 +102,6 @@ it('shows the Error Screen for a render error and brings back the session it hel
   expect(paper()).not.toBeNull();
   expect(caller.liveScreen.history).toBe(held);
   expect(caller.liveScreen.history.undo).toHaveLength(STROKES_BEFORE_FAULT + 1);
-  expect(decodeDrawingDraft(drafts.at(-1)).strokes).toHaveLength(STROKES_BEFORE_FAULT + 1);
 
   await act(async () => caller.liveScreen.undo());
   expect(caller.liveScreen.history.drawing.strokes).toHaveLength(STROKES_BEFORE_FAULT);

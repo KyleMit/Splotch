@@ -1,3 +1,4 @@
+import { MAX_UNDO_DEPTH } from '../../../../web/src/lib/drawing/undoHistory';
 import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
 import { isPageId, type PageId } from './pages';
 import {
@@ -33,9 +34,6 @@ import {
   type StoredStrokeWidthPx,
 } from './storedStrokeWidth';
 
-const MAX_STROKES = 1000;
-export const MAX_POINTS = 100_000;
-export const DRAWING_FULL_MESSAGE = 'This picture is full. Save it, then start a new picture.';
 const MIN_SAMPLE_DISTANCE = 1;
 export type Point = Readonly<{ x: number; y: number }>;
 type BrushStyle =
@@ -53,9 +51,6 @@ export type History = Readonly<{
   drawing: Drawing;
   undo: readonly Drawing[];
 }>;
-
-const HISTORY_LIMIT = 50;
-const HISTORY_POINT_BUDGET = 200_000;
 
 export function emptyDrawing(
   rainbow = INITIAL_RAINBOW,
@@ -89,26 +84,8 @@ export function createHistory(drawing: Drawing = emptyDrawing()): History {
   return { drawing, undo: [] };
 }
 
-function pointCount(drawing: Drawing): number {
-  return drawing.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
-}
-
 export function commitDrawing(history: History, drawing: Drawing): History {
-  let undo = [...history.undo, history.drawing].slice(-HISTORY_LIMIT);
-  while (
-    undo.length > 1 &&
-    undo.reduce((sum, item) => sum + pointCount(item), 0) > HISTORY_POINT_BUDGET
-  ) {
-    undo = undo.slice(1);
-  }
-  return { drawing, undo };
-}
-
-export function drawingCapacity(drawing: Drawing): { strokes: number; points: number } {
-  return {
-    strokes: MAX_STROKES - drawing.strokes.length,
-    points: MAX_POINTS - pointCount(drawing),
-  };
+  return { drawing, undo: [...history.undo, history.drawing].slice(-MAX_UNDO_DEPTH) };
 }
 
 export function addStrokes(
@@ -118,10 +95,6 @@ export function addStrokes(
 ): History {
   const additions = strokes.filter((stroke) => stroke.points.length > 0);
   if (additions.length === 0) return history;
-  const capacity = drawingCapacity(history.drawing);
-  const points = additions.reduce((sum, stroke) => sum + stroke.points.length, 0);
-  if (additions.length > capacity.strokes || points > capacity.points)
-    throw new Error(DRAWING_FULL_MESSAGE);
   const drawing = history.drawing;
   if (drawing.version === 5) {
     if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
@@ -152,8 +125,17 @@ export function addStroke(history: History, stroke: Stroke, paper?: PaperReferen
 }
 
 export function undoDrawing(history: History): History {
-  const drawing = history.undo.at(-1);
-  return drawing ? { drawing, undo: history.undo.slice(0, -1) } : history;
+  const previous = history.undo.at(-1);
+  if (!previous) return history;
+  const current = history.drawing;
+  const restoresMagicPage =
+    previous.strokes === current.strokes &&
+    current.strokes.some((stroke) => stroke.brush === 'magic');
+  const drawing =
+    restoresMagicPage || previous.pageId === current.pageId
+      ? previous
+      : { ...previous, pageId: current.pageId };
+  return { drawing, undo: history.undo.slice(0, -1) };
 }
 
 export function clearDrawing(history: History, visuallyEmpty: boolean): History {
@@ -165,9 +147,11 @@ export function clearDrawing(history: History, visuallyEmpty: boolean): History 
 }
 
 export function changePage(history: History, pageId: PageId): History {
-  return pageId === history.drawing.pageId
-    ? history
-    : commitDrawing(history, { ...history.drawing, pageId });
+  if (pageId === history.drawing.pageId) return history;
+  const drawing = { ...history.drawing, pageId };
+  return drawing.strokes.some((stroke) => stroke.brush === 'magic')
+    ? commitDrawing(history, drawing)
+    : { ...history, drawing };
 }
 
 export function paperPoint(x: number, y: number, width: number, height: number): Point {
@@ -193,8 +177,6 @@ export function appendPoint(
     Math.hypot(point.x - last.x, point.y - last.y) < MIN_SAMPLE_DISTANCE
   )
     return points;
-  if (points.length >= MAX_POINTS)
-    throw new Error('This stroke is too long. Lift your finger to finish it.');
   return [...points, point];
 }
 
@@ -325,7 +307,7 @@ function readPoint(point: unknown, size: PaperSize): Point {
 }
 
 export function parseDrawing(value: unknown): Drawing {
-  if (!record(value) || !Array.isArray(value.strokes) || value.strokes.length > MAX_STROKES)
+  if (!record(value) || !Array.isArray(value.strokes))
     throw new Error('This saved picture is not a supported drawing.');
   const format = savedFormat(value);
   const pageId = format === 'legacy' || format === 'brush' ? 'blank' : value.pageId;
@@ -334,7 +316,6 @@ export function parseDrawing(value: unknown): Drawing {
     format === 'legacy' || format === 'page' ? INITIAL_RAINBOW : readRainbow(value.rainbow);
   const paper = format === 'paper' ? readDrawingPaper(value.paper) : LEGACY_PAPER;
   const size = paperSize(paper);
-  let total = 0;
   const strokes = value.strokes.map((item: unknown): Stroke => {
     if (!record(item) || !Array.isArray(item.points) || item.points.length === 0)
       throw new Error('This saved picture contains an invalid stroke.');
@@ -357,8 +338,6 @@ export function parseDrawing(value: unknown): Drawing {
       throw new Error('This saved picture contains an invalid stroke width.');
     if (!isStoredStrokeWidth(style.brush, actualWidth))
       throw new Error('This saved picture contains an invalid stroke width.');
-    total += item.points.length;
-    if (total > MAX_POINTS) throw new Error('This saved picture is too large.');
     return {
       ...style,
       width: actualWidth,

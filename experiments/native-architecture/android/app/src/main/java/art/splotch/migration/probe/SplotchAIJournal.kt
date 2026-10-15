@@ -18,8 +18,6 @@ class SplotchAIJournal(private val context: Context) {
   private val maxModel = 8 * 1024 * 1024
   private val currentOriginalVersions = setOf(5L, 7L)
   private val importedOriginalVersions = setOf(1L, 2L, 3L, 4L, 5L, 7L)
-  private val maxDrawingContacts = 1000
-  private val maxDrawingSamples = 100000
   private val drawingRainbowCount = 10L
   private val drawingPaperWidth = 1024.0
   private val drawingPaperHeight = 768.0
@@ -369,13 +367,10 @@ class SplotchAIJournal(private val context: Context) {
     if (value.has("pageId")) check(value.get("pageId") is String && value.getString("pageId").isNotEmpty())
     if (value.has("rainbow")) check(integer(value, "rainbow", 0) < drawingRainbowCount)
     val strokes = value.getJSONArray("strokes")
-    check(strokes.length() <= maxDrawingContacts)
-    var points = 0
     for (index in 0 until strokes.length()) {
       val stroke = strokes.getJSONObject(index)
       val samples = stroke.getJSONArray("points")
-      points += samples.length()
-      check(samples.length() > 0 && points <= maxDrawingSamples)
+      check(samples.length() > 0)
       for (entry in 0 until samples.length()) samples.getJSONObject(entry)
     }
     val count = strokes.length()

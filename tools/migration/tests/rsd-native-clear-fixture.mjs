@@ -38,6 +38,7 @@ export function clearScreen({ drawing = inkedDrawing(), ...overrides } = {}) {
     brushControl: { kind: 'none' },
     availableBrushes: ['pen'],
     history: { undo: [], drawing },
+    inkVisible: drawing.strokes.length > 0,
     recovery: { failed: false },
     pictures: null,
     pagePickerOpen: false,

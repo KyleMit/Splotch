@@ -1,29 +1,18 @@
 import { drawingPaper, type AdoptedPaper, type PaperReference } from './paperSpace';
 import type { PaintColor } from './palette';
-import {
-  appendPoint,
-  strokeStyle,
-  drawingCapacity,
-  DRAWING_FULL_MESSAGE,
-  type Drawing,
-  type Point,
-  type Stroke,
-} from './model';
+import { appendPoint, strokeStyle, type Drawing, type Point, type Stroke } from './model';
 import type { Brush } from './brushes';
 import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
 
 export function createContactCohort() {
   const active = new Map<string, number>();
   let strokes: readonly Stroke[] = [];
-  let capacity = { strokes: 0, points: 0 };
-  let acceptedPoints = 0;
   let paper: PaperReference | null = null;
 
   function drain(): readonly Stroke[] | null {
     if (active.size > 0 || strokes.length === 0) return null;
     const completed = strokes;
     strokes = [];
-    acceptedPoints = 0;
     return completed;
   }
 
@@ -39,13 +28,9 @@ export function createContactCohort() {
     ) {
       if (active.has(identifier)) return;
       if (active.size === 0) {
-        capacity = drawingCapacity(drawing);
         const reference = drawingPaper(drawing);
         paper = reference.kind === 'unadopted' ? (adoption?.() ?? null) : reference;
         if (!paper) throw new Error('The drawing paper is not ready.');
-      }
-      if (strokes.length >= capacity.strokes || acceptedPoints >= capacity.points) {
-        throw new Error(DRAWING_FULL_MESSAGE);
       }
       const reserved = strokes.findLast((stroke) => stroke.brush === 'crayon');
       const style = strokeStyle(
@@ -56,7 +41,6 @@ export function createContactCohort() {
       );
       active.set(identifier, strokes.length);
       strokes = [...strokes, { ...style, points: [point] }];
-      acceptedPoints += 1;
     },
     sample(identifier: string, point: Point, endpoint = false) {
       const index = active.get(identifier);
@@ -64,9 +48,7 @@ export function createContactCohort() {
       const stroke = strokes[index];
       const points = appendPoint(stroke.points, point, endpoint);
       const added = points.length - stroke.points.length;
-      if (acceptedPoints + added > capacity.points) throw new Error(DRAWING_FULL_MESSAGE);
       if (added === 0) return;
-      acceptedPoints += added;
       strokes = strokes.map((item, position) =>
         position === index ? { ...stroke, points } : item
       );

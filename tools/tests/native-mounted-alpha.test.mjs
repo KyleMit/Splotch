@@ -50,10 +50,6 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
     write: vi.fn(),
   },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
-  drawingDraftStorage: { read: async () => null, write: async () => {} },
-  protectedDraftPageIds: async () => [],
-}));
 vi.mock('react-native', () => {
   const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));

@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 import {
   sdk,
   owner,
+  historyOwner,
   root,
   touch,
   event,
@@ -12,28 +13,29 @@ import {
   Consumer,
 } from './native-contacts-mounted-harness.mjs';
 import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
-import { encodeDrawingDraft } from '../../experiments/native-architecture/src/product/drawingDraft.ts';
+import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { adoptedDrawing } from './native-paper-fixtures.mjs';
 
 // The real drawing surface and screen owner under React StrictMode, which runs every effect's
 // cleanup and setup once more as they mount, as development builds do. The paper's responder,
-// frame loop and sound must come back whole: the stored draft restored once, a stroke drawn,
-// sounded and taken back as on the plain root. rsd-native-strict-root.test.mjs holds the canonical
+// frame loop and sound must come back whole: a stroke drawn, sounded and taken back on the same
+// session history as on the plain root. rsd-native-strict-root.test.mjs holds the canonical
 // root's services the same way.
 const FRAME_MS = 16;
 const MOVES = 4;
 
 async function launch(strict) {
-  sdk.draft = encodeDrawingDraft({
+  const drawing = {
     ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }),
     strokes: [{ brush: 'pen', width: 8, color: 'Purple', points: [{ x: 1, y: 1 }] }],
-  });
+  };
   sdk.soundStart.mockClear();
   sdk.soundStop.mockClear();
   const session = createElement(DrawingSessionProvider, null, createElement(Consumer));
   await act(async () => root.render(strict ? createElement(StrictMode, null, session) : session));
   await settle();
-  sdk.draft = null;
+  await act(async () => historyOwner.setHistory(createHistory(drawing)));
+  await settle();
   const restored = {
     strokes: owner.history.drawing.strokes.length,
     undo: owner.history.undo.length,

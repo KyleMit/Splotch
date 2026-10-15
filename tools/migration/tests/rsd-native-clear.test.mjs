@@ -495,6 +495,7 @@ it('flies the departing page into the docked tab from the paper area it sits in'
   await layout('rsd-canvas-column', { x: 0, y: 68, width: 402, height: 806 });
   await layout('rsd-canvas-area', { x: 0, y: 0, ...area });
   await layout('rsd-clear-underlay', { x: 0, y: 0, ...area });
+  const frame = fittedPaper(area, drawingPaper(inkedDrawing()));
   await press();
   await drag(offset(radius() / 2));
   expect(byTestID('rsd-clear-wash')).toMatchObject({ top: -68 });
@@ -505,7 +506,7 @@ it('flies the departing page into the docked tab from the paper area it sits in'
   // The tab's centre sits 20px in from the screen edge and 120px down: 52px into the paper area
   // below the 68px palette bar.
   const origin = clearSheetOrigin({ x: 402 - 20, y: 120 - 68 }, area);
-  const frame = fittedPaper(area, drawingPaper(inkedDrawing()));
+  expect(byTestID('rsd-clear-sheet')).toMatchObject(frame);
   expect(byTestID('rsd-clear-sheet').transformOrigin).toBe(
     `${origin.x - frame.left}px ${origin.y - frame.top}px`
   );
