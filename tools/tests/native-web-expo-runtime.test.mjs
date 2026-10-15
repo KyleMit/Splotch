@@ -51,8 +51,10 @@ describe('the web export leaves Expo’s native-module runtime out', () => {
     const [, path] = /from '(expo\/src\/[^']+)'/.exec(
       readFileSync(join(SRC, WEB_LAUNCHER), 'utf8')
     );
+    // The index's own relative specifier for the module the web launcher imports by package path.
+    const fromIndex = path.replace('expo/src/', './');
     expect(readFileSync(join(EXPO, 'Expo.ts'), 'utf8')).toContain(
-      `export { default as registerRootComponent } from './${path.replace('expo/src/', '')}';`
+      `export { default as registerRootComponent } from '${fromIndex}';`
     );
   });
 
