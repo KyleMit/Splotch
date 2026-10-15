@@ -7,7 +7,7 @@ const services = vi.hoisted(() => ({
   registerDeferredServiceWorker: vi.fn(() => Promise.resolve(true)),
   recordWebInstallRepromptSession: vi.fn(),
 }));
-vi.mock('$lib/pwa/updates', () => ({ pwaUpdates: services }));
+vi.mock('$lib/pwa/updates.svelte', () => ({ pwaUpdates: services }));
 vi.mock('./webOnlyServices', () => services);
 
 let stop = () => {};

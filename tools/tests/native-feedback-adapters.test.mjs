@@ -59,6 +59,8 @@ import {
 } from '../../experiments/native-architecture/src/feedback/feedbackPolicy.ts';
 import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
 import { sendFeedback } from '../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
+import { describeDeviceInfo } from '../../experiments/native-architecture/src/feedback/deviceReport.ts';
+import { describeDeviceInfo as shippingDeviceRows } from '../../web/src/lib/platform/deviceReport.ts';
 const body = { kind: 'bug', message: 'Actual adapter fixture', hp: '' };
 beforeEach(() => {
   host.files.clear();
@@ -129,7 +131,7 @@ describe('actual native and web feedback adapters', () => {
     expect(response.body.getReader).toBeTypeOf('function');
   });
   it('collects only the opted-in diagnostic vocabulary without installation or hardware identifiers', () => {
-    expect(feedbackDevice()).toEqual({
+    expect(feedbackDevice(true)).toEqual({
       app: FEEDBACK_APP_VERSION,
       platform: 'iOS',
       os: 'ios 18.7',
@@ -139,11 +141,19 @@ describe('actual native and web feedback adapters', () => {
       screen: '400 × 800',
       pixelRatio: '3',
       display: 'Native app',
+      online: 'Yes',
     });
+  });
+  it("includes shipping's current Online row in a native report snapshot", () => {
+    for (const online of [true, false]) {
+      expect(
+        describeDeviceInfo(feedbackDevice(online)).filter((row) => row.label === 'Online')
+      ).toEqual(shippingDeviceRows({ online: online ? 'Yes' : 'No' }));
+    }
   });
   it('uses Android release, manufacturer and model rather than the SDK level', () => {
     host.platform.OS = 'android';
-    expect(feedbackDevice()).toMatchObject({
+    expect(feedbackDevice(true)).toMatchObject({
       platform: 'Android',
       os: 'android 14',
       device: 'samsung SM-G990U',
@@ -160,7 +170,7 @@ describe('actual native and web feedback adapters', () => {
     vi.stubGlobal('innerHeight', 750);
     vi.stubGlobal('devicePixelRatio', 3);
     vi.stubGlobal('matchMedia', () => ({ matches: false }));
-    expect(webDevice()).toEqual({
+    expect(webDevice(false)).toEqual({
       app: FEEDBACK_APP_VERSION,
       platform: 'Web',
       os: 'Android 14',

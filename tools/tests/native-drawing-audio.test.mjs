@@ -3,7 +3,7 @@ import {
   AUDIO_LOAD_TIMEOUT_MS,
   BASE_SCRATCH_GAIN,
   createDrawingAudio,
-  FULL_VOLUME_PAPER_UNITS_PER_MS,
+  FULL_VOLUME_BACKING_PX_PER_MS,
 } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
 
 function pending() {
@@ -25,6 +25,10 @@ function fixture() {
   return { ready, loop, load, failure, recovered, audio };
 }
 const first = { x: 10, y: 20 };
+import {
+  calculateStrokeSpeed,
+  STROKE_SPEED_WINDOW_MS,
+} from '../../web/src/lib/drawing/strokeMath.ts';
 async function ready(f) {
   f.ready.resolve(f.loop);
   await Promise.resolve();
@@ -32,6 +36,36 @@ async function ready(f) {
 afterEach(() => vi.useRealTimers());
 
 describe('drawing audio gesture and resource ownership', () => {
+  it('preloads an enabled idle loop before the first gesture without playing it', async () => {
+    const f = fixture();
+    f.audio.prepare();
+    expect(f.load).not.toHaveBeenCalled();
+    f.audio.setEnabled(true);
+    f.audio.prepare();
+    f.audio.prepare();
+    expect(f.load).toHaveBeenCalledOnce();
+    await ready(f);
+    expect(f.loop.start).not.toHaveBeenCalled();
+    f.audio.begin(first, 100);
+    expect(f.loop.start).toHaveBeenCalledOnce();
+    expect(f.load).toHaveBeenCalledOnce();
+    f.audio.dispose();
+  });
+  it('retries a silent idle preload failure on the first actual gesture', async () => {
+    const f = fixture();
+    f.audio.setEnabled(true);
+    f.audio.prepare();
+    f.ready.reject(new Error('bad asset'));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(f.failure).not.toHaveBeenCalled();
+    f.load.mockResolvedValueOnce(f.loop);
+    f.audio.begin(first, 100);
+    await Promise.resolve();
+    expect(f.load).toHaveBeenCalledTimes(2);
+    expect(f.loop.start).toHaveBeenCalledOnce();
+    f.audio.dispose();
+  });
   it('updates an active loop immediately and retains the volume for the next gesture', async () => {
     const f = fixture();
     f.audio.setEnabled(true);
@@ -93,12 +127,12 @@ describe('drawing audio gesture and resource ownership', () => {
     f.audio.begin(first, 200);
     expect(f.load).not.toHaveBeenCalled();
   });
-  it('maps normalized paper movement to its bounded scratch gain and stops on lift', async () => {
+  it('maps backing-pixel movement to its bounded scratch gain and stops on lift', async () => {
     const f = fixture();
     f.audio.setEnabled(true);
     f.audio.begin(first, 100);
     await ready(f);
-    f.audio.sample({ x: 10 + FULL_VOLUME_PAPER_UNITS_PER_MS * 100, y: 20 }, 200);
+    f.audio.sample({ x: 10 + FULL_VOLUME_BACKING_PX_PER_MS * 100, y: 20 }, 200);
     expect(f.loop.start).toHaveBeenCalledOnce();
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(BASE_SCRATCH_GAIN);
     f.audio.end();
@@ -112,7 +146,7 @@ describe('drawing audio gesture and resource ownership', () => {
       f.audio.setEnabled(true);
       f.audio.begin(first, 100);
       await ready(f);
-      f.audio.sample({ x: first.x + FULL_VOLUME_PAPER_UNITS_PER_MS / 2, y: first.y }, 100 + delta);
+      f.audio.sample({ x: first.x + FULL_VOLUME_BACKING_PX_PER_MS / 2, y: first.y }, 100 + delta);
       expect(f.loop.setVolume.mock.calls.at(-1)[0]).toBeCloseTo(BASE_SCRATCH_GAIN / 2);
       f.audio.sample({ x: first.x + 100, y: first.y }, 100 + delta);
       expect(f.loop.setVolume).toHaveBeenLastCalledWith(BASE_SCRATCH_GAIN);
@@ -166,7 +200,7 @@ describe('drawing audio gesture and resource ownership', () => {
     expect(f.loop.start).toHaveBeenCalledOnce();
     f.audio.dispose();
   });
-  it('makes a stationary held finger quiet without relying on more touch events', async () => {
+  it('holds the last movement gain until lift, like shipping', async () => {
     vi.useFakeTimers();
     const f = fixture();
     f.audio.setEnabled(true);
@@ -174,7 +208,9 @@ describe('drawing audio gesture and resource ownership', () => {
     await ready(f);
     f.audio.sample({ x: 400, y: 20 }, 200);
     await vi.runOnlyPendingTimersAsync();
-    expect(f.loop.setVolume).toHaveBeenLastCalledWith(0);
+    expect(f.loop.setVolume).toHaveBeenLastCalledWith(BASE_SCRATCH_GAIN);
+    f.audio.end();
+    expect(f.loop.stop).toHaveBeenCalledOnce();
     f.audio.dispose();
   });
   it('reports a failed decode once and retries on the next real gesture', async () => {
@@ -220,4 +256,27 @@ describe('drawing audio gesture and resource ownership', () => {
     expect(f.loop.dispose).toHaveBeenCalledOnce();
     expect(f.failure).toHaveBeenCalledOnce();
   });
+});
+
+it("uses shipping's sliding speed window across uneven movement events", async () => {
+  const f = fixture();
+  f.audio.setEnabled(true);
+  f.audio.begin(first, 100);
+  await ready(f);
+  const samples = [{ t: 100, distance: 0 }];
+  let x = first.x;
+  for (const [timestamp, distance] of [
+    [120, 4],
+    [140, 1],
+    [190, 20],
+    [250, 2],
+  ]) {
+    x += distance;
+    const speed = calculateStrokeSpeed(samples, { t: timestamp, distance }, STROKE_SPEED_WINDOW_MS);
+    f.audio.sample({ x, y: first.y }, timestamp);
+    expect(f.loop.setVolume.mock.calls.at(-1)[0]).toBeCloseTo(
+      BASE_SCRATCH_GAIN * Math.min(speed / FULL_VOLUME_BACKING_PX_PER_MS, 1)
+    );
+  }
+  f.audio.dispose();
 });

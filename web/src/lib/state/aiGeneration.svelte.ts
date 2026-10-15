@@ -1,5 +1,5 @@
 import type { StyleName } from '$lib/ai/styles';
-import type { SaveResult } from '$lib/saveNaming';
+import type { AiAutoSave } from '$lib/ai/autoSaveCopy';
 import { demandOverlay } from './overlayDemand';
 import { readonlyValue, type DeepReadonly } from './readonlyView';
 
@@ -21,8 +21,6 @@ export interface AiFailureDetails {
 type AiFailure =
   | { errorKind: 'safety'; reportToken: string | null }
   | { errorKind: 'retry' | 'generic'; details: AiFailureDetails };
-
-export type AiAutoSave = { status: 'saving' } | SaveResult;
 
 // Where a run is. One value, so a result and an error cannot both be on
 // screen, a picture cannot exist while generating, and every consumer branches

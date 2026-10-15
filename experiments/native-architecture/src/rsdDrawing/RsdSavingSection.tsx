@@ -2,11 +2,10 @@ import { SAVE_ON_DELETE_HELP, SAVE_ON_DELETE_LABEL } from '../settings/saveOnDel
 import { CAMERA_BUTTON_HELP, CAMERA_BUTTON_LABEL } from '../settings/savingSection';
 import { RsdSettingCard, RsdSettingGroup, RsdSettingSectionBody } from './RsdSettingCard';
 import { RsdToggleRow } from './RsdToggleRow';
+import { SaveFolderSetting } from '../platform/SaveFolderSetting';
 
 // The shipping Settings › Saving section (settings/SavingSection.svelte): the Camera button switch,
-// the deliberate save, then Auto-Save on Delete. Shipping's "Save drawings to" folder row needs the
-// File System Access API and appears only on desktop Chromium; the app saves to the photo library
-// on a device and downloads on the web, so it has no folder to choose.
+// the deliberate save, then Auto-Save on Delete and the browser's optional destination folder.
 export function RsdSavingSection({
   screenshotEnabled,
   saveOnDeleteEnabled,
@@ -45,6 +44,7 @@ export function RsdSavingSection({
             onToggle={onSaveOnDeleteChange}
           />
         </RsdSettingCard>
+        <SaveFolderSetting />
       </RsdSettingGroup>
     </RsdSettingSectionBody>
   );

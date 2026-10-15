@@ -3,7 +3,7 @@
 // silent activation and the hidden-edge reload — in updates.activation.test.ts.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createPWAUpdates } from './updates';
+import { createPWAUpdates } from './updates.svelte';
 import {
   CURRENT_VERSION,
   NEWER_VERSION,

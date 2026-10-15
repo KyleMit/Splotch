@@ -4,7 +4,7 @@ import type { AudioMode } from 'expo-audio';
 // never fight over the session category.
 export const PLAYBACK_AUDIO_MODE = {
   allowsRecording: false,
-  playsInSilentMode: true,
+  playsInSilentMode: false,
   interruptionMode: 'mixWithOthers',
   shouldPlayInBackground: false,
   shouldRouteThroughEarpiece: false,

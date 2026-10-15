@@ -4,7 +4,7 @@
 // use it — the field order and labels live here once so the parent-facing
 // preview and the Markdown written into the GitHub issue can never drift.
 
-import { truncateCodeUnits } from '$lib/truncate';
+import { truncateCodeUnits } from '../truncate';
 
 // Every field a report can carry, with its human label, in row order. The table
 // is the DeviceInfo type, so a collector can't fill a field that has no label.

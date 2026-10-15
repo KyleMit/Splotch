@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   BASE_SCRATCH_GAIN,
-  FULL_VOLUME_PAPER_UNITS_PER_MS,
+  FULL_VOLUME_BACKING_PX_PER_MS,
   GAIN_RAMP_S,
   STOP_DECLICK_S,
   TEARDOWN_SLACK_MS,
@@ -17,7 +17,7 @@ const root = join(import.meta.dirname, '../..');
 const shippingAudio = readFileSync(join(root, 'web/src/lib/audio/drawingSound.ts'), 'utf8');
 const mapping = {
   BASE_SCRATCH_GAIN,
-  FULL_VOLUME_SPEED: FULL_VOLUME_PAPER_UNITS_PER_MS,
+  FULL_VOLUME_SPEED: FULL_VOLUME_BACKING_PX_PER_MS,
   GAIN_RAMP_S,
   STOP_DECLICK_S,
   TEARDOWN_SLACK_MS,
@@ -46,7 +46,7 @@ const candidateAsset = readFileSync(
   join(root, 'experiments/native-architecture/src/audio/pencil-1.mp3')
 );
 describe('candidate-owned audio and Settings projections', () => {
-  it('pins reused gain and timing literals without claiming equivalent speed units', () => {
+  it('pins the shared backing-pixel speed gain and timing literals', () => {
     expect(() => assertScratchProjection(shippingAudio)).not.toThrow();
   });
   it('rejects a changed reused shipping gain literal', () => {

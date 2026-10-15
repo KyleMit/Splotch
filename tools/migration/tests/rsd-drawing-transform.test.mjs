@@ -84,13 +84,13 @@ it.each([
   ],
   [
     'src/ProbeApp.tsx',
-    "<RsdScreenBoundary>\n            {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}\n          </RsdScreenBoundary>",
+    "<RsdScreenBoundary>\n              {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}\n            </RsdScreenBoundary>",
     '<RsdDrawingScreen page={page} />',
     'Mounted screen boundary',
   ],
   [
     'src/ProbeApp.tsx',
-    "<ShippingFontGate>\n          <RsdScreenBoundary>\n            {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}\n          </RsdScreenBoundary>\n        </ShippingFontGate>",
+    "<ShippingFontGate>\n            <RsdScreenBoundary>\n              {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}\n            </RsdScreenBoundary>\n          </ShippingFontGate>",
     '<RsdDrawingScreen page={page} />',
     'Font-gated screen',
   ],
@@ -103,6 +103,12 @@ it.each([
   ['src/rsdDrawing/RsdEdgeControls.tsx', 'role="radiogroup"', 'role="group"', 'RSD radio group'],
   [
     'src/rsdDrawing/NativePaper.tsx',
+    "from 'react-native'",
+    "from 'foreign-native'",
+    'Native adapter import removed',
+  ],
+  [
+    'src/rsdDrawing/ModalShellContent.tsx',
     "from 'react-native'",
     "from 'foreign-native'",
     'Native adapter import removed',

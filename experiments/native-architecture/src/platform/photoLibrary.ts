@@ -1,41 +1,72 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import type { PictureSave, PictureSaveOutcome } from '../export/pictureSave';
 import { DRAWING_PICTURE, pictureFilename, type PictureFormat } from '../export/pictureFilename';
+import { createLazyExport } from '../lazyExport';
+
+const fileModules = createLazyExport(async () => {
+  const [files, legacy] = await Promise.all([
+    import('expo-file-system'),
+    import('expo-file-system/legacy'),
+  ]);
+  return { files, legacy };
+});
+const mediaModule = createLazyExport(() => import('expo-media-library'));
 
 const STAGING_DIRECTORY = 'splotch-photo-library-v1';
-// The shipping app's Android album, PhotoLibraryPlugin.java's ALBUM_NAME; Album.create files
-// the picture under Pictures/<name>/. tools/tests/native-photo-library.test.mjs holds them equal.
+// The shipping app's Android album, PhotoLibraryPlugin.java's ALBUM_NAME;
+// tools/tests/native-photo-library.test.mjs holds the native writers equal.
 export const ANDROID_ALBUM_NAME = 'Splotch';
-// Android 11. Below it expo-media-library writes through WRITE_EXTERNAL_STORAGE, which this
-// app's manifest removes, so the save could never land.
-const MEDIASTORE_WITHOUT_PERMISSION_API = 30;
+type AndroidPhotoLibrary = {
+  save(
+    uri: string,
+    displayName: string,
+    mime: PictureFormat['mime'],
+    album: string
+  ): Promise<unknown>;
+};
 
-// Asks only for add-only access: iOS shows its "add to Photos" prompt, and on Android a
-// write-only request with no storage permission in the manifest asks nothing, because
-// MediaStore inserts need none on API 30+. Asset.create, not the legacy createAssetAsync:
-// the legacy call demands WRITE_EXTERNAL_STORAGE below Android 13 and, under iOS add-only
-// access, rejects after saving because it reads the new asset back. Android files the picture
-// through Album.create, which inserts it under the album's relative path and finds the album
-// among the app's own MediaStore rows; on iOS that call needs full library access, so iOS
-// keeps the default camera roll save.
+function isAndroidPhotoLibrary(value: unknown): value is AndroidPhotoLibrary {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'save' in value &&
+    typeof value.save === 'function'
+  );
+}
+
+// Asset.create honors iOS add-only access; the legacy Expo call reads the saved asset back and
+// rejects after saving. Android's writer owns shipping's older-OS permission and fallback policy.
 async function save(base64: string, format: PictureFormat): Promise<PictureSaveOutcome> {
-  if (Platform.OS === 'android' && Number(Platform.Version) < MEDIASTORE_WITHOUT_PERMISSION_API)
-    return 'unavailable';
-  const MediaLibrary = await import('expo-media-library');
-  const permission = await MediaLibrary.requestPermissionsAsync(true);
-  if (!permission.granted) return 'denied';
-  const { Directory, File, Paths } = await import('expo-file-system');
-  const LegacyFiles = await import('expo-file-system/legacy');
+  const android = Platform.OS === 'android';
+  const native: unknown = NativeModules?.SplotchPhotoLibrary;
+  if (android && !isAndroidPhotoLibrary(native)) return 'failed';
+  const MediaLibrary = android ? null : await mediaModule.load();
+  if (MediaLibrary) {
+    const permission = await MediaLibrary.requestPermissionsAsync(true);
+    if (!permission.granted) return 'denied';
+  }
+  const {
+    files: { Directory, File, Paths },
+    legacy: LegacyFiles,
+  } = await fileModules.load();
   const owner = new Directory(Paths.cache, STAGING_DIRECTORY);
   owner.create({ intermediates: true, idempotent: true });
-  const staged = new File(owner, pictureFilename(new Date(), format));
+  const displayName = pictureFilename(new Date(), format);
+  const staged = new File(
+    owner,
+    `${Date.now()}-${Math.random().toString(36).slice(2)}-${displayName}`
+  );
   try {
     await LegacyFiles.writeAsStringAsync(staged.uri, base64, {
       encoding: LegacyFiles.EncodingType.Base64,
     });
-    if (Platform.OS === 'android')
-      await MediaLibrary.Album.create(ANDROID_ALBUM_NAME, [staged.uri]);
-    else await MediaLibrary.Asset.create(staged.uri);
+    if (isAndroidPhotoLibrary(native) && android) {
+      const outcome = await native.save(staged.uri, displayName, format.mime, ANDROID_ALBUM_NAME);
+      if (outcome === 'photos' || outcome === 'denied' || outcome === 'failed') return outcome;
+      throw new Error('The photo library returned an invalid outcome.');
+    }
+    if (!MediaLibrary) throw new Error('The photo library is unavailable.');
+    await MediaLibrary.Asset.create(staged.uri);
     return 'photos';
   } finally {
     try {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Platform, StatusBar, useWindowDimensions } from 'react-native';
+import { AppState, Platform, StatusBar, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
 import {
@@ -51,19 +51,24 @@ function shippingPlatform(): ShippingPlatform {
 // The status bar follows the band only where shipping's SystemBars call does: icons that read on a
 // painted cutout, and Android's landscape bar hidden for the long top edge.
 function BandStatusBar({ band }: { band: NotchBandState }) {
+  const style =
+    band.statusBarStyle === null
+      ? undefined
+      : band.statusBarStyle === 'DARK'
+        ? 'light-content'
+        : 'dark-content';
+  const hidden = band.statusBarHidden;
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      if (style !== undefined) StatusBar.setBarStyle(style);
+      if (hidden !== null) StatusBar.setHidden(hidden);
+    });
+    return () => subscription.remove();
+  }, [style, hidden]);
   if (band.statusBarStyle === null && band.statusBarHidden !== true) return null;
-  return (
-    <StatusBar
-      barStyle={
-        band.statusBarStyle === null
-          ? undefined
-          : band.statusBarStyle === 'DARK'
-            ? 'light-content'
-            : 'dark-content'
-      }
-      hidden={band.statusBarHidden === true}
-    />
-  );
+  return <StatusBar barStyle={style} hidden={hidden === true} />;
 }
 
 // The Notch Band: the drawing color (the paper's, while erasing) in the safe-area strip a display

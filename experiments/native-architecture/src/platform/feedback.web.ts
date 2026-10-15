@@ -18,7 +18,7 @@ export const feedbackTransport: FeedbackTransport = (body, signal) =>
     credentials: 'omit',
     redirect: 'error',
   });
-export function feedbackDevice(): DeviceInfo {
+export function feedbackDevice(online: boolean): DeviceInfo {
   return {
     app: FEEDBACK_APP_VERSION,
     platform: 'Web',
@@ -29,7 +29,7 @@ export function feedbackDevice(): DeviceInfo {
     screen: `${screen.width} × ${screen.height}`,
     pixelRatio: String(devicePixelRatio),
     display: matchMedia('(display-mode: standalone)').matches ? 'Installed (PWA)' : 'Browser tab',
-    online: navigator.onLine ? 'Yes' : 'No',
+    online: online ? 'Yes' : 'No',
   };
 }
 export const feedbackPolicyStorage: FeedbackPolicyStorage = {
