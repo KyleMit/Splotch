@@ -32,6 +32,7 @@ internal class SplotchLibraryDownloads(private val context: ReactApplicationCont
     val existing = manager.getWorkInfosForUniqueWork(WORK_TAG).get().firstOrNull { !it.state.isFinished }
     val joins = existing != null && previous != null && previous.optString("marker") == marker &&
       previous.optString("identity") == identity && previous.optBoolean("allowMetered") == allowMetered
+    val joinedAttemptCount = if (joins && existing?.state == WorkInfo.State.ENQUEUED) requireNotNull(existing).runAttemptCount else 0
     val workId: UUID
     if (joins) workId = requireNotNull(existing).id
     else {
@@ -61,7 +62,7 @@ internal class SplotchLibraryDownloads(private val context: ReactApplicationCont
       observer = Observer { info ->
         if (info == null || settled) return@Observer
         val finished = info.state.isFinished
-        val deferred = info.state == WorkInfo.State.ENQUEUED && info.runAttemptCount > 0
+        val deferred = info.state == WorkInfo.State.ENQUEUED && info.runAttemptCount > joinedAttemptCount
         if (!finished && !deferred) return@Observer
         settled = true
         live.removeObserver(observer)

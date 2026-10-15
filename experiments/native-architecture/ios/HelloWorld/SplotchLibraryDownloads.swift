@@ -54,6 +54,7 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
         self.pack = pack
         self.completions.append(completion)
         try self.persist()
+        try SplotchLibraryFiles.pruneSupersededStages(pack)
         self.startNextFile()
       } catch { self.fail(error) }
     }
@@ -68,6 +69,7 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
         let job = try JSONDecoder().decode(SplotchLibraryJob.self, from: Data(contentsOf: url))
         let pack = try SplotchLibraryFiles.parse(marker: job.marker, identity: job.identity)
         guard job.nextFileIndex >= 0, job.nextFileIndex <= pack.files.count else { throw SplotchLibraryError.invalidPack }
+        try SplotchLibraryFiles.pruneSupersededStages(pack)
         self.job = job
         self.pack = pack
         let session = job.allowMetered ? self.meteredSession : self.wifiSession

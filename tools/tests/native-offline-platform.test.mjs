@@ -420,3 +420,52 @@ it('pins native pack validation to the JavaScript catalog limits', async () => {
   expect(Number(android.match(/MAX_PACK_BYTES = (\d+)L/)[1])).toBe(maxPackBytes);
   expect(Number(ios.match(/maxPackBytes: Int64 = (\d+)/)[1])).toBe(maxPackBytes);
 });
+
+it('ignores an existing Android backoff while observing failure of a joined running attempt', async () => {
+  const source = await readFile(
+    new URL(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryDownloads.kt',
+      candidate
+    ),
+    'utf8'
+  );
+  const shipping = await readFile(
+    new URL(
+      '../../android/app/src/main/java/art/splotch/app/ColoringPacksPlugin.java',
+      import.meta.url
+    ),
+    'utf8'
+  );
+  expect(shipping).toContain('ExistingWorkPolicy.REPLACE');
+  expect(source).toContain(
+    'val joinedAttemptCount = if (joins && existing?.state == WorkInfo.State.ENQUEUED) requireNotNull(existing).runAttemptCount else 0'
+  );
+  expect(source).not.toContain('if (joins) requireNotNull(existing).runAttemptCount');
+  expect(source).toContain('info.runAttemptCount > joinedAttemptCount');
+  expect(source).toContain('if (!finished && !deferred) return@Observer');
+  expect(source).toContain('if (info.state == WorkInfo.State.SUCCEEDED) promise.resolve(true)');
+});
+
+it('prunes only superseded same-book iOS transfer stages and retains published Undo files', async () => {
+  const source = await readFile(
+    new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate),
+    'utf8'
+  );
+  const downloads = await readFile(
+    new URL('ios/HelloWorld/SplotchLibraryDownloads.swift', candidate),
+    'utf8'
+  );
+  const shipping = await readFile(
+    new URL('../../ios/App/App/ColoringPacksPlugin.swift', import.meta.url),
+    'utf8'
+  );
+  expect(shipping).toContain('try Self.removeUnlistedFiles(in: directory, book: book)');
+  expect(source).toContain('let staging = try stage(pack)');
+  expect(source).toContain('let transfers = staging.deletingLastPathComponent()');
+  expect(source).toContain('contentsOfDirectory(at: transfers, includingPropertiesForKeys: nil)');
+  expect(source).toContain(
+    'where sibling.lastPathComponent.hasPrefix(pack.id + "-") && sibling.lastPathComponent != staging.lastPathComponent'
+  );
+  expect(source).toContain('try FileManager.default.removeItem(at: sibling)');
+  expect(downloads.match(/try SplotchLibraryFiles.pruneSupersededStages\(pack\)/g)).toHaveLength(2);
+});

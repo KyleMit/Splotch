@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createLibraryPlatform as createWebLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
 import { createDeferredLibrary } from '../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
 import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import {
@@ -70,7 +72,7 @@ function deferredFixture() {
   const library = createDeferredLibrary(
     load,
     () => idle.promise,
-    async () => true
+    async () => 'resume'
   );
   return { controller, chunk, idle, load, library };
 }
@@ -85,7 +87,7 @@ describe('the offline library on web before its controller loads', () => {
       .mockReturnValueOnce(firstIdle.promise)
       .mockReturnValue(engagedIdle.promise);
     const load = vi.fn(async () => controller);
-    const library = createDeferredLibrary(load, idle, async () => false);
+    const library = createDeferredLibrary(load, idle, async () => 'defer');
     library.setFeatureEnabled(true);
     const initialized = library.initialize();
     firstIdle.resolve();
@@ -108,7 +110,7 @@ describe('the offline library on web before its controller loads', () => {
     const library = createDeferredLibrary(
       load,
       () => idle.promise,
-      async () => true
+      async () => 'resume'
     );
     const initialized = library.initialize();
     await flush();
@@ -117,6 +119,60 @@ describe('the offline library on web before its controller loads', () => {
     await initialized;
     expect(controller.calls).toContainEqual(['engage']);
     expect(controller.initialize).toHaveBeenCalledOnce();
+  });
+
+  it('hydrates a policy-only visit without admitting a first download', async () => {
+    const controller = recordingController();
+    const library = createDeferredLibrary(
+      async () => controller,
+      async () => {},
+      async () => 'hydrate'
+    );
+    await library.initialize();
+    expect(controller.calls).toEqual([['initialize']]);
+  });
+
+  it('keeps early Settings policy hydration separate from child engagement', async () => {
+    const controller = recordingController();
+    const readDisposition = vi.fn(async () => 'hydrate');
+    const library = createDeferredLibrary(
+      async () => controller,
+      async () => {},
+      readDisposition
+    );
+    await library.setPolicy(true, true);
+    await library.initialize();
+    expect(readDisposition).toHaveBeenCalledOnce();
+    expect(controller.calls).toEqual([['setPolicy', true, true], ['initialize']]);
+  });
+
+  it('retains explicit child engagement before deferred initialization', async () => {
+    const controller = recordingController();
+    const library = createDeferredLibrary(
+      async () => controller,
+      async () => {},
+      async () => 'defer'
+    );
+    library.engage();
+    await library.initialize();
+    await flush();
+    expect(controller.calls.filter(([name]) => name === 'engage')).toEqual([['engage']]);
+    expect(controller.initialize).toHaveBeenCalled();
+  });
+
+  it('retains child engagement after early Settings hydration and before initialization', async () => {
+    const controller = recordingController();
+    const library = createDeferredLibrary(
+      async () => controller,
+      async () => {},
+      async () => 'hydrate'
+    );
+    await library.setPolicy(true, true);
+    library.engage();
+    await library.initialize();
+    await flush();
+    expect(controller.calls.filter(([name]) => name === 'engage')).toEqual([['engage']]);
+    expect(controller.initialize).toHaveBeenCalled();
   });
 
   it('reports the controller’s loading snapshot and fetches nothing for settings alone', async () => {
@@ -220,7 +276,7 @@ describe('the offline library on web before its controller loads', () => {
     const library = createDeferredLibrary(
       load,
       async () => {},
-      async () => true
+      async () => 'resume'
     );
 
     library.retryStalled();
@@ -252,7 +308,7 @@ describe('the offline library on web before its controller loads', () => {
     const library = createDeferredLibrary(
       async () => createOfflineLibrary(platform, 'full'),
       () => idle.promise,
-      async () => true
+      async () => 'resume'
     );
 
     const initialized = library.initialize();
@@ -279,7 +335,7 @@ describe('the offline library on web before its controller loads', () => {
     const library = createDeferredLibrary(
       async () => createOfflineLibrary(memoryPlatform(read), 'full'),
       async () => {},
-      async () => true
+      async () => 'resume'
     );
     library.setFeatureEnabled(true);
 
@@ -336,4 +392,76 @@ it('holds native boot work until the drawing has painted and a native idle callb
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+describe('web startup network policy', () => {
+  let webPlatform, fetchMock;
+  beforeEach(() => {
+    webPlatform = createWebLibraryPlatform();
+    fetchMock = vi.fn(() => Promise.reject(new Error('Unexpected network request')));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('navigator', {
+      onLine: true,
+      connection: { type: 'wifi', saveData: false },
+      storage: { estimate: vi.fn(async () => ({ quota: 1_000_000_000, usage: 100 })) },
+    });
+  });
+  afterEach(() => {
+    webPlatform.dispose();
+    vi.unstubAllGlobals();
+  });
+  it.each([
+    undefined,
+    {},
+    { effectiveType: '4g' },
+    { type: 'wifi' },
+    { type: 'ethernet' },
+    { metered: true },
+  ])('allows ordinary web downloads for connection %j, as shipping does', async (connection) => {
+    navigator.connection = connection;
+    expect((await webPlatform.environment()).metered).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it.each([
+    { saveData: true },
+    { type: 'cellular' },
+    { effectiveType: '2g' },
+    { effectiveType: 'slow-2g' },
+  ])('holds automatic web downloads for connection %j, as shipping does', async (connection) => {
+    navigator.connection = connection;
+    expect((await webPlatform.environment()).metered).toBe(true);
+  });
+  it('pins the ordinary web network fallback and opt-out policy to shipping', () => {
+    const shipping = readFileSync(
+      new URL('../../web/src/lib/coloringPacks/manager.ts', import.meta.url),
+      'utf8'
+    );
+    expect(shipping).toContain('if (!network) return true;');
+    expect(shipping).toContain('settingsState.coloringPacksAllowMetered');
+    expect(
+      readFileSync(new URL('../../web/src/lib/boot/coloringPacks.ts', import.meta.url), 'utf8')
+    ).toContain('heldForEngagement = !hasPackStorage && !engaged;');
+    expect(shipping).toContain(
+      "if (network.saveData || network.type === 'cellular') return false;"
+    );
+    expect(shipping).toContain(
+      "network.effectiveType !== 'slow-2g' && network.effectiveType !== '2g'"
+    );
+  });
+
+  it('reports quota and connection uncertainty without requesting persistence', async () => {
+    const owner = webPlatform;
+    expect(await owner.environment()).toEqual({
+      online: true,
+      metered: false,
+      freeBytes: 999_999_900,
+    });
+    vi.stubGlobal('navigator', {
+      onLine: false,
+      connection: { saveData: true },
+      storage: { estimate: vi.fn(async () => ({})), persist: vi.fn() },
+    });
+    expect(await owner.environment()).toEqual({ online: false, metered: true, freeBytes: 0 });
+    expect(navigator.storage.persist).not.toHaveBeenCalled();
+  });
 });

@@ -6,6 +6,6 @@ export const offlineLibrary = createDeferredLibrary(
   afterDrawingPaint,
   () =>
     import('../platform/offlineLibraryStorage.web').then((module) =>
-      module.hasColoringPackStorage()
+      module.readLibraryStartupDisposition()
     )
 );

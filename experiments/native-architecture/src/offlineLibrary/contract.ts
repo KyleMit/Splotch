@@ -47,6 +47,8 @@ export function hasBackgroundTransfers(
 ): platform is LibraryBackgroundPlatform {
   return 'installPack' in platform;
 }
+export type LibraryStartupDisposition = 'defer' | 'hydrate' | 'resume';
+export const LIBRARY_POLICY_PATH = 'policy.json';
 export const LIBRARY_TEXT_LIMIT_BYTES = 128 * 1024;
 export const LIBRARY_STORAGE_RESERVE_BYTES = 8 * 1024 * 1024;
 export const encodeLibraryText = (text: string) => new TextEncoder().encode(text);

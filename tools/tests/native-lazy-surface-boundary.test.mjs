@@ -2,6 +2,7 @@
 import { act, createElement, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { STEP_NUMBER_SIZE_PX } from '../../experiments/native-architecture/src/rsdDrawing/stepNumberSize.ts';
 import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
 import { deferredLayer } from '../../experiments/native-architecture/src/rsdDrawing/clearSurfaces.web.ts';
 import {
@@ -51,7 +52,16 @@ vi.mock('../../web/src/lib/idle.ts', () => ({
 vi.mock('react-strict-dom', () => ({
   css: { create: (styles) => styles },
   html: Object.fromEntries(
-    ['div', 'span'].map((tag) => [tag, ({ style: _style, ...props }) => createElement(tag, props)])
+    ['div', 'span'].map((tag) => [
+      tag,
+      ({ style, ...props }) => {
+        const merged = Object.assign({}, ...[style].flat(3).filter(Boolean));
+        const layout = Object.fromEntries(
+          ['width', 'height', 'flexShrink'].map((key) => [key, merged[key]])
+        );
+        return createElement(tag, { ...props, style: layout });
+      },
+    ])
   ),
 }));
 vi.mock('../../experiments/native-architecture/src/rsdDrawing/controls.tsx', () => ({
@@ -305,4 +315,82 @@ it('plays the remaining first shutter cue when its real web component mounts fro
   clock.mockReturnValue(CAMERA_CAPTURE_MS + 1);
   await act(async () => root.render(render('remounted')));
   expect(timing).toHaveBeenCalledOnce();
+});
+
+async function webStepNumber(load) {
+  vi.resetModules();
+  vi.doMock(
+    '../../experiments/native-architecture/src/rsdDrawing/RsdStepNumberContent.tsx',
+    () => ({
+      RsdStepNumber: () => createElement('span', { 'data-loaded-badge': true }, '1'),
+    })
+  );
+  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+      ...actual,
+      createLazyExport: (importContent) =>
+        actual.createLazyExport(() => load().then(importContent)),
+    };
+  });
+  return (
+    await import('../../experiments/native-architecture/src/rsdDrawing/RsdStepNumber.web.tsx')
+  ).RsdStepNumber;
+}
+
+function stepRows(Badge) {
+  return createElement(
+    RsdSurfaceBoundary,
+    null,
+    createElement(
+      'section',
+      { 'data-step-instructions': true },
+      createElement('h2', null, 'Install as App'),
+      ...Object.keys(STEP_NUMBER_SIZE_PX).map((size) =>
+        createElement(
+          'div',
+          { key: size },
+          createElement(Badge, { number: 1, size, shape: 'disc' }),
+          createElement('span', null, 'Follow the prompts')
+        )
+      ),
+      createElement('button', { 'aria-label': 'Close instructions' }, 'Close')
+    )
+  );
+}
+
+it('reserves every shipping badge size during the shared first-use import', async () => {
+  let finish;
+  const pending = new Promise((resolve) => {
+    finish = resolve;
+  });
+  const load = vi.fn(() => pending);
+  const Badge = await webStepNumber(load);
+  await act(async () => root.render(stepRows(Badge)));
+  const boxes = [...host.querySelectorAll('[aria-hidden="true"]')];
+  expect(boxes).toHaveLength(Object.keys(STEP_NUMBER_SIZE_PX).length);
+  expect(boxes.map((box) => [box.style.width, box.style.height, box.style.flexShrink])).toEqual(
+    Object.values(STEP_NUMBER_SIZE_PX).map((size) => [`${size}px`, `${size}px`, '0'])
+  );
+  expect(load).toHaveBeenCalledOnce();
+  await act(async () => finish({ RsdStepNumber: () => null }));
+});
+
+it('keeps instructions and Close mounted after a badge failure, then retries on remount', async () => {
+  const load = vi.fn().mockRejectedValueOnce(CHUNK_FAILURE).mockResolvedValue(undefined);
+  const Badge = await webStepNumber(load);
+  await act(async () => root.render(stepRows(Badge)));
+  expect(host.querySelector('[data-step-instructions]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Close instructions"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Did not load"]')).toBeNull();
+  expect(errors).toHaveBeenCalledWith('The step number failed to load:', expect.any(Error));
+  await act(async () => root.render(null));
+  await act(async () => root.render(stepRows(Badge)));
+  expect(load).toHaveBeenCalledTimes(2);
+  expect(host.querySelectorAll('[data-loaded-badge]')).toHaveLength(
+    Object.keys(STEP_NUMBER_SIZE_PX).length
+  );
+  expect(host.querySelector('[aria-label="Close instructions"]')).not.toBeNull();
+  vi.doUnmock('../../experiments/native-architecture/src/rsdDrawing/RsdStepNumberContent.tsx');
+  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
 });

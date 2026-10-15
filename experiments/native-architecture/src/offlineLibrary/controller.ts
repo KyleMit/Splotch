@@ -9,6 +9,7 @@ import { isOfflinePageId } from './identity';
 import {
   LibraryFault,
   LIBRARY_TEXT_LIMIT_BYTES,
+  LIBRARY_POLICY_PATH,
   encodeLibraryText,
   decodeLibraryText,
   requireDownloadNetwork,
@@ -95,7 +96,7 @@ class OfflineLibraryController {
     try {
       await this.platform.environment();
       this.catalog ??= await import('./catalog');
-      const policy = await this.platform.read('policy.json', LIBRARY_TEXT_LIMIT_BYTES);
+      const policy = await this.platform.read(LIBRARY_POLICY_PATH, LIBRARY_TEXT_LIMIT_BYTES);
       if (policy) {
         const parsed: unknown = JSON.parse(decodeLibraryText(policy));
         if (
@@ -236,7 +237,7 @@ class OfflineLibraryController {
         'policy-pending.json',
         encodeLibraryText(JSON.stringify({ enabled, allowMetered }))
       );
-      await this.platform.move('policy-pending.json', 'policy.json');
+      await this.platform.move('policy-pending.json', LIBRARY_POLICY_PATH);
       this.publish({ enabled, allowMetered });
     });
     this.policyWrites = write.catch(() => undefined);

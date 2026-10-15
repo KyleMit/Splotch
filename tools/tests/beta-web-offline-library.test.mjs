@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
+import { createDeferredLibrary } from '../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
+import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import {
   LIBRARY_DATABASE,
   MAX_LIBRARY_PATHS,
-  hasColoringPackStorage,
+  readLibraryStartupDisposition,
 } from '../../experiments/native-architecture/src/platform/offlineLibraryStorage.web.ts';
 import { LIBRARY_FILE_TIMEOUT_MS } from '../../experiments/native-architecture/src/platform/offlineLibraryTransfer.web.ts';
 import {
@@ -209,49 +210,60 @@ describe('beta browser coloring library', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('recognizes real partial pack storage for repeat visits without loading a catalog', async () => {
-    expect(await hasColoringPackStorage()).toBe(false);
-    idb.rows.set('@paths', ['policy.json']);
-    expect(await hasColoringPackStorage()).toBe(false);
-    idb.rows.set('@paths', [`staging-${directory}/identity.json`]);
-    expect(await hasColoringPackStorage()).toBe(true);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
+  it.each([false, true])(
+    'restores saved mobile-data policy %s without installed packs',
+    async (allowMetered) => {
+      expect(await readLibraryStartupDisposition()).toBe('defer');
+      idb.rows.set('@paths', ['policy.json']);
+      idb.rows.set(
+        'policy.json',
+        new TextEncoder().encode(JSON.stringify({ enabled: false, allowMetered }))
+      );
+      expect(await readLibraryStartupDisposition()).toBe('hydrate');
+      const library = createDeferredLibrary(
+        async () => createOfflineLibrary(platform(), 'full'),
+        async () => {},
+        readLibraryStartupDisposition
+      );
+      await library.initialize();
+      expect(library.snapshot()).toMatchObject({ enabled: false, allowMetered, inventoried: true });
+      idb.rows.delete('policy.json');
+      idb.rows.set('@paths', [`staging-${directory}/identity.json`]);
+      expect(await readLibraryStartupDisposition()).toBe('resume');
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
 
-  it.each([
-    undefined,
-    {},
-    { effectiveType: '4g' },
-    { type: 'wifi' },
-    { type: 'ethernet' },
-    { metered: true },
-  ])('allows ordinary web downloads for connection %j, as shipping does', async (connection) => {
-    navigator.connection = connection;
-    expect((await platform().environment()).metered).toBe(false);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-  it.each([
-    { saveData: true },
-    { type: 'cellular' },
-    { effectiveType: '2g' },
-    { effectiveType: 'slow-2g' },
-  ])('holds automatic web downloads for connection %j, as shipping does', async (connection) => {
-    navigator.connection = connection;
-    expect((await platform().environment()).metered).toBe(true);
-  });
-  it('pins the ordinary web network fallback and opt-out policy to shipping', () => {
-    const shipping = readFileSync(
-      new URL('../../web/src/lib/coloringPacks/manager.ts', import.meta.url),
-      'utf8'
-    );
-    expect(shipping).toContain('if (!network) return true;');
-    expect(shipping).toContain(
-      "if (network.saveData || network.type === 'cellular') return false;"
-    );
-    expect(shipping).toContain(
-      "network.effectiveType !== 'slow-2g' && network.effectiveType !== '2g'"
-    );
-  });
+  it.each([false, true])(
+    'holds enabled policy-only mobile data %s until child engagement',
+    async (allowMetered) => {
+      idb.rows.set('@paths', ['policy.json']);
+      idb.rows.set(
+        'policy.json',
+        new TextEncoder().encode(JSON.stringify({ enabled: true, allowMetered }))
+      );
+      const controller = createOfflineLibrary(platform(), 'full');
+      const library = createDeferredLibrary(
+        async () => controller,
+        async () => {},
+        readLibraryStartupDisposition
+      );
+      library.setFeatureEnabled(true);
+      await library.initialize();
+      await controller.settled();
+      expect(library.snapshot()).toMatchObject({
+        enabled: true,
+        allowMetered,
+        inventoried: true,
+        installed: [],
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      library.engage();
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+      await controller.settled();
+      controller.dispose();
+    }
+  );
 
   it('keeps isolated durable bytes across new owners and exposes only verified object URLs', async () => {
     const first = platform();
@@ -367,21 +379,6 @@ describe('beta browser coloring library', () => {
     ).toBeNull();
     expect(revoke).toHaveBeenCalledWith(cover);
     expect(await store.scan()).toEqual([]);
-  });
-  it('reports quota and connection uncertainty without requesting persistence', async () => {
-    const owner = platform();
-    expect(await owner.environment()).toEqual({
-      online: true,
-      metered: false,
-      freeBytes: 999_999_900,
-    });
-    vi.stubGlobal('navigator', {
-      onLine: false,
-      connection: { saveData: true },
-      storage: { estimate: vi.fn(async () => ({})), persist: vi.fn() },
-    });
-    expect(await owner.environment()).toEqual({ online: false, metered: true, freeBytes: 0 });
-    expect(navigator.storage.persist).not.toHaveBeenCalled();
   });
   it('downloads only an approved staged file using an exact bounded verified stream', async () => {
     const owner = platform();

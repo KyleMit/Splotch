@@ -1,1 +1,2 @@
-export { RsdStepNumber, STEP_NUMBER_SIZE_PX } from './RsdStepNumberContent';
+export { RsdStepNumber } from './RsdStepNumberContent';
+export { STEP_NUMBER_SIZE_PX } from './stepNumberSize';

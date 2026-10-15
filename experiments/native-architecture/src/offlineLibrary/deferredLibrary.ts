@@ -5,6 +5,7 @@ import {
   type LibrarySnapshot,
 } from './snapshot';
 import type { OfflineLibrary } from './controller';
+import type { LibraryStartupDisposition } from './contract';
 
 const UNAVAILABLE_SNAPSHOT: LibrarySnapshot = {
   ...initialLibrarySnapshot,
@@ -18,7 +19,7 @@ type Call = (library: OfflineLibrary) => void;
 export function createDeferredLibrary(
   load: () => Promise<OfflineLibrary>,
   idle: () => Promise<void>,
-  resumeAtIdle: () => Promise<boolean>
+  readStartupDisposition: () => Promise<LibraryStartupDisposition>
 ): OfflineLibrary {
   let library: OfflineLibrary | null = null;
   let loading: Promise<OfflineLibrary> | null = null;
@@ -78,12 +79,13 @@ export function createDeferredLibrary(
       initialization ??= (async () => {
         if (!library) await idle();
         try {
-          if (!library && !(await resumeAtIdle())) {
+          const disposition = await readStartupDisposition();
+          if (!library && disposition === 'defer') {
             fallback = { ...initialLibrarySnapshot, status: 'ready', inventoried: true };
             notify();
             return;
           }
-          record((owner) => owner.engage());
+          if (disposition === 'resume') record((owner) => owner.engage());
           await (await start()).initialize();
         } catch (error) {
           console.error('The offline library failed to load:', error);

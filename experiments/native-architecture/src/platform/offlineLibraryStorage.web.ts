@@ -4,7 +4,12 @@ import {
   type IdbDatabase,
   type IdbTransaction,
 } from '../../../../web/src/lib/idbDatabase';
-import { LibraryFault } from '../offlineLibrary/contract';
+import {
+  LibraryFault,
+  LIBRARY_POLICY_PATH,
+  LIBRARY_TEXT_LIMIT_BYTES,
+  type LibraryStartupDisposition,
+} from '../offlineLibrary/contract';
 import { MAX_PACK_FILE_BYTES } from '../offlineLibrary/manifest';
 
 export const LIBRARY_DATABASE = 'splotch-beta-offline-library-v1';
@@ -200,12 +205,16 @@ export class WebLibraryStorage {
   }
 }
 
-export async function hasColoringPackStorage(): Promise<boolean> {
+export async function readLibraryStartupDisposition(): Promise<LibraryStartupDisposition> {
   const storage = new WebLibraryStorage();
   try {
-    return (await storage.list()).some((path) => /^(?:staging-)?[a-z]+-[a-f0-9]{64}$/.test(path));
+    if ((await storage.list()).some((path) => /^(?:staging-)?[a-z]+-[a-f0-9]{64}$/.test(path)))
+      return 'resume';
+    return (await storage.read(LIBRARY_POLICY_PATH, LIBRARY_TEXT_LIMIT_BYTES)) !== null
+      ? 'hydrate'
+      : 'defer';
   } catch {
-    return false;
+    return 'defer';
   } finally {
     storage.dispose();
   }

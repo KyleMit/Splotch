@@ -5,5 +5,5 @@ import { afterDrawingPaint } from '../product/afterDrawingPaint';
 export const offlineLibrary = createDeferredLibrary(
   async () => createLibrary(),
   afterDrawingPaint,
-  async () => true
+  async () => 'resume'
 );

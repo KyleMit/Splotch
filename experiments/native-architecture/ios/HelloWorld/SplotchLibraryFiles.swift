@@ -57,6 +57,15 @@ enum SplotchLibraryFiles {
   static func stage(_ pack: SplotchLibraryPack) throws -> URL {
     try root().appendingPathComponent("transfers", isDirectory: true).appendingPathComponent(directory(pack), isDirectory: true)
   }
+  static func pruneSupersededStages(_ pack: SplotchLibraryPack) throws {
+    let staging = try stage(pack)
+    let transfers = staging.deletingLastPathComponent()
+    try FileManager.default.createDirectory(at: transfers, withIntermediateDirectories: true)
+    for sibling in try FileManager.default.contentsOfDirectory(at: transfers, includingPropertiesForKeys: nil)
+      where sibling.lastPathComponent.hasPrefix(pack.id + "-") && sibling.lastPathComponent != staging.lastPathComponent {
+      try FileManager.default.removeItem(at: sibling)
+    }
+  }
   static func destination(_ file: SplotchLibraryFile, in directory: URL) -> URL {
     directory.appendingPathComponent("files", isDirectory: true).appendingPathComponent(URL(fileURLWithPath: file.path).lastPathComponent)
   }
