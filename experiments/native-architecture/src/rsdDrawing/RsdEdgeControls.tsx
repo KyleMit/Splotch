@@ -75,7 +75,6 @@ function useRememberedDrawer() {
 // and the overlay that reads the drawer state, never the strokes on the paper.
 export function RsdEdgeLayout({
   covered,
-  paintsDisabled,
   buttonScale,
   resizing,
   status,
@@ -85,7 +84,6 @@ export function RsdEdgeLayout({
 }: Controls & {
   // A dialog is open over the chrome, which stays at full strength and inert (InertRegion).
   covered: boolean;
-  paintsDisabled: boolean;
   // Button Size, live while its slider is dragged.
   buttonScale: number;
   // The drawer opens while Button Size is dragged, as shipping's does, so every control it
@@ -136,7 +134,7 @@ export function RsdEdgeLayout({
               sound={sound}
               layout={layout}
               actionButtonSize={actionButtonSize}
-              disabled={paintsDisabled}
+              disabled={disabled}
             />
           )}
           clearUnderlay={(offset) => (
