@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseArgs } from 'node:util';
 import { Window } from 'happy-dom';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
@@ -113,4 +114,10 @@ export async function generateNativePrivacy(check = false) {
   } else writeFileSync(path, output);
 }
 
-if (isMain(import.meta.url)) runMain(() => generateNativePrivacy(process.argv.includes('--check')));
+if (isMain(import.meta.url)) {
+  const { values } = parseArgs({
+    options: { check: { type: 'boolean', default: false } },
+    allowPositionals: false,
+  });
+  runMain(() => generateNativePrivacy(values.check));
+}
