@@ -1,4 +1,8 @@
+import { currentAppFragment, visitAppFragment } from './appPath';
+
 export function informationFragmentAtLaunch(): string | null {
-  return null;
+  return currentAppFragment();
 }
-export function visitInformationFragment(_id: string) {}
+export function visitInformationFragment(id: string) {
+  visitAppFragment(id);
+}

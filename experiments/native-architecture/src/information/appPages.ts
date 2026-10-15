@@ -17,19 +17,25 @@ export function appPageAt(path: string): AppLocation {
 }
 
 export function createAppPages() {
-  let current: AppLocation = 'drawing';
+  let destination: { page: AppPage; fragment: string | null } = {
+    page: 'drawing',
+    fragment: null,
+  };
   const listeners = new Set<() => void>();
   return {
-    current: () => current,
+    current: () => destination.page,
+    fragment: () => destination.fragment,
     subscribe(listener: () => void) {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
       };
     },
-    open(page: AppPage) {
-      if (page === current) return;
-      current = page;
+    open(page: AppPage, fragment?: string) {
+      if (page === destination.page && fragment === undefined) return;
+      const next = { page, fragment: fragment ?? null };
+      if (next.page === destination.page && next.fragment === destination.fragment) return;
+      destination = next;
       for (const listener of listeners) listener();
     },
   };

@@ -32,9 +32,14 @@ export function createBrowserAppPages() {
         if (listeners.size === 0) window.removeEventListener('popstate', publish);
       };
     },
-    open(page: AppPage) {
-      if (appPageAt(location.pathname) === page) return;
-      history.pushState(null, '', APP_PAGE_PATHS[page]);
+    open(page: AppPage, fragment?: string) {
+      const hash = fragment === undefined ? '' : `#${encodeURIComponent(fragment)}`;
+      if (
+        appPageAt(location.pathname) === page &&
+        (fragment === undefined || location.hash === hash)
+      )
+        return;
+      history.pushState(null, '', `${APP_PAGE_PATHS[page]}${hash}`);
       publish();
     },
   };
