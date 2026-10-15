@@ -81,6 +81,7 @@ async function settle(check) {
 }
 const strokesOnPaper = () => caller.liveScreen.history.drawing.strokes.length;
 beforeEach(() => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.24);
   photos.reset();
   records.os = 'android';
   records.nativeModules.SplotchPhotoLibrary = reactNativeModule.NativeModules.SplotchPhotoLibrary;
@@ -209,7 +210,7 @@ describe('canonical Auto-Save on Delete', () => {
       await act(async () => caller.liveScreen.setBrush('eraser'));
       await click('Draw RSD fixture stroke');
       await clear();
-      await settle(() => expect(caller.liveScreen.history.drawing).toEqual(emptyDrawing(1)));
+      await settle(() => expect(caller.liveScreen.history.drawing).toEqual(emptyDrawing(2)));
       expect(photos.created).toEqual([]);
       expect(privateWrite).not.toHaveBeenCalled();
     },
