@@ -78,8 +78,8 @@ export function starterOutlineSamples(farmDir = BUNDLED_FARM_DIR) {
 
 // The longest plain-text run of each release note What's New shows. Only Settings imports the
 // notes (settings/whatsNew.ts); the settings store reads the stamp alone (whatsNewStamp.ts).
-export function releaseNoteSamples(notesPath = RELEASE_NOTES_JSON) {
-  const releases = Object.values(JSON.parse(readFileSync(notesPath, 'utf8')));
+export function releaseNoteSamples() {
+  const releases = Object.values(JSON.parse(readFileSync(RELEASE_NOTES_JSON, 'utf8')));
   return releases
     .flat()
     .flatMap((section) => section.blocks)
