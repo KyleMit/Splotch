@@ -118,7 +118,7 @@ export function RsdReleaseBlocks({
 
 // The shipping What's New section (WhatsNewSection.svelte): the current release's notes on a raised
 // card under its date, each section headed by its New, Improved or Fixed icon, then a link to every
-// release, which opens the hosted changelog through `onOpen`.
+// release, which opens the in-app changelog through `onOpen`.
 export function RsdWhatsNewSection({
   sectionHeadingLevel,
   onOpen,

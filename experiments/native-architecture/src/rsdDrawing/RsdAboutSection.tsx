@@ -69,8 +69,8 @@ const styles = css.create({
 });
 
 // The shipping About section (AboutSection.svelte): Splotchy and the tagline over a rule, then the
-// Privacy Policy and GitHub links and the version. Both links open outside the app, so both carry
-// the external mark and open through `onOpen`, which holds them behind the external-links check.
+// Privacy Policy and GitHub links and the version. Only GitHub leaves the app and carries the
+// external mark; the route owns each destination.
 export function RsdAboutSection({ onOpen }: { onOpen: (page: SettingsLink) => void }) {
   return (
     <html.section>

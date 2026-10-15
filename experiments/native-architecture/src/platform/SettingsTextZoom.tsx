@@ -68,7 +68,11 @@ export function SettingsTextZoom({ children, enabled, onZoom }: Props) {
         pinch.current = null;
       }}
       onResponderTerminationRequest={() => false}
-      style={zoom === MIN_TEXT_ZOOM ? undefined : { height: size.height * zoom }}
+      style={
+        zoom === MIN_TEXT_ZOOM
+          ? undefined
+          : { height: size.height ? size.height * zoom : undefined }
+      }
     >
       <View
         testID="settings-text-zoom-content"

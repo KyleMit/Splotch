@@ -1,7 +1,9 @@
-import { host, mount, records, root } from './rsd-native-selection-host.mjs';
+import { host, mount, records, root, openSettingsSection } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, it, vi } from 'vitest';
 import { SettingsTextZoom } from '../../../experiments/native-architecture/src/platform/SettingsTextZoom.tsx';
+import { drawingScreen, storedSettings } from './rsd-native-settings-fixture.mjs';
+import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { html } from 'react-strict-dom';
 const touches = (...points) => ({
   nativeEvent: {
@@ -49,5 +51,20 @@ it('pins the shared zoom range and clamps a large or reversed pinch', async () =
   });
   expect(content().style.transform).toEqual([{ scale: 3 }]);
   await act(async () => boundary().onResponderMove(touches([0, 0], [1, 0])));
+  expect(content().style.transform).toEqual([{ scale: 1 }]);
+});
+
+it('wires zoom into the real phone Settings and resets when a section opens', async () => {
+  storedSettings();
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  expect(host.querySelector('[data-testid="settings-text-zoom"]')).not.toBeNull();
+  await act(async () => {
+    boundary().onResponderGrant(touches([0, 0], [100, 0]));
+    boundary().onResponderMove(touches([0, 0], [200, 0]));
+    boundary().onResponderRelease(touches());
+  });
+  expect(content().style.transform).toEqual([{ scale: 2 }]);
+  await openSettingsSection('Sound');
   expect(content().style.transform).toEqual([{ scale: 1 }]);
 });

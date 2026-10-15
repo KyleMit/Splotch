@@ -15,11 +15,9 @@ import type { SliderDraft } from './useSliderDraft';
 import { openAppPage } from '../platform/appPath';
 import { openHostedPage, type SettingsLink } from '../settings/hostedPages';
 
-// Every Settings link leaves the app, so each opens only through Parent Center's Viewing external
-// links check, as shipping's parentalGateLink does. The page opens inside the solving tap, with no
-// "Unlocked!" card, which keeps a web export's new tab within that tap's user activation; with no
-// owner, nothing opens.
-function openOutside(owner: DrawingProductOwner | null, page: SettingsLink) {
+// Privacy and release history stay in the app. External destinations open inside the solving
+// tap so the web export keeps the user activation required for a new tab.
+function openSettingsLink(owner: DrawingProductOwner | null, page: SettingsLink) {
   if (page === 'privacy' || page === 'changelog') {
     openAppPage(page);
     return;
@@ -105,7 +103,7 @@ export function RsdSettingsRoute({
         ) : null
       }
       feedback={product.feedback.owner}
-      onOpenPage={(page) => openOutside(owner, page)}
+      onOpenPage={(page) => openSettingsLink(owner, page)}
       downloadedBooks={screen.library.state.installed.length}
       ai={{
         owner: aiOwner,
@@ -113,7 +111,7 @@ export function RsdSettingsRoute({
         onToggle: (enabled) => void owner?.setAiEnabled(enabled),
         saveFailed: owner?.settings.aiSaveFailed() ?? false,
         onRetrySave: () => void owner?.settings.retryAiSave(),
-        onOpenKeysPage: () => openOutside(owner, 'openAiKeys'),
+        onOpenKeysPage: () => openSettingsLink(owner, 'openAiKeys'),
       }}
     />
   );
