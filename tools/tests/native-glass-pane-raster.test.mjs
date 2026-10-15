@@ -196,6 +196,20 @@ describe('the native glass pane rasters', () => {
     );
   });
 
+  it('keeps the drawer and Brush menu junction continuous', () => {
+    const shapes = glassPaneShapes(PHONE_SEVEN, 'brush', true);
+    const coat = composite(shapes.map((shape) => sampler(glassPaneRaster(shape, INK_ALPHA))));
+    const junction = { x: 46, y: 750 };
+    const halfStep = STEP_PX / 2;
+    const across = Math.abs(
+      coat(junction.x - halfStep, junction.y) - coat(junction.x + halfStep, junction.y)
+    );
+    const down = Math.abs(
+      coat(junction.x, junction.y - halfStep) - coat(junction.x, junction.y + halfStep)
+    );
+    expect(Math.max(across, down)).toBeLessThan(STEP_TOLERANCE);
+  });
+
   it('carry the raster losslessly in their image', async () => {
     const [shape] = glassPaneShapes(PHONE_SEVEN, 'brush', true);
     const raster = glassPaneRaster(shape, INK_ALPHA);
