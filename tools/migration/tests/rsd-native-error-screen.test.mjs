@@ -53,6 +53,7 @@ function rendererFault(recovery) {
 describe("the drawing screen's Error Screen", () => {
   it('keeps the copy and literals ErrorScreen.svelte writes', () => {
     const markup = SHIPPING_ERROR_SCREEN.replace(/\s+/g, ' ');
+    expect(markup).toContain(`<title>${ERROR_SCREEN_COPY.documentTitle}</title>`);
     expect(markup).toContain(`<h1>${ERROR_SCREEN_COPY.title}</h1>`);
     expect(markup).toContain(`<p>${ERROR_SCREEN_COPY.lines.join('<br />')}</p>`);
     expect(markup).toMatch(new RegExp(`>${ERROR_SCREEN_COPY.restart}</button>`));

@@ -260,24 +260,30 @@ function SaveStatus({
   return (
     <html.div style={styles.failure}>
       <RsdStatusMessage status="error">{settings.message}</RsdStatusMessage>
-      <html.div style={styles.failureActions}>
-        <RsdButton
-          size="sm"
-          onPress={() => {
-            void owner.retryParentSave();
-          }}
-        >
-          Retry saving Parent Center choices
-        </RsdButton>
-        <RsdButton
-          size="sm"
-          onPress={() => {
-            void owner.settings.retryRead();
-          }}
-        >
-          Read saved settings again
-        </RsdButton>
-      </html.div>
+      {owner.settings.retryCanRecover() ? <SaveRetries owner={owner} /> : null}
+    </html.div>
+  );
+}
+
+function SaveRetries({ owner }: { owner: DrawingProductOwner }) {
+  return (
+    <html.div style={styles.failureActions}>
+      <RsdButton
+        size="sm"
+        onPress={() => {
+          void owner.retryParentSave();
+        }}
+      >
+        Retry saving Parent Center choices
+      </RsdButton>
+      <RsdButton
+        size="sm"
+        onPress={() => {
+          void owner.settings.retryRead();
+        }}
+      >
+        Read saved settings again
+      </RsdButton>
     </html.div>
   );
 }

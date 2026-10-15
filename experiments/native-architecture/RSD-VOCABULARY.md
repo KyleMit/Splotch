@@ -339,6 +339,19 @@ switch and key save that ask for no check while a send still does;
 `tools/migration/tests/rsd-native-ai-settings.test.mjs` mounts the section through the released
 native renderer.
 
+## Settings record
+
+Every choice above persists in one strict, canonical record (`src/settings/soundSettingsCodec.ts`,
+at `SOUND_SETTINGS_VERSION`). Shipping keeps each setting in its own synchronous key and never fails
+a read; this record can fail one of three ways, and each shows its own message in Settings and
+Parent Center. A store that did not answer offers Read saved settings again. A damaged record, and
+one a newer build wrote (a higher leading `version`), offer no retry, since neither changes however
+often it is read; the newer one asks the parent to update Splotch. Every failure leaves the record
+untouched, runs on protected session settings (sound and AI off, every check on), and keeps Parent
+Center's choices locked. Because a newer version strands every older install that way, the version
+is bumped only for a meaningful contract change; the rule sits beside `SOUND_SETTINGS_VERSION`.
+`tools/tests/native-settings-read-failures.test.mjs` holds the three apart.
+
 ## Design primitives
 
 `src/rsdDrawing/` ports the small shipping primitives in `web/src/lib/components/design/` and the
