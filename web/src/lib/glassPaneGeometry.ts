@@ -16,7 +16,7 @@ const FEATHER_SIGMA_PX = 24;
 const COMPACT_FEATHER_SIGMA_PX = 12;
 // Three sigma, where the blurred mask is effectively transparent, so the
 // pane's own box never shows as an edge.
-export const FEATHER_REACH_SIGMAS = 3;
+const FEATHER_REACH_SIGMAS = 3;
 const FEATHER_CURVE_SAMPLES = 16;
 const INFLATE_PX = 14;
 const BLEED_PX = 44;
@@ -75,7 +75,7 @@ export type GlassPaneLayout = Readonly<{
 
 // Abramowitz & Stegun 7.1.26: the blurred alpha a straight shape edge reaches
 // `distance` inside itself is the normal CDF of distance / sigma.
-function normalCdf(z: number): number {
+export function normalCdf(z: number): number {
   const t = 1 / (1 + (0.3275911 * Math.abs(z)) / Math.SQRT2);
   const poly =
     t *
@@ -95,20 +95,24 @@ function featherTable(sigma: number): number[] {
   });
 }
 
-// The mask's alpha `distance` px inside one straight shape edge (negative outside it), read
-// through the feather table as feFuncA interpolates it, for a renderer that draws no SVG mask.
-export function edgeFeather(distance: number, sigma: number): number {
+// The mask's alpha for each blurred alpha, read through the feather table as feFuncA interpolates
+// it, for a renderer that draws no SVG mask.
+export function featherAlpha(sigma: number): (blurred: number) => number {
   const table = featherTable(sigma);
-  const position = normalCdf(distance / sigma) * FEATHER_CURVE_SAMPLES;
-  const index = Math.min(FEATHER_CURVE_SAMPLES - 1, Math.floor(position));
-  return table[index] + (position - index) * (table[index + 1] - table[index]);
+  return (blurred) => {
+    const position = Math.min(1, Math.max(0, blurred)) * FEATHER_CURVE_SAMPLES;
+    const index = Math.min(FEATHER_CURVE_SAMPLES - 1, Math.floor(position));
+    return table[index] + (position - index) * (table[index + 1] - table[index]);
+  };
 }
 
 function rectangle(left: number, top: number, right: number, bottom: number, radius = 0): Rect {
   return { x: left, y: top, width: right - left, height: bottom - top, radius };
 }
 
-function glassPane({ rects, clip, sigma }: PaneShape): Pane {
+// The pane's own box: its shapes and their feather's reach, clipped. It is also the mask's filter
+// region, so the blur sees nothing of a shape past it.
+export function paneBox({ rects, clip, sigma }: PaneShape): Rect {
   const reach = FEATHER_REACH_SIGMAS * sigma;
   const x = Math.max(clip.x, Math.min(...rects.map((r) => r.x)) - reach);
   const y = Math.max(clip.y, Math.min(...rects.map((r) => r.y)) - reach);
@@ -117,8 +121,12 @@ function glassPane({ rects, clip, sigma }: PaneShape): Pane {
     clip.y + clip.height,
     Math.max(...rects.map((r) => r.y + r.height)) + reach
   );
-  const width = Math.max(0, right - x);
-  const height = Math.max(0, bottom - y);
+  return { x, y, width: Math.max(0, right - x), height: Math.max(0, bottom - y) };
+}
+
+function glassPane(shape: PaneShape): Pane {
+  const { rects, sigma } = shape;
+  const { x, y, width, height } = paneBox(shape);
   const shapes = rects
     .map(
       (r) =>

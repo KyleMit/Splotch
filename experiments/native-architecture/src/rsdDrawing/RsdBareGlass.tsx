@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { Image, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { glassPaneShapes } from '../../../../web/src/lib/glassPaneGeometry';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -7,7 +7,8 @@ import { PaperTexture } from '../drawing/PaperTexture';
 import type { BareGlass } from './bareGlassLayout';
 import { glassPaneLayout, type GlassSpace } from './bareGlassSpace';
 import { GLASS_PANE_INKS } from './glassPaneInk';
-import { glassPaneTiles } from './glassPaneTiles';
+import { glassPanePng } from './glassPanePng';
+import { glassPaneRaster, paneImagePlace } from './glassPaneRaster';
 import { MARGIN_RULE_GAP_PX, MARGIN_RULE_INK_STOPS, MARGIN_RULE_WIDTH_PX } from './bareGlassStyle';
 import { MARGIN_RULE_INKS } from './marginRuleInk';
 import type { LayoutAxis } from './edgeLayout';
@@ -19,7 +20,9 @@ const styles = StyleSheet.create({
   row: { top: PALETTE_FLOWS.row.extentPx, height: MARGIN_RULE_WIDTH_PX },
   // Over the paper with the palette bar, as shipping's rules share the rail glass's layer.
   rule: { position: 'absolute', zIndex: 1 },
-  tile: { position: 'absolute' },
+  panes: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  paneClip: { position: 'absolute', overflow: 'hidden' },
+  pane: { position: 'absolute' },
 });
 
 // The native renderers have no backdrop blur, so the rail takes shipping's own fallback for a
@@ -70,28 +73,47 @@ export function RsdMarginRules({ axis }: { axis: LayoutAxis }) {
 }
 
 // The feathered panes behind the drawer, its open menu and the Settings corner, fading the ink
-// under them as shipping's do. Plain gradient views, never blended, blurred or made translucent
-// as a group: Android would draw the layout and its ink offscreen on every frame of a stroke.
-// Shipping's geometry is the layout's, so each tile shifts back into the paper area that holds it.
+// under them as shipping's do: each pane one image of shipping's own mask in the pane's ink, never
+// blended, blurred live or made translucent as a group, so Android draws nothing offscreen on the
+// frames of a stroke. Shipping's geometry is the layout's, so each pane shifts back into the paper
+// area that holds it.
 export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: BareGlass }) {
   const ink = GLASS_PANE_INKS[useDrawingAppearance()];
   const { width, height, insetBottom, paperTop, paperLeft } = space;
   const { panel, open, expanded, fullscreen } = glass;
-  const tiles = useMemo(() => {
+  const panes = useMemo(() => {
     if (!panel) return [];
     const layout = glassPaneLayout(
       { width, height, insetBottom, paperTop, paperLeft },
       panel,
       fullscreen
     );
-    return glassPaneShapes(layout, open, expanded).flatMap((shape) =>
-      glassPaneTiles(shape, ink).map((tile) => [
-        styles.tile,
-        { ...tile, left: tile.left - paperLeft, top: tile.top - paperTop },
-      ])
-    );
+    return glassPaneShapes(layout, open, expanded).flatMap((shape) => {
+      const raster = glassPaneRaster(shape, ink.alpha);
+      if (!raster) return [];
+      const { x, y, width: across, height: down } = raster.box;
+      return [
+        {
+          uri: glassPanePng(raster, ink.rgb),
+          box: { left: x - paperLeft, top: y - paperTop, width: across, height: down },
+          image: paneImagePlace(raster),
+        },
+      ];
+    });
   }, [width, height, insetBottom, paperTop, paperLeft, panel, open, expanded, fullscreen, ink]);
-  return tiles.map((style, index) => (
-    <View key={index} testID="rsd-glass-pane" pointerEvents="none" style={style} />
-  ));
+  return (
+    <View pointerEvents="none" style={styles.panes}>
+      {panes.map(({ uri, box, image }, index) => (
+        <View key={index} style={[styles.paneClip, box]}>
+          <Image
+            testID="rsd-glass-pane"
+            source={{ uri }}
+            resizeMode="stretch"
+            fadeDuration={0}
+            style={[styles.pane, image]}
+          />
+        </View>
+      ))}
+    </View>
+  );
 }
