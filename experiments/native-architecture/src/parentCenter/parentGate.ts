@@ -261,9 +261,22 @@ function createParentGateDestination(
   let handoff: ((proof: ParentProof) => void) | null = null;
   let immediate = false;
   let until: number | null = null;
+  function discard() {
+    pending = null;
+    handoff = null;
+    immediate = false;
+    until = null;
+  }
+  function dismiss() {
+    model.invalidate();
+    discard();
+    close();
+  }
   return {
     deadline: () => until,
+    discard,
     start(action: (proof: ParentProof) => void, atOnce: boolean) {
+      discard();
       pending = action;
       immediate = atOnce;
     },
@@ -273,13 +286,9 @@ function createParentGateDestination(
       until = null;
       close();
     },
-    dismiss() {
-      model.invalidate();
-      pending = null;
-      handoff = null;
-      immediate = false;
-      until = null;
-      close();
+    dismiss,
+    cancel() {
+      if (pending !== null || handoff !== null || until !== null) dismiss();
     },
     succeed() {
       if (!immediate) {
@@ -387,6 +396,7 @@ export function createParentGate(
     ) {
       if (model.isDisposed() || getState().open) return false;
       model.invalidate();
+      destination.discard();
       if (access.bypass(feature)) {
         execute(action);
         return true;
@@ -433,7 +443,7 @@ export function createParentGate(
     /** The card's exit has played: a solved destination runs now, once. */
     closed: destination.closed,
     cancel(feature: ParentFeature) {
-      if (getState().feature === feature && getState().open) dismiss();
+      if (getState().feature === feature) destination.cancel();
     },
     invalidate: dismiss,
     /** A changed policy asks again, whatever was solved under the old one (shipping setParentalGateMode). */

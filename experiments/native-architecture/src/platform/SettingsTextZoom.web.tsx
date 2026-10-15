@@ -27,5 +27,13 @@ export function SettingsTextZoom({
   useEffect(() => {
     if (!enabled && node.current) node.current.style.zoom = '';
   }, [enabled]);
-  return createElement('div', { ref: node, 'data-testid': 'settings-text-zoom' }, children);
+  return createElement(
+    'div',
+    {
+      ref: node,
+      'data-testid': 'settings-text-zoom',
+      style: { touchAction: enabled ? 'pan-x pan-y' : undefined },
+    },
+    children
+  );
 }

@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
-import { RELEASES_SHOWN_OPEN } from '../../../../web/src/lib/releaseHistoryPolicy';
+import releaseHistoryPolicy from '../../../../web/src/lib/releaseHistoryPolicy.json';
+
+const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 
 type ReleasePosition = { id: string };
 export function useReleaseHistory(

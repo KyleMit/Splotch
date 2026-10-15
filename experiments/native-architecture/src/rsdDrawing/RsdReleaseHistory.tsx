@@ -2,7 +2,7 @@ import { View, useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import releases from '../../../../web/src/lib/releases.json';
 import { parseReleaseHue } from '../../../../web/src/lib/releaseHues';
-import { RELEASES_SHOWN_OPEN } from '../../../../web/src/lib/releaseHistoryPolicy';
+import releaseHistoryPolicy from '../../../../web/src/lib/releaseHistoryPolicy.json';
 import { RELEASE_NOTES } from '../settings/whatsNew';
 import { INFORMATION_TOP_ID } from '../information/appPages';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
@@ -22,6 +22,7 @@ import { RsdTextLink } from './RsdTextLink';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
 import { colors, dimensions } from './tokens.css';
 
+const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 const RELEASE_SPY_BAND_BOTTOM_PERCENT = 70;
 const PERCENT = 100;
 const FOOTER_RESERVE_PX = 160;

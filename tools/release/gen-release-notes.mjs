@@ -20,8 +20,8 @@ import { renderReleaseMarkdown } from './lib/release-markdown.mjs';
 
 const RELEASE_HUE_PALETTE_MODULE = './palette';
 export const RELEASE_HUES = ['Purple', 'Blue', 'Green', 'Orange', 'Pink', 'Red'];
-import { RELEASES_SHOWN_OPEN } from '../../web/src/lib/releaseHistoryPolicy.ts';
-export { RELEASES_SHOWN_OPEN } from '../../web/src/lib/releaseHistoryPolicy.ts';
+import releaseHistoryPolicy from '../../web/src/lib/releaseHistoryPolicy.json' with { type: 'json' };
+export const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 
 const RELEASES_DIR = join(ROOT, 'releases');
 export const NATIVE_RELEASE_NOTES_PATH =

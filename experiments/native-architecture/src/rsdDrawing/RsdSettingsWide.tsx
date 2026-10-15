@@ -1,15 +1,11 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { SettingsTextZoom } from '../platform/SettingsTextZoom';
+import { scrollSettingsPaneToSection, spiedSettingsSection } from '../platform/settingsPane';
 import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
-import {
-  navRevealOffset,
-  sectionJumpOffset,
-  spiedSectionAt,
-  stackedOffsets,
-} from '../settings/settingsPane';
+import { navRevealOffset, sectionJumpOffset, stackedOffsets } from '../settings/settingsPane';
 import type { NativeSettingsSection, NativeSettingsSectionId } from '../settings/settingsSections';
 import { sectionHeading } from '../settings/settingsSections';
 import { rgba } from './colorMix';
@@ -291,17 +287,14 @@ export function RsdSettingsWide({
     if (lockedJump.current === landing) return;
     jumpTarget.current = null;
     markSeen(landing);
-    pane.current?.scrollTo({
-      y: sectionJumpOffset(stacked[at]),
-      animated: false,
-    });
+    scrollSettingsPaneToSection(pane.current, landing, sectionJumpOffset(stacked[at]), false);
   };
 
   const elect = () => {
     land();
     const stacked = offsets();
     if (!stacked) return;
-    const next = spiedSectionAt(paneIds, stacked, paneExtent.current);
+    const next = spiedSettingsSection(pane.current, paneIds, stacked, paneExtent.current);
     const inFlight = jumpTarget.current;
     if (next === inFlight || next === paneIds[paneIds.length - 1]) jumpTarget.current = null;
     const changed = next !== spiedNow.current;
@@ -322,10 +315,12 @@ export function RsdSettingsWide({
     if (!stacked) return;
     markSeen(id);
     jumpTarget.current = reduced ? null : id;
-    pane.current?.scrollTo({
-      y: sectionJumpOffset(stacked[paneIds.indexOf(id)]),
-      animated: !reduced,
-    });
+    scrollSettingsPaneToSection(
+      pane.current,
+      id,
+      sectionJumpOffset(stacked[paneIds.indexOf(id)]),
+      !reduced
+    );
   };
 
   useEffect(() => {

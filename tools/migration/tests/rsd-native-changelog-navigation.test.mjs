@@ -6,13 +6,14 @@ import { host, mount, records, root } from './rsd-native-selection-host.mjs';
 import { RsdReleaseHistory } from '../../../experiments/native-architecture/src/rsdDrawing/RsdReleaseHistory.tsx';
 import { RELEASE_PAGE } from '../../../experiments/native-architecture/src/rsdDrawing/RsdReleaseArticle.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
-import { RELEASES_SHOWN_OPEN } from '../../../web/src/lib/releaseHistoryPolicy.ts';
+import releaseHistoryPolicy from '../../../web/src/lib/releaseHistoryPolicy.json';
 import { RELEASE_NOTES } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
 import releases from '../../../web/src/lib/releases.json';
 import { formatReleaseAgo } from '../../../web/src/lib/releaseAgo.ts';
 import { blobPath } from '../../../experiments/native-architecture/src/rsdDrawing/blob.ts';
 import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
 
+const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 const props = (id) => records.props.findLast((entry) => entry.testID === id);
 const layout = (id, y, height) =>
   props(id).onLayout({ nativeEvent: { layout: { x: 0, y, width: 350, height } } });

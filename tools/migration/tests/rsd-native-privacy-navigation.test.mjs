@@ -109,6 +109,16 @@ it('renders the shipping metadata row and compact contents geometry', async () =
     join(import.meta.dirname, '../../../web/src/lib/components/nav/TocDisclosure.svelte'),
     'utf8'
   );
+  const pageShell = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
+    'utf8'
+  );
+  const pageRule = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/page/RuleLabel.svelte'),
+    'utf8'
+  );
+  expect(pageShell).toContain('line-height: 1.62;');
+  expect(pageRule).toContain('padding-bottom: var(--space-5);');
   expect(policy).toContain('gap: 10px;');
   expect(policy).toContain('margin: calc(-1 * var(--space-4)) 0 var(--space-6);');
   expect(toc).toContain(`--toc-row-height: ${PAGE_CONTENTS.row}px;`);
@@ -128,6 +138,19 @@ it('renders the shipping metadata row and compact contents geometry', async () =
     borderWidth: 2,
     borderRadius: Number.parseFloat(scale.radiusMd),
   });
+  expect(props('privacy-updated-dot').style).toMatchObject({
+    alignItems: 'center',
+    justifyContent: 'center',
+  });
+  expect(props('privacy-short-version-label').style.paddingBottom).toBe(
+    Number.parseFloat(scale.space5)
+  );
+  expect(props('privacy-details-label').style.paddingBottom).toBe(Number.parseFloat(scale.space5));
+  expect(
+    records.props.some(
+      (entry) => entry.style?.fontSize === 16 && entry.style?.lineHeight === 16 * 1.62
+    )
+  ).toBe(true);
   expect(host.textContent).toContain(privacy.native.updated);
 });
 

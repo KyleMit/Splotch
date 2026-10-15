@@ -31,7 +31,7 @@ const UPDATED_MARK_PX = 10;
 const UPDATED_TOP_PULL_PX = 16;
 const UPDATED_LINE_HEIGHT = 1.62;
 const UPDATED_MARK_PATH = blobPath('radiusBlob1', UPDATED_MARK_PX, UPDATED_MARK_PX);
-const POLICY_LINE_HEIGHT = 1.6;
+const POLICY_LINE_HEIGHT = 1.62;
 const POLICY_FONT_PX = 16;
 const POLICY_LIST_INDENT_EM = 1.2;
 const POLICY_ITEM_GAP_PX = 8;
@@ -67,7 +67,15 @@ const styles = css.create({
     fontSize: dimensions.fontSizeSm,
     lineHeight: UPDATED_LINE_HEIGHT,
   },
-  updatedDot: { flexShrink: 0, width: UPDATED_MARK_PX, height: UPDATED_MARK_PX },
+  updatedDot: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: UPDATED_MARK_PX,
+    height: UPDATED_MARK_PX,
+  },
+  pageRule: { paddingBottom: dimensions.space5 },
   link: { color: colors.brandText, textDecorationLine: 'underline', cursor: 'pointer' },
   italic: { fontStyle: 'italic' },
   summary: {
@@ -77,7 +85,6 @@ const styles = css.create({
     borderRadius: dimensions.radiusLg,
     paddingBlock: dimensions.space1,
     paddingInline: HIGHLIGHT_INLINE_PX,
-    marginTop: dimensions.space5,
     marginBottom: dimensions.space8,
   },
   highlight: {
@@ -323,7 +330,9 @@ export function RsdPrivacyContent(props: PrivacyContentProps) {
         </html.div>
         <html.p style={[controlStyles.semiboldText, styles.updatedText]}>{policy.updated}</html.p>
       </html.div>
-      <RsdRuleLabel>The short version</RsdRuleLabel>
+      <html.div data-testid="privacy-short-version-label" style={styles.pageRule}>
+        <RsdRuleLabel>The short version</RsdRuleLabel>
+      </html.div>
       <html.div style={styles.summary}>
         {HIGHLIGHTS.map(({ label, lead, body }, index) => (
           <html.div key={label} style={[styles.highlight, index > 0 && styles.highlightRule]}>
@@ -335,7 +344,9 @@ export function RsdPrivacyContent(props: PrivacyContentProps) {
           </html.div>
         ))}
       </html.div>
-      <RsdRuleLabel>The details</RsdRuleLabel>
+      <html.div data-testid="privacy-details-label" style={styles.pageRule}>
+        <RsdRuleLabel>The details</RsdRuleLabel>
+      </html.div>
       <PrivacyDetails {...props} />
     </>
   );
