@@ -137,9 +137,9 @@ function DrawingScreenContent({
   const menu = useDrawingMenu(screen, 'platform');
   const window = useWindowDimensions();
   const landscape = window.width > window.height;
-  const { surface, colorPickerOpen, disabled: drawingDisabled } = screen;
+  const { surface, colorPickerOpen } = screen;
   const modalBlocked = isProductModalBlocked(route.shown, product);
-  const disabled = drawingDisabled || modalBlocked;
+  const disabled = screen.disabled || screen.dialogOpen || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
   useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
   const focusReturn = useColorPickerFocus({

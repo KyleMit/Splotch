@@ -88,8 +88,10 @@ export function useDrawingScreen() {
   // contact, as a second finger's does in shipping. Disabling the chrome for a stroke would fade
   // every control and re-mount it on the UI thread at each stroke start and lift, which costs the
   // canvas frames.
-  const disabled =
-    busy || preparing || pagePickerOpen || settings.sheetOpen || brushes.state.status !== 'ready';
+  const disabled = busy || preparing || brushes.state.status !== 'ready';
+  // A dialog leaves the chrome at full strength under its scrim, as shipping's modal leaves the
+  // page: the chrome is held rather than disabled while one is open.
+  const dialogOpen = pagePickerOpen || settings.sheetOpen;
 
   const commandsBlocked = () =>
     command.current ||
@@ -121,7 +123,7 @@ export function useDrawingScreen() {
     surface,
     rendererFault,
     command,
-    blocked: drawing || busy || pagePickerOpen || settings.sheetOpen,
+    blocked: drawing || busy || dialogOpen,
     setPreparing,
     setDrawing,
     finishCohort,
@@ -151,6 +153,7 @@ export function useDrawingScreen() {
     ...coloring,
     ...settings,
     disabled,
+    dialogOpen,
     report,
     currentDrawing,
     finishCohort,

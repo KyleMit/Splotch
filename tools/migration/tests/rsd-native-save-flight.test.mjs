@@ -15,6 +15,7 @@ import {
   BANNER_FLY_PX,
 } from '../../../web/src/lib/components/bannerMotion.ts';
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 
 // The photo library's answer to each save, in order, and the PNGs it was handed. A pending answer
 // holds that save until the test settles it.
@@ -43,6 +44,8 @@ const SCREEN = { left: 0, top: 0, width: 402, height: 874 };
 const CAMERA = { left: 20, top: 700, width: 60, height: 60 };
 // Generous beside the component's gap between emptying the region and rewriting it.
 const REANNOUNCE_WAIT_MS = 2000;
+// A solved check's Unlocked! hold, then generous room for the dialog's exit on real timers.
+const DIALOG_EXIT_WAIT_MS = PARENT_GATE_SUCCESS_HOLD_MS + 2000;
 
 let interpolations;
 let timings;
@@ -213,6 +216,19 @@ describe('the Save Failure Banner', () => {
     await act(async () => gate.answer());
   }
 
+  // The chrome stays inert until a closing dialog has left, as a modal's scrim holds every touch
+  // through its exit and a solved check's Unlocked! hold; a child's next press comes after that.
+  async function dialogsGone() {
+    await vi.waitFor(() => expect(host.querySelector('[data-native-modal]')).toBeNull(), {
+      timeout: DIALOG_EXIT_WAIT_MS,
+    });
+  }
+
+  async function leaveGate() {
+    await solveGate();
+    await dialogsGone();
+  }
+
   // Parent Center's own route to a policy: solve its check, choose, and leave.
   async function choosePolicy(mode) {
     const owner = caller.product.owner;
@@ -220,6 +236,7 @@ describe('the Save Failure Banner', () => {
     if (owner.gate.getState().open) await solveGate();
     await act(async () => owner.setPolicy('externalLinks', mode));
     await act(async () => owner.closeParentCenter());
+    await dialogsGone();
   }
 
   async function refusedOnIos() {
@@ -238,7 +255,7 @@ describe('the Save Failure Banner', () => {
       feature: 'externalLinks',
     });
     expect(records.settingsOpened).toBe(0);
-    await solveGate();
+    await leaveGate();
     expect(records.settingsOpened).toBe(1);
     await act(async () => button('Open Settings').click());
     expect(caller.product.owner.gate.getState().open).toBe(true);
@@ -253,7 +270,7 @@ describe('the Save Failure Banner', () => {
       open: true,
       feature: 'externalLinks',
     });
-    await solveGate();
+    await leaveGate();
     await act(async () => button('Open Settings').click());
     expect(caller.product.owner.gate.getState().open).toBe(false);
     expect(records.settingsOpened).toBe(2);

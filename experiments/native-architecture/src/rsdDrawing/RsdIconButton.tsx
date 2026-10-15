@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ComponentType } from 'react';
 import { css, html } from 'react-strict-dom';
 import { Animated, Easing } from '../platform/animated';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
@@ -6,6 +6,7 @@ import { useReduceMotion } from '../drawing/useReduceMotion';
 import { DRAWING_BRAND, DRAWING_SCALE } from '../drawing/theme';
 import { paintedTile } from './paintedTile';
 import { RsdIcon } from './RsdIcon';
+import type { OptionOutlineProps } from './optionOutline';
 import { RsdPressable } from './RsdPressable';
 import type { NativeIconName } from './icons.generated';
 import { useBareToolbar } from './toolbarSkin';
@@ -44,7 +45,7 @@ export const WHITE_INK_KEYLINE = '#000';
 // The flat (bare) Button style: ink printed on the paper with no face of its own. The icon keeps a
 // tenth of the button as padding; a press sinks it, an open menu's button and a hovered one lift,
 // and a parked one washes out instead of fading. A flat menu's selected option is outlined in the
-// strong text ink, one drop shadow this far out on each side.
+// strong text ink, one drop shadow this far out on each side (optionOutline.tsx).
 export const BARE_TILE_PADDING_SHARE = 10;
 export const BARE_TILE_PRESS_SCALE = 0.9;
 export const BARE_TILE_LIFT_SCALE = 1.08;
@@ -192,7 +193,6 @@ const styles = css.create({
   },
   bareTileDisabled: { transform: 'scale(1)', cursor: 'auto' },
   bareTileWashed: { filter: BARE_TILE_DISABLED_FILTER },
-  outlined: (size: number, filter: string) => ({ width: size, height: size, filter }),
   // app.css's .free-count on the AI Image Button's corner.
   badge: (offset: number, size: number, padding: number) => ({
     boxSizing: 'border-box',
@@ -218,17 +218,6 @@ const styles = css.create({
   // A flat badge sits on the paper, ringed in paper to lift it off the ink beneath.
   bareBadge: (paper: string) => ({ boxShadow: `0 0 0 ${BARE_BADGE_RING_PX}px ${paper}` }),
 });
-
-function outlineFilter(ink: string) {
-  return [
-    `${BARE_OPTION_OUTLINE_PX}px 0`,
-    `-${BARE_OPTION_OUTLINE_PX}px 0`,
-    `0 ${BARE_OPTION_OUTLINE_PX}px`,
-    `0 -${BARE_OPTION_OUTLINE_PX}px`,
-  ]
-    .map((offset) => `drop-shadow(${offset} 0 ${ink})`)
-    .join(' ');
-}
 
 // The AI Image Button's .free-count badge and its .loading spin; native-ai-flow-geometry.test.mjs
 // reads each back from AiImageButton.svelte and app.css.
@@ -366,6 +355,9 @@ export type IconButtonProps = Common &
         skin: 'flyout';
         // An eraser size preview drawn at the eraser's true pixel size, with no padding.
         pinnedIconPx?: number;
+        // Draws the flat style's outline around the selected option's glyph. The menus hand it
+        // over, so the web loads it with them rather than before first paint.
+        Outline: ComponentType<OptionOutlineProps>;
       } & FlyoutScale &
         FaceInk &
         Selection)
@@ -469,10 +461,10 @@ export function RsdIconButton(props: IconButtonProps) {
       }
       onClick={onPress}
     >
-      {bare && skin === 'flyout' && selected ? (
-        <html.div style={styles.outlined(glyphPx, outlineFilter(theme.textStrong))}>
+      {props.skin === 'flyout' && bare && selected ? (
+        <props.Outline name={icon} size={glyphPx} keyline={keyline}>
           {glyph}
-        </html.div>
+        </props.Outline>
       ) : busy ? (
         <SpinningIcon size={glyphPx} muted={disabled && !bare} filter={paint.filter} />
       ) : (
