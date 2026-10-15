@@ -1,15 +1,12 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
-import { Linking, Platform, type ScrollView } from 'react-native';
+import { Fragment, useEffect, useRef } from 'react';
+import { Linking, Modal, Platform, type ScrollView } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
-import { openAppPage, setDocumentTitle } from '../platform/appPath';
+import { openAppPage, setDocumentTitle, documentTitle } from '../platform/appPath';
 import { useDialogBack } from '../platform/BrowserBack';
-import { soundSettingsStorage } from '../platform/soundSettings';
-import { createDrawingProduct } from '../product/createDrawingProduct';
-import { createNativeFeedback } from '../feedback/feedback';
-import { feedbackDevice, feedbackPolicyStorage, feedbackTransport } from '../platform/feedback';
+import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { AppPage } from '../information/appPages';
 import privacy from '../information/privacy.generated.json';
 import { RELEASE_NOTES } from '../settings/whatsNew';
@@ -26,6 +23,8 @@ import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
+import { resolveBackLabel } from '../../../../web/src/lib/components/page/backLabel';
+import { DRAWING_ROUTE } from '../../../../web/src/lib/boot/appSurfaceRoute';
 
 type Page = Exclude<AppPage, 'drawing'>;
 const PAGE_LINE_HEIGHT = 1.6;
@@ -48,7 +47,7 @@ const styles = css.create({
   muted: { color: colors.textSoft },
 });
 const PAGE_TITLES: Record<Page, string> = {
-  privacy: 'Privacy policy',
+  privacy: privacy.native.title,
   changelog: 'Changelog',
   feedback: 'Send Feedback',
 };
@@ -82,36 +81,30 @@ function Changelog() {
   ));
 }
 
-function usePageProduct() {
-  const [, publish] = useState(0);
-  const [owner] = useState(() =>
-    createDrawingProduct(soundSettingsStorage, () => publish((value) => value + 1))
-  );
-  const [feedback] = useState(() =>
-    createNativeFeedback({
-      transport: feedbackTransport,
-      device: feedbackDevice,
-      policyStorage: feedbackPolicyStorage,
-      parent: owner.port,
-    })
-  );
-  useEffect(() => {
-    void owner.settings.load();
-    void feedback.loadPolicy();
-    return () => {
-      feedback.dispose();
-      owner.dispose();
-    };
-  }, [owner, feedback]);
-  return { owner, feedback };
-}
+type InformationProduct = Pick<
+  ReturnType<typeof useDrawingProduct>,
+  'owner' | 'state' | 'feedback'
+>;
+type InformationPageProps = {
+  page: Page;
+  product: InformationProduct;
+  drawingVisited: boolean;
+  standalone: boolean;
+};
 
-function PageContent({ page }: { page: Page }) {
-  const { owner, feedback } = usePageProduct();
-  const state = owner.getState();
-  const gate = useParentGateCard(state.gate);
+function PageContent({ page, product, drawingVisited }: InformationPageProps) {
+  const { owner, state, feedback } = product;
+  useEffect(
+    () => () => {
+      if (owner?.getState().gate.open) owner.gate.dismiss();
+      if (owner?.getState().parentCenterOpen) owner.closeParentCenter();
+    },
+    [owner, page]
+  );
+  useEffect(() => () => feedback.owner?.close(), [feedback.owner, page]);
+  const gate = useParentGateCard(state?.gate ?? null);
   const card = useModalPresence(gate?.open ? gate : null);
-  const parentCenter = useModalPresence(state.parentCenterOpen ? true : null);
+  const parentCenter = useModalPresence(state?.parentCenterOpen ? true : null);
   const scroll = useRef<ScrollView>(null);
   const bodyOffset = useRef(0);
   const sections = useRef<Record<string, number>>({});
@@ -128,7 +121,7 @@ function PageContent({ page }: { page: Page }) {
       openAppPage('feedback');
       return;
     }
-    owner.port.request(
+    owner?.port.request(
       'externalLinks',
       (proof) => {
         if (proof.valid()) void Linking.openURL(href);
@@ -141,6 +134,12 @@ function PageContent({ page }: { page: Page }) {
     <>
       <RsdPageSheet
         title={PAGE_TITLES[page]}
+        backLabel={resolveBackLabel({
+          fromPath: drawingVisited ? DRAWING_ROUTE : null,
+          sessionFlag: null,
+          referrer: '',
+          origin: '',
+        })}
         lede={PAGE_LEDES[page]}
         scrollRef={scroll}
         onBodyOffset={(offset) => {
@@ -158,11 +157,11 @@ function PageContent({ page }: { page: Page }) {
         ) : page === 'changelog' ? (
           <Changelog />
         ) : (
-          <RsdFeedbackSection owner={feedback} />
+          <RsdFeedbackSection owner={feedback.owner} />
         )}
         <RsdInformationFooter page={page} onExternal={onLink} />
       </RsdPageSheet>
-      {card.shown ? (
+      {owner && card.shown ? (
         <RsdParentGateSheet
           owner={owner}
           state={card.shown.state}
@@ -171,9 +170,10 @@ function PageContent({ page }: { page: Page }) {
           onDismiss={card.dismissed}
         />
       ) : null}
-      {parentCenter.shown ? (
+      {owner && parentCenter.shown ? (
         <ModalShell
           label="Parent Center"
+          size="settings"
           visible={parentCenter.visible}
           onDismiss={parentCenter.dismissed}
           onClose={owner.closeParentCenter}
@@ -186,13 +186,40 @@ function PageContent({ page }: { page: Page }) {
   );
 }
 
-export function RsdInformationPage({ page }: { page: Page }) {
-  useEffect(() => setDocumentTitle(`${PAGE_TITLES[page]} · Splotch`), [page]);
-  return (
-    <DrawingAppearanceProvider preference={bootAppearance()}>
+export function RsdInformationPage({
+  page,
+  product,
+  drawingVisited,
+  standalone,
+}: InformationPageProps) {
+  useEffect(() => {
+    const previous = documentTitle();
+    setDocumentTitle(`${PAGE_TITLES[page]} · Splotch`);
+    return () => setDocumentTitle(previous);
+  }, [page]);
+  const content = (
+    <DrawingAppearanceProvider preference={product.state?.settings?.appearance ?? bootAppearance()}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <PageContent page={page} />
+        <PageContent
+          page={page}
+          product={product}
+          drawingVisited={drawingVisited}
+          standalone={standalone}
+        />
       </SafeAreaProvider>
     </DrawingAppearanceProvider>
+  );
+  return standalone ? (
+    <Modal
+      visible
+      animationType="none"
+      accessibilityLabel="Information page"
+      supportedOrientations={['portrait', 'portrait-upside-down', 'landscape']}
+      onRequestClose={() => openAppPage('drawing')}
+    >
+      {content}
+    </Modal>
+  ) : (
+    content
   );
 }

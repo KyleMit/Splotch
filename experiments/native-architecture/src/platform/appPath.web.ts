@@ -13,8 +13,33 @@ export function setDocumentTitle(title: string) {
   document.title = title;
 }
 
-export const currentAppPage = () => appPageAt(location.pathname);
-export const subscribeAppPage = () => () => {};
-export function openAppPage(page: AppPage) {
-  location.assign(APP_PAGE_PATHS[page]);
+export function createBrowserAppPages() {
+  const listeners = new Set<() => void>();
+  const publish = () => {
+    for (const listener of listeners) listener();
+  };
+  return {
+    current: () => appPageAt(location.pathname),
+    subscribe(listener: () => void) {
+      if (listeners.size === 0) window.addEventListener('popstate', publish);
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) window.removeEventListener('popstate', publish);
+      };
+    },
+    open(page: AppPage) {
+      if (appPageAt(location.pathname) === page) return;
+      history.pushState(null, '', APP_PAGE_PATHS[page]);
+      publish();
+    },
+  };
+}
+const pages = createBrowserAppPages();
+export const currentAppPage = pages.current;
+export const subscribeAppPage = pages.subscribe;
+export const openAppPage = pages.open;
+
+export function documentTitle() {
+  return document.title;
 }

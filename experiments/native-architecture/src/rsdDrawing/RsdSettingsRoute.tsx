@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -44,6 +44,7 @@ export function RsdSettingsRoute({
   soundVolume,
   visible,
   onDismiss,
+  informationPage,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
@@ -55,6 +56,7 @@ export function RsdSettingsRoute({
   soundVolume: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
+  informationPage?: ReactNode;
 }) {
   const owner = product.owner;
   const aiOwner = product.ai.owner;
@@ -84,6 +86,7 @@ export function RsdSettingsRoute({
       initialSection={screen.settingsSection}
       visible={visible}
       onDismiss={onDismiss}
+      informationPage={informationPage}
       parentCenter={{
         unlocked: product.state?.parentCenterOpen === true,
         checkDue: product.state?.parentCenterCheckDue !== false,

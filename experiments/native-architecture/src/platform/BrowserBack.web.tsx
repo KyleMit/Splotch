@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
+import { currentAppPage, subscribeAppPage } from './appPath';
 import { hasDrawingInk } from '../drawing/model';
 import {
   createBrowserBack,
@@ -34,9 +43,11 @@ export function BrowserBackProvider({
   session: DrawingSession;
   children: ReactNode;
 }) {
+  const drawingPage = useSyncExternalStore(subscribeAppPage, currentAppPage) === 'drawing';
   const [owner, setOwner] = useState<BrowserBackOwner | null>(null);
   const retainedOwner = useRef<BrowserBackOwner | null>(null);
   useEffect(() => {
+    if (!drawingPage) return;
     const back =
       retainedOwner.current ??
       createBrowserBack(browserHistoryPort(), {
@@ -58,7 +69,7 @@ export function BrowserBackProvider({
       unsubscribe();
       back.stop();
     };
-  }, [session]);
+  }, [session, drawingPage]);
   return <BrowserBackScope.Provider value={owner}>{children}</BrowserBackScope.Provider>;
 }
 

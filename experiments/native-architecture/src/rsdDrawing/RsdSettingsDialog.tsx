@@ -39,6 +39,7 @@ import { RsdAiSettingsSection, type AiSettingsRoute } from './RsdAiSettingsSecti
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
+import { openAppPage } from '../platform/appPath';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 
 type NativeSoundSettingsDialogProps = {
@@ -76,6 +77,7 @@ type NativeSoundSettingsDialogProps = {
   parentCenter: ParentCenterRoute;
   // The Grown-Ups Only card, held over Settings while a check raised from it is open.
   gate: ReactNode;
+  informationPage?: ReactNode;
   feedback: NativeFeedbackOwner | null;
   // Opens a page outside the app; the route holds it behind the external-links check.
   onOpenPage: (page: SettingsLink) => void;
@@ -153,13 +155,14 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   return (
     <ModalShell
       visible={visible}
+      overlay={props.informationPage}
       seeThrough={props.buttonScale.active}
       onDismiss={onDismiss}
-      label={pageLabel(subpage ?? HUB)}
+      label={props.informationPage ? 'Information page' : pageLabel(subpage ?? HUB)}
       size={subpage?.section === 'ai' ? 'aiSettings' : 'settings'}
       // Escape, the scrim, Android Back and browser Back close Settings from any page, as
       // shipping's dialog does; only the header's Back returns to the hub.
-      onClose={onClose}
+      onClose={props.informationPage ? () => openAppPage('drawing') : onClose}
       scrolls={false}
       header={
         subpage ? (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode, type Ref } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode, type Ref } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import {
   initialWindowMetrics,
@@ -7,12 +7,14 @@ import {
 } from 'react-native-safe-area-context';
 import { SvgXml } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
+import type { BackLabel } from '../../../../web/src/lib/components/page/backLabel';
 import { PHONE_MAX_WIDTH_PX } from '../../../../web/src/lib/breakpoints';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
+import { landFocus, retainFocus } from './landFocus';
 import { RsdButton } from './RsdButton';
 import { RsdPressable } from './RsdPressable';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
@@ -188,7 +190,7 @@ function startDrawing() {
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
-function BackLink() {
+function BackLink({ label }: { label: BackLabel }) {
   const theme = useDrawingAppearance();
   const chevron = useNativeIconMarkup('chevron-left')?.[theme];
   const { brandSolid } = DRAWING_THEMES[theme];
@@ -207,9 +209,7 @@ function BackLink() {
       <html.div aria-hidden style={styles.blob(blobShadow(brandSolid))}>
         <SvgXml xml={xml} width={BACK_BLOB_PX} height={BACK_BLOB_PX} />
       </html.div>
-      <html.span style={[controlStyles.boldText, styles.backLabel]}>
-        {NOT_FOUND_COPY.startDrawing}
-      </html.span>
+      <html.span style={[controlStyles.boldText, styles.backLabel]}>{label}</html.span>
     </RsdPressable>
   );
 }
@@ -247,13 +247,21 @@ export function RsdPageSheet({
   children,
   scrollRef,
   onBodyOffset,
+  backLabel = NOT_FOUND_COPY.startDrawing,
 }: {
   title: string;
   lede: string;
   children: ReactNode;
   scrollRef?: Ref<ScrollView>;
   onBodyOffset?: (y: number) => void;
+  backLabel?: BackLabel;
 }) {
+  const titleRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const restore = retainFocus();
+    landFocus(titleRef.current);
+    return restore;
+  }, [title]);
   const theme = useDrawingAppearance();
   const window = useWindowDimensions();
   // PageShell runs under the status bar, notch and home indicator, and pads every breakpoint's
@@ -297,11 +305,15 @@ export function RsdPageSheet({
           ]}
         >
           <html.div style={styles.topbar}>
-            <BackLink />
+            <BackLink label={backLabel} />
             <BrandMark phone={phone} />
           </html.div>
           <html.div style={styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide'])}>
-            <html.h1 style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}>
+            <html.h1
+              ref={titleRef}
+              tabIndex={-1}
+              style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}
+            >
               {title}
             </html.h1>
             <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>{lede}</html.p>
@@ -319,8 +331,6 @@ export function RsdPageSheet({
   );
 }
 
-// Shipping's NotFoundPage.svelte, which a host shows for any path but the drawing screen's. This
-// export has no Changelog or Privacy page to offer beside Start drawing, so it offers that alone.
 export function RsdNotFoundPage() {
   useEffect(() => setDocumentTitle(NOT_FOUND_COPY.documentTitle), []);
   return (

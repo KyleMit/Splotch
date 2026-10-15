@@ -7,3 +7,7 @@ export function isDrawingPath() {
   return currentAppPage() === 'drawing';
 }
 export function setDocumentTitle(_title: string) {}
+
+export function documentTitle() {
+  return '';
+}

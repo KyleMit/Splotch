@@ -4,7 +4,6 @@ import { AppRestartRoot } from './product/AppRestart';
 import { ShippingFontGate } from './platform/shippingFont';
 import { useSyncExternalStore } from 'react';
 import { currentAppPage, subscribeAppPage } from './platform/appPath';
-import { RsdInformationPage } from './rsdDrawing/informationSurface';
 import { RsdNotFoundPage } from './rsdDrawing/notFoundSurface';
 
 export function ProbeApp() {
@@ -13,13 +12,7 @@ export function ProbeApp() {
     <AppRestartRoot>
       <DrawingSessionProvider>
         <ShippingFontGate>
-          {page === 'drawing' ? (
-            <RsdDrawingScreen />
-          ) : page === 'notFound' ? (
-            <RsdNotFoundPage />
-          ) : (
-            <RsdInformationPage page={page} />
-          )}
+          {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}
         </ShippingFontGate>
       </DrawingSessionProvider>
     </AppRestartRoot>

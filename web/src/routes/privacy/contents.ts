@@ -1,4 +1,4 @@
-import type { PaletteLabel } from '$lib/palette';
+import type { PaletteLabel } from '../../lib/palette';
 
 // The privacy page's contents metadata and the scrollspy that drives its
 // contents rail/disclosure, kept beside +page.svelte.
