@@ -1,6 +1,6 @@
 import './platform/skiaRuntime';
 import './strict.css';
-import { registerRootComponent } from 'expo';
+import { registerRootComponent } from './platform/registerRoot';
 import { ProbeApp } from './ProbeApp';
 import { registerServiceWorker } from './platform/serviceWorker';
 import { startLaunchInvites } from './platform/launchInvites';

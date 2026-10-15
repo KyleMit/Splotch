@@ -1,4 +1,4 @@
-import { Asset } from 'expo-asset';
+import { webAssetUri } from './webAsset';
 import { PENCIL_SOUNDS, pickPencilTake, usableTakes } from '../audio/pencilSounds';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
@@ -73,8 +73,7 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
     const loads = await Promise.race([
       Promise.allSettled(
         PENCIL_SOUNDS.map(async (sound) => {
-          const asset = Asset.fromModule(sound);
-          const response = await fetch(asset.localUri ?? asset.uri, { signal });
+          const response = await fetch(webAssetUri(sound), { signal });
           if (!response.ok) throw new Error('Drawing sound could not be loaded.');
           return context.decodeAudioData(await response.arrayBuffer());
         })

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Asset } from 'expo-asset';
+import { webAssetUri } from '../platform/webAsset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { glassPanes, type GlassPaneLayout } from '../../../../web/src/lib/glassPaneGeometry';
 import handmadePaper from '../../assets/paper/handmade-paper.webp';
@@ -31,7 +31,7 @@ const RULE_Z_INDEX = 1;
 // carry backdrop-filter, mask-image or mix-blend-mode. Shipping's BareToolbarPaper.svelte and
 // GlassPanes.svelte, element for element.
 
-const PAPER_TEXTURE = `url("${Asset.fromModule(handmadePaper).uri}")`;
+const PAPER_TEXTURE = `url("${webAssetUri(handmadePaper)}")`;
 
 const backdropBlurs =
   typeof CSS !== 'undefined' &&
