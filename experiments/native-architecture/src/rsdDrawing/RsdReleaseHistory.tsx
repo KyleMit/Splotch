@@ -20,7 +20,7 @@ import { styles as controls } from './controls';
 import { useReleaseHistory } from './useReleaseHistory';
 import { RsdTextLink } from './RsdTextLink';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
-import { colors, dimensions } from './tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 
 const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 const RELEASE_SPY_BAND_BOTTOM_PERCENT = 70;
@@ -69,7 +69,24 @@ const styles = css.create({
     fontSize: dimensions.fontSizeSm,
     cursor: 'pointer',
   },
-  version: { margin: 0, fontSize: dimensions.fontSizeXs, color: colors.textSoft },
+  version: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: dimensions.space1,
+    margin: 0,
+    fontSize: dimensions.fontSizeXs,
+    color: colors.textSoft,
+    fontFamily: fonts.mediumFamily,
+    fontWeight: fonts.mediumWeight,
+  },
+  versionLink: {
+    minHeight: NAV_TARGET_PX,
+    fontSize: dimensions.fontSizeXs,
+    color: colors.brandText,
+    textDecorationLine: 'underline',
+  },
 });
 const CONTENTS = releases.map((release) => ({
   ...release,
@@ -203,12 +220,15 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
   );
 }
 
-export function RsdLatestReleaseLabel() {
-  const latest = RELEASE_NOTES[0];
+export function RsdLatestReleaseLabel({ onPress }: { onPress: (id: string) => void }) {
+  const latest = releases[0];
   return (
-    <html.p
-      style={styles.version}
-    >{`Splotch ${latest.version} · released ${latest.dateLabel}`}</html.p>
+    <html.div style={styles.version}>
+      <html.span>{`Splotch ${latest.version} · released ${latest.dateLabel} ·`}</html.span>
+      <RsdTextLink style={styles.versionLink} onPress={() => onPress(latest.id)}>
+        <html.span>What's new</html.span>
+      </RsdTextLink>
+    </html.div>
   );
 }
 
