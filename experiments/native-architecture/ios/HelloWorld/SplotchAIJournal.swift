@@ -664,10 +664,9 @@ final class SplotchAIJournal {
     r["state"] = "acknowledged"; var next = value; next["recovery"] = r
     return try publishRequest(root, dir, value, next)
   }
-  // Shipping holds only the run in hand, so a new attempt replaces every finished plain one; recovery
-  // records stay, as their chain names its source.
-  private func dropFinishedAttempts(_ root: URL, _ all: [URL]) throws {
-    for dir in all { if try integer(latest(dir), "schema") == 1 { try FileManager.default.removeItem(at: dir) } }
+  // A new plain run replaces saved attempts, including a run abandoned by another process.
+  private func dropPreviousAttempts(_ root: URL, _ all: [URL]) throws {
+    for dir in all { try FileManager.default.removeItem(at: dir) }
     try fence(root)
   }
   private func confirmedAttempts(_ root: URL) throws -> [[String: Any]] {
@@ -740,8 +739,8 @@ final class SplotchAIJournal {
         try checked(["free", "managed", "byok"].contains(string(credential, "kind")) && matches(string(credential, "reference"), "[a-f0-9]{64}"))
       }
       let all = try attempts(root)
-      for dir in all { try checked(!unresolved(latest(dir))) }
-      if kind == "prepare" { try dropFinishedAttempts(root, all) }
+      if kind == "prepare" { try dropPreviousAttempts(root, all) }
+      else { for dir in all { try checked(!unresolved(latest(dir))) } }
       try checked(try attempts(root).count < maxAttempts)
       let original = Data(try string(input, "originalModel").utf8)
       try originalModel(original, kind == "importLegacy")

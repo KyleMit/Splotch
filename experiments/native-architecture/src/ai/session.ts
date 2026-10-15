@@ -9,7 +9,7 @@ import {
 import { credentialHeaders, maskSecret, validCredential, type AiCredential } from './credentials';
 import { AI_THROTTLED_MESSAGE, requestAi } from './transport';
 import { credentialRefusal, type AiCredentialOutcome } from './credentialResult';
-import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
+import type { AiJournal } from './journal';
 import { createAiReportOwner } from './reportOwner';
 import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
@@ -295,60 +295,15 @@ export class AiSession {
     this.resultCount += 1;
     this.update({ credentialResult: { id: this.resultCount, ...result } });
   };
-  private holdRecovery = (receipt: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt) => {
-    this.recoveryUncertain = receipt.kind === 'recovery-request';
-    this.credential = null;
-    this.update({
-      recovery: receipt,
-      heldResult: receipt.journal.result,
-      journal: null,
-      credential: 'unavailable',
-      remaining: null,
-      message:
-        'A saved recovery request is held. Recovery sending is unavailable. Your original stays saved.',
-    });
-  };
   protected load = async () => {
     if (!this.consented() || this.active || this.state.retryAt > Date.now()) return;
-    const proof = this.authorization;
-    const permitted = () =>
-      this.state.authorized && proof === this.authorization && !this.disposed && this.consented();
     this.active = true;
     this.update({
       busy: true,
       message: '',
     });
     try {
-      {
-        const stored = await this.deps.storage.read();
-        if (!permitted()) return;
-        this.recoveryUncertain = false;
-        if (stored?.kind === 'recovery-held' || stored?.kind === 'recovery-request') {
-          this.holdRecovery(stored.receipt);
-          return;
-        }
-        const journal =
-          stored === null
-            ? null
-            : stored.kind === 'native'
-              ? stored.receipt.journal
-              : stored.journal;
-        this.update({
-          journal,
-          refusal: this.state.refusal?.id === journal?.id ? this.state.refusal : null,
-        });
-        if (journal) this.journals.set(journal.id, journal);
-      }
       await this.refreshCredential();
-      if (!permitted()) return;
-      const pictures = await this.deps.storage.pictures();
-      if (!permitted()) return;
-      this.update({ pictures });
-      // A run the app was closed on before its ticket came back is gone, as shipping's in-memory
-      // run is: the next tap starts afresh rather than holding the wand until the job expires.
-      const journal = this.state.journal;
-      if (journal && (journal.phase === 'sent' || journal.phase === 'unknown'))
-        await this.persist({ ...journal, phase: 'failed' });
     } catch {
       this.update({
         credential: 'unavailable',

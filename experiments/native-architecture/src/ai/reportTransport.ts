@@ -1,11 +1,10 @@
-import { MAX_JSON_BYTES, MAX_RETRY_AFTER_MS } from './contract';
+import { MAX_JSON_BYTES } from './contract';
 import { readAiBytes, type AiTransport } from './transport';
 import { narrowReportReply, REPORT_TIMEOUT_MESSAGE } from '../../../../web/src/lib/reportReply';
 import { NETWORK_ERROR_MESSAGE } from '../../../../web/src/lib/latestRequest';
 export type AiReportReply =
   | { kind: 'success'; reportId: string | null }
   | { kind: 'failure'; message: string; retryAt: number };
-const DEFAULT_REPORT_RETRY_MS = 60_000;
 export async function reportWait<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   if (signal.aborted) throw new Error('AI report request stopped.');
   let abort: () => void = () => {};
@@ -44,26 +43,7 @@ export async function sendAiReport(
     const reply = narrowReportReply(raw);
     if (response.status >= 200 && response.status < 300 && reply?.ok)
       return { kind: 'success', reportId: 'reportId' in reply ? reply.reportId : null };
-    if (reply && !reply.ok) {
-      const retry = response.headers.get('Retry-After');
-      const delay =
-        retry && /^\d+$/.test(retry)
-          ? Number(retry) * 1000
-          : retry
-            ? Date.parse(retry) - Date.now()
-            : NaN;
-      return {
-        kind: 'failure',
-        message: reply.error,
-        retryAt:
-          response.status === 429
-            ? Date.now() +
-              (Number.isFinite(delay)
-                ? Math.max(0, Math.min(MAX_RETRY_AFTER_MS, delay))
-                : DEFAULT_REPORT_RETRY_MS)
-            : 0,
-      };
-    }
+    if (reply && !reply.ok) return { kind: 'failure', message: reply.error, retryAt: 0 };
   } catch {
     return {
       kind: 'failure',

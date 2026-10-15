@@ -144,7 +144,7 @@ it('deduplicates sends and suppresses deferred completion after close', async ()
   expect(state.phase).toBe('idle');
 });
 
-it('honors an explicit 429 wait', async () => {
+it('offers explicit report retry after a 429 as shipping does', async () => {
   await prepare();
   owner.request(URI);
   releaseGate({ valid: () => true });
@@ -153,10 +153,9 @@ it('honors an explicit 429 wait', async () => {
   );
   await owner.send();
   expect(state.phase).toBe('error');
-  const retryAt = state.retryAt;
-  expect(retryAt).toBeGreaterThan(Date.now());
+  expect(state.retryAt).toBe(0);
   owner.request(URI);
-  expect(state.phase).toBe('error');
+  expect(state.phase).toBe('confirm');
   expect(parent.request).toHaveBeenCalledOnce();
 });
 

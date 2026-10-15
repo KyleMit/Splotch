@@ -147,14 +147,33 @@ it('fails closed when the newest entry is malformed', async () => {
   await expect(createAiStorage().read()).rejects.toThrow();
 });
 
-it('refuses new attempts while unresolved and requires monotonic IDs', async () => {
+it('requires monotonic attempt IDs', async () => {
   const storage = createAiStorage();
   await storage.prepare(journal(), model, png);
-  await expect(storage.prepare(journal(2), model, png)).rejects.toThrow();
-  await storage.read();
   await storage.write(journal(1, 'failed'));
   await expect(storage.prepare(journal(1), model, png)).rejects.toThrow();
 });
+
+it.each(['sent', 'pending', 'recovery'])(
+  'replaces an abandoned %s attempt when a fresh session starts a picture',
+  async (phase) => {
+    const previous = createAiStorage();
+    if (phase === 'recovery')
+      await previous.prepareRecovery(journal(1, 'unknown'), model, png, {
+        kind: 'free',
+        reference: 'a'.repeat(64),
+      });
+    else {
+      await previous.prepare(journal(), model, png);
+      if (phase === 'pending') await previous.write({ ...journal(), phase, jobId: 'b'.repeat(64) });
+    }
+    const fresh = createAiStorage();
+    await expect(fresh.prepare(journal(2), model, png)).resolves.toMatchObject({
+      journal: { id: 2 },
+    });
+    expect(disk.raw.attempts.map(({ receipt }) => receipt.journal.id)).toEqual([2]);
+  }
+);
 
 it('keeps making pictures past the attempt cap, holding only the latest one, as shipping does', async () => {
   const storage = createAiStorage();

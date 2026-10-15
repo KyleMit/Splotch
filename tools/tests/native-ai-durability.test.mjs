@@ -79,13 +79,14 @@ it('pins native original-expiry interval to the actual recovery protocol skew wi
   }
 });
 
-it('replaces finished attempts before the attempt cap in both native journals, as the web store does', () => {
+it('replaces abandoned attempts before the attempt cap in both native journals', () => {
   for (const path of [android, apple]) {
     const source = readFileSync(new URL(path, candidate), 'utf8');
     const prepare = source.slice(source.indexOf('"prepare", "importLegacy", "prepareRecovery"'));
-    const drop = prepare.search(/if \(?kind == "prepare"\)? (?:\{ try )?dropFinishedAttempts\(/);
+    const drop = prepare.search(/if \(?kind == "prepare"\)? (?:\{ try )?dropPreviousAttempts\(/);
     expect(drop).toBeGreaterThan(-1);
     expect(drop).toBeLessThan(prepare.indexOf('maxAttempts'));
-    expect(source).toMatch(/dropFinishedAttempts[\s\S]{0,200}"schema"\)? == 1L?/);
+    expect(source).toMatch(/dropPreviousAttempts[\s\S]{0,200}(?:removeItem|deleteRecursively)/);
+    expect(prepare.slice(drop)).toMatch(/else[^\n]*unresolved/);
   }
 });

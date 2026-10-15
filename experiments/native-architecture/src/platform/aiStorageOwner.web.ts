@@ -66,16 +66,9 @@ function assertReceiptProgress(previous: WebAiAttempt, next: WebAiAttempt): void
     invalidAiStorage();
 }
 
-// A plain attempt leaves storage only when a newer one is prepared, which needs it finished first,
-// so a newer id is proof enough for a tab that last saw it unfinished.
-function supersededAttempt(previous: WebAiAttempt, newest: number): boolean {
-  return previous.receipt.kind === 'prepared' && previous.receipt.journal.id < newest;
-}
-
-// Shipping holds only the run in hand, so preparing a new attempt drops every finished plain one;
-// recovery records stay, as their chain names its source.
-export function attemptsForNewRun(attempts: readonly WebAiAttempt[]): WebAiAttempt[] {
-  return attempts.filter(({ receipt }) => receipt.kind !== 'prepared');
+// A new plain run replaces saved attempts, including a run abandoned by another process.
+function supersededAttempt(previous: WebAiAttempt, newest: WebAiReceipt | undefined): boolean {
+  return newest?.kind === 'prepared' && previous.receipt.journal.id < newest.journal.id;
 }
 
 export class WebAiStorageOwner {
@@ -122,7 +115,7 @@ export class WebAiStorageOwner {
     if (!after || after.revision < before.revision) invalidAiStorage();
     if (after.revision === before.revision && JSON.stringify(after) !== JSON.stringify(before))
       invalidAiStorage();
-    const newest = after.attempts.at(-1)?.receipt.journal.id ?? 0;
+    const newest = after.attempts.at(-1)?.receipt;
     for (const previous of before.attempts) {
       const next = after.attempts.find(
         (attempt) => attempt.receipt.journal.id === previous.receipt.journal.id

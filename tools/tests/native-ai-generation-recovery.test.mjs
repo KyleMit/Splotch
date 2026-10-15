@@ -203,66 +203,6 @@ it('stops an authorized credential refresh between secure reads when the visit c
   f.owner.dispose();
 });
 
-it.each(['prepared', 'committed'])(
-  'holds restored recovery intent %s before credential reads, timers, legacy release or requests',
-  async (intent) => {
-    const f = fixture();
-    const journal = {
-      version: 1,
-      id: 1,
-      createdAt: 1,
-      style: 'Magical',
-      originalId: 'picture-1-fixture',
-      phase: 'unknown',
-      jobId: null,
-      result: null,
-    };
-    const receipt = {
-      kind: 'recovery-held',
-      journal,
-      nonce: 'c'.repeat(64),
-      revision: 1,
-      originalRevision: 1,
-      originalDigest: 'd'.repeat(64),
-      inputDigest: 'e'.repeat(64),
-      inputLength: 1,
-      resultDigest: null,
-      resultLength: null,
-      recovery: {
-        version: 2,
-        protocol: 'splotch-ai-recovery-v1',
-        id: 'a'.repeat(64),
-        credential: { kind: 'free', reference: 'b'.repeat(64) },
-        expiry: { kind: 'unknown' },
-        intent,
-      },
-    };
-    f.storage.read.mockResolvedValue({ kind: 'recovery-held', receipt });
-    await f.open();
-    expect(f.owner.getState().recovery).toBe(receipt);
-    expect(f.owner.getState().journal).toBeNull();
-    vi.useFakeTimers();
-    vi.setSystemTime(9000000000000);
-    await f.owner.generate();
-    f.owner.resume();
-    f.owner.releaseExpired();
-    await f.owner.setup('byok', 'fixture-key');
-    await f.owner.removeCredential('managed');
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(f.transport).not.toHaveBeenCalled();
-    expect(f.vault.read).not.toHaveBeenCalled();
-    expect(f.vault.installationId).not.toHaveBeenCalled();
-    expect(f.vault.write).not.toHaveBeenCalled();
-    expect(f.vault.remove).not.toHaveBeenCalled();
-    expect(f.storage.prepare).not.toHaveBeenCalled();
-    expect(f.storage.readPreparedUpload).not.toHaveBeenCalled();
-    expect(f.storage.write).not.toHaveBeenCalled();
-    expect(f.storage.retain).not.toHaveBeenCalled();
-    expect(f.owner.getState().recovery).toBe(receipt);
-    f.owner.dispose();
-  }
-);
-
 it('explicitly creates a native held recovery request and confirms intent without any recovery or legacy upload', async () => {
   const f = fixture();
   await f.open();
