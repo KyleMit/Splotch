@@ -1,10 +1,11 @@
-import { expect, it } from 'vitest';
-import { act } from 'react';
+import { expect, it, vi } from 'vitest';
+import { act, createElement } from 'react';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
-import { caller, records, host } from './rsd-native-selection-host.mjs';
+import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { RsdAiReportStatus } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAiImageReport.tsx';
 import {
   save,
   labelled,
@@ -29,6 +30,32 @@ import {
   sendDrawing,
   finishedPicture,
 } from './rsd-native-ai-fixture.mjs';
+
+it.each(['error', 'unknown', 'unavailable'])(
+  'offers an explicit report review only after a definite failure, not %s delivery',
+  async (phase) => {
+    const target = { kind: 'false-positive-refusal', id: 17 };
+    const owner = { reviewAiReport: vi.fn(), sendPictureReport: vi.fn() };
+    await mount(
+      createElement(RsdAiReportStatus, {
+        owner,
+        report: { phase, target, message: 'The report did not finish.', retryAt: 0 },
+      })
+    );
+    expect(host.textContent).toContain('The report did not finish.');
+    const review = [...host.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Review report again'
+    );
+    expect(review !== undefined).toBe(phase === 'error');
+    expect(labelled('Send report')).toBeNull();
+    expect(owner.sendPictureReport).not.toHaveBeenCalled();
+    if (review) {
+      await act(async () => review.click());
+      expect(owner.reviewAiReport).toHaveBeenCalledExactlyOnceWith(target);
+      expect(owner.sendPictureReport).not.toHaveBeenCalled();
+    }
+  }
+);
 
 it(
   'gates the wand at the tap, then picks a style from the covers and sends it at once',

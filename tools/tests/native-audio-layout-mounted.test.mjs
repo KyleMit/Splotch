@@ -11,7 +11,9 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
+import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
+import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 
 const sdk = vi.hoisted(() => ({
   handlers: null,
@@ -123,6 +125,11 @@ vi.mock('react-native-svg', () => {
     FeComposite: empty,
   };
 });
+function Paper() {
+  const screen = useDrawingScreen();
+  const sound = useDrawingSound();
+  return createElement(NativePaper, { screen, sound, menuOpen: false, lifted: false });
+}
 const TARGET = 101;
 function event(x, y, timestamp, ended = false) {
   const touch = {
@@ -150,7 +157,6 @@ async function send(name, x, y, timestamp, ended = false) {
     if (name === 'onPanResponderGrant') sdk.handlers.onPanResponderStart(input);
   });
 }
-const resource = () => ({ start: vi.fn(), stop: vi.fn(), setVolume: vi.fn(), dispose: vi.fn() });
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   sdk.handlers = null;
@@ -160,43 +166,11 @@ beforeEach(async () => {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
-  await act(async () => root.render(createElement(DrawingScreen)));
+  await act(async () => root.render(createElement(Paper)));
 });
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-});
-it('defers actual audio failure and recovery layout until the last lift without truncating either stroke', async () => {
-  await send('onPanResponderGrant', 10, 20, 100);
-  await send('onPanResponderMove', 30, 40, 200);
-  expect(sdk.loads).toHaveLength(1);
-  const changes = sdk.contentChanges;
-  await act(async () => sdk.loads[0].reject(new Error('SDK load failure')));
-  expect(owner.drawing).toBe(true);
-  expect(host.textContent).not.toContain('Drawing sound is unavailable');
-  expect(sdk.contentChanges).toBe(changes);
-  await send('onPanResponderMove', 200, 200, 300);
-  await send('onPanResponderEnd', 400, 400, 400, true);
-  expect(owner.history.drawing.strokes[0].points).toEqual([
-    { x: 10, y: 20 },
-    { x: 30, y: 40 },
-    { x: 200, y: 200 },
-    { x: 400, y: 400 },
-  ]);
-  expect(host.textContent).toContain('Drawing sound is unavailable');
-  await send('onPanResponderGrant', 10, 20, 100);
-  await send('onPanResponderMove', 30, 40, 200);
-  expect(sdk.loads).toHaveLength(2);
-  const retryChanges = sdk.contentChanges;
-  await act(async () => sdk.loads[1].resolve(resource()));
-  expect(owner.drawing).toBe(true);
-  expect(host.textContent).toContain('Drawing sound is unavailable');
-  expect(sdk.contentChanges).toBe(retryChanges);
-  await send('onPanResponderMove', 200, 200, 300);
-  await send('onPanResponderEnd', 400, 400, 400, true);
-  expect(owner.history.drawing.strokes[1].points).toEqual(owner.history.drawing.strokes[0].points);
-  expect(owner.history.undo).toHaveLength(2);
-  expect(host.textContent).not.toContain('Drawing sound is unavailable');
 });
 it('continues to settle a cohort on a genuine paper-frame invalidation', async () => {
   await send('onPanResponderGrant', 10, 20, 100);

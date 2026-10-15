@@ -11,7 +11,6 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { drawingPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
@@ -219,59 +218,53 @@ afterEach(async () => {
   host.remove();
 });
 
-it.each([
-  ['PaperWorkspace', DrawingScreen],
-  ['RSD NativePaper', RsdPaper],
-])(
-  '%s adopts the portrait slot, keeps its shape after rotating, and maps new touches under the finger',
-  async (_name, Screen) => {
-    await act(async () => root.render(createElement(Screen)));
-    await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
-    expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
-    await stroke(
-      PORTRAIT_FRAME,
-      [
-        [39, 70.4],
-        [195, 352],
-      ],
-      100
-    );
-    const before = structuredClone(owner.history.drawing);
-    expect(before.paper).toEqual({
-      kind: 'adopted',
-      cssWidth: 390,
-      cssHeight: 704,
-      backingScale: 1,
-    });
-    expect(before.strokes[0].points).toEqual([
-      { x: 56.59, y: 102.4 },
-      { x: 283.5, y: 512 },
-    ]);
-    sdk.sized.length = 0;
-    await rotate(LANDSCAPE_SLOT, LANDSCAPE_FRAME);
-    expect(owner.history.drawing).toEqual(before);
-    expect(sdk.sized.at(-1).height).toBe(300);
-    expect(sdk.sized.at(-1).width).toBeCloseTo(FITTED_WIDTH, 9);
-    await stroke(
-      LANDSCAPE_FRAME,
-      [
-        [FITTED_WIDTH / 4, 75],
-        [FITTED_WIDTH / 2, 150],
-      ],
-      1000
-    );
-    expect(owner.history.drawing.strokes).toHaveLength(2);
-    expect(owner.history.drawing.strokes[0]).toEqual(before.strokes[0]);
-    expect(owner.history.drawing.paper).toEqual(before.paper);
-    expect(owner.history.drawing.strokes[1].points).toEqual([
-      { x: 141.68, y: 256 },
-      { x: 283.5, y: 512 },
-    ]);
-    sdk.sized.length = 0;
-    await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
-    expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
-  }
-);
+it('RSD NativePaper adopts the portrait slot, keeps its shape after rotating, and maps new touches under the finger', async () => {
+  await act(async () => root.render(createElement(RsdPaper)));
+  await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
+  expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
+  await stroke(
+    PORTRAIT_FRAME,
+    [
+      [39, 70.4],
+      [195, 352],
+    ],
+    100
+  );
+  const before = structuredClone(owner.history.drawing);
+  expect(before.paper).toEqual({
+    kind: 'adopted',
+    cssWidth: 390,
+    cssHeight: 704,
+    backingScale: 1,
+  });
+  expect(before.strokes[0].points).toEqual([
+    { x: 56.59, y: 102.4 },
+    { x: 283.5, y: 512 },
+  ]);
+  sdk.sized.length = 0;
+  await rotate(LANDSCAPE_SLOT, LANDSCAPE_FRAME);
+  expect(owner.history.drawing).toEqual(before);
+  expect(sdk.sized.at(-1).height).toBe(300);
+  expect(sdk.sized.at(-1).width).toBeCloseTo(FITTED_WIDTH, 9);
+  await stroke(
+    LANDSCAPE_FRAME,
+    [
+      [FITTED_WIDTH / 4, 75],
+      [FITTED_WIDTH / 2, 150],
+    ],
+    1000
+  );
+  expect(owner.history.drawing.strokes).toHaveLength(2);
+  expect(owner.history.drawing.strokes[0]).toEqual(before.strokes[0]);
+  expect(owner.history.drawing.paper).toEqual(before.paper);
+  expect(owner.history.drawing.strokes[1].points).toEqual([
+    { x: 141.68, y: 256 },
+    { x: 283.5, y: 512 },
+  ]);
+  sdk.sized.length = 0;
+  await rotate(PORTRAIT_SLOT, PORTRAIT_FRAME);
+  expect(sdk.sized.at(-1)).toEqual(PORTRAIT_SLOT);
+});
 
 // The sheet's own grain: the shipping paper texture beneath the ink, on the sheet itself.
 function sheetGrain() {
