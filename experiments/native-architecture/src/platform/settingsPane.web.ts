@@ -1,6 +1,6 @@
 import type { ScrollView } from 'react-native';
 import {
-  scrollPaneToSection,
+  sectionScrollTop,
   spiedSectionAt,
 } from '../../../../web/src/lib/components/settings/paneScroll';
 import type { NativeSettingsSectionId } from '../settings/settingsSections';
@@ -22,7 +22,7 @@ export function scrollSettingsPaneToSection(
   const node = scrollElement(pane);
   const section = node.querySelector(`[data-section="${id}"]`);
   if (!(section instanceof HTMLElement)) throw new Error('Settings section is unavailable.');
-  scrollPaneToSection(node, section, animated ? 'smooth' : 'auto');
+  pane.scrollTo({ y: sectionScrollTop(node, section), animated });
 }
 
 export function spiedSettingsSection(

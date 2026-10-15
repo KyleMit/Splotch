@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ScrollView } from 'react-native-web';
 import { expect, it, vi } from 'vitest';
 import {
   scrollSettingsPaneToSection,
@@ -60,24 +61,39 @@ it('wires the shipping pinch owner, blocks its trailing tap and resets when Sett
   }
 });
 
-it('uses live web section geometry after the pane reflows and elects its clamped final section', () => {
-  const pane = document.createElement('div');
-  const previous = document.createElement('section');
-  previous.dataset.section = 'whatsnew';
-  const section = document.createElement('section');
-  section.dataset.section = 'about';
-  pane.append(previous, section);
-  document.body.append(pane);
-  Object.defineProperties(pane, { clientHeight: { value: 642 }, scrollHeight: { value: 5365 } });
-  pane.scrollTop = 4688;
-  pane.getBoundingClientRect = () => ({ top: 226, height: 642 });
-  section.getBoundingClientRect = () => ({ top: 598 });
-  pane.scrollTo = vi.fn();
-  const ref = { getScrollableNode: () => pane };
+it('uses the real web ScrollView API and live section geometry after the pane reflows', async () => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  let ref;
   try {
+    await act(async () =>
+      root.render(
+        createElement(
+          ScrollView,
+          {
+            ref: (value) => {
+              ref = value;
+            },
+          },
+          createElement('section', { 'data-section': 'whatsnew' }),
+          createElement('section', { 'data-section': 'about' })
+        )
+      )
+    );
+    const pane = ref.getScrollableNode();
+    const section = pane.querySelector('[data-section="about"]');
+    Object.defineProperties(pane, { clientHeight: { value: 642 }, scrollHeight: { value: 5365 } });
+    pane.scrollTop = 4688;
+    pane.getBoundingClientRect = () => ({ top: 226, height: 642 });
+    section.getBoundingClientRect = () => ({ top: 598 });
+    pane.scroll = vi.fn(({ top }) => {
+      pane.scrollTop = Math.min(top, pane.scrollHeight - pane.clientHeight);
+    });
     scrollSettingsPaneToSection(ref, 'about', 4688, false);
-    expect(pane.scrollTo).toHaveBeenCalledWith({ top: 5048, behavior: 'auto' });
-    pane.scrollTop = pane.scrollHeight - pane.clientHeight;
+    expect(pane.scroll).toHaveBeenCalledWith({ top: 5048, left: 0, behavior: 'auto' });
+    expect(pane.scrollTop).toBe(4723);
     expect(
       spiedSettingsSection(ref, ['whatsnew', 'about'], [0, 5056], {
         offset: 4688,
@@ -86,6 +102,7 @@ it('uses live web section geometry after the pane reflows and elects its clamped
       })
     ).toBe('about');
   } finally {
-    pane.remove();
+    await act(async () => root.unmount());
+    host.remove();
   }
 });

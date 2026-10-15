@@ -3,8 +3,13 @@ import {
   createParentGate,
   PARENT_GATE_SUCCESS_HOLD_MS,
   PARENT_GATE_ERROR_VISIBLE_MS,
+  PARENT_GATE_SHAKE_MS,
 } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { PROTECTED_PARENT_POLICIES } from '../../experiments/native-architecture/src/parentCenter/parentPolicy.ts';
+import {
+  GATE_LOCKOUT_MAX_MS,
+  GATE_LOCKOUT_ENDED_MESSAGE,
+} from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -20,6 +25,30 @@ function fixture() {
 }
 
 describe('the gate card timing and destination', () => {
+  it.each([false, true])(
+    'announces an expired lockout only while its card stays open: %s',
+    (open) => {
+      const { gate } = fixture();
+      gate.request('feedback', vi.fn());
+      for (let wrong = 0; wrong < 3; wrong += 1) {
+        gate.answer();
+        vi.advanceTimersByTime(PARENT_GATE_SHAKE_MS);
+      }
+      expect(gate.getState().locked).toBe(true);
+      const announced = gate.getState().announcementId;
+      if (!open) gate.dismiss();
+      vi.advanceTimersByTime(GATE_LOCKOUT_MAX_MS + 1);
+      if (!open) gate.request('feedback', vi.fn());
+      expect(gate.getState()).toMatchObject({
+        open: true,
+        locked: false,
+        message: '',
+        announcement: open ? GATE_LOCKOUT_ENDED_MESSAGE : '',
+      });
+      expect(gate.getState().announcementId).toBe(announced + Number(open));
+      gate.dispose();
+    }
+  );
   it('holds success before closing and hands over only after the exit, once', () => {
     const { gate } = fixture();
     const destination = vi.fn();

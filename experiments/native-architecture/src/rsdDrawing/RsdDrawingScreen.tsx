@@ -152,11 +152,13 @@ function useParentCenterSettings(
   gateOpen: boolean,
   informationOpen: boolean
 ) {
+  const owner = product.owner;
   const unlocked = product.state?.parentCenterOpen === true;
   const { settingsOpen, openSettings } = screen;
   useEffect(() => {
-    if (unlocked && !gateOpen && !settingsOpen && !informationOpen) openSettings();
-  }, [unlocked, gateOpen, settingsOpen, openSettings, informationOpen]);
+    if (owner?.getState().parentCenterOpen && !gateOpen && !settingsOpen && !informationOpen)
+      openSettings();
+  }, [owner, unlocked, gateOpen, settingsOpen, openSettings, informationOpen]);
 }
 
 // One route shows at a time (useProductModalRoute); each sheet's boundary closes the route it

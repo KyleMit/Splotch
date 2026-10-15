@@ -1,8 +1,9 @@
-import { caller, host, mount } from './rsd-native-selection-host.mjs';
+import { caller, host, mount, root } from './rsd-native-selection-host.mjs';
 import { Linking } from 'react-native';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { PolicySpans } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyContent.tsx';
 import { useCaller } from './rsd-native-ai-fixture.mjs';
 import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
 import { RELEASE_NOTES } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
@@ -40,6 +41,32 @@ it('renders every shipping privacy paragraph and gates only the links that leave
   expect(Linking.openURL).not.toHaveBeenCalled();
   await solveParentGate();
   expect(Linking.openURL).toHaveBeenCalledWith('https://openai.com/policies/services-agreement/');
+});
+
+it('activates a rendered policy link with Enter and leaves Space to page scrolling', () => {
+  const onLink = vi.fn();
+  const span = privacy.native.sections
+    .flatMap((section) => section.blocks.flatMap((block) => block.spans))
+    .find((span) => span.href === 'https://openai.com/policies/services-agreement/');
+  expect(span).toBeDefined();
+  const [link] = PolicySpans({ spans: [span], onLink });
+  expect(link.props.children).toBe('OpenAI Services Agreement');
+  link.props.onKeyDown({ key: ' ' });
+  expect(onLink).not.toHaveBeenCalled();
+  link.props.onKeyDown({ key: 'Enter' });
+  expect(onLink).toHaveBeenCalledExactlyOnceWith(span.href);
+});
+
+it('keeps Settings closed when leaving a standalone reading page with Parent Center open', async () => {
+  useCaller();
+  await mount(createElement(RsdDrawingScreen, { page: 'privacy' }));
+  await act(async () => caller.product.owner.openParentCenter());
+  await solveParentGate();
+  expect(caller.product.owner.getState().parentCenterOpen).toBe(true);
+  expect(caller.screen.settingsOpen).toBe(false);
+  await act(async () => root.render(createElement(RsdDrawingScreen, { page: 'drawing' })));
+  expect(caller.product.owner.getState().parentCenterOpen).toBe(false);
+  expect(caller.screen.settingsOpen).toBe(false);
 });
 
 it('renders the complete bundled release history, newest first', async () => {

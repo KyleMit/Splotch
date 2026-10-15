@@ -87,7 +87,7 @@ function createParentGateLockout(
       until = null;
     }
     const locked = until !== null;
-    if (getState().locked && !locked) announce(GATE_LOCKOUT_ENDED_MESSAGE);
+    if (getState().open && getState().locked && !locked) announce(GATE_LOCKOUT_ENDED_MESSAGE);
     if (errorUntil !== null && time >= errorUntil) {
       errorUntil = null;
       if (getState().announcement === PARENT_GATE_ERROR_MESSAGE) update({ announcement: '' });
@@ -403,12 +403,14 @@ export function createParentGate(
       }
       destination.start(action, options.immediate === true);
       lockout.calm();
+      lockout.tick();
       challenge();
       update({
         open: true,
         unlocked: false,
         feature,
         message: '',
+        announcement: '',
         shaking: false,
       });
       tick();

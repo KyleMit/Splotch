@@ -109,7 +109,8 @@ const styles = css.create({
   flush: { marginBottom: 0, flexShrink: 1 },
 });
 
-function PolicySpans({
+// The native Text renderer drops keyboard props; this export exposes the web link's rendered handler.
+export function PolicySpans({
   spans,
   onLink,
 }: {
@@ -132,7 +133,7 @@ function PolicySpans({
         onKeyDown={
           href
             ? (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
+                if (event.key === 'Enter') {
                   onLink(href);
                 }
               }
