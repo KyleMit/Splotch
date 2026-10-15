@@ -43,7 +43,7 @@ const ignore = () => {};
 // The app's rotation lock decides the dialog's orientation, as it decides the shipping page's. A
 // modal left at React Native's iPhone default, portrait only, shares no orientation with a
 // Landscape lock, so UIKit refuses the rotation and logs an exception.
-const FOLLOW_APP_ORIENTATION: ComponentProps<typeof Modal>['supportedOrientations'] = [
+export const FOLLOW_APP_ORIENTATION: ComponentProps<typeof Modal>['supportedOrientations'] = [
   'portrait',
   'portrait-upside-down',
   'landscape',
@@ -181,6 +181,7 @@ type ModalStageProps = {
   onClose: () => void;
   onDismiss?: () => void;
   children: ReactNode;
+  overlay?: ReactNode;
 };
 
 // The shipping modal frame (app.css .modal-dialog): a card centered on a dimmed scrim that flies
@@ -195,6 +196,7 @@ export function ModalStage({
   onClose,
   onDismiss,
   children,
+  overlay,
 }: ModalStageProps) {
   const { presented, motion } = useModalMotion(visible, onDismiss);
   const origin = useModalOrigin();
@@ -208,7 +210,7 @@ export function ModalStage({
       animationType="none"
       supportedOrientations={FOLLOW_APP_ORIENTATION}
       accessibilityLabel={label}
-      aria-labelledby={labelledBy}
+      aria-labelledby={overlay ? undefined : labelledBy}
       onRequestClose={visible ? onClose : ignore}
       onDismiss={Platform.OS === 'ios' ? onDismiss : undefined}
     >
@@ -244,7 +246,13 @@ export function ModalStage({
               also stamps an unlayered `pointer-events: auto` on every descendant, outranking React
               Strict DOM's layered `pointerEvents: 'none'`; the card turns its own subtree back on,
               so plain `none` is the same stage on the web without that rule. */}
-          <View pointerEvents={Platform.OS === 'web' ? 'none' : 'box-none'} style={layout.center}>
+          <View
+            accessibilityElementsHidden={!!overlay}
+            importantForAccessibility={overlay ? 'no-hide-descendants' : 'auto'}
+            aria-hidden={!!overlay}
+            pointerEvents={overlay ? 'none' : Platform.OS === 'web' ? 'none' : 'box-none'}
+            style={[layout.center, !!overlay && layout.clear]}
+          >
             <Animated.View
               testID="modal-card"
               pointerEvents={visible ? 'auto' : 'none'}
@@ -260,6 +268,7 @@ export function ModalStage({
               {children}
             </Animated.View>
           </View>
+          {overlay ? <View style={layout.cover}>{overlay}</View> : null}
         </View>
       </SafeAreaProvider>
     </Modal>
@@ -290,7 +299,7 @@ export function ModalShell({
       <ModalCard
         size={size}
         titleId={titleId}
-        active={stage.visible}
+        active={stage.visible && !stage.overlay}
         seeThrough={stage.seeThrough ?? false}
         header={header}
         scrolls={scrolls}

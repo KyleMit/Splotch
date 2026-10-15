@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { act, createElement, useEffect, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { host, mount, records, checkedRadio } from './rsd-native-selection-host.mjs';
@@ -8,10 +6,11 @@ import { createDrawingProduct } from '../../../experiments/native-architecture/s
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { RsdParentCenterSection } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentCenterSection.tsx';
+import { useModalPresence } from '../../../experiments/native-architecture/src/rsdDrawing/useModalPresence.ts';
 import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { useParentGateHold } from '../../../experiments/native-architecture/src/parentCenter/useParentGateHold.ts';
+import { useParentGateCard } from '../../../experiments/native-architecture/src/parentCenter/useParentGateCard.ts';
 import {
   PARENT_GATE_ERROR_MESSAGE,
   PARENT_GATE_KEYPAD_KEYS,
@@ -26,11 +25,7 @@ import {
 } from '../../../experiments/native-architecture/src/parentCenter/parentCenterCopy.ts';
 import { PARENT_GATE_COPY } from '../../../experiments/native-architecture/src/parentCenter/parentGateCopy.ts';
 import { GATE_LOCKOUT_BASE_MS } from '../../../experiments/native-architecture/src/feedback/gateLockout.ts';
-import {
-  PARENT_GATE_KEY_ICONS,
-  PARENT_GATE_KEY_LABELS,
-} from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateKeypad.tsx';
-import { PICKER_MARK_METRICS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSegmentedPicker.tsx';
+import { PARENT_GATE_KEY_LABELS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateKeypad.tsx';
 import {
   GATE_MODAL,
   finishGateHold,
@@ -86,14 +81,15 @@ async function choose(feature, mode) {
 }
 
 function GateFixture({ owner }) {
-  const view = useParentGateHold(owner.getState().gate);
-  return view?.open
+  const view = useParentGateCard(owner.getState().gate);
+  const presence = useModalPresence(view?.open ? view : null);
+  return presence.shown
     ? createElement(RsdParentGateSheet, {
         owner,
-        state: view.state,
-        unlocked: view.unlocked,
-        visible: true,
-        onDismiss: () => {},
+        state: presence.shown.state,
+        unlocked: presence.shown.unlocked,
+        visible: presence.visible,
+        onDismiss: presence.dismissed,
       })
     : null;
 }
@@ -431,6 +427,28 @@ describe('RSD Parental Gate card', () => {
     expect(host.querySelector(GATE_MODAL).textContent).toContain(PARENT_GATE_COPY.managingSubtitle);
   });
 
+  it('takes native hardware keys only while a challenge is mounted', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(FIXED_OPERAND_RANDOM);
+    const owner = await mountProduct();
+    await click('Parent Center fixture entry');
+    const receiver = records.props.findLast((props) => props.testID === 'parent-gate-keyboard');
+    expect(receiver).toBeDefined();
+    expect(receiver.style).toMatchObject({ width: 1, height: 1 });
+    await act(async () => receiver.onGateKey({ nativeEvent: { key: '3' } }));
+    expect(owner.gate.getState().input).toBe('3');
+    await act(async () => receiver.onGateKey({ nativeEvent: { key: 'delete' } }));
+    expect(owner.gate.getState().input).toBe('');
+    await act(async () => {
+      receiver.onGateKey({ nativeEvent: { key: '3' } });
+      receiver.onGateKey({ nativeEvent: { key: '6' } });
+      receiver.onGateKey({ nativeEvent: { key: 'submit' } });
+    });
+    expect(owner.gate.getState().unlocked).toBe(true);
+    expect(host.querySelector('[data-testid="parent-gate-keyboard"]')).toBeNull();
+    expect(() => receiver.onGateKey({ nativeEvent: { key: 'unknown' } })).toThrow('Unrecognized');
+    await finishGateHold();
+  });
+
   it('holds the Unlocked card, without a close, before the destination shows', async () => {
     await openGateOnFixedProblem();
     await tapGateKeys(...FIXED_ANSWER_DIGITS, 'Check answer');
@@ -501,40 +519,5 @@ describe('RSD Parental Gate card', () => {
     const keypad = gateKey(1).parentElement.parentElement;
     const problem = host.querySelector(`${GATE_MODAL} [role="img"]`).parentElement;
     expect(keypad.parentElement).toBe(problem.parentElement.parentElement);
-  });
-});
-const shipping = (path) =>
-  readFileSync(join(import.meta.dirname, '../../../web/src', path), 'utf8');
-
-describe('Grown-Ups Only keypad and policy marks against shipping', () => {
-  it('pins the keys, labels and icons to the shipping keypad', () => {
-    const state = shipping('lib/state/parentalGate.svelte.ts');
-    const keypad = shipping('lib/components/ParentalGateKeypad.svelte');
-    const shippingKeys = state.match(/export const GATE_KEYPAD_KEYS = \[(.*)\] as const;/)[1];
-    const checkKey = state.match(/export const GATE_CHECK_KEY = '(\w+)';/)[1];
-    expect(
-      shippingKeys
-        .split(', ')
-        .map((key) => (key === 'GATE_CHECK_KEY' ? checkKey : JSON.parse(key.replaceAll("'", '"'))))
-    ).toEqual([...PARENT_GATE_KEYPAD_KEYS]);
-    expect(keypad).toContain(
-      `const KEY_ICONS = { delete: '${PARENT_GATE_KEY_ICONS.delete}', submit: '${PARENT_GATE_KEY_ICONS.submit}' } as const;`
-    );
-    expect(keypad).toContain(
-      `const KEY_LABELS = { delete: '${PARENT_GATE_KEY_LABELS.delete}', submit: '${PARENT_GATE_KEY_LABELS.submit}' } as const;`
-    );
-  });
-
-  it('draws the matrix radio marks at the shipping ring, edge and inset', () => {
-    const section = shipping('lib/components/settings/ParentCenterSection.svelte');
-    const from = section.indexOf(':global(.policy-picker .option::after) {');
-    const mark = section.slice(from, section.indexOf('}', from));
-    expect(mark).toContain(`width: ${PICKER_MARK_METRICS.MARK_PX}px;`);
-    expect(mark).toContain(
-      `border: ${PICKER_MARK_METRICS.MARK_EDGE_PX}px solid var(--icon-muted);`
-    );
-    expect(section).toContain(
-      `box-shadow: inset 0 0 0 ${PICKER_MARK_METRICS.MARK_INSET_PX}px var(--surface);`
-    );
   });
 });

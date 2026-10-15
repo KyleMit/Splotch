@@ -1,7 +1,12 @@
+import { Svg, Path, Circle } from '../platform/svg';
+import { paletteHex } from '../drawing/palette';
+import type { ReleaseHue } from '../../../../web/src/lib/releaseHues';
+import { blobPath } from './blob';
 import { css, html } from 'react-strict-dom';
 import { brandColors, colors, dimensions, fonts } from './tokens.css';
 import { RsdActivityDot } from './RsdActivityDot';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
+import { styles as controlStyles } from './controls';
 import { sidebarRowFade } from './sidebarRowFade';
 import { DRAWING_SCALE } from '../drawing/theme';
 
@@ -11,6 +16,13 @@ const ROW_MIN_PX = 44;
 const ROW_PADDING_Y_PX = 9;
 const ICON_PX = 34;
 const LINE_HEIGHT = 1.3;
+const HUE_PX = 10;
+const ACTIVE_HUE_PX = 18;
+const HIGHLIGHT_PX = 10;
+const HIGHLIGHT_LEFT_PX = -4;
+const HIGHLIGHT_RIGHT_PX = -6;
+const HIGHLIGHT_BOTTOM_PX = 1;
+const META_GAP_PX = 2;
 // The current row thickens its segment of the track without moving its label: the extra width
 // comes back out of the row's leading padding.
 const SEGMENT_PX = 3;
@@ -64,23 +76,51 @@ const styles = css.create({
   activePadding: (paddingLeft: number) => ({ paddingLeft }),
   icon: { position: 'relative', width: ICON_PX, height: ICON_PX, flexShrink: 0 },
   label: { flexShrink: 1 },
+  text: { display: 'flex', flexDirection: 'column', minWidth: 0, flexShrink: 1 },
+  meta: { marginTop: META_GAP_PX, fontSize: dimensions.fontSizeXs, color: colors.textSoft },
+  huedActive: { backgroundColor: 'transparent' },
+  hueFrame: {
+    width: ACTIVE_HUE_PX,
+    height: ACTIVE_HUE_PX,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  highlighted: { position: 'relative', color: colors.textStrong },
+  highlight: {
+    position: 'absolute',
+    left: HIGHLIGHT_LEFT_PX,
+    right: HIGHLIGHT_RIGHT_PX,
+    bottom: HIGHLIGHT_BOTTOM_PX,
+    height: HIGHLIGHT_PX,
+    borderRadius: dimensions.radiusPill,
+    backgroundColor: colors.highlighter,
+    transform: 'rotate(-1.5deg)',
+  },
+  front: { position: 'relative' },
 });
 
-// One row of the wide Settings sidebar (SidebarToc.svelte's button rows): the section's icon
-// with its activity dot and its label, marked as the reading position while its section is.
+// SidebarToc.svelte's button row, marked as the reading position while its section is.
+type SidebarRowProps = { label: string; meta?: string; active: boolean; onSelect: () => void } & (
+  | { icon: SectionIconName; unseen: boolean; hue?: never }
+  | { icon?: never; unseen?: never; hue?: ReleaseHue }
+);
+
 export function RsdSidebarRow({
   icon,
   label,
+  meta,
+  hue,
   unseen,
   active,
   onSelect,
-}: {
-  icon: SectionIconName;
-  label: string;
-  unseen: boolean;
-  active: boolean;
-  onSelect: () => void;
-}) {
+}: SidebarRowProps) {
+  const text = (
+    <html.span style={[styles.label, active && !!hue && controlStyles.boldText, styles.front]}>
+      {label}
+    </html.span>
+  );
   return (
     <html.button
       aria-label={unseen ? `${label}, new` : label}
@@ -90,15 +130,42 @@ export function RsdSidebarRow({
         styles.row,
         sidebarRowFade.row,
         active && styles.active,
+        active && !!hue && styles.huedActive,
         active && styles.activePadding(ACTIVE_PADDING_LEFT_PX),
       ]}
       onClick={onSelect}
     >
-      <html.div style={styles.icon}>
-        <RsdSectionIcon icon={icon} size={ICON_PX} ink={undefined} />
-        <RsdActivityDot unseen={unseen} surface="surface" />
-      </html.div>
-      <html.span style={styles.label}>{label}</html.span>
+      {icon ? (
+        <html.div style={styles.icon}>
+          <RsdSectionIcon icon={icon} size={ICON_PX} ink={undefined} />
+          <RsdActivityDot unseen={unseen} surface="surface" />
+        </html.div>
+      ) : null}
+      {hue ? (
+        <html.div aria-hidden style={styles.hueFrame}>
+          <Svg width={active ? ACTIVE_HUE_PX : HUE_PX} height={active ? ACTIVE_HUE_PX : HUE_PX}>
+            {active ? (
+              <Path
+                d={blobPath('radiusBlob1', ACTIVE_HUE_PX, ACTIVE_HUE_PX)}
+                fill={paletteHex(hue)}
+              />
+            ) : (
+              <Circle cx={HUE_PX / 2} cy={HUE_PX / 2} r={HUE_PX / 2} fill={paletteHex(hue)} />
+            )}
+          </Svg>
+        </html.div>
+      ) : null}
+      {hue || meta ? (
+        <html.div style={styles.text}>
+          <html.div style={[active && !!hue && styles.highlighted]}>
+            {active && hue ? <html.div aria-hidden style={styles.highlight} /> : null}
+            {text}
+          </html.div>
+          {meta ? <html.span style={styles.meta}>{meta}</html.span> : null}
+        </html.div>
+      ) : (
+        text
+      )}
     </html.button>
   );
 }

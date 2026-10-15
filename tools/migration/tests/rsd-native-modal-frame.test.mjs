@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { records, root, host, mount, openSettingsSection } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
@@ -358,16 +360,35 @@ it('heads the Settings hub with Settings and Close, and a section with Back to t
     expect(labelledTitle().textContent).toBe('Sound');
     expect(frameControls()).toEqual(['Back', 'Close']);
     expectNoFooter();
-    await act(async () => modalProps().onRequestClose());
-    expect(labelledTitle().textContent).toBe('Settings');
-    expect(onClose).not.toHaveBeenCalled();
-    await openSettingsSection('Sound');
     await click('Back');
     expect(labelledTitle().textContent).toBe('Settings');
     expect(host.querySelector('[role="list"] button[aria-label^="Sound, "]')).not.toBeNull();
     expect(onClose).not.toHaveBeenCalled();
     await click('Close');
     expect(onClose).toHaveBeenCalledOnce();
+  } finally {
+    dispose();
+  }
+});
+
+// Shipping's Settings dialog closes on Escape, a backdrop press, Android Back and browser Back
+// from any view (SettingsModal.svelte's onRequestClose is settingsModal.hide; boot/dialogBack.ts).
+it('closes Settings, not the section, on Escape, Android Back and a scrim press', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/SettingsModal.svelte'),
+    'utf8'
+  );
+  expect(shipping).toContain('onRequestClose: settingsModal.hide,');
+  const onClose = vi.fn();
+  const dispose = await settingsDialog(onClose);
+  try {
+    await openSettingsSection('Sound');
+    // The Modal's request to close is Escape on the web and the Back button on Android.
+    await act(async () => modalProps().onRequestClose());
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(labelledTitle().textContent).toBe('Sound');
+    await act(async () => host.querySelector('[data-testid="modal-backdrop"]').click());
+    expect(onClose).toHaveBeenCalledTimes(2);
   } finally {
     dispose();
   }

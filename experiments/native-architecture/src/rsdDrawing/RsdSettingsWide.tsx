@@ -1,14 +1,11 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { SettingsTextZoom } from '../platform/SettingsTextZoom';
+import { scrollSettingsPaneToSection, spiedSettingsSection } from '../platform/settingsPane';
 import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
-import {
-  navRevealOffset,
-  sectionJumpOffset,
-  spiedSectionAt,
-  stackedOffsets,
-} from '../settings/settingsPane';
+import { navRevealOffset, sectionJumpOffset, stackedOffsets } from '../settings/settingsPane';
 import type { NativeSettingsSection, NativeSettingsSectionId } from '../settings/settingsSections';
 import { sectionHeading } from '../settings/settingsSections';
 import { rgba } from './colorMix';
@@ -218,6 +215,26 @@ function PaneSection({
   );
 }
 
+function scaledOffsets(heights: readonly (number | undefined)[], count: number, zoom: number) {
+  return stackedOffsets(
+    heights.map((height) => (height === undefined ? undefined : height * zoom)),
+    count,
+    WIDE_SHELL.pane.top,
+    WIDE_SHELL.sectionGap * zoom
+  );
+}
+
+function useMarkSeen(onSeen: (id: NativeSettingsSectionId) => void) {
+  const seenInitial = useRef(false);
+  return {
+    seenInitial,
+    markSeen(id: NativeSettingsSectionId) {
+      seenInitial.current = true;
+      onSeen(id);
+    },
+  };
+}
+
 // The shipping tablet Settings (WideShell.svelte): a table of contents beside one continuously
 // scrolling pane that stacks every section. The table of contents marks where the reading
 // position is rather than a page, and a row jumps the pane to its section.
@@ -247,22 +264,18 @@ export function RsdSettingsWide({
   children: ReactNode;
 }) {
   const reduced = useReduceMotion();
+  const [zoom, setZoom] = useState(1);
   const headingId = useId();
   const paneIds = sections.map((section) => section.id);
   const [spied, setSpied] = useState<NativeSettingsSectionId>(paneIds[0]);
   const spiedNow = useRef(spied);
+  const { seenInitial, markSeen } = useMarkSeen(onSeen);
   const pane = useRef<ScrollView>(null);
   const paneExtent = useRef<ScrollExtent>(AT_REST);
   const sectionHeights = useHeights();
   // A smooth jump crosses sections the parent did not choose to visit; none of them is seen.
   const jumpTarget = useRef<NativeSettingsSectionId | null>(null);
-  const offsets = () =>
-    stackedOffsets(
-      sectionHeights.heights.current,
-      paneIds.length,
-      WIDE_SHELL.pane.top,
-      WIDE_SHELL.sectionGap
-    );
+  const offsets = () => scaledOffsets(sectionHeights.heights.current, paneIds.length, zoom);
 
   const landed = useRef<NativeSettingsSectionId | null>(null);
   const lockedJump = useRef<NativeSettingsSectionId | null>(null);
@@ -273,24 +286,23 @@ export function RsdSettingsWide({
     landed.current = landing;
     if (lockedJump.current === landing) return;
     jumpTarget.current = null;
-    onSeen(landing);
-    pane.current?.scrollTo({
-      y: sectionJumpOffset(stacked[at]),
-      animated: false,
-    });
+    markSeen(landing);
+    scrollSettingsPaneToSection(pane.current, landing, sectionJumpOffset(stacked[at]), false);
   };
 
   const elect = () => {
     land();
     const stacked = offsets();
     if (!stacked) return;
-    const next = spiedSectionAt(paneIds, stacked, paneExtent.current);
+    const next = spiedSettingsSection(pane.current, paneIds, stacked, paneExtent.current);
     const inFlight = jumpTarget.current;
     if (next === inFlight || next === paneIds[paneIds.length - 1]) jumpTarget.current = null;
-    if (next === spiedNow.current) return;
-    spiedNow.current = next;
-    setSpied(next);
-    if (!inFlight) onSeen(next);
+    const changed = next !== spiedNow.current;
+    if (changed) {
+      spiedNow.current = next;
+      setSpied(next);
+    }
+    if (!inFlight && (changed || !seenInitial.current)) markSeen(next);
   };
 
   const jump = (id: NativeSettingsSectionId) => {
@@ -301,12 +313,14 @@ export function RsdSettingsWide({
     }
     const stacked = offsets();
     if (!stacked) return;
-    onSeen(id);
+    markSeen(id);
     jumpTarget.current = reduced ? null : id;
-    pane.current?.scrollTo({
-      y: sectionJumpOffset(stacked[paneIds.indexOf(id)]),
-      animated: !reduced,
-    });
+    scrollSettingsPaneToSection(
+      pane.current,
+      id,
+      sectionJumpOffset(stacked[paneIds.indexOf(id)]),
+      !reduced
+    );
   };
 
   useEffect(() => {
@@ -335,19 +349,21 @@ export function RsdSettingsWide({
           elect();
         }}
       >
-        {paneIds.map((id, index) => (
-          <PaneSection
-            key={id}
-            id={id}
-            headingId={`${headingId}-${id}`}
-            following={index > 0}
-            keptSection={keptSection}
-            onLayout={sectionHeights.measure(index, elect)}
-          >
-            {renderSection(id)}
-          </PaneSection>
-        ))}
-        {children}
+        <SettingsTextZoom enabled onZoom={setZoom}>
+          {paneIds.map((id, index) => (
+            <PaneSection
+              key={id}
+              id={id}
+              headingId={`${headingId}-${id}`}
+              following={index > 0}
+              keptSection={keptSection}
+              onLayout={sectionHeights.measure(index, elect)}
+            >
+              {renderSection(id)}
+            </PaneSection>
+          ))}
+          {children}
+        </SettingsTextZoom>
       </RsdScrollCue>
     </html.div>
   );

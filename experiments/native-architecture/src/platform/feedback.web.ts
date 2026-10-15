@@ -1,3 +1,4 @@
+import { osLabelFromUserAgent } from '../feedback/osLabel';
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import { FEEDBACK_URL, type FeedbackTransport } from '../feedback/feedbackTransport';
 import {
@@ -17,14 +18,17 @@ export const feedbackTransport: FeedbackTransport = (body, signal) =>
     credentials: 'omit',
     redirect: 'error',
   });
-export const feedbackOffline = () => !navigator.onLine;
 export function feedbackDevice(): DeviceInfo {
   return {
     app: FEEDBACK_APP_VERSION,
-    platform: 'Web preview',
+    platform: 'Web',
+    os: osLabelFromUserAgent(navigator.userAgent),
+    browser: navigator.userAgent,
+    language: navigator.language || '',
+    viewport: `${innerWidth} × ${innerHeight}`,
     screen: `${screen.width} × ${screen.height}`,
     pixelRatio: String(devicePixelRatio),
-    display: 'Browser',
+    display: matchMedia('(display-mode: standalone)').matches ? 'Installed (PWA)' : 'Browser tab',
     online: navigator.onLine ? 'Yes' : 'No',
   };
 }

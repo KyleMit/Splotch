@@ -15,6 +15,7 @@ import {
 import { PARENT_GATE_COPY } from '../../experiments/native-architecture/src/parentCenter/parentGateCopy.ts';
 import {
   PARENT_GATE_ERROR_MESSAGE,
+  PARENT_GATE_ERROR_VISIBLE_MS,
   PARENT_GATE_SUCCESS_HOLD_MS,
 } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import {
@@ -78,17 +79,26 @@ describe('Parent Center policies against parentalGate.svelte.ts', () => {
           );
   });
 
-  it('asks before Never on Parent Center and nothing else', () => {
-    for (const feature of PARENT_FEATURES)
-      for (const mode of PARENT_MODES)
-        expect(endsParentCenterProtection(feature, mode)).toBe(
-          feature === 'parentCenter' && mode === 'never'
-        );
+  it('asks before Never on Parent Center and nothing else, unless it is already Never', () => {
+    expect(SHIPPING.state).toContain(
+      "return feature === 'parentCenter' && mode === 'never' && !isParentCenterUnprotected();"
+    );
+    for (const current of PARENT_MODES) {
+      const policies = Object.fromEntries(PARENT_FEATURES.map((feature) => [feature, current]));
+      for (const feature of PARENT_FEATURES)
+        for (const mode of PARENT_MODES)
+          expect(endsParentCenterProtection(feature, mode, policies), `${current} ${feature}`).toBe(
+            feature === 'parentCenter' && mode === 'never' && current !== 'never'
+          );
+    }
   });
 
   it('holds success and words a wrong answer as shipping does', () => {
     expect(SHIPPING.state).toContain(
       `export const GATE_SUCCESS_HOLD_MS = ${PARENT_GATE_SUCCESS_HOLD_MS};`
+    );
+    expect(SHIPPING.state).toContain(
+      `export const GATE_ERROR_VISIBLE_MS = ${PARENT_GATE_ERROR_VISIBLE_MS};`
     );
     expect(SHIPPING.state).toContain(
       `export const GATE_ERROR_MESSAGE = ${literal(PARENT_GATE_ERROR_MESSAGE)};`

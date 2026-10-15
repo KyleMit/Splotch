@@ -1,6 +1,5 @@
 import { useDeviceReduceMotion, useReduceMotion } from '../drawing/useReduceMotion';
 import {
-  BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
   BUTTON_SIZE_HELP,
   BUTTON_SIZE_LABEL,
@@ -23,10 +22,12 @@ import type { SliderDraft } from './useSliderDraft';
 // controls resize in view behind it.
 export function RsdAccessibilitySection({
   buttonScale,
+  scaleCeiling,
   busy,
   onReduceMotionChange,
 }: {
   buttonScale: SliderDraft;
+  scaleCeiling: number;
   busy: boolean;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
 }) {
@@ -39,10 +40,10 @@ export function RsdAccessibilitySection({
           id="accessibilityButtonScaleLabel"
           label={BUTTON_SIZE_LABEL}
           icon="photo-size-select-small"
-          value={buttonScale.value}
+          value={Math.min(buttonScale.value, scaleCeiling)}
           min={BUTTON_SCALE_MIN}
-          max={BUTTON_SCALE_MAX}
-          snap={DEFAULT_BUTTON_SCALE}
+          max={scaleCeiling}
+          snap={scaleCeiling > DEFAULT_BUTTON_SCALE ? DEFAULT_BUTTON_SCALE : undefined}
           help={BUTTON_SIZE_HELP}
           onInput={buttonScale.onInput}
           onActiveChange={buttonScale.onActiveChange}

@@ -7,7 +7,7 @@ import {
   checkedSwitch,
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
-import { hubSessions } from './rsd-native-settings-hub-mocks.mjs';
+import { hubSessions, sectionVisits } from './rsd-native-settings-hub-mocks.mjs';
 import { solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import {
   button,
@@ -88,6 +88,30 @@ it('lists every shipping section in order with its icon tile and shipping status
   expect(hubRows()).toHaveLength(listed.length);
 });
 
+it('dots every unseen section and clears each dot when that section is visited', async () => {
+  storedSettings({
+    parentPolicies: {
+      ai: 'never',
+      imageReport: 'never',
+      externalLinks: 'never',
+      feedback: 'never',
+      parentCenter: 'never',
+    },
+  });
+  sectionVisits.snapshot = '{}';
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  expect(dottedRows()).toHaveLength(NATIVE_SETTINGS_SECTIONS.length);
+  for (const { id, label, contentStamp } of NATIVE_SETTINGS_SECTIONS) {
+    await act(async () => hubRow(label).click());
+    expect(JSON.parse(sectionVisits.snapshot)[id], id).toBe(contentStamp);
+    await click('Back');
+    expect(hubRow(label).getAttribute('aria-label'), id).not.toMatch(/, new$/);
+  }
+  expect(dottedRows()).toEqual([]);
+  expect(sectionVisits.write).toHaveBeenCalledTimes(NATIVE_SETTINGS_SECTIONS.length);
+});
+
 it('answers Night Mode and Sound with switches on their hub rows and no others', async () => {
   const settings = storedSettings({ soundEnabled: true, soundVolume: 100 });
   drawingScreen();
@@ -107,6 +131,31 @@ it('answers Night Mode and Sound with switches on their hub rows and no others',
   expect(hubRow('Sound').getAttribute('aria-label')).toBe('Sound, Muted');
   expect(settings.stored()).toMatchObject({ appearance: 'dark', soundEnabled: false });
   expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
+});
+
+// Shipping's setResolvedTheme: a quick toggle writes System when the device already shows the
+// look it asks for, so a light-device parent who turns Night Mode on and back off is on System.
+it('writes the loosest preference from the Night Mode switch', async () => {
+  records.scheme = 'light';
+  const settings = storedSettings({ appearance: 'system' });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Night Mode');
+  expect(settings.stored().appearance).toBe('dark');
+  await click('Night Mode');
+  checkedSwitch(button('Night Mode'), false);
+  expect(settings.stored().appearance).toBe('system');
+});
+
+it('lets a dark device take Night Mode back to System from a light pin', async () => {
+  records.scheme = 'dark';
+  const settings = storedSettings({ appearance: 'light' });
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  checkedSwitch(button('Night Mode'), false);
+  await click('Night Mode');
+  checkedSwitch(button('Night Mode'), true);
+  expect(settings.stored().appearance).toBe('system');
 });
 
 // Shipping stores each choice synchronously, so neither switch dims or refuses for a save.
@@ -217,12 +266,13 @@ it.each([
     expect(host.textContent).toContain(current.sections[0].blocks[0].text);
     for (const release of earlier) expect(host.textContent).not.toContain(release.dateLabel);
     expect(host.textContent).toContain(WHATS_NEW_COPY.allReleases);
-    expect(settings.stored().whatsNewSeen).toBe(WHATS_NEW_STAMP);
+    expect(JSON.parse(sectionVisits.snapshot).whatsnew).toBe(WHATS_NEW_STAMP);
     await click('Back');
     expect(dottedRows()).toEqual([]);
-    expect(settings.storage.write).toHaveBeenCalledOnce();
+    expect(sectionVisits.write).toHaveBeenCalledOnce();
+    expect(settings.storage.write).not.toHaveBeenCalled();
     await openSettingsSection(WHATS_NEW);
-    expect(settings.storage.write).toHaveBeenCalledOnce();
+    expect(sectionVisits.write).toHaveBeenCalledOnce();
   }
 );
 
@@ -269,11 +319,12 @@ it("keeps the What's New stamp when the section opens while another choice is st
   expect(host.querySelector('[data-native-modal="Updates"]')).not.toBeNull();
   expect(settings.storage.write).toHaveBeenCalledOnce();
   await act(async () => finishWrite());
-  expect(settings.storage.write).toHaveBeenCalledTimes(2);
-  expect(settings.stored()).toMatchObject({
+  expect(settings.storage.write).toHaveBeenCalledOnce();
+  expect(caller.product.sound.settings).toMatchObject({
     reduceMotion: 'reduce',
-    whatsNewSeen: WHATS_NEW_STAMP,
+    whatsNewSeen: null,
   });
+  expect(JSON.parse(sectionVisits.snapshot).whatsnew).toBe(WHATS_NEW_STAMP);
   await click('Back');
   expect(dottedRows()).toEqual([]);
 });

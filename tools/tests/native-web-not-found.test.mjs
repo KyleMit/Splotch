@@ -3,8 +3,14 @@ import { isAppShellNavigation } from '../../web/src/lib/pwa/appShellRoute.ts';
 import {
   DRAWING_PATHS,
   isDrawingPath,
+  currentAppPage,
 } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
-import { APP_SHELL_FILE, NOT_FOUND_FILE } from '../migration/build-native-web.mjs';
+import { APP_PAGE_PATHS } from '../../experiments/native-architecture/src/information/appPages.ts';
+import {
+  isNativeAppNavigation,
+  APP_SHELL_FILE,
+  NOT_FOUND_FILE,
+} from '../migration/build-native-web.mjs';
 import { nativeWebPrecacheProblems } from '../migration/check-native-web-precache.mjs';
 import { reloadApp } from '../../experiments/native-architecture/src/platform/appRestart.web.ts';
 
@@ -23,6 +29,27 @@ describe("the web export's unknown paths", () => {
       globalThis.location = { pathname: path };
       expect(isDrawingPath(), path).toBe(shell);
     }
+  });
+
+  it('routes every bundled parent page online and offline without treating unknown paths as pages', () => {
+    for (const [page, path] of Object.entries(APP_PAGE_PATHS)) {
+      globalThis.location = { pathname: path };
+      expect(currentAppPage()).toBe(page);
+      expect(
+        isNativeAppNavigation({
+          request: { mode: 'navigate' },
+          url: new URL(path, 'https://splotch.art'),
+        })
+      ).toBe(true);
+    }
+    globalThis.location = { pathname: '/unknown' };
+    expect(currentAppPage()).toBe('notFound');
+    expect(
+      isNativeAppNavigation({
+        request: { mode: 'navigate' },
+        url: new URL('https://splotch.art/unknown'),
+      })
+    ).toBe(false);
   });
 
   it("serves the host's 404 answer without asking the precache to hold it", () => {

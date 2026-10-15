@@ -19,3 +19,13 @@ export function resolveAppearance(
 ): PaperTheme {
   return preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
 }
+
+// A quick toggle can only ask for a look, not a preference, so it writes the loosest preference
+// that gives that look: System when the device already shows it, else a pin (shipping
+// appearance.svelte.ts setResolvedTheme). A parent still on System is never pinned by one tap.
+export function quickToggleAppearance(
+  wanted: PaperTheme,
+  system: PaperTheme | null | undefined
+): AppearancePreference {
+  return resolveAppearance('system', system) === wanted ? 'system' : wanted;
+}

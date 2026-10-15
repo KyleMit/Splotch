@@ -1,10 +1,8 @@
+import { NETWORK_ERROR_MESSAGE } from '../../../../web/src/lib/latestRequest';
 import type { ReportRequestBody } from './report';
 
 export const FEEDBACK_URL = 'https://splotch.art/api/report';
-export const FEEDBACK_TIMEOUT_MS = 20_000;
 export const MAX_FEEDBACK_REPLY_BYTES = 8192;
-export const MAX_RETRY_AFTER_SECONDS = 3600;
-const DEFAULT_RETRY_AFTER_SECONDS = 60;
 export const FEEDBACK_UNKNOWN_DELIVERY_NOTICE =
   'Splotch may already have received it. Sending again could send it twice.';
 
@@ -19,25 +17,12 @@ export type FeedbackTransport = (
 ) => Promise<FeedbackResponse>;
 export type FeedbackOutcome =
   | { status: 'success'; message: string }
-  | {
-      status: 'offline' | 'connection' | 'timeout' | 'malformed' | 'error' | 'cancelled';
-      message: string;
-    }
-  | { status: 'throttled'; message: string; retryAfterSeconds: number };
+  | { status: 'connection' | 'malformed' | 'error' | 'cancelled'; message: string };
 
 function parseReply(raw: unknown): { ok: true } | { ok: false; error: string } | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const keys = Object.keys(raw).sort();
-  if ('ok' in raw && raw.ok === true && keys.join(',') === 'ok') return { ok: true };
-  if (
-    'ok' in raw &&
-    raw.ok === false &&
-    'error' in raw &&
-    typeof raw.error === 'string' &&
-    raw.error.trim() &&
-    keys.join(',') === 'error,ok'
-  )
-    return { ok: false, error: raw.error };
+  if ('ok' in raw && raw.ok === true) return { ok: true };
+  if ('error' in raw && typeof raw.error === 'string') return { ok: false, error: raw.error };
   return null;
 }
 
@@ -82,79 +67,42 @@ async function readReply(response: FeedbackResponse, signal: AbortSignal): Promi
 
 function outcome(response: FeedbackResponse, raw: unknown): FeedbackOutcome {
   const reply = parseReply(raw);
-  if (!reply || (response.status === 200) !== reply.ok)
-    return {
-      status: 'malformed',
-      message: `Splotch did not return a valid confirmation. ${FEEDBACK_UNKNOWN_DELIVERY_NOTICE}`,
-    };
-  if (reply.ok)
-    return { status: 'success', message: 'Thank you. Your feedback was sent privately.' };
-  if (response.status === 429) {
-    const header = response.headers.get('Retry-After');
-    const retryAfterSeconds =
-      header && /^\d+$/.test(header)
-        ? Math.min(Number(header), MAX_RETRY_AFTER_SECONDS)
-        : DEFAULT_RETRY_AFTER_SECONDS;
-    return {
-      status: 'throttled',
-      retryAfterSeconds,
-      message: `Too many reports. Wait ${retryAfterSeconds} seconds before trying again.`,
-    };
-  }
-  return { status: 'error', message: 'Could not send your feedback. Please try again later.' };
+  const successful = response.status >= 200 && response.status < 300;
+  if (successful && reply?.ok) return { status: 'success', message: 'Thanks for your feedback.' };
+  if (!reply) return { status: 'malformed', message: 'Could not read the server response.' };
+  return {
+    status: 'error',
+    message: reply.ok ? 'Could not send your report. Please try again.' : reply.error,
+  };
 }
 
 export async function sendFeedback(
   transport: FeedbackTransport,
   body: Readonly<ReportRequestBody>,
-  controller: AbortController,
-  isOffline: () => boolean | null
+  controller: AbortController
 ): Promise<FeedbackOutcome> {
-  if (isOffline())
-    return {
-      status: 'offline',
-      message: 'You are offline. Your draft is ready when you reconnect.',
-    };
-  let timedOut = false;
-  let finishDeadline: (outcome: FeedbackOutcome) => void = () => {};
-  const deadline = new Promise<FeedbackOutcome>((resolve) => {
-    finishDeadline = resolve;
+  let finishCancellation: (outcome: FeedbackOutcome) => void = () => {};
+  const cancellation = new Promise<FeedbackOutcome>((resolve) => {
+    finishCancellation = resolve;
   });
   const cancel = () =>
-    finishDeadline({
+    finishCancellation({
       status: 'cancelled',
       message: `Sending stopped. ${FEEDBACK_UNKNOWN_DELIVERY_NOTICE}`,
     });
   controller.signal.addEventListener('abort', cancel, { once: true });
-  const timer = setTimeout(() => {
-    timedOut = true;
-    finishDeadline({
-      status: 'timeout',
-      message: `Sending timed out. ${FEEDBACK_UNKNOWN_DELIVERY_NOTICE}`,
-    });
-    controller.abort();
-  }, FEEDBACK_TIMEOUT_MS);
+  if (controller.signal.aborted) cancel();
   try {
     const request = (async (): Promise<FeedbackOutcome> => {
       try {
         const response = await transport(body, controller.signal);
-        const raw = await readReply(response, controller.signal);
-        if (controller.signal.aborted)
-          return {
-            status: timedOut ? 'timeout' : 'cancelled',
-            message: `Sending stopped. ${FEEDBACK_UNKNOWN_DELIVERY_NOTICE}`,
-          };
-        return outcome(response, raw);
+        return outcome(response, await readReply(response, controller.signal));
       } catch {
-        return {
-          status: 'connection',
-          message: `Could not connect. You may be offline. ${FEEDBACK_UNKNOWN_DELIVERY_NOTICE}`,
-        };
+        return { status: 'connection', message: NETWORK_ERROR_MESSAGE };
       }
     })();
-    return await Promise.race([request, deadline]);
+    return await Promise.race([request, cancellation]);
   } finally {
-    clearTimeout(timer);
     controller.signal.removeEventListener('abort', cancel);
   }
 }

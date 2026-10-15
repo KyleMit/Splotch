@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
   parseReleaseSource,
@@ -17,6 +18,22 @@ import {
   validateStoreText,
 } from '../gen-release-notes.mjs';
 import { renderReleaseMarkdown } from '../lib/release-markdown.mjs';
+
+it('loads release generation and direct release owners without TypeScript stripping', () => {
+  const generation = new URL('../gen-release-notes.mjs', import.meta.url).href;
+  const release = new URL('../cut-release.mjs', import.meta.url).href;
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--no-experimental-strip-types',
+      '--input-type=module',
+      '-e',
+      `await import(${JSON.stringify(generation)}); await import(${JSON.stringify(release)});`,
+    ],
+    { encoding: 'utf8' }
+  );
+  expect(result.status, result.stderr).toBe(0);
+});
 
 it('generates every release datetime from its validated source date', () => {
   const metadata = JSON.parse(

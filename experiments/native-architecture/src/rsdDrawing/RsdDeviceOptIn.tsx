@@ -151,8 +151,10 @@ export function DeviceDetails({ rows }: { rows: readonly DeviceRow[] }) {
           <html.ul style={styles.rows}>
             {rows.map((row) => (
               <html.li key={row.label} style={styles.row}>
-                <html.span style={controlStyles.semiboldText}>{`${row.label}:`}</html.span>
-                {` ${row.value}`}
+                <html.span>
+                  <html.span style={controlStyles.semiboldText}>{`${row.label}:`}</html.span>
+                  {` ${row.value}`}
+                </html.span>
               </html.li>
             ))}
           </html.ul>

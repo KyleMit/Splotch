@@ -51,7 +51,6 @@ function initialFeedbackState(sharedParent: boolean, gate: FeedbackGateState): N
 type NativeFeedbackOptions = {
   transport: FeedbackTransport;
   device: () => DeviceInfo;
-  offline: () => boolean | null;
   policyStorage: FeedbackPolicyStorage;
   // Test seams let lockout checks advance the actual controller's clock without waiting minutes.
   now?: () => number;
@@ -62,9 +61,7 @@ type NativeFeedbackOptions = {
 // A report the owner cannot reach mid-send keeps its delivery state; any other edit clears the
 // last outcome.
 function settledDelivery(delivery: FeedbackDeliveryState) {
-  return delivery.status === 'sending' || delivery.status === 'throttled'
-    ? {}
-    : { delivery: { status: 'idle' } as const };
+  return delivery.status === 'sending' ? {} : { delivery: { status: 'idle' } as const };
 }
 
 // The snapshot goes out once the grown-up check passes: Parent Center's when the product shares
@@ -98,10 +95,15 @@ export function describeFeedbackDevice(device: () => DeviceInfo) {
   }
 }
 
+function submissionState(result: ReturnType<typeof buildFeedbackPreview>) {
+  return result.ok
+    ? { preview: result.snapshot, validation: '' }
+    : { preview: null, validation: result.message };
+}
+
 export function createNativeFeedback({
   transport,
   device,
-  offline,
   policyStorage,
   now,
   random,
@@ -120,14 +122,12 @@ export function createNativeFeedback({
   }
   const delivery = createFeedbackDelivery(
     transport,
-    offline,
     (delivery) => update({ delivery }),
     (snapshot) => {
       if (snapshot.revision !== revision) return;
       revision += 1;
       update({ draft: EMPTY_DRAFT, preview: null });
-    },
-    now
+    }
   );
   function replaceDraft(draft: FeedbackDraft) {
     parent?.cancel('feedback');
@@ -147,6 +147,11 @@ export function createNativeFeedback({
       { parent, gate, delivery },
       () => !disposed && shown() && state.preview === snapshot && snapshot.revision === revision
     );
+  }
+  function prepareSubmission() {
+    const result = buildFeedbackPreview(state.draft, revision, device);
+    update(submissionState(result));
+    return result.ok ? result.snapshot : null;
   }
   const owner = {
     getState: () => state,
@@ -176,10 +181,7 @@ export function createNativeFeedback({
       edit({ includeDevice });
     },
     preview() {
-      const result = buildFeedbackPreview(state.draft, revision, device);
-      update(
-        result.ok ? { preview: result.snapshot, validation: '' } : { validation: result.message }
-      );
+      prepareSubmission();
     },
     editPreview() {
       parent?.cancel('feedback');
@@ -193,18 +195,17 @@ export function createNativeFeedback({
     // grown-up check in one step, with no review page. A check raised from Settings may close
     // Settings while it is answered, so only a changed draft withdraws the report.
     submit() {
-      const result = buildFeedbackPreview(state.draft, revision, device);
-      if (!result.ok) {
-        update({ validation: result.message });
-        return;
-      }
-      update({ preview: result.snapshot, validation: '' });
-      deliver(result.snapshot, () => true);
+      const snapshot = prepareSubmission();
+      if (snapshot) deliver(snapshot, () => true);
+    },
+    submitPublic() {
+      if (disposed || !delivery.available()) return;
+      const snapshot = prepareSubmission();
+      if (snapshot) void delivery.submit(snapshot);
     },
     // Each visit to the Settings form starts from an empty draft and no outcome, as the shipping
     // form does: a report already on its way keeps going, but it belongs to the visit that sent it,
-    // so it can neither keep the new form busy nor report into it. A wait the server asked for still
-    // holds.
+    // so it can neither keep the new form busy nor report into it.
     reset() {
       if (state.delivery.status === 'sending') {
         delivery.detach();
@@ -214,7 +215,6 @@ export function createNativeFeedback({
     },
     deviceRows: () => describeFeedbackDevice(device),
     cancelSending: delivery.cancel,
-    deliveryTick: delivery.tick,
     changePolicy: parent ? () => {} : policy.change,
     gateInput: gate.input,
     gateAnswer: gate.answer,
