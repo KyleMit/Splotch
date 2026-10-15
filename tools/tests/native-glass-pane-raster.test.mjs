@@ -206,11 +206,13 @@ describe('the native glass pane rasters', () => {
       .raw()
       .toBuffer({ resolveWithObject: true });
     expect([info.width, info.height]).toEqual([raster.columns, raster.rows]);
-    for (let pixel = 0; pixel < raster.alpha.length; pixel++) {
-      expect(data[pixel * 4 + 3]).toBe(raster.alpha[pixel]);
-      if (raster.alpha[pixel])
-        expect([...data.subarray(pixel * 4, pixel * 4 + 3)]).toEqual(GLASS_PANE_INKS.light.rgb);
-    }
+    const pixels = Array.from(raster.alpha, (_, pixel) => [
+      ...data.subarray(pixel * 4, pixel * 4 + 4),
+    ]);
+    expect(pixels.map((rgba) => rgba[3])).toEqual([...raster.alpha]);
+    const inked = pixels.filter((rgba) => rgba[3] > 0).map((rgba) => rgba.slice(0, 3));
+    expect(inked.length).toBeGreaterThan(0);
+    expect(new Set(inked.map(String))).toEqual(new Set([String(GLASS_PANE_INKS.light.rgb)]));
   });
 });
 
