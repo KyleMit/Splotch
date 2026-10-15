@@ -114,7 +114,7 @@ async function mountInked() {
 it('leaves every chrome host untouched through a stroke start, its moves and its lift', async () => {
   await mountInked();
   expect(host.querySelector('[aria-label="Undo"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Purple paint"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Purple"]')).not.toBeNull();
 
   await contactFrame();
   expect(caller.liveScreen.drawing).toBe(true);
@@ -148,8 +148,8 @@ it('takes a stroke back through Undo without updating or re-mounting the chrome'
 // selection leaves and joins and the Selection Ring it moves between them.
 it('sees a paint choice update the swatches it moves the selection between', async () => {
   await mountInked();
-  await act(async () => host.querySelector('[aria-label="Blue paint"]').click());
+  await act(async () => host.querySelector('[aria-label="Blue"]').click());
   const { updated, remounted } = chromeChanges();
-  expect(updated).toEqual(expect.arrayContaining(['Purple paint', 'Blue paint']));
+  expect(updated).toEqual(expect.arrayContaining(['Purple', 'Blue']));
   expect(remounted).toBeGreaterThan(0);
 });

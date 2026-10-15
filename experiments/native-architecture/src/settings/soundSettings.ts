@@ -11,13 +11,8 @@ import {
   type AppearancePreference,
 } from './appearance';
 import { isStrokeWidth, type StrokeWidth } from '../drawing/strokeWidth';
-import {
-  DEFAULT_COLOR_SETTINGS,
-  isCustomColor,
-  isPaintColor,
-  rememberColor,
-  type PaintColor,
-} from '../drawing/palette';
+import { DEFAULT_COLOR_SETTINGS } from '../drawing/palette';
+import { createPaintActions } from './paintSettings';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
 import { defaultOrientation } from '../platform/orientationDefault';
 import { isOrientationChoice, type OrientationChoice } from './orientation';
@@ -128,7 +123,7 @@ function unreadSoundSettingsState(
   };
 }
 
-type PreferenceActionContext = {
+export type PreferenceActionContext = {
   getState: () => SoundSettingsState;
   isDisposed: () => boolean;
   hasReadFailed: () => boolean;
@@ -292,19 +287,6 @@ function createDrawingPreferenceActions({
       }
       await persist({ ...snapshot(state), ...choices });
     },
-    // Never written, so a pick lands even while another choice saves.
-    setColor(selectedColor: PaintColor) {
-      const state = getState();
-      if (isDisposed() || state.status === 'loading') return;
-      if (!isPaintColor(selectedColor)) throw new Error('Paint color is invalid.');
-      publish({
-        ...state,
-        selectedColor,
-        customColors: isCustomColor(selectedColor)
-          ? rememberColor(state.customColors, selectedColor)
-          : state.customColors,
-      });
-    },
     async setAppearance(appearance: AppearancePreference) {
       const state = getState();
       if (isDisposed() || state.status !== 'ready') return;
@@ -356,6 +338,7 @@ function createPreferenceActions(context: PreferenceActionContext) {
   const choose = createChoiceSetter(context);
   return {
     ...createDrawingPreferenceActions(context),
+    ...createPaintActions(context),
     ...createSoundActions(choose),
     ...createPencilActions(choose),
     ...createAiActions(choose),

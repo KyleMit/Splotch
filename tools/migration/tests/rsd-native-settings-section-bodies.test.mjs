@@ -107,7 +107,7 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   expect(outerSize('Save screenshot')).toBe(size);
   expect(outerSize('Collapse controls')).toBe(CORNER_BUTTON_SIZE_PX);
   // Shipping sizes its swatches and the corner Settings Button apart from Button Size.
-  for (const label of ['Purple paint', 'More colors'])
+  for (const label of ['Purple', 'Custom Color'])
     expect(outerSize(label), label).toBe(PALETTE_FLOWS.row.swatchPx);
   expect(outerSize('Settings')).toBe(CORNER_BUTTON_SIZE_PX);
   await rerender({ settingsOpen: true });
@@ -119,7 +119,7 @@ it('drags Button Size through a see-through Settings, resizing the edge controls
   await rerender({ settingsOpen: false });
   expect(outerSize('Save screenshot')).toBe(tileSize(BUTTON_SCALE_MIN));
   expect(tileSize(BUTTON_SCALE_MIN)).toBeLessThan(tileSize(100));
-  expect(outerSize('Purple paint')).toBe(PALETTE_FLOWS.row.swatchPx);
+  expect(outerSize('Purple')).toBe(PALETTE_FLOWS.row.swatchPx);
 });
 
 it('writes the Drawing and Deleting sound sources and words the hub from them', async () => {

@@ -50,7 +50,7 @@ it('leaves every chrome control enabled through a stroke and holds its openings 
   await expandControls();
   const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
   const startAi = vi.spyOn(caller.product.ai.owner, 'start').mockImplementation(() => {});
-  for (const label of ['Blue paint', 'Brushes', 'Stroke width', AI_BUTTON, 'Undo'])
+  for (const label of ['Blue', 'Brushes', 'Stroke width', AI_BUTTON, 'Undo'])
     expect(button(label).disabled, label).toBe(false);
   expect(
     records.props.findLast((props) => props.accessibilityLabel === 'Clear drawing')
@@ -65,7 +65,7 @@ it('leaves every chrome control enabled through a stroke and holds its openings 
   expect(startAi).not.toHaveBeenCalled();
   await act(async () => activateClear());
   expect(caller.screen.clear).not.toHaveBeenCalled();
-  await act(async () => button('Blue paint').click());
+  await act(async () => button('Blue').click());
   expect(setColor).toHaveBeenCalledExactlyOnceWith('Blue');
 
   await setDrawing(false);

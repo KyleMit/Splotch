@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act } from 'react';
 import { describe, expect, it } from 'vitest';
-import { records, host, expandControls } from './rsd-native-selection-host.mjs';
+import { caller, records, host, expandControls } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import {
   COLOR_MENU_EDGE_ROOM_PX,
@@ -148,17 +148,26 @@ describe('the landscape phone Color Button and Color Menu', () => {
     await act(async () => colorsButton().click());
     expect(expanded()).toBe(true);
     const room = LANDSCAPE_PHONE.width - PHONE_TOOLBAR_BUTTON_PX - COLOR_MENU_EDGE_ROOM_PX;
-    expect(menuPaints()).toEqual(shippingMenuRanks(room).map((label) => `${label} paint`));
+    expect(menuPaints()).toEqual(shippingMenuRanks(room));
     expect(menuPaints()).toHaveLength(9);
-    const purple = colorMenu().querySelector('[aria-label="Purple paint"]');
+    const purple = colorMenu().querySelector('[aria-label="Purple"]');
     expect(purple.dataset.checked).toBe('true');
-    expect(colorMenu().querySelector('[aria-label="More colors"]')).not.toBeNull();
-    await act(async () => colorMenu().querySelector('[aria-label="Blue paint"]').click());
+    expect(colorMenu().querySelector('[aria-label="Custom Color"]')).not.toBeNull();
+    await act(async () => colorMenu().querySelector('[aria-label="Blue"]').click());
     expect(screen.selectInkBrush).toHaveBeenCalledOnce();
     expect(colorMenu()).toBeNull();
+    await act(async () => {
+      caller.product.sound.owner.settings.setColor('#123ABC');
+      caller.product.sound.owner.settings.setColor('Blue');
+    });
     await act(async () => colorsButton().click());
-    await act(async () => colorMenu().querySelector('[aria-label="More colors"]').click());
+    await act(async () => colorMenu().querySelector('[aria-label="Custom Color"]').click());
     expect(screen.openColorPicker).toHaveBeenCalledOnce();
+    expect(caller.sound.settings).toMatchObject({
+      activeSwatch: 'custom',
+      selectedColor: '#123ABC',
+    });
+    expect(screen.selectInkBrush).toHaveBeenCalledTimes(2);
     expect(colorMenu()).toBeNull();
   });
 

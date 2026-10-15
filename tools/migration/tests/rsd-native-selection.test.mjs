@@ -12,6 +12,8 @@ import {
   openSettingsSection,
 } from './rsd-native-selection-host.mjs';
 import { act, createElement, useState } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { html } from 'react-strict-dom';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -19,14 +21,68 @@ import {
   RsdAction,
   styles,
 } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { RsdPaintAction } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
+import {
+  RsdMoreColorsSwatch,
+  RsdPaintAction,
+} from '../../../experiments/native-architecture/src/rsdDrawing/RsdSwatch.tsx';
+import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+
+it.each(['light', 'dark'])(
+  'uses shipping paint names at the native boundary in %s',
+  async (theme) => {
+    const shipping = (file) =>
+      readFileSync(join(import.meta.dirname, '../../../web/src/lib/components', file), 'utf8');
+    const white = shipping('ColorPalette.svelte').match(
+      /label=\{shown === hex \? label : '([^']+)'\}/
+    )[1];
+    const custom = shipping('ColorSwatch.svelte').match(
+      /aria-label=\{flat \? flat.label : '([^']+)'\}/
+    )[1];
+    const expected = PALETTE_COLORS.map(({ label }) =>
+      theme === 'dark' && label === 'Black' ? white : label
+    );
+    expected.push(custom);
+    await mount(
+      createElement(
+        DrawingAppearanceProvider,
+        { preference: theme },
+        createElement(
+          html.div,
+          null,
+          ...PALETTE_COLORS.map(({ label }) =>
+            createElement(RsdPaintAction, {
+              key: label,
+              color: label,
+              size: TOUCH_TARGET,
+              selected: false,
+              disabled: false,
+              onClick() {},
+            })
+          ),
+          createElement(RsdMoreColorsSwatch, {
+            size: TOUCH_TARGET,
+            custom: null,
+            disabled: false,
+            onClick() {},
+          })
+        )
+      )
+    );
+    expect(
+      [...host.querySelectorAll('button')].map((node) => node.getAttribute('aria-label'))
+    ).toEqual(expected);
+    for (const label of expected)
+      expect(records.props.some((props) => props.accessibilityLabel === label)).toBe(true);
+  }
+);
 it('uses the released native renderer for checked radio state and selected treatment', async () => {
   await mount(
     createElement(RsdAction, {
-      label: 'Blue paint',
+      label: 'Blue',
       selection: 'radio',
       selected: true,
       onClick() {},
@@ -39,7 +95,7 @@ it('uses the released native renderer for checked radio state and selected treat
   await act(async () =>
     root.render(
       createElement(RsdAction, {
-        label: 'Blue paint',
+        label: 'Blue',
         selection: 'radio',
         selected: false,
         onClick() {},
@@ -220,13 +276,13 @@ it('propagates paint availability both ways without losing its selected color or
     const element = blueSwatch({ selected: true, disabled, onClick() {} });
     if (!root) await mount(element);
     else await act(async () => root.render(element));
-    const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
+    const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue');
     assertDisabledBoundary(props, disabled);
     expect(props.accessibilityState.checked).toBe(true);
     const node = host.querySelector('button');
     mountedNode ??= node;
     expect(node).toBe(mountedNode);
-    expect(node.getAttribute('aria-label')).toBe('Blue paint');
+    expect(node.getAttribute('aria-label')).toBe('Blue');
   }
 });
 
@@ -242,7 +298,7 @@ it('mounts the shared color picker outside Paint colors and writes through the e
   try {
     await mount(createElement(Screen));
     const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
-    let more = host.querySelector('[aria-label="More colors"]');
+    let more = host.querySelector('[aria-label="Custom Color"]');
     expect(more.disabled).toBe(true);
     expect(more.closest('[role="radiogroup"]')).toBeNull();
     await act(async () => {
@@ -250,15 +306,15 @@ it('mounts the shared color picker outside Paint colors and writes through the e
       await owner.setColor('#123456');
     });
     setColor.mockClear();
-    more = host.querySelector('[aria-label="More colors"]');
+    more = host.querySelector('[aria-label="Custom Color"]');
     expect(more.disabled).toBe(false);
     await act(async () => more.click());
     expect(open).toHaveBeenCalledOnce();
     const picker = host.querySelector('[aria-label="Color Picker"]');
     expect(picker).not.toBeNull();
     // Shipping's modal leaves the swatch behind it at full strength and out of reach.
-    expect(host.querySelector('[aria-label="More colors"]').disabled).toBe(false);
-    await act(async () => host.querySelector('[aria-label="More colors"]').click());
+    expect(host.querySelector('[aria-label="Custom Color"]').disabled).toBe(false);
+    await act(async () => host.querySelector('[aria-label="Custom Color"]').click());
     expect(open).toHaveBeenCalledOnce();
     await act(async () => picker.querySelector('[aria-label="#E63946"]').click());
     expect(setColor).toHaveBeenCalledExactlyOnceWith('#E63946');
@@ -266,7 +322,7 @@ it('mounts the shared color picker outside Paint colors and writes through the e
     expect(close).toHaveBeenCalledOnce();
     expect(setColor.mock.invocationCallOrder[0]).toBeLessThan(close.mock.invocationCallOrder[0]);
     expect(host.querySelector('[aria-label="Color Picker"]')).toBeNull();
-    await act(async () => host.querySelector('[aria-label="More colors"]').click());
+    await act(async () => host.querySelector('[aria-label="Custom Color"]').click());
     await act(async () => host.querySelector('[data-testid="modal-backdrop"]').click());
     expect(close).toHaveBeenCalledTimes(2);
     expect(setColor).toHaveBeenCalledExactlyOnceWith('#E63946');

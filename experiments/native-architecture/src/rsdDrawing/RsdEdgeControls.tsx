@@ -6,7 +6,7 @@ import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
-import { paintAppearance, visiblePaints } from '../drawing/palette';
+import { customPaintSelection, paintAppearance, visiblePaints } from '../drawing/palette';
 import { RsdIconButton } from './RsdIconButton';
 import { RsdMoreColorsSwatch, RsdPaintAction } from './RsdSwatch';
 import {
@@ -244,11 +244,11 @@ function RsdPalette({
   actionButtonSize: number | null;
   disabled: boolean;
 }) {
-  const { selectedColor, customColors, toolbarStyle } = sound.settings;
+  const { activeSwatch, toolbarStyle } = sound.settings;
   const face = toolbarStyle === 'bare' ? paletteStyles.bare : paletteStyles.surface;
   const column = layout.axis === 'column';
   const flow = PALETTE_FLOWS[layout.axis];
-  const paints = visiblePaints(customColors, selectedColor, layout.slots - 1);
+  const paints = visiblePaints(layout.slots - 1);
   const endClearance = column
     ? columnEndClearance(actionButtonSize ?? flow.swatchPx, layout.endInset)
     : flow.endPaddingPx;
@@ -273,7 +273,7 @@ function RsdPalette({
             key={color}
             color={color}
             size={flow.swatchPx}
-            selected={color === selectedColor}
+            selected={screen.brush !== 'eraser' && color === activeSwatch}
             disabled={disabled}
             onClick={() => {
               screen.selectInkBrush();
@@ -284,8 +284,13 @@ function RsdPalette({
       </html.div>
       <RsdMoreColorsSwatch
         size={flow.swatchPx}
+        custom={customPaintSelection(sound.settings, screen.brush === 'eraser')}
         disabled={disabled}
-        onClick={screen.openColorPicker}
+        onClick={() => {
+          screen.selectInkBrush();
+          sound.owner?.settings.selectCustomPaint();
+          screen.openColorPicker();
+        }}
       />
     </html.div>
   );
