@@ -66,6 +66,18 @@ function assertReceiptProgress(previous: WebAiAttempt, next: WebAiAttempt): void
     invalidAiStorage();
 }
 
+// A plain attempt leaves storage only when a newer one is prepared, which needs it finished first,
+// so a newer id is proof enough for a tab that last saw it unfinished.
+function supersededAttempt(previous: WebAiAttempt, newest: number): boolean {
+  return previous.receipt.kind === 'prepared' && previous.receipt.journal.id < newest;
+}
+
+// Shipping holds only the run in hand, so preparing a new attempt drops every finished plain one;
+// recovery records stay, as their chain names its source.
+export function attemptsForNewRun(attempts: readonly WebAiAttempt[]): WebAiAttempt[] {
+  return attempts.filter(({ receipt }) => receipt.kind !== 'prepared');
+}
+
 export class WebAiStorageOwner {
   private connection: Promise<IdbDatabase<AiDatabase>> | undefined;
   private snapshot: WebAiState | null = null;
@@ -107,16 +119,17 @@ export class WebAiStorageOwner {
   private assertProgress(after: WebAiState | null): void {
     const before = this.snapshot;
     if (!before) return;
-    if (
-      !after ||
-      after.revision < before.revision ||
-      after.attempts.length < before.attempts.length
-    )
-      invalidAiStorage();
+    if (!after || after.revision < before.revision) invalidAiStorage();
     if (after.revision === before.revision && JSON.stringify(after) !== JSON.stringify(before))
       invalidAiStorage();
-    for (let index = 0; index < before.attempts.length; index++)
-      assertReceiptProgress(before.attempts[index], after.attempts[index]);
+    const newest = after.attempts.at(-1)?.receipt.journal.id ?? 0;
+    for (const previous of before.attempts) {
+      const next = after.attempts.find(
+        (attempt) => attempt.receipt.journal.id === previous.receipt.journal.id
+      );
+      if (next) assertReceiptProgress(previous, next);
+      else if (!supersededAttempt(previous, newest)) invalidAiStorage();
+    }
   }
   async readState(): Promise<WebAiState | null> {
     const db = await this.database();

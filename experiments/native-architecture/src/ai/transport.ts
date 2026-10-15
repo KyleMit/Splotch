@@ -21,6 +21,15 @@ import {
   type AiMime,
 } from './contract';
 import { resultImageGrid } from './imageAdmission';
+import {
+  FREE_DAILY_LIMIT_EXHAUSTED_CODE,
+  FREE_GRANT_EXHAUSTED_CODE,
+  GENERATION_ACCEPTED_STATUS,
+  GENERATION_UNAVAILABLE_CODE,
+  SAFETY_REFUSAL_STATUS,
+  THROTTLED_STATUS,
+} from '../../../../web/src/lib/ai/generationResult';
+import { AI_UNFINISHED_MESSAGE } from '../../../../web/src/lib/ai/generationFailures';
 import { imageReportToken, REPORT_TOKEN_HEADER } from './reportContract';
 import type { RecoveryReportProof } from './recoveryReport';
 import type { AiRecoveryAckConfirmation, AiRecoveryTerminalConfirmation } from './journal';
@@ -80,13 +89,13 @@ export type AiReply =
     }
   | {
       kind: 'failure';
-      reason: 'exhausted' | 'unavailable' | 'expired' | 'rejected' | 'server' | 'invalid';
+      reason: 'exhausted' | 'unavailable' | 'throttled' | 'rejected' | 'server' | 'invalid';
       message: string;
       retryAt?: number;
       status?: number;
       detail?: string;
     }
-  | { kind: 'unknown'; message: string };
+  | { kind: 'unknown'; cause: 'timeout' | 'network'; message: string };
 export function aiUrl(request: AiRequest) {
   if (request.path === RECOVERY_PATH)
     throw new Error(
@@ -132,31 +141,11 @@ export async function parseAiResponse(
     };
   }
   const bytes = await readAiBytes(response, MAX_JSON_BYTES, signal);
-  if (response.status === 202 && poll && bytes.length === 0)
-    return { kind: 'pending', delayMs: POLL_INTERVAL_MS };
-  let raw: unknown;
-  try {
-    raw = JSON.parse(new TextDecoder().decode(bytes));
-  } catch {
-    throw new Error('Invalid reply');
-  }
-  if (!object(raw)) throw new Error('Invalid reply');
-  if (
-    response.status === 202 &&
-    request.path === '/api/generate-image' &&
-    raw.ok === true &&
-    isInstallationId(raw.jobId) &&
-    typeof raw.pollAfterMs === 'number' &&
-    Number.isFinite(raw.pollAfterMs) &&
-    raw.pollAfterMs >= 0 &&
-    raw.pollAfterMs <= MAX_RETRY_AFTER_MS &&
-    Object.keys(raw).sort().join(',') === 'jobId,ok,pollAfterMs'
-  )
-    return {
-      kind: 'ticket',
-      jobId: raw.jobId,
-      pollAfterMs: Math.max(POLL_INTERVAL_MS, raw.pollAfterMs),
-    };
+  const text = new TextDecoder().decode(bytes);
+  if (poll || request.path === '/api/generate-image')
+    return generationReply(response, jsonObject(text), text, poll, now);
+  const raw = jsonObject(text);
+  if (!raw) throw new Error('Invalid reply');
   if (
     response.status === 200 &&
     request.path === '/api/free-generation-grant' &&
@@ -185,7 +174,7 @@ export async function parseAiResponse(
     Object.keys(raw).sort().join(',') === 'accessCode,ok'
   )
     return { kind: 'verified', accessCode: raw.accessCode };
-  const reply = parseAiFailure(raw, response, poll, now, VERIFY_PATHS.includes(request.path));
+  const reply = parseAiFailure(raw, response, now, VERIFY_PATHS.includes(request.path));
   // The HTTP status, and for anything but a refusal the server's own words, ride along for the
   // problem report a grown-up can send about a failure; the child sees only the app's message. A
   // refusal's provider reason is never kept.
@@ -194,12 +183,92 @@ export async function parseAiResponse(
     ? { ...reply, status: response.status }
     : { ...reply, status: response.status, detail: String(raw.error) };
 }
+function jsonObject(text: string): Record<string, unknown> | null {
+  try {
+    const raw: unknown = JSON.parse(text);
+    return object(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+function validTicket(raw: Record<string, unknown> | null) {
+  return (
+    !!raw &&
+    raw.ok === true &&
+    isInstallationId(raw.jobId) &&
+    typeof raw.pollAfterMs === 'number' &&
+    Number.isFinite(raw.pollAfterMs) &&
+    raw.pollAfterMs >= 0 &&
+    raw.pollAfterMs <= MAX_RETRY_AFTER_MS &&
+    Object.keys(raw).sort().join(',') === 'jobId,ok,pollAfterMs'
+  );
+}
+const UNFINISHED_PICTURE = 'That picture did not finish. Your original drawing is saved.';
+// A generation reply read as shipping's readAiImageResponse reads it: by status and code, with the
+// body's own words, or the raw body when it is not the JSON envelope (a bare platform 502), kept
+// for the problem report. Every failure a retry may fix comes back as one the child can retry.
+function generationReply(
+  response: AiResponse,
+  raw: Record<string, unknown> | null,
+  text: string,
+  poll: boolean,
+  now: number
+): AiReply {
+  const status = response.status;
+  if (status === GENERATION_ACCEPTED_STATUS) {
+    if (poll) return { kind: 'pending', delayMs: POLL_INTERVAL_MS };
+    if (raw && validTicket(raw))
+      return {
+        kind: 'ticket',
+        jobId: String(raw.jobId),
+        pollAfterMs: Math.max(POLL_INTERVAL_MS, Number(raw.pollAfterMs)),
+      };
+    return {
+      kind: 'failure',
+      reason: 'server',
+      message: UNFINISHED_PICTURE,
+      detail: AI_UNFINISHED_MESSAGE,
+    };
+  }
+  const detail = raw && typeof raw.error === 'string' ? raw.error : text;
+  const code = raw && typeof raw.code === 'string' ? raw.code : null;
+  if (poll && code === GENERATION_UNAVAILABLE_CODE)
+    return { kind: 'pending', delayMs: POLL_INTERVAL_MS };
+  if (code === FREE_GRANT_EXHAUSTED_CODE)
+    return {
+      kind: 'failure',
+      reason: 'exhausted',
+      status,
+      detail,
+      message: 'Your free pictures are used up. A grown-up can add an access code or OpenAI key.',
+    };
+  if (code === FREE_DAILY_LIMIT_EXHAUSTED_CODE)
+    return {
+      kind: 'failure',
+      reason: 'unavailable',
+      status,
+      detail,
+      message: 'AI pictures are unavailable right now. Please try later.',
+    };
+  if (status === SAFETY_REFUSAL_STATUS)
+    return {
+      kind: 'failure',
+      reason: 'safety',
+      status,
+      reportToken: imageReportToken(response.headers.get(REPORT_TOKEN_HEADER)),
+      message: "Let's try drawing something else! Your original is still here.",
+    };
+  if (status === THROTTLED_STATUS)
+    return poll
+      ? { kind: 'pending', delayMs: retryDelay(response, now) }
+      : { kind: 'failure', reason: 'throttled', status, detail, message: AI_THROTTLED_MESSAGE };
+  return { kind: 'failure', reason: 'server', status, detail, message: UNFINISHED_PICTURE };
+}
 const VERIFY_PATHS: readonly AiRequest['path'][] = ['/api/verify-key', '/api/verify-access-code'];
 export const AI_THROTTLED_MESSAGE = 'Too many attempts. Please wait before trying again.';
 function parseAiFailure(
   raw: Record<string, unknown>,
   response: AiResponse,
-  poll: boolean,
   now: number,
   verify: boolean
 ): AiReply {
@@ -224,17 +293,13 @@ function parseAiFailure(
     ('remaining' in raw && (raw.code !== 'FREE_GRANT_EXHAUSTED' || raw.remaining !== 0))
   )
     throw new Error('Invalid failure contract');
-  if (response.status === 503 && poll && raw.code === 'GENERATION_UNAVAILABLE')
-    return { kind: 'pending', delayMs: POLL_INTERVAL_MS };
-  if (response.status === 429)
-    return poll
-      ? { kind: 'pending', delayMs: retryDelay(response, now) }
-      : {
-          kind: 'failure',
-          reason: 'unavailable',
-          retryAt: now + retryDelay(response, now),
-          message: AI_THROTTLED_MESSAGE,
-        };
+  if (response.status === THROTTLED_STATUS)
+    return {
+      kind: 'failure',
+      reason: 'unavailable',
+      retryAt: now + retryDelay(response, now),
+      message: AI_THROTTLED_MESSAGE,
+    };
   if (response.status === 422)
     return {
       kind: 'failure',
@@ -260,23 +325,13 @@ function parseAiFailure(
       reason: 'unavailable',
       message: 'AI pictures are unavailable right now. Please try later.',
     };
-  if (response.status === 404 && poll)
-    return {
-      kind: 'failure',
-      reason: 'expired',
-      message: 'This waiting picture is no longer available. Your original drawing is saved.',
-    };
   if (response.status === 200 || response.status === 403)
     return {
       kind: 'failure',
       reason: 'rejected',
       message: 'That credential was not recognized. Your saved credential was not changed.',
     };
-  return {
-    kind: 'failure',
-    reason: 'server',
-    message: 'That picture did not finish. Your original drawing is saved.',
-  };
+  return { kind: 'failure', reason: 'server', message: UNFINISHED_PICTURE };
 }
 export async function requestAi(
   transport: AiTransport,
@@ -294,6 +349,7 @@ export async function requestAi(
       controller.abort();
       resolve({
         kind: 'unknown',
+        cause: 'timeout',
         message:
           'The connection timed out. A sent picture may still finish. No generation will be retried automatically.',
       });
@@ -312,6 +368,7 @@ export async function requestAi(
     } catch {
       return {
         kind: 'unknown',
+        cause: 'network',
         message:
           'The reply could not be collected. A sent picture may still finish. Your original is saved; no generation will be retried automatically.',
       };

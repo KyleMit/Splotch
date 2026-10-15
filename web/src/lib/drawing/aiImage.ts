@@ -30,14 +30,15 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse } from './aiImageResponse';
 import { awaitGeneration, generationResultUrl, type SettledGeneration } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import {
+  AI_REQUEST_FAILED_MESSAGE,
+  AI_TIMEOUT_MESSAGE,
+  AI_UNFINISHED_MESSAGE,
+} from '$lib/ai/generationFailures';
 import { THROTTLED_STATUS } from '$lib/ai/generationResult';
 import { autoSaveImages } from './aiAutoSave';
 import { encodeWebpUpload } from './aiUploadEncoding';
 import type { StyleName } from '$lib/ai/styles';
-
-// Read by a grown-up in the problem report's diagnostics, not by the child, who
-// sees the same retry card as any other transient failure.
-const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
 
 const FIRST_SERVER_ERROR_STATUS = 500;
 
@@ -247,7 +248,7 @@ export async function generateAiImage({
         details: {
           status: null,
           endpoint: failureEndpoint,
-          message: 'The server did not finish the picture.',
+          message: AI_UNFINISHED_MESSAGE,
         },
       });
       return;
@@ -269,7 +270,7 @@ export async function generateAiImage({
       details: {
         status: null,
         endpoint: failureEndpoint,
-        message: timedOut ? AI_TIMEOUT_MESSAGE : 'The picture request could not complete.',
+        message: timedOut ? AI_TIMEOUT_MESSAGE : AI_REQUEST_FAILED_MESSAGE,
       },
     });
     console.error(err);

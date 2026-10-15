@@ -25,7 +25,7 @@ import {
   invalidAiStorage,
   type WebAiReceipt,
 } from './aiStorageRecords.web';
-import { sameAiIdentity } from './aiStorageOwner.web';
+import { attemptsForNewRun, sameAiIdentity } from './aiStorageOwner.web';
 import { WebAiRecoveryStorage } from './aiRecoveryStorage.web';
 
 const AI_ATTEMPT_NONCE_BYTES = 32;
@@ -78,8 +78,9 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
     const receipt = recovery
       ? parseRecoveryHeldReceipt({ ...base, kind: 'recovery-held', recovery })
       : parseNativeReceipt(base);
+    const kept = recovery ? this.owner.attempts() : attemptsForNewRun(this.owner.attempts());
     return this.owner.commit([
-      ...this.owner.attempts(),
+      ...kept,
       { receipt, originalModel, originalLength: model.length, upload: bytesBase64(bytes) },
     ]);
   }

@@ -53,7 +53,6 @@ export class AiSession {
   protected recoveryUncertain = false;
   protected timer: ReturnType<typeof setTimeout> | null = null;
   protected journals = new Map<number, AiJournal>();
-  protected ambiguous = new Set<number>();
   protected credential: AiCredential | null = null;
   protected active = false;
   protected pollStarted = 0;
@@ -352,11 +351,11 @@ export class AiSession {
       const pictures = await this.deps.storage.pictures();
       if (!permitted()) return;
       this.update({ pictures });
-      if (this.state.journal?.phase === 'sent')
-        await this.persist({
-          ...this.state.journal,
-          phase: 'unknown',
-        });
+      // A run the app was closed on before its ticket came back is gone, as shipping's in-memory
+      // run is: the next tap starts afresh rather than holding the wand until the job expires.
+      const journal = this.state.journal;
+      if (journal && (journal.phase === 'sent' || journal.phase === 'unknown'))
+        await this.persist({ ...journal, phase: 'failed' });
     } catch {
       this.update({
         credential: 'unavailable',
@@ -370,6 +369,9 @@ export class AiSession {
       });
     }
   };
+  // The drawing the current run sent, which Try again sends again as shipping's retry does, rather
+  // than the canvas as it is by then. A picture that arrives, or a closed card, ends the run.
+  protected runDrawing: PreparedAiDrawing | null = null;
   protected heldBytes: {
     id: number;
     bytes: Uint8Array;
@@ -455,12 +457,15 @@ export class AiSession {
     this.parentProof = null;
     this.deps.parent?.cancel('ai');
     this.gate.dismiss();
+    this.runDrawing = null;
     this.update({
       open: false,
       minimized: false,
       authorized: false,
       view: 'prompt',
       attempt: null,
+      failures: 0,
+      failure: null,
     });
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;

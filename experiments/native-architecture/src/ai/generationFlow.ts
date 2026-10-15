@@ -150,17 +150,17 @@ export class NativeAiFlow extends NativeAiController {
     this.update({ style, view: 'result' });
     this.run();
   };
-  // The error card's Try again: the same style, with the drawing as it is now.
+  // The error card's Try again: the same style and the same drawing the failed run sent.
   retry = () => {
     if (!this.state.open || this.state.view !== 'result' || this.active || this.unresolved())
       return;
-    this.run();
+    this.run(true);
   };
-  private run = () => {
+  private run = (again = false) => {
     const go = () => {
       this.problems?.reset();
       this.update({ attempt: { kind: 'starting', startedAt: Date.now() }, minimized: false });
-      void this.loadThenGenerate().then(() => {
+      void this.loadThenGenerate(again).then(() => {
         if (this.state.attempt?.kind === 'starting') this.update({ attempt: { kind: 'stopped' } });
       });
     };
@@ -169,9 +169,9 @@ export class NativeAiFlow extends NativeAiController {
     if (this.consented()) go();
     else this.protect(go);
   };
-  // Showing a waiting run again checks on it at once, which is how a poll that gave up is resumed.
-  // A run held past its server window is released first, so the card offers a new run rather
-  // than a dial that can never finish.
+  // Showing a waiting run again checks on it at once; its wait still ends at the poll deadline
+  // counted from its ticket. A run held past its server window is released first, so the card
+  // offers a new run rather than a dial that can never finish.
   restore = () => {
     if (!this.state.open || !this.state.minimized) return;
     this.update({ minimized: false });
@@ -180,10 +180,8 @@ export class NativeAiFlow extends NativeAiController {
       void this.releaseHeld(journal);
       return;
     }
-    if (this.state.journal?.jobId && !this.active && this.unresolved() && this.consented()) {
-      this.pollStarted = Date.now();
+    if (this.state.journal?.jobId && !this.active && this.unresolved() && this.consented())
       this.schedule(0);
-    }
   };
 }
 

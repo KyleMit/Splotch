@@ -1,7 +1,14 @@
 import { POLL_INTERVAL_MS, JOB_TTL_MS, POLL_TIMEOUT_MS } from './contract';
+import {
+  AI_POLL_TIMEOUT_MESSAGE,
+  AI_POLL_TIMEOUT_STATUS,
+  AI_REQUEST_FAILED_MESSAGE,
+  AI_TIMEOUT_MESSAGE,
+} from '../../../../web/src/lib/ai/generationFailures';
 import { credentialHeaders } from './credentials';
 import { requestAi, type AiReply } from './transport';
 import type { AiJournal, AiResult } from './journal';
+import type { AiFailureDetails } from './sessionContract';
 import { AiRecoverySession } from './recoverySession';
 import { bytesBase64 } from './base64';
 export class NativeAiController extends AiRecoverySession {
@@ -99,48 +106,10 @@ export class NativeAiController extends AiRecoverySession {
         return;
       }
     }
-    if (this.state.journal?.id !== id) {
-      if (reply.kind === 'image') {
-        let result: AiResult;
-        try {
-          result = (await this.deps.storage.retain(id, reply.bytes, reply.mime)).picture;
-        } catch {
-          this.heldBytes = {
-            id,
-            bytes: reply.bytes,
-            mime: reply.mime,
-          };
-          this.update({
-            heldResult: {
-              uri: `data:${reply.mime};base64,${bytesBase64(reply.bytes)}`,
-              mime: reply.mime,
-            },
-            message:
-              'An earlier AI picture arrived but could not be saved. Keep this app open and retry saving it.',
-          });
-          if (this.state.heldResult)
-            this.reports.complete(
-              id,
-              reply.bytes,
-              reply.mime,
-              reply.reportToken,
-              this.state.heldResult.uri
-            );
-          return;
-        }
-        this.heldBytes = null;
-        this.reports.complete(id, reply.bytes, reply.mime, reply.reportToken, result.uri);
-        this.update({
-          pictures: [
-            ...this.state.pictures.filter((picture) => picture.uri !== result.uri),
-            result,
-          ],
-          message: 'An earlier AI picture arrived and was saved separately.',
-        });
-      }
-      return;
-    }
+    // Shipping delivers only into the run that owns the card; a superseded run's reply is dropped.
+    if (this.state.journal?.id !== id) return;
     if (reply.kind === 'image') {
+      this.runDrawing = null;
       this.update({ refusal: null, failures: 0 });
       await this.collectImage(journal, reply);
     } else if (reply.kind === 'ticket') {
@@ -163,56 +132,46 @@ export class NativeAiController extends AiRecoverySession {
       this.pollStarted = Date.now();
       this.schedule(reply.pollAfterMs);
     } else if (reply.kind === 'pending' || (reply.kind === 'unknown' && poll)) {
-      if (reply.kind === 'unknown') this.ambiguous.add(id);
+      // One poll that went unanswered is a job probably still running: keep waiting, as shipping's
+      // poll does, until its deadline.
       this.update({
         message: reply.kind === 'unknown' ? reply.message : 'Your picture is still on its way.',
       });
       this.schedule(reply.kind === 'pending' ? reply.delayMs : POLL_INTERVAL_MS);
     } else if (reply.kind === 'failure') {
-      await this.settleFailure(id, journal, reply, poll);
+      await this.settleFailure(journal, reply, poll);
     } else if (reply.kind === 'unknown') {
-      this.ambiguous.add(id);
-      await this.persist({
-        ...journal,
-        phase: 'unknown',
+      await this.failRun(journal, {
+        status: null,
+        endpoint: '/api/generate-image',
+        message: reply.cause === 'timeout' ? AI_TIMEOUT_MESSAGE : AI_REQUEST_FAILED_MESSAGE,
       });
-      this.update({
-        message: reply.message,
-      });
+      this.update({ message: reply.message });
     }
   };
+  // A run that failed in a way the same drawing may fix: the error card offers Try again until
+  // shipping's repeated-failure limit.
+  private failRun = async (journal: AiJournal, failure: AiFailureDetails) => {
+    this.update({ failures: this.state.failures + 1, failure });
+    await this.persist({ ...journal, phase: 'failed' });
+  };
   private settleFailure = async (
-    id: number,
     journal: AiJournal,
     reply: Extract<AiReply, { kind: 'failure' }>,
     poll: boolean
   ) => {
-    if (reply.reason === 'expired' && this.ambiguous.has(id)) {
-      this.update({
-        message:
-          'A previous reply is still uncertain. Keep this app open; the attempt stays held until its server retention window ends.',
-      });
-      return;
-    }
     if (reply.reason === 'safety') {
-      this.reports.refuse(id, reply.reportToken);
-      this.update({ refusal: { id }, message: reply.message, failures: 0 });
+      this.reports.refuse(journal.id, reply.reportToken);
+      this.update({ refusal: { id: journal.id }, message: reply.message, failures: 0 });
+      await this.persist({ ...journal, phase: 'failed' });
     } else
-      this.update({
-        failures: this.state.failures + 1,
-        failure: {
-          status: reply.status ?? null,
-          endpoint: poll ? '/api/generation-result' : '/api/generate-image',
-          message: reply.detail ?? reply.message,
-        },
+      await this.failRun(journal, {
+        status: reply.status ?? null,
+        endpoint: poll ? '/api/generation-result' : '/api/generate-image',
+        message: reply.detail ?? reply.message,
       });
-    await this.persist({
-      ...journal,
-      phase: 'failed',
-    });
     this.update({
       message: reply.message,
-      retryAt: reply.retryAt ?? 0,
       ...(reply.reason === 'exhausted'
         ? { remaining: 0 }
         : reply.reason === 'unavailable' && this.credential?.kind === 'free'
@@ -223,16 +182,14 @@ export class NativeAiController extends AiRecoverySession {
     // shipping closes the card and opens the AI settings, where a grown-up can add a key.
     if (
       reply.reason === 'exhausted' ||
-      (reply.reason === 'unavailable' &&
-        reply.retryAt === undefined &&
-        this.credential?.kind === 'free')
+      (reply.reason === 'unavailable' && this.credential?.kind === 'free')
     )
       this.needsSetup();
   };
   private currentGenerationPermission = (proof: number) =>
     this.state.authorized && this.consented() && proof === this.authorization && !this.disposed;
   // Resolves whether the run started: a refused start has nothing for the result card to show.
-  protected generateAuthorized = async (): Promise<boolean> => {
+  protected generateAuthorized = async (again = false): Promise<boolean> => {
     if (
       !this.state.authorized ||
       !this.consented() ||
@@ -256,7 +213,8 @@ export class NativeAiController extends AiRecoverySession {
     });
     let uploadStarted = false;
     try {
-      const prepared = await this.deps.prepare();
+      const prepared = (again && this.runDrawing) || (await this.deps.prepare());
+      this.runDrawing = prepared;
       if (!this.currentGenerationPermission(proof)) return true;
       const id = Math.max(Date.now(), (this.state.journal?.id ?? 0) + 1);
       const journal: AiJournal = {
@@ -310,7 +268,7 @@ export class NativeAiController extends AiRecoverySession {
           },
           body: upload,
         },
-        (late) => this.settle(id, late, false)
+        () => {}
       );
       await this.settle(id, reply, false);
     } catch {
@@ -338,10 +296,10 @@ export class NativeAiController extends AiRecoverySession {
   };
   // Settings reads the saved credential for display only. A send without a credential this
   // session has loaded loads it, with any held journal or recovery, under the send's own check.
-  protected loadThenGenerate = async () => {
+  protected loadThenGenerate = async (again = false) => {
     if (!this.state.authorized) return false;
     if (!this.credential) await this.load();
-    return this.generateAuthorized();
+    return this.generateAuthorized(again);
   };
   generate = async () => {
     if (!this.deps.parent) return this.loadThenGenerate();
@@ -365,9 +323,10 @@ export class NativeAiController extends AiRecoverySession {
       return;
     }
     if (Date.now() - this.pollStarted >= POLL_TIMEOUT_MS) {
-      this.update({
-        message:
-          'This picture is taking longer. Open this panel again to keep checking before its 20-minute expiry.',
+      await this.failRun(journal, {
+        status: AI_POLL_TIMEOUT_STATUS,
+        endpoint: '/api/generation-result',
+        message: AI_POLL_TIMEOUT_MESSAGE,
       });
       return;
     }

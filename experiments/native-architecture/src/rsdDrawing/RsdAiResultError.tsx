@@ -76,7 +76,7 @@ function SafetyRefusal({ owner, state }: { owner: NativeAiOwner; state: AiState 
 }
 
 // The shipping AiErrorCard: Dottie, what happened, and one big way on. A first failure offers
-// Try again; a repeated one, or a run held rather than resent, sends the child back to drawing.
+// Try again; a repeated one sends the child back to drawing.
 function RsdAiErrorCard({
   reason,
   onTryAgain,
