@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { saveFailureCopy } from '../export/pictureSave';
 import { saveOs } from '../keepPicture';
-import { useDraftNotice } from '../product/useDraftNotice';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import { RsdFailureBanner } from './drawingSheets';
 import type { FailureBannerAction, FailureBannerModel } from './RsdFailureBanner';
@@ -16,11 +15,7 @@ type Screen = ReturnType<typeof useDrawingScreen>;
 export const FAILURE_REANNOUNCE_GAP_MS = 150;
 
 // Shipping's generic failure heading; a refused save brings its own.
-export const FAILURE_HEADING = 'Something went wrong';
-function retryAction(label: string, disabled: boolean, onPress: () => void): FailureBannerAction {
-  return { id: 'retry', label, variant: 'brand', busy: false, disabled, onPress };
-}
-
+const FAILURE_HEADING = 'Something went wrong';
 // SaveFailureBanner.svelte: Open Settings where a native save was refused for a permission, behind
 // the parental gate since Settings is outside the app, and Try again for the pictures it holds.
 function saveBanner(
@@ -59,19 +54,10 @@ function saveBanner(
 // so the Save Failure Banner waits for it (SaveFailureBanner.svelte).
 function failureBanners(
   screen: Screen,
-  draft: ReturnType<typeof useDraftNotice>,
   saving: Readonly<{ openAppSettings: (() => void) | null; aiMinimized: boolean }>
 ): FailureBannerModel[] {
   const banners: FailureBannerModel[] = [];
   const { failure, recovery } = screen;
-  if (draft.state.status === 'failed')
-    banners.push({
-      key: 'draft',
-      heading: FAILURE_HEADING,
-      detail: draft.state.message,
-      onDismiss: null,
-      actions: [retryAction('Retry draft recovery', draft.disabled, draft.retry)],
-    });
   const save = saving.aiMinimized ? null : saveBanner(screen, saving.openAppSettings);
   if (save) banners.push(save);
   if (failure && !recovery.failed)
@@ -108,24 +94,21 @@ function useFailureAnnouncement(message: string, retrying: boolean) {
 // Shipping shows no status text on the paper. Routine notices are spoken from a visually hidden
 // polite region; failures show in the Save Failure Banner, whose words a second region, mounted
 // before any failure, speaks. Each failure is spoken there once: the screen's routine notice
-// leaves out any notice a failure wrote, and a failed draft's words are the banner's.
+// leaves out any notice a failure wrote.
 export function RsdDrawingStatus({
   screen,
   notice,
   soundNotice,
-  blocked,
   openAppSettings,
   aiMinimized,
 }: {
   screen: Screen;
   notice: string;
   soundNotice: string;
-  blocked: boolean;
   openAppSettings: (() => void) | null;
   aiMinimized: boolean;
 }) {
-  const draft = useDraftNotice(screen, blocked);
-  const banners = failureBanners(screen, draft, { openAppSettings, aiMinimized });
+  const banners = failureBanners(screen, { openAppSettings, aiMinimized });
   // The banner stays mounted after its last failure leaves, so that failure's exit can play.
   const [bannerUsed, setBannerUsed] = useState(false);
   if (banners.length > 0 && !bannerUsed) setBannerUsed(true);
@@ -133,7 +116,7 @@ export function RsdDrawingStatus({
     banners.map(({ heading, detail }) => `${heading}. ${detail}`).join(' '),
     screen.saveFailure.retrying
   );
-  const routine = [notice, soundNotice, draft.state.status === 'failed' ? '' : draft.state.message];
+  const routine = [notice, soundNotice];
   return (
     <>
       <RsdVisuallyHidden live>{routine.filter(Boolean).join(' ')}</RsdVisuallyHidden>

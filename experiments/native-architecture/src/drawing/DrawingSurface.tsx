@@ -169,7 +169,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   color={props.color}
                   onBusy={props.onPreparingChange}
                   onError={(error) => {
-                    input.silence();
+                    input.detach();
                     props.onRendererFault(error);
                   }}
                 />

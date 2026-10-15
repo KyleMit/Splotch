@@ -45,8 +45,7 @@ export function useRendererRecovery(options: RecoveryOptions) {
       return;
     let release: (() => void) | undefined;
     try {
-      if (!current.current.surface.current) throw new Error('The drawing paper is not ready.');
-      release = current.current.surface.current.lockInput();
+      release = current.current.surface.current?.lockInput();
       const next = generation + 1;
       currentGeneration.current = next;
       faultGeneration.current = null;
@@ -88,6 +87,15 @@ export function useRendererRecovery(options: RecoveryOptions) {
       },
       onRendererFault(error: unknown) {
         if (!valid()) return;
+        if (recoveringGeneration.current !== generation) {
+          const next = generation + 1;
+          currentGeneration.current = next;
+          recoveringGeneration.current = next;
+          current.current.rendererFault.current = false;
+          current.current.setPreparing(true);
+          setGeneration(next);
+          return;
+        }
         faultGeneration.current = generation;
         current.current.rendererFault.current = true;
         current.current.setPreparing(true);

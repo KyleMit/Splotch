@@ -1,6 +1,5 @@
 import { drawingPaperSize, type PaperReference } from './drawing/paperSpace';
 import { useDrawingHistory } from './product/DrawingSession';
-import { protectedDraftPageIds } from './platform/drawingDraft';
 import { offlineLibrary } from './offlineLibrary/runtime';
 import { useOfflineLibrary } from './offlineLibrary/useOfflineLibrary';
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -10,6 +9,7 @@ import {
   addStrokes,
   hasDrawingInk,
   clearDrawing,
+  emptyDrawing,
   undoDrawing,
   type History,
   type Stroke,
@@ -34,6 +34,26 @@ import { useBackAwareDrawingState } from './platform/BrowserBack';
 import { useVisibleInk } from './drawing/inkVisibility';
 import { createEmptyScan, useInkObservers } from './drawingScan';
 
+function useBlankPaper(
+  history: History,
+  setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
+  drawing: boolean,
+  visible: boolean
+) {
+  useEffect(() => {
+    if (drawing || visible || history.drawing.strokes.length === 0) return;
+    const erased = history.drawing;
+    setHistory((current) =>
+      current.drawing === erased
+        ? {
+            ...current,
+            drawing: emptyDrawing(erased.rainbow, erased.pageId),
+          }
+        : current
+    );
+  }, [drawing, visible, history.drawing, setHistory]);
+}
+
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
   const replacementGuard = useHistoryReplacementGuard();
@@ -44,7 +64,7 @@ export function useDrawingScreen() {
   const [preparing, setPreparing] = useState(false);
   const [drawing, setDrawing] = useBackAwareDrawingState();
   const [commandBusy, setBusy] = useState(false);
-  const busy = commandBusy || historyOwner.draftState.status === 'loading';
+  const busy = commandBusy;
   const messages = useDrawingMessages();
   const { notice, setNotice, report } = messages;
   const saveFailure = useSaveFailure();
@@ -73,6 +93,7 @@ export function useDrawingScreen() {
   const [committedStrokes, setCommittedStrokes] = useState(0);
   // Whether the page shows ink: the screenshot camera's blank state.
   const ink = useVisibleInk(history.drawing, !drawing, scanEmpty);
+  useBlankPaper(history, setHistory, drawing, ink.visible);
   visibleInk.current = ink;
   const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (strokes) => {
     setCommittedStrokes((total) => total + strokes.length);
@@ -92,8 +113,7 @@ export function useDrawingScreen() {
   // contact, as a second finger's does in shipping. Disabling the chrome for a stroke would fade
   // every control and re-mount it on the UI thread at each stroke start and lift, which costs the
   // canvas frames.
-  const disabled =
-    historyOwner.draftState.status === 'loading' || preparing || brushes.state.status !== 'ready';
+  const disabled = preparing || brushes.state.status !== 'ready';
   // A dialog leaves the chrome at full strength under its scrim, as shipping's modal leaves the
   // page: the chrome is held rather than disabled while one is open.
   const dialogOpen = pagePickerOpen || settings.sheetOpen;
@@ -139,8 +159,6 @@ export function useDrawingScreen() {
   return {
     library,
     recovery,
-    draftState: historyOwner.draftState,
-    retryDraft: historyOwner.retryDraft,
     history,
     brush,
     ...brushActions,
@@ -249,7 +267,7 @@ function createColoringPageActions(
         const next = changePage(history.historyRef.current, pageId);
         if (next !== history.historyRef.current) {
           history.setHistory(next);
-          setNotice(`${pageLabel(pageId)} ready. Undo brings your picture back.`);
+          setNotice(`${pageLabel(pageId)} ready.`);
         }
         setPickerOpen(false);
       });
@@ -265,7 +283,6 @@ function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pi
     remove: () =>
       offlineLibrary.remove(async () => [
         ...(await savedColoringPageIds()),
-        ...(await protectedDraftPageIds()),
         historyRef.current.drawing.pageId,
         ...historyRef.current.undo.map((entry) => entry.pageId),
       ]),

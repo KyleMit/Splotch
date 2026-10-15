@@ -33,14 +33,34 @@ function picture() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('native coloring-page composition', () => {
-  it('changes the page and paint together as one reversible picture operation', () => {
+  it('picks a page on blank paper without adding an Undo step', () => {
+    const next = changePage(createHistory(), 'flower');
+    expect(next.drawing.pageId).toBe('flower');
+    expect(next.undo).toEqual([]);
+    expect(undoDrawing(next)).toBe(next);
+  });
+
+  it('keeps a pen-only page pick when Undo removes the last stroke', () => {
     const original = picture();
     const next = changePage(original, 'turtle');
-    expect(next.drawing).toEqual({ ...original.drawing, pageId: 'turtle' });
     expect(next.drawing.strokes).toBe(original.drawing.strokes);
-    expect(next.undo.at(-1)).toBe(original.drawing);
-    expect(undoDrawing(next).drawing).toBe(original.drawing);
-    expect(original.drawing.strokes).toEqual([stroke()]);
+    expect(next.undo).toBe(original.undo);
+    expect(undoDrawing(next).drawing).toEqual(emptyDrawing(0, 'turtle'));
+  });
+
+  it('keeps ordinary page choices through Undo Clear while retaining Magic page Undo', () => {
+    const original = createHistory({
+      ...legacyDrawing(3, 'flower'),
+      strokes: [{ brush: 'magic', width: 30, rainbow: 3, points: [{ x: 512, y: 384 }] }],
+    });
+    const magicPage = changePage(original, 'turtle');
+    const cleared = clearDrawing(magicPage, false);
+    const picked = changePage(cleared, 'sunshine');
+    expect(picked.undo).toBe(cleared.undo);
+    const restored = undoDrawing(picked);
+    expect(restored.drawing.strokes).toBe(original.drawing.strokes);
+    expect(restored.drawing.pageId).toBe('sunshine');
+    expect(undoDrawing(restored).drawing).toBe(original.drawing);
   });
 
   it('retains mixed brush metadata and one page Undo unit through page removal and later ink', () => {
@@ -80,12 +100,13 @@ describe('native coloring-page composition', () => {
     expect(changePage(original, 'flower')).toBe(original);
   });
 
-  it('returns to blank paper without discarding the undoable painted page', () => {
+  it('removes a pen-only page without adding an Undo step', () => {
     const original = picture();
     const blank = changePage(original, 'blank');
     expect(blank.drawing).toEqual({ ...original.drawing, pageId: 'blank' });
     expect(blank.drawing.strokes).toBe(original.drawing.strokes);
-    expect(undoDrawing(blank).drawing).toBe(original.drawing);
+    expect(blank.undo).toBe(original.undo);
+    expect(undoDrawing(blank).drawing).toEqual(emptyDrawing(0, 'blank'));
   });
 
   it.each(PAGE_IDS)(

@@ -1,11 +1,4 @@
-import {
-  appendPoint,
-  MAX_POINTS,
-  type Drawing,
-  type Point,
-  type Stroke,
-  type StrokeStyle,
-} from './model';
+import { appendPoint, type Drawing, type Point, type Stroke, type StrokeStyle } from './model';
 
 export function createStrokeInput() {
   let current: { identifier: string; stroke: Stroke } | null = null;
@@ -27,9 +20,7 @@ export function createStrokeInput() {
       if (!current || (identifier !== undefined && identifier !== current.identifier)) return null;
       const stroke = current.stroke;
       current = null;
-      return point && stroke.points.length < MAX_POINTS
-        ? { ...stroke, points: appendPoint(stroke.points, point, true) }
-        : stroke;
+      return point ? { ...stroke, points: appendPoint(stroke.points, point, true) } : stroke;
     },
     identifier(): string | undefined {
       return current?.identifier;

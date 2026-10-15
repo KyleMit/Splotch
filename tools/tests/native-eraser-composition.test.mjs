@@ -83,13 +83,15 @@ describe('joint native drawing and eraser ownership', () => {
     expect(cleared.drawing.rainbow).toBe(1);
   });
 
-  it('plans all 1000 legal alternating operations with at most one erase run per stage', () => {
+  it('accepts more than 1000 alternating operations and plans at most one erase run per stage', () => {
     const strokes = Array.from({ length: 1000 }, (_, index) => ({
       ...(index % 2 ? { ...erase, width: 44 } : { ...marker, width: 22 }),
       points: [{ x: index % 1024, y: 40 }],
     }));
     expect(parseDrawing({ ...legacyDrawing(), strokes }).strokes).toHaveLength(1000);
-    expect(() => addStroke(createHistory({ ...legacyDrawing(), strokes }), marker)).toThrow('full');
+    expect(
+      addStroke(createHistory({ ...legacyDrawing(), strokes }), marker).drawing.strokes
+    ).toHaveLength(1001);
     let checkpoint = null;
     let captures = 0;
     for (;;) {

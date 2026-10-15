@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { FAILURE_HEADING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingStatus.tsx';
 import {
   BANNER_CLEAR_RESERVE_PX,
   BANNER_DISMISS_OVERHANG_PX,
@@ -96,15 +95,6 @@ describe('the Save Failure Banner on the drawing screen', () => {
     });
     expect(records.announcements).toContain(PICK_A_COLOR);
     expect(banners()).toEqual([]);
-  });
-
-  it('speaks a failed draft once, from the banner, with its Retry', async () => {
-    const message = 'Your current picture could not be saved.';
-    await mountToolbar(
-      toolbarScreen({ draftState: { status: 'failed', message }, retryDraft: vi.fn() })
-    );
-    expect(banners()).toEqual([`${FAILURE_HEADING}${message}Retry draft recovery`]);
-    expect(spoken(message)).toEqual({ announced: 1, regions: 1 });
   });
 
   it('gives each notice a failure wrote to the banner alone, and later notices back to routine', async () => {

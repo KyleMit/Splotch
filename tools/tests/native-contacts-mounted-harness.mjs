@@ -6,8 +6,11 @@ import { afterEach, beforeEach, expect, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
-import { encodeDrawingDraft } from '../../experiments/native-architecture/src/product/drawingDraft.ts';
-import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  DrawingSessionProvider,
+  useDrawingHistory,
+} from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 
 const sdk = vi.hoisted(() => ({
   handlers: null,
@@ -19,7 +22,6 @@ const sdk = vi.hoisted(() => ({
   captures: [],
   hold: false,
   fail: false,
-  draft: null,
   save: vi.fn(),
   soundStart: vi.fn(),
   soundStop: vi.fn(),
@@ -44,13 +46,6 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
     write: vi.fn(),
   },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => {
-  const storage = { read: async () => sdk.draft, write: async () => {} };
-  return {
-    drawingDraftStorage: storage,
-    protectedDraftPageIds: async () => [],
-  };
-});
 vi.mock('react-native', () => ({
   PixelRatio: { get: () => 1 },
   AccessibilityInfo: createAccessibilityInfoFixture(),
@@ -138,9 +133,10 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
 }));
 
 const PAPER_TARGET = 101;
-let owner, root, host;
+let owner, historyOwner, root, host;
 function Consumer() {
   sdk.screenRenders += 1;
+  historyOwner = useDrawingHistory();
   owner = useDrawingScreen();
   const sound = useDrawingSound();
   return createElement(DrawingSurface, {
@@ -201,16 +197,13 @@ async function settle() {
       for (const frame of frames) frame(0);
     });
 }
-// A screen opens on a picture it did not draw by restoring it as the current-picture draft, so the
-// fixture remounts the screen in an app session that restores this drawing, and hands back the
-// restored copy the history now holds.
 async function open(drawing) {
-  sdk.draft = encodeDrawingDraft(drawing);
   await act(async () =>
     root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
   );
   await settle();
-  sdk.draft = null;
+  await act(async () => historyOwner.setHistory(createHistory(drawing)));
+  await settle();
   return owner.history.drawing;
 }
 async function twoContacts() {
@@ -251,7 +244,9 @@ beforeEach(async () => {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
-  await act(async () => root.render(createElement(Consumer)));
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
   expect(owner.brushPreferences.status).toBe('ready');
 });
 afterEach(async () => {
@@ -261,4 +256,17 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-export { sdk, owner, root, host, touch, event, send, settle, open, twoContacts, Consumer };
+export {
+  sdk,
+  owner,
+  historyOwner,
+  root,
+  host,
+  touch,
+  event,
+  send,
+  settle,
+  open,
+  twoContacts,
+  Consumer,
+};

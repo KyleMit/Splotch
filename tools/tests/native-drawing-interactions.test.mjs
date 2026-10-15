@@ -8,7 +8,6 @@ import {
   addStroke,
   createHistory,
   emptyDrawing,
-  MAX_POINTS,
   parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -58,17 +57,17 @@ describe('native drawing interaction ownership', () => {
     expect(input.finish()).toBeNull();
   });
 
-  it('releases capped input and preserves save, undo, and the next stroke after a refused sample', () => {
+  it('keeps a long stroke and its final sample, save, undo, and the next stroke', () => {
     const input = createStrokeInput();
     const draft = input.start(
       'finger A',
       { color: 'Blue', brush: 'pencil', width: 7 },
       { x: 10, y: 20 }
     );
-    draft.points = Array.from({ length: MAX_POINTS }, () => ({ x: 10, y: 20 }));
-    expect(() => input.sample('finger A', { x: 30, y: 40 })).toThrow('Lift your finger');
+    draft.points = Array.from({ length: 100_000 }, () => ({ x: 10, y: 20 }));
+    expect(input.sample('finger A', { x: 30, y: 40 }).points).toHaveLength(100_001);
     const finished = input.finish('finger A', { x: 50, y: 60 });
-    expect(finished.points).toHaveLength(MAX_POINTS);
+    expect(finished.points).toHaveLength(100_002);
     expect(input.identifier()).toBeUndefined();
     const committed = addStroke(createHistory(legacyDrawing()), finished);
     expect(parseDrawing(JSON.parse(JSON.stringify(committed.drawing)))).toEqual(committed.drawing);

@@ -1,9 +1,4 @@
-// The native apps have no document to reload; the app root remounts instead (AppRestartRoot),
-// carrying the fresh launch itself.
+// The native apps have no document to reload; AppRestartRoot remounts their session owners.
 export function reloadApp(): boolean {
-  return false;
-}
-
-export function takeFreshStart(): boolean {
   return false;
 }

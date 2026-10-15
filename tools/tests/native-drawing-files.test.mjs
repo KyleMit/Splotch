@@ -1,3 +1,4 @@
+import { unsavedPictureStore } from '../../experiments/native-architecture/src/platform/unsavedPictures.ts';
 import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { adoptedDrawing, legacyDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -270,4 +271,36 @@ it('reopens native legacy v5 without adding paper or rewriting its original cano
     JSON.stringify(parseDrawing(drawing))
   );
   expect(JSON.stringify(drawing)).toBe(before);
+});
+
+describe('durable unsaved pictures on native', () => {
+  const held = [{ pngBase64: 'exact-captured-png', outcome: 'denied' }];
+  it('keeps exact bytes and formats through a verified commit and clears without resurrecting older records', async () => {
+    const pictures = [
+      ...held,
+      {
+        pngBase64: 'exact-ai-jpeg',
+        outcome: 'failed',
+        format: { baseName: 'splotch-ai', mime: 'image/jpeg' },
+      },
+    ];
+    await unsavedPictureStore.write(pictures);
+    await expect(unsavedPictureStore.read()).resolves.toEqual(pictures);
+    await unsavedPictureStore.write(null);
+    await expect(unsavedPictureStore.read()).resolves.toBeNull();
+  });
+  it('leaves the last committed pictures readable after an interrupted write', async () => {
+    await unsavedPictureStore.write(held);
+    filesystem.writeError = new Error('Disk full.');
+    await expect(unsavedPictureStore.write(null)).rejects.toThrow('Disk full.');
+    filesystem.writeError = null;
+    await expect(unsavedPictureStore.read()).resolves.toEqual(held);
+  });
+  it('refuses an incomplete staged write without replacing committed pictures', async () => {
+    await unsavedPictureStore.write(held);
+    filesystem.readbackMismatch = true;
+    await expect(unsavedPictureStore.write(null)).rejects.toThrow('incomplete');
+    filesystem.readbackMismatch = false;
+    await expect(unsavedPictureStore.read()).resolves.toEqual(held);
+  });
 });
