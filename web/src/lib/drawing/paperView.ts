@@ -10,7 +10,7 @@
 // engine.ts owns all state; everything here is a pure function so the mapping
 // math is unit-testable.
 
-import type { Orientation } from '$lib/platform';
+import type { Orientation } from '../breakpoints';
 import type { Point } from './strokeMath';
 
 export type ViewRotation = 0 | 90 | 180 | 270;
