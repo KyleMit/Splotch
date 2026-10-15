@@ -1,11 +1,14 @@
 import { css, html } from 'react-strict-dom';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import {
-  isCustomColor,
+  CUSTOM_COLOR_LABEL,
+  customPaintSelection,
   paintAppearance,
   paintLabel,
   type PaintColor,
   type PaletteLabel,
+  type PaintSwatch,
+  type CustomPaintSelection,
 } from '../drawing/palette';
 import { RsdFlyoutMenu } from './RsdFlyoutMenu';
 import type { FlyoutScale } from './RsdIconButton';
@@ -68,13 +71,14 @@ function PaintOption({
   disabled: boolean;
   onPick: () => void;
 }) {
-  const { hex } = paintAppearance(label, useDrawingAppearance());
+  const theme = useDrawingAppearance();
+  const { hex } = paintAppearance(label, theme);
   const bare = useBareToolbar();
   return (
     <RsdPressable
       type="button"
       role="radio"
-      aria-label={paintLabel(label)}
+      aria-label={paintLabel(label, theme)}
       aria-checked={ringed}
       aria-disabled={disabled}
       disabled={disabled}
@@ -106,26 +110,26 @@ function MoreColorsOption({
   disabled,
   onCustom,
 }: {
-  custom: string | null;
+  custom: CustomPaintSelection;
   disabled: boolean;
   onCustom: () => void;
 }) {
-  const icon = INNER_PX / (custom ? 1 : MORE_COLORS_POP_SCALE);
+  const icon = INNER_PX / (custom?.color ? 1 : MORE_COLORS_POP_SCALE);
   const bare = useBareToolbar();
   return (
     <RsdPressable
       type="button"
-      aria-label="More colors"
+      aria-label={CUSTOM_COLOR_LABEL}
       aria-disabled={disabled}
       disabled={disabled}
       style={[styles.option(COLOR_MENU_SWATCH_PX), styles.press, styles.clear]}
       onClick={onCustom}
     >
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />
-      {custom ? (
+      {custom?.color ? (
         <SelectionRing
           size={COLOR_MENU_SWATCH_PX}
-          color={custom}
+          color={custom.color}
           surface={bare ? 'paper' : 'floatSurface'}
         />
       ) : null}
@@ -139,6 +143,7 @@ export function RsdColorMenu({
   areaWidth,
   buttonSize,
   selected,
+  activeSwatch,
   erasing,
   disabled,
   onPick,
@@ -149,12 +154,13 @@ export function RsdColorMenu({
   areaWidth: number;
   buttonSize: number;
   selected: PaintColor;
+  activeSwatch: PaintSwatch;
   erasing: boolean;
   disabled: boolean;
   onPick: (color: PaletteLabel) => void;
   onCustom: () => void;
 }) {
-  const custom = !erasing && isCustomColor(selected) ? selected : null;
+  const custom = customPaintSelection({ selectedColor: selected, activeSwatch }, erasing);
   return (
     <RsdFlyoutMenu label="Colors" direction="row" spacing={COLOR_MENU_SPACING} {...scale}>
       <html.div
@@ -166,7 +172,7 @@ export function RsdColorMenu({
           <PaintOption
             key={label}
             label={label}
-            ringed={!erasing && selected === label}
+            ringed={!erasing && activeSwatch === label}
             disabled={disabled}
             onPick={() => onPick(label)}
           />

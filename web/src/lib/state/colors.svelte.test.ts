@@ -15,6 +15,14 @@ import {
 import { PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 import { colorContrast } from '$lib/design/colorContrast';
 import { themes, toCssVarName } from '$lib/design/tokens';
+import {
+  createSoundSettings,
+  initialSoundSettingsState,
+} from '../../../../experiments/native-architecture/src/settings/soundSettings';
+import {
+  paintAppearance,
+  paletteHex,
+} from '../../../../experiments/native-architecture/src/drawing/palette';
 
 // Ink the old BT.601 predicate reported as light enough to skip the keyline.
 const PERCEIVED_BRIGHTNESS_MISSES = [
@@ -42,6 +50,63 @@ function selection(state: ColorsState) {
   const { activeSwatch, activeColor, customColor, customColorSelected } = state;
   return { activeSwatch, activeColor, customColor, customColorSelected };
 }
+
+it.each(['light', 'dark'] as const)(
+  'matches shipping custom-swatch selection and painting in %s',
+  async (theme) => {
+    colors.followTheme(() => theme === 'dark');
+    let state = initialSoundSettingsState();
+    let stored: string | null = null;
+    const storage = {
+      read: async () => stored,
+      write: async (value: string) => {
+        stored = value;
+      },
+    };
+    const native = createSoundSettings(storage, (next) => {
+      state = next;
+    });
+    const expectShippingSelection = () => {
+      expect(
+        state.activeSwatch === CUSTOM_SWATCH ? CUSTOM_SWATCH : paletteHex(state.activeSwatch)
+      ).toBe(colors.activeSwatch);
+      expect(paintAppearance(state.selectedColor, theme).hex).toBe(colors.activeColor);
+    };
+    try {
+      await native.load();
+      native.setColor('Black');
+      colors.selectPaletteColor(BLACK_INK);
+      native.selectCustomPaint();
+      colors.selectCustomSwatch();
+      expectShippingSelection();
+      native.setColor('#123ABC');
+      colors.pickCustomColor('#123ABC');
+      expectShippingSelection();
+      native.setColor('Red');
+      colors.selectPaletteColor(paletteHex('Red'));
+      native.selectCustomPaint();
+      colors.selectCustomSwatch();
+      expectShippingSelection();
+      await native.setEnabled(false);
+      expectShippingSelection();
+      const saved = JSON.parse(stored ?? '');
+      expect(saved).not.toHaveProperty('activeSwatch');
+      expect(saved).not.toHaveProperty('selectedColor');
+      const reopened = createSoundSettings(storage, (next) => {
+        state = next;
+      });
+      try {
+        await reopened.load();
+        colors = createColors();
+        expectShippingSelection();
+      } finally {
+        reopened.dispose();
+      }
+    } finally {
+      native.dispose();
+    }
+  }
+);
 
 describe('palette invariants', () => {
   it('keeps Purple as the index-0 default selection', () => {

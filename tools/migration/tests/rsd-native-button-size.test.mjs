@@ -50,8 +50,8 @@ it.each(BUTTON_SCALES)(
     await chooseButtonScale(scale);
     const { swatchPx, gapPx, endPaddingPx } = PALETTE_FLOWS.row;
     const outer = [
-      outerSize(resolved((props) => props.accessibilityLabel === 'Purple paint')),
-      outerSize(resolved((props) => props.accessibilityLabel === 'More colors')),
+      outerSize(resolved((props) => props.accessibilityLabel === 'Purple')),
+      outerSize(resolved((props) => props.accessibilityLabel === 'Custom Color')),
     ];
     expect(outer).toEqual([swatchPx, swatchPx]);
     const span = (count) => count * swatchPx + (count - 1) * gapPx + 2 * endPaddingPx;

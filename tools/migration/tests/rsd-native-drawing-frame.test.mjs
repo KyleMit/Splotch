@@ -223,7 +223,7 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   const ring = selectionRingColor(blue);
   const surface = '#ffffff';
   const swatchStyle = () =>
-    flatStyle(records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint').style);
+    flatStyle(records.props.findLast((entry) => entry.accessibilityLabel === 'Blue').style);
   const render = async (selected) => {
     records.props.length = 0;
     const element = createElement(RsdPaintAction, {
@@ -237,7 +237,7 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
     else await act(async () => root.render(element));
   };
   await render(true);
-  const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue paint');
+  const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue');
   expect(props.accessibilityState.checked).toBe(true);
   expect(swatchStyle()).toMatchObject({
     boxSizing: 'border-box',
@@ -289,7 +289,7 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   expect(SELECTION_SEAM_OVERLAP_PX).toBeGreaterThanOrEqual(1);
   const selectedNode = host.querySelector('button');
   expect(selectedNode.getAttribute('role')).toBe('radio');
-  expect(selectedNode.getAttribute('aria-label')).toBe('Blue paint');
+  expect(selectedNode.getAttribute('aria-label')).toBe('Blue');
   expect(selectedNode.textContent).toBe('');
   await act(async () => selectedNode.click());
   expect(onClick).toHaveBeenCalledOnce();
@@ -310,7 +310,7 @@ describe('the mounted drawing screen frame', () => {
       await mountToolbar(toolbarScreen());
       const length = axis === 'row' ? width : height;
       expect(paintLabels()).toHaveLength(paletteSlots(length, axis) - 1);
-      for (const label of [...paintLabels(), 'More colors'])
+      for (const label of [...paintLabels(), 'Custom Color'])
         expect(
           resolved((props) => props.accessibilityLabel === label),
           label
@@ -405,11 +405,11 @@ describe('the mounted drawing screen frame', () => {
 
   it('sits More colors on a raised disc of the bar surface, its honeycomb inside the ring band', async () => {
     await mountToolbar(toolbarScreen());
-    const more = resolved((props) => props.accessibilityLabel === 'More colors');
+    const more = resolved((props) => props.accessibilityLabel === 'Custom Color');
     expect(more.backgroundColor).toBe(DRAWING_THEMES.light.surface);
     expect(more.boxShadow).toBeTruthy();
     expect(more.borderRadius).toBe(PALETTE_FLOWS.row.swatchPx / 2);
-    const icon = host.querySelector('[aria-label="More colors"] svg');
+    const icon = host.querySelector('[aria-label="Custom Color"] svg');
     expect(Number(icon.getAttribute('width'))).toBeCloseTo(
       (PALETTE_FLOWS.row.swatchPx - 2 * SELECTION_RING_GAP_PX) / MORE_COLORS_POP_SCALE
     );
@@ -432,7 +432,7 @@ describe('the mounted drawing screen frame', () => {
       selectionRingColor(paintAppearance('Purple', 'light').hex),
     ]);
     records.props.length = 0;
-    await act(async () => host.querySelector('[aria-label="Yellow paint"]').click());
+    await act(async () => host.querySelector('[aria-label="Yellow"]').click());
     caller.sound.settings = { ...caller.sound.settings, selectedColor: 'Yellow' };
     await act(async () => root.render(createElement(RsdDrawingScreen)));
     const yellow = paintAppearance('Yellow', 'light').hex;

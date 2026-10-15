@@ -22,14 +22,19 @@ import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/
 
 // The drawer's tools draw from the deferred module, which the native apps resolve at launch.
 const NATIVE_ICONS = { ...STARTUP_ICONS, ...NATIVE_DEFERRED_ICONS };
-import { paletteSlots } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import {
-  PALETTE_COLORS,
+  paletteSlots,
+  SELECTION_RING_WIDTH_PX,
+} from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
+import {
   PALETTE_TRIM_ORDER,
   paletteHex,
-  visiblePaints,
 } from '../../../experiments/native-architecture/src/drawing/palette.ts';
 import { DRAWING_THEME } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import {
+  PALETTE_COLORS as SHIPPING_PALETTE,
+  TRIM_ORDER as SHIPPING_TRIM_ORDER,
+} from '../../../web/src/lib/palette.ts';
 import {
   AI_BUTTON,
   flat,
@@ -152,13 +157,13 @@ it('selects paint through text-free round swatches and keeps More colors outside
     swatches
       .filter((node) => node.dataset.checked === 'true')
       .map((node) => node.getAttribute('aria-label'));
-  expect(checked()).toEqual(['Purple paint']);
+  expect(checked()).toEqual(['Purple']);
   const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
-  await act(async () => button('Blue paint').click());
+  await act(async () => button('Blue').click());
   expect(caller.screen.selectInkBrush).toHaveBeenCalledOnce();
   expect(setColor).toHaveBeenCalledExactlyOnceWith('Blue');
-  expect(checked()).toEqual(['Blue paint']);
-  const more = button('More colors');
+  expect(checked()).toEqual(['Blue']);
+  const more = button('Custom Color');
   expect(more.closest('[role="radiogroup"]')).toBeNull();
   expect(iconMarkup(more)).toBe(NATIVE_ICONS['more-colors'].light);
   await act(async () => more.click());
@@ -167,9 +172,9 @@ it('selects paint through text-free round swatches and keeps More colors outside
 
 it('fits one bar of colors plus More colors to the edge it runs along', async () => {
   await mountToolbar(toolbarScreen());
-  const portrait = ['Purple', 'Blue', 'Green', 'Yellow', 'Black'].map((label) => `${label} paint`);
+  const portrait = ['Purple', 'Blue', 'Green', 'Yellow', 'Black'];
   expect(paintLabels()).toEqual(portrait);
-  expect(paintGroup().nextElementSibling).toBe(button('More colors'));
+  expect(paintGroup().nextElementSibling).toBe(button('Custom Color'));
   const bar = host.querySelector('[data-testid="rsd-palette-bar"]');
   expect(bar.querySelectorAll('button')).toHaveLength(portrait.length + 1);
   records.dimensions = { width: 1180, height: 820, scale: 1, fontScale: 1 };
@@ -177,21 +182,69 @@ it('fits one bar of colors plus More colors to the edge it runs along', async ()
   expect(paintLabels()).toHaveLength(paletteSlots(820, 'column') - 1);
   expect(paintLabels()).toEqual(expect.arrayContaining(portrait));
   for (const trimmed of PALETTE_TRIM_ORDER.slice(0, 5))
-    expect(paintLabels()).not.toContain(`${trimmed} paint`);
+    expect(paintLabels()).not.toContain(trimmed);
 });
 
-it('keeps the loaded paint on the bar when the room runs out', () => {
-  expect(visiblePaints([], 'Purple', 5)).toEqual(['Purple', 'Blue', 'Green', 'Yellow', 'Black']);
-  expect(visiblePaints([], 'Grey', 5)).toEqual(['Purple', 'Blue', 'Yellow', 'Grey', 'Black']);
-  const palette = PALETTE_COLORS.map(({ label }) => label);
-  expect(visiblePaints(['#123456', '#ABCDEF'], 'Purple', 16)).toEqual([...palette, '#123456']);
-  expect(visiblePaints(['#123456', '#ABCDEF'], '#ABCDEF', 16)).toEqual([...palette, '#ABCDEF']);
-  expect(visiblePaints(['#123456'], '#123456', 15)).toEqual([
-    ...palette.filter((label) => label !== PALETTE_TRIM_ORDER[0]),
-    '#123456',
-  ]);
-  expect(visiblePaints(['#123456'], '#123456', 1)).toEqual(['#123456']);
-  expect(visiblePaints([], 'Black', 0)).toEqual([]);
+it('keeps shipping palette swatches while custom or trimmed paint is loaded', async () => {
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  const kept = new Set(SHIPPING_TRIM_ORDER.slice(-5));
+  const expected = SHIPPING_PALETTE.filter(({ hex }) => kept.has(hex)).map(({ label }) => label);
+  await mountToolbar(toolbarScreen());
+  const settings = caller.product.sound.owner.settings;
+  await act(async () => {
+    await settings.setColor('#123456');
+    await settings.setColor('#ABCDEF');
+    await settings.setColor('Grey');
+  });
+  expect(caller.sound.settings.selectedColor).toBe('Grey');
+  expect(paintLabels()).toEqual(expected);
+  records.props.length = 0;
+  await act(async () => {
+    await settings.setColor('#ABCDEF');
+  });
+  expect(paintLabels()).toEqual(expected);
+  expect(host.querySelectorAll('[aria-label="Custom Color"]')).toHaveLength(1);
+  expect(records.props.some((props) => flat(props.style)?.borderColor === '#ABCDEF')).toBe(true);
+  records.props.length = 0;
+  await act(async () => {
+    caller.screen.brush = 'eraser';
+    root.render(createElement(RsdDrawingScreen));
+  });
+  expect(records.props.some((props) => flat(props.style)?.borderColor === '#ABCDEF')).toBe(false);
+});
+
+it('selects the custom swatch before opening its picker, restoring the last custom paint', async () => {
+  await mountToolbar(toolbarScreen());
+  const settings = caller.product.sound.owner.settings;
+  await act(async () => settings.setColor('Red'));
+  records.props.length = 0;
+  await act(async () => button('Custom Color').click());
+  expect(caller.sound.settings).toMatchObject({ activeSwatch: 'custom', selectedColor: 'Red' });
+  expect(records.props.some((props) => flat(props.style)?.top === -SELECTION_RING_WIDTH_PX)).toBe(
+    false
+  );
+  await act(async () => {
+    settings.setColor('#123ABC');
+    settings.setColor('Blue');
+  });
+  records.props.length = 0;
+  await act(async () => button('Custom Color').click());
+  expect(caller.sound.settings).toMatchObject({
+    activeSwatch: 'custom',
+    selectedColor: '#123ABC',
+  });
+  expect(records.props.some((props) => flat(props.style)?.borderColor === '#123ABC')).toBe(true);
+  expect(caller.screen.openColorPicker).toHaveBeenCalledTimes(2);
+});
+
+it('hides the palette selection ring while erasing, as shipping does', async () => {
+  await mountToolbar(toolbarScreen({ brush: 'eraser' }));
+  expect(paintGroup().querySelectorAll('[data-checked="true"]')).toHaveLength(0);
+  await act(async () => {
+    caller.screen.brush = 'pen';
+    root.render(createElement(RsdDrawingScreen));
+  });
+  expect(paintGroup().querySelectorAll('[data-checked="true"]')).toHaveLength(1);
 });
 
 it('tucks the shipping tools, in order, into a drawer the chevron after them reveals and hides', async () => {
