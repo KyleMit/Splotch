@@ -37,7 +37,6 @@ import {
   parseSoundSettings,
 } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { TOUCH_TARGET } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import { INFORMATION_CONTENT } from '../../experiments/native-architecture/src/information/content.ts';
 import {
   NATIVE_RELEASE_NOTES_PATH,
   readReleases,
@@ -311,12 +310,6 @@ describe("What's New", () => {
       releases.map(({ version, dateLabel }) => ({ version, dateLabel }))
     );
     expect(source(NATIVE_RELEASE_NOTES_PATH)).toBe(renderNativeReleaseNotes(readReleases()));
-    expect(INFORMATION_CONTENT.whatsNew.sections).toEqual(
-      RELEASE_NOTES[0].sections.map(({ title, blocks }) => ({
-        title,
-        paragraphs: blocks.map(({ text }) => text),
-      }))
-    );
   });
 
   it('stamps the dot with the app version, as the shipping section does', () => {

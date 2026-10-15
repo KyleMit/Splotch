@@ -20,7 +20,6 @@
     "experiments/native-architecture/src/platform/feedback.web.ts",
     "experiments/native-architecture/src/rsdDrawing/RsdFeedbackSheet.tsx",
     "experiments/native-architecture/src/DrawingControls.tsx",
-    "experiments/native-architecture/src/DrawingScreen.tsx",
     "experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx"
   ],
   "transport": "ordinary feedback only, explicit parent send, HTTPS splotch.art/api/report",
