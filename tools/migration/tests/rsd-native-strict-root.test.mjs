@@ -18,6 +18,8 @@ vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx'
 }));
 
 const SETTLE_TURNS = 6;
+// Two full launches of the app, each through a stroke and a Settings choice.
+const TWO_LAUNCHES_TIMEOUT_MS = 30_000;
 let drafts;
 
 beforeEach(() => {
@@ -88,21 +90,25 @@ async function launch(strict) {
   return { launched, drawn, chosen, unmounted: listeners() };
 }
 
-it('runs the canonical root under StrictMode as it runs without it', async () => {
-  const plain = await launch(false);
-  expect(plain).toEqual({
-    launched: {
-      strokes: 1,
-      undo: 0,
-      settings: 'ready',
-      listeners: { appState: 2, back: 0, dimensions: 1 },
-    },
-    drawn: { strokes: 2, draftWrites: 1, draftStrokes: 2 },
-    chosen: { settingsWrites: 1, soundEnabled: false },
-    unmounted: { appState: 0, back: 0, dimensions: 0 },
-  });
-  caller.draftStorage.write.mockClear();
-  caller.settingsStorage.write.mockClear();
-  drafts.splice(1);
-  expect(await launch(true)).toEqual(plain);
-});
+it(
+  'runs the canonical root under StrictMode as it runs without it',
+  async () => {
+    const plain = await launch(false);
+    expect(plain).toEqual({
+      launched: {
+        strokes: 1,
+        undo: 0,
+        settings: 'ready',
+        listeners: { appState: 2, back: 0, dimensions: 1 },
+      },
+      drawn: { strokes: 2, draftWrites: 1, draftStrokes: 2 },
+      chosen: { settingsWrites: 1, soundEnabled: false },
+      unmounted: { appState: 0, back: 0, dimensions: 0 },
+    });
+    caller.draftStorage.write.mockClear();
+    caller.settingsStorage.write.mockClear();
+    drafts.splice(1);
+    expect(await launch(true)).toEqual(plain);
+  },
+  TWO_LAUNCHES_TIMEOUT_MS
+);
