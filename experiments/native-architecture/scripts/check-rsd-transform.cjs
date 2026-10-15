@@ -165,7 +165,6 @@ const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = vali
 const files = [
   'src/platform/BrowserBack.tsx',
   'src/platform/BrowserBack.web.tsx',
-  'src/platform/DrawingModal.tsx',
   'src/product/browserBack.ts',
   'src/rsdDrawing/RsdColorPicker.tsx',
   'src/platform/useFullscreen.ts',
@@ -266,7 +265,6 @@ const files = [
   'src/rsdDrawing/RsdSettingsDialog.tsx',
   'src/rsdDrawing/RsdSettingsRoute.tsx',
   'src/rsdDrawing/NativeScrollAreas.tsx',
-  'src/useDrawingMenu.ts',
   'src/drawing/brushes.ts',
   'src/settings/brushPreferences.ts',
   'src/useBrushPreferences.ts',

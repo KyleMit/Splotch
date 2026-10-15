@@ -3,13 +3,6 @@ import type { Brush } from './brushes';
 export const STROKE_WIDTHS = ['extraThin', 'thin', 'medium', 'thick', 'extraThick'] as const;
 export type StrokeWidth = (typeof STROKE_WIDTHS)[number];
 export const DEFAULT_STROKE_WIDTH: StrokeWidth = 'medium';
-export const STROKE_WIDTH_LABELS: Record<StrokeWidth, string> = {
-  extraThin: 'Extra thin',
-  thin: 'Thin',
-  medium: 'Medium',
-  thick: 'Thick',
-  extraThick: 'Extra thick',
-};
 const INK_WIDTH_PX = { extraThin: 2, thin: 4, medium: 8, thick: 14, extraThick: 22 } as const;
 export const STROKE_WIDTH_PX = {
   pen: INK_WIDTH_PX,
