@@ -5,15 +5,15 @@ import { owner, sdk, touch, event, send, settle } from './native-contacts-mounte
 
 const call = (action) => act(async () => action());
 it('takes back committed ink while preserving a different live contact through its lift', async () => {
-  await send('onPanResponderGrant', event([touch(0, 10, 20, 100)]));
-  await send('onPanResponderEnd', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
+  await send('start', event([touch(0, 10, 20, 100)]));
+  await send('end', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
   expect(owner.history.drawing.strokes).toHaveLength(1);
-  await send('onPanResponderGrant', event([touch(1, 50, 60, 300)]));
+  await send('start', event([touch(1, 50, 60, 300)]));
   await call(() => owner.undo());
   expect(owner.history.drawing.strokes).toHaveLength(0);
   expect(owner.drawing).toBe(true);
-  await send('onPanResponderMove', event([touch(1, 70, 80, 400)], undefined, { 1: 300 }), false);
-  await send('onPanResponderEnd', event([], [touch(1, 90, 100, 500)], { 1: 300 }), false);
+  await send('move', event([touch(1, 70, 80, 400)], undefined, { 1: 300 }), false);
+  await send('end', event([], [touch(1, 90, 100, 500)], { 1: 300 }), false);
   expect(owner.history.drawing.strokes).toHaveLength(1);
   expect(owner.history.drawing.strokes[0].points).toEqual([
     { x: 50, y: 60 },
@@ -23,26 +23,26 @@ it('takes back committed ink while preserving a different live contact through i
 });
 
 it('finishes held ink before a palette choice and ignores that finger until a fresh start', async () => {
-  await send('onPanResponderGrant', event([touch(0, 10, 20, 100)]));
+  await send('start', event([touch(0, 10, 20, 100)]));
   await call(() => owner.selectInkBrush());
   expect(owner.drawing).toBe(false);
   expect(owner.history.drawing.strokes).toHaveLength(1);
-  await send('onPanResponderMove', event([touch(0, 30, 40, 200)], undefined, { 0: 100 }), false);
-  await send('onPanResponderEnd', event([], [touch(0, 50, 60, 300)], { 0: 100 }), false);
+  await send('move', event([touch(0, 30, 40, 200)], undefined, { 0: 100 }), false);
+  await send('end', event([], [touch(0, 50, 60, 300)], { 0: 100 }), false);
   expect(owner.history.drawing.strokes).toHaveLength(1);
   expect(owner.history.drawing.strokes[0].points).toEqual([{ x: 10, y: 20 }]);
-  await send('onPanResponderGrant', event([touch(1, 70, 80, 400)]));
-  await send('onPanResponderEnd', event([], [touch(1, 90, 100, 500)], { 1: 400 }), false);
+  await send('start', event([touch(1, 70, 80, 400)]));
+  await send('end', event([], [touch(1, 90, 100, 500)], { 1: 400 }), false);
   expect(owner.history.drawing.strokes).toHaveLength(2);
 });
 
 it('finishes held ink before Clear and ignores that finger until a fresh start', async () => {
-  await send('onPanResponderGrant', event([touch(0, 10, 20, 100)]));
+  await send('start', event([touch(0, 10, 20, 100)]));
   await call(() => owner.clear(false));
   expect(owner.drawing).toBe(false);
   expect(owner.history.drawing.strokes).toHaveLength(0);
-  await send('onPanResponderMove', event([touch(0, 30, 40, 200)], undefined, { 0: 100 }), false);
-  await send('onPanResponderEnd', event([], [touch(0, 50, 60, 300)], { 0: 100 }), false);
+  await send('move', event([touch(0, 30, 40, 200)], undefined, { 0: 100 }), false);
+  await send('end', event([], [touch(0, 50, 60, 300)], { 0: 100 }), false);
   expect(owner.history.drawing.strokes).toHaveLength(0);
   await call(() => owner.undo());
   expect(owner.history.drawing.strokes).toHaveLength(1);
@@ -50,7 +50,7 @@ it('finishes held ink before Clear and ignores that finger until a fresh start',
 });
 
 it('captures the finished live cohort before Auto-Save Clear and preserves it for Undo', async () => {
-  await send('onPanResponderGrant', event([touch(0, 10, 20, 100)]));
+  await send('start', event([touch(0, 10, 20, 100)]));
   let clearing;
   await act(async () => {
     clearing = owner.clear(true);
@@ -64,7 +64,7 @@ it('captures the finished live cohort before Auto-Save Clear and preserves it fo
 });
 
 it('cancels a same-event capture before its committed render when the command lease ends', async () => {
-  await send('onPanResponderGrant', event([touch(0, 10, 20, 100)]));
+  await send('start', event([touch(0, 10, 20, 100)]));
   let failure;
   await act(async () => {
     const surface = owner.surface.current;
@@ -76,8 +76,8 @@ it('cancels a same-event capture before its committed render when the command le
   expect(await failure).toContain('changed');
   await settle();
   expect(sdk.captures).toHaveLength(0);
-  await send('onPanResponderGrant', event([touch(1, 50, 60, 300)]));
-  await send('onPanResponderEnd', event([], [touch(1, 70, 80, 400)], { 1: 300 }), false);
+  await send('start', event([touch(1, 50, 60, 300)]));
+  await send('end', event([], [touch(1, 70, 80, 400)], { 1: 300 }), false);
   expect(owner.history.drawing.strokes).toHaveLength(2);
   expect(sdk.captures).toHaveLength(0);
 });
@@ -88,7 +88,7 @@ it('leaves chrome enabled while dialogs and capture wait for the live contact to
   await call(() => owner.setPagePickerOpen(true));
   expect(owner.pagePickerOpen).toBe(true);
 
-  await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+  await send('start', event([touch(0, 10, 20)]));
   expect(owner.drawing).toBe(true);
 
   await call(() => owner.setPagePickerOpen(false));
@@ -106,7 +106,7 @@ it('leaves chrome enabled while dialogs and capture wait for the live contact to
   expect(owner.history).toBe(held);
   expect(sdk.captures).toHaveLength(0);
 
-  await send('onPanResponderEnd', event([], [touch(0, 30, 40, 200)]), false);
+  await send('end', event([], [touch(0, 30, 40, 200)]), false);
   await settle();
   expect(owner.drawing).toBe(false);
   expect(owner.disabled).toBe(false);
@@ -136,14 +136,14 @@ const FRAME_MS = 16;
 it('renders the screen owner for the stroke flag only, with the chrome props unchanged', async () => {
   await settle();
   const resting = chromeProps();
-  await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+  await send('start', event([touch(0, 10, 20)]));
   expect(owner.drawing).toBe(true);
   expect(chromeProps()).toEqual(resting);
 
   const started = sdk.screenRenders;
   for (let move = 1; move <= MOVES; move += 1)
     await send(
-      'onPanResponderMove',
+      'move',
       event([touch(0, 10 + move * 5, 20 + move * 5, 100 + move * FRAME_MS)], undefined, { 0: 100 }),
       false
     );
@@ -151,7 +151,7 @@ it('renders the screen owner for the stroke flag only, with the chrome props unc
   expect(sdk.screenRenders - started).toBeLessThanOrEqual(1);
   expect(chromeProps()).toEqual(resting);
 
-  await send('onPanResponderEnd', event([], [touch(0, 60, 70, 300)], { 0: 100 }), false);
+  await send('end', event([], [touch(0, 60, 70, 300)], { 0: 100 }), false);
   await settle();
   expect(owner.drawing).toBe(false);
   expect(owner.history.drawing.strokes).toHaveLength(1);

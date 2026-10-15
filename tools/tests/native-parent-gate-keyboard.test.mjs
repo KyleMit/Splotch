@@ -90,3 +90,32 @@ it('binds both native receivers to the same key event contract', () => {
   expect(android).toContain('KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> "submit"');
   expect(ios).toContain('? "delete" : input == "\\r" ? "submit" : input');
 });
+
+it('binds drawing and modal shortcut receivers to the same native view and event contract', () => {
+  const read = (path) =>
+    readFileSync(
+      resolve(import.meta.dirname, '../../experiments/native-architecture', path),
+      'utf8'
+    );
+  const android = read(
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchGateKeyboard.kt'
+  );
+  const ios = read('ios/HelloWorld/SplotchGateKeyboard.swift');
+  const bridge = read('ios/HelloWorld/SplotchGateKeyboard.m');
+  const adapter = read('src/platform/KeyboardScope.tsx');
+  expect(adapter).toContain("requireNativeComponent<ReceiverProps>('SplotchShortcutKeyboard')");
+  expect(android).toContain('override fun getName() = "SplotchShortcutKeyboard"');
+  expect(ios).toContain('@objc(SplotchShortcutKeyboardManager)');
+  expect(bridge).toContain('RCT_EXPORT_VIEW_PROPERTY(onShortcutKey, RCTDirectEventBlock)');
+  expect(android).toContain('SHORTCUT_KEY_EVENT to mapOf("registrationName" to "onShortcutKey")');
+  for (const name of ['shortcutScope', 'shortcutsEnabled']) {
+    expect(adapter).toContain(`${name}=`);
+    expect(android).toContain(`@ReactProp(name = "${name}"`);
+    expect(bridge).toContain(`RCT_EXPORT_VIEW_PROPERTY(${name},`);
+  }
+  for (const key of ['undo', 'escape']) {
+    expect(adapter).toContain(`key !== '${key}'`);
+    expect(android).toContain(`return "${key}"`);
+    expect(ios).toContain(`"${key}"`);
+  }
+});

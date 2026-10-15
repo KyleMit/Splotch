@@ -1,6 +1,6 @@
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
@@ -18,7 +18,7 @@ import {
   MODAL_SCRIM_PLAIN,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 
-function dialog({ visible = true, seeThrough = false, touchBackdrop } = {}) {
+function dialog({ visible = true, seeThrough = false, touchBackdrop, onClose = () => {} } = {}) {
   return createElement(
     ModalShell,
     {
@@ -27,8 +27,8 @@ function dialog({ visible = true, seeThrough = false, touchBackdrop } = {}) {
       touchBackdrop,
       label: 'Drawing tools',
       size: 'sheet',
-      onClose() {},
-      header: createElement(DialogHeader, { title: 'Drawing tools', onClose() {} }),
+      onClose,
+      header: createElement(DialogHeader, { title: 'Drawing tools', onClose }),
     },
     createElement('span', null, 'body')
   );
@@ -160,4 +160,16 @@ it('uses the secondary chrome contact for the dialog opener dead zone', async ()
   );
   expect(stage.onStartShouldSetResponderCapture({ nativeEvent: second })).toBe(true);
   expect(stage.onStartShouldSetResponderCapture({ nativeEvent: first })).toBe(false);
+});
+
+it('routes native Escape to the visible modal and ignores its departed receiver', async () => {
+  const close = vi.fn();
+  await mount(dialog({ onClose: close }));
+  const receiver = records.props.findLast((props) => props.testID === 'modal-keyboard-scope');
+  expect(receiver).toBeDefined();
+  await act(async () => receiver.onShortcutKey({ nativeEvent: { key: 'escape' } }));
+  expect(close).toHaveBeenCalledOnce();
+  await act(async () => root.render(null));
+  await act(async () => receiver.onShortcutKey({ nativeEvent: { key: 'escape' } }));
+  expect(close).toHaveBeenCalledOnce();
 });

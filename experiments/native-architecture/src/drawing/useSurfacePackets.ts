@@ -105,12 +105,12 @@ export function useSurfacePackets(owner: PacketOwner) {
     [captures, resume]
   );
 
-  const cancel = useCallback(() => {
+  const cancel = useCallback((message = 'The picture changed before capture finished.') => {
     const request = captureLock.current;
     if (!request) return;
     captureLock.current = null;
     pending.current = null;
-    request.cancel('The picture changed before capture finished.');
+    request.cancel(message);
     if (mounted.current) latest.current.setPacket(null);
   }, []);
 
@@ -119,7 +119,7 @@ export function useSurfacePackets(owner: PacketOwner) {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      cancel();
+      cancel('Picture capture was cancelled.');
     };
   }, [cancel]);
 

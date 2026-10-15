@@ -418,7 +418,7 @@ function useSurfaceCommands({
   }
 
   function undo() {
-    if (command.current || blocked()) return;
+    if (command.current || blocked() || historyRef.current.undo.length === 0) return;
     let release: (() => void) | undefined;
     try {
       release = surface.current?.lockInput('undo');

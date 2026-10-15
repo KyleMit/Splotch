@@ -12,8 +12,8 @@ const AUTO_SAVE_CAPTURE_LIMIT = 3;
 async function contact(brush, x) {
   await act(async () => owner.setBrush(brush));
   await settle();
-  await send('onPanResponderGrant', event([touch(0, x, 20)]));
-  await send('onPanResponderEnd', event([], [touch(0, x + 40, 60, 200)], { 0: 100 }), false);
+  await send('start', event([touch(0, x, 20)]));
+  await send('end', event([], [touch(0, x + 40, 60, 200)], { 0: 100 }), false);
   await settle();
 }
 
@@ -57,7 +57,6 @@ describe('the screen’s visible-ink scan', () => {
     }
     expect(sdk.save).toHaveBeenCalledOnce();
     expect(owner.busy).toBe(false);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
     await contact('pen', 200);
     expect(owner.history.drawing.strokes).toHaveLength(2);
     await act(async () => finish('photos'));
@@ -130,7 +129,6 @@ describe('the screen’s visible-ink scan', () => {
     expect(owner.history.drawing.strokes).toHaveLength(0);
     expect(owner.history.undo.at(-1)).toBe(previous);
     expect(owner.busy).toBe(false);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
     await contact('pen', 200);
     expect(owner.history.drawing.strokes).toHaveLength(1);
     await act(async () => finish('denied'));
@@ -155,7 +153,6 @@ describe('the screen’s visible-ink scan', () => {
     expect(owner.disabled).toBe(false);
     expect(owner.history.drawing.strokes).toHaveLength(0);
     expect(owner.history.undo.at(-1)).toBe(previous);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
     await contact('pen', 200);
     expect(owner.history.drawing.strokes).toHaveLength(1);
   });
@@ -218,10 +215,8 @@ describe('the screen’s visible-ink scan', () => {
     await scanInFlight();
     const before = owner.history.drawing.strokes.length;
     sdk.hold = false;
-    // The responder asks the paper before granting, as React Native does for every new touch.
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
-    await send('onPanResponderGrant', event([touch(0, 200, 20, 300)]));
-    await send('onPanResponderEnd', event([], [touch(0, 240, 60, 400)], { 0: 300 }), false);
+    await send('start', event([touch(0, 200, 20, 300)]));
+    await send('end', event([], [touch(0, 240, 60, 400)], { 0: 300 }), false);
     await settle();
     expect(owner.history.drawing.strokes).toHaveLength(before + 1);
     expect(owner.history.drawing.strokes.at(-1).brush).toBe('eraser');

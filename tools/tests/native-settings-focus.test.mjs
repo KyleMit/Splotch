@@ -11,6 +11,14 @@ import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architectur
 // the web build resolves to its .web file resolves to it here too.
 vi.mock('react-native', async () => import('react-native-web'));
 vi.mock(
+  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
+  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+);
+vi.mock(
+  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
+  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
+);
+vi.mock(
   '../../experiments/native-architecture/src/platform/sectionsSeen.ts',
   () => import('../../experiments/native-architecture/src/platform/sectionsSeen.web.ts')
 );

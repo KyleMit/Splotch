@@ -28,12 +28,8 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       await twoContacts();
       expect(owner.history).toBe(before);
       expect(owner.drawing).toBe(true);
-      await send(
-        'onPanResponderGrant',
-        event([touch(0, 70, 80, 400)], undefined, { 0: 100 }),
-        false
-      );
-      await send('onPanResponderEnd', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
+      await send('start', event([touch(0, 70, 80, 400)], undefined, { 0: 100 }), false);
+      await send('end', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
       expect(owner.history.undo).toEqual([...before.undo, base]);
       const added = owner.history.drawing.strokes.slice(1);
       expect(added.map(({ brush: selected }) => selected)).toEqual([brush, brush]);
@@ -87,7 +83,7 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     await act(async () => owner.save());
     expect(sdk.save).not.toHaveBeenCalled();
     expect(owner.history).toBe(before);
-    await send('onPanResponderEnd', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
+    await send('end', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
     await act(async () => {
       void owner.save();
     });
@@ -99,7 +95,9 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     const drawing = owner.history.drawing;
     const handle = owner.surface.current;
     const release = handle.lockInput();
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(false);
+    await send('start', event([touch(9, 50, 60, 100)]));
+    await send('end', event([], [touch(9, 70, 80, 200)], { 9: 100 }));
+    expect(owner.history.drawing).toBe(drawing);
     sdk.hold = true;
     let pending;
     await act(async () => {
@@ -107,15 +105,15 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     });
     const failure = pending.catch((error) => error.message);
     await settle();
-    await send('onPanResponderGrant', event([touch(0, 10, 20)]));
-    await send('onPanResponderEnd', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
+    await send('start', event([touch(0, 10, 20)]));
+    await send('end', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
     expect(owner.history.drawing).toBe(drawing);
     release();
     await act(async () => sdk.captures.at(-1).callback('late after release'));
     expect(await failure).toContain('changed');
     expect(owner.surface.current).toBe(handle);
-    await send('onPanResponderGrant', event([touch(1, 50, 60, 300)]));
-    await send('onPanResponderEnd', event([], [touch(1, 70, 80, 400)], { 1: 300 }), false);
+    await send('start', event([touch(1, 50, 60, 300)]));
+    await send('end', event([], [touch(1, 70, 80, 400)], { 1: 300 }), false);
     expect(owner.history.drawing.strokes).toHaveLength(1);
   });
 
@@ -136,8 +134,8 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     });
     await act(async () => owner.surface.current.refreshGeometry());
     await act(async () => sdk.measurements.at(-1)(0, 0, 0, 0, 0, 0));
-    await send('onPanResponderMove', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
-    await send('onPanResponderEnd', event([], [touch(0, 110, 120, 500)], { 0: 100 }), false);
+    await send('move', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
+    await send('end', event([], [touch(0, 110, 120, 500)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes).toHaveLength(2);
     expect(owner.history.undo).toHaveLength(1);
     expect(owner.history.drawing.strokes[0].points).toEqual([
@@ -147,8 +145,8 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       { x: 90, y: 200 },
       { x: 110, y: 220 },
     ]);
-    await send('onPanResponderGrant', event([touch(1, 60, 80, 600)]));
-    await send('onPanResponderEnd', event([], [touch(1, 80, 100, 700)], { 1: 600 }), false);
+    await send('start', event([touch(1, 60, 80, 600)]));
+    await send('end', event([], [touch(1, 80, 100, 700)], { 1: 600 }), false);
     expect(owner.history.drawing.strokes.at(-1).points).toEqual([
       { x: 60, y: 180 },
       { x: 80, y: 200 },
@@ -174,8 +172,8 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     expect(owner.history).toBe(before);
     expect(owner.recovery.failed).toBe(false);
     expect(owner.drawing).toBe(false);
-    await send('onPanResponderGrant', event([touch(0, 10, 20)]));
-    await send('onPanResponderEnd', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
+    await send('start', event([touch(0, 10, 20)]));
+    await send('end', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes).toHaveLength(1);
   });
 
@@ -183,7 +181,7 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     await twoContacts();
     expect(sdk.soundStart).toHaveBeenCalledOnce();
     expect(sdk.soundStop).not.toHaveBeenCalled();
-    await send('onPanResponderEnd', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
+    await send('end', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
     expect(sdk.soundStop).toHaveBeenCalledOnce();
     expect(owner.history.drawing.strokes).toHaveLength(2);
     await settle();
@@ -196,7 +194,8 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     const staleChoosePage = owner.choosePage;
     await act(async () => owner.openSettings());
     expect(owner.settingsOpen).toBe(true);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(false);
+    await send('start', event([touch(9, 50, 60, 100)]));
+    await send('end', event([], [touch(9, 70, 80, 200)], { 9: 100 }));
     await act(async () => {
       await owner.save();
       await owner.clear();
@@ -208,7 +207,9 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     expect(owner.history).toBe(before);
     await act(async () => owner.closeSettings());
     expect(owner.settingsOpen).toBe(false);
-    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await send('start', event([touch(10, 50, 60, 300)]));
+    await send('end', event([], [touch(10, 70, 80, 400)], { 10: 300 }));
+    expect(owner.history.drawing.strokes).toHaveLength(before.drawing.strokes.length + 1);
   });
 
   it('refuses Settings during an admitted cohort and keeps its sound through layout refresh', async () => {
@@ -218,10 +219,10 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     const before = owner.history;
     await act(async () => owner.surface.current.refreshGeometry());
     expect(sdk.soundStop).not.toHaveBeenCalled();
-    await send('onPanResponderMove', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
+    await send('move', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
     expect(owner.drawing).toBe(true);
     expect(owner.history).toBe(before);
-    await send('onPanResponderEnd', event([], [touch(0, 110, 120, 500)], { 0: 100 }), false);
+    await send('end', event([], [touch(0, 110, 120, 500)], { 0: 100 }), false);
     expect(sdk.soundStop).toHaveBeenCalledOnce();
   });
 

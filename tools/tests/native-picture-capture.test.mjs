@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { legacyDrawing } from './native-paper-fixtures.mjs';
+import { legacyDrawing, paperInputPacket } from './native-paper-fixtures.mjs';
 import { act, createElement, createRef } from 'react';
 import { createPictureSurfaceFixture } from './native-picture-surface-fixture.mjs';
 import {
@@ -28,7 +28,7 @@ const state = vi.hoisted(() => ({
   platform: { OS: 'web' },
   packets: [],
   imageLoads: [],
-  responders: [],
+  inputs: [],
   layouts: [],
   frames: new Map(),
   nextFrame: 0,
@@ -100,7 +100,7 @@ beforeEach(() => {
   state.scheme = 'light';
   state.packets.length = 0;
   state.imageLoads.length = 0;
-  state.responders.length = 0;
+  state.inputs.length = 0;
   state.layouts.length = 0;
   installCaptureFrames(state, vi);
   host = document.createElement('div');
@@ -366,22 +366,29 @@ describe('mounted canonical output identity', () => {
     second.release();
   });
 
-  it('refuses output throughout checkpoint capture and incoming-image readiness', async () => {
+  it('waits for checkpoint and incoming-image readiness with the identical output snapshot', async () => {
     const drawing = { ...legacyDrawing(), strokes: [marker, erase] };
     await surface(drawing);
     const release = ref.current.lockInput();
-    await expect(ref.current.captureInk(drawing)).rejects.toThrow('still being prepared');
+    let output;
+    await act(async () => {
+      output = ref.current.captureInk(drawing);
+    });
+    const settled = vi.fn();
+    void output.then(settled, settled);
     await frames();
+    expect(settled).not.toHaveBeenCalled();
+    expect(state.packets.filter(Boolean)).toHaveLength(0);
     await png(0, 'prepared-prefix');
-    await expect(ref.current.captureInk(drawing)).rejects.toThrow('still being prepared');
+    expect(settled).not.toHaveBeenCalled();
+    expect(state.packets.filter(Boolean)).toHaveLength(0);
     await load();
-    release();
-    const output = await beginOutput(drawing);
+    expect(state.packets.findLast(Boolean).request.drawing).toBe(drawing);
     await load('1024');
     await frames();
     await png(1, 'current-ink');
-    await expect(output.promise).resolves.toBe('current-ink');
-    output.release();
+    await expect(output).resolves.toBe('current-ink');
+    release();
   });
 
   it('refuses output while the original pointer owns a draft', async () => {
@@ -390,13 +397,13 @@ describe('mounted canonical output identity', () => {
     await act(async () =>
       state.layouts.at(-1)({ nativeEvent: { layout: { width: 1024, height: 768 } } })
     );
-    const responder = state.responders[0];
+    const input = state.inputs[0];
     const touch = {
       identifier: 'finger',
-      locationX: 20,
-      locationY: 30,
-      pageX: 20,
-      pageY: 30,
+      locationX: 200,
+      locationY: 300,
+      pageX: 200,
+      pageY: 300,
       target: 101,
       timestamp: 100,
     };
@@ -409,8 +416,13 @@ describe('mounted canonical output identity', () => {
       },
     };
     await act(async () => {
-      responder.onPanResponderGrant(start);
-      responder.onPanResponderStart(start);
+      input({
+        nativeEvent: paperInputPacket('start', start, 0, {
+          width: 1024,
+          height: 768,
+          bottomInset: 0,
+        }),
+      });
     });
     expect(() => ref.current.lockInput()).toThrow('Finish drawing');
     await expect(ref.current.captureInk(drawing)).rejects.toThrow('Lift your finger');

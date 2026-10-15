@@ -25,6 +25,14 @@ import { RsdAiStylePrompt } from '../../experiments/native-architecture/src/rsdD
 // cascade to whichever element the browser would focus.
 vi.mock('react-native', async () => import('react-native-web'));
 vi.mock(
+  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
+  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+);
+vi.mock(
+  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
+  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
+);
+vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
   () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
 );

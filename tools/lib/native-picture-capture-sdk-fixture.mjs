@@ -12,6 +12,12 @@ export function installCaptureFrames(state, vi) {
 }
 
 export function nativeCaptureSdk(state, crayonTilePx) {
+  const View = forwardRef(({ children, style, onLayout, onPaperInput }, ref) => {
+    useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
+    if (onLayout) state.layouts.push(onLayout);
+    if (onPaperInput) state.inputs.push(onPaperInput);
+    return createElement('div', { style }, children);
+  });
   return {
     useColorScheme: () => state.scheme,
     Platform: state.platform,
@@ -34,21 +40,12 @@ export function nativeCaptureSdk(state, crayonTilePx) {
       return null;
     },
     findNodeHandle: (target) => target,
-    View: forwardRef(({ children, style, onLayout }, ref) => {
-      useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
-      if (onLayout) state.layouts.push(onLayout);
-      return createElement('div', { style }, children);
-    }),
+    View,
+    requireNativeComponent: () => View,
     StyleSheet: {
       create: (styles) => styles,
       absoluteFill: { position: 'absolute' },
       absoluteFillObject: { position: 'absolute' },
-    },
-    PanResponder: {
-      create: (responder) => {
-        state.responders.push(responder);
-        return { panHandlers: {} };
-      },
     },
   };
 }

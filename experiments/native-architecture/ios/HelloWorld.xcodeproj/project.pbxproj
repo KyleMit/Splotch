@@ -29,6 +29,8 @@
 		D29150000000000000000002 /* SplotchGateKeyboard.m in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000004 /* SplotchGateKeyboard.m */; };
 		D29150000000000000000005 /* SplotchFeedbackDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000007 /* SplotchFeedbackDevice.swift */; };
 		D29150000000000000000006 /* SplotchFeedbackDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000008 /* SplotchFeedbackDevice.m */; };
+		D29120000000000000000001 /* SplotchPaperInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000003 /* SplotchPaperInput.swift */; };
+		D29120000000000000000002 /* SplotchPaperInput.m in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000004 /* SplotchPaperInput.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,6 +62,8 @@
 		D29150000000000000000004 /* SplotchGateKeyboard.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchGateKeyboard.m; sourceTree = "<group>"; };
 		D29150000000000000000007 /* SplotchFeedbackDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchFeedbackDevice.swift; sourceTree = "<group>"; };
 		D29150000000000000000008 /* SplotchFeedbackDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchFeedbackDevice.m; sourceTree = "<group>"; };
+		D29120000000000000000003 /* SplotchPaperInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchPaperInput.swift; sourceTree = "<group>"; };
+		D29120000000000000000004 /* SplotchPaperInput.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchPaperInput.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +86,8 @@
 				D29150000000000000000008 /* SplotchFeedbackDevice.m */,
 				D29150000000000000000007 /* SplotchFeedbackDevice.swift */,
 				D29150000000000000000004 /* SplotchGateKeyboard.m */,
+				D29120000000000000000003 /* SplotchPaperInput.swift */,
+				D29120000000000000000004 /* SplotchPaperInput.m */,
 				D29150000000000000000003 /* SplotchGateKeyboard.swift */,
 				A12870000000000000000002 /* SplotchAIJournal.swift */,
 				A12863000000000000000004 /* SplotchAIEnvironment.m */,
@@ -388,6 +394,8 @@
 				D29150000000000000000006 /* SplotchFeedbackDevice.m in Sources */,
 				D29150000000000000000005 /* SplotchFeedbackDevice.swift in Sources */,
 				D29150000000000000000002 /* SplotchGateKeyboard.m in Sources */,
+				D29120000000000000000001 /* SplotchPaperInput.swift in Sources */,
+				D29120000000000000000002 /* SplotchPaperInput.m in Sources */,
 				D29150000000000000000001 /* SplotchGateKeyboard.swift in Sources */,
 				A12870000000000000000001 /* SplotchAIJournal.swift in Sources */,
 				A12863000000000000000002 /* SplotchAIEnvironment.m in Sources */,

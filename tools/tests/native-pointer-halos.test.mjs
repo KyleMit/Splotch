@@ -1,3 +1,4 @@
+import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -127,11 +128,17 @@ function responder(brush) {
     (_drafts, _paper, halos) => published.push(halos),
     () => 1
   );
-  const begin = (value) => {
-    input.grant(value);
-    input.start(value);
+  let sequence = 0;
+  const send = (phase, value) => {
+    const packet = paperInputPacket(phase, value, sequence++, {
+      width: 1104,
+      height: 1608,
+      bottomInset: 0,
+    });
+    if (packet) input.receiveInput(packet);
   };
-  return { input, begin, halos: () => published.at(-1) };
+  const begin = (value) => send('start', value);
+  return { input, send, begin, halos: () => published.at(-1) };
 }
 
 describe('native Pointer Halos', () => {
@@ -153,15 +160,16 @@ describe('native Pointer Halos', () => {
     const r = responder('pen');
     r.begin(event([touch(0, 10, 20)]));
     expect(r.halos()).toEqual([{ id: 1, kind: 'ring', x: 10, y: 20, size: 8 }]);
-    r.input.move(event([touch(0, 50, 60, 200)], undefined, { 0: 100 }));
+    r.send('move', event([touch(0, 50, 60, 200)], undefined, { 0: 100 }));
     expect(r.halos()).toEqual([{ id: 1, kind: 'ring', x: 50, y: 60, size: 8 }]);
-    r.input.release(event([], [touch(0, 55, 65, 300)], { 0: 100 }));
+    r.send('end', event([], [touch(0, 55, 65, 300)], { 0: 100 }));
     expect(r.halos()).toEqual([]);
   });
   it('gives each simultaneous contact its own halo', () => {
     const r = responder('pen');
     r.begin(event([touch(0, 10, 20)]));
-    r.input.start(
+    r.send(
+      'start',
       event([touch(0, 12, 22, 200), touch(1, 80, 90, 200)], [touch(1, 80, 90, 200)], { 0: 100 })
     );
     expect(r.halos().map(({ id, x, y }) => [id, x, y])).toEqual([

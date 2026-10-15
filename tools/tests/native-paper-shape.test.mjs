@@ -1,3 +1,4 @@
+import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -149,12 +150,16 @@ function responder(frame) {
     drafts,
     () => 3
   );
+  let sequence = 0;
+  function send(phase, value) {
+    input.receiveInput(
+      paperInputPacket(phase, value, sequence++, { width: 844, height: 944, bottomInset: 0 })
+    );
+  }
   function stroke(id, from, to, at) {
-    const start = event([touch(id, ...from, at)]);
-    input.grant(start);
-    input.start(start);
-    input.move(event([touch(id, ...to, at + 1)], undefined, { [id]: at }));
-    input.release(event([], [touch(id, ...to, at + 2)], { [id]: at }));
+    send('start', event([touch(id, ...from, at)]));
+    send('move', event([touch(id, ...to, at + 1)], undefined, { [id]: at }));
+    send('end', event([], [touch(id, ...to, at + 2)], { [id]: at }));
   }
   return { stroke, drafts, history: () => history };
 }

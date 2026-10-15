@@ -1,3 +1,4 @@
+import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDrawingAudio } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
 import { createContactSound } from '../../experiments/native-architecture/src/audio/contactSound.ts';
@@ -59,10 +60,17 @@ async function fixture(brush = 'pen') {
     vi.fn(),
     () => 1
   );
+  let sequence = 0;
+  function send(phase, next) {
+    const packet = paperInputPacket(phase, next, sequence++, {
+      width: 1024,
+      height: 1366,
+      bottomInset: 34,
+    });
+    if (packet) input.receiveInput(packet);
+  }
   function start(touches, changed = touches, starts = {}) {
-    const next = event(touches, changed, starts);
-    input.grant(next);
-    input.start(next);
+    send('start', event(touches, changed, starts));
   }
   function finish() {
     sound.dispose();
@@ -75,6 +83,7 @@ async function fixture(brush = 'pen') {
     sound,
     input,
     start,
+    send,
     finish,
     cohort,
     history: () => history,
@@ -96,15 +105,16 @@ describe('joint admitted contact sound lifecycle', () => {
       f.start([touch(0, 10, 20, 200), touch(1, 900, 700, 200)], [touch(1, 900, 700, 200)], {
         0: 100,
       });
-      f.input.move(
+      f.send(
+        'move',
         event([touch(0, 10, 20, 300), touch(1, 909, 700, 300)], undefined, { 0: 100, 1: 200 })
       );
       expect(f.loop.setVolume.mock.calls.at(-1)[0]).toBeCloseTo(0.04);
       expect(f.loop.start).toHaveBeenCalledOnce();
-      f.input.end(event([touch(1, 909, 700, 400)], [touch(0, 10, 20, 400)], { 0: 100, 1: 200 }));
+      f.send('end', event([touch(1, 909, 700, 400)], [touch(0, 10, 20, 400)], { 0: 100, 1: 200 }));
       expect(f.loop.stop).not.toHaveBeenCalled();
       expect(f.cohort).not.toHaveBeenCalled();
-      f.input.end(event([], [touch(1, 909, 700, 500)], { 1: 200 }));
+      f.send('end', event([], [touch(1, 909, 700, 500)], { 1: 200 }));
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
       expect(f.history().drawing).toMatchObject({
@@ -129,30 +139,31 @@ describe('joint admitted contact sound lifecycle', () => {
       const held = [touch(1, 900, 700, 200), ...(controlSurvives ? [control] : [])];
       f.start([touch(0, 10, 20, 200), ...held], held, { 0: 100 });
       const partial = event(held, [touch(0, 30, 40, 300)], { 0: 100, 1: 200, 2: 200 });
-      f.input.end(partial);
-      f.input.release(partial);
+      f.send('end', partial);
+      f.send('end', partial);
       expect(f.loop.stop).not.toHaveBeenCalled();
       expect(f.cohort).not.toHaveBeenCalled();
-      f.input.endRaw({
-        nativeEvent: {
-          touches: controlSurvives ? [control] : [],
-          changedTouches: [touch(1, 5000, 6000, 400)],
-        },
-      });
+      f.send(
+        'end',
+        event(controlSurvives ? [control] : [], [touch(1, 5000, 6000, 400)], { 1: 200, 2: 200 })
+      );
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
       expect(f.history().drawing.strokes).toHaveLength(2);
-      expect(f.history().drawing.strokes[1].points).toEqual([{ x: 900, y: 700 }]);
+      expect(f.history().drawing.strokes[1].points).toEqual([
+        { x: 900, y: 700 },
+        { x: 5000, y: 6000 },
+      ]);
       expect(f.input.hasActive()).toBe(false);
       expect(f.history().undo).toHaveLength(1);
       expect(undoDrawing(f.history()).drawing).toBe(original);
-      f.input.endRaw({ nativeEvent: { touches: [], changedTouches: [control] } });
+      f.send('end', event([], [control], { 2: 200 }));
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
       f.finish();
     }
   );
-  it.each(['resize', 'interrupt', 'detach'])(
+  it.each(['finishInput', 'interrupt', 'detach'])(
     'ends sound once on %s and refuses samples from the old lease',
     async (method) => {
       const f = await fixture();
@@ -160,7 +171,7 @@ describe('joint admitted contact sound lifecycle', () => {
       await Promise.resolve();
       f.input[method]();
       const calls = f.loop.setVolume.mock.calls.length;
-      f.input.move(event([touch(0, 200, 20, 300)], undefined, { 0: 100 }));
+      f.send('move', event([touch(0, 200, 20, 300)], undefined, { 0: 100 }));
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.loop.setVolume).toHaveBeenCalledTimes(calls);
       f.finish();

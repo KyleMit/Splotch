@@ -14,8 +14,8 @@ vi.mock('../../experiments/native-architecture/src/drawing/InkLayer.web.tsx', ()
 }));
 
 it('commits the live contact before restoring a failed renderer, without losing ink or leaving drawing active', async () => {
-  await send('onPanResponderGrant', event([touch(0, 10, 20)]));
-  await send('onPanResponderMove', event([touch(0, 80, 90, 200)], undefined, { 0: 100 }), false);
+  await send('start', event([touch(0, 10, 20)]));
+  await send('move', event([touch(0, 80, 90, 200)], undefined, { 0: 100 }), false);
   await settle();
   expect(owner.drawing).toBe(true);
   expect(owner.history.drawing.strokes).toHaveLength(0);

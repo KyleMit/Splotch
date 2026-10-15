@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -13,7 +14,8 @@ import {
 } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 
 const sdk = vi.hoisted(() => ({
-  handlers: null,
+  input: null,
+  sequence: 0,
   frames: new Map(),
   nextFrame: 0,
   measurements: [],
@@ -46,14 +48,8 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
     write: vi.fn(),
   },
 }));
-vi.mock('react-native', () => ({
-  PixelRatio: { get: () => 1 },
-  AccessibilityInfo: createAccessibilityInfoFixture(),
-  BackHandler: { addEventListener: () => ({ remove() {} }), exitApp() {} },
-  useColorScheme: () => 'light',
-  AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
-  findNodeHandle: (owner) => owner,
-  View: forwardRef(({ children, style }, ref) => {
+vi.mock('react-native', () => {
+  const View = forwardRef(({ children, style }, ref) => {
     useImperativeHandle(ref, () => ({
       measure(complete) {
         sdk.measurements.push(complete);
@@ -61,29 +57,38 @@ vi.mock('react-native', () => ({
       },
     }));
     return createElement('div', { style }, children);
-  }),
-  PanResponder: {
-    create: (handlers) => {
-      sdk.handlers = handlers;
-      return { panHandlers: {} };
+  });
+  return {
+    PixelRatio: { get: () => 1 },
+    AccessibilityInfo: createAccessibilityInfoFixture(),
+    BackHandler: { addEventListener: () => ({ remove() {} }), exitApp() {} },
+    useColorScheme: () => 'light',
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    findNodeHandle: (owner) => owner,
+    View,
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => {
+            sdk.input = emit;
+          })
+        : View,
+    StyleSheet: { create: (styles) => styles, absoluteFill: {} },
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+      addEventListener: () => ({ remove() {} }),
     },
-  },
-  StyleSheet: { create: (styles) => styles, absoluteFill: {} },
-  Dimensions: {
-    get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
-    addEventListener: () => ({ remove() {} }),
-  },
-  Platform: { OS: 'android' },
-  // Android's SVG capture returns exactly the pixels it was asked for, so a decoded capture
-  // reports the grid of the request that produced it.
-  Image: ({ source, onLoad }) => {
-    useEffect(() => {
-      const { width, height } = sdk.captures.at(-1)?.options ?? { width: 1024, height: 768 };
-      onLoad({ nativeEvent: { source: { uri: source.uri, width, height } } });
-    }, [source.uri]);
-    return null;
-  },
-}));
+    Platform: { OS: 'android' },
+    // Android's SVG capture returns exactly the pixels it was asked for, so a decoded capture
+    // reports the grid of the request that produced it.
+    Image: ({ source, onLoad }) => {
+      useEffect(() => {
+        const { width, height } = sdk.captures.at(-1)?.options ?? { width: 1024, height: 768 };
+        onLoad({ nativeEvent: { source: { uri: source.uri, width, height } } });
+      }, [source.uri]);
+      return null;
+    },
+  };
+});
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
@@ -156,6 +161,7 @@ function Consumer() {
 function touch(identifier, x, y, timestamp = 100) {
   return {
     identifier,
+    tool: 'pen',
     locationX: -900,
     locationY: -800,
     pageX: x + 40,
@@ -183,11 +189,16 @@ function event(touches, changedTouches = touches, starts = {}) {
     },
   };
 }
-async function send(name, value, start = name === 'onPanResponderGrant') {
-  await act(async () => {
-    sdk.handlers[name](value);
-    if (start) sdk.handlers.onPanResponderStart(value);
+function deliver(phase, value) {
+  const packet = paperInputPacket(phase, value, sdk.sequence++, {
+    width: 1104,
+    height: 1608,
+    bottomInset: 0,
   });
+  if (packet) sdk.input({ nativeEvent: packet });
+}
+async function send(phase, value) {
+  await act(async () => deliver(phase, value));
 }
 async function settle() {
   for (let count = 0; count < 8; count += 1)
@@ -207,14 +218,14 @@ async function open(drawing) {
   return owner.history.drawing;
 }
 async function twoContacts() {
-  await send('onPanResponderGrant', event([touch(0, 10, 20)]));
+  await send('start', event([touch(0, 10, 20)]));
   await send(
-    'onPanResponderStart',
+    'start',
     event([touch(0, 30, 40, 200), touch(1, 80, 90, 200)], [touch(1, 80, 90, 200)], { 0: 100 }),
     false
   );
   await send(
-    'onPanResponderEnd',
+    'end',
     event([touch(0, 50, 60, 300)], [touch(1, 100, 110, 300)], { 0: 100, 1: 200 }),
     false
   );
@@ -222,6 +233,8 @@ async function twoContacts() {
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
+  sdk.input = null;
+  sdk.sequence = 0;
   sdk.frames.clear();
   sdk.captures.length = 0;
   sdk.measurements.length = 0;
@@ -265,6 +278,7 @@ export {
   touch,
   event,
   send,
+  deliver,
   settle,
   open,
   twoContacts,

@@ -12,7 +12,7 @@ import {
   type ForwardedRef,
   type ReactNode,
 } from 'react';
-import { PanResponder, PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Svg } from '../platform/svg';
 import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
@@ -24,6 +24,7 @@ import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { useSurfacePackets } from './useSurfacePackets';
+import { PaperInputView } from './PaperInputView';
 import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
@@ -125,13 +126,14 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         refreshGeometry
       );
     useLayoutEffect(() => {
+      input.attach();
       refreshGeometry();
       return () => {
         input.detach();
         geometry.clear();
       };
     }, [input, geometry, refreshGeometry]);
-    const responder = useRef(createSurfaceResponder(input, preemptBackground)).current;
+    useLayoutEffect(() => input.observeInputStyle(), [input, props.color, props.brush]);
 
     return (
       <InkPaperScope.Provider value={paperReference}>
@@ -146,16 +148,15 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
               ]}
             >
               {props.underlay}
-              <View
+              <PaperInputView
                 ref={paper}
                 accessibilityLabel="Drawing paper"
                 testID="drawing-paper"
                 style={styles.inkPlane}
                 pointerEvents="box-only"
                 onLayout={layoutPlane}
-                {...responder.panHandlers}
-                onTouchEnd={(event) => input.endRaw(event)}
-                onTouchCancel={() => input.interrupt()}
+                onClaim={preemptBackground}
+                onInput={(value) => input.receiveInput(value)}
               >
                 {/* Committed ink holds Magic colors; appearance changes must replay semantic strokes. */}
                 <InkLayer
@@ -188,7 +189,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   </Svg>
                 ) : null}
                 <PointerHalos feed={halos} />
-              </View>
+              </PaperInputView>
             </View>
             {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
           </View>
@@ -212,30 +213,6 @@ function usePresentedPaper(paper: PaperReference, refreshGeometry: () => void) {
     [refreshGeometry]
   );
   return [presentedPaperSize(paper, plane), layout] as const;
-}
-
-// A new touch is a foreground claim: it ends background work on the paper before asking whether
-// the paper can take it.
-function createSurfaceResponder(
-  input: ReturnType<typeof createContactResponder>,
-  preemptBackground: () => void
-) {
-  const admit = () => {
-    preemptBackground();
-    return input.ready();
-  };
-  return PanResponder.create({
-    onStartShouldSetPanResponder: admit,
-    onMoveShouldSetPanResponder: admit,
-    onPanResponderGrant: (event) => input.grant(event),
-    onPanResponderStart: (event) => input.start(event),
-    onPanResponderMove: (event) => input.move(event),
-    onPanResponderEnd: (event) => input.end(event),
-    onPanResponderRelease: (event) => input.release(event),
-    onPanResponderTerminate: () => input.interrupt(),
-    onPanResponderTerminationRequest: () => !input.hasActive(),
-    onShouldBlockNativeResponder: () => true,
-  });
 }
 
 function useSurfaceCapture(

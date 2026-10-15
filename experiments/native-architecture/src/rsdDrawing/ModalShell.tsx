@@ -10,6 +10,7 @@ import { css, html } from 'react-strict-dom';
 import { DrawingStatusBar, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useDialogBack } from '../platform/BrowserBack';
+import { ModalKeyboardScope } from '../platform/KeyboardScope';
 import { DialogScope } from './dialogScope';
 import { fontTheme } from './fontTheme';
 import { ModalScrim } from './ModalScrim';
@@ -216,7 +217,9 @@ export function ModalStage({
     >
       <SafeAreaProvider initialMetrics={initialWindowMetrics} style={layout.fill}>
         <DrawingStatusBar />
-        <View
+        <ModalKeyboardScope
+          enabled={visible}
+          onEscape={onClose}
           style={layout.fill}
           onStartShouldSetResponderCapture={(event) =>
             origin?.blocks(event) || (origin?.record(event) ?? false)
@@ -269,7 +272,7 @@ export function ModalStage({
             </Animated.View>
           </View>
           {overlay ? <View style={layout.cover}>{overlay}</View> : null}
-        </View>
+        </ModalKeyboardScope>
       </SafeAreaProvider>
     </Modal>
   );

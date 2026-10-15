@@ -1,9 +1,16 @@
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { caller, records, root, host, expandControls } from './rsd-native-selection-host.mjs';
+import {
+  caller,
+  records,
+  root,
+  host,
+  mount,
+  expandControls,
+} from './rsd-native-selection-host.mjs';
 import { AI_BUTTON, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
-import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
+import { adoptedDrawing, canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 
 const PORTRAIT_PHONE = { width: 402, height: 874, scale: 1, fontScale: 1 };
@@ -300,4 +307,45 @@ it('defers actual drawing-audio failure and recovery banners until the stroke li
   } finally {
     caller.drawingLoop = null;
   }
+});
+
+it('uses current history for native Undo in the same event as the first committed cohort', async () => {
+  caller.realScreen = true;
+  caller.settingsStorage = {
+    read: async () => '{"version":1,"soundEnabled":false}',
+    write: async () => {},
+  };
+  await mount(createElement(RsdDrawingScreen));
+  expect(caller.liveScreen.history.undo).toHaveLength(0);
+  const receiver = records.props.findLast((props) => props.testID === 'drawing-keyboard-scope');
+  expect(receiver).toBeDefined();
+  await act(async () => {
+    caller.liveScreen.recovery.callbacks.onCohort(
+      [{ brush: 'pen', color: 'Red', width: 8, points: [{ x: 20, y: 20 }] }],
+      canonicalPaper()
+    );
+    receiver.onShortcutKey({ nativeEvent: { key: 'undo' } });
+  });
+  expect(caller.paper.strokes).toHaveLength(0);
+});
+
+it('routes native Undo to committed drawing history and refuses it under Settings', async () => {
+  caller.realScreen = true;
+  caller.settingsStorage = {
+    read: async () => '{"version":1,"soundEnabled":false}',
+    write: async () => {},
+  };
+  await mount(createElement(RsdDrawingScreen));
+  await act(async () => button('Draw RSD fixture stroke').click());
+  await act(async () => button('Draw RSD fixture stroke').click());
+  const receiver = () =>
+    records.props.findLast((props) => props.testID === 'drawing-keyboard-scope');
+  expect(receiver()).toBeDefined();
+  await act(async () => caller.liveScreen.recovery.callbacks.onDrawingChange(true));
+  await act(async () => receiver().onShortcutKey({ nativeEvent: { key: 'undo' } }));
+  expect(caller.paper.strokes).toHaveLength(1);
+  await act(async () => caller.liveScreen.recovery.callbacks.onDrawingChange(false));
+  await act(async () => button('Settings').click());
+  await act(async () => receiver().onShortcutKey({ nativeEvent: { key: 'undo' } }));
+  expect(caller.paper.strokes).toHaveLength(1);
 });

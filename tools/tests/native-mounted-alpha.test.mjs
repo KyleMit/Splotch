@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createPaperInputView } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
@@ -28,7 +29,7 @@ const sdk = vi.hoisted(() => ({
   fail: false,
   load: true,
   imageLoads: [],
-  responders: [],
+  inputs: [],
   save: vi.fn(),
 }));
 
@@ -51,16 +52,12 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 vi.mock('react-native', () => {
-  const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
+  const View = forwardRef(function View({ children, testID, onLayout }, ref) {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
     }, []);
-    return createElement(
-      'div',
-      { 'data-testid': testID, 'data-responder': responderIndex },
-      children
-    );
+    return createElement('div', { 'data-testid': testID }, children);
   });
   return {
     AccessibilityInfo: createAccessibilityInfoFixture(),
@@ -105,12 +102,10 @@ vi.mock('react-native', () => {
     ActivityIndicator: () => null,
     StatusBar: () => null,
     StyleSheet: { create: (styles) => styles, absoluteFill: {} },
-    PanResponder: {
-      create: (handlers) => {
-        sdk.responders.push(handlers);
-        return { panHandlers: { responderIndex: sdk.responders.length - 1 } };
-      },
-    },
+    requireNativeComponent: (name) =>
+      name === 'SplotchPaperInput'
+        ? createPaperInputView(View, (emit) => sdk.inputs.push(emit))
+        : View,
   };
 });
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
@@ -170,7 +165,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   sdk.frames.clear();
   sdk.captures.length = 0;
-  sdk.responders.length = 0;
+  sdk.inputs.length = 0;
   sdk.imageLoads.length = 0;
   sdk.dimensions.clear();
   sdk.metrics = { width: 1024, height: 768, scale: 1, fontScale: 1 };
@@ -425,7 +420,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     const ref = { current: null },
       props = {
         drawing: fixture,
-        currentDrawing: () => fixture,
+        currentDrawing: () => props.drawing,
         color: 'Purple',
         brush: 'marker',
         disabled: false,
@@ -450,6 +445,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await frames();
     const old = sdk.captures.at(-1);
     const replacement = emptyDrawing(2, 'turtle');
+    props.drawing = replacement;
     await act(async () =>
       root.render(createElement(DrawingSurface, { ...props, drawing: replacement, ref }))
     );

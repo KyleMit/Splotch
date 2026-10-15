@@ -8,6 +8,14 @@ import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawi
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
 // only React Strict DOM is reduced to the plain elements its web build emits.
 vi.mock('react-native', async () => import('react-native-web'));
+vi.mock(
+  '../../experiments/native-architecture/src/platform/KeyboardScope.tsx',
+  () => import('../../experiments/native-architecture/src/platform/KeyboardScope.web.tsx')
+);
+vi.mock(
+  '../../experiments/native-architecture/src/platform/flyoutFocus.ts',
+  () => import('../../experiments/native-architecture/src/platform/flyoutFocus.web.ts')
+);
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',

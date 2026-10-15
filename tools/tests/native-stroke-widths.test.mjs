@@ -1,3 +1,4 @@
+import { paperInputPacket } from './native-paper-fixtures.mjs';
 import { legacyDrawing, canonicalPaper, adoptedDrawing } from './native-paper-fixtures.mjs';
 import { STROKE_WIDTHS } from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
 import {
@@ -156,11 +157,14 @@ describe('canonical shared stroke widths', () => {
       },
     });
     const first = event([touch(0, 100)], [touch(0, 100)], [100]);
-    input.grant(first);
-    input.start(first);
+    input.receiveInput(
+      paperInputPacket('start', first, 0, { width: 1024, height: 1366, bottomInset: 34 })
+    );
     strokeWidth = 'thick';
     const second = event([touch(0, 200), touch(1, 200)], [touch(1, 200)], [100, 200]);
-    input.start(second);
+    input.receiveInput(
+      paperInputPacket('start', second, 1, { width: 1024, height: 1366, bottomInset: 34 })
+    );
     eraserWidth = 'thin';
     brush = 'eraser';
     const third = event(
@@ -168,7 +172,9 @@ describe('canonical shared stroke widths', () => {
       [touch(2, 300)],
       [100, 200, 300]
     );
-    input.start(third);
+    input.receiveInput(
+      paperInputPacket('start', third, 2, { width: 1024, height: 1366, bottomInset: 34 })
+    );
     input.interrupt();
     expect(errors).toEqual([]);
     expect(cohorts).toHaveLength(1);
