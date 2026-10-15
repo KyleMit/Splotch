@@ -162,6 +162,11 @@ export function changePage(history: History, pageId: PageId): History {
     : { ...history, drawing };
 }
 
+export function clearColoringOverlay(history: History): History {
+  if (history.drawing.pageId === 'blank') return history;
+  return { ...history, drawing: { ...history.drawing, pageId: 'blank' } };
+}
+
 export function paperPoint(x: number, y: number, width: number, height: number): Point {
   if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
     throw new Error('The drawing paper is not ready.');

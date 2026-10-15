@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.web.ts';
+import { createDeferredLibrary } from '../../experiments/native-architecture/src/offlineLibrary/deferredLibrary.ts';
+import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import {
   LIBRARY_DATABASE,
   MAX_LIBRARY_PATHS,
+  readLibraryStartupDisposition,
 } from '../../experiments/native-architecture/src/platform/offlineLibraryStorage.web.ts';
 import { LIBRARY_FILE_TIMEOUT_MS } from '../../experiments/native-architecture/src/platform/offlineLibraryTransfer.web.ts';
 import {
@@ -11,16 +14,30 @@ import {
   packDirectory,
 } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
 import { MAX_PACK_FILE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
+import { LIBRARY_TEXT_LIMIT_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
 
 const idb = vi.hoisted(() => ({
   rows: new Map(),
+  idle: null,
   failCommit: false,
   delayCommit: false,
   release: null,
   opens: [],
   corruptReadback: false,
+}));
+vi.mock('../../web/src/lib/idle.ts', () => ({
+  scheduleIdle(callback) {
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) callback();
+    };
+    if (idb.idle) idb.idle.push(run);
+    else queueMicrotask(run);
+    return () => {
+      cancelled = true;
+    };
+  },
 }));
 vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
   openDatabase: vi.fn(async (name, store) => {
@@ -91,6 +108,9 @@ function platform() {
   owners.push(owner);
   return owner;
 }
+function downloadFile(owner) {
+  return owner.download(staged, file, new AbortController().signal, false, vi.fn());
+}
 function response(value = bytes, overrides = {}) {
   return {
     ok: true,
@@ -131,6 +151,7 @@ async function installFixture(owner, pack) {
 beforeEach(() => {
   owners = [];
   idb.rows = new Map();
+  idb.idle = null;
   idb.failCommit = false;
   idb.delayCommit = false;
   idb.release = null;
@@ -157,6 +178,93 @@ afterEach(() => {
 });
 
 describe('beta browser coloring library', () => {
+  it('waits for idle between web files while drawing without cancelling the transfer', async () => {
+    idb.idle = [];
+    fetchMock.mockResolvedValue(response());
+    const owner = platform();
+    owner.setDrawing(true);
+    const abort = new AbortController();
+    const downloading = owner.download(staged, file, abort.signal, false, () => {});
+    await vi.waitFor(() => expect(idb.idle).toHaveLength(1));
+    idb.idle.shift()();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(abort.signal.aborted).toBe(false);
+    expect(idb.idle).toHaveLength(1);
+    owner.setDrawing(false);
+    idb.idle.shift()();
+    await downloading;
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(await owner.verify(staged, file)).toBe(true);
+  });
+
+  it('cancels a pending web idle wait when downloaded pictures are removed', async () => {
+    idb.idle = [];
+    const owner = platform();
+    const abort = new AbortController();
+    const downloading = owner.download(staged, file, abort.signal, false, () => {});
+    const rejected = downloading.catch((error) => error);
+    await vi.waitFor(() => expect(idb.idle).toHaveLength(1));
+    abort.abort();
+    expect(await rejected).toMatchObject({ code: 'cancelled' });
+    idb.idle.shift()();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    'restores saved mobile-data policy %s without installed packs',
+    async (allowMetered) => {
+      expect(await readLibraryStartupDisposition()).toBe('defer');
+      idb.rows.set('@paths', ['policy.json']);
+      idb.rows.set(
+        'policy.json',
+        new TextEncoder().encode(JSON.stringify({ enabled: false, allowMetered }))
+      );
+      expect(await readLibraryStartupDisposition()).toBe('hydrate');
+      const library = createDeferredLibrary(
+        async () => createOfflineLibrary(platform(), 'full'),
+        async () => {},
+        readLibraryStartupDisposition
+      );
+      await library.initialize();
+      expect(library.snapshot()).toMatchObject({ enabled: false, allowMetered, inventoried: true });
+      idb.rows.delete('policy.json');
+      idb.rows.set('@paths', [`staging-${directory}/identity.json`]);
+      expect(await readLibraryStartupDisposition()).toBe('resume');
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([false, true])(
+    'holds enabled policy-only mobile data %s until child engagement',
+    async (allowMetered) => {
+      idb.rows.set('@paths', ['policy.json']);
+      idb.rows.set(
+        'policy.json',
+        new TextEncoder().encode(JSON.stringify({ enabled: true, allowMetered }))
+      );
+      const controller = createOfflineLibrary(platform(), 'full');
+      const library = createDeferredLibrary(
+        async () => controller,
+        async () => {},
+        readLibraryStartupDisposition
+      );
+      library.setFeatureEnabled(true);
+      await library.initialize();
+      await controller.settled();
+      expect(library.snapshot()).toMatchObject({
+        enabled: true,
+        allowMetered,
+        inventoried: true,
+        installed: [],
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      library.engage();
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+      await controller.settled();
+      controller.dispose();
+    }
+  );
+
   it('keeps isolated durable bytes across new owners and exposes only verified object URLs', async () => {
     const first = platform();
     await first.write(path, bytes);
@@ -257,7 +365,7 @@ describe('beta browser coloring library', () => {
     expect(await owner.read(path, bytes.length)).toBeNull();
     expect(revoke).toHaveBeenCalledWith(uri);
   });
-  it('keeps a protected saved/current revision and its in-use URI during book removal', async () => {
+  it('removes the installed revision and revokes its in-use URI', async () => {
     const owner = platform();
     const pack = fixturePack();
     await installFixture(owner, pack);
@@ -265,26 +373,12 @@ describe('beta browser coloring library', () => {
     const installed = await store.scan();
     expect(installed).toHaveLength(1);
     const cover = store.cover(pack, false);
-    const retained = await store.remove(async () => [offlinePageId(pack, 'trex')]);
-    expect(retained).toBe(pack.bytes);
-    expect(store.cover(pack, false)).toBe(cover);
-    expect(revoke).not.toHaveBeenCalledWith(cover);
+    await store.remove();
+    expect(
+      await owner.read(`${packDirectory(pack)}/installed.json`, LIBRARY_TEXT_LIMIT_BYTES)
+    ).toBeNull();
+    expect(revoke).toHaveBeenCalledWith(cover);
     expect(await store.scan()).toEqual([]);
-  });
-  it('reports quota and connection uncertainty without requesting persistence', async () => {
-    const owner = platform();
-    expect(await owner.environment()).toEqual({
-      online: true,
-      metered: false,
-      freeBytes: 999_999_900,
-    });
-    vi.stubGlobal('navigator', {
-      onLine: false,
-      connection: { saveData: true },
-      storage: { estimate: vi.fn(async () => ({})), persist: vi.fn() },
-    });
-    expect(await owner.environment()).toEqual({ online: false, metered: true, freeBytes: 0 });
-    expect(navigator.storage.persist).not.toHaveBeenCalled();
   });
   it('downloads only an approved staged file using an exact bounded verified stream', async () => {
     const owner = platform();
@@ -307,15 +401,13 @@ describe('beta browser coloring library', () => {
     async (origin) => {
       vi.stubGlobal('location', new URL(origin));
       fetchMock.mockResolvedValue(response());
-      await platform().download(staged, file, new AbortController().signal, false, vi.fn());
+      await downloadFile(platform());
       expect(fetchMock.mock.calls[0][0]).toBe(`${origin}${assetPath}`);
     }
   );
   it('reports a failed asset transfer without claiming local storage failed', async () => {
     fetchMock.mockRejectedValue(new TypeError('Network request failed'));
-    await expect(
-      platform().download(staged, file, new AbortController().signal, false, vi.fn())
-    ).rejects.toMatchObject({
+    await expect(downloadFile(platform())).rejects.toMatchObject({
       code: 'unavailable',
       message: 'This coloring book could not be downloaded. Try again later.',
     });
@@ -327,9 +419,7 @@ describe('beta browser coloring library', () => {
       connection: { saveData: fault === 'metered' },
       storage: { estimate: vi.fn(async () => ({})) },
     });
-    await expect(
-      platform().download(staged, file, new AbortController().signal, false, vi.fn())
-    ).rejects.toMatchObject({ code: fault });
+    await expect(downloadFile(platform())).rejects.toMatchObject({ code: fault });
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('rejects a cancelled owner before starting a request', async () => {
@@ -346,9 +436,7 @@ describe('beta browser coloring library', () => {
       navigator.connection.saveData = true;
       return response();
     });
-    await expect(
-      owner.download(staged, file, new AbortController().signal, false, vi.fn())
-    ).rejects.toMatchObject({ code: 'metered' });
+    await expect(downloadFile(owner)).rejects.toMatchObject({ code: 'metered' });
     expect(idb.rows.has(staged)).toBe(false);
   });
   it.each(['oversized', 'short', 'digest', 'redirect'])(
@@ -365,9 +453,7 @@ describe('beta browser coloring library', () => {
       fetchMock.mockResolvedValue(
         response(incoming, { headers: new Headers(), redirected: failure === 'redirect' })
       );
-      await expect(
-        owner.download(staged, file, new AbortController().signal, false, vi.fn())
-      ).rejects.toHaveProperty('code');
+      await expect(downloadFile(owner)).rejects.toHaveProperty('code');
       expect(await owner.read(staged, bytes.length)).toEqual(bytes);
     }
   );
@@ -383,7 +469,7 @@ describe('beta browser coloring library', () => {
       })
     );
     vi.useFakeTimers();
-    const download = owner.download(staged, file, new AbortController().signal, false, vi.fn());
+    const download = downloadFile(owner);
     const outcome = download.then(
       () => null,
       (error) => error
@@ -405,7 +491,7 @@ describe('beta browser coloring library', () => {
       started(options.signal);
       return new Promise(() => {});
     });
-    const download = owner.download(staged, file, new AbortController().signal, false, vi.fn());
+    const download = downloadFile(owner);
     const signal = await startedPromise;
     const outcome = download.then(
       () => null,

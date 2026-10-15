@@ -40,6 +40,7 @@ const SHIPPING = {
   aiKeyManager: web('lib/components/settings/AiKeyManager.svelte'),
   reportFields: web('lib/components/report/ReportFields.svelte'),
   setupInstructions: web('lib/components/settings/SetupInstructions.svelte'),
+  feedbackPage: web('routes/feedback/+page.svelte'),
 };
 
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -91,6 +92,8 @@ function primitiveParity(shipping) {
       declaration(shipping.setupInstructions, '.section-number', '--step-number-size'),
       px(stepNumber.STEP_NUMBER_SIZE_PX.summary),
     ],
+    [declaration(shipping.feedbackPage, '.aside', '--step-number-size'), 'var(--space-6)'],
+    [px(stepNumber.STEP_NUMBER_SIZE_PX.support), scale.space6],
     [
       declaration(shipping.appCss, ':nth-child(3n + 2) > .step-number--blob', 'border-radius'),
       'var(--radius-blob-2)',
@@ -176,6 +179,12 @@ it.each([
     'installBanner',
     '--step-number-size: 20px',
     '--step-number-size: 24px',
+  ],
+  [
+    'the support step size',
+    'feedbackPage',
+    '--step-number-size: var(--space-6)',
+    '--step-number-size: var(--space-5)',
   ],
   ['the disclosure turn', 'disclosure', 'transform: rotate(90deg)', 'transform: rotate(180deg)'],
   ['the warning line height', 'statusMessage', 'line-height: 1.45', 'line-height: 1.4'],

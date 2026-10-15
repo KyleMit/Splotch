@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   caller,
   records,
@@ -381,6 +382,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo wh
 });
 it('fences a real pending Offline transfer when the rendered RSD master is disabled without changing download policy', async () => {
   rootColoringSettings();
+  const files = new Map();
   let entered, finish, signal;
   const started = new Promise((resolve) => {
     entered = resolve;
@@ -391,9 +393,16 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   const platform = {
     environment: async () => ({ online: true, metered: false, freeBytes: 1e9 }),
     list: async () => [],
-    read: async () => null,
-    verify: async () => false,
-    write: vi.fn(async () => {}),
+    read: async (path) => files.get(path) ?? null,
+    verify: async (path, expected) => {
+      const bytes = files.get(path);
+      return (
+        !!bytes &&
+        bytes.length === expected.bytes &&
+        createHash('sha256').update(bytes).digest('hex') === expected.sha256
+      );
+    },
+    write: vi.fn(async (path, bytes) => files.set(path, bytes)),
     move: vi.fn(async () => {}),
     remove: vi.fn(async () => {}),
     uri: (path) => path,
@@ -406,7 +415,7 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
   };
   caller.library.owner.dispose();
   const owner = createOfflineLibrary(platform, 'full');
-  caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove(async () => []) };
+  caller.library = { owner, state: owner.snapshot(), remove: () => owner.remove() };
   await mount(createElement(RsdDrawingScreen));
   await expandControls();
   await click('Coloring books');
@@ -423,7 +432,9 @@ it('fences a real pending Offline transfer when the rendered RSD master is disab
     await owner.settled();
   });
   expect(owner.snapshot().installed).toEqual([]);
-  expect(platform.write).not.toHaveBeenCalled();
+  expect(platform.write.mock.calls.map(([path]) => path)).toEqual([
+    expect.stringMatching(/^staging-[a-z]+-[a-f0-9]{64}\/identity\.json$/),
+  ]);
   expect(platform.move).not.toHaveBeenCalled();
   expect(coloringPaper().pageId).toBe('blank');
 });

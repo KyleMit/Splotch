@@ -55,10 +55,6 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
     write: async () => {},
   },
 }));
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: vi.fn(),
-  listPictures: async () => [],
-}));
 vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')

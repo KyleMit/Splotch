@@ -5,6 +5,7 @@ import {
   type LibrarySnapshot,
 } from './snapshot';
 import type { OfflineLibrary } from './controller';
+import type { LibraryStartupDisposition } from './contract';
 
 const UNAVAILABLE_SNAPSHOT: LibrarySnapshot = {
   ...initialLibrarySnapshot,
@@ -15,17 +16,14 @@ const UNAVAILABLE_SNAPSHOT: LibrarySnapshot = {
 
 type Call = (library: OfflineLibrary) => void;
 
-// Stands in for the offline library until its controller loads (runtime.web.ts). Its loading
-// snapshot is the controller's own first snapshot. Calls that only set state the controller reads
-// later are kept in order and replayed onto it; a call that needs the controller now loads it; the
-// launch inventory, which needs the coloring catalog, waits for `idle`. A failed load reports the
-// failure the controller reports for a failed catalog, and retry loads afresh.
 export function createDeferredLibrary(
   load: () => Promise<OfflineLibrary>,
-  idle: () => Promise<void>
+  idle: () => Promise<void>,
+  readStartupDisposition: () => Promise<LibraryStartupDisposition>
 ): OfflineLibrary {
   let library: OfflineLibrary | null = null;
   let loading: Promise<OfflineLibrary> | null = null;
+  let initialization: Promise<void> | null = null;
   let fallback = initialLibrarySnapshot;
   const queued: Call[] = [];
   const listeners = new Set<() => void>();
@@ -77,13 +75,23 @@ export function createDeferredLibrary(
         listeners.delete(listener);
       };
     },
-    initialize: async () => {
-      if (!library) await idle();
-      try {
-        await (await start()).initialize();
-      } catch (error) {
-        console.error('The offline library failed to load:', error);
-      }
+    initialize: () => {
+      initialization ??= (async () => {
+        if (!library) await idle();
+        try {
+          const disposition = await readStartupDisposition();
+          if (!library && disposition === 'defer') {
+            fallback = { ...initialLibrarySnapshot, status: 'ready', inventoried: true };
+            notify();
+            return;
+          }
+          if (disposition === 'resume') record((owner) => owner.engage());
+          await (await start()).initialize();
+        } catch (error) {
+          console.error('The offline library failed to load:', error);
+        }
+      })();
+      return initialization;
     },
     setFeatureEnabled: (enabled) => record((owner) => owner.setFeatureEnabled(enabled)),
     setActive: (value) => record((owner) => owner.setActive(value)),
@@ -91,12 +99,12 @@ export function createDeferredLibrary(
     cancel: () => record((owner) => owner.cancel()),
     engage() {
       record((owner) => owner.engage());
-      settle(start());
+      settle(idle().then(start));
     },
     // Before the controller loads, the only stalled state is a failed load, which nothing paused.
     retryStalled() {
       if (library) library.retryStalled();
-      else if (fallback !== initialLibrarySnapshot) retry();
+      else if (fallback.status === 'failed') retry();
     },
     retry,
     setPolicy: (enabled, allowMetered) =>
@@ -104,15 +112,14 @@ export function createDeferredLibrary(
         (owner) => owner.setPolicy(enabled, allowMetered),
         () => undefined
       ),
-    remove: (getProtectedPages) =>
+    remove: () =>
       start().then(
-        (owner) => owner.remove(getProtectedPages),
+        (owner) => owner.remove(),
         () => undefined
       ),
     async openPage(pageId) {
       if (isOfflinePageId(pageId)) await (await start()).openPage(pageId);
     },
-    withSavedArtwork: async (pageId, action) => (await start()).withSavedArtwork(pageId, action),
     cover: (pack, dark) => loaded().cover(pack, dark),
     selector: (pack, page, orientation, dark) => loaded().selector(pack, page, orientation, dark),
   };

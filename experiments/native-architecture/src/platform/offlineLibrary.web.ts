@@ -1,7 +1,7 @@
 import {
   LibraryFault,
   LIBRARY_TEXT_LIMIT_BYTES,
-  type LibraryPlatform,
+  type LibraryFilePlatform,
   type LibraryEnvironment,
 } from '../offlineLibrary/contract';
 import { approvedAssetUrl, MAX_PACK_FILE_BYTES, type PackFile } from '../offlineLibrary/manifest';
@@ -11,6 +11,7 @@ import {
   downloadLibraryFile,
   matchesLibraryFile,
   requireLibraryFile,
+  waitForLibraryIdle,
 } from './offlineLibraryTransfer.web';
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -21,10 +22,13 @@ function meteredConnection(): boolean {
     Reflect.get(navigator, 'connection') ??
     Reflect.get(navigator, 'mozConnection') ??
     Reflect.get(navigator, 'webkitConnection');
-  if (!record(connection)) return true;
-  if (connection.saveData === true || connection.type === 'cellular') return true;
-  if (typeof connection.metered === 'boolean') return connection.metered;
-  return connection.type !== 'wifi' && connection.type !== 'ethernet';
+  if (!record(connection)) return false;
+  return (
+    connection.saveData === true ||
+    connection.type === 'cellular' ||
+    connection.effectiveType === '2g' ||
+    connection.effectiveType === 'slow-2g'
+  );
 }
 function networkEnvironment(): Pick<LibraryEnvironment, 'online' | 'metered'> {
   if (typeof navigator === 'undefined') throw libraryFault(null);
@@ -58,11 +62,12 @@ function requireDestination(path: string, file: PackFile): void {
 }
 type ImageUrl = Readonly<{ uri: string; bytes: number; sha256: string }>;
 
-class WebLibraryPlatform implements LibraryPlatform {
+class WebLibraryPlatform implements LibraryFilePlatform {
   private readonly storage = new WebLibraryStorage();
   private readonly urls = new Map<string, ImageUrl>();
   private readonly transfers = new Set<AbortController>();
   private disposed = false;
+  private drawing = false;
   private pending: Promise<unknown> = Promise.resolve();
   private active() {
     if (this.disposed) throw libraryFault(null);
@@ -219,6 +224,7 @@ class WebLibraryPlatform implements LibraryPlatform {
       else signal.addEventListener('abort', cancel, { once: true });
       this.transfers.add(transfer);
       try {
+        await waitForLibraryIdle(transfer.signal, () => this.drawing);
         const bytes = await downloadLibraryFile(
           file,
           transfer.signal,
@@ -243,6 +249,9 @@ class WebLibraryPlatform implements LibraryPlatform {
       }
     });
   }
+  setDrawing(drawing: boolean) {
+    this.drawing = drawing;
+  }
   dispose() {
     this.disposed = true;
     for (const transfer of this.transfers)
@@ -251,6 +260,6 @@ class WebLibraryPlatform implements LibraryPlatform {
     this.storage.dispose();
   }
 }
-export function createLibraryPlatform(): LibraryPlatform {
+export function createLibraryPlatform(): LibraryFilePlatform {
   return new WebLibraryPlatform();
 }

@@ -70,7 +70,7 @@ export function offlineRuntimePort(caller) {
     engage: () => caller.library.owner.engage(),
     setFeatureEnabled: (enabled) => caller.library.owner.setFeatureEnabled(enabled),
     openPage: (page) => caller.library.owner.openPage(page),
-    remove: (pages) => caller.library.owner.remove(pages),
+    remove: () => caller.library.owner.remove(),
   };
 }
 export function paperPort(React, strokeStyle, caller) {

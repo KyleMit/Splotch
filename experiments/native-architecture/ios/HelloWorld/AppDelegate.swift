@@ -13,6 +13,7 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    SplotchLibraryDownloads.shared.resumePendingDownload()
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -21,6 +22,18 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
     reactNativeFactory = factory
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  public override func application(
+    _ application: UIApplication,
+    handleEventsForBackgroundURLSession identifier: String,
+    completionHandler: @escaping () -> Void
+  ) {
+    if SplotchLibraryDownloads.handles(identifier) {
+      SplotchLibraryDownloads.shared.acceptBackgroundEvents(identifier: identifier, completion: completionHandler)
+    } else {
+      super.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
+    }
   }
 
   // Linking API

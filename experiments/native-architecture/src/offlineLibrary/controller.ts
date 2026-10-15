@@ -9,9 +9,11 @@ import { isOfflinePageId } from './identity';
 import {
   LibraryFault,
   LIBRARY_TEXT_LIMIT_BYTES,
+  LIBRARY_POLICY_PATH,
   encodeLibraryText,
   decodeLibraryText,
   requireDownloadNetwork,
+  hasBackgroundTransfers,
   type LibraryPlatform,
 } from './contract';
 import { createLibraryStore } from './store';
@@ -43,9 +45,7 @@ class OfflineLibraryController {
   private initialization: Promise<void> | null = null;
   private engaged = false;
   private featureEnabled = false;
-  private active = true;
   private paused = false;
-  private drawing = false;
   private consumers = 0;
   private policyWrites: Promise<void> = Promise.resolve();
   private operation: Promise<void> | null = null;
@@ -79,6 +79,12 @@ class OfflineLibraryController {
     this.epoch++;
     this.transfer?.abort();
     this.transfer = null;
+    if (hasBackgroundTransfers(this.platform)) {
+      const epoch = this.epoch;
+      void this.platform.cancelInstallations().catch((error: unknown) => {
+        if (epoch === this.epoch) this.fail(error);
+      });
+    }
     if (this.state.status === 'downloading')
       this.publish({ status: 'ready', activeBook: null, message, fault: null });
   }
@@ -90,7 +96,7 @@ class OfflineLibraryController {
     try {
       await this.platform.environment();
       this.catalog ??= await import('./catalog');
-      const policy = await this.platform.read('policy.json', LIBRARY_TEXT_LIMIT_BYTES);
+      const policy = await this.platform.read(LIBRARY_POLICY_PATH, LIBRARY_TEXT_LIMIT_BYTES);
       if (policy) {
         const parsed: unknown = JSON.parse(decodeLibraryText(policy));
         if (
@@ -104,25 +110,20 @@ class OfflineLibraryController {
           throw new LibraryFault('corrupt', 'Coloring download settings could not be read.');
         this.publish({ enabled: parsed.enabled, allowMetered: parsed.allowMetered });
       }
-      const { installed, retainedBytes } = await this.store.inventory(
+      const installed = await this.store.inventory(
         OFFLINE_BOOKS.map((book) => this.currentPack(book.id))
       );
-      this.publish({ status: 'ready', installed, inventoried: true, retainedBytes, fault: null });
+      this.publish({ status: 'ready', installed, inventoried: true, fault: null });
     } catch (error) {
       this.fail(error);
       this.initialization = null;
     }
   }
   private allowed() {
-    return (
-      this.featureEnabled &&
-      this.state.enabled &&
-      this.engaged &&
-      this.active &&
-      !this.paused &&
-      !this.drawing &&
-      this.consumers === 0
-    );
+    return this.featureEnabled && this.state.enabled && this.engaged && !this.paused;
+  }
+  private canStartTransfer() {
+    return this.allowed() && this.consumers === 0;
   }
   private currentPack(id: OfflineBookId): Pack {
     if (!this.catalog)
@@ -138,7 +139,7 @@ class OfflineLibraryController {
   private schedule() {
     if (
       this.operation ||
-      !this.allowed() ||
+      !this.canStartTransfer() ||
       this.state.status === 'failed' ||
       this.state.status === 'waiting'
     )
@@ -152,19 +153,20 @@ class OfflineLibraryController {
   }
   private async run() {
     await this.initialize();
-    if (!this.allowed() || this.state.status !== 'ready') return;
+    if (!this.canStartTransfer() || this.state.status !== 'ready') return;
     const owner = ++this.epoch;
     const controller = new AbortController();
     this.transfer = controller;
     const isCurrent = () => owner === this.epoch && this.allowed() && !controller.signal.aborted;
     try {
       for (const book of OFFLINE_BOOKS) {
-        if (!isCurrent()) return;
+        if (!isCurrent() || !this.canStartTransfer()) return;
         const pack = this.currentPack(book.id);
         if (this.state.installed.some((item) => item.revision === pack.revision)) continue;
         const environment = await this.platform.environment();
-        requireDownloadNetwork(environment, this.state.allowMetered);
-        if (!isCurrent()) return;
+        if (!hasBackgroundTransfers(this.platform))
+          requireDownloadNetwork(environment, this.state.allowMetered);
+        if (!isCurrent() || !this.canStartTransfer()) return;
         this.publish({
           status: 'downloading',
           activeBook: book.id,
@@ -205,14 +207,11 @@ class OfflineLibraryController {
     this.schedule();
   }
   setActive(value: boolean) {
-    this.active = value;
-    if (!value) this.abort('Coloring downloads pause while Splotch is in the background.');
-    else this.schedule();
+    if (value) this.schedule();
   }
   setDrawing(value: boolean) {
-    this.drawing = value;
-    if (value) this.abort('');
-    else this.schedule();
+    this.platform.setDrawing?.(value);
+    if (!value) this.schedule();
   }
   cancel() {
     this.paused = true;
@@ -238,7 +237,7 @@ class OfflineLibraryController {
         'policy-pending.json',
         encodeLibraryText(JSON.stringify({ enabled, allowMetered }))
       );
-      await this.platform.move('policy-pending.json', 'policy.json');
+      await this.platform.move('policy-pending.json', LIBRARY_POLICY_PATH);
       this.publish({ enabled, allowMetered });
     });
     this.policyWrites = write.catch(() => undefined);
@@ -261,7 +260,7 @@ class OfflineLibraryController {
   async openPage(pageId: string) {
     if (!isOfflinePageId(pageId)) return;
     this.consumers++;
-    if (this.transfer) this.abort('');
+    if (this.transfer && !hasBackgroundTransfers(this.platform)) this.abort('');
     try {
       await this.initialize();
       const artwork = await this.store.openPage(pageId);
@@ -277,32 +276,18 @@ class OfflineLibraryController {
   selector(pack: Pack, page: OfflinePageSlug, orientation: ArtOrientation, dark: boolean) {
     return this.store.selector(pack, page, orientation, dark);
   }
-  async withSavedArtwork<T>(pageId: string, action: () => Promise<T>): Promise<T> {
-    this.consumers++;
-    if (this.transfer) this.abort('');
-    try {
-      return await this.store.withSavedArtwork(pageId, action);
-    } finally {
-      this.consumers--;
-      this.schedule();
-    }
-  }
-  async remove(getProtectedPages: () => Promise<readonly string[]>) {
+  async remove() {
     this.paused = true;
     this.abort('');
     this.publish({ status: 'removing' });
     try {
       await this.initialize();
-      await this.persistPolicy(false, this.state.allowMetered);
       this.publish({ status: 'removing', fault: null });
-      const retainedBytes = await this.store.remove(getProtectedPages);
+      await this.store.remove();
       this.publish({
         installed: [],
-        retainedBytes,
         status: 'ready',
-        message: retainedBytes
-          ? 'Downloaded books removed. Artwork used by your pictures is kept.'
-          : 'Downloaded books removed.',
+        message: 'Downloaded books removed.',
       });
     } catch (error) {
       this.fail(error);
@@ -322,8 +307,6 @@ class OfflineLibraryController {
 export function createOfflineLibrary(platform: LibraryPlatform, resolution: PackResolution) {
   return new OfflineLibraryController(platform, resolution);
 }
-// What the app reaches through offlineLibrary/runtime.ts, and so what deferredLibrary.ts stands in
-// for on web until the controller's chunk loads.
 export type OfflineLibrary = Pick<
   OfflineLibraryController,
   | 'snapshot'
@@ -340,6 +323,5 @@ export type OfflineLibrary = Pick<
   | 'openPage'
   | 'cover'
   | 'selector'
-  | 'withSavedArtwork'
   | 'remove'
 >;

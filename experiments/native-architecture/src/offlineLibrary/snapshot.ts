@@ -15,7 +15,6 @@ export type LibrarySnapshot = Readonly<{
   activeBook: OfflineBookId | null;
   completedBytes: number;
   totalBytes: number;
-  retainedBytes: number;
   fault: LibraryFaultCode | null;
   message: string;
 }>;
@@ -30,7 +29,6 @@ export const initialLibrarySnapshot: LibrarySnapshot = {
   activeBook: null,
   completedBytes: 0,
   totalBytes: 0,
-  retainedBytes: 0,
   fault: null,
   message: '',
 };

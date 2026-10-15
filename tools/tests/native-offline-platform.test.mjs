@@ -9,21 +9,18 @@ import {
   statSync,
   rmSync,
   renameSync,
-  openSync,
-  writeSync,
-  closeSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.ts';
+import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
+import { createLibraryStore } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import {
-  createLibraryPlatform,
-  LIBRARY_FILE_TIMEOUT_MS,
-} from '../../experiments/native-architecture/src/platform/offlineLibrary.ts';
-import {
-  approvedAssetUrl,
   MAX_PACK_FILE_BYTES,
+  PACK_ORIGIN,
 } from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
+import { LIBRARY_STORAGE_RESERVE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
 
 const fixture = vi.hoisted(() => ({
   root: '',
@@ -31,12 +28,6 @@ const fixture = vi.hoisted(() => ({
   diskReads: 0,
   online: true,
   metered: false,
-  chunks: [],
-  length: null,
-  encoding: null,
-  responseUrl: '',
-  afterChunk: null,
-  fetch: vi.fn(),
   bridge: null,
 }));
 vi.mock('react-native', () => ({
@@ -46,7 +37,6 @@ vi.mock('react-native', () => ({
     },
   },
 }));
-vi.mock('expo/fetch', () => ({ fetch: (...args) => fixture.fetch(...args) }));
 vi.mock('expo-file-system', () => {
   const pathOf = (value) =>
     typeof value === 'string' ? value.replace(/^file:\/\//, '') : value.path;
@@ -96,15 +86,10 @@ vi.mock('expo-file-system', () => {
       renameSync(this.path, destination.path);
       this.path = destination.path;
     }
-    open() {
-      const fd = openSync(this.path, 'w');
-      return { writeBytes: (bytes) => writeSync(fd, bytes), close: () => closeSync(fd) };
-    }
   }
   return {
     Directory,
     File,
-    FileMode: { WriteOnly: 'w' },
     Paths: {
       get availableDiskSpace() {
         fixture.diskReads++;
@@ -127,11 +112,6 @@ beforeEach(async () => {
   fixture.diskReads = 0;
   fixture.online = true;
   fixture.metered = false;
-  fixture.chunks = [bytes];
-  fixture.length = String(bytes.length);
-  fixture.encoding = null;
-  fixture.responseUrl = approvedAssetUrl(expected.downloadPath);
-  fixture.afterChunk = null;
   fixture.bridge = {
     async environment() {
       return {
@@ -140,30 +120,13 @@ beforeEach(async () => {
         metered: fixture.metered,
       };
     },
+    install: vi.fn(async () => true),
+    cancelAll: vi.fn(async () => true),
     async verify(uri, length, sha256) {
       const data = await readFile(uri.replace(/^file:\/\//, ''));
       return data.length === length && createHash('sha256').update(data).digest('hex') === sha256;
     },
   };
-  fixture.fetch.mockReset().mockImplementation(async () => {
-    let index = 0;
-    return {
-      ok: true,
-      url: fixture.responseUrl,
-      headers: { get: (name) => (name === 'content-encoding' ? fixture.encoding : fixture.length) },
-      body: {
-        getReader: () => ({
-          async read() {
-            if (index >= fixture.chunks.length) return { done: true };
-            const value = fixture.chunks[index++];
-            fixture.afterChunk?.();
-            return { done: false, value };
-          },
-          async cancel() {},
-        }),
-      },
-    };
-  });
   platform = createLibraryPlatform();
   await platform.environment();
 });
@@ -171,171 +134,122 @@ afterEach(async () => {
   await rm(fixture.root, { recursive: true, force: true });
 });
 
-describe('actual native library adapter with private disk and streamed transport boundaries', () => {
-  it('checks every streamed chunk against native network state without repeated root or disk setup', async () => {
-    fixture.chunks = Array.from({ length: 100 }, () => new Uint8Array([1]));
-    fixture.length = '100';
-    const environment = fixture.bridge.environment;
-    let networkChecks = 0;
-    fixture.bridge.environment = async () => {
-      networkChecks++;
-      return environment();
-    };
-    const file = {
-      ...expected,
-      bytes: 100,
-      sha256: createHash('sha256').update(Buffer.alloc(100, 1)).digest('hex'),
-    };
-    await platform.download(
-      'staging/files/chunks.svg',
-      file,
-      new AbortController().signal,
+describe('actual native library adapter with whole-book transfer ownership', () => {
+  it.each([false, true])(
+    'hands the complete verified catalog snapshot and mobile-data policy %s to native',
+    async (allowMetered) => {
+      const pack = catalogPack('dinosaur', 'compact');
+      const progress = vi.fn();
+      await platform.installPack(pack, new AbortController().signal, allowMetered, progress);
+      expect(fixture.bridge.install).toHaveBeenCalledExactlyOnceWith(
+        JSON.stringify(pack),
+        JSON.stringify(pack.files),
+        allowMetered
+      );
+      expect(progress).toHaveBeenCalledExactlyOnceWith(pack.bytes);
+      expect(fixture.rootCreates).toBe(1);
+      expect(fixture.diskReads).toBe(1);
+      expect('download' in platform).toBe(false);
+    }
+  );
+
+  it('awaits native cancellation before settling an aborted whole-book transfer', async () => {
+    let rejectInstall;
+    let finishCancel;
+    let rejected = false;
+    fixture.bridge.install.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectInstall = reject;
+        })
+    );
+    fixture.bridge.cancelAll.mockImplementation(() => {
+      rejectInstall(new Error('cancelled'));
+      return new Promise((resolve) => {
+        finishCancel = resolve;
+      });
+    });
+    const abort = new AbortController();
+    const installing = platform.installPack(
+      catalogPack('dinosaur', 'full'),
+      abort.signal,
       false,
       () => {}
     );
-    expect(networkChecks).toBe(101);
-    expect(fixture.rootCreates).toBe(1);
-    expect(fixture.diskReads).toBe(1);
-    expect(await platform.verify('staging/files/chunks.svg', file)).toBe(true);
+    const checked = installing.catch((error) => {
+      rejected = true;
+      return error;
+    });
+    abort.abort();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fixture.bridge.cancelAll).toHaveBeenCalledOnce();
+    expect(rejected).toBe(false);
+    finishCancel(true);
+    expect(await checked).toMatchObject({ code: 'cancelled' });
   });
-  it('rejects a native private root change before accepting streamed bytes', async () => {
-    fixture.afterChunk = () => {
-      fixture.bridge.environment = async () => ({
-        rootUri: 'file:///foreign',
-        online: true,
-        metered: false,
-      });
-    };
+
+  it('rejects a pre-aborted transfer and a forged pack before native creates work', async () => {
+    const abort = new AbortController();
+    abort.abort();
+    const pack = catalogPack('dinosaur', 'full');
+    await expect(platform.installPack(pack, abort.signal, false, () => {})).rejects.toMatchObject({
+      code: 'cancelled',
+    });
     await expect(
-      platform.download(
-        'staging/files/root.svg',
-        expected,
+      platform.installPack(
+        { ...pack, bytes: pack.bytes + 1 },
         new AbortController().signal,
         false,
         () => {}
       )
-    ).rejects.toMatchObject({ code: 'unavailable' });
-    expect(await platform.read('staging/files/root.svg', 4)).toHaveLength(0);
+    ).rejects.toThrow();
+    expect(fixture.bridge.install).not.toHaveBeenCalled();
   });
 
-  it('streams exactly bounded bytes, verifies them with the native bridge and awaits publication moves', async () => {
-    const progress = [];
-    await platform.download(
-      'staging-dinosaur/files/trex.svg',
-      expected,
-      new AbortController().signal,
-      false,
-      (bytes) => progress.push(bytes)
-    );
-    expect(fixture.fetch).toHaveBeenCalledWith(
-      approvedAssetUrl(expected.downloadPath),
-      expect.objectContaining({ redirect: 'error', credentials: 'omit' })
-    );
-    expect(progress).toEqual([4]);
-    expect(await platform.verify('staging-dinosaur/files/trex.svg', expected)).toBe(true);
-    await platform.move('staging-dinosaur/files/trex.svg', 'installed/files/trex.svg');
+  it('requires a verified native installed marker rather than trusting a bridge success', async () => {
+    const store = createLibraryStore(platform);
+    await expect(
+      store.install(catalogPack('dinosaur', 'full'), new AbortController().signal, false, () => {})
+    ).rejects.toMatchObject({ code: 'corrupt' });
+    expect(await store.scan()).toEqual([]);
+  });
+
+  it.each([
+    ['library_metered', 'metered'],
+    ['library_storage_full', 'storage-full'],
+  ])('reports native %s as the existing %s disposition', async (code, expectedCode) => {
+    fixture.bridge.install.mockRejectedValueOnce({ code });
+    await expect(
+      platform.installPack(
+        catalogPack('dinosaur', 'full'),
+        new AbortController().signal,
+        false,
+        () => {}
+      )
+    ).rejects.toMatchObject({ code: expectedCode });
+  });
+
+  it('confirms native cancellation before removal can delete stored books', async () => {
+    fixture.bridge.cancelAll.mockResolvedValueOnce(false);
+    await expect(platform.cancelInstallations()).rejects.toMatchObject({ code: 'unavailable' });
+  });
+
+  it('retains bounded private reads, native hashes and awaited publication moves', async () => {
+    await platform.write('staging/files/trex.svg', bytes);
+    expect(await platform.verify('staging/files/trex.svg', expected)).toBe(true);
+    await platform.move('staging/files/trex.svg', 'installed/files/trex.svg');
     expect([...(await platform.read('installed/files/trex.svg', 4))]).toEqual([...bytes]);
     await expect(platform.read('installed/files/trex.svg', 3)).rejects.toMatchObject({
       code: 'corrupt',
     });
   });
-  it.each([
-    'https://evil.example/coloring/dinosaur/trex-wide.overlay.svg',
-    'https://splotch.art/coloring/dinosaur/redirect.svg',
-  ])('refuses a transport response from %s', async (url) => {
-    fixture.responseUrl = url;
-    await expect(
-      platform.download(
-        'staging/files/a.svg',
-        expected,
-        new AbortController().signal,
-        false,
-        () => {}
-      )
-    ).rejects.toMatchObject({ code: 'unavailable' });
-  });
-  it.each([
-    [new Uint8Array([1]), '4'],
-    [new Uint8Array([1, 2, 3, 4, 5]), null],
-    [bytes, '5'],
-  ])('rejects missing, excessive or conflicting byte lengths', async (chunk, length) => {
-    fixture.chunks = [chunk];
-    fixture.length = length;
-    await expect(
-      platform.download(
-        'staging/files/a.svg',
-        expected,
-        new AbortController().signal,
-        false,
-        () => {}
-      )
-    ).rejects.toMatchObject({ code: 'corrupt' });
-  });
-  it('checks decoded byte length and digest when HTTP compression changes Content-Length', async () => {
-    fixture.encoding = 'gzip';
-    fixture.length = '2';
-    await platform.download(
-      'staging/files/compressed.svg',
-      expected,
-      new AbortController().signal,
-      false,
-      () => {}
-    );
-    expect(await platform.verify('staging/files/compressed.svg', expected)).toBe(true);
-  });
-  it('bounds a stalled transfer and relays a real abort to the transport', async () => {
-    vi.useFakeTimers();
-    try {
-      fixture.fetch.mockImplementation(
-        (_url, { signal }) =>
-          new Promise((_resolve, reject) =>
-            signal.addEventListener('abort', () => reject(signal.reason), { once: true })
-          )
-      );
-      const job = platform.download(
-        'staging/files/stalled.svg',
-        expected,
-        new AbortController().signal,
-        false,
-        () => {}
-      );
-      const rejected = (async () => {
-        await expect(job).rejects.toMatchObject({
-          code: 'unavailable',
-          message: 'The coloring download timed out. Try again.',
-        });
-      })();
-      await vi.advanceTimersByTimeAsync(LIBRARY_FILE_TIMEOUT_MS);
-      await rejected;
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-  it('rejects cancellation and metered handoff before accepting another chunk', async () => {
-    const abort = new AbortController();
-    fixture.afterChunk = () => abort.abort();
-    await expect(
-      platform.download('staging/files/a.svg', expected, abort.signal, false, () => {})
-    ).rejects.toMatchObject({ code: 'cancelled' });
-    fixture.afterChunk = () => {
-      fixture.metered = true;
-    };
-    await expect(
-      platform.download(
-        'staging/files/b.svg',
-        expected,
-        new AbortController().signal,
-        false,
-        () => {}
-      )
-    ).rejects.toMatchObject({ code: 'metered' });
-    expect(await platform.read('staging/files/b.svg', 4)).toHaveLength(0);
-  });
-  it('rejects traversal and missing native support without a permission request', async () => {
+
+  it('rejects traversal and missing native background support without a permission request', async () => {
     await expect(platform.write('../escape.json', bytes)).rejects.toMatchObject({
       code: 'unavailable',
     });
-    fixture.bridge = null;
+    fixture.bridge = { environment: fixture.bridge.environment, verify: fixture.bridge.verify };
     await expect(platform.environment()).rejects.toMatchObject({ code: 'unavailable' });
   });
 });
@@ -354,11 +268,46 @@ describe('native bridge registration and private storage contract', () => {
       new URL('ios/HelloWorld/SplotchLibraryEnvironment.swift', candidate),
       'utf8'
     );
-    expect(Number(android.match(/MAX_FILE_BYTES = (\d+)/)[1])).toBe(MAX_PACK_FILE_BYTES);
-    expect(Number(ios.match(/maxFileBytes = (\d+)/)[1])).toBe(MAX_PACK_FILE_BYTES);
-    expect(android).toContain('context.filesDir');
-    expect(ios).toContain('.applicationSupportDirectory');
-    expect(ios).toContain('isExcludedFromBackup = true');
+    const androidFiles = await readFile(
+      new URL(
+        'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryFiles.kt',
+        candidate
+      ),
+      'utf8'
+    );
+    const iosFiles = await readFile(
+      new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate),
+      'utf8'
+    );
+    expect(Number(androidFiles.match(/MAX_FILE_BYTES = (\d+)/)[1])).toBe(MAX_PACK_FILE_BYTES);
+    expect(Number(iosFiles.match(/maxFileBytes: Int64 = (\d+)/)[1])).toBe(MAX_PACK_FILE_BYTES);
+    const packSource = await readFile(new URL('src/offlineLibrary/manifest.ts', candidate), 'utf8');
+    const fileCount = Number(packSource.match(/PACK_FILE_COUNT = (\d+)/)[1]);
+    expect(Number(androidFiles.match(/PACK_FILE_COUNT = (\d+)/)[1])).toBe(fileCount);
+    expect(Number(iosFiles.match(/packFileCount = (\d+)/)[1])).toBe(fileCount);
+    const packLimit =
+      Number(packSource.match(/MAX_PACK_BYTES = (\d+) \* 1024 \* 1024/)[1]) * 1024 * 1024;
+    expect(Number(androidFiles.match(/MAX_PACK_BYTES = (\d+)/)[1])).toBe(packLimit);
+    expect(Number(iosFiles.match(/maxPackBytes: Int64 = (\d+)/)[1])).toBe(packLimit);
+    expect(androidFiles.match(/"(splotch-offline-library-v\d+)"/)[1]).toBe(
+      iosFiles.match(/"(splotch-offline-library-v\d+)"/)[1]
+    );
+    const objc = await readFile(
+      new URL('ios/HelloWorld/SplotchLibraryEnvironment.m', candidate),
+      'utf8'
+    );
+    expect(objc).toContain(
+      'RCT_EXTERN_METHOD(install:(NSString *)marker identity:(NSString *)identity allowMetered:(BOOL)allowMetered'
+    );
+    expect(objc).toContain('RCT_EXTERN_METHOD(cancelAll:(RCTPromiseResolveBlock)resolve');
+    expect(android).toContain(
+      'fun install(marker: String, identity: String, allowMetered: Boolean, promise: Promise)'
+    );
+    expect(android).toContain('fun cancelAll(promise: Promise)');
+
+    expect(androidFiles).toContain('context.filesDir');
+    expect(iosFiles).toContain('.applicationSupportDirectory');
+    expect(iosFiles).toContain('isExcludedFromBackup = true');
     expect(ios.match(/NWPathMonitor\(\)/g)).toHaveLength(1);
     expect(ios).toContain('monitor.pathUpdateHandler = { [weak self] path in');
     expect(ios).toContain('NSObject, RCTInvalidating');
@@ -385,5 +334,138 @@ describe('native bridge registration and private storage contract', () => {
     );
     expect(xcode.match(/SplotchLibraryEnvironment.swift in Sources/g)).toHaveLength(2);
     expect(xcode.match(/SplotchLibraryEnvironment.m in Sources/g)).toHaveLength(2);
+    expect(xcode.match(/SplotchLibraryFiles.swift in Sources/g)).toHaveLength(2);
+    expect(xcode.match(/SplotchLibraryDownloads.swift in Sources/g)).toHaveLength(2);
   });
+});
+
+it('preserves shipping native network and background transfer policy', async () => {
+  const android = await readFile(
+    new URL(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryDownloads.kt',
+      candidate
+    ),
+    'utf8'
+  );
+  const worker = await readFile(
+    new URL(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryWorker.kt',
+      candidate
+    ),
+    'utf8'
+  );
+  const ios = await readFile(
+    new URL('ios/HelloWorld/SplotchLibraryDownloads.swift', candidate),
+    'utf8'
+  );
+  const delegate = await readFile(new URL('ios/HelloWorld/AppDelegate.swift', candidate), 'utf8');
+  const shippingAndroid = await readFile(
+    new URL('../../android/app/build.gradle', import.meta.url),
+    'utf8'
+  );
+  const nativeAndroid = await readFile(new URL('android/app/build.gradle', candidate), 'utf8');
+  expect(nativeAndroid.match(/androidx.work:work-runtime:([\d.]+)/)[1]).toBe(
+    shippingAndroid.match(/androidx.work:work-runtime:([\d.]+)/)[1]
+  );
+  expect(android).toContain('if (allowMetered) NetworkType.CONNECTED else NetworkType.UNMETERED');
+  expect(android).toContain('getWorkInfosForUniqueWork(WORK_TAG)');
+  expect(android).toContain('enqueueUniqueWork(WORK_TAG, ExistingWorkPolicy.REPLACE, work)');
+  const origins = (source) => new Set(source.match(/https:\/\/[a-z0-9.-]+/g) ?? []);
+  expect(origins(worker)).toEqual(new Set([PACK_ORIGIN]));
+  expect(origins(ios)).toEqual(new Set([PACK_ORIGIN]));
+  expect(worker).toContain('stored.getBoolean("allowMetered") && dataSaverEnabled()');
+  expect(worker).toContain('SplotchLibraryFiles.write(File(staging, "installed.json"), marker)');
+  expect(worker).toContain('staging.renameTo(current)');
+  expect(worker).toContain('prepareStaging(pack, current, staging, job, token)');
+  expect(worker).toContain(
+    'if (candidate == current) previous.copyTo(destination, overwrite = true)'
+  );
+  expect(worker).toContain('check(previous.renameTo(destination))');
+  expect(worker).toContain('directory != packStages');
+  expect(worker).toContain('for (directory in siblings) check(directory.deleteRecursively())');
+  expect(Number(worker.match(/STORAGE_RESERVE_BYTES = (\d+)L/)[1])).toBe(
+    LIBRARY_STORAGE_RESERVE_BYTES
+  );
+  expect(ios).toContain('URLSessionConfiguration.background');
+  expect(ios).toContain('configuration.isDiscretionary = true');
+  expect(ios).toContain('configuration.allowsExpensiveNetworkAccess = allowMetered');
+  expect(ios).toContain('configuration.allowsConstrainedNetworkAccess = false');
+  expect(Number(ios.match(/storageReserveBytes: Int64 = (\d+)/)[1])).toBe(
+    LIBRARY_STORAGE_RESERVE_BYTES
+  );
+  expect(delegate).toContain('SplotchLibraryDownloads.shared.resumePendingDownload()');
+  expect(delegate).toContain('handleEventsForBackgroundURLSession identifier');
+  expect(delegate).toContain('SplotchLibraryDownloads.shared.acceptBackgroundEvents');
+});
+
+it('pins native pack validation to the JavaScript catalog limits', async () => {
+  const [manifest, android, ios] = await Promise.all([
+    readFile(new URL('src/offlineLibrary/manifest.ts', candidate), 'utf8'),
+    readFile(
+      new URL(
+        'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryFiles.kt',
+        candidate
+      ),
+      'utf8'
+    ),
+    readFile(new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate), 'utf8'),
+  ]);
+  const fileCount = Number(manifest.match(/const PACK_FILE_COUNT = (\d+);/)[1]);
+  const maxPackBytes =
+    Number(manifest.match(/const MAX_PACK_BYTES = (\d+) \* 1024 \* 1024;/)[1]) * 1024 * 1024;
+  expect(Number(android.match(/PACK_FILE_COUNT = (\d+)/)[1])).toBe(fileCount);
+  expect(Number(ios.match(/packFileCount = (\d+)/)[1])).toBe(fileCount);
+  expect(Number(android.match(/MAX_FILE_BYTES = (\d+)L/)[1])).toBe(MAX_PACK_FILE_BYTES);
+  expect(Number(ios.match(/maxFileBytes: Int64 = (\d+)/)[1])).toBe(MAX_PACK_FILE_BYTES);
+  expect(Number(android.match(/MAX_PACK_BYTES = (\d+)L/)[1])).toBe(maxPackBytes);
+  expect(Number(ios.match(/maxPackBytes: Int64 = (\d+)/)[1])).toBe(maxPackBytes);
+});
+
+it('ignores an existing Android backoff while observing failure of a joined running attempt', async () => {
+  const source = await readFile(
+    new URL(
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryDownloads.kt',
+      candidate
+    ),
+    'utf8'
+  );
+  const shipping = await readFile(
+    new URL(
+      '../../android/app/src/main/java/art/splotch/app/ColoringPacksPlugin.java',
+      import.meta.url
+    ),
+    'utf8'
+  );
+  expect(shipping).toContain('ExistingWorkPolicy.REPLACE');
+  expect(source).toContain(
+    'val joinedAttemptCount = if (joins && existing?.state == WorkInfo.State.ENQUEUED) requireNotNull(existing).runAttemptCount else 0'
+  );
+  expect(source).not.toContain('if (joins) requireNotNull(existing).runAttemptCount');
+  expect(source).toContain('info.runAttemptCount > joinedAttemptCount');
+  expect(source).toContain('if (!finished && !deferred) return@Observer');
+  expect(source).toContain('if (info.state == WorkInfo.State.SUCCEEDED) promise.resolve(true)');
+});
+
+it('prunes only superseded same-book iOS transfer stages and retains published Undo files', async () => {
+  const source = await readFile(
+    new URL('ios/HelloWorld/SplotchLibraryFiles.swift', candidate),
+    'utf8'
+  );
+  const downloads = await readFile(
+    new URL('ios/HelloWorld/SplotchLibraryDownloads.swift', candidate),
+    'utf8'
+  );
+  const shipping = await readFile(
+    new URL('../../ios/App/App/ColoringPacksPlugin.swift', import.meta.url),
+    'utf8'
+  );
+  expect(shipping).toContain('try Self.removeUnlistedFiles(in: directory, book: book)');
+  expect(source).toContain('let staging = try stage(pack)');
+  expect(source).toContain('let transfers = staging.deletingLastPathComponent()');
+  expect(source).toContain('contentsOfDirectory(at: transfers, includingPropertiesForKeys: nil)');
+  expect(source).toContain(
+    'where sibling.lastPathComponent.hasPrefix(pack.id + "-") && sibling.lastPathComponent != staging.lastPathComponent'
+  );
+  expect(source).toContain('try FileManager.default.removeItem(at: sibling)');
+  expect(downloads.match(/try SplotchLibraryFiles.pruneSupersededStages\(pack\)/g)).toHaveLength(2);
 });

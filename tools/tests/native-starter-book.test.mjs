@@ -1,11 +1,9 @@
-import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import {
   BUNDLED_FARM_DIR,
-  BUNDLED_FARM_FILL_DIR,
   WEB_IMAGES_FILE,
   WEB_PICKER_IMAGES_FILE,
   bundledFarmImageFiles,
@@ -42,7 +40,6 @@ import {
   BUNDLED_FARM_SELECTORS,
 } from '../../experiments/native-architecture/src/drawing/bundledFarm/pickerImages.ts';
 import { BUNDLED_BOOK_OUTLINES } from '../../experiments/native-architecture/src/drawing/bundledOutlines.ts';
-import { savePicture } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 
 function paintedPage(pageId) {
   const selected = changePage(createHistory(emptyDrawing(3)), pageId);
@@ -135,18 +132,6 @@ describe('bundled Farm book and saved page identity', () => {
     }
   );
 
-  it.each(PAGE_IDS)('saves and reopens %s through the real browser adapter', async (pageId) => {
-    const values = new Map();
-    vi.stubGlobal('localStorage', {
-      getItem: (key) => values.get(key) ?? null,
-      setItem: (key, value) => values.set(key, value),
-    });
-    const original = paintedPage(pageId).drawing;
-    const saved = await savePicture(original);
-    expect(JSON.parse(values.get(`splotch-picture:${saved.id}`))).toEqual(original);
-    await expect(readSavedWebPicture(saved.id)).resolves.toEqual(original);
-  });
-
   it.each(FARM_PAGE_IDS)(
     'freezes %s and its mixed ink while a later page changes during export',
     async (pageId) => {
@@ -194,20 +179,13 @@ describe('bundled Farm book and saved page identity', () => {
     );
   });
 
-  it('refuses an unknown Farm page without rewriting the saved record', async () => {
-    const id = 'picture-123-fixture';
-    const serialized = JSON.stringify({
-      ...paintedPage('farm/cat').drawing,
-      pageId: 'farm/kitten',
-    });
-    const values = new Map([[`splotch-picture:${id}`, serialized]]);
-    const write = vi.fn((key, value) => values.set(key, value));
-    vi.stubGlobal('localStorage', { getItem: (key) => values.get(key) ?? null, setItem: write });
-    await expect(readSavedWebPicture(id)).rejects.toThrow(
+  it('refuses an unknown Farm page without mutating the legacy model', () => {
+    const drawing = { ...paintedPage('farm/cat').drawing, pageId: 'farm/kitten' };
+    const before = JSON.stringify(drawing);
+    expect(() => parseDrawing(drawing)).toThrow(
       'This saved picture contains an invalid coloring page.'
     );
-    expect(values.get(`splotch-picture:${id}`)).toBe(serialized);
-    expect(write).not.toHaveBeenCalled();
+    expect(JSON.stringify(drawing)).toBe(before);
   });
 });
 
@@ -501,13 +479,16 @@ describe('bundled art preserves shipped Farm provenance', () => {
   );
 
   it.each(ART_VARIANTS)(
-    'bundles $pageId $orientation $theme on its own frame with the compact shipped fill bytes',
+    'bundles $pageId $orientation $theme on its own frame with the canonical shipped fill bytes',
     ({ pageId, orientation, slug, viewBox, theme, fill }) => {
       const art = BUNDLED_BOOK_OUTLINES[pageId][orientation][theme];
       expect(art.viewBox).toBe(viewBox);
       expect(art.ink).toBe(theme === 'dark' ? '#fff' : '#000');
       const shipped = readFileSync(
-        `${BUNDLED_FARM_FILL_DIR}${pageId.split('/')[1]}-${slug}.${fill}.webp`
+        new URL(
+          `../../web/static/coloring/farm/${pageId.split('/')[1]}-${slug}.${fill}.webp`,
+          import.meta.url
+        )
       );
       expect(webpBytes(BUNDLED_FARM_IMAGES[pageId][orientation][theme]).equals(shipped)).toBe(true);
     }

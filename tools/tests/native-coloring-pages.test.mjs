@@ -1,4 +1,3 @@
-import { readSavedWebPicture } from './native-saved-picture-readback.mjs';
 import { legacyDrawing, canonicalPaper, adoptedDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -16,7 +15,6 @@ import {
   PAGE_IDS,
 } from '../../experiments/native-architecture/src/drawing/pages.ts';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import { savePicture } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 
 function legacyStroke() {
   return { color: 'Green', brush: 'marker', points: [{ x: 512, y: 384 }] };
@@ -182,31 +180,5 @@ describe('native coloring-page composition', () => {
     expect(next.drawing.pageId).toBe('sunshine');
     expect(request.complete('snapshot PNG')).toBe(true);
     await expect(request.promise).resolves.toBe('snapshot PNG');
-  });
-
-  it('saves and reopens the full page composition through the browser storage adapter', async () => {
-    const values = new Map();
-    vi.stubGlobal('localStorage', {
-      getItem: (key) => values.get(key) ?? null,
-      setItem: (key, value) => values.set(key, value),
-    });
-    values.set(
-      'splotch-picture:picture-1-first',
-      JSON.stringify({ version: 1, strokes: [legacyStroke()] })
-    );
-    await expect(readSavedWebPicture('picture-1-first')).resolves.toEqual({
-      ...legacyDrawing(),
-      strokes: [{ ...legacyStroke(), width: 22 }],
-    });
-    const original = picture().drawing;
-    const saved = await savePicture(original);
-    const opened = await readSavedWebPicture(saved.id);
-    expect(opened).toEqual(original);
-    values.set(`splotch-picture:${saved.id}`, JSON.stringify({ ...original, pageId: 'unknown' }));
-    const refused = values.get(`splotch-picture:${saved.id}`);
-    await expect(readSavedWebPicture(saved.id)).rejects.toThrow(
-      'This saved picture contains an invalid coloring page.'
-    );
-    expect(values.get(`splotch-picture:${saved.id}`)).toBe(refused);
   });
 });

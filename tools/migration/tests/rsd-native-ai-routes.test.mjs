@@ -30,7 +30,6 @@ it(
     useCaller();
     await sendDrawing();
     await settle(() => expect(caller.aiPrepare).toHaveBeenCalledOnce());
-    expect(caller.saveOriginal).not.toHaveBeenCalled();
     const [journal, originalModel, png] = caller.aiPrepare.mock.calls[0];
     expect(journal.originalId).toMatch(/^picture-\d+-[a-z0-9]+$/);
     expect(JSON.parse(originalModel)).toEqual(caller.screen.currentDrawing());

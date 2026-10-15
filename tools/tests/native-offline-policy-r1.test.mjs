@@ -1,91 +1,19 @@
-import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename } from 'node:fs/promises';
-import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
 import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
 import { createLibraryStore } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 import { LibraryFault } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  savePicture,
-  savedColoringPageIds,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
 function createEnabledOfflineLibrary(...args) {
   const owner = createOfflineLibrary(...args);
   owner.setFeatureEnabled(true);
   return owner;
 }
-
-const savedConsumer = vi.hoisted(() => ({ root: '', owner: null }));
-vi.mock('../../experiments/native-architecture/src/offlineLibrary/runtime.ts', () => ({
-  offlineLibrary: {
-    withSavedArtwork: (...args) => savedConsumer.owner.withSavedArtwork(...args),
-    openPage: (...args) => savedConsumer.owner.openPage(...args),
-  },
-}));
-vi.mock('expo-file-system', () => {
-  const pathOf = (value) =>
-    typeof value === 'string' ? value.replace(/^file:\/\//, '') : value.path;
-  class Directory {
-    constructor(parent, ...parts) {
-      this.path = join(pathOf(parent), ...parts);
-    }
-    create() {
-      fs.mkdirSync(this.path, { recursive: true });
-    }
-    list() {
-      return fs.readdirSync(this.path).map((name) => new File(this, name));
-    }
-  }
-  class File {
-    constructor(parent, ...parts) {
-      this.path = join(pathOf(parent), ...parts);
-    }
-    get uri() {
-      return `file://${this.path}`;
-    }
-    get name() {
-      return this.path.split('/').at(-1);
-    }
-    get exists() {
-      return fs.existsSync(this.path);
-    }
-    get size() {
-      return fs.statSync(this.path).size;
-    }
-    create() {
-      fs.writeFileSync(this.path, '');
-    }
-    write(value) {
-      fs.writeFileSync(this.path, value);
-    }
-    async text() {
-      return fs.readFileSync(this.path, 'utf8');
-    }
-    move(destination) {
-      fs.renameSync(this.path, destination.path);
-      this.path = destination.path;
-    }
-    delete() {
-      fs.unlinkSync(this.path);
-    }
-  }
-  return {
-    Directory,
-    File,
-    Paths: {
-      get document() {
-        return savedConsumer.root;
-      },
-    },
-  };
-});
 
 const staticRoot = new URL('../../web/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -169,7 +97,6 @@ async function diskPlatform() {
 }
 beforeEach(async () => {
   scratch = await diskPlatform();
-  savedConsumer.root = scratch.root;
 });
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -227,7 +154,7 @@ describe('R1 real controller and disk regression controls', () => {
     }
   );
 
-  it('keeps a download failure visible while real saved artwork is opened and saved', async () => {
+  it('keeps a download failure visible while existing artwork is opened', async () => {
     await createLibraryStore(scratch.platform).install(
       dinosaur,
       new AbortController().signal,
@@ -235,7 +162,6 @@ describe('R1 real controller and disk regression controls', () => {
       () => {}
     );
     const owner = createEnabledOfflineLibrary(scratch.platform, 'full');
-    savedConsumer.owner = owner;
     await owner.initialize();
     scratch.state.corrupt = true;
     owner.engage();
@@ -244,8 +170,6 @@ describe('R1 real controller and disk regression controls', () => {
     expect(failed.fault).toBe('corrupt');
     const id = offlinePageId(dinosaur, 'trex');
     await owner.openPage(id);
-    const picture = await savePicture(emptyDrawing(0, id));
-    await readSavedNativePicture(picture.id);
     expect(owner.snapshot()).toMatchObject({
       status: failed.status,
       fault: failed.fault,
@@ -254,43 +178,37 @@ describe('R1 real controller and disk regression controls', () => {
     expect(scratch.state.downloads).toBe(75);
   });
 
-  it('persists removal while online, preserves real saved art and only downloads after explicit enable', async () => {
+  it('pauses removal for the session and downloads all removed books on the next launch', async () => {
     const owner = createEnabledOfflineLibrary(scratch.platform, 'full');
-    savedConsumer.owner = owner;
     await owner.initialize();
     owner.engage();
     await owner.settled();
-    const drawing = emptyDrawing(0, offlinePageId(dinosaur, 'trex'));
-    const picture = await savePicture(drawing);
-    const artwork = await createLibraryStore(scratch.platform).openPage(drawing.pageId);
-    await owner.remove(savedColoringPageIds);
-    expect(owner.snapshot()).toMatchObject({ enabled: false, installed: [] });
+    await owner.setPolicy(true, false);
+    const pageId = offlinePageId(dinosaur, 'trex');
+    const artwork = await createLibraryStore(scratch.platform).openPage(pageId);
+    await owner.remove();
+    expect(owner.snapshot()).toMatchObject({ enabled: true, installed: [] });
+    owner.retryStalled();
+    await owner.settled();
+    expect(scratch.state.downloads).toBe(518);
     expect(JSON.parse(await readFile(join(scratch.root, 'policy.json'), 'utf8'))).toEqual({
-      enabled: false,
+      enabled: true,
       allowMetered: false,
     });
     const fresh = createEnabledOfflineLibrary(scratch.platform, 'full');
-    savedConsumer.owner = fresh;
     await fresh.initialize();
     fresh.engage();
     await fresh.settled();
     expect(scratch.state.online).toBe(true);
-    expect(scratch.state.downloads).toBe(518);
-    expect(fresh.snapshot()).toMatchObject({
-      enabled: false,
-      installed: [],
-      retainedBytes: dinosaur.bytes,
-    });
-    expect(await readSavedNativePicture(picture.id)).toEqual(drawing);
-    await fresh.openPage(drawing.pageId);
-    expect(fresh.snapshot().artwork[drawing.pageId]).toEqual(artwork);
-    await fresh.setPolicy(true, false);
-    await fresh.settled();
+    expect(scratch.state.downloads).toBe(518 + 7 * 74);
+    expect(fresh.snapshot().enabled).toBe(true);
     expect(fresh.snapshot().installed).toHaveLength(7);
-    expect(scratch.state.downloads).toBe(518 + 6 * 74);
+    await fresh.openPage(pageId);
+    expect(fresh.snapshot().artwork[pageId]).toEqual(artwork);
+    expect(scratch.state.downloads).toBe(518 + 7 * 74);
   });
 
-  it('keeps installed books when removal intent cannot be committed to private policy storage', async () => {
+  it('removes downloaded bytes without requiring a write that disables their download policy', async () => {
     await createLibraryStore(scratch.platform).install(
       dinosaur,
       new AbortController().signal,
@@ -300,10 +218,8 @@ describe('R1 real controller and disk regression controls', () => {
     const owner = createEnabledOfflineLibrary(scratch.platform, 'full');
     await owner.initialize();
     scratch.state.failWrite = true;
-    await owner.remove(async () => []);
-    expect(owner.snapshot()).toMatchObject({ status: 'failed', fault: 'storage-full' });
-    expect((await createLibraryStore(scratch.platform).scan()).map((pack) => pack.id)).toEqual([
-      'dinosaur',
-    ]);
+    await owner.remove();
+    expect(owner.snapshot()).toMatchObject({ status: 'ready', enabled: true, installed: [] });
+    expect(await createLibraryStore(scratch.platform).scan()).toEqual([]);
   });
 });

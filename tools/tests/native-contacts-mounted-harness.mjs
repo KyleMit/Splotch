@@ -13,6 +13,10 @@ import {
   useDrawingHistory,
 } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 
+vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', () => ({
+  subscribeNetworkReturn: () => () => {},
+}));
+
 const sdk = vi.hoisted(() => ({
   input: null,
   sequence: 0,
@@ -130,10 +134,6 @@ vi.mock('react-native-svg', () => {
 // The live photo-library save and retry behavior is covered by rsd-native-save-to-photos.test.mjs.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
   photoLibrary: { save: sdk.save },
-}));
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: vi.fn(),
-  savedColoringPageIds: async () => [],
 }));
 
 const PAPER_TARGET = 101;

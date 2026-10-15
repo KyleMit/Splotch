@@ -1,7 +1,5 @@
-import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
-import { adoptedDrawing } from './native-paper-fixtures.mjs';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, readdir, rm, rename } from 'node:fs/promises';
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -20,16 +18,8 @@ import {
   packDirectory,
 } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
+import { createLibrary } from '../../experiments/native-architecture/src/offlineLibrary/createLibrary.ts';
 import { LibraryFault } from '../../experiments/native-architecture/src/offlineLibrary/contract.ts';
-import {
-  emptyDrawing,
-  parseDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  savePicture,
-  savedColoringPageIds,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
 function createEnabledOfflineLibrary(...args) {
   const owner = createOfflineLibrary(...args);
@@ -42,71 +32,11 @@ async function readyLibrary(owner = createEnabledOfflineLibrary(scratch.platform
   return owner;
 }
 
-const savedConsumer = vi.hoisted(() => ({ root: '', owner: null }));
-vi.mock('../../experiments/native-architecture/src/offlineLibrary/runtime.ts', () => ({
-  offlineLibrary: {
-    withSavedArtwork: (...args) => savedConsumer.owner.withSavedArtwork(...args),
-    openPage: (...args) => savedConsumer.owner.openPage(...args),
-  },
+const nativeFactory = vi.hoisted(() => ({ platform: null, screen: null }));
+vi.mock('../../experiments/native-architecture/src/platform/offlineLibrary.ts', () => ({
+  createLibraryPlatform: () => nativeFactory.platform,
 }));
-vi.mock('expo-file-system', () => {
-  const pathOf = (value) =>
-    typeof value === 'string' ? value.replace(/^file:\/\//, '') : value.path;
-  class Directory {
-    constructor(parent, ...parts) {
-      this.path = join(pathOf(parent), ...parts);
-    }
-    create() {
-      fs.mkdirSync(this.path, { recursive: true });
-    }
-    list() {
-      return fs.readdirSync(this.path).map((name) => new File(this, name));
-    }
-  }
-  class File {
-    constructor(parent, ...parts) {
-      this.path = join(pathOf(parent), ...parts);
-    }
-    get uri() {
-      return `file://${this.path}`;
-    }
-    get name() {
-      return this.path.split('/').at(-1);
-    }
-    get exists() {
-      return fs.existsSync(this.path);
-    }
-    get size() {
-      return fs.statSync(this.path).size;
-    }
-    create() {
-      fs.writeFileSync(this.path, '');
-    }
-    write(value) {
-      fs.writeFileSync(this.path, value);
-    }
-    async text() {
-      return fs.readFileSync(this.path, 'utf8');
-    }
-    move(destination) {
-      fs.renameSync(this.path, destination.path);
-      this.path = destination.path;
-    }
-    delete() {
-      fs.unlinkSync(this.path);
-    }
-  }
-  return {
-    Directory,
-    File,
-    Paths: {
-      get document() {
-        return savedConsumer.root;
-      },
-    },
-  };
-});
-
+vi.mock('react-native', () => ({ Dimensions: { get: () => nativeFactory.screen } }));
 const staticRoot = new URL('../../web/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let scratch;
@@ -189,7 +119,8 @@ async function diskPlatform() {
 }
 beforeEach(async () => {
   scratch = await diskPlatform();
-  savedConsumer.root = scratch.root;
+  nativeFactory.platform = scratch.platform;
+  nativeFactory.screen = { width: 390, height: 844, scale: 2 };
 });
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -233,40 +164,28 @@ describe('approved offline coloring catalog', () => {
   });
 });
 
-describe('real disk pack publication and saved picture consumers', () => {
-  it('installs exactly 74 verified files, saves the revision, removes the book, relaunches offline and reopens identical artwork', async () => {
+describe('real disk pack publication and removal', () => {
+  it('installs 74 verified files and removes their revision before an offline relaunch', async () => {
     const store = createLibraryStore(scratch.platform);
     await store.install(dinosaur, new AbortController().signal, false, () => {});
     expect((await store.scan()).map((pack) => pack.id)).toEqual(['dinosaur']);
     expect(scratch.state.downloads).toBe(74);
     const id = offlinePageId(dinosaur, 'trex');
     expect(isOfflinePageId(id)).toBe(true);
-    savedConsumer.owner = createEnabledOfflineLibrary(scratch.platform, 'full');
-    const drawing = parseDrawing({
-      ...adoptedDrawing({ width: 1024, height: 768, pixelRatio: 1 }, 0, id),
-      strokes: [
-        { ...strokeStyle('magic', 'Purple', emptyDrawing(0, id)), points: [{ x: 100, y: 200 }] },
-      ],
-    });
-    const picture = await savePicture(drawing);
-    expect(await savedColoringPageIds()).toEqual([id]);
-    const artBefore = await store.openPage(id);
-    await savedConsumer.owner.remove(savedColoringPageIds);
+    const artwork = await store.openPage(id);
+    expect(artwork.portrait.dark.fill).toContain('trex-tall.night.webp');
+    expect(artwork.landscape.dark.fill).toContain('trex-wide.night.webp');
+    const owner = await readyLibrary();
+    await owner.remove();
     expect(await store.scan()).toEqual([]);
-    expect(await stat(join(scratch.root, packDirectory(dinosaur), 'retained.json'))).toBeDefined();
+    expect(fs.existsSync(join(scratch.root, packDirectory(dinosaur)))).toBe(false);
     scratch.state.online = false;
-    const relaunched = createEnabledOfflineLibrary(scratch.platform, 'full');
-    savedConsumer.owner = relaunched;
-    await readyLibrary(relaunched);
-    expect(relaunched.snapshot().retainedBytes).toBe(dinosaur.bytes);
-    expect(await readSavedNativePicture(picture.id)).toEqual(drawing);
-    await relaunched.openPage(drawing.pageId);
-    expect(relaunched.snapshot().artwork[id]).toEqual(artBefore);
-    expect(relaunched.snapshot().artwork[id].portrait.dark.fill).toContain('trex-tall.night.webp');
-    expect(relaunched.snapshot().artwork[id].landscape.dark.fill).toContain('trex-wide.night.webp');
+    const relaunched = await readyLibrary();
+    expect(relaunched.snapshot()).toMatchObject({ installed: [] });
+    await expect(relaunched.openPage(id)).rejects.toMatchObject({ code: 'corrupt' });
     expect(scratch.state.downloads).toBe(74);
   });
-  it('never shows an interrupted partial pack and discards its staging directory on fresh launch', async () => {
+  it('keeps an interrupted pack hidden, resumes verified staging and removes abandoned storage', async () => {
     const store = createLibraryStore(scratch.platform);
     scratch.state.gate = deferred();
     scratch.state.entered = deferred();
@@ -274,7 +193,7 @@ describe('real disk pack publication and saved picture consumers', () => {
     const installing = store.install(dinosaur, abort.signal, false, () => {});
     await scratch.state.entered.promise;
     const files = await readdir(scratch.root);
-    expect(files.some((name) => name.startsWith('staging-'))).toBe(false);
+    expect(files.some((name) => name.startsWith('staging-'))).toBe(true);
     abort.abort();
     scratch.state.gate.resolve();
     await expect(installing).rejects.toMatchObject({ code: 'cancelled' });
@@ -286,6 +205,18 @@ describe('real disk pack publication and saved picture consumers', () => {
     );
     expect(await createLibraryStore(scratch.platform).scan()).toEqual([]);
     expect(fs.existsSync(join(scratch.root, 'staging-abandoned'))).toBe(false);
+    expect(
+      fs.existsSync(join(scratch.root, `staging-${packDirectory(dinosaur)}`, 'identity.json'))
+    ).toBe(true);
+    const downloaded = scratch.state.downloads;
+    await createLibraryStore(scratch.platform).install(
+      dinosaur,
+      new AbortController().signal,
+      false,
+      () => {}
+    );
+    expect(scratch.state.downloads - downloaded).toBe(73);
+    expect(await createLibraryStore(scratch.platform).scan()).toEqual([dinosaur]);
   });
   it('discards files moved before an interrupted marker publication on fresh launch', async () => {
     const directory = join(scratch.root, packDirectory(dinosaur));
@@ -295,20 +226,24 @@ describe('real disk pack publication and saved picture consumers', () => {
     expect(await createLibraryStore(scratch.platform).scan()).toEqual([]);
     expect(fs.existsSync(directory)).toBe(false);
   });
-  it('preserves complete packs when an actual saved JSON cannot be parsed for removal', async () => {
+  it('removes books without reading or deleting unrelated legacy picture records', async () => {
     const store = createLibraryStore(scratch.platform);
     await store.install(dinosaur, new AbortController().signal, false, () => {});
-    savedConsumer.owner = createEnabledOfflineLibrary(scratch.platform, 'full');
-    await mkdir(join(scratch.root, 'splotch-pictures'), { recursive: true });
-    await writeFile(join(scratch.root, 'splotch-pictures', 'picture-123-broken.json'), '{');
-    await savedConsumer.owner.remove(savedColoringPageIds);
-    expect(savedConsumer.owner.snapshot()).toMatchObject({
-      fault: 'corrupt',
-      message: 'A saved picture could not be checked. Your coloring books were kept.',
-    });
-    expect((await store.scan()).map((pack) => pack.id)).toEqual(['dinosaur']);
+    const original = join(scratch.root, 'splotch-pictures', 'picture-123-broken.json');
+    await mkdir(dirname(original), { recursive: true });
+    await writeFile(original, '{');
+    const read = scratch.platform.read;
+    scratch.platform.read = vi.fn((...args) => read(...args));
+    const owner = await readyLibrary();
+    await owner.remove();
+    expect(owner.snapshot()).toMatchObject({ status: 'ready', installed: [] });
+    expect(await store.scan()).toEqual([]);
+    expect(await readFile(original, 'utf8')).toBe('{');
+    expect(
+      scratch.platform.read.mock.calls.some(([path]) => path.startsWith('splotch-pictures/'))
+    ).toBe(false);
   });
-  it('rejects corrupt bytes before publication and refuses damaged retained art on reopen', async () => {
+  it('rejects corrupt bytes before publication and refuses damaged installed art on reopen', async () => {
     const store = createLibraryStore(scratch.platform);
     scratch.state.corrupt = true;
     await expect(
@@ -318,46 +253,43 @@ describe('real disk pack publication and saved picture consumers', () => {
     scratch.state.corrupt = false;
     await store.install(dinosaur, new AbortController().signal, false, () => {});
     const id = offlinePageId(dinosaur, 'trex');
-    await store.remove(async () => [id]);
     await writeFile(
       join(scratch.root, packDirectory(dinosaur), 'files', 'trex-wide.light.webp'),
       'damaged'
     );
     await expect(store.openPage(id)).rejects.toMatchObject({ code: 'corrupt' });
   });
-  it('serializes a save commit before removal calculates protected revisions', async () => {
+  it('finishes an active artwork read before removing its verified pack', async () => {
     const store = createLibraryStore(scratch.platform);
     await store.install(dinosaur, new AbortController().signal, false, () => {});
     const id = offlinePageId(dinosaur, 'trex');
     const gate = deferred();
     const entered = deferred();
-    let saved = [];
-    const saving = store.withSavedArtwork(id, async () => {
+    const verify = scratch.platform.verify;
+    scratch.platform.verify = async (...args) => {
       entered.resolve();
       await gate.promise;
-      saved = [id];
-    });
+      return verify(...args);
+    };
+    const opening = store.openPage(id);
     await entered.promise;
-    const removing = store.remove(async () => saved);
+    const removing = store.remove();
     gate.resolve();
-    await saving;
+    expect(await opening).toBeDefined();
     await removing;
-    expect(await store.openPage(id)).toBeDefined();
     expect(await store.scan()).toEqual([]);
+    await expect(store.openPage(id)).rejects.toMatchObject({ code: 'corrupt' });
   });
-  it('rejects damaged protected artwork before removing any other complete pack', async () => {
+  it('removes damaged and complete revisions without retaining unusable artwork', async () => {
     const store = createLibraryStore(scratch.platform);
     const creatures = catalogPack('creatures', 'full');
     await store.install(creatures, new AbortController().signal, false, () => {});
     await store.install(dinosaur, new AbortController().signal, false, () => {});
     await writeFile(join(scratch.root, packDirectory(dinosaur), 'identity.json'), 'corrupt');
-    await expect(store.remove(async () => [offlinePageId(dinosaur, 'trex')])).rejects.toMatchObject(
-      { code: 'corrupt' }
-    );
-    expect((await store.scan()).map((pack) => pack.id)).toEqual(['creatures']);
-    expect(fs.existsSync(join(scratch.root, packDirectory(creatures), 'installed.json'))).toBe(
-      true
-    );
+    await store.remove();
+    expect(await store.scan()).toEqual([]);
+    expect(fs.existsSync(join(scratch.root, packDirectory(creatures)))).toBe(false);
+    expect(fs.existsSync(join(scratch.root, packDirectory(dinosaur)))).toBe(false);
   });
   it('withdraws publication when cancellation arrives during the marker move', async () => {
     const store = createLibraryStore(scratch.platform);
@@ -394,15 +326,54 @@ describe('real disk pack publication and saved picture consumers', () => {
     expect(owner.snapshot().installed).toHaveLength(7);
     expect(scratch.state.downloads).toBe(518);
   });
-  it('keeps the original saved JSON unchanged when artwork cannot be reopened', async () => {
-    const id = offlinePageId(dinosaur, 'trex');
-    savedConsumer.owner = createEnabledOfflineLibrary(scratch.platform, 'full');
-    await expect(savePicture(emptyDrawing(0, id))).rejects.toMatchObject({ code: 'corrupt' });
-    expect((await readdir(scratch.root)).filter((name) => name.includes('picture'))).toEqual([]);
-  });
+});
+
+describe('the native launch library', () => {
+  it.each([
+    [{ width: 375, height: 812, scale: 2 }, 'compact'],
+    [{ width: 390, height: 844, scale: 2 }, 'full'],
+    [{ width: 390, height: 844, scale: 3 }, 'full'],
+    [{ width: 768, height: 1024, scale: 2 }, 'full'],
+    [{ width: 0, height: 0, scale: 1 }, 'full'],
+  ])(
+    'starts downloads at boot using the shipping screen tier for %j',
+    async (screen, resolution) => {
+      nativeFactory.screen = screen;
+      const owner = createLibrary();
+      owner.setFeatureEnabled(true);
+      await owner.initialize();
+      await owner.settled();
+      expect(owner.snapshot().installed).toHaveLength(7);
+      expect(owner.snapshot().installed[0]).toEqual(catalogPack('dinosaur', resolution));
+      expect(scratch.state.downloads).toBe(7 * 74);
+    }
+  );
 });
 
 describe('download controller dispositions', () => {
+  it.each(['offline', 'metered'])(
+    'queues a whole native book on %s so the OS can resume it without JavaScript',
+    async (connection) => {
+      scratch.state.online = connection !== 'offline';
+      scratch.state.metered = connection === 'metered';
+      const installPack = vi.fn(() => new Promise(() => {}));
+      const owner = createEnabledOfflineLibrary(
+        { ...scratch.platform, installPack, cancelInstallations: async () => {} },
+        'full'
+      );
+      try {
+        await owner.initialize();
+        owner.engage();
+        await vi.waitFor(() => expect(installPack).toHaveBeenCalledOnce());
+        expect(installPack.mock.calls[0][0]).toEqual(dinosaur);
+        expect(installPack.mock.calls[0][2]).toBe(false);
+        expect(scratch.state.downloads).toBe(0);
+      } finally {
+        owner.dispose();
+      }
+    }
+  );
+
   it('extends the complete catalog sequentially with seven real complete packs', async () => {
     const owner = await readyLibrary();
     owner.engage();
@@ -420,19 +391,26 @@ describe('download controller dispositions', () => {
     expect(await createLibraryStore(scratch.platform).scan()).toHaveLength(7);
     expect(owner.snapshot().fault).toBeNull();
   });
-  it('pauses on background and rejects a late native completion', async () => {
-    const owner = createEnabledOfflineLibrary(scratch.platform, 'full');
+  it('lets a native book transfer finish and publish while drawing or in the background', async () => {
+    const transferStore = createLibraryStore(scratch.platform);
+    const installPack = vi.fn((...args) => transferStore.install(...args));
+    const owner = createEnabledOfflineLibrary(
+      { ...scratch.platform, installPack, cancelInstallations: async () => {} },
+      'full'
+    );
     scratch.state.entered = deferred();
     scratch.state.gate = deferred();
     await readyLibrary(owner);
     owner.engage();
     await scratch.state.entered.promise;
+    owner.setDrawing(true);
     owner.setActive(false);
     scratch.state.gate.resolve();
     await owner.settled();
-    expect(owner.snapshot().installed).toEqual([]);
-    expect(owner.snapshot().message).toContain('background');
-    expect(await createLibraryStore(scratch.platform).scan()).toEqual([]);
+    expect(installPack).toHaveBeenCalledTimes(7);
+    expect(owner.snapshot().installed).toHaveLength(7);
+    expect(await createLibraryStore(scratch.platform).scan()).toHaveLength(7);
+    expect(owner.snapshot().fault).toBeNull();
   });
   it('serializes rapid parent policy changes and restores the final policy on relaunch', async () => {
     const owner = await readyLibrary();
@@ -488,7 +466,7 @@ describe('download controller dispositions', () => {
     await owner.settled();
     expect(owner.snapshot().installed).toEqual([]);
     expect(owner.snapshot().message).toBe(message);
-    await owner.remove(async () => []);
+    await owner.remove();
     expect(await createLibraryStore(scratch.platform).scan()).toEqual([]);
   });
   it('does not start downloads until engagement or while disabled', async () => {

@@ -1,4 +1,9 @@
-import { createFullLibrary } from './fullLibrary';
+import { createLibrary } from './createLibrary';
+import { createDeferredLibrary } from './deferredLibrary';
+import { afterDrawingPaint } from '../product/afterDrawingPaint';
 
-// The native apps carry the controller in their one bundle; runtime.web.ts defers it.
-export const offlineLibrary = createFullLibrary();
+export const offlineLibrary = createDeferredLibrary(
+  async () => createLibrary(),
+  afterDrawingPaint,
+  async () => 'resume'
+);

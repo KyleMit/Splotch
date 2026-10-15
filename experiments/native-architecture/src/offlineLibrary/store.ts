@@ -1,6 +1,5 @@
 import { OFFLINE_BOOKS } from './books.generated';
 import {
-  isOfflinePageId,
   pageReference,
   parsePack,
   type Pack,
@@ -15,6 +14,9 @@ import {
   encodeLibraryText,
   decodeLibraryText,
   requireDownloadNetwork,
+  hasBackgroundTransfers,
+  type LibraryBackgroundPlatform,
+  type LibraryFilePlatform,
   type LibraryPlatform,
 } from './contract';
 import { ART_VARIANT_SLUGS, type ArtOrientation } from '../drawing/paperSpace';
@@ -29,6 +31,7 @@ function cancelled(signal: AbortSignal) {
 class LibraryStore {
   private transaction: Promise<unknown> = Promise.resolve();
   private launchCleaned = false;
+  private readonly openedRevisions = new Set<string>();
   constructor(private readonly platform: LibraryPlatform) {}
   private serialize<T>(action: () => Promise<T>): Promise<T> {
     const next = this.transaction.then(action, action);
@@ -70,12 +73,45 @@ class LibraryStore {
   private async cleanInterruptedLaunch() {
     if (this.launchCleaned) return;
     for (const directory of await this.platform.list())
-      if (directory.startsWith('staging-')) await this.platform.remove(directory);
+      if (directory.startsWith('staging-') && !(await this.validStage(directory)))
+        await this.platform.remove(directory);
     this.launchCleaned = true;
   }
-  private async retainSuperseded(current: Pack) {
+  private async validStage(directory: string) {
+    const match = /^staging-([a-z]+)-([a-f0-9]{64})$/.exec(directory);
+    if (!match || !OFFLINE_BOOKS.some((book) => book.id === match[1])) return false;
+    try {
+      const path = `${directory}/identity.json`;
+      const identity = await this.platform.read(path, LIBRARY_TEXT_LIMIT_BYTES);
+      return (
+        identity !== null &&
+        (await this.platform.verify(path, {
+          path: '',
+          downloadPath: '',
+          bytes: identity.length,
+          sha256: match[2],
+        }))
+      );
+    } catch {
+      return false;
+    }
+  }
+  private async retireSuperseded(current: Pack) {
     for (const directory of await this.platform.list()) {
-      if (!directory.startsWith(`${current.id}-`) || directory === packDirectory(current)) continue;
+      if (directory.startsWith(`staging-${current.id}-`) && directory !== stageName(current)) {
+        await this.platform.remove(directory);
+        continue;
+      }
+      if (
+        !PACK_DIRECTORY.test(directory) ||
+        !directory.startsWith(`${current.id}-`) ||
+        directory === packDirectory(current)
+      )
+        continue;
+      if (!this.openedRevisions.has(directory)) {
+        await this.platform.remove(directory);
+        continue;
+      }
       const old = await this.validPack(directory);
       if (!old) continue;
       await this.platform.write(
@@ -107,7 +143,8 @@ class LibraryStore {
             (marker) => !marker,
             () => false
           );
-        if (unpublished && unretained) await this.platform.remove(directory);
+        if (unpublished && unretained && !hasBackgroundTransfers(this.platform))
+          await this.platform.remove(directory);
       }
     }
     return installed;
@@ -118,20 +155,14 @@ class LibraryStore {
   inventory(currentCatalog: readonly Pack[]) {
     return this.serialize(async () => {
       await this.cleanInterruptedLaunch();
-      for (const current of currentCatalog) await this.retainSuperseded(current);
+      for (const current of currentCatalog) await this.retireSuperseded(current);
       const revisions = new Set(currentCatalog.map((pack) => pack.revision));
       const installed = (await this.scanInstalled()).filter((pack) => revisions.has(pack.revision));
-      const visible = new Set(installed.map(packDirectory));
-      let retainedBytes = 0;
-      for (const directory of await this.platform.list()) {
-        if (!PACK_DIRECTORY.test(directory) || visible.has(directory)) continue;
-        const retained = await this.validPack(directory, true);
-        if (retained) retainedBytes += retained.bytes;
-      }
-      return { installed, retainedBytes };
+      return installed;
     });
   }
   private async downloadStaged(
+    platform: LibraryFilePlatform,
     pack: Pack,
     staging: string,
     signal: AbortSignal,
@@ -164,13 +195,14 @@ class LibraryStore {
         'There is not enough free space for this coloring book.'
       );
     progress(completed);
+    await this.writeIdentity(pack, staging);
     for (const file of pack.files) {
       cancelled(signal);
       if (verified.has(file.path)) continue;
       requireDownloadNetwork(await this.platform.environment(), allowMetered);
       cancelled(signal);
       const path = `${staging}/${assetName(file)}`;
-      await this.platform.download(path, file, signal, allowMetered, (bytes) => {
+      await platform.download(path, file, signal, allowMetered, (bytes) => {
         if (!signal.aborted) progress(completed + Math.min(bytes, file.bytes));
       });
       cancelled(signal);
@@ -183,6 +215,8 @@ class LibraryStore {
       progress(completed);
     }
     cancelled(signal);
+  }
+  private async writeIdentity(pack: Pack, staging: string) {
     const identity = encodeLibraryText(JSON.stringify(pack.files));
     await this.platform.write(`${staging}/identity.json`, identity);
     if (
@@ -206,7 +240,7 @@ class LibraryStore {
     }
     await this.platform.move(`${staging}/identity.json`, `${directory}/identity.json`);
     cancelled(signal);
-    await this.retainSuperseded(pack);
+    await this.retireSuperseded(pack);
     cancelled(signal);
     const marker = encodeLibraryText(JSON.stringify(pack));
     await this.platform.write(`${directory}/pending.json`, marker);
@@ -223,13 +257,16 @@ class LibraryStore {
     allowMetered: boolean,
     progress: (bytes: number) => void
   ) {
+    const platform = this.platform;
+    if (hasBackgroundTransfers(platform))
+      return this.installBackground(platform, pack, signal, allowMetered, progress);
     return this.serialize(async () => {
       cancelled(signal);
       await this.cleanInterruptedLaunch();
       const directory = packDirectory(pack);
       const already = (await this.validPack(directory)) ?? (await this.validPack(directory, true));
       if (already) {
-        await this.retainSuperseded(pack);
+        await this.retireSuperseded(pack);
         cancelled(signal);
         await this.platform.write(
           `${directory}/pending.json`,
@@ -244,13 +281,37 @@ class LibraryStore {
         return already;
       }
       const staging = stageName(pack);
+      let published = false;
       try {
-        await this.downloadStaged(pack, staging, signal, allowMetered, progress);
+        await this.downloadStaged(platform, pack, staging, signal, allowMetered, progress);
         await this.publishStaged(pack, staging, signal);
+        published = true;
         return pack;
       } finally {
-        if (!signal.aborted) await this.platform.remove(staging).catch(() => undefined);
+        if (published) await this.platform.remove(staging).catch(() => undefined);
       }
+    });
+  }
+  private async installBackground(
+    platform: LibraryBackgroundPlatform,
+    pack: Pack,
+    signal: AbortSignal,
+    allowMetered: boolean,
+    progress: (bytes: number) => void
+  ) {
+    cancelled(signal);
+    await platform.installPack(pack, signal, allowMetered, progress);
+    return this.serialize(async () => {
+      cancelled(signal);
+      const installed = await this.validPack(packDirectory(pack));
+      if (!installed)
+        throw new LibraryFault(
+          'corrupt',
+          'The coloring download did not pass verification. Try again.'
+        );
+      await this.retireSuperseded(pack);
+      progress(pack.bytes);
+      return installed;
     });
   }
   openPage(id: OfflinePageId) {
@@ -261,7 +322,7 @@ class LibraryStore {
       if (!pack)
         throw new LibraryFault(
           'corrupt',
-          'This picture’s coloring artwork is unavailable or damaged. Your saved picture is unchanged.'
+          'This picture’s coloring artwork is unavailable or damaged.'
         );
       const variant = async (orientation: ArtOrientation, dark: boolean) => {
         const basename = `${page.slug}-${ART_VARIANT_SLUGS[orientation]}`;
@@ -281,7 +342,9 @@ class LibraryStore {
         light: await variant(orientation, false),
         dark: await variant(orientation, true),
       });
-      return { landscape: await themes('landscape'), portrait: await themes('portrait') };
+      const artwork = { landscape: await themes('landscape'), portrait: await themes('portrait') };
+      this.openedRevisions.add(directory);
+      return artwork;
     });
   }
   cover(pack: Pack, dark: boolean) {
@@ -297,62 +360,18 @@ class LibraryStore {
       `${packDirectory(pack)}/files/${page}-${ART_VARIANT_SLUGS[orientation]}${dark ? '.dark' : ''}.selector.webp`
     );
   }
-  withSavedArtwork<T>(id: string, action: () => Promise<T>) {
+  remove() {
     return this.serialize(async () => {
-      if (isOfflinePageId(id)) {
-        const { book, revision } = pageReference(id);
-        const directory = `${book.id}-${revision}`;
-        if (!(await this.validPack(directory)) && !(await this.validPack(directory, true)))
-          throw new LibraryFault(
-            'corrupt',
-            'The coloring artwork could not be saved safely. Please try again.'
-          );
-      }
-      return action();
-    });
-  }
-  remove(getProtectedPages: () => Promise<readonly string[]>) {
-    return this.serialize(async () => {
-      const protectedPages = await getProtectedPages();
-      const keep = new Set(
-        protectedPages.filter(isOfflinePageId).map((id) => {
-          const { book, revision } = pageReference(id);
-          return `${book.id}-${revision}`;
-        })
-      );
-      const protectedPacks = new Map<string, Pack>();
-      for (const directory of keep) {
-        const pack = (await this.validPack(directory)) ?? (await this.validPack(directory, true));
-        if (!pack)
-          throw new LibraryFault(
-            'corrupt',
-            'Saved coloring artwork could not be checked. Your coloring books were kept.'
-          );
-        protectedPacks.set(directory, pack);
-      }
-      let retainedBytes = 0;
+      if (hasBackgroundTransfers(this.platform)) await this.platform.cancelInstallations();
       for (const directory of await this.platform.list()) {
-        if (directory.startsWith('staging-')) {
+        if (
+          directory.startsWith('staging-') ||
+          directory === 'transfers' ||
+          PACK_DIRECTORY.test(directory)
+        )
           await this.platform.remove(directory);
-          continue;
-        }
-        if (!PACK_DIRECTORY.test(directory)) continue;
-        const pack = protectedPacks.get(directory);
-        if (pack) {
-          await this.platform.write(
-            `${directory}/retained.json`,
-            encodeLibraryText(JSON.stringify(pack))
-          );
-          const marker = await this.platform.read(
-            `${directory}/installed.json`,
-            LIBRARY_TEXT_LIMIT_BYTES
-          );
-          if (marker)
-            await this.platform.move(`${directory}/installed.json`, `${directory}/withdrawn.json`);
-          retainedBytes += pack.bytes;
-        } else await this.platform.remove(directory);
       }
-      return retainedBytes;
+      this.openedRevisions.clear();
     });
   }
   dispose() {

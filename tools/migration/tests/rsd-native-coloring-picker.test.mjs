@@ -337,7 +337,7 @@ describe('the books an open picker holds', () => {
     expect(control('Space coloring book')).toBeNull();
     await act(async () => root.render(picker({ state: inventory([]) }).tree));
     expect(control('Dinosaurs coloring book')).toBeNull();
-    expect(title()).toBe('Farm');
+    expect(title()).toBe('Coloring Books');
   });
 
   it('lists downloaded books in catalog order, not the order they finished', async () => {
@@ -356,11 +356,18 @@ describe('the books an open picker holds', () => {
     await act(async () => root.render(picker({ state: inventory([dinosaurs]) }).tree));
     expect(title()).toBe('Farm');
     await act(async () => root.render(picker({ state: inventory([dinosaurs, space]) }).tree));
-    await press('Back');
-    expect(tileNames(' coloring book')).toEqual(['Farm coloring book', 'Dinosaurs coloring book']);
+    expect(control('Back')).toBeNull();
+    expect(tileNames(' coloring page')).toEqual(FARM_PAGE_NAMES);
+    await act(async () => root.render(null));
+    await act(async () => root.render(picker({ state: inventory([dinosaurs, space]) }).tree));
+    expect(tileNames(' coloring book')).toEqual([
+      'Farm coloring book',
+      'Dinosaurs coloring book',
+      'Space coloring book',
+    ]);
   });
 
-  it('holds nothing from a failed inventory or Retry’s interim ready, then lists the recovered one', async () => {
+  it('keeps a failed inventory and Retry’s recovered books out of an already open picker', async () => {
     const loading = { ...owner.snapshot(), status: 'loading', installed: [] };
     await mount(picker({ state: loading }).tree);
     for (const state of [
@@ -370,8 +377,17 @@ describe('the books an open picker holds', () => {
       await act(async () => root.render(picker({ state }).tree));
     expect(control('Back')).toBeNull();
     await act(async () => root.render(picker({ state: inventory([dinosaurs]) }).tree));
-    await press('Back');
+    expect(control('Back')).toBeNull();
+    expect(tileNames(' coloring page')).toEqual(FARM_PAGE_NAMES);
+    await act(async () => root.render(null));
+    await act(async () => root.render(picker({ state: inventory([dinosaurs]) }).tree));
     expect(control('Dinosaurs coloring book')).not.toBeNull();
+  });
+
+  it('pins the fixed opening inventory and navigation to shipping', () => {
+    const shipping = read('web/src/lib/state/coloringPicker.svelte.ts');
+    expect(shipping).toContain('shownBookIds = installed.map((book) => book.id)');
+    expect(shipping).toContain('const listsBooks = $derived(shownBookIds.length >= 2)');
   });
 });
 

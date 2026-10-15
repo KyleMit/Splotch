@@ -211,7 +211,6 @@ const files = [
   'src/platform/offlineLibrary.web.ts',
   'src/platform/offlineLibraryStorage.web.ts',
   'src/platform/offlineLibraryTransfer.web.ts',
-  'src/platform/drawingFiles.web.ts',
   'src/drawing/crayon.ts',
   'src/drawing/crayonGrain.ts',
   'src/platform/useUndoShortcut.ts',

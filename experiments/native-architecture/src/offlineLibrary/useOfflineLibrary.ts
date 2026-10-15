@@ -2,8 +2,9 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import { subscribeNetworkReturn } from '../platform/networkReturn';
 import { offlineLibrary } from './runtime';
+import { SETTLED_IN_STROKES } from '../install/installPolicy';
 
-export function useOfflineLibrary(drawing: boolean, pickerOpen: boolean) {
+export function useOfflineLibrary(drawing: boolean, pickerOpen: boolean, committedStrokes: number) {
   const snapshot = useSyncExternalStore(offlineLibrary.subscribe, offlineLibrary.snapshot);
   useEffect(() => {
     void offlineLibrary.initialize();
@@ -25,7 +26,7 @@ export function useOfflineLibrary(drawing: boolean, pickerOpen: boolean) {
     offlineLibrary.setDrawing(drawing);
   }, [drawing]);
   useEffect(() => {
-    if (pickerOpen) offlineLibrary.engage();
-  }, [pickerOpen]);
+    if (pickerOpen || committedStrokes >= SETTLED_IN_STROKES) offlineLibrary.engage();
+  }, [pickerOpen, committedStrokes]);
   return snapshot;
 }

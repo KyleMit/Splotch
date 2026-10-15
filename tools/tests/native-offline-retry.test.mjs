@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createHash } from 'node:crypto';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,7 +31,7 @@ const library = vi.hoisted(() => {
     initialize: async () => {},
     setActive: () => {},
     setDrawing: () => {},
-    engage: () => {},
+    engage: vi.fn(),
     retryStalled: vi.fn(),
   };
 });
@@ -38,8 +39,8 @@ vi.mock('../../experiments/native-architecture/src/offlineLibrary/runtime.ts', (
   offlineLibrary: library,
 }));
 
-function Probe({ drawing }) {
-  useOfflineLibrary(drawing, false);
+function Probe({ drawing, pickerOpen = false, committedStrokes = 0 }) {
+  useOfflineLibrary(drawing, pickerOpen, committedStrokes);
   return null;
 }
 
@@ -48,6 +49,7 @@ describe('the drawing screen’s ambient download retry', () => {
   beforeEach(async () => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
     library.retryStalled.mockClear();
+    library.engage.mockClear();
     root = createRoot(document.createElement('div'));
     await act(async () => root.render(createElement(Probe, { drawing: false })));
   });
@@ -62,6 +64,17 @@ describe('the drawing screen’s ambient download retry', () => {
     expect(library.retryStalled).toHaveBeenCalledOnce();
     host.networkReturn();
     expect(library.retryStalled).toHaveBeenCalledTimes(2);
+  });
+
+  it('engages downloads after three committed strokes or opening the picker', async () => {
+    expect(library.engage).not.toHaveBeenCalled();
+    await act(async () => root.render(createElement(Probe, { committedStrokes: 2 })));
+    expect(library.engage).not.toHaveBeenCalled();
+    await act(async () => root.render(createElement(Probe, { committedStrokes: 3 })));
+    expect(library.engage).toHaveBeenCalledOnce();
+    library.engage.mockClear();
+    await act(async () => root.render(createElement(Probe, { pickerOpen: true })));
+    expect(library.engage).toHaveBeenCalledOnce();
   });
 
   it('never asks because drawing stopped', async () => {
@@ -81,18 +94,39 @@ describe('the drawing screen’s ambient download retry', () => {
 // A library whose network, policy writes and transfers the test controls; a transfer that starts
 // stays pending, so its call is the evidence that a download began.
 function fakePlatform() {
-  const network = { online: true, failWrite: false };
+  const network = { online: true, failWrite: false, failRemove: false };
+  const files = new Map();
   const platform = {
     environment: async () => ({ online: network.online, metered: false, freeBytes: 1e9 }),
-    list: async () => [],
-    read: async () => null,
-    write: vi.fn(async () => {
+    list: async () => {
+      if (network.failRemove) throw new Error('Coloring storage could not be removed.');
+      return [
+        ...new Set(
+          [...files.keys()].filter((path) => path.includes('/')).map((path) => path.split('/')[0])
+        ),
+      ];
+    },
+    read: async (path) => files.get(path) ?? null,
+    write: vi.fn(async (path, bytes) => {
       if (network.failWrite) throw new Error('ENOSPC: no space left on device');
+      files.set(path, new Uint8Array(bytes));
     }),
-    move: async () => {},
-    remove: async () => {},
+    move: async (from, to) => {
+      files.set(to, files.get(from));
+      files.delete(from);
+    },
+    remove: async () => {
+      if (network.failRemove) throw new Error('Coloring storage could not be removed.');
+    },
     uri: (path) => path,
-    verify: async () => false,
+    verify: async (path, expected) => {
+      const bytes = files.get(path);
+      return (
+        bytes !== undefined &&
+        bytes.length === expected.bytes &&
+        createHash('sha256').update(bytes).digest('hex') === expected.sha256
+      );
+    },
     download: vi.fn(() => new Promise(() => {})),
     dispose() {},
   };
@@ -120,10 +154,10 @@ describe('retryStalled on the real controller', () => {
   it('keeps a failed removal’s pause through foreground and network returns', async () => {
     const { network, platform, owner } = fakePlatform();
     await owner.initialize();
-    network.failWrite = true;
-    await owner.remove(async () => []);
+    network.failRemove = true;
+    await owner.remove();
     expect(owner.snapshot()).toMatchObject({ status: 'failed', enabled: true });
-    network.failWrite = false;
+    network.failRemove = false;
     owner.engage();
     owner.retryStalled();
     await turn();

@@ -1,5 +1,12 @@
-// React Native reports no connectivity change without a network module; the app's return to the
-// foreground is the retry signal there.
-export function subscribeNetworkReturn(_listener: () => void): () => void {
-  return () => {};
+import { addNetworkStateListener } from 'expo-network';
+
+export function subscribeNetworkReturn(listener: () => void): () => void {
+  let active = true;
+  const subscription = addNetworkStateListener(({ isConnected }) => {
+    if (active && isConnected === true) listener();
+  });
+  return () => {
+    active = false;
+    subscription.remove();
+  };
 }

@@ -30,17 +30,10 @@ const sdk = vi.hoisted(() => ({
   load: true,
   imageLoads: [],
   inputs: [],
-  save: vi.fn(),
 }));
 
-// This suite observes the current drawing through its save port.
-// rsd-native-save-to-photos.test.mjs covers the live photo-library handoff.
 vi.mock('../../experiments/native-architecture/src/platform/photoLibrary.ts', () => ({
   photoLibrary: null,
-}));
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: sdk.save,
-  savedColoringPageIds: async () => [],
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(),
@@ -174,7 +167,6 @@ beforeEach(() => {
   sdk.load = true;
   sdk.hold = false;
   sdk.png = paintedPng;
-  sdk.save.mockResolvedValue(undefined);
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++sdk.next;
     sdk.frames.set(id, callback);

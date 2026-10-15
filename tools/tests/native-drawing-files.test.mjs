@@ -1,16 +1,5 @@
 import { unsavedPictureStore } from '../../experiments/native-architecture/src/platform/unsavedPictures.ts';
-import { readSavedNativePicture } from './native-saved-picture-readback.mjs';
-import { adoptedDrawing, legacyDrawing } from './native-paper-fixtures.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  emptyDrawing,
-  parseDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
-  listPictures,
-  savePicture,
-} from '../../experiments/native-architecture/src/platform/drawingFiles.ts';
 
 const filesystem = vi.hoisted(() => ({
   contents: new Map(),
@@ -92,19 +81,6 @@ vi.mock('expo-file-system', () => {
 
   return { Directory, File, Paths: { document: 'document' } };
 });
-vi.mock('expo-file-system/legacy', () => ({}));
-vi.mock('expo-sharing', () => ({}));
-
-function deferred() {
-  let resolve;
-  let reject;
-  const promise = new Promise((accept, refuse) => {
-    resolve = accept;
-    reject = refuse;
-  });
-  return { promise, resolve, reject };
-}
-
 beforeEach(() => {
   filesystem.contents.clear();
   filesystem.created.length = 0;
@@ -118,160 +94,6 @@ beforeEach(() => {
 });
 
 afterEach(() => vi.restoreAllMocks());
-
-describe('native picture save commit', () => {
-  it('saves and reopens independent actual widths through the verified file commit', async () => {
-    const drawing = {
-      ...adoptedDrawing({ width: 342, height: 256.5, pixelRatio: 3 }, 3, 'flower'),
-      strokes: [
-        { ...strokeStyle('crayon', 'Blue', emptyDrawing(3), 'thin'), points: [{ x: 200, y: 300 }] },
-        { ...strokeStyle('magic', 'Blue', emptyDrawing(3), 'thick'), points: [{ x: 300, y: 300 }] },
-        {
-          ...strokeStyle('eraser', 'Blue', emptyDrawing(3), 'thick'),
-          points: [{ x: 200, y: 300 }],
-        },
-      ],
-    };
-    const saved = await savePicture(drawing);
-    const reopened = await readSavedNativePicture(saved.id);
-    expect(reopened).toEqual(drawing);
-    expect(reopened.strokes.map(({ width }) => width)).toEqual([4, 14, 28]);
-    const stored = JSON.parse(
-      filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)
-    );
-    expect(stored.version).toBe(7);
-    expect(stored.paper).toEqual({
-      kind: 'adopted',
-      cssWidth: 342,
-      cssHeight: 256.5,
-      backingScale: 2,
-    });
-    expect(Buffer.byteLength(JSON.stringify(stored))).toBeLessThan(8 * 1024 * 1024);
-    expect(stored.strokes.map(({ width }) => width)).toEqual([4, 14, 28]);
-  });
-
-  it('keeps save pending until the asynchronous move commits the reopened picture', async () => {
-    const gate = deferred();
-    const entered = deferred();
-    filesystem.beforeMove.mockImplementation(() => {
-      entered.resolve();
-      return gate.promise;
-    });
-    let settled = false;
-    const saving = savePicture(emptyDrawing()).then((picture) => {
-      settled = true;
-      return picture;
-    });
-    try {
-      await entered.promise;
-      await Promise.resolve();
-      expect(settled).toBe(false);
-      expect(listPictures()).toEqual([]);
-    } finally {
-      gate.resolve();
-    }
-    const picture = await saving;
-    expect(await readSavedNativePicture(picture.id)).toEqual(emptyDrawing());
-    expect(listPictures().map((saved) => saved.id)).toEqual([picture.id]);
-    expect([...filesystem.contents.keys()]).toEqual([
-      `document/splotch-pictures/${picture.id}.json`,
-    ]);
-    expect(filesystem.deleted).toEqual([]);
-  });
-
-  it('reports a late move rejection and removes only its original pending file', async () => {
-    const gate = deferred();
-    const entered = deferred();
-    const error = new Error('Move refused.');
-    filesystem.beforeMove.mockImplementation(() => {
-      entered.resolve();
-      return gate.promise;
-    });
-    const saving = savePicture(emptyDrawing());
-    const outcome = saving.catch((failure) => failure);
-    await entered.promise;
-    gate.reject(error);
-    expect(await outcome).toBe(error);
-    expect(filesystem.deleted).toEqual(filesystem.created);
-    expect([...filesystem.contents.keys()]).toEqual([]);
-    expect(listPictures()).toEqual([]);
-  });
-
-  it.each(['write', 'read', 'readback', 'move'])(
-    'cleans its owned pending file after %s failure',
-    async (stage) => {
-      const committed = 'document/splotch-pictures/picture-1-existing.json';
-      const concurrent = 'document/splotch-pictures/picture-2-concurrent.pending';
-      filesystem.contents.set(committed, JSON.stringify(emptyDrawing()));
-      filesystem.contents.set(concurrent, 'another save');
-      const error = new Error(`${stage} refused.`);
-      const failures = {
-        write: () => (filesystem.writeError = error),
-        read: () => (filesystem.readError = error),
-        readback: () => (filesystem.readbackMismatch = true),
-        move: () => filesystem.beforeMove.mockRejectedValue(error),
-      };
-      failures[stage]();
-      const expected =
-        stage === 'readback'
-          ? 'The picture could not be saved completely. Please try again.'
-          : error.message;
-      await expect(savePicture(emptyDrawing())).rejects.toThrow(expected);
-      expect(filesystem.deleted).toEqual(filesystem.created);
-      expect([...filesystem.contents.keys()]).toEqual([committed, concurrent]);
-    }
-  );
-
-  it('preserves the original failure when pending cleanup also fails', async () => {
-    const error = new Error('Original write refused.');
-    filesystem.writeError = error;
-    filesystem.deleteError = new Error('Cleanup refused.');
-    await expect(savePicture(emptyDrawing())).rejects.toBe(error);
-    expect(filesystem.deleted).toEqual(filesystem.created);
-    expect([...filesystem.contents.keys()]).toEqual(filesystem.created);
-  });
-
-  it('never deletes a published JSON if a move changes the File URI before rejecting', async () => {
-    const error = new Error('Move completion refused.');
-    filesystem.afterMove.mockRejectedValue(error);
-    await expect(savePicture(emptyDrawing())).rejects.toBe(error);
-    const published = filesystem.created[0].replace(/\.pending$/, '.json');
-    expect([...filesystem.contents.keys()]).toEqual([published]);
-    expect(filesystem.contents.get(published)).toBe(JSON.stringify(emptyDrawing()));
-    expect(filesystem.deleted).toEqual([]);
-  });
-});
-
-it.each(['unadopted-ink', 'foreign-paper-key'])(
-  'refuses native save of malformed v7 %s before creating a pending file',
-  async (fault) => {
-    const drawing = adoptedDrawing({ width: 342, height: 256.5, pixelRatio: 1 });
-    drawing.strokes = [{ ...strokeStyle('pen', 'Red', drawing), points: [{ x: 200, y: 300 }] }];
-    drawing.paper =
-      fault === 'unadopted-ink' ? { kind: 'unadopted' } : { ...drawing.paper, extra: true };
-    await expect(savePicture(drawing)).rejects.toThrow();
-    expect(filesystem.created).toEqual([]);
-    expect(filesystem.contents.size).toBe(0);
-  }
-);
-
-it('reopens native legacy v5 without adding paper or rewriting its original canonical ink', async () => {
-  const drawing = {
-    ...legacyDrawing(3, 'flower'),
-    strokes: [
-      { brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [{ x: 200, y: 300 }] },
-    ],
-  };
-  const before = JSON.stringify(drawing);
-  const saved = await savePicture(drawing);
-  const reopened = await readSavedNativePicture(saved.id);
-  expect(reopened).toEqual(drawing);
-  expect(Object.hasOwn(reopened, 'paper')).toBe(false);
-  expect(filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)).toBe(
-    JSON.stringify(parseDrawing(drawing))
-  );
-  expect(JSON.stringify(drawing)).toBe(before);
-});
 
 describe('durable unsaved pictures on native', () => {
   const held = [{ pngBase64: 'exact-captured-png', outcome: 'denied' }];

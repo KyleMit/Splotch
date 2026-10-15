@@ -45,10 +45,6 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  savePicture: vi.fn(),
-  listPictures: async () => [],
-}));
 vi.mock('react-native', () => {
   const View = forwardRef(({ children }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(...sdk.frame) }));
