@@ -155,15 +155,19 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
     check(read(name) == null)
     true
   }
-  @ReactMethod fun decodeImage(base64: String, mime: String, width: Double, height: Double, promise: Promise) {
+  @ReactMethod fun decodeImage(base64: String, mime: String, width: Double, height: Double, purpose: String, promise: Promise) {
     try {
       synchronized(this) {
         check(width.isFinite() && height.isFinite() && width == width.toInt().toDouble() && height == height.toInt().toDouble())
-        check(width >= 1 && height >= 1 && width <= SplotchAIImageDecoder.maxImageDimension && height <= SplotchAIImageDecoder.maxImageDimension && width * height <= SplotchAIImageDecoder.maxImagePixels)
+        check(purpose == "result" || purpose == "original")
+        check(purpose != "original" || mime == "image/png")
+        val maxPixels = if (purpose == "original") SplotchAIImageDecoder.maxOriginalPixels else SplotchAIImageDecoder.maxImagePixels
+        val maxDimension = if (purpose == "original") maxPixels else SplotchAIImageDecoder.maxImageDimension
+        check(width >= 1 && height >= 1 && width <= maxDimension && height <= maxDimension && width * height <= maxPixels)
         check(base64.length <= ((SplotchAIImageDecoder.maxImageBytes + 2) / 3) * 4)
         val bytes = Base64.decode(base64, Base64.NO_WRAP)
         check(Base64.encodeToString(bytes, Base64.NO_WRAP) == base64)
-        val dimensions = SplotchAIImageDecoder.decode(bytes, mime)
+        val dimensions = if (purpose == "original") SplotchAIImageDecoder.decodeOriginal(bytes) else SplotchAIImageDecoder.decode(bytes, mime)
         check(dimensions.first == width.toInt() && dimensions.second == height.toInt())
         promise.resolve(Arguments.createMap().apply { putInt("width", dimensions.first); putInt("height", dimensions.second) })
       }
@@ -176,7 +180,7 @@ internal object SplotchAIImageDecoder {
   const val maxImageBytes = 16 * 1024 * 1024
   const val maxImageDimension = 4096
   const val maxImagePixels = 4 * 1024 * 1024
-  private const val maxDecodedBytes = maxImagePixels * 4
+  const val maxOriginalPixels = 16 * 1024 * 1024
   private const val maxPngChunks = 4096
   private const val maxJpegSegments = 1024
   private const val maxWebpChunks = 8
@@ -258,13 +262,16 @@ internal object SplotchAIImageDecoder {
       decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
       decoder.setOnPartialImageListener { false }
     }
-  fun decode(bytes: ByteArray, mime: String): Pair<Int, Int> {
+  fun decode(bytes: ByteArray, mime: String): Pair<Int, Int> = decode(bytes, mime, maxImagePixels, maxImageDimension)
+  fun decodeOriginal(bytes: ByteArray): Pair<Int, Int> = decode(bytes, "image/png", maxOriginalPixels, maxOriginalPixels)
+  private fun decode(bytes: ByteArray, mime: String, pixelLimit: Int, dimensionLimit: Int): Pair<Int, Int> {
+    val maxDecodedBytes = pixelLimit * 4
     check(bytes.isNotEmpty() && bytes.size <= maxImageBytes)
     structure(bytes, mime)
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
     val width = bounds.outWidth; val height = bounds.outHeight
-    check(width in 1..maxImageDimension && height in 1..maxImageDimension && width.toLong() * height <= maxImagePixels && bounds.outMimeType == mime)
+    check(width in 1..dimensionLimit && height in 1..dimensionLimit && width.toLong() * height <= pixelLimit && bounds.outMimeType == mime)
     check(Build.VERSION.SDK_INT >= 28 || mime != "image/webp")
     val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888; inSampleSize = 1; inScaled = false }
     val bitmap = if (Build.VERSION.SDK_INT >= 28) completeBitmap(bytes, mime, width, height)

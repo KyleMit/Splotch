@@ -14,6 +14,15 @@ import {
   FREE_LIMIT,
 } from '../../experiments/native-architecture/src/ai/contract.ts';
 import { readFileSync } from 'node:fs';
+import { AI_UNFINISHED_MESSAGE } from '../../web/src/lib/ai/generationFailures.ts';
+import {
+  FREE_DAILY_LIMIT_EXHAUSTED_CODE,
+  FREE_GRANT_EXHAUSTED_CODE,
+  GENERATION_UNAVAILABLE_CODE,
+  THROTTLED_STATUS,
+} from '../../web/src/lib/ai/generationResult.ts';
+vi.mock('$lib/ai/generationResult', async () => import('../../web/src/lib/ai/generationResult.ts'));
+const { readAiImageResponse } = await import('../../web/src/lib/drawing/aiImageResponse.ts');
 const signal = () => new AbortController().signal;
 const start = { path: '/api/generate-image', method: 'POST', headers: {} };
 const poll = { ...start, path: '/api/generation-result', method: 'GET' };
@@ -34,16 +43,19 @@ describe('strict native hosted AI contract', () => {
     ['not-a-job', 3000],
     ['a'.repeat(64), -1],
     ['a'.repeat(64), Infinity],
-  ])('refuses a malformed start ticket %s', async (jobId, pollAfterMs) => {
-    await expect(
-      parseAiResponse(
-        new Response(JSON.stringify({ ok: true, jobId, pollAfterMs }), { status: 202 }),
-        start,
-        signal(),
-        0
-      )
-    ).rejects.toThrow();
-  });
+  ])(
+    'reads a malformed start ticket %s as a picture that did not finish, as shipping does',
+    async (jobId, pollAfterMs) => {
+      expect(
+        await parseAiResponse(
+          new Response(JSON.stringify({ ok: true, jobId, pollAfterMs }), { status: 202 }),
+          start,
+          signal(),
+          0
+        )
+      ).toMatchObject({ kind: 'failure', reason: 'server', detail: AI_UNFINISHED_MESSAGE });
+    }
+  );
   it('distinguishes empty pending polls and unavailable job reads from malformed starts', async () => {
     expect(await parseAiResponse(new Response(null, { status: 202 }), poll, signal(), 0)).toEqual({
       kind: 'pending',
@@ -59,9 +71,9 @@ describe('strict native hosted AI contract', () => {
         0
       )
     ).toEqual({ kind: 'pending', delayMs: 3000 });
-    await expect(
-      parseAiResponse(new Response(null, { status: 202 }), start, signal(), 0)
-    ).rejects.toThrow();
+    expect(
+      await parseAiResponse(new Response(null, { status: 202 }), start, signal(), 0)
+    ).toMatchObject({ kind: 'failure', reason: 'server' });
   });
   it('cancels the stream at the first chunk over the cap without buffering its tail', async () => {
     const cancel = vi.fn();
@@ -141,4 +153,64 @@ it('pins native secure owner semantics and the namespaced app pseudonym without 
   expect(kotlin).toContain('AES/GCM/NoPadding');
   expect(swift).toContain('kSecAttrAccessibleWhenUnlockedThisDeviceOnly');
   expect(swift).toContain('kSecAttrSynchronizable as String: false');
+});
+
+// What the child is shown next, in both apps' terms: shipping's readAiImageResponse plus
+// generateAiImage's handling of each kind, and the native reply plus its generation owner's.
+function shippingOutcome(response, polling) {
+  switch (response.kind) {
+    case 'pending':
+      return polling ? 'wait' : 'retry';
+    case 'throttled':
+      return polling ? 'wait' : 'retry';
+    case 'free-exhausted':
+    case 'free-unavailable':
+      return 'setup';
+    case 'error':
+      return 'retry';
+    default:
+      return response.kind;
+  }
+}
+function nativeOutcome(reply) {
+  if (reply.kind === 'pending') return 'wait';
+  if (reply.kind !== 'failure') return reply.kind;
+  if (reply.reason === 'exhausted' || reply.reason === 'unavailable') return 'setup';
+  return reply.reason === 'safety' ? 'safety' : 'retry';
+}
+const failure = (status, body) => () =>
+  new Response(typeof body === 'string' ? body : JSON.stringify({ ok: false, ...body }), {
+    status,
+    headers: { 'Retry-After': '5' },
+  });
+it.each([
+  ['a bare platform 502', failure(502, '<html>Bad gateway</html>')],
+  ['a 502 with the server error', failure(502, { error: 'Upstream down' })],
+  ['a 504 with no body', failure(504, '')],
+  ['a plain 503', failure(503, { error: 'Busy' })],
+  ['a 429 throttle', failure(429, { error: 'Slow down' })],
+  ['a 422 refusal', failure(422, { error: 'Refused' })],
+  ['a 400', failure(400, { error: 'Bad request' })],
+  ['a 404', failure(404, { error: 'Gone' })],
+  [
+    'an exhausted grant',
+    failure(403, { code: FREE_GRANT_EXHAUSTED_CODE, error: 'Used up', remaining: 0 }),
+  ],
+  [
+    'a closed free day',
+    failure(503, { code: FREE_DAILY_LIMIT_EXHAUSTED_CODE, error: 'Not today' }),
+  ],
+  ['an unreadable job', failure(503, { code: GENERATION_UNAVAILABLE_CODE, error: 'Not now' })],
+])('answers %s as shipping does, on a start and on a poll', async (_, reply) => {
+  for (const request of [start, poll]) {
+    const polling = request === poll;
+    const shipping = await readAiImageResponse(reply());
+    const native = await parseAiResponse(reply(), request, signal(), 0);
+    expect(nativeOutcome(native)).toBe(shippingOutcome(shipping, polling));
+    const reported =
+      !polling && (shipping.kind === 'error' || shipping.kind === 'throttled')
+        ? { status: shipping.status ?? THROTTLED_STATUS, detail: shipping.detail }
+        : null;
+    expect(reported && { status: native.status, detail: native.detail }).toEqual(reported);
+  }
 });

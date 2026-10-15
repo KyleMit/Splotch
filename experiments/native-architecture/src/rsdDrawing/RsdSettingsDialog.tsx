@@ -200,7 +200,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
             if (section === 'whatsnew') onWhatsNewSeen();
           }}
           locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
-          landing={unlocked ? 'parentCenter' : null}
+          landing={unlocked ? 'parentCenter' : props.initialSection}
           onUnlock={props.parentCenter.onUnlock}
         >
           {status}

@@ -61,6 +61,18 @@ it('sends only the selected upload bytes when the input shares a larger backing 
   expect([...new Uint8Array(await options.body.arrayBuffer())]).toEqual([1, 2, 3]);
   expect(options).toMatchObject({ credentials: 'omit', redirect: 'error', signal });
 });
+it('admits a tablet original at capture resolution while retaining the remote-result budget', async () => {
+  const width = 2564;
+  const height = 2048;
+  const png = rgbaPng(width, height, 255);
+  decode.mockImplementation(async () => {
+    picture.naturalWidth = width;
+    picture.naturalHeight = height;
+  });
+  await expect(admitAiImage(png, 'image/png', 'original')).resolves.toBeUndefined();
+  await expect(admitAiImage(png, 'image/png')).rejects.toThrow();
+});
+
 it('rejects browser decode failure and releases its temporary picture', async () => {
   decode.mockRejectedValue(new Error('decode failed'));
   await expect(admitAiImage(rgbaPng(2, 2, 255), 'image/png')).rejects.toThrow('decode failed');

@@ -9,8 +9,7 @@ import {
 import { credentialHeaders, maskSecret, validCredential, type AiCredential } from './credentials';
 import { AI_THROTTLED_MESSAGE, requestAi } from './transport';
 import { credentialRefusal, type AiCredentialOutcome } from './credentialResult';
-import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
-import type { ParentProof } from '../parentCenter/parentPolicy';
+import type { AiJournal } from './journal';
 import { createAiReportOwner } from './reportOwner';
 import type { AiProblemReport } from './problemReport';
 import type { AiReportTarget } from './reportContract';
@@ -53,20 +52,14 @@ export class AiSession {
   protected recoveryUncertain = false;
   protected timer: ReturnType<typeof setTimeout> | null = null;
   protected journals = new Map<number, AiJournal>();
-  protected ambiguous = new Set<number>();
   protected credential: AiCredential | null = null;
   protected active = false;
   protected pollStarted = 0;
   protected authorization = 0;
-  private parentProof: ParentProof | null = null;
   private consentEpoch = -1;
   protected consented = () => {
     const consent = this.deps.parent?.consent();
-    return (
-      !this.disposed &&
-      (!consent ||
-        (consent.enabled && consent.epoch === this.consentEpoch && !!this.parentProof?.valid()))
-    );
+    return !this.disposed && (!consent || (consent.enabled && consent.epoch === this.consentEpoch));
   };
   protected protect = (action: () => void) => {
     const parent = this.deps.parent;
@@ -77,7 +70,6 @@ export class AiSession {
     if (!parent.consent().enabled) return;
     parent.request('ai', (proof) => {
       if (!proof.valid() || !parent.consent().enabled || this.disposed) return;
-      this.parentProof = proof;
       this.consentEpoch = parent.consent().epoch;
       this.authorization += 1;
       this.update({ authorized: true });
@@ -303,60 +295,15 @@ export class AiSession {
     this.resultCount += 1;
     this.update({ credentialResult: { id: this.resultCount, ...result } });
   };
-  private holdRecovery = (receipt: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt) => {
-    this.recoveryUncertain = receipt.kind === 'recovery-request';
-    this.credential = null;
-    this.update({
-      recovery: receipt,
-      heldResult: receipt.journal.result,
-      journal: null,
-      credential: 'unavailable',
-      remaining: null,
-      message:
-        'A saved recovery request is held. Recovery sending is unavailable. Your original stays saved.',
-    });
-  };
   protected load = async () => {
     if (!this.consented() || this.active || this.state.retryAt > Date.now()) return;
-    const proof = this.authorization;
-    const permitted = () =>
-      this.state.authorized && proof === this.authorization && !this.disposed && this.consented();
     this.active = true;
     this.update({
       busy: true,
       message: '',
     });
     try {
-      {
-        const stored = await this.deps.storage.read();
-        if (!permitted()) return;
-        this.recoveryUncertain = false;
-        if (stored?.kind === 'recovery-held' || stored?.kind === 'recovery-request') {
-          this.holdRecovery(stored.receipt);
-          return;
-        }
-        const journal =
-          stored === null
-            ? null
-            : stored.kind === 'native'
-              ? stored.receipt.journal
-              : stored.journal;
-        this.update({
-          journal,
-          refusal: this.state.refusal?.id === journal?.id ? this.state.refusal : null,
-        });
-        if (journal) this.journals.set(journal.id, journal);
-      }
       await this.refreshCredential();
-      if (!permitted()) return;
-      const pictures = await this.deps.storage.pictures();
-      if (!permitted()) return;
-      this.update({ pictures });
-      if (this.state.journal?.phase === 'sent')
-        await this.persist({
-          ...this.state.journal,
-          phase: 'unknown',
-        });
     } catch {
       this.update({
         credential: 'unavailable',
@@ -370,6 +317,9 @@ export class AiSession {
       });
     }
   };
+  // The drawing the current run sent, which Try again sends again as shipping's retry does, rather
+  // than the canvas as it is by then. A picture that arrives, or a closed card, ends the run.
+  protected runDrawing: PreparedAiDrawing | null = null;
   protected heldBytes: {
     id: number;
     bytes: Uint8Array;
@@ -452,15 +402,17 @@ export class AiSession {
     this.reports.cancel();
     this.problems?.reset();
     this.authorization += 1;
-    this.parentProof = null;
     this.deps.parent?.cancel('ai');
     this.gate.dismiss();
+    this.runDrawing = null;
     this.update({
       open: false,
       minimized: false,
       authorized: false,
       view: 'prompt',
       attempt: null,
+      failures: 0,
+      failure: null,
     });
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
@@ -492,7 +444,6 @@ export class AiSession {
   dispose = () => {
     this.reports.dispose();
     this.authorization += 1;
-    this.parentProof = null;
     this.deps.parent?.cancel('ai');
     this.disposed = true;
     this.gate.dismiss();

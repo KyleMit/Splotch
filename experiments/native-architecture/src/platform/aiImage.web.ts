@@ -1,8 +1,11 @@
-import { resultImageGrid, type AiImageAdmission } from '../ai/imageAdmission';
+import { originalImageGrid, resultImageGrid, type AiImageAdmission } from '../ai/imageAdmission';
 import { AI_IMAGE_DECODE_TIMEOUT_MS, invalidImage } from '../ai/imageBounds';
 
-export const admitAiImage: AiImageAdmission = async (bytes, mime) => {
-  const grid = await resultImageGrid(bytes, mime, () => true);
+export const admitAiImage: AiImageAdmission = async (bytes, mime, purpose = 'result') => {
+  if (purpose === 'original' && mime !== 'image/png') invalidImage();
+  const grid = await (purpose === 'original'
+    ? originalImageGrid(bytes, () => true)
+    : resultImageGrid(bytes, mime, () => true));
   const picture = new Image();
   const uri = URL.createObjectURL(new Blob([new Uint8Array(bytes).buffer], { type: mime }));
   let timer: ReturnType<typeof setTimeout> | undefined;

@@ -521,7 +521,7 @@ final class SplotchAIJournal {
     let original = try read(source.appendingPathComponent("original.bin"), maxModel)
     let upload = try read(source.appendingPathComponent("upload.bin"), maxUpload)
     try originalModel(original, false)
-    _ = try SplotchAIImageDecoder.decode(upload, "image/png")
+    _ = try SplotchAIImageDecoder.decodeOriginal(upload)
     try quota(root, original.count + upload.count + maxResult + maxJournal * 2)
     var entropy = [UInt8](repeating: 0, count: 32)
     try checked(SecRandomCopyBytes(kSecRandomDefault, entropy.count, &entropy) == errSecSuccess)
@@ -664,6 +664,11 @@ final class SplotchAIJournal {
     r["state"] = "acknowledged"; var next = value; next["recovery"] = r
     return try publishRequest(root, dir, value, next)
   }
+  // A new plain run replaces saved attempts, including a run abandoned by another process.
+  private func dropPreviousAttempts(_ root: URL, _ all: [URL]) throws {
+    for dir in all { try FileManager.default.removeItem(at: dir) }
+    try fence(root)
+  }
   private func confirmedAttempts(_ root: URL) throws -> [[String: Any]] {
     let values = try attempts(root).map { try confirm($0, latest($0)) }
     if try values.contains(where: { try integer($0, "schema") == 3 }) {
@@ -694,7 +699,7 @@ final class SplotchAIJournal {
         let bytes = try read(dir.appendingPathComponent("upload.bin"), maxUpload)
         let meta = try object(value["upload"])
         try checked(integer(meta, "bytes") == bytes.count && string(meta, "sha256") == hash(bytes))
-        _ = try SplotchAIImageDecoder.decode(bytes, "image/png")
+        _ = try SplotchAIImageDecoder.decodeOriginal(bytes)
         try checked(same(confirm(dir, latest(dir)), value))
         return ["receipt": try receipt(value), "upload": bytes.base64EncodedString()]
       }
@@ -734,8 +739,9 @@ final class SplotchAIJournal {
         try checked(["free", "managed", "byok"].contains(string(credential, "kind")) && matches(string(credential, "reference"), "[a-f0-9]{64}"))
       }
       let all = try attempts(root)
-      try checked(all.count < maxAttempts)
-      for dir in all { try checked(!unresolved(latest(dir))) }
+      if kind == "prepare" { try dropPreviousAttempts(root, all) }
+      else { for dir in all { try checked(!unresolved(latest(dir))) } }
+      try checked(try attempts(root).count < maxAttempts)
       let original = Data(try string(input, "originalModel").utf8)
       try originalModel(original, kind == "importLegacy")
       let upload = kind != "importLegacy" ? try decode(input, "upload", maxUpload) : nil

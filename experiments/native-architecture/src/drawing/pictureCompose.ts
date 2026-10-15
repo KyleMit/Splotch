@@ -51,14 +51,18 @@ function release(...instances: Array<SkJSIInstance<string> | null>) {
 
 // The shipping export compositor's stack (exportCompositor.ts): the paper color, the grain tiled
 // one texel per CSS pixel, then the captured ink and line art stretched onto the saved grid.
-export async function composePicture(layerBase64: string, picture: PictureExport) {
+export async function composePicture(
+  layerBase64: string,
+  picture: PictureExport,
+  includePaperTexture = true
+) {
   const layer = decode(Skia.Data.fromBase64(layerBase64));
   const { width, height } = picture.size;
   const surface = Skia.Surface.Make(width, height);
   const paint = Skia.Paint();
   try {
     if (!surface) throw new Error('Picture export is unavailable.');
-    const texture = await loadGrain();
+    const texture = includePaperTexture ? await loadGrain() : null;
     const canvas = surface.getCanvas();
     canvas.drawColor(Skia.Color(picture.paper));
     if (texture) {

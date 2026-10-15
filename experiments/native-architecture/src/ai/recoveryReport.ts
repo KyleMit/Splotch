@@ -124,7 +124,7 @@ export async function prepareRecoveryReport(
     return null;
   await verifyRecoveryRequestIdentity(receipt);
   if (!valid()) return null;
-  await reportWait(admit(original, 'image/png'), signal);
+  await reportWait(admit(original, 'image/png', 'original'), signal);
   if (!valid()) return null;
   const reference = Object.freeze({ ...receipt.recovery.credential });
   const credential = await reportWait(vault.readReferenced(reference), signal);

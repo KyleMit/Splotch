@@ -1,5 +1,14 @@
 import { createElement, forwardRef, useRef } from 'react';
 
+export function pressNative(props) {
+  props.onPress?.({ nativeEvent: {} });
+  if (props.onStartShouldSetResponder?.()) props.onResponderRelease?.({ nativeEvent: {} });
+}
+
+export function imagePort(View) {
+  return Object.assign(View, { getSize: (_uri, done) => queueMicrotask(() => done(1024, 768)) });
+}
+
 // A synchronous stand-in for React Native's Animated: every timing lands on its
 // target at once and loops never tick, so mounted RSD tests observe end states.
 class Value {
