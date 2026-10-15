@@ -28,16 +28,18 @@ import {
   subresourceIntegrity,
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
+import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
 export const MAX_NATIVE_WEB_PRECACHE_BYTES = MAX_PWA_PRECACHE_BYTES;
-// Served by the export but never fetched by the page: the worker itself, Expo's build-identity
-// file and the host's not-found answer.
+// The version endpoint must reach the network; the worker, build identity and host's not-found
+// answer are not page assets.
 const UNFETCHED_EXPORT_FILES = new Set([
   NATIVE_WEB_SERVICE_WORKER,
   'metadata.json',
   NOT_FOUND_FILE,
+  VERSION_JSON_FILENAME,
 ]);
 const OUTLINE_PATH_DATA = /\bd: '([^']+)'/;
 const JSON_STRING = '"(?:\\\\.|[^"\\\\])*"';

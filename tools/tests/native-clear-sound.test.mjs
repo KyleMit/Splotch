@@ -52,6 +52,22 @@ afterEach(() => {
 });
 
 describe('native clear page-turn owner', () => {
+  it('preloads an allowed page turn without playing before a clear', async () => {
+    const fixture = loader();
+    const sound = createClearSound(fixture.load);
+    sound.prepare();
+    expect(fixture.load).not.toHaveBeenCalled();
+    sound.setEnabled(true);
+    sound.prepare();
+    sound.prepare();
+    expect(fixture.load).toHaveBeenCalledOnce();
+    await fixture.arrive();
+    await Promise.resolve();
+    expect(fixture.turn.play).not.toHaveBeenCalled();
+    sound.commit();
+    expect(fixture.turn.play).toHaveBeenCalledExactlyOnceWith(1);
+    sound.dispose();
+  });
   it('plays once per commit at the gain of its volume', async () => {
     const fixture = loader();
     const sound = createClearSound(fixture.load);
@@ -170,6 +186,7 @@ describe('native page-turn player', () => {
     const pending = loadClearPageTurn(signal);
     await vi.waitFor(() => expect(player.listener).not.toBeNull());
     expect(audio.mode).toHaveBeenCalledExactlyOnceWith(PLAYBACK_AUDIO_MODE);
+    expect(audio.mode).toHaveBeenCalledWith(expect.objectContaining({ playsInSilentMode: false }));
     player.listener({ isLoaded: true, error: null });
     const turn = await pending;
     turn.play(2);

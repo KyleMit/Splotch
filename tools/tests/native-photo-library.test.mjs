@@ -43,36 +43,78 @@ describe('native photo library save', () => {
     expect(photos.created).toHaveLength(1);
     const [{ via, filePath, album, base64 }] = photos.created;
     expect(via).toBe('Asset.create');
-    expect(filePath).toMatch(/^cache\/splotch-photo-library-v1\/splotch-[\d_-]+\.png$/);
+    expect(filePath).toMatch(/^cache\/splotch-photo-library-v1\/[\da-z_-]+\.png$/);
     expect(album).toBeUndefined();
     expect(base64).toBe(PNG);
     expect(photos.deleted).toEqual([filePath]);
     expect(photos.files.size).toBe(0);
   });
 
-  it('files an Android 11+ picture in the shipping Splotch album', async () => {
-    photos.os = 'android';
-    photos.androidApi = 30;
-    expect(await photoLibrary.save(PNG)).toBe('photos');
-    expect(photos.permissionRequests).toEqual([[true]]);
-    expect(photos.created).toEqual([
-      expect.objectContaining({ via: 'Album.create', album: 'Splotch', base64: PNG }),
-    ]);
-    expect(photos.files.size).toBe(0);
-  });
+  it.each([24, 28, 29, 30, 35])(
+    'files an Android API%s picture through the shipping-compatible gallery writer',
+    async (api) => {
+      photos.os = 'android';
+      photos.androidApi = api;
+      expect(await photoLibrary.save(PNG)).toBe('photos');
+      expect(photos.permissionRequests).toEqual([]);
+      expect(photos.created).toEqual([
+        expect.objectContaining({
+          via: 'SplotchPhotoLibrary.save',
+          album: 'Splotch',
+          base64: PNG,
+          mime: 'image/png',
+          displayName: expect.stringMatching(/^splotch-.*\.png$/),
+        }),
+      ]);
+      expect(photos.files.size).toBe(0);
+    }
+  );
 
-  it('reports Android 10 and below as unavailable without asking or writing', async () => {
+  it('reports a missing native gallery writer without losing a staged picture', async () => {
     photos.os = 'android';
-    photos.androidApi = 29;
+    photos.nativeAvailable = false;
     expect(await photoLibrary.save(PNG)).toBe('unavailable');
     expect(photos.permissionRequests).toEqual([]);
     expect(photos.created).toEqual([]);
     expect(photos.files.size).toBe(0);
-    // No copy stays inside the app, so a gallery this app cannot write to is a failed save.
     expect(nativeSaveFailureCopy('unavailable', 0, 'android')).toEqual({
       heading: saveFailureCopy('failed', 0, 'android').heading,
       detail: UNAVAILABLE_DETAIL,
     });
+  });
+
+  it.each(['denied', 'failed'])(
+    'retains the native Android %s outcome and removes staging',
+    async (outcome) => {
+      photos.os = 'android';
+      photos.nativeOutcome = outcome;
+      expect(await photoLibrary.save(PNG)).toBe(outcome);
+      expect(photos.created).toHaveLength(1);
+      expect(photos.files.size).toBe(0);
+    }
+  );
+
+  it('rejects an unrecognized native gallery outcome and removes staging', async () => {
+    photos.os = 'android';
+    photos.nativeOutcome = 'saved-maybe';
+    expect(await photoLibrary.save(PNG)).toBe('failed');
+    expect(photos.files.size).toBe(0);
+  });
+
+  it('keeps concurrent same-second Android saves in distinct staging files', async () => {
+    photos.os = 'android';
+    const reads = [];
+    photos.beforeNativeRead = () => new Promise((resolve) => reads.push(resolve));
+    const first = photoLibrary.save(PNG);
+    const secondBytes = btoa('second picture');
+    const second = photoLibrary.save(secondBytes);
+    await vi.waitFor(() => expect(reads).toHaveLength(2));
+    expect(photos.files.size).toBe(2);
+    for (const read of reads) read();
+    expect(await Promise.all([first, second])).toEqual(['photos', 'photos']);
+    expect(photos.created.map(({ base64 }) => base64)).toEqual([PNG, secondBytes]);
+    expect(new Set(photos.created.map(({ filePath }) => filePath)).size).toBe(2);
+    expect(photos.files.size).toBe(0);
   });
 
   it('reports a refused permission as denied without writing anything', async () => {
@@ -99,6 +141,21 @@ describe('shipping parity', () => {
     const plugin = read('android/app/src/main/java/art/splotch/app/PhotoLibraryPlugin.java');
     expect(plugin).toContain('Environment.DIRECTORY_PICTURES + File.separator + ALBUM_NAME');
     expect(plugin.match(/String ALBUM_NAME = "([^"]+)";/)?.[1]).toBe(ANDROID_ALBUM_NAME);
+    const native = read(
+      'experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchPhotoLibrary.kt'
+    );
+    expect(native.match(/const val ALBUM_NAME = "([^"]+)"/)?.[1]).toBe(ANDROID_ALBUM_NAME);
+    const stagedDirectory = read(
+      'experiments/native-architecture/src/platform/photoLibrary.ts'
+    ).match(/const STAGING_DIRECTORY = '([^']+)'/)?.[1];
+    expect(native.match(/const val STAGING_DIRECTORY = "([^"]+)"/)?.[1]).toBe(stagedDirectory);
+    expect(native).toContain('Environment.DIRECTORY_PICTURES + File.separator + ALBUM_NAME');
+    expect(native).toContain('Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q');
+    expect(native).toContain('MediaStore.MediaColumns.IS_PENDING, 1');
+    expect(native).toContain('MediaStore.MediaColumns.IS_PENDING, 0');
+    expect(native).toContain('resolver.delete(item, null, null)');
+    expect(native).toContain('context.externalMediaDirs.firstOrNull()');
+    expect(plugin).toContain('getContext().getExternalMediaDirs()');
   });
 
   // Every outcome shipping words, for no held picture, one, several and the held limit, on each

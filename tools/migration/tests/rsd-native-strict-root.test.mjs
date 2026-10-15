@@ -99,7 +99,7 @@ it(
         strokes: 1,
         undo: 0,
         settings: 'ready',
-        listeners: { appState: 2, back: 0, dimensions: 1 },
+        listeners: { appState: 3, back: 0, dimensions: 1 },
       },
       drawn: { strokes: 2, draftWrites: 1, draftStrokes: 2 },
       chosen: { settingsWrites: 1, soundEnabled: false },

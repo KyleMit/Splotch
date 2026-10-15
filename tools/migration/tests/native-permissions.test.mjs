@@ -28,26 +28,38 @@ function permissions(source) {
 }
 
 describe('Android manifest permissions', () => {
-  it('requests only network access and removes the storage and media read grants', () => {
+  it('requests network access and shipping legacy writes while removing media read grants', () => {
     expect(manifest).toContain('xmlns:tools="http://schemas.android.com/tools"');
     expect(permissions(manifest)).toEqual([
       { name: 'android.permission.INTERNET', removed: false, limited: false },
       { name: 'android.permission.ACCESS_NETWORK_STATE', removed: false, limited: false },
       { name: 'android.permission.READ_EXTERNAL_STORAGE', removed: true, limited: false },
-      { name: 'android.permission.WRITE_EXTERNAL_STORAGE', removed: true, limited: false },
+      { name: 'android.permission.WRITE_EXTERNAL_STORAGE', removed: false, limited: true },
       { name: 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED', removed: true, limited: false },
     ]);
   });
 
-  // Saving to the photo library inserts into MediaStore, which needs no permission on API 30+,
-  // so every permission expo-media-library's own manifest would merge in is removed.
-  it('removes every permission expo-media-library declares', () => {
+  it('limits the legacy write grant to shipping API28 and removes every other media permission', () => {
     const declared = permissions(mediaLibraryManifest).map(({ name }) => name);
     expect(declared).toContain('android.permission.READ_EXTERNAL_STORAGE');
     const removed = permissions(manifest)
       .filter((permission) => permission.removed)
       .map(({ name }) => name);
-    expect(removed).toEqual(expect.arrayContaining(declared));
+    expect(removed).toEqual(
+      expect.arrayContaining(
+        declared.filter((name) => name !== 'android.permission.WRITE_EXTERNAL_STORAGE')
+      )
+    );
+    const writeVersion = (source) =>
+      source.match(
+        /<uses-permission\b[^>]*android:name="android.permission.WRITE_EXTERNAL_STORAGE"[^>]*android:maxSdkVersion="(\d+)"[^>]*\/>/
+      )?.[1];
+    const shipping = readFileSync(
+      new URL('../../../android/app/src/main/AndroidManifest.xml', import.meta.url),
+      'utf8'
+    );
+    expect(writeVersion(shipping)).toBe('28');
+    expect(writeVersion(manifest)).toBe(writeVersion(shipping));
   });
 
   it('allows no cleartext traffic or package visibility queries', () => {

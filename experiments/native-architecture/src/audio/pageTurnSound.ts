@@ -12,8 +12,7 @@ type Resource =
   | { status: 'loading'; request: AbortController }
   | { status: 'ready'; turn: ClearPageTurn };
 
-// The page turn that closes a committed clear. The clip loads when a drag begins, as the shipping
-// gesture does, so a release usually finds it ready; a commit that beats the load plays it the
+// The page turn that closes a committed clear. A commit that beats the load plays it the
 // moment it arrives. A failed load is silent and retried by the next gesture: the sound is polish,
 // never a reason for Clear to fail.
 export function createClearSound(load: ClearPageTurnLoader) {
@@ -63,6 +62,7 @@ export function createClearSound(load: ClearPageTurnLoader) {
   }
 
   return {
+    prepare,
     start() {
       requested = false;
       prepare();

@@ -45,6 +45,7 @@ import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
 import { useParentGateHold, type ParentGateView } from '../parentCenter/useParentGateHold';
+import { usePWAUpdates } from '../platform/serviceWorker';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -58,6 +59,10 @@ function useSettledMessage(message: string, drawing: boolean) {
 export function RsdDrawingScreen() {
   const screen = useDrawingScreen();
   const product = useDrawingProduct(screen);
+  usePWAUpdates({
+    canvasEmpty: !screen.inkVisible && !screen.drawing,
+    strokes: screen.committedStrokes,
+  });
   const gate = useParentGateHold(product.state?.gate ?? null);
   const sound = product.sound;
   // Settings holds the gate over itself, as shipping stacks the challenge over its modal, so a

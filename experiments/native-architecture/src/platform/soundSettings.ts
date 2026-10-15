@@ -1,5 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
-import { MAX_SETTINGS_BYTES, type SoundSettingsStorage } from '../settings/soundSettings';
+import { MAX_SETTINGS_BYTES, type SoundSettingsStorage } from '../settings/soundSettingsCodec';
 
 const SETTINGS_DIRECTORY = 'splotch-sound-settings-v1';
 const REVISION_NAME = /^sound-(\d+)\.json$/;
@@ -27,12 +27,18 @@ function revisions(owner: Directory) {
     .sort((a, b) => b.revision - a.revision);
 }
 
-export const soundSettingsStorage: SoundSettingsStorage = {
+function latestSettingsFile() {
+  const latest = revisions(directory())[0]?.file;
+  if (latest && latest.size > MAX_SETTINGS_BYTES) throw new Error('Sound settings are too large.');
+  return latest;
+}
+
+export const soundSettingsStorage: SoundSettingsStorage & { readSync(): string | null } = {
+  readSync() {
+    return latestSettingsFile()?.textSync() ?? null;
+  },
   async read() {
-    const latest = revisions(directory())[0]?.file;
-    if (!latest) return null;
-    if (latest.size > MAX_SETTINGS_BYTES) throw new Error('Sound settings are too large.');
-    return latest.text();
+    return latestSettingsFile()?.text() ?? null;
   },
   async write(snapshot) {
     const owner = directory();

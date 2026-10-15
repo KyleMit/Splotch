@@ -1,5 +1,13 @@
 @react-strict-dom;
 
+:root[data-app-surface] body {
+  touch-action: none;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* The UA stylesheet gives form controls the system font; they inherit the app's
    font instead, as the shipping design Button does. */
 button,

@@ -11,6 +11,9 @@ export const photos = {
   onCreate: null,
   files: new Map(),
   deleted: [],
+  nativeOutcome: 'photos',
+  nativeAvailable: true,
+  beforeNativeRead: null,
   reset() {
     this.os = 'ios';
     this.androidApi = 33;
@@ -21,10 +24,26 @@ export const photos = {
     this.onCreate = null;
     this.files.clear();
     this.deleted.length = 0;
+    this.nativeOutcome = 'photos';
+    this.nativeAvailable = true;
+    this.beforeNativeRead = null;
   },
 };
 
 export const reactNativeModule = {
+  NativeModules: {
+    get SplotchPhotoLibrary() {
+      return photos.nativeAvailable
+        ? {
+            async save(uri, displayName, mime, album) {
+              await photos.beforeNativeRead?.();
+              record({ via: 'SplotchPhotoLibrary.save', filePath: uri, album, displayName, mime });
+              return photos.nativeOutcome;
+            },
+          }
+        : undefined;
+    },
+  },
   Platform: {
     get OS() {
       return photos.os;

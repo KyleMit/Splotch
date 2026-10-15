@@ -12,11 +12,19 @@ import {
   createAppShellFallbackPlugin,
   isAppShellNavigation,
 } from '../../web/src/lib/pwa/appShellRoute.ts';
-import { CACHE_BUST_VERSION_PARAM } from '../../web/src/lib/pwa/versionEndpoint.ts';
-import { SERVICE_WORKER_PATH } from '../../experiments/native-architecture/src/platform/serviceWorkerPath.ts';
+import {
+  CACHE_BUST_VERSION_PARAM,
+  VERSION_JSON_FILENAME,
+  SERVICE_WORKER_PATH,
+} from '../../web/src/lib/pwa/versionEndpoint.ts';
+import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
 import { DRAWING_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import {
+  APP_SURFACE_ATTRIBUTE,
+  DRAWING_PATHS,
+} from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
@@ -102,6 +110,10 @@ export function bootThemeHeadTags({
   return [`<style>${style}</style>`, `<script>${script}</script>`];
 }
 
+export function bootAppSurfaceHeadTag() {
+  return `<script>if(${JSON.stringify(DRAWING_PATHS)}.includes(location.pathname))document.documentElement.setAttribute(${JSON.stringify(APP_SURFACE_ATTRIBUTE)},'');</script>`;
+}
+
 function exportWebBundle(outputDir) {
   run(
     join(ROOT, 'node_modules/.bin/expo'),
@@ -120,11 +132,19 @@ function copyShippingInstallAssets(outputDir) {
     SHIPPING_MANIFEST,
   ]);
   for (const asset of assets) copyFileSync(join(WEB_STATIC_DIR, asset), join(outputDir, asset));
+  writeFileSync(
+    join(outputDir, VERSION_JSON_FILENAME),
+    JSON.stringify({ version: FEEDBACK_APP_VERSION })
+  );
   const indexPath = join(outputDir, APP_SHELL_FILE);
   writeFileSync(
     indexPath,
     withShippingViewport(
-      withInstallHeadTags(readFileSync(indexPath, 'utf8'), [...tags, ...bootThemeHeadTags()]),
+      withInstallHeadTags(readFileSync(indexPath, 'utf8'), [
+        ...tags,
+        ...bootThemeHeadTags(),
+        bootAppSurfaceHeadTag(),
+      ]),
       appHtml
     )
   );

@@ -1,6 +1,6 @@
 import { untrack } from 'svelte';
 import { canvasState, SETTLED_IN_STROKES, type CanvasState } from '$lib/state/canvas.svelte';
-import { pwaUpdates } from '$lib/pwa/updates';
+import { pwaUpdates } from '$lib/pwa/updates.svelte';
 import { recordWebInstallRepromptSession } from './webOnlyServices';
 import type { BootHiddenOverlays } from './bootHiddenOverlays';
 

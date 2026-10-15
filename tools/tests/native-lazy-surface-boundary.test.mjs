@@ -9,6 +9,22 @@ import {
   SURFACE_FAILURE_MESSAGE,
 } from '../../experiments/native-architecture/src/rsdDrawing/RsdSurfaceBoundary.tsx';
 
+const background = vi.hoisted(() => ({ painted: false, waiters: [], idle: [] }));
+vi.mock('../../experiments/native-architecture/src/product/drawingPaint.ts', () => ({
+  drawingPaint: {
+    painted: () =>
+      background.painted
+        ? Promise.resolve()
+        : new Promise((resolve) => background.waiters.push(resolve)),
+  },
+}));
+vi.mock('../../web/src/lib/idle.ts', () => ({
+  scheduleInteractionIdle: (run) => {
+    background.idle.push(run);
+    return () => {};
+  },
+}));
+
 vi.mock('react-strict-dom', () => ({
   html: Object.fromEntries(
     ['div', 'span'].map((tag) => [tag, ({ style: _style, ...props }) => createElement(tag, props)])
@@ -45,6 +61,9 @@ const CHUNK_FAILURE = new Error(
 );
 let host, root, errors;
 beforeEach(() => {
+  background.painted = false;
+  background.waiters.length = 0;
+  background.idle.length = 0;
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   errors = vi.spyOn(console, 'error').mockImplementation(() => {});
   host = document.createElement('div');
@@ -80,6 +99,31 @@ async function settle() {
 
 const dialog = (label) => host.querySelector(`[role="dialog"][aria-label="${label}"]`);
 const button = (label) => host.querySelector(`button[aria-label="${label}"]`);
+
+it('prewarms one surface per quiet slice after drawing paints and renders it on its first open', async () => {
+  const first = vi.fn(async () => Settings);
+  const second = vi.fn(async () => Settings);
+  const Surface = lazySurface(first);
+  lazySurface(second);
+  await settle();
+  expect(first).not.toHaveBeenCalled();
+  expect(background.idle).toHaveLength(0);
+  background.painted = true;
+  for (const ready of background.waiters) ready();
+  await settle();
+  expect(background.idle).toHaveLength(1);
+  background.idle.shift()();
+  await settle();
+  expect(first).toHaveBeenCalledOnce();
+  expect(second).not.toHaveBeenCalled();
+  expect(background.idle).toHaveLength(1);
+  background.idle.shift()();
+  await settle();
+  expect(second).toHaveBeenCalledOnce();
+  await act(async () => root.render(screen(Surface, vi.fn())));
+  expect(dialog('Drawing settings')).not.toBeNull();
+  expect(first).toHaveBeenCalledOnce();
+});
 
 it('keeps the drawing screen when a surface chunk fails, then loads it on Try again', async () => {
   const load = vi.fn().mockRejectedValueOnce(CHUNK_FAILURE).mockResolvedValueOnce(Settings);

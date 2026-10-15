@@ -9,7 +9,7 @@ vi.mock('$lib/platform', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/platform')>()),
   isNative: () => false,
 }));
-vi.mock('$lib/pwa/updates', () => ({
+vi.mock('$lib/pwa/updates.svelte', () => ({
   pwaUpdates: { registerDeferredServiceWorker: () => Promise.resolve(true) },
 }));
 // The unit build excludes web-only wrappers; run their real bookkeeping target.

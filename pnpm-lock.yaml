@@ -251,6 +251,9 @@ importers:
       expo-haptics:
         specifier: 57.0.3
         version: 57.0.3(expo@57.0.26)
+      expo-keep-awake:
+        specifier: 57.0.2
+        version: 57.0.2(expo@57.0.26)(react@19.2.3)
       expo-media-library:
         specifier: 57.0.5
         version: 57.0.5(expo@57.0.26)(react-native@0.86.3(patch_hash=030d2b9c2d2fb62072ff72e81a9617fad2af1fca7c9f8d9c9d13332f15e3aeed)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))

@@ -202,6 +202,8 @@ const records = vi.hoisted(() => ({
   os: 'ios',
   settingsOpened: 0,
   journalHostProps: false,
+  statusBarHidden: [],
+  statusBarStyles: [],
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
@@ -263,10 +265,16 @@ vi.mock('react-native', async () => {
   return {
     StyleSheet: { create: (value) => value, absoluteFill: {} },
     I18nManager: { isRTL: false, doLeftAndRightSwapInRTL: true },
-    StatusBar: (props) => {
-      records.props.push(props);
-      return React.createElement('span', { 'data-status-bar': props.barStyle });
-    },
+    StatusBar: Object.assign(
+      (props) => {
+        records.props.push(props);
+        return React.createElement('span', { 'data-status-bar': props.barStyle });
+      },
+      {
+        setHidden: (hidden) => records.statusBarHidden.push(hidden),
+        setBarStyle: (style) => records.statusBarStyles.push(style),
+      }
+    ),
     AppState: appStatePort(records),
     Linking: {
       openSettings: async () => {
@@ -411,6 +419,8 @@ afterEach(async () => {
   caller.sound = null;
   caller.screen = null;
   records.props.length = 0;
+  records.statusBarHidden.length = 0;
+  records.statusBarStyles.length = 0;
   records.viewports.length = 0;
   records.announcements.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };

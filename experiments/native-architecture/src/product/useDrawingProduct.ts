@@ -2,6 +2,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
 import { productOwners } from './productOwnersLoader';
+import { afterDrawingPaint } from './afterDrawingPaint';
 import type { createProductOwners, ProductOwners } from './productOwners';
 import { createDrawingAudio } from '../audio/drawingAudio';
 import { createContactSound } from '../audio/contactSound';
@@ -56,6 +57,17 @@ function useSoundChoices(
         deleteSoundEnabled,
       });
   }, [services, soundEnabled, soundVolume, drawingSoundEnabled, deleteSoundEnabled]);
+  useEffect(() => {
+    let disposed = false;
+    void afterDrawingPaint().then(() => {
+      if (disposed) return;
+      services?.audio.prepare();
+      services?.clear.prepare();
+    });
+    return () => {
+      disposed = true;
+    };
+  }, [services, soundEnabled, drawingSoundEnabled, deleteSoundEnabled]);
 }
 
 function createProductTicker(

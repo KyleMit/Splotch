@@ -1,4 +1,9 @@
 import type { Point } from '../drawing/model';
+import {
+  calculateStrokeSpeed,
+  STROKE_SPEED_WINDOW_MS,
+  type SpeedSample,
+} from '../../../../web/src/lib/drawing/strokeMath';
 import { isSoundVolume, SOUND_VOLUME_DEFAULT, soundVolumeGain } from '../settings/soundVolume';
 
 export type DrawingLoop = {
@@ -12,15 +17,14 @@ export type DrawingLoopLoader = (
   onFailure: () => void
 ) => Promise<DrawingLoop>;
 // native-audio-projection.test.mjs pins the portable gain/timing literals without a startup import.
-// Speed is per-event normalized paper units/ms, distinct from shipping backing-store/windowed speed.
 export const BASE_SCRATCH_GAIN = 0.2;
-export const FULL_VOLUME_PAPER_UNITS_PER_MS = 0.45;
+export const FULL_VOLUME_BACKING_PX_PER_MS = 0.45;
 export const GAIN_RAMP_S = 0.06;
 export const STOP_DECLICK_S = 0.005;
 export const TEARDOWN_SLACK_MS = 20;
 export const AUDIO_LOAD_TIMEOUT_MS = 10_000;
-const STILLNESS_MS = 100;
-const MIN_SAMPLE_INTERVAL_MS = 1;
+
+export type AudioSample = { point: Point; timestamp: number; samples: SpeedSample[] };
 
 type AudioResource =
   | { status: 'idle' }
@@ -31,9 +35,8 @@ type AudioState = {
   foreground: boolean;
   disposed: boolean;
   generation: number;
-  active: { point: Point; timestamp: number } | null;
+  active: AudioSample | null;
   resource: AudioResource;
-  stillness: ReturnType<typeof setTimeout> | null;
   volume: number;
   gain: number;
   failureReported: boolean;
@@ -45,17 +48,12 @@ function reportFailure(state: AudioState) {
   state.failureReported = true;
   state.onFailure();
 }
-function clearStillness(state: AudioState) {
-  if (state.stillness !== null) clearTimeout(state.stillness);
-  state.stillness = null;
-}
 function release(state: AudioState) {
   state.generation += 1;
   const old = state.resource;
   state.resource = { status: 'idle' };
   state.active = null;
   state.volume = 0;
-  clearStillness(state);
   if (old.status === 'loading') {
     clearTimeout(old.deadline);
     old.request.abort();
@@ -74,10 +72,13 @@ function fail(state: AudioState) {
   release(state);
   reportFailure(state);
 }
+function failLoad(state: AudioState) {
+  if (state.active) fail(state);
+  else release(state);
+}
 function stop(state: AudioState) {
   state.active = null;
   state.volume = 0;
-  clearStillness(state);
   if (state.resource.status === 'ready') {
     try {
       state.resource.loop.stop();
@@ -98,11 +99,11 @@ function prepare(state: AudioState, load: DrawingLoopLoader) {
   if (state.resource.status !== 'idle') return;
   const request = new AbortController();
   const generation = state.generation;
-  const deadline = setTimeout(() => fail(state), AUDIO_LOAD_TIMEOUT_MS);
+  const deadline = setTimeout(() => failLoad(state), AUDIO_LOAD_TIMEOUT_MS);
   state.resource = { status: 'loading', request, deadline };
   const expired = () => request.signal.aborted || state.disposed || generation !== state.generation;
   void load(request.signal, () => {
-    if (!expired()) fail(state);
+    if (!expired()) failLoad(state);
   })
     .then((ready) => {
       clearTimeout(deadline);
@@ -123,7 +124,7 @@ function prepare(state: AudioState, load: DrawingLoopLoader) {
     })
     .catch(() => {
       clearTimeout(deadline);
-      if (!expired()) fail(state);
+      if (!expired()) failLoad(state);
     });
 }
 export function createDrawingAudio(
@@ -138,7 +139,6 @@ export function createDrawingAudio(
     generation: 0,
     active: null,
     resource: { status: 'idle' },
-    stillness: null,
     volume: 0,
     gain: soundVolumeGain(SOUND_VOLUME_DEFAULT),
     failureReported: false,
@@ -146,12 +146,15 @@ export function createDrawingAudio(
     onReady,
   };
   return {
+    prepare() {
+      if (state.enabled && state.foreground && !state.disposed) prepare(state, load);
+    },
     begin(point: Point, timestamp: number) {
       stop(state);
       if (!state.enabled || !state.foreground || state.disposed || !Number.isFinite(timestamp))
         return;
       state.failureReported = false;
-      state.active = { point, timestamp };
+      state.active = { point, timestamp, samples: [{ t: timestamp, distance: 0 }] };
       try {
         if (state.resource.status === 'ready') state.resource.loop.start();
         prepare(state, load);
@@ -159,11 +162,7 @@ export function createDrawingAudio(
         fail(state);
       }
     },
-    sample(
-      point: Point,
-      timestamp: number,
-      previous: { point: Point; timestamp: number } | null = state.active
-    ) {
+    sample(point: Point, timestamp: number, previous: AudioSample | null = state.active) {
       if (
         !state.active ||
         !previous ||
@@ -172,17 +171,17 @@ export function createDrawingAudio(
         timestamp < previous.timestamp
       )
         return;
-      const elapsed = Math.max(MIN_SAMPLE_INTERVAL_MS, timestamp - previous.timestamp);
-      const speed = Math.hypot(point.x - previous.point.x, point.y - previous.point.y) / elapsed;
-      state.active = { point, timestamp };
-      state.volume = BASE_SCRATCH_GAIN * Math.min(speed / FULL_VOLUME_PAPER_UNITS_PER_MS, 1);
+      const speed = calculateStrokeSpeed(
+        previous.samples,
+        {
+          t: timestamp,
+          distance: Math.hypot(point.x - previous.point.x, point.y - previous.point.y),
+        },
+        STROKE_SPEED_WINDOW_MS
+      );
+      state.active = { point, timestamp, samples: previous.samples };
+      state.volume = BASE_SCRATCH_GAIN * Math.min(speed / FULL_VOLUME_BACKING_PX_PER_MS, 1);
       applyVolume(state);
-      clearStillness(state);
-      state.stillness = setTimeout(() => {
-        state.volume = 0;
-        applyVolume(state);
-        state.stillness = null;
-      }, STILLNESS_MS);
     },
     end() {
       stop(state);

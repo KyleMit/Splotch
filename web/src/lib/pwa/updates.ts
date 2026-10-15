@@ -43,9 +43,12 @@
 // first frame (ADR-0072), so a stale session that has ink on it keeps running
 // until the next blank-canvas boot.
 
-import { canvasState } from '$lib/state/canvas.svelte';
-import { scheduleIdle } from '$lib/idle';
-import { CACHE_BUST_VERSION_PARAM, VERSION_JSON_PATH } from '$lib/pwa/versionEndpoint';
+import { scheduleIdle } from '../idle';
+import {
+  CACHE_BUST_VERSION_PARAM,
+  VERSION_JSON_PATH,
+  SERVICE_WORKER_PATH,
+} from './versionEndpoint';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -80,7 +83,13 @@ function serviceWorkerSupported() {
 }
 
 function saveDataEnabled() {
-  return navigator.connection?.saveData === true;
+  const connection = 'connection' in navigator ? navigator.connection : null;
+  return (
+    connection !== null &&
+    typeof connection === 'object' &&
+    'saveData' in connection &&
+    connection.saveData === true
+  );
 }
 
 function watchUpdateTriggers(
@@ -173,18 +182,10 @@ async function fetchDeployedVersion(): Promise<string | null> {
   }
 }
 
-async function checkVersionMismatch(attemptedVersion: string | null = null) {
-  const version = await fetchDeployedVersion();
-  if (version === null) return;
-  if (version !== __APP_VERSION__ && version !== attemptedVersion) {
-    if (!canvasState.canvasEmpty) return;
-    const next = new URL(window.location.href);
-    next.searchParams.set(CACHE_BUST_VERSION_PARAM, version);
-    window.location.replace(next.toString());
-  }
-}
-
-function createDeferredRegistration(onRegistered: () => Promise<unknown>) {
+function createDeferredRegistration(
+  onRegistered: () => Promise<unknown>,
+  isDevelopment: () => boolean
+) {
   let registrationScheduled: Promise<boolean> | null = null;
 
   // The register() call itself still waits for an idle slot: the stroke gate
@@ -198,7 +199,7 @@ function createDeferredRegistration(onRegistered: () => Promise<unknown>) {
     registrationScheduled = new Promise((resolve) => {
       scheduleIdle(() => {
         navigator.serviceWorker
-          .register('/sw.js')
+          .register(SERVICE_WORKER_PATH)
           .then(onRegistered)
           .then(() => resolve(true))
           .catch(() => {
@@ -215,7 +216,7 @@ function createDeferredRegistration(onRegistered: () => Promise<unknown>) {
   // First-visit registration, called from +page.svelte's stroke-count gate.
   // Resolves false only when a later stroke needs to retry the registration.
   function registerDeferredServiceWorker(): Promise<boolean> {
-    if (import.meta.env.DEV || !serviceWorkerSupported()) return Promise.resolve(true);
+    if (isDevelopment() || !serviceWorkerSupported()) return Promise.resolve(true);
     return schedule();
   }
 
@@ -226,8 +227,25 @@ function createDeferredRegistration(onRegistered: () => Promise<unknown>) {
 // is provably side-effect-free, and the bundler cannot prove that through the
 // sub-factory calls on its own. tools/mobile/check-static-bundle.mjs fails the
 // native build if the web-only lifecycle survives.
+export interface PWAUpdateEnvironment {
+  canvasEmpty(): boolean;
+  isDevelopment(): boolean;
+  appVersion: string;
+}
+
 /* @__NO_SIDE_EFFECTS__ */
-export function createPWAUpdates() {
+export function createPWAUpdates(environment: PWAUpdateEnvironment) {
+  async function checkVersionMismatch(attemptedVersion: string | null = null) {
+    const version = await fetchDeployedVersion();
+    if (version === null) return;
+    if (version !== environment.appVersion && version !== attemptedVersion) {
+      if (!environment.canvasEmpty()) return;
+      const next = new URL(window.location.href);
+      next.searchParams.set(CACHE_BUST_VERSION_PARAM, version);
+      window.location.replace(next.toString());
+    }
+  }
+
   let initialized = false;
   // none → ready when a waiting worker is found and the page is stale (or the
   //   deployed version is unknown); the apply waits for the hidden edge.
@@ -242,7 +260,10 @@ export function createPWAUpdates() {
   // Held so applyPendingUpdate can reach registration.waiting synchronously
   // inside the visibilitychange handler.
   let updateRegistration: ServiceWorkerRegistration | null = null;
-  const deferredRegistration = createDeferredRegistration(() => checkForUpdates());
+  const deferredRegistration = createDeferredRegistration(
+    () => checkForUpdates(),
+    environment.isDevelopment
+  );
   const revalidate = createRegistrationRevalidator();
   const watchInstallSettle = createInstallSettleWatcher((waiting) => {
     void decideWaitingActivation(waiting);
@@ -258,7 +279,7 @@ export function createPWAUpdates() {
   }
 
   function initPWAUpdates(): (() => void) | undefined {
-    if (import.meta.env.DEV) return;
+    if (environment.isDevelopment()) return;
     if (!serviceWorkerSupported()) return;
     if (initialized) return;
     initialized = true;
@@ -302,7 +323,7 @@ export function createPWAUpdates() {
       updateReload = 'none';
       return;
     }
-    if (deployedVersion === __APP_VERSION__) activateWaitingSW(sw, 'silent');
+    if (deployedVersion === environment.appVersion) activateWaitingSW(sw, 'silent');
   }
 
   // Drains a pending update while nothing is on screen to disrupt — the
@@ -310,7 +331,7 @@ export function createPWAUpdates() {
   // half of 'reload' mode happens while the app is backgrounded and the next
   // resume boots the new version with no visible refresh.
   function applyPendingUpdate(): void {
-    if (!canvasState.canvasEmpty) return;
+    if (!environment.canvasEmpty()) return;
     if (updateReload === 'owed') {
       reloadForUpdate();
       return;
@@ -346,7 +367,7 @@ export function createPWAUpdates() {
       // takes control, landing this callback in a visible session. Reloading
       // then is the yank the hidden-edge apply exists to prevent — defer to
       // 'owed' and drain at the next hidden moment instead.
-      if (!canvasState.canvasEmpty || document.visibilityState === 'visible') {
+      if (!environment.canvasEmpty() || document.visibilityState === 'visible') {
         deferReload();
         return;
       }
@@ -416,5 +437,3 @@ export function createPWAUpdates() {
     applyPendingUpdate,
   };
 }
-
-export const pwaUpdates = createPWAUpdates();
