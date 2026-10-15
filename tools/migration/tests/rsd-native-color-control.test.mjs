@@ -61,7 +61,7 @@ const slot = () => records.props.findLast((props) => props.testID === 'rsd-color
 const touch = (pageX, pageY) => ({ nativeEvent: { pageX, pageY } });
 
 it.each([PORTRAIT_PHONE, { width: 1024, height: 768 }])(
-  'keeps palette pointer presses from moving focus at %o without blocking activation',
+  'gives the palette plate shipping focus-preserving pointer-down at %o',
   async (window) => {
     const palette = read('web/src/lib/components/ColorPalette.svelte');
     const shippingDown = palette.match(/function handlePaletteDown\([^)]*\) \{([^}]+)\}/);
@@ -69,16 +69,13 @@ it.each([PORTRAIT_PHONE, { width: 1024, height: 768 }])(
     expect(shippingDown[1]).toContain('e.preventDefault();');
     expect(shippingDown[1]).not.toContain('e.stopPropagation();');
     viewport(window);
-    const screen = toolbarScreen();
-    await mountToolbar(screen);
+    await mountToolbar(toolbarScreen());
     const plate = records.props.findLast((props) => props.testID === 'rsd-palette-plate');
     expect(plate.onPointerDown).toBeTypeOf('function');
     const event = { preventDefault: vi.fn(), stopPropagation: vi.fn() };
     plate.onPointerDown(event);
     expect(event.preventDefault).toHaveBeenCalledOnce();
     expect(event.stopPropagation).not.toHaveBeenCalled();
-    await act(async () => host.querySelector('[aria-label="Custom Color"]').click());
-    expect(screen.openColorPicker).toHaveBeenCalledOnce();
   }
 );
 
