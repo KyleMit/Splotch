@@ -117,9 +117,7 @@ function FeedbackSheet({
                               : 'Try sending again'
                         }
                         primary
-                        disabled={
-                          sending || state.delivery.status === 'throttled' || !state.policyReady
-                        }
+                        disabled={sending || !state.policyReady}
                         onPress={owner.send}
                       />
                     </>

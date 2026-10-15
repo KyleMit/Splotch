@@ -208,11 +208,7 @@ export function RsdFeedbackSection({ owner }: { owner: NativeFeedbackOwner | nul
           <RsdButton
             variant="brand"
             busy={sending}
-            disabled={
-              !state.draft.message.trim() ||
-              !state.policyReady ||
-              state.delivery.status === 'throttled'
-            }
+            disabled={!state.draft.message.trim() || !state.policyReady}
             onPress={owner.submit}
           >
             {sending ? REPORT_FORM_COPY.sending : REPORT_FORM_COPY.send}

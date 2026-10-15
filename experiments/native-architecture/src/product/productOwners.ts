@@ -1,12 +1,7 @@
 import { Platform } from 'react-native';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
-import {
-  feedbackDevice,
-  feedbackOffline,
-  feedbackPolicyStorage,
-  feedbackTransport,
-} from '../platform/feedback';
+import { feedbackDevice, feedbackPolicyStorage, feedbackTransport } from '../platform/feedback';
 import { aiDismissal, aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from '../ai/prepare';
@@ -24,7 +19,6 @@ export function createProductOwners(
   const feedback = createNativeFeedback({
     transport: feedbackTransport,
     device: feedbackDevice,
-    offline: feedbackOffline,
     policyStorage: feedbackPolicyStorage,
     parent,
   });
@@ -39,7 +33,6 @@ export function createProductOwners(
       platform: Platform.OS,
       transport: feedbackTransport,
       device: feedbackDevice,
-      offline: feedbackOffline,
     },
     async prepare() {
       const current = screenRef.current;

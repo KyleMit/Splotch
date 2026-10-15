@@ -18,10 +18,5 @@ export function useNativeFeedbackState(
     const timer = setInterval(owner.gateTick, FEEDBACK_GATE_TICK_MS);
     return () => clearInterval(timer);
   }, [owner, state?.gate.open, state?.sharedParent]);
-  useEffect(() => {
-    if (!owner || state?.sharedParent || state?.delivery.status !== 'throttled') return;
-    const timer = setInterval(owner.deliveryTick, FEEDBACK_GATE_TICK_MS);
-    return () => clearInterval(timer);
-  }, [owner, state?.delivery.status, state?.sharedParent]);
   return state;
 }

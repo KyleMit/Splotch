@@ -74,7 +74,6 @@ export type AiProblemTransport = Readonly<{
   platform: string;
   transport: FeedbackTransport;
   device: () => DeviceInfo;
-  offline: () => boolean | null;
 }>;
 
 // A grown-up's report of a failed AI run, from the error card's Report a problem to its outcome:
@@ -83,7 +82,6 @@ export type AiProblemTransport = Readonly<{
 export function createAiProblemReport({
   transport,
   device,
-  offline,
   parent,
   publish,
 }: AiProblemTransport & {
@@ -144,8 +142,7 @@ export function createAiProblemReport({
           message: rows.map(({ label, value }) => `${label}: ${value}`).join('\n'),
           ...(attached ? { device: attached } : {}),
         },
-        request,
-        offline
+        request
       );
       if (ticket !== epoch || controller !== request) return;
       controller = null;
