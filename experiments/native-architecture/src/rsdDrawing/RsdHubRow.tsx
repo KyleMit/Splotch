@@ -70,14 +70,14 @@ const styles = css.create({
   title: {
     color: colors.textStrong,
     fontSize: dimensions.fontSizeMd,
-    overflowWrap: 'normal',
+    wordWrap: 'normal',
   },
   // Wraps rather than ellipsizing on one line: the summary says what a section does.
   subtitle: {
     color: colors.textSoft,
     fontSize: dimensions.fontSizeSm,
     lineClamp: SUBTITLE_LINES,
-    overflowWrap: 'normal',
+    wordWrap: 'normal',
   },
   action: {
     display: 'flex',
