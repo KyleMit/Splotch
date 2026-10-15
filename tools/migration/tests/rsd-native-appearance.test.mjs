@@ -231,7 +231,7 @@ it.each(['light', 'dark'])(
       await mount(createElement(Screen));
       await act(async () => owner.setColor('Black'));
       const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
-      await click('More colors');
+      await click('Custom Color');
       expect(
         records.props.findLast((props) => props.accessibilityLabel === 'Color Picker')
       ).toMatchObject({

@@ -470,6 +470,7 @@ function createPickerCaller(refresh) {
     settingsOpen: false,
     colorPickerOpen: false,
     openColorPicker: open,
+    selectInkBrush: vi.fn(),
     closeColorPicker: close,
   };
   caller.sound = { settings: null, owner: { settings: owner }, audioMessage: '' };

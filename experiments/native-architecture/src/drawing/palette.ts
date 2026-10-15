@@ -72,11 +72,29 @@ export function paletteHex(label: PaletteLabel): string {
 
 export type CustomColor = `#${string}`;
 export type PaintColor = PaletteLabel | CustomColor;
-export const MAX_CUSTOM_COLORS = 6;
-export const DEFAULT_COLOR_SETTINGS: Readonly<{
+export const CUSTOM_SWATCH = 'custom';
+export type PaintSwatch = PaletteLabel | typeof CUSTOM_SWATCH;
+export type ColorSettings = Readonly<{
   selectedColor: PaintColor;
   customColors: readonly CustomColor[];
-}> = { selectedColor: 'Purple', customColors: [] };
+  activeSwatch: PaintSwatch;
+}>;
+export type CustomPaintSelection = Readonly<{ color: CustomColor | null }> | null;
+export const MAX_CUSTOM_COLORS = 6;
+export const DEFAULT_COLOR_SETTINGS: ColorSettings = {
+  selectedColor: 'Purple',
+  customColors: [],
+  activeSwatch: 'Purple',
+};
+
+export function customPaintSelection(
+  settings: Pick<ColorSettings, 'selectedColor' | 'activeSwatch'>,
+  erasing: boolean
+): CustomPaintSelection {
+  return !erasing && settings.activeSwatch === CUSTOM_SWATCH
+    ? { color: isCustomColor(settings.selectedColor) ? settings.selectedColor : null }
+    : null;
+}
 
 // The shipping bar's trim priority: first listed is the first hidden when the bar runs out of room.
 export const PALETTE_TRIM_ORDER = [
@@ -97,23 +115,11 @@ export const PALETTE_TRIM_ORDER = [
   'Black',
 ] as const satisfies readonly PaletteLabel[];
 
-// One bar of swatches: remembered custom paints go first, oldest first, then the shipping trim
-// order; the selected paint keeps its swatch so the child always sees which color is loaded.
-export function visiblePaints(
-  customColors: readonly CustomColor[],
-  selected: PaintColor,
-  slots: number
-): PaintColor[] {
-  const trim: PaintColor[] = [...customColors].reverse();
-  trim.push(...PALETTE_TRIM_ORDER);
-  const kept = new Set(trim.slice(Math.max(0, trim.length - Math.max(0, slots))));
-  if (kept.size > 0 && !kept.has(selected) && trim.includes(selected)) {
-    kept.delete(trim.find((color) => kept.has(color)) ?? selected);
-    kept.add(selected);
-  }
-  const display: PaintColor[] = PALETTE_COLORS.map((color) => color.label);
-  display.push(...customColors);
-  return display.filter((color) => kept.has(color));
+export function visiblePaints(slots: number): PaletteLabel[] {
+  const kept = new Set(
+    PALETTE_TRIM_ORDER.slice(Math.max(0, PALETTE_TRIM_ORDER.length - Math.max(0, slots)))
+  );
+  return PALETTE_COLORS.map((color) => color.label).filter((color) => kept.has(color));
 }
 
 export function isPaletteLabel(value: unknown): value is PaletteLabel {
@@ -149,8 +155,11 @@ export function paintId(color: PaintColor): string {
   return `ink-${paintHex(color).slice(1).toLowerCase()}`;
 }
 
-export function paintLabel(color: PaintColor): string {
-  return isPaletteLabel(color) ? `${color} paint` : `Custom paint ${paintHex(color)}`;
+export const CUSTOM_COLOR_LABEL = 'Custom Color';
+
+export function paintLabel(color: PaintColor, theme: PaperTheme): string {
+  if (!isPaletteLabel(color)) return CUSTOM_COLOR_LABEL;
+  return color === 'Black' && theme === 'dark' ? 'White' : color;
 }
 
 export function rememberColor(

@@ -69,6 +69,7 @@ describe('candidate sound settings', () => {
         eraserWidth: 'medium',
         selectedColor: 'Purple',
         customColors: [],
+        activeSwatch: 'Purple',
         appearance: 'system',
         aiEnabled: false,
         parentPolicies: {
