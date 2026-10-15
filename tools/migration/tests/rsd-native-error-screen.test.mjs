@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement, useEffect } from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { host, mount, records } from './rsd-native-selection-host.mjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { caller, host, mount, records } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import {
   ERROR_COPY_MAX_WIDTH_PX,
@@ -23,10 +23,15 @@ import {
   emptyDrawing,
 } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { inkedDrawing } from './rsd-native-clear-fixture.mjs';
+import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 const SHIPPING_ERROR_SCREEN = readFileSync(
   join(import.meta.dirname, '../../../web/src/lib/components/ErrorScreen.svelte'),
   'utf8'
 );
+
+afterEach(() => {
+  delete caller.exportPng;
+});
 
 const errorScreen = () =>
   [...host.querySelectorAll('[role="alert"]')].find((node) =>
@@ -67,7 +72,7 @@ describe("the drawing screen's Error Screen", () => {
     expect(markup).toContain(`min-width: ${ERROR_RESTART_MIN_WIDTH_PX}px;`);
   });
 
-  it('shows a renderer fault on the Error Screen, whose Start over brings the paper back', async () => {
+  it('shows a renderer fault with the shipping fresh-drawing action rather than a renderer Retry', async () => {
     const screen = rendererFault();
     await mountToolbar(screen);
     expect(errorScreen()).not.toBeNull();
@@ -80,7 +85,7 @@ describe("the drawing screen's Error Screen", () => {
     );
     expect(flat(title?.style)?.fontSize).toBe(displayFontSize(records.dimensions.width));
     await act(async () => startOver().click());
-    expect(screen.recovery.retry).toHaveBeenCalledOnce();
+    expect(screen.recovery.retry).not.toHaveBeenCalled();
     expect(startOver().disabled).toBe(true);
   });
 
@@ -88,6 +93,67 @@ describe("the drawing screen's Error Screen", () => {
     await mountToolbar(toolbarScreen());
     expect(errorScreen()).toBeNull();
   });
+
+  it.each(['page picker', 'command'])(
+    'starts a fresh native session after persistent renderer failure while a %s is open',
+    async (blocker) => {
+      caller.realScreen = true;
+      const launches = vi.fn();
+      let session, finishCapture;
+      function Probe() {
+        session = useDrawingHistory();
+        useEffect(launches, []);
+        return createElement(RsdDrawingScreen);
+      }
+      await mount(
+        createElement(
+          AppRestartRoot,
+          null,
+          createElement(DrawingSessionProvider, null, createElement(Probe))
+        )
+      );
+      await act(async () =>
+        session.setHistory({ drawing: inkedDrawing(), undo: [emptyDrawing()] })
+      );
+      let clearing;
+      if (blocker === 'page picker') {
+        await act(async () => caller.liveScreen.setPagePickerOpen(true));
+      } else {
+        caller.exportPng = () =>
+          new Promise((resolve) => {
+            finishCapture = resolve;
+          });
+        await act(async () => {
+          clearing = caller.liveScreen.clear(true);
+        });
+      }
+      expect(caller.liveScreen.pagePickerOpen).toBe(blocker === 'page picker');
+      expect(caller.liveScreen.commandBusy).toBe(blocker === 'command');
+      await act(async () =>
+        caller.liveScreen.recovery.callbacks.onRendererFault(new Error('Lost renderer.'))
+      );
+      expect(caller.liveScreen.recovery.failed).toBe(false);
+      await act(async () =>
+        caller.liveScreen.recovery.callbacks.onRendererFault(new Error('Still lost.'))
+      );
+      expect(errorScreen()).not.toBeNull();
+      const departed = session;
+      await act(async () => startOver().click());
+      expect(launches).toHaveBeenCalledTimes(2);
+      expect(errorScreen()).toBeNull();
+      expect(session.history).toEqual(createHistory());
+      expect(session.setHistory).not.toBe(departed.setHistory);
+      expect(caller.liveScreen.pagePickerOpen).toBe(false);
+      expect(caller.liveScreen.commandBusy).toBe(false);
+      if (finishCapture) {
+        await act(async () => {
+          finishCapture('cmVhbC1wbmc=');
+          await clearing;
+        });
+      }
+      expect(session.history).toEqual(createHistory());
+    }
+  );
 
   it('clears native ink and Undo, then remounts a fresh session on Start over', async () => {
     const launches = vi.fn();
