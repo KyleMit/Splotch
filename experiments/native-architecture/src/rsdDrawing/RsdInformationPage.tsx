@@ -1,6 +1,5 @@
-import { Fragment, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Linking, Modal, Platform } from 'react-native';
-import { css, html } from 'react-strict-dom';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
@@ -9,44 +8,22 @@ import { useDialogBack } from '../platform/BrowserBack';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { AppPage } from '../information/appPages';
 import privacy from '../information/privacy.generated.json';
-import { RELEASE_NOTES } from '../settings/whatsNew';
 import { useParentGateCard } from '../parentCenter/useParentGateCard';
 import { RsdPageSheet } from './RsdNotFoundPage';
 import { useInformationPageScroll } from './useInformationPageScroll';
 import { RsdPrivacyContent } from './RsdPrivacyContent';
 import { RsdInformationFooter } from './RsdInformationFooter';
-import { RsdReleaseBlocks } from './RsdWhatsNewSection';
+import { RsdReleaseHistory } from './releaseHistorySurface';
 import { RsdFeedbackSection } from './RsdFeedbackSection';
 import { RsdParentGateSheet } from './RsdParentGateSheet';
 import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { useModalPresence } from './useModalPresence';
 import { FOLLOW_APP_ORIENTATION, ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
-import { styles as controlStyles } from './controls';
-import { colors, dimensions } from './tokens.css';
 import { resolveBackLabel } from '../../../../web/src/lib/components/page/backLabel';
 import { DRAWING_ROUTE } from '../../../../web/src/lib/boot/appSurfaceRoute';
 
 type Page = Exclude<AppPage, 'drawing'>;
-const PAGE_LINE_HEIGHT = 1.6;
-const PAGE_FONT_PX = 16;
-const styles = css.create({
-  section: { marginTop: dimensions.space6 },
-  heading: {
-    marginTop: 0,
-    marginBottom: dimensions.space2,
-    color: colors.textStrong,
-    fontSize: dimensions.fontSizeLg,
-  },
-  paragraph: {
-    marginTop: 0,
-    marginBottom: dimensions.space3,
-    fontSize: dimensions.fontSizeMd,
-    color: colors.text,
-    lineHeight: PAGE_LINE_HEIGHT,
-  },
-  muted: { color: colors.textSoft },
-});
 const PAGE_TITLES: Record<Page, string> = {
   privacy: privacy.native.title,
   changelog: 'Changelog',
@@ -58,29 +35,6 @@ const PAGE_LEDES: Record<Page, string> = {
     'Every public Splotch release, newest first, with the notes that shipped alongside it.',
   feedback: 'Report a bug or suggest a feature — privately, with no account needed.',
 };
-
-function Changelog() {
-  return RELEASE_NOTES.map((release) => (
-    <html.section key={release.version} style={styles.section}>
-      <html.h2
-        style={[controlStyles.boldText, styles.heading]}
-      >{`Version ${release.version}`}</html.h2>
-      <html.p style={[styles.paragraph, styles.muted]}>{release.dateLabel}</html.p>
-      {release.sections.map((section) => (
-        <Fragment key={section.title}>
-          <html.h3 style={[controlStyles.boldText, styles.heading]}>{section.title}</html.h3>
-          <html.div style={styles.paragraph}>
-            <RsdReleaseBlocks
-              blocks={section.blocks}
-              fontSizePx={PAGE_FONT_PX}
-              lineHeight={PAGE_LINE_HEIGHT}
-            />
-          </html.div>
-        </Fragment>
-      ))}
-    </html.section>
-  ));
-}
 
 type InformationProduct = Pick<
   ReturnType<typeof useDrawingProduct>,
@@ -149,7 +103,7 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
             scrollY={reading.offset}
           />
         ) : page === 'changelog' ? (
-          <Changelog />
+          <RsdReleaseHistory />
         ) : (
           <RsdFeedbackSection owner={feedback.owner} />
         )}

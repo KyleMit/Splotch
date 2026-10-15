@@ -119,3 +119,5 @@ export function RsdSettingsRoute({
     />
   );
 }
+
+export { RsdReleaseHistory, RsdLatestReleaseLabel } from './RsdReleaseHistory';

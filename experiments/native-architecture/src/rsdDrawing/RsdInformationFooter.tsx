@@ -4,7 +4,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { FEEDBACK_URL } from '../../../../web/src/lib/siteUrl';
 import type { AppPage } from '../information/appPages';
 import { openAppPage } from '../platform/appPath';
-import { RELEASE_NOTES } from '../settings/whatsNew';
+import { RsdLatestReleaseLabel } from './releaseHistorySurface';
 import { RsdTextLink } from './RsdTextLink';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { RsdExternalMark } from './RsdExternalMark';
@@ -44,7 +44,6 @@ const styles = css.create({
     fontSize: dimensions.fontSizeSm,
     color: colors.brandText,
   },
-  version: { margin: 0, fontSize: dimensions.fontSizeXs, color: colors.textSoft },
 });
 const LINKS = [
   { page: 'privacy', label: 'Privacy' },
@@ -59,7 +58,6 @@ export function RsdInformationFooter({
   page: Exclude<AppPage, 'drawing'>;
   onExternal: (href: string) => void;
 }) {
-  const latest = RELEASE_NOTES[0];
   const theme = useDrawingTheme();
   return (
     <html.footer style={styles.footer}>
@@ -92,9 +90,7 @@ export function RsdInformationFooter({
           })}
         </html.nav>
       </html.div>
-      <html.p
-        style={styles.version}
-      >{`Splotch ${latest.version} · released ${latest.dateLabel}`}</html.p>
+      <RsdLatestReleaseLabel />
     </html.footer>
   );
 }
