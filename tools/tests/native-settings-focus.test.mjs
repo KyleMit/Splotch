@@ -10,6 +10,11 @@ import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architectur
 // only React Strict DOM is reduced to the plain elements its web build emits. Each platform split
 // the web build resolves to its .web file resolves to it here too.
 vi.mock('react-native', async () => import('react-native-web'));
+vi.mock(
+  '../../experiments/native-architecture/src/platform/sectionsSeen.ts',
+  () => import('../../experiments/native-architecture/src/platform/sectionsSeen.web.ts')
+);
+
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',

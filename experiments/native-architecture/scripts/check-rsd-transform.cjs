@@ -98,9 +98,27 @@ assert.equal(
   'RsdScreenBoundary',
   'Mounted screen boundary'
 );
-const mountedScreens = elementChildren(boundaries[0]);
-assert.equal(mountedScreens.length, 1, 'Screen boundary has one screen');
-assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
+const routes = boundaries[0].children.filter((node) => node.type === 'JSXExpressionContainer');
+assert.equal(routes.length, 1, 'Screen boundary has one page route');
+const route = routes[0].expression;
+assert.equal(route.type, 'ConditionalExpression', 'Mounted page route');
+assert.equal(route.test.type, 'BinaryExpression', 'Mounted page condition');
+assert.equal(route.test.operator, '===', 'Mounted page comparison');
+assert.equal(route.test.left.name, 'page', 'Mounted page state');
+assert.equal(route.test.right.value, 'notFound', 'Mounted not-found route');
+assert.equal(
+  route.consequent.openingElement.name.name,
+  'RsdNotFoundPage',
+  'Mounted not-found page'
+);
+const mountedScreen = route.alternate.openingElement;
+assert.equal(mountedScreen.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
+assert.ok(
+  !mountedScreen.attributes.some((item) => item.name?.name === 'key'),
+  'Stable drawing mount'
+);
+const pageProp = mountedScreen.attributes.find((item) => item.name?.name === 'page');
+assert.equal(pageProp?.value?.expression?.name, 'page', 'Mounted drawing page state');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const edgeControls = parse('src/rsdDrawing/RsdEdgeControls.tsx');
 const actionsPanel = parse('src/rsdDrawing/RsdActionsPanel.tsx');

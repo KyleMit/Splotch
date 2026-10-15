@@ -230,7 +230,7 @@ class BrowserBackController {
       this.passiveRecovery = initial.runtime === this.options.runtime && initial.unwinding;
       if (!this.passiveRecovery) this.port.back();
     } else {
-      this.write([], false);
+      if (!resuming) this.write([], false);
       this.reconcile();
     }
   }

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { css, html } from 'react-strict-dom';
+import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { FEEDBACK_URL } from '../../../../web/src/lib/siteUrl';
 import type { AppPage } from '../information/appPages';
 import { openAppPage } from '../platform/appPath';
@@ -59,6 +60,7 @@ export function RsdInformationFooter({
   onExternal: (href: string) => void;
 }) {
   const latest = RELEASE_NOTES[0];
+  const theme = useDrawingTheme();
   return (
     <html.footer style={styles.footer}>
       <html.div style={styles.row}>
@@ -84,7 +86,7 @@ export function RsdInformationFooter({
                 style={styles.link}
               >
                 <html.span>{link.label}</html.span>
-                {external ? <RsdExternalMark variant="inline" /> : null}
+                {external ? <RsdExternalMark variant="inline" ink={theme.brandText} /> : null}
               </RsdTextLink>
             );
           })}

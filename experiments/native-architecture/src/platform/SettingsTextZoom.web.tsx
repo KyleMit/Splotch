@@ -1,8 +1,6 @@
 import { createElement, useEffect, useRef, type ReactNode } from 'react';
-import {
-  MIN_TEXT_ZOOM,
-  attachPinchTextZoom,
-} from '../../../../web/src/lib/actions/pinchTextZoom.svelte';
+import { MIN_TEXT_ZOOM } from '../../../../web/src/lib/actions/textZoom';
+import { attachPinchTextZoom } from '../../../../web/src/lib/actions/pinchTextZoomGesture';
 export function SettingsTextZoom({
   children,
   enabled,

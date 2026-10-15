@@ -13,7 +13,7 @@ import { colors, dimensions } from './tokens.css';
 
 type Policy = typeof privacy.native;
 type Block = Policy['sections'][number]['blocks'][number];
-type Span = Block['spans'][number];
+type Span = { text: string; href?: string; strong?: boolean; italic?: boolean };
 const POLICY_LINE_HEIGHT = 1.6;
 const POLICY_FONT_PX = 16;
 const POLICY_LIST_INDENT_EM = 1.2;
@@ -94,7 +94,7 @@ function PolicySpans({
         style={[
           span.strong && controlStyles.boldText,
           span.italic && styles.italic,
-          href && styles.link,
+          !!href && styles.link,
         ]}
         role={href ? 'link' : undefined}
         tabIndex={href ? 0 : undefined}
@@ -103,7 +103,6 @@ function PolicySpans({
           href
             ? (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
                   onLink(href);
                 }
               }

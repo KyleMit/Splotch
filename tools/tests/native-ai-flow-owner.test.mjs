@@ -1,4 +1,5 @@
-import { expect, it, vi } from 'vitest';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
 import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
@@ -8,10 +9,15 @@ import { nativeAiBoundary } from './native-ai-boundary.mjs';
 
 const GRANT = '{"ok":true,"remaining":10,"limit":10}';
 
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
 function solve(gate) {
   const { x, y } = gate.getState();
   gate.input(String(x * y));
   gate.answer();
+  vi.advanceTimersByTime(PARENT_GATE_SUCCESS_HOLD_MS);
+  gate.closed();
 }
 const picture = () =>
   new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } });

@@ -177,7 +177,9 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
           visible={parentCenter.visible}
           onDismiss={parentCenter.dismissed}
           onClose={owner.closeParentCenter}
-          header={<DialogHeader title="Parent Center" onClose={owner.closeParentCenter} />}
+          header={
+            <DialogHeader title="Parent Center" titleSize="lg" onClose={owner.closeParentCenter} />
+          }
         >
           <RsdParentCenterSection owner={owner} />
         </ModalShell>
@@ -194,7 +196,9 @@ export function RsdInformationPage({
 }: InformationPageProps) {
   useEffect(() => {
     const previous = setDocumentTitle(`${PAGE_TITLES[page]} · Splotch`);
-    return () => setDocumentTitle(previous);
+    return () => {
+      setDocumentTitle(previous);
+    };
   }, [page]);
   const content = (
     <DrawingAppearanceProvider preference={product.state?.settings?.appearance ?? bootAppearance()}>

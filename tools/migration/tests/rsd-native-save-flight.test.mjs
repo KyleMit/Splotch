@@ -234,9 +234,16 @@ describe('the Save Failure Banner', () => {
   async function choosePolicy(mode) {
     const owner = caller.product.owner;
     await act(async () => owner.openParentCenter());
-    if (owner.gate.getState().open) await solveGate();
+    if (owner.gate.getState().open) {
+      await solveGate();
+      await vi.waitFor(() => expect(owner.getState().parentCenterOpen).toBe(true), {
+        timeout: DIALOG_EXIT_WAIT_MS,
+      });
+    }
     await act(async () => owner.setPolicy('externalLinks', mode));
     await act(async () => owner.closeParentCenter());
+    const close = host.querySelector('[aria-label="Close"]');
+    if (close) await act(async () => close.click());
     await dialogsGone();
   }
 

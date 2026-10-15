@@ -1,5 +1,6 @@
 import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
@@ -26,13 +27,17 @@ const COLLECT_POINTS = [
 ];
 const LIFETIMES = ['background', 'master off', 'dispose'];
 const cleanups = [];
+beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup();
+  vi.useRealTimers();
 });
 function solve(gate) {
   const { x, y } = gate.getState();
   gate.input(String(x * y));
   gate.answer();
+  vi.advanceTimersByTime(PARENT_GATE_SUCCESS_HOLD_MS);
+  gate.closed();
 }
 function deferred() {
   let resolve;

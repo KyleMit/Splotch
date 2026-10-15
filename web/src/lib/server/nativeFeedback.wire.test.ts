@@ -17,7 +17,6 @@ function owner() {
   return createNativeFeedback({
     transport: feedbackTransport,
     device: () => ({ platform: 'iOS', os: 'iOS fixture', screen: '400 × 800' }),
-    offline: () => false,
     policyStorage: { read: async () => null, write: async () => {} },
     random: () => 0,
   });

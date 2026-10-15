@@ -1,4 +1,3 @@
-import { Linking } from 'react-native';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
@@ -9,6 +8,7 @@ import {
   openSettingsSection,
   expandControls,
 } from './rsd-native-selection-host.mjs';
+import { Linking } from 'react-native';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';

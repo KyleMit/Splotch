@@ -256,7 +256,7 @@ export function RsdPageSheet({
   onBodyOffset?: (y: number) => void;
   backLabel?: BackLabel;
 }) {
-  const titleRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     const restore = retainFocus();
     landFocus(titleRef.current);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, type GestureResponderEvent } from 'react-native';
-import { MIN_TEXT_ZOOM, nextTextZoom } from '../../../../web/src/lib/actions/pinchTextZoom.svelte';
+import { MIN_TEXT_ZOOM, nextTextZoom } from '../../../../web/src/lib/actions/textZoom';
 
 type Props = { children: ReactNode; enabled: boolean; onZoom?: (zoom: number) => void };
 function spread(event: GestureResponderEvent) {

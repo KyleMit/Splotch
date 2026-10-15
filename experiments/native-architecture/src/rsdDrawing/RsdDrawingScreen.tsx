@@ -234,6 +234,16 @@ function RsdDrawingFirstPaint() {
   );
 }
 
+type DrawingContentProps = {
+  screen: Screen;
+  sound: Sound;
+  product: ReturnType<typeof useDrawingProduct>;
+  route: ReturnType<typeof useProductModalRoute>;
+  gate: ParentGateView | null;
+  onModalDismissed: () => void;
+  informationPage: ReactNode;
+};
+
 function RsdDrawingContent({
   screen,
   sound,
@@ -242,15 +252,7 @@ function RsdDrawingContent({
   gate,
   onModalDismissed,
   informationPage,
-}: {
-  screen: Screen;
-  sound: Sound;
-  product: ReturnType<typeof useDrawingProduct>;
-  route: ReturnType<typeof useProductModalRoute>;
-  gate: ParentGateView | null;
-  onModalDismissed: () => void;
-  informationPage: ReactNode;
-}) {
+}: DrawingContentProps) {
   const theme = useDrawingAppearance();
   const startOver = useStartOver();
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
