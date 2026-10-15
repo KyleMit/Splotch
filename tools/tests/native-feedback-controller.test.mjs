@@ -230,14 +230,14 @@ describe('native feedback request ownership', () => {
     expect(listener).not.toHaveBeenCalled();
     f.owner.dispose();
   });
-  it('does not publish late results after owner disposal', async () => {
+  it('leaves a sent report on the wire without publishing after its form owner goes away', async () => {
     const f = await prepared('never');
     f.owner.send();
     const listener = vi.fn();
     f.owner.subscribe(listener);
     f.owner.dispose();
     await settle(f.requests[0]);
-    expect(f.requests[0].signal.aborted).toBe(true);
+    expect(f.requests[0].signal.aborted).toBe(false);
     expect(listener).not.toHaveBeenCalled();
   });
 });

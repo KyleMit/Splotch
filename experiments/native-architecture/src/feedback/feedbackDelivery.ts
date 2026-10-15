@@ -54,7 +54,6 @@ export function createFeedbackDelivery(
     },
     dispose() {
       disposed = true;
-      active?.controller.abort();
       active = null;
     },
   };
