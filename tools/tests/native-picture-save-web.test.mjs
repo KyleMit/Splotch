@@ -19,6 +19,7 @@ import {
 import { timestamp } from '../../web/src/lib/savedFile.ts';
 import { saveFailureCopy } from '../../web/src/lib/drawing/saveFailureCopy.ts';
 import { folderSave } from '../../experiments/native-architecture/src/platform/folderSave.web.ts';
+import { browserFolderSave } from '../../experiments/native-architecture/src/platform/browserFolderSaveLoader.ts';
 
 const folderRecords = vi.hoisted(() => new Map());
 vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
@@ -118,6 +119,23 @@ function surface(png) {
 }
 
 describe('saving a picture on the web', () => {
+  it('downloads without loading the optional folder module on an unsupported browser', async () => {
+    delete window.showDirectoryPicker;
+    const load = vi.spyOn(browserFolderSave, 'load');
+    expect(await pictureSave.save(PNG)).toBe('downloads');
+    expect(load).not.toHaveBeenCalled();
+    expect(downloads).toHaveLength(1);
+    expect([...new Uint8Array(await blobs[0].arrayBuffer())]).toEqual(PNG_BYTES);
+  });
+
+  it('downloads the exact picture if the optional folder chunk cannot load', async () => {
+    vi.spyOn(browserFolderSave, 'load').mockRejectedValueOnce(new Error('Chunk unavailable.'));
+    expect(await pictureSave.save(PNG)).toBe('downloads');
+    expect(downloads).toHaveLength(1);
+    expect([...new Uint8Array(await blobs[0].arrayBuffer())]).toEqual(PNG_BYTES);
+    expect(revoked).toEqual(['blob:picture-1']);
+  });
+
   it('writes into the chosen shipping folder without opening the picker again or downloading', async () => {
     const { handle, files } = directory();
     window.showDirectoryPicker.mockResolvedValue(handle);

@@ -1,6 +1,7 @@
 import type { PictureSave } from '../export/pictureSave';
 import { DRAWING_PICTURE, pictureFilename } from '../export/pictureFilename';
 import { browserFolderSave } from './browserFolderSaveLoader';
+import { folderSaveSupported } from './folderSaveSupport.web';
 
 function pictureBlob(base64: string, type: string) {
   const binary = atob(base64);
@@ -16,8 +17,12 @@ export const pictureSave: PictureSave = {
     try {
       const blob = pictureBlob(base64, format.mime);
       const filename = pictureFilename(new Date(), format);
-      const { folderSave: folder } = await browserFolderSave.load();
-      const folderName = await folder.saveBlobToFolder(blob, filename, options);
+      const folderName = folderSaveSupported()
+        ? await browserFolderSave.load().then(
+            ({ folderSave }) => folderSave.saveBlobToFolder(blob, filename, options),
+            () => null
+          )
+        : null;
       if (folderName !== null) return { status: 'chosenFolder', folderName };
       const url = URL.createObjectURL(blob);
       try {

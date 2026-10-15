@@ -4,6 +4,7 @@ import {
   UNSAVED_PICTURE_LIMIT,
   createSaveFailure,
 } from '../../experiments/native-architecture/src/export/saveFailure.ts';
+import { readUnsavedPictures } from '../../experiments/native-architecture/src/export/unsavedPictures.ts';
 
 const browserDisk = vi.hoisted(() => new Map());
 vi.mock('../../web/src/lib/idbDatabase.ts', () => ({
@@ -35,6 +36,13 @@ function owner(save = vi.fn(async () => 'photos')) {
 }
 
 describe('the Save Failure Banner owner', () => {
+  it('rejects obsolete saved outcomes while keeping valid refused pictures', () => {
+    const obsolete = { pngBase64: 'held-png', outcome: 'unavailable' };
+    const valid = { pngBase64: 'valid-png', outcome: 'failed' };
+    expect(readUnsavedPictures([obsolete])).toBeNull();
+    expect(readUnsavedPictures([obsolete, valid])).toEqual([valid]);
+  });
+
   function durableStore(initial = null) {
     let record = structuredClone(initial);
     return {
