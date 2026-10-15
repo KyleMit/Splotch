@@ -143,7 +143,6 @@ function brushTool({ screen, sound, disabled, ink, flyout, setFlyout }: ToolCont
           label={BRUSH_MENU_OPTIONS[control.brush].label}
           ink={ink}
           keyline={keyline}
-          selection="switch"
           selected={screen.brush === control.brush}
           disabled={disabled}
           onPress={screen.toggleBrush}
@@ -279,6 +278,7 @@ type ActionsPanelProps = {
   area: AreaSize;
   viewport: AreaSize;
   open: boolean;
+  chosenOpen: boolean;
   // Button Size, live while its slider is dragged.
   buttonScale: number;
   onToggle: () => void;
@@ -301,6 +301,7 @@ export function RsdActionsPanel({
   area,
   viewport,
   open,
+  chosenOpen,
   buttonScale,
   onToggle,
   slot,
@@ -404,6 +405,7 @@ export function RsdActionsPanel({
         <DrawerChevron
           layout={layout}
           open={open}
+          chosenOpen={chosenOpen}
           dimmed={flyout !== null}
           onPress={() => {
             setFlyout(null);
@@ -419,11 +421,13 @@ export function RsdActionsPanel({
 function DrawerChevron({
   layout,
   open,
+  chosenOpen,
   dimmed,
   onPress,
 }: {
   layout: ActionPanelLayout;
   open: boolean;
+  chosenOpen: boolean;
   dimmed: boolean;
   onPress: () => void;
 }) {
@@ -432,8 +436,8 @@ function DrawerChevron({
       <RsdIconButton
         skin="corner"
         icon="chevron-right"
-        label={open ? 'Collapse controls' : 'Expand controls'}
-        expanded={open}
+        label={chosenOpen ? 'Collapse controls' : 'Expand controls'}
+        expanded={chosenOpen}
         dimmed={dimmed}
         turn={DRAWER_CHEVRON_TURN_DEG[layout.mode][open ? 'open' : 'closed']}
         onPress={onPress}

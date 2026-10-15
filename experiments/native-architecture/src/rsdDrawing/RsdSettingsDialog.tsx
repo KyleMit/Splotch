@@ -169,7 +169,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       overlay={props.informationPage}
       seeThrough={props.buttonScale.active}
       onDismiss={onDismiss}
-      label={props.informationPage ? 'Information page' : pageLabel(subpage ?? HUB)}
+      label={props.informationPage ? 'Information page' : 'Settings'}
       size={subpage?.section === 'ai' ? 'aiSettings' : 'settings'}
       // Escape, the scrim, Android Back and browser Back close Settings from any page, as
       // shipping's dialog does; only the header's Back returns to the hub.

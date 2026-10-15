@@ -160,6 +160,7 @@ export function RsdEdgeLayout({
               area={area}
               viewport={viewport}
               open={drawerOpen}
+              chosenOpen={drawerChosen}
               buttonScale={buttonScale}
               onToggle={() => setDrawerChosen(!drawerOpen)}
               slot={slot}
@@ -264,8 +265,8 @@ function RsdPalette({
       ]}
     >
       <html.div
-        role="radiogroup"
-        aria-label="Paint colors"
+        // Geometry tests identify the paint row independently of its accessibility semantics.
+        data-testid="rsd-palette-paints"
         style={[paletteStyles.flow(column, spacing), paletteStyles.group]}
       >
         {paints.map((color) => (

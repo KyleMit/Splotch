@@ -109,7 +109,7 @@ it('renders every toolbar action as a named icon button that calls its owner', a
   expect(NATIVE_ICONS.settings.light).toContain('currentColor');
 });
 
-it('keeps the toolbar disabled boundary and the lone optional brush switch', async () => {
+it('keeps the toolbar disabled boundary and the lone optional brush button', async () => {
   await mountToolbar(
     toolbarScreen({
       disabled: true,
@@ -120,8 +120,8 @@ it('keeps the toolbar disabled boundary and the lone optional brush switch', asy
   );
   await expandControls();
   const eraser = button('Eraser');
-  expect(eraser.getAttribute('role')).toBe('switch');
-  expect(eraser.dataset.checked).toBe('false');
+  expect(eraser.getAttribute('role')).toBe('button');
+  expect(eraser.dataset.selected).toBe('false');
   expect(iconMarkup(eraser)).toBe(NATIVE_ICONS['brush-eraser'].light);
   expect(button('Clear drawing')).not.toBeNull();
   expect(clearProps().accessibilityState.disabled).toBe(true);
@@ -150,14 +150,16 @@ function expanded(label) {
     .expanded;
 }
 
-it('selects paint through text-free round swatches and keeps More colors outside the group', async () => {
+const ringedPaints = () => [...paintGroup().children].filter((node) => node.childElementCount > 0);
+
+it('selects paint through text-free round buttons and keeps Custom Color outside the paint row', async () => {
   await mountToolbar(toolbarScreen());
-  const swatches = [...paintGroup().querySelectorAll('[role="radio"]')];
+  const swatches = [...paintGroup().querySelectorAll('button')];
+  expect(host.querySelector('[role="radiogroup"]')).toBeNull();
+  expect(swatches.every((node) => node.getAttribute('role') === 'button')).toBe(true);
+  expect(swatches.every((node) => !node.hasAttribute('data-checked'))).toBe(true);
   expect(swatches.every((node) => node.textContent === '')).toBe(true);
-  const checked = () =>
-    swatches
-      .filter((node) => node.dataset.checked === 'true')
-      .map((node) => node.getAttribute('aria-label'));
+  const checked = () => ringedPaints().map((node) => node.getAttribute('aria-label'));
   expect(checked()).toEqual(['Purple']);
   const setColor = vi.spyOn(caller.product.sound.owner.settings, 'setColor');
   await act(async () => button('Blue').click());
@@ -249,12 +251,12 @@ it('selects the custom swatch before opening its picker, restoring the last cust
 
 it('hides the palette selection ring while erasing, as shipping does', async () => {
   await mountToolbar(toolbarScreen({ brush: 'eraser' }));
-  expect(paintGroup().querySelectorAll('[data-checked="true"]')).toHaveLength(0);
+  expect(ringedPaints()).toHaveLength(0);
   await act(async () => {
     caller.screen.brush = 'pen';
     root.render(createElement(RsdDrawingScreen));
   });
-  expect(paintGroup().querySelectorAll('[data-checked="true"]')).toHaveLength(1);
+  expect(ringedPaints()).toHaveLength(1);
 });
 
 it('tucks the shipping tools, in order, into a drawer the chevron after them reveals and hides', async () => {

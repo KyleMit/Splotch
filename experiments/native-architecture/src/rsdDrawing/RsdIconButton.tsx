@@ -315,8 +315,7 @@ function iconSize(
 // keyline, which is transparent (no keyline) on light paper.
 export type InkKeyline = 'white' | 'dark';
 
-type Selection =
-  { selection?: never; selected?: never } | { selection: 'radio' | 'switch'; selected: boolean };
+type Selection = { selected?: boolean };
 
 type Common = {
   icon: NativeIconName;
@@ -396,7 +395,7 @@ export function RsdIconButton(props: IconButtonProps) {
       </RsdPressable>
     );
   }
-  const { skin, ink, selection, selected = false } = props;
+  const { skin, ink, selected = false } = props;
   const face = faceGeometry(props, bare);
   const { size, padding } = face;
   const disabled = skin === 'tile' && props.disabled === true;
@@ -428,9 +427,9 @@ export function RsdIconButton(props: IconButtonProps) {
     <RsdPressable
       key={bare ? 'flat' : 'raised'}
       type="button"
-      role={selection ?? 'button'}
+      role="button"
       aria-label={label}
-      aria-checked={selection ? selected : undefined}
+      aria-pressed={props.selected}
       aria-expanded={expanded}
       aria-disabled={disabled}
       aria-busy={busy || undefined}

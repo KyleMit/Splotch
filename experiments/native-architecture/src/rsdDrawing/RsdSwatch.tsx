@@ -139,9 +139,7 @@ export function RsdPaintAction({
   return (
     <RsdPressable
       type="button"
-      role="radio"
       aria-label={paintLabel(color, theme)}
-      aria-checked={selected}
       aria-disabled={disabled}
       disabled={disabled}
       style={[

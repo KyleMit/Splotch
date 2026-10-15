@@ -109,7 +109,7 @@ it('drills into Feedback inside Settings, with the shipping form and none of the
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Feedback');
   expect(caller.screen.closeSettings).not.toHaveBeenCalled();
-  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
   expect(host.querySelector('[data-native-modal="Send Feedback"]')).toBeNull();
   expect(host.textContent).toContain(REPORT_FORM_COPY.intro);
   expect(host.textContent).toContain(REPORT_FORM_COPY.privacy);
@@ -158,7 +158,7 @@ it('previews the device rows in the disclosure and sends the report only after t
   });
   // The check stacks over Settings, so the form the parent sent from is still there for the result.
   expect(caller.screen.closeSettings).not.toHaveBeenCalled();
-  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
   expect(labelled(REPORT_FORM_COPY.sending).disabled).toBe(true);
   await act(async () => {
     finish(new Response('{"ok":true}'));
@@ -166,7 +166,7 @@ it('previews the device rows in the disclosure and sends the report only after t
   });
   const statuses = [...host.querySelectorAll('[role="status"]')].map((node) => node.textContent);
   expect(statuses.filter(Boolean)).toEqual([REPORT_FORM_COPY.sent]);
-  expect(host.querySelector('[data-native-modal="Feedback"]')).not.toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
 });
 
 // The shell's exit plays before the route lets Settings go, so a reopen is a fresh visit.
@@ -195,7 +195,7 @@ it("keeps an earlier visit's report out of the next visit's form", async () => {
   expect(caller.feedbackSend).toHaveBeenCalledOnce();
   expect(labelled(REPORT_FORM_COPY.sending).disabled).toBe(true);
   await rerender(false);
-  expect(host.querySelector('[data-native-modal="Feedback"]')).toBeNull();
+  expect(host.querySelector('[data-native-modal="Settings"]')).toBeNull();
   await rerender(true);
   await openSettingsSection('Feedback');
   await input(BUG_FIELD, 'Second visit, not sent');

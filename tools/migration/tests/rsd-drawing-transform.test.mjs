@@ -50,9 +50,9 @@ it('transforms the canonical mounted RSD screen, native adapters and actual rele
   expect(JSON.parse(result.stdout)).toMatchObject({
     canonicalEntry: true,
     mountedRsdSource: true,
-    optionalBrushSwitches: 3,
+    optionalBrushToggles: 3,
     optionalBrushLabels: ['Crayon', 'Magic Brush', 'Eraser'],
-    adaptiveToolbarSwitch: true,
+    adaptiveToolbarToggle: true,
     preservedSettingsSwitches: 0,
   });
 });
@@ -100,7 +100,24 @@ it.each([
     '<RsdDrawingScreen key={page} page={page} />',
     'Stable drawing mount',
   ],
-  ['src/rsdDrawing/RsdEdgeControls.tsx', 'role="radiogroup"', 'role="group"', 'RSD radio group'],
+  [
+    'src/rsdDrawing/RsdEdgeControls.tsx',
+    'data-testid="rsd-palette-paints"',
+    'role="radiogroup" data-testid="rsd-palette-paints"',
+    'RSD palette radio group count',
+  ],
+  [
+    'src/rsdDrawing/RsdSwatch.tsx',
+    'type="button"',
+    'type="button" role="radio"',
+    'RSD plain paint button',
+  ],
+  [
+    'src/rsdDrawing/RsdIconButton.tsx',
+    'aria-pressed={props.selected}',
+    'aria-checked={props.selected}',
+    'RSD pressed button owner',
+  ],
   [
     'src/rsdDrawing/NativePaper.tsx',
     "from 'react-native'",
@@ -208,25 +225,25 @@ it.each([
     'src/rsdDrawing/RsdActionsPanel.tsx',
     "control.kind === 'toggle'",
     "control.kind === 'menu'",
-    'RSD optional toolbar switch branch',
+    'RSD optional toolbar toggle branch',
   ],
   [
     'src/rsdDrawing/RsdActionsPanel.tsx',
     'selected={screen.brush === control.brush}',
     'selected={control.brush === control.brush}',
-    'RSD optional toolbar switch state owner',
+    'RSD optional toolbar toggle state owner',
   ],
   [
     'src/rsdDrawing/RsdActionsPanel.tsx',
     'label={BRUSH_MENU_OPTIONS[control.brush].label}',
     'label={BRUSH_MENU_OPTIONS[screen.brush].label}',
-    'RSD optional toolbar switch labels',
+    'RSD optional toolbar toggle labels',
   ],
   [
     'src/rsdDrawing/RsdActionsPanel.tsx',
     'onPress={screen.toggleBrush}',
     'onPress={screen.undo}',
-    'RSD optional toolbar switch callback',
+    'RSD optional toolbar toggle callback',
   ],
   [
     'src/rsdDrawing/RsdSettingsRoute.tsx',
@@ -257,7 +274,7 @@ it.each([
   expect(result.stderr).toContain(reason);
 });
 
-it('rejects actual Babel output losing the optional toolbar switch selected state', () => {
+it('rejects actual Babel output losing the optional toolbar toggle selected state', () => {
   const path = fixture();
   writeFileSync(
     join(path, 'babel.config.cjs'),
@@ -272,11 +289,11 @@ module.exports = function(api) {
           const properties = path.node.properties;
           const property = (name) => properties.find((item) =>
             item.type === 'ObjectProperty' && !item.computed && item.key.type === 'Identifier' && item.key.name === name);
-          const selection = property('selection');
+          const onPress = property('onPress');
           const selected = property('selected');
           const value = selected && selected.value;
-          if (selection && selection.value.type === 'StringLiteral' && selection.value.value === 'switch' &&
-              value && value.type === 'BinaryExpression') {
+          if (onPress && onPress.value.type === 'MemberExpression' &&
+              onPress.value.property.name === 'toggleBrush' && value && value.type === 'BinaryExpression') {
             selected.value = { type: 'BooleanLiteral', value: false };
           }
         }});
@@ -287,5 +304,5 @@ module.exports = function(api) {
   );
   const result = run(path);
   expect(result.status, result.stderr).toBe(1);
-  expect(result.stderr).toContain('RSD transformed optional toolbar switch state owner');
+  expect(result.stderr).toContain('RSD transformed optional toolbar toggle state owner');
 });

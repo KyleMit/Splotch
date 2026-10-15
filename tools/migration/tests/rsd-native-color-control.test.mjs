@@ -50,7 +50,7 @@ function viewport({ width, height }) {
 const colorsButton = () => host.querySelector('[aria-label="Colors"][role="button"]');
 const colorMenu = () => host.querySelector('[role="group"][aria-label="Colors"]');
 const menuPaints = () =>
-  [...colorMenu().querySelectorAll('[role="radio"]')].map((node) =>
+  [...colorMenu().firstElementChild.querySelectorAll('button')].map((node) =>
     node.getAttribute('aria-label')
   );
 const expanded = () =>
@@ -109,7 +109,7 @@ describe('the landscape phone Color Button and Color Menu', () => {
     viewport(LANDSCAPE_PHONE);
     await mountToolbar(toolbarScreen());
     expect(host.querySelector('[data-testid="rsd-palette-bar"]')).toBeNull();
-    expect(host.querySelector('[aria-label="Paint colors"]')).toBeNull();
+    expect(host.querySelector('[data-testid="rsd-palette-paints"]')).toBeNull();
     expect(expanded()).toBe(false);
     expect(colorsButton().querySelector('svg[data-xml]').dataset.xml).toContain('fill="#AB71E1"');
     const size = PHONE_TOOLBAR_BUTTON_PX;
@@ -137,7 +137,7 @@ describe('the landscape phone Color Button and Color Menu', () => {
   it('keeps the palette bar, with no Color Button, in portrait', async () => {
     viewport(PORTRAIT_PHONE);
     await mountToolbar(toolbarScreen());
-    expect(host.querySelector('[aria-label="Paint colors"]')).not.toBeNull();
+    expect(host.querySelector('[data-testid="rsd-palette-paints"]')).not.toBeNull();
     expect(colorsButton()).toBeNull();
   });
 
@@ -151,7 +151,9 @@ describe('the landscape phone Color Button and Color Menu', () => {
     expect(menuPaints()).toEqual(shippingMenuRanks(room));
     expect(menuPaints()).toHaveLength(9);
     const purple = colorMenu().querySelector('[aria-label="Purple"]');
-    expect(purple.dataset.checked).toBe('true');
+    expect(purple.getAttribute('role')).toBe('button');
+    expect(purple.hasAttribute('data-checked')).toBe(false);
+    expect(purple.childElementCount).toBe(3);
     expect(colorMenu().querySelector('[aria-label="Custom Color"]')).not.toBeNull();
     await act(async () => colorMenu().querySelector('[aria-label="Blue"]').click());
     expect(screen.selectInkBrush).toHaveBeenCalledOnce();
@@ -175,7 +177,8 @@ describe('the landscape phone Color Button and Color Menu', () => {
     viewport(LANDSCAPE_PHONE);
     await mountToolbar(toolbarScreen({ brush: 'eraser' }));
     await act(async () => colorsButton().click());
-    expect(colorMenu().querySelectorAll('[data-checked="true"]')).toHaveLength(0);
+    const paints = colorMenu().firstElementChild;
+    expect([...paints.children].filter((node) => node.childElementCount > 0)).toHaveLength(0);
   });
 
   it('folds the drawer out on a swipe up and away on a swipe down, leaving taps to the menu', async () => {
