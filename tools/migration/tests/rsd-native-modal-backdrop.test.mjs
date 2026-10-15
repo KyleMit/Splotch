@@ -1,3 +1,4 @@
+import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -107,6 +108,9 @@ it('uses the secondary chrome contact for the dialog opener dead zone', async ()
     NativeDrawingLayout,
     {
       bareGlass: null,
+      paper: UNADOPTED_PAPER,
+      empty: true,
+      departingPaper: null,
       palette: () => null,
       clearUnderlay: () => null,
       clearOverlay: null,
@@ -122,7 +126,7 @@ it('uses the secondary chrome contact for the dialog opener dead zone', async ()
           onPress: () => root.render(screen(true)),
         }),
     },
-    'paper'
+    () => 'paper'
   );
   const screen = (visible) =>
     createElement(

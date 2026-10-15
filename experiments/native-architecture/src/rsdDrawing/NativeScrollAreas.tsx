@@ -66,6 +66,10 @@ function areaOffset(root: Box | undefined, column: Box | undefined, area: Box | 
   };
 }
 
+function insetControlsArea(area: AreaSize, left: number, bottom: number): AreaSize {
+  return { width: area.width - left, height: area.height - bottom };
+}
+
 function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined) => void) {
   return ({ nativeEvent }: { nativeEvent: { layout: Box } }) => {
     const { x, y, width, height } = nativeEvent.layout;
@@ -242,10 +246,7 @@ export function NativeDrawingLayout({
   );
   const controlsLeftPx =
     bareGlass && axis === 'column' && !phoneLandscape ? PALETTE_FLOWS.column.extentPx : 0;
-  const controlArea = {
-    width: paperArea.width - controlsLeftPx,
-    height: paperArea.height - insetBottom,
-  };
+  const controlArea = insetControlsArea(paperArea, controlsLeftPx, insetBottom);
   const content = (
     <View
       testID="rsd-drawing-layout"

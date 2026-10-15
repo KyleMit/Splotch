@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { legacyDrawing, paperInputPacket } from './native-paper-fixtures.mjs';
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act, createElement, createRef } from 'react';
 import { createPictureSurfaceFixture } from './native-picture-surface-fixture.mjs';
 import {
@@ -397,33 +397,21 @@ describe('mounted canonical output identity', () => {
     await act(async () =>
       state.layouts.at(-1)({ nativeEvent: { layout: { width: 1024, height: 768 } } })
     );
-    const input = state.inputs[0];
-    const touch = {
-      identifier: 'finger',
-      locationX: 200,
-      locationY: 300,
-      pageX: 200,
-      pageY: 300,
-      target: 101,
-      timestamp: 100,
+    const nativeEvent = {
+      sequence: 0,
+      phase: 'start',
+      changed: ['finger'],
+      contacts: [
+        {
+          identifier: 'finger',
+          startedAt: 100,
+          tool: 'touch',
+          samples: [{ pageX: 200, pageY: 300, timestamp: 100 }],
+        },
+      ],
+      viewport: { width: 1024, height: 768, bottomInset: 0 },
     };
-    const start = {
-      currentTarget: 101,
-      nativeEvent: { touches: [touch], changedTouches: [touch], target: 101 },
-      touchHistory: {
-        touchBank: { finger: { touchActive: true, startTimeStamp: 100 } },
-        mostRecentTimeStamp: 100,
-      },
-    };
-    await act(async () => {
-      input({
-        nativeEvent: paperInputPacket('start', start, 0, {
-          width: 1024,
-          height: 768,
-          bottomInset: 0,
-        }),
-      });
-    });
+    await act(async () => state.inputs[0]({ nativeEvent }));
     expect(() => ref.current.lockInput()).toThrow('Finish drawing');
     await expect(ref.current.captureInk(drawing)).rejects.toThrow('Lift your finger');
   });

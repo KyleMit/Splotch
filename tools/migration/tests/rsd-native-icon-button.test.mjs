@@ -1,5 +1,5 @@
 import { expect, describe, it, vi } from 'vitest';
-import { createElement as h } from 'react';
+import { act, createElement as h } from 'react';
 import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import {
   control,
@@ -112,6 +112,7 @@ describe('RsdIconButton', () => {
   it.each(MODES)(
     'fades a disabled %s tile deeper than the shared step and mutes its glyph',
     async (mode) => {
+      const onPress = vi.fn();
       await mount(
         h(RsdIconButton, {
           skin: 'tile',
@@ -119,7 +120,7 @@ describe('RsdIconButton', () => {
           label: 'Settings',
           size: TILE_PX,
           disabled: true,
-          onPress: vi.fn(),
+          onPress,
         }),
         { mode }
       );
@@ -134,7 +135,12 @@ describe('RsdIconButton', () => {
         NATIVE_ICONS.settings[mode].replaceAll('currentColor', themes[mode].iconMuted)
       );
       expect(tile.style.transform).toEqual([{ scale: 1 }]);
-      expect(tile.onPressIn).toBeUndefined();
+      const timings = host.timings.length;
+      await pressIn('Settings');
+      await act(async () => control('Settings').onPress({ nativeEvent: {} }));
+      expect(onPress).not.toHaveBeenCalled();
+      expect(host.timings).toHaveLength(timings);
+      expect(control('Settings').style.transform).toEqual([{ scale: 1 }]);
     }
   );
 

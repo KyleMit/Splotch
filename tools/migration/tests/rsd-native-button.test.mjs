@@ -133,7 +133,8 @@ describe('RsdButton', () => {
   it.each(MODES.flatMap((mode) => Object.keys(PARKED).map((variant) => [variant, mode])))(
     'parks a disabled %s button on the neutral %s treatment with no press',
     async (variant, mode) => {
-      await mount(h(RsdButton, { variant, disabled: true, onPress: vi.fn() }, 'Send report'), {
+      const onPress = vi.fn();
+      await mount(h(RsdButton, { variant, disabled: true, onPress }, 'Send report'), {
         mode,
       });
       const button = control();
@@ -145,7 +146,12 @@ describe('RsdButton', () => {
         transform: [{ scale: 1 }],
       });
       expect(label().color).toBe(themes[mode].text);
-      expect(button.onPressIn).toBeUndefined();
+      const timings = host.timings.length;
+      await pressIn();
+      await act(async () => control().onPress({ nativeEvent: {} }));
+      expect(onPress).not.toHaveBeenCalled();
+      expect(host.timings).toHaveLength(timings);
+      expect(control().style.transform).toEqual([{ scale: 1 }]);
     }
   );
 
