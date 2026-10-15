@@ -65,8 +65,8 @@ native keeps its synchronous, offline-complete bundle unchanged.
     modules.
 * **Images are data URIs on native and hashed asset files on web.**
   * `gen-bundled-farm.mjs` writes `bundledFarm/images.ts` (data URIs) and
-    `bundledFarm/images.web.ts` (imports of the shipping `web/static/coloring` files, resolved
-    through `Asset.fromModule`).
+    `bundledFarm/images.web.ts` (imports of the shipping `web/static/coloring` files, whose URLs
+    `webAssetUri` in `platform/webAsset.ts` reads; see the fourth cut).
   * `tools/tests/native-starter-book.test.mjs` proves both modules carry the same shipped bytes slot
     for slot.
   * Consequence for capture: a page fill can now be a URL on web. An SVG decoded as an image loads
@@ -86,7 +86,8 @@ native keeps its synchronous, offline-complete bundle unchanged.
     * executable inline scripts;
     * inline CSS.
   * `check-native-web-precache.mjs` requires every Farm image and page chunk to be precached for
-    offline use. It rejects Farm line art or deferred icons found in a script the shell loads.
+    offline use. It rejects Farm line art, deferred icons or release notes found in a script the
+    shell loads.
   * The target is `NATIVE_WEB_STARTUP_TARGET_BYTES` = `MAX_STARTUP_JS_CSS_BYTES` + the 323,984-byte
     React Native Web floor (`REACT_NATIVE_WEB_FLOOR_BYTES`) = 848,984 bytes. That is the cost the
     export would have if its app code were as lean as the shipping app's.
@@ -94,11 +95,14 @@ native keeps its synchronous, offline-complete bundle unchanged.
     1,219,090, against a 1,220,000 cap. Issue 2844 took the two levers below and reviewed the
     startup at 993,619 bytes, 144,635 over the target. The third cut (below) took the startup icon
     set and `react-native-svg` off the path, reached 877,862 bytes, and with the AI flow (PR 2869)
-    merged was reviewed at 894,104, 45,120 over.
-  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 906,000, is that measurement plus 11,896 bytes of
-    headroom. The headroom stays below the smallest move it protects (the offline library
-    controller, 24,471 bytes). Undoing any lever fails the build. So does statically importing the
-    AI sheet (measured at 1,099,429 bytes against the earlier base).
+    merged was reviewed at 894,104, 45,120 over. The fourth cut (below) reviewed it at 858,902,
+    9,918 over.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 870,798, is that measurement plus 11,896 bytes of
+    headroom, the margin the 906,000 cap kept over 894,104. The headroom stays below every move
+    through the third cut (the smallest, the offline library controller, is 24,471 bytes), so
+    undoing one fails the build. So does statically importing the AI sheet (measured at 1,099,429
+    bytes against the earlier base). Two of the fourth cut's levers are smaller than the headroom,
+    so each of its three fails its own check instead.
   * The cap is a ratchet. Consuming the headroom is the cue to take the next lever, not to raise the
     number.
 * **The app's `Animated` leaves out React Native Web's list components.**
@@ -242,6 +246,77 @@ KB entry over the wire and 3.15 s LCP on phone and tablet; with the cut, 894,104
 modules left on the path are the startup icons (14 KB), the sound settings with their codec (16 KB)
 and the contact responder (8 KB).
 
+### The fourth cut: release notes, Expo's native-module runtime, compiled-away RSD imports
+
+The startup reached 905,037 bytes against the 906,000 cap. A source-map attribution of the three
+startup scripts found four pieces no first paint uses and no second lazy chunk shares:
+
+* **The release notes load with Settings.** The settings store read the What's New stamp from
+  `settings/whatsNew.ts`, which also held every release's notes. The stamp lives in
+  `whatsNewStamp.ts`; only Settings imports the notes. `check-native-web-precache.mjs` samples the
+  notes among the modules no shell script may hold.
+* **expo-asset leaves the web bundle.** Each web module read a bundled file's URL through
+  `Asset.fromModule(...).uri`. Expo's web asset transform exports an image as
+  `{ uri, width, height }` and any other file as its URL, so `webAssetUri` (`platform/webAsset.ts`)
+  reads both. `gen-bundled-farm.mjs` writes the Farm image modules that way.
+* **The web export launches without Expo's native-module runtime.** The `expo` index re-exports
+  `expo-modules-core` beside `registerRootComponent`; no web module uses it.
+  `platform/registerRoot.web.ts` imports `expo/src/launch/registerRootComponent`, the module the
+  index re-exports and the path Expo's own `AppEntry.js` uses. Its web variant runs Expo's web
+  setup, including the async-require the lazy chunks load through. Native keeps the index. Because
+  TypeScript checks that module's source, `platform/expoWebLauncher.d.ts` declares the one window
+  global it reads.
+* **React Strict DOM imports the web preset compiled away are dropped.** The preset rewrites every
+  `html.*` element and `css.*` call to DOM props, then leaves the import, which Metro keeps as a
+  require of RSD's runtime element library. A web-only Babel step in `babel.config.cjs` drops each
+  RSD binding nothing reads after the preset. The two Settings modules that read `html.*` as a value
+  keep theirs, so the library loads with Settings.
+
+`tools/tests/native-web-expo-runtime.test.mjs` fails if a module the web export bundles imports the
+`expo` index or `expo-asset`. It also fails if Expo moves the launcher, or if the asset transform
+stops exporting either shape. `tools/tests/native-web-strict-dom-imports.test.mjs` runs the
+project's Babel config and fails if a compiled-away RSD import survives on web, or if one is dropped
+where a module still reads it or on native.
+
+Measured one lever at a time on `origin/codex/native-migration` at 64a9ca53a, then on the merged
+base at a01948dab:
+
+| Step                                    | Startup bytes     | Change  |
+| --------------------------------------- | ----------------- | ------- |
+| Before                                  | 905,037           |         |
+| Release notes with Settings             | 898,043           | −6,994  |
+| `expo-asset` off the web bundle         | 889,208           | −8,835  |
+| Expo's web launcher                     | 867,157           | −22,051 |
+| Compiled-away RSD imports dropped       | 859,163           | −7,994  |
+| Merged base (a01948dab), before / after | 904,776 / 858,902 | −45,874 |
+
+The release-notes row is attributed from source maps; the others are builds. The service worker
+precaches every chunk, so the RSD library's move into the Settings chunk adds no offline download.
+Screenshots at 390×844, light and dark, are pixel-identical before and after at first paint, in
+Settings' What's New, the color picker, the Brushes flyout, the Coloring Book Picker, a Farm page, a
+Magic Brush fill and the Flat button style. First contentful paint under 4× CPU throttling is
+unchanged (280 ms local median of seven runs each).
+
+Levers measured and not taken:
+
+* **Expo's experimental tree shaking** (`EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH` and
+  `EXPO_UNSTABLE_TREE_SHAKING`) removes about 26.8 KB more from the cut's startup, mostly unused
+  exports. It is a build-wide flag still marked unstable, and no app flow has run under it.
+* **Expo's `__common` chunk**, 27.8 KB, holds only modules that two lazy chunks share. `index.html`
+  loads it before first paint, yet no startup module uses it. Most of it is shared between Settings
+  and the product chunk (the buttons, confirm card, disclosure and device opt-in, about 17 KB).
+  Taking it off needs either one chunk for Settings and the product, which loads Settings after
+  every launch, or a runtime change to Expo's async-require.
+* **React Native Web's `Animated`**, about 62 KB, drives the startup chrome's press motion and the
+  clear gesture as well as the dialogs, so it cannot leave without a second animation driver.
+* **The surface failure dialog** (`RsdSurfaceBoundary`) keeps `ModalShell`, `DialogHeader`, React
+  Native Web's `Modal` and `ScrollView` on the path, about 36 KB, by design: it is the answer to a
+  chunk that failed to load. Every lazy dialog shares those modules, so moving them off the entry
+  would put them in `__common` instead.
+* **React Native Web's development-only style validator** (`StyleSheet/validate.js` with
+  `postcss-value-parser`, about 6 KB) is imported unconditionally. Only a resolver alias would drop
+  it, which this ADR rejects for library internals.
+
 ## Consequences
 
 * \+ First paint on a throttled phone dropped from 13.2 s LCP and 2,346 KB transferred to about
@@ -282,3 +357,10 @@ and the contact responder (8 KB).
   rather than on first open.
 * − Web capture now does a network or cache fetch per file-served fill. A failed fetch fails the
   capture closed (an empty result), as a decode error already did.
+* \+ The fourth cut took 45,874 bytes off the startup path with first paint unchanged, leaving it
+  9,918 bytes over the target.
+* − The web export imports Expo's launcher by its source path, and TypeScript checks that source. An
+  Expo upgrade that moves it fails `native-web-expo-runtime.test.mjs`; one that changes its globals
+  can fail the native type check.
+* − The RSD element library now loads with the Settings chunk. A second lazy chunk that reads
+  `html.*` as a value would move it into `__common`, back on the startup path.
