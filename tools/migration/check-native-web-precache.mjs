@@ -49,6 +49,12 @@ const SHELL_ASSET_REFERENCE = /(?:src|href)="\/([^"?#]+)"/g;
 const PATH_DATA = / d="([^"]+)"/;
 // Shorter path data (a lone circle or square) could recur in a startup icon by coincidence.
 const MIN_LAZY_ICON_SAMPLE_CHARS = 40;
+const RELEASE_NOTES_JSON = new URL(
+  '../../experiments/native-architecture/src/information/releaseNotes.generated.json',
+  import.meta.url
+);
+// Text a minifier copies into a string literal unescaped, long enough not to recur by chance.
+const PLAIN_TEXT_RUN = /[A-Za-z0-9 ,.]{24,}/g;
 
 // The first path of each lazily imported icon (iconRegistry.ts): the scripts the shell loads must
 // hold none, or the deferred set has fallen back onto the startup path.
@@ -70,6 +76,17 @@ export function starterOutlineSamples(farmDir = BUNDLED_FARM_DIR) {
   });
 }
 
+// The longest plain-text run of each release note What's New shows. Only Settings imports the
+// notes (settings/whatsNew.ts); the settings store reads the stamp alone (whatsNewStamp.ts).
+export function releaseNoteSamples(notesPath = RELEASE_NOTES_JSON) {
+  const releases = Object.values(JSON.parse(readFileSync(notesPath, 'utf8')));
+  return releases
+    .flat()
+    .flatMap((section) => section.blocks)
+    .map(({ text }) => text.match(PLAIN_TEXT_RUN)?.sort((a, b) => b.length - a.length)[0])
+    .filter((sample) => sample !== undefined);
+}
+
 export function lazyModuleSamples() {
   return [
     ...lazyIconSamples().map((sample) => ({ module: 'deferred icons', sample })),
@@ -77,6 +94,7 @@ export function lazyModuleSamples() {
       module: `${pageId} line art`,
       sample,
     })),
+    ...releaseNoteSamples().map((sample) => ({ module: 'release notes', sample })),
   ];
 }
 

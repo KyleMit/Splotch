@@ -27,11 +27,11 @@ import {
   createSettingsSessions,
 } from '../../experiments/native-architecture/src/settings/settingsSessions.ts';
 import { DEFAULT_BRUSH_AVAILABILITY } from '../../experiments/native-architecture/src/settings/brushPreferences.ts';
+import { RELEASE_NOTES } from '../../experiments/native-architecture/src/settings/whatsNew.ts';
 import {
-  RELEASE_NOTES,
   WHATS_NEW_STAMP,
   whatsNewUnseen,
-} from '../../experiments/native-architecture/src/settings/whatsNew.ts';
+} from '../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import {
   createSoundSettings,
   parseSoundSettings,

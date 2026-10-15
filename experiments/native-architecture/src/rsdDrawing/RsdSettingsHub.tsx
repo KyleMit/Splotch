@@ -11,7 +11,7 @@ import {
   type NativeSettingsSectionId,
   type SectionSummaryContext,
 } from '../settings/settingsSections';
-import { whatsNewUnseen } from '../settings/whatsNew';
+import { whatsNewUnseen } from '../settings/whatsNewStamp';
 
 const SESSION_COUNT_DESCRIPTION = 'Settings session count';
 

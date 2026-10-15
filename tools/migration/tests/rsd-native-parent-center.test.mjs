@@ -39,7 +39,7 @@ import {
   solveParentGate,
   tapGateKeys,
 } from './rsd-parent-gate-keypad.mjs';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import { paletteHex } from '../../../web/src/lib/palette.ts';
 import { colorFamilyShade } from '../../../web/src/lib/hexPickerLayout.ts';
 

@@ -30,7 +30,7 @@ import {
   REDUCE_MOTION_DEFAULT,
   type ReduceMotionPreference,
 } from './reduceMotion';
-import { isWhatsNewSeen } from './whatsNew';
+import { isWhatsNewSeen } from './whatsNewStamp';
 import { DEFAULT_PENCIL_SETTINGS, readPencilSettings, type PencilSettings } from './pencilEraser';
 import { DEFAULT_AI_PREFERENCES, readAiPreferences, type AiPreferences } from './aiPreferences';
 import {
