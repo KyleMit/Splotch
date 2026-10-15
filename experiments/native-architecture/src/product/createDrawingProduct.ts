@@ -27,13 +27,13 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
   let settingsState: SoundSettingsState | null = null;
   const gate = createParentGate(() => preferences.parentPolicies, notify);
   const settings = createSoundSettings(storage, (next) => {
-    const changed =
-      preferences.aiEnabled !== next.aiEnabled ||
-      PARENT_FEATURES.some(
-        (feature) => preferences.parentPolicies[feature] !== next.parentPolicies[feature]
-      );
+    const changedPolicies = PARENT_FEATURES.filter(
+      (feature) => preferences.parentPolicies[feature] !== next.parentPolicies[feature]
+    );
+    const changed = preferences.aiEnabled !== next.aiEnabled || changedPolicies.length > 0;
     preferences = { aiEnabled: next.aiEnabled, parentPolicies: next.parentPolicies };
     settingsState = next;
+    for (const feature of changedPolicies) gate.rearm(feature);
     if (changed) {
       consentEpoch += 1;
       gate.invalidate();
@@ -41,7 +41,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     notify();
   });
   const port: ParentOperationPort = {
-    request(feature, action) {
+    request(feature, action, options) {
       if (
         disposed ||
         !settingsState ||
@@ -49,7 +49,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
         ((feature === 'ai' || feature === 'imageReport') && !preferences.aiEnabled)
       )
         return false;
-      return gate.request(feature, action);
+      return gate.request(feature, action, options);
     },
     cancel: gate.cancel,
     consent: () => ({ enabled: !disposed && preferences.aiEnabled, epoch: consentEpoch }),
@@ -96,7 +96,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     async setPolicy(feature: ParentFeature, mode: ParentMode, confirmed = false) {
       if (!editable()) return;
       if (!isParentModeAvailable(feature, mode, PARENT_PLATFORM)) return;
-      if (endsParentCenterProtection(feature, mode) && !confirmed) {
+      if (endsParentCenterProtection(feature, mode, preferences.parentPolicies) && !confirmed) {
         confirmNever = true;
         notify();
         return;

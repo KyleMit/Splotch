@@ -11,7 +11,7 @@ import { RsdParentCenterSection } from '../../../experiments/native-architecture
 import { RsdParentGateSheet } from '../../../experiments/native-architecture/src/rsdDrawing/RsdParentGateSheet.tsx';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { RsdAction } from '../../../experiments/native-architecture/src/rsdDrawing/controls.tsx';
-import { useParentGateHold } from '../../../experiments/native-architecture/src/parentCenter/useParentGateHold.ts';
+import { useParentGateCard } from '../../../experiments/native-architecture/src/parentCenter/useParentGateCard.ts';
 import {
   PARENT_GATE_ERROR_MESSAGE,
   PARENT_GATE_KEYPAD_KEYS,
@@ -86,7 +86,7 @@ async function choose(feature, mode) {
 }
 
 function GateFixture({ owner }) {
-  const view = useParentGateHold(owner.getState().gate);
+  const view = useParentGateCard(owner.getState().gate);
   return view?.open
     ? createElement(RsdParentGateSheet, {
         owner,

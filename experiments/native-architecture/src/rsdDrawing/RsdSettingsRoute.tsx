@@ -9,18 +9,23 @@ import { RsdParentCenterSection } from './RsdParentCenterSection';
 // would put it in two lazy chunks, which Expo hoists into the startup chunk.
 import { RsdParentGateSheet } from './drawingSheets';
 import { useModalPresence } from './useModalPresence';
-import type { ParentGateView } from '../parentCenter/useParentGateHold';
+import type { ParentGateView } from '../parentCenter/useParentGateCard';
 import { soundSettingsActions } from './soundSettingsActions';
 import type { SliderDraft } from './useSliderDraft';
 import { openHostedPage, type HostedPage } from '../settings/hostedPages';
 
 // Every Settings link leaves the app, so each opens only through Parent Center's Viewing external
-// links check, as shipping's parentalGateLink does. The page opens inside the solving tap, which
-// keeps a web export's new tab within that tap's user activation; with no owner, nothing opens.
+// links check, as shipping's parentalGateLink does. The page opens inside the solving tap, with no
+// "Unlocked!" card, which keeps a web export's new tab within that tap's user activation; with no
+// owner, nothing opens.
 function openOutside(owner: DrawingProductOwner | null, page: HostedPage) {
-  owner?.port.request('externalLinks', (proof) => {
-    if (proof.valid()) openHostedPage(page);
-  });
+  owner?.port.request(
+    'externalLinks',
+    (proof) => {
+      if (proof.valid()) openHostedPage(page);
+    },
+    { immediate: true }
+  );
 }
 
 // Settings wired to the drawing screen's owners. Its own module so the wiring loads with the
