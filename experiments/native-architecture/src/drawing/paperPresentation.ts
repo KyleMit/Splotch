@@ -8,7 +8,7 @@ import type { AdoptedPaper, PaperReference } from './paperSpace';
 
 // Where the paper sits inside its slot, in the slot's CSS pixels. It may reach past the slot,
 // which crops it.
-export type PaperFrame = Readonly<{ left: number; top: number; width: number; height: number }>;
+type PresentedFrame = Readonly<{ left: number; top: number; width: number; height: number }>;
 type Point = Readonly<{ x: number; y: number }>;
 
 // Shipping's PaperLayoutSnapshot (paperLayout.ts): an inked paper held at a screen position and
@@ -28,7 +28,7 @@ export type PaperPresentationInputs = Readonly<{
 
 export type PaperPresentationState = Readonly<{
   inputs: PaperPresentationInputs | null;
-  frame: PaperFrame | null;
+  frame: PresentedFrame | null;
   retained: Retained | null;
 }>;
 
@@ -50,7 +50,7 @@ function stillApplies(retained: Retained, window: Size) {
   );
 }
 
-function fitted(paper: Size, slot: Size): PaperFrame {
+function fitted(paper: Size, slot: Size): PresentedFrame {
   const { scale, offsetX, offsetY } = containFit(paper, slot);
   return { left: offsetX, top: offsetY, width: paper.width * scale, height: paper.height * scale };
 }
@@ -58,7 +58,7 @@ function fitted(paper: Size, slot: Size): PaperFrame {
 // Shipping's resize policy (paperPresentationFor) for a paper that is kept. Its `adopt` re-adopts
 // an inked paper at the new viewport; a native picture keeps the paper it adopted, so that case
 // contain-fits, as shipping's own layout-only resize does.
-function policyFrame(paper: AdoptedPaper, slot: Size, layoutOnly: boolean): PaperFrame {
+function policyFrame(paper: AdoptedPaper, slot: Size, layoutOnly: boolean): PresentedFrame {
   const size = { width: paper.cssWidth, height: paper.cssHeight };
   const presentation = paperPresentationFor({
     canvasEmpty: false,
@@ -71,7 +71,7 @@ function policyFrame(paper: AdoptedPaper, slot: Size, layoutOnly: boolean): Pape
   return presentation === 'window' ? { left: 0, top: 0, ...size } : fitted(size, slot);
 }
 
-function retainedFrame(retained: Retained, origin: Point): PaperFrame {
+function retainedFrame(retained: Retained, origin: Point): PresentedFrame {
   return {
     left: retained.screen.x - origin.x,
     top: retained.screen.y - origin.y,
