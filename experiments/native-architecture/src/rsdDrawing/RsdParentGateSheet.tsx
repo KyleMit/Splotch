@@ -22,6 +22,7 @@ import { PARENT_GATE_COPY } from '../parentCenter/parentGateCopy';
 import type { ParentGateState } from '../parentCenter/parentGate';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import { useParentGateMotion } from '../parentCenter/useParentGateMotion';
+import { GateKeyboard } from '../platform/gateKeyboard';
 
 // Operand splats wear crayon hues, not chrome tokens: palette Purple, and the picker's mid-blue
 // because palette Blue misses 3:1 against the white digit (ParentalGateProblem.svelte).
@@ -68,7 +69,10 @@ export function RsdParentGateSheet({
   return (
     <ModalShell
       visible={visible}
-      onDismiss={onDismiss}
+      onDismiss={() => {
+        onDismiss();
+        owner.gate.closed();
+      }}
       label={PARENT_GATE_COPY.title}
       size="gate"
       onClose={close}
@@ -77,9 +81,12 @@ export function RsdParentGateSheet({
       {unlocked ? (
         <GateSuccess size={size} />
       ) : (
-        <Animated.View style={{ transform: [{ translateX: offset }] }}>
-          <GateChallenge owner={owner} state={state} size={size} />
-        </Animated.View>
+        <>
+          <GateKeyboard onPress={owner.gate.press} />
+          <Animated.View style={{ transform: [{ translateX: offset }] }}>
+            <GateChallenge owner={owner} state={state} size={size} />
+          </Animated.View>
+        </>
       )}
     </ModalShell>
   );

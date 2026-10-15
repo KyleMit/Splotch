@@ -39,7 +39,7 @@ export function spiedSectionAt<Id extends string>(
   offsets: readonly number[],
   { offset, viewport, content }: ScrollExtent
 ): Id {
-  if (viewport > 0 && offset + viewport >= content - SCROLL_END_EPSILON_PX)
+  if (viewport > 0 && content > 0 && offset + viewport >= content - SCROLL_END_EPSILON_PX)
     return ids[ids.length - 1];
   const line = offset + SCROLLSPY_LINE_INSET_PX;
   let current = ids[0];

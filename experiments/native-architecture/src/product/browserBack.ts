@@ -214,16 +214,23 @@ class BrowserBackController {
       this.reconcile();
       return;
     }
-    this.installedUrl = this.port.url();
+    const url = this.port.url();
+    const retainedDocument = this.installedUrl === url;
+    this.installedUrl = url;
     const initial = this.marker();
+    const resuming =
+      retainedDocument &&
+      initial?.owner === this.options.owner &&
+      initial.runtime === this.options.runtime &&
+      !initial.unwinding;
     this.spent ||= initial?.runtime === this.options.runtime && initial.spent;
     this.unlisten = this.port.listen(() => this.pop());
-    if (initial && initial.layers.length > 0) {
+    if (initial && initial.layers.length > 0 && !resuming) {
       this.recovery = initial;
       this.passiveRecovery = initial.runtime === this.options.runtime && initial.unwinding;
       if (!this.passiveRecovery) this.port.back();
     } else {
-      this.write([], false);
+      if (!resuming) this.write([], false);
       this.reconcile();
     }
   }

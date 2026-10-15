@@ -1,13 +1,11 @@
-import { SITE_ORIGIN } from '$lib/siteUrl';
-import { SECTIONS, type SectionId } from './contents';
-
-const COPIED_DURATION_MS = 2000;
-// Leave an empty live region between identical confirmations across rendering tasks.
-const REANNOUNCE_DELAY_MS = 150;
-
-export function sectionUrl(id: SectionId): string {
-  return `${SITE_ORIGIN}/privacy#${id}`;
-}
+import type { SectionId } from './contents';
+import {
+  sectionUrl,
+  sectionLinkAnnouncement,
+  COPIED_DURATION_MS,
+  REANNOUNCE_DELAY_MS,
+} from './sectionLink';
+export { sectionUrl } from './sectionLink';
 
 export function createSectionLinks() {
   let copied = $state<SectionId | null>(null);
@@ -48,9 +46,7 @@ export function createSectionLinks() {
     history.replaceState(history.state, '', `#${id}`);
     clearTimeout(timer);
     copied = id;
-    const section = SECTIONS.find((section) => section.id === id);
-    if (!section) throw new Error(`Unknown privacy section: ${id}`);
-    announce(`Link to “${section.label}” copied.`, currentRequest);
+    announce(sectionLinkAnnouncement(id), currentRequest);
     timer = setTimeout(() => {
       copied = null;
       announcement = '';

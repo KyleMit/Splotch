@@ -88,6 +88,7 @@ function Panel() {
     buttonScale: 100,
     onToggle() {},
     onButtonSize() {},
+    onScaleCeiling() {},
     slot,
   });
 }

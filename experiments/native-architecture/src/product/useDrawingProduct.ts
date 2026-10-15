@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
+import { createDrawingProduct } from './createDrawingProduct';
 import { productOwners } from './productOwnersLoader';
 import { afterDrawingPaint } from './afterDrawingPaint';
 import type { createProductOwners, ProductOwners } from './productOwners';
@@ -16,13 +16,10 @@ import { subscribePencilDoubleTap } from '../platform/pencilDoubleTap';
 import { impactThreshold } from '../platform/clearHaptics';
 import { soundSettingsStorage } from '../platform/soundSettings';
 import { initialSoundSettingsState, type SoundSettingsState } from '../settings/soundSettings';
-import { PARENT_GATE_SHAKE_MS } from '../parentCenter/parentGate';
 import { openAppSettings } from '../platform/appSettings';
 import { useOnline } from '../platform/useOnline';
-import type { NativeFeedbackOwner } from '../feedback/feedback';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
-const PRODUCT_TICK_MS = 1000;
 function createProductServices(publish: () => void, setAudioMessage: (message: string) => void) {
   const product = createDrawingProduct(soundSettingsStorage, publish);
   const audio = createDrawingAudio(
@@ -70,65 +67,9 @@ function useSoundChoices(
   }, [services, soundEnabled, drawingSoundEnabled, deleteSoundEnabled]);
 }
 
-function createProductTicker(
-  product: DrawingProductOwner,
-  feedback: () => NativeFeedbackOwner | null,
-  foreground: boolean
-) {
-  let disposed = false;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let timerDelay: number | null = null;
-  function stopTimer() {
-    if (timer !== null) clearTimeout(timer);
-    timer = null;
-    timerDelay = null;
-  }
-  function reconcile() {
-    const gate = product.gate.getState();
-    const report = feedback()?.getState();
-    const gateActive = gate.open && (gate.locked || gate.shaking);
-    const reportActive = report?.delivery.status === 'throttled';
-    const delay =
-      !disposed && foreground && (gateActive || reportActive)
-        ? gateActive && gate.shaking
-          ? PARENT_GATE_SHAKE_MS
-          : PRODUCT_TICK_MS
-        : null;
-    if (timer !== null && timerDelay === delay) return;
-    stopTimer();
-    if (delay === null) return;
-    timerDelay = delay;
-    timer = setTimeout(() => {
-      timer = null;
-      timerDelay = null;
-      if (disposed || !foreground) return;
-      const gate = product.gate.getState();
-      if (gate.open && (gate.locked || gate.shaking)) product.gate.tick();
-      const owner = feedback();
-      if (owner?.getState().delivery.status === 'throttled') owner.deliveryTick();
-      reconcile();
-    }, delay);
-  }
-  return {
-    reconcile,
-    setForeground(value: boolean) {
-      foreground = value;
-      reconcile();
-    },
-    dispose() {
-      disposed = true;
-      stopTimer();
-    },
-  };
-}
-
 // Feedback and AI report to the product, so they attach to it once their module is loaded: at
 // once on native, as a chunk on web (productOwnersLoader.web.ts).
-function attachProductOwners(
-  owners: ProductOwners,
-  publish: () => void,
-  reconcileTimer: () => void
-) {
+function attachProductOwners(owners: ProductOwners, publish: () => void) {
   const { feedback, ai } = owners;
   let feedbackOpen = feedback.getState().open;
   const offFeedback = feedback.subscribe(() => {
@@ -136,7 +77,7 @@ function attachProductOwners(
     if (open !== feedbackOpen) {
       feedbackOpen = open;
       publish();
-    } else reconcileTimer();
+    }
   });
   const offAi = ai.subscribe(publish);
   void feedback.loadPolicy();
@@ -176,23 +117,19 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   useEffect(() => {
     let alive = true;
     let foreground = AppState.currentState === 'active';
-    let reconcileTimer: (() => void) | null = null;
     const publish = () => {
       if (alive) {
         update((value) => value + 1);
-        reconcileTimer?.();
       }
     };
     const services = createProductServices(publish, setAudioMessage);
     const { product, audio, contacts, clear, preview } = services;
     let attached: ProductOwners | null = null;
     let detachOwners: (() => void) | null = null;
-    const ticker = createProductTicker(product, () => attached?.feedback ?? null, foreground);
-    reconcileTimer = ticker.reconcile;
     const attach = (create: typeof createProductOwners) => {
       if (!alive || attached) return;
       attached = create(screenRef, product.port);
-      detachOwners = attachProductOwners(attached, publish, ticker.reconcile);
+      detachOwners = attachProductOwners(attached, publish);
       setOwners(attached);
     };
     const loadOwners = () => {
@@ -204,7 +141,6 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     };
     const subscription = AppState.addEventListener('change', (next) => {
       foreground = next === 'active';
-      ticker.setForeground(foreground);
       if (!foreground) {
         product.background();
         attached?.feedback.close();
@@ -217,7 +153,6 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
       audio.setForeground(foreground);
       clear.setForeground(foreground);
       preview.setForeground(foreground);
-      reconcileTimer?.();
     });
     audio.setForeground(foreground);
     clear.setForeground(foreground);
@@ -237,7 +172,6 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     else loadOwners();
     return () => {
       alive = false;
-      ticker.dispose();
       offPencil();
       subscription.remove();
       detachOwners?.();
@@ -251,12 +185,14 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const settings = services?.product.getState().settings ?? initialSoundSettingsState();
   const aiState = owners?.ai.getState() ?? null;
   const aiProgress = useAiProgressOwner(aiState);
-  const parentCenterOpen = services?.product.getState().parentCenterOpen ?? false;
+  const productState = services?.product.getState();
+  const parentCenterOpen = productState?.parentCenterOpen ?? false;
+  const parentCenterGranted =
+    parentCenterOpen ||
+    (productState?.gate.unlocked === true && productState.gate.feature === 'parentCenter');
   useEffect(() => {
-    if (parentCenterOpen) {
-      owners?.feedback.close();
-    }
-  }, [owners, parentCenterOpen]);
+    if (parentCenterGranted) owners?.feedback.close();
+  }, [owners, parentCenterGranted]);
   useSoundChoices(services, settings);
   useEffect(() => {
     if (!settings.aiEnabled) owners?.ai.close();

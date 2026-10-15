@@ -1,4 +1,4 @@
-import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
+import { DRAWING_ROUTE } from '../../boot/appSurfaceRoute';
 
 // The drawing route stamps this sessionStorage flag on mount, so a standalone
 // page can tell a parent who came from the canvas apart from a cold visit (a

@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import {
   createSoundSettings,
@@ -25,10 +26,15 @@ const ALWAYS = {
 };
 const NEVER = Object.fromEntries(Object.keys(ALWAYS).map((feature) => [feature, 'never']));
 
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
 function solve(gate) {
   const { x, y } = gate.getState();
   gate.input(String(x * y));
   gate.answer();
+  vi.advanceTimersByTime(PARENT_GATE_SUCCESS_HOLD_MS);
+  gate.closed();
 }
 
 // The record this build writes.

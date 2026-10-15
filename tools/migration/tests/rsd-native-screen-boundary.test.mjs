@@ -19,7 +19,8 @@ vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx'
 // The web export's tab title, which the Error Screen names itself in while it shows.
 const tab = vi.hoisted(() => ({ title: 'Splotch' }));
 vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
-  isDrawingPath: () => true,
+  currentAppPage: () => 'drawing',
+  subscribeAppPage: () => () => {},
   setDocumentTitle(title) {
     const previous = tab.title;
     tab.title = title;

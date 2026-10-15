@@ -2,6 +2,7 @@ import { css, html } from 'react-strict-dom';
 import { SvgXml } from '../platform/svg';
 import { dimensions, fonts, stepNumberMix } from './tokens.css';
 import { DRAWING_BRAND } from '../drawing/theme';
+import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { useDrawingAppearance, useDrawingTheme } from '../drawing/DrawingAppearance';
 import { blobXml, type BlobShape } from './blob';
 import { mixSrgb } from './colorMix';
@@ -9,10 +10,11 @@ import { mixSrgb } from './colorMix';
 // app.css .step-number's default --step-number-size, the Install Banner's compact override and the
 // Settings install guide's summary badge (SetupInstructions.svelte .section-number).
 // Exported for native-design-primitives-drift.test.mjs, which reads both from shipping.
-export const STEP_NUMBER_SIZE_PX = { regular: 32, summary: 26, compact: 20 } as const;
+export const STEP_NUMBER_SIZE_PX = { regular: 32, summary: 26, compact: 20, support: 24 } as const;
 export type StepNumberSize = keyof typeof STEP_NUMBER_SIZE_PX;
 
 // app.css cycles the three blobs down a list, :nth-child(3n + 1) through (3n), so neighbors differ.
+const SUPPORT_INK_FRACTION = 0.75;
 const BLOB_CYCLE: readonly BlobShape[] = ['radiusBlob3', 'radiusBlob1', 'radiusBlob2'];
 
 const styles = css.create({
@@ -39,6 +41,7 @@ const styles = css.create({
   regular: { fontSize: dimensions.fontSizeSm },
   summary: { fontSize: dimensions.fontSizeSm },
   compact: { fontSize: dimensions.fontSizeXs },
+  support: { fontSize: dimensions.fontSizeXs },
 });
 
 // The shipping numbered-step badge: the brand tinted into the surface behind a brand-tinted digit,
@@ -48,15 +51,22 @@ export function RsdStepNumber({
   number,
   size,
   shape,
+  hue,
 }: {
   number: number;
   size: StepNumberSize;
   shape: 'disc' | 'blob';
+  hue?: PaletteLabel;
 }) {
   const theme = useDrawingTheme();
   const mix = stepNumberMix[useDrawingAppearance()];
-  const wash = mixSrgb(DRAWING_BRAND, mix.washPercent, theme.surface);
-  const ink = mixSrgb(DRAWING_BRAND, mix.inkPercent, theme.textStrong);
+  const accent = hue ? paletteHex(hue) : DRAWING_BRAND;
+  const wash = mixSrgb(accent, mix.washPercent, theme.surface);
+  const ink = mixSrgb(
+    accent,
+    mix.inkPercent * (size === 'support' ? SUPPORT_INK_FRACTION : 1),
+    theme.textStrong
+  );
   const box = STEP_NUMBER_SIZE_PX[size];
   return (
     <html.div

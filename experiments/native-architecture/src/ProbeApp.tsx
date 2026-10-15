@@ -2,29 +2,23 @@ import { RsdDrawingScreen } from './rsdDrawing/RsdDrawingScreen';
 import { DrawingSessionProvider } from './product/DrawingSession';
 import { AppRestartRoot } from './product/AppRestart';
 import { ShippingFontGate } from './platform/shippingFont';
-import { isDrawingPath } from './platform/appPath';
+import { useEffect, useSyncExternalStore } from 'react';
+import { currentAppPage, subscribeAppPage } from './platform/appPath';
 import { RsdNotFoundPage } from './rsdDrawing/notFoundSurface';
 import { RsdScreenBoundary } from './rsdDrawing/RsdScreenBoundary';
-import { useEffect } from 'react';
 import { installAppSurface } from './platform/appSurface';
 
 export function ProbeApp() {
-  const drawing = isDrawingPath();
+  const page = useSyncExternalStore(subscribeAppPage, currentAppPage);
   useEffect(() => {
-    if (drawing) return installAppSurface();
-  }, [drawing]);
-  if (!drawing)
-    return (
-      <ShippingFontGate>
-        <RsdNotFoundPage />
-      </ShippingFontGate>
-    );
+    if (page === 'drawing') return installAppSurface();
+  }, [page]);
   return (
     <AppRestartRoot>
       <DrawingSessionProvider>
         <ShippingFontGate>
           <RsdScreenBoundary>
-            <RsdDrawingScreen />
+            {page === 'notFound' ? <RsdNotFoundPage /> : <RsdDrawingScreen page={page} />}
           </RsdScreenBoundary>
         </ShippingFontGate>
       </DrawingSessionProvider>

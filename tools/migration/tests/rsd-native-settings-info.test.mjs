@@ -6,7 +6,6 @@ import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/r
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
 import { EXTERNAL_MARK_LABEL } from '../../../experiments/native-architecture/src/rsdDrawing/RsdExternalMark.tsx';
-import { FEEDBACK_APP_VERSION } from '../../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
 import {
   INSTALL_GUIDE_COPY,
   exitGuideSteps,
@@ -16,11 +15,16 @@ import {
   RELEASE_NOTES,
   WHATS_NEW_COPY,
 } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { openHostedPage } from '../../../experiments/native-architecture/src/settings/hostedPages.ts';
 
 vi.mock('../../../experiments/native-architecture/src/settings/hostedPages.ts', async (actual) => ({
   ...(await actual()),
   openHostedPage: vi.fn(),
+}));
+
+vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
+  openAppPage: vi.fn(),
 }));
 
 const POLICIES = {
@@ -96,32 +100,28 @@ async function press(node) {
 
 beforeEach(() => {
   vi.mocked(openHostedPage).mockClear();
+  vi.mocked(openAppPage).mockClear();
   settingsScreen();
 });
 
-it('shows About as shipping does and opens its links outside the app through the route', async () => {
+it('opens Privacy in the app without a check and keeps GitHub behind the external-links check', async () => {
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('About');
   expect(host.querySelector(`[role="img"][aria-label="${ABOUT_COPY.mascot}"]`)).not.toBeNull();
   expect(host.textContent).toContain(ABOUT_COPY.tagline);
-  expect(host.textContent).toContain(`${ABOUT_COPY.version} ${FEEDBACK_APP_VERSION}`);
-  expect(host.textContent).not.toContain('Help and about');
-  for (const [name, page] of [
-    [ABOUT_COPY.privacy, 'privacy'],
-    [ABOUT_COPY.github, 'github'],
-  ]) {
-    const found = link(name);
-    expect(found.querySelector(`[aria-label="${EXTERNAL_MARK_LABEL}"]`), name).not.toBeNull();
-    await press(found);
-    expect(openHostedPage, name).not.toHaveBeenCalled();
-    expect(gateShown(), name).toBe(true);
-    expect(host.querySelector('[data-native-modal="About"]'), name).not.toBeNull();
-    await solveParentGate();
-    expect(openHostedPage).toHaveBeenCalledOnce();
-    expect(openHostedPage).toHaveBeenCalledWith(page);
-    vi.mocked(openHostedPage).mockClear();
-  }
-  expect(caller.screen.closeSettings).not.toHaveBeenCalled();
+  const policy = link(ABOUT_COPY.privacy);
+  expect(policy.querySelector(`[aria-label="${EXTERNAL_MARK_LABEL}"]`)).toBeNull();
+  await press(policy);
+  expect(openAppPage).toHaveBeenCalledWith('privacy');
+  expect(gateShown()).toBe(false);
+  expect(openHostedPage).not.toHaveBeenCalled();
+  const github = link(ABOUT_COPY.github);
+  expect(github.querySelector(`[aria-label="${EXTERNAL_MARK_LABEL}"]`)).not.toBeNull();
+  await press(github);
+  expect(gateShown()).toBe(true);
+  await solveParentGate();
+  expect(openHostedPage).toHaveBeenCalledOnce();
+  expect(openHostedPage).toHaveBeenCalledWith('github');
 });
 
 it("shows only the current release under What's New, with every release one link away", async () => {
@@ -140,9 +140,8 @@ it("shows only the current release under What's New, with every release one link
   expect(host.textContent).not.toContain('• ');
   await press(link(WHATS_NEW_COPY.allReleases));
   expect(openHostedPage).not.toHaveBeenCalled();
-  await solveParentGate();
-  expect(openHostedPage).toHaveBeenCalledOnce();
-  expect(openHostedPage).toHaveBeenCalledWith('changelog');
+  expect(gateShown()).toBe(false);
+  expect(openAppPage).toHaveBeenCalledWith('changelog');
 });
 
 const numbered = (steps) => steps.map((step, index) => `${index + 1}.${step}`);
@@ -193,6 +192,8 @@ it('asks once per session under Per session, then opens later links at once', as
   expect(openHostedPage).toHaveBeenLastCalledWith('github');
   await press(link(ABOUT_COPY.privacy));
   expect(caller.product.state.gate.open).toBe(false);
-  expect(openHostedPage).toHaveBeenLastCalledWith('privacy');
+  expect(openAppPage).toHaveBeenLastCalledWith('privacy');
+  await press(link(ABOUT_COPY.github));
   expect(openHostedPage).toHaveBeenCalledTimes(2);
+  expect(gateShown()).toBe(false);
 });

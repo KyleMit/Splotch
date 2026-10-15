@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createNativeFeedback } from '../../experiments/native-architecture/src/feedback/feedback.ts';
 import { MAX_REPORT_MESSAGE_LENGTH } from '../../experiments/native-architecture/src/feedback/report.ts';
-import { FEEDBACK_TIMEOUT_MS } from '../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
+const SLOW_REPORT_MS = 60000;
 import {
   GATE_LOCKOUT_BASE_MS,
   GATE_ESCALATION_QUIET_MS,
@@ -160,15 +160,15 @@ describe('native feedback request ownership', () => {
     await settle(f.requests[1]);
     expect(f.owner.getState().delivery.status).toBe('success');
   });
-  it('aborts a deadline, retains the draft and never auto resubmits after an unknown delivery', async () => {
+  it('keeps a slow report sending without a local deadline or automatic resubmission', async () => {
     vi.useFakeTimers();
     const f = await prepared('never');
     f.owner.send();
-    await vi.advanceTimersByTimeAsync(FEEDBACK_TIMEOUT_MS);
-    expect(f.requests[0].signal.aborted).toBe(true);
-    expect(f.owner.getState().delivery.status).toBe('timeout');
+    await vi.advanceTimersByTimeAsync(SLOW_REPORT_MS);
+    expect(f.requests[0].signal.aborted).toBe(false);
+    expect(f.owner.getState().delivery.status).toBe('sending');
     expect(f.owner.getState().draft.message).toBe('  The crayon is stuck  ');
-    await vi.advanceTimersByTimeAsync(FEEDBACK_TIMEOUT_MS * 3);
+    await vi.advanceTimersByTimeAsync(SLOW_REPORT_MS * 3);
     expect(f.requests).toHaveLength(1);
     f.owner.dispose();
   });
@@ -180,36 +180,19 @@ describe('native feedback request ownership', () => {
     expect(f.requests).toHaveLength(1);
     await settle(f.requests[0]);
   });
-  it('honors Retry-After without automatic resubmission and enables explicit retry after expiry', async () => {
+  it('shows the server throttle reason and permits an explicit retry immediately', async () => {
     const f = await prepared('never');
     f.owner.send();
-    f.requests[0].response.resolve(
-      new Response('{"ok":false,"error":"throttle"}', {
-        status: 429,
-        headers: { 'Retry-After': '12' },
-      })
-    );
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    f.owner.send();
-    expect(f.requests).toHaveLength(1);
-    expect(f.owner.getState().delivery.status).toBe('throttled');
-    f.owner.setMessage('A different report during throttle');
-    f.owner.preview();
-    expect(f.owner.getState().delivery.status).toBe('throttled');
-    f.owner.send();
-    expect(f.requests).toHaveLength(1);
-    f.advance(12000);
-    f.owner.deliveryTick();
-    expect(f.owner.getState().delivery).toEqual({ status: 'idle' });
+    await settle(f.requests[0], { ok: false, error: 'Please wait 12s.' }, 429);
+    expect(f.owner.getState().delivery).toEqual({ status: 'error', message: 'Please wait 12s.' });
     expect(f.requests).toHaveLength(1);
     f.owner.send();
     expect(f.requests).toHaveLength(2);
-    expect(f.requests[1].body.message).toBe('A different report during throttle');
     await settle(f.requests[1]);
   });
   it.each([
     [503, { ok: false, error: 'Fixture error' }, 'error'],
-    [200, { ok: true, privateId: 'not allowed' }, 'malformed'],
+    [200, { unexpected: 'reply' }, 'malformed'],
     [200, { ok: true }, 'success'],
   ])(
     'clears settled %s delivery when a different draft is edited',
@@ -227,24 +210,16 @@ describe('native feedback request ownership', () => {
       await settle(f.requests[1]);
     }
   );
-  it.each(['timeout', 'cancelled'])(
-    'clears an old %s after the next draft edit',
-    async (outcome) => {
-      vi.useFakeTimers();
-      const f = await prepared('never');
-      f.owner.send();
-      if (outcome === 'cancelled') f.owner.cancelSending(f.owner.getState().delivery.id);
-      await vi.advanceTimersByTimeAsync(FEEDBACK_TIMEOUT_MS);
-      expect(f.owner.getState().delivery.status).toBe(outcome);
-      expect(f.owner.getState().delivery.message).toBe(
-        `${outcome === 'timeout' ? 'Sending timed out.' : 'Sending stopped.'} Splotch may already have received it. Sending again could send it twice.`
-      );
-      f.owner.setMessage('Next report');
-      expect(f.owner.getState().delivery).toEqual({ status: 'idle' });
-      expect(f.requests).toHaveLength(1);
-      f.owner.dispose();
-    }
-  );
+  it('clears an explicitly cancelled report after the next draft edit', async () => {
+    const f = await prepared('never');
+    f.owner.send();
+    f.owner.cancelSending(f.owner.getState().delivery.id);
+    expect(f.owner.getState().delivery.status).toBe('cancelled');
+    f.owner.setMessage('Next report');
+    expect(f.owner.getState().delivery).toEqual({ status: 'idle' });
+    expect(f.requests).toHaveLength(1);
+    f.owner.dispose();
+  });
   it('does not publish an unlocked challenge tick when no visible state changes', async () => {
     const f = await prepared();
     f.owner.send();
@@ -255,14 +230,14 @@ describe('native feedback request ownership', () => {
     expect(listener).not.toHaveBeenCalled();
     f.owner.dispose();
   });
-  it('does not publish late results after owner disposal', async () => {
+  it('leaves a sent report on the wire without publishing after its form owner goes away', async () => {
     const f = await prepared('never');
     f.owner.send();
     const listener = vi.fn();
     f.owner.subscribe(listener);
     f.owner.dispose();
     await settle(f.requests[0]);
-    expect(f.requests[0].signal.aborted).toBe(true);
+    expect(f.requests[0].signal.aborted).toBe(false);
     expect(listener).not.toHaveBeenCalled();
   });
 });

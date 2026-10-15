@@ -227,6 +227,23 @@ describe('beta browser Back history owner', () => {
     expect(history.listenerCount()).toBe(0);
   });
 
+  it('resumes its retained Settings layer without truncating an internal page from Forward history', () => {
+    const history = browser();
+    const back = owner(history);
+    const close = vi.fn();
+    back.registerDialog(close);
+    history.navigate('https://beta.invalid/privacy');
+    back.stop();
+    history.back();
+    const traversals = history.port.back.mock.calls.length;
+    back.start();
+    history.flush();
+    expect(history.port.back).toHaveBeenCalledTimes(traversals);
+    expect(close).not.toHaveBeenCalled();
+    expect(history.layers()).toHaveLength(1);
+    expect(history.entries.at(-1).url).toBe('https://beta.invalid/privacy');
+  });
+
   it('ignores stale pop events and never undoes an unrelated route on cleanup', () => {
     const history = browser();
     const back = owner(history);

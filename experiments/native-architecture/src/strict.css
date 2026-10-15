@@ -35,6 +35,10 @@ input[readonly] {
   outline-offset: 2px;
 }
 
+[data-page-heading]:focus-visible {
+  outline: none;
+}
+
 [data-focus-ring='part']:focus-visible {
   outline: none;
 }

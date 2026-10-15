@@ -17,7 +17,6 @@ function owner() {
   return createNativeFeedback({
     transport: feedbackTransport,
     device: () => ({ platform: 'iOS', os: 'iOS fixture', screen: '400 × 800' }),
-    offline: () => false,
     policyStorage: { read: async () => null, write: async () => {} },
     random: () => 0,
   });
@@ -90,12 +89,12 @@ describe('the native feedback caller through the real controlled report handler'
     expect(createIssue.mock.calls[0][0].body).not.toContain('Operating system');
     feedback.dispose();
   });
-  it('shows the actual route throttle without performing a support write', async () => {
+  it('shows the actual route throttle text as an ordinary error without performing a support write', async () => {
     rateLimit.mockReturnValue({ limited: true, retryAfter: 12 });
     const { feedback } = await send('bug', false);
     expect(feedback.getState().delivery).toMatchObject({
-      status: 'throttled',
-      retryAfterSeconds: 12,
+      status: 'error',
+      message: 'Too many attempts. Please wait 12s.',
     });
     expect(createIssue).not.toHaveBeenCalled();
     feedback.dispose();

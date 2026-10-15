@@ -10,7 +10,7 @@ import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdAboutSection } from './RsdAboutSection';
 import { RsdFeedbackSection } from './RsdFeedbackSection';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
-import type { HostedPage } from '../settings/hostedPages';
+import type { SettingsLink } from '../settings/hostedPages';
 import type { OrientationChoice } from '../settings/orientation';
 import type { ReduceMotionPreference } from '../settings/reduceMotion';
 import {
@@ -22,6 +22,7 @@ import {
 import { RsdSettingsHub, useHubToggles, useSectionActivity } from './RsdSettingsHub';
 import { RsdSettingsWide } from './RsdSettingsWide';
 import { RsdSettingsCompact } from './RsdSettingsCompact';
+import { SettingsTextZoom } from '../platform/SettingsTextZoom';
 import { RsdScrollCue } from './RsdScrollCue';
 import { useDialogBody, useDialogSeeThrough } from './dialogScope';
 import { settingsShell } from './modalGeometry';
@@ -38,6 +39,7 @@ import { RsdAiSettingsSection, type AiSettingsRoute } from './RsdAiSettingsSecti
 import { ModalShell } from './ModalShell';
 import { DialogHeader } from './DialogHeader';
 import { landFocus } from './landFocus';
+import { openAppPage } from '../platform/appPath';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 
 type NativeSoundSettingsDialogProps = {
@@ -65,6 +67,7 @@ type NativeSoundSettingsDialogProps = {
   onAutoSaveAiChange: (enabled: boolean) => void;
   // Lifted to the drawing screen, whose edge controls preview the size while it is dragged.
   buttonScale: SliderDraft;
+  scaleCeiling: number;
   // Lifted to the drawing screen with the audio owner it previews through.
   soundVolume: SliderDraft;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
@@ -75,9 +78,10 @@ type NativeSoundSettingsDialogProps = {
   parentCenter: ParentCenterRoute;
   // The Grown-Ups Only card, held over Settings while a check raised from it is open.
   gate: ReactNode;
+  informationPage?: ReactNode;
   feedback: NativeFeedbackOwner | null;
   // Opens a page outside the app; the route holds it behind the external-links check.
-  onOpenHostedPage: (page: HostedPage) => void;
+  onOpenPage: (page: SettingsLink) => void;
   downloadedBooks: number;
   ai: AiSettingsRoute;
   visible?: boolean;
@@ -113,7 +117,7 @@ function pageLabel(page: SettingsPage) {
 // returned to. A tablet shows the sections beside a table of contents, and a landscape phone the
 // quick toggles only. A rotation re-picks the shell live.
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
-  const { settings, notice, onRetry, onClose, onWhatsNewSeen, visible = true, onDismiss } = props;
+  const { settings, notice, onRetry, onClose, visible = true, onDismiss } = props;
   const busy = settings.status !== 'ready' || !visible;
   const shell = settingsShell(useWindowDimensions());
   const { unlocked } = props.parentCenter;
@@ -130,13 +134,16 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
     downloadedBooks: props.downloadedBooks,
     ai: props.ai.state,
   };
-  const unseen = useSectionActivity(context);
+  const { unseen, markSeen } = useSectionActivity();
+  useEffect(() => {
+    if (visible && shell === 'phone' && page.kind === 'section') markSeen(page.section);
+  }, [visible, shell, page, markSeen]);
   const openSection = (section: NativeSettingsSectionId) => {
     if (section === 'parentCenter' && !unlocked) {
       props.parentCenter.onUnlock();
       return;
     }
-    if (section === 'whatsnew') onWhatsNewSeen();
+    markSeen(section);
     setPage({ kind: 'section', section });
   };
   const back = () => {
@@ -159,11 +166,14 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   return (
     <ModalShell
       visible={visible}
+      overlay={props.informationPage}
       seeThrough={props.buttonScale.active}
       onDismiss={onDismiss}
-      label={pageLabel(subpage ?? HUB)}
+      label={props.informationPage ? 'Information page' : pageLabel(subpage ?? HUB)}
       size={subpage?.section === 'ai' ? 'aiSettings' : 'settings'}
-      onClose={subpage ? back : onClose}
+      // Escape, the scrim, Android Back and browser Back close Settings from any page, as
+      // shipping's dialog does; only the header's Back returns to the hub.
+      onClose={props.informationPage ? () => openAppPage('drawing') : onClose}
       scrolls={false}
       header={
         subpage ? (
@@ -184,7 +194,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       }
     >
       {subpage ? (
-        <PhoneScroll>
+        <PhoneScroll key={subpage.section} enabled={visible}>
           <SettingsSection {...props} section={subpage.section} busy={busy} wide={false} />
           {status}
         </PhoneScroll>
@@ -197,7 +207,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
             <SettingsSection {...props} section={section} busy={busy} wide />
           )}
           onSeen={(section) => {
-            if (section === 'whatsnew') onWhatsNewSeen();
+            markSeen(section);
           }}
           locked={parentCenterRevealed(props.parentCenter) ? null : 'parentCenter'}
           landing={unlocked ? 'parentCenter' : props.initialSection}
@@ -210,7 +220,7 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
           {status}
         </CompactSettings>
       ) : (
-        <PhoneScroll>
+        <PhoneScroll key="hub" enabled={visible}>
           <RsdSettingsHub
             sections={NATIVE_SETTINGS_SECTIONS}
             context={context}
@@ -309,13 +319,15 @@ function isParentCenter(page: SettingsPage) {
 
 // The phone shell's one scroller, inset by the card's body padding, with its bottom edge fading
 // while more lies below.
-function PhoneScroll({ children }: { children: ReactNode }) {
+function PhoneScroll({ children, enabled }: { children: ReactNode; enabled: boolean }) {
   const body = useDialogBody();
   return (
     <RsdScrollCue
       inset={body && { top: body.top, right: body.inline, bottom: body.bottom, left: body.inline }}
     >
-      <html.div style={controlStyles.dialogContent}>{children}</html.div>
+      <SettingsTextZoom enabled={enabled}>
+        <html.div style={controlStyles.dialogContent}>{children}</html.div>
+      </SettingsTextZoom>
     </RsdScrollCue>
   );
 }
@@ -373,6 +385,7 @@ function SettingsSection(props: SectionProps) {
       return (
         <RsdAccessibilitySection
           buttonScale={props.buttonScale}
+          scaleCeiling={props.scaleCeiling}
           busy={busy}
           onReduceMotionChange={props.onReduceMotionChange}
         />
@@ -417,12 +430,9 @@ function SettingsSection(props: SectionProps) {
       return <RsdInstallGuide />;
     case 'whatsnew':
       return (
-        <RsdWhatsNewSection
-          sectionHeadingLevel={props.wide ? 3 : 2}
-          onOpen={props.onOpenHostedPage}
-        />
+        <RsdWhatsNewSection sectionHeadingLevel={props.wide ? 3 : 2} onOpen={props.onOpenPage} />
       );
     case 'about':
-      return <RsdAboutSection onOpen={props.onOpenHostedPage} />;
+      return <RsdAboutSection onOpen={props.onOpenPage} />;
   }
 }
