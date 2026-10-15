@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, createElement } from 'react';
+import { act, createElement, useEffect } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
@@ -12,6 +12,17 @@ import {
   RsdCrashScreen,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
 import { displayFontSize } from '../../../experiments/native-architecture/src/rsdDrawing/displayType.ts';
+import { AppRestartRoot } from '../../../experiments/native-architecture/src/product/AppRestart.tsx';
+import {
+  DrawingSessionProvider,
+  useDrawingHistory,
+  useStartOver,
+} from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import {
+  createHistory,
+  emptyDrawing,
+} from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { inkedDrawing } from './rsd-native-clear-fixture.mjs';
 const SHIPPING_ERROR_SCREEN = readFileSync(
   join(import.meta.dirname, '../../../web/src/lib/components/ErrorScreen.svelte'),
   'utf8'
@@ -76,5 +87,33 @@ describe("the drawing screen's Error Screen", () => {
   it('stays away while the paper draws', async () => {
     await mountToolbar(toolbarScreen());
     expect(errorScreen()).toBeNull();
+  });
+
+  it('clears native ink and Undo, then remounts a fresh session on Start over', async () => {
+    const launches = vi.fn();
+    let session;
+    function Probe() {
+      const history = useDrawingHistory();
+      const restart = useStartOver();
+      session = { ...history, restart };
+      useEffect(launches, []);
+      return null;
+    }
+    await mount(
+      createElement(
+        AppRestartRoot,
+        null,
+        createElement(DrawingSessionProvider, null, createElement(Probe))
+      )
+    );
+    await act(async () => session.setHistory({ drawing: inkedDrawing(), undo: [emptyDrawing()] }));
+    expect(session.history.drawing.strokes).toHaveLength(1);
+    expect(session.history.undo).toHaveLength(1);
+    const departed = session;
+    await act(async () => session.restart());
+    expect(launches).toHaveBeenCalledTimes(2);
+    expect(departed.historyRef.current).toEqual(createHistory());
+    expect(session.history).toEqual(createHistory());
+    expect(session.setHistory).not.toBe(departed.setHistory);
   });
 });

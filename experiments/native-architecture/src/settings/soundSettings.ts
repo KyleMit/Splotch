@@ -29,6 +29,7 @@ import { WHATS_NEW_STAMP } from './whatsNewStamp';
 import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
 import { DEFAULT_AI_PREFERENCES, createAiActions } from './aiPreferences';
 import { createParentSaves } from './parentSaves';
+import { createLatestWriter, createSettingsReset, createWriteQueue } from './settingsWriteQueue';
 import {
   readStoredSettings,
   UNREAD_SETTINGS_MESSAGES,
@@ -135,9 +136,6 @@ type PreferenceActionContext = {
   persist: (settings: SoundSettings) => Promise<void>;
 };
 
-const SETTINGS_SAVE_FAILED_MESSAGE =
-  'Your settings work for this session, but could not be saved. Please retry.';
-
 // What the app records about itself rather than a choice a parent makes.
 type SettingsMetadata = Partial<Pick<Choices, 'whatsNewSeen' | 'applePencilSeen'>>;
 
@@ -149,49 +147,18 @@ function unrecorded(state: SoundSettingsState, metadata: SettingsMetadata): Sett
   };
 }
 
-// Metadata is written on its own rather than through persist, so a failed Parent Center save
-// stays pending for its retry. Ordinary choices are already in the state it writes, so once that
-// write lands, an earlier ordinary failure is recovered.
-function createMetadataWriter(
-  storage: SoundSettingsStorage,
-  { getState, publish }: PreferenceActionContext,
-  hasPendingParent: () => boolean
-) {
-  return async function persistMetadata(metadata: SettingsMetadata) {
-    const state = getState();
-    if (state.status !== 'ready') return;
-    const { status: _status, saved, message, ...current } = state;
-    const choices = { ...current, ...metadata };
-    publish({ status: 'saving', ...choices, message });
-    try {
-      await storage.write(JSON.stringify(snapshot(choices)));
-      const settled = { ...choices, ...sessionPaint(getState()) };
-      if (saved || hasPendingParent()) publish({ status: 'ready', ...settled, saved, message });
-      else publish({ status: 'ready', ...settled, saved: true, message: '' });
-    } catch {
-      const failure = saved ? SETTINGS_SAVE_FAILED_MESSAGE : message;
-      publish({
-        status: 'ready',
-        ...choices,
-        ...sessionPaint(getState()),
-        saved: false,
-        message: failure,
-      });
-    }
-  };
-}
-
-// Opening What's New or the first Apple Pencil double-tap can happen while settings load or
-// another choice is still being written; the record then waits for that writer instead of being
-// dropped. The owner awaits flushMetadata after each write it finishes.
+// Opening What's New or the first Apple Pencil double-tap can happen while settings load or a
+// Parent Center save holds the record; the record then waits for it instead of being dropped.
+// Metadata is written with the choices rather than through persist, so a failed Parent Center
+// save stays pending for its retry. The owner awaits flushMetadata after each save it finishes.
 function createMetadataActions({
   getState,
   isDisposed,
   hasReadFailed,
   publish,
-  persistMetadata,
+  writeLatest,
 }: PreferenceActionContext & {
-  persistMetadata: (metadata: SettingsMetadata) => Promise<void>;
+  writeLatest: () => Promise<void>;
 }) {
   let queued: SettingsMetadata = {};
   async function record(metadata: SettingsMetadata) {
@@ -200,12 +167,9 @@ function createMetadataActions({
     const missing = unrecorded(state, { ...queued, ...metadata });
     queued = state.status === 'ready' ? {} : missing;
     if (state.status !== 'ready' || Object.keys(missing).length === 0) return;
-    if (hasReadFailed()) {
-      publish({ ...state, ...missing });
-      return;
-    }
-    await persistMetadata(missing);
-    await flushMetadata();
+    publish({ ...state, ...missing });
+    if (hasReadFailed()) return;
+    await writeLatest();
   }
   async function flushMetadata() {
     if (isDisposed() || getState().status !== 'ready' || Object.keys(queued).length === 0) return;
@@ -222,8 +186,8 @@ function createMetadataActions({
   };
 }
 
-// One validated choice: dropped while settings load or save, kept for the session alone after a
-// failed read, and written otherwise.
+// One validated choice: dropped while settings load or a Parent Center save holds the record, kept
+// for the session alone after a failed read, and written otherwise.
 function createChoiceSetter({
   getState,
   isDisposed,
@@ -413,27 +377,21 @@ export function createSoundSettings(
     state = next;
     onChange(state);
   }
+  const serialize = createWriteQueue();
+  const writeLatest = createLatestWriter(storage, serialize, {
+    getState: () => state,
+    isDisposed: () => disposed,
+    publish,
+    hasPendingParent: () => parent.hasPending(),
+    encode: (current) => JSON.stringify(snapshot(current)),
+  });
+  // The choice shows at once, with nothing left to retry, as shipping's synchronous storage
+  // shows it; a write that does not land brings the retry back.
   async function persist(settings: SoundSettings) {
     parent.clearPending();
     const { version: _version, ...choices } = settings;
-    publish({ status: 'saving', ...choices, ...sessionPaint(state), message: '' });
-    try {
-      await storage.write(JSON.stringify(settings));
-      readFailure = null;
-      publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
-    } catch {
-      publish(
-        readFailure
-          ? unreadSoundSettingsState(sessionPaint(state), readFailure)
-          : {
-              status: 'ready',
-              ...choices,
-              ...sessionPaint(state),
-              saved: false,
-              message: SETTINGS_SAVE_FAILED_MESSAGE,
-            }
-      );
-    }
+    publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
+    await writeLatest();
     await metadata.flushMetadata();
   }
   const actionContext: PreferenceActionContext = {
@@ -444,16 +402,25 @@ export function createSoundSettings(
     persist,
   };
   const parent = createParentSaves({
-    storage,
+    storage: {
+      read: storage.read,
+      write: (snapshot) => serialize(() => storage.write(snapshot)),
+    },
     ...actionContext,
     flushMetadata: () => metadata.flushMetadata(),
   });
-  const metadata = createMetadataActions({
+  const metadata = createMetadataActions({ ...actionContext, writeLatest });
+  const reset = createSettingsReset(storage, serialize, {
     ...actionContext,
-    persistMetadata: createMetadataWriter(storage, actionContext, parent.hasPending),
+    defaults: () => snapshot(defaultSoundSettings()),
+    getReadFailure: () => readFailure,
+    recovered() {
+      readFailure = null;
+    },
+    unreadState: () => unreadSoundSettingsState(sessionPaint(state), 'malformed'),
+    paint: () => sessionPaint(state),
+    flushMetadata: metadata.flushMetadata,
   });
-  const canResetSavedSettings = () =>
-    !disposed && state.status === 'ready' && readFailure === 'malformed';
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
@@ -512,10 +479,7 @@ export function createSoundSettings(
       readFailure = null;
       publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
     },
-    async resetSavedSettings() {
-      if (canResetSavedSettings()) await persist(snapshot(defaultSoundSettings()));
-    },
-    canResetSavedSettings,
+    ...reset,
     // Ordinary retries cannot replace an unreadable record without the parent's explicit reset.
     retryCanRecover: () => readFailure !== 'malformed' && readFailure !== 'newer',
     canEditParent: () => !disposed && readFailure === null && state.status === 'ready',

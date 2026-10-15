@@ -314,6 +314,37 @@ it('writes the real Volume slider once it settles, independently of the Sound sw
   expect(caller.aiSend).not.toHaveBeenCalled();
   expect(caller.feedbackSend).not.toHaveBeenCalled();
 });
+it('keeps rendered Sound and Volume choices live while a write waits and lets the child draw after Settings closes', async () => {
+  const storage = rootColoringSettings();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Draw RSD fixture stroke');
+  const drawing = coloringPaper();
+  await click('Settings');
+  await openSettingsSection('Sound');
+  let finish;
+  storage.write.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+  await toggleSound();
+  expect(volumeSlider()['aria-valuenow']).toBe(50);
+  await adjustVolume('increment');
+  const first = volumeSlider()['aria-valuenow'];
+  await adjustVolume('increment');
+  const latest = volumeSlider()['aria-valuenow'];
+  expect(latest).toBeGreaterThan(first);
+  expect(host.querySelector('[role="switch"][aria-label="Sound"]').disabled).toBe(false);
+  await toggleSound();
+  expect(host.querySelector('[role="slider"]')).toBeNull();
+  expect(storage.write).toHaveBeenCalledOnce();
+  await click('Close');
+  await click('Draw RSD fixture stroke');
+  expect(coloringPaper().strokes).toHaveLength(drawing.strokes.length + 1);
+  await act(async () => finish());
+  expect(storage.write).toHaveBeenCalledTimes(2);
+  expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
+    soundEnabled: false,
+    soundVolume: latest,
+  });
+});
+
 it('hides Coloring through actual RSD Settings and clamps actual history Undo while retaining ink', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));

@@ -3,8 +3,11 @@ import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { sdk, owner, touch, event, send, settle } from './native-contacts-mounted-harness.mjs';
 import { EMPTY_SCAN_IDLE_MS } from '../../experiments/native-architecture/src/drawing/inkVisibility.ts';
+import { SCREENSHOT_COOLDOWN_MS } from '../../web/src/lib/drawing/screenshotTiming.ts';
 import { drawingPaperSize } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
+
+const AUTO_SAVE_CAPTURE_LIMIT = 3;
 
 async function contact(brush, x) {
   await act(async () => owner.setBrush(brush));
@@ -38,6 +41,141 @@ async function idle() {
 }
 
 describe('the screen’s visible-ink scan', () => {
+  it('gives the real paper up after capture while Photos still writes', async () => {
+    await contact('pen', 10);
+    let finish;
+    sdk.save.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    sdk.hold = true;
+    await act(async () => void owner.save());
+    await settle();
+    for (let layer = 0; layer < 2; layer += 1) {
+      const { callback, options } = sdk.captures.at(-1);
+      await act(async () =>
+        callback(rgbaPng(options.width, options.height, 255).toString('base64'))
+      );
+      await settle();
+    }
+    expect(sdk.save).toHaveBeenCalledOnce();
+    expect(owner.busy).toBe(false);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await contact('pen', 200);
+    expect(owner.history.drawing.strokes).toHaveLength(2);
+    await act(async () => finish('photos'));
+  });
+
+  it('coalesces overlapping saves and keeps the first flight through the successful save cooldown', async () => {
+    sdk.save.mockReset().mockResolvedValue('photos');
+    await contact('pen', 10);
+    let finish;
+    sdk.save.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    let first;
+    let second;
+    await act(async () => {
+      first = owner.save();
+      second = owner.save();
+    });
+    expect(second).toBe(first);
+    await settle();
+    expect(sdk.save).toHaveBeenCalledOnce();
+    const flight = owner.flight;
+    const captures = sdk.captures.length;
+    await act(async () => finish('photos'));
+    await first;
+    await act(async () => void owner.save());
+    await settle();
+    expect(sdk.captures).toHaveLength(captures);
+    expect(owner.flight).toBe(flight);
+    await act(async () => vi.advanceTimersByTimeAsync(SCREENSHOT_COOLDOWN_MS));
+    await act(async () => void owner.save());
+    await settle();
+    expect(sdk.save).toHaveBeenCalledTimes(2);
+    expect(owner.flight.id).not.toBe(flight.id);
+  });
+
+  it('allows an immediate new save after a failed save', async () => {
+    sdk.save.mockReset().mockResolvedValue('photos');
+    await contact('pen', 10);
+    sdk.save.mockResolvedValueOnce('denied');
+    await act(async () => void owner.save());
+    await settle();
+    expect(owner.flight.discarded).toBe(true);
+    const flight = owner.flight;
+    await act(async () => void owner.save());
+    await settle();
+    expect(sdk.save).toHaveBeenCalledTimes(2);
+    expect(owner.flight.id).not.toBe(flight.id);
+    expect(owner.flight.discarded).toBe(false);
+  });
+
+  it('clears and gives the real paper up while Auto-Save on Delete still writes Photos', async () => {
+    await contact('pen', 10);
+    const previous = owner.history.drawing;
+    let finish;
+    sdk.save.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+    sdk.hold = true;
+    await act(async () => void owner.clear(true));
+    await settle();
+    for (
+      let layer = 0;
+      layer < AUTO_SAVE_CAPTURE_LIMIT && sdk.save.mock.calls.length === 0;
+      layer += 1
+    ) {
+      const { callback, options } = sdk.captures.at(-1);
+      await act(async () =>
+        callback(rgbaPng(options.width, options.height, 255).toString('base64'))
+      );
+      await settle();
+    }
+    expect(sdk.save).toHaveBeenCalledOnce();
+    expect(owner.history.drawing.strokes).toHaveLength(0);
+    expect(owner.history.undo.at(-1)).toBe(previous);
+    expect(owner.busy).toBe(false);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await contact('pen', 200);
+    expect(owner.history.drawing.strokes).toHaveLength(1);
+    await act(async () => finish('denied'));
+    expect(owner.history.drawing.strokes).toHaveLength(1);
+    expect(owner.saveFailure.pictureCount).toBe(1);
+    await act(async () => owner.undo());
+    await settle();
+    expect(owner.history.drawing.strokes).toHaveLength(0);
+    await act(async () => owner.undo());
+    await settle();
+    expect(owner.history.drawing).toBe(previous);
+  });
+
+  it('clears known ink without a capture and admits the next contact immediately', async () => {
+    await contact('pen', 10);
+    const previous = owner.history.drawing;
+    const captures = sdk.captures.length;
+    sdk.hold = true;
+    await act(async () => void owner.clear(false));
+    expect(sdk.captures).toHaveLength(captures);
+    expect(owner.busy).toBe(false);
+    expect(owner.disabled).toBe(false);
+    expect(owner.history.drawing.strokes).toHaveLength(0);
+    expect(owner.history.undo.at(-1)).toBe(previous);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+    await contact('pen', 200);
+    expect(owner.history.drawing.strokes).toHaveLength(1);
+  });
+
+  it('clears a scanned blank page without another capture or an extra undo step', async () => {
+    await contact('pen', 10);
+    await contact('eraser', 10);
+    sdk.hold = true;
+    await idle();
+    await act(async () => sdk.captures.at(-1).callback(blankPaper()));
+    await act(async () => vi.advanceTimersByTimeAsync(EMPTY_SCAN_IDLE_MS));
+    expect(owner.inkVisible).toBe(false);
+    const captures = sdk.captures.length;
+    const undo = owner.history.undo;
+    await act(async () => void owner.clear(false));
+    expect(sdk.captures).toHaveLength(captures);
+    expect(owner.history.drawing.strokes).toHaveLength(0);
+    expect(owner.history.undo).toBe(undo);
+  });
+
   it('reads a page the eraser wiped as blank once the child stops', async () => {
     await contact('pen', 10);
     expect(owner.inkVisible).toBe(true);

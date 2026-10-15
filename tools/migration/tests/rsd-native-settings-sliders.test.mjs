@@ -66,7 +66,7 @@ it.each([
     await mount(createElement(RsdDrawingScreen));
     await openSettingsSection(section);
     await adjust(label, 'increment');
-    expect(caller.product.sound.settings.status).toBe('saving');
+    expect(settings.storage.write).toHaveBeenCalledOnce();
     await adjust(label, 'increment');
     // The slider answers the second nudge rather than locking while the first one writes.
     expect(sliderProps(label)['aria-valuenow']).toBe(start + 2);

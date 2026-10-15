@@ -213,7 +213,7 @@ describe('parent drawing control preferences', () => {
     }
   );
   it.each(CONTROLS)(
-    'blocks %s before hydration, during save, and after disposal',
+    'blocks %s before hydration and after disposal, and keeps one chosen during a save',
     async (field, method) => {
       const f = fixture();
       await f.owner[method](false);
@@ -226,16 +226,21 @@ describe('parent drawing control preferences', () => {
         })
       );
       const saving = f.owner[method](false);
-      expect(f.changes.at(-1)).toMatchObject({ status: 'saving', [field]: false });
-      await f.owner[method](true);
-      await f.owner.setSoundVolume(25);
+      expect(f.changes.at(-1)).toMatchObject({ status: 'ready', [field]: false });
+      const kept = f.owner[method](true);
+      const volume = f.owner.setSoundVolume(25);
+      expect(f.changes.at(-1)).toMatchObject({ status: 'ready', [field]: true, soundVolume: 25 });
       expect(f.storage.write).toHaveBeenCalledOnce();
-      f.owner.dispose();
       finish();
-      await saving;
-      expect(f.changes.at(-1)).toMatchObject({ status: 'saving', [field]: false });
-      await f.owner[method](true);
-      expect(f.storage.write).toHaveBeenCalledOnce();
+      await Promise.all([saving, kept, volume]);
+      expect(f.storage.write).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(f.storage.write.mock.calls[1][0])).toMatchObject({
+        [field]: true,
+        soundVolume: 25,
+      });
+      f.owner.dispose();
+      await f.owner[method](false);
+      expect(f.storage.write).toHaveBeenCalledTimes(2);
     }
   );
   it.each(CONTROLS)(

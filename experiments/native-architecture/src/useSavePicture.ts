@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { SCREENSHOT_COOLDOWN_MS } from '../../../web/src/lib/drawing/screenshotTiming';
+import type { History } from './drawing/model';
+import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import { isUnsaved, type UnsavedOutcome } from './export/pictureSave';
+import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react';
 import type { View } from 'react-native';
-import type { PaperSize } from './drawing/paperSpace';
+import { drawingPaperSize, type PaperSize } from './drawing/paperSpace';
 import { createSaveFailure } from './export/saveFailure';
-import { savePicture } from './keepPicture';
+import { capturePicture, savePicture } from './keepPicture';
 import { unsavedPictureStore } from './platform/unsavedPictures';
 
 // One save's polaroid: the captured PNG it shows, the paper it was drawn on, and whether the
@@ -47,5 +51,58 @@ export function usePolaroidFlights() {
     discard(id: number) {
       setFlight((current) => (current?.id === id ? { ...current, discarded: true } : current));
     },
+  };
+}
+
+export function useSaveAction({
+  historyRef,
+  surface,
+  runCommand,
+  setNotice,
+  flights,
+  reportSaveFailure,
+}: {
+  historyRef: RefObject<History>;
+  surface: RefObject<DrawingSurfaceHandle | null>;
+  runCommand: (action: () => Promise<void>) => Promise<void>;
+  setNotice: (notice: string) => void;
+  flights: ReturnType<typeof usePolaroidFlights>;
+  reportSaveFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void;
+}) {
+  const state = useRef<{ active: Promise<void> | null; cooldownUntil: number }>({
+    active: null,
+    cooldownUntil: 0,
+  }).current;
+  async function save() {
+    const capture: { started: boolean; pngBase64: string | null; flight: number | null } = {
+      started: false,
+      pngBase64: null,
+      flight: null,
+    };
+    await runCommand(async () => {
+      capture.started = true;
+      const drawing = historyRef.current.drawing;
+      capture.pngBase64 = await capturePicture(drawing, surface.current);
+      if (capture.pngBase64) {
+        capture.flight = flights.launch(capture.pngBase64, drawingPaperSize(drawing));
+        setNotice('');
+      }
+    });
+    if (!capture.started) return;
+    const outcome = capture.pngBase64 ? await savePicture(capture.pngBase64) : 'failed';
+    if (!isUnsaved(outcome)) {
+      state.cooldownUntil = performance.now() + SCREENSHOT_COOLDOWN_MS;
+      return;
+    }
+    if (capture.flight !== null) flights.discard(capture.flight);
+    reportSaveFailure(outcome, capture.pngBase64);
+  }
+  return () => {
+    if (state.active) return state.active;
+    if (performance.now() < state.cooldownUntil) return Promise.resolve();
+    state.active = save().finally(() => {
+      state.active = null;
+    });
+    return state.active;
   };
 }

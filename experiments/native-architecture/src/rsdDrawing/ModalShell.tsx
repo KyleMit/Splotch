@@ -216,7 +216,10 @@ export function ModalStage({
         <DrawingStatusBar />
         <View
           style={layout.fill}
-          onStartShouldSetResponderCapture={(event) => origin?.record(event) ?? false}
+          onStartShouldSetResponderCapture={(event) =>
+            origin?.blocks(event) || (origin?.record(event) ?? false)
+          }
+          onResponderTerminationRequest={() => false}
         >
           {/* Hidden rather than unmounted: the web scrim follows its fade only while mounted. */}
           <View style={[layout.cover, seeThrough && layout.clear]} pointerEvents="none">
