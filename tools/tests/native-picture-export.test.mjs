@@ -13,14 +13,16 @@ import { pictureExport } from '../../experiments/native-architecture/src/drawing
 import { composePicture as composeWebPicture } from '../../experiments/native-architecture/src/drawing/pictureCompose.web.ts';
 
 const skia = vi.hoisted(() => ({ log: [], grainFails: false }));
-// Metro hands a native bundle the grain as an asset id, which each platform resolves to a URL.
-const { GRAIN_ASSET_ID } = vi.hoisted(() => ({ GRAIN_ASSET_ID: 7 }));
-vi.mock('../../experiments/native-architecture/assets/paper/handmade-paper.webp', () => ({
-  default: GRAIN_ASSET_ID,
+// Metro hands the web export the grain as { uri, width, height }, which it reads as is
+// (platform/webAsset.ts); the native apps resolve the bundled grain through React Native.
+const { GRAIN } = vi.hoisted(() => ({
+  GRAIN: { uri: '/assets/paper/handmade-paper.webp', width: 148, height: 148 },
 }));
-vi.mock('expo-asset', () => ({ Asset: { fromModule: (source) => ({ uri: `asset:${source}` }) } }));
+vi.mock('../../experiments/native-architecture/assets/paper/handmade-paper.webp', () => ({
+  default: GRAIN,
+}));
 vi.mock('react-native', () => ({
-  Image: { resolveAssetSource: (source) => ({ uri: `resolved:${source}` }) },
+  Image: { resolveAssetSource: (source) => ({ uri: `resolved:${source.uri}` }) },
 }));
 vi.mock('@shopify/react-native-skia', () => {
   const instance = (name, methods = {}) => ({
@@ -221,7 +223,7 @@ describe('composing the saved picture on the web', () => {
       const layer = log[drawn][1];
       const grain = log.find(([key]) => key === 'createPattern')[1];
       expect(layer.src).toBe('data:image/png;base64,layer');
-      expect(grain.src).toBe(`asset:${GRAIN_ASSET_ID}`);
+      expect(grain.src).toBe(GRAIN.uri);
       expect(log.slice(0, drawn + 1)).toEqual([
         ['canvas', 780, 1538],
         ['set', 'imageSmoothingEnabled', true],
@@ -272,7 +274,7 @@ describe('composing the saved picture on Android and iOS', () => {
       ['flush'],
       ['encode', 'png', 100],
     ]);
-    expect(skia.log.find(([key]) => key === 'fromURI')[1]).toBe(`resolved:${GRAIN_ASSET_ID}`);
+    expect(skia.log.find(([key]) => key === 'fromURI')[1]).toBe(`resolved:${GRAIN.uri}`);
     expect(skia.log.filter(([key]) => key === 'dispose').map(([, name]) => name)).toEqual([
       'snapshot',
       'paint',

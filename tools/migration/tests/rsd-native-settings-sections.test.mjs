@@ -38,8 +38,8 @@ import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/nativ
 import {
   RELEASE_NOTES,
   WHATS_NEW_COPY,
-  WHATS_NEW_STAMP,
 } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import {
   PENCIL_ERASER_HELP,
   PENCIL_ERASER_LABEL,

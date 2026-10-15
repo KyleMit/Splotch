@@ -16,17 +16,22 @@ export const REACT_NATIVE_WEB_FLOOR_BYTES = 323_984;
 // its app code were as lean as the shipping app's.
 export const NATIVE_WEB_STARTUP_TARGET_BYTES =
   MAX_STARTUP_JS_CSS_BYTES + REACT_NATIVE_WEB_FLOOR_BYTES;
-// The reviewed 2026-10-13 startup is 894,104 bytes, after the bundled Farm images became hashed
+// The reviewed 2026-10-14 startup is 858,902 bytes, after the bundled Farm images became hashed
 // assets, each page's line art and every on-request sheet moved into lazy chunks, Reanimated left
 // the web bundle, the app's Animated stopped importing React Native Web's animated list components,
 // feedback, AI generation and recovery, and the offline library began loading after the drawing
-// screen paints, the startup icon set shrank to the icons the screen mounts with, and
-// react-native-svg left the web bundle (platform/svg.web.ts), measured with the AI flow (PR 2869)
-// merged. That is 45,120 bytes over NATIVE_WEB_STARTUP_TARGET_BYTES. The 11,896 bytes of headroom
-// stay below the smallest of those moves (the offline library controller, 24,471 bytes), so
-// undoing any of them fails; consuming the headroom is the cue to take the next lever, not to
-// raise the number.
-export const MAX_NATIVE_WEB_STARTUP_BYTES = 906_000;
+// screen paints, the startup icon set shrank to the icons the screen mounts with,
+// react-native-svg left the web bundle (platform/svg.web.ts), the release notes moved to Settings'
+// chunk (settings/whatsNewStamp.ts), Expo's native-module runtime left the web bundle
+// (platform/webAsset.ts, platform/registerRoot.web.ts), and the React Strict DOM imports its web
+// preset compiles away stopped loading RSD's element library (babel.config.cjs). That is 9,918
+// bytes over NATIVE_WEB_STARTUP_TARGET_BYTES. The 11,896 bytes of headroom stay below every move
+// up to react-native-svg (the smallest, the offline library controller, is 24,471 bytes), so
+// undoing one fails here; the last three, two of them smaller than the headroom, each fail their
+// own check instead (the precache check's release-note samples, native-web-expo-runtime.test.mjs,
+// native-web-strict-dom-imports.test.mjs). Consuming the headroom is the cue to take the next
+// lever, not to raise the number.
+export const MAX_NATIVE_WEB_STARTUP_BYTES = 870_798;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(

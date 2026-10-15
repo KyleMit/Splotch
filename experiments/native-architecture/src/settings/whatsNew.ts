@@ -1,6 +1,5 @@
 import releases from '../../../../web/src/lib/releases.json';
 import notes from '../information/releaseNotes.generated.json';
-import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import type { NativeIconName } from '../rsdDrawing/icons.generated';
 
 export type ReleaseBlock = Readonly<{ kind: 'item' | 'paragraph'; text: string }>;
@@ -48,16 +47,3 @@ export function releaseSectionIcon(title: string): NativeIconName | null {
 }
 
 export const WHATS_NEW_COPY = { allReleases: 'See all releases' } as const;
-
-// The shipping What's New section's content stamp is the app version, so its dot returns with
-// each release until the section is opened.
-export const WHATS_NEW_STAMP = FEEDBACK_APP_VERSION;
-const VERSION_STAMP = /^\d+\.\d+\.\d+$/;
-
-export function isWhatsNewSeen(value: unknown): value is string | null {
-  return value === null || (typeof value === 'string' && VERSION_STAMP.test(value));
-}
-
-export function whatsNewUnseen(seen: string | null) {
-  return seen !== WHATS_NEW_STAMP;
-}

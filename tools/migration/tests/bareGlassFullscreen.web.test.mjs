@@ -3,7 +3,6 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-vi.mock('expo-asset', () => ({ Asset: { fromModule: () => ({ uri: '/paper.webp' }) } }));
 vi.mock('../../../experiments/native-architecture/assets/paper/handmade-paper.webp', () => ({
   default: '/paper.webp',
 }));

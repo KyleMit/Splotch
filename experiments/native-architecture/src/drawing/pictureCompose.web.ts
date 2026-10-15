@@ -1,4 +1,4 @@
-import { Asset } from 'expo-asset';
+import { webAssetUri } from '../platform/webAsset';
 import handmadePaper from '../../assets/paper/handmade-paper.webp';
 import type { PictureExport } from './pictureExport';
 
@@ -16,7 +16,7 @@ let grain: Promise<HTMLImageElement | null> | null = null;
 // As the shipping export does, a grain that will not load leaves the plain paper color.
 function loadGrain(): Promise<HTMLImageElement | null> {
   if (grain) return grain;
-  const loading = decodeImage(Asset.fromModule(handmadePaper).uri).catch(() => {
+  const loading = decodeImage(webAssetUri(handmadePaper)).catch(() => {
     if (grain === loading) grain = null;
     return null;
   });

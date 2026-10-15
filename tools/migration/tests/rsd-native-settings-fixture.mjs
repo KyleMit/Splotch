@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 
 // The stored settings, drawing screen and Settings queries the RSD Settings suites share.
 const CURRENT_SETTINGS = {

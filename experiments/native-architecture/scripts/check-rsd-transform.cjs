@@ -30,7 +30,10 @@ function imported(ast, module, name) {
 assert.equal(process.argv.length, 2, 'RSD transform accepts no arguments');
 assert.equal(JSON.parse(source('package.json')).main, 'src/index.ts', 'Canonical RSD entry');
 const entry = parse('src/index.ts');
-assert.ok(imported(entry, 'expo', 'registerRootComponent'), 'Registration import owner');
+assert.ok(
+  imported(entry, './platform/registerRoot', 'registerRootComponent'),
+  'Registration import owner'
+);
 assert.ok(imported(entry, './ProbeApp', 'ProbeApp'), 'ProbeApp import owner');
 const registrations = entry.program.body
   .filter(

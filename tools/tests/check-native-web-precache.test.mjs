@@ -7,6 +7,7 @@ import {
   checkNativeWebPrecache,
   lazyIconSamples,
   lazyModuleSamples,
+  releaseNoteSamples,
   starterBookImages,
   starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
@@ -17,6 +18,15 @@ import { appShellPrecacheUrl } from '../../web/src/lib/pwa/appShellRoute.ts';
 import { contentAddressedShell, subresourceIntegrity } from '../migration/build-native-web.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+const RELEASE_NOTES_BY_VERSION = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../experiments/native-architecture/src/information/releaseNotes.generated.json',
+      import.meta.url
+    ),
+    'utf8'
+  )
+);
 const OUTLINES = [
   { pageId: 'farm/cat', sample: 'M1 2C3 4 5 6 7 8CAT' },
   { pageId: 'farm/cow', sample: 'M1 2C3 4 5 6 7 8COW' },
@@ -211,6 +221,24 @@ it('samples line art for every starter page and lists it among the lazily loaded
   expect(new Set(outlines.map(({ sample }) => sample)).size).toBe(FARM_PAGE_IDS.length);
   const lazy = lazyModuleSamples().map(({ sample }) => sample);
   for (const { sample } of outlines) expect(lazy).toContain(sample);
+});
+
+it('samples every release note and keeps the notes out of the scripts the app shell loads', () => {
+  const samples = releaseNoteSamples();
+  for (const [version, sections] of Object.entries(RELEASE_NOTES_BY_VERSION)) {
+    const texts = sections.flatMap((section) => section.blocks.map(({ text }) => text));
+    expect(
+      samples.some((sample) => texts.some((text) => text.includes(sample))),
+      version
+    ).toBe(true);
+  }
+  for (const sample of samples) expect(sample.length).toBeGreaterThanOrEqual(24);
+  const lazy = lazyModuleSamples().filter(({ module }) => module === 'release notes');
+  expect(lazy.map(({ sample }) => sample)).toEqual(samples);
+  const eager = { ...ASSETS, [ENTRY]: `${ASSETS[ENTRY]}var t="${samples[0]}";` };
+  expect(() =>
+    check(exportFixture({ urls: COMPLETE, assets: eager }), { lazySamples: lazy })
+  ).toThrow(/1 lazily loaded samples are in the app shell's scripts: release notes/);
 });
 
 it('hashes every starter page image and both covers from the shipped files', () => {

@@ -33,7 +33,7 @@ import {
   NATIVE_SETTINGS_SECTIONS,
   sectionHeading,
 } from '../../../experiments/native-architecture/src/settings/settingsSections.ts';
-import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
+import { WHATS_NEW_STAMP } from '../../../experiments/native-architecture/src/settings/whatsNewStamp.ts';
 import { SETTINGS_ACTIVITY_DOTS_START_SESSION } from '../../../experiments/native-architecture/src/settings/settingsSessions.ts';
 import { SECTION_JUMP_INSET_PX } from '../../../web/src/lib/components/settings/paneScroll.ts';
 

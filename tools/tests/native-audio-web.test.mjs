@@ -5,10 +5,9 @@ import {
   STOP_DECLICK_S,
   TEARDOWN_SLACK_MS,
 } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
-const asset = vi.hoisted(() => ({ fromModule: vi.fn() }));
-vi.mock('expo-asset', () => ({ Asset: asset }));
 import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.web.ts';
 import { PENCIL_SOUNDS } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
+import { webAssetUri } from '../../experiments/native-architecture/src/platform/webAsset.ts';
 
 const TAKE_SECONDS = 2;
 
@@ -74,9 +73,6 @@ beforeEach(() => {
   vi.useFakeTimers();
   contexts = [];
   rejectInitialResume = false;
-  asset.fromModule
-    .mockReset()
-    .mockReturnValue({ localUri: 'file:owned-pencil', uri: 'https://fixture.invalid/pencil' });
   fetchSound = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(2) }));
   vi.stubGlobal('fetch', fetchSound);
   vi.stubGlobal('AudioContext', FakeAudioContext);
@@ -90,9 +86,10 @@ describe('explicit drawing web audio adapter', () => {
   it('loads the owned asset and connects a muted looping source with bounded gain and de-click teardown', async () => {
     const f = fixture();
     const loop = await f.promise;
-    expect(asset.fromModule.mock.calls.map(([sound]) => sound)).toEqual([...PENCIL_SOUNDS]);
-    expect(fetchSound).toHaveBeenCalledTimes(PENCIL_SOUNDS.length);
-    expect(fetchSound).toHaveBeenCalledWith('file:owned-pencil', { signal: f.abort.signal });
+    expect(fetchSound.mock.calls).toEqual(
+      PENCIL_SOUNDS.map((sound) => [webAssetUri(sound), { signal: f.abort.signal }])
+    );
+    expect(new Set(fetchSound.mock.calls.map(([url]) => url)).size).toBe(PENCIL_SOUNDS.length);
     vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0);
     loop.start();
     const source = f.context.sources[0];

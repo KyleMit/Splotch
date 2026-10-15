@@ -1,0 +1,1 @@
+export { registerRootComponent } from 'expo';

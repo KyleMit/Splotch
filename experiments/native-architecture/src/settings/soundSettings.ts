@@ -25,7 +25,7 @@ import { DEFAULT_SAVE_ON_DELETE_ENABLED } from './saveOnDelete';
 import { PROTECTED_PARENT_POLICIES } from '../parentCenter/parentPolicy';
 import { isButtonScale } from './buttonSize';
 import { isReduceMotionPreference, type ReduceMotionPreference } from './reduceMotion';
-import { WHATS_NEW_STAMP } from './whatsNew';
+import { WHATS_NEW_STAMP } from './whatsNewStamp';
 import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
 import { DEFAULT_AI_PREFERENCES, createAiActions } from './aiPreferences';
 import { createParentSaves } from './parentSaves';

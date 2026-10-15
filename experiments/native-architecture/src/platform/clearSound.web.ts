@@ -1,4 +1,4 @@
-import { Asset } from 'expo-asset';
+import { webAssetUri } from './webAsset';
 import clearPageTurn from '../audio/clear-page-turn.mp3';
 import type { ClearPageTurnLoader } from '../audio/pageTurnSound';
 
@@ -10,8 +10,7 @@ export const loadClearPageTurn: ClearPageTurnLoader = async (signal) => {
   };
   try {
     resume();
-    const asset = Asset.fromModule(clearPageTurn);
-    const response = await fetch(asset.localUri ?? asset.uri, { signal });
+    const response = await fetch(webAssetUri(clearPageTurn), { signal });
     if (!response.ok) throw new Error('Clear sound could not be loaded.');
     const buffer = await context.decodeAudioData(await response.arrayBuffer());
     if (signal.aborted) throw new Error('Clear sound was cancelled.');

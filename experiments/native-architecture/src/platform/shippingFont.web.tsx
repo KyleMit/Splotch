@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { Asset } from 'expo-asset';
+import { webAssetUri } from './webAsset';
 import vietnamese from '@fontsource-variable/quicksand/files/quicksand-vietnamese-wght-normal.woff2';
 import latinExt from '@fontsource-variable/quicksand/files/quicksand-latin-ext-wght-normal.woff2';
 import latin from '@fontsource-variable/quicksand/files/quicksand-latin-wght-normal.woff2';
@@ -21,7 +21,7 @@ const SHIPPING_FONT_FACES = SHIPPING_FONT_SUBSETS.map(
   ({ subset, unicodeRange }) =>
     new FontFace(
       SHIPPING_FONT_FAMILY,
-      `url(${Asset.fromModule(SUBSET_FILES[subset]).uri}) format('woff2')`,
+      `url(${webAssetUri(SUBSET_FILES[subset])}) format('woff2')`,
       { weight: SHIPPING_FONT_WEIGHT_RANGE, display: SHIPPING_FONT_DISPLAY, unicodeRange }
     )
 );
