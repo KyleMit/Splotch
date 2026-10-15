@@ -30,12 +30,17 @@ import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
 import { DEFAULT_AI_PREFERENCES, createAiActions } from './aiPreferences';
 import { createParentSaves } from './parentSaves';
 import {
+  readStoredSettings,
+  UNREAD_SETTINGS_MESSAGES,
+  type SettingsReadFailure,
+} from './settingsRead';
+import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
   DEFAULT_SOUND_SOURCE_SETTINGS,
   DEFAULT_WIDTH_SETTINGS,
-  parseSoundSettings,
   sessionPaint,
   snapshot,
+  SOUND_SETTINGS_VERSION,
   type Choices,
   type ColorSettings,
   type SoundSettings,
@@ -76,7 +81,7 @@ export function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 16,
+    version: SOUND_SETTINGS_VERSION,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
     ...DEFAULT_SOUND_SOURCE_SETTINGS,
@@ -93,7 +98,13 @@ function defaultSoundSettings(): SoundSettings {
   };
 }
 
-function unreadSoundSettingsState(paint: ColorSettings): SoundSettingsState {
+const STILL_UNAVAILABLE_MESSAGE =
+  'Settings still could not be read. AI stays off and protection stays active.';
+
+function unreadSoundSettingsState(
+  paint: ColorSettings,
+  failure: SettingsReadFailure
+): SoundSettingsState {
   return {
     status: 'ready',
     coloringBookEnabled: false,
@@ -112,8 +123,7 @@ function unreadSoundSettingsState(paint: ColorSettings): SoundSettingsState {
     ...DEFAULT_PENCIL_SETTINGS,
     ...DEFAULT_AI_PREFERENCES,
     saved: false,
-    message:
-      'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
+    message: UNREAD_SETTINGS_MESSAGES[failure],
   };
 }
 
@@ -432,7 +442,7 @@ export function createSoundSettings(
 ) {
   let state = initialSoundSettingsState();
   let disposed = false;
-  let readFailed = false;
+  let readFailure: SettingsReadFailure | null = null;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
     state = next;
@@ -448,7 +458,6 @@ export function createSoundSettings(
   // The choice shows at once, with nothing left to retry, as shipping's synchronous storage
   // shows it; a write that does not land brings the retry back.
   async function persist(settings: SoundSettings) {
-    readFailed = false;
     parent.clearPending();
     const { version: _version, ...choices } = settings;
     publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
@@ -458,7 +467,7 @@ export function createSoundSettings(
   const actionContext: PreferenceActionContext = {
     getState: () => state,
     isDisposed: () => disposed,
-    hasReadFailed: () => readFailed,
+    hasReadFailed: () => readFailure !== null,
     publish,
     persist,
   };
@@ -471,17 +480,18 @@ export function createSoundSettings(
     flushMetadata: () => metadata.flushMetadata(),
   });
   const metadata = createMetadataActions({ ...actionContext, writeLatest });
+  const canResetSavedSettings = () =>
+    !disposed && state.status === 'ready' && readFailure === 'malformed';
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
-      try {
-        const stored = await storage.read();
-        const settings = stored === null ? defaultSoundSettings() : parseSoundSettings(stored);
-        const { version: _version, ...choices } = settings;
+      const read = await readStoredSettings(storage);
+      if (read.kind === 'failed') {
+        readFailure = read.failure;
+        publish(unreadSoundSettingsState(sessionPaint(state), read.failure));
+      } else {
+        const { version: _version, ...choices } = read.settings ?? defaultSoundSettings();
         publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
-      } catch {
-        readFailed = true;
-        publish(unreadSoundSettingsState(sessionPaint(state)));
       }
       await metadata.flushMetadata();
     },
@@ -497,10 +507,11 @@ export function createSoundSettings(
         publish({ ...state, message: 'Open Parent Center to retry saving its choices.' });
         return;
       }
-      if (readFailed) {
+      if (readFailure === 'unavailable') {
         publish({ ...state, message: 'Read settings again before saving Parent Center choices.' });
         return;
       }
+      if (readFailure !== null) return;
       await persist(snapshot(state));
     },
     setParentPreferences: parent.setParentPreferences,
@@ -509,24 +520,52 @@ export function createSoundSettings(
     aiSaveFailed: parent.aiSaveFailed,
     retryParentSave: parent.retryParentSave,
     async retryRead() {
-      if (disposed || state.status !== 'ready' || !readFailed) return;
-      try {
-        const stored = await storage.read();
-        const next =
-          stored === null
-            ? { ...snapshot(state), ...DEFAULT_PARENT_PREFERENCES }
-            : parseSoundSettings(stored);
-        const { version: _version, ...choices } = next;
-        readFailed = false;
-        publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
-      } catch {
+      if (disposed || state.status !== 'ready' || readFailure === null) return;
+      const read = await readStoredSettings(storage);
+      if (read.kind === 'failed') {
+        readFailure = read.failure;
         publish({
           ...state,
-          message: 'Settings still could not be read. AI stays off and protection stays active.',
+          message:
+            read.failure === 'unavailable'
+              ? STILL_UNAVAILABLE_MESSAGE
+              : UNREAD_SETTINGS_MESSAGES[read.failure],
         });
+        return;
       }
+      const { version: _version, ...choices } = read.settings ?? {
+        ...snapshot(state),
+        ...DEFAULT_PARENT_PREFERENCES,
+      };
+      readFailure = null;
+      publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
     },
-    canEditParent: () => !disposed && !readFailed && state.status === 'ready',
+    async resetSavedSettings() {
+      if (!canResetSavedSettings()) return;
+      const defaults = snapshot(defaultSoundSettings());
+      const { version: _version, ...choices } = defaults;
+      publish({ ...state, status: 'saving', message: '' });
+      await serialize(async () => {
+        try {
+          await storage.write(JSON.stringify(defaults));
+          readFailure = null;
+          publish({
+            status: 'ready',
+            ...choices,
+            ...sessionPaint(state),
+            saved: true,
+            message: '',
+          });
+        } catch {
+          publish(unreadSoundSettingsState(sessionPaint(state), 'malformed'));
+        }
+      });
+      await metadata.flushMetadata();
+    },
+    canResetSavedSettings,
+    // Ordinary retries cannot replace an unreadable record without the parent's explicit reset.
+    retryCanRecover: () => readFailure !== 'malformed' && readFailure !== 'newer',
+    canEditParent: () => !disposed && readFailure === null && state.status === 'ready',
     dispose() {
       disposed = true;
     },

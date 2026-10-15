@@ -9,6 +9,7 @@ import {
   ERROR_DOTTIE_PX,
   ERROR_RESTART_MIN_WIDTH_PX,
   ERROR_SCREEN_COPY,
+  RsdCrashScreen,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdErrorScreen.tsx';
 import { displayFontSize } from '../../../experiments/native-architecture/src/rsdDrawing/displayType.ts';
 import { AppRestartRoot } from '../../../experiments/native-architecture/src/product/AppRestart.tsx';
@@ -51,8 +52,17 @@ function rendererFault(recovery) {
 }
 
 describe("the drawing screen's Error Screen", () => {
+  it('wears the shipping font when the failed drawing screen cannot provide it', async () => {
+    await mount(createElement(RsdCrashScreen, { onRestart: vi.fn(async () => {}) }));
+    const copy = records.props.findLast(
+      (props) => props.children?.[0] === ERROR_SCREEN_COPY.lines[0]
+    );
+    expect(flat(copy?.style)?.fontFamily).toMatch(/Quicksand/);
+  });
+
   it('keeps the copy and literals ErrorScreen.svelte writes', () => {
     const markup = SHIPPING_ERROR_SCREEN.replace(/\s+/g, ' ');
+    expect(markup).toContain(`<title>${ERROR_SCREEN_COPY.documentTitle}</title>`);
     expect(markup).toContain(`<h1>${ERROR_SCREEN_COPY.title}</h1>`);
     expect(markup).toContain(`<p>${ERROR_SCREEN_COPY.lines.join('<br />')}</p>`);
     expect(markup).toMatch(new RegExp(`>${ERROR_SCREEN_COPY.restart}</button>`));
