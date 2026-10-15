@@ -60,14 +60,32 @@ it.each([
   ['package.json', '"main": "src/index.ts"', '"main": "src/Other.ts"', 'Canonical RSD entry'],
   [
     'src/index.ts',
-    'registerRootComponent(ProbeApp)',
+    'registerRootComponent(__DEV__ ? StrictProbeApp : ProbeApp)',
     'registerRootComponent(OtherApp)',
     'Canonical registration',
+  ],
+  [
+    'src/index.ts',
+    '__DEV__ ? StrictProbeApp : ProbeApp',
+    '__DEV__ ? OtherApp : ProbeApp',
+    'Canonical registration development root',
+  ],
+  [
+    'src/index.ts',
+    '__DEV__ ? StrictProbeApp : ProbeApp',
+    '__DEV__ ? StrictProbeApp : OtherApp',
+    'Canonical registration release root',
   ],
   ['src/ProbeApp.tsx', '<RsdDrawingScreen />', '<DrawingScreen />', 'Mounted RSD screen'],
   [
     'src/ProbeApp.tsx',
-    '<ShippingFontGate>\n          <RsdDrawingScreen />\n        </ShippingFontGate>',
+    '<RsdScreenBoundary>\n            <RsdDrawingScreen />\n          </RsdScreenBoundary>',
+    '<RsdDrawingScreen />',
+    'Mounted screen boundary',
+  ],
+  [
+    'src/ProbeApp.tsx',
+    '<ShippingFontGate>\n          <RsdScreenBoundary>\n            <RsdDrawingScreen />\n          </RsdScreenBoundary>\n        </ShippingFontGate>',
     '<RsdDrawingScreen />',
     'Font-gated screen',
   ],
@@ -105,8 +123,8 @@ it('rejects a comment marker instead of actual canonical registration', () => {
   writeFileSync(
     target,
     readFileSync(target, 'utf8').replace(
-      'registerRootComponent(ProbeApp);',
-      'registerRootComponent(OtherApp); // registerRootComponent(ProbeApp);'
+      'registerRootComponent(__DEV__ ? StrictProbeApp : ProbeApp);',
+      'registerRootComponent(OtherApp); // registerRootComponent(__DEV__ ? StrictProbeApp : ProbeApp);'
     )
   );
   const result = run(path);
