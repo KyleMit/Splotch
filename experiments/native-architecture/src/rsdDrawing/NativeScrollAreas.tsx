@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { paletteSlots } from './paletteGeometry';
+import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
 import { fittedPaper } from '../drawing/paperGeometry';
 import type { PaperReference } from '../drawing/paperSpace';
 import {
@@ -238,7 +238,12 @@ export function NativeDrawingLayout({
     () => children(frame, { width: paperArea.width, height: paperArea.height }),
     [children, frame, paperArea.width, paperArea.height]
   );
-  const controlArea = { width: paperArea.width, height: paperArea.height - insetBottom };
+  const controlsLeftPx =
+    bareGlass && axis === 'column' && !phoneLandscape ? PALETTE_FLOWS.column.extentPx : 0;
+  const controlArea = {
+    width: paperArea.width - controlsLeftPx,
+    height: paperArea.height - insetBottom,
+  };
   return (
     <View
       testID="rsd-drawing-layout"
@@ -295,7 +300,7 @@ export function NativeDrawingLayout({
           <View
             testID="rsd-controls-inset"
             pointerEvents="box-none"
-            style={[docks.controls, { bottom: insetBottom }]}
+            style={[docks.controls, { bottom: insetBottom, left: controlsLeftPx }]}
           >
             {overlays}
             <View testID="rsd-settings-dock" style={docks.settings}>
