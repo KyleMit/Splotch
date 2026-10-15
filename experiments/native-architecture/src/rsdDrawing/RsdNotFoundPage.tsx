@@ -313,7 +313,9 @@ function NotFoundSheet() {
 // Shipping's NotFoundPage.svelte, which a host shows for any path but the drawing screen's. This
 // export has no Changelog or Privacy page to offer beside Start drawing, so it offers that alone.
 export function RsdNotFoundPage() {
-  useEffect(() => setDocumentTitle(NOT_FOUND_COPY.documentTitle), []);
+  useEffect(() => {
+    setDocumentTitle(NOT_FOUND_COPY.documentTitle);
+  }, []);
   return (
     <DrawingAppearanceProvider preference={bootAppearance()}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics} style={scroll.fill}>

@@ -261,4 +261,4 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-export { sdk, owner, root, host, touch, event, send, settle, open, twoContacts };
+export { sdk, owner, root, host, touch, event, send, settle, open, twoContacts, Consumer };
