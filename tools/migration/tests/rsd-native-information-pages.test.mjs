@@ -1,5 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { caller, host, mount, root, records } from './rsd-native-selection-host.mjs';
 import { Linking } from 'react-native';
+import { RsdInformationFooter } from '../../../experiments/native-architecture/src/rsdDrawing/RsdInformationFooter.tsx';
+import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { mixSrgb } from '../../../experiments/native-architecture/src/rsdDrawing/colorMix.ts';
+import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
+import { themes, scale } from '../../../web/src/lib/design/tokens.ts';
+import releases from '../../../web/src/lib/releases.json';
+import { FEEDBACK_URL } from '../../../web/src/lib/siteUrl.ts';
 import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
@@ -14,10 +23,14 @@ import { FEEDBACK_PAGE_COPY } from '../../../experiments/native-architecture/src
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { RELEASE_NOTES } from '../../../experiments/native-architecture/src/settings/whatsNew.ts';
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
-vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
-  openAppPage: vi.fn(),
-  setDocumentTitle: vi.fn(() => 'Splotch'),
-}));
+vi.mock(
+  '../../../experiments/native-architecture/src/platform/appPath.ts',
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    openAppPage: vi.fn(),
+    setDocumentTitle: vi.fn(() => 'Splotch'),
+  })
+);
 
 afterEach(() => {
   delete Linking.openURL;
@@ -138,4 +151,175 @@ it('uses the standalone shipping Feedback hero and fields without a second Setti
       .click()
   );
   expect(openAppPage).toHaveBeenCalledWith('privacy');
+});
+
+const SHIPPING_FOOTER = readFileSync(
+  join(import.meta.dirname, '../../../web/src/lib/components/page/PageFooter.svelte'),
+  'utf8'
+);
+const FOOTER_NARROW_WIDTH = Number(SHIPPING_FOOTER.match(/max-width: (\d+)px/)[1]);
+const FOOTER_SHORT_HEIGHT = Number(SHIPPING_FOOTER.match(/max-height: (\d+)px/)[1]);
+const footerStyle = (node) => JSON.parse(node.getAttribute('data-committed-props')).style;
+const footerTree = (page = 'privacy', theme = 'light', onExternal = vi.fn()) =>
+  createElement(
+    DrawingAppearanceProvider,
+    { preference: theme },
+    createElement(RsdInformationFooter, { page, onExternal })
+  );
+
+it.each([
+  {
+    width: FOOTER_NARROW_WIDTH,
+    height: FOOTER_SHORT_HEIGHT + 1,
+    direction: 'column',
+    gap: 'space2',
+    margin: 'space8',
+  },
+  {
+    width: FOOTER_NARROW_WIDTH + 1,
+    height: FOOTER_SHORT_HEIGHT + 1,
+    direction: 'row',
+    gap: null,
+    margin: 'space8',
+  },
+  { width: 844, height: FOOTER_SHORT_HEIGHT, direction: 'row', gap: null, margin: 'space6' },
+])(
+  'lays out the shipping footer at $width × $height',
+  async ({ width, height, direction, gap, margin }) => {
+    records.dimensions = { width, height, scale: 1, fontScale: 1 };
+    records.journalHostProps = true;
+    await mount(footerTree());
+    const nav = host.querySelector('[aria-label="Splotch pages"]');
+    const row = nav.parentElement;
+    const footer = row.parentElement;
+    expect(footerStyle(row)).toMatchObject({
+      flexDirection: direction,
+      alignItems: direction === 'column' ? 'flex-start' : 'center',
+      flexWrap: 'wrap',
+      gap: Number.parseFloat(scale.space4),
+    });
+    expect(footerStyle(footer)).toMatchObject({
+      flexDirection: 'column',
+      gap: Number.parseFloat(scale.space4),
+      marginTop: Number.parseFloat(scale[margin]),
+    });
+    expect(footerStyle(footer).borderTopWidth).toBeUndefined();
+    expect(footerStyle(nav.querySelector('[role="list"]'))).toMatchObject({
+      rowGap: Number.parseFloat(scale.space1),
+      columnGap: gap
+        ? Number.parseFloat(scale[gap])
+        : Number(SHIPPING_FOOTER.match(/gap: var\(--space-1\) (\d+)px/)[1]),
+    });
+    const brand = [...row.querySelectorAll('[role="link"]')].find(
+      (node) => node.textContent === 'Splotch'
+    );
+    const wordmark = brand.lastElementChild;
+    expect(footerStyle(brand)).toMatchObject({
+      minHeight: Number(SHIPPING_FOOTER.match(/min-height: (\d+)px/)[1]),
+      gap: Number.parseFloat(scale.space2),
+    });
+    expect(footerStyle(wordmark)).toMatchObject({
+      fontSize: Number.parseFloat(scale.fontSizeXs),
+      fontWeight: scale.fontWeightBold,
+      textTransform: 'uppercase',
+      letterSpacing:
+        Number.parseFloat(scale.fontSizeXs) *
+        Number(SHIPPING_FOOTER.match(/letter-spacing: ([\d.]+)em/)[1]),
+    });
+    expect(footer.lastElementChild.textContent).toBe(
+      `Splotch ${releases[0].version} · released ${releases[0].dateLabel} ·What's new`
+    );
+  }
+);
+
+it.each(['light', 'dark'])(
+  'paints the shared footer with shipping’s orange squiggle in %s',
+  async (theme) => {
+    const squiggle = readFileSync(
+      join(import.meta.dirname, '../../../web/src/lib/components/design/SquiggleRule.svelte'),
+      'utf8'
+    );
+    expect(SHIPPING_FOOTER).toContain("--footer-rule-color={paletteHex('Orange')}");
+    expect(squiggle).toContain("d='M0 4 Q6 0 12 4 T24 4'");
+    await mount(footerTree('privacy', theme));
+    const rule = records.props.findLast((props) => props.testID === 'release-squiggle');
+    expect(rule).toBeDefined();
+    await act(async () => rule.onLayout({ nativeEvent: { layout: { width: 48 } } }));
+    const stroke = host.querySelector('[data-testid="release-squiggle"] path');
+    expect(stroke.getAttribute('d')).toBe('M0 4 Q6 0 12 4 T24 4 M24 4 Q30 0 36 4 T48 4');
+    expect(stroke.getAttribute('stroke-width')).toBe(squiggle.match(/stroke-width='([\d.]+)'/)[1]);
+    expect(stroke.getAttribute('stroke')).toBe(
+      mixSrgb(
+        paletteHex('Orange'),
+        Number.parseFloat(themes[theme].squiggleStrength),
+        themes[theme].surface
+      )
+    );
+  }
+);
+
+it.each([
+  {
+    page: 'privacy',
+    target: 'page',
+    arguments: ['changelog', releases[0].id],
+    current: 'Privacy',
+    links: ['Changelog', 'Send feedback'],
+  },
+  {
+    page: 'changelog',
+    target: 'fragment',
+    arguments: [`#${releases[0].id}`],
+    current: 'Changelog',
+    links: ['Privacy', 'Send feedback'],
+  },
+  {
+    page: 'feedback',
+    target: 'page',
+    arguments: ['changelog', releases[0].id],
+    current: null,
+    links: ['Privacy', 'Changelog', 'Send feedback'],
+  },
+])(
+  'keeps shipping footer navigation and release action on $page',
+  async ({ page, target, arguments: args, current, links }) => {
+    const onExternal = vi.fn();
+    openAppPage.mockClear();
+    await mount(footerTree(page, 'light', onExternal));
+    const nav = host.querySelector('[aria-label="Splotch pages"]');
+    const shippingLinks = [...SHIPPING_FOOTER.matchAll(/id: '([^']+)', label: '([^']+)'/g)].map(
+      (match) => match[2]
+    );
+    expect([...nav.querySelectorAll('[role="listitem"]')].map((node) => node.textContent)).toEqual(
+      shippingLinks
+    );
+    expect([...nav.querySelectorAll('[role="link"]')].map((node) => node.textContent)).toEqual(
+      links
+    );
+    const markers = [...nav.querySelectorAll('path')];
+    expect(markers).toHaveLength(current ? 1 : 0);
+    expect(markers.map((node) => node.getAttribute('fill').toLowerCase())).toEqual(
+      current ? [paletteHex(page === 'privacy' ? 'Purple' : 'Blue').toLowerCase()] : []
+    );
+    const latest = [...host.querySelectorAll('[role="link"]')].find(
+      (node) => node.textContent === "What's new"
+    );
+    expect(latest).toBeDefined();
+    await act(async () => latest.click());
+    expect({ page: openAppPage, fragment: onExternal }[target]).toHaveBeenCalledExactlyOnceWith(
+      ...args
+    );
+  }
+);
+
+it('keeps the native footer’s feedback link behind its external-link owner', async () => {
+  const onExternal = vi.fn();
+  openAppPage.mockClear();
+  await mount(footerTree('feedback', 'light', onExternal));
+  const link = [...host.querySelectorAll('[role="link"]')].find(
+    (node) => node.textContent === 'Send feedback'
+  );
+  await act(async () => link.click());
+  expect(onExternal).toHaveBeenCalledExactlyOnceWith(FEEDBACK_URL);
+  expect(openAppPage).not.toHaveBeenCalled();
 });

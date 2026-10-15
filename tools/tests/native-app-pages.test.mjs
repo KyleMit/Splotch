@@ -17,6 +17,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createBrowserAppPages } from '../../experiments/native-architecture/src/platform/appPath.web.ts';
 import { retainFocus } from '../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts';
 import { createAppPages } from '../../experiments/native-architecture/src/information/appPages.ts';
+import releases from '../../web/src/lib/releases.json';
 afterEach(() => vi.unstubAllGlobals());
 
 it('navigates web information pages without reloading the drawing session and follows browser Back', () => {
@@ -126,4 +127,65 @@ it('records a reading jump as a reversible fragment while preserving the held pa
   expect(history.length).toBe(length + 1);
   visitInformationFragment('release-1-0-0');
   expect(history.length).toBe(length + 1);
+});
+
+it('publishes the native page and release fragment as one owned destination', () => {
+  const pages = createAppPages();
+  const snapshots = [];
+  const release = releases[0].id;
+  expect(pages.fragment).toBeTypeOf('function');
+  const unsubscribe = pages.subscribe(() =>
+    snapshots.push({ page: pages.current(), fragment: pages.fragment() })
+  );
+  pages.open('changelog', release);
+  expect(snapshots).toEqual([{ page: 'changelog', fragment: release }]);
+  pages.open('changelog', release);
+  pages.open('changelog');
+  expect(snapshots).toHaveLength(1);
+  expect(pages.fragment()).toBe(release);
+  pages.open('privacy');
+  expect(snapshots).toEqual([
+    { page: 'changelog', fragment: release },
+    { page: 'privacy', fragment: null },
+  ]);
+  expect(createAppPages().fragment()).toBeNull();
+  unsubscribe();
+  pages.open('drawing');
+  expect(snapshots).toHaveLength(2);
+});
+
+it('publishes the web page and release fragment in one reversible history entry', () => {
+  const location = { pathname: '/privacy', hash: '', assign: vi.fn() };
+  const pushState = vi.fn((_state, _title, path) => {
+    const url = new URL(path, 'https://splotch.art');
+    location.pathname = url.pathname;
+    location.hash = url.hash;
+  });
+  vi.stubGlobal('location', location);
+  vi.stubGlobal('history', { pushState });
+  const pages = createBrowserAppPages();
+  const snapshots = [];
+  const unsubscribe = pages.subscribe(() =>
+    snapshots.push({ page: pages.current(), fragment: informationFragmentAtLaunch() })
+  );
+  const release = releases[0].id;
+  pages.open('changelog', release);
+  expect(pushState).toHaveBeenCalledExactlyOnceWith(
+    null,
+    '',
+    `/changelog#${encodeURIComponent(release)}`
+  );
+  expect(snapshots).toEqual([{ page: 'changelog', fragment: release }]);
+  pages.open('changelog', release);
+  pages.open('changelog');
+  expect(pushState).toHaveBeenCalledOnce();
+  location.pathname = '/privacy';
+  location.hash = '';
+  window.dispatchEvent(new PopStateEvent('popstate'));
+  expect(snapshots).toEqual([
+    { page: 'changelog', fragment: release },
+    { page: 'privacy', fragment: null },
+  ]);
+  expect(location.assign).not.toHaveBeenCalled();
+  unsubscribe();
 });
