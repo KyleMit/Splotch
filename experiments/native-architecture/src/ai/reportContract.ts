@@ -8,7 +8,6 @@ export const MAX_AI_REPORT_BYTES = 4 * 1024 * 1024;
 export const AI_REPORT_TIMEOUT_MS = 20_000;
 export const AI_REPORT_REVIEW_HOURS = 24;
 export const AI_REPORT_RETENTION_DAYS = 30;
-export const AI_REPORT_HANDLING_NOTICE = `We review reports within ${AI_REPORT_REVIEW_HOURS} hours and schedule deletion after ${AI_REPORT_RETENTION_DAYS} days by a daily cleanup.`;
 export const MAX_AI_REPORT_TOKEN_CHARACTERS = 4096;
 const MAX_REPORT_BOUNDARY_ATTEMPTS = 16;
 export const AI_REPORT_FIELDS = {
