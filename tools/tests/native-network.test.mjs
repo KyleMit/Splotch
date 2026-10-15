@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
+import { readFileSync } from 'node:fs';
+import { URL as NodeURL } from 'node:url';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
@@ -96,4 +98,20 @@ it('follows browser connectivity immediately and persists its changes', async ()
   connected = true;
   await act(async () => window.dispatchEvent(new Event('online')));
   expect(host.textContent).toBe('true');
+});
+
+it('declares the native network module where Expo autolinking reads it', () => {
+  const native = JSON.parse(
+    readFileSync(
+      new NodeURL('../../experiments/native-architecture/package.json', import.meta.url),
+      'utf8'
+    )
+  );
+  const version = native.devDependencies['expo-network'];
+  expect(version).toBeDefined();
+  const pods = readFileSync(
+    new NodeURL('../../experiments/native-architecture/ios/Podfile.lock', import.meta.url),
+    'utf8'
+  );
+  expect(pods).toContain(`- ExpoNetwork (${version})`);
 });

@@ -16,6 +16,7 @@
     "expo-font": "57.0.4",
     "expo-haptics": "57.0.3",
     "expo-media-library": "57.0.5",
+    "expo-network": "57.0.2",
     "expo-screen-orientation": "57.0.2",
     "expo-sharing": "57.0.22",
     "react": "19.2.3",
