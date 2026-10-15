@@ -149,15 +149,18 @@ final class SplotchAIEnvironment: NSObject {
       return true
     }
   }
-  @objc(decodeImage:mime:width:height:resolver:rejecter:)
-  func decodeImage(_ base64: String, mime: String, width: Double, height: Double,
+  @objc(decodeImage:mime:width:height:purpose:resolver:rejecter:)
+  func decodeImage(_ base64: String, mime: String, width: Double, height: Double, purpose: String,
     resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
     do {
+      guard ["result", "original"].contains(purpose), purpose != "original" || mime == "image/png" else { throw failure() }
+      let maxPixels = purpose == "original" ? SplotchAIImageDecoder.maxOriginalPixels : SplotchAIImageDecoder.maxImagePixels
+      let maxDimension = purpose == "original" ? maxPixels : SplotchAIImageDecoder.maxImageDimension
       guard width.isFinite, height.isFinite, width.rounded() == width, height.rounded() == height,
-        width >= 1, height >= 1, width <= Double(SplotchAIImageDecoder.maxImageDimension), height <= Double(SplotchAIImageDecoder.maxImageDimension),
-        width * height <= Double(SplotchAIImageDecoder.maxImagePixels), base64.count <= ((SplotchAIImageDecoder.maxImageBytes + 2) / 3) * 4,
+        width >= 1, height >= 1, width <= Double(maxDimension), height <= Double(maxDimension),
+        width * height <= Double(maxPixels), base64.count <= ((SplotchAIImageDecoder.maxImageBytes + 2) / 3) * 4,
         let bytes = Data(base64Encoded: base64), bytes.base64EncodedString() == base64 else { throw failure() }
-      let result = try SplotchAIImageDecoder.decode(bytes, mime)
+      let result = try (purpose == "original" ? SplotchAIImageDecoder.decodeOriginal(bytes) : SplotchAIImageDecoder.decode(bytes, mime))
       guard result["width"] == Int(width), result["height"] == Int(height) else { throw failure() }
       resolve(result)
     } catch { reject("AI_IMAGE_REJECTED", "AI picture decoding failed.", nil) }
@@ -168,6 +171,7 @@ enum SplotchAIImageDecoder {
   static let maxImageBytes = 16 * 1024 * 1024
   static let maxImageDimension = 4096
   static let maxImagePixels = 4 * 1024 * 1024
+  static let maxOriginalPixels = 16 * 1024 * 1024
   private static let maxPngChunks = 4096
   private static let maxJpegSegments = 1024
   private static let maxWebpChunks = 8
@@ -246,6 +250,12 @@ enum SplotchAIImageDecoder {
     }
   }
   static func decode(_ data: Data, _ mime: String) throws -> [String: Int] {
+    try decode(data, mime, maxPixels: maxImagePixels, maxDimension: maxImageDimension)
+  }
+  static func decodeOriginal(_ data: Data) throws -> [String: Int] {
+    try decode(data, "image/png", maxPixels: maxOriginalPixels, maxDimension: maxOriginalPixels)
+  }
+  private static func decode(_ data: Data, _ mime: String, maxPixels: Int, maxDimension: Int) throws -> [String: Int] {
     try autoreleasepool {
       try require(!data.isEmpty && data.count <= maxImageBytes && ["image/png", "image/jpeg", "image/webp"].contains(mime))
       try structure(data, mime)
@@ -256,11 +266,11 @@ enum SplotchAIImageDecoder {
         let w = properties[kCGImagePropertyPixelWidth] as? NSNumber,
         let h = properties[kCGImagePropertyPixelHeight] as? NSNumber else { throw NSError(domain: "AI_IMAGE_REJECTED", code: 1) }
       let width = w.doubleValue, height = h.doubleValue
-      try require(width.isFinite && height.isFinite && width.rounded() == width && height.rounded() == height && width >= 1 && height >= 1 && width <= Double(maxImageDimension) && height <= Double(maxImageDimension) && width * height <= Double(maxImagePixels))
+      try require(width.isFinite && height.isFinite && width.rounded() == width && height.rounded() == height && width >= 1 && height >= 1 && width <= Double(maxDimension) && height <= Double(maxDimension) && width * height <= Double(maxPixels))
       let options = [kCGImageSourceShouldCache: true, kCGImageSourceShouldCacheImmediately: true] as CFDictionary
       guard let image = CGImageSourceCreateImageAtIndex(source, 0, options), image.width == Int(width), image.height == Int(height),
-        image.bitsPerComponent == 8, image.bitsPerPixel <= 32, image.bytesPerRow <= maxImageDimension * 4,
-        image.bytesPerRow * image.height <= maxImagePixels * 4,
+        image.bitsPerComponent == 8, image.bitsPerPixel <= 32, image.bytesPerRow <= maxDimension * 4,
+        image.bytesPerRow * image.height <= maxPixels * 4,
         let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
           bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
           bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)

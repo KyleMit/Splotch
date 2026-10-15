@@ -63,7 +63,7 @@ class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
       new TextDecoder('utf-8', { fatal: true }).decode(model) !== originalModel
     )
       invalidAiStorage();
-    await admitAiImage(bytes, 'image/png');
+    await admitAiImage(bytes, 'image/png', 'original');
     const base = {
       kind: 'prepared',
       journal: value,

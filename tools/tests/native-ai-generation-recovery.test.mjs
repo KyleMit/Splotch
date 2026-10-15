@@ -2,7 +2,13 @@ import { withCredentialLeases } from '../../experiments/native-architecture/src/
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
-const INSTALLATION = 'a'.repeat(64);
+import {
+  POLL_INTERVAL_MS,
+  POLL_TIMEOUT_MS,
+} from '../../experiments/native-architecture/src/ai/contract.ts';
+const INSTALLATION = 'a'.repeat(64),
+  JOB = 'b'.repeat(64);
+const image = () => new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } });
 function fixture() {
   let journal = null;
   let recovery = null;
@@ -283,3 +289,45 @@ it('holds an unknown native create outcome until confirmed readback and refuses 
   expect(f.vault.remove).not.toHaveBeenCalled();
   f.owner.dispose();
 });
+
+it.each(['deadline', 'reply'])(
+  'shows the retry card when persisting a poll %s failure fails',
+  async (failure) => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.owner.open();
+    const gate = f.owner.getState().gate;
+    f.owner.gateInput(String(gate.x * gate.y));
+    f.owner.gateAnswer();
+    await vi.advanceTimersByTimeAsync(0);
+    f.post.mockImplementation((request) =>
+      Promise.resolve(
+        request.path === '/api/generation-result' && failure === 'reply'
+          ? new Response(JSON.stringify({ error: 'Generation failed.' }), { status: 500 })
+          : new Response(JSON.stringify({ ok: true, jobId: JOB, pollAfterMs: POLL_INTERVAL_MS }), {
+              status: 202,
+            })
+      )
+    );
+    await f.owner.generate();
+    const write = f.storage.write.getMockImplementation();
+    f.storage.write.mockImplementation((journal) =>
+      journal.phase === 'failed' ? Promise.reject(new Error('disk full')) : write(journal)
+    );
+    await vi.advanceTimersByTimeAsync(
+      failure === 'deadline' ? POLL_TIMEOUT_MS + POLL_INTERVAL_MS : POLL_INTERVAL_MS
+    );
+    expect(f.owner.getState()).toMatchObject({
+      journal: { phase: 'failed' },
+      busy: false,
+      failures: 1,
+    });
+    const posts = f.post.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2);
+    expect(f.post).toHaveBeenCalledTimes(posts);
+    f.post.mockImplementation(async () => image());
+    await f.owner.generate();
+    expect(f.owner.getState().journal.phase).toBe('result');
+    f.owner.dispose();
+  }
+);

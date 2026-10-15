@@ -154,7 +154,13 @@ export class NativeAiController extends AiRecoverySession {
   // shipping's repeated-failure limit.
   private failRun = async (journal: AiJournal, failure: AiFailureDetails) => {
     this.update({ failures: this.state.failures + 1, failure });
-    await this.persist({ ...journal, phase: 'failed' });
+    const failed: AiJournal = { ...journal, phase: 'failed' };
+    try {
+      await this.persist(failed);
+    } catch {
+      this.journals.set(journal.id, failed);
+      this.update({ journal: failed });
+    }
   };
   private settleFailure = async (
     journal: AiJournal,

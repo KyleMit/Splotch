@@ -29,6 +29,14 @@ it('restarts with exact original UTF8 model and pinned upload in the isolated da
   expect(disk.opened.every(([name]) => name === AI_STORAGE_DATABASE)).toBe(true);
 });
 
+it('prepares and rereads a tablet original at the shipping capture resolution', async () => {
+  const upload = new Uint8Array(rgbaPng(2564, 2048, 255));
+  const storage = createAiStorage();
+  const receipt = await storage.prepare(journal(), model, upload);
+  expect(await storage.readPreparedUpload(receipt)).toEqual(upload);
+  expect((await createAiStorage().read()).receipt).toEqual(receipt);
+});
+
 it('waits for transaction completion and does not expose an aborted preparation', async () => {
   const storage = createAiStorage();
   disk.abort = true;

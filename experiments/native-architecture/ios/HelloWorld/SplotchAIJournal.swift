@@ -521,7 +521,7 @@ final class SplotchAIJournal {
     let original = try read(source.appendingPathComponent("original.bin"), maxModel)
     let upload = try read(source.appendingPathComponent("upload.bin"), maxUpload)
     try originalModel(original, false)
-    _ = try SplotchAIImageDecoder.decode(upload, "image/png")
+    _ = try SplotchAIImageDecoder.decodeOriginal(upload)
     try quota(root, original.count + upload.count + maxResult + maxJournal * 2)
     var entropy = [UInt8](repeating: 0, count: 32)
     try checked(SecRandomCopyBytes(kSecRandomDefault, entropy.count, &entropy) == errSecSuccess)
@@ -699,7 +699,7 @@ final class SplotchAIJournal {
         let bytes = try read(dir.appendingPathComponent("upload.bin"), maxUpload)
         let meta = try object(value["upload"])
         try checked(integer(meta, "bytes") == bytes.count && string(meta, "sha256") == hash(bytes))
-        _ = try SplotchAIImageDecoder.decode(bytes, "image/png")
+        _ = try SplotchAIImageDecoder.decodeOriginal(bytes)
         try checked(same(confirm(dir, latest(dir)), value))
         return ["receipt": try receipt(value), "upload": bytes.base64EncodedString()]
       }

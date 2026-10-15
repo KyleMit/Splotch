@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { deflateSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import { resultImageGrid } from '../../experiments/native-architecture/src/ai/imageAdmission.ts';
+import { MAX_PNG_PIXELS } from '../../experiments/native-architecture/src/drawing/pngLimits.ts';
 import {
   MAX_AI_IMAGE_PIXELS,
   MAX_AI_IMAGE_DIMENSION_PX,
@@ -381,7 +382,13 @@ it('honors cancellation before image work and pins actual bounded native decodin
     expect(text).toContain('maxImageDimension = 4096');
     expect(text).toContain('maxImagePixels = 4 * 1024 * 1024');
     expect(text).toContain('maxImageBytes = 16 * 1024 * 1024');
+    const originalLimit = text.match(/maxOriginalPixels = (\d+) \* 1024 \* 1024/);
+    expect(Number(originalLimit?.[1]) * 1024 * 1024).toBe(MAX_PNG_PIXELS);
+    expect(text).toContain('purpose == "original"');
+    expect(text).toContain('decodeOriginal');
   }
+  const bridge = readFileSync(new URL('ios/HelloWorld/SplotchAIEnvironment.m', root), 'utf8');
+  expect(bridge).toContain('purpose:(NSString *)purpose');
   expect(kotlin).toContain('bitmap.recycle()');
   expect(kotlin).toContain('decoder.setOnPartialImageListener { false }');
   expect(kotlin).toContain('Build.VERSION.SDK_INT >= 28 || mime != "image/webp"');

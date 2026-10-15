@@ -297,6 +297,23 @@ it('requires actual bounded native decode agreement before result publication an
   expect(fixture.files.has(path)).toBe(true);
 });
 
+it('passes the original capture budget to native decoding without widening remote-result admission', async () => {
+  const width = 2564;
+  const height = 2048;
+  const bytes = rgbaPng(width, height, 255);
+  await admitAiImage(bytes, 'image/png', 'original');
+  expect(fixture.decode).toHaveBeenLastCalledWith(
+    expect.any(String),
+    'image/png',
+    width,
+    height,
+    'original'
+  );
+  fixture.decode.mockClear();
+  await expect(admitAiImage(bytes, 'image/png')).rejects.toThrow();
+  expect(fixture.decode).not.toHaveBeenCalled();
+});
+
 it('fails closed when the native decoder never answers and does not publish a file', async () => {
   vi.useFakeTimers();
   fixture.decode.mockImplementation(() => new Promise(() => {}));

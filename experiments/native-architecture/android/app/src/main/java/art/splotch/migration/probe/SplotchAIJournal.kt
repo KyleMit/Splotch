@@ -529,7 +529,7 @@ class SplotchAIJournal(private val context: Context) {
     j.put("id", id).put("createdAt", created)
     val original = read(File(source, "original.bin"), maxModel); val upload = read(File(source, "upload.bin"), maxUpload)
     originalModel(original, false)
-    SplotchAIImageDecoder.decode(upload, "image/png")
+    SplotchAIImageDecoder.decodeOriginal(upload)
     quota(original.size + upload.size + maxResult + maxJournal * 2L)
     val nonce = ByteArray(32).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
     confirmed.forEach { check(it.getString("nonce") != nonce) }
@@ -692,7 +692,7 @@ class SplotchAIJournal(private val context: Context) {
             val bytes = read(File(dir, "upload.bin"), maxUpload)
             val meta = value.getJSONObject("upload")
             check(integer(meta, "bytes") == bytes.size.toLong() && meta.getString("sha256") == digest(bytes))
-            SplotchAIImageDecoder.decode(bytes, "image/png")
+            SplotchAIImageDecoder.decodeOriginal(bytes)
             check(same(confirm(dir, latest(dir)), value))
             JSONObject().put("receipt", receipt(value)).put("upload", Base64.encodeToString(bytes, Base64.NO_WRAP))
           }

@@ -118,7 +118,7 @@ class AiReportOwner {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), AI_REPORT_PREPARE_TIMEOUT_MS);
     try {
-      await reportWait(this.deps.admit(original, 'image/png'), controller.signal);
+      await reportWait(this.deps.admit(original, 'image/png', 'original'), controller.signal);
       const reference = await reportWait(this.deps.vault.pin(credential.kind), controller.signal);
       const confirmed = await reportWait(
         this.deps.vault.readReferenced(reference),
