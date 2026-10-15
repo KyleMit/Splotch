@@ -42,7 +42,7 @@ export function NativePaper({
           ref={screen.surface}
           drawing={screen.history.drawing}
           currentDrawing={screen.currentDrawing}
-          isChromeTouch={contacts?.contains}
+          isChromeTouch={contacts?.containsPoint}
           color={sound.settings.selectedColor}
           brush={screen.brush}
           strokeWidth={sound.settings.strokeWidth}

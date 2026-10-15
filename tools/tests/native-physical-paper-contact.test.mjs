@@ -116,7 +116,7 @@ describe('normal contact adoption owner', () => {
       press,
     });
     routes.register({ ...secondary, bounds: () => frame, priority: 'control' });
-    const f = fixture({ isChromeTouch: routes.contains });
+    const f = fixture({ isChromeTouch: routes.containsPoint });
     const first = touch('paper', 10, 20, 100);
     f.start(first);
     const chrome = touch('chrome', 50, 50, 200);
@@ -132,6 +132,39 @@ describe('normal contact adoption owner', () => {
     f.send('end', event([], [touch('paper', 30, 40, 400)], { paper: 100 }));
     expect(f.history().drawing.strokes).toHaveLength(1);
     expect(f.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('admits a paper contact whose independent native identifier matches a held chrome contact', () => {
+    const routes = createSecondTouchRoutes();
+    const press = vi.fn();
+    const frame = { x: 40, y: 40, width: 20, height: 20 };
+    routes.register({
+      ...createSecondTouchPress({
+        enabled: () => true,
+        measure: (done) => done(frame),
+        pressIn() {},
+        pressOut() {},
+        press,
+      }),
+      bounds: () => frame,
+      priority: 'control',
+    });
+    const f = fixture({ isChromeTouch: routes.containsPoint });
+    const first = touch('0', 100, 100, 100);
+    f.start(first);
+    const chrome = touch('1', 50, 50, 200);
+    routes.start(event([first, chrome], [chrome]));
+    const paper = touch('1', 200, 100, 300);
+    f.send('start', event([first, paper], [paper], { 0: 100, 1: 300 }));
+    expect(f.drafts.mock.calls.at(-1)[0]).toHaveLength(2);
+    f.send(
+      'end',
+      event([], [touch('0', 120, 100, 400), touch('1', 220, 100, 400)], { 0: 100, 1: 300 })
+    );
+    routes.end(event([first], [touch('1', 50, 50, 400)]));
+    expect(f.history().drawing.strokes).toHaveLength(2);
+    expect(f.commit).toHaveBeenCalledTimes(1);
+    expect(press).toHaveBeenCalledTimes(1);
   });
 
   it('adopts measured content and capped actual PixelRatio before live ink and commits them atomically', () => {

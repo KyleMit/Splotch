@@ -42,7 +42,7 @@ export function nativePressFrame(view: View | null): Frame | null {
 export function createSecondTouchRoutes() {
   const targets = new Set<Target>();
   const held = new Map<string, Target>();
-  const targetAt = (sample: Sample) =>
+  const targetAt = (sample: Pick<Sample, 'pageX' | 'pageY'>) =>
     [...targets]
       .reverse()
       .sort((a, b) => TARGET_PRIORITY[b.priority] - TARGET_PRIORITY[a.priority])
@@ -63,7 +63,8 @@ export function createSecondTouchRoutes() {
         target.cancel();
       };
     },
-    contains: (sample: Sample) => held.has(String(sample.identifier)) || targetAt(sample) != null,
+    // Paper packets and responder touches allocate identifiers independently on iOS.
+    containsPoint: (sample: Pick<Sample, 'pageX' | 'pageY'>) => targetAt(sample) != null,
     start(event: GestureResponderEvent) {
       let point: Sample | null = null;
       if (event.nativeEvent.touches.length < 2) return point;
@@ -127,7 +128,7 @@ export function useSecondTouchRoutes() {
   return useContext(SecondTouchRouteScope);
 }
 
-function inside(sample: Sample, frame: Frame) {
+function inside(sample: Pick<Sample, 'pageX' | 'pageY'>, frame: Frame) {
   return (
     Number.isFinite(sample.pageX) &&
     Number.isFinite(sample.pageY) &&
