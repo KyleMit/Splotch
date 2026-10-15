@@ -16,9 +16,9 @@ export type SliderPreview = {
 };
 
 // A drag passes through many values, and the settings owner writes each choice and drops any made
-// while a write is pending. So the drag moves a draft that previews live, and the value the hand
-// settles on is held until the owner is ready to write it, then written once. A second nudge
-// during the first one's write is therefore kept rather than dropped, and the slider never locks.
+// while a Parent Center save holds the record. So the drag moves a draft that previews live, and
+// the value the hand settles on is held until the owner is ready to write it, then written once.
+// A nudge made meanwhile is therefore kept rather than dropped, and the slider never locks.
 export function useSliderDraft({
   saved,
   ready,

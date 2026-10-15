@@ -249,8 +249,7 @@ function RsdDrawingContent({
   // Any dialog holds the chrome under its scrim at full strength, as shipping's modal does.
   const covered = screen.dialogOpen || modalBlocked;
   const paperBlocked = modalBlocked;
-  const paintsDisabled = disabled || sound.settings.status !== 'ready';
-  useDrawingUndoShortcut(screen, paintsDisabled || covered || buttonScale.active);
+  useDrawingUndoShortcut(screen, disabled || covered || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
   return (
     <LibraryProvider {...screen.library}>
@@ -273,7 +272,6 @@ function RsdDrawingContent({
             product={product}
             disabled={disabled}
             covered={covered}
-            paintsDisabled={paintsDisabled}
             buttonScale={buttonScale.value}
             resizing={buttonScale.active}
             paperOverlay={(drawerOpen) => (

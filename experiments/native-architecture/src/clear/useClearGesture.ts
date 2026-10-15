@@ -177,8 +177,8 @@ function clearEffects(context: Context): ClearGestureEffects {
         context.sheets.current += 1;
         const id = context.sheets.current;
         set.sheet({ id, drawing, startedAt: Date.now() });
-        // The flight's own deadline, so the sheet and the cover under it expire on time even when
-        // no renderer flies them (the web underlay's chunk can arrive after the clear).
+        // The flight's own deadline also applies when no renderer flies the sheet (the web
+        // underlay's chunk can arrive after the clear).
         context.later(() => set.finishSheet(id), CLEAR_SHEET_DURATION_MS);
       }
       set.pending(1);
@@ -329,7 +329,7 @@ export function useClearGesture(owner: Owner) {
     clearing,
     sheet,
     // The clean page stands under the departing one until the clear has landed.
-    covered: pending > 0 || sheet !== null,
+    covered: pending > 0,
     radius: radius.current,
     dock: clearDock(window, insets.top),
     finishSheet,

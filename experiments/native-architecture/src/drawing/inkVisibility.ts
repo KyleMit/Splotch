@@ -66,6 +66,12 @@ export function useVisibleInk(drawing: Drawing, idle: boolean, scanEmpty: EmptyS
   }, [drawing, idle, lifts]);
   return {
     visible: verdict === 'scan' ? (answers.current.get(drawing) ?? true) : verdict === 'inked',
+    empty(snapshot: Drawing): boolean | undefined {
+      const known = inkVerdict(snapshot);
+      if (known !== 'scan') return known === 'blank';
+      const visible = answers.current.get(snapshot);
+      return visible === undefined ? undefined : !visible;
+    },
     erased(lifted: Drawing) {
       if (inkVerdict(lifted) !== 'scan') return;
       awaiting.current.add(lifted);

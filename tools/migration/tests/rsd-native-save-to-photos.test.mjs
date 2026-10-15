@@ -133,7 +133,7 @@ describe('canonical Save screenshot to Photos', () => {
 });
 describe('canonical Auto-Save on Delete', () => {
   it(
-    'saves the picture before Clear wipes the paper',
+    'captures the picture before Clear and saves it after the paper is clear',
     async () => {
       await mountWith(SETTINGS_V9(true));
       await click('Draw RSD fixture stroke');
@@ -145,7 +145,7 @@ describe('canonical Auto-Save on Delete', () => {
       await clear();
       await settle(() => expect(photos.created).toHaveLength(1));
       expect(strokesOnPaper()).toBe(0);
-      expect(strokesWhenSaved).toBe(1);
+      expect(strokesWhenSaved).toBe(0);
       expect(photos.created.map(({ base64 }) => base64)).toEqual([EXPORTED_PNG]);
       expect(caller.exportPng).toHaveBeenCalledWith(drawing);
       expect(privateWrite).not.toHaveBeenCalled();
@@ -154,7 +154,7 @@ describe('canonical Auto-Save on Delete', () => {
     SAVE_TEST_TIMEOUT_MS
   );
   it(
-    'keeps the paper and reports the captured picture when Photos refuses it',
+    'clears the paper and reports the captured picture when Photos refuses it',
     async () => {
       photos.permission = 'denied';
       await mountWith(SETTINGS_V9(true));
@@ -162,13 +162,13 @@ describe('canonical Auto-Save on Delete', () => {
       await clear();
       const shipping = saveFailureCopy('denied', 1, 'android');
       await settle(() => expect(host.textContent).toContain(shipping.detail));
-      expect(strokesOnPaper()).toBe(1);
+      expect(strokesOnPaper()).toBe(0);
       expect(photos.created).toEqual([]);
     },
     SAVE_TEST_TIMEOUT_MS
   );
   it.each(['capture', 'photos'])(
-    'keeps the paper after an Auto-Save on Delete %s failure and reports the failed save',
+    'clears the paper after an Auto-Save on Delete %s failure and reports the failed save',
     async (failure) => {
       if (failure === 'capture')
         caller.exportPng.mockRejectedValueOnce(new Error('capture failed'));
@@ -178,7 +178,7 @@ describe('canonical Auto-Save on Delete', () => {
       await clear();
       const shipping = saveFailureCopy('failed', failure === 'capture' ? 0 : 1, 'android');
       await settle(() => expect(host.textContent).toContain(shipping.detail));
-      expect(strokesOnPaper()).toBe(1);
+      expect(strokesOnPaper()).toBe(0);
     },
     SAVE_TEST_TIMEOUT_MS
   );
