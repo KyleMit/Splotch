@@ -64,7 +64,7 @@ const styles = css.create({
 // apology and the hero Start over, which restarts the app on a fresh drawing as shipping's does.
 export function RsdErrorScreen({ onRestart }: { onRestart: () => Promise<void> }) {
   const window = useWindowDimensions();
-  // One press restarts; a second while the fresh page is being stored would only repeat it.
+  // One press owns the restart until the replacement screen mounts.
   const [restarting, setRestarting] = useState(false);
   // The tab names the screen while it shows, as shipping's title travels with its Error Screen.
   useEffect(() => {

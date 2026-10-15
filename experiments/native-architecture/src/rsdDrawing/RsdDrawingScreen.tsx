@@ -1,4 +1,5 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
+import { useStartOver } from '../product/DrawingSession';
 import {
   RsdAiResult,
   RsdAiStylePrompt,
@@ -240,9 +241,10 @@ function RsdDrawingFirstPaint() {
 }
 
 function RendererErrorScreen({ recovery }: { recovery: Screen['recovery'] }) {
+  const startOver = useStartOver();
   return recovery.failed ? (
     <RsdSurfaceBoundary>
-      <RsdErrorScreen onRestart={async () => recovery.retry()} />
+      <RsdErrorScreen onRestart={startOver} />
     </RsdSurfaceBoundary>
   ) : null;
 }
