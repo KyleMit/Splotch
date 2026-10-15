@@ -66,6 +66,11 @@ function assertReceiptProgress(previous: WebAiAttempt, next: WebAiAttempt): void
     invalidAiStorage();
 }
 
+// A new plain run replaces saved attempts, including a run abandoned by another process.
+function supersededAttempt(previous: WebAiAttempt, newest: WebAiReceipt | undefined): boolean {
+  return newest?.kind === 'prepared' && previous.receipt.journal.id < newest.journal.id;
+}
+
 export class WebAiStorageOwner {
   private connection: Promise<IdbDatabase<AiDatabase>> | undefined;
   private snapshot: WebAiState | null = null;
@@ -107,16 +112,17 @@ export class WebAiStorageOwner {
   private assertProgress(after: WebAiState | null): void {
     const before = this.snapshot;
     if (!before) return;
-    if (
-      !after ||
-      after.revision < before.revision ||
-      after.attempts.length < before.attempts.length
-    )
-      invalidAiStorage();
+    if (!after || after.revision < before.revision) invalidAiStorage();
     if (after.revision === before.revision && JSON.stringify(after) !== JSON.stringify(before))
       invalidAiStorage();
-    for (let index = 0; index < before.attempts.length; index++)
-      assertReceiptProgress(before.attempts[index], after.attempts[index]);
+    const newest = after.attempts.at(-1)?.receipt;
+    for (const previous of before.attempts) {
+      const next = after.attempts.find(
+        (attempt) => attempt.receipt.journal.id === previous.receipt.journal.id
+      );
+      if (next) assertReceiptProgress(previous, next);
+      else if (!supersededAttempt(previous, newest)) invalidAiStorage();
+    }
   }
   async readState(): Promise<WebAiState | null> {
     const db = await this.database();

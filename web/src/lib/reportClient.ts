@@ -4,6 +4,7 @@ import { IMAGE_REPORT_FORM_FIELDS, type AiReportKind } from '$lib/imageReport';
 import type { ReportRequestBody } from '$lib/report';
 import type { ReportResponse } from '../routes/api/report/+server';
 import type { ImageReportResponse } from '../routes/api/report-image/+server';
+import { narrowReportReply } from './reportReply';
 
 // The client half of the two report endpoints' wire contract. Each request is
 // built from the declaration its route parses ($lib/report's body type,
@@ -42,20 +43,6 @@ export function postImageReport(
   if (output) form.set(field.output, output, field.output);
   form.set(field.style, style ?? '');
   return fetch(apiUrl('/api/report-image'), { method: 'POST', headers, body: form, signal });
-}
-
-// A body carrying a string `error` is a failure that says why even without
-// `ok: false`: a platform or proxy can answer that way, and its reason is
-// still the most useful line to show the parent.
-function narrowReportReply(body: unknown): ReportResponse | ImageReportResponse | null {
-  if (typeof body !== 'object' || body === null) return null;
-  if ('ok' in body && body.ok === true) {
-    return 'reportId' in body && typeof body.reportId === 'string'
-      ? { ok: true, reportId: body.reportId }
-      : { ok: true };
-  }
-  if ('error' in body && typeof body.error === 'string') return { ok: false, error: body.error };
-  return null;
 }
 
 /**

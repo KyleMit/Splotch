@@ -90,8 +90,8 @@ function fixture() {
     storage,
     parent,
     transport,
-    unknownReport: () => {
-      reportReply = { ok: true };
+    failReport: () => {
+      reportReply = { ok: false, error: 'Fixture report failed.' };
     },
   };
 }
@@ -134,28 +134,42 @@ it('carries a refused generation into an explicit report with its submitted draw
   expect(f.storage.read).toHaveBeenCalledTimes(reads);
   expect(owner.getState().report.phase).toBe('success');
 });
-it('does not reconstruct or resend an unknown refusal report from the durable failed generation', async () => {
+it('offers retry after a failed refusal report and never reconstructs it after relaunch', async () => {
   const f = fixture();
   const owner = f.create();
   await f.refuse(owner);
   const id = owner.getState().refusal.id;
-  f.unknownReport();
+  f.failReport();
   owner.reportRefusal(id);
   await owner.sendPictureReport();
-  expect(owner.getState().report.phase).toBe('unknown');
+  expect(owner.getState().report).toMatchObject({ phase: 'error', retryAt: 0 });
   owner.close();
   owner.open();
   owner.reportRefusal(id);
-  expect(owner.getState().report.phase).toBe('unavailable');
+  expect(owner.getState().report.phase).toBe('confirm');
+  await owner.sendPictureReport();
+  const attempts = f.transport.mock.calls.filter(
+    ([request]) => request.path === '/api/report-image'
+  );
+  expect(attempts).toHaveLength(2);
+  expect(attempts[1][0].headers['X-Report-Token']).toBe(TOKEN);
+  for (const [request] of attempts) {
+    const form = await new Response(request.body, {
+      headers: { 'Content-Type': request.headers['Content-Type'] },
+    }).formData();
+    expect(form.get('kind')).toBe('false-positive-refusal');
+    expect(form.get('style')).toBe('Clay');
+    expect(new Uint8Array(await form.get('drawing').arrayBuffer())).toEqual(INPUT);
+  }
   owner.dispose();
   const restarted = f.create();
   await f.open(restarted);
-  expect(restarted.getState().journal.phase).toBe('failed');
+  expect(restarted.getState().journal).toBeNull();
   expect(restarted.getState().refusal).toBeNull();
   restarted.reportRefusal(id);
   await restarted.sendPictureReport();
   expect(restarted.getState().report.phase).toBe('unavailable');
   expect(
     f.transport.mock.calls.filter(([request]) => request.path === '/api/report-image')
-  ).toHaveLength(1);
+  ).toHaveLength(2);
 });

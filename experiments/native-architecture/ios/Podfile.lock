@@ -81,6 +81,8 @@ PODS:
     - ExpoModulesJSI
     - ExpoModulesWorklets
     - RNWorklets
+  - ExpoNetwork (57.0.2):
+    - ExpoModulesCore
   - ExpoScreenOrientation (57.0.2):
     - ExpoModulesCore
     - hermes-engine
@@ -2256,6 +2258,7 @@ DEPENDENCIES:
   - ExpoModulesJSI (from `../../../node_modules/expo-modules-jsi/apple`)
   - ExpoModulesWorklets (from `../../../node_modules/expo-modules-core/ExpoModulesWorklets.podspec`)
   - ExpoModulesWorkletsAdapter (from `../../../node_modules/expo-modules-core`)
+  - ExpoNetwork (from `../../../node_modules/expo-network/ios`)
   - ExpoScreenOrientation (from `../../../node_modules/expo-screen-orientation/ios`)
   - ExpoSharing (from `../../../node_modules/expo-sharing/ios`)
   - FBLazyVector (from `../../../node_modules/react-native/Libraries/FBLazyVector`)
@@ -2371,6 +2374,8 @@ EXTERNAL SOURCES:
     :podspec: "../../../node_modules/expo-modules-core/ExpoModulesWorklets.podspec"
   ExpoModulesWorkletsAdapter:
     :path: "../../../node_modules/expo-modules-core"
+  ExpoNetwork:
+    :path: "../../../node_modules/expo-network/ios"
   ExpoScreenOrientation:
     :path: "../../../node_modules/expo-screen-orientation/ios"
   ExpoSharing:
@@ -2553,6 +2558,7 @@ SPEC CHECKSUMS:
   ExpoModulesJSI: 383849017851b1ebacbd78cfaa32b18b6152585e
   ExpoModulesWorklets: 40d29262efc034e4357f2713e6037a41a27218d6
   ExpoModulesWorkletsAdapter: 5300fea859eb939db7ba5b59b99533163a8a6b56
+  ExpoNetwork: 7a7a7e0123d1ac5efc742b7b29e43102be5634bf
   ExpoScreenOrientation: 29f306f9e1a37b304862310ceb9664866f653ebd
   ExpoSharing: 5cc46810cfba71e331f649d947660213082094c1
   FBLazyVector: 2138c6c2ab66c31bf5754dc18097fbc498a49c7f

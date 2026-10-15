@@ -5,6 +5,17 @@ const PNG_IHDR_LENGTH = 13;
 const PNG_WIDTH_OFFSET = 16;
 const PNG_HEIGHT_OFFSET = 20;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+const ORIGINAL_SUFFIX_LENGTH = 8;
+
+export function aiOriginalId(): string {
+  const suffix = Math.random()
+    .toString(36)
+    .slice(2)
+    .padEnd(ORIGINAL_SUFFIX_LENGTH, '0')
+    .slice(0, ORIGINAL_SUFFIX_LENGTH);
+  return `picture-${Date.now()}-${suffix}`;
+}
+
 export function prepareAiPng(base64: string, size: PaperSize): Uint8Array {
   if (
     !base64 ||

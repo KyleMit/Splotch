@@ -99,7 +99,7 @@ it('makes master-off and panel-open negative controls against actual vault, allo
   f.product.dispose();
 });
 it.each(['capture', 'durable prepare', 'pinned upload'])(
-  'revokes the actual funded POST if parent lifetime changes during %s',
+  'keeps the solved AI authorization through background during %s',
   async (boundary) => {
     const f = await fixture();
     await f.enable();
@@ -140,7 +140,9 @@ it.each(['capture', 'durable prepare', 'pinned upload'])(
     await vi.waitFor(() => expect(f.owner.getState().busy).toBe(false));
     expect(
       f.transport.mock.calls.filter(([request]) => request.path === '/api/generate-image')
-    ).toHaveLength(0);
+    ).toHaveLength(1);
+    expect(f.storage.retain).toHaveBeenCalledOnce();
+    expect(f.owner.getState().open).toBe(true);
     f.owner.dispose();
     f.product.dispose();
   }
@@ -169,7 +171,7 @@ it('continues safe retention of an already-sent image after master-off without r
   f.product.dispose();
 });
 
-it.each(['master off', 'background', 'dispose'])(
+it.each(['master off', 'dispose'])(
   'revokes the funded POST during pinned upload on %s while retaining its local journal',
   async (lifetime) => {
     const f = await fixture();
@@ -191,8 +193,7 @@ it.each(['master off', 'background', 'dispose'])(
       f.product.openParentCenter();
       solve(f.product.gate);
       await f.product.setAiEnabled(false);
-    } else if (lifetime === 'background') f.product.background();
-    else f.owner.dispose();
+    } else f.owner.dispose();
     wait.resolve();
     await vi.waitFor(() => expect(f.owner.getState().busy).toBe(false));
     expect(f.storage.prepare).toHaveBeenCalledOnce();
@@ -205,3 +206,24 @@ it.each(['master off', 'background', 'dispose'])(
     f.product.dispose();
   }
 );
+
+it('keeps an authorized AI response while a parent opens Parent Center', async () => {
+  const f = await fixture();
+  await f.enable();
+  f.owner.open();
+  f.owner.refresh();
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.owner.getState().busy).toBe(false));
+  const reply = pending();
+  f.transport.mockImplementationOnce(() => reply.promise);
+  await f.owner.generate();
+  solve(f.product.gate);
+  await vi.waitFor(() => expect(f.transport).toHaveBeenCalledTimes(2));
+  f.product.openParentCenter();
+  solve(f.product.gate);
+  reply.resolve(new Response(rgbaPng(2, 2, 255), { headers: { 'Content-Type': 'image/png' } }));
+  await vi.waitFor(() => expect(f.storage.retain).toHaveBeenCalledOnce());
+  expect(f.owner.getState().open).toBe(true);
+  f.owner.dispose();
+  f.product.dispose();
+});

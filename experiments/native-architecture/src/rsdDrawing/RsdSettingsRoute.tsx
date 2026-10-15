@@ -120,4 +120,4 @@ export function RsdSettingsRoute({
   );
 }
 
-export { RsdReleaseHistory, RsdLatestReleaseLabel } from './RsdReleaseHistory';
+export { RsdInformationPage } from './RsdInformationPage';

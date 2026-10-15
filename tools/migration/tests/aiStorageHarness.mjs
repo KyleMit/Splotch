@@ -67,11 +67,13 @@ vi.mock('../../../web/src/lib/idbDatabase.ts', () => ({
   },
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/aiImage.web.ts', async () => {
-  const { resultImageGrid } =
+  const { originalImageGrid, resultImageGrid } =
     await import('../../../experiments/native-architecture/src/ai/imageAdmission.ts');
   return {
-    admitAiImage: async (bytes, mime) => {
-      await resultImageGrid(bytes, mime, () => true);
+    admitAiImage: async (bytes, mime, purpose = 'result') => {
+      await (purpose === 'original'
+        ? originalImageGrid(bytes, () => true)
+        : resultImageGrid(bytes, mime, () => true));
     },
   };
 });

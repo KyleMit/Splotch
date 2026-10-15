@@ -4,7 +4,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { FEEDBACK_URL } from '../../../../web/src/lib/siteUrl';
 import type { AppPage } from '../information/appPages';
 import { openAppPage } from '../platform/appPath';
-import { RsdLatestReleaseLabel } from './releaseHistorySurface';
+import { RsdLatestReleaseLabel } from './RsdReleaseHistory';
 import { RsdTextLink } from './RsdTextLink';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { RsdExternalMark } from './RsdExternalMark';

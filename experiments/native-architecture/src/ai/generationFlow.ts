@@ -47,9 +47,9 @@ export class NativeAiFlow extends NativeAiController {
   };
   // The AI Image Button. A run waiting in the corner claims the tap and is shown again without a
   // second check, since the grown-up already answered one to start it. Otherwise a grown-up
-  // answers first, as shipping asks at the tap, before anything is read or sent: a run left
-  // waiting before a reload reopens, an attempt held past its server retention is released, and
-  // the AI Style Prompt opens, or, with no credential and no free picture left, `onSetup` sends
+  // answers first, as shipping asks at the tap, before anything is read or sent: an attempt held
+  // past its server retention is released, and the AI Style Prompt opens, or, with no credential
+  // and no free picture left, `onSetup` sends
   // the grown-up to the AI Art settings instead.
   // With style choice off (`customize`), the run starts with no style instead, as shipping's does.
   start = ({ onSetup, customize }: { onSetup: () => void; customize: boolean }) => {
@@ -98,7 +98,7 @@ export class NativeAiFlow extends NativeAiController {
     this.update({ open: true, minimized: false, view: 'result', attempt: null });
     this.run();
   };
-  // A finished picture nobody dismissed (it landed while the app was away, or before a reload)
+  // A finished picture nobody dismissed (it landed while the app was in the background)
   // comes back on the next wand tap however long ago it was made: the server's retention bounds
   // collecting it, not the copy already kept here, as shipping keeps a collected picture until its
   // card is closed.
@@ -150,17 +150,17 @@ export class NativeAiFlow extends NativeAiController {
     this.update({ style, view: 'result' });
     this.run();
   };
-  // The error card's Try again: the same style, with the drawing as it is now.
+  // The error card's Try again: the same style and the same drawing the failed run sent.
   retry = () => {
     if (!this.state.open || this.state.view !== 'result' || this.active || this.unresolved())
       return;
-    this.run();
+    this.run(true);
   };
-  private run = () => {
+  private run = (again = false) => {
     const go = () => {
       this.problems?.reset();
       this.update({ attempt: { kind: 'starting', startedAt: Date.now() }, minimized: false });
-      void this.loadThenGenerate().then(() => {
+      void this.loadThenGenerate(again).then(() => {
         if (this.state.attempt?.kind === 'starting') this.update({ attempt: { kind: 'stopped' } });
       });
     };
@@ -169,9 +169,9 @@ export class NativeAiFlow extends NativeAiController {
     if (this.consented()) go();
     else this.protect(go);
   };
-  // Showing a waiting run again checks on it at once, which is how a poll that gave up is resumed.
-  // A run held past its server window is released first, so the card offers a new run rather
-  // than a dial that can never finish.
+  // Showing a waiting run again checks on it at once; its wait still ends at the poll deadline
+  // counted from its ticket. A run held past its server window is released first, so the card
+  // offers a new run rather than a dial that can never finish.
   restore = () => {
     if (!this.state.open || !this.state.minimized) return;
     this.update({ minimized: false });
@@ -180,10 +180,8 @@ export class NativeAiFlow extends NativeAiController {
       void this.releaseHeld(journal);
       return;
     }
-    if (this.state.journal?.jobId && !this.active && this.unresolved() && this.consented()) {
-      this.pollStarted = Date.now();
+    if (this.state.journal?.jobId && !this.active && this.unresolved() && this.consented())
       this.schedule(0);
-    }
   };
 }
 

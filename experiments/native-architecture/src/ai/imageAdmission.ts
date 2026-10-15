@@ -4,7 +4,26 @@ import { imageBytes } from './imageBounds';
 import { pngResultGrid } from './pngResult';
 import { jpegResultGrid } from './jpegResult';
 import { webpResultGrid } from './webpResult';
-export type AiImageAdmission = (bytes: Uint8Array, mime: AiMime) => Promise<void>;
+import { assertPngGrid } from '../drawing/pngLimits';
+export type AiImagePurpose = 'result' | 'original';
+export type AiImageAdmission = (
+  bytes: Uint8Array,
+  mime: AiMime,
+  purpose?: AiImagePurpose
+) => Promise<void>;
+
+export async function originalImageGrid(bytes: Uint8Array, isCurrent: () => boolean) {
+  imageBytes(bytes);
+  const work = createPngWork(isCurrent);
+  work.check();
+  const grid = await pngResultGrid(bytes, work, (width, height) => {
+    const captured = { width, height };
+    assertPngGrid(captured);
+    return captured;
+  });
+  work.check();
+  return grid;
+}
 export async function resultImageGrid(bytes: Uint8Array, mime: AiMime, isCurrent: () => boolean) {
   imageBytes(bytes);
   const work = createPngWork(isCurrent);

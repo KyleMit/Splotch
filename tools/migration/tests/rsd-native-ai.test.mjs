@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
+import { currentExportScale } from '../../../web/src/lib/drawing/exportScale.ts';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
 import { GATE_MODAL, solveParentGate as solve } from './rsd-parent-gate-keypad.mjs';
 import { AI_STYLES } from '../../../experiments/native-architecture/src/ai/contract.ts';
@@ -31,8 +32,8 @@ import {
   finishedPicture,
 } from './rsd-native-ai-fixture.mjs';
 
-it.each(['error', 'unknown', 'unavailable'])(
-  'offers an explicit report review only after a definite failure, not %s delivery',
+it.each(['error', 'unavailable'])(
+  'offers review after report errors and protects unavailable evidence (%s)',
   async (phase) => {
     const target = { kind: 'false-positive-refusal', id: 17 };
     const owner = { reviewAiReport: vi.fn(), sendPictureReport: vi.fn() };
@@ -94,8 +95,9 @@ it.each([
     await sendDrawing();
     await settle(() => expect(testId('ai-submitted-drawing')).not.toBeNull());
     const sent = records.props.findLast((props) => props.testID === 'ai-submitted-drawing');
+    const scale = currentExportScale();
     expect(sent.source.uri).toBe(
-      `data:image/png;base64,${rgbaPng(1024, 768, 255).toString('base64')}`
+      `data:image/png;base64,${rgbaPng(1024 * scale, 768 * scale, 255).toString('base64')}`
     );
     expect(sent.blurRadius).toBeGreaterThan(2);
     expect(labelled('AI picture progress')).not.toBeNull();

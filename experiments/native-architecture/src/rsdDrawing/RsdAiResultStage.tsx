@@ -8,6 +8,7 @@ import type { AiProgress } from '../ai/aiProgress';
 import type { AiRun } from '../ai/uiState';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { useReduceMotion } from '../drawing/useReduceMotion';
+import { useAiResultZoom } from '../ai/useAiResultZoom';
 
 // AiResultStage.svelte's literals; native-ai-flow-geometry.test.mjs reads them back.
 // The drawing stays blurry to keep the suspense, sharpening as the dial fills, in quarter-pixel
@@ -23,6 +24,7 @@ export const STAGE_RESULT_SETTLE_MS = 600;
 export const STAGE_RESULT_ENTRY_SCALE = 1.08;
 export const STAGE_SHADOW = '0px 4px 16px rgba(0, 0, 0, 0.15)';
 const STAGE_RADIUS_PX = 12;
+const GESTURE_POINTER = { touchAction: 'none' } as const;
 // --ease-glide
 const GLIDE = Easing.bezier(0.22, 1, 0.36, 1);
 
@@ -84,6 +86,7 @@ export function RsdAiResultStage({
   const reduceMotion = useReduceMotion();
   const revealed = progress.revealed && !!run?.picture;
   const reveal = useReveal(revealed, reduceMotion);
+  const zoom = useAiResultZoom(revealed, run?.picture?.uri, width, height);
   return (
     <View
       testID="ai-result-stage"
@@ -108,13 +111,18 @@ export function RsdAiResultStage({
             { opacity: reveal.result, transform: [{ scale: reveal.scale }] },
           ]}
         >
-          <Image
-            testID="ai-result-picture"
-            accessibilityLabel="Your AI picture"
-            source={{ uri: run.picture.uri }}
-            resizeMode="contain"
-            style={styles.fill}
-          />
+          <View
+            testID="ai-zoomed-picture"
+            style={{ ...styles.fill, transformOrigin: 'top left', transform: zoom.transform }}
+          >
+            <Image
+              testID="ai-result-picture"
+              accessibilityLabel="Your AI picture"
+              source={{ uri: run.picture.uri }}
+              resizeMode="contain"
+              style={styles.fill}
+            />
+          </View>
         </Animated.View>
       ) : null}
       {/* Under reduced motion the dial alone says something is happening. */}
@@ -122,6 +130,12 @@ export function RsdAiResultStage({
       <View pointerEvents="none" style={styles.center}>
         <AiProgressDial progress={progress} size={dialSize} reduceMotion={reduceMotion} />
       </View>
+      <View
+        testID="ai-result-gesture"
+        pointerEvents={revealed ? 'box-only' : 'none'}
+        style={{ ...StyleSheet.absoluteFill, ...GESTURE_POINTER }}
+        {...zoom.handlers}
+      />
     </View>
   );
 }

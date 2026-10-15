@@ -1,12 +1,12 @@
-import { Platform } from 'react-native';
+import { PixelRatio, Platform } from 'react-native';
 import { createNativeFeedback } from '../feedback/feedback';
 import { createNativeAi } from '../ai/generation';
 import { feedbackDevice, feedbackPolicyStorage, feedbackTransport } from '../platform/feedback';
 import { aiDismissal, aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
-import { savePicture } from '../platform/drawingFiles';
-import { prepareAiPng } from '../ai/prepare';
+import { aiOriginalId, prepareAiPng } from '../ai/prepare';
 import { parseDrawing } from '../drawing/model';
-import { drawingPaperSize } from '../drawing/paperSpace';
+import { drawingPaper } from '../drawing/paperSpace';
+import { pictureExport } from '../drawing/pictureExport';
 import type { ParentOperationPort } from '../parentCenter/parentPolicy';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
@@ -42,14 +42,14 @@ export function createProductOwners(
       const release = surface.lockInput();
       try {
         const drawing = current.currentDrawing();
-        const base64 = await surface.capturePng(drawing);
+        const base64 = await surface.captureAiPng(drawing);
         if (current.currentDrawing() !== drawing)
           throw new Error('The drawing changed during capture.');
-        const bytes = prepareAiPng(base64, drawingPaperSize(drawing));
-        const original = await savePicture(drawing);
+        const size = pictureExport(drawingPaper(drawing), 'light', PixelRatio.get()).size;
+        const bytes = prepareAiPng(base64, size);
         return {
           bytes,
-          originalId: original.id,
+          originalId: aiOriginalId(),
           originalModel: JSON.stringify(parseDrawing(drawing)),
         };
       } finally {

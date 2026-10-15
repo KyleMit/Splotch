@@ -1,6 +1,6 @@
 import { fetch } from 'expo/fetch';
 import { withCredentialLeases } from '../ai/credentialLease';
-import { NativeModules } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import { aiUrl, type AiTransport } from '../ai/transport';
 import { SECRET_SLOTS, isInstallationId } from '../ai/contract';
 import { validCredential, type AiVault, type AiReferencedVault } from '../ai/credentials';
@@ -107,7 +107,10 @@ export const aiVault = withCredentialLeases(nativeVault);
 export const aiTransport: AiTransport = (request, signal) =>
   fetch(aiUrl(request), {
     method: request.method,
-    headers: request.headers,
+    headers: {
+      ...request.headers,
+      Origin: Platform.OS === 'ios' ? 'capacitor://localhost' : 'https://localhost',
+    },
     ...(request.body === undefined
       ? {}
       : {

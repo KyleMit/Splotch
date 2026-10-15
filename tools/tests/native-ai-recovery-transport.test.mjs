@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import {
   aiUrl,
   parseAiResponse,
@@ -239,16 +238,6 @@ describe('recovery transport source proposals (unrun at packet seal)', () => {
       expect(transport).not.toHaveBeenCalled();
     }
   );
-  it('keeps the live result on the recovery action owner', () => {
-    const source = readFileSync(
-      new URL(
-        '../../experiments/native-architecture/src/rsdDrawing/RsdAiResult.tsx',
-        import.meta.url
-      ),
-      'utf8'
-    );
-    expect(source).toMatch(/<AiRecoveryActions\s+owner=\{owner\}\s+state=\{state\}\s+waiting=\{/);
-  });
 });
 
 const terminalBody = () => ({

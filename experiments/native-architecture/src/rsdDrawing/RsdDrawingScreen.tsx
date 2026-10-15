@@ -79,7 +79,7 @@ export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
             : 'aiResult'
           : 'none';
   useParentCenterSettings(screen, product, gate?.open === true, informationOpen);
-  useAiAvailability(product.ai.owner, sound.settings);
+  useAiAvailability(product.ai.owner, sound.settings, product.ai.online);
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
   });

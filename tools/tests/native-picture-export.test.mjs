@@ -297,4 +297,15 @@ describe('composing the saved picture on Android and iOS', () => {
     expect(skia.log.filter(([key]) => key === 'fromURI')).toHaveLength(1);
     expect(skia.log.some(([key]) => key === 'drawPaint')).toBe(true);
   });
+
+  it('omits paper grain from an AI upload while keeping the export pixel grid', async () => {
+    vi.resetModules();
+    const { composePicture } =
+      await import('../../experiments/native-architecture/src/drawing/pictureCompose.ts');
+    const picture = pictureExport(adoptPaper(390, 769, 1), 'light', 1);
+    await expect(composePicture('layer', picture, false)).resolves.toBe('native-composed');
+    expect(skia.log).toContainEqual(['surface', 780, 1538]);
+    expect(skia.log.some(([key]) => key === 'drawPaint')).toBe(false);
+    expect(skia.log.some(([key]) => key === 'fromURI')).toBe(false);
+  });
 });

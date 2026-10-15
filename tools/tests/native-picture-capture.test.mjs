@@ -6,6 +6,7 @@ import {
   flushCaptureFrames,
   loadCaptureImage,
   beginFixtureOutput,
+  installCaptureFrames,
 } from '../lib/native-picture-capture-sdk-fixture.mjs';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -101,13 +102,7 @@ beforeEach(() => {
   state.imageLoads.length = 0;
   state.responders.length = 0;
   state.layouts.length = 0;
-  state.frames.clear();
-  vi.stubGlobal('requestAnimationFrame', (callback) => {
-    const id = ++state.nextFrame;
-    state.frames.set(id, callback);
-    return id;
-  });
-  vi.stubGlobal('cancelAnimationFrame', (id) => state.frames.delete(id));
+  installCaptureFrames(state, vi);
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -219,6 +214,17 @@ const surface = createPictureSurfaceFixture({
 const beginOutput = (drawing, kind) => beginFixtureOutput(ref, drawing, kind);
 
 describe('mounted canonical output identity', () => {
+  it('captures AI ink on the shipping export grid even on a 1x screen', async () => {
+    const drawing = { ...legacyDrawing(0, 'flower'), strokes: [marker] };
+    await surface(drawing, 'light');
+    const { promise, release } = await beginOutput(drawing, 'captureAiPng');
+    const completion = promise.catch((failure) => failure.message);
+    await frames();
+    expect(state.captures[0].options).toMatchObject({ width: 2048, height: 1536 });
+    release();
+    await expect(completion).resolves.toContain('changed');
+  });
+
   it.each(['system', 'light'])(
     'supersedes capture after resolved %s appearance changes and rejects late output',
     async (preference) => {

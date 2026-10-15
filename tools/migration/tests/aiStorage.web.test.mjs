@@ -29,6 +29,14 @@ it('restarts with exact original UTF8 model and pinned upload in the isolated da
   expect(disk.opened.every(([name]) => name === AI_STORAGE_DATABASE)).toBe(true);
 });
 
+it('prepares and rereads a tablet original at the shipping capture resolution', async () => {
+  const upload = new Uint8Array(rgbaPng(2564, 2048, 255));
+  const storage = createAiStorage();
+  const receipt = await storage.prepare(journal(), model, upload);
+  expect(await storage.readPreparedUpload(receipt)).toEqual(upload);
+  expect((await createAiStorage().read()).receipt).toEqual(receipt);
+});
+
 it('waits for transaction completion and does not expose an aborted preparation', async () => {
   const storage = createAiStorage();
   disk.abort = true;
@@ -117,46 +125,73 @@ it('confirms an identical retained result after an uncertain save without rewrit
   expect(disk.raw.revision).toBe(revision);
 });
 
-it('saves an earlier late result separately while preserving the newer unresolved attempt', async () => {
+it('drops the earlier finished attempt when a new one is prepared, so its late result has no home', async () => {
   const storage = createAiStorage();
   await storage.prepare(journal(), model, png);
   await storage.write(journal(1, 'failed'));
   const next = await storage.prepare(journal(2), model, png);
-  const result = await storage.retain(1, png, 'image/png');
-  expect(result.receipt.journal.id).toBe(1);
-  expect((await storage.read()).receipt).toEqual(next);
-  expect(await storage.pictures()).toEqual([result.picture]);
-  expect(disk.raw.attempts.map(({ receipt }) => receipt.journal.phase)).toEqual(['result', 'sent']);
+  await expect(storage.retain(1, png, 'image/png')).rejects.toThrow();
+  expect((await createAiStorage().read()).receipt).toEqual(next);
+  expect(await createAiStorage().pictures()).toEqual([]);
+  expect(disk.raw.attempts.map(({ receipt }) => receipt.journal.id)).toEqual([2]);
 });
 
-it('never chooses an earlier valid attempt when the newest entry is malformed', async () => {
+it('lets a tab that last saw an attempt unfinished read the newer run that replaced it', async () => {
+  const stale = createAiStorage();
+  await stale.prepare(journal(), model, png);
+  const other = createAiStorage();
+  await other.read();
+  await other.write(journal(1, 'failed'));
+  await other.prepare(journal(2), model, png);
+  expect((await stale.read()).receipt.journal.id).toBe(2);
+});
+
+it('fails closed when the newest entry is malformed', async () => {
   const storage = createAiStorage();
   await storage.prepare(journal(), model, png);
   await storage.write(journal(1, 'failed'));
   await storage.prepare(journal(2), model, png);
-  disk.raw.attempts[1].receipt.journal.phase = 'invented';
+  disk.raw.attempts.at(-1).receipt.journal.phase = 'invented';
   await expect(createAiStorage().read()).rejects.toThrow();
 });
 
-it('refuses new attempts while unresolved and requires monotonic IDs', async () => {
+it('requires monotonic attempt IDs', async () => {
   const storage = createAiStorage();
   await storage.prepare(journal(), model, png);
-  await expect(storage.prepare(journal(2), model, png)).rejects.toThrow();
-  await storage.read();
   await storage.write(journal(1, 'failed'));
   await expect(storage.prepare(journal(1), model, png)).rejects.toThrow();
 });
 
-it('keeps all old pictures when the count limit rejects another attempt', async () => {
+it.each(['sent', 'pending', 'recovery'])(
+  'replaces an abandoned %s attempt when a fresh session starts a picture',
+  async (phase) => {
+    const previous = createAiStorage();
+    if (phase === 'recovery')
+      await previous.prepareRecovery(journal(1, 'unknown'), model, png, {
+        kind: 'free',
+        reference: 'a'.repeat(64),
+      });
+    else {
+      await previous.prepare(journal(), model, png);
+      if (phase === 'pending') await previous.write({ ...journal(), phase, jobId: 'b'.repeat(64) });
+    }
+    const fresh = createAiStorage();
+    await expect(fresh.prepare(journal(2), model, png)).resolves.toMatchObject({
+      journal: { id: 2 },
+    });
+    expect(disk.raw.attempts.map(({ receipt }) => receipt.journal.id)).toEqual([2]);
+  }
+);
+
+it('keeps making pictures past the attempt cap, holding only the latest one, as shipping does', async () => {
   const storage = createAiStorage();
-  for (let id = 1; id <= MAX_AI_STORAGE_ATTEMPTS; id++) {
+  const runs = MAX_AI_STORAGE_ATTEMPTS * 2;
+  for (let id = 1; id <= runs; id++) {
     await storage.prepare(journal(id), model, png);
     await storage.retain(id, png, 'image/png');
   }
-  const before = structuredClone(disk.raw);
-  await expect(storage.prepare(journal(MAX_AI_STORAGE_ATTEMPTS + 1), model, png)).rejects.toThrow();
-  expect(disk.raw).toEqual(before);
-  expect(await createAiStorage().pictures()).toHaveLength(MAX_AI_STORAGE_ATTEMPTS);
+  expect(disk.raw.attempts.map(({ receipt }) => receipt.journal.id)).toEqual([runs]);
+  expect(await createAiStorage().pictures()).toHaveLength(1);
 });
 
 it('charges durable base64/data URI UTF16 copies against the byte limit', () => {

@@ -6,6 +6,13 @@ import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contrac
 import { aiResultPhase } from '../../experiments/native-architecture/src/ai/uiState.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
+import { FREE_DAILY_LIMIT_EXHAUSTED_CODE } from '../../web/src/lib/ai/generationResult.ts';
+import { AI_FAILURE_RETRY_LIMIT } from '../../experiments/native-architecture/src/ai/uiState.ts';
+
+const cleanups = [];
+afterEach(() => {
+  for (const cleanup of cleanups.splice(0)) cleanup();
+});
 
 const GRANT = '{"ok":true,"remaining":10,"limit":10}';
 
@@ -62,6 +69,10 @@ async function fixture({
       device: () => ({ platform: 'Android' }),
       offline: () => false,
     },
+  });
+  cleanups.push(() => {
+    owner.dispose();
+    product.dispose();
   });
   const settled = () => vi.waitFor(() => expect(owner.getState().busy).toBe(false));
   return { product, owner, storage: boundary.aiStorage, transport, prepare, settled, report };
@@ -149,56 +160,40 @@ it('sends a grown-up to Settings instead of the prompt when no free picture is l
   expect(f.prepare).not.toHaveBeenCalled();
 });
 
-it('releases an attempt held past its server window when the wand is next tapped', async () => {
-  const sentAt = Date.now() - JOB_TTL_MS - 1;
-  const journal = Object.freeze({
-    version: 1,
-    id: sentAt,
-    createdAt: sentAt,
-    style: 'Sticker',
-    originalId: 'picture-1-fixture',
-    phase: 'unknown',
-    jobId: null,
-    result: null,
-  });
-  const f = await fixture({
-    stored: { kind: 'native', receipt: { kind: 'prepared', journal } },
-  });
-  f.owner.start({ onSetup: vi.fn(), customize: true });
-  solve(f.product.gate);
-  await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
-  expect(f.storage.write).toHaveBeenCalledWith(expect.objectContaining({ phase: 'failed' }));
-  expect(f.owner.getState().view).toBe('prompt');
-});
-
-it('reopens a run left waiting before a reload on the result card and checks on it', async () => {
-  const sentAt = Date.now() - 60_000;
-  const journal = Object.freeze({
-    version: 1,
-    id: sentAt,
-    createdAt: sentAt,
-    style: 'Sticker',
-    originalId: 'picture-1-fixture',
-    phase: 'pending',
-    jobId: 'b'.repeat(64),
-    result: null,
-  });
-  const f = await fixture({
-    stored: { kind: 'native', receipt: { kind: 'prepared', journal } },
-  });
-  f.owner.start({ onSetup: vi.fn(), customize: true });
-  solve(f.product.gate);
-  await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
-  expect(f.owner.getState()).toMatchObject({
-    view: 'result',
-    attempt: { kind: 'journal', id: sentAt },
-  });
-  await vi.waitFor(() =>
-    expect(
-      f.transport.mock.calls.some(([request]) => request.path === '/api/generation-result')
-    ).toBe(true)
-  );
-});
+it.each(['unknown', 'sent', 'pending', 'result'])(
+  'opens a fresh prompt behind the AI check with a saved %s attempt after relaunch',
+  async (phase) => {
+    const sentAt = Date.now() - JOB_TTL_MS - 1;
+    const journal = Object.freeze({
+      version: 1,
+      id: sentAt,
+      createdAt: sentAt,
+      style: 'Sticker',
+      originalId: 'picture-1-fixture',
+      phase,
+      jobId: 'b'.repeat(64),
+      result: phase === 'result' ? { uri: 'file:///old.png', mime: 'image/png' } : null,
+    });
+    const f = await fixture({ stored: { kind: 'native', receipt: { kind: 'prepared', journal } } });
+    f.owner.start({ onSetup: vi.fn(), customize: true });
+    expect(f.product.gate.getState()).toMatchObject({ open: true, feature: 'ai' });
+    solve(f.product.gate);
+    await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
+    expect(f.owner.getState()).toMatchObject({
+      view: 'prompt',
+      attempt: null,
+      journal: null,
+      recovery: null,
+      heldResult: null,
+      pictures: [],
+    });
+    expect(f.storage.read).not.toHaveBeenCalled();
+    expect(f.storage.write).not.toHaveBeenCalled();
+    expect(f.transport.mock.calls.map(([request]) => request.path)).toEqual([
+      '/api/free-generation-grant',
+    ]);
+  }
+);
 
 // Through the gate to the prompt, then a picked style.
 async function sendStyle(f, onSetup = vi.fn()) {
@@ -214,7 +209,7 @@ const ticket = () =>
     status: 202,
   });
 
-it('releases a minimized run held past its server window when it is shown again, and asks again for a new one', async () => {
+it('releases a minimized run held past its server window and retries under its original approval', async () => {
   const f = await fixture({ generate: ticket });
   await sendStyle(f);
   expect(f.owner.getState().journal.phase).toBe('pending');
@@ -230,48 +225,11 @@ it('releases a minimized run held past its server window when it is shown again,
     f.product.gate.dismiss();
     f.product.closeParentCenter();
     f.owner.retry();
-    expect(f.product.gate.getState()).toMatchObject({ open: true, feature: 'ai' });
+    expect(f.product.gate.getState().open).toBe(false);
+    await vi.waitFor(() => expect(generateCalls(f)).toHaveLength(2));
   } finally {
     clock.mockRestore();
   }
-});
-
-it('brings back a finished picture nobody dismissed past the server window, and remembers its close across a reload', async () => {
-  const createdAt = Date.now() - JOB_TTL_MS - 60_000;
-  const journal = Object.freeze({
-    version: 1,
-    id: createdAt,
-    createdAt,
-    style: 'Clay',
-    originalId: 'picture-1-fixture',
-    phase: 'result',
-    jobId: 'b'.repeat(64),
-    result: { uri: 'file:///fixture/ai.png', mime: 'image/png' },
-  });
-  const saved = { id: null };
-  const dismissal = {
-    read: async () => saved.id,
-    write: async (id) => {
-      saved.id = id;
-    },
-  };
-  const stored = { kind: 'native', receipt: { kind: 'prepared', journal } };
-  const f = await fixture({ stored, dismissal });
-  f.owner.start({ onSetup: vi.fn(), customize: true });
-  solve(f.product.gate);
-  await vi.waitFor(() => expect(f.owner.getState().open).toBe(true));
-  expect(f.owner.getState().view).toBe('result');
-  expect(aiResultPhase(f.owner.getState())).toMatchObject({
-    kind: 'result',
-    picture: { uri: 'file:///fixture/ai.png' },
-  });
-  f.owner.dismiss();
-  expect(saved.id).toBe(String(createdAt));
-  const reloaded = await fixture({ stored, dismissal });
-  reloaded.owner.start({ onSetup: vi.fn(), customize: true });
-  solve(reloaded.product.gate);
-  await vi.waitFor(() => expect(reloaded.owner.getState().open).toBe(true));
-  expect(reloaded.owner.getState().view).toBe('prompt');
 });
 
 it.each([
@@ -283,7 +241,14 @@ it.each([
         { status: 403 }
       ),
   ],
-  ['unavailable', () => new Response('{"ok":false,"error":"No key"}', { status: 503 })],
+  [
+    'unavailable today',
+    () =>
+      new Response(
+        JSON.stringify({ ok: false, code: FREE_DAILY_LIMIT_EXHAUSTED_CODE, error: 'Not today' }),
+        { status: 503 }
+      ),
+  ],
 ])(
   'sends a grown-up to Settings when the free allowance is %s, as shipping does',
   async (_, reply) => {
@@ -342,4 +307,61 @@ it('names no art style in a problem report for a run sent with style choice off'
     label: 'Art style',
     value: 'Default',
   });
+});
+
+const failed = (status, body) => () =>
+  new Response(JSON.stringify({ ok: false, error: body }), { status });
+const generateCalls = (f) =>
+  f.transport.mock.calls.filter(([request]) => request.path === '/api/generate-image');
+
+it('offers Try again after a plain 503 rather than sending the grown-up to Settings', async () => {
+  const onSetup = vi.fn();
+  const f = await fixture({ generate: failed(503, 'Busy') });
+  await sendStyle(f, onSetup);
+  expect(onSetup).not.toHaveBeenCalled();
+  expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
+});
+
+it('offers Try again after a throttled start and sends again at once when it is tapped', async () => {
+  const f = await fixture({ generate: failed(429, 'Slow down') });
+  await sendStyle(f);
+  expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
+  expect(f.owner.getState()).toMatchObject({ retryAt: 0, availability: 'ready' });
+  f.owner.retry();
+  await vi.waitFor(() => expect(generateCalls(f)).toHaveLength(2));
+});
+
+it('sends the drawing the failed run sent when Try again is tapped, not the canvas as it is now', async () => {
+  let reply = failed(502, 'Upstream down');
+  const f = await fixture({ generate: () => reply() });
+  await sendStyle(f);
+  const sent = generateCalls(f)[0][0].body;
+  f.prepare.mockResolvedValue({
+    bytes: rgbaPng(4, 3, 0),
+    originalId: 'picture-2-fixture',
+    originalModel: JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] }),
+  });
+  reply = picture;
+  f.owner.retry();
+  await vi.waitFor(() => expect(generateCalls(f)).toHaveLength(2));
+  await f.settled();
+  expect(f.prepare).toHaveBeenCalledOnce();
+  expect(generateCalls(f)[1][0].body).toEqual(sent);
+  expect(generateCalls(f)[1][0].query).toBe('style=Clay');
+  expect(aiResultPhase(f.owner.getState()).kind).toBe('result');
+});
+
+it('starts the repeated-failure count afresh once the card is closed, as shipping does', async () => {
+  const f = await fixture({ generate: failed(502, 'Upstream down') });
+  await sendStyle(f);
+  for (let failures = 1; failures < AI_FAILURE_RETRY_LIMIT; failures++) {
+    f.owner.retry();
+    await vi.waitFor(() => expect(f.owner.getState().failures).toBe(failures + 1));
+    await f.settled();
+  }
+  expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'rest' });
+  f.owner.dismiss();
+  expect(f.owner.getState().failures).toBe(0);
+  await sendStyle(f);
+  expect(aiResultPhase(f.owner.getState())).toEqual({ kind: 'error', reason: 'retry' });
 });
