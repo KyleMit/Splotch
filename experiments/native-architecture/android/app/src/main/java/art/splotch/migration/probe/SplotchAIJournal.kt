@@ -159,6 +159,12 @@ class SplotchAIJournal(private val context: Context) {
     val bytes = read(File(dir, name), cap)
     check(integer(meta, "bytes") == bytes.size.toLong() && meta.getString("sha256") == digest(bytes))
   }
+  // Shipping holds only the run in hand, so a new attempt replaces every finished plain one; recovery
+  // records stay, as their chain names its source.
+  private fun dropFinishedAttempts(all: List<File>) {
+    for (dir in all) if (integer(latest(dir), "schema") == 1L) check(dir.deleteRecursively())
+    fence(root)
+  }
   private fun attempts(): List<File> {
     val entries = root.listFiles() ?: error("Storage unavailable")
     check(entries.size <= maxAttempts + 1)
@@ -734,7 +740,9 @@ class SplotchAIJournal(private val context: Context) {
           check(credential.getString("kind") in setOf("free", "managed", "byok") && Regex("[a-f0-9]{64}").matches(credential.getString("reference")))
         }
         val all = attempts()
-        check(all.size < maxAttempts && all.none { unresolved(latest(it)) })
+        check(all.none { unresolved(latest(it)) })
+        if (kind == "prepare") dropFinishedAttempts(all)
+        check(attempts().size < maxAttempts)
         val original = input.getString("originalModel").toByteArray(Charsets.UTF_8)
         originalModel(original, kind == "importLegacy")
         val upload = if (kind != "importLegacy") decode(input, "upload", maxUpload) else null

@@ -78,3 +78,14 @@ it('pins native original-expiry interval to the actual recovery protocol skew wi
     expect(source).toContain('recovery-held');
   }
 });
+
+it('replaces finished attempts before the attempt cap in both native journals, as the web store does', () => {
+  for (const path of [android, apple]) {
+    const source = readFileSync(new URL(path, candidate), 'utf8');
+    const prepare = source.slice(source.indexOf('"prepare", "importLegacy", "prepareRecovery"'));
+    const drop = prepare.search(/if \(?kind == "prepare"\)? (?:\{ try )?dropFinishedAttempts\(/);
+    expect(drop).toBeGreaterThan(-1);
+    expect(drop).toBeLessThan(prepare.indexOf('maxAttempts'));
+    expect(source).toMatch(/dropFinishedAttempts[\s\S]{0,200}"schema"\)? == 1L?/);
+  }
+});
