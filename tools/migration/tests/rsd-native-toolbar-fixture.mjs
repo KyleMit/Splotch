@@ -65,11 +65,11 @@ export async function mountToolbar(screen, settings = {}) {
 }
 
 export function paintGroup() {
-  return host.querySelector('[role="radiogroup"][aria-label="Paint colors"]');
+  return host.querySelector('[data-testid="rsd-palette-paints"]');
 }
 
 export function paintLabels() {
-  return [...paintGroup().querySelectorAll('[role="radio"]')].map((node) =>
+  return [...paintGroup().querySelectorAll('button')].map((node) =>
     node.getAttribute('aria-label')
   );
 }

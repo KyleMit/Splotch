@@ -42,16 +42,20 @@ function RsdClearButton({ control, disabled }: { control: ClearControl; disabled
             }),
           },
           {
-            scaleX: values.lift.interpolate({
-              inputRange: [0, 1],
-              outputRange: [1, 1 + LIFT_SQUASH],
-            }),
+            scaleX: Animated.add(values.lift, Animated.multiply(values.liftReturn, -1)).interpolate(
+              {
+                inputRange: [0, 1],
+                outputRange: [1, 1 + LIFT_SQUASH],
+              }
+            ),
           },
           {
-            scaleY: values.lift.interpolate({
-              inputRange: [0, 1],
-              outputRange: [1, 1 - LIFT_SQUASH],
-            }),
+            scaleY: Animated.add(values.lift, Animated.multiply(values.liftReturn, -1)).interpolate(
+              {
+                inputRange: [0, 1],
+                outputRange: [1, 1 - LIFT_SQUASH],
+              }
+            ),
           },
         ],
       }}
@@ -91,7 +95,7 @@ export function RsdClearOverlay({
               }),
               transform: [
                 {
-                  scale: values.ring.interpolate({
+                  scale: values.ringScale.interpolate({
                     inputRange: [0, 1],
                     outputRange: [RING_REVEAL_FROM_SCALE, 1],
                   }),

@@ -77,9 +77,8 @@ function PaintOption({
   return (
     <RsdPressable
       type="button"
-      role="radio"
       aria-label={paintLabel(label, theme)}
-      aria-checked={ringed}
+      aria-pressed={ringed}
       aria-disabled={disabled}
       disabled={disabled}
       style={[
@@ -120,6 +119,7 @@ function MoreColorsOption({
     <RsdPressable
       type="button"
       aria-label={CUSTOM_COLOR_LABEL}
+      aria-pressed={custom?.color != null}
       aria-disabled={disabled}
       disabled={disabled}
       style={[styles.option(COLOR_MENU_SWATCH_PX), styles.press, styles.clear]}
@@ -163,11 +163,7 @@ export function RsdColorMenu({
   const custom = customPaintSelection({ selectedColor: selected, activeSwatch }, erasing);
   return (
     <RsdFlyoutMenu label="Colors" direction="row" spacing={COLOR_MENU_SPACING} {...scale}>
-      <html.div
-        role="radiogroup"
-        aria-label="Paint colors"
-        style={styles.row(COLOR_MENU_SPACING.gapPx)}
-      >
+      <html.div style={styles.row(COLOR_MENU_SPACING.gapPx)}>
         {colorMenuLabels(areaWidth, buttonSize).map((label) => (
           <PaintOption
             key={label}

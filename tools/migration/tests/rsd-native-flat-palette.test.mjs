@@ -125,7 +125,7 @@ describe('the native palette bar', () => {
     const rail = painted.indexOf(byTestId('rsd-rail-glass'));
     expect(rail).toBeGreaterThanOrEqual(0);
     const swatches = [
-      ...host.querySelectorAll('[role="radiogroup"][aria-label="Paint colors"] [role="radio"]'),
+      ...host.querySelectorAll('[data-testid="rsd-palette-paints"] button'),
       host.querySelector('[aria-label="Custom Color"]'),
     ];
     expect(swatches.length).toBeGreaterThan(1);

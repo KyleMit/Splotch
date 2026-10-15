@@ -375,7 +375,14 @@ const DOCK = { top: 48, right: 0, size: 70, iconSize: 40 };
 it('rings the docked Clear half-disc rather than its square host', async () => {
   const value = () => new Animated.Value(0);
   const control = {
-    values: { drag: new Animated.ValueXY(), emphasis: value(), lift: value(), ring: value() },
+    values: {
+      drag: new Animated.ValueXY(),
+      emphasis: value(),
+      lift: value(),
+      liftReturn: value(),
+      ring: value(),
+      ringScale: value(),
+    },
     dragging: false,
     reached: false,
     clearing: false,

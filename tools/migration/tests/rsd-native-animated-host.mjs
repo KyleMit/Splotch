@@ -67,6 +67,7 @@ export function viewNativeComponentPort(records) {
           ref,
           role: props.role,
           'aria-label': props.accessibilityLabel,
+          'data-testid': props.testID,
           'data-committed-props': records.journalHostProps ? committedHostProps(props) : undefined,
         },
         props.children

@@ -3,6 +3,7 @@ import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
 import { isPageId, type PageId } from './pages';
 import {
   INITIAL_RAINBOW,
+  pickRainbow,
   MAGIC_RAINBOW_COUNT,
   MAX_CRAYON_SEED,
   type Brush,
@@ -51,6 +52,13 @@ export type History = Readonly<{
   drawing: Drawing;
   undo: readonly Drawing[];
 }>;
+
+// An Undo copy that only changes the next Magic choice retains every existing pixel and scan.
+const inkIdentities = new WeakMap<Drawing, Drawing>();
+
+export function drawingInkIdentity(drawing: Drawing): Drawing {
+  return inkIdentities.get(drawing) ?? drawing;
+}
 
 export function emptyDrawing(
   rainbow = INITIAL_RAINBOW,
@@ -131,18 +139,18 @@ export function undoDrawing(history: History): History {
   const restoresMagicPage =
     previous.strokes === current.strokes &&
     current.strokes.some((stroke) => stroke.brush === 'magic');
-  const drawing =
+  const restored =
     restoresMagicPage || previous.pageId === current.pageId
       ? previous
       : { ...previous, pageId: current.pageId };
+  const drawing =
+    restored.rainbow === current.rainbow ? restored : { ...restored, rainbow: current.rainbow };
+  if (drawing !== restored) inkIdentities.set(drawing, drawingInkIdentity(restored));
   return { drawing, undo: history.undo.slice(0, -1) };
 }
 
 export function clearDrawing(history: History, visuallyEmpty: boolean): History {
-  const drawing = emptyDrawing(
-    (history.drawing.rainbow + 1) % MAGIC_RAINBOW_COUNT,
-    history.drawing.pageId
-  );
+  const drawing = emptyDrawing(pickRainbow(), history.drawing.pageId);
   return visuallyEmpty ? { drawing, undo: history.undo } : commitDrawing(history, drawing);
 }
 

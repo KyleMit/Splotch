@@ -128,9 +128,9 @@ const actionsPanel = parse('src/rsdDrawing/RsdActionsPanel.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
 const switches = [];
-const toolbarSwitches = [];
+const toolbarToggles = [];
 const toolbarConditions = [];
-let radios = 0;
+let paints = 0;
 const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
@@ -147,39 +147,57 @@ for (const component of [drawing, edgeControls, actionsPanel, coloringPicker, se
         !attribute(node, 'selected')
       )
         return;
-      const selection =
-        node.name.name === 'RsdPaintAction' ? 'radio' : literal(attribute(node, 'selection'));
-      if (selection === 'switch') {
-        if (component === actionsPanel) {
-          toolbarSwitches.push(node);
-          toolbarConditions.push(
-            path.findParent((parent) => parent.isConditionalExpression() || parent.isIfStatement())
-              ?.node.test
-          );
-        } else {
-          switches.push(node);
-        }
-        return;
-      }
-      assert.equal(selection, 'radio', 'RSD selected action mode');
-      radios++;
-      const group = path.findParent(
-        (parent) =>
-          parent.isJSXElement() &&
-          literal(attribute(parent.node.openingElement, 'role')) === 'radiogroup'
-      );
-      assert.ok(group, 'RSD radio group owner');
+      if (node.name.name === 'RsdPaintAction') {
+        assert.equal(attribute(node, 'selection'), undefined, 'RSD plain paint caller');
+        paints++;
+      } else if (node.name.name === 'RsdIconButton' && component === actionsPanel) {
+        assert.equal(attribute(node, 'selection'), undefined, 'RSD toolbar button semantics');
+        toolbarToggles.push(node);
+        toolbarConditions.push(
+          path.findParent((parent) => parent.isConditionalExpression() || parent.isIfStatement())
+            ?.node.test
+        );
+      } else switches.push(node);
     },
   });
-assert.equal(groups.length, 1, 'RSD radio group count');
-assert.deepEqual(groups.map(literal), ['Paint colors'], 'RSD radio group names');
-assert.equal(radios, 1, 'RSD selection callers');
+assert.equal(groups.length, 0, 'RSD palette radio group count');
+assert.equal(paints, 1, 'RSD paint callers');
+for (const file of ['RsdSwatch.tsx', 'RsdColorMenu.tsx'])
+  babel.traverse(parse('src/rsdDrawing/' + file), {
+    JSXOpeningElement({ node }) {
+      if (node.name.name !== 'RsdPressable') return;
+      const stateless = file === 'RsdSwatch.tsx';
+      for (const name of stateless
+        ? ['role', 'aria-checked', 'aria-pressed']
+        : ['role', 'aria-checked'])
+        assert.equal(attribute(node, name), undefined, 'RSD plain paint button');
+      if (!stateless) assert.ok(attribute(node, 'aria-pressed'), 'RSD pressed paint button');
+    },
+  });
+let pressedButtons = 0;
+babel.traverse(parse('src/rsdDrawing/RsdIconButton.tsx'), {
+  JSXOpeningElement({ node }) {
+    if (node.name.name !== 'RsdPressable' || !attribute(node, 'aria-pressed')) return;
+    pressedButtons++;
+    assert.equal(literal(attribute(node, 'role')), 'button', 'RSD pressed button role');
+    assert.equal(attribute(node, 'aria-checked'), undefined, 'RSD pressed button checked state');
+    const selected = attribute(node, 'aria-pressed').value?.expression;
+    assert.ok(
+      selected?.type === 'MemberExpression' &&
+        !selected.computed &&
+        selected.object.name === 'props' &&
+        selected.property.name === 'selected',
+      'RSD pressed button state owner'
+    );
+  },
+});
+assert.equal(pressedButtons, 1, 'RSD pressed button owner');
 // Every Settings switch is a toggle row in its own section module; none is a selected action.
 assert.equal(switches.length, 0, 'RSD switch state callers');
-const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = validateBrushSources({
+const { optionalBrushes, optionalLabels, assertTransformedBrushToggles } = validateBrushSources({
   parse,
   babel,
-  toolbarSwitches,
+  toolbarToggles,
   toolbarConditions,
   attribute,
 });
@@ -324,7 +342,7 @@ for (const file of [...files, releasedNative]) {
       throw new Error('RSD Babel left JSX');
     },
   });
-  assertTransformedBrushSwitches(result.ast, file);
+  assertTransformedBrushToggles(result.ast, file);
   if (nativeAdapters.has(file)) assert.ok(nativeImport, `Native adapter import removed: ${file}`);
   rows.push({
     file,
@@ -336,9 +354,9 @@ process.stdout.write(
   `${JSON.stringify({
     canonicalEntry: true,
     mountedRsdSource: true,
-    optionalBrushSwitches: optionalBrushes.elements.length,
+    optionalBrushToggles: optionalBrushes.elements.length,
     optionalBrushLabels: optionalLabels,
-    adaptiveToolbarSwitch: true,
+    adaptiveToolbarToggle: true,
     preservedSettingsSwitches: switches.length,
     releasedNative,
     rows,

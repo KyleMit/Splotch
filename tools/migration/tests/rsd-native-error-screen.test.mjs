@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement, useEffect } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caller, host, mount, records } from './rsd-native-selection-host.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import {
@@ -29,8 +29,12 @@ const SHIPPING_ERROR_SCREEN = readFileSync(
   'utf8'
 );
 
+beforeEach(() => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.24);
+});
 afterEach(() => {
   delete caller.exportPng;
+  vi.restoreAllMocks();
 });
 
 const errorScreen = () =>
@@ -141,7 +145,7 @@ describe("the drawing screen's Error Screen", () => {
       await act(async () => startOver().click());
       expect(launches).toHaveBeenCalledTimes(2);
       expect(errorScreen()).toBeNull();
-      expect(session.history).toEqual(createHistory());
+      expect(session.history).toEqual(createHistory(emptyDrawing(2)));
       expect(session.setHistory).not.toBe(departed.setHistory);
       expect(caller.liveScreen.pagePickerOpen).toBe(false);
       expect(caller.liveScreen.commandBusy).toBe(false);
@@ -151,7 +155,7 @@ describe("the drawing screen's Error Screen", () => {
           await clearing;
         });
       }
-      expect(session.history).toEqual(createHistory());
+      expect(session.history).toEqual(createHistory(emptyDrawing(2)));
     }
   );
 
@@ -179,7 +183,7 @@ describe("the drawing screen's Error Screen", () => {
     await act(async () => session.restart());
     expect(launches).toHaveBeenCalledTimes(2);
     expect(departed.historyRef.current).toEqual(createHistory());
-    expect(session.history).toEqual(createHistory());
+    expect(session.history).toEqual(createHistory(emptyDrawing(2)));
     expect(session.setHistory).not.toBe(departed.setHistory);
   });
 });

@@ -85,6 +85,7 @@ function Panel() {
     area: { width: 390, height: 769 },
     viewport: { width: 390, height: 844 },
     open: true,
+    chosenOpen: true,
     buttonScale: 100,
     onToggle() {},
     onButtonSize() {},
@@ -135,6 +136,10 @@ describe('flyout keyboard lifecycle on the web', () => {
 
   it('returns focus to the Brushes button when the keyboard picks a brush', async () => {
     await press('Brushes');
+    expect(button('Pen').getAttribute('role')).toBe('button');
+    expect(button('Pen').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Crayon').getAttribute('aria-pressed')).toBe('false');
+    expect(button('Crayon').hasAttribute('aria-checked')).toBe(false);
     button('Crayon').focus();
     await act(async () => document.activeElement.click());
     expect(setBrush).toHaveBeenCalledExactlyOnceWith('crayon');
@@ -144,6 +149,9 @@ describe('flyout keyboard lifecycle on the web', () => {
 
   it('does the same for the Stroke Width Menu', async () => {
     await press('Stroke width');
+    expect(button('Size 3').getAttribute('role')).toBe('button');
+    expect(button('Size 3').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Size 2').getAttribute('aria-pressed')).toBe('false');
     button('Size 2').focus();
     await act(async () => document.activeElement.click());
     expect(setWidth).toHaveBeenCalledExactlyOnceWith('drawing', 'thin');

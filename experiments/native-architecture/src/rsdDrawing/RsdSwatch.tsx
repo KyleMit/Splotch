@@ -9,6 +9,7 @@ import {
 } from '../drawing/palette';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
+import { RsdSwatchBloom } from './swatchBloomSurface';
 import {
   MORE_COLORS_POP_SCALE,
   SELECTION_RING_GAP_PX,
@@ -124,12 +125,14 @@ export function RsdPaintAction({
   size,
   selected,
   disabled,
+  bloom,
   onClick,
 }: {
   color: PaintColor;
   size: number;
   selected: boolean;
   disabled: boolean;
+  bloom: { reduced: boolean } | null;
   onClick: () => void;
 }) {
   const theme = useDrawingAppearance();
@@ -139,9 +142,7 @@ export function RsdPaintAction({
   return (
     <RsdPressable
       type="button"
-      role="radio"
       aria-label={paintLabel(color, theme)}
-      aria-checked={selected}
       aria-disabled={disabled}
       disabled={disabled}
       style={[
@@ -152,6 +153,9 @@ export function RsdPaintAction({
       ]}
       onClick={onClick}
     >
+      {bloom ? (
+        <RsdSwatchBloom size={size} color={selectionRingColor(hex)} reduced={bloom.reduced} />
+      ) : null}
       {selected ? (
         <>
           <html.div aria-hidden style={[styles.disc(inner), styles.fill(hex)]} />

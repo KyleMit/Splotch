@@ -30,6 +30,7 @@ import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
 import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
 import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { TOUCH_TARGET } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 
 it.each(['light', 'dark'])(
   'uses shipping paint names at the native boundary in %s',
@@ -42,6 +43,7 @@ it.each(['light', 'dark'])(
     const custom = shipping('ColorSwatch.svelte').match(
       /aria-label=\{flat \? flat.label : '([^']+)'\}/
     )[1];
+    expect(shipping('ColorSwatch.svelte')).not.toMatch(/role=|aria-checked=|aria-pressed=/);
     const expected = PALETTE_COLORS.map(({ label }) =>
       theme === 'dark' && label === 'Black' ? white : label
     );
@@ -58,7 +60,7 @@ it.each(['light', 'dark'])(
               key: label,
               color: label,
               size: TOUCH_TARGET,
-              selected: false,
+              selected: label === 'Purple',
               disabled: false,
               onClick() {},
             })
@@ -75,10 +77,40 @@ it.each(['light', 'dark'])(
     expect(
       [...host.querySelectorAll('button')].map((node) => node.getAttribute('aria-label'))
     ).toEqual(expected);
-    for (const label of expected)
-      expect(records.props.some((props) => props.accessibilityLabel === label)).toBe(true);
+    for (const label of expected) {
+      const props = records.props.findLast((props) => props.accessibilityLabel === label);
+      expect(props.role, label).toBe('button');
+      expect(props.accessibilityState?.checked, label).toBeUndefined();
+      expect(props.accessibilityState?.selected, label).toBeUndefined();
+    }
   }
 );
+it.each(['tile', 'flyout'])('maps a %s pressed button into native selected state', async (skin) => {
+  for (const file of ['BrushControl', 'BrushMenu', 'StrokeWidthMenu']) {
+    const shipping = readFileSync(
+      join(import.meta.dirname, `../../../web/src/lib/components/${file}.svelte`),
+      'utf8'
+    );
+    expect(shipping).toContain('aria-pressed=');
+    expect(shipping).not.toContain('role="radio"');
+  }
+  for (const selected of [true, false]) {
+    const props = {
+      skin,
+      icon: 'brush-pen',
+      label: 'Pen',
+      selected,
+      onPress() {},
+      ...(skin === 'tile' ? { size: 60 } : { base: 60, scale: 1, Outline: () => null }),
+    };
+    if (!root) await mount(createElement(RsdIconButton, props));
+    else await act(async () => root.render(createElement(RsdIconButton, props)));
+    const native = records.props.findLast((entry) => entry.accessibilityLabel === 'Pen');
+    expect(native.role).toBe('button');
+    expect(native.accessibilityState?.selected).toBe(selected);
+    expect(native.accessibilityState?.checked).toBeUndefined();
+  }
+});
 it('uses the released native renderer for checked radio state and selected treatment', async () => {
   await mount(
     createElement(RsdAction, {
@@ -254,7 +286,7 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
     await mount(createElement(Settings));
     await openSettingsSection('Sound');
     await act(async () => host.querySelector('[role="switch"][aria-label="Sound"]').click());
-    const modal = host.querySelector('[data-native-modal="Sound"]');
+    const modal = host.querySelector('[data-native-modal="Settings"]');
     expect(modal).not.toBeNull();
     const close = modal.querySelector('[aria-label="Close"]');
     expect(close).not.toBeNull();
@@ -278,7 +310,8 @@ it('propagates paint availability both ways without losing its selected color or
     else await act(async () => root.render(element));
     const props = records.props.findLast((entry) => entry.accessibilityLabel === 'Blue');
     assertDisabledBoundary(props, disabled);
-    expect(props.accessibilityState.checked).toBe(true);
+    expect(props.accessibilityState.checked).toBeUndefined();
+    expect(props.accessibilityState.selected).toBeUndefined();
     const node = host.querySelector('button');
     mountedNode ??= node;
     expect(node).toBe(mountedNode);

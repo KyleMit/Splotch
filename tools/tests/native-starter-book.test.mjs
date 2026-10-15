@@ -10,7 +10,7 @@ import {
   generateBundledFarm,
   imageFilePaths,
 } from '../migration/gen-bundled-farm.mjs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BUNDLED_BOOKS,
   FARM_PAGE_IDS,
@@ -58,6 +58,9 @@ function paintedPage(pageId) {
     canonicalPaper()
   );
 }
+
+afterEach(() => vi.unstubAllGlobals());
+afterEach(() => vi.restoreAllMocks());
 
 describe('bundled Farm book and saved page identity', () => {
   it('exposes the six real Farm pages as one book and retains the original sample identities', () => {
@@ -118,10 +121,11 @@ describe('bundled Farm book and saved page identity', () => {
   it.each(FARM_PAGE_IDS)(
     'preserves %s through Clear and restores its painted composition with Undo',
     (pageId) => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.91);
       const painted = paintedPage(pageId);
       const cleared = clearDrawing(painted, false);
-      expect(cleared.drawing).toEqual(emptyDrawing(4, pageId));
-      expect(undoDrawing(cleared).drawing).toBe(painted.drawing);
+      expect(cleared.drawing).toEqual(emptyDrawing(9, pageId));
+      expect(undoDrawing(cleared).drawing).toEqual({ ...painted.drawing, rainbow: 9 });
       const blank = changePage(painted, 'blank');
       expect(blank.drawing.strokes).toBe(painted.drawing.strokes);
       expect(undoDrawing(blank).drawing).toBe(painted.drawing);

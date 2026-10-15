@@ -230,6 +230,7 @@ vi.mock('react-native', async () => {
           'aria-labelledby': props['aria-labelledby'],
           'aria-modal': props['aria-modal'],
           'data-checked': props.accessibilityState?.checked,
+          'data-selected': props.accessibilityState?.selected,
           'data-native-background': props.style?.backgroundColor,
           'data-native-color': props.style?.color,
           'aria-live': props.accessibilityLiveRegion,

@@ -159,6 +159,7 @@ const emptyPng = rgbaPng(1024, 768).toString('base64');
 const paintedPng = rgbaPng(1024, 768, 4).toString('base64');
 let host, root, state, session;
 beforeEach(() => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.24);
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
   sdk.frames.clear();
@@ -187,6 +188,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 async function frames() {
   for (let index = 0; index < 10; index++)
@@ -238,19 +240,19 @@ async function openHook() {
 }
 
 describe('mounted actual native Clear and decoder ownership', () => {
-  it('clears observed ink once and Undo restores exact page/rainbow/drawing identity through rerenders', async () => {
+  it('clears once and Undo restores the old ink and page with the new active rainbow through rerenders', async () => {
     await opened();
     expect(await saved()).toEqual(fixture);
     await clear();
     expect(state.busy).toBe(true);
     await frames();
     await decodeSettles();
-    expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
+    expect(await saved()).toEqual(emptyDrawing(2, 'flower'));
     expect(state.recovery.failed).toBe(false);
     await undo();
     expect(state.busy).toBe(true);
     await frames();
-    expect(await saved()).toEqual(fixture);
+    expect(await saved()).toEqual({ ...fixture, rainbow: 2 });
     expect(sdk.dimensions.size).toBe(0);
   });
   it('clears a visually blank recorded log without adding an Undo entry', async () => {
@@ -259,7 +261,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await clear();
     await frames();
     await decodeSettles();
-    expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
+    expect(await saved()).toEqual(emptyDrawing(2, 'flower'));
     expect(state.history.undo).toEqual([]);
   });
   it('retains exact drawing and history on a dimension event before decoding', async () => {
@@ -320,7 +322,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     });
     await frames();
     await decodeSettles();
-    expect(state.history.drawing).toEqual(emptyDrawing(6, 'flower'));
+    expect(state.history.drawing).toEqual(emptyDrawing(2, 'flower'));
   });
   it('refuses corrupt-tail Clear without converting failure into empty or offering renderer Retry', async () => {
     await opened();
@@ -354,7 +356,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     expect(state.surface.current).toBe(handle);
     await decodeSettles();
     expect(state.surface.current).toBe(handle);
-    expect(state.history.drawing).toEqual(emptyDrawing(6, 'flower'));
+    expect(state.history.drawing).toEqual(emptyDrawing(2, 'flower'));
   });
   it('refuses a duplicate command and remains locked through actual cooperative decode', async () => {
     await openHook();
@@ -373,7 +375,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     expect(state.busy).toBe(true);
     await decodeSettles();
     expect(state.busy).toBe(false);
-    expect(state.history.drawing).toEqual(emptyDrawing(6, 'flower'));
+    expect(state.history.drawing).toEqual(emptyDrawing(2, 'flower'));
   });
   it('cancels an old mounted request on unmount and ignores its late callback in a replacement owner', async () => {
     await openHook();
@@ -391,7 +393,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await act(async () => root.render(createElement(HookSurface)));
     await act(async () => old.callback(paintedPng));
     await decodeSettles();
-    expect(state.history.drawing).toEqual(emptyDrawing());
+    expect(state.history.drawing).toEqual(emptyDrawing(2));
     expect(original.drawing).toEqual(fixture);
   });
   it('recovers a real main-renderer fault through its current recovery owner, refuses the old callback and then permits Clear', async () => {
@@ -407,11 +409,11 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await clear();
     await frames();
     await decodeSettles();
-    expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
+    expect(await saved()).toEqual(emptyDrawing(2, 'flower'));
     await undo();
     expect(state.busy).toBe(true);
     await frames();
-    expect(await saved()).toEqual(fixture);
+    expect(await saved()).toEqual({ ...fixture, rainbow: 2 });
   });
   it('rejects a superseded current-drawing capture and allows the same stable owner to capture its replacement', async () => {
     const ref = { current: null },

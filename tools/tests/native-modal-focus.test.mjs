@@ -1,13 +1,34 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ModalShell } from '../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
 import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
 // only React Strict DOM is reduced to the plain elements its web build emits.
 vi.mock('react-native', async () => import('react-native-web'));
+vi.mock(
+  '../../experiments/native-architecture/src/platform/bootAppearance.ts',
+  () => import('../../experiments/native-architecture/src/platform/bootAppearance.web.ts')
+);
+const scrollChunk = vi.hoisted(() => ({ release: null }));
+vi.mock(
+  '../../experiments/native-architecture/src/platform/ScrollView.ts',
+  () => import('../../experiments/native-architecture/src/platform/ScrollView.web.ts')
+);
+vi.mock('../../experiments/native-architecture/src/platform/ScrollViewContent.web.ts', async () => {
+  await new Promise((resolve) => {
+    scrollChunk.release = resolve;
+  });
+  return { ScrollView: (await import('react-native-web')).ScrollView };
+});
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
+);
+
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
@@ -30,7 +51,7 @@ vi.mock('react-native-svg', () => ({
 }));
 vi.mock('react-strict-dom', () => ({
   html: Object.fromEntries(
-    ['div', 'span', 'button', 'header', 'h1', 'h2', 'p'].map((tag) => [
+    ['div', 'span', 'button', 'header', 'h1', 'h2', 'p', 'main'].map((tag) => [
       tag,
       ({ style: _style, 'data-testid': testId, ...props }) =>
         createElement(tag, { ...props, 'data-testid': testId }),
@@ -73,6 +94,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  scrollChunk.release?.();
   await act(async () => root.unmount());
   document.body.replaceChildren();
   HTMLElement.prototype.focus = domFocus;
@@ -110,6 +132,40 @@ const tabStops = () =>
   [...document.querySelectorAll('[role="dialog"] button, [role="dialog"] [tabindex]')]
     .filter((node) => node.getAttribute('tabindex') !== '-1' && !node.disabled)
     .map((node) => node.getAttribute('aria-label') ?? node.textContent);
+
+it('keeps a cold dialog Close live and lands an information heading when its real web scroller mounts', async () => {
+  const opener = document.createElement('button');
+  opener.textContent = 'Privacy';
+  document.body.append(opener);
+  opener.focus();
+  await act(async () => root.render(dialog(undefined)));
+  await act(async () => vi.waitFor(() => expect(scrollChunk.release).toBeTypeOf('function')));
+  expect(document.activeElement.getAttribute('aria-label')).toBe('Close');
+  expect(host.textContent).not.toContain('Sound');
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+  const scroll = createRef();
+  await act(async () =>
+    root.render(
+      createElement(
+        RsdPageSheet,
+        { title: 'Privacy', lede: 'Privacy details', scrollRef: scroll },
+        createElement('p', null, 'Privacy content')
+      )
+    )
+  );
+  await act(async () => vi.waitFor(() => expect(scrollChunk.release).toBeTypeOf('function')));
+  expect(host.querySelector('h1')).toBeNull();
+  expect(scroll.current).toBeNull();
+  expect(document.activeElement).toBe(opener);
+  await act(async () => scrollChunk.release());
+  await act(async () => vi.waitFor(() => expect(host.querySelector('h1')).not.toBeNull()));
+  expect(document.activeElement).toBe(host.querySelector('h1'));
+  expect(scroll.current.getScrollableNode()).toBeInstanceOf(HTMLElement);
+  expect(scroll.current.scrollTo).toBeTypeOf('function');
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+});
 
 it('lands initial focus on the header Close, as shipping showModal() does, never on the scrim', async () => {
   await open(undefined);

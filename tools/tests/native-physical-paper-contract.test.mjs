@@ -92,7 +92,9 @@ describe('drawing-level physical paper reference', () => {
     expect(semanticWidth(22, reopened.paper) * (760 / 1024)).toBeCloseTo((22 * 760) / 342, 12);
     const cleared = clearDrawing(continued, false);
     expect(cleared.drawing.paper).toEqual({ kind: 'unadopted' });
-    expect(undoDrawing(cleared).drawing).toBe(continued.drawing);
+    const restored = undoDrawing(cleared).drawing;
+    expect(restored).toEqual({ ...continued.drawing, rainbow: cleared.drawing.rainbow });
+    expect(restored.paper).toBe(continued.drawing.paper);
   });
 
   it('rejects absent adoption and reference substitution without mutating history', () => {

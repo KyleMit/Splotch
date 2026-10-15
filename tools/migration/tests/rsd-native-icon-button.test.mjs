@@ -85,7 +85,7 @@ describe('RsdIconButton', () => {
     expect(host.timings.at(-1)).toMatchObject({ useNativeDriver: true });
   });
 
-  it('rings a selected tile in the brand and reports it checked', async () => {
+  it('rings a selected tile in the brand and exposes native selected state', async () => {
     await mount(
       h(RsdIconButton, {
         skin: 'tile',
@@ -93,14 +93,13 @@ describe('RsdIconButton', () => {
         label: 'Crayon',
         size: TILE_PX,
         ink: '#e53935',
-        selection: 'switch',
         selected: true,
         onPress: vi.fn(),
       })
     );
     const tile = control('Crayon');
-    expect(tile.role).toBe('switch');
-    expect(tile.accessibilityState).toMatchObject({ checked: true });
+    expect(tile.role).toBe('button');
+    expect(tile.accessibilityState).toMatchObject({ selected: true });
     expect(tile.style).toMatchObject({
       borderColor: brand.brand,
       backgroundColor: themes.light.brandWash,
@@ -146,14 +145,13 @@ describe('RsdIconButton', () => {
         label: 'Option',
         base: TILE_PX,
         scale: 1,
-        selection: 'radio',
         selected: true,
         onPress: vi.fn(),
       })
     );
     const option = control('Option');
-    expect(option.role).toBe('radio');
-    expect(option.accessibilityState).toMatchObject({ checked: true });
+    expect(option.role).toBe('button');
+    expect(option.accessibilityState).toMatchObject({ selected: true });
     expect(option.style).toMatchObject({
       padding: 7,
       borderRadius: TILE_PX * 0.3,
@@ -176,13 +174,12 @@ describe('RsdIconButton', () => {
         base: TILE_PX,
         scale: 1,
         ink: '#1e88e5',
-        selection: 'radio',
         selected: false,
         onPress: vi.fn(),
       }),
       { mode: 'dark' }
     );
-    expect(control('Pen').accessibilityState).toMatchObject({ checked: false });
+    expect(control('Pen').accessibilityState).toMatchObject({ selected: false });
     expect(control('Pen').style).toMatchObject({
       backgroundColor: themes.dark.floatSurface,
       borderColor: rgba(themes.dark.floatBorder),

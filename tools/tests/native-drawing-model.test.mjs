@@ -1,12 +1,18 @@
-import { legacyDrawing } from './native-paper-fixtures.mjs';
-import { describe, expect, it } from 'vitest';
+import { canonicalPaper, legacyDrawing } from './native-paper-fixtures.mjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAX_UNDO_DEPTH } from '../../web/src/lib/drawing/undoHistory.ts';
+import { createDrawingSession } from '../../experiments/native-architecture/src/product/createDrawingSession.ts';
+import {
+  createRainbowGradient,
+  MAGIC_GRADIENT_COUNT,
+} from '../../web/src/lib/drawing/magicSheetGradient.ts';
 import {
   addStroke,
   appendPoint,
   clearDrawing,
   commitDrawing,
   createHistory,
+  strokeStyle,
   parseDrawing,
   paperPoint,
   undoDrawing,
@@ -21,7 +27,60 @@ const firstStroke = {
   ],
 };
 
+afterEach(() => vi.restoreAllMocks());
+
 describe('native development drawing model', () => {
+  it('holds a lazy pool of shipping-generated random rainbows through repeated rendering', async () => {
+    const values = [0.05, 0.95, 0.25, 0.75, 0.45, 0.55, 0.15, 0.85, 0.35, 0.65, 0.1];
+    const sequence = () => {
+      let index = 0;
+      return () => values[index++ % values.length];
+    };
+    const random = vi.spyOn(Math, 'random').mockImplementation(sequence());
+    vi.resetModules();
+    const { rainbow, MAGIC_RAINBOW_COUNT } =
+      await import('../../experiments/native-architecture/src/drawing/brushes.ts');
+    expect(random).not.toHaveBeenCalled();
+    expect(MAGIC_RAINBOW_COUNT).toBe(MAGIC_GRADIENT_COUNT);
+    const shippingRandom = vi.fn(sequence());
+    const expected = Array.from({ length: MAGIC_GRADIENT_COUNT }, () =>
+      createRainbowGradient(shippingRandom)
+    );
+    const pool = expected.map((_, index) => rainbow(index));
+    expect(pool).toEqual(expected);
+    expect(new Set(pool.map((gradient) => JSON.stringify(gradient))).size).toBeGreaterThan(1);
+    const generated = random.mock.calls.length;
+    expect(generated).toBe(shippingRandom.mock.calls.length);
+    for (const [index, gradient] of pool.entries()) expect(rainbow(index)).toBe(gradient);
+    expect(random).toHaveBeenCalledTimes(generated);
+  });
+
+  it('randomly chooses and holds a rainbow while Clear and Undo preserve the replacement for new ink', () => {
+    const firstRandom = 0.71;
+    const clearRandom = 0.24;
+    const random = vi
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(firstRandom)
+      .mockReturnValueOnce(clearRandom);
+    const first = createDrawingSession().getSnapshot();
+    const chosen = Math.floor(firstRandom * MAGIC_GRADIENT_COUNT);
+    expect(first.drawing.rainbow).toBe(chosen);
+    const magic = strokeStyle('magic', 'Purple', first.drawing);
+    expect(magic.rainbow).toBe(chosen);
+    strokeStyle('pen', 'Blue', first.drawing);
+    expect(strokeStyle('magic', 'Blue', first.drawing)).toEqual(magic);
+    expect(random).toHaveBeenCalledOnce();
+    const inked = addStroke(first, { ...magic, points: [{ x: 10, y: 20 }] }, canonicalPaper());
+    const cleared = clearDrawing(inked, false);
+    expect(cleared.drawing.rainbow).toBe(Math.floor(clearRandom * MAGIC_GRADIENT_COUNT));
+    expect(random).toHaveBeenCalledTimes(2);
+    const restored = undoDrawing(cleared);
+    expect(restored.drawing.strokes).toBe(inked.drawing.strokes);
+    expect(restored.drawing.strokes[0].rainbow).toBe(chosen);
+    expect(restored.drawing.rainbow).toBe(cleared.drawing.rainbow);
+    expect(strokeStyle('magic', 'Blue', restored.drawing).rainbow).toBe(cleared.drawing.rainbow);
+  });
+
   it('keeps drawing beyond the former stroke and point caps', () => {
     const stroke = { ...firstStroke, width: 22 };
     const manyStrokes = { ...legacyDrawing(), strokes: Array.from({ length: 1000 }, () => stroke) };
@@ -56,7 +115,10 @@ describe('native development drawing model', () => {
     const snapshot = JSON.stringify(original.drawing);
     const cleared = clearDrawing(original, false);
     expect(cleared.drawing.strokes).toEqual([]);
-    expect(undoDrawing(cleared).drawing).toEqual(original.drawing);
+    expect(undoDrawing(cleared).drawing).toEqual({
+      ...original.drawing,
+      rainbow: cleared.drawing.rainbow,
+    });
     const opened = commitDrawing(cleared, parseDrawing(JSON.parse(snapshot)));
     expect(undoDrawing(opened).drawing.strokes).toEqual([]);
     expect(JSON.stringify(original.drawing)).toBe(snapshot);
