@@ -9,7 +9,13 @@ import {
   inkVerdict,
   useVisibleInk,
 } from '../../experiments/native-architecture/src/drawing/inkVisibility.ts';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  emptyDrawing,
+  createHistory,
+  clearDrawing,
+  undoDrawing,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 
 const point = { x: 10, y: 10 };
 const pen = { brush: 'pen', width: 8, color: 'Purple', points: [point] };
@@ -104,6 +110,34 @@ describe('the drawing owner’s visible-ink state', () => {
     await show(blank);
     expect(visible).toBe(false);
     expect(scan).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a scan through Clear Undo while isolating page and paper changes', async () => {
+    const partial = drawn(pen, eraser);
+    await lift(partial);
+    await idleFor(EMPTY_SCAN_IDLE_MS);
+    expect(ink.empty(partial)).toBe(true);
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.71);
+    let restored;
+    try {
+      restored = undoDrawing(clearDrawing(createHistory(partial), false)).drawing;
+    } finally {
+      random.mockRestore();
+    }
+    expect(restored).not.toBe(partial);
+    expect(restored.rainbow).toBe(7);
+    await show(restored);
+    expect(visible).toBe(false);
+    expect(ink.empty(restored)).toBe(true);
+    for (const changed of [
+      { ...restored, pageId: 'turtle' },
+      { ...restored, paper: adoptPaper(768, 1024, 1) },
+    ]) {
+      await show(changed);
+      expect(visible).toBe(true);
+      expect(ink.empty(changed)).toBeUndefined();
+    }
+    expect(scan).toHaveBeenCalledOnce();
   });
 
   it('waits another idle stretch when the paper is busy, and stops at a page it cannot read', async () => {

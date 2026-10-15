@@ -53,6 +53,13 @@ export type History = Readonly<{
   undo: readonly Drawing[];
 }>;
 
+// An Undo copy that only changes the next Magic choice retains every existing pixel and scan.
+const inkIdentities = new WeakMap<Drawing, Drawing>();
+
+export function drawingInkIdentity(drawing: Drawing): Drawing {
+  return inkIdentities.get(drawing) ?? drawing;
+}
+
 export function emptyDrawing(
   rainbow = INITIAL_RAINBOW,
   pageId: PageId = 'blank'
@@ -138,6 +145,7 @@ export function undoDrawing(history: History): History {
       : { ...previous, pageId: current.pageId };
   const drawing =
     restored.rainbow === current.rainbow ? restored : { ...restored, rainbow: current.rainbow };
+  if (drawing !== restored) inkIdentities.set(drawing, drawingInkIdentity(restored));
   return { drawing, undo: history.undo.slice(0, -1) };
 }
 
