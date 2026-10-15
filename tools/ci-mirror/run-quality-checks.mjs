@@ -7,6 +7,7 @@ import { runJobCommands, summarizeJob } from './lib/job-mirror.mjs';
 export const QUALITY_COMMANDS = [
   'npm run format:check',
   'npm run check',
+  'npm run check:migration:types',
   'npm run lint',
   'npm run lint:css',
   'npm run check:svg-assets',

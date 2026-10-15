@@ -10,32 +10,33 @@ real-device launch tests run only on tagged releases. The native shells still co
 that touches a native input, in a path-filtered workflow nothing waits on. ADR-0100's 2026-08-11
 amendment records why its obsolete pre-merge blob-encoding guard retired.
 
-| Layer                 | Tool                | Command                             | Runs in CI                                   |
-| --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`        | every push / PR                              |
-| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
-| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
-| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer/consumer paths + manual dispatch      |
-| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
-| E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
-| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (browserless job)            |
-| Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`         | daily production + manual deploy URL         |
-| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`        | every push / PR (parallel job)               |
-| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
-| Compile (Android)     | Gradle javac        | `npm run android:compile`           | PRs touching native inputs (path-filtered)   |
-| Compile (iOS)         | xcodebuild          | `npm run ios:build:release`         | PRs touching native inputs (macOS runner)    |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
-| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
-| WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
+| Layer                 | Tool                | Command                                | Runs in CI                                   |
+| --------------------- | ------------------- | -------------------------------------- | -------------------------------------------- |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`           | every push / PR                              |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`               | every push / PR                              |
+| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`          | every push / PR                              |
+| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`      | tracer/consumer paths + manual dispatch      |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                   | every push / PR                              |
+| Unit (RN renderer)    | Vitest (happy-dom)  | `npm run test:migration:rsd-selection` | every push / PR (browserless job)            |
+| E2E (web)             | Playwright          | `npm run test:e2e`                     | every push / PR                              |
+| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`               | every push / PR (browserless job)            |
+| Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`            | daily production + manual deploy URL         |
+| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`           | every push / PR (parallel job)               |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`            | every push / PR (parallel job)               |
+| Compile (Android)     | Gradle javac        | `npm run android:compile`              | PRs touching native inputs (path-filtered)   |
+| Compile (iOS)         | xcodebuild          | `npm run ios:build:release`            | PRs touching native inputs (macOS runner)    |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`                 | **tagged releases only** (API 33 + API 24)   |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                     | **tagged releases only** (macOS runner)      |
+| WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast`    | pushes to `main`; full suite on release tags |
 
-A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
-`pnpm audit --audit-level=high`) also runs on every push/PR alongside the tests — see Continuous
-integration below. Two commands reproduce the non-browser half of that gate before a push, each in
-CI's order and each continuing past a failure so one run reports everything: `npm run check:quality`
-mirrors the `quality` job, and `npm run test:browserless` mirrors the `browserless` job — the four
-Vitest tiers plus `test:api:smoke`, about a minute locally. A tools test per script reads its job's
-steps out of `test.yml` and fails on drift. The hosted deploy smoke runs separately against real
-deployments; its narrower `test:blobs:smoke` diagnostic is manual.
+A separate `quality` CI job (the web and native candidate type checks, ESLint, Prettier
+`--format:check`, and `pnpm audit --audit-level=high`) also runs on every push/PR alongside the
+tests — see Continuous integration below. Two commands reproduce the non-browser half of that gate
+before a push, each in CI's order and each continuing past a failure so one run reports everything:
+`npm run check:quality` mirrors the `quality` job, and `npm run test:browserless` mirrors the
+`browserless` job — the five Vitest tiers plus `test:api:smoke`. A tools test per script reads its
+job's steps out of `test.yml` and fails on drift. The hosted deploy smoke runs separately against
+real deployments; its narrower `test:blobs:smoke` diagnostic is manual.
 
 Before pushing a deletion that may leave an export unused, run `npm run lint:dead`. An edit to the
 inline boot script in `web/src/app.html` also needs its CSP hash checked through
@@ -879,14 +880,15 @@ npm run test:android:device     # re-run as often as you like
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
-`test:store-drawings` + `test:tools`) run in a browser-free `browserless` job
-(`npm run test:browserless` locally), and the Playwright e2e suite runs as a matrix in `Tests` —
-each shard builds the app itself (a shared build artifact was measured slower: it serializes shards
-behind `needs:`), and each uploads its own `playwright-report-shard-N` artifact. The app-driver and
-worker-sweep smokes ride shard 1 only. With `fullyParallel` on, `--shard` deals out individual tests
-(not files) in a deterministic order, balanced by count and blind to duration — so the longest shard
-is bounded by the slowest single test, which lives among the deliberately heavy stress tests of
-`tests/flows-tile-history.spec.ts` (the header comment there explains why their cost is intrinsic).
+`test:store-drawings` + `test:tools` + `test:migration:rsd-selection`) run in a browser-free
+`browserless` job (`npm run test:browserless` locally), and the Playwright e2e suite runs as a
+matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured slower:
+it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`
+artifact. The app-driver and worker-sweep smokes ride shard 1 only. With `fullyParallel` on,
+`--shard` deals out individual tests (not files) in a deterministic order, balanced by count and
+blind to duration — so the longest shard is bounded by the slowest single test, which lives among
+the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts` (the header comment there
+explains why their cost is intrinsic).
 
 The 2026-08-19 shard-count measurement is preserved in the
 [shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring

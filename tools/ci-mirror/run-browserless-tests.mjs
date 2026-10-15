@@ -11,6 +11,7 @@ export const BROWSERLESS_TEST_COMMANDS = [
   'npm run test:asset-gen',
   'npm run test:store-drawings',
   'npm run test:tools',
+  'npm run test:migration:rsd-selection',
   'npm run test:api:smoke',
 ];
 

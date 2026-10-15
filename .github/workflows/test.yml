@@ -81,6 +81,11 @@ jobs:
       - name: Type check
         run: npm run check
 
+      # The React Native candidate in experiments/native-architecture is its own TypeScript
+      # project, which `npm run check` does not reach.
+      - name: Native candidate type check
+        run: npm run check:migration:types
+
       - name: Lint
         run: npm run lint
 
@@ -184,6 +189,12 @@ jobs:
 
       - name: Run repo-script tests
         run: npm run test:tools
+
+      # The RN candidate's drawing-screen tests mount through the released native react-strict-dom
+      # renderer, an alias test:tools cannot carry, so they run as their own tier. Its pre hook
+      # generates web/.svelte-kit, which the web/src modules those tests import need.
+      - name: Run RSD native-renderer tests
+        run: npm run test:migration:rsd-selection
 
       # The /api/* contract (CORS/preflight, admin auth, oracle shapes, the
       # canonical error envelope) has no other per-PR coverage. The hosted

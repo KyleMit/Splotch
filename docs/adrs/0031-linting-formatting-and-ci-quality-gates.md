@@ -6,7 +6,7 @@ dependency audit raised from critical to high; amended 2026-09: the silently-fol
 ratified as rules — issue 1529; stylelint adopted for CSS and Svelte `<style>` blocks — issue 1859;
 five auto-fixable notation rules adopted through one isolated reformat — issue 1861; unpinned
 `:global()` selectors ratcheted — issue 1938; amended 2026-10: React's two hooks rules adopted for
-the native candidate — issue 2690)
+the native candidate, whose type check joins the quality job — issue 2690)
 
 ## Context
 
@@ -305,6 +305,12 @@ choices:
   `--ignore-unfixable`, and `--ignore-registry-errors` are not exception mechanisms.
 * **`precheck` runs `svelte-kit sync`** so `npm run check` generates `.svelte-kit/tsconfig.json` and
   works standalone in CI (mirrors `predev`).
+* **The native candidate's TypeScript project is type-checked in the quality job** (amended 2026-10,
+  issue 2690). `experiments/native-architecture/tsconfig.json` is a project `npm run check` never
+  reads, so `npm run check:migration:types` runs `tsc --noEmit` over it as its own step, and
+  `npm run check:quality` mirrors it. `tools/migration/tests/native-ci-wiring.test.mjs` fails if the
+  step leaves the job, or if the workflow's pull-request trigger gains a branch or path filter that
+  would skip the candidate's pull requests.
 
 New scripts: `lint`, `lint:fix`, `format`, `format:check` (with `scripts-info` entries, ADR-0019).
 The `quality` job runs type-check + lint + format:check + audit on every push/PR, parallel to the

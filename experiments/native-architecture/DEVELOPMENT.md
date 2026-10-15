@@ -8,6 +8,19 @@ native smoke flow.
 Install JavaScript dependencies once with `pnpm install` at the repository root. The app has no
 separate install step; Metro and the native builds resolve packages from the root `node_modules`.
 
+## Checks
+
+CI runs three checks over this app on every pull request, alongside the web app's:
+
+* `npm run check:migration:types` type-checks this app's own TypeScript project (`tsconfig.json`),
+  which `npm run check` does not reach. It runs in the Quality job.
+* `npm run test:migration:rsd-selection` mounts the drawing screen's tests
+  (`tools/migration/tests/rsd-native-*.test.mjs`) through the released native react-strict-dom
+  renderer. It runs in the Browserless tests job.
+* `npm run lint` holds `src/` to React's rules of hooks and exhaustive effect dependencies.
+
+`tools/migration/tests/native-ci-wiring.test.mjs` fails if either command leaves its job.
+
 ## iOS
 
 ```sh
