@@ -29,6 +29,7 @@ import { WHATS_NEW_STAMP } from './whatsNewStamp';
 import { DEFAULT_PENCIL_SETTINGS } from './pencilEraser';
 import { DEFAULT_AI_PREFERENCES, createAiActions } from './aiPreferences';
 import { createParentSaves } from './parentSaves';
+import { createLatestWriter, createSettingsReset, createWriteQueue } from './settingsWriteQueue';
 import {
   readStoredSettings,
   UNREAD_SETTINGS_MESSAGES,
@@ -135,9 +136,6 @@ type PreferenceActionContext = {
   persist: (settings: SoundSettings) => Promise<void>;
 };
 
-const SETTINGS_SAVE_FAILED_MESSAGE =
-  'Your settings work for this session, but could not be saved. Please retry.';
-
 // What the app records about itself rather than a choice a parent makes.
 type SettingsMetadata = Partial<Pick<Choices, 'whatsNewSeen' | 'applePencilSeen'>>;
 
@@ -146,75 +144,6 @@ function unrecorded(state: SoundSettingsState, metadata: SettingsMetadata): Sett
   return {
     ...(whatsNewSeen !== undefined && whatsNewSeen !== state.whatsNewSeen ? { whatsNewSeen } : {}),
     ...(applePencilSeen && !state.applePencilSeen ? { applePencilSeen } : {}),
-  };
-}
-
-// Shipping stores every choice synchronously, so its Settings never refuse or dim a choice for a
-// save. Here a choice lands in the state at once and its write follows. Writes run one at a time
-// and each carries the choices as they stand when it starts, so a choice made during another's
-// write is kept, and the record never goes back to an older one. A choice made while one write
-// waits joins that write.
-function createLatestWriter(
-  storage: SoundSettingsStorage,
-  serialize: (write: () => Promise<void>) => Promise<void>,
-  {
-    getState,
-    isDisposed,
-    publish,
-    hasPendingParent,
-  }: Pick<PreferenceActionContext, 'getState' | 'isDisposed' | 'publish'> & {
-    hasPendingParent: () => boolean;
-  }
-) {
-  let revision = 0;
-  let waiting: Promise<void> | null = null;
-  // A Parent Center save in flight owns the status, and a failed one keeps its retry until its
-  // own section retries it, so only the latest write of a ready record settles it.
-  function settle(written: number, landed: boolean) {
-    const state = getState();
-    if (isDisposed() || written !== revision || state.status !== 'ready') return;
-    if (!landed)
-      publish({
-        ...state,
-        saved: false,
-        message: state.saved ? SETTINGS_SAVE_FAILED_MESSAGE : state.message,
-      });
-    else if (!hasPendingParent() && (!state.saved || state.message))
-      publish({ ...state, saved: true, message: '' });
-  }
-  return function writeLatest(): Promise<void> {
-    revision += 1;
-    if (waiting) return waiting;
-    const job = { started: false };
-    const write = serialize(async () => {
-      job.started = true;
-      waiting = null;
-      const written = revision;
-      const state = getState();
-      if (isDisposed() || state.status === 'loading') return;
-      try {
-        await storage.write(JSON.stringify(snapshot(state)));
-        settle(written, true);
-      } catch {
-        settle(written, false);
-      }
-    });
-    if (!job.started) waiting = write;
-    return write;
-  };
-}
-
-// Runs each write after the one before it has settled, and an idle queue's write at once.
-function createWriteQueue() {
-  let tail: Promise<void> | null = null;
-  return function serialize(write: () => Promise<void>): Promise<void> {
-    const run = tail ? tail.then(write) : write();
-    const settled = run.catch(() => undefined);
-    tail = settled;
-    void settled.then(() => {
-      if (tail === settled) tail = null;
-    });
-    return run;
   };
 }
 
@@ -454,6 +383,7 @@ export function createSoundSettings(
     isDisposed: () => disposed,
     publish,
     hasPendingParent: () => parent.hasPending(),
+    encode: (current) => JSON.stringify(snapshot(current)),
   });
   // The choice shows at once, with nothing left to retry, as shipping's synchronous storage
   // shows it; a write that does not land brings the retry back.
@@ -480,8 +410,17 @@ export function createSoundSettings(
     flushMetadata: () => metadata.flushMetadata(),
   });
   const metadata = createMetadataActions({ ...actionContext, writeLatest });
-  const canResetSavedSettings = () =>
-    !disposed && state.status === 'ready' && readFailure === 'malformed';
+  const reset = createSettingsReset(storage, serialize, {
+    ...actionContext,
+    defaults: () => snapshot(defaultSoundSettings()),
+    getReadFailure: () => readFailure,
+    recovered() {
+      readFailure = null;
+    },
+    unreadState: () => unreadSoundSettingsState(sessionPaint(state), 'malformed'),
+    paint: () => sessionPaint(state),
+    flushMetadata: metadata.flushMetadata,
+  });
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
@@ -540,29 +479,7 @@ export function createSoundSettings(
       readFailure = null;
       publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
     },
-    async resetSavedSettings() {
-      if (!canResetSavedSettings()) return;
-      const defaults = snapshot(defaultSoundSettings());
-      const { version: _version, ...choices } = defaults;
-      publish({ ...state, status: 'saving', message: '' });
-      await serialize(async () => {
-        try {
-          await storage.write(JSON.stringify(defaults));
-          readFailure = null;
-          publish({
-            status: 'ready',
-            ...choices,
-            ...sessionPaint(state),
-            saved: true,
-            message: '',
-          });
-        } catch {
-          publish(unreadSoundSettingsState(sessionPaint(state), 'malformed'));
-        }
-      });
-      await metadata.flushMetadata();
-    },
-    canResetSavedSettings,
+    ...reset,
     // Ordinary retries cannot replace an unreadable record without the parent's explicit reset.
     retryCanRecover: () => readFailure !== 'malformed' && readFailure !== 'newer',
     canEditParent: () => !disposed && readFailure === null && state.status === 'ready',

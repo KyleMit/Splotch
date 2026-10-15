@@ -153,7 +153,7 @@ describe('Save picture', () => {
 
 describe('Auto-Save on Delete', () => {
   it(
-    'saves the picture to the photo library before Clear wipes the paper',
+    'captures before Clear wipes the paper and saves afterward',
     async () => {
       await mountWith(SETTINGS_V9(true));
       await screen.click('Draw fixture stroke');
@@ -164,7 +164,7 @@ describe('Auto-Save on Delete', () => {
       };
       await screen.menuClick('Clear');
       await settle(() => expect(strokesOnPaper()).toBe(0));
-      expect(strokesWhenSaved).toBe(1);
+      expect(strokesWhenSaved).toBe(0);
       expect(photos.created.map(({ base64 }) => base64)).toEqual([EXPORTED_PNG]);
       expect(files.capture).toHaveBeenCalledWith(drawing);
       expect(files.save).not.toHaveBeenCalled();
@@ -175,7 +175,7 @@ describe('Auto-Save on Delete', () => {
   );
 
   it(
-    'keeps the picture on the paper when the photo library refuses it',
+    'clears the paper and reports the captured picture when Photos refuses it',
     async () => {
       photos.permission = 'denied';
       await mountWith(SETTINGS_V9(true));
@@ -183,8 +183,23 @@ describe('Auto-Save on Delete', () => {
       await screen.menuClick('Clear');
       const shipping = saveFailureCopy('denied', 1, 'android');
       await settle(() => expect(screen.container.textContent).toContain(shipping.detail));
-      expect(strokesOnPaper()).toBe(1);
+      expect(strokesOnPaper()).toBe(0);
       expect(photos.created).toEqual([]);
+    },
+    SAVE_TEST_TIMEOUT_MS
+  );
+
+  it.each(['capture', 'photos'])(
+    'clears after an Auto-Save on Delete %s failure and reports the failed save',
+    async (failure) => {
+      if (failure === 'capture') files.capture.mockRejectedValueOnce(new Error('capture failed'));
+      else photos.createError = new Error('Photos failed');
+      await mountWith(SETTINGS_V9(true));
+      await screen.click('Draw fixture stroke');
+      await screen.menuClick('Clear');
+      const shipping = saveFailureCopy('failed', failure === 'capture' ? 0 : 1, 'android');
+      await settle(() => expect(screen.container.textContent).toContain(shipping.detail));
+      expect(strokesOnPaper()).toBe(0);
     },
     SAVE_TEST_TIMEOUT_MS
   );
@@ -208,6 +223,9 @@ describe('Auto-Save on Delete', () => {
     async () => {
       files.ink.mockResolvedValue(BLANK_PAPER);
       await mountWith(SETTINGS_V9(true));
+      await screen.click('Draw fixture stroke');
+      await screen.menuClick('Eraser');
+      await screen.click('Keep drawing');
       await screen.click('Draw fixture stroke');
       await screen.menuClick('Clear');
       await settle(() => expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(1)));

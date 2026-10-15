@@ -2,8 +2,7 @@ import { isUnsaved, type PictureSaveOutcome, type UnsavedOutcome } from './pictu
 import type { PictureFormat } from './pictureFilename';
 
 // The shipping Save Failure Banner's owner (web/src/lib/state/saveFailure.svelte.ts), held in
-// memory: no copy of a picture outlives the app, so a picture still unsaved when the app closes
-// stays only on the paper it was drawn on.
+// memory: no copy of an unsaved picture outlives the app.
 
 // A picture whose save did not land, held as the exact PNG that was captured. Try again saves
 // these bytes, never a fresh capture: by the time a parent reads the banner the paper may have

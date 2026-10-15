@@ -7,7 +7,10 @@ import {
   pictureFilename,
 } from '../../experiments/native-architecture/src/export/pictureFilename.ts';
 import { keepAiPicture } from '../../experiments/native-architecture/src/ai/keepAiPicture.ts';
-import { keepPicture } from '../../experiments/native-architecture/src/keepPicture.ts';
+import {
+  capturePicture,
+  savePicture,
+} from '../../experiments/native-architecture/src/keepPicture.ts';
 import { saveFailureCopy as nativeSaveFailureCopy } from '../../experiments/native-architecture/src/export/pictureSave.ts';
 import {
   AI_IMAGE_BASENAME as SHIPPING_AI_BASENAME,
@@ -110,10 +113,9 @@ describe('saving a picture on the web', () => {
 
   it('keeps a picture by downloading it, with the PNG it captured', async () => {
     const paper = surface(PNG);
-    expect(await keepPicture({ strokes: [] }, paper)).toEqual({
-      outcome: 'downloads',
-      pngBase64: PNG,
-    });
+    const pngBase64 = await capturePicture({ strokes: [] }, paper);
+    expect(pngBase64).toBe(PNG);
+    expect(await savePicture(pngBase64)).toBe('downloads');
     expect(downloads).toHaveLength(1);
   });
 
@@ -121,23 +123,16 @@ describe('saving a picture on the web', () => {
     URL.createObjectURL.mockImplementation(() => {
       throw new Error('blocked');
     });
-    expect(await keepPicture({ strokes: [] }, surface(PNG))).toEqual({
-      outcome: 'failed',
-      pngBase64: PNG,
-    });
+    const pngBase64 = await capturePicture({ strokes: [] }, surface(PNG));
+    expect(pngBase64).toBe(PNG);
+    expect(await savePicture(pngBase64)).toBe('failed');
     expect(downloads).toEqual([]);
   });
 
   it('reports a capture that produced nothing as a failed save with no picture to retry', async () => {
-    expect(await keepPicture({ strokes: [] }, surface(undefined))).toEqual({
-      outcome: 'failed',
-      pngBase64: null,
-    });
+    expect(await capturePicture({ strokes: [] }, surface(undefined))).toBeNull();
     const thrown = { exportPng: vi.fn(async () => Promise.reject(new Error('lost'))) };
-    expect(await keepPicture({ strokes: [] }, thrown)).toEqual({
-      outcome: 'failed',
-      pngBase64: null,
-    });
+    expect(await capturePicture({ strokes: [] }, thrown)).toBeNull();
     expect(downloads).toEqual([]);
   });
 

@@ -16,9 +16,9 @@ import {
   type Drawing,
 } from './drawing/model';
 import { savedColoringPageIds } from './platform/drawingFiles';
-import { capturePicture, keepPicture, savePicture } from './keepPicture';
+import { capturePicture, savePicture } from './keepPicture';
 import { isUnsaved, type UnsavedOutcome } from './export/pictureSave';
-import { usePolaroidFlights, useSaveFailure } from './useSavePicture';
+import { usePolaroidFlights, useSaveFailure, useSaveAction } from './useSavePicture';
 import { useDrawingMessages } from './drawingMessages';
 import { useBrushPreferences } from './useBrushPreferences';
 import {
@@ -115,7 +115,7 @@ export function useDrawingScreen() {
     replacementGuard
   );
 
-  const save = createSave({
+  const save = useSaveAction({
     historyRef,
     surface,
     runCommand,
@@ -337,47 +337,6 @@ function useDrawingSettings({
   };
 }
 
-// The polaroid starts as soon as the picture is captured, so the child sees the save answer at
-// once; a save that turns out not to land takes it back, and the parent's explanation and Try
-// again go to the Save Failure Banner with the captured picture. A success says nothing more.
-function createSave({
-  historyRef,
-  surface,
-  runCommand,
-  setNotice,
-  flights,
-  reportSaveFailure,
-}: {
-  historyRef: RefObject<History>;
-  surface: RefObject<DrawingSurfaceHandle | null>;
-  runCommand: (action: () => Promise<void>) => Promise<void>;
-  setNotice: (notice: string) => void;
-  flights: ReturnType<typeof usePolaroidFlights>;
-  reportSaveFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void;
-}) {
-  return async () => {
-    const capture: { started: boolean; pngBase64: string | null; flight: number | null } = {
-      started: false,
-      pngBase64: null,
-      flight: null,
-    };
-    await runCommand(async () => {
-      capture.started = true;
-      const drawing = historyRef.current.drawing;
-      capture.pngBase64 = await capturePicture(drawing, surface.current);
-      if (capture.pngBase64) {
-        capture.flight = flights.launch(capture.pngBase64, drawingPaperSize(drawing));
-        setNotice('');
-      }
-    });
-    if (!capture.started) return;
-    const outcome = capture.pngBase64 ? await savePicture(capture.pngBase64) : 'failed';
-    if (!isUnsaved(outcome)) return;
-    if (capture.flight !== null) flights.discard(capture.flight);
-    reportSaveFailure(outcome, capture.pngBase64);
-  };
-}
-
 function useSurfaceCommands({
   historyRef,
   setHistory,
@@ -451,6 +410,10 @@ function useSurfaceCommands({
       clearSnapshot(snapshot, empty);
       return;
     }
+    const save: { requested: boolean; pngBase64: string | null } = {
+      requested: false,
+      pngBase64: null,
+    };
     await runCommand(async () => {
       const snapshot = historyRef.current;
       const owner = surface.current;
@@ -460,31 +423,32 @@ function useSurfaceCommands({
         !blocked() &&
         historyRef.current === snapshot &&
         surface.current === owner;
-      const observation = hasDrawingInk(snapshot.drawing)
+      const known = knownEmpty(snapshot.drawing);
+      const needsScan = known === undefined && hasDrawingInk(snapshot.drawing);
+      const observation = needsScan
         ? observations.current?.begin(isCurrent, drawingPaperSize(snapshot.drawing))
         : null;
       try {
-        const pixels = hasDrawingInk(snapshot.drawing)
-          ? await owner?.captureInk(snapshot.drawing)
-          : null;
-        if (hasDrawingInk(snapshot.drawing) && (!pixels || !observation))
+        const pixels = needsScan ? await owner?.captureInk(snapshot.drawing) : null;
+        if (needsScan && (!pixels || !observation))
           throw new Error('The drawing paper is not ready to check.');
-        const empty = pixels && observation ? await observation.observe(pixels) : true;
+        const empty = known ?? (pixels && observation ? await observation.observe(pixels) : true);
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
-        const saved = keepInked && !empty ? await keepPicture(snapshot.drawing, owner) : null;
-        // No copy stays inside the app, so a picture Auto-Save could not keep stays on the paper.
-        if (saved && isUnsaved(saved.outcome)) {
-          reportSaveFailure(saved.outcome, saved.pngBase64);
-          return;
-        }
-        if (saved !== null && !isCurrent())
-          throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
+        const keep = keepInked && !empty;
+        const pngBase64 = keep ? await capturePicture(snapshot.drawing, owner) : null;
+        if (!isCurrent())
+          throw new Error('The picture changed before Clear finished. Please try again.');
         clearSnapshot(snapshot, empty);
+        save.requested = keep;
+        save.pngBase64 = pngBase64;
       } finally {
         observation?.cancel();
       }
     });
+    if (!save.requested) return;
+    const outcome = save.pngBase64 ? await savePicture(save.pngBase64) : 'failed';
+    if (isUnsaved(outcome)) reportSaveFailure(outcome, save.pngBase64);
   }
 
   return {
