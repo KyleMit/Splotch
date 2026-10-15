@@ -75,6 +75,7 @@ private class ShortcutKeyEvent(surfaceId: Int, tag: Int, private val key: String
 }
 
 class ShortcutKeyboardView(private val reactContext: ThemedReactContext) : ReactViewGroup(reactContext) {
+  private val consumedKeys = mutableSetOf<Int>()
   var shortcutScope = "drawing"
   var shortcutsEnabled = false
     set(value) {
@@ -107,16 +108,18 @@ class ShortcutKeyboardView(private val reactContext: ThemedReactContext) : React
     return null
   }
 
-  override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-    val key = shortcutKey(event) ?: return super.onKeyDown(keyCode, event)
+  // Focused descendants bypass this view's onKeyDown.
+  override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    if (event.action == KeyEvent.ACTION_UP && consumedKeys.remove(event.keyCode)) return true
+    val key = shortcutKey(event) ?: return super.dispatchKeyEvent(event)
+    if (event.action != KeyEvent.ACTION_DOWN) return super.dispatchKeyEvent(event)
+    consumedKeys.add(event.keyCode)
     UIManagerHelper.getEventDispatcherForReactTag(reactContext, id)?.dispatchEvent(
       ShortcutKeyEvent(UIManagerHelper.getSurfaceId(this), id, key)
     )
     return true
   }
 
-  override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
-    shortcutKey(event) != null || super.onKeyUp(keyCode, event)
 }
 
 class SplotchShortcutKeyboardManager : ViewGroupManager<ShortcutKeyboardView>() {

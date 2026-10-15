@@ -105,6 +105,20 @@ it('binds drawing and modal shortcut receivers to the same native view and event
   const adapter = read('src/platform/KeyboardScope.tsx');
   expect(adapter).toContain("requireNativeComponent<ReceiverProps>('SplotchShortcutKeyboard')");
   expect(android).toContain('override fun getName() = "SplotchShortcutKeyboard"');
+  const shortcut = android.slice(
+    android.indexOf('class ShortcutKeyboardView'),
+    android.indexOf('class SplotchShortcutKeyboardManager')
+  );
+  expect(shortcut).toContain('override fun dispatchKeyEvent(event: KeyEvent): Boolean');
+  expect(shortcut).not.toContain('override fun onKeyDown');
+  expect(shortcut).toContain(
+    'event.action == KeyEvent.ACTION_UP && consumedKeys.remove(event.keyCode)'
+  );
+  expect(shortcut).toContain('event.action != KeyEvent.ACTION_DOWN');
+  expect(shortcut).toContain('super.dispatchKeyEvent(event)');
+  expect(shortcut).toContain('rootView.findFocus() !is EditText');
+  expect(shortcut).toContain('event.isCtrlPressed || event.isMetaPressed');
+  expect(shortcut).not.toContain('repeatCount');
   expect(ios).toContain('@objc(SplotchShortcutKeyboardManager)');
   expect(bridge).toContain('RCT_EXPORT_VIEW_PROPERTY(onShortcutKey, RCTDirectEventBlock)');
   expect(android).toContain('SHORTCUT_KEY_EVENT to mapOf("registrationName" to "onShortcutKey")');

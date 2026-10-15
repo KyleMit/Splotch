@@ -341,6 +341,8 @@ it('routes native Undo to committed drawing history and refuses it under Setting
   const receiver = () =>
     records.props.findLast((props) => props.testID === 'drawing-keyboard-scope');
   expect(receiver()).toBeDefined();
+  button('Settings').focus();
+  expect(document.activeElement).toBe(button('Settings'));
   await act(async () => caller.liveScreen.recovery.callbacks.onDrawingChange(true));
   await act(async () => receiver().onShortcutKey({ nativeEvent: { key: 'undo' } }));
   expect(caller.paper.strokes).toHaveLength(1);
@@ -348,4 +350,17 @@ it('routes native Undo to committed drawing history and refuses it under Setting
   await act(async () => button('Settings').click());
   await act(async () => receiver().onShortcutKey({ nativeEvent: { key: 'undo' } }));
   expect(caller.paper.strokes).toHaveLength(1);
+});
+
+it('routes native Escape while a flyout option holds focus', async () => {
+  await mountToolbar(toolbarScreen());
+  await expandControls();
+  await act(async () => button('Brushes').click());
+  const option = host.querySelector('[aria-label="Brush Menu"] [role="radio"]');
+  expect(option).not.toBeNull();
+  option.focus();
+  expect(document.activeElement).toBe(option);
+  const receiver = records.props.findLast((props) => props.testID === 'drawing-keyboard-scope');
+  await act(async () => receiver.onShortcutKey({ nativeEvent: { key: 'escape' } }));
+  expect(host.querySelector('[aria-label="Brush Menu"]')).toBeNull();
 });
