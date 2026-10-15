@@ -15,7 +15,9 @@ import { useInformationPageScroll } from './useInformationPageScroll';
 import { RsdPrivacyContent } from './RsdPrivacyContent';
 import { RsdInformationFooter } from './RsdInformationFooter';
 import { RsdReleaseHistory } from './RsdReleaseHistory';
-import { RsdFeedbackSection } from './RsdFeedbackSection';
+import { RsdFeedbackPageContent } from './RsdFeedbackPageContent';
+import { useNativeFeedbackState } from '../feedback/useNativeFeedback';
+import { FEEDBACK_PAGE_COPY } from '../information/feedbackPageCopy';
 import { RsdParentGateSheet } from './drawingSheets';
 import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { useModalPresence } from './useModalPresence';
@@ -28,13 +30,13 @@ type Page = Exclude<AppPage, 'drawing'>;
 const PAGE_TITLES: Record<Page, string> = {
   privacy: privacy.native.title,
   changelog: 'Changelog',
-  feedback: 'Send Feedback',
+  feedback: FEEDBACK_PAGE_COPY.title,
 };
 const PAGE_LEDES: Record<Page, string> = {
   privacy: privacy.native.lede,
   changelog:
     'Every public Splotch release, newest first, with the notes that shipped alongside it.',
-  feedback: 'Report a bug or suggest a feature — privately, with no account needed.',
+  feedback: FEEDBACK_PAGE_COPY.lede,
 };
 
 type InformationProduct = Pick<
@@ -50,6 +52,8 @@ type InformationPageProps = {
 
 function PageContent({ page, product, drawingVisited }: InformationPageProps) {
   const { owner, state, feedback } = product;
+  const delivery = useNativeFeedbackState(feedback.owner)?.delivery;
+  const sent = page === 'feedback' && delivery?.status === 'success';
   useEffect(
     () => () => {
       if (owner?.getState().gate.open) owner.gate.dismiss();
@@ -86,14 +90,14 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
   return (
     <>
       <RsdPageSheet
-        title={PAGE_TITLES[page]}
+        title={sent ? FEEDBACK_PAGE_COPY.sentTitle : PAGE_TITLES[page]}
         backLabel={resolveBackLabel({
           fromPath: drawingVisited ? DRAWING_ROUTE : null,
           sessionFlag: null,
           referrer: '',
           origin: '',
         })}
-        lede={PAGE_LEDES[page]}
+        lede={sent ? FEEDBACK_PAGE_COPY.sentLede : PAGE_LEDES[page]}
         scrollRef={reading.scroll}
         onBodyOffset={reading.onBodyOffset}
         onScroll={reading.onScroll}
@@ -112,7 +116,7 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
             onLink={onLink}
           />
         ) : (
-          <RsdFeedbackSection owner={feedback.owner} />
+          <RsdFeedbackPageContent owner={feedback.owner} onPrivacy={() => openAppPage('privacy')} />
         )}
         <RsdInformationFooter page={page} onExternal={onLink} />
       </RsdPageSheet>
@@ -150,7 +154,9 @@ export function RsdInformationPage({
   standalone,
 }: InformationPageProps) {
   useEffect(() => {
-    const previous = setDocumentTitle(`${PAGE_TITLES[page]} · Splotch`);
+    const previous = setDocumentTitle(
+      `${page === 'feedback' ? 'Send Feedback' : PAGE_TITLES[page]} · Splotch`
+    );
     return () => {
       setDocumentTitle(previous);
     };

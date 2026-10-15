@@ -95,6 +95,12 @@ export function describeFeedbackDevice(device: () => DeviceInfo) {
   }
 }
 
+function submissionState(result: ReturnType<typeof buildFeedbackPreview>) {
+  return result.ok
+    ? { preview: result.snapshot, validation: '' }
+    : { preview: null, validation: result.message };
+}
+
 export function createNativeFeedback({
   transport,
   device,
@@ -142,6 +148,11 @@ export function createNativeFeedback({
       () => !disposed && shown() && state.preview === snapshot && snapshot.revision === revision
     );
   }
+  function prepareSubmission() {
+    const result = buildFeedbackPreview(state.draft, revision, device);
+    update(submissionState(result));
+    return result.ok ? result.snapshot : null;
+  }
   const owner = {
     getState: () => state,
     subscribe(listener: () => void) {
@@ -170,10 +181,7 @@ export function createNativeFeedback({
       edit({ includeDevice });
     },
     preview() {
-      const result = buildFeedbackPreview(state.draft, revision, device);
-      update(
-        result.ok ? { preview: result.snapshot, validation: '' } : { validation: result.message }
-      );
+      prepareSubmission();
     },
     editPreview() {
       parent?.cancel('feedback');
@@ -187,13 +195,13 @@ export function createNativeFeedback({
     // grown-up check in one step, with no review page. A check raised from Settings may close
     // Settings while it is answered, so only a changed draft withdraws the report.
     submit() {
-      const result = buildFeedbackPreview(state.draft, revision, device);
-      if (!result.ok) {
-        update({ validation: result.message });
-        return;
-      }
-      update({ preview: result.snapshot, validation: '' });
-      deliver(result.snapshot, () => true);
+      const snapshot = prepareSubmission();
+      if (snapshot) deliver(snapshot, () => true);
+    },
+    submitPublic() {
+      if (disposed || !delivery.available()) return;
+      const snapshot = prepareSubmission();
+      if (snapshot) void delivery.submit(snapshot);
     },
     // Each visit to the Settings form starts from an empty draft and no outcome, as the shipping
     // form does: a report already on its way keeps going, but it belongs to the visit that sent it,

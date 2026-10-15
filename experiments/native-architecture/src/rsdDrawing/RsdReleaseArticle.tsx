@@ -96,7 +96,7 @@ const styles = css.create({
     fontSize: dimensions.fontSizeXs,
   },
   ink: (color: string) => ({ color }),
-  section: { marginTop: dimensions.space4 },
+  section: { display: 'flex', flexDirection: 'column', marginTop: dimensions.space4 },
   firstSection: { marginTop: 0 },
   notes: { fontSize: FONT_PX, lineHeight: LINE_HEIGHT, color: colors.text },
   list: { margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column' },
@@ -223,6 +223,7 @@ export function RsdReleaseArticle({
         {release.sections.map((section, index) => (
           <html.div
             key={section.title}
+            data-testid={`release-section-${section.title}`}
             style={[styles.section, index === 0 && styles.firstSection]}
           >
             <ReleaseTape title={section.title} />

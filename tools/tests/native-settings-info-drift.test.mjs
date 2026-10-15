@@ -6,6 +6,7 @@ import {
   MESSAGE_PROMPT_BY_KIND,
   REPORT_FORM_COPY,
 } from '../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
+import { FEEDBACK_PAGE_COPY } from '../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
 import { WHATS_NEW_COPY } from '../../experiments/native-architecture/src/settings/whatsNew.ts';
 
 vi.mock('react-native', () => ({ Linking: {} }));
@@ -372,4 +373,23 @@ describe('native Settings info sections against their shipping sources', () => {
       Function(`return (${shippingIcons});`)()
     );
   });
+});
+
+it('keeps the standalone Feedback hero and next steps from the shipping route', () => {
+  const source = text(read('web/src/routes/feedback/+page.svelte'));
+  for (const copy of [
+    FEEDBACK_PAGE_COPY.lede,
+    FEEDBACK_PAGE_COPY.next,
+    ...FEEDBACK_PAGE_COPY.steps,
+    FEEDBACK_PAGE_COPY.privacy,
+    FEEDBACK_PAGE_COPY.sentLede,
+    FEEDBACK_PAGE_COPY.sentStatus,
+    FEEDBACK_PAGE_COPY.sendAnother,
+  ])
+    expect(source).toContain(copy);
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(FEEDBACK_PAGE_COPY.title);
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(FEEDBACK_PAGE_COPY.sentTitle);
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(
+    `feature: '${REPORT_FORM_COPY.sendIdea}'`
+  );
 });

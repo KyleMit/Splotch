@@ -10,7 +10,11 @@ import { PARENT_GATE_KEYPAD_KEYS, type ParentGateKey } from '../parentCenter/par
 type GateKeyEvent = NativeSyntheticEvent<Readonly<{ key: unknown }>>;
 type ReceiverProps = ViewProps & Readonly<{ onGateKey: (event: GateKeyEvent) => void }>;
 const Receiver = requireNativeComponent<ReceiverProps>('SplotchGateKeyboard');
-const styles = StyleSheet.create({ receiver: { position: 'absolute', width: 0, height: 0 } });
+// Android skips hardware-key dispatch to focused descendants with empty bounds.
+const KEY_RECEIVER_SIZE_DP = 1;
+const styles = StyleSheet.create({
+  receiver: { position: 'absolute', width: KEY_RECEIVER_SIZE_DP, height: KEY_RECEIVER_SIZE_DP },
+});
 
 export function GateKeyboard({ onPress }: { onPress: (key: ParentGateKey) => void }) {
   return createElement(Receiver, {

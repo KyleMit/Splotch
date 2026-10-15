@@ -23,6 +23,8 @@ const PRIVACY_PULL_PX = 2;
 const PRIVACY_LINE_HEIGHT = 1.45;
 // ReportFields.svelte's (max-width: 400px): below it the kind picker tightens its track.
 const TIGHT_PICKER_MAX_WIDTH_PX = 400;
+const PAGE_FIELD_GAP_PX = 14;
+const PAGE_PHONE_MAX_WIDTH_PX = 540;
 // The .report-textarea skin. The field is React Strict DOM's own textarea rather than the shared
 // RsdTextArea, whose React Native Web TextInput the color picker's chunk also loads: a module two
 // web chunks share is hoisted onto the startup path.
@@ -88,6 +90,17 @@ const styles = css.create({
   },
   submit: { alignSelf: 'flex-start' },
   status: { marginTop: dimensions.space3 },
+  pageCard: { padding: 0, backgroundColor: 'transparent', gap: PAGE_FIELD_GAP_PX },
+  pageLabel: {
+    fontSize: dimensions.fontSizeLg,
+    fontFamily: fonts.boldFamily,
+    fontWeight: fonts.boldWeight,
+    color: colors.textStrong,
+  },
+  pagePrivacy: { fontSize: dimensions.fontSizeSm },
+  pageField: { borderRadius: dimensions.radiusMd },
+  pageSubmit: { marginTop: dimensions.space1 },
+  phoneSubmit: { width: '100%' },
 });
 
 // What the parent hears after Send report: the shipping thanks on success, else the delivery's
@@ -116,11 +129,13 @@ function MessageField({
   state,
   label,
   placeholder,
+  page,
 }: {
   owner: NativeFeedbackOwner;
   state: NativeFeedbackState;
   label: string;
   placeholder: string;
+  page: boolean;
 }) {
   return (
     <html.textarea
@@ -134,7 +149,7 @@ function MessageField({
         const value = inputValue(event);
         if (value !== null) owner.setMessage(value);
       }}
-      style={styles.textarea}
+      style={[styles.textarea, page && styles.pageField]}
     />
   );
 }
@@ -142,9 +157,11 @@ function MessageField({
 function ReportFields({
   owner,
   state,
+  page,
 }: {
   owner: NativeFeedbackOwner;
   state: NativeFeedbackState;
+  page: boolean;
 }) {
   const prompt = MESSAGE_PROMPT_BY_KIND[state.draft.kind];
   const tight = useWindowDimensions().width <= TIGHT_PICKER_MAX_WIDTH_PX;
@@ -157,12 +174,13 @@ function ReportFields({
         selected={state.draft.kind}
         onSelect={owner.setKind}
       />
-      <html.span style={styles.label}>{prompt.label}</html.span>
+      <html.span style={[styles.label, page && styles.pageLabel]}>{prompt.label}</html.span>
       <MessageField
         owner={owner}
         state={state}
         label={prompt.label}
         placeholder={prompt.placeholder}
+        page={page}
       />
       {state.draft.kind === 'bug' ? (
         <html.div style={styles.device}>
@@ -173,7 +191,9 @@ function ReportFields({
           {state.draft.includeDevice ? <DeviceDetails rows={owner.deviceRows()} /> : null}
         </html.div>
       ) : null}
-      <html.p style={styles.privacy}>{REPORT_FORM_COPY.privacy}</html.p>
+      <html.p style={[styles.privacy, page && styles.pagePrivacy]}>
+        {REPORT_FORM_COPY.privacy}
+      </html.p>
     </>
   );
 }
@@ -183,7 +203,15 @@ function ReportFields({
 // send, the privacy line and Send report, which asks for the grown-up check before anything
 // leaves. Each visit starts a fresh draft. The owner loads after first paint on the web, so until
 // it has the section shows nothing.
-export function RsdFeedbackSection({ owner }: { owner: NativeFeedbackOwner | null }) {
+export function RsdFeedbackSection({
+  owner,
+  presentation = 'settings',
+}: {
+  owner: NativeFeedbackOwner | null;
+  presentation?: 'settings' | 'page';
+}) {
+  const page = presentation === 'page';
+  const phone = useWindowDimensions().width <= PAGE_PHONE_MAX_WIDTH_PX;
   const state = useNativeFeedbackState(owner);
   useEffect(() => {
     owner?.reset();
@@ -196,22 +224,34 @@ export function RsdFeedbackSection({ owner }: { owner: NativeFeedbackOwner | nul
     : outcome;
   return (
     <html.section style={styles.section}>
-      <html.div style={styles.heading}>
-        <RsdRuleLabel as="h3" strong>
-          {REPORT_FORM_COPY.heading}
-        </RsdRuleLabel>
-      </html.div>
-      <html.p style={styles.intro}>{REPORT_FORM_COPY.intro}</html.p>
-      <html.div style={styles.card}>
-        <ReportFields owner={owner} state={state} />
-        <html.div style={styles.submit}>
+      {!page ? (
+        <>
+          <html.div style={styles.heading}>
+            <RsdRuleLabel as="h3" strong>
+              {REPORT_FORM_COPY.heading}
+            </RsdRuleLabel>
+          </html.div>
+          <html.p style={styles.intro}>{REPORT_FORM_COPY.intro}</html.p>
+        </>
+      ) : null}
+      <html.div style={[styles.card, page && styles.pageCard]}>
+        <ReportFields owner={owner} state={state} page={page} />
+        <html.div
+          style={[styles.submit, page && styles.pageSubmit, page && phone && styles.phoneSubmit]}
+        >
           <RsdButton
             variant="brand"
+            size={page ? 'lg' : 'md'}
+            fullWidth={page && phone}
             busy={sending}
             disabled={!state.draft.message.trim() || !state.policyReady}
-            onPress={owner.submit}
+            onPress={page ? owner.submitPublic : owner.submit}
           >
-            {sending ? REPORT_FORM_COPY.sending : REPORT_FORM_COPY.send}
+            {sending
+              ? REPORT_FORM_COPY.sending
+              : page && state.draft.kind === 'feature'
+                ? REPORT_FORM_COPY.sendIdea
+                : REPORT_FORM_COPY.send}
           </RsdButton>
         </html.div>
       </html.div>

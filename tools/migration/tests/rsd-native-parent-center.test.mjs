@@ -433,6 +433,7 @@ describe('RSD Parental Gate card', () => {
     await click('Parent Center fixture entry');
     const receiver = records.props.findLast((props) => props.testID === 'parent-gate-keyboard');
     expect(receiver).toBeDefined();
+    expect(receiver.style).toMatchObject({ width: 1, height: 1 });
     await act(async () => receiver.onGateKey({ nativeEvent: { key: '3' } }));
     expect(owner.gate.getState().input).toBe('3');
     await act(async () => receiver.onGateKey({ nativeEvent: { key: 'delete' } }));

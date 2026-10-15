@@ -323,6 +323,7 @@ export function RsdPageSheet({
           <html.div style={styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide'])}>
             <html.h1
               ref={titleRef}
+              data-page-heading
               tabIndex={-1}
               style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}
             >

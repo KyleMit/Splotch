@@ -41,6 +41,10 @@ it('opens the shipping release count, Latest tape and relative date, with older 
   expect(host.textContent).toContain(formatReleaseAgo(releases[0].datetime, now));
   const tape = host.querySelector('[data-testid="release-tape-New"]');
   expect(tape).not.toBeNull();
+  expect(Object.assign({}, ...[props('release-section-New').style].flat(Infinity))).toMatchObject({
+    display: 'flex',
+    flexDirection: 'column',
+  });
   await act(async () =>
     props('release-tape-New').onLayout({ nativeEvent: { layout: { width: 60, height: 32 } } })
   );

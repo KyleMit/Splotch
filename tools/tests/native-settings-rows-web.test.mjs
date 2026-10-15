@@ -150,6 +150,9 @@ it('clamps the hub subtitle to two lines in a -webkit-box, as shipping does', as
   await render(
     h(RsdHubRow, { icon: 'sound', title: 'Sound', subtitle, unseen: false, onOpen: () => {} })
   );
+  const title = [...host.querySelectorAll('span')].find((span) => span.textContent === 'Sound');
+  expect(style(title).overflowWrap).toBe('normal');
+  expect(style(host.querySelector('[data-testid="hub-subtitle"]')).overflowWrap).toBe('normal');
   const clamp = host.querySelector('[data-testid="hub-subtitle"] > [data-line-clamp]');
   expect(clamp.textContent).toBe(subtitle);
   const markup = renderToStaticMarkup(
