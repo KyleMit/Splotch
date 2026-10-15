@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Animated, Easing } from '../platform/animated';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
@@ -135,7 +135,7 @@ function useModalMotion(visible: boolean, onDismiss: (() => void) | undefined) {
   windowRef.current = window;
   const dismissal = useRef({ pending: false, onDismiss });
   dismissal.current.onDismiss = onDismiss;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (phase !== 'entering' && phase !== 'exiting') return;
     if (phase === 'entering') from.current = origin?.take(windowRef.current) ?? { x: 0, y: 0 };
     const animation =

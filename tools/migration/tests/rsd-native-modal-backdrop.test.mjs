@@ -1,6 +1,7 @@
 import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { act, createElement } from 'react';
+import { act, createElement, Fragment, useEffect } from 'react';
+import { Animated } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
@@ -42,6 +43,44 @@ const blur = () =>
   host.querySelector('[data-testid="modal-backdrop-blur"]')
     ? latest('modal-backdrop-blur').blur
     : undefined;
+
+function PassiveWork({ visible, exit, observe }) {
+  useEffect(() => {
+    if (!visible) observe(typeof exit.finish === 'function');
+  }, [visible, exit, observe]);
+  return null;
+}
+
+it('starts the shipping exit before unrelated passive work on Android', async () => {
+  records.os = 'android';
+  const observed = [];
+  const observe = (started) => observed.push(started);
+  const exit = {};
+  const screen = (visible) =>
+    createElement(
+      Fragment,
+      null,
+      createElement(PassiveWork, { visible, exit, observe }),
+      dialog({ visible })
+    );
+  await mount(screen(true));
+  vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+    start(done) {
+      animations.forEach((animation) => animation.start());
+      exit.finish = () => done({ finished: true });
+    },
+    stop() {},
+  }));
+  try {
+    await act(async () => root.render(screen(false)));
+    expect(observed).toEqual([true]);
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+    await act(async () => exit.finish());
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
 
 describe('the dialog backdrop', () => {
   it('blurs the screen behind on iOS under the frosted dim, and unblurs with the exit', async () => {

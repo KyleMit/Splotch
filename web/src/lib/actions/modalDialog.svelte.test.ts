@@ -365,6 +365,22 @@ describe('modalDialog', () => {
     });
   }
 
+  it('starts the exit in the close commit before a paint', () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    stubExit(dialog, 10_000);
+    const destroy = mountClosable(dialog, modal);
+    try {
+      flushSync(() => modal.show(null));
+      flushSync(() => modal.hide());
+      expect(dialog.classList.contains(DIALOG_CLOSING_CLASS)).toBe(true);
+      expect(dialog.open).toBe(true);
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
   it('closes only once the exit animation finishes', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));

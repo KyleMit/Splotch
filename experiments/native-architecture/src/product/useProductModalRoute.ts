@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { useDrawingProduct } from './useDrawingProduct';
 import { aiSheetShown } from '../ai/uiState';
@@ -38,7 +38,7 @@ export function useProductModalRoute(
   routeRef.current = route;
   const callbackRef = useRef(onDismissed);
   callbackRef.current = onDismissed;
-  useEffect(() => {
+  useLayoutEffect(() => {
     setRoute((current) =>
       current.shown === target
         ? current
