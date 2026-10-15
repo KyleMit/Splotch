@@ -295,11 +295,11 @@ describe('custom paints as session state beside the one settings owner', () => {
         })
     );
     const saving = f.owner.setWidth('drawing', 'thin');
-    expect(f.states.at(-1).status).toBe('saving');
+    expect(f.states.at(-1)).toMatchObject({ status: 'ready', strokeWidth: 'thin' });
     f.owner.setColor('#123ABC');
     f.owner.setColor('#FEDCBA');
     expect(f.states.at(-1)).toMatchObject({
-      status: 'saving',
+      status: 'ready',
       selectedColor: '#FEDCBA',
     });
     finish();

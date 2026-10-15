@@ -139,49 +139,87 @@ function unrecorded(state: SoundSettingsState, metadata: SettingsMetadata): Sett
   };
 }
 
-// Metadata is written on its own rather than through persist, so a failed Parent Center save
-// stays pending for its retry. Ordinary choices are already in the state it writes, so once that
-// write lands, an earlier ordinary failure is recovered.
-function createMetadataWriter(
+// Shipping stores every choice synchronously, so its Settings never refuse or dim a choice for a
+// save. Here a choice lands in the state at once and its write follows. Writes run one at a time
+// and each carries the choices as they stand when it starts, so a choice made during another's
+// write is kept, and the record never goes back to an older one. A choice made while one write
+// waits joins that write.
+function createLatestWriter(
   storage: SoundSettingsStorage,
-  { getState, publish }: PreferenceActionContext,
-  hasPendingParent: () => boolean
+  serialize: (write: () => Promise<void>) => Promise<void>,
+  {
+    getState,
+    isDisposed,
+    publish,
+    hasPendingParent,
+  }: Pick<PreferenceActionContext, 'getState' | 'isDisposed' | 'publish'> & {
+    hasPendingParent: () => boolean;
+  }
 ) {
-  return async function persistMetadata(metadata: SettingsMetadata) {
+  let revision = 0;
+  let waiting: Promise<void> | null = null;
+  // A Parent Center save in flight owns the status, and a failed one keeps its retry until its
+  // own section retries it, so only the latest write of a ready record settles it.
+  function settle(written: number, landed: boolean) {
     const state = getState();
-    if (state.status !== 'ready') return;
-    const { status: _status, saved, message, ...current } = state;
-    const choices = { ...current, ...metadata };
-    publish({ status: 'saving', ...choices, message });
-    try {
-      await storage.write(JSON.stringify(snapshot(choices)));
-      const settled = { ...choices, ...sessionPaint(getState()) };
-      if (saved || hasPendingParent()) publish({ status: 'ready', ...settled, saved, message });
-      else publish({ status: 'ready', ...settled, saved: true, message: '' });
-    } catch {
-      const failure = saved ? SETTINGS_SAVE_FAILED_MESSAGE : message;
+    if (isDisposed() || written !== revision || state.status !== 'ready') return;
+    if (!landed)
       publish({
-        status: 'ready',
-        ...choices,
-        ...sessionPaint(getState()),
+        ...state,
         saved: false,
-        message: failure,
+        message: state.saved ? SETTINGS_SAVE_FAILED_MESSAGE : state.message,
       });
-    }
+    else if (!hasPendingParent() && (!state.saved || state.message))
+      publish({ ...state, saved: true, message: '' });
+  }
+  return function writeLatest(): Promise<void> {
+    revision += 1;
+    if (waiting) return waiting;
+    const job = { started: false };
+    const write = serialize(async () => {
+      job.started = true;
+      waiting = null;
+      const written = revision;
+      const state = getState();
+      if (isDisposed() || state.status === 'loading') return;
+      try {
+        await storage.write(JSON.stringify(snapshot(state)));
+        settle(written, true);
+      } catch {
+        settle(written, false);
+      }
+    });
+    if (!job.started) waiting = write;
+    return write;
   };
 }
 
-// Opening What's New or the first Apple Pencil double-tap can happen while settings load or
-// another choice is still being written; the record then waits for that writer instead of being
-// dropped. The owner awaits flushMetadata after each write it finishes.
+// Runs each write after the one before it has settled, and an idle queue's write at once.
+function createWriteQueue() {
+  let tail: Promise<void> | null = null;
+  return function serialize(write: () => Promise<void>): Promise<void> {
+    const run = tail ? tail.then(write) : write();
+    const settled = run.catch(() => undefined);
+    tail = settled;
+    void settled.then(() => {
+      if (tail === settled) tail = null;
+    });
+    return run;
+  };
+}
+
+// Opening What's New or the first Apple Pencil double-tap can happen while settings load or a
+// Parent Center save holds the record; the record then waits for it instead of being dropped.
+// Metadata is written with the choices rather than through persist, so a failed Parent Center
+// save stays pending for its retry. The owner awaits flushMetadata after each save it finishes.
 function createMetadataActions({
   getState,
   isDisposed,
   hasReadFailed,
   publish,
-  persistMetadata,
+  writeLatest,
 }: PreferenceActionContext & {
-  persistMetadata: (metadata: SettingsMetadata) => Promise<void>;
+  writeLatest: () => Promise<void>;
 }) {
   let queued: SettingsMetadata = {};
   async function record(metadata: SettingsMetadata) {
@@ -190,12 +228,9 @@ function createMetadataActions({
     const missing = unrecorded(state, { ...queued, ...metadata });
     queued = state.status === 'ready' ? {} : missing;
     if (state.status !== 'ready' || Object.keys(missing).length === 0) return;
-    if (hasReadFailed()) {
-      publish({ ...state, ...missing });
-      return;
-    }
-    await persistMetadata(missing);
-    await flushMetadata();
+    publish({ ...state, ...missing });
+    if (hasReadFailed()) return;
+    await writeLatest();
   }
   async function flushMetadata() {
     if (isDisposed() || getState().status !== 'ready' || Object.keys(queued).length === 0) return;
@@ -212,8 +247,8 @@ function createMetadataActions({
   };
 }
 
-// One validated choice: dropped while settings load or save, kept for the session alone after a
-// failed read, and written otherwise.
+// One validated choice: dropped while settings load or a Parent Center save holds the record, kept
+// for the session alone after a failed read, and written otherwise.
 function createChoiceSetter({
   getState,
   isDisposed,
@@ -403,23 +438,21 @@ export function createSoundSettings(
     state = next;
     onChange(state);
   }
+  const serialize = createWriteQueue();
+  const writeLatest = createLatestWriter(storage, serialize, {
+    getState: () => state,
+    isDisposed: () => disposed,
+    publish,
+    hasPendingParent: () => parent.hasPending(),
+  });
+  // The choice shows at once, with nothing left to retry, as shipping's synchronous storage
+  // shows it; a write that does not land brings the retry back.
   async function persist(settings: SoundSettings) {
     readFailed = false;
     parent.clearPending();
     const { version: _version, ...choices } = settings;
-    publish({ status: 'saving', ...choices, ...sessionPaint(state), message: '' });
-    try {
-      await storage.write(JSON.stringify(settings));
-      publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
-    } catch {
-      publish({
-        status: 'ready',
-        ...choices,
-        ...sessionPaint(state),
-        saved: false,
-        message: SETTINGS_SAVE_FAILED_MESSAGE,
-      });
-    }
+    publish({ status: 'ready', ...choices, ...sessionPaint(state), saved: true, message: '' });
+    await writeLatest();
     await metadata.flushMetadata();
   }
   const actionContext: PreferenceActionContext = {
@@ -430,14 +463,14 @@ export function createSoundSettings(
     persist,
   };
   const parent = createParentSaves({
-    storage,
+    storage: {
+      read: storage.read,
+      write: (snapshot) => serialize(() => storage.write(snapshot)),
+    },
     ...actionContext,
     flushMetadata: () => metadata.flushMetadata(),
   });
-  const metadata = createMetadataActions({
-    ...actionContext,
-    persistMetadata: createMetadataWriter(storage, actionContext, parent.hasPending),
-  });
+  const metadata = createMetadataActions({ ...actionContext, writeLatest });
   return {
     async load() {
       if (disposed || state.status !== 'loading') return;
