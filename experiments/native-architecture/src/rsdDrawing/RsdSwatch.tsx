@@ -177,7 +177,7 @@ export function RsdMoreColorsSwatch({
   disabled: boolean;
   onClick: () => void;
 }) {
-  const icon = (size - 2 * SELECTION_RING_GAP_PX) / (custom ? 1 : MORE_COLORS_POP_SCALE);
+  const icon = (size - 2 * SELECTION_RING_GAP_PX) / (custom?.color ? 1 : MORE_COLORS_POP_SCALE);
   const bare = useBareToolbar();
   return (
     <RsdPressable

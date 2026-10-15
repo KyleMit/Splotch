@@ -24,6 +24,7 @@ import { NATIVE_DEFERRED_ICONS } from '../../../experiments/native-architecture/
 const NATIVE_ICONS = { ...STARTUP_ICONS, ...NATIVE_DEFERRED_ICONS };
 import {
   paletteSlots,
+  MORE_COLORS_POP_SCALE,
   SELECTION_RING_WIDTH_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
 import {
@@ -217,9 +218,15 @@ it('selects the custom swatch before opening its picker, restoring the last cust
   await mountToolbar(toolbarScreen());
   const settings = caller.product.sound.owner.settings;
   await act(async () => settings.setColor('Red'));
+  const restingIconWidth = Number(
+    button('Custom Color').querySelector('svg').getAttribute('width')
+  );
   records.props.length = 0;
   await act(async () => button('Custom Color').click());
   expect(caller.sound.settings).toMatchObject({ activeSwatch: 'custom', selectedColor: 'Red' });
+  expect(Number(button('Custom Color').querySelector('svg').getAttribute('width'))).toBe(
+    restingIconWidth
+  );
   expect(records.props.some((props) => flat(props.style)?.top === -SELECTION_RING_WIDTH_PX)).toBe(
     false
   );
@@ -234,6 +241,9 @@ it('selects the custom swatch before opening its picker, restoring the last cust
     selectedColor: '#123ABC',
   });
   expect(records.props.some((props) => flat(props.style)?.borderColor === '#123ABC')).toBe(true);
+  expect(Number(button('Custom Color').querySelector('svg').getAttribute('width'))).toBeCloseTo(
+    restingIconWidth * MORE_COLORS_POP_SCALE
+  );
   expect(caller.screen.openColorPicker).toHaveBeenCalledTimes(2);
 });
 
