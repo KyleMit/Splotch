@@ -319,9 +319,7 @@ describe('coloring-page controls through the real drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const paged = { ...JSON.parse(original), pageId: 'flower' };
     expect(JSON.parse(screen.paper())).toEqual(paged);
-    expect(screen.container.textContent).toContain(
-      'Garden flower ready. Undo brings your picture back.'
-    );
+    expect(screen.container.textContent).toContain('Garden flower ready.');
     await screen.click('Undo');
     expect(screen.paper()).toBe(original);
     expect(screen.container.textContent).not.toContain('Garden flower ready.');

@@ -8,8 +8,6 @@ final class SplotchAIJournal {
   private let maxModel = 8 * 1024 * 1024
   private let currentOriginalVersions: Set<Int64> = [5, 7]
   private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 7]
-  private let maxDrawingContacts = 1000
-  private let maxDrawingSamples = 100000
   private let drawingRainbowCount: Int64 = 10
   private let drawingPaperWidth = 1024.0
   private let drawingPaperHeight = 768.0
@@ -372,13 +370,11 @@ final class SplotchAIJournal {
     try keys(value, expected)
     if value["pageId"] != nil { try checked(!string(value, "pageId").isEmpty) }
     if value["rainbow"] != nil { try checked(integer(value, "rainbow", 0) < drawingRainbowCount) }
-    guard let strokes = value["strokes"] as? [Any], strokes.count <= maxDrawingContacts else { throw failure() }
-    var points = 0
+    guard let strokes = value["strokes"] as? [Any] else { throw failure() }
     for entry in strokes {
       let stroke = try object(entry)
       guard let samples = stroke["points"] as? [Any] else { throw failure() }
-      points += samples.count
-      try checked(!samples.isEmpty && points <= maxDrawingSamples)
+      try checked(!samples.isEmpty)
       for item in samples { _ = try object(item) }
     }
     let count = strokes.count

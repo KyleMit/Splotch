@@ -1,13 +1,23 @@
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import './native-feedback-drawing-fixture.mjs';
-import { act, createElement, forwardRef, useImperativeHandle, useLayoutEffect } from 'react';
+import {
+  act,
+  createElement,
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
+import { drawingPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
+import { View } from 'react-native';
 
 // The paper area beside the swatch bar on a 390x844 phone, upright and then turned to landscape.
 const PORTRAIT_SLOT = { width: 390, height: 704 };
@@ -85,7 +95,7 @@ vi.mock('react-native', () => ({
     if (
       style &&
       !Array.isArray(style) &&
-      Object.keys(style).join() === 'width,height' &&
+      (Object.keys(style).join() === 'width,height' || testID === 'rsd-paper-plane') &&
       typeof style.width === 'number'
     )
       sdk.sized.push({ width: style.width, height: style.height });
@@ -180,7 +190,18 @@ async function rotate(slot, frame) {
 function RsdPaper({ lifted = false }) {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
-  return createElement(NativePaper, { screen, sound, menuOpen: false, lifted });
+  const [space, setSpace] = useState(PORTRAIT_SLOT);
+  return createElement(
+    View,
+    { onLayout: ({ nativeEvent }) => setSpace(nativeEvent.layout) },
+    createElement(NativePaper, {
+      screen,
+      sound,
+      menuOpen: false,
+      lifted,
+      frame: fittedPaper(space, drawingPaper(screen.history.drawing)),
+    })
+  );
 }
 
 beforeEach(() => {

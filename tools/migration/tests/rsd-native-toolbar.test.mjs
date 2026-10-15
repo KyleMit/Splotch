@@ -14,6 +14,7 @@ import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
 import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import { ACTION_TILE_DISABLED_OPACITY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
+import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { fittedPaper } from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { NATIVE_ICONS as STARTUP_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
@@ -28,10 +29,7 @@ import {
   paletteHex,
   visiblePaints,
 } from '../../../experiments/native-architecture/src/drawing/palette.ts';
-import {
-  DRAWING_THEME,
-  TOUCH_TARGET,
-} from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import { DRAWING_THEME } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import {
   AI_BUTTON,
   flat,
@@ -291,7 +289,9 @@ function layoutElement(seen) {
   return createElement(
     NativeDrawingLayout,
     {
-      controlSize: TOUCH_TARGET,
+      paper: UNADOPTED_PAPER,
+      empty: true,
+      departingPaper: null,
       palette: (layout) => {
         seen.palette = layout;
         return createElement('button', null, 'Colors');
@@ -310,7 +310,7 @@ function layoutElement(seen) {
       status: createElement('output', { 'data-status': true }),
       overlays: createElement('div', { 'data-overlay': true }),
     },
-    createElement('div', { 'data-paper': true })
+    () => createElement('div', { 'data-paper': true })
   );
 }
 

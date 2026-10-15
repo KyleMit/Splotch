@@ -8,10 +8,6 @@ import {
   AI_ORIGINAL_IMPORT_VERSIONS,
 } from '../../experiments/native-architecture/src/platform/aiOriginalModel.ts';
 import {
-  drawingCapacity,
-  emptyDrawing,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
-import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
   MAX_BACKING_SCALE,
@@ -91,11 +87,10 @@ describe('native opaque original-model admission', () => {
     expect(apple).toContain(
       'importedOriginalVersions: Set<Int64> = [' + AI_ORIGINAL_IMPORT_VERSIONS.join(', ') + ']'
     );
-    const capacity = drawingCapacity(emptyDrawing());
-    expect(android).toContain('maxDrawingContacts = ' + capacity.strokes);
-    expect(apple).toContain('maxDrawingContacts = ' + capacity.strokes);
-    expect(android).toContain('maxDrawingSamples = ' + capacity.points);
-    expect(apple).toContain('maxDrawingSamples = ' + capacity.points);
+    for (const source of [android, apple]) {
+      expect(source).not.toContain('maxDrawingContacts');
+      expect(source).not.toContain('maxDrawingSamples');
+    }
     expect(android).toContain('drawingRainbowCount = ' + MAGIC_RAINBOW_COUNT + 'L');
     expect(apple).toContain('drawingRainbowCount: Int64 = ' + MAGIC_RAINBOW_COUNT);
     expect(android).toContain('drawingPaperWidth = ' + PAPER_WIDTH + '.0');

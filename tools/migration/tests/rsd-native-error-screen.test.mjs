@@ -74,9 +74,8 @@ describe("the drawing screen's Error Screen", () => {
       (props) => props.children === ERROR_SCREEN_COPY.title || props.children?.[0] === 'Oops!'
     );
     expect(flat(title?.style)?.fontSize).toBe(displayFontSize(records.dimensions.width));
-    // Start over is shipping's restart, not the renderer retry the banner used to offer.
     await act(async () => startOver().click());
-    expect(screen.recovery.retry).not.toHaveBeenCalled();
+    expect(screen.recovery.retry).toHaveBeenCalledOnce();
     expect(startOver().disabled).toBe(true);
   });
 

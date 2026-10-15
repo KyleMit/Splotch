@@ -1,5 +1,4 @@
 import { useDrawingProduct } from '../product/useDrawingProduct';
-import { useStartOver } from '../product/DrawingSession';
 import {
   RsdAiResult,
   RsdAiStylePrompt,
@@ -206,6 +205,14 @@ function RsdDrawingFirstPaint() {
   );
 }
 
+function RendererErrorScreen({ recovery }: { recovery: Screen['recovery'] }) {
+  return recovery.failed ? (
+    <RsdSurfaceBoundary>
+      <RsdErrorScreen onRestart={async () => recovery.retry()} />
+    </RsdSurfaceBoundary>
+  ) : null;
+}
+
 function RsdDrawingContent({
   screen,
   sound,
@@ -222,7 +229,6 @@ function RsdDrawingContent({
   onModalDismissed: () => void;
 }) {
   const theme = useDrawingAppearance();
-  const startOver = useStartOver();
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
   const soundNotice = useSettledMessage(
     sound.settings.message || sound.audioMessage,
@@ -296,7 +302,16 @@ function RsdDrawingContent({
               />
             }
           >
-            <RsdPaperSlot screen={screen} sound={sound} ai={product.ai} menuOpen={paperBlocked} />
+            {(frame, space) => (
+              <RsdPaperSlot
+                screen={screen}
+                sound={sound}
+                ai={product.ai}
+                menuOpen={paperBlocked}
+                frame={frame}
+                space={space}
+              />
+            )}
           </RsdEdgeLayout>
           <RsdPolaroidFlight
             flight={screen.flight}
@@ -305,11 +320,7 @@ function RsdDrawingContent({
           />
           <RsdScreenSheets screen={screen} />
           <DrawingColorPicker screen={screen} sound={sound} />
-          {screen.recovery.failed ? (
-            <RsdSurfaceBoundary>
-              <RsdErrorScreen onRestart={startOver} />
-            </RsdSurfaceBoundary>
-          ) : null}
+          <RendererErrorScreen recovery={screen.recovery} />
         </html.div>
         {/* Outside the themed screen root: switching its theme remounts what it holds, and
             Settings keeps which section is open across an Appearance change. */}

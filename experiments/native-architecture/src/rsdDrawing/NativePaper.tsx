@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { View } from 'react-native';
 import { DrawingSurface } from '../drawing/DrawingSurface';
 import { PaperTexture } from '../drawing/PaperTexture';
-import { fittedPaper } from '../drawing/paperGeometry';
-import { drawingPaper } from '../drawing/paperSpace';
+import type { PresentedFrame } from '../drawing/paperPresentation';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -15,28 +13,28 @@ export function NativePaper({
   sound,
   menuOpen,
   lifted,
+  frame,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
   menuOpen: boolean;
   // A sheet lifted off the margin wears its own grain; one that fills the slot shows the slot's.
   lifted: boolean;
+  frame: PresentedFrame;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
-  const [space, setSpace] = useState({ width: 0, height: 0 });
-  const { width, height } = fittedPaper(space, drawingPaper(screen.history.drawing));
   return (
     <View
       style={drawingScreenStyles.workspace}
-      onLayout={({ nativeEvent }) => {
-        const { width, height } = nativeEvent.layout;
-        setSpace((previous) =>
-          previous.width === width && previous.height === height ? previous : { width, height }
-        );
+      onLayout={() => {
         screen.surface.current?.refreshGeometry();
       }}
     >
-      <View style={{ width, height }}>
+      <View
+        testID="rsd-paper-plane"
+        style={{ position: 'absolute', ...frame }}
+        onLayout={() => screen.surface.current?.refreshGeometry()}
+      >
         <DrawingSurface
           key={screen.recovery.generation}
           ref={screen.surface}

@@ -1,4 +1,5 @@
-import { act, createElement } from 'react';
+import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
+import { act, createElement, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mount, root } from './rsd-native-selection-host.mjs';
 import { AppRestartRoot } from '../../../experiments/native-architecture/src/product/AppRestart.tsx';
@@ -9,12 +10,10 @@ import {
 } from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
 import { drawingDraftStorage } from '../../../experiments/native-architecture/src/platform/drawingDraft.ts';
 import { FRESH_START_PARAM } from '../../../experiments/native-architecture/src/platform/appRestart.web.ts';
-import {
-  decodeDrawingDraft,
-  encodeDrawingDraft,
-} from '../../../experiments/native-architecture/src/product/drawingDraft.ts';
+import { encodeDrawingDraft } from '../../../experiments/native-architecture/src/product/drawingDraft.ts';
 import {
   createHistory,
+  addStroke,
   emptyDrawing,
 } from '../../../experiments/native-architecture/src/drawing/model.ts';
 
@@ -34,19 +33,51 @@ afterEach(() => {
 });
 
 describe("the web export's Start over", () => {
-  // Negative control: with the mark kept in the refused session storage, or a fresh launch that
-  // reads the draft back, the reloaded page returns the picture the fault left.
-  it('reloads to a blank page when session storage and the blank draft write both refuse', async () => {
+  it('starts each process blank while retaining ink and Undo across a screen remount', async () => {
+    const read = vi
+      .spyOn(drawingDraftStorage, 'read')
+      .mockResolvedValue(encodeDrawingDraft(emptyDrawing(RAINBOW_IN_USE)));
+    const write = vi.spyOn(drawingDraftStorage, 'write').mockResolvedValue(undefined);
+    let app, replace;
+    function Probe() {
+      app = useDrawingHistory();
+      return null;
+    }
+    function Process() {
+      const [keys, setKeys] = useState({ launch: 0, screen: 0 });
+      replace = setKeys;
+      return createElement(
+        DrawingSessionProvider,
+        { key: keys.launch },
+        createElement(Probe, { key: keys.screen })
+      );
+    }
+    await mount(createElement(Process));
+    expect(app.history.drawing).toEqual(emptyDrawing());
+    await act(async () =>
+      app.setHistory((history) =>
+        addStroke(
+          history,
+          { brush: 'pen', width: 14, color: 'Purple', points: [{ x: 10, y: 20 }] },
+          canonicalPaper()
+        )
+      )
+    );
+    expect(app.history.undo).toHaveLength(1);
+    const sameSession = app.history;
+    await act(async () => replace({ launch: 0, screen: 1 }));
+    expect(app.history).toBe(sameSession);
+    await act(async () => replace({ launch: 1, screen: 0 }));
+    expect(app.history).toEqual(createHistory());
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('reloads to a blank page even when session storage refuses', async () => {
     const refuse = () => {
       throw new Error('Storage is disabled');
     };
     vi.stubGlobal('sessionStorage', { getItem: refuse, setItem: refuse, removeItem: refuse });
-    const store = { snapshot: null, refuse: false };
-    vi.spyOn(drawingDraftStorage, 'read').mockImplementation(async () => store.snapshot);
-    vi.spyOn(drawingDraftStorage, 'write').mockImplementation(async (snapshot) => {
-      if (store.refuse) throw new Error('The draft store is full.');
-      store.snapshot = snapshot;
-    });
     const assigned = [];
     vi.spyOn(location, 'assign').mockImplementation((url) => assigned.push(url));
     let app;
@@ -61,17 +92,10 @@ describe("the web export's Start over", () => {
         null,
         createElement(DrawingSessionProvider, null, createElement(Probe))
       );
-
     await mount(page());
-    const drawn = emptyDrawing(RAINBOW_IN_USE);
-    await act(async () => app.setHistory(createHistory(drawn)));
-    expect(decodeDrawingDraft(store.snapshot)).toEqual(drawn);
-    store.refuse = true;
+    await act(async () => app.setHistory(createHistory(emptyDrawing(RAINBOW_IN_USE))));
     await act(async () => app.startOver());
     expect(assigned).toEqual([`/?${FRESH_START_PARAM}=1`]);
-    expect(store.snapshot).toBe(encodeDrawingDraft(drawn));
-
-    // The browser loads the address it was sent to: a new page, with the old draft still stored.
     await act(async () => root.unmount());
     history.replaceState(null, '', assigned[0]);
     await mount(page());

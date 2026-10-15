@@ -10,6 +10,7 @@ import {
   addStrokes,
   hasDrawingInk,
   clearDrawing,
+  emptyDrawing,
   undoDrawing,
   type History,
   type Stroke,
@@ -32,6 +33,26 @@ import { useRendererRecovery } from './useRendererRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
 import { useVisibleInk } from './drawing/inkVisibility';
 import { createEmptyScan, useInkObservers } from './drawingScan';
+
+function useBlankPaper(
+  history: History,
+  setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
+  drawing: boolean,
+  visible: boolean
+) {
+  useEffect(() => {
+    if (drawing || visible || history.drawing.strokes.length === 0) return;
+    const erased = history.drawing;
+    setHistory((current) =>
+      current.drawing === erased
+        ? {
+            ...current,
+            drawing: emptyDrawing(erased.rainbow, erased.pageId),
+          }
+        : current
+    );
+  }, [drawing, visible, history.drawing, setHistory]);
+}
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
@@ -70,6 +91,7 @@ export function useDrawingScreen() {
   const [committedStrokes, setCommittedStrokes] = useState(0);
   // Whether the page shows ink: the screenshot camera's blank state.
   const ink = useVisibleInk(history.drawing, !drawing, scanEmpty);
+  useBlankPaper(history, setHistory, drawing, ink.visible);
   const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report, (strokes) => {
     setCommittedStrokes((total) => total + strokes.length);
     if (strokes.some((stroke) => stroke.brush === 'eraser')) ink.erased(historyRef.current.drawing);
@@ -243,7 +265,7 @@ function createColoringPageActions(
         const next = changePage(history.historyRef.current, pageId);
         if (next !== history.historyRef.current) {
           history.setHistory(next);
-          setNotice(`${pageLabel(pageId)} ready. Undo brings your picture back.`);
+          setNotice(`${pageLabel(pageId)} ready.`);
         }
         setPickerOpen(false);
       });

@@ -1,8 +1,9 @@
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { View } from 'react-native';
 import type { PaperSize } from './drawing/paperSpace';
 import { createSaveFailure } from './export/saveFailure';
 import { savePicture } from './keepPicture';
+import { unsavedPictureStore } from './platform/unsavedPictures';
 
 // One save's polaroid: the captured PNG it shows, the paper it was drawn on, and whether the
 // save failed under it, which takes it back mid-flight.
@@ -16,7 +17,10 @@ export type PolaroidFlight = Readonly<{
 // The screen's Save Failure Banner owner; Try again saves through the same platform save.
 export function useSaveFailure() {
   const [, publish] = useReducer((count: number) => count + 1, 0);
-  const [owner] = useState(() => createSaveFailure(savePicture, publish));
+  const [owner] = useState(() => createSaveFailure(savePicture, publish, unsavedPictureStore));
+  useEffect(() => {
+    void owner.restore();
+  }, [owner]);
   return owner;
 }
 

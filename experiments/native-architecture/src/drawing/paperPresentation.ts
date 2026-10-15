@@ -5,10 +5,11 @@ import {
   type Size,
 } from '../../../../web/src/lib/drawing/paperView';
 import type { AdoptedPaper, PaperReference } from './paperSpace';
+import type { ToolbarStyle } from '../settings/toolbarStyle';
 
 // Where the paper sits inside its slot, in the slot's CSS pixels. It may reach past the slot,
 // which crops it.
-type PresentedFrame = Readonly<{ left: number; top: number; width: number; height: number }>;
+export type PresentedFrame = Readonly<{ left: number; top: number; width: number; height: number }>;
 type Point = Readonly<{ x: number; y: number }>;
 
 // Shipping's PaperLayoutSnapshot (paperLayout.ts): an inked paper held at a screen position and
@@ -23,7 +24,7 @@ export type PaperPresentationInputs = Readonly<{
   // The slot's top-left corner in the layout's coordinates, which a Button style switch moves.
   origin: Point;
   window: Size;
-  toolbarStyle: string;
+  toolbarStyle: ToolbarStyle;
 }>;
 
 export type PaperPresentationState = Readonly<{

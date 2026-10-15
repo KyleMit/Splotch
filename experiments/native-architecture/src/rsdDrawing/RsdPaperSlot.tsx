@@ -1,18 +1,18 @@
 import { View, useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
-import { useState, type ComponentProps } from 'react';
+import { type ComponentProps } from 'react';
 import { NativePaper } from './NativePaper';
 import { AiWaitingPolaroid } from './drawingSheets';
 import { RsdSurfaceBoundary } from './RsdSurfaceBoundary';
 import { aiCornerFace, aiRun } from '../ai/uiState';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { PaperTexture } from '../drawing/PaperTexture';
-import { fittedPaper, paperLifted } from '../drawing/paperGeometry';
-import { drawingPaper } from '../drawing/paperSpace';
+import { paperLifted } from '../drawing/paperGeometry';
+import type { AreaSize } from './edgeLayout';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import { colors } from './tokens.css';
 
-const paperSlot = { flex: 1, minWidth: 0, minHeight: 0 } as const;
+const paperSlot = { flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' } as const;
 const paperCorner = {
   position: 'absolute',
   top: 0,
@@ -42,27 +42,19 @@ const styles = css.create({
 // sheet fills it, and a flat margin tone around a sheet lifted by rotation.
 export function RsdPaperSlot({
   ai,
+  space,
   ...paper
 }: Omit<ComponentProps<typeof NativePaper>, 'lifted'> & {
   ai: ReturnType<typeof useDrawingProduct>['ai'];
+  space: AreaSize;
 }) {
   const { paperMargin } = useDrawingTheme();
-  const [space, setSpace] = useState({ width: 0, height: 0 });
   const run = ai.state?.open && ai.state.minimized ? aiRun(ai.state) : null;
   const window = useWindowDimensions();
-  const frame = fittedPaper(space, drawingPaper(paper.screen.history.drawing));
+  const { frame } = paper;
   const lifted = paperLifted(space, frame);
   return (
-    <View
-      testID="rsd-paper-slot"
-      style={[paperSlot, lifted && { backgroundColor: paperMargin }]}
-      onLayout={({ nativeEvent }) => {
-        const { width, height } = nativeEvent.layout;
-        setSpace((previous) =>
-          previous.width === width && previous.height === height ? previous : { width, height }
-        );
-      }}
-    >
+    <View testID="rsd-paper-slot" style={[paperSlot, lifted && { backgroundColor: paperMargin }]}>
       {lifted ? (
         <html.div
           data-testid="rsd-paper-lift"
