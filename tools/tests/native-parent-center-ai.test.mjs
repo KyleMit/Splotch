@@ -1,13 +1,19 @@
-import { expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { nativeAiBoundary } from './native-ai-boundary.mjs';
 
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
 function solve(gate) {
   const { x, y } = gate.getState();
   gate.input(String(x * y));
   gate.answer();
+  vi.advanceTimersByTime(PARENT_GATE_SUCCESS_HOLD_MS);
+  gate.closed();
 }
 function pending() {
   let resolve;

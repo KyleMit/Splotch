@@ -12,6 +12,7 @@ import {
 } from './rsd-native-toolbar-fixture.mjs';
 import {
   actionPanelLayout,
+  actionButtonScaleCeiling,
   EDGE_INSET_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
 import {
@@ -28,7 +29,6 @@ import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/dr
 import {
   BUTTON_SCALE_MAX,
   BUTTON_SCALE_MIN,
-  BUTTON_SCALE_STEP,
   DEFAULT_BUTTON_SCALE,
 } from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 
@@ -201,7 +201,7 @@ it('stops a landscape row, chevron included, short of Settings at every Button S
     const viewport = { width, height: 600 };
     const area = { width: width - PALETTE_FLOWS.column.extentPx, height: 600 };
     const settingsLeft = area.width - EDGE_INSET_PX - CORNER_BUTTON_SIZE_PX;
-    for (let scale = BUTTON_SCALE_MIN; scale <= BUTTON_SCALE_MAX; scale += BUTTON_SCALE_STEP) {
+    for (let scale = BUTTON_SCALE_MIN; scale <= BUTTON_SCALE_MAX; scale++) {
       const { mode, toggle } = actionPanelLayout({
         area,
         viewport,
@@ -217,3 +217,15 @@ it('stops a landscape row, chevron included, short of Settings at every Button S
   }
   expect(overreaches).toEqual([]);
 });
+
+it.each([
+  [{ width: 320, height: 365 }, { width: 320, height: 440 }, 5, 98],
+  [{ width: 568, height: 260 }, { width: 568, height: 260 }, 6, 86],
+  [{ width: 710, height: 600 }, { width: 800, height: 600 }, 6, 130],
+  [{ width: 320, height: 200 }, { width: 320, height: 275 }, 6, 70],
+])(
+  'caps the Button Size percentage at what this panel can render (%j)',
+  (area, viewport, count, expected) => {
+    expect(actionButtonScaleCeiling(area, viewport, count)).toBe(expected);
+  }
+);

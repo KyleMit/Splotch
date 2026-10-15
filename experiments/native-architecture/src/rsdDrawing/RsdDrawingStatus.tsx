@@ -15,7 +15,7 @@ type Screen = ReturnType<typeof useDrawingScreen>;
 export const FAILURE_REANNOUNCE_GAP_MS = 150;
 
 // Shipping's generic failure heading; a refused save brings its own.
-export const FAILURE_HEADING = 'Something went wrong';
+const FAILURE_HEADING = 'Something went wrong';
 // SaveFailureBanner.svelte: Open Settings where a native save was refused for a permission, behind
 // the parental gate since Settings is outside the app, and Try again for the pictures it holds.
 function saveBanner(

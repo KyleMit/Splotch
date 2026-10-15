@@ -144,6 +144,7 @@ export function nativeSettingsProps(owner, state) {
     onAppearanceChange: (appearance) => owner.setAppearance(appearance),
     onToolbarStyleChange: (style) => owner.setToolbarStyle(style),
     onOrientationChange: (orientation) => owner.setOrientation(orientation),
+    scaleCeiling: 130,
     buttonScale: {
       value: state.buttonScale,
       active: false,
@@ -163,7 +164,7 @@ export function nativeSettingsProps(owner, state) {
     parentCenter: { unlocked: false, checkDue: true, onUnlock() {}, onLeave() {}, section: null },
     gate: null,
     feedback: null,
-    onOpenHostedPage() {},
+    onOpenPage() {},
     downloadedBooks: 0,
     ai: {
       owner: null,

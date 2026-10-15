@@ -11,23 +11,30 @@ import type { SectionIconName } from '../rsdDrawing/RsdSectionIcon';
 // native-settings-sections.test.mjs holds the ids, labels, titles, icons, order and copy to the
 // shipping list.
 export const NATIVE_SETTINGS_SECTIONS = [
-  { id: 'appearance', label: 'Appearance', icon: 'appearance' },
-  { id: 'sound', label: 'Sound', icon: 'sound' },
-  { id: 'controls', label: 'Tool Drawer', icon: 'controls' },
-  { id: 'accessibility', label: 'Accessibility', icon: 'accessibility' },
-  { id: 'coloring', label: 'Coloring', icon: 'shapes' },
-  { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
-  { id: 'saving', label: 'Saving', icon: 'save-picture' },
-  { id: 'parentCenter', label: 'Parent Center', icon: 'parent-center' },
-  { id: 'setup', label: 'Install', icon: 'setup' },
-  { id: 'feedback', label: 'Feedback', icon: 'feedback' },
-  { id: 'whatsnew', label: "What's New", title: 'Updates', icon: 'whats-new' },
-  { id: 'about', label: 'About', icon: SPLOTCHY_ICON_NAME },
+  { id: 'appearance', label: 'Appearance', icon: 'appearance', contentStamp: '1' },
+  { id: 'sound', label: 'Sound', icon: 'sound', contentStamp: '2' },
+  { id: 'controls', label: 'Tool Drawer', icon: 'controls', contentStamp: '1' },
+  { id: 'accessibility', label: 'Accessibility', icon: 'accessibility', contentStamp: '2' },
+  { id: 'coloring', label: 'Coloring', icon: 'shapes', contentStamp: '1' },
+  { id: 'ai', label: 'AI Art', icon: 'wand-stars', contentStamp: '2' },
+  { id: 'saving', label: 'Saving', icon: 'save-picture', contentStamp: '1' },
+  { id: 'parentCenter', label: 'Parent Center', icon: 'parent-center', contentStamp: '1' },
+  { id: 'setup', label: 'Install', icon: 'setup', contentStamp: '1' },
+  { id: 'feedback', label: 'Feedback', icon: 'feedback', contentStamp: '1' },
+  {
+    id: 'whatsnew',
+    label: "What's New",
+    title: 'Updates',
+    icon: 'whats-new',
+    contentStamp: FEEDBACK_APP_VERSION,
+  },
+  { id: 'about', label: 'About', icon: SPLOTCHY_ICON_NAME, contentStamp: '1' },
 ] as const satisfies readonly {
   id: string;
   label: string;
   title?: string;
   icon: SectionIconName;
+  contentStamp: string;
 }[];
 
 export type NativeSettingsSection = (typeof NATIVE_SETTINGS_SECTIONS)[number];

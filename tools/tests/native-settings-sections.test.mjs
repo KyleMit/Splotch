@@ -173,7 +173,9 @@ describe('sectioned Settings', () => {
   it('names, titles, icons and orders every section as the shipping list does', () => {
     const shipping = shippingSections();
     expect(shipping.map(({ id }) => id)).toContain('whatsnew');
-    expect(NATIVE_SETTINGS_SECTIONS).toEqual(shipping);
+    expect(NATIVE_SETTINGS_SECTIONS.map(({ contentStamp: _stamp, ...section }) => section)).toEqual(
+      shipping
+    );
     expect(sectionHeading('whatsnew')).toBe('Updates');
     expect(sectionHeading('accessibility')).toBe('Accessibility');
   });

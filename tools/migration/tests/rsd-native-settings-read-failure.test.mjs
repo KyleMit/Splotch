@@ -1,3 +1,4 @@
+import { finishGateHold } from './rsd-parent-gate-keypad.mjs';
 import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { host, mount, records } from './rsd-native-selection-host.mjs';
@@ -143,6 +144,8 @@ it.each([402, 1024])(
         owner.gate.input(String(x * y));
         owner.gate.answer();
       });
+      await finishGateHold();
+      await act(async () => owner.gate.closed());
       expect(reset()).toBeDefined();
       expect(visibleText()).toContain(
         'Resetting replaces saved settings with their defaults. Your pictures are kept.'

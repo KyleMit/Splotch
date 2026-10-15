@@ -1,0 +1,708 @@
+{
+  "native": {
+    "title": "Privacy policy",
+    "lede": "Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short version is easy to remember.",
+    "updated": "Updated September 28, 2026",
+    "highlights": [
+      "No ads. Ever. None.",
+      "No tracking. We don't follow you around the internet.",
+      "No accounts. No sign-up, no login, no passwords.",
+      "No analytics. Not from us, not from anyone else.",
+      "No surprises. Every request the app makes is described on this page.",
+      "Works offline. Drawing happens entirely on your device."
+    ],
+    "sections": [
+      {
+        "id": "on-device",
+        "title": "What stays on your device",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Ordinary drawing never leaves your device. Splotch does not build a profile of you or your child, does not sell information, and shows no advertising. Three features can send something you made or wrote, and a grown-up starts each one: making an AI picture, reporting one, and sending feedback. Each is described below. The app's other requests are the ordinary kind any website makes — loading the app itself, downloading coloring pages, checking the free-picture count — and none of them includes a drawing."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Saved pictures stay local too. Android puts them in a Splotch album in your gallery; iPhone and iPad add them to your photo library; the web uses a normal browser download, or a folder you pick in a supported desktop browser. Saving never uploads anything."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Settings — appearance, sound, enabled tools, brush sizes, grown-up-check choices — are stored on your device and never sent to us. An access code or your own OpenAI key is stored on the device too, in the device's secure storage (the Keychain on Apple devices) and encrypted in the browser on the web. The access code or OpenAI key is sent to us when a grown-up adds it so we can check it. It is sent again with each AI picture made or reported using it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ai-pictures",
+        "title": "Making an AI picture",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "The AI image button redraws your child's drawing in a chosen art style. It is Splotch's one big online feature: when someone taps the button, the current drawing is sent to our image service (which uses OpenAI), and the finished picture is sent straight back. Nothing is sent before the tap. The button follows the grown-up check set in Parent Center, hides while the device is offline, and can be switched off entirely in Settings (“Create AI Images”). Every install starts with 10 free pictures, counted on our server (see "
+              },
+              {
+                "href": "#counting",
+                "text": "How the counting works"
+              },
+              {
+                "text": "). After those, a grown-up can add an access code or their own OpenAI key in Settings."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "strong": true,
+                "text": "We keep nothing once a picture is delivered."
+              },
+              {
+                "text": " Our service holds the drawing just long enough to hand it to the generator, and holds the finished picture until the app collects it; then we delete our copy immediately. An uncollected picture expires after 20 minutes, and an hourly cleanup removes its remaining files. The one exception is a report a grown-up confirms — see "
+              },
+              {
+                "href": "#reports",
+                "text": "Reporting a picture"
+              },
+              {
+                "text": "."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "OpenAI generates the picture on its own systems, under the "
+              },
+              {
+                "href": "https://openai.com/policies/services-agreement/",
+                "text": "OpenAI Services Agreement"
+              },
+              {
+                "text": ". By default, OpenAI does not use what we send to train its models — only an account that opts in shares content that way. OpenAI does keep a copy to check for abuse. That copy is normally kept for up to 30 days; OpenAI's "
+              },
+              {
+                "href": "https://developers.openai.com/api/docs/guides/your-data",
+                "text": "published policy"
+              },
+              {
+                "text": " lets it keep one longer where the law requires it or where a copy is needed to stop harm. If a safety scan flags a picture as possible child sexual abuse material, OpenAI keeps it for a person to review, whatever the account settings say. Those copies are OpenAI's, not ours. Our requests also tell OpenAI not to save the finished picture for later use — the one part of its retention we control."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "With your "
+              },
+              {
+                "italic": true,
+                "text": "own"
+              },
+              {
+                "text": " OpenAI key, the drawing takes the same path but reaches OpenAI under "
+              },
+              {
+                "italic": true,
+                "text": "your"
+              },
+              {
+                "text": " account and your account's terms — including its training setting. Check that setting before adding a key: if your account opts in to sharing, it is your child's drawing that would be shared. Our service passes your key along for that one request and never stores it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "counting",
+        "title": "How the counting works",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "To count the 10 free pictures fairly, the app has to recognize an install without knowing whose it is. So it sends a one-way code — a scrambled value that cannot be turned back into what it came from. The native apps make it by hashing the platform-provided app or vendor identifier; the web hashes a random value created and kept in that browser. We never receive the underlying identifier, and the code is never combined with an account, advertising ID, hardware fingerprint, or location."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "With that code we store attempt and success counts, timestamps, and broad failure reasons — enough to enforce the limit and nothing more. A separate anonymous daily total caps what the free service can spend. On the web, clearing site data creates a new code; uninstalling on iOS sometimes does too. On Android the code normally survives a reinstall."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "An access code gets a small tally of its own: how many times it was used, first and latest use, and broad style and outcome categories. The tally is keyed by a one-way identifier — not the access code itself — and never contains a drawing. It expires 30 days after its first use; later uses do not extend that deadline. Daily cleanup removes expired tallies. Retiring an access code also asks for its tally to be deleted right away; if that request fails, the fixed expiry still removes it."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Access-code and own-key requests also write an ordinary operational server log: the date, credential category, art-style category, and outcome — never the drawing, the access code, or your key. Netlify retains function logs for at least 24 hours and, depending on the hosting plan, makes up to 7 days available. None of this is used for advertising, tracking, or product analytics."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reports",
+        "title": "Reporting a picture",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Every finished AI picture is labeled “AI-generated picture.” If one is wrong or inappropriate, a grown-up can choose “Report this picture,” review exactly what will be sent, and send it to us for human review. Nothing is kept unless that final confirmation happens."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "When a grown-up confirms a picture report, we store the drawing, the exact instruction our server wrote for the generator, the chosen art style, the report time, and the AI picture — privately, on Splotch's Netlify account. A private GitHub support issue tells us where to look; it carries report details, never the images. We investigate and respond within 24 hours. A daily cleanup deletes the report after "
+              },
+              {
+                "strong": true,
+                "text": "30 days"
+              },
+              {
+                "text": ". To ask us to delete one sooner, use the "
+              },
+              {
+                "href": "https://splotch.art/feedback",
+                "text": "private feedback form"
+              },
+              {
+                "text": " and include the reference shown after sending."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "If the AI refuses a harmless drawing, a grown-up can choose “Report this refusal” instead. Confirming sends the refused drawing, the same instruction and style details, OpenAI's refusal reason, and the report time. There is no generated picture to include. A refusal is kept only when a grown-up reports it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "feedback",
+        "title": "Sending feedback",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send report,” only what you type is sent to our "
+              },
+              {
+                "strong": true,
+                "text": "private"
+              },
+              {
+                "text": " support tracker on GitHub. Please don't put personal details, like a name or email address, in a report. The form reminds you of this too."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "For a bug, you can check a box to include basic device details — app version, platform, operating system, device model or browser, screen and window sizes, pixel ratio, language, display mode, and online status — to help us reproduce the problem. It's off by default, and you can expand it first to see exactly what would be sent. A few of those details, like a full browser user-agent, can be somewhat identifying, so it stays your choice. We never add your name, location, advertising ID, or the code used to count free pictures."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hosting",
+        "title": "Hosting and downloads",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Splotch — the website, the API, and the stored reports above — is hosted by Netlify. Loading the app there works like loading any website: the request carries normal details such as an IP address and browser version. Our API holds the address briefly in memory to slow down abuse; it is not stored with the counting records and not used to follow a person or device."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Two requests happen on their own, and neither carries a drawing:"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "spans": [
+              {
+                "text": "With coloring books enabled, the app downloads coloring pages from our own site — the same kind of request that loads the app itself."
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "spans": [
+              {
+                "text": "If the site's security rules block something unexpected, the browser can send us a short automatic note (the page address, the blocked address, and a small code sample) so we can fix it. There is no third-party error service."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Links that leave Splotch — OpenAI's policies above, our GitHub project page — open only when tapped. In the store apps they follow the external-links grown-up check."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "children",
+        "title": "Children's privacy",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Splotch is made for young children, so the protection is built into the design: no accounts, no ads, no analytics or tracking code, no chat, comments, or public sharing, and no purchases. We never ask for a child's name, email address, or location, and we do not use submitted content to identify a child. These choices minimize children's data and support the protections required by COPPA and the GDPR."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Every action that reaches beyond drawing — making an AI picture, reporting one, opening an external link, sending feedback, and opening Parent Center — sits behind its own grown-up check. A grown-up can set each one to Every time, Per session, or Never in Parent Center. The store apps start with every check set to Every time; the web starts with Never; iOS does not allow external links to be set to Never. These checks guard actions; they are not accounts, and they are not legal proof of consent."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "When the app opens online with AI pictures enabled and no credential added, it checks the remaining free count using the one-way code above. No drawing is sent during that check."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contact",
+        "title": "Changes and contact",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "If this policy changes, the date at the top changes with it. Questions or concerns? Send them through our "
+              },
+              {
+                "href": "https://splotch.art/feedback",
+                "text": "private feedback form"
+              },
+              {
+                "text": " and we'll take a look."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "strong": true,
+                "text": "Questions about privacy?"
+              },
+              {
+                "text": " "
+              },
+              {
+                "href": "https://splotch.art/feedback",
+                "text": "Send us a note"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "web": {
+    "title": "Privacy policy",
+    "lede": "Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short version is easy to remember.",
+    "updated": "Updated September 28, 2026",
+    "highlights": [
+      "No ads. Ever. None.",
+      "No tracking. We don't follow you around the internet.",
+      "No accounts. No sign-up, no login, no passwords.",
+      "No analytics. Not from us, not from anyone else.",
+      "No surprises. Every request the app makes is described on this page.",
+      "Works offline. Drawing happens entirely on your device."
+    ],
+    "sections": [
+      {
+        "id": "on-device",
+        "title": "What stays on your device",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Ordinary drawing never leaves your device. Splotch does not build a profile of you or your child, does not sell information, and shows no advertising. Three features can send something you made or wrote, and a grown-up starts each one: making an AI picture, reporting one, and sending feedback. Each is described below. The app's other requests are the ordinary kind any website makes — loading the app itself, downloading coloring pages, checking the free-picture count — and none of them includes a drawing."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Saved pictures stay local too. Android puts them in a Splotch album in your gallery; iPhone and iPad add them to your photo library; the web uses a normal browser download, or a folder you pick in a supported desktop browser. Saving never uploads anything."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Settings — appearance, sound, enabled tools, brush sizes, grown-up-check choices — are stored on your device and never sent to us. An access code or your own OpenAI key is stored on the device too, in the device's secure storage (the Keychain on Apple devices) and encrypted in the browser on the web. The access code or OpenAI key is sent to us when a grown-up adds it so we can check it. It is sent again with each AI picture made or reported using it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ai-pictures",
+        "title": "Making an AI picture",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "The AI image button redraws your child's drawing in a chosen art style. It is Splotch's one big online feature: when someone taps the button, the current drawing is sent to our image service (which uses OpenAI), and the finished picture is sent straight back. Nothing is sent before the tap. The button follows the grown-up check set in Parent Center, hides while the device is offline, and can be switched off entirely in Settings (“Create AI Images”). Every install starts with 10 free pictures, counted on our server (see "
+              },
+              {
+                "href": "#counting",
+                "text": "How the counting works"
+              },
+              {
+                "text": "). After those, a grown-up can add an access code or their own OpenAI key in Settings."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "strong": true,
+                "text": "We keep nothing once a picture is delivered."
+              },
+              {
+                "text": " Our service holds the drawing just long enough to hand it to the generator, and holds the finished picture until the app collects it; then we delete our copy immediately. An uncollected picture expires after 20 minutes, and an hourly cleanup removes its remaining files. The one exception is a report a grown-up confirms — see "
+              },
+              {
+                "href": "#reports",
+                "text": "Reporting a picture"
+              },
+              {
+                "text": "."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "OpenAI generates the picture on its own systems, under the "
+              },
+              {
+                "href": "https://openai.com/policies/services-agreement/",
+                "text": "OpenAI Services Agreement"
+              },
+              {
+                "text": ". By default, OpenAI does not use what we send to train its models — only an account that opts in shares content that way. OpenAI does keep a copy to check for abuse. That copy is normally kept for up to 30 days; OpenAI's "
+              },
+              {
+                "href": "https://developers.openai.com/api/docs/guides/your-data",
+                "text": "published policy"
+              },
+              {
+                "text": " lets it keep one longer where the law requires it or where a copy is needed to stop harm. If a safety scan flags a picture as possible child sexual abuse material, OpenAI keeps it for a person to review, whatever the account settings say. Those copies are OpenAI's, not ours. Our requests also tell OpenAI not to save the finished picture for later use — the one part of its retention we control."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "With your "
+              },
+              {
+                "italic": true,
+                "text": "own"
+              },
+              {
+                "text": " OpenAI key, the drawing takes the same path but reaches OpenAI under "
+              },
+              {
+                "italic": true,
+                "text": "your"
+              },
+              {
+                "text": " account and your account's terms — including its training setting. Check that setting before adding a key: if your account opts in to sharing, it is your child's drawing that would be shared. Our service passes your key along for that one request and never stores it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "counting",
+        "title": "How the counting works",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "To count the 10 free pictures fairly, the app has to recognize an install without knowing whose it is. So it sends a one-way code — a scrambled value that cannot be turned back into what it came from. The native apps make it by hashing the platform-provided app or vendor identifier; the web hashes a random value created and kept in that browser. We never receive the underlying identifier, and the code is never combined with an account, advertising ID, hardware fingerprint, or location."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "With that code we store attempt and success counts, timestamps, and broad failure reasons — enough to enforce the limit and nothing more. A separate anonymous daily total caps what the free service can spend. On the web, clearing site data creates a new code; uninstalling on iOS sometimes does too. On Android the code normally survives a reinstall."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "An access code gets a small tally of its own: how many times it was used, first and latest use, and broad style and outcome categories. The tally is keyed by a one-way identifier — not the access code itself — and never contains a drawing. It expires 30 days after its first use; later uses do not extend that deadline. Daily cleanup removes expired tallies. Retiring an access code also asks for its tally to be deleted right away; if that request fails, the fixed expiry still removes it."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Access-code and own-key requests also write an ordinary operational server log: the date, credential category, art-style category, and outcome — never the drawing, the access code, or your key. Netlify retains function logs for at least 24 hours and, depending on the hosting plan, makes up to 7 days available. None of this is used for advertising, tracking, or product analytics."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "reports",
+        "title": "Reporting a picture",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Every finished AI picture is labeled “AI-generated picture.” If one is wrong or inappropriate, a grown-up can choose “Report this picture,” review exactly what will be sent, and send it to us for human review. Nothing is kept unless that final confirmation happens."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "When a grown-up confirms a picture report, we store the drawing, the exact instruction our server wrote for the generator, the chosen art style, the report time, and the AI picture — privately, on Splotch's Netlify account. A private GitHub support issue tells us where to look; it carries report details, never the images. We investigate and respond within 24 hours. A daily cleanup deletes the report after "
+              },
+              {
+                "strong": true,
+                "text": "30 days"
+              },
+              {
+                "text": ". To ask us to delete one sooner, use the "
+              },
+              {
+                "href": "/feedback",
+                "text": "private feedback form"
+              },
+              {
+                "text": " and include the reference shown after sending."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "If the AI refuses a harmless drawing, a grown-up can choose “Report this refusal” instead. Confirming sends the refused drawing, the same instruction and style details, OpenAI's refusal reason, and the report time. There is no generated picture to include. A refusal is kept only when a grown-up reports it."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "feedback",
+        "title": "Sending feedback",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send report,” only what you type is sent to our "
+              },
+              {
+                "strong": true,
+                "text": "private"
+              },
+              {
+                "text": " support tracker on GitHub. Please don't put personal details, like a name or email address, in a report. The form reminds you of this too."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "For a bug, you can check a box to include basic device details — app version, platform, operating system, device model or browser, screen and window sizes, pixel ratio, language, display mode, and online status — to help us reproduce the problem. It's off by default, and you can expand it first to see exactly what would be sent. A few of those details, like a full browser user-agent, can be somewhat identifying, so it stays your choice. We never add your name, location, advertising ID, or the code used to count free pictures."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hosting",
+        "title": "Hosting and downloads",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Splotch — the website, the API, and the stored reports above — is hosted by Netlify. Loading the app there works like loading any website: the request carries normal details such as an IP address and browser version. Our API holds the address briefly in memory to slow down abuse; it is not stored with the counting records and not used to follow a person or device."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Two requests happen on their own, and neither carries a drawing:"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "spans": [
+              {
+                "text": "With coloring books enabled, the app downloads coloring pages from our own site — the same kind of request that loads the app itself."
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "spans": [
+              {
+                "text": "If the site's security rules block something unexpected, the browser can send us a short automatic note (the page address, the blocked address, and a small code sample) so we can fix it. There is no third-party error service."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Links that leave Splotch — OpenAI's policies above, our GitHub project page — open only when tapped. In the store apps they follow the external-links grown-up check."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "children",
+        "title": "Children's privacy",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Splotch is made for young children, so the protection is built into the design: no accounts, no ads, no analytics or tracking code, no chat, comments, or public sharing, and no purchases. We never ask for a child's name, email address, or location, and we do not use submitted content to identify a child. These choices minimize children's data and support the protections required by COPPA and the GDPR."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "Every action that reaches beyond drawing — making an AI picture, reporting one, opening an external link, sending feedback, and opening Parent Center — sits behind its own grown-up check. A grown-up can set each one to Every time, Per session, or Never in Parent Center. The store apps start with every check set to Every time; the web starts with Never; iOS does not allow external links to be set to Never. These checks guard actions; they are not accounts, and they are not legal proof of consent."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "When the app opens online with AI pictures enabled and no credential added, it checks the remaining free count using the one-way code above. No drawing is sent during that check."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "contact",
+        "title": "Changes and contact",
+        "blocks": [
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "text": "If this policy changes, the date at the top changes with it. Questions or concerns? Send them through our "
+              },
+              {
+                "href": "/feedback",
+                "text": "private feedback form"
+              },
+              {
+                "text": " and we'll take a look."
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "spans": [
+              {
+                "strong": true,
+                "text": "Questions about privacy?"
+              },
+              {
+                "text": " "
+              },
+              {
+                "href": "/feedback",
+                "text": "Send us a note"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

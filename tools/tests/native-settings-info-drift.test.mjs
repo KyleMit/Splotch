@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { SITE_ORIGIN } from '../../web/src/lib/siteUrl.ts';
 import { GITHUB_REPO_URL } from '../../web/src/lib/githubRepo.ts';
 import { HOSTED_PAGES } from '../../experiments/native-architecture/src/settings/hostedPages.ts';
 import {
   MESSAGE_PROMPT_BY_KIND,
   REPORT_FORM_COPY,
 } from '../../experiments/native-architecture/src/feedback/reportFormCopy.ts';
+import { FEEDBACK_PAGE_COPY } from '../../experiments/native-architecture/src/information/feedbackPageCopy.ts';
 import { WHATS_NEW_COPY } from '../../experiments/native-architecture/src/settings/whatsNew.ts';
 
 vi.mock('react-native', () => ({ Linking: {} }));
@@ -365,8 +365,6 @@ describe('native Settings info sections against their shipping sources', () => {
     expect(SHIPPING.about).toContain('<a href="/privacy">');
     expect(SHIPPING.whatsNew).toContain('<a href="/changelog">');
     expect(HOSTED_PAGES).toEqual({
-      privacy: `${SITE_ORIGIN}/privacy`,
-      changelog: `${SITE_ORIGIN}/changelog`,
       github: GITHUB_REPO_URL,
       openAiKeys: 'https://platform.openai.com/api-keys',
     });
@@ -375,4 +373,23 @@ describe('native Settings info sections against their shipping sources', () => {
       Function(`return (${shippingIcons});`)()
     );
   });
+});
+
+it('keeps the standalone Feedback hero and next steps from the shipping route', () => {
+  const source = text(read('web/src/routes/feedback/+page.svelte'));
+  for (const copy of [
+    FEEDBACK_PAGE_COPY.lede,
+    FEEDBACK_PAGE_COPY.next,
+    ...FEEDBACK_PAGE_COPY.steps,
+    FEEDBACK_PAGE_COPY.privacy,
+    FEEDBACK_PAGE_COPY.sentLede,
+    FEEDBACK_PAGE_COPY.sentStatus,
+    FEEDBACK_PAGE_COPY.sendAnother,
+  ])
+    expect(source).toContain(copy);
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(FEEDBACK_PAGE_COPY.title);
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(FEEDBACK_PAGE_COPY.sentTitle);
+  expect(read('web/src/routes/feedback/+page.svelte')).toContain(
+    `feature: '${REPORT_FORM_COPY.sendIdea}'`
+  );
 });

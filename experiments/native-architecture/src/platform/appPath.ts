@@ -1,9 +1,8 @@
-// The native apps always open on the drawing screen; only a browser arrives at another path.
-export function isDrawingPath() {
-  return true;
-}
-
-// Answers the title it replaced, so a screen can hand it back.
+import { createAppPages } from '../information/appPages';
+const pages = createAppPages();
+export const currentAppPage = pages.current;
+export const subscribeAppPage = pages.subscribe;
+export const openAppPage = pages.open;
 export function setDocumentTitle(_title: string) {
   return '';
 }

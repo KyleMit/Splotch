@@ -1,7 +1,7 @@
 import { FEEDBACK_APP_VERSION } from '../feedback/feedbackCopy';
 import { fetch } from 'expo/fetch';
 import { File, Paths } from 'expo-file-system';
-import { Dimensions, Platform } from 'react-native';
+import { Dimensions, NativeModules, Platform } from 'react-native';
 import { FEEDBACK_URL, type FeedbackTransport } from '../feedback/feedbackTransport';
 import {
   FEEDBACK_POLICY_FILE,
@@ -22,19 +22,36 @@ export const feedbackTransport: FeedbackTransport = (body, signal) =>
     redirect: 'error',
   });
 
+function nativeDevice(): { os: string; device: string; language: string } {
+  const language = Intl.DateTimeFormat().resolvedOptions().locale.split('-')[0];
+  if (Platform.OS === 'android')
+    return {
+      os: `android ${Platform.constants.Release}`,
+      device: `${Platform.constants.Manufacturer} ${Platform.constants.Model}`.trim(),
+      language,
+    };
+  const module: unknown = NativeModules.SplotchFeedbackDevice;
+  if (!module || typeof module !== 'object') throw new Error('Device details are unavailable');
+  const os: unknown = Reflect.get(module, 'os');
+  const model: unknown = Reflect.get(module, 'model');
+  if (typeof os !== 'string' || typeof model !== 'string' || !os || !model)
+    throw new Error('Device details are unavailable');
+  return { os, device: `Apple ${model}`, language };
+}
+
 export function feedbackDevice(): DeviceInfo {
   const screen = Dimensions.get('screen');
+  const viewport = Dimensions.get('window');
   return {
     app: FEEDBACK_APP_VERSION,
-    platform: Platform.OS,
-    os: `${Platform.OS} ${Platform.Version}`,
+    platform: Platform.OS === 'android' ? 'Android' : 'iOS',
+    ...nativeDevice(),
     screen: `${Math.round(screen.width)} × ${Math.round(screen.height)}`,
-    pixelRatio: String(screen.scale),
+    viewport: `${Math.round(viewport.width)} × ${Math.round(viewport.height)}`,
+    pixelRatio: String(Math.round(screen.scale * 100) / 100),
     display: 'Native app',
   };
 }
-// React Native's navigator has no connectivity signal; null keeps delivery uncertainty explicit.
-export const feedbackOffline = (): null => null;
 
 export const feedbackPolicyStorage: FeedbackPolicyStorage = {
   async read() {

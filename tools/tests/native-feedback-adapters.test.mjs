@@ -1,13 +1,21 @@
+import { readFileSync } from 'node:fs';
+import { NETWORK_ERROR_MESSAGE } from '../../web/src/lib/latestRequest.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const host = vi.hoisted(() => ({
   send: vi.fn(),
   files: new Map(),
   create: vi.fn(),
   failReadback: false,
+  platform: {
+    OS: 'ios',
+    Version: '18.7',
+    constants: { Release: '14', Manufacturer: 'samsung', Model: 'SM-G990U' },
+  },
 }));
 vi.mock('expo/fetch', () => ({ fetch: host.send }));
 vi.mock('react-native', () => ({
-  Platform: { OS: 'ios', Version: '18.7' },
+  Platform: host.platform,
+  NativeModules: { SplotchFeedbackDevice: { os: 'ios 18.7', model: 'iPhone15,2' } },
   Dimensions: { get: () => ({ width: 400, height: 800, scale: 3 }) },
 }));
 vi.mock('expo-file-system', () => ({
@@ -38,12 +46,12 @@ vi.mock('expo-file-system', () => ({
 import {
   feedbackTransport,
   feedbackDevice,
-  feedbackOffline,
   feedbackPolicyStorage,
 } from '../../experiments/native-architecture/src/platform/feedback.ts';
 import {
   feedbackTransport as webTransport,
   feedbackPolicyStorage as webPolicy,
+  feedbackDevice as webDevice,
 } from '../../experiments/native-architecture/src/platform/feedback.web.ts';
 import {
   FEEDBACK_POLICY_FILE,
@@ -57,29 +65,20 @@ beforeEach(() => {
   host.send.mockReset().mockResolvedValue(new Response('{"ok":true}'));
   host.create.mockReset();
   host.failReadback = false;
+  host.platform.OS = 'ios';
 });
 afterEach(() => vi.unstubAllGlobals());
 describe('actual native and web feedback adapters', () => {
-  it('represents the real React Native navigator contract as unknown connectivity', async () => {
-    vi.stubGlobal('navigator', { product: 'ReactNative' });
-    expect(feedbackOffline()).toBeNull();
-    host.send.mockRejectedValueOnce(new TypeError('Network request failed: private fixture'));
-    const result = await sendFeedback(
-      feedbackTransport,
-      body,
-      new AbortController(),
-      feedbackOffline
-    );
-    expect(host.send).toHaveBeenCalledOnce();
-    expect(result).toEqual({
-      status: 'connection',
-      message:
-        'Could not connect. You may be offline. Splotch may already have received it. Sending again could send it twice.',
-    });
-  });
-  it('does not mistake a browser navigator shim for native connectivity evidence', () => {
+  it('attempts delivery even when a navigator shim claims offline, as shipping does', async () => {
     vi.stubGlobal('navigator', { product: 'ReactNative', onLine: false });
-    expect(feedbackOffline()).toBeNull();
+    host.send.mockRejectedValueOnce(new TypeError('private network detail'));
+    const result = await sendFeedback(feedbackTransport, body, new AbortController());
+    expect(host.send).toHaveBeenCalledOnce();
+    expect(result).toEqual({ status: 'connection', message: NETWORK_ERROR_MESSAGE });
+    const send = vi.fn().mockResolvedValue(new Response('{"ok":true}'));
+    vi.stubGlobal('fetch', send);
+    expect((await sendFeedback(webTransport, body, new AbortController())).status).toBe('success');
+    expect(send).toHaveBeenCalledOnce();
   });
   it('uses the released Expo streaming transport with the exact hosted endpoint and no credentials or redirects', async () => {
     const signal = new AbortController().signal;
@@ -93,7 +92,7 @@ describe('actual native and web feedback adapters', () => {
       redirect: 'error',
     });
   });
-  it('reads the native Expo response stream through the real deadline reader without global fetch', async () => {
+  it('reads the native Expo response stream without global fetch', async () => {
     const globalSend = vi.fn().mockRejectedValue(new Error('Legacy fetch is outside this fixture'));
     vi.stubGlobal('fetch', globalSend);
     const encoder = new TextEncoder();
@@ -107,7 +106,7 @@ describe('actual native and web feedback adapters', () => {
       })
     );
     host.send.mockResolvedValueOnce(nativeResponse);
-    const result = await sendFeedback(feedbackTransport, body, new AbortController(), () => false);
+    const result = await sendFeedback(feedbackTransport, body, new AbortController());
     expect(result.status).toBe('success');
     expect(host.send).toHaveBeenCalledOnce();
     expect(nativeResponse.bodyUsed).toBe(true);
@@ -132,12 +131,60 @@ describe('actual native and web feedback adapters', () => {
   it('collects only the opted-in diagnostic vocabulary without installation or hardware identifiers', () => {
     expect(feedbackDevice()).toEqual({
       app: FEEDBACK_APP_VERSION,
-      platform: 'ios',
+      platform: 'iOS',
       os: 'ios 18.7',
+      device: 'Apple iPhone15,2',
+      language: Intl.DateTimeFormat().resolvedOptions().locale.split('-')[0],
+      viewport: '400 × 800',
       screen: '400 × 800',
       pixelRatio: '3',
       display: 'Native app',
     });
+  });
+  it('uses Android release, manufacturer and model rather than the SDK level', () => {
+    host.platform.OS = 'android';
+    expect(feedbackDevice()).toMatchObject({
+      platform: 'Android',
+      os: 'android 14',
+      device: 'samsung SM-G990U',
+    });
+  });
+  it('shows the shipping browser diagnostic fields and display mode', () => {
+    vi.stubGlobal('navigator', {
+      userAgent: 'Mozilla Android 14',
+      language: 'fr-CA',
+      onLine: false,
+    });
+    vi.stubGlobal('screen', { width: 400, height: 800 });
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('innerHeight', 750);
+    vi.stubGlobal('devicePixelRatio', 3);
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    expect(webDevice()).toEqual({
+      app: FEEDBACK_APP_VERSION,
+      platform: 'Web',
+      os: 'Android 14',
+      browser: 'Mozilla Android 14',
+      language: 'fr-CA',
+      screen: '400 × 800',
+      viewport: '390 × 750',
+      pixelRatio: '3',
+      display: 'Browser tab',
+      online: 'No',
+    });
+  });
+  it('pins the pure OS-label copy to the shipping platform owner', () => {
+    const shipping = readFileSync(
+      new URL('../../web/src/lib/platform/index.ts', import.meta.url),
+      'utf8'
+    );
+    const native = readFileSync(
+      new URL('../../experiments/native-architecture/src/feedback/osLabel.ts', import.meta.url),
+      'utf8'
+    );
+    const fn = (source) =>
+      source.slice(source.indexOf('export function osLabelFromUserAgent(')).trim();
+    expect(fn(native)).toBe(fn(shipping).split('\n}')[0] + '\n}');
   });
   it('creates and verifies its own native policy file and round trips a deliberate parent choice', async () => {
     expect(await feedbackPolicyStorage.read()).toBeNull();

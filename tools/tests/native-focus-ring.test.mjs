@@ -14,6 +14,7 @@ import { RsdToggleSwitch } from '../../experiments/native-architecture/src/rsdDr
 import { RsdSliderRow } from '../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
 import { RsdDisclosure } from '../../experiments/native-architecture/src/rsdDrawing/RsdDisclosure.tsx';
 import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 import { DeviceCheckbox } from '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.tsx';
 import { RsdClearOverlay } from '../../experiments/native-architecture/src/rsdDrawing/RsdClearControl.tsx';
 import { RsdAiStylePrompt } from '../../experiments/native-architecture/src/rsdDrawing/RsdAiStylePrompt.tsx';
@@ -23,6 +24,10 @@ import { RsdAiStylePrompt } from '../../experiments/native-architecture/src/rsdD
 // and attributes its web build emits. The ring itself is src/strict.css, applied by happy-dom's
 // cascade to whichever element the browser would focus.
 vi.mock('react-native', async () => import('react-native-web'));
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
+);
 // The web build resolves ModalScrim to its web file; Vitest resolves the native one.
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/ModalScrim.tsx',
@@ -394,4 +399,14 @@ it('lights the AI style cover with shipping halo instead of ringing the whole op
     boxShadow: resolve(AI_HALO['box-shadow']),
   });
   expect(computed(option).outlineStyle).toBe('none');
+});
+
+it('moves reading-page focus to the heading without a control outline', async () => {
+  await mount(
+    h(RsdPageSheet, { title: 'Changelog', lede: 'Every release' }, h('p', null, 'Notes'))
+  );
+  const heading = host.querySelector('h1');
+  expect(document.activeElement).toBe(heading);
+  expect(heading.hasAttribute('data-page-heading')).toBe(true);
+  expect(computed(heading).outlineStyle).toBe('none');
 });

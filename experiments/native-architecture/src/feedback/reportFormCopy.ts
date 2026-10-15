@@ -17,6 +17,7 @@ export const REPORT_FORM_COPY = {
   privacy:
     "Your report goes to our private support tracker. Please don't include personal details like names or email addresses.",
   send: 'Send report',
+  sendIdea: 'Send idea',
   sending: 'Sending…',
   sent: 'Thanks for your feedback.',
 } as const;

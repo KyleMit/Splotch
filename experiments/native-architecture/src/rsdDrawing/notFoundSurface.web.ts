@@ -3,11 +3,12 @@ import { createLazyExport, useLazyValue } from '../lazyExport';
 import type { RsdNotFoundPage as Page } from './RsdNotFoundPage';
 
 const page = createLazyExport(() =>
-  import('./RsdNotFoundPage').then((module) => module.RsdNotFoundPage)
+  import('./RsdSettingsRoute').then((module) => module.RsdNotFoundPage)
 );
 const whole = (loaded: typeof Page) => loaded;
 
-// A stray link is the only way here, so the drawing screen's startup carries none of the page.
+// PageShell is also used by the internal reading pages, so every page loads through Settings'
+// chunk entry; a second entry would hoist their shared shell onto the drawing startup path.
 export function RsdNotFoundPage() {
   const Loaded = useLazyValue(page, whole, 'The not-found page');
   return Loaded ? createElement(Loaded) : null;
