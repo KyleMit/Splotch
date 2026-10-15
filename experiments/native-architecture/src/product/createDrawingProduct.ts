@@ -27,13 +27,13 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
   let settingsState: SoundSettingsState | null = null;
   const gate = createParentGate(() => preferences.parentPolicies, notify);
   const settings = createSoundSettings(storage, (next) => {
-    const changed =
-      preferences.aiEnabled !== next.aiEnabled ||
-      PARENT_FEATURES.some(
-        (feature) => preferences.parentPolicies[feature] !== next.parentPolicies[feature]
-      );
+    const changedPolicies = PARENT_FEATURES.filter(
+      (feature) => preferences.parentPolicies[feature] !== next.parentPolicies[feature]
+    );
+    const changed = preferences.aiEnabled !== next.aiEnabled || changedPolicies.length > 0;
     preferences = { aiEnabled: next.aiEnabled, parentPolicies: next.parentPolicies };
     settingsState = next;
+    for (const feature of changedPolicies) gate.rearm(feature);
     if (changed) {
       consentEpoch += 1;
       gate.invalidate();

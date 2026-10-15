@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   createParentGate,
@@ -297,7 +298,7 @@ describe('root Parent Center policy and lifetime', () => {
     solve(f.gate);
     expect(feedback).not.toHaveBeenCalled();
     expect(parent).toHaveBeenCalledOnce();
-    f.gate.resetSessions();
+    f.gate.rearm('ai');
     f.gate.request('ai', ai);
     expect(f.gate.getState().open).toBe(true);
   });
@@ -397,6 +398,65 @@ describe('root Parent Center policy and lifetime', () => {
     expect(f.owner.gate.getState().feature).toBe('parentCenter');
     solve(f.owner.gate);
     expect(f.owner.getState().parentCenterOpen).toBe(true);
+    f.owner.dispose();
+  });
+});
+
+// parentalGate.svelte.ts's session rule, which its own unit tests pin as "an every-time solve
+// does not satisfy a later switch to per-session mode" and "changing a policy re-arms a
+// previously solved per-session gate".
+describe('Per session solves follow the shipping session rule', () => {
+  const shippingGate = readFileSync(
+    new URL('../../web/src/lib/state/parentalGate.svelte.ts', import.meta.url),
+    'utf8'
+  );
+
+  it('reads the rule this suite ports from the shipping gate', () => {
+    expect(shippingGate).toContain(
+      "if (feature && policies[feature] === 'session') sessionSolved[feature] = true;"
+    );
+    expect(shippingGate).toContain(
+      'if (policies[feature] !== mode) sessionSolved[feature] = false;'
+    );
+  });
+
+  it('asks again after an Every time solve is followed by a switch to Per session', async () => {
+    const f = productFixture();
+    await f.owner.settings.load();
+    f.owner.openParentCenter();
+    solve(f.owner.gate);
+    expect(f.owner.getState().parentCenterOpen).toBe(true);
+    await f.owner.setPolicy('parentCenter', 'session');
+    expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('session');
+    f.owner.closeParentCenter();
+    expect(f.owner.getState().parentCenterCheckDue).toBe(true);
+    f.owner.openParentCenter();
+    expect(f.owner.gate.getState()).toMatchObject({ open: true, feature: 'parentCenter' });
+    expect(f.owner.getState().parentCenterOpen).toBe(false);
+    f.owner.dispose();
+  });
+
+  it('re-arms a solved Per session check when its policy changes and changes back', async () => {
+    const f = productFixture();
+    await f.owner.settings.load();
+    const setFeedback = async (mode) => {
+      f.owner.openParentCenter();
+      solve(f.owner.gate);
+      await f.owner.setPolicy('feedback', mode);
+      f.owner.closeParentCenter();
+    };
+    await setFeedback('session');
+    const send = vi.fn();
+    f.owner.port.request('feedback', send);
+    solve(f.owner.gate);
+    expect(send).toHaveBeenCalledOnce();
+    f.owner.port.request('feedback', send);
+    expect(send).toHaveBeenCalledTimes(2);
+    await setFeedback('always');
+    await setFeedback('session');
+    f.owner.port.request('feedback', send);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(f.owner.gate.getState()).toMatchObject({ open: true, feature: 'feedback' });
     f.owner.dispose();
   });
 });

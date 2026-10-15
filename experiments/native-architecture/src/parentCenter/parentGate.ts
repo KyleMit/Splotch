@@ -199,7 +199,9 @@ export function createParentGate(
       return;
     }
     resetLockout();
-    sessions.add(state.feature);
+    // Only a solve made under Per session counts for the session (shipping succeed): an Every time
+    // solve must not satisfy a later switch to Per session.
+    if (policies()[state.feature] === 'session') sessions.add(state.feature);
     const action = pending;
     pending = null;
     update({
@@ -253,9 +255,9 @@ export function createParentGate(
       if (state.feature === feature && state.open) dismiss();
     },
     invalidate: dismiss,
-    resetSessions() {
-      sessions.clear();
-      dismiss();
+    /** A changed policy asks again, whatever was solved under the old one (shipping setParentalGateMode). */
+    rearm(feature: ParentFeature) {
+      sessions.delete(feature);
     },
     tick,
     dismiss,
