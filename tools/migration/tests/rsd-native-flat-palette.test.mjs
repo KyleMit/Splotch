@@ -163,6 +163,38 @@ describe('the native palette bar', () => {
   });
 });
 
+// Android draws a view offscreen when it carries a partial or animated opacity, and draws a view's
+// parent offscreen when the view blends (PR 2887). Either on a view holding the paper redraws the
+// whole drawing, ink included, on every frame, so neither may sit on the paper's ancestors or
+// their children through a stroke. Dialogs and buttons fade on layers of their own. Negative
+// control: a translucent canvas area, or a blended view beside the paper, fails here.
+describe('the views holding the paper', () => {
+  const composites = ({ style }) =>
+    (style.opacity ?? 1) !== 1 || (style.mixBlendMode ?? 'normal') !== 'normal';
+  const named = ({ element, props }) => props.testID ?? element.getAttribute('aria-label');
+
+  it.each(['buttons', 'bare'])('draw nothing offscreen in the %s style', async (toolbarStyle) => {
+    records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+    storedSettings({ toolbarStyle, aiEnabled: true });
+    await mountToolbar(toolbarScreen({ drawing: true }));
+    // The flat style's glass loads before the first paint shows the chrome.
+    await vi.waitFor(() =>
+      expect(byTestId('rsd-rail-glass') !== null).toBe(toolbarStyle === 'bare')
+    );
+    const ancestors = [];
+    let element = byTestId('rsd-paper-slot');
+    for (; element !== host; element = element.parentElement) ancestors.push(hostOf(element));
+    expect(ancestors.map(({ props }) => props.testID)).toEqual(
+      expect.arrayContaining(['rsd-paper-slot', 'rsd-canvas-area', 'rsd-drawing-layout'])
+    );
+    expect(ancestors.filter(composites).map(named)).toEqual([]);
+    const blendedChildren = ancestors
+      .flatMap(hostChildren)
+      .filter(({ style }) => (style.mixBlendMode ?? 'normal') !== 'normal');
+    expect(blendedChildren.map(named)).toEqual([]);
+  });
+});
+
 const channels = (hex) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16) / 255);
 const BLENDS = {
   multiply: (paper, ink) => paper * ink,
