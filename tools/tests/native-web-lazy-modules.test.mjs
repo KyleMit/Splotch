@@ -111,3 +111,40 @@ describe('bundled page line art on the web export', () => {
     expect(source).not.toMatch(/^import .* from '\.\/bundledFarm\//m);
   });
 });
+
+const SCROLL_VIEW_IMPORT = ['import { ScrollView }', 'from', "'../platform/ScrollView';"].join(' ');
+
+describe('optional web scrollers', () => {
+  it('keeps the native component and one actual lazy web content import', () => {
+    expect(read('platform/ScrollView.ts').trim()).toBe(
+      "export { ScrollView } from 'react-native';"
+    );
+    expect(read('platform/ScrollViewContent.web.ts').trim()).toBe(
+      "export { ScrollView } from 'react-native';"
+    );
+    const web = read('platform/ScrollView.web.ts');
+    expect(web).toContain('lazySurface<ComponentPropsWithRef<typeof NativeScrollView>>');
+    expect([...web.matchAll(/import\('\.\/ScrollViewContent\.web'\)/g)]).toHaveLength(1);
+    for (const file of [
+      'RsdSettingsWide.tsx',
+      'ModalShellContent.tsx',
+      'RsdColoringScroll.tsx',
+      'RsdNotFoundPage.tsx',
+      'RsdPageContents.tsx',
+      'RsdScrollCue.tsx',
+    ]) {
+      expect(read(`rsdDrawing/${file}`)).toContain(SCROLL_VIEW_IMPORT);
+    }
+  });
+
+  it('keeps failure recovery independent of the scroller chunk', () => {
+    const source = read('rsdDrawing/RsdSurfaceFailure.web.tsx');
+    const independent = (value) => {
+      expect(value).not.toMatch(/import[^;]*(?:ScrollView|ModalShell)/);
+      expect(value).toContain('<dialog');
+      expect(value).toContain("overflow: 'auto'");
+    };
+    independent(source);
+    expect(() => independent(`${SCROLL_VIEW_IMPORT}\n${source}`)).toThrow();
+  });
+});

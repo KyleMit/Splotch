@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { ScrollView } from '../platform/ScrollView';
 import { css, html } from 'react-strict-dom';
 import type { ReleaseHue } from '../../../../web/src/lib/releaseHues';
 import { paletteHex } from '../drawing/palette';

@@ -9,6 +9,8 @@ import { createSaveFailure } from './export/saveFailure';
 import { capturePicture, savePicture } from './keepPicture';
 import { unsavedPictureStore } from './platform/unsavedPictures';
 
+export type ScreenshotFeedback = Readonly<{ id: number; kind: 'capture' | 'unavailable' }>;
+
 // One save's polaroid: the captured PNG it shows, the paper it was drawn on, and whether the
 // save failed under it, which takes it back mid-flight.
 export type PolaroidFlight = Readonly<{
@@ -37,6 +39,10 @@ export function useSaveFailure() {
 // The polaroid the Save screenshot button sends up, starting from that button's tile.
 export function usePolaroidFlights() {
   const [flight, setFlight] = useState<PolaroidFlight | null>(null);
+  const [feedback, setFeedback] = useState<ScreenshotFeedback | null>(null);
+  const cue = useCallback((kind: ScreenshotFeedback['kind']) => {
+    setFeedback((previous) => ({ id: (previous?.id ?? 0) + 1, kind }));
+  }, []);
   const nextId = useRef(0);
   const cameraTile = useRef<View>(null);
   // The flight finishes through `land`, so it keeps one identity for the flight's lifetime.
@@ -46,6 +52,8 @@ export function usePolaroidFlights() {
   );
   return {
     flight,
+    feedback,
+    cue,
     cameraTile,
     land,
     launch(pngBase64: string, paper: PaperSize) {
@@ -87,6 +95,7 @@ export function useSaveAction({
     };
     await runCommand(async () => {
       capture.started = true;
+      flights.cue('capture');
       const drawing = historyRef.current.drawing;
       capture.pngBase64 = await capturePicture(drawing, surface.current);
       if (capture.pngBase64) {
@@ -103,11 +112,18 @@ export function useSaveAction({
       return;
     }
     if (capture.flight !== null) flights.discard(capture.flight);
+    flights.cue('unavailable');
     reportSaveFailure(outcome, capture.pngBase64);
   }
   return () => {
-    if (state.active) return state.active;
-    if (performance.now() < state.cooldownUntil) return Promise.resolve();
+    if (state.active) {
+      flights.cue('unavailable');
+      return state.active;
+    }
+    if (performance.now() < state.cooldownUntil) {
+      flights.cue('unavailable');
+      return Promise.resolve();
+    }
     state.active = save().finally(() => {
       state.active = null;
     });

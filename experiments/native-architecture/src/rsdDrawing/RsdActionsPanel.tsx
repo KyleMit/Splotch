@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
@@ -6,6 +6,9 @@ import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 import { refocusFlyoutTrigger, useFlyoutEscape } from '../platform/flyoutFocus';
 import { RsdIconButton } from './RsdIconButton';
+import { useDrawerOpening } from './RsdDrawerCascade';
+import { RsdDrawerTools, type DrawerTool as Tool } from './RsdDrawerTools';
+import { useModalPresence } from './useModalPresence';
 import { useReportPanelGlass, type ReportPanelGlass } from './bareGlassLayout';
 import { BRUSH_MENU_OPTIONS } from './brushMenuOptions';
 import { RsdBrushMenu, RsdColorMenu, RsdStrokeWidthMenu } from './toolFlyouts';
@@ -87,26 +90,6 @@ export function useFlyoutSlot(open: boolean, disabled: boolean, drawing: boolean
       inside.current = true;
       return false;
     },
-  };
-}
-
-type Tool = Readonly<{ key: 'brush' | 'stroke' | 'coloring' | 'camera' | 'ai' | 'undo' }> & {
-  render: (face: Face) => ReactNode;
-};
-// A tile's size and padding, and whether an open menu greys it out.
-type Face = Pick<ActionPanelLayout, 'size' | 'padding'> & { dimmed: boolean };
-
-// The Brush and Stroke Width slots are where a closing menu hands keyboard focus back.
-function triggerRef(
-  triggers: ReturnType<typeof useFlyoutSlot>['triggers'],
-  key: Tool['key'],
-  screen: Screen
-) {
-  // The save polaroid flies out of the Save screenshot button's tile.
-  if (key === 'camera') return screen.cameraTile;
-  if (key !== 'brush' && key !== 'stroke') return undefined;
-  return (node: View | null) => {
-    triggers.current[key] = node;
   };
 }
 
@@ -222,6 +205,7 @@ function panelTools(context: ToolContext): Tool[] {
           {...face}
           icon="camera"
           label="Save screenshot"
+          captureFeedback={screen.screenshotFeedback}
           disabled={disabled || !screen.inkVisible}
           onPress={() => {
             void screen.save();
@@ -308,8 +292,9 @@ export function RsdActionsPanel({
   onButtonSize,
   onScaleCeiling,
 }: ActionsPanelProps) {
-  const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
+  const { flyout, setFlyout, markInside, close, menu: menuSlot } = slot;
   const insets = useSafeAreaInsets();
+  const cascade = useDrawerOpening(open, screen.drawing);
   const tools = panelTools({ screen, sound, product, disabled, ink, flyout, setFlyout });
   // Shipping's data-no-actions: with no control left to show, the chevron goes too, while a
   // landscape phone keeps its Color Button, which no Settings section owns.
@@ -328,11 +313,20 @@ export function RsdActionsPanel({
   useEffect(() => onButtonSize(layout.size), [onButtonSize, layout.size]);
   const ceiling = actionButtonScaleCeiling(area, viewport, tools.length);
   useEffect(() => onScaleCeiling(ceiling), [onScaleCeiling, ceiling]);
-  const trigger = tools.findIndex((tool) => tool.key === flyout);
+  const menuPresence = useModalPresence(flyout === 'color' ? null : flyout);
+  const shownMenu = menuPresence.shown;
+  const trigger = tools.findIndex((tool) => tool.key === shownMenu);
   const placement =
     trigger < 0 ? null : flyoutPlacement(layout.mode, layout.tools[trigger], layout.size, viewport);
   const menu = placement ? { base: layout.base, scale, direction: placement.direction } : null;
-  const tool = flyout === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
+  const menuMotion = {
+    visible: menuPresence.visible,
+    onExited: menuPresence.dismissed,
+    motionless: screen.drawing,
+    portrait: viewport.width <= viewport.height,
+    originX: viewport.width <= viewport.height ? 0 : layout.size / 2,
+  };
+  const tool = shownMenu === 'stroke' && screen.brush === 'eraser' ? 'eraser' : 'drawing';
   if (noActions && !layout.color) return null;
   return (
     <>
@@ -349,23 +343,16 @@ export function RsdActionsPanel({
         slot={slot}
         onToggle={onToggle}
       />
-      {open
-        ? tools.map((item, index) => (
-            <View
-              key={item.key}
-              ref={triggerRef(triggers, item.key, screen)}
-              testID="rsd-drawer-tool"
-              style={[docks.slot, layout.tools[index]]}
-              onStartShouldSetResponderCapture={item.key === flyout ? markInside : undefined}
-            >
-              {item.render({
-                size: layout.size,
-                padding: layout.padding,
-                dimmed: flyout !== null && item.key !== flyout,
-              })}
-            </View>
-          ))
-        : null}
+      {open ? (
+        <RsdDrawerTools
+          tools={tools}
+          layout={layout}
+          screen={screen}
+          slot={slot}
+          opening={cascade.opening}
+          onEntered={cascade.finish}
+        />
+      ) : null}
       {placement && menu ? (
         <View
           ref={menuSlot}
@@ -373,13 +360,14 @@ export function RsdActionsPanel({
           style={[docks.flyout, { left: placement.left, bottom: placement.bottom }]}
           onStartShouldSetResponderCapture={markInside}
         >
-          {flyout === 'brush' ? (
+          {shownMenu === 'brush' ? (
             <RsdBrushMenu
               {...menu}
+              {...menuMotion}
               brushes={screen.availableBrushes}
               selected={screen.brush}
               ink={ink}
-              disabled={disabled}
+              disabled={disabled || !menuPresence.visible}
               onPick={(brush) => {
                 screen.setBrush(brush);
                 close();
@@ -388,10 +376,11 @@ export function RsdActionsPanel({
           ) : (
             <RsdStrokeWidthMenu
               {...menu}
+              {...menuMotion}
               brush={screen.brush}
               selected={tool === 'eraser' ? sound.settings.eraserWidth : sound.settings.strokeWidth}
               ink={ink}
-              disabled={disabled}
+              disabled={disabled || !menuPresence.visible}
               onPick={(width) => {
                 void sound.owner?.settings.setWidth(tool, width);
                 close();

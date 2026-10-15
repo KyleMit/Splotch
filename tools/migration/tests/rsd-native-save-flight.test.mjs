@@ -449,3 +449,25 @@ describe('the Save Failure Banner', () => {
     );
   });
 });
+
+it('plays the shutter cue when capture starts before the PNG settles', async () => {
+  let finishCapture;
+  caller.exportPng = () =>
+    new Promise((resolve) => {
+      finishCapture = resolve;
+    });
+  await mount(createElement(RsdDrawingScreen));
+  await click('[aria-label="Draw RSD fixture stroke"]');
+  await click('[aria-label="Expand controls"]');
+  await click('[aria-label="Save screenshot"]');
+  expect(overlay()).toBeNull();
+  expect(host.querySelector('[data-testid="rsd-camera-feedback"]')).not.toBeNull();
+  expect(timings.some((config) => config.duration === 460 && config.useNativeDriver)).toBe(true);
+  await act(async () => finishCapture('captured-png'));
+});
+
+it('drops the shutter squash under Reduce Motion', async () => {
+  records.reduceMotion = true;
+  await drawAndSave();
+  expect(timings.some((config) => config.duration === 460)).toBe(false);
+});

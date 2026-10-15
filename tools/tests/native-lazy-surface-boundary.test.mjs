@@ -3,6 +3,7 @@ import { act, createElement, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
+import { deferredLayer } from '../../experiments/native-architecture/src/rsdDrawing/clearSurfaces.web.ts';
 import {
   RsdSurfaceBoundary,
   SURFACE_FAILURE_LABEL,
@@ -230,4 +231,40 @@ it('keeps web failure recovery available without downloading a modal chunk', asy
   );
   expect(fallback.open).toBe(false);
   expect(onDismiss).toHaveBeenCalledOnce();
+});
+
+it('keeps a camera glyph and its focused button through a decorative chunk failure and retry', async () => {
+  const requests = [];
+  const load = vi.fn(() => new Promise((resolve, reject) => requests.push({ resolve, reject })));
+  const Cue = deferredLayer(load, 'The screenshot capture cue', (props) => props.children);
+  const save = vi.fn();
+  const glyph = createElement('span', { 'data-testid': 'camera-glyph' }, 'camera');
+  const render = (key) =>
+    createElement(
+      'button',
+      { 'aria-label': 'Save screenshot', onClick: save },
+      createElement(Cue, { key }, glyph)
+    );
+  await act(async () => root.render(render('first')));
+  const button = host.querySelector('[aria-label="Save screenshot"]');
+  expect(host.querySelector('[data-testid="camera-glyph"]')).not.toBeNull();
+  button.focus();
+  await act(async () => button.click());
+  expect(save).toHaveBeenCalledOnce();
+  await act(async () => requests[0].reject(CHUNK_FAILURE));
+  expect(host.querySelector('[data-testid="camera-glyph"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Save screenshot"]')).toBe(button);
+  expect(document.activeElement).toBe(button);
+  expect(errors).toHaveBeenCalledWith('The screenshot capture cue failed to load:', CHUNK_FAILURE);
+  await act(async () => root.render(render('retry')));
+  expect(load).toHaveBeenCalledTimes(2);
+  await act(async () =>
+    requests[1].resolve(({ children }) =>
+      createElement('span', { 'data-capture-cue': true }, children)
+    )
+  );
+  expect(host.querySelector('[data-capture-cue]')).not.toBeNull();
+  expect(host.querySelector('[data-testid="camera-glyph"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Save screenshot"]')).toBe(button);
+  expect(document.activeElement).toBe(button);
 });
