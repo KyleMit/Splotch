@@ -470,7 +470,9 @@ describe('the mounted drawing screen frame', () => {
     const grain = records.props.findLast((props) => props.resizeMode === 'repeat');
     expect(grain.source).toBeTruthy();
     await act(async () =>
-      slot().onLayout({ nativeEvent: { layout: { width: 800, height: 400 } } })
+      records.props
+        .findLast((props) => props.testID === 'rsd-canvas-area')
+        .onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 800, height: 400 } } })
     );
     expect(texture()).not.toBeNull();
     caller.screen = {

@@ -70,6 +70,10 @@ describe('generation and real input/command admission', () => {
     const h = harness(),
       old = h.get();
     act(() => old.callbacks.onRendererFault(new Error('fault')));
+    expect(h.get().generation).toBe(1);
+    expect(h.get().failed).toBe(false);
+    expect(h.lockInput).not.toHaveBeenCalled();
+    act(() => h.get().callbacks.onRendererFault(new Error('persistent fault')));
     const retry = h.get().retry;
     act(() => {
       retry();
@@ -77,7 +81,7 @@ describe('generation and real input/command admission', () => {
     });
     expect(h.lockInput).toHaveBeenCalledTimes(1);
     expect(h.release).toHaveBeenCalledTimes(1);
-    expect(h.get().generation).toBe(1);
+    expect(h.get().generation).toBe(2);
     const counts = [h.options.setPreparing.mock.calls.length, h.options.report.mock.calls.length];
     act(() => {
       old.callbacks.onPreparingChange(false);
@@ -111,6 +115,7 @@ describe('generation and real input/command admission', () => {
     expect(history.undo).toEqual([initial.drawing]);
     const committed = history;
     act(() => old.callbacks.onRendererFault(new Error('fault')));
+    act(() => h.get().callbacks.onRendererFault(new Error('persistent fault')));
     act(() => h.get().retry());
     act(() => old.callbacks.onCohort(strokes, paper));
     expect(history).toBe(committed);
@@ -125,9 +130,10 @@ describe('generation and real input/command admission', () => {
     expect(history).toBe(afterRetry);
     expect(h.options.finishCohort).toHaveBeenCalledTimes(2);
   });
-  it('refuses command/modal admission and an actual active-contact lock failure without losing the fault', () => {
+  it('refuses command/modal admission and an actual active-contact lock failure after silent recovery without losing the persistent fault', () => {
     const h = harness();
     act(() => h.get().callbacks.onRendererFault(new Error('fault')));
+    act(() => h.get().callbacks.onRendererFault(new Error('persistent fault')));
     h.options.command.current = true;
     act(() => h.get().retry());
     expect(h.lockInput).not.toHaveBeenCalled();
@@ -142,7 +148,7 @@ describe('generation and real input/command admission', () => {
       throw new Error('active contact');
     });
     act(() => h.get().retry());
-    expect(h.get().generation).toBe(0);
+    expect(h.get().generation).toBe(1);
     expect(h.get().failed).toBe(true);
     expect(h.options.rendererFault.current).toBe(true);
     expect(h.options.report).toHaveBeenLastCalledWith(
