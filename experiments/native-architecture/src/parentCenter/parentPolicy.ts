@@ -109,8 +109,16 @@ export function orderedParentPolicies(policies: ParentPolicies): ParentPolicies 
   };
 }
 export type ParentProof = Readonly<{ valid: () => boolean }>;
+// An external link opens inside the solving tap, which keeps a web export's new tab within that
+// tap's user activation, so its solve hands over at once with no "Unlocked!" card (shipping's
+// `immediate`).
+export type ParentRequestOptions = Readonly<{ immediate?: boolean }>;
 export type ParentOperationPort = {
-  request: (feature: ParentFeature, action: (proof: ParentProof) => void) => boolean;
+  request: (
+    feature: ParentFeature,
+    action: (proof: ParentProof) => void,
+    options?: ParentRequestOptions
+  ) => boolean;
   cancel: (feature: ParentFeature) => void;
   consent: () => Readonly<{ enabled: boolean; epoch: number }>;
 };

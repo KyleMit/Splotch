@@ -41,7 +41,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
     notify();
   });
   const port: ParentOperationPort = {
-    request(feature, action) {
+    request(feature, action, options) {
       if (
         disposed ||
         !settingsState ||
@@ -49,7 +49,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
         ((feature === 'ai' || feature === 'imageReport') && !preferences.aiEnabled)
       )
         return false;
-      return gate.request(feature, action);
+      return gate.request(feature, action, options);
     },
     cancel: gate.cancel,
     consent: () => ({ enabled: !disposed && preferences.aiEnabled, epoch: consentEpoch }),

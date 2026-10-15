@@ -44,7 +44,7 @@ import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
-import { useParentGateHold, type ParentGateView } from '../parentCenter/useParentGateHold';
+import { useParentGateCard, type ParentGateView } from '../parentCenter/useParentGateCard';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -58,7 +58,7 @@ function useSettledMessage(message: string, drawing: boolean) {
 export function RsdDrawingScreen() {
   const screen = useDrawingScreen();
   const product = useDrawingProduct(screen);
-  const gate = useParentGateHold(product.state?.gate ?? null);
+  const gate = useParentGateCard(product.state?.gate ?? null);
   const sound = product.sound;
   // Settings holds the gate over itself, as shipping stacks the challenge over its modal, so a
   // check raised from Settings never closes the page the parent is on.
