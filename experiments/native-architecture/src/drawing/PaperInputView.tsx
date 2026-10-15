@@ -6,7 +6,11 @@ import {
   type ViewProps,
 } from 'react-native';
 
-type Props = ViewProps & { onInput: (value: unknown) => void; onClaim: () => void };
+// Fabric interop rejects a wrapper hit; the native content view owns the paper's hit area.
+type Props = Omit<ViewProps, 'pointerEvents'> & {
+  onInput: (value: unknown) => void;
+  onClaim: () => void;
+};
 type NativeProps = ViewProps & { onPaperInput?: (event: NativeSyntheticEvent<unknown>) => void };
 const InputView = requireNativeComponent<NativeProps>('SplotchPaperInput');
 

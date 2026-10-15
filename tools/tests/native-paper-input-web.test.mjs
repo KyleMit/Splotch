@@ -99,6 +99,8 @@ it('binds both native paper views to the same direct event and public metadata A
       'utf8'
     );
   const adapter = read('src/drawing/PaperInputView.tsx');
+  const surface = read('src/drawing/DrawingSurface.tsx');
+  const webAdapter = read('src/drawing/PaperInputView.web.tsx');
   const android = read(
     'android/app/src/main/java/art/splotch/migration/probe/SplotchPaperInput.kt'
   );
@@ -106,6 +108,16 @@ it('binds both native paper views to the same direct event and public metadata A
   const bridge = read('ios/HelloWorld/SplotchPaperInput.m');
   const project = read('ios/HelloWorld.xcodeproj/project.pbxproj');
   expect(adapter).toContain("requireNativeComponent<NativeProps>('SplotchPaperInput')");
+  expect(adapter).toContain("Omit<ViewProps, 'pointerEvents'>");
+  expect(surface).not.toContain('pointerEvents="box-only"');
+  expect(webAdapter).toContain('pointerEvents="box-only"');
+  const hitTest = ios.slice(
+    ios.indexOf('override func hitTest'),
+    ios.indexOf('private func sample')
+  );
+  expect(hitTest).toContain('self.point(inside: point, with: event)');
+  expect(hitTest).toContain('isUserInteractionEnabled, !isHidden');
+  expect(hitTest).toContain('return self');
   expect(android).toContain('"registrationName" to "onPaperInput"');
   expect(android).toContain('class SplotchPaperInputManager : ReactViewManager()');
   expect(android).toContain('super.getExportedCustomDirectEventTypeConstants()');

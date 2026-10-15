@@ -153,7 +153,6 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                 accessibilityLabel="Drawing paper"
                 testID="drawing-paper"
                 style={styles.inkPlane}
-                pointerEvents="box-only"
                 onLayout={layoutPlane}
                 onClaim={preemptBackground}
                 onInput={(value) => input.receiveInput(value)}

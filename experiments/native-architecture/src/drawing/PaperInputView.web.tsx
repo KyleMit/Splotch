@@ -118,6 +118,7 @@ export const PaperInputView = forwardRef<View, Props>(function PaperInputView(
   return (
     <View
       {...props}
+      pointerEvents="box-only"
       ref={(node) => {
         host.current = node;
         if (typeof ref === 'function') ref(node);

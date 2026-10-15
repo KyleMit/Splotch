@@ -2,6 +2,7 @@ import React
 import UIKit
 
 private let millisecondsPerSecond = 1000.0
+private let hitTestAlphaThreshold: CGFloat = 0.01
 
 @objc(SplotchPaperInputView)
 final class SplotchPaperInputView: RCTView {
@@ -21,6 +22,12 @@ final class SplotchPaperInputView: RCTView {
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
+
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    guard isUserInteractionEnabled, !isHidden, alpha >= hitTestAlphaThreshold,
+      self.point(inside: point, with: event) else { return nil }
+    return self
+  }
 
   private func sample(_ touch: UITouch, in window: UIWindow) -> [String: Any] {
     let point = touch.location(in: window)
