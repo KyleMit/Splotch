@@ -65,6 +65,7 @@ type NativeSoundSettingsDialogProps = {
   onAutoSaveAiChange: (enabled: boolean) => void;
   // Lifted to the drawing screen, whose edge controls preview the size while it is dragged.
   buttonScale: SliderDraft;
+  scaleCeiling: number;
   // Lifted to the drawing screen with the audio owner it previews through.
   soundVolume: SliderDraft;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
@@ -367,6 +368,7 @@ function SettingsSection(props: SectionProps) {
       return (
         <RsdAccessibilitySection
           buttonScale={props.buttonScale}
+          scaleCeiling={props.scaleCeiling}
           busy={busy}
           onReduceMotionChange={props.onReduceMotionChange}
         />

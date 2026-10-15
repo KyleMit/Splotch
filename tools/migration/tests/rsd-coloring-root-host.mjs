@@ -135,6 +135,7 @@ export function nativeSettingsProps(owner, state) {
     onAppearanceChange: (appearance) => owner.setAppearance(appearance),
     onToolbarStyleChange: (style) => owner.setToolbarStyle(style),
     onOrientationChange: (orientation) => owner.setOrientation(orientation),
+    scaleCeiling: 130,
     buttonScale: {
       value: state.buttonScale,
       active: false,

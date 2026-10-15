@@ -77,6 +77,7 @@ export function RsdEdgeLayout({
   covered,
   paintsDisabled,
   buttonScale,
+  onScaleCeiling,
   resizing,
   status,
   children,
@@ -88,6 +89,7 @@ export function RsdEdgeLayout({
   paintsDisabled: boolean;
   // Button Size, live while its slider is dragged.
   buttonScale: number;
+  onScaleCeiling: (scale: number) => void;
   // The drawer opens while Button Size is dragged, as shipping's does, so every control it
   // resizes is in view.
   resizing: boolean;
@@ -155,6 +157,7 @@ export function RsdEdgeLayout({
               slot={slot}
               onGlass={bare ? setPanelGlass : undefined}
               onButtonSize={setActionButtonSize}
+              onScaleCeiling={onScaleCeiling}
             />
           )}
           capturePress={slot.capturePress}

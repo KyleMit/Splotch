@@ -136,6 +136,7 @@ async function openSettings() {
       onOpenKeysPage: vi.fn(),
     },
     visible: true,
+    scaleCeiling: 130,
     buttonScale: { value: 100, active: false, onInput: () => {}, onActiveChange: () => {} },
     soundVolume: { value: 50, active: false, onInput: () => {}, onActiveChange: () => {} },
     gate: null,

@@ -37,6 +37,7 @@ export function RsdSettingsRoute({
   gate,
   notice,
   buttonScale,
+  scaleCeiling,
   soundVolume,
   visible,
   onDismiss,
@@ -47,6 +48,7 @@ export function RsdSettingsRoute({
   gate: ParentGateView | null;
   notice: string;
   buttonScale: SliderDraft;
+  scaleCeiling: number;
   soundVolume: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
@@ -73,6 +75,7 @@ export function RsdSettingsRoute({
       notice={notice}
       {...soundSettingsActions(sound)}
       buttonScale={buttonScale}
+      scaleCeiling={scaleCeiling}
       soundVolume={soundVolume}
       onClose={close}
       initialSection={screen.settingsSection}

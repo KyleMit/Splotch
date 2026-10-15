@@ -39,7 +39,7 @@ import { paintAppearance } from '../drawing/palette';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
-import { controlSize } from '../settings/buttonSize';
+import { BUTTON_SCALE_MAX, controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
@@ -228,6 +228,7 @@ function RsdDrawingContent({
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
+  const [scaleCeiling, setScaleCeiling] = useState(BUTTON_SCALE_MAX);
   const ready = sound.settings.status === 'ready';
   const buttonScale = useSliderDraft({
     saved: sound.settings.buttonScale,
@@ -275,6 +276,7 @@ function RsdDrawingContent({
             covered={covered}
             paintsDisabled={paintsDisabled}
             buttonScale={buttonScale.value}
+            onScaleCeiling={setScaleCeiling}
             resizing={buttonScale.active}
             paperOverlay={(drawerOpen) => (
               <RsdInstallBanner
@@ -322,6 +324,7 @@ function RsdDrawingContent({
               gate={gate}
               notice={soundNotice}
               buttonScale={buttonScale}
+              scaleCeiling={scaleCeiling}
               soundVolume={soundVolume}
               visible={route.visible}
               onDismiss={onModalDismissed}

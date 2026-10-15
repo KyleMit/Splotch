@@ -14,6 +14,7 @@ import { inkKeyline } from './inkKeyline';
 import { aiButtonFace } from '../ai/uiState';
 import {
   actionPanelLayout,
+  actionButtonScaleCeiling,
   DRAWER_CHEVRON_TURN_DEG,
   flyoutPlacement,
   isPhoneLandscapeViewport,
@@ -286,6 +287,7 @@ type ActionsPanelProps = {
   onGlass: ReportPanelGlass | undefined;
   // The landscape palette centres More colors on the Brush Button, so it follows this size.
   onButtonSize: (size: number) => void;
+  onScaleCeiling: (scale: number) => void;
 };
 
 // The drawer of drawing tools in the paper area's bottom-left corner, with its chevron after the
@@ -304,6 +306,7 @@ export function RsdActionsPanel({
   slot,
   onGlass,
   onButtonSize,
+  onScaleCeiling,
 }: ActionsPanelProps) {
   const { flyout, setFlyout, markInside, close, menu: menuSlot, triggers } = slot;
   const insets = useSafeAreaInsets();
@@ -323,6 +326,8 @@ export function RsdActionsPanel({
   });
   useReportPanelGlass(onGlass, layout, scale, tools, screen.availableBrushes.length);
   useEffect(() => onButtonSize(layout.size), [onButtonSize, layout.size]);
+  const ceiling = actionButtonScaleCeiling(area, viewport, tools.length);
+  useEffect(() => onScaleCeiling(ceiling), [onScaleCeiling, ceiling]);
   const trigger = tools.findIndex((tool) => tool.key === flyout);
   const placement =
     trigger < 0 ? null : flyoutPlacement(layout.mode, layout.tools[trigger], layout.size, viewport);
