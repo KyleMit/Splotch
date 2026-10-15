@@ -407,8 +407,6 @@ export function createSoundSettings(
 ) {
   let state = initialSoundSettingsState();
   let disposed = false;
-  // Set while the stored record could not be used: every choice then stays in the session and the
-  // record is never written over.
   let readFailure: SettingsReadFailure | null = null;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
