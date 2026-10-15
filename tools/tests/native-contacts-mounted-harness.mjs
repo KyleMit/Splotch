@@ -25,6 +25,7 @@ const sdk = vi.hoisted(() => ({
   soundStop: vi.fn(),
   soundVolume: vi.fn(),
   soundDispose: vi.fn(),
+  screenRenders: 0,
 }));
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(async () => ({
@@ -139,6 +140,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
 const PAPER_TARGET = 101;
 let owner, root, host;
 function Consumer() {
+  sdk.screenRenders += 1;
   owner = useDrawingScreen();
   const sound = useDrawingSound();
   return createElement(DrawingSurface, {
@@ -233,6 +235,7 @@ beforeEach(async () => {
   sdk.autoMeasure = true;
   sdk.hold = false;
   sdk.fail = false;
+  sdk.screenRenders = 0;
   sdk.frame = [0, 0, 1024, 768, 40, 800];
   sdk.save.mockClear();
   sdk.soundStart.mockClear();
@@ -258,4 +261,4 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-export { sdk, owner, root, host, touch, event, send, settle, open, twoContacts };
+export { sdk, owner, root, host, touch, event, send, settle, open, twoContacts, Consumer };

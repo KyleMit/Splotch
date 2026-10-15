@@ -9,8 +9,7 @@ import { RELEASE_NOTES } from '../../../experiments/native-architecture/src/sett
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
 vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
   openAppPage: vi.fn(),
-  setDocumentTitle: vi.fn(),
-  documentTitle: () => 'Splotch',
+  setDocumentTitle: vi.fn(() => 'Splotch'),
 }));
 
 afterEach(() => {

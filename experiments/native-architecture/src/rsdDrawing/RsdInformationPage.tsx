@@ -4,7 +4,7 @@ import { css, html } from 'react-strict-dom';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { DrawingAppearanceProvider } from '../drawing/DrawingAppearance';
 import { bootAppearance } from '../platform/bootAppearance';
-import { openAppPage, setDocumentTitle, documentTitle } from '../platform/appPath';
+import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { useDialogBack } from '../platform/BrowserBack';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { AppPage } from '../information/appPages';
@@ -193,8 +193,7 @@ export function RsdInformationPage({
   standalone,
 }: InformationPageProps) {
   useEffect(() => {
-    const previous = documentTitle();
-    setDocumentTitle(`${PAGE_TITLES[page]} · Splotch`);
+    const previous = setDocumentTitle(`${PAGE_TITLES[page]} · Splotch`);
     return () => setDocumentTitle(previous);
   }, [page]);
   const content = (

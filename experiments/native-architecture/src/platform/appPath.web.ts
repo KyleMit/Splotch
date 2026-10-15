@@ -9,8 +9,11 @@ export function isDrawingPath() {
   return DRAWING_PATHS.includes(location.pathname);
 }
 
+// Answers the title it replaced, so a screen can hand it back.
 export function setDocumentTitle(title: string) {
+  const previous = document.title;
   document.title = title;
+  return previous;
 }
 
 export function createBrowserAppPages() {
@@ -39,7 +42,3 @@ const pages = createBrowserAppPages();
 export const currentAppPage = pages.current;
 export const subscribeAppPage = pages.subscribe;
 export const openAppPage = pages.open;
-
-export function documentTitle() {
-  return document.title;
-}

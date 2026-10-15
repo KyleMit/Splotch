@@ -6,8 +6,7 @@ export const openAppPage = pages.open;
 export function isDrawingPath() {
   return currentAppPage() === 'drawing';
 }
-export function setDocumentTitle(_title: string) {}
 
-export function documentTitle() {
+export function setDocumentTitle(_title: string) {
   return '';
 }

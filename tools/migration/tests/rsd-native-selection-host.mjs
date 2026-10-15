@@ -143,7 +143,10 @@ vi.mock('../../../experiments/native-architecture/src/platform/pencilDoubleTap.t
   },
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
-  drawingDraftStorage: { read: async () => null, write: async () => {} },
+  drawingDraftStorage: {
+    read: async () => caller.draftStorage?.read() ?? null,
+    write: async (draft) => caller.draftStorage?.write(draft),
+  },
   protectedDraftPageIds: async () => [],
 }));
 vi.mock(
@@ -203,6 +206,7 @@ const records = vi.hoisted(() => ({
   exits: 0,
   os: 'ios',
   settingsOpened: 0,
+  journalHostProps: false,
 }));
 vi.mock('expo-screen-orientation', () => import('./rsd-orientation-port.mjs'));
 vi.mock('react-native-safe-area-context', async () => {
@@ -224,6 +228,7 @@ vi.mock('react-native', async () => {
     easingPort,
     platformPort,
     useShownStyle,
+    committedHostProps,
   } = await import('./rsd-native-animated-host.mjs');
   const host = (tag) =>
     React.forwardRef((props, ref) => {
@@ -234,6 +239,8 @@ vi.mock('react-native', async () => {
         {
           ref,
           'data-shown-opacity': shown.opacity,
+          // Only a case that journals host commits pays for writing every prop out.
+          'data-committed-props': records.journalHostProps ? committedHostProps(props) : undefined,
           role: props.role ?? props.accessibilityRole,
           id: props.nativeID,
           'aria-label': props.accessibilityLabel,
@@ -331,17 +338,8 @@ vi.mock('react-native/Libraries/Text/TextAncestor', async () => {
   return { default: React.createContext(false) };
 });
 vi.mock('react-native/Libraries/Components/View/ViewNativeComponent', async () => {
-  const React = await import('react');
-  return {
-    default: React.forwardRef((props, ref) => {
-      records.props.push(props);
-      return React.createElement(
-        'div',
-        { ref, role: props.role, 'aria-label': props.accessibilityLabel },
-        props.children
-      );
-    }),
-  };
+  const { viewNativeComponentPort } = await import('./rsd-native-animated-host.mjs');
+  return viewNativeComponentPort(records);
 });
 let root, host;
 beforeEach(() => {
@@ -428,6 +426,9 @@ afterEach(async () => {
   records.exits = 0;
   records.os = 'ios';
   records.settingsOpened = 0;
+  records.journalHostProps = false;
+  caller.liveScreen = null;
+  caller.draftStorage = null;
   caller.exportPng = null;
   caller.deviceLocked = false;
   orientationCalls.length = 0;

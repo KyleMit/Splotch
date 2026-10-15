@@ -72,7 +72,8 @@ type NativeSoundSettingsDialogProps = {
   soundVolume: SliderDraft;
   onReduceMotionChange: (preference: ReduceMotionPreference) => void;
   onWhatsNewSeen: () => void;
-  onRetry: () => void;
+  // Null while the stored settings are a record no retry can recover.
+  onRetry: (() => void) | null;
   onClose: () => void;
   parentCenter: ParentCenterRoute;
   // The Grown-Ups Only card, held over Settings while a check raised from it is open.
@@ -151,7 +152,17 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
   };
   // Only the phone shell drills in; the others show the same sections in place.
   const subpage = shell === 'phone' && page.kind === 'section' ? page : null;
-  const status = <SaveStatus settings={settings} notice={notice} onRetry={onRetry} />;
+  const parentCenterOwnsStatus =
+    props.parentCenter.section !== null &&
+    parentCenterRevealed(props.parentCenter) &&
+    (shell === 'wide' || subpage?.section === 'parentCenter');
+  const status = (
+    <SaveStatus
+      settings={settings}
+      notice={parentCenterOwnsStatus ? '' : notice}
+      onRetry={onRetry}
+    />
+  );
   return (
     <ModalShell
       visible={visible}
@@ -272,7 +283,7 @@ function SaveStatus({
   return (
     <>
       {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-      <RsdAction label="Try saving settings again" onClick={onRetry} />
+      {onRetry ? <RsdAction label="Try saving settings again" onClick={onRetry} /> : null}
     </>
   );
 }

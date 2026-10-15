@@ -4,8 +4,14 @@ import { DEFAULT_BRUSH_AVAILABILITY } from '../../../experiments/native-architec
 
 export function drawingScreenPort(actual, caller, projectHistory) {
   return {
-    useDrawingScreen: () => (caller.realScreen ? actual.useDrawingScreen() : useStubScreen()),
+    useDrawingScreen: () => (caller.realScreen ? useLiveScreen() : useStubScreen()),
   };
+  // The real screen owner, kept where a case can drive the callbacks its paper would.
+  function useLiveScreen() {
+    const screen = actual.useDrawingScreen();
+    caller.liveScreen = screen;
+    return screen;
+  }
   // The stub's own Settings open and close, so a product route that opens Settings (a Parent
   // Center unlock) renders it; a test that stubs either one keeps its own.
   function useStubScreen() {

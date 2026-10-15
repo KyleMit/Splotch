@@ -332,7 +332,9 @@ export function RsdPageSheet({
 }
 
 export function RsdNotFoundPage() {
-  useEffect(() => setDocumentTitle(NOT_FOUND_COPY.documentTitle), []);
+  useEffect(() => {
+    setDocumentTitle(NOT_FOUND_COPY.documentTitle);
+  }, []);
   return (
     <DrawingAppearanceProvider preference={bootAppearance()}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics} style={scroll.fill}>
