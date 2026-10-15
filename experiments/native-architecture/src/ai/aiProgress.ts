@@ -10,6 +10,10 @@ export type AiProgress = Readonly<{
   revealed: boolean;
 }>;
 
+// What the dial follows of a run. Its submitted drawing and picture change what the surfaces show,
+// never how far the dial has filled.
+type AiProgressRun = Pick<AiRun, 'id' | 'startedAt' | 'phase'>;
+
 // Where the run is on screen: the open sheet watches the dial fill, the corner
 // print only reads its caption bar, and nothing at all needs frames.
 export type AiProgressPresence = 'sheet' | 'corner' | 'hidden';
@@ -68,7 +72,7 @@ export function createAiProgress() {
   function run() {
     if (frame === null && !settled) frame = requestAnimationFrame(step);
   }
-  function begin(next: AiRun) {
+  function begin(next: AiProgressRun) {
     stop();
     runId = next.id;
     settled = false;
@@ -92,7 +96,7 @@ export function createAiProgress() {
         listeners.delete(listener);
       };
     },
-    follow(next: AiRun | null, presence: AiProgressPresence) {
+    follow(next: AiProgressRun | null, presence: AiProgressPresence) {
       if (!next) {
         stop();
         runId = null;

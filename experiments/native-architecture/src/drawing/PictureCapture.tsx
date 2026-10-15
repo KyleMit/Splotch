@@ -1,5 +1,5 @@
 import { drawingPaper, paperSize, samePaper, type PaperSize } from './paperSpace';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from '../platform/svg';
 import { CaptureSvg } from './CaptureSvg';
@@ -59,17 +59,25 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   if (!samePaper(packet.plan.paper, drawingPaper(request.drawing)))
     throw new Error('The captured paper reference does not match the picture.');
 
-  function fail(error: unknown) {
-    request.cancel(error instanceof Error ? error.message : 'PNG capture failed.');
-  }
-  function accept(pixels: string, kind: PictureRequest['kind']) {
-    if (!current.current || !packet.isCurrent()) {
-      request.cancel('The picture changed before capture finished.');
-      return;
-    }
-    if (kind === 'ink' && packet.kind !== 'ink') setBase64(pixels);
-    else request.complete(pixels);
-  }
+  // DrawingSurface keys this component by packet id, so the packet and its request, and with them
+  // these callbacks, stay the same for the component's whole life: listing them in the capture
+  // effects never restarts a capture.
+  const fail = useCallback(
+    (error: unknown) =>
+      request.cancel(error instanceof Error ? error.message : 'PNG capture failed.'),
+    [request]
+  );
+  const accept = useCallback(
+    (pixels: string, kind: PictureRequest['kind']) => {
+      if (!current.current || !packet.isCurrent()) {
+        request.cancel('The picture changed before capture finished.');
+        return;
+      }
+      if (kind === 'ink' && packet.kind !== 'ink') setBase64(pixels);
+      else request.complete(pixels);
+    },
+    [packet, request]
+  );
   function loaded() {
     if (current.current && packet.isCurrent()) setImageLoaded(true);
   }
@@ -83,7 +91,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
     const job = captures.capture(ink.current, target.raster);
     void job.promise.then((pixels) => accept(pixels, 'ink')).catch(fail);
     return () => job.cancel();
-  }, [ready, base64, captures]);
+  }, [ready, base64, captures, packet, target.raster, accept, fail]);
 
   useEffect(() => {
     if (!imageLoaded || !outlineReady) return;
@@ -97,7 +105,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       .then((pixels) => accept(pixels, 'picture'))
       .catch(fail);
     return () => job.cancel();
-  }, [imageLoaded, outlineReady, captures]);
+  }, [imageLoaded, outlineReady, captures, packet, target, accept, fail]);
 
   useEffect(() => {
     const timeout = setTimeout(
@@ -110,7 +118,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
       captures.dispose();
       request.cancel('Picture capture was cancelled.');
     };
-  }, [captures, request]);
+  }, [captures, request, fail]);
 
   return (
     <InkAppearanceScope.Provider value={packet.appearance}>

@@ -88,13 +88,7 @@ describe('owned ink observation request', () => {
       caller.indexOf('setHistory(clearDrawing(snapshot, empty))')
     );
     expect(caller).toContain('observation?.cancel()');
-    const surface = readFileSync(
-      new URL(
-        '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx',
-        import.meta.url
-      ),
-      'utf8'
-    );
-    expect(surface).toMatch(/useImperativeHandle\([\s\S]*?captureInk:[\s\S]*?\[\]\s*\)/);
+    // The `surface.current === owner` guard needs a handle that keeps its identity across renders;
+    // native-picture-capture.test.mjs holds the mounted surface to that.
   });
 });

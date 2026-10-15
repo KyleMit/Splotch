@@ -30,6 +30,7 @@ export function usePaintSelectionFocus({
       }
     });
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- a counter, not a rendered node: cleanup bumps its live value to void pending focus returns
       interaction.current++;
       request.current = null;
       subscription.remove();

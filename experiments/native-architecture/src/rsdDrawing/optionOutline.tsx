@@ -33,7 +33,8 @@ const styles = css.create({
 // silhouette in the ink at every step of a three-by-three grid, corners included, under the glyph.
 export function RsdOptionOutline({ children, name, size, keyline }: OptionOutlineProps) {
   const { textStrong } = useDrawingTheme();
-  const markup = useNativeIconMarkup(name)?.[useDrawingAppearance()];
+  const appearance = useDrawingAppearance();
+  const markup = useNativeIconMarkup(name)?.[appearance];
   const silhouette = useMemo(() => {
     if (!markup) return EMPTY_ICON_MARKUP;
     const ringed = keyline ? keylinedMarkup(markup, textStrong, size) : markup;

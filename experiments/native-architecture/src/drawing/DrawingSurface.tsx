@@ -257,35 +257,38 @@ function useSurfaceCapture(
   const mounted = useRef(true);
   const nextId = useRef(1);
 
-  async function capture(snapshot: Drawing, kind: PictureRequest['kind']) {
-    if (input.hasActive()) throw new Error('Lift your finger before capturing the picture.');
-    const lease = commandLock.current;
-    if (!lease || currentDrawing.current !== snapshot || !raster.current)
-      throw new Error('The current drawing paper is not ready to capture.');
-    const plan = raster.current.readyPlan(snapshot.strokes);
-    const request = captures.begin(snapshot);
-    captureLock.current = request;
-    const capturedAppearance = currentAppearance.current;
-    captureAppearance.current = capturedAppearance;
-    setPacket({
-      id: nextId.current++,
-      request,
-      kind,
-      plan,
-      appearance: capturedAppearance,
-      isCurrent: () =>
-        captureLock.current === request &&
-        commandLock.current === lease &&
-        currentDrawing.current === snapshot &&
-        currentAppearance.current === capturedAppearance,
-    });
-    return request.promise.finally(() => {
-      if (captureLock.current !== request) return;
-      captureLock.current = null;
-      captureAppearance.current = null;
-      if (mounted.current) setPacket(null);
-    });
-  }
+  const capture = useCallback(
+    async (snapshot: Drawing, kind: PictureRequest['kind']) => {
+      if (input.hasActive()) throw new Error('Lift your finger before capturing the picture.');
+      const lease = commandLock.current;
+      if (!lease || currentDrawing.current !== snapshot || !raster.current)
+        throw new Error('The current drawing paper is not ready to capture.');
+      const plan = raster.current.readyPlan(snapshot.strokes);
+      const request = captures.begin(snapshot);
+      captureLock.current = request;
+      const capturedAppearance = currentAppearance.current;
+      captureAppearance.current = capturedAppearance;
+      setPacket({
+        id: nextId.current++,
+        request,
+        kind,
+        plan,
+        appearance: capturedAppearance,
+        isCurrent: () =>
+          captureLock.current === request &&
+          commandLock.current === lease &&
+          currentDrawing.current === snapshot &&
+          currentAppearance.current === capturedAppearance,
+      });
+      return request.promise.finally(() => {
+        if (captureLock.current !== request) return;
+        captureLock.current = null;
+        captureAppearance.current = null;
+        if (mounted.current) setPacket(null);
+      });
+    },
+    [input, raster, captures, setPacket]
+  );
 
   useEffect(() => {
     const request = captureLock.current;
@@ -295,31 +298,37 @@ function useSurfaceCapture(
 
   // A capture belongs to the lease it was taken under, so ending the lease ends its capture at
   // once, rather than leaving it to block the next claim's.
-  function endLease(lease: Lease) {
-    if (commandLock.current !== lease) return;
-    commandLock.current = null;
-    const request = captureLock.current;
-    if (!request) return;
-    captureLock.current = null;
-    captureAppearance.current = null;
-    request.cancel('The picture changed before capture finished.');
-    if (mounted.current) setPacket(null);
-  }
+  const endLease = useCallback(
+    (lease: Lease) => {
+      if (commandLock.current !== lease) return;
+      commandLock.current = null;
+      const request = captureLock.current;
+      if (!request) return;
+      captureLock.current = null;
+      captureAppearance.current = null;
+      request.cancel('The picture changed before capture finished.');
+      if (mounted.current) setPacket(null);
+    },
+    [setPacket]
+  );
 
-  function claim(preempt: Lease['preempt']) {
-    const lease: Lease = { preempt };
-    commandLock.current = lease;
-    return () => endLease(lease);
-  }
+  const claim = useCallback(
+    (preempt: Lease['preempt']) => {
+      const lease: Lease = { preempt };
+      commandLock.current = lease;
+      return () => endLease(lease);
+    },
+    [endLease]
+  );
 
   // Background work never refuses or delays the child: every foreground claim on the paper
   // passes through here first, so no caller can forget to make it yield.
-  function preemptBackground() {
+  const preemptBackground = useCallback(() => {
     const lease = commandLock.current;
     if (!lease?.preempt) return;
     endLease(lease);
     lease.preempt();
-  }
+  }, [endLease]);
 
   useImperativeHandle(
     ref,
@@ -340,7 +349,7 @@ function useSurfaceCapture(
         return claim(onPreempt);
       },
     }),
-    []
+    [capture, claim, input, preemptBackground, refreshGeometry]
   );
 
   useEffect(

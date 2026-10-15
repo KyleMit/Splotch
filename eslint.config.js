@@ -4,6 +4,7 @@ import tseslint from 'typescript-eslint';
 import svelte from 'eslint-plugin-svelte';
 import vitest from '@vitest/eslint-plugin';
 import playwright from 'eslint-plugin-playwright';
+import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import {
@@ -911,6 +912,17 @@ export default tseslint.config(
     files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': ['error', NAMED_EXPORTS_ONLY],
+    },
+  },
+  {
+    // The two classic hooks rules only: the plugin's recommended preset also enables the React
+    // Compiler's rules, which judge code against a compiler the candidate does not run.
+    // tools/tests/native-react-hooks-lint.test.mjs is the positive control.
+    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
   prettier

@@ -50,6 +50,7 @@ type Props = {
   onBusy: (busy: boolean) => void;
   onError: (error: unknown) => void;
 };
+const NO_DRAFTS: readonly Stroke[] = [];
 type Incoming = Readonly<{
   frame: InkCheckpoint;
   plan: InkPlan;
@@ -84,12 +85,12 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
 function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   const propsRef = useRef(props);
   propsRef.current = props;
-  const drafts = props.drafts ?? [];
+  const drafts = props.drafts ?? NO_DRAFTS;
   const { plan, available, capturePlan, commitFrame } = useInkPlan(props);
   const checkpoint = (drafts.length ? available?.checkpoint : null) ?? plan.checkpoint;
   const displayStrokes = useMemo(
     () => [...props.strokes.slice(checkpoint?.strokes.length ?? 0), ...drafts],
-    [props.strokes, checkpoint, props.drafts]
+    [props.strokes, checkpoint, drafts]
   );
   const { theme } = useInkAppearance();
   const tileResources = useCrayonTileResources(
@@ -244,7 +245,7 @@ function createRasterFrames(
 
 function useInkPlan(props: Pick<Props, 'strokes' | 'drafts' | 'brush'>) {
   const paper = useInkPaper();
-  const drafts = props.drafts ?? [];
+  const drafts = props.drafts ?? NO_DRAFTS;
   const [checkpoint, setCheckpoint] = useState<InkCheckpoint | null>(null);
   const [prepared, setPrepared] = useState<InkPreparation | null>(null);
   const predecessor = useMemo(
@@ -269,15 +270,13 @@ function useInkPlan(props: Pick<Props, 'strokes' | 'drafts' | 'brush'>) {
     (drafts.length ? drafts[0].brush === prepared.brush : props.brush === prepared.brush)
       ? prepared
       : null;
-  const prepare =
-    !drafts.length &&
-    !plan.needsCheckpoint &&
-    needsPreparation(props.strokes, props.brush) &&
-    !available;
-  const capturePlan = useMemo(
-    () => (plan.needsCheckpoint ? plan : prepare ? { ...plan, needsCheckpoint: true } : null),
-    [plan, prepare, props.brush]
-  );
+  // The brush decides whether the paper prepares, so a switch between two brushes that both
+  // prepare starts a new preparation rather than finishing the old one under the new brush.
+  const capturePlan = useMemo(() => {
+    if (plan.needsCheckpoint) return plan;
+    const prepare = !drafts.length && needsPreparation(props.strokes, props.brush) && !available;
+    return prepare ? { ...plan, needsCheckpoint: true } : null;
+  }, [plan, drafts.length, props.strokes, props.brush, available]);
   useEffect(() => {
     if (promoted) {
       setCheckpoint(promoted.checkpoint);

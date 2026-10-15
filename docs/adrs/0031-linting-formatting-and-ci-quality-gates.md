@@ -5,7 +5,8 @@ to dprint — ADR-0057; hand-authored configuration brought into Prettier scope;
 dependency audit raised from critical to high; amended 2026-09: the silently-followed conventions
 ratified as rules — issue 1529; stylelint adopted for CSS and Svelte `<style>` blocks — issue 1859;
 five auto-fixable notation rules adopted through one isolated reformat — issue 1861; unpinned
-`:global()` selectors ratcheted — issue 1938)
+`:global()` selectors ratcheted — issue 1938; amended 2026-10: React's two hooks rules adopted for
+the native candidate, whose type check joins the quality job — issue 2690)
 
 ## Context
 
@@ -81,6 +82,17 @@ choices:
   change. The block recomposes the `web/src` restriction list, and
   `tools/tests/server-only-imports-lint.test.mjs` fails if either set stops firing. The rule sees
   static imports and re-exports only, not `import()`.
+* **The native candidate's hooks obey React's two classic rules** (amended 2026-10, issue 2690).
+  `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` from `eslint-plugin-react-hooks`
+  run as errors over `experiments/native-architecture/src/**/*.{ts,tsx}`, platform-suffixed files
+  included. The plugin's `recommended` preset is deliberately not adopted: it also turns on the
+  React Compiler's rules (14 more in 7.1), which judge code against a compiler the candidate does
+  not run. The adopting change measured 14 violations — 12 `exhaustive-deps`, and 2 `rules-of-hooks`
+  where an appearance hook sat inside an optional chain and so ran only once an icon had loaded —
+  and fixed each at its source. Two remain as justified per-line disables: counter refs that an
+  effect cleanup bumps, which the rule cannot tell from a React-managed node ref.
+  `tools/tests/native-react-hooks-lint.test.mjs` is the positive control, at plain and
+  platform-suffixed `.ts` and `.tsx` paths, and it fails if any rule beyond these two is enabled.
 * **Rejected rule candidates — measured, do not re-litigate without new evidence.** Same verdict as
   the `no-magic-numbers` rejection (~750 hits): each of these carries a violation count showing the
   codebase deliberately follows a different convention (counts as of the 2026-09 evaluation):
@@ -293,6 +305,12 @@ choices:
   `--ignore-unfixable`, and `--ignore-registry-errors` are not exception mechanisms.
 * **`precheck` runs `svelte-kit sync`** so `npm run check` generates `.svelte-kit/tsconfig.json` and
   works standalone in CI (mirrors `predev`).
+* **The native candidate's TypeScript project is type-checked in the quality job** (amended 2026-10,
+  issue 2690). `experiments/native-architecture/tsconfig.json` is a project `npm run check` never
+  reads, so `npm run check:migration:types` runs `tsc --noEmit` over it as its own step, and
+  `npm run check:quality` mirrors it. `tools/migration/tests/native-ci-wiring.test.mjs` fails if the
+  step leaves the job, or if the workflow's pull-request trigger gains a branch or path filter that
+  would skip the candidate's pull requests.
 
 New scripts: `lint`, `lint:fix`, `format`, `format:check` (with `scripts-info` entries, ADR-0019).
 The `quality` job runs type-check + lint + format:check + audit on every push/PR, parallel to the

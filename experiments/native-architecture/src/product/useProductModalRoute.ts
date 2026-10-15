@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { useDrawingProduct } from './useDrawingProduct';
 import { aiSheetShown } from '../ai/uiState';
@@ -47,15 +47,17 @@ export function useProductModalRoute(
           : { ...current, closing: true }
     );
   }, [target]);
-  function dismissed() {
+  // Bound to the route it was rendered with, so a dismissal reported for an earlier epoch's dialog
+  // is ignored.
+  const dismissed = useCallback(() => {
     if (!routeRef.current.closing || routeRef.current.epoch !== route.epoch) return;
     const next = { shown: targetRef.current, closing: false, epoch: route.epoch + 1 };
     routeRef.current = next;
     setRoute(next);
     callbackRef.current(route.shown);
-  }
+  }, [route.epoch, route.shown]);
   useEffect(() => {
     if (route.closing && dismissal === 'platform' && Platform.OS !== 'ios') dismissed();
-  }, [route.closing, target, dismissal]);
+  }, [route.closing, dismissal, dismissed]);
   return { ...route, visible: !route.closing, dismissed };
 }

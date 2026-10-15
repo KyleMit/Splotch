@@ -48,9 +48,12 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   the native `react-strict-dom` alias. Both tiers select them by name: a test file named
   `tools/migration/tests/rsd-native-*.test.mjs` (`RSD_NATIVE_RENDERER_TESTS` in
   `lib/rsd-drawing-checks.mjs`) joins this suite with no list to edit, and
-  `tests/rsd-test-tiers.test.mjs` fails when one runs in neither tier or in both. Among them,
-  `rsd-native-segmented-picker.test.mjs` and `rsd-native-slider.test.mjs` mount the shared
-  `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow` controls over the stand-in in
+  `tests/rsd-test-tiers.test.mjs` fails when one runs in neither tier or in both. CI's Browserless
+  tests job runs the tier on every pull request; its pre hook runs `svelte-kit sync`, so it needs no
+  earlier `npm run check`. `tests/native-ci-wiring.test.mjs` fails if the tier, or
+  `check:migration:types` (the candidate's own type check, in the Quality job), leaves CI. Among the
+  tier's tests, `rsd-native-segmented-picker.test.mjs` and `rsd-native-slider.test.mjs` mount the
+  shared `RsdSegmentedPicker` and `RsdSlider`/`RsdSliderRow` controls over the stand-in in
   `rsd-native-control-host.mjs` and hold each literal those ports carry, and the colour token each
   painted part takes, to the shipping Svelte sources. The picker's RTL thumb origin is laid out by
   React Native's own Yoga, which `rsd-yoga-host.mjs` compiles from the installed `react-native`'s

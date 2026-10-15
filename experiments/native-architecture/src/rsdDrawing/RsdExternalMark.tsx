@@ -29,7 +29,8 @@ export function RsdExternalMark(
   props: { variant: 'standalone' } | { variant: 'inline'; ink: string }
 ) {
   const theme = useDrawingTheme();
-  const icon = useNativeIconMarkup('external')?.[useDrawingAppearance()];
+  const appearance = useDrawingAppearance();
+  const icon = useNativeIconMarkup('external')?.[appearance];
   const size = EXTERNAL_MARK_PX[props.variant];
   const fill = props.variant === 'inline' ? theme.brandWash : theme.externalMarkWash;
   const ink = props.variant === 'inline' ? props.ink : theme.iconMuted;

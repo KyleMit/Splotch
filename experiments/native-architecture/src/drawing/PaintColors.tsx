@@ -152,6 +152,7 @@ function PaintSwatch({
   useLayoutEffect(() => {
     measurePosition(keyboardFocus.current);
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- a counter, not a rendered node: cleanup bumps its live value to void in-flight measurements
       measurement.current++;
     };
   }, [layoutVersion, disabled, measurePosition]);
