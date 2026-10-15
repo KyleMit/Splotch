@@ -148,7 +148,7 @@ describe('candidate sound settings', () => {
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
     const write = f.settings.setEnabled(false);
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', soundEnabled: false });
+    expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false });
     save.reject(new Error('disk full'));
     await write;
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: false });
@@ -163,18 +163,44 @@ describe('candidate sound settings', () => {
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
   });
-  it('admits no second writer while saving', async () => {
+  // Shipping stores each choice synchronously, so none is refused for a save in flight: a choice
+  // made during a write shows at once and goes to storage in the write after it.
+  it('keeps every choice made while another saves, and writes the latest once that write lands', async () => {
     const f = fixture();
     await f.settings.load();
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
-    const write = f.settings.setEnabled(false);
-    await f.settings.setEnabled(true);
-    await f.settings.retrySave();
+    const first = f.settings.setEnabled(false);
+    const second = f.settings.setEnabled(true);
+    const third = f.settings.setSoundVolume(30);
+    expect(f.changes.at(-1)).toMatchObject({
+      status: 'ready',
+      soundEnabled: true,
+      soundVolume: 30,
+      saved: true,
+    });
     expect(f.storage.write).toHaveBeenCalledTimes(1);
     save.resolve();
-    await write;
-    expect(f.changes.at(-1)).toMatchObject({ soundEnabled: false, saved: true });
+    await Promise.all([first, second, third]);
+    const written = f.storage.write.mock.calls.map(([snapshot]) => JSON.parse(snapshot));
+    expect(written).toEqual([
+      expect.objectContaining({ soundEnabled: false, soundVolume: 50 }),
+      expect.objectContaining({ soundEnabled: true, soundVolume: 30 }),
+    ]);
+    expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, soundVolume: 30, saved: true });
+  });
+  it('lets a later write that lands settle an earlier one that failed', async () => {
+    const f = fixture();
+    await f.settings.load();
+    const save = pending();
+    f.storage.write.mockReturnValueOnce(save.promise);
+    const first = f.settings.setEnabled(false);
+    const second = f.settings.setSoundVolume(30);
+    save.reject(new Error('disk full'));
+    await Promise.all([first, second]);
+    expect(f.storage.write).toHaveBeenCalledTimes(2);
+    expect(f.changes.at(-1)).toMatchObject({ soundVolume: 30, saved: true, message: '' });
+    expect(f.changes.some((state) => state.saved === false)).toBe(false);
   });
   it('ignores hydration after the owner unmounts', async () => {
     const f = fixture();
@@ -194,10 +220,12 @@ describe('candidate sound settings', () => {
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
     const writing = f.settings.setEnabled(false);
+    const published = f.changes.length;
     f.settings.dispose();
-    save.resolve();
+    save.reject(new Error('disk full'));
     await writing;
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', soundEnabled: false });
+    expect(f.changes).toHaveLength(published);
+    expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false });
   });
   it.each([1, 2, 3, 4, 5, 6, 7])(
     'normalizes legacy schema %s to the shipping volume and both sources without writing',
@@ -326,9 +354,7 @@ describe('candidate sound settings', () => {
     const save = pending();
     f.storage.write.mockReturnValueOnce(save.promise);
     const writing = f.settings.setSoundVolume(20);
-    expect(f.changes.at(-1)).toMatchObject({ status: 'saving', soundVolume: 20 });
-    await f.settings.setSoundVolume(90);
-    expect(f.storage.write).toHaveBeenCalledOnce();
+    expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundVolume: 20 });
     save.reject(new Error('disk full'));
     await writing;
     expect(f.changes.at(-1)).toMatchObject({ soundVolume: 20, saved: false });

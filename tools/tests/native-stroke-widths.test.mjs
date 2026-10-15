@@ -393,7 +393,7 @@ describe('one persisted candidate settings owner', () => {
     expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
   });
 
-  it('rejects invalid live widths and admits no concurrent writer after a successful read', async () => {
+  it('rejects invalid live widths and keeps every width chosen during a write', async () => {
     const states = [];
     let finish;
     const storage = {
@@ -418,19 +418,26 @@ describe('one persisted candidate settings owner', () => {
     expect(storage.write).not.toHaveBeenCalled();
     const writing = owner.setWidth('drawing', 'thin');
     expect(states.at(-1)).toMatchObject({
-      status: 'saving',
+      status: 'ready',
       strokeWidth: 'thin',
       eraserWidth: 'medium',
     });
-    await owner.setWidth('eraser', 'thick');
-    await owner.setEnabled(true);
+    const eraser = owner.setWidth('eraser', 'thick');
+    expect(states.at(-1)).toMatchObject({ strokeWidth: 'thin', eraserWidth: 'thick' });
     expect(storage.write).toHaveBeenCalledOnce();
     finish();
     await writing;
+    finish();
+    await eraser;
+    expect(storage.write).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(storage.write.mock.calls[1][0])).toMatchObject({
+      strokeWidth: 'thin',
+      eraserWidth: 'thick',
+    });
     expect(states.at(-1)).toMatchObject({
       saved: true,
       strokeWidth: 'thin',
-      eraserWidth: 'medium',
+      eraserWidth: 'thick',
       soundEnabled: true,
     });
   });

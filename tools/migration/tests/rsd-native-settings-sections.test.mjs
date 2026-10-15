@@ -109,19 +109,18 @@ it('answers Night Mode and Sound with switches on their hub rows and no others',
   expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
 });
 
-it('holds both hub switches while a hub choice saves, so a second tap is never dropped', async () => {
+// Shipping stores each choice synchronously, so neither switch dims or refuses for a save.
+it('keeps both hub switches live while a hub choice saves, and writes a tap made meanwhile', async () => {
   const settings = storedSettings({ soundEnabled: true });
   const finishNight = holdNextWrite(settings.storage);
   drawingScreen();
   await mount(createElement(RsdDrawingScreen));
   await click('Night Mode');
-  expect(caller.product.sound.settings.status).toBe('saving');
-  for (const label of ['Night Mode', 'Sound']) expect(button(label).disabled, label).toBe(true);
-  await act(async () => button('Sound').click());
-  await finishNight();
+  expect(settings.storage.write).toHaveBeenCalledOnce();
   for (const label of ['Night Mode', 'Sound']) expect(button(label).disabled, label).toBe(false);
-  checkedSwitch(button('Sound'), true);
-  await click('Sound');
+  await act(async () => button('Sound').click());
+  checkedSwitch(button('Sound'), false);
+  await finishNight();
   expect(settings.storage.write).toHaveBeenCalledTimes(2);
   expect(settings.stored()).toMatchObject({ appearance: 'dark', soundEnabled: false });
 });
@@ -263,7 +262,7 @@ it("keeps the What's New stamp when the section opens while another choice is st
   await mount(createElement(RsdDrawingScreen));
   await openSettingsSection('Accessibility');
   await click(REDUCE_MOTION_LABEL);
-  expect(caller.product.sound.settings.status).toBe('saving');
+  expect(settings.storage.write).toHaveBeenCalledOnce();
   await click('Back');
   expect(dottedRows()).toHaveLength(1);
   await openSettingsSection(WHATS_NEW);
@@ -357,7 +356,7 @@ it('keeps the first Apple Pencil detection that lands while another choice is sa
   const finishVolume = holdNextWrite(settings.storage);
   const owner = caller.product.sound.owner.settings;
   await act(async () => void owner.setSoundVolume(73));
-  expect(caller.product.sound.settings.status).toBe('saving');
+  expect(settings.storage.write).toHaveBeenCalledOnce();
   await pencilDoubleTap();
   expect(brushLabel()).toBe('Brush: Eraser');
   await finishVolume();
