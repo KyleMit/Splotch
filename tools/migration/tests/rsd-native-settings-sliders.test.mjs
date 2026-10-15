@@ -165,3 +165,28 @@ it('plays nothing while Volume moves with Sound off', async () => {
   expect(caller.drawingLoop).not.toHaveBeenCalled();
   expect(loop.start).toHaveBeenCalledOnce();
 });
+
+it('clamps Button Size to the live panel ceiling without rewriting a larger saved choice', async () => {
+  const settings = storedSettings({ buttonScale: 130 });
+  records.dimensions = { width: 320, height: 440, scale: 3, fontScale: 1 };
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  const area = records.props.findLast((props) => props.testID === 'rsd-canvas-area');
+  await act(async () =>
+    area.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 365 } } })
+  );
+  await openSettingsSection('Accessibility');
+  expect(sliderProps('Button Size')['aria-valuemax']).toBe(98);
+  expect(sliderProps('Button Size')['aria-valuenow']).toBe(98);
+  expect(caller.product.sound.settings.buttonScale).toBe(130);
+  expect(settings.storage.write).not.toHaveBeenCalled();
+  records.dimensions = { width: 390, height: 844, scale: 3, fontScale: 1 };
+  await rerender({});
+  const larger = records.props.findLast((props) => props.testID === 'rsd-canvas-area');
+  await act(async () =>
+    larger.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 769 } } })
+  );
+  expect(sliderProps('Button Size')['aria-valuemax']).toBe(130);
+  expect(sliderProps('Button Size')['aria-valuenow']).toBe(130);
+  expect(settings.storage.write).not.toHaveBeenCalled();
+});

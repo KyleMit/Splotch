@@ -20,8 +20,8 @@ import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/Draw
 import { colors, darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
 import { bootAppearance } from '../platform/bootAppearance';
-import { useEffect, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
@@ -39,12 +39,15 @@ import { paintAppearance } from '../drawing/palette';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
-import { controlSize } from '../settings/buttonSize';
+import { BUTTON_SCALE_MAX, controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
-import { useParentGateHold, type ParentGateView } from '../parentCenter/useParentGateHold';
+import { useParentGateCard, type ParentGateView } from '../parentCenter/useParentGateCard';
+
+import type { AppPage } from '../information/appPages';
+import { RsdInformationPage } from './informationSurface';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -55,10 +58,13 @@ function useSettledMessage(message: string, drawing: boolean) {
   return drawing ? settled : message;
 }
 
-export function RsdDrawingScreen() {
+export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
   const screen = useDrawingScreen();
   const product = useDrawingProduct(screen);
-  const gate = useParentGateHold(product.state?.gate ?? null);
+  const informationOpen = page !== 'drawing';
+  const [drawingVisited, setDrawingVisited] = useState(!informationOpen);
+  if (!informationOpen && !drawingVisited) setDrawingVisited(true);
+  const gate = useParentGateCard(informationOpen ? null : (product.state?.gate ?? null));
   const sound = product.sound;
   // Settings holds the gate over itself, as shipping stacks the challenge over its modal, so a
   // check raised from Settings never closes the page the parent is on.
@@ -67,12 +73,12 @@ export function RsdDrawingScreen() {
       ? 'gate'
       : screen.settingsOpen
         ? 'settings'
-        : product.ai.state && aiSheetShown(product.ai.state)
+        : !informationOpen && product.ai.state && aiSheetShown(product.ai.state)
           ? product.ai.state.view === 'prompt'
             ? 'aiPrompt'
             : 'aiResult'
           : 'none';
-  useParentCenterSettings(screen, product, gate?.open === true);
+  useParentCenterSettings(screen, product, gate?.open === true, informationOpen);
   useAiAvailability(product.ai.owner, sound.settings, product.ai.online);
   const route = useProductModalRoute('reported', target, (outgoing) => {
     if (outgoing === 'settings') screen.closeSettings();
@@ -84,29 +90,50 @@ export function RsdDrawingScreen() {
     glassReady
   );
   useDrawingPainted(!loading);
+  const informationPage = informationOpen ? (
+    <RsdInformationPage
+      page={page}
+      product={product}
+      drawingVisited={drawingVisited}
+      standalone={route.shown === 'none'}
+    />
+  ) : null;
   return (
     <DrawingAppearanceProvider preference={loading ? bootAppearance() : sound.settings.appearance}>
       <ModalOriginProvider>
         <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
-          {loading ? (
-            <RsdDrawingFirstPaint />
-          ) : (
-            <RsdDrawingContent
-              screen={screen}
-              sound={sound}
-              product={product}
-              route={route}
-              gate={gate}
-              onModalDismissed={dismissed}
-            />
-          )}
-          <RsdModalSheets screen={screen} product={product} route={route} gate={gate} />
-          <RsdLeaveConfirm />
+          <View
+            testID="drawing-page"
+            style={[pageLayout.fill, informationOpen && pageLayout.hidden]}
+            pointerEvents={informationOpen ? 'none' : 'auto'}
+            accessibilityElementsHidden={informationOpen}
+            importantForAccessibility={informationOpen ? 'no-hide-descendants' : 'auto'}
+            aria-hidden={informationOpen}
+          >
+            {loading ? (
+              <RsdDrawingFirstPaint />
+            ) : (
+              <RsdDrawingContent
+                screen={screen}
+                sound={sound}
+                product={product}
+                route={route}
+                gate={gate}
+                onModalDismissed={dismissed}
+                informationPage={informationPage}
+              />
+            )}
+            <RsdModalSheets screen={screen} product={product} route={route} gate={gate} />
+            <RsdLeaveConfirm />
+          </View>
+          {route.shown === 'none' ? informationPage : null}
         </ReduceMotionPreferenceProvider>
       </ModalOriginProvider>
     </DrawingAppearanceProvider>
   );
 }
+
+const pageLayout = StyleSheet.create({ fill: { flex: 1 }, hidden: { opacity: 0 } });
 
 // The controls join once the settings and, for the flat style, its glass have arrived. Only the
 // first paint waits on the glass: a style switched later must not unmount the Settings it came from.
@@ -122,13 +149,16 @@ function useFirstPaintHeld(settingsLoading: boolean, glassReady: boolean) {
 function useParentCenterSettings(
   screen: Screen,
   product: ReturnType<typeof useDrawingProduct>,
-  gateOpen: boolean
+  gateOpen: boolean,
+  informationOpen: boolean
 ) {
+  const owner = product.owner;
   const unlocked = product.state?.parentCenterOpen === true;
   const { settingsOpen, openSettings } = screen;
   useEffect(() => {
-    if (unlocked && !gateOpen && !settingsOpen) openSettings();
-  }, [unlocked, gateOpen, settingsOpen, openSettings]);
+    if (owner?.getState().parentCenterOpen && !gateOpen && !settingsOpen && !informationOpen)
+      openSettings();
+  }, [owner, unlocked, gateOpen, settingsOpen, openSettings, informationOpen]);
 }
 
 // One route shows at a time (useProductModalRoute); each sheet's boundary closes the route it
@@ -206,6 +236,16 @@ function RsdDrawingFirstPaint() {
   );
 }
 
+type DrawingContentProps = {
+  screen: Screen;
+  sound: Sound;
+  product: ReturnType<typeof useDrawingProduct>;
+  route: ReturnType<typeof useProductModalRoute>;
+  gate: ParentGateView | null;
+  onModalDismissed: () => void;
+  informationPage: ReactNode;
+};
+
 function RsdDrawingContent({
   screen,
   sound,
@@ -213,14 +253,8 @@ function RsdDrawingContent({
   route,
   gate,
   onModalDismissed,
-}: {
-  screen: Screen;
-  sound: Sound;
-  product: ReturnType<typeof useDrawingProduct>;
-  route: ReturnType<typeof useProductModalRoute>;
-  gate: ParentGateView | null;
-  onModalDismissed: () => void;
-}) {
+  informationPage,
+}: DrawingContentProps) {
   const theme = useDrawingAppearance();
   const startOver = useStartOver();
   const notice = useSettledMessage(screen.routineNotice, screen.drawing);
@@ -228,6 +262,7 @@ function RsdDrawingContent({
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
+  const [scaleCeiling, setScaleCeiling] = useState(BUTTON_SCALE_MAX);
   const ready = sound.settings.status === 'ready';
   const buttonScale = useSliderDraft({
     saved: sound.settings.buttonScale,
@@ -247,7 +282,7 @@ function RsdDrawingContent({
   // keeps every touch meanwhile.
   const disabled = !buttonScale.active && screen.disabled;
   // Any dialog holds the chrome under its scrim at full strength, as shipping's modal does.
-  const covered = screen.dialogOpen || modalBlocked;
+  const covered = !!informationPage || screen.dialogOpen || modalBlocked;
   const paperBlocked = modalBlocked;
   useDrawingUndoShortcut(screen, disabled || covered || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
@@ -273,6 +308,7 @@ function RsdDrawingContent({
             disabled={disabled}
             covered={covered}
             buttonScale={buttonScale.value}
+            onScaleCeiling={setScaleCeiling}
             resizing={buttonScale.active}
             paperOverlay={(drawerOpen) => (
               <RsdInstallBanner
@@ -320,9 +356,11 @@ function RsdDrawingContent({
               gate={gate}
               notice={soundNotice}
               buttonScale={buttonScale}
+              scaleCeiling={scaleCeiling}
               soundVolume={soundVolume}
               visible={route.visible}
               onDismiss={onModalDismissed}
+              informationPage={informationPage}
             />
           </RsdSurfaceBoundary>
         ) : null}

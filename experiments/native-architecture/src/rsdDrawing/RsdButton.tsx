@@ -42,6 +42,7 @@ export type ButtonSize = 'sm' | 'md' | 'lg' | 'hero';
 // kebab-case color names reach the web's CSS transition alone and transform runs on the native
 // driver: one render as the press starts and one as it ends, none per frame.
 const styles = css.create({
+  fill: { width: '100%' },
   button: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -216,6 +217,7 @@ export function RsdButton({
   variant = 'wash',
   size = 'md',
   busy = false,
+  fullWidth = false,
   disabled = false,
   onPress,
   icon,
@@ -224,6 +226,7 @@ export function RsdButton({
   variant?: ButtonVariant;
   size?: ButtonSize;
   busy?: boolean;
+  fullWidth?: boolean;
   disabled?: boolean;
   onPress: () => void;
   // A glyph before the label, in the label's ink, which the caller resolves for its variant.
@@ -241,6 +244,7 @@ export function RsdButton({
       aria-busy={busy}
       style={[
         styles.button,
+        fullWidth && styles.fill,
         styles[size],
         styles[variant],
         variant === 'outline' && styles.outlineInset(outline.block, outline.inline),

@@ -58,14 +58,18 @@ export function spiedSectionAt<Id extends string>(
 // are all clipped boxes. Dividing the rect delta by the pane's visual scale
 // lands the arithmetic in layout pixels, so neither the fly-in's transform nor
 // a pinch-zoomed pane skews where the scroll ends up.
+export function sectionScrollTop(pane: HTMLElement, section: HTMLElement) {
+  const offset =
+    (section.getBoundingClientRect().top - pane.getBoundingClientRect().top) / visualScale(pane);
+  return pane.scrollTop + offset - SECTION_JUMP_INSET_PX;
+}
+
 export function scrollPaneToSection(
   pane: HTMLElement,
   section: HTMLElement,
   behavior: ScrollBehavior
 ) {
-  const offset =
-    (section.getBoundingClientRect().top - pane.getBoundingClientRect().top) / visualScale(pane);
-  pane.scrollTo({ top: pane.scrollTop + offset - SECTION_JUMP_INSET_PX, behavior });
+  pane.scrollTo({ top: sectionScrollTop(pane, section), behavior });
 }
 
 // The pane's scroll elects the highlight, so — unlike a click, which can only

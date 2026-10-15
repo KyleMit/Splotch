@@ -15,7 +15,7 @@ import { colors, dimensions, fonts } from './tokens.css';
 import {
   PARENT_FEATURES,
   PARENT_MODES,
-  endsParentCenterProtection,
+  isParentCenterUnprotected,
   isParentModeAvailable,
   type ParentFeature,
   type ParentMode,
@@ -66,6 +66,9 @@ export function RsdParentCenterSection({ owner }: { owner: DrawingProductOwner }
                 key={feature}
                 feature={feature}
                 selected={settings.parentPolicies[feature]}
+                unprotected={
+                  feature === 'parentCenter' && isParentCenterUnprotected(settings.parentPolicies)
+                }
                 matrix={matrix.on}
                 disabled={disabled}
                 onChoose={choose}
@@ -112,12 +115,15 @@ function MatrixHeader() {
 function PolicyCard({
   feature,
   selected,
+  unprotected,
   matrix,
   disabled,
   onChoose,
 }: {
   feature: ParentFeature;
   selected: ParentMode;
+  // Parent Center's own card carries the standing warning while it asks for no check.
+  unprotected: boolean;
   matrix: boolean;
   disabled: boolean;
   onChoose: (feature: ParentFeature, mode: ParentMode) => void;
@@ -125,7 +131,6 @@ function PolicyCard({
   const helpId = `parental-gate-${feature}-help`;
   const platform = PARENT_PLATFORM;
   const unavailable = !isParentModeAvailable(feature, 'never', platform);
-  const unprotected = endsParentCenterProtection(feature, selected);
   const notes = [
     unavailable ? `parental-gate-${feature}-unavailable` : null,
     unprotected ? `parental-gate-${feature}-warning` : null,

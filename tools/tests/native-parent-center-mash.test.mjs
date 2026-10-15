@@ -46,6 +46,10 @@ function unlockRate(interval, guided, brokenAutoSubmit = false) {
         guided && state.input.length === String(state.x * state.y).length
           ? 'check'
           : KEYS[Math.floor(random() * (guided ? 10 : KEYS.length))];
+      if (state.unlocked) {
+        solved = true;
+        break;
+      }
       if (state.locked || state.shaking) continue;
       if (key === 'check') gate.answer();
       else if (key === 'delete') gate.input(state.input.slice(0, -1));

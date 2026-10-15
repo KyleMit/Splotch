@@ -142,6 +142,9 @@ it('previews the device rows in the disclosure and sends the report only after t
   expect(host.textContent).not.toContain('Platform: iOS');
   await press(labelled(REPORT_FORM_COPY.deviceSummary), REPORT_FORM_COPY.deviceSummary);
   expect(host.textContent).toContain('Platform: iOS');
+  expect(
+    [...host.querySelectorAll('span')].some((span) => span.textContent === 'Platform: iOS')
+  ).toBe(true);
   expect(host.textContent).toContain(REPORT_FORM_COPY.deviceNote);
   await press(labelled(REPORT_FORM_COPY.send), REPORT_FORM_COPY.send);
   expect(caller.feedbackSend).not.toHaveBeenCalled();

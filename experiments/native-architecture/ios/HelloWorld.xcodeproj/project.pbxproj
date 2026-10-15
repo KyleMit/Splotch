@@ -25,6 +25,10 @@
 		B727C4CAF029FA28F7204012 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DF277C58AB46B059F0E82D6D /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		D29150000000000000000001 /* SplotchGateKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000003 /* SplotchGateKeyboard.swift */; };
+		D29150000000000000000002 /* SplotchGateKeyboard.m in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000004 /* SplotchGateKeyboard.m */; };
+		D29150000000000000000005 /* SplotchFeedbackDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000007 /* SplotchFeedbackDevice.swift */; };
+		D29150000000000000000006 /* SplotchFeedbackDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = D29150000000000000000008 /* SplotchFeedbackDevice.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +56,10 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HelloWorld/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "HelloWorld-Bridging-Header.h"; path = "HelloWorld/HelloWorld-Bridging-Header.h"; sourceTree = "<group>"; };
+		D29150000000000000000003 /* SplotchGateKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchGateKeyboard.swift; sourceTree = "<group>"; };
+		D29150000000000000000004 /* SplotchGateKeyboard.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchGateKeyboard.m; sourceTree = "<group>"; };
+		D29150000000000000000007 /* SplotchFeedbackDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchFeedbackDevice.swift; sourceTree = "<group>"; };
+		D29150000000000000000008 /* SplotchFeedbackDevice.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchFeedbackDevice.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +79,10 @@
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				A12863000000000000000003 /* SplotchAIEnvironment.swift */,
+				D29150000000000000000008 /* SplotchFeedbackDevice.m */,
+				D29150000000000000000007 /* SplotchFeedbackDevice.swift */,
+				D29150000000000000000004 /* SplotchGateKeyboard.m */,
+				D29150000000000000000003 /* SplotchGateKeyboard.swift */,
 				A12870000000000000000002 /* SplotchAIJournal.swift */,
 				A12863000000000000000004 /* SplotchAIEnvironment.m */,
 				285700000000000000000002 /* SplotchLibraryEnvironment.m */,
@@ -373,6 +385,10 @@
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				A12863000000000000000001 /* SplotchAIEnvironment.swift in Sources */,
+				D29150000000000000000006 /* SplotchFeedbackDevice.m in Sources */,
+				D29150000000000000000005 /* SplotchFeedbackDevice.swift in Sources */,
+				D29150000000000000000002 /* SplotchGateKeyboard.m in Sources */,
+				D29150000000000000000001 /* SplotchGateKeyboard.swift in Sources */,
 				A12870000000000000000001 /* SplotchAIJournal.swift in Sources */,
 				A12863000000000000000002 /* SplotchAIEnvironment.m in Sources */,
 				285700000000000000000004 /* SplotchLibraryEnvironment.m in Sources */,

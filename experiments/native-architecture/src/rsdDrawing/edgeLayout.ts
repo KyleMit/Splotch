@@ -1,4 +1,5 @@
 import { isPhoneLandscape } from '../../../../web/src/lib/breakpoints';
+import { BUTTON_SCALE_MAX, BUTTON_SCALE_MIN } from '../settings/buttonSize';
 import { CONTROL_GAP } from '../drawing/theme';
 import { CORNER_BUTTON_SIZE_PX } from './RsdIconButton';
 
@@ -101,6 +102,17 @@ function lineSize(mode: ActionPanelMode, area: AreaSize, base: number, scale: nu
       ? [area.width, LANDSCAPE_ROW_RESERVE_PX]
       : [area.height, PORTRAIT_COLUMN_RESERVE_PX];
   return Math.min(base * scale, (extent - reserve - (n - 1) * ACTION_BUTTON_GAP_PX) / n);
+}
+
+export function actionButtonScaleCeiling(area: AreaSize, viewport: AreaSize, count: number) {
+  if (count === 0) return BUTTON_SCALE_MAX;
+  const mode = actionPanelMode(viewport);
+  const base = mode === 'phoneLandscape' ? PHONE_TOOLBAR_BUTTON_PX : actionButtonBase(viewport);
+  const available = lineSize(mode, area, base, Infinity, count);
+  return Math.min(
+    BUTTON_SCALE_MAX,
+    Math.max(BUTTON_SCALE_MIN, Math.floor((available / base) * 100))
+  );
 }
 
 // The panel sits in the paper area's bottom-left corner. Its cross axis is as thick as its

@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createParentGate,
   PARENT_GATE_SHAKE_MS,
+  PARENT_GATE_SUCCESS_HOLD_MS,
 } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import {
@@ -22,23 +24,26 @@ const ALWAYS = {
   feedback: 'always',
   parentCenter: 'always',
 };
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
 function fixture(policies = ALWAYS) {
-  let clock = 1000;
+  vi.setSystemTime(1000);
   const changes = [];
   const gate = createParentGate(
     () => policies,
     (next) => changes.push(next),
-    () => clock,
+    Date.now,
     () => 0
   );
   return {
     gate,
     changes,
     advance(ms) {
-      clock += ms;
+      vi.advanceTimersByTime(ms);
     },
     setClock(value) {
-      clock = value;
+      vi.setSystemTime(value);
     },
   };
 }
@@ -46,6 +51,8 @@ function solve(gate) {
   const { x, y } = gate.getState();
   gate.input(String(x * y));
   gate.answer();
+  vi.advanceTimersByTime(PARENT_GATE_SUCCESS_HOLD_MS);
+  gate.closed();
 }
 function pending() {
   let resolve;
@@ -249,6 +256,9 @@ describe('root Parent Center policy and lifetime', () => {
     expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('always');
     await f.owner.setPolicy('parentCenter', 'never', true);
     expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('never');
+    // Re-picking Never once it is already off asks nothing (flows-parent-center-warning.spec.ts).
+    await f.owner.setPolicy('parentCenter', 'never');
+    expect(f.owner.getState().confirmNever).toBe(false);
     f.owner.dispose();
     expect(f.owner.port.consent().enabled).toBe(false);
   });
@@ -297,7 +307,7 @@ describe('root Parent Center policy and lifetime', () => {
     solve(f.gate);
     expect(feedback).not.toHaveBeenCalled();
     expect(parent).toHaveBeenCalledOnce();
-    f.gate.resetSessions();
+    f.gate.rearm('ai');
     f.gate.request('ai', ai);
     expect(f.gate.getState().open).toBe(true);
   });
@@ -397,6 +407,65 @@ describe('root Parent Center policy and lifetime', () => {
     expect(f.owner.gate.getState().feature).toBe('parentCenter');
     solve(f.owner.gate);
     expect(f.owner.getState().parentCenterOpen).toBe(true);
+    f.owner.dispose();
+  });
+});
+
+// parentalGate.svelte.ts's session rule, which its own unit tests pin as "an every-time solve
+// does not satisfy a later switch to per-session mode" and "changing a policy re-arms a
+// previously solved per-session gate".
+describe('Per session solves follow the shipping session rule', () => {
+  const shippingGate = readFileSync(
+    new URL('../../web/src/lib/state/parentalGate.svelte.ts', import.meta.url),
+    'utf8'
+  );
+
+  it('reads the rule this suite ports from the shipping gate', () => {
+    expect(shippingGate).toContain(
+      "if (feature && policies[feature] === 'session') sessionSolved[feature] = true;"
+    );
+    expect(shippingGate).toContain(
+      'if (policies[feature] !== mode) sessionSolved[feature] = false;'
+    );
+  });
+
+  it('asks again after an Every time solve is followed by a switch to Per session', async () => {
+    const f = productFixture();
+    await f.owner.settings.load();
+    f.owner.openParentCenter();
+    solve(f.owner.gate);
+    expect(f.owner.getState().parentCenterOpen).toBe(true);
+    await f.owner.setPolicy('parentCenter', 'session');
+    expect(f.owner.getState().settings.parentPolicies.parentCenter).toBe('session');
+    f.owner.closeParentCenter();
+    expect(f.owner.getState().parentCenterCheckDue).toBe(true);
+    f.owner.openParentCenter();
+    expect(f.owner.gate.getState()).toMatchObject({ open: true, feature: 'parentCenter' });
+    expect(f.owner.getState().parentCenterOpen).toBe(false);
+    f.owner.dispose();
+  });
+
+  it('re-arms a solved Per session check when its policy changes and changes back', async () => {
+    const f = productFixture();
+    await f.owner.settings.load();
+    const setFeedback = async (mode) => {
+      f.owner.openParentCenter();
+      solve(f.owner.gate);
+      await f.owner.setPolicy('feedback', mode);
+      f.owner.closeParentCenter();
+    };
+    await setFeedback('session');
+    const send = vi.fn();
+    f.owner.port.request('feedback', send);
+    solve(f.owner.gate);
+    expect(send).toHaveBeenCalledOnce();
+    f.owner.port.request('feedback', send);
+    expect(send).toHaveBeenCalledTimes(2);
+    await setFeedback('always');
+    await setFeedback('session');
+    f.owner.port.request('feedback', send);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(f.owner.gate.getState()).toMatchObject({ open: true, feature: 'feedback' });
     f.owner.dispose();
   });
 });

@@ -1,3 +1,4 @@
+import { sectionVisits } from './rsd-native-settings-hub-mocks.mjs';
 import { caller, records, root, host } from './rsd-native-selection-host.mjs';
 import { act, createElement } from 'react';
 import { expect, vi } from 'vitest';
@@ -43,6 +44,11 @@ const CURRENT_SETTINGS = {
 };
 
 export function storedSettings(overrides = {}) {
+  if (Object.hasOwn(overrides, 'whatsNewSeen')) {
+    const stamps = JSON.parse(sectionVisits.snapshot);
+    stamps.whatsnew = overrides.whatsNewSeen;
+    sectionVisits.snapshot = JSON.stringify(stamps);
+  }
   let stored = JSON.stringify({ ...CURRENT_SETTINGS, ...overrides });
   caller.settingsStorage = {
     read: async () => stored,

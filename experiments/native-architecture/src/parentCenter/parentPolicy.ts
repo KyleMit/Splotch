@@ -58,10 +58,20 @@ export function availablePolicies(
     parentCenter: pick('parentCenter'),
   };
 }
+// Whether Parent Center itself opens with no check in front of it, which leaves every other
+// policy on the device open to whoever holds it (shipping isParentCenterUnprotected).
+export function isParentCenterUnprotected(policies: ParentPolicies) {
+  return policies.parentCenter === 'never';
+}
 // Never on Parent Center is the one choice that waits for a confirmation: it leaves the checks
-// themselves unprotected.
-export function endsParentCenterProtection(feature: ParentFeature, mode: ParentMode) {
-  return feature === 'parentCenter' && mode === 'never';
+// themselves unprotected. Already unprotected is not a change, so it asks nothing (shipping
+// endsParentCenterProtection).
+export function endsParentCenterProtection(
+  feature: ParentFeature,
+  mode: ParentMode,
+  policies: ParentPolicies
+) {
+  return feature === 'parentCenter' && mode === 'never' && !isParentCenterUnprotected(policies);
 }
 function hasExactPolicies<Feature extends ParentFeature>(
   value: unknown,
@@ -99,8 +109,16 @@ export function orderedParentPolicies(policies: ParentPolicies): ParentPolicies 
   };
 }
 export type ParentProof = Readonly<{ valid: () => boolean }>;
+// An external link opens inside the solving tap, which keeps a web export's new tab within that
+// tap's user activation, so its solve hands over at once with no "Unlocked!" card (shipping's
+// `immediate`).
+export type ParentRequestOptions = Readonly<{ immediate?: boolean }>;
 export type ParentOperationPort = {
-  request: (feature: ParentFeature, action: (proof: ParentProof) => void) => boolean;
+  request: (
+    feature: ParentFeature,
+    action: (proof: ParentProof) => void,
+    options?: ParentRequestOptions
+  ) => boolean;
   cancel: (feature: ParentFeature) => void;
   consent: () => Readonly<{ enabled: boolean; epoch: number }>;
 };

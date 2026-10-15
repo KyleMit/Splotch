@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import type { useDrawingProduct } from '../product/useDrawingProduct';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -9,18 +9,26 @@ import { RsdParentCenterSection } from './RsdParentCenterSection';
 // would put it in two lazy chunks, which Expo hoists into the startup chunk.
 import { RsdParentGateSheet } from './drawingSheets';
 import { useModalPresence } from './useModalPresence';
-import type { ParentGateView } from '../parentCenter/useParentGateHold';
+import type { ParentGateView } from '../parentCenter/useParentGateCard';
 import { soundSettingsActions } from './soundSettingsActions';
 import type { SliderDraft } from './useSliderDraft';
-import { openHostedPage, type HostedPage } from '../settings/hostedPages';
+import { openAppPage } from '../platform/appPath';
+import { openHostedPage, type SettingsLink } from '../settings/hostedPages';
 
-// Every Settings link leaves the app, so each opens only through Parent Center's Viewing external
-// links check, as shipping's parentalGateLink does. The page opens inside the solving tap, which
-// keeps a web export's new tab within that tap's user activation; with no owner, nothing opens.
-function openOutside(owner: DrawingProductOwner | null, page: HostedPage) {
-  owner?.port.request('externalLinks', (proof) => {
-    if (proof.valid()) openHostedPage(page);
-  });
+// Privacy and release history stay in the app. External destinations open inside the solving
+// tap so the web export keeps the user activation required for a new tab.
+function openSettingsLink(owner: DrawingProductOwner | null, page: SettingsLink) {
+  if (page === 'privacy' || page === 'changelog') {
+    openAppPage(page);
+    return;
+  }
+  owner?.port.request(
+    'externalLinks',
+    (proof) => {
+      if (proof.valid()) openHostedPage(page);
+    },
+    { immediate: true }
+  );
 }
 
 // Settings wired to the drawing screen's owners. Its own module so the wiring loads with the
@@ -32,9 +40,11 @@ export function RsdSettingsRoute({
   gate,
   notice,
   buttonScale,
+  scaleCeiling,
   soundVolume,
   visible,
   onDismiss,
+  informationPage,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
@@ -42,9 +52,11 @@ export function RsdSettingsRoute({
   gate: ParentGateView | null;
   notice: string;
   buttonScale: SliderDraft;
+  scaleCeiling: number;
   soundVolume: SliderDraft;
   visible: boolean;
   onDismiss: () => void;
+  informationPage?: ReactNode;
 }) {
   const owner = product.owner;
   const aiOwner = product.ai.owner;
@@ -68,11 +80,13 @@ export function RsdSettingsRoute({
       notice={notice}
       {...soundSettingsActions(sound)}
       buttonScale={buttonScale}
+      scaleCeiling={scaleCeiling}
       soundVolume={soundVolume}
       onClose={close}
       initialSection={screen.settingsSection}
       visible={visible}
       onDismiss={onDismiss}
+      informationPage={informationPage}
       parentCenter={{
         unlocked: product.state?.parentCenterOpen === true,
         checkDue: product.state?.parentCenterCheckDue !== false,
@@ -92,7 +106,7 @@ export function RsdSettingsRoute({
         ) : null
       }
       feedback={product.feedback.owner}
-      onOpenHostedPage={(page) => openOutside(owner, page)}
+      onOpenPage={(page) => openSettingsLink(owner, page)}
       downloadedBooks={screen.library.state.installed.length}
       ai={{
         owner: aiOwner,
@@ -100,8 +114,11 @@ export function RsdSettingsRoute({
         onToggle: (enabled) => void owner?.setAiEnabled(enabled),
         saveFailed: owner?.settings.aiSaveFailed() ?? false,
         onRetrySave: () => void owner?.settings.retryAiSave(),
-        onOpenKeysPage: () => openOutside(owner, 'openAiKeys'),
+        onOpenKeysPage: () => openSettingsLink(owner, 'openAiKeys'),
       }}
     />
   );
 }
+
+export { RsdInformationPage } from './RsdInformationPage';
+export { RsdNotFoundPage } from './RsdNotFoundPage';
