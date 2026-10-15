@@ -119,13 +119,10 @@ class OfflineLibraryController {
     }
   }
   private allowed() {
-    return (
-      this.featureEnabled &&
-      this.state.enabled &&
-      this.engaged &&
-      !this.paused &&
-      this.consumers === 0
-    );
+    return this.featureEnabled && this.state.enabled && this.engaged && !this.paused;
+  }
+  private canStartTransfer() {
+    return this.allowed() && this.consumers === 0;
   }
   private currentPack(id: OfflineBookId): Pack {
     if (!this.catalog)
@@ -141,7 +138,7 @@ class OfflineLibraryController {
   private schedule() {
     if (
       this.operation ||
-      !this.allowed() ||
+      !this.canStartTransfer() ||
       this.state.status === 'failed' ||
       this.state.status === 'waiting'
     )
@@ -155,20 +152,20 @@ class OfflineLibraryController {
   }
   private async run() {
     await this.initialize();
-    if (!this.allowed() || this.state.status !== 'ready') return;
+    if (!this.canStartTransfer() || this.state.status !== 'ready') return;
     const owner = ++this.epoch;
     const controller = new AbortController();
     this.transfer = controller;
     const isCurrent = () => owner === this.epoch && this.allowed() && !controller.signal.aborted;
     try {
       for (const book of OFFLINE_BOOKS) {
-        if (!isCurrent()) return;
+        if (!isCurrent() || !this.canStartTransfer()) return;
         const pack = this.currentPack(book.id);
         if (this.state.installed.some((item) => item.revision === pack.revision)) continue;
         const environment = await this.platform.environment();
         if (!hasBackgroundTransfers(this.platform))
           requireDownloadNetwork(environment, this.state.allowMetered);
-        if (!isCurrent()) return;
+        if (!isCurrent() || !this.canStartTransfer()) return;
         this.publish({
           status: 'downloading',
           activeBook: book.id,

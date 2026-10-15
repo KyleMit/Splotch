@@ -38,22 +38,11 @@ class SplotchLibraryWorker(context: Context, parameters: WorkerParameters) : Wor
       val staging = SplotchLibraryFiles.stage(applicationContext, pack, token)
       val current = File(root, SplotchLibraryFiles.directory(pack))
       val files = pack.getJSONArray("files")
+      prepareStaging(pack, current, staging, job, token)
       for (index in 0 until files.length()) {
         checkActive(job, token)
         val entry = files.getJSONObject(index)
         val destination = SplotchLibraryFiles.destination(staging, entry)
-        synchronized(SplotchLibraryFiles.lock) {
-          checkActive(job, token)
-          if (!SplotchLibraryFiles.matches(destination, entry)) {
-            val candidates = listOf(current) + (staging.parentFile?.listFiles()?.toList() ?: emptyList())
-            val previous = candidates.map { SplotchLibraryFiles.destination(it, entry) }
-              .firstOrNull { SplotchLibraryFiles.matches(it, entry) }
-            if (previous != null) {
-              check(destination.parentFile?.isDirectory == true || destination.parentFile?.mkdirs() == true)
-              previous.copyTo(destination, overwrite = true)
-            }
-          }
-        }
         if (!SplotchLibraryFiles.matches(destination, entry)) {
           if (root.usableSpace < entry.getLong("bytes") + STORAGE_RESERVE_BYTES)
             return Result.failure(Data.Builder().putString("fault", "library_storage_full").build())
@@ -76,6 +65,36 @@ class SplotchLibraryWorker(context: Context, parameters: WorkerParameters) : Wor
     catch (_: RetiredAsset) { Result.failure() }
     catch (_: IllegalArgumentException) { Result.failure() }
     catch (_: Exception) { Result.retry() }
+  }
+
+  private fun prepareStaging(pack: JSONObject, current: File, staging: File, job: File, token: String) {
+    synchronized(SplotchLibraryFiles.lock) {
+      checkActive(job, token)
+      val packStages = requireNotNull(staging.parentFile)
+      val transfers = requireNotNull(packStages.parentFile)
+      for (directory in transfers.listFiles().orEmpty())
+        if (directory.name.startsWith("${pack.getString("id")}-") && directory != packStages)
+          check(directory.deleteRecursively())
+      val siblings = packStages.listFiles().orEmpty().filter { it != staging }
+      val files = pack.getJSONArray("files")
+      for (index in 0 until files.length()) {
+        checkActive(job, token)
+        val entry = files.getJSONObject(index)
+        val destination = SplotchLibraryFiles.destination(staging, entry)
+        if (SplotchLibraryFiles.matches(destination, entry)) continue
+        val candidate = (listOf(current) + siblings).firstOrNull {
+          SplotchLibraryFiles.matches(SplotchLibraryFiles.destination(it, entry), entry)
+        } ?: continue
+        val previous = SplotchLibraryFiles.destination(candidate, entry)
+        check(destination.parentFile?.isDirectory == true || destination.parentFile?.mkdirs() == true)
+        if (candidate == current) previous.copyTo(destination, overwrite = true)
+        else {
+          check(!destination.exists() || destination.delete())
+          check(previous.renameTo(destination))
+        }
+      }
+      for (directory in siblings) check(directory.deleteRecursively())
+    }
   }
 
   private fun checkActive(job: File, token: String) {

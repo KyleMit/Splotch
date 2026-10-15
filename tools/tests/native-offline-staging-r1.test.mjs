@@ -32,6 +32,13 @@ const staticRoot = new URL('../../web/static/', import.meta.url);
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let scratch;
 const roots = [];
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
 async function diskPlatform() {
   const root = await mkdtemp(join(tmpdir(), 'splotch-library-unit-'));
   roots.push(root);
@@ -111,6 +118,78 @@ afterEach(async () => {
 const dinosaur = catalogPack('dinosaur', 'full');
 
 describe('R1 real controller and disk regression controls', () => {
+  it.each([
+    ['active', true],
+    ['master-off', false],
+    ['disposed', false],
+  ])('handles native completion during a page open with %s', async (disposition, published) => {
+    const base = scratch.platform;
+    await createLibraryStore(base).install(dinosaur, new AbortController().signal, false, () => {});
+    const verifying = deferred();
+    const finish = deferred();
+    const transferStore = createLibraryStore(base);
+    let holdVerification = false;
+    const platform = {
+      ...base,
+      async verify(path, expected) {
+        if (holdVerification && path.startsWith('creatures-')) {
+          holdVerification = false;
+          verifying.resolve();
+          await finish.promise;
+        }
+        return base.verify(path, expected);
+      },
+      async installPack(...args) {
+        await transferStore.install(...args);
+        if (args[0].id === 'creatures') holdVerification = true;
+      },
+      cancelInstallations: async () => {},
+    };
+    const owner = createEnabledOfflineLibrary(platform, 'full');
+    try {
+      await owner.initialize();
+      expect(owner.snapshot().installed.map((pack) => pack.id)).toEqual(['dinosaur']);
+      owner.engage();
+      await verifying.promise;
+      const opening = owner.openPage(offlinePageId(dinosaur, 'trex'));
+      if (disposition === 'master-off') owner.setFeatureEnabled(false);
+      if (disposition === 'disposed') owner.dispose();
+      finish.resolve();
+      await opening;
+      await owner.settled();
+      expect(owner.snapshot().installed.some((pack) => pack.id === 'creatures')).toBe(published);
+      expect(owner.snapshot().activeBook).not.toBe('creatures');
+    } finally {
+      finish.resolve();
+      owner.dispose();
+      await owner.settled();
+    }
+  });
+  it('prunes obsolete staging during inventory and preserves current verified partial bytes', async () => {
+    const compact = catalogPack('dinosaur', 'compact');
+    const store = createLibraryStore(scratch.platform);
+    const download = scratch.platform.download;
+    for (const pack of [compact, dinosaur]) {
+      const abort = new AbortController();
+      scratch.platform.download = async (...args) => {
+        await download(...args);
+        abort.abort();
+      };
+      await expect(store.install(pack, abort.signal, false, () => {})).rejects.toMatchObject({
+        code: 'cancelled',
+      });
+    }
+    scratch.platform.download = download;
+    const obsoleteStage = join(scratch.root, `staging-${packDirectory(compact)}`);
+    const currentStage = join(scratch.root, `staging-${packDirectory(dinosaur)}`);
+    const currentFile = join(currentStage, 'files', dinosaur.files[0].path.split('/').at(-1));
+    const before = await readFile(currentFile);
+    expect(fs.existsSync(obsoleteStage)).toBe(true);
+    await createLibraryStore(scratch.platform).inventory([dinosaur]);
+    expect(fs.existsSync(obsoleteStage)).toBe(false);
+    expect(await readFile(currentFile)).toEqual(before);
+    expect(scratch.state.downloads).toBe(2);
+  });
   it.each([false, true])(
     'resumes verified staging after cancellation and rechecks tampered bytes: %s',
     async (tamper) => {

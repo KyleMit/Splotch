@@ -376,6 +376,13 @@ it('preserves shipping native network and background transfer policy', async () 
   expect(worker).toContain('stored.getBoolean("allowMetered") && dataSaverEnabled()');
   expect(worker).toContain('SplotchLibraryFiles.write(File(staging, "installed.json"), marker)');
   expect(worker).toContain('staging.renameTo(current)');
+  expect(worker).toContain('prepareStaging(pack, current, staging, job, token)');
+  expect(worker).toContain(
+    'if (candidate == current) previous.copyTo(destination, overwrite = true)'
+  );
+  expect(worker).toContain('check(previous.renameTo(destination))');
+  expect(worker).toContain('directory != packStages');
+  expect(worker).toContain('for (directory in siblings) check(directory.deleteRecursively())');
   expect(Number(worker.match(/STORAGE_RESERVE_BYTES = (\d+)L/)[1])).toBe(
     LIBRARY_STORAGE_RESERVE_BYTES
   );

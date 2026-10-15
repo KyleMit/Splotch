@@ -98,6 +98,10 @@ class LibraryStore {
   }
   private async retireSuperseded(current: Pack) {
     for (const directory of await this.platform.list()) {
+      if (directory.startsWith(`staging-${current.id}-`) && directory !== stageName(current)) {
+        await this.platform.remove(directory);
+        continue;
+      }
       if (
         !PACK_DIRECTORY.test(directory) ||
         !directory.startsWith(`${current.id}-`) ||
