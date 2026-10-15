@@ -133,3 +133,29 @@ it('binds drawing and modal shortcut receivers to the same native view and event
     expect(ios).toContain(`"${key}"`);
   }
 });
+
+it("keeps shortcut capture visually transparent like shipping's window listener", () => {
+  const shipping = readFileSync(
+    resolve(import.meta.dirname, '../../web/src/lib/boot/undoShortcut.ts'),
+    'utf8'
+  );
+  const android = readFileSync(
+    resolve(
+      import.meta.dirname,
+      '../../experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/SplotchGateKeyboard.kt'
+    ),
+    'utf8'
+  );
+  const shortcut = android.slice(
+    android.indexOf('class ShortcutKeyboardView'),
+    android.indexOf('class SplotchShortcutKeyboardManager')
+  );
+  const initialization = shortcut.match(/init \{([\s\S]*?)\n {2}\}/)?.[1];
+  expect(shipping).toContain("window.addEventListener('keydown', onKeyDown)");
+  expect(shipping).not.toMatch(/\.focus\(/);
+  expect(initialization).toContain('isFocusable = true');
+  expect(initialization).toContain('isFocusableInTouchMode = true');
+  expect(initialization).toContain(
+    'if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) defaultFocusHighlightEnabled = false'
+  );
+});

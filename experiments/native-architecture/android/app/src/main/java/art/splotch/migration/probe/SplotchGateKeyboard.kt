@@ -1,5 +1,6 @@
 package art.splotch.migration.probe
 
+import android.os.Build
 import android.view.KeyEvent
 import android.widget.EditText
 import com.facebook.react.ReactPackage
@@ -86,6 +87,7 @@ class ShortcutKeyboardView(private val reactContext: ThemedReactContext) : React
   init {
     isFocusable = true
     isFocusableInTouchMode = true
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) defaultFocusHighlightEnabled = false
   }
 
   private fun focusWhenAvailable() {
