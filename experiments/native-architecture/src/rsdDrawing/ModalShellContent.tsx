@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
 import { Animated, Easing } from '../platform/animated';
@@ -134,8 +134,8 @@ function useModalMotion(visible: boolean, onDismiss: (() => void) | undefined) {
   const from = useRef<Point>({ x: 0, y: 0 });
   const windowRef = useRef(window);
   windowRef.current = window;
-  const dismissal = useRef({ pending: false, onDismiss });
-  dismissal.current.onDismiss = onDismiss;
+  const dismissal = useRef(onDismiss);
+  dismissal.current = onDismiss;
   useLayoutEffect(() => {
     if (phase !== 'entering' && phase !== 'exiting') return;
     if (phase === 'entering') from.current = origin?.take(windowRef.current) ?? { x: 0, y: 0 };
@@ -143,18 +143,19 @@ function useModalMotion(visible: boolean, onDismiss: (() => void) | undefined) {
       phase === 'entering'
         ? enter(motion, from.current, reduced)
         : exit(motion, from.current, reduced);
+    let active = true;
     animation.start(({ finished }) => {
+      if (!active) return;
+      active = false;
       if (!finished) return;
-      if (phase === 'exiting') dismissal.current.pending = true;
       setPhase(phase === 'entering' ? 'open' : 'gone');
+      if (phase === 'exiting' && Platform.OS !== 'ios') dismissal.current?.();
     });
-    return () => animation.stop();
+    return () => {
+      active = false;
+      animation.stop();
+    };
   }, [phase, motion, origin, reduced]);
-  useEffect(() => {
-    if (phase !== 'gone' || !dismissal.current.pending) return;
-    dismissal.current.pending = false;
-    if (Platform.OS !== 'ios') dismissal.current.onDismiss?.();
-  }, [phase]);
   return { presented: phase !== 'gone', motion };
 }
 

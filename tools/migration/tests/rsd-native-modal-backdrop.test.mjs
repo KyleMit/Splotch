@@ -1,6 +1,6 @@
 import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { act, createElement, Fragment, useEffect } from 'react';
+import { act, createElement, Fragment, useEffect, useLayoutEffect } from 'react';
 import { Animated } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
@@ -8,6 +8,7 @@ import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDra
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
+import { useProductModalRoute } from '../../../experiments/native-architecture/src/product/useProductModalRoute.ts';
 import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import {
@@ -20,7 +21,13 @@ import {
   MODAL_SCRIM_PLAIN,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 
-function dialog({ visible = true, seeThrough = false, touchBackdrop, onClose = () => {} } = {}) {
+function dialog({
+  visible = true,
+  seeThrough = false,
+  touchBackdrop,
+  onClose = () => {},
+  onDismiss,
+} = {}) {
   return createElement(
     ModalShell,
     {
@@ -30,6 +37,7 @@ function dialog({ visible = true, seeThrough = false, touchBackdrop, onClose = (
       label: 'Drawing tools',
       size: 'sheet',
       onClose,
+      onDismiss,
       header: createElement(DialogHeader, { title: 'Drawing tools', onClose }),
     },
     createElement('span', null, 'body')
@@ -77,6 +85,128 @@ it('starts the shipping exit before unrelated passive work on Android', async ()
     expect(host.querySelector('[role="dialog"]')).not.toBeNull();
     await act(async () => exit.finish());
     expect(host.querySelector('[role="dialog"]')).toBeNull();
+  } finally {
+    vi.restoreAllMocks();
+  }
+});
+
+function RouteCommit({ target, observe, onDismissed }) {
+  const route = useProductModalRoute('reported', target, onDismissed);
+  useLayoutEffect(() => {
+    observe(route);
+  });
+  return null;
+}
+
+it('closes the product route in its first committed render', async () => {
+  records.os = 'android';
+  const commits = [];
+  const observe = (route) => commits.push(route);
+  const onDismissed = vi.fn();
+  const screen = (target) => createElement(RouteCommit, { target, observe, onDismissed });
+  await mount(screen('settings'));
+  commits.length = 0;
+  await act(async () => root.render(screen('none')));
+  expect(commits.map(({ visible }) => visible)).toEqual([false]);
+  expect(commits[0]).toMatchObject({ shown: 'settings', closing: true, epoch: 1 });
+  expect(onDismissed).not.toHaveBeenCalled();
+});
+
+it.each(['settings', 'feedback'])(
+  'retains the route epoch while the closing target becomes %s',
+  async (target) => {
+    const commits = [];
+    const observe = (route) => commits.push(route);
+    const onDismissed = vi.fn();
+    const screen = (next) => createElement(RouteCommit, { target: next, observe, onDismissed });
+    await mount(screen('settings'));
+    await act(async () => root.render(screen('none')));
+    const outgoing = commits.at(-1).dismissed;
+    await act(async () => root.render(screen(target)));
+    expect(commits.at(-1)).toMatchObject({ shown: 'settings', closing: true, epoch: 1 });
+    await act(async () => outgoing());
+    expect(commits.at(-1)).toMatchObject({ shown: target, closing: false, epoch: 2 });
+    expect(onDismissed).toHaveBeenCalledExactlyOnceWith('settings');
+    await act(async () => root.render(screen('none')));
+    const current = commits.at(-1).dismissed;
+    await act(async () => outgoing());
+    expect(commits.at(-1)).toMatchObject({ shown: target, closing: true, epoch: 2 });
+    expect(onDismissed).toHaveBeenCalledOnce();
+    await act(async () => current());
+    expect(commits.at(-1)).toMatchObject({ shown: 'none', closing: false, epoch: 3 });
+    expect(onDismissed.mock.calls).toEqual([['settings'], [target]]);
+  }
+);
+
+function CompletionPassiveWork({ completed, observe }) {
+  useEffect(() => {
+    if (completed) observe('passive');
+  }, [completed, observe]);
+  return null;
+}
+
+it.each(['android', 'web'])(
+  'reports a completed exit before unrelated passive work on %s',
+  async (os) => {
+    records.os = os;
+    const order = [];
+    const observe = (step) => order.push(step);
+    const onDismiss = vi.fn(() => observe('dismiss'));
+    const screen = (visible, completed = false) =>
+      createElement(
+        Fragment,
+        null,
+        createElement(CompletionPassiveWork, { completed, observe }),
+        dialog({ visible, onDismiss })
+      );
+    await mount(screen(true));
+    const exit = {};
+    vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+      start(done) {
+        animations.forEach((animation) => animation.start());
+        exit.finish = () => done({ finished: true });
+      },
+      stop() {},
+    }));
+    try {
+      await act(async () => root.render(screen(false)));
+      expect(onDismiss).not.toHaveBeenCalled();
+      await act(async () => {
+        exit.finish();
+        root.render(screen(false, true));
+      });
+      expect(order).toEqual(['dismiss', 'passive']);
+      expect(onDismiss).toHaveBeenCalledOnce();
+      await act(async () => exit.finish());
+      expect(onDismiss).toHaveBeenCalledOnce();
+      expect(host.querySelector('[role="dialog"]')).toBeNull();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  }
+);
+
+it('ignores a canceled exit callback after the dialog reopens', async () => {
+  records.os = 'android';
+  const onDismiss = vi.fn();
+  await mount(dialog({ onDismiss }));
+  const exit = {};
+  vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+    start(done) {
+      animations.forEach((animation) => animation.start());
+      exit.finish = (finished) => done({ finished });
+    },
+    stop() {},
+  }));
+  try {
+    await act(async () => root.render(dialog({ visible: false, onDismiss })));
+    await act(async () => exit.finish(false));
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+    await act(async () => root.render(dialog({ onDismiss })));
+    await act(async () => exit.finish(true));
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
   } finally {
     vi.restoreAllMocks();
   }

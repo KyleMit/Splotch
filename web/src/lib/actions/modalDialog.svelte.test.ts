@@ -381,25 +381,25 @@ describe('modalDialog', () => {
     }
   });
 
-  it('closes only once the exit animation finishes', async () => {
+  it('closes only once the exit animation finishes while unrelated frame work is held', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
     const finishExit = stubExit(dialog, 10_000);
     const destroy = mountClosable(dialog, modal);
+    const heldFrame = vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(0);
 
     try {
-      modal.show(null);
-      await Promise.resolve();
-      modal.hide();
-      await Promise.resolve();
-      await afterContentRetirementPaint();
-
+      flushSync(() => modal.show(null));
+      flushSync(() => modal.hide());
+      const retired = waitForDialogRetirement(dialog);
       expect(dialog.open).toBe(true);
       expect(dialog.classList.contains(DIALOG_CLOSING_CLASS)).toBe(true);
-
       finishExit();
-      await vi.waitFor(() => expect(dialog.open).toBe(false));
+      await retired;
+      expect(dialog.open).toBe(false);
+      expect(heldFrame).toHaveBeenCalledOnce();
     } finally {
+      heldFrame.mockRestore();
       destroy();
       dialog.remove();
     }
