@@ -17,7 +17,12 @@ import {
   RsdPageSheet,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 
-import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
+import {
+  BREAKPOINT_EPSILON_PX,
+  NARROW_PHONE_MIN_WIDTH_PX,
+  PHONE_MAX_WIDTH_PX,
+  SHORT_PAGE_HEIGHT_PX,
+} from '../../../web/src/lib/breakpoints.ts';
 import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 
@@ -131,6 +136,26 @@ const pageParts = () => {
     ),
   };
 };
+
+it.each([
+  { width: 360, crayons: false },
+  { width: NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX, crayons: false },
+  { width: NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX / 2, crayons: true },
+  { width: NARROW_PHONE_MIN_WIDTH_PX, crayons: true },
+  { width: 1024, crayons: true },
+])('keeps shipping’s masthead decoration at width $width', async ({ width, crayons }) => {
+  const shell = read('web/src/lib/components/page/PageShell.svelte');
+  expect(shell).toContain(
+    `@media (max-width: ${NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX}px) { .brand :global(.crayons) { display: none; } }`
+  );
+  records.dimensions = { width, height: 874, scale: 1, fontScale: 1 };
+  await mount(pageTree('light', { backLabel: 'Back to drawing' }));
+  const brand = pageParts().topbar.lastElementChild;
+  expect(brand.textContent).toBe(NOT_FOUND_COPY.wordmark);
+  expect(brand.childElementCount).toBe(crayons ? 2 : 1);
+  expect(brand.firstElementChild.childElementCount).toBe(crayons ? CRAYON_LABELS.length : 0);
+  expect(pageParts().topbar.firstElementChild.textContent).toBe('Back to drawing');
+});
 
 it('pins the shipping short-height sheet, compact hero and optional lede disclosure', () => {
   const shell = read('web/src/lib/components/page/PageShell.svelte');

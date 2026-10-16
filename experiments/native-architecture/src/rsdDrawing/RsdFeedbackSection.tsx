@@ -90,7 +90,14 @@ const styles = css.create({
   },
   submit: { alignSelf: 'flex-start' },
   status: { marginTop: dimensions.space3 },
-  pageCard: { padding: 0, backgroundColor: 'transparent', gap: PAGE_FIELD_GAP_PX },
+  pageCard: {
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    backgroundColor: 'transparent',
+    gap: PAGE_FIELD_GAP_PX,
+  },
   pageLabel: {
     fontSize: dimensions.fontSizeLg,
     fontFamily: fonts.boldFamily,

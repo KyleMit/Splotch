@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
+import { Window } from 'happy-dom';
 import { brand, scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import * as rsdTokens from '../../../experiments/native-architecture/src/rsdDrawing/tokens.css.ts';
 import {
@@ -276,12 +277,35 @@ const result = babel.transformSync(readFileSync(0, 'utf8'), {
   babelrc: false,
   configFile: join(process.cwd(), 'babel.config.cjs'),
   caller: { name: 'splotch-rsd-web-token-test', platform: 'web', supportsStaticESM: true },
+  ast: true,
 });
 assert.ok(result && typeof result.code === 'string');
 assert.ok(Array.isArray(result.metadata.stylex));
 assert.ok(result.metadata.stylex.length > 0);
 assert.ok(!/\\bcss\\.create\\s*\\(/.test(result.code));
-process.stdout.write(JSON.stringify({ stylex: result.metadata.stylex }));
+function literal(node, scope) {
+  if (node.type === 'MemberExpression') {
+    const styles = scope.getBinding(node.object.name).path.node.init;
+    const declaration = styles.properties.find((property) => property.key.name === node.property.name).value;
+    assert.equal(declaration.type, 'ArrowFunctionExpression');
+    assert.equal(declaration.body.type, 'ArrayExpression');
+    const fixed = declaration.body.elements[0];
+    assert.equal(fixed.type, 'Identifier');
+    const rules = literal(scope.getBinding(fixed.name).path.node.init, scope);
+    return { className: Object.values(rules).filter((value) => typeof value === 'string').join(' ') };
+  }
+  if (node.type === 'ObjectExpression') return Object.fromEntries(node.properties.map((property) => {
+    assert.equal(property.type, 'ObjectProperty');
+    return [property.key.name ?? property.key.value, literal(property.value, scope)];
+  }));
+  assert.ok(['StringLiteral', 'NumericLiteral', 'BooleanLiteral', 'NullLiteral'].includes(node.type));
+  return node.type === 'NullLiteral' ? null : node.value;
+}
+let probe;
+babel.traverse(result.ast, { VariableDeclarator(path) {
+  if (path.node.id.name === 'rsdWebStyleProbe') probe = literal(path.node.init, path.scope);
+} });
+process.stdout.write(JSON.stringify({ stylex: result.metadata.stylex, probe }));
 `;
 
 function compileWeb(file, source = readFileSync(join(candidate, file), 'utf8')) {
@@ -298,6 +322,74 @@ function compiledRules(result) {
   expect(result.status, result.stderr).toBe(0);
   return JSON.parse(result.stdout).stylex;
 }
+
+function computedWebStyles(file, composition, properties) {
+  const source = readFileSync(join(candidate, file), 'utf8');
+  const result = compileWeb(file, `${source}\nexport const rsdWebStyleProbe = ${composition};`);
+  expect(result.status, result.stderr).toBe(0);
+  const { stylex, probe } = JSON.parse(result.stdout);
+  const window = new Window();
+  const stylesheet = window.document.createElement('style');
+  stylesheet.textContent = [...compiledRules(compileWeb(WEB_STYLE_FILES[0])), ...stylex]
+    .sort((left, right) => left[2] - right[2])
+    .map((rule) => rule[1].ltr)
+    .join('\n');
+  window.document.head.append(stylesheet);
+  return Object.fromEntries(
+    Object.entries(probe).map(([name, props]) => {
+      const element = window.document.createElement('div');
+      element.className = props.className;
+      window.document.body.append(element);
+      const style = window.getComputedStyle(element);
+      return [
+        name,
+        Object.fromEntries(
+          properties.map((property) => [property, style.getPropertyValue(property)])
+        ),
+      ];
+    })
+  );
+}
+
+it(
+  'compiles standalone Feedback flush to its form while Settings keeps its card inset',
+  () => {
+    const padding = ['padding-top', 'padding-right', 'padding-bottom', 'padding-left'];
+    const actual = computedWebStyles(
+      'src/rsdDrawing/RsdFeedbackSection.tsx',
+      '{ settings: css.props(styles.card), page: css.props(styles.card, styles.pageCard) }',
+      padding
+    );
+    expect(actual).toEqual({
+      settings: Object.fromEntries(
+        padding.map((side, index) => [side, index % 2 ? scale.space4 : scale.space3])
+      ),
+      page: Object.fromEntries(padding.map((side) => [side, '0px'])),
+    });
+  },
+  WEB_TEST_TIMEOUT_MS
+);
+
+it(
+  'compiles the page Back link with the shipping unwrapped flex behavior',
+  () => {
+    const shipping = readFileSync(
+      join(root, 'web/src/lib/components/page/BackLink.svelte'),
+      'utf8'
+    );
+    const back = shipping.match(/^\s*\.back\s*\{([^}]+)\}/m);
+    expect(back, 'Shipping Back link rule').not.toBeNull();
+    expect(back[1]).toContain('flex-shrink: 0;');
+    expect(back[1]).toContain('white-space: nowrap;');
+    expect(
+      computedWebStyles('src/rsdDrawing/RsdNotFoundPage.tsx', '{ back: styles.back }', [
+        'flex-shrink',
+        'white-space',
+      ])
+    ).toEqual({ back: { 'flex-shrink': '0', 'white-space': 'nowrap' } });
+  },
+  WEB_TEST_TIMEOUT_MS
+);
 
 function selectedForegroundRule() {
   const rules = compiledRules(

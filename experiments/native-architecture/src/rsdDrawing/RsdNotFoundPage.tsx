@@ -9,7 +9,12 @@ import {
 import { SvgXml } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import type { BackLabel } from '../../../../web/src/lib/components/page/backLabel';
-import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../../../web/src/lib/breakpoints';
+import {
+  BREAKPOINT_EPSILON_PX,
+  NARROW_PHONE_MIN_WIDTH_PX,
+  PHONE_MAX_WIDTH_PX,
+  SHORT_PAGE_HEIGHT_PX,
+} from '../../../../web/src/lib/breakpoints';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
@@ -131,6 +136,8 @@ const styles = css.create({
   },
   shortTopbar: { paddingTop: SHORT_TOPBAR_PADDING_PX, paddingBottom: SHORT_TOPBAR_PADDING_PX },
   back: (overhang: number) => ({
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
@@ -227,19 +234,21 @@ function blobShadow(hex: string) {
   return `0 3px 8px rgba(${red}, ${green}, ${blue}, ${BLOB_SHADOW_ALPHA})`;
 }
 
-function BrandMark({ phone }: { phone: boolean }) {
+function BrandMark({ phone, narrow }: { phone: boolean; narrow: boolean }) {
   const crayon = CRAYON[phone ? 'phone' : 'wide'];
   const tracking = WORDMARK_TRACKING_EM[phone ? 'phone' : 'wide'];
   return (
     <html.div style={styles.brand(BRAND_GAP_PX[phone ? 'phone' : 'wide'])}>
-      <html.div aria-hidden style={styles.crayons(crayon.gap)}>
-        {CRAYON_LABELS.map((label) => (
-          <html.div
-            key={label}
-            style={styles.crayon(crayon.width, crayon.height, paletteHex(label))}
-          />
-        ))}
-      </html.div>
+      {!narrow && (
+        <html.div aria-hidden style={styles.crayons(crayon.gap)}>
+          {CRAYON_LABELS.map((label) => (
+            <html.div
+              key={label}
+              style={styles.crayon(crayon.width, crayon.height, paletteHex(label))}
+            />
+          ))}
+        </html.div>
+      )}
       <html.span style={[controlStyles.boldText, styles.wordmark(WORDMARK_FONT_PX * tracking)]}>
         {NOT_FOUND_COPY.wordmark}
       </html.span>
@@ -276,6 +285,7 @@ export function RsdPageSheet({
   const insets = useSafeAreaInsets();
   const frame = pageFrame(window.width);
   const phone = frame === 'phone';
+  const narrow = window.width <= NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX;
   const short = window.height <= SHORT_PAGE_HEIGHT_PX;
   const side = short && !phone ? SHORT_SHEET_GUTTER_PX : gutter(window.width);
   const sheet = short
@@ -331,7 +341,7 @@ export function RsdPageSheet({
           >
             <html.div style={[styles.topbar, short && styles.shortTopbar]}>
               <BackLink label={backLabel} short={short} />
-              <BrandMark phone={phone} />
+              <BrandMark phone={phone} narrow={narrow} />
             </html.div>
             {/* RN Web does not report position-only layout changes on the body. */}
             <View
