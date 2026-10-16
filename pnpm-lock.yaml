@@ -46,8 +46,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@netlify/blobs':
-        specifier: ^11.1.1
-        version: 11.1.1(supports-color@10.2.2)
+        specifier: ^11.1.4
+        version: 11.1.4(supports-color@10.2.2)
       '@sveltejs/adapter-netlify':
         specifier: ^6.0.4
         version: 6.0.4(@sveltejs/kit@2.70.3(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.1(@typescript-eslint/types@8.71.0))(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.1)))(svelte@5.57.1(@typescript-eslint/types@8.71.0))(typescript@6.0.3)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.1)))
@@ -1139,8 +1139,8 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@fastify/busboy@3.2.2':
-    resolution: {integrity: sha512-yXSS27qPExaXeuLvMRMXOLtpipzfQYNjG3FkunDWKGfMYjKuhFXko9CVzqxm8jcF+lmtS9Fd89QNdh9XDjnbNg==}
+  '@fastify/busboy@3.2.3':
+    resolution: {integrity: sha512-fmo/IKgkenPzz3qTKG+sIUXdF/Kv83AkvvOXJHPTHJeKJbat8SsL1ihUaFaDotqoEl4UZ1Lf8Eb/3vK6eaWX2A==}
 
   '@fontsource-variable/quicksand@5.3.0':
     resolution: {integrity: sha512-EMyoXnGC0uIbjyHDB01MTJoQuODsMo7Q/4XLEwN97YJEeV1WIVFI0QBiW2exGnxvhnMHb+IwQ9E5QZDgGMWCHw==}
@@ -1457,16 +1457,16 @@ packages:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
 
-  '@netlify/blobs@11.1.1':
-    resolution: {integrity: sha512-99H0BJlieiWLkTYQ4ACbw5aGlkbpgyJ3TYF1Hb76wU43eO57LnnP/m3cnMZWNWeAwXhiTEjvUTH7ghJTBoSjFQ==}
+  '@netlify/blobs@11.1.4':
+    resolution: {integrity: sha512-rtvtXG0NQkmIdpdI8AI/LKesf3TdZJwNP0VaxodPpb/yYzME62YAaqYVmB2MC5gO5Wxls1aIzcCK2xJFRNRhoQ==}
     engines: {node: '>=22.12.0'}
 
-  '@netlify/dev-utils@6.0.1':
-    resolution: {integrity: sha512-q5g70dO3q/M/XTBQz7uIECJxVlJoS8UBlzpjf22DV6q61UzXa8EONTPXPmvisrFcUi1I3AUKplPcHGQYZZj+Vw==}
+  '@netlify/dev-utils@6.0.3':
+    resolution: {integrity: sha512-p+M9a8mI0H0rRohY7Z4TkblvJMwsl5nfNKzmmhz1XBgSLBoDcgwf1TroHvM0TyK5sRiD8LViXe1wuJbzYlilUQ==}
     engines: {node: '>=22.12.0'}
 
-  '@netlify/otel@7.0.2':
-    resolution: {integrity: sha512-MHEsRJTZtOCrLa2fR+Y3GN51rvgxUHazuRVxuWuG7R1qzwynXAZB20Ufwp7BxKSTKcp7LNVEnKAZ/k2ytVmYvQ==}
+  '@netlify/otel@7.0.4':
+    resolution: {integrity: sha512-HrGxXgauSZEzSd2mKu5YlqCvHpaNjQzf/yvwBdVXstZLRWWvbWIZBanrbXG0poyq70PBuiL+zVp3lU48aWnRNg==}
     engines: {node: '>=22.12.0'}
 
   '@netlify/runtime-utils@3.0.0':
@@ -2829,6 +2829,9 @@ packages:
   cjs-module-lexer@2.2.1:
     resolution: {integrity: sha512-Ca8swihM+/4yKecYHY52kgJd300hi2lADU/a1RxNTRe+RJ9jvqQlESpbz9DnG9mowez8qwXHB8qYdIUw9e+F5Q==}
 
+  cjs-module-lexer@2.3.0:
+    resolution: {integrity: sha512-lmNyBzi6iYiqyrExTctfmjd8tInx+dHu9PBomTfH5RXS53c27JMFJgzNv5TyAnm3PgGf+MLy0+Ws41/HlVxdKQ==}
+
   cliui@6.0.0:
     resolution: {integrity: sha512-t6wbgtoCXvAzst7QgXxJYqPt0usEfbgQdftEPbLL/cvv6HPE5VgvqCuAIDR0NgU52ds6rFwqrgakNLrHEjCbrQ==}
 
@@ -3250,6 +3253,9 @@ packages:
 
   es-module-lexer@3.0.2:
     resolution: {integrity: sha512-BuIB67FngDSyQ/dpQNOZybwdEBDUGJQvOqwWr4ha/ufYiqzuEwPkKO2zLhRAgay28tStRIHUeWmszZAJo3GCOg==}
+
+  es-module-lexer@3.0.3:
+    resolution: {integrity: sha512-yWGe1O/j+almnV4hOYrmZo8u58JdnmXEMneRQAYkWtqSiT86yoMIEKF4rpqEDj52tbYl3xceBD3DQIBwcsC9Pw==}
 
   es-object-atoms@1.1.2:
     resolution: {integrity: sha512-HWcBoN6NileqtSydK2FqHbS/LoDd2pqrnQHLyJzBj4kOp/ky2MWMN694xOfkK8/SnUsW2DH7EfyVlydKCsm1Zw==}
@@ -3745,6 +3751,10 @@ packages:
     resolution: {integrity: sha512-mPKuL8bPQzecui2KK6Gb+M8JvJoHnhS1FeYGa22QopBmlevF5F0FE6ued/B5EgHDeIoMTONIpDWWFKUPOG0DBQ==}
     engines: {node: '>=18'}
 
+  import-in-the-middle@3.5.2:
+    resolution: {integrity: sha512-WseIA/4o56+GYO3RmlOPvejYi771OFeJEeK/ejROsr9bdjW+E5NXTOD1Di8TL40Qgg3JJX9aa97Hf8iiSVIKZw==}
+    engines: {node: '>=18'}
+
   import-meta-resolve@4.2.0:
     resolution: {integrity: sha512-Iqv2fzaTQN28s/FwZAoFq0ZSs/7hMAHJVX+w8PZl3cY19Pxk6jFFalxQoIfW2826i/fDLXv8IiEZRIT0lDuWcg==}
 
@@ -4048,8 +4058,8 @@ packages:
   known-css-properties@0.37.0:
     resolution: {integrity: sha512-JCDrsP4Z1Sb9JwG0aJ8Eo2r7k4Ou5MwmThS/6lcIe1ICyb7UBJKGRIUUdqc2ASdE/42lgz6zFUnzAIhtXnBVrQ==}
 
-  legacy-javascript@0.0.1:
-    resolution: {integrity: sha512-lPyntS4/aS7jpuvOlitZDFifBCb4W8L/3QU0PLbUTUj+zYah8rfVjYic88yG7ZKTxhS5h9iz7duT8oUXKszLhg==}
+  legacy-javascript@0.0.3:
+    resolution: {integrity: sha512-1r6MT4dVaJyXt4G07Cm2cQ0AUaLJdefiEp4SmIAylA++gnEQ82YvmzE58RkM5EP0fk5hROLCslUPGnwIYdZQVA==}
 
   leven@3.1.0:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
@@ -6794,7 +6804,7 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@fastify/busboy@3.2.2': {}
+  '@fastify/busboy@3.2.3': {}
 
   '@fontsource-variable/quicksand@5.3.0': {}
 
@@ -7139,15 +7149,15 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@netlify/blobs@11.1.1(supports-color@10.2.2)':
+  '@netlify/blobs@11.1.4(supports-color@10.2.2)':
     dependencies:
-      '@netlify/dev-utils': 6.0.1
-      '@netlify/otel': 7.0.2(supports-color@10.2.2)
+      '@netlify/dev-utils': 6.0.3
+      '@netlify/otel': 7.0.4(supports-color@10.2.2)
       '@netlify/runtime-utils': 3.0.0
     transitivePeerDependencies:
       - supports-color
 
-  '@netlify/dev-utils@6.0.1':
+  '@netlify/dev-utils@6.0.3':
     dependencies:
       '@whatwg-node/server': 0.11.0
       ansis: 4.4.0
@@ -7161,7 +7171,7 @@ snapshots:
       parse-gitignore: 2.0.0
       semver: 7.8.5
 
-  '@netlify/otel@7.0.2(supports-color@10.2.2)':
+  '@netlify/otel@7.0.4(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.10.0(@opentelemetry/api@1.9.1)
@@ -7217,7 +7227,7 @@ snapshots:
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.221.0
-      import-in-the-middle: 3.5.1
+      import-in-the-middle: 3.5.2
       require-in-the-middle: 8.0.1(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
@@ -7376,7 +7386,7 @@ snapshots:
 
   '@paulirish/trace_engine@0.0.65':
     dependencies:
-      legacy-javascript: 0.0.1
+      legacy-javascript: 0.0.3
       third-party-web: 0.30.0
 
   '@playwright/test@1.63.0':
@@ -8027,7 +8037,7 @@ snapshots:
 
   '@whatwg-node/node-fetch@0.8.6':
     dependencies:
-      '@fastify/busboy': 3.2.2
+      '@fastify/busboy': 3.2.3
       '@whatwg-node/disposablestack': 0.0.6
       '@whatwg-node/promise-helpers': 1.3.2
       tslib: 2.8.1
@@ -8321,6 +8331,8 @@ snapshots:
       zod: 3.25.76
 
   cjs-module-lexer@2.2.1: {}
+
+  cjs-module-lexer@2.3.0: {}
 
   cliui@6.0.0:
     dependencies:
@@ -8817,6 +8829,8 @@ snapshots:
   es-module-lexer@2.3.2: {}
 
   es-module-lexer@3.0.2: {}
+
+  es-module-lexer@3.0.3: {}
 
   es-object-atoms@1.1.2:
     dependencies:
@@ -9399,6 +9413,12 @@ snapshots:
       es-module-lexer: 3.0.2
       module-details-from-path: 1.0.4
 
+  import-in-the-middle@3.5.2:
+    dependencies:
+      cjs-module-lexer: 2.3.0
+      es-module-lexer: 3.0.3
+      module-details-from-path: 1.0.4
+
   import-meta-resolve@4.2.0: {}
 
   imurmurhash@0.1.4: {}
@@ -9673,7 +9693,7 @@ snapshots:
 
   known-css-properties@0.37.0: {}
 
-  legacy-javascript@0.0.1: {}
+  legacy-javascript@0.0.3: {}
 
   leven@3.1.0: {}
 
