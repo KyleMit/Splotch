@@ -12,6 +12,7 @@ import {
 import { Linking } from 'react-native';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
 import releases from '../../../web/src/lib/releases.json';
 import { PRIVACY_LAYOUT } from '../../../experiments/native-architecture/src/information/privacyLayout.ts';
 import { informationFragmentAtLaunch } from '../../../experiments/native-architecture/src/platform/informationFragment.ts';
@@ -263,6 +264,11 @@ it('keeps the reader’s scrolled position across a reading-park width change an
   await act(async () => layout(`changelog-position-${releases[0].id}`, 700));
   expect(scroll.scrollTo).not.toHaveBeenCalled();
   expect(informationFragmentAtLaunch()).toBe(older.id);
+  records.dimensions = { ...records.dimensions, height: SHORT_PAGE_HEIGHT_PX };
+  await act(async () => root.render(createElement(ProbeApp)));
+  await act(async () => layout('information-page-body', 160));
+  expect(scroll.scrollTo).not.toHaveBeenCalled();
+  expect(informationFragmentAtLaunch()).toBe(older.id);
   const currentLatestLink = [...host.querySelectorAll('[role="link"]')].find(
     (node) => node.textContent === "What's new"
   );
@@ -273,7 +279,7 @@ it('keeps the reader’s scrolled position across a reading-park width change an
   expect(pagePadding.paddingTop).toBeTypeOf('number');
   await act(async () => currentLatestLink.click());
   expect(scroll.scrollTo).toHaveBeenCalledExactlyOnceWith({
-    y: 240 + pagePadding.paddingTop + 700 - PRIVACY_LAYOUT.stickyTop,
+    y: 160 + pagePadding.paddingTop + 700 - PRIVACY_LAYOUT.stickyTop,
     animated: false,
   });
 });
@@ -317,3 +323,23 @@ it.each([
     });
   }
 );
+
+it('starts each compact information page with its own collapsed introduction', async () => {
+  records.dimensions = { width: 844, height: SHORT_PAGE_HEIGHT_PX, scale: 1, fontScale: 1 };
+  records.journalHostProps = true;
+  useCaller();
+  await mount(createElement(ProbeApp));
+  await act(async () => openAppPage('privacy'));
+  const toggle = () =>
+    [...host.querySelectorAll('button')].find((node) => node.textContent === 'About this page');
+  const expanded = () =>
+    JSON.parse(toggle().getAttribute('data-committed-props')).accessibilityState.expanded;
+  expect(toggle()).toBeDefined();
+  expect(expanded()).toBe(false);
+  await act(async () => toggle().click());
+  expect(expanded()).toBe(true);
+  await act(async () => openAppPage('changelog'));
+  expect(toggle()).toBeDefined();
+  expect(expanded()).toBe(false);
+  expect(host.querySelector('[data-testid="information-page-scroll"]')).not.toBeNull();
+});
