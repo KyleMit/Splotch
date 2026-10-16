@@ -400,28 +400,22 @@ function RsdDrawingContent({
 // The page picker stays mounted through its exit, after the screen has closed it.
 function RsdScreenSheets({ screen }: { screen: Screen }) {
   const pagePicker = useModalPresence(screen.pagePickerOpen || null);
+  const dismissed = () => screen.pagePickerDismissed(pagePicker.dismissed);
   const window = useWindowDimensions();
-  return (
-    <>
-      {pagePicker.shown ? (
-        <RsdSurfaceBoundary
-          onClose={() => screen.setPagePickerOpen(false)}
-          onDismiss={pagePicker.dismissed}
-        >
-          <RsdColoringBookPicker
-            selected={screen.history.drawing.pageId}
-            orientation={artOrientation(
-              presentedPaperSize(drawingPaper(screen.history.drawing), window)
-            )}
-            visible={pagePicker.visible}
-            onDismiss={pagePicker.dismissed}
-            onChoose={screen.choosePage}
-            onClose={() => screen.setPagePickerOpen(false)}
-          />
-        </RsdSurfaceBoundary>
-      ) : null}
-    </>
-  );
+  return pagePicker.shown ? (
+    <RsdSurfaceBoundary onClose={() => screen.setPagePickerOpen(false)} onDismiss={dismissed}>
+      <RsdColoringBookPicker
+        selected={screen.history.drawing.pageId}
+        orientation={artOrientation(
+          presentedPaperSize(drawingPaper(screen.history.drawing), window)
+        )}
+        visible={pagePicker.visible}
+        onDismiss={dismissed}
+        onChoose={screen.choosePage}
+        onClose={() => screen.setPagePickerOpen(false)}
+      />
+    </RsdSurfaceBoundary>
+  ) : null;
 }
 
 // The picker stays mounted through its fly-back after a pick or a close has cleared the screen's

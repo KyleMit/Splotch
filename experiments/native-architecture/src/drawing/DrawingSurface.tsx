@@ -13,12 +13,11 @@ import {
   type ReactNode,
 } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import { Svg } from '../platform/svg';
 import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
-import { PageOutline, pageHasOutline } from './PageOutline';
+import { pageArt } from './pageArtResource';
 import { InkLayer } from './InkLayer';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { PAPER_THEMES } from './theme';
@@ -82,6 +81,7 @@ function surfaceUndoGhost(props: DrawingSurfaceProps, drafts: readonly Stroke[])
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
   function DrawingSurface(props, ref) {
     const theme = useDrawingAppearance();
+    const PageArt = pageArt().current()?.PageArtMotion;
     const appearance = useMemo<InkAppearance>(
       () => ({ pageId: props.drawing.pageId, theme }),
       [props.drawing.pageId, theme]
@@ -182,19 +182,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                     props.onRendererFault(error);
                   }}
                 />
-                {/* react-native-svg paints a full-paper bitmap on Android even when it is empty. */}
-                {pageHasOutline(props.drawing.pageId) ? (
-                  <Svg
-                    width="100%"
-                    height="100%"
-                    viewBox={`0 0 ${presented.width} ${presented.height}`}
-                    preserveAspectRatio="xMidYMid meet"
-                    pointerEvents="none"
-                    style={StyleSheet.absoluteFill}
-                  >
-                    <PageOutline pageId={props.drawing.pageId} size={presented} />
-                  </Svg>
-                ) : null}
+                {PageArt ? <PageArt pageId={props.drawing.pageId} size={presented} /> : null}
                 <PointerHalos feed={halos} />
               </PaperInputView>
             </View>
