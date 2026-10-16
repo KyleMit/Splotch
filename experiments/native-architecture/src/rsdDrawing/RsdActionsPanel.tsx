@@ -248,7 +248,8 @@ function panelTools(context: ToolContext): Tool[] {
           icon="undo"
           label="Undo"
           disabled={disabled || screen.history.undo.length === 0}
-          onPress={screen.undo}
+          undoFeedback={screen.undoFeedback}
+          onPress={() => screen.undoFromButton(context.reduced)}
         />
       ),
     });

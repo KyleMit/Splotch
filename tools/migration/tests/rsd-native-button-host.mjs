@@ -46,6 +46,7 @@ vi.mock('react-native', async () => {
     }
   }
   return {
+    StyleSheet: { create: (styles) => styles },
     Platform: {
       OS: 'ios',
       constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },

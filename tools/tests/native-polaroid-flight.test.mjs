@@ -427,3 +427,99 @@ it('resumes the camera keyframe clock at its elapsed phase without replaying the
     expect(from + (1 - from) * resumed.easing(phase)).toBeCloseTo(full.easing(0.5 + 0.5 * phase));
   }
 });
+
+it("winds Undo through shipping's exact anticipation, turns, curves and duration", async () => {
+  const { UNDO_SPIN_MS, UNDO_SPIN_KEYFRAMES } =
+    await import('../../experiments/native-architecture/src/rsdDrawing/undoKeyframes.ts');
+  expect(declaration(block('.undo-firing'), 'animation')).toBe(
+    `undo-spin ${UNDO_SPIN_MS}ms linear`
+  );
+  const frames = keyframes('undo-spin').map(({ at, declarations }) => ({
+    at,
+    rotate: transform(declaration(declarations, 'transform')).rotate,
+    easing: bezier(declaration(declarations, 'animation-timing-function') ?? 'linear'),
+  }));
+  expect(UNDO_SPIN_KEYFRAMES).toEqual(frames);
+  expect(declaration(block('.undo-firing[data-start-reduced-motion]'), 'animation')).toBe('none');
+  expect(read('web/src/lib/components/UndoButton.svelte')).toContain(
+    '{#key canvasState.undoCount}'
+  );
+});
+
+it("fades the removed ink through shipping's scale, drift, duration and curve", async () => {
+  const {
+    UNDO_GHOST_AA_PAD_PX,
+    UNDO_GHOST_MS,
+    UNDO_GHOST_SCALE,
+    UNDO_GHOST_DRIFT_FRACTION,
+    UNDO_GHOST_EASE,
+  } = await import('../../experiments/native-architecture/src/drawing/undoGhostGeometry.ts');
+  const shippingPad = /export const AA_PAD_PX = ([\d.]+);/.exec(
+    read('web/src/lib/drawing/opGeometry.ts')
+  );
+  expect(shippingPad).not.toBeNull();
+  expect(UNDO_GHOST_AA_PAD_PX).toBe(Number(shippingPad[1]));
+  expect(declaration(block('.undo-ink-motion'), 'animation')).toBe(
+    `undo-ink ${UNDO_GHOST_MS}ms var(--ease-glide) forwards paused`
+  );
+  const last = keyframes('undo-ink').at(-1).declarations;
+  expect(transform(declaration(last, 'transform')).scale).toBe(UNDO_GHOST_SCALE);
+  expect(declaration(last, 'opacity')).toBe('0');
+  expect(UNDO_GHOST_EASE).toEqual(bezier(scale.easeGlide));
+  expect(read('web/src/lib/drawing/inkMotion.ts')).toContain(
+    `const UNDO_INK_DRIFT_FRACTION = ${UNDO_GHOST_DRIFT_FRACTION};`
+  );
+  expect(declaration(block(':root[data-reduce-motion] .undo-ink-motion'), 'display')).toBe('none');
+});
+
+it('pins page art arrivals and retirement release to shipping DrawingCanvas', async () => {
+  const art = await import('../../experiments/native-architecture/src/drawing/pageArtKeyframes.ts');
+  const source = read('web/src/lib/components/DrawingCanvas.svelte').replace(
+    /\/\*[\s\S]*?\*\//g,
+    ''
+  );
+  expect(declaration(block('.coloring-overlay.overlay-ready', source), 'animation')).toBe(
+    'page-land var(--duration-slow) var(--ease-glide) both'
+  );
+  expect(art.PAGE_ART_ENTER_MS).toBe(seconds(scale.durationSlow));
+  expect(art.PAGE_ART_CALM_MS).toBe(seconds(scale.durationBase));
+  expect(art.PAGE_ART_GLIDE).toEqual(bezier(scale.easeGlide));
+  expect(art.PAGE_ART_CALM_EASE).toEqual(bezier('ease'));
+  const frames = keyframes('page-land', source);
+  expect(art.PAGE_ART_FADE_KEYFRAMES).toEqual(
+    frames
+      .filter(({ declarations }) => declaration(declarations, 'opacity') !== undefined)
+      .map(({ at, declarations }) => ({
+        at,
+        opacity: Number(declaration(declarations, 'opacity')),
+        easing: art.PAGE_ART_GLIDE,
+      }))
+  );
+  expect(art.PAGE_ART_SCALE_KEYFRAMES).toEqual(
+    frames
+      .filter(({ declarations }) => declaration(declarations, 'transform') !== undefined)
+      .map(({ at, declarations }) => ({
+        at,
+        scale: transform(declaration(declarations, 'transform')).scale,
+        easing: art.PAGE_ART_GLIDE,
+      }))
+  );
+  expect(
+    declaration(
+      block('.coloring-overlay.overlay-ready[data-start-reduced-motion]', source),
+      'animation'
+    )
+  ).toBe('overlay-fade-in var(--duration-base) ease both');
+  expect(block('@keyframes overlay-fade-in', source)).not.toContain('transform:');
+  expect(source).toMatch(/<img\s+class="coloring-overlay"[\s\S]*?id=\{COLORING_OVERLAY_ID\}/);
+  expect(source).toContain('hidden={!hasOverlayPage() && !retiringOverlayUrl}');
+  expect(source).toMatch(
+    /overlayEl\.getAnimations\(\)\.map\(\(animation\) => animation\.finished\.catch\(\(\) => undefined\)\)/
+  );
+  expect(source).toContain(
+    'if (!abandoned && retiringOverlayUrl === retiring) retiringOverlayUrl = null;'
+  );
+  expect(source).toMatch(
+    /if \(!untrack\(\(\) => displayedOverlayUrl\)\) \{\s*overlayMotionStartedReduced = prefersReducedMotion\(\);/
+  );
+});

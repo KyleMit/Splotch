@@ -41,6 +41,7 @@ export function NativePaper({
           key={screen.recovery.generation}
           ref={screen.surface}
           drawing={screen.history.drawing}
+          undoGhost={screen.undoGhost}
           currentDrawing={screen.currentDrawing}
           isChromeTouch={contacts?.containsPoint}
           color={sound.settings.selectedColor}

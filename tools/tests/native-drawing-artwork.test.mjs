@@ -69,6 +69,13 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+  const { animatedPort, easingPort } =
+    await import('../migration/tests/rsd-native-animated-host.mjs');
+  const { View } = await import('react-native');
+  return { Animated: animatedPort(View, View), Easing: easingPort };
+});
+
 vi.mock(
   '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
   () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
