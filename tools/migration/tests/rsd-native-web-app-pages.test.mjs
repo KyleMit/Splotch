@@ -22,6 +22,11 @@ import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDraw
 import { GATE_MODAL } from './rsd-parent-gate-keypad.mjs';
 import { useCaller, click, settle } from './rsd-native-ai-fixture.mjs';
 
+vi.mock('react-strict-dom', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, css: { ...actual.css, props: () => ({}) } };
+});
+
 vi.mock(
   '../../../experiments/native-architecture/src/rsdDrawing/pageTypography.ts',
   () => import('../../../experiments/native-architecture/src/rsdDrawing/pageTypography.web.ts')
@@ -29,6 +34,11 @@ vi.mock(
 vi.mock(
   '../../../experiments/native-architecture/src/rsdDrawing/notFoundFooter.tsx',
   () => import('../../../experiments/native-architecture/src/rsdDrawing/notFoundFooter.web.tsx')
+);
+
+vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/notFoundLink.tsx',
+  () => import('../../../experiments/native-architecture/src/rsdDrawing/notFoundLink.web.tsx')
 );
 
 vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx', () => ({
@@ -124,6 +134,7 @@ it.each(
 );
 
 it.each([
+  { label: 'Start drawing', path: '/', footer: false },
   { label: 'Changelog', path: '/changelog', footer: false },
   { label: 'Privacy', path: '/privacy', footer: false },
   { label: 'Send feedback', path: '/feedback', footer: true },
@@ -149,9 +160,77 @@ it.each([
     )
   ).toEqual(['Privacy', 'Changelog', 'Send feedback']);
   const surface = footer ? footerNode : host.querySelector('[data-testid="information-page-body"]');
-  const action = [...surface.querySelectorAll('button')].find((node) => node.textContent === label);
+  const action = [...surface.querySelectorAll('button, a')].find(
+    (node) => node.textContent === label
+  );
   expect(action).toBeDefined();
   await act(async () => action.click());
   expect(`${location.pathname}${location.hash}`).toBe(path);
   expect(host.querySelector(GATE_MODAL)).toBeNull();
+});
+
+it('renders the not-found actions as real links with shipping page leading', async () => {
+  records.os = 'web';
+  history.replaceState(null, '', '/unknown-page');
+  useCaller();
+  await mount(createElement(ProbeApp));
+  const links = [...host.querySelectorAll('[data-testid="information-page-body"] a[href]')];
+  expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+    ['Start drawing', '/'],
+    ['Changelog', '/changelog'],
+    ['Privacy', '/privacy'],
+  ]);
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
+    'utf8'
+  );
+  const pageLeading = shipping.match(/line-height: ([\d.]+);/)[1];
+  for (const link of links) expect(link.style.lineHeight).toBe(pageLeading);
+});
+
+it.each([
+  { label: 'Alt', altKey: true },
+  { label: 'Control', ctrlKey: true },
+  { label: 'Command', metaKey: true },
+  { label: 'Shift', shiftKey: true },
+  { label: 'middle click', button: 1 },
+])(
+  'leaves the browser in charge of $label on a not-found link',
+  async ({ label, ...modifiers }) => {
+    records.os = 'web';
+    history.replaceState(null, '', '/unknown-page');
+    useCaller();
+    await mount(createElement(ProbeApp));
+    const link = host.querySelector('[data-testid="information-page-body"] a[href="/privacy"]');
+    expect(link).not.toBeNull();
+    const browserDefault = vi.fn((event) => {
+      expect(event.defaultPrevented).toBe(false);
+      event.preventDefault();
+    });
+    document.addEventListener('click', browserDefault);
+    try {
+      await act(async () =>
+        link.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true, ...modifiers })
+        )
+      );
+      expect(browserDefault).toHaveBeenCalledOnce();
+      expect(location.pathname).toBe('/unknown-page');
+    } finally {
+      document.removeEventListener('click', browserDefault);
+    }
+  }
+);
+
+it('preserves an already prevented not-found link activation', async () => {
+  records.os = 'web';
+  history.replaceState(null, '', '/unknown-page');
+  useCaller();
+  await mount(createElement(ProbeApp));
+  const link = host.querySelector('[data-testid="information-page-body"] a[href="/privacy"]');
+  expect(link).not.toBeNull();
+  const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+  event.preventDefault();
+  await act(async () => link.dispatchEvent(event));
+  expect(location.pathname).toBe('/unknown-page');
 });

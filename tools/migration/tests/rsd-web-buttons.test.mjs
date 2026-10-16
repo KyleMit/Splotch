@@ -77,3 +77,22 @@ it(
   },
   RENDER_TIMEOUT_MS
 );
+
+it(
+  'compiles the shared large button chrome onto the real not-found anchors',
+  () => {
+    const { notFoundLinks } = render();
+    expect(notFoundLinks).toHaveLength(3);
+    for (const [index, href] of ['/', '/changelog', '/privacy'].entries()) {
+      const anchor = notFoundLinks[index];
+      expect(anchor).toMatch(/^<a\b/);
+      expect(anchor).toContain(`href="${href}"`);
+      expect(anchor).not.toContain('[object Object]');
+      expect(/class="([^"]*)"/.exec(anchor)[1].split(' ').length).toBeGreaterThanOrEqual(10);
+      expect(anchor).toContain('display:inline-flex');
+      expect(anchor).toContain('box-sizing:border-box');
+      expect(anchor).toContain('line-height:1.62');
+    }
+  },
+  RENDER_TIMEOUT_MS
+);

@@ -350,6 +350,8 @@ it.each([
     expect(mascot.getAttribute('width')).toBe(String(mark));
     expect(mascot.getAttribute('height')).toBe(String(mark));
     expect(sheetStyle(body).gap).toBe(Number.parseFloat(scale[gap]));
+    expect(sheetStyle(body.firstElementChild).display).toBe('flex');
+    expect(read('web/src/lib/components/SplotchyIcon.svelte')).toContain('display: inline-flex;');
   }
 );
 

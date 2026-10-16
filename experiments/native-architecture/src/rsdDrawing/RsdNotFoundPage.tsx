@@ -16,7 +16,7 @@ import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { landFocus, retainFocus } from './landFocus';
-import { RsdButton } from './RsdButton';
+import { RsdNotFoundLink } from './notFoundLink';
 import { RsdPageHero } from './RsdPageHero';
 import { RsdNotFoundFooter } from './notFoundFooter';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
@@ -182,7 +182,7 @@ const styles = css.create({
     padding: 0,
   },
   firstLink: { flexBasis: '100%' },
-  mark: { transform: `rotate(${NOT_FOUND_MARK_TURN_DEG}deg)` },
+  mark: { display: 'flex', transform: `rotate(${NOT_FOUND_MARK_TURN_DEG}deg)` },
 });
 
 function startDrawing() {
@@ -394,19 +394,19 @@ export function RsdNotFoundPage() {
             </html.div>
             <html.ul role="list" style={styles.links}>
               <html.li style={window.width <= PHONE_MAX_WIDTH_PX && styles.firstLink}>
-                <RsdButton variant="brand" size="lg" onPress={startDrawing}>
+                <RsdNotFoundLink page="drawing" variant="brand">
                   {NOT_FOUND_COPY.startDrawing}
-                </RsdButton>
+                </RsdNotFoundLink>
               </html.li>
               <html.li>
-                <RsdButton variant="wash" size="lg" onPress={() => openAppPage('changelog')}>
+                <RsdNotFoundLink page="changelog" variant="wash">
                   {NOT_FOUND_COPY.changelog}
-                </RsdButton>
+                </RsdNotFoundLink>
               </html.li>
               <html.li>
-                <RsdButton variant="wash" size="lg" onPress={() => openAppPage('privacy')}>
+                <RsdNotFoundLink page="privacy" variant="wash">
                   {NOT_FOUND_COPY.privacy}
-                </RsdButton>
+                </RsdNotFoundLink>
               </html.li>
             </html.ul>
           </html.div>

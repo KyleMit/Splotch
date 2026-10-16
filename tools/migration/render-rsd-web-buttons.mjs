@@ -97,6 +97,7 @@ registerHooks({
 
 const src = (path) => require(join(app, 'src', path));
 const { RsdButton } = src('rsdDrawing/RsdButton.tsx');
+const { RsdNotFoundLink } = src('rsdDrawing/notFoundLink.web.tsx');
 const { RsdIconButton } = src('rsdDrawing/RsdIconButton.tsx');
 const { PressableCaller } = require(fileURLToPath(CALLER));
 const { merge, defaultStyles } = require('react-strict-dom/runtime');
@@ -119,6 +120,13 @@ const SPECIMENS = {
 console.log(
   JSON.stringify({
     defaultClasses: merge(defaultStyles.button).className,
+    notFoundLinks: [
+      ['drawing', 'brand', 'Start drawing'],
+      ['changelog', 'wash', 'Changelog'],
+      ['privacy', 'wash', 'Privacy'],
+    ].map(([page, variant, label]) =>
+      renderToStaticMarkup(h(RsdNotFoundLink, { page, variant }, label))
+    ),
     markup: Object.fromEntries(
       Object.entries(SPECIMENS).map(([name, element]) => [name, renderToStaticMarkup(element)])
     ),
