@@ -67,7 +67,7 @@ it.each([1, 2, 3, 3.5])(
 );
 
 it.each(['light', 'dark'].flatMap((theme) => [0, 48].map((rightInset) => ({ theme, rightInset }))))(
-  'paints web grain synchronously with intrinsic CSS repeat in $theme at right inset $rightInset',
+  'keeps intrinsic web grain through theme and inset rerenders from $theme at right inset $rightInset',
   async ({ theme, rightInset }) => {
     await mount(
       createElement(
@@ -89,6 +89,27 @@ it.each(['light', 'dark'].flatMap((theme) => [0, 48].map((rightInset) => ({ them
     expect(paper.style.pointerEvents).toBe('none');
     expect(paper.style.transform).toBe('');
     expect(paper.querySelector('img')).toBeNull();
+    const changedTheme = theme === 'light' ? 'dark' : 'light';
+    const changedInset = rightInset ? 24 : 48;
+    for (const inset of [rightInset, changedInset, changedInset]) {
+      await act(async () =>
+        root.render(
+          createElement(
+            DrawingAppearanceProvider,
+            { preference: changedTheme },
+            createElement(WebPaperTexture, { rightInset: inset })
+          )
+        )
+      );
+      expect(host.querySelector('[data-testid="paper-texture"]')).toBe(paper);
+      color.style.backgroundColor = PAPER_THEMES[changedTheme].paper;
+      expect(paper.style.backgroundColor).toBe(color.style.backgroundColor);
+      expect(paper.style.backgroundPosition).toMatch(
+        inset
+          ? new RegExp(`^calc\\(${inset}px - 100vw\\) 0(?:px|%)?$`)
+          : /^(0% 0%|0px 0px|initial)$/
+      );
+    }
   }
 );
 

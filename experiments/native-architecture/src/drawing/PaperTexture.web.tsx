@@ -19,8 +19,7 @@ export const PaperTexture = memo(function PaperTexture({
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: `${paper} ${PAPER_TEXTURE}`,
-        backgroundPosition: rightInset ? `calc(${rightInset}px - 100vw) 0` : '0 0',
+        background: `${paper} ${PAPER_TEXTURE} ${rightInset ? `calc(${rightInset}px - 100vw) 0` : '0 0'}`,
       }}
     />
   );
