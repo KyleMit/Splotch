@@ -401,9 +401,10 @@ function RsdDrawingContent({
 function RsdScreenSheets({ screen }: { screen: Screen }) {
   const pagePicker = useModalPresence(screen.pagePickerOpen || null);
   const dismissed = () => screen.pagePickerDismissed(pagePicker.dismissed);
+  const close = () => screen.setPagePickerOpen(false);
   const window = useWindowDimensions();
   return pagePicker.shown ? (
-    <RsdSurfaceBoundary onClose={() => screen.setPagePickerOpen(false)} onDismiss={dismissed}>
+    <RsdSurfaceBoundary onClose={close} onDismiss={dismissed}>
       <RsdColoringBookPicker
         selected={screen.history.drawing.pageId}
         orientation={artOrientation(
@@ -412,7 +413,7 @@ function RsdScreenSheets({ screen }: { screen: Screen }) {
         visible={pagePicker.visible}
         onDismiss={dismissed}
         onChoose={screen.choosePage}
-        onClose={() => screen.setPagePickerOpen(false)}
+        onClose={close}
       />
     </RsdSurfaceBoundary>
   ) : null;

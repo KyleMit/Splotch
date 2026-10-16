@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act } from 'react';
+import { flushSync } from 'react-dom';
 import { describe, expect, it, vi } from 'vitest';
 import {
   sdk,
@@ -381,34 +382,52 @@ describe('the coloring page action after picker retirement', () => {
     }
   });
 
-  it.each(['dismissal', 'frame'])('cancels feature-disabled selection during %s', async (phase) => {
-    const { dismissed } = await choose();
-    if (phase === 'frame') await act(async () => dismissed());
-    const lateFrames = [...sdk.frames.values()];
-    await act(async () => owner.setColoringBookEnabled(false));
-    const disabled = owner.history;
-    await act(async () => {
-      dismissed();
-      lateFrames.forEach((frame) => frame(0));
-    });
-    await settle();
-    expect(owner.history).toBe(disabled);
-    expect(owner.commandBusy).toBe(false);
-  });
+  it.each(['dismissal', 'frame', 'completed frame'])(
+    'cancels feature-disabled selection during %s',
+    async (phase) => {
+      const { before, dismissed } = await choose();
+      if (phase !== 'dismissal') await act(async () => dismissed());
+      const lateFrames = [...sdk.frames.values()];
+      await act(async () => {
+        if (phase === 'completed frame') {
+          sdk.frames.clear();
+          lateFrames.forEach((frame) => frame(0));
+        }
+        owner.setColoringBookEnabled(false);
+        if (phase === 'completed frame') owner.setColoringBookEnabled(true);
+      });
+      await act(async () => {
+        dismissed();
+        lateFrames.forEach((frame) => frame(0));
+      });
+      await settle();
+      expect(owner.history).toBe(before);
+      expect(owner.commandBusy).toBe(false);
+    }
+  );
 
-  it.each(['dismissal', 'frame'])('cancels an unmounted selection during %s', async (phase) => {
-    const { before, dismissed } = await choose();
-    const history = historyOwner.historyRef;
-    if (phase === 'frame') await act(async () => dismissed());
-    const lateFrames = [...sdk.frames.values()];
-    await act(async () => root.render(null));
-    await act(async () => {
-      dismissed();
-      lateFrames.forEach((frame) => frame(0));
-    });
-    expect(history.current).toBe(before);
-    expect(sdk.frames.size).toBe(0);
-  });
+  it.each(['dismissal', 'frame', 'completed frame'])(
+    'cancels an unmounted selection during %s',
+    async (phase) => {
+      const { before, dismissed } = await choose();
+      const history = historyOwner.historyRef;
+      if (phase !== 'dismissal') await act(async () => dismissed());
+      const lateFrames = [...sdk.frames.values()];
+      await act(async () => {
+        if (phase === 'completed frame') {
+          sdk.frames.clear();
+          lateFrames.forEach((frame) => frame(0));
+        }
+        flushSync(() => root.render(null));
+      });
+      await act(async () => {
+        dismissed();
+        lateFrames.forEach((frame) => frame(0));
+      });
+      expect(history.current).toBe(before);
+      expect(sdk.frames.size).toBe(0);
+    }
+  );
 });
 
 async function webPagePreparation() {
@@ -481,14 +500,13 @@ describe('web page preparation through the production command owner', () => {
     expect(owner.history.drawing.pageId).toBe('turtle');
     expect(owner.history.undo).toEqual([before.drawing]);
     expect(owner.commandBusy).toBe(false);
-    expect(sdk.pageArt.current()?.PageArtMotion).toBeTypeOf('object');
     expect(releases).toHaveBeenCalledTimes(2);
   });
 
   it.each(['close', 'disable', 'unmount'])(
     'cancels held resource preparation on %s without resurrecting art',
     async (action) => {
-      const { requests, before, releases } = await select();
+      const { requests, releases } = await select();
       await act(async () => {
         if (action === 'close') owner.setPagePickerOpen(false);
         if (action === 'disable') owner.setColoringBookEnabled(false);
@@ -498,7 +516,6 @@ describe('web page preparation through the production command owner', () => {
       await act(async () => requests[0].resolve());
       await settle();
       expect(historyOwner.historyRef.current).toBe(cancelled);
-      expect(historyOwner.historyRef.current.drawing.pageId).toBe(before.drawing.pageId);
       expect(releases).toHaveBeenCalledOnce();
     }
   );

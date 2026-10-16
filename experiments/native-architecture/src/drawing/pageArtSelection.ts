@@ -6,6 +6,7 @@ import { pageLabel, type PageId } from './pages';
 export type PagePickerLifetime = {
   open: boolean;
   generation: number;
+  revision: number;
   pending?: {
     dismiss: () => void;
     cancel: () => void;
@@ -56,7 +57,8 @@ export async function prepareColoringPage(
 ): Promise<void> {
   const isOpen = () => lifetime.open && lifetime.generation === generation;
   if (!isOpen() || !history.coloringBookEnabled.current) return;
-  const isCurrent = () => lifetime.generation === generation;
+  const revision = lifetime.revision;
+  const isCurrent = () => lifetime.generation === generation && lifetime.revision === revision;
   await offlineLibrary.openPage(pageId);
   if (!isCurrent() || !history.coloringBookEnabled.current || !isOpen()) return;
   if (

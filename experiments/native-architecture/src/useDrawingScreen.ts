@@ -250,7 +250,7 @@ function brushPreferenceActions(
 
 function cancelPagePicker(lifetime: PagePickerLifetime) {
   lifetime.open = false;
-  lifetime.generation += 1;
+  lifetime.revision += 1;
   lifetime.pending?.cancel();
 }
 
@@ -264,6 +264,7 @@ function useColoringPageActions(
   const lifetime = useRef<PagePickerLifetime>({
     open: false,
     generation: 0,
+    revision: 0,
   }).current;
   useEffect(() => () => cancelPagePicker(lifetime), [lifetime]);
   const generation = lifetime.generation;

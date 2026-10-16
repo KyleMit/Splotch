@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, createElement } from 'react';
+import { act, createElement, useEffect } from 'react';
 import { expect, it, vi } from 'vitest';
 import {
   caller,
@@ -250,6 +250,10 @@ it('rejects old picker choices and dismissals after a manual close and reopen', 
     expect(caller.liveScreen.history).toBe(before);
     expect(caller.liveScreen.commandBusy).toBe(false);
     expect(caller.liveScreen.pagePickerOpen).toBe(true);
+    await act(async () => old.onDismiss());
+    expect(host.querySelector('[data-native-modal="Coloring books"]')).not.toBeNull();
+    expect(caller.liveScreen.pagePickerOpen).toBe(true);
+    expect(caller.liveScreen.commandBusy).toBe(false);
     vi.stubGlobal('requestAnimationFrame', (run) => {
       const id = ++frameId;
       frames.set(id, run);
@@ -278,3 +282,55 @@ it('rejects old picker choices and dismissals after a manual close and reopen', 
     vi.unstubAllGlobals();
   }
 });
+
+it.each(['ios', 'android'])(
+  'unmounts a manually closing picker when coloring is disabled on %s',
+  async (os) => {
+    caller.realScreen = true;
+    records.os = os;
+    let mounted = 0;
+    const dismissed = vi.fn();
+    const Picker = pickerModule.RsdColoringBookPicker;
+    const capture = vi
+      .spyOn(pickerModule, 'RsdColoringBookPicker')
+      .mockImplementation(function TrackedPicker(props) {
+        useEffect(() => {
+          mounted += 1;
+          return () => {
+            mounted -= 1;
+          };
+        }, []);
+        return createElement(Picker, {
+          ...props,
+          onDismiss() {
+            dismissed();
+            props.onDismiss();
+          },
+        });
+      });
+    const completions = [];
+    let parallel;
+    try {
+      await mount(createElement(DrawingSessionProvider, null, createElement(RsdDrawingScreen)));
+      parallel = vi.spyOn(Animated, 'parallel').mockImplementation((animations) => ({
+        start(done) {
+          animations.forEach((animation) => animation.start());
+          completions.push(done);
+        },
+        stop() {},
+      }));
+      await act(async () => caller.liveScreen.setPagePickerOpen(true));
+      await act(async () => completions.shift()({ finished: true }));
+      expect(mounted).toBe(1);
+      await act(async () => caller.liveScreen.setPagePickerOpen(false));
+      await act(async () => caller.liveScreen.setColoringBookEnabled(false));
+      await act(async () => completions.shift()({ finished: true }));
+      expect(dismissed).toHaveBeenCalledOnce();
+      expect(host.querySelector('[data-native-modal="Coloring books"]')).toBeNull();
+      expect(mounted).toBe(0);
+    } finally {
+      parallel?.mockRestore();
+      capture.mockRestore();
+    }
+  }
+);
