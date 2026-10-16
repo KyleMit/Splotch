@@ -6,6 +6,7 @@ import type { AiState } from '../ai/sessionContract';
 import { AI_AUTO_SAVE_HELP, AI_SETTINGS_COPY as COPY } from '../settings/aiSettingsCopy';
 import { folderSaveSupported } from '../platform/folderSaveSupport';
 import type { SoundSettingsState } from '../settings/soundSettings';
+import { RsdSectionReveal } from './RsdSectionReveal';
 import { RsdAiKeyManager } from './RsdAiKeyManager';
 import { RsdAiValueProp } from './RsdAiValueProp';
 import { RsdButton } from './RsdButton';
@@ -87,7 +88,13 @@ export function RsdAiSettingsSection({
           </RsdButton>
         </html.div>
       ) : null}
-      {enabled ? (
+      <RsdSectionReveal visible={!enabled}>
+        <RsdAiValueProp
+          credential={credential === 'byok' || credential === 'managed' ? credential : 'none'}
+          freeRemaining={state?.remaining ?? FREE_LIMIT}
+        />
+      </RsdSectionReveal>
+      <RsdSectionReveal visible={enabled}>
         <html.div style={styles.enabled}>
           <RsdAiKeyManager owner={ai.owner} state={state} onOpenKeysPage={ai.onOpenKeysPage} />
           <RsdSettingGroup>
@@ -115,12 +122,7 @@ export function RsdAiSettingsSection({
             </RsdSettingCard>
           </RsdSettingGroup>
         </html.div>
-      ) : (
-        <RsdAiValueProp
-          credential={credential === 'byok' || credential === 'managed' ? credential : 'none'}
-          freeRemaining={state?.remaining ?? FREE_LIMIT}
-        />
-      )}
+      </RsdSectionReveal>
     </html.div>
   );
 }
