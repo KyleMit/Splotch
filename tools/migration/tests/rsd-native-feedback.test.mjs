@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   caller,
   records,
@@ -12,6 +13,7 @@ import { html } from 'react-strict-dom';
 import { expect, it, vi } from 'vitest';
 import { REPORT_KINDS } from '../../../web/src/lib/report.ts';
 import { scale } from '../../../web/src/lib/design/tokens.ts';
+import { SETTINGS_WIDE_MIN_WIDTH_PX } from '../../../web/src/lib/breakpoints.ts';
 import { GATE_MODAL, solveParentGate } from './rsd-parent-gate-keypad.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
@@ -28,15 +30,15 @@ import {
 const CHECKBOX = `${REPORT_FORM_COPY.includeDevice} ${REPORT_FORM_COPY.includeDeviceWhy}`;
 const BUG_FIELD = MESSAGE_PROMPT_BY_KIND.bug.label;
 const SHIPPING_REPORT_FIELDS = readFileSync(
-  new URL('../../../web/src/lib/components/report/ReportFields.svelte', import.meta.url),
+  join(import.meta.dirname, '../../../web/src/lib/components/report/ReportFields.svelte'),
   'utf8'
 );
 const SHIPPING_FEEDBACK_PAGE = readFileSync(
-  new URL('../../../web/src/routes/feedback/+page.svelte', import.meta.url),
+  join(import.meta.dirname, '../../../web/src/routes/feedback/+page.svelte'),
   'utf8'
 );
 const SHIPPING_SETTINGS_REPORT = readFileSync(
-  new URL('../../../web/src/lib/components/settings/ReportForm.svelte', import.meta.url),
+  join(import.meta.dirname, '../../../web/src/lib/components/settings/ReportForm.svelte'),
   'utf8'
 );
 
@@ -67,7 +69,7 @@ async function input(label, value) {
   await act(async () => props.onChange({ nativeEvent: { text: value } }));
 }
 
-function settingsScreen() {
+function settingsScreen(appearance = 'light') {
   let stored = JSON.stringify({
     version: 12,
     soundEnabled: false,
@@ -75,7 +77,7 @@ function settingsScreen() {
     eraserWidth: 'medium',
     selectedColor: 'Purple',
     customColors: [],
-    appearance: 'light',
+    appearance,
     aiEnabled: false,
     parentPolicies: {
       ai: 'always',
@@ -146,9 +148,15 @@ it('drills into Feedback inside Settings, with the shipping form and none of the
   expect(host.textContent).toContain(MESSAGE_PROMPT_BY_KIND.feature.label);
 });
 
-it.each([360, 400, 401])(
-  'keeps Feedback kind labels unbroken at native width %i',
-  async (width) => {
+it.each(
+  [360, 400, 401, 1024].flatMap((width) =>
+    ['light', 'dark'].flatMap((appearance) =>
+      ['settings', 'page'].map((presentation) => ({ width, appearance, presentation }))
+    )
+  )
+)(
+  'renders complete $appearance $presentation Feedback labels without a line clamp at $width px',
+  async ({ width, appearance, presentation }) => {
     const phoneRule = SHIPPING_REPORT_FIELDS.match(
       /@media \(max-width: (\d+)px\) \{([\s\S]*?)\n {2}\}/
     );
@@ -156,18 +164,32 @@ it.each([360, 400, 401])(
     expect(phoneRule[2]).toContain('font-size: var(--font-size-xs);');
     expect(phoneRule[2]).toContain('white-space: nowrap;');
     const tight = width <= Number(phoneRule[1]);
-    settingsScreen();
+    settingsScreen(appearance);
     records.os = 'android';
+    records.scheme = appearance;
     records.dimensions = { width, height: 780, scale: 3, fontScale: 1 };
-    await mount(createElement(RsdDrawingScreen));
-    await openSettingsSection('Feedback');
+    caller.screen.settingsOpen = presentation === 'settings';
+    await mount(
+      createElement(RsdDrawingScreen, { page: presentation === 'page' ? 'feedback' : 'drawing' })
+    );
+    if (presentation === 'settings' && width < SETTINGS_WIDE_MIN_WIDTH_PX)
+      await openSettingsSection('Feedback');
+    const group = host.querySelector(
+      `[role="radiogroup"][aria-label="${REPORT_FORM_COPY.kindLabel}"]`
+    );
+    expect(group).not.toBeNull();
+    expect(
+      [...group.querySelectorAll('[role="radio"]')].map((option) => option.textContent)
+    ).toEqual(REPORT_KINDS.map(({ label }) => label));
     for (const { label } of REPORT_KINDS) {
       const text = records.props.findLast((props) => props.children === label);
       expect(text, label).toBeDefined();
       expect(text.style.fontSize, label).toBe(
         Number.parseFloat(tight ? scale.fontSizeXs : scale.fontSizeSm)
       );
-      expect(text.numberOfLines, label).toBe(tight ? 1 : undefined);
+      expect(text.numberOfLines, label).toBeUndefined();
+      expect(text.ellipsizeMode, label).toBeUndefined();
+      expect(text.style.overflow, label).not.toBe('hidden');
     }
   }
 );

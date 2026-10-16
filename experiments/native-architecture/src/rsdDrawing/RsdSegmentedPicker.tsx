@@ -223,13 +223,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
             option.disabled && styles.disabled,
           ]}
         >
-          <OptionBody
-            option={option}
-            variant={variant}
-            active={active}
-            labels={props.labels}
-            singleLine={variant === 'segment' && tight}
-          />
+          <OptionBody option={option} variant={variant} active={active} labels={props.labels} />
         </html.button>
       </View>
     );
@@ -275,13 +269,11 @@ function OptionBody<T extends string>({
   variant,
   active,
   labels = 'shown',
-  singleLine,
 }: {
   option: SegmentedPickerOption<T>;
   variant: Variant;
   active: boolean;
   labels: Labels | undefined;
-  singleLine: boolean;
 }) {
   const theme = useDrawingTheme();
   if (labels === 'marks')
@@ -306,11 +298,7 @@ function OptionBody<T extends string>({
         </html.div>
       ) : null}
       {labels === 'shown' ? (
-        <html.span
-          style={[variant === 'chip' && styles.chipLabel, singleLine && styles.singleLineLabel]}
-        >
-          {option.label}
-        </html.span>
+        <html.span style={variant === 'chip' && styles.chipLabel}>{option.label}</html.span>
       ) : null}
       {variant === 'chip' ? (
         <html.span aria-hidden style={styles.check}>
@@ -409,8 +397,6 @@ const styles = css.create({
     fontSize: dimensions.fontSizeXs,
     whiteSpace: 'nowrap',
   },
-  // Native RSD maps lineClamp to Text.numberOfLines; it does not support whiteSpace.
-  singleLineLabel: { lineClamp: 1 },
   segmentActive: { color: { default: brandColors.onBrand, ':hover': brandColors.onBrand } },
   chipOption: {
     gap: CHIP_GAP_PX,
