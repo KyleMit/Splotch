@@ -42,8 +42,8 @@ function FlatSafeAreaPaper() {
   const { top, left, right } = useSafeAreaInsets();
   const strips = [
     ['top', top, { height: top }],
-    ['left', left, { top, width: left }],
-    ['right', right, { top, width: right }],
+    ['left', left, { top: 0, width: left }],
+    ['right', right, { top: 0, width: right }],
   ] as const;
   return strips.map(([edge, inset, extent]) =>
     inset > 0 ? (
@@ -53,7 +53,7 @@ function FlatSafeAreaPaper() {
         pointerEvents="none"
         style={[grainStyles.strip, grainStyles[edge], extent]}
       >
-        <PaperTexture />
+        <PaperTexture rightInset={edge === 'right' ? inset : 0} />
       </View>
     ) : null
   );

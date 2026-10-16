@@ -41,16 +41,21 @@ function grainBox(density: number): ImageStyle {
   };
 }
 
-// Takes no props, so ink landing on the paper never re-renders the grain; only an appearance
-// or screen-density change does.
-export const PaperTexture = memo(function PaperTexture() {
+// No drawing state reaches the grain, so landing ink does not re-render it.
+export const PaperTexture = memo(function PaperTexture({
+  rightInset = 0,
+}: {
+  rightInset?: number;
+}) {
   const { paper } = useDrawingTheme();
-  const density = paperGrainDensity(useWindowDimensions().scale);
+  const window = useWindowDimensions();
+  const density = paperGrainDensity(window.scale);
+  const leftOffset = rightInset ? (window.width - rightInset) % PAPER_GRAIN_TILE_PX : 0;
   return (
     <View
       testID="paper-texture"
       pointerEvents="none"
-      style={[styles.fill, { backgroundColor: paper }]}
+      style={[styles.fill, { backgroundColor: paper, left: -leftOffset }]}
     >
       <Image testID="paper-grain" source={source} resizeMode="repeat" style={grainBox(density)} />
     </View>

@@ -4,6 +4,7 @@ import { act, createElement } from 'react';
 import { expect, it } from 'vitest';
 import sharp from 'sharp';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
+import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
 import { PaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.tsx';
 import { PaperTexture as WebPaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.web.tsx';
@@ -65,14 +66,14 @@ it.each([1, 2, 3, 3.5])(
   }
 );
 
-it.each(['light', 'dark'])(
-  'paints web grain synchronously as an intrinsic repeating CSS background in %s',
-  async (theme) => {
+it.each(['light', 'dark'].flatMap((theme) => [0, 48].map((rightInset) => ({ theme, rightInset }))))(
+  'paints web grain synchronously with intrinsic CSS repeat in $theme at right inset $rightInset',
+  async ({ theme, rightInset }) => {
     await mount(
       createElement(
         DrawingAppearanceProvider,
         { preference: theme },
-        createElement(WebPaperTexture)
+        createElement(WebPaperTexture, { rightInset })
       )
     );
     const paper = host.querySelector('[data-testid="paper-texture"]');
@@ -82,7 +83,9 @@ it.each(['light', 'dark'])(
     expect(paper.style.backgroundImage).toMatch(/handmade-paper\.webp/);
     expect(paper.style.backgroundSize).toMatch(/^(auto|initial)$/);
     expect(paper.style.backgroundRepeat).toMatch(/^(repeat|initial)$/);
-    expect(paper.style.backgroundPosition).toMatch(/^(0% 0%|initial)$/);
+    expect(paper.style.backgroundPosition).toMatch(
+      rightInset ? /^calc\(48px - 100vw\) 0(?:px|%)?$/ : /^(0% 0%|0px 0px|initial)$/
+    );
     expect(paper.style.pointerEvents).toBe('none');
     expect(paper.style.transform).toBe('');
     expect(paper.querySelector('img')).toBeNull();
@@ -98,8 +101,8 @@ const INSET_CASES = [
     edges: ['top', 'left', 'right'],
     boxes: [
       { position: 'absolute', overflow: 'hidden', top: 0, left: 0, right: 0, height: 24 },
-      { position: 'absolute', overflow: 'hidden', top: 24, left: 0, bottom: 0, width: 44 },
-      { position: 'absolute', overflow: 'hidden', top: 24, right: 0, bottom: 0, width: 44 },
+      { position: 'absolute', overflow: 'hidden', top: 0, left: 0, bottom: 0, width: 44 },
+      { position: 'absolute', overflow: 'hidden', top: 0, right: 0, bottom: 0, width: 44 },
     ],
     bandColors: ['transparent', PURPLE, PURPLE],
   },
@@ -113,6 +116,18 @@ const INSET_CASES = [
       { position: 'absolute', overflow: 'hidden', top: 0, right: 0, bottom: 0, width: 62 },
     ],
     bandColors: ['transparent', PURPLE, PURPLE],
+  },
+  {
+    name: 'asymmetric landscape inset fixture',
+    insets: { top: 0, right: 48, bottom: 20, left: 36 },
+    dimensions: { width: 1210, height: 834, scale: 3, fontScale: 1 },
+    orientation: Orientation.LANDSCAPE_RIGHT,
+    edges: ['left', 'right'],
+    boxes: [
+      { position: 'absolute', overflow: 'hidden', top: 0, left: 0, bottom: 0, width: 36 },
+      { position: 'absolute', overflow: 'hidden', top: 0, right: 0, bottom: 0, width: 48 },
+    ],
+    bandColors: ['transparent', PURPLE, 'transparent'],
   },
   {
     name: 'iPad landscape inset fixture',
@@ -138,13 +153,15 @@ it.each(
   INSET_CASES.flatMap((profile) => ['light', 'dark'].map((theme) => ({ ...profile, theme })))
 )(
   'grains only Flat safe-area strips for $name in $theme, under the content and Notch Band',
-  async ({ theme, insets, dimensions, edges, boxes, bandColors }) => {
+  async ({ theme, insets, dimensions, orientation, edges, boxes, bandColors }) => {
     const app = read('web/src/app.css');
     expect(
       /html\[data-toolbar='bare'\] \.app-container \{\s*background:\s*([^;]+);/.exec(app)[1]
     ).toBe('var(--paper) var(--paper-texture)');
     records.insets = insets;
     records.dimensions = dimensions;
+    records.journalHostProps = true;
+    displayOrientation.current = orientation ?? Orientation.PORTRAIT_UP;
     records.props.length = 0;
     await mount(
       createElement(
@@ -171,6 +188,14 @@ it.each(
       )
     ).toEqual(boxes);
     for (const strip of strips) {
+      const texture = strip.querySelector('[data-testid="paper-texture"]');
+      expect(JSON.parse(texture.dataset.committedProps).style).toMatchObject({
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+      });
       expect(strip.querySelector('[data-testid="paper-grain"]')).not.toBeNull();
       expect(
         records.props.findLast((props) => props.testID === strip.dataset.testid).pointerEvents
@@ -181,17 +206,28 @@ it.each(
         .filter((props) => props.testID === 'paper-texture')
         .map((props) => flat(props.style).backgroundColor)
     ).toEqual(edges.map(() => PAPER_THEMES[theme].paper));
+    const tile = await sharp(
+      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+    ).metadata();
+    expect(
+      records.props
+        .filter((props) => props.testID === 'paper-texture')
+        .map((props) => flat(props.style).left + 0)
+    ).toEqual(
+      edges.map((edge) =>
+        edge === 'right' ? -((dimensions.width - insets.right) % tile.width) : 0
+      )
+    );
     const frame = provider.querySelector('[data-testid="rsd-safe-area-frame"]');
     expect([...provider.children].indexOf(strips.at(-1))).toBeLessThan(
       [...provider.children].indexOf(frame)
     );
-    const frameProps = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
+    const siblings = [...provider.children];
     expect(
-      records.props
-        .slice(records.props.lastIndexOf(frameProps) + 1)
-        .map((props) => flat(props.style))
-        .filter((style) => style?.position === 'absolute' && style.pointerEvents === 'none')
-        .map((style) => style.backgroundColor)
+      siblings
+        .slice(siblings.indexOf(frame) + 1)
+        .filter((node) => node.dataset.committedProps !== undefined)
+        .map((node) => JSON.parse(node.dataset.committedProps).style.backgroundColor)
     ).toEqual(bandColors);
   }
 );

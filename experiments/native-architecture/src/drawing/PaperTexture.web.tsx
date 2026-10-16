@@ -5,7 +5,11 @@ import { useDrawingTheme } from './DrawingAppearance';
 
 const PAPER_TEXTURE = `url("${webAssetUri(handmadePaper)}")`;
 
-export const PaperTexture = memo(function PaperTexture() {
+export const PaperTexture = memo(function PaperTexture({
+  rightInset = 0,
+}: {
+  rightInset?: number;
+}) {
   const { paper } = useDrawingTheme();
   return (
     <div
@@ -16,6 +20,7 @@ export const PaperTexture = memo(function PaperTexture() {
         inset: 0,
         pointerEvents: 'none',
         background: `${paper} ${PAPER_TEXTURE}`,
+        backgroundPosition: rightInset ? `calc(${rightInset}px - 100vw) 0` : '0 0',
       }}
     />
   );
