@@ -36,7 +36,20 @@ const sdk = vi.hoisted(() => ({
   soundVolume: vi.fn(),
   soundDispose: vi.fn(),
   screenRenders: 0,
+  pageArt: null,
 }));
+vi.mock(
+  '../../experiments/native-architecture/src/drawing/pageArtResource.ts',
+  async (original) => {
+    const { pageArt } = await original();
+    return {
+      pageArt: () => ({
+        current: () => (sdk.pageArt ? sdk.pageArt.current() : pageArt().current()),
+        load: () => (sdk.pageArt ? sdk.pageArt.load() : pageArt().load()),
+      }),
+    };
+  }
+);
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(async () => ({
     start: sdk.soundStart,
@@ -96,6 +109,13 @@ vi.mock('react-native', () => {
     },
   };
 });
+vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+  const { animatedPort, easingPort } =
+    await import('../migration/tests/rsd-native-animated-host.mjs');
+  const { View } = await import('react-native');
+  return { Animated: animatedPort(View, View), Easing: easingPort };
+});
+
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
@@ -246,6 +266,7 @@ beforeEach(async () => {
   sdk.hold = false;
   sdk.fail = false;
   sdk.screenRenders = 0;
+  sdk.pageArt = null;
   sdk.frame = [0, 0, 1024, 768, 40, 800];
   sdk.save.mockClear();
   sdk.soundStart.mockClear();
@@ -271,6 +292,8 @@ afterEach(async () => {
   host.remove();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
+  vi.doUnmock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts');
 });
 
 export {

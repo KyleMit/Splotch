@@ -471,3 +471,55 @@ it("fades the removed ink through shipping's scale, drift, duration and curve", 
   );
   expect(declaration(block(':root[data-reduce-motion] .undo-ink-motion'), 'display')).toBe('none');
 });
+
+it('pins page art arrivals and retirement release to shipping DrawingCanvas', async () => {
+  const art = await import('../../experiments/native-architecture/src/drawing/pageArtKeyframes.ts');
+  const source = read('web/src/lib/components/DrawingCanvas.svelte').replace(
+    /\/\*[\s\S]*?\*\//g,
+    ''
+  );
+  expect(declaration(block('.coloring-overlay.overlay-ready', source), 'animation')).toBe(
+    'page-land var(--duration-slow) var(--ease-glide) both'
+  );
+  expect(art.PAGE_ART_ENTER_MS).toBe(seconds(scale.durationSlow));
+  expect(art.PAGE_ART_CALM_MS).toBe(seconds(scale.durationBase));
+  expect(art.PAGE_ART_GLIDE).toEqual(bezier(scale.easeGlide));
+  expect(art.PAGE_ART_CALM_EASE).toEqual(bezier('ease'));
+  const frames = keyframes('page-land', source);
+  expect(art.PAGE_ART_FADE_KEYFRAMES).toEqual(
+    frames
+      .filter(({ declarations }) => declaration(declarations, 'opacity') !== undefined)
+      .map(({ at, declarations }) => ({
+        at,
+        opacity: Number(declaration(declarations, 'opacity')),
+        easing: art.PAGE_ART_GLIDE,
+      }))
+  );
+  expect(art.PAGE_ART_SCALE_KEYFRAMES).toEqual(
+    frames
+      .filter(({ declarations }) => declaration(declarations, 'transform') !== undefined)
+      .map(({ at, declarations }) => ({
+        at,
+        scale: transform(declaration(declarations, 'transform')).scale,
+        easing: art.PAGE_ART_GLIDE,
+      }))
+  );
+  expect(
+    declaration(
+      block('.coloring-overlay.overlay-ready[data-start-reduced-motion]', source),
+      'animation'
+    )
+  ).toBe('overlay-fade-in var(--duration-base) ease both');
+  expect(block('@keyframes overlay-fade-in', source)).not.toContain('transform:');
+  expect(source).toMatch(/<img\s+class="coloring-overlay"[\s\S]*?id=\{COLORING_OVERLAY_ID\}/);
+  expect(source).toContain('hidden={!hasOverlayPage() && !retiringOverlayUrl}');
+  expect(source).toMatch(
+    /overlayEl\.getAnimations\(\)\.map\(\(animation\) => animation\.finished\.catch\(\(\) => undefined\)\)/
+  );
+  expect(source).toContain(
+    'if (!abandoned && retiringOverlayUrl === retiring) retiringOverlayUrl = null;'
+  );
+  expect(source).toMatch(
+    /if \(!untrack\(\(\) => displayedOverlayUrl\)\) \{\s*overlayMotionStartedReduced = prefersReducedMotion\(\);/
+  );
+});

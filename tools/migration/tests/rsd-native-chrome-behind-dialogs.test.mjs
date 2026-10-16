@@ -1,11 +1,23 @@
-import { act, createElement } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { act, createElement, useEffect } from 'react';
 import { expect, it, vi } from 'vitest';
-import { caller, records, root, host, expandControls } from './rsd-native-selection-host.mjs';
+import {
+  caller,
+  records,
+  root,
+  host,
+  mount,
+  expandControls,
+} from './rsd-native-selection-host.mjs';
 import { AI_BUTTON, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { adoptedDrawing } from '../../tests/native-paper-fixtures.mjs';
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { DrawingSessionProvider } from '../../../experiments/native-architecture/src/product/DrawingSession.tsx';
+import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import * as pickerModule from '../../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
 
 // Shipping's modal dialog leaves the drawing chrome behind it at full strength under the scrim's
 // dim and blur, and inert: no press reaches it until the dialog has gone. Each dialog here is
@@ -151,5 +163,174 @@ it.each(['buttons', 'bare'].flatMap((style) => Object.keys(DIALOGS).map((name) =
       expect(caller.screen[handler], handler).toHaveBeenCalledOnce();
     expect(caller.screen.openSettings).toHaveBeenCalledOnce();
     expect(startAi).toHaveBeenCalledOnce();
+  }
+);
+
+it('pins shipping page selection and clear after dialog retirement and one frame', () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/ColoringBook.svelte'),
+    'utf8'
+  );
+  for (const action of ['applyColoringPageWithMagicUndo', 'clearColoringPageWithMagicUndo'])
+    expect(shipping).toMatch(
+      new RegExp(`await dialogRetired;\\s*await nextFrame\\(\\);\\s*${action}\\(`)
+    );
+});
+
+it('keeps actual page history unchanged until the picker retires and the next frame paints', async () => {
+  caller.realScreen = true;
+  await mount(createElement(DrawingSessionProvider, null, createElement(RsdDrawingScreen)));
+  await act(async () => caller.liveScreen.setBrush('magic'));
+  await act(async () => host.querySelector('[data-testid="rsd-real-history-paper"]').click());
+  await act(async () => caller.liveScreen.setPagePickerOpen(true));
+  const before = caller.liveScreen.history;
+  const frames = new Map();
+  let frameId = 0,
+    finishExit;
+  vi.stubGlobal('requestAnimationFrame', (callback) => {
+    const id = ++frameId;
+    frames.set(id, callback);
+    return id;
+  });
+  vi.stubGlobal('cancelAnimationFrame', (id) => frames.delete(id));
+  const parallel = vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+    start(done) {
+      animations.forEach((animation) => animation.start());
+      finishExit = () => done({ finished: true });
+    },
+    stop() {},
+  }));
+  try {
+    await act(async () => host.querySelector('[aria-label="Cat coloring page"]').click());
+    expect(caller.liveScreen.history).toBe(before);
+    expect(caller.paper.pageId).toBe(before.drawing.pageId);
+    expect(host.querySelector('[data-native-modal="Coloring books"]')).not.toBeNull();
+    expect(caller.liveScreen.commandBusy).toBe(true);
+    await act(async () => finishExit());
+    expect(host.querySelector('[data-native-modal="Coloring books"]')).toBeNull();
+    expect(caller.liveScreen.history).toBe(before);
+    expect(caller.paper.pageId).toBe(before.drawing.pageId);
+    const pending = [...frames.values()];
+    frames.clear();
+    await act(async () => pending.forEach((frame) => frame(0)));
+    expect(caller.liveScreen.history.drawing.pageId).toBe('farm/cat');
+    expect(caller.paper.pageId).toBe('farm/cat');
+    expect(caller.liveScreen.history.undo).toEqual([...before.undo, before.drawing]);
+    expect(caller.liveScreen.commandBusy).toBe(false);
+  } finally {
+    parallel.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});
+
+it('rejects old picker choices and dismissals after a manual close and reopen', async () => {
+  caller.realScreen = true;
+  const props = [];
+  const Picker = pickerModule.RsdColoringBookPicker;
+  const capture = vi.spyOn(pickerModule, 'RsdColoringBookPicker').mockImplementation((value) => {
+    props.push(value);
+    return createElement(Picker, value);
+  });
+  const exits = vi.spyOn(Animated, 'parallel').mockImplementation((animations) => ({
+    start() {
+      animations.forEach((animation) => animation.start());
+    },
+    stop() {},
+  }));
+  const frames = new Map();
+  let frameId = 0;
+  try {
+    await mount(createElement(DrawingSessionProvider, null, createElement(RsdDrawingScreen)));
+    await act(async () => caller.liveScreen.setPagePickerOpen(true));
+    const old = props.at(-1);
+    await act(async () => old.onClose());
+    await act(async () => caller.liveScreen.setPagePickerOpen(true));
+    const before = caller.liveScreen.history;
+    await act(async () => old.onChoose('turtle'));
+    expect(caller.liveScreen.history).toBe(before);
+    expect(caller.liveScreen.commandBusy).toBe(false);
+    expect(caller.liveScreen.pagePickerOpen).toBe(true);
+    await act(async () => old.onDismiss());
+    expect(host.querySelector('[data-native-modal="Coloring books"]')).not.toBeNull();
+    expect(caller.liveScreen.pagePickerOpen).toBe(true);
+    expect(caller.liveScreen.commandBusy).toBe(false);
+    vi.stubGlobal('requestAnimationFrame', (run) => {
+      const id = ++frameId;
+      frames.set(id, run);
+      return id;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (id) => frames.delete(id));
+    await act(async () => props.at(-1).onChoose('flower'));
+    expect(caller.liveScreen.commandBusy).toBe(true);
+    expect(caller.liveScreen.pagePickerOpen).toBe(false);
+    const current = props.at(-1);
+    await act(async () => old.onDismiss());
+    expect(host.querySelector('[data-native-modal="Coloring books"]')).not.toBeNull();
+    expect(caller.liveScreen.history).toBe(before);
+    expect(frames.size).toBe(0);
+    await act(async () => current.onDismiss());
+    expect(host.querySelector('[data-native-modal="Coloring books"]')).toBeNull();
+    expect(frames.size).toBe(1);
+    const ready = [...frames.values()];
+    frames.clear();
+    await act(async () => ready.forEach((run) => run(0)));
+    expect(caller.liveScreen.history.drawing.pageId).toBe('flower');
+    expect(caller.liveScreen.commandBusy).toBe(false);
+  } finally {
+    capture.mockRestore();
+    exits.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});
+
+it.each(['ios', 'android'])(
+  'unmounts a manually closing picker when coloring is disabled on %s',
+  async (os) => {
+    caller.realScreen = true;
+    records.os = os;
+    let mounted = 0;
+    const dismissed = vi.fn();
+    const Picker = pickerModule.RsdColoringBookPicker;
+    const capture = vi
+      .spyOn(pickerModule, 'RsdColoringBookPicker')
+      .mockImplementation(function TrackedPicker(props) {
+        useEffect(() => {
+          mounted += 1;
+          return () => {
+            mounted -= 1;
+          };
+        }, []);
+        return createElement(Picker, {
+          ...props,
+          onDismiss() {
+            dismissed();
+            props.onDismiss();
+          },
+        });
+      });
+    const completions = [];
+    let parallel;
+    try {
+      await mount(createElement(DrawingSessionProvider, null, createElement(RsdDrawingScreen)));
+      parallel = vi.spyOn(Animated, 'parallel').mockImplementation((animations) => ({
+        start(done) {
+          animations.forEach((animation) => animation.start());
+          completions.push(done);
+        },
+        stop() {},
+      }));
+      await act(async () => caller.liveScreen.setPagePickerOpen(true));
+      await act(async () => completions.shift()({ finished: true }));
+      expect(mounted).toBe(1);
+      await act(async () => caller.liveScreen.setPagePickerOpen(false));
+      await act(async () => caller.liveScreen.setColoringBookEnabled(false));
+      await act(async () => completions.shift()({ finished: true }));
+      expect(dismissed).toHaveBeenCalledOnce();
+      expect(host.querySelector('[data-native-modal="Coloring books"]')).toBeNull();
+      expect(mounted).toBe(0);
+    } finally {
+      parallel?.mockRestore();
+      capture.mockRestore();
+    }
   }
 );
