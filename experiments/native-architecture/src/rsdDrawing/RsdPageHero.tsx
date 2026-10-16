@@ -23,43 +23,41 @@ const HERO_BOTTOM_PX = { wide: 32, phone: 28 } as const;
 const LEDE_FONT_PX = { wide: 18, phone: 16 } as const;
 const LEDE_TOGGLE_TARGET_PX = 44;
 
+// Page geometry stays in the lazy page module; dynamic styles reuse declarations checked by
+// check-native-web-startup.mjs instead of adding page-specific rules to startup CSS.
 const styles = css.create({
   hero: (bottom: number) => ({ paddingTop: dimensions.space2, paddingBottom: bottom }),
   shortHero: { paddingTop: dimensions.space1, paddingBottom: dimensions.space4 },
-  shortHeroText: {
+  shortHeroText: (columnGap: string) => ({
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'baseline',
-    columnGap: dimensions.space4,
+    columnGap,
     minWidth: 0,
-  },
+  }),
   shortTitle: {
-    fontSize: dimensions.fontSizeXl,
-    lineHeight: SHORT_H1_LINE_HEIGHT,
-    letterSpacing: SHORT_H1_FONT_PX * SHORT_H1_TRACKING_EM,
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: 'auto',
     minWidth: 0,
   },
-  ledeToggle: {
+  ledeToggle: (margin: number, padding: string) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: dimensions.space1,
     flexShrink: 0,
     minHeight: LEDE_TOGGLE_TARGET_PX,
-    marginTop: LEDE_TOGGLE_MARGIN_PX,
-    marginBottom: LEDE_TOGGLE_MARGIN_PX,
+    marginTop: margin,
+    marginBottom: margin,
     paddingTop: 0,
     paddingBottom: 0,
-    paddingLeft: dimensions.space1,
-    paddingRight: dimensions.space1,
+    paddingLeft: padding,
+    paddingRight: padding,
     borderWidth: 0,
     backgroundColor: 'transparent',
     cursor: 'pointer',
-  },
+  }),
   ledeToggleText: {
     color: colors.brandText,
     fontSize: dimensions.fontSizeSm,
@@ -83,13 +81,13 @@ const styles = css.create({
     fontSize: dimensions.fontSizeMd,
     lineHeight: SHORT_LEDE_LINE_HEIGHT,
   },
-  title: (fontSize: number) => ({
+  title: (fontSize: number, short: boolean) => ({
     margin: 0,
     color: colors.textStrong,
     fontSize,
-    lineHeight: H1_LINE_HEIGHT,
+    lineHeight: short ? SHORT_H1_LINE_HEIGHT : H1_LINE_HEIGHT,
     outlineWidth: 0,
-    letterSpacing: fontSize * H1_TRACKING_EM,
+    letterSpacing: fontSize * (short ? SHORT_H1_TRACKING_EM : H1_TRACKING_EM),
   }),
   lede: (fontSize: number) => ({
     marginTop: dimensions.space4,
@@ -127,14 +125,14 @@ export function RsdPageHero({
     <html.div
       style={[styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide']), short && styles.shortHero]}
     >
-      <html.div style={short && styles.shortHeroText}>
+      <html.div style={short && styles.shortHeroText(dimensions.space4)}>
         <html.h1
           ref={titleRef}
           data-page-heading
           tabIndex={-1}
           style={[
             controlStyles.boldText,
-            styles.title(displayFontSize(width)),
+            styles.title(short ? SHORT_H1_FONT_PX : displayFontSize(width), short),
             short && styles.shortTitle,
           ]}
         >
@@ -145,7 +143,10 @@ export function RsdPageHero({
             type="button"
             aria-expanded={ledeOpen}
             aria-controls={ledeId}
-            style={[styles.ledeToggle, !short && styles.hidden]}
+            style={[
+              styles.ledeToggle(LEDE_TOGGLE_MARGIN_PX, dimensions.space1),
+              !short && styles.hidden,
+            ]}
             onClick={() => setLedeOpen((open) => !open)}
           >
             <html.span style={[controlStyles.boldText, styles.ledeToggleText]}>

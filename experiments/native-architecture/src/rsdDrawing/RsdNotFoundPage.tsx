@@ -125,20 +125,19 @@ const styles = css.create({
     paddingBottom: TOPBAR_PADDING_PX,
   },
   shortTopbar: { paddingTop: SHORT_TOPBAR_PADDING_PX, paddingBottom: SHORT_TOPBAR_PADDING_PX },
-  back: {
+  back: (overhang: number) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: BACK_GAP_PX,
     minHeight: BACK_BLOB_PX,
-    marginTop: BACK_OVERHANG_PX,
-    marginBottom: BACK_OVERHANG_PX,
+    marginTop: overhang,
+    marginBottom: overhang,
     padding: 0,
     borderWidth: 0,
     backgroundColor: 'transparent',
     cursor: 'pointer',
-  },
-  shortBack: { marginTop: SHORT_BACK_OVERHANG_PX, marginBottom: SHORT_BACK_OVERHANG_PX },
+  }),
   backLabel: { color: colors.brandText, fontSize: dimensions.fontSizeMd },
   blob: (shadow: string) => ({
     width: BACK_BLOB_PX,
@@ -195,7 +194,7 @@ function BackLink({ label, short }: { label: BackLabel; short: boolean }) {
     <RsdPressable
       type="button"
       role="link"
-      style={[styles.back, short && styles.shortBack]}
+      style={styles.back(short ? SHORT_BACK_OVERHANG_PX : BACK_OVERHANG_PX)}
       onClick={startDrawing}
     >
       <html.div aria-hidden style={[styles.blob(blobShadow(brandSolid)), styles.blobSize(size)]}>
