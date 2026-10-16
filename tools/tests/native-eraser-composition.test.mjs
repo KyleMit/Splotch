@@ -1,3 +1,4 @@
+import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -104,7 +105,7 @@ describe('joint native drawing and eraser ownership', () => {
     let checkpoint = null;
     let captures = 0;
     for (;;) {
-      const plan = planInk(strokes, checkpoint);
+      const plan = planInk(strokes, checkpoint, LEGACY_PAPER, paperProjection(LEGACY_PAPER));
       const eraseRuns = plan.strokes.filter(
         (stroke, index) => stroke.brush === 'eraser' && plan.strokes[index - 1]?.brush !== 'eraser'
       );
@@ -115,6 +116,7 @@ describe('joint native drawing and eraser ownership', () => {
         id: ++captures,
         strokes: plan.prefix,
         paper: LEGACY_PAPER,
+        projection: paperProjection(LEGACY_PAPER),
         base64: 'planner fixture; not raster evidence',
       };
     }
@@ -123,33 +125,57 @@ describe('joint native drawing and eraser ownership', () => {
 
   it('captures the original painted prefix before a first eraser and selected eraser', () => {
     const prefix = [crayon, magic];
-    const loaded = planInk([...prefix, erase], null);
+    const loaded = planInk([...prefix, erase], null, LEGACY_PAPER, paperProjection(LEGACY_PAPER));
     expect(loaded.prefix).toEqual(prefix);
     expect(loaded.strokes).toEqual(prefix);
     expect(loaded.needsCheckpoint).toBe(true);
-    expect(planInk(prefix, null).needsCheckpoint).toBe(false);
+    expect(planInk(prefix, null, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).needsCheckpoint).toBe(
+      false
+    );
     expect(needsPreparation(prefix, 'eraser')).toBe(true);
-    const checkpoint = { id: 1, strokes: prefix, paper: LEGACY_PAPER, base64: 'planner fixture' };
-    const ready = planInk([...prefix, erase], checkpoint);
+    const checkpoint = {
+      id: 1,
+      strokes: prefix,
+      paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
+      base64: 'planner fixture',
+    };
+    const ready = planInk(
+      [...prefix, erase],
+      checkpoint,
+      LEGACY_PAPER,
+      paperProjection(LEGACY_PAPER)
+    );
     expect(ready.strokes).toEqual([erase]);
     expect(ready.needsCheckpoint).toBe(false);
-    expect(planInk([erase], null).needsCheckpoint).toBe(false);
+    expect(
+      planInk([erase], null, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).needsCheckpoint
+    ).toBe(false);
   });
 
   it('prepares before a new eraser gesture and refuses a stale checkpoint after replacement', () => {
     const strokes = [marker, erase, { ...marker, color: 'Red' }];
-    expect(planInk(strokes, null).prefix).toEqual([marker]);
-    expect(planInk(strokes, null).needsCheckpoint).toBe(true);
-    expect(planInk(strokes, null).needsCheckpoint).toBe(true);
+    expect(planInk(strokes, null, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).prefix).toEqual([
+      marker,
+    ]);
+    expect(
+      planInk(strokes, null, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).needsCheckpoint
+    ).toBe(true);
+    expect(
+      planInk(strokes, null, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).needsCheckpoint
+    ).toBe(true);
     const checkpoint = {
       id: 1,
       strokes,
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'planner fixture; not raster evidence',
     };
     expect(checkpointMatches([...strokes, erase], checkpoint)).toBe(true);
     expect(checkpointMatches([marker], checkpoint)).toBe(false);
-    expect(planInk([{ ...marker }], checkpoint).checkpoint).toBeNull();
+    expect(
+      planInk([{ ...marker }], checkpoint, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).checkpoint
+    ).toBeNull();
   });
 });
 

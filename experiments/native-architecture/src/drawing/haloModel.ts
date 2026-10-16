@@ -1,5 +1,11 @@
 import type { Brush } from './brushes';
-import { paperSize, paperView, semanticWidth, type PaperReference } from './paperSpace';
+import {
+  paperProjection,
+  paperProjectionView,
+  semanticWidth,
+  type PaperProjection,
+  type PaperReference,
+} from './paperSpace';
 
 // Pointer Halos follow each drawing contact the way the shipping PointerHalos.svelte does: a grey
 // ring just outside the stroke footprint, a rainbow band for Magic, and a filled bubble the size of
@@ -45,9 +51,10 @@ export function haloKind(brush: Brush): HaloKind {
 export function haloSize(
   width: number,
   paper: PaperReference,
-  frame: Readonly<{ width: number; height: number }>
+  frame: Readonly<{ width: number; height: number }>,
+  projection: PaperProjection = paperProjection(paper)
 ): number {
-  return semanticWidth(width, paper) * paperView(frame.width, frame.height, paperSize(paper)).scale;
+  return semanticWidth(width, paper) * paperProjectionView(projection, frame).scale;
 }
 
 // A halo grows in where the contact lands, follows it, and lifts off where it left. Reduced motion

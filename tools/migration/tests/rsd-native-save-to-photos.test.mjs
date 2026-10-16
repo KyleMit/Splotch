@@ -92,8 +92,16 @@ beforeEach(() => {
   photos.reset();
   records.os = 'android';
   records.nativeModules.SplotchPhotoLibrary = reactNativeModule.NativeModules.SplotchPhotoLibrary;
-  caller.exportPng = vi.fn(async () => EXPORTED_PNG);
-  caller.captureInk = vi.fn(async () => INKED_PAPER);
+  caller.exportPng = vi.fn(async () => ({
+    base64: EXPORTED_PNG,
+    size: { width: 4, height: 4 },
+    isCurrent: () => true,
+  }));
+  caller.captureInk = vi.fn(async () => ({
+    base64: INKED_PAPER,
+    size: { width: 1024, height: 768 },
+    isCurrent: () => true,
+  }));
   files = vi.spyOn(fileSystemModule, 'File');
 });
 afterEach(() => {
@@ -212,7 +220,11 @@ describe('canonical Auto-Save on Delete', () => {
   it(
     'saves nothing for a page with no visible ink',
     async () => {
-      caller.captureInk.mockResolvedValue(BLANK_PAPER);
+      caller.captureInk.mockResolvedValue({
+        base64: BLANK_PAPER,
+        size: { width: 1024, height: 768 },
+        isCurrent: () => true,
+      });
       await mountWith(SETTINGS_V9(true));
       await click('Draw RSD fixture stroke');
       await act(async () => caller.liveScreen.setBrush('eraser'));

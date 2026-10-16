@@ -1,8 +1,15 @@
-import { InkPaperScope, useInkPaper } from './InkPaper';
-import { paperSize, samePaper, type PaperReference } from './paperSpace';
+import { InkPaperScope, useInkPaper, useInkProjection } from './InkPaper';
+import {
+  paperBounds,
+  paperRasterSize,
+  samePaperProjection,
+  type PaperProjection,
+  type PaperReference,
+} from './paperSpace';
 import {
   Fragment,
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -105,6 +112,18 @@ function useInkTiles(props: Props, strokes: readonly Stroke[]) {
   return { tileResources, ...useCrayonTileReadiness(tileResources.uris, props.onError) };
 }
 
+function useRasterFault(props: RefObject<Props>) {
+  const [fault, setFault] = useState<unknown>(null);
+  const reportFault = useCallback(
+    (error: unknown) => {
+      setFault(error);
+      props.current.onError(error);
+    },
+    [props]
+  );
+  return { fault, reportFault };
+}
+
 function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   const propsRef = useRef(props);
   propsRef.current = props;
@@ -117,7 +136,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   );
   const { tileResources, ...tiles } = useInkTiles(props, displayStrokes);
   const [pending, setPending] = useState<Incoming | null>(null);
-  const [fault, setFault] = useState<unknown>(null);
+  const { fault, reportFault } = useRasterFault(propsRef);
   const nextId = useRef(1);
   const incoming = pending && pending.plan === capturePlan ? pending : null;
   const incomingRef = useRef(incoming);
@@ -146,16 +165,14 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
           strokes: capturedPlan.prefix,
           base64,
           paper: capturedPlan.paper,
+          projection: capturedPlan.projection,
         },
         plan: capturedPlan,
         brush: propsRef.current.brush,
         provisional: !plan.needsCheckpoint,
       });
     },
-    onError(error) {
-      setFault(error);
-      propsRef.current.onError(error);
-    },
+    onError: reportFault,
   });
   useImperativeHandle(ref, () => ({
     isReady: () => inputReady && !working.current,
@@ -184,6 +201,15 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   useEffect(() => {
     if (pending && !incoming) setPending(null);
   }, [pending, incoming]);
+  const failImage = useCallback(
+    (frame: InkCheckpoint, error: Error) => {
+      if (incomingRef.current?.frame !== frame) return;
+      incomingRef.current = null;
+      setPending(null);
+      reportFault(error);
+    },
+    [reportFault]
+  );
   useEffect(() => {
     if (!incoming) return;
     const timeout = setTimeout(() => {
@@ -194,7 +220,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
       );
     }, PNG_TIMEOUT_MS);
     return () => clearTimeout(timeout);
-  }, [incoming]);
+  }, [incoming, failImage]);
   function imageLoaded(frame: InkCheckpoint) {
     const current = incomingRef.current;
     if (!current || current.frame !== frame) return;
@@ -202,25 +228,22 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
     commitFrame(current);
     setPending(null);
   }
-  function failImage(frame: InkCheckpoint, error: Error) {
-    if (incomingRef.current?.frame !== frame) return;
-    incomingRef.current = null;
-    setPending(null);
-    setFault(error);
-    propsRef.current.onError(error);
-  }
   return {
     undoCheckpoint,
     tileResources,
     tileDecode: tiles.decode,
     capturePlan: capturePlan && !drafts.length && !incoming && !fault ? capturePlan : null,
     captureReady: () => setFixedReady(capturePlan),
-    captureError(error: unknown) {
-      setFault(error);
-      propsRef.current.onError(error);
-    },
+    captureError: reportFault,
     fixedSvg,
-    frames: createRasterFrames(checkpoint, displayStrokes, props.strokes, incoming, plan.paper),
+    frames: createRasterFrames(
+      checkpoint,
+      displayStrokes,
+      props.strokes,
+      incoming,
+      plan.paper,
+      plan.projection
+    ),
     imageLoaded,
     failImage,
   };
@@ -231,10 +254,12 @@ function createRasterFrames(
   strokes: readonly Stroke[],
   prefix: readonly Stroke[],
   incoming: Incoming | null,
-  paper: PaperReference
+  paper: PaperReference,
+  projection: PaperProjection
 ) {
   const displayPlan: InkPlan = {
     paper,
+    projection,
     checkpoint,
     strokes,
     prefix,
@@ -248,6 +273,7 @@ function createRasterFrames(
             id: incoming.frame.id,
             plan: {
               paper: incoming.frame.paper,
+              projection: incoming.frame.projection,
               checkpoint: incoming.frame,
               strokes: [],
               prefix: incoming.frame.strokes,
@@ -263,26 +289,27 @@ function createRasterFrames(
 
 function useInkPlan(props: Pick<Props, 'strokes' | 'drafts' | 'brush'>) {
   const paper = useInkPaper();
+  const projection = useInkProjection();
   const drafts = props.drafts ?? NO_DRAFTS;
   const [checkpoint, setCheckpoint] = useState<InkCheckpoint | null>(null);
   const [prepared, setPrepared] = useState<InkPreparation | null>(null);
   const predecessor = useMemo(
-    () => planInk(props.strokes, checkpoint, paper),
-    [props.strokes, checkpoint, paper]
+    () => planInk(props.strokes, checkpoint, paper, projection),
+    [props.strokes, checkpoint, paper, projection]
   );
   const promoted =
     prepared &&
-    samePaper(prepared.checkpoint.paper, paper) &&
+    samePaperProjection(prepared.checkpoint.projection, projection) &&
     preparationWitnessed(props.strokes, prepared, predecessor.checkpoint)
       ? prepared
       : null;
   const plan = useMemo(
-    () => planInk(props.strokes, promoted?.checkpoint ?? checkpoint, paper),
-    [props.strokes, promoted, checkpoint, paper]
+    () => planInk(props.strokes, promoted?.checkpoint ?? checkpoint, paper, projection),
+    [props.strokes, promoted, checkpoint, paper, projection]
   );
   const available =
     prepared &&
-    samePaper(prepared.checkpoint.paper, paper) &&
+    samePaperProjection(prepared.checkpoint.projection, projection) &&
     sameStrokes(props.strokes, prepared.checkpoint.strokes) &&
     preparationMatches(props.strokes, prepared, plan.checkpoint) &&
     (drafts.length ? drafts[0].brush === prepared.brush : props.brush === prepared.brush)
@@ -338,7 +365,7 @@ function useCheckpointJob(options: {
   useEffect(() => {
     const revision = ++epoch.current;
     if (!ready) return;
-    const job = captures.capture(svg.current, paperSize(plan.paper));
+    const job = captures.capture(svg.current, paperRasterSize(plan.projection));
     active.current = job;
     const valid = () =>
       epoch.current === revision &&
@@ -371,9 +398,9 @@ function useCheckpointJob(options: {
   return active;
 }
 
-function paperViewBox(paper: PaperReference) {
-  const { width, height } = paperSize(paper);
-  return `0 0 ${width} ${height}`;
+function paperViewBox(plan: InkPlan) {
+  const { x, y, width, height } = paperBounds(plan.projection);
+  return `${x} ${y} ${width} ${height}`;
 }
 
 function RasterFrames({
@@ -393,7 +420,7 @@ function RasterFrames({
             <DecodedPng
               key={frame.plan.checkpoint.id}
               base64={frame.plan.checkpoint.base64}
-              size={paperSize(frame.plan.paper)}
+              size={paperRasterSize(frame.plan.projection)}
               onLoad={() => {
                 if (frame.plan.checkpoint) onImageLoad(frame.plan.checkpoint);
               }}
@@ -402,11 +429,11 @@ function RasterFrames({
               }}
             />
           ) : null}
-          <InkPaperScope.Provider value={frame.plan.paper}>
+          <InkPaperScope.Provider value={frame.plan.projection}>
             <Svg
               width="100%"
               height="100%"
-              viewBox={paperViewBox(frame.plan.paper)}
+              viewBox={paperViewBox(frame.plan)}
               preserveAspectRatio="xMidYMid meet"
               style={StyleSheet.absoluteFill}
               pointerEvents="none"

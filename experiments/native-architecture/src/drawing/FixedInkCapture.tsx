@@ -1,5 +1,5 @@
 import { InkPaperScope } from './InkPaper';
-import { paperSize, samePaper } from './paperSpace';
+import { paperBounds, paperRasterSize, samePaperProjection } from './paperSpace';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { Svg } from '../platform/svg';
@@ -28,10 +28,12 @@ export function FixedInkCapture({
   onReady: () => void;
   onError: (error: unknown) => void;
 }) {
-  if (plan.checkpoint && !samePaper(plan.paper, plan.checkpoint.paper))
+  if (plan.checkpoint && !samePaperProjection(plan.projection, plan.checkpoint.projection))
     throw new Error('The checkpoint paper reference does not match the capture.');
   const { theme } = useInkAppearance();
-  const size = paperSize(plan.paper);
+  const projection = plan.projection;
+  const size = paperBounds(projection);
+  const raster = paperRasterSize(projection);
   const tileResources = useCrayonTileResources(plan.strokes, theme);
   const tiles = useCrayonTileReadiness(tileResources.uris, onError);
   const fill = useBundledFillReadiness(plan, onError);
@@ -59,15 +61,21 @@ export function FixedInkCapture({
     if (current.current.plan.checkpoint === plan.checkpoint) setLoaded(plan.checkpoint);
   }
   return (
-    <InkPaperScope.Provider value={plan.paper}>
-      <View style={[styles.capture, size, { left: -size.width * 2 }]} pointerEvents="none">
+    <InkPaperScope.Provider value={projection}>
+      <View
+        style={[
+          styles.capture,
+          { width: raster.width, height: raster.height, left: -raster.width * 2 },
+        ]}
+        pointerEvents="none"
+      >
         {fill.decode}
         {tiles.decode}
         {plan.checkpoint ? (
           <DecodedPng
             key={plan.checkpoint.id}
             base64={plan.checkpoint.base64}
-            size={size}
+            size={raster}
             onLoad={imageLoaded}
             onError={(error) => {
               if (current.current.plan === plan) current.current.onError(error);
@@ -78,9 +86,9 @@ export function FixedInkCapture({
           <BundledFillLoadScope.Provider value={fill.loaded}>
             <CaptureSvg
               ref={svgRef}
-              width={size.width}
-              height={size.height}
-              viewBox={`0 0 ${size.width} ${size.height}`}
+              width={raster.width}
+              height={raster.height}
+              viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
               preserveAspectRatio="xMidYMid meet"
             >
               <InkScene

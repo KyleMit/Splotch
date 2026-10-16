@@ -1,3 +1,4 @@
+import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -155,8 +156,14 @@ describe('active Crayon tile ownership', () => {
     const pen = { brush: 'pen', color: 'Red', width: 8, points: [{ x: 10, y: 10 }] };
     const tail = strokes(22).slice(21);
     const drawing = [...prefix, pen, ...tail];
-    const frame = { id: 1, strokes: [...prefix, pen], paper: LEGACY_PAPER, base64: 'checkpoint' };
-    const plan = planInk(drawing, frame);
+    const frame = {
+      id: 1,
+      strokes: [...prefix, pen],
+      paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
+      base64: 'checkpoint',
+    };
+    const plan = planInk(drawing, frame, LEGACY_PAPER, paperProjection(LEGACY_PAPER));
     expect(plan.checkpoint).toBe(frame);
     expect(plan.strokes).toEqual(tail);
     retained(prefix, 'light');

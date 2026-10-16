@@ -126,8 +126,9 @@ export function RsdEdgeLayout({
     <ToolbarSkin.Provider value={toolbarStyle}>
       <InertRegion.Provider value={covered}>
         <NativeDrawingLayout
-          paper={drawingPaper(screen.history.drawing)}
-          empty={!screen.inkVisible}
+          paper={screen.activePaper ?? drawingPaper(screen.history.drawing)}
+          paperPresentations={screen.paperPresentations}
+          empty={!screen.inkVisible && !screen.drawing}
           departingPaper={clear.sheet ? drawingPaper(clear.sheet.drawing) : null}
           bareGlass={
             bare
@@ -148,13 +149,15 @@ export function RsdEdgeLayout({
               disabled={disabled}
             />
           )}
-          clearUnderlay={(offset, frame, departingFrame) => (
+          clearUnderlay={(offset, frame, departingFrame, projection, departingProjection) => (
             <RsdClearUnderlay
               control={clear}
               drawing={screen.history.drawing}
               offset={offset}
               frame={frame}
               departingFrame={departingFrame}
+              projection={projection}
+              departingProjection={departingProjection}
             />
           )}
           clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}

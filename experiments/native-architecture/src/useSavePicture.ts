@@ -4,7 +4,7 @@ import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { isUnsaved, type UnsavedOutcome } from './export/pictureSave';
 import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react';
 import type { View } from 'react-native';
-import { drawingPaperSize, type PaperSize } from './drawing/paperSpace';
+import type { PaperSize } from './drawing/paperSpace';
 import { createSaveFailure } from './export/saveFailure';
 import { capturePicture, savePicture } from './keepPicture';
 import { unsavedPictureStore } from './platform/unsavedPictures';
@@ -105,9 +105,11 @@ export function useSaveAction({
       capture.started = true;
       flights.cue('capture', reduced);
       const drawing = historyRef.current.drawing;
-      capture.pngBase64 = await capturePicture(drawing, surface.current);
-      if (capture.pngBase64) {
-        capture.flight = flights.launch(capture.pngBase64, drawingPaperSize(drawing));
+      const picture = await capturePicture(drawing, surface.current);
+      if (picture && !picture.isCurrent()) throw new Error('The drawing changed during capture.');
+      capture.pngBase64 = picture?.base64 ?? null;
+      if (picture?.base64) {
+        capture.flight = flights.launch(picture.base64, picture.size);
         setNotice('');
       }
     });

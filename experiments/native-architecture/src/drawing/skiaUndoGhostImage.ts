@@ -8,7 +8,7 @@ import {
   type SkImage,
 } from '@shopify/react-native-skia';
 import { smoothStroke, type Stroke } from './model';
-import { paperSize, paperView, semanticWidth } from './paperSpace';
+import { paperProjectionView, semanticWidth } from './paperSpace';
 import { paintStroke, type InkPaintContext } from './skiaInkPainter';
 import { UNDO_GHOST_AA_PAD_PX, type GhostBounds } from './undoGhostGeometry';
 
@@ -65,7 +65,10 @@ export function makeSkiaUndoGhost({
   const surface = Skia.Surface.Make(pixelBounds.width, pixelBounds.height);
   if (!surface) return null;
   const canvas = surface.getCanvas();
-  const view = paperView(size.width * density, size.height * density, paperSize(context.paper));
+  const view = paperProjectionView(context.projection, {
+    width: size.width * density,
+    height: size.height * density,
+  });
   const readsRaster = removed.some(
     (stroke) => stroke.brush === 'crayon' || stroke.brush === 'magic'
   );

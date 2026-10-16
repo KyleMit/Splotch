@@ -21,11 +21,11 @@ function exportLength(cssLength: number, backingScale: number, scale: number): n
 
 // A paper with no adopted CSS size (a version-5 picture's canonical sheet) has one CSS pixel per
 // unit, the scale its ink widths are drawn at.
-function exportSize(paper: PaperReference, scale: number): PaperSize {
+function exportSize(paper: PaperReference, scale: number, extent?: PaperSize): PaperSize {
   if (paper.kind === 'adopted')
     return {
-      width: exportLength(paper.cssWidth, paper.backingScale, scale),
-      height: exportLength(paper.cssHeight, paper.backingScale, scale),
+      width: exportLength(extent?.width ?? paper.cssWidth, paper.backingScale, scale),
+      height: exportLength(extent?.height ?? paper.cssHeight, paper.backingScale, scale),
     };
   const units = paperSize(paper);
   return { width: Math.round(units.width * scale), height: Math.round(units.height * scale) };
@@ -34,8 +34,9 @@ function exportSize(paper: PaperReference, scale: number): PaperSize {
 export function pictureExport(
   paper: PaperReference,
   theme: PaperTheme,
-  pixelRatio: number
+  pixelRatio: number,
+  extent?: PaperSize
 ): PictureExport {
   const scale = exportScale(pixelRatio);
-  return { size: exportSize(paper, scale), scale, paper: PAPER_THEMES[theme].paper };
+  return { size: exportSize(paper, scale, extent), scale, paper: PAPER_THEMES[theme].paper };
 }

@@ -115,7 +115,13 @@ function directory(name = 'Drawings') {
 }
 
 function surface(png) {
-  return { exportPng: vi.fn(async () => png) };
+  return {
+    exportPng: vi.fn(async () => ({
+      base64: png ?? null,
+      ...(png ? { size: { width: 1, height: 1 } } : {}),
+      isCurrent: () => true,
+    })),
+  };
 }
 
 describe('saving a picture on the web', () => {
@@ -235,9 +241,11 @@ describe('saving a picture on the web', () => {
 
   it('keeps a picture by downloading it, with the PNG it captured', async () => {
     const paper = surface(PNG);
-    const pngBase64 = await capturePicture({ strokes: [] }, paper);
-    expect(pngBase64).toBe(PNG);
-    expect(await savePicture(pngBase64)).toBe('downloads');
+    const captured = await capturePicture({ strokes: [] }, paper);
+    expect(captured.base64).toBe(PNG);
+    expect(captured.size).toEqual({ width: 1, height: 1 });
+    expect(captured.isCurrent()).toBe(true);
+    expect(await savePicture(captured.base64)).toBe('downloads');
     expect(downloads).toHaveLength(1);
   });
 
@@ -245,14 +253,16 @@ describe('saving a picture on the web', () => {
     URL.createObjectURL.mockImplementation(() => {
       throw new Error('blocked');
     });
-    const pngBase64 = await capturePicture({ strokes: [] }, surface(PNG));
-    expect(pngBase64).toBe(PNG);
-    expect(await savePicture(pngBase64)).toBe('failed');
+    const captured = await capturePicture({ strokes: [] }, surface(PNG));
+    expect(captured.base64).toBe(PNG);
+    expect(await savePicture(captured.base64)).toBe('failed');
     expect(downloads).toEqual([]);
   });
 
   it('reports a capture that produced nothing as a failed save with no picture to retry', async () => {
-    expect(await capturePicture({ strokes: [] }, surface(undefined))).toBeNull();
+    const failed = await capturePicture({ strokes: [] }, surface(undefined));
+    expect(failed.base64).toBeNull();
+    expect(failed.isCurrent()).toBe(true);
     const thrown = { exportPng: vi.fn(async () => Promise.reject(new Error('lost'))) };
     expect(await capturePicture({ strokes: [] }, thrown)).toBeNull();
     expect(downloads).toEqual([]);
@@ -262,4 +272,17 @@ describe('saving a picture on the web', () => {
     expect(saveFailureCopy('denied', 1, 'web')).toEqual(nativeSaveFailureCopy('denied', 1, 'web'));
     expect(nativeSaveFailureCopy('denied', 1, 'web').detail).not.toContain('Settings');
   });
+});
+
+it.each([PNG, null])('keeps producer currentness with a saved capture of %s', async (base64) => {
+  let current = true;
+  const outcome = base64
+    ? { base64, size: { width: 1, height: 1 }, isCurrent: () => current }
+    : { base64: null, isCurrent: () => current };
+  const paper = { exportPng: vi.fn(async () => outcome) };
+  const captured = await capturePicture({ strokes: [] }, paper);
+  expect(captured).toBe(outcome);
+  expect(captured.isCurrent()).toBe(true);
+  current = false;
+  expect(captured.isCurrent()).toBe(false);
 });

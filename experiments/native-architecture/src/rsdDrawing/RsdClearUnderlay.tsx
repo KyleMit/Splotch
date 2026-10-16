@@ -19,7 +19,12 @@ import { InkScene } from '../drawing/InkScene';
 import type { Drawing } from '../drawing/model';
 import { PageOutline } from '../drawing/PageOutline';
 import type { PresentedFrame } from '../drawing/paperPresentation';
-import { drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
+import {
+  drawingPaper,
+  paperBounds,
+  paperProjection,
+  type PaperProjection,
+} from '../drawing/paperSpace';
 import { PAPER_THEMES } from '../drawing/theme';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import { isOfflinePageId } from '../offlineLibrary/identity';
@@ -38,21 +43,40 @@ const layer = StyleSheet.create({
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   wash: { position: 'absolute', width: WASH_SIZE_PX, height: WASH_SIZE_PX },
 });
-function PaperArt({ drawing, ink, frame }: { drawing: Drawing; ink: boolean; frame: AreaSize }) {
+function PaperArt({
+  drawing,
+  ink,
+  frame,
+  projection: supplied,
+}: {
+  drawing: Drawing;
+  ink: boolean;
+  frame: AreaSize;
+  projection?: PaperProjection | null;
+}) {
   const theme = useDrawingAppearance();
-  const size = presentedPaperSize(drawingPaper(drawing), frame);
+  const paper = drawingPaper(drawing);
+  const projection =
+    supplied ?? paperProjection(paper, paper.kind === 'unadopted' ? frame : undefined);
+  const size = paperBounds(projection);
   const artwork = useContext(OfflineArtworkScope);
   const outline = !isOfflinePageId(drawing.pageId) || Boolean(artwork[drawing.pageId]);
   return (
     <InkAppearanceScope.Provider value={{ pageId: drawing.pageId, theme }}>
-      <InkPaperScope.Provider value={drawingPaper(drawing)}>
+      <InkPaperScope.Provider value={projection}>
         <Svg
           width="100%"
           height="100%"
-          viewBox={`0 0 ${size.width} ${size.height}`}
+          viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
           preserveAspectRatio="none"
         >
-          <Rect width={size.width} height={size.height} fill={PAPER_THEMES[theme].paper} />
+          <Rect
+            x={size.x}
+            y={size.y}
+            width={size.width}
+            height={size.height}
+            fill={PAPER_THEMES[theme].paper}
+          />
           {ink ? (
             <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={() => {}} />
           ) : null}
@@ -70,11 +94,13 @@ function DepartingSheet({
   area,
   offset,
   frame,
+  projection,
 }: {
   control: ClearControl;
   area: AreaSize;
   offset: AreaOffset;
   frame: PresentedFrame | null;
+  projection?: PaperProjection | null;
 }) {
   // A sheet that left before this layer mounted has missed its departure; replaying the flight from
   // the start would bring the cleared page back over newer ink. The gesture expires it on time.
@@ -124,7 +150,7 @@ function DepartingSheet({
         ],
       }}
     >
-      <PaperArt drawing={sheet.drawing} ink frame={frame} />
+      <PaperArt drawing={sheet.drawing} ink frame={frame} projection={projection} />
     </Animated.View>
   );
 }
@@ -164,10 +190,18 @@ function PaperGradient({
   );
 }
 
-function ClearCover({ drawing, frame }: { drawing: Drawing; frame: PresentedFrame }) {
+function ClearCover({
+  drawing,
+  frame,
+  projection,
+}: {
+  drawing: Drawing;
+  frame: PresentedFrame;
+  projection?: PaperProjection;
+}) {
   return (
     <View testID="rsd-clear-cover" style={[{ position: 'absolute' }, frame]}>
-      <PaperArt drawing={drawing} ink={false} frame={frame} />
+      <PaperArt drawing={drawing} ink={false} frame={frame} projection={projection} />
     </View>
   );
 }
@@ -182,12 +216,16 @@ export function RsdClearUnderlay({
   offset,
   frame,
   departingFrame,
+  projection,
+  departingProjection,
 }: {
   control: ClearControl;
   drawing: Drawing;
   offset: AreaOffset;
   frame: PresentedFrame;
   departingFrame: PresentedFrame | null;
+  projection?: PaperProjection;
+  departingProjection?: PaperProjection | null;
 }) {
   const [area, setArea] = useState<AreaSize>({ width: 0, height: 0 });
   const window = useWindowDimensions();
@@ -205,7 +243,9 @@ export function RsdClearUnderlay({
         );
       }}
     >
-      {control.covered ? <ClearCover drawing={drawing} frame={frame} /> : null}
+      {control.covered ? (
+        <ClearCover drawing={drawing} frame={frame} projection={projection} />
+      ) : null}
       <Animated.View
         testID="rsd-clear-wash"
         style={[
@@ -245,7 +285,13 @@ export function RsdClearUnderlay({
           far={FLOOD_FAR_OPACITY}
         />
       </Animated.View>
-      <DepartingSheet control={control} area={area} offset={offset} frame={departingFrame} />
+      <DepartingSheet
+        control={control}
+        area={area}
+        offset={offset}
+        frame={departingFrame}
+        projection={departingProjection}
+      />
     </View>
   );
 }

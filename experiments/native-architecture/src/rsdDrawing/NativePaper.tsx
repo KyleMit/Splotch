@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { DrawingSurface } from '../drawing/DrawingSurface';
 import { PaperTexture } from '../drawing/PaperTexture';
+import type { PaperProjection } from '../drawing/paperSpace';
 import type { PresentedFrame } from '../drawing/paperPresentation';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -15,6 +16,7 @@ export function NativePaper({
   menuOpen,
   lifted,
   frame,
+  projection,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
@@ -22,6 +24,7 @@ export function NativePaper({
   // A sheet lifted off the margin wears its own grain; one that fills the slot shows the slot's.
   lifted: boolean;
   frame: PresentedFrame;
+  projection: PaperProjection;
 }) {
   const drawingScreenStyles = useDrawingScreenStyles();
   const contacts = useSecondTouchRoutes();
@@ -41,6 +44,7 @@ export function NativePaper({
           key={screen.recovery.generation}
           ref={screen.surface}
           drawing={screen.history.drawing}
+          projection={projection}
           undoGhost={screen.undoGhost}
           currentDrawing={screen.currentDrawing}
           isChromeTouch={contacts?.containsPoint}

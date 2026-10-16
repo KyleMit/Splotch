@@ -7,7 +7,7 @@ import { G, Path } from '../platform/svg';
 import { COLORING_PAGES, type PageId } from './pages';
 import { PAPER_THEMES } from './theme';
 import { useInkAppearance } from './InkAppearance';
-import { pageArtTransform, type PaperSize } from './paperSpace';
+import { pageArtTransform, type PaperBounds, type PaperSize } from './paperSpace';
 
 const OUTLINE_WIDTH_PX = 7;
 
@@ -24,11 +24,26 @@ export function pageHasOutline(pageId: PageId): boolean {
 }
 
 // Every page's art frame sits contain-fitted and centered on the paper (pageArtTransform).
-export function PageOutline({ pageId, size }: { pageId: PageId; size: PaperSize }) {
+export function PageOutline({
+  pageId,
+  size,
+}: {
+  pageId: PageId;
+  size: PaperSize & Partial<Pick<PaperBounds, 'x' | 'y'>>;
+}) {
   const { theme } = useInkAppearance();
   if (isOfflinePageId(pageId))
-    return <OfflineBookOutline pageId={pageId} theme={theme} size={size} />;
-  if (isFarmPageId(pageId)) return <BundledBookOutline pageId={pageId} theme={theme} size={size} />;
+    return (
+      <G transform={`translate(${size.x ?? 0} ${size.y ?? 0})`}>
+        <OfflineBookOutline pageId={pageId} theme={theme} size={size} />
+      </G>
+    );
+  if (isFarmPageId(pageId))
+    return (
+      <G transform={`translate(${size.x ?? 0} ${size.y ?? 0})`}>
+        <BundledBookOutline pageId={pageId} theme={theme} size={size} />
+      </G>
+    );
   const paths = COLORING_PAGES[pageId].paths;
   if (paths.length === 0) return null;
   return (

@@ -1,12 +1,11 @@
-import { useInkPaper } from './InkPaper';
+import { useInkPaper, useInkProjection } from './InkPaper';
 import {
   artOrientation,
-  CANONICAL_PAPER_SIZE,
   paperKey,
-  paperSize,
-  paperView,
-  presentedPaperSize,
-  type PaperReference,
+  paperBounds,
+  paperProjectionView,
+  samePaperProjection,
+  type PaperProjection,
   type PaperSize,
 } from './paperSpace';
 import {
@@ -122,7 +121,7 @@ function useBookFill(
 // Paper units onto a canvas of the given pixel size, contain-fitted and centered exactly as
 // contacts are mapped back (paperView).
 function presentPaper(canvas: SkCanvas, pixels: Size, context: InkPaintContext) {
-  const view = paperView(pixels.width, pixels.height, paperSize(context.paper));
+  const view = paperProjectionView(context.projection, pixels);
   canvas.translate(view.left, view.top);
   canvas.scale(view.scale, view.scale);
 }
@@ -174,13 +173,24 @@ function useCommittedLayer(
                 : null,
           }
         : null;
-    const previous =
-      previousCue.current && previousCue.current.size === size ? previousCue.current.ink : null;
+    const cue = previousCue.current;
+    let previous = cue && cue.size === size ? cue.ink : null;
     if (!size || !context) {
       layer.current = null;
       return { value: null, error: null, previous };
     }
     try {
+      if (cue?.ink) {
+        if (
+          cue.size !== size ||
+          !samePaperProjection(cue.ink.context.projection, context.projection)
+        ) {
+          const image = commitLayer({ current: null }, cue.ink.strokes, size, context, key);
+          cue.ink = { image, strokes: cue.ink.strokes, context };
+          cue.size = size;
+        }
+        previous = cue.ink;
+      }
       return { value: commitLayer(layer, strokes, size, context, key), error: null, previous };
     } catch (error) {
       layer.current = null;
@@ -247,23 +257,25 @@ function recordDrafts(drafts: readonly Stroke[], size: Size, context: InkPaintCo
 }
 
 function useInkContext(
-  paper: PaperReference,
+  projection: PaperProjection,
   tiles: CrayonTileResources,
   bookFill: ReturnType<typeof useBookFill>
 ): InkPaintContext | null {
   const { pageId, theme } = useInkAppearance();
+  const paper = projection.paper;
   return useMemo(
     () =>
       bookFill.ready && paper.kind !== 'unadopted'
-        ? { paper, theme, pageId, tiles, bookFill: bookFill.image }
+        ? { paper, projection, theme, pageId, tiles, bookFill: bookFill.image }
         : null,
-    [paper, theme, pageId, tiles, bookFill.ready, bookFill.image]
+    [paper, projection, theme, pageId, tiles, bookFill.ready, bookFill.image]
   );
 }
 
 export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props, ref) {
   const drafts = props.drafts ?? NO_DRAFTS;
   const paper = useInkPaper();
+  const projection = useInkProjection();
   const { pageId, theme } = useInkAppearance();
   const [size, setSize] = useState<Size | null>(null);
   const allStrokes = useMemo(() => [...props.strokes, ...drafts], [props.strokes, drafts]);
@@ -272,14 +284,9 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
     theme,
     props.brush === 'crayon' ? props.color : undefined
   );
-  const bookFill = useBookFill(
-    pageId,
-    theme,
-    presentedPaperSize(paper, size ?? CANONICAL_PAPER_SIZE),
-    props.onError
-  );
-  const context = useInkContext(paper, tiles, bookFill);
-  const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}`;
+  const bookFill = useBookFill(pageId, theme, paperBounds(projection), props.onError);
+  const context = useInkContext(projection, tiles, bookFill);
+  const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}:${projection.extent.width}x${projection.extent.height}`;
   const committed = useCommittedLayer(props.strokes, size, context, key, props.undoGhost);
   const draftPicture = useDraftPicture(drafts, size, context);
   const scene = useInkScene(committed.value, draftPicture.value, size);
@@ -297,7 +304,14 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
     readyPlan(requested): InkPlan {
       if (!ready || drafts.length > 0 || !sameStrokes(requested, props.strokes))
         throw new Error('This picture is still being prepared.');
-      return { paper, checkpoint: null, strokes: requested, prefix: [], needsCheckpoint: false };
+      return {
+        paper,
+        projection,
+        checkpoint: null,
+        strokes: requested,
+        prefix: [],
+        needsCheckpoint: false,
+      };
     },
   }));
   return (

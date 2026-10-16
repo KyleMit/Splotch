@@ -15,6 +15,7 @@ import { InkAppearanceScope } from '../../experiments/native-architecture/src/dr
 import {
   adoptPaper,
   paperKey,
+  paperProjection,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 const state = vi.hoisted(() => ({
   captures: [],
@@ -98,6 +99,7 @@ describe('snapshot paper ownership through asynchronous capture', () => {
     const onReady = vi.fn();
     const plan = {
       paper: phone,
+      projection: paperProjection(phone),
       checkpoint: null,
       strokes: [pen],
       prefix: [pen],
@@ -119,7 +121,14 @@ describe('snapshot paper ownership through asynchronous capture', () => {
   it('rejects a checkpoint that belongs to another paper before rendering it', async () => {
     const plan = {
       paper: phone,
-      checkpoint: { id: 1, strokes: [pen], base64: 'model-only', paper: tablet },
+      projection: paperProjection(phone),
+      checkpoint: {
+        id: 1,
+        strokes: [pen],
+        base64: 'model-only',
+        paper: tablet,
+        projection: paperProjection(tablet),
+      },
       strokes: [],
       prefix: [pen],
       needsCheckpoint: false,
@@ -164,18 +173,21 @@ describe('snapshot paper ownership through asynchronous capture', () => {
   it('exports a portrait picture at its own shape, through both capture passes', async () => {
     const portrait = adoptPaper(390, 704, 3);
     const drawing = { ...emptyDrawing(), paper: portrait, strokes: [pen] };
-    const request = createPngCapture().begin(drawing);
+    const request = createPngCapture().begin(drawing, () => true);
     const plan = {
       paper: portrait,
+      projection: paperProjection(portrait),
       checkpoint: null,
       strokes: [pen],
       prefix: [pen],
       needsCheckpoint: false,
     };
+    const complete = vi.spyOn(request, 'complete');
     const packet = {
       id: 1,
       request,
       kind: 'picture',
+      pixelRatio: state.pixelRatio,
       plan,
       appearance: { pageId: 'blank', theme: 'light' },
       isCurrent: () => true,
@@ -192,7 +204,8 @@ describe('snapshot paper ownership through asynchronous capture', () => {
     expect(state.captures[1].options).toEqual(grid);
     expect(state.captures[1]).toMatchObject({ ...grid, viewBox: '0 0 567 1024' });
     await act(async () => state.captures[1].callback('portrait-picture'));
-    await expect(request.promise).resolves.toBe('portrait-picture');
+    await expect(request.promise).resolves.toMatchObject({ base64: 'portrait-picture' });
+    expect(complete).toHaveBeenCalledExactlyOnceWith('portrait-picture', grid);
     expect(state.composed).toEqual([]);
   });
 });
@@ -204,12 +217,20 @@ describe('the saved picture', () => {
 
   async function exportPicture(paper, theme = 'light') {
     const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
-    const request = createPngCapture().begin(drawing);
+    const request = createPngCapture().begin(drawing, () => true);
     const packet = {
       id: 1,
       request,
       kind: 'export',
-      plan: { paper, checkpoint: null, strokes: [pen], prefix: [pen], needsCheckpoint: false },
+      pixelRatio: state.pixelRatio,
+      plan: {
+        paper,
+        projection: paperProjection(paper),
+        checkpoint: null,
+        strokes: [pen],
+        prefix: [pen],
+        needsCheckpoint: false,
+      },
       appearance: { pageId: 'blank', theme },
       isCurrent: () => true,
     };
@@ -238,7 +259,7 @@ describe('the saved picture', () => {
       await act(async () => state.captures[0].callback('ink'));
       await finishOutput('ink-and-outline');
       expect(state.captures[1].options).toEqual(grid);
-      await expect(request.promise).resolves.toBe('composed:ink-and-outline');
+      await expect(request.promise).resolves.toMatchObject({ base64: 'composed:ink-and-outline' });
       expect(state.composed).toEqual([
         { layer: 'ink-and-outline', picture: { size: grid, scale: 2, paper } },
       ]);
@@ -253,7 +274,7 @@ describe('the saved picture', () => {
     await act(async () => state.captures[0].callback('ink'));
     await finishOutput('screen-scale-layer');
     expect(state.captures[1].options).toEqual(sheet);
-    await expect(request.promise).resolves.toBe('composed:screen-scale-layer');
+    await expect(request.promise).resolves.toMatchObject({ base64: 'composed:screen-scale-layer' });
     expect(state.composed[0].picture).toMatchObject({
       size: { width: 1170, height: 2307 },
       scale: 3,
@@ -273,7 +294,7 @@ describe('the saved picture', () => {
     );
     await finishOutput('android-layer');
     expect(state.captures[1].options).toEqual(grid);
-    await expect(request.promise).resolves.toBe('composed:android-layer');
+    await expect(request.promise).resolves.toMatchObject({ base64: 'composed:android-layer' });
     expect(state.composed[0].picture).toMatchObject({ size: grid, scale: 2.625 });
   });
 });

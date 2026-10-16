@@ -103,10 +103,12 @@ it('cancels a same-event capture before its committed render when the command le
     const surface = owner.surface.current;
     surface.finishInput();
     const release = surface.lockInput();
-    failure = surface.exportPng(owner.currentDrawing()).catch((error) => error.message);
+    failure = surface.exportPng(owner.currentDrawing());
     release();
   });
-  expect(await failure).toContain('changed');
+  const cancelled = await failure;
+  expect(cancelled.base64).toBeNull();
+  expect(cancelled.isCurrent()).toBe(false);
   await settle();
   expect(sdk.captures).toHaveLength(0);
   await send('start', event([touch(1, 50, 60, 300)]));

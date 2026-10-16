@@ -4,17 +4,17 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
 import { bundledFill } from './bundledBookAssets';
 import { isFarmPageId } from './bundledBooks';
-import { artOrientation, paperSize } from './paperSpace';
+import { artOrientation, paperBounds } from './paperSpace';
 import { useInkAppearance } from './InkAppearance';
 import type { InkPlan } from './checkpoints';
 
 export function useBundledFillReadiness(
-  plan: Pick<InkPlan, 'paper' | 'strokes'>,
+  plan: Pick<InkPlan, 'paper' | 'strokes' | 'projection'>,
   onError: (error: unknown) => void
 ) {
   const { pageId, theme } = useInkAppearance();
   const offlineArtwork = useContext(OfflineArtworkScope);
-  const size = paperSize(plan.paper);
+  const size = paperBounds(plan.projection);
   const fill = isOfflinePageId(pageId)
     ? offlineArtwork[pageId]?.[artOrientation(size)][theme].fill
     : isFarmPageId(pageId)

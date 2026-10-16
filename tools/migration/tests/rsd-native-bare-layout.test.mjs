@@ -15,6 +15,7 @@ function layoutElement(seen, bareGlass, paper = adoptPaper(1000, 700, 1), depart
     NativeDrawingLayout,
     {
       bareGlass,
+      paperPresentations: (seen.paperPresentations ??= new WeakMap()),
       paper,
       empty: false,
       departingPaper,

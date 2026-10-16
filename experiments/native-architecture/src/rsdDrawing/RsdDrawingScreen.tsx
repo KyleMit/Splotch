@@ -353,13 +353,14 @@ function RsdDrawingContent({
               />
             }
           >
-            {(frame, space) => (
+            {(frame, space, projection) => (
               <RsdPaperSlot
                 screen={screen}
                 sound={sound}
                 ai={product.ai}
                 menuOpen={paperBlocked}
                 frame={frame}
+                projection={projection}
                 space={space}
               />
             )}

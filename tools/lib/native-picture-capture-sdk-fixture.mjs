@@ -21,6 +21,10 @@ export function nativeCaptureSdk(state, crayonTilePx) {
   return {
     useColorScheme: () => state.scheme,
     Platform: state.platform,
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: state.pixelRatio ?? 1, fontScale: 1 }),
+      addEventListener: () => ({ remove() {} }),
+    },
     PixelRatio: { get: () => state.pixelRatio ?? 1 },
     AccessibilityInfo: createAccessibilityInfoFixture(),
     Image: (props) => {

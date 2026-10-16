@@ -278,6 +278,7 @@ it('uses the secondary chrome contact for the dialog opener dead zone', async ()
     {
       bareGlass: null,
       paper: UNADOPTED_PAPER,
+      paperPresentations: new WeakMap(),
       empty: true,
       departingPaper: null,
       palette: () => null,

@@ -92,7 +92,11 @@ export function useCaller(drawing = emptyDrawing(), overrides = {}) {
             'light',
             records.dimensions.scale
           ).size;
-          return rgbaPng(width, height, 255).toString('base64');
+          return {
+            base64: rgbaPng(width, height, 255).toString('base64'),
+            size: { width, height },
+            isCurrent: () => true,
+          };
         },
       },
     },

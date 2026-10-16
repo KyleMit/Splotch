@@ -73,17 +73,19 @@ describe('owned ink observation request', () => {
     await expect(f.controller.begin(() => true).observe('png')).rejects.toThrow('corrupt tail');
     expect(f.dispose).toHaveBeenCalledOnce();
   });
-  it('wires actual Clear preparation before capture and guards history/owner before commit', () => {
+  it('binds Clear observation to the actual captured grid and guards history/owner before commit', () => {
     const caller = readFileSync(
       new URL('../../experiments/native-architecture/src/useDrawingScreen.ts', import.meta.url),
       'utf8'
     );
     const clear = caller.slice(caller.indexOf('async function clearCurrentPicture'));
     const observedClear = clear.slice(clear.indexOf('await runCommand(async () => {'));
-    const prepare = observedClear.indexOf('observations.current?.begin(isCurrent,');
+    const prepare = observedClear.indexOf('observations.current?.begin(');
     const capture = observedClear.indexOf('await owner?.captureInk');
     expect(prepare).toBeGreaterThanOrEqual(0);
-    expect(capture).toBeGreaterThan(prepare);
+    expect(prepare).toBeGreaterThan(capture);
+    expect(observedClear).toContain('pixels.size');
+    expect(observedClear).toContain('await observation.observe(pixels.base64)');
     expect(caller).toContain('historyRef.current === snapshot');
     expect(caller).toContain('surface.current === owner');
     expect(caller).toMatch(/mounted\.current\s*&&\s*command\.current\s*&&\s*!blocked\(\)/);

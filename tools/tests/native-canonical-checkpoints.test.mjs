@@ -1,4 +1,8 @@
 import { LEGACY_PAPER } from './native-paper-fixtures.mjs';
+import {
+  adoptPaper,
+  paperProjection,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { describe, expect, it } from 'vitest';
 import {
   checkpointMatches,
@@ -7,6 +11,10 @@ import {
   preparationMatches,
   preparationWitnessed,
 } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
+
+function canonicalPlan(strokes, cached) {
+  return planInk(strokes, cached, LEGACY_PAPER, paperProjection(LEGACY_PAPER));
+}
 
 function fixture() {
   const marker = { brush: 'marker', width: 22, color: 'Purple', points: [{ x: 200, y: 120 }] };
@@ -26,16 +34,17 @@ describe('canonical boundaries and provisional selection ownership', () => {
     const { marker, crayon } = fixture();
     const second = { ...crayon, seed: 21 };
     const strokes = [marker, crayon, second];
-    const first = planInk(strokes, null);
+    const first = canonicalPlan(strokes, null);
     expect(first.prefix).toEqual([marker]);
     expect(first.needsCheckpoint).toBe(true);
     const checkpoint = {
       id: 1,
       strokes: first.prefix,
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'model-only fixture',
     };
-    const ready = planInk(strokes, checkpoint);
+    const ready = canonicalPlan(strokes, checkpoint);
     expect(ready.strokes).toEqual([crayon, second]);
     expect(ready.needsCheckpoint).toBe(false);
   });
@@ -47,10 +56,11 @@ describe('canonical boundaries and provisional selection ownership', () => {
       id: 1,
       strokes: [marker, crayon],
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'noncanonical fixture',
     };
     expect(checkpointMatches([marker, crayon, second], cache)).toBe(false);
-    expect(planInk([marker, crayon, second], cache).checkpoint).toBeNull();
+    expect(canonicalPlan([marker, crayon, second], cache).checkpoint).toBeNull();
     const valid = { ...cache, strokes: [marker] };
     expect(checkpointMatches([marker, crayon], valid)).toBe(true);
     expect(checkpointMatches([marker], valid)).toBe(false);
@@ -62,10 +72,17 @@ describe('canonical boundaries and provisional selection ownership', () => {
       id: 1,
       strokes: [marker],
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'canonical predecessor',
     };
     const preparation = {
-      checkpoint: { id: 2, strokes: [marker, crayon], paper: LEGACY_PAPER, base64: 'prepared' },
+      checkpoint: {
+        id: 2,
+        strokes: [marker, crayon],
+        paper: LEGACY_PAPER,
+        projection: paperProjection(LEGACY_PAPER),
+        base64: 'prepared',
+      },
       predecessor,
       brush: 'eraser',
     };
@@ -87,17 +104,19 @@ describe('canonical boundaries and provisional selection ownership', () => {
       id: 1,
       strokes: [crayon],
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'unused eraser selection',
     };
-    expect(planInk([crayon, { ...crayon, seed: 21 }], speculative).checkpoint).toBeNull();
+    expect(canonicalPlan([crayon, { ...crayon, seed: 21 }], speculative).checkpoint).toBeNull();
     const unusedCrayon = {
       id: 2,
       strokes: [marker],
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'unused crayon selection',
     };
     const secondMarker = { ...marker, color: 'Blue' };
-    const replay = planInk([marker, secondMarker, crayon, erase], unusedCrayon);
+    const replay = canonicalPlan([marker, secondMarker, crayon, erase], unusedCrayon);
     expect(replay.checkpoint).toBeNull();
     expect(replay.prefix).toEqual([marker, secondMarker]);
   });
@@ -108,17 +127,38 @@ describe('canonical boundaries and provisional selection ownership', () => {
     let cached = null;
     const captured = [];
     for (let index = 0; index < strokes.length; index += 1) {
-      const plan = planInk(strokes, cached);
+      const plan = canonicalPlan(strokes, cached);
       if (!plan.needsCheckpoint) break;
       captured.push(plan.prefix.length);
       cached = {
         id: index + 1,
         strokes: plan.prefix,
         paper: LEGACY_PAPER,
+        projection: paperProjection(LEGACY_PAPER),
         base64: 'planner fixture',
       };
     }
     expect(captured).toEqual([1, 2, 4, 5]);
-    expect(planInk(strokes, cached).strokes).toEqual([crayon]);
+    expect(canonicalPlan(strokes, cached).strokes).toEqual([crayon]);
   });
+});
+
+it('rejects a checkpoint from an earlier extent without changing the semantic strokes', () => {
+  const paper = adoptPaper(400, 800, 2);
+  const { marker, crayon } = fixture();
+  const strokes = [marker, crayon];
+  const original = paperProjection(paper);
+  const resized = paperProjection(paper, { width: 800, height: 1000 });
+  const checkpoint = {
+    id: 1,
+    paper,
+    projection: original,
+    strokes: [marker],
+    base64: 'original extent',
+  };
+  expect(planInk(strokes, checkpoint, paper, original).checkpoint).toBe(checkpoint);
+  const replay = planInk(strokes, checkpoint, paper, resized);
+  expect(replay.checkpoint).toBeNull();
+  expect(replay.prefix[0]).toBe(marker);
+  expect(replay.projection).toBe(resized);
 });

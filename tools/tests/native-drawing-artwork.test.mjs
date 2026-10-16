@@ -1,3 +1,7 @@
+import {
+  paperProjection,
+  drawingPaper,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import {
@@ -50,6 +54,10 @@ vi.mock('react-native', () => {
   });
   return {
     PixelRatio: { get: () => 1 },
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+      addEventListener: () => ({ remove() {} }),
+    },
     AccessibilityInfo: createAccessibilityInfoFixture(),
     useColorScheme: () => responder.scheme,
     Platform: { OS: 'ios' },
@@ -177,6 +185,7 @@ function mount(snapshot = drawing) {
         DrawingAppearanceProvider,
         { preference: 'system' },
         createElement(DrawingSurface, {
+          projection: paperProjection(drawingPaper(snapshot)),
           drawing: snapshot,
           currentDrawing: () => snapshot,
           onPreparingChange: (busy) => {

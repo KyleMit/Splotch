@@ -33,7 +33,7 @@ export function SkiaUndoGhost({
   const ghost = useMemo(() => {
     if (!feedback || !previous || !size || previous.strokes !== feedback.before.strokes)
       return null;
-    const bounds = undoGhostBounds(feedback, size, PixelRatio.get());
+    const bounds = undoGhostBounds(feedback, size, PixelRatio.get(), previous.context.projection);
     if (!bounds) return null;
     const image = makeSkiaUndoGhost({
       before: previous.image,
