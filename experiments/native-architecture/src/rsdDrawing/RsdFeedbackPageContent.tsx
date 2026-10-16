@@ -7,7 +7,7 @@ import { RsdFeedbackSection } from './RsdFeedbackSection';
 import { RsdStatusMessage } from './RsdStatusMessage';
 import { RsdStepNumber } from './RsdStepNumber';
 import { styles as controls } from './controls';
-import { colors, dimensions } from './tokens.css';
+import { colors, dimensions, fonts } from './tokens.css';
 
 const RAIL_MIN_WIDTH_PX = 1024;
 const FORM_BASIS_PX = 380;
@@ -71,11 +71,18 @@ const styles = css.create({
     flexShrink: 1,
     minWidth: 0,
     fontSize: dimensions.fontSizeSm,
+    fontFamily: fonts.mediumFamily,
+    fontWeight: fonts.mediumWeight,
     lineHeight: STEP_LINE_HEIGHT,
     color: colors.text,
   },
   done: { display: 'flex', flexDirection: 'column', gap: dimensions.space6 },
-  link: { color: colors.brandText, textDecorationLine: 'underline' },
+  link: {
+    color: colors.brandText,
+    textDecorationLine: 'underline',
+    fontFamily: fonts.semiboldFamily,
+    fontWeight: fonts.semiboldWeight,
+  },
 });
 
 export function RsdFeedbackPageContent({
