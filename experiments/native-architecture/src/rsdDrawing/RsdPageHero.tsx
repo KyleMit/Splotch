@@ -1,10 +1,11 @@
-import { useId, useState, type RefObject } from 'react';
+import { useId, useRef, useState, type RefObject } from 'react';
 import { css, html } from 'react-strict-dom';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { DRAWING_THEMES } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
 import { RsdIcon } from './RsdIcon';
 import { RsdPressable } from './RsdPressable';
+import { usePageTypography } from './pageTypography';
 import { styles as controlStyles } from './controls';
 import { displayFontSize } from './displayType';
 import { colors, dimensions, fonts, motion } from './tokens.css';
@@ -121,6 +122,8 @@ export function RsdPageHero({
   const ledeId = useId();
   const [ledeOpen, setLedeOpen] = useState(false);
   const reduced = useReduceMotion();
+  const ledeRef = useRef<HTMLParagraphElement>(null);
+  usePageTypography(titleRef, ledeRef);
   return (
     <html.div
       style={[styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide']), short && styles.shortHero]}
@@ -170,6 +173,7 @@ export function RsdPageHero({
           </RsdPressable>
         ) : null}
         <html.p
+          ref={ledeRef}
           id={ledeId}
           style={[
             styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide']),

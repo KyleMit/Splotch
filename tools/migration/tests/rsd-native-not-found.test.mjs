@@ -17,12 +17,17 @@ import {
   RsdPageSheet,
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 
-import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
+import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
 import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8').replace(/\s+/g, ' ');
+const SHORT_NOT_FOUND_MARK_PX = Number(
+  read('web/src/lib/components/page/NotFoundPage.svelte')
+    .split(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`)[1]
+    .match(/width: (\d+)px/)[1]
+);
 
 describe("the web export's not-found page", () => {
   it('keeps the copy and literals NotFoundPage and PageShell declare', () => {
@@ -30,7 +35,12 @@ describe("the web export's not-found page", () => {
     expect(page).toContain(`<title>${NOT_FOUND_COPY.documentTitle}</title>`);
     expect(page).toContain(`title="${NOT_FOUND_COPY.title}"`);
     expect(page).toContain(`{#snippet lede()}${NOT_FOUND_COPY.lede}{/snippet}`);
-    expect(page).toContain(`>${NOT_FOUND_COPY.startDrawing}</Button>`);
+    for (const label of [
+      NOT_FOUND_COPY.startDrawing,
+      NOT_FOUND_COPY.changelog,
+      NOT_FOUND_COPY.privacy,
+    ])
+      expect(page).toContain(`>${label}</Button>`);
     expect(page).toContain(
       `width: ${NOT_FOUND_MARK_PX}px; height: ${NOT_FOUND_MARK_PX}px; transform: rotate(${NOT_FOUND_MARK_TURN_DEG}deg);`
     );
@@ -316,4 +326,54 @@ it('keeps the not-found introduction expanded in the compact page shell', async 
   expect(toggle).toBeUndefined();
   expect(lede.textContent).toBe(NOT_FOUND_COPY.lede);
   expect(sheetStyle(lede).display).not.toBe('none');
+});
+
+it.each([
+  { height: SHORT_PAGE_HEIGHT_PX, mark: SHORT_NOT_FOUND_MARK_PX, gap: 'space4' },
+  { height: SHORT_PAGE_HEIGHT_PX + 1, mark: NOT_FOUND_MARK_PX, gap: 'space6' },
+])(
+  'uses shipping’s not-found mascot and body gap at height $height',
+  async ({ height, mark, gap }) => {
+    const shipping = read('web/src/lib/components/page/NotFoundPage.svelte');
+    const compact = shipping.slice(
+      shipping.lastIndexOf(`@media (max-height: ${SHORT_PAGE_HEIGHT_PX}px)`)
+    );
+    expect(compact).toContain(
+      `width: ${SHORT_NOT_FOUND_MARK_PX}px; height: ${SHORT_NOT_FOUND_MARK_PX}px;`
+    );
+    expect(compact).toContain('gap: var(--space-4);');
+    records.dimensions = { width: 844, height, scale: 1, fontScale: 1 };
+    records.journalHostProps = true;
+    await mount(createElement(RsdNotFoundPage));
+    const body = host.querySelector('[data-testid="information-page-body"]').firstElementChild;
+    const mascot = body.firstElementChild.querySelector('svg');
+    expect(mascot.getAttribute('width')).toBe(String(mark));
+    expect(mascot.getAttribute('height')).toBe(String(mark));
+    expect(sheetStyle(body).gap).toBe(Number.parseFloat(scale[gap]));
+  }
+);
+
+it.each([
+  { width: PHONE_MAX_WIDTH_PX, basis: '100%' },
+  { width: PHONE_MAX_WIDTH_PX + 1, basis: undefined },
+])('retains the shipping not-found action row at width $width', async ({ width, basis }) => {
+  records.dimensions = { width, height: 874, scale: 1, fontScale: 1 };
+  records.journalHostProps = true;
+  await mount(createElement(RsdNotFoundPage));
+  const actions = host.querySelector('[data-testid="information-page-body"] [role="list"]');
+  expect([...actions.children].map((node) => node.textContent)).toEqual([
+    NOT_FOUND_COPY.startDrawing,
+    NOT_FOUND_COPY.changelog,
+    NOT_FOUND_COPY.privacy,
+  ]);
+  expect(sheetStyle(actions)).toMatchObject({
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Number.parseFloat(scale.space3),
+  });
+  expect(sheetStyle(actions.firstElementChild).flexBasis).toBe(basis);
+  expect(host.querySelector('[aria-label="Splotch pages"]')).toBeNull();
+  const title = pageParts().title;
+  expect(title.style.getPropertyValue('text-wrap')).toBe('');
+  expect(pageParts().lede.style.maxWidth).toBe('');
 });

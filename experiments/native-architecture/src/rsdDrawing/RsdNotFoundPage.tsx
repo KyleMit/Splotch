@@ -18,6 +18,9 @@ import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { landFocus, retainFocus } from './landFocus';
 import { RsdButton } from './RsdButton';
 import { RsdPageHero } from './RsdPageHero';
+import { RsdNotFoundFooter } from './notFoundFooter';
+import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
+export { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { RsdPressable } from './RsdPressable';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { blobXml } from './blob';
@@ -34,6 +37,8 @@ export const NOT_FOUND_COPY = {
   title: 'This page wandered off',
   lede: 'The link may be old. These are still here:',
   startDrawing: 'Start drawing',
+  changelog: 'Changelog',
+  privacy: 'Privacy',
   wordmark: 'Splotch',
 } as const;
 export const CRAYON_LABELS: readonly PaletteLabel[] = [
@@ -46,11 +51,11 @@ export const CRAYON_LABELS: readonly PaletteLabel[] = [
   'Pink',
 ];
 export const PAGE_SHEET_MAX_WIDTH_PX = 760;
-export const PAGE_FRAMED_MAX_WIDTH_PX = 920;
 export const PAGE_GUTTER = { minPx: 20, viewportWidthPercent: 5, maxPx: 34 } as const;
 export const BACK_BLOB_PX = 44;
 export const BACK_ICON_PX = 24;
 export const NOT_FOUND_MARK_PX = 80;
+const SHORT_NOT_FOUND_MARK_PX = 56;
 export const NOT_FOUND_MARK_TURN_DEG = -8;
 const PERCENT = 100;
 const SHORT_PAGE_TOP_PX = 12;
@@ -160,13 +165,23 @@ const styles = css.create({
     letterSpacing,
     textTransform: 'uppercase',
   }),
-  body: {
+  body: (gap: string) => ({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: dimensions.space6,
+    gap,
     paddingBottom: dimensions.space8,
+  }),
+  links: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: dimensions.space3,
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
   },
+  firstLink: { flexBasis: '100%' },
   mark: { transform: `rotate(${NOT_FOUND_MARK_TURN_DEG}deg)` },
 });
 
@@ -360,6 +375,8 @@ function PageSheetFocus({
 }
 
 export function RsdNotFoundPage() {
+  const window = useWindowDimensions();
+  const short = window.height <= SHORT_PAGE_HEIGHT_PX;
   useEffect(() => {
     setDocumentTitle(NOT_FOUND_COPY.documentTitle);
   }, []);
@@ -371,14 +388,29 @@ export function RsdNotFoundPage() {
           lede={NOT_FOUND_COPY.lede}
           collapsibleLede={false}
         >
-          <html.div style={styles.body}>
+          <html.div style={styles.body(short ? dimensions.space4 : dimensions.space6)}>
             <html.div aria-hidden style={styles.mark}>
-              <RsdSplotchyIcon size={NOT_FOUND_MARK_PX} />
+              <RsdSplotchyIcon size={short ? SHORT_NOT_FOUND_MARK_PX : NOT_FOUND_MARK_PX} />
             </html.div>
-            <RsdButton variant="brand" size="lg" onPress={startDrawing}>
-              {NOT_FOUND_COPY.startDrawing}
-            </RsdButton>
+            <html.ul role="list" style={styles.links}>
+              <html.li style={window.width <= PHONE_MAX_WIDTH_PX && styles.firstLink}>
+                <RsdButton variant="brand" size="lg" onPress={startDrawing}>
+                  {NOT_FOUND_COPY.startDrawing}
+                </RsdButton>
+              </html.li>
+              <html.li>
+                <RsdButton variant="wash" size="lg" onPress={() => openAppPage('changelog')}>
+                  {NOT_FOUND_COPY.changelog}
+                </RsdButton>
+              </html.li>
+              <html.li>
+                <RsdButton variant="wash" size="lg" onPress={() => openAppPage('privacy')}>
+                  {NOT_FOUND_COPY.privacy}
+                </RsdButton>
+              </html.li>
+            </html.ul>
           </html.div>
+          <RsdNotFoundFooter />
         </RsdPageSheet>
       </SafeAreaProvider>
     </DrawingAppearanceProvider>

@@ -93,7 +93,7 @@ export function RsdInformationFooter({
   page,
   onExternal,
 }: {
-  page: Exclude<AppPage, 'drawing'>;
+  page: Exclude<AppPage, 'drawing'> | null;
   onExternal: (href: string) => void;
 }) {
   const theme = useDrawingTheme();

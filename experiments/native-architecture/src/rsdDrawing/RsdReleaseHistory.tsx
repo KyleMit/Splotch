@@ -19,7 +19,7 @@ import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { styles as controls } from './controls';
 import { useReleaseHistory } from './useReleaseHistory';
 import { RsdTextLink } from './RsdTextLink';
-import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
+import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { colors, dimensions, fonts } from './tokens.css';
 
 const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
