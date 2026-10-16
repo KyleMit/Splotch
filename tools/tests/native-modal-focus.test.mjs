@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
-import { act, createElement, createRef } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { act, createElement, createRef, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ModalShell } from '../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
 import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import { RsdConfirmCard } from '../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
+import { RsdButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
+import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
+import { useConfirmFocus } from '../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.web.ts';
 import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
@@ -32,6 +38,24 @@ vi.mock('../../experiments/native-architecture/src/platform/ScrollViewContent.we
   });
   return { ScrollView: (await import('react-native-web')).ScrollView };
 });
+const deviceChunk = vi.hoisted(() => ({ release: null }));
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptInContent.tsx',
+  async (importOriginal) => {
+    await new Promise((resolve) => {
+      deviceChunk.release = resolve;
+    });
+    return importOriginal();
+  }
+);
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.web.tsx')
+);
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.ts',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.web.ts')
+);
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/landFocus.ts',
   () => import('../../experiments/native-architecture/src/rsdDrawing/landFocus.web.ts')
@@ -59,7 +83,7 @@ vi.mock('react-native-svg', () => ({
 }));
 vi.mock('react-strict-dom', () => ({
   html: Object.fromEntries(
-    ['div', 'span', 'button', 'header', 'h1', 'h2', 'p', 'main'].map((tag) => [
+    ['div', 'span', 'button', 'header', 'h1', 'h2', 'h4', 'p', 'main', 'section'].map((tag) => [
       tag,
       ({ style: _style, 'data-testid': testId, ...props }) =>
         createElement(tag, { ...props, 'data-testid': testId }),
@@ -80,12 +104,14 @@ vi.mock('react-strict-dom', () => ({
 
 // happy-dom lets focus() land on any element; a browser only moves focus to a focusable area. React
 // Native Web's focus trap walks the dialog calling focus() until one sticks, so the browser rule
-// decides where it lands.
+// decides where it lands. Chromium also focuses an overflowing modal-body scroll container.
 const NATIVELY_FOCUSABLE = 'button, input, select, textarea, a[href]';
 const domFocus = HTMLElement.prototype.focus;
 function focusLikeABrowser(options) {
   const focusable =
-    this.hasAttribute('tabindex') || (this.matches(NATIVELY_FOCUSABLE) && !this.disabled);
+    this.hasAttribute('tabindex') ||
+    this.matches('[data-testid="modal-body"]') ||
+    (this.matches(NATIVELY_FOCUSABLE) && !this.disabled);
   if (focusable) domFocus.call(this, options);
 }
 
@@ -103,6 +129,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   scrollChunk.release?.();
+  deviceChunk.release?.();
   await act(async () => root.unmount());
   document.body.replaceChildren();
   HTMLElement.prototype.focus = domFocus;
@@ -194,4 +221,212 @@ it('returns focus to the opener when the dialog closes', async () => {
   const opener = await open(undefined);
   await act(async () => root.render(null));
   expect(document.activeElement).toBe(opener);
+});
+
+function confirmation(ready, children, visible = true) {
+  return createElement(
+    ModalShell,
+    { visible, label: 'Report this picture', size: 'confirm', onClose() {}, header: null },
+    ready
+      ? createElement(
+          RsdConfirmCard,
+          {
+            title: 'Report this picture',
+            copy: 'The AI picture and drawing go to a grown-up at Splotch.',
+            actions: [
+              createElement(RsdButton, { key: 'cancel', onPress() {} }, 'Cancel'),
+              createElement(RsdButton, { key: 'send', onPress() {} }, 'Send report'),
+            ],
+          },
+          children
+        )
+      : null
+  );
+}
+
+async function emptyConfirmation() {
+  await act(async () => root.render(confirmation(false)));
+  await act(async () => vi.waitFor(() => expect(scrollChunk.release).toBeTypeOf('function')));
+  await act(async () => scrollChunk.release());
+  await act(async () =>
+    vi.waitFor(() => expect(document.querySelector('[data-testid="modal-body"]')).not.toBeNull())
+  );
+}
+
+it('lands the shipping first choice when the confirmation body arrives after the web modal opens', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../web/src/lib/components/AiImageReport.svelte'),
+    'utf8'
+  );
+  const cancelAt = shipping.indexOf('>Cancel</Button>');
+  const sendAt = shipping.indexOf("{sending ? 'Sending…' : 'Send report'}");
+  expect(cancelAt).toBeGreaterThan(-1);
+  expect(sendAt).toBeGreaterThan(cancelAt);
+  expect(shipping).not.toContain('autofocus');
+  const opener = document.createElement('button');
+  opener.textContent = 'Report this picture';
+  document.body.append(opener);
+  opener.focus();
+  await emptyConfirmation();
+  expect(document.querySelector('[role="dialog"] button')).toBeNull();
+  expect(document.activeElement).not.toBe(opener);
+  await act(async () => root.render(confirmation(true)));
+  const [cancel, send] = document.querySelectorAll('[role="dialog"] button');
+  expect(cancel.textContent).toBe('Cancel');
+  expect(document.activeElement).toBe(cancel);
+  send.focus();
+  await act(async () => root.render(confirmation(true, createElement('p', null, 'Preview ready'))));
+  expect(document.activeElement).toBe(send);
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+});
+
+it('keeps the opener when a warm confirmation already has its controls at initial mount', async () => {
+  const opener = document.createElement('button');
+  opener.textContent = 'Report this picture';
+  document.body.append(opener);
+  opener.focus();
+  await act(async () => root.render(confirmation(true)));
+  expect(document.activeElement.textContent).toBe('Cancel');
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+});
+
+it('returns focus after a retained confirmation retires and lands its first choice on reopening', async () => {
+  const opener = document.createElement('button');
+  opener.textContent = 'Report this picture';
+  document.body.append(opener);
+  opener.focus();
+  await emptyConfirmation();
+  await act(async () => root.render(confirmation(true)));
+  expect(document.activeElement.textContent).toBe('Cancel');
+  const [, send] = document.querySelectorAll('[role="dialog"] button');
+  expect(send.textContent).toBe('Send report');
+  send.focus();
+  await act(async () => root.render(confirmation(true, null, false)));
+  await act(async () =>
+    vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+  );
+  expect(document.activeElement).toBe(opener);
+  await act(async () => root.render(confirmation(true)));
+  expect(document.activeElement.textContent).toBe('Cancel');
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+});
+
+it('loads the actual problem confirmation with its device opt-in before landing focus', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../web/src/lib/components/AiImageReport.svelte'),
+    'utf8'
+  );
+  const deviceAt = shipping.indexOf('mode="device-only"');
+  const actionsAt = shipping.indexOf('class="ai-report-confirm-actions"');
+  expect(deviceAt).toBeGreaterThan(-1);
+  expect(actionsAt).toBeGreaterThan(deviceAt);
+  await emptyConfirmation();
+  await act(async () => root.render(null));
+  const ProblemConfirmation = lazySurface(() =>
+    import('../../experiments/native-architecture/src/rsdDrawing/RsdAiProblemReport.tsx').then(
+      (module) => module.RsdAiProblemConfirm
+    )
+  );
+  const opener = document.createElement('button');
+  opener.textContent = 'Report a problem';
+  document.body.append(opener);
+  opener.focus();
+  const owner = { cancelProblemReport() {}, setProblemDevice() {}, sendProblemReport() {} };
+  const problem = { phase: 'confirm', rows: [], includeDevice: false, deviceRows: [] };
+  await act(async () => root.render(createElement(ProblemConfirmation, { owner, problem })));
+  await act(async () => vi.waitFor(() => expect(deviceChunk.release).toBeTypeOf('function')));
+  const dialogBeforeDevice = document.querySelector('[role="dialog"]');
+  const focusBeforeDevice = document.activeElement;
+  await act(async () => deviceChunk.release());
+  await act(async () =>
+    vi.waitFor(() => expect(document.querySelector('[role="checkbox"]')).not.toBeNull())
+  );
+  expect(document.activeElement.getAttribute('role')).toBe('checkbox');
+  expect(document.activeElement.getAttribute('aria-checked')).toBe('false');
+  expect(dialogBeforeDevice).toBeNull();
+  expect(focusBeforeDevice).toBe(opener);
+  const send = [...document.querySelectorAll('[role="dialog"] button')].find(
+    (button) => button.textContent === 'Send report'
+  );
+  expect(send).toBeDefined();
+  send.focus();
+  await act(async () =>
+    root.render(
+      createElement(ProblemConfirmation, {
+        owner,
+        problem: { ...problem, rows: [{ label: 'Attempts', value: '1 in a row' }] },
+      })
+    )
+  );
+  expect(document.activeElement).toBe(send);
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+});
+
+function RetainedConfirmation({ active }) {
+  const card = useRef(null);
+  useConfirmFocus(card, active, null);
+  return createElement(
+    'div',
+    { ref: card },
+    createElement(RsdConfirmCard, {
+      title: 'Leave Splotch?',
+      copy: 'This drawing stays in the background.',
+      actions: [
+        createElement(RsdButton, { key: 'stay', onPress() {} }, 'Keep drawing'),
+        createElement(RsdButton, { key: 'leave', onPress() {} }, 'Leave'),
+      ],
+    })
+  );
+}
+
+const retainedConfirmation = (active) => createElement(RetainedConfirmation, { active });
+
+it('lands confirmation focus only when its dialog is active, including a retained reopening', async () => {
+  const opener = document.createElement('button');
+  document.body.append(opener);
+  opener.focus();
+  await act(async () => root.render(retainedConfirmation(false)));
+  expect(document.activeElement).toBe(opener);
+  await act(async () => root.render(retainedConfirmation(true)));
+  const [stay, leave] = host.querySelectorAll('button');
+  expect(document.activeElement).toBe(stay);
+  leave.focus();
+  await act(async () => root.render(retainedConfirmation(false)));
+  expect(document.activeElement).toBe(leave);
+  opener.focus();
+  await act(async () => root.render(retainedConfirmation(true)));
+  expect(document.activeElement).toBe(stay);
+});
+
+it('cancels pending confirmation focus when its retained dialog becomes inactive', async () => {
+  const opener = document.createElement('button');
+  document.body.append(opener);
+  opener.focus();
+  act(() => root.render(retainedConfirmation(true)));
+  act(() => root.render(retainedConfirmation(false)));
+  await act(async () => {});
+  expect(document.activeElement).toBe(opener);
+});
+
+it('preserves a control that already took focus while the confirmation body mounted', async () => {
+  await act(async () =>
+    root.render(
+      confirmation(
+        true,
+        createElement(
+          'button',
+          {
+            type: 'button',
+            autoFocus: true,
+          },
+          'Preview ready'
+        )
+      )
+    )
+  );
+  expect(document.activeElement.textContent).toBe('Preview ready');
 });

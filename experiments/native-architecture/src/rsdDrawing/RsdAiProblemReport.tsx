@@ -2,7 +2,7 @@ import { css, html } from 'react-strict-dom';
 import type { NativeAiOwner } from '../ai/generation';
 import { AI_PROBLEM_REPORT_COPY, type AiProblemState } from '../ai/problemReport';
 import { AI_REPORT_COPY } from '../ai/aiResultCopy';
-import { DeviceCheckbox, DeviceDetails } from './RsdDeviceOptIn';
+import { DeviceCheckbox, DeviceDetails } from './RsdDeviceOptInContent';
 import { ModalShell } from './ModalShell';
 import { RsdButton } from './RsdButton';
 import { RsdConfirmCard } from './RsdConfirmCard';

@@ -152,6 +152,51 @@ test.describe('AI picture report', () => {
     });
   }
 
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`a short-landscape picture confirmation scrolls to its first choice in ${colorScheme}`, async ({
+      page,
+    }) => {
+      const viewport = { width: 844, height: 390 };
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      await page.addInitScript(
+        (key) => localStorage.setItem(key, 'never'),
+        STORAGE_KEYS.parentalGateImageReportMode
+      );
+      await revealAiResult(page);
+      const report = page.getByRole('button', { name: 'Report this picture' });
+      for (const opening of ['initial', 'reopened']) {
+        await report.focus();
+        await page.keyboard.press('Enter');
+        const confirm = await landedReportConfirm(page);
+        const cancel = confirm.getByRole('button', { name: 'Cancel', exact: true });
+        await expect(cancel).toBeFocused();
+        const geometry = await confirm.evaluate((dialog) => {
+          const frame = dialog.getBoundingClientRect();
+          const heading = dialog.querySelector('h3')!.getBoundingClientRect();
+          const firstChoice = dialog.querySelector('button')!.getBoundingClientRect();
+          return {
+            top: frame.top,
+            bottom: frame.bottom,
+            scrollTop: dialog.scrollTop,
+            headingTop: heading.top,
+            choiceTop: firstChoice.top,
+            choiceBottom: firstChoice.bottom,
+          };
+        });
+        expect(geometry.top, opening).toBeGreaterThanOrEqual(0);
+        expect(geometry.bottom, opening).toBeLessThanOrEqual(viewport.height);
+        expect(geometry.scrollTop, opening).toBeGreaterThan(0);
+        expect(geometry.headingTop, opening).toBeLessThan(geometry.top);
+        expect(geometry.choiceTop, opening).toBeGreaterThanOrEqual(geometry.top);
+        expect(geometry.choiceBottom, opening).toBeLessThanOrEqual(geometry.bottom);
+        await page.keyboard.press('Escape');
+        await expect(confirm).not.toBeVisible();
+        await expect(report).toBeFocused();
+      }
+    });
+  }
+
   // Dismissal is blocked while the request is on the wire, so the deadline is
   // the only thing that can end a send that never settles. Without it the
   // topmost dialog stays open against Cancel, the backdrop, Esc and Android
