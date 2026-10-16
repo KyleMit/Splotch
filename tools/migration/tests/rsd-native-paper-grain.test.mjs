@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
 import { PaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.tsx';
+import { PaperTexture as WebPaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.web.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { RsdNotchBand } from '../../../experiments/native-architecture/src/rsdDrawing/RsdNotchBand.tsx';
@@ -61,6 +62,30 @@ it.each([1, 2, 3, 3.5])(
       flat(records.props.findLast((props) => props.testID === 'paper-texture').style)
     ).toMatchObject({ overflow: 'hidden' });
     records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };
+  }
+);
+
+it.each(['light', 'dark'])(
+  'paints web grain synchronously as an intrinsic repeating CSS background in %s',
+  async (theme) => {
+    await mount(
+      createElement(
+        DrawingAppearanceProvider,
+        { preference: theme },
+        createElement(WebPaperTexture)
+      )
+    );
+    const paper = host.querySelector('[data-testid="paper-texture"]');
+    const color = document.createElement('div');
+    color.style.backgroundColor = PAPER_THEMES[theme].paper;
+    expect(paper.style.backgroundColor).toBe(color.style.backgroundColor);
+    expect(paper.style.backgroundImage).toMatch(/handmade-paper\.webp/);
+    expect(paper.style.backgroundSize).toMatch(/^(auto|initial)$/);
+    expect(paper.style.backgroundRepeat).toMatch(/^(repeat|initial)$/);
+    expect(paper.style.backgroundPosition).toMatch(/^(0% 0%|initial)$/);
+    expect(paper.style.pointerEvents).toBe('none');
+    expect(paper.style.transform).toBe('');
+    expect(paper.querySelector('img')).toBeNull();
   }
 );
 
