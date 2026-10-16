@@ -77,3 +77,32 @@ it(
   },
   RENDER_TIMEOUT_MS
 );
+
+it(
+  'compiles the shared large button chrome onto the real not-found anchors',
+  () => {
+    const { notFoundLinks, notFoundButtons, defaultClasses, defaultLabelClasses } = render();
+    const defaults = new Set(defaultClasses.split(' '));
+    const ownClasses = (markup) =>
+      /class="([^"]*)"/
+        .exec(markup)[1]
+        .split(' ')
+        .filter((name) => !defaults.has(name))
+        .sort();
+    expect(notFoundLinks).toHaveLength(3);
+    for (const [index, href] of ['/', '/changelog', '/privacy'].entries()) {
+      const anchor = notFoundLinks[index];
+      expect(anchor).toMatch(/^<a\b/);
+      expect(anchor).toContain(`href="${href}"`);
+      expect(anchor).not.toContain('[object Object]');
+      expect(/class="([^"]*)"/.exec(anchor)[1].split(' ').length).toBeGreaterThanOrEqual(10);
+      expect(anchor).toContain('display:inline-flex');
+      expect(anchor).toContain('box-sizing:border-box');
+      expect(anchor).toContain('line-height:1.62');
+      expect(ownClasses(anchor)).toEqual(ownClasses(notFoundButtons[index]));
+      const labelClasses = /<span\b[^>]*class="([^"]*)"/.exec(notFoundButtons[index])[1];
+      expect(new Set(labelClasses.split(' '))).toEqual(new Set(defaultLabelClasses.split(' ')));
+    }
+  },
+  RENDER_TIMEOUT_MS
+);

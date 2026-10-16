@@ -9,19 +9,22 @@ import {
 import { SvgXml } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import type { BackLabel } from '../../../../web/src/lib/components/page/backLabel';
-import { PHONE_MAX_WIDTH_PX } from '../../../../web/src/lib/breakpoints';
+import { PHONE_MAX_WIDTH_PX, SHORT_PAGE_HEIGHT_PX } from '../../../../web/src/lib/breakpoints';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { paletteHex, type PaletteLabel } from '../drawing/palette';
 import { DRAWING_ON_BRAND, DRAWING_THEMES } from '../drawing/theme';
 import { bootAppearance } from '../platform/bootAppearance';
 import { openAppPage, setDocumentTitle } from '../platform/appPath';
 import { landFocus, retainFocus } from './landFocus';
-import { RsdButton } from './RsdButton';
+import { RsdNotFoundLink } from './notFoundLink';
+import { RsdPageHero } from './RsdPageHero';
+import { RsdNotFoundFooter } from './notFoundFooter';
+import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
+export { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { RsdPressable } from './RsdPressable';
 import { RsdSplotchyIcon } from './RsdSplotchyIcon';
 import { blobXml } from './blob';
 import { styles as controlStyles } from './controls';
-import { displayFontSize } from './displayType';
 import { fontTheme } from './fontTheme';
 import { useNativeIconMarkup } from './iconRegistry';
 import { colors, darkTheme, dimensions, fonts } from './tokens.css';
@@ -34,6 +37,8 @@ export const NOT_FOUND_COPY = {
   title: 'This page wandered off',
   lede: 'The link may be old. These are still here:',
   startDrawing: 'Start drawing',
+  changelog: 'Changelog',
+  privacy: 'Privacy',
   wordmark: 'Splotch',
 } as const;
 export const CRAYON_LABELS: readonly PaletteLabel[] = [
@@ -46,16 +51,18 @@ export const CRAYON_LABELS: readonly PaletteLabel[] = [
   'Pink',
 ];
 export const PAGE_SHEET_MAX_WIDTH_PX = 760;
-export const PAGE_FRAMED_MAX_WIDTH_PX = 920;
 export const PAGE_GUTTER = { minPx: 20, viewportWidthPercent: 5, maxPx: 34 } as const;
 export const BACK_BLOB_PX = 44;
 export const BACK_ICON_PX = 24;
 export const NOT_FOUND_MARK_PX = 80;
+const SHORT_NOT_FOUND_MARK_PX = 56;
 export const NOT_FOUND_MARK_TURN_DEG = -8;
 const PERCENT = 100;
-const H1_LINE_HEIGHT = 1.08;
-const H1_TRACKING_EM = -0.015;
-const LEDE_LINE_HEIGHT = 1.6;
+const SHORT_PAGE_TOP_PX = 12;
+const SHORT_SHEET_GUTTER_PX = 32;
+const SHORT_TOPBAR_PADDING_PX = 10;
+const SHORT_BACK_OVERHANG_PX = -10;
+const SHORT_BACK_BLOB_PX = 36;
 const WORDMARK_TRACKING_EM = { wide: 0.14, phone: 0.06 } as const;
 const CRAYON = { wide: { width: 11, height: 7, gap: 4 }, phone: { width: 9, height: 5, gap: 3 } };
 const DESKTOP_PAGE_PADDING_PX = { top: 32, side: 16, bottom: 72 } as const;
@@ -65,11 +72,8 @@ const BACK_GAP_PX = 10;
 const BACK_OVERHANG_PX = -11;
 const BRAND_GAP_PX = { wide: 8, phone: 6 } as const;
 const SHEET_PADDING_PX = { framed: { top: 12, bottom: 36 }, open: { top: 0, bottom: 40 } };
-const HERO_BOTTOM_PX = { wide: 32, phone: 28 } as const;
 const FRAMED_PAGE_PADDING_PX = 24;
-// The type steps these lengths scale with: --font-size-xs for the wordmark, -lg and -md for the lede.
 const WORDMARK_FONT_PX = 12;
-const LEDE_FONT_PX = { wide: 18, phone: 16 } as const;
 
 type Frame = 'phone' | 'framed' | 'desktop';
 
@@ -125,19 +129,20 @@ const styles = css.create({
     paddingTop: TOPBAR_PADDING_PX,
     paddingBottom: TOPBAR_PADDING_PX,
   },
-  back: {
+  shortTopbar: { paddingTop: SHORT_TOPBAR_PADDING_PX, paddingBottom: SHORT_TOPBAR_PADDING_PX },
+  back: (overhang: number) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: BACK_GAP_PX,
     minHeight: BACK_BLOB_PX,
-    marginTop: BACK_OVERHANG_PX,
-    marginBottom: BACK_OVERHANG_PX,
+    marginTop: overhang,
+    marginBottom: overhang,
     padding: 0,
     borderWidth: 0,
     backgroundColor: 'transparent',
     cursor: 'pointer',
-  },
+  }),
   backLabel: { color: colors.brandText, fontSize: dimensions.fontSizeMd },
   blob: (shadow: string) => ({
     width: BACK_BLOB_PX,
@@ -145,6 +150,7 @@ const styles = css.create({
     borderRadius: BACK_BLOB_PX / 2,
     boxShadow: shadow,
   }),
+  blobSize: (size: number) => ({ width: size, height: size, borderRadius: size / 2 }),
   brand: (gap: number) => ({ display: 'flex', flexDirection: 'row', alignItems: 'center', gap }),
   crayons: (gap: number) => ({ display: 'flex', flexDirection: 'row', gap }),
   crayon: (width: number, height: number, backgroundColor: string) => ({
@@ -159,32 +165,24 @@ const styles = css.create({
     letterSpacing,
     textTransform: 'uppercase',
   }),
-  hero: (bottom: number) => ({ paddingTop: dimensions.space2, paddingBottom: bottom }),
-  title: (fontSize: number) => ({
-    margin: 0,
-    color: colors.textStrong,
-    fontSize,
-    lineHeight: H1_LINE_HEIGHT,
-    outlineWidth: 0,
-    letterSpacing: fontSize * H1_TRACKING_EM,
-  }),
-  lede: (fontSize: number) => ({
-    marginTop: dimensions.space4,
-    marginBottom: 0,
-    color: colors.text,
-    fontSize,
-    fontFamily: fonts.mediumFamily,
-    fontWeight: fonts.mediumWeight,
-    lineHeight: LEDE_LINE_HEIGHT,
-  }),
-  body: {
+  body: (gap: string) => ({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: dimensions.space6,
+    gap,
     paddingBottom: dimensions.space8,
+  }),
+  links: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: dimensions.space3,
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
   },
-  mark: { transform: `rotate(${NOT_FOUND_MARK_TURN_DEG}deg)` },
+  firstLink: { flexBasis: '100%' },
+  mark: { display: 'flex', transform: `rotate(${NOT_FOUND_MARK_TURN_DEG}deg)` },
 });
 
 function startDrawing() {
@@ -192,7 +190,8 @@ function startDrawing() {
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
-function BackLink({ label }: { label: BackLabel }) {
+function BackLink({ label, short }: { label: BackLabel; short: boolean }) {
+  const size = short ? SHORT_BACK_BLOB_PX : BACK_BLOB_PX;
   const theme = useDrawingAppearance();
   const chevron = useNativeIconMarkup('chevron-left')?.[theme];
   const { brandSolid } = DRAWING_THEMES[theme];
@@ -200,16 +199,21 @@ function BackLink({ label }: { label: BackLabel }) {
     () =>
       blobXml({
         shape: 'radiusBlob1',
-        size: BACK_BLOB_PX,
+        size,
         fill: brandSolid,
         icon: chevron ? { markup: chevron, size: BACK_ICON_PX, ink: DRAWING_ON_BRAND } : undefined,
       }),
-    [brandSolid, chevron]
+    [brandSolid, chevron, size]
   );
   return (
-    <RsdPressable type="button" role="link" style={styles.back} onClick={startDrawing}>
-      <html.div aria-hidden style={styles.blob(blobShadow(brandSolid))}>
-        <SvgXml xml={xml} width={BACK_BLOB_PX} height={BACK_BLOB_PX} />
+    <RsdPressable
+      type="button"
+      role="link"
+      style={styles.back(short ? SHORT_BACK_OVERHANG_PX : BACK_OVERHANG_PX)}
+      onClick={startDrawing}
+    >
+      <html.div aria-hidden style={[styles.blob(blobShadow(brandSolid)), styles.blobSize(size)]}>
+        <SvgXml xml={xml} width={size} height={size} />
       </html.div>
       <html.span style={[controlStyles.boldText, styles.backLabel]}>{label}</html.span>
     </RsdPressable>
@@ -253,6 +257,7 @@ export function RsdPageSheet({
   onBodyOffset,
   backLabel = NOT_FOUND_COPY.startDrawing,
   onScroll,
+  collapsibleLede = true,
 }: {
   title: string;
   lede: string;
@@ -261,20 +266,30 @@ export function RsdPageSheet({
   onBodyOffset?: (y: number) => void;
   backLabel?: BackLabel;
   onScroll?: (y: number) => void;
+  collapsibleLede?: boolean;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   const theme = useDrawingAppearance();
   const window = useWindowDimensions();
-  // PageShell runs under the status bar, notch and home indicator, and pads every breakpoint's
-  // spacing by the safe area.
+  // PageShell adds safe-area spacing except for the short phone's explicitly edge-to-edge sides.
   const insets = useSafeAreaInsets();
   const frame = pageFrame(window.width);
   const phone = frame === 'phone';
-  const side = gutter(window.width);
-  const sheet = phone || frame === 'desktop' ? SHEET_PADDING_PX.open : SHEET_PADDING_PX.framed;
-  const page =
-    frame === 'desktop'
+  const short = window.height <= SHORT_PAGE_HEIGHT_PX;
+  const side = short && !phone ? SHORT_SHEET_GUTTER_PX : gutter(window.width);
+  const sheet = short
+    ? { top: 0, bottom: SHEET_PADDING_PX.framed.bottom }
+    : phone || frame === 'desktop'
+      ? SHEET_PADDING_PX.open
+      : SHEET_PADDING_PX.framed;
+  const page = short
+    ? {
+        top: SHORT_PAGE_TOP_PX,
+        side: phone ? 0 : FRAMED_PAGE_PADDING_PX,
+        bottom: FRAMED_PAGE_PADDING_PX,
+      }
+    : frame === 'desktop'
       ? DESKTOP_PAGE_PADDING_PX
       : phone
         ? { top: 0, side: 0, bottom: 0 }
@@ -299,9 +314,9 @@ export function RsdPageSheet({
             phone ? styles.plain : styles.ground,
             styles.pagePadding(
               page.top + insets.top,
-              page.side + insets.right,
+              short && phone ? 0 : page.side + insets.right,
               page.bottom + insets.bottom,
-              page.side + insets.left
+              short && phone ? 0 : page.side + insets.left
             ),
             fontTheme,
             theme === 'dark' && darkTheme,
@@ -314,21 +329,29 @@ export function RsdPageSheet({
               styles.sheetPadding(sheet.top, side, sheet.bottom),
             ]}
           >
-            <html.div style={styles.topbar}>
-              <BackLink label={backLabel} />
+            <html.div style={[styles.topbar, short && styles.shortTopbar]}>
+              <BackLink label={backLabel} short={short} />
               <BrandMark phone={phone} />
             </html.div>
-            <html.div style={styles.hero(HERO_BOTTOM_PX[phone ? 'phone' : 'wide'])}>
-              <html.h1
-                ref={titleRef}
-                data-page-heading
-                tabIndex={-1}
-                style={[controlStyles.boldText, styles.title(displayFontSize(window.width))]}
-              >
-                {title}
-              </html.h1>
-              <html.p style={styles.lede(LEDE_FONT_PX[phone ? 'phone' : 'wide'])}>{lede}</html.p>
-            </html.div>
+            {/* RN Web does not report position-only layout changes on the body. */}
+            <View
+              testID="information-page-hero"
+              onLayout={({ nativeEvent }) =>
+                onBodyOffset?.(
+                  nativeEvent.layout.y + nativeEvent.layout.height + page.top + insets.top
+                )
+              }
+            >
+              <RsdPageHero
+                title={title}
+                lede={lede}
+                titleRef={titleRef}
+                width={window.width}
+                phone={phone}
+                short={short}
+                collapsibleLede={collapsibleLede}
+              />
+            </View>
             <View
               testID="information-page-body"
               onLayout={({ nativeEvent }) =>
@@ -362,21 +385,42 @@ function PageSheetFocus({
 }
 
 export function RsdNotFoundPage() {
+  const window = useWindowDimensions();
+  const short = window.height <= SHORT_PAGE_HEIGHT_PX;
   useEffect(() => {
     setDocumentTitle(NOT_FOUND_COPY.documentTitle);
   }, []);
   return (
     <DrawingAppearanceProvider preference={bootAppearance()}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics} style={scroll.fill}>
-        <RsdPageSheet title={NOT_FOUND_COPY.title} lede={NOT_FOUND_COPY.lede}>
-          <html.div style={styles.body}>
+        <RsdPageSheet
+          title={NOT_FOUND_COPY.title}
+          lede={NOT_FOUND_COPY.lede}
+          collapsibleLede={false}
+        >
+          <html.div style={styles.body(short ? dimensions.space4 : dimensions.space6)}>
             <html.div aria-hidden style={styles.mark}>
-              <RsdSplotchyIcon size={NOT_FOUND_MARK_PX} />
+              <RsdSplotchyIcon size={short ? SHORT_NOT_FOUND_MARK_PX : NOT_FOUND_MARK_PX} />
             </html.div>
-            <RsdButton variant="brand" size="lg" onPress={startDrawing}>
-              {NOT_FOUND_COPY.startDrawing}
-            </RsdButton>
+            <html.ul role="list" style={styles.links}>
+              <html.li style={window.width <= PHONE_MAX_WIDTH_PX && styles.firstLink}>
+                <RsdNotFoundLink page="drawing" variant="brand">
+                  {NOT_FOUND_COPY.startDrawing}
+                </RsdNotFoundLink>
+              </html.li>
+              <html.li>
+                <RsdNotFoundLink page="changelog" variant="wash">
+                  {NOT_FOUND_COPY.changelog}
+                </RsdNotFoundLink>
+              </html.li>
+              <html.li>
+                <RsdNotFoundLink page="privacy" variant="wash">
+                  {NOT_FOUND_COPY.privacy}
+                </RsdNotFoundLink>
+              </html.li>
+            </html.ul>
           </html.div>
+          <RsdNotFoundFooter />
         </RsdPageSheet>
       </SafeAreaProvider>
     </DrawingAppearanceProvider>

@@ -12,6 +12,7 @@ import {
 import { Linking } from 'react-native';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
 import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
+import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
 import releases from '../../../web/src/lib/releases.json';
 import { PRIVACY_LAYOUT } from '../../../experiments/native-architecture/src/information/privacyLayout.ts';
 import { informationFragmentAtLaunch } from '../../../experiments/native-architecture/src/platform/informationFragment.ts';
@@ -263,6 +264,11 @@ it('keeps the reader’s scrolled position across a reading-park width change an
   await act(async () => layout(`changelog-position-${releases[0].id}`, 700));
   expect(scroll.scrollTo).not.toHaveBeenCalled();
   expect(informationFragmentAtLaunch()).toBe(older.id);
+  records.dimensions = { ...records.dimensions, height: SHORT_PAGE_HEIGHT_PX };
+  await act(async () => root.render(createElement(ProbeApp)));
+  await act(async () => layout('information-page-body', 160));
+  expect(scroll.scrollTo).not.toHaveBeenCalled();
+  expect(informationFragmentAtLaunch()).toBe(older.id);
   const currentLatestLink = [...host.querySelectorAll('[role="link"]')].find(
     (node) => node.textContent === "What's new"
   );
@@ -273,7 +279,7 @@ it('keeps the reader’s scrolled position across a reading-park width change an
   expect(pagePadding.paddingTop).toBeTypeOf('number');
   await act(async () => currentLatestLink.click());
   expect(scroll.scrollTo).toHaveBeenCalledExactlyOnceWith({
-    y: 240 + pagePadding.paddingTop + 700 - PRIVACY_LAYOUT.stickyTop,
+    y: 160 + pagePadding.paddingTop + 700 - PRIVACY_LAYOUT.stickyTop,
     animated: false,
   });
 });
@@ -313,6 +319,73 @@ it.each([
     await act(async () => measure[second]());
     expect(scroll.scrollTo).toHaveBeenCalledExactlyOnceWith({
       y: 200 + 600 - PRIVACY_LAYOUT.compactPark,
+      animated: false,
+    });
+  }
+);
+
+it('starts each compact information page with its own collapsed introduction', async () => {
+  records.dimensions = { width: 844, height: SHORT_PAGE_HEIGHT_PX, scale: 1, fontScale: 1 };
+  records.journalHostProps = true;
+  useCaller();
+  await mount(createElement(ProbeApp));
+  await act(async () => openAppPage('privacy'));
+  const toggle = () =>
+    [...host.querySelectorAll('button')].find((node) => node.textContent === 'About this page');
+  const expanded = () =>
+    JSON.parse(toggle().getAttribute('data-committed-props')).accessibilityState.expanded;
+  expect(toggle()).toBeDefined();
+  expect(expanded()).toBe(false);
+  await act(async () => toggle().click());
+  expect(expanded()).toBe(true);
+  await act(async () => openAppPage('changelog'));
+  expect(toggle()).toBeDefined();
+  expect(expanded()).toBe(false);
+  expect(host.querySelector('[data-testid="information-page-scroll"]')).not.toBeNull();
+});
+
+it.each([0, 47])(
+  'refreshes the reading body offset from a resized hero with inset %i and no body layout',
+  async (inset) => {
+    records.journalHostProps = true;
+    records.insets = { top: inset, right: 0, bottom: 34, left: 0 };
+    records.dimensions = { width: 402, height: SHORT_PAGE_HEIGHT_PX, scale: 1, fontScale: 1 };
+    useCaller();
+    await mount(createElement(ProbeApp));
+    await act(async () => openAppPage('changelog'));
+    const scroll = host.querySelector('[data-testid="information-page-scroll"]');
+    scroll.scrollTo = vi.fn();
+    const layout = (id, y, height) =>
+      records.props
+        .findLast((props) => props.testID === id)
+        ?.onLayout({
+          nativeEvent: { layout: { x: 0, y, width: 362, height } },
+        });
+    await act(async () => {
+      layout('information-page-body', 108, 2000);
+      layout(`changelog-position-${releases[0].id}`, 600, 1000);
+    });
+    const toggle = [...host.querySelectorAll('button')].find(
+      (node) => node.textContent === 'About this page'
+    );
+    await act(async () => toggle.click());
+    await act(async () => layout('information-page-hero', 50, 138));
+    const latest = [...host.querySelectorAll('[role="link"]')].find(
+      (node) => node.textContent === "What's new"
+    );
+    const pageStyle = JSON.parse(
+      scroll.firstElementChild.getAttribute('data-committed-props')
+    ).style;
+    await act(async () => latest.click());
+    expect(scroll.scrollTo).toHaveBeenLastCalledWith({
+      y: 188 + pageStyle.paddingTop + 600 - PRIVACY_LAYOUT.compactPark,
+      animated: false,
+    });
+    await act(async () => toggle.click());
+    await act(async () => layout('information-page-hero', 50, 58));
+    await act(async () => latest.click());
+    expect(scroll.scrollTo).toHaveBeenLastCalledWith({
+      y: 108 + pageStyle.paddingTop + 600 - PRIVACY_LAYOUT.compactPark,
       animated: false,
     });
   }

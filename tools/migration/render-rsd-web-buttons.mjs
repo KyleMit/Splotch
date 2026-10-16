@@ -97,6 +97,7 @@ registerHooks({
 
 const src = (path) => require(join(app, 'src', path));
 const { RsdButton } = src('rsdDrawing/RsdButton.tsx');
+const { RsdNotFoundLink } = src('rsdDrawing/notFoundLink.web.tsx');
 const { RsdIconButton } = src('rsdDrawing/RsdIconButton.tsx');
 const { PressableCaller } = require(fileURLToPath(CALLER));
 const { merge, defaultStyles } = require('react-strict-dom/runtime');
@@ -116,9 +117,22 @@ const SPECIMENS = {
   }),
 };
 
+const NOT_FOUND_ACTIONS = [
+  ['drawing', 'brand', 'Start drawing'],
+  ['changelog', 'wash', 'Changelog'],
+  ['privacy', 'wash', 'Privacy'],
+];
+
 console.log(
   JSON.stringify({
     defaultClasses: merge(defaultStyles.button).className,
+    defaultLabelClasses: merge(defaultStyles.span).className,
+    notFoundLinks: NOT_FOUND_ACTIONS.map(([page, variant, label]) =>
+      renderToStaticMarkup(h(RsdNotFoundLink, { page, variant }, label))
+    ),
+    notFoundButtons: NOT_FOUND_ACTIONS.map(([, variant, label]) =>
+      renderToStaticMarkup(h(RsdButton, { variant, size: 'lg', onPress: noop }, label))
+    ),
     markup: Object.fromEntries(
       Object.entries(SPECIMENS).map(([name, element]) => [name, renderToStaticMarkup(element)])
     ),
