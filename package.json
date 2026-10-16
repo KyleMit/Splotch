@@ -554,7 +554,7 @@
     "eslint-plugin-svelte": "^3.23.0",
     "fit-curve": "^0.2.0",
     "globals": "^17.12.0",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^21.0.1",
     "knip": "^6.38.0",
     "lighthouse": "13.5.0",
     "postcss-html": "^2.0.0",
