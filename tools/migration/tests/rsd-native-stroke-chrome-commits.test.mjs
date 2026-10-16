@@ -4,6 +4,8 @@ import { caller, records, host, mount, expandControls } from './rsd-native-selec
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { strokeStyle } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
+import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import { UNDO_SPIN_MS } from '../../../experiments/native-architecture/src/rsdDrawing/undoKeyframes.ts';
 
 // A stroke keeps the chrome as it was (PR 2890): the screen owner's stroke flag gates the chrome's
 // commands, but it must never reach a chrome control's props, or every control is updated, faded
@@ -133,15 +135,27 @@ it('leaves every chrome host untouched through a stroke start, its moves and its
   expect(chromeChanges()).toEqual(UNCHANGED);
 });
 
-it('takes a stroke back through Undo without updating or re-mounting the chrome', async () => {
+it('takes a stroke back and winds only the Undo glyph without re-mounting the chrome', async () => {
   await mountInked();
   await contactFrame();
   await lift();
   chromeChanges();
 
+  const timing = vi.spyOn(Animated, 'timing');
+  const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
   await act(async () => host.querySelector('[aria-label="Undo"]').click());
   expect(caller.liveScreen.history.drawing.strokes).toHaveLength(1);
+  const spin = timing.mock.calls
+    .map(([, config]) => config)
+    .filter((config) => config.duration === UNDO_SPIN_MS);
+  expect(spin).toHaveLength(1);
+  expect(spin[0]).toMatchObject({ useNativeDriver: true });
+  expect(
+    host.querySelector('[aria-label="Undo"] [data-testid="rsd-undo-feedback"]')
+  ).not.toBeNull();
   expect(chromeChanges()).toEqual(UNCHANGED);
+  clock.mockRestore();
+  timing.mockRestore();
 });
 
 // Positive control for the journal: a change the chrome does show is seen, as the swatches the

@@ -45,6 +45,9 @@ import type { PaperTheme } from './theme';
 import { decodeDataUriImage, paintStroke, type InkPaintContext } from './skiaInkPainter';
 import type { Stroke } from './model';
 import type { RasterInkHandle } from './RasterInk';
+import type { UndoGhost } from './undoFeedback';
+import type { PaperFrame } from './paperGeometry';
+import { SkiaUndoGhost, type PreviousInk } from './SkiaUndoGhost';
 
 type Props = {
   strokes: readonly Stroke[];
@@ -53,6 +56,8 @@ type Props = {
   color: PaintColor;
   onBusy: (busy: boolean) => void;
   onError: (error: unknown) => void;
+  undoGhost?: UndoGhost | null;
+  paperFrame?: PaperFrame | null;
 };
 type Size = Readonly<{ width: number; height: number }>;
 type Rendered<T> = Readonly<{ value: T | null; error: unknown }>;
@@ -61,6 +66,7 @@ type CommittedLayer = {
   surface: SkSurface;
   strokes: readonly Stroke[];
   image: SkImage;
+  context: InkPaintContext;
 };
 
 const NO_DRAFTS: readonly Stroke[] = [];
@@ -142,18 +148,45 @@ function useCommittedLayer(
   strokes: readonly Stroke[],
   size: Size | null,
   context: InkPaintContext | null,
-  key: string
+  key: string,
+  feedback: UndoGhost | null | undefined
 ) {
   const layer = useRef<CommittedLayer | null>(null);
-  return useMemo((): Rendered<SkImage> => {
-    if (!size || !context) return { value: null, error: null };
+  // Memo replay needs the same pre-Undo image after commitLayer replaces the live cache.
+  const previousCue = useRef<{
+    feedback: UndoGhost;
+    ink: PreviousInk | null;
+    size: Size | null;
+  } | null>(null);
+  return useMemo(() => {
+    const current = layer.current;
+    if (previousCue.current?.feedback !== feedback)
+      previousCue.current = feedback
+        ? {
+            feedback,
+            size,
+            ink:
+              current &&
+              !feedback.reduced &&
+              current.strokes === feedback.before.strokes &&
+              strokes === feedback.after.strokes
+                ? { image: current.image, strokes: current.strokes, context: current.context }
+                : null,
+          }
+        : null;
+    const previous =
+      previousCue.current && previousCue.current.size === size ? previousCue.current.ink : null;
+    if (!size || !context) {
+      layer.current = null;
+      return { value: null, error: null, previous };
+    }
     try {
-      return { value: commitLayer(layer, strokes, size, context, key), error: null };
+      return { value: commitLayer(layer, strokes, size, context, key), error: null, previous };
     } catch (error) {
       layer.current = null;
-      return { value: null, error };
+      return { value: null, error, previous: null };
     }
-  }, [strokes, size, context, key]);
+  }, [strokes, size, context, key, feedback]);
 }
 
 function commitLayer(
@@ -183,7 +216,7 @@ function commitLayer(
     const surface = Skia.Surface.Make(pixelWidth, pixelHeight);
     if (!surface) throw new Error('The drawing paper could not be prepared.');
     const image = paintAll(surface, strokes, pixels, context);
-    layer.current = { key: layerKey, surface, strokes, image };
+    layer.current = { key: layerKey, surface, strokes, image, context };
     return image;
   }
 }
@@ -247,7 +280,7 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
   );
   const context = useInkContext(paper, tiles, bookFill);
   const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}`;
-  const committed = useCommittedLayer(props.strokes, size, context, key);
+  const committed = useCommittedLayer(props.strokes, size, context, key, props.undoGhost);
   const draftPicture = useDraftPicture(drafts, size, context);
   const scene = useInkScene(committed.value, draftPicture.value, size);
   const failure = committed.error ?? draftPicture.error ?? scene.error;
@@ -283,6 +316,13 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
       {scene.value ? (
         <SkiaPictureView picture={scene.value} style={StyleSheet.absoluteFill} />
       ) : null}
+      <SkiaUndoGhost
+        feedback={props.undoGhost}
+        previous={committed.previous}
+        after={committed.value}
+        size={size}
+        frame={props.paperFrame ?? null}
+      />
     </View>
   );
 });

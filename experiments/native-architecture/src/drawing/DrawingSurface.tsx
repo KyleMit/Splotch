@@ -13,12 +13,11 @@ import {
   type ReactNode,
 } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import { Svg } from '../platform/svg';
 import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
-import { PageOutline, pageHasOutline } from './PageOutline';
+import { pageArt } from './pageArtResource';
 import { InkLayer } from './InkLayer';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { PAPER_THEMES } from './theme';
@@ -28,6 +27,7 @@ import { PaperInputView } from './PaperInputView';
 import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
+import type { UndoGhost } from './undoFeedback';
 
 export type DrawingSurfaceHandle = {
   capturePng: (snapshot: Drawing) => Promise<string>;
@@ -47,6 +47,7 @@ export type DrawingSurfaceHandle = {
 type Lease = Readonly<{ preempt: (() => void) | null }>;
 export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
+  undoGhost?: UndoGhost | null;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
   // What the paper shows beneath the ink, in place of a plain sheet: the drawing screen's paper
@@ -73,9 +74,14 @@ function useLiveDraft() {
   return { draft, halos, show };
 }
 
+function surfaceUndoGhost(props: DrawingSurfaceProps, drafts: readonly Stroke[]) {
+  return !drafts.length && props.undoGhost?.after === props.drawing ? props.undoGhost : null;
+}
+
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
   function DrawingSurface(props, ref) {
     const theme = useDrawingAppearance();
+    const PageArt = pageArt().current()?.PageArtMotion;
     const appearance = useMemo<InkAppearance>(
       () => ({ pageId: props.drawing.pageId, theme }),
       [props.drawing.pageId, theme]
@@ -162,6 +168,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   key={`${appearance.pageId}:${appearance.theme}`}
                   ref={attachRaster}
                   strokes={props.drawing.strokes}
+                  undoGhost={surfaceUndoGhost(props, draft.strokes)}
+                  paperFrame={geometry.current()}
                   drafts={draft.strokes}
                   brush={props.brush}
                   color={props.color}
@@ -174,19 +182,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                     props.onRendererFault(error);
                   }}
                 />
-                {/* react-native-svg paints a full-paper bitmap on Android even when it is empty. */}
-                {pageHasOutline(props.drawing.pageId) ? (
-                  <Svg
-                    width="100%"
-                    height="100%"
-                    viewBox={`0 0 ${presented.width} ${presented.height}`}
-                    preserveAspectRatio="xMidYMid meet"
-                    pointerEvents="none"
-                    style={StyleSheet.absoluteFill}
-                  >
-                    <PageOutline pageId={props.drawing.pageId} size={presented} />
-                  </Svg>
-                ) : null}
+                {PageArt ? <PageArt pageId={props.drawing.pageId} size={presented} /> : null}
                 <PointerHalos feed={halos} />
               </PaperInputView>
             </View>

@@ -101,6 +101,13 @@ vi.mock('react-native', () => {
         : View,
   };
 });
+vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+  const { animatedPort, easingPort } =
+    await import('../migration/tests/rsd-native-animated-host.mjs');
+  const { View } = await import('react-native');
+  return { Animated: animatedPort(View, View), Easing: easingPort };
+});
+
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
