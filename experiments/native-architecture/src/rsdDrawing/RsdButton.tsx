@@ -162,6 +162,10 @@ const styles = css.create({
   },
 });
 
+export function buttonSkin() {
+  return styles;
+}
+
 // The ring is drawn in the label's ink, the shipping currentColor.
 const ringInk = css.create({
   brand: {
