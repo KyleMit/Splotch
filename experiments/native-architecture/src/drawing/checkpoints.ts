@@ -1,14 +1,23 @@
-import { samePaperProjection, type PaperProjection, type PaperReference } from './paperSpace';
+import {
+  samePaperProjection,
+  type PaperProjection,
+  type PaperReference,
+  type PaperSize,
+  type PaperBounds,
+} from './paperSpace';
 import type { Stroke } from './model';
 import type { Brush } from './brushes';
 
-export type InkCheckpoint = Readonly<{
-  id: number;
-  strokes: readonly Stroke[];
-  base64: string;
-  paper: PaperReference;
-  projection: PaperProjection;
-}>;
+export type InkRaster = Readonly<{ raster: PaperSize; bounds: PaperBounds }>;
+
+export type InkCheckpoint = InkRaster &
+  Readonly<{
+    id: number;
+    strokes: readonly Stroke[];
+    base64: string;
+    paper: PaperReference;
+    projection: PaperProjection;
+  }>;
 export type InkPlan = Readonly<{
   paper: PaperReference;
   projection: PaperProjection;

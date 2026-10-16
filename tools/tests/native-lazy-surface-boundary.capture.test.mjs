@@ -25,10 +25,12 @@ async function settle() {
   });
 }
 
-async function webPictureCapture(load) {
+async function webPictureCapture(load, exportName = 'PictureCapture') {
   vi.resetModules();
   vi.doMock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts', () => ({
     PictureCapture: ({ packet }) => createElement('div', { 'data-capture-id': packet.id }),
+    FixedInkCapture: ({ plan, onReady }) =>
+      createElement('button', { 'data-fixed-id': plan.id, onClick: () => onReady(plan) }),
   }));
   vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
     const actual = await importOriginal();
@@ -40,7 +42,7 @@ async function webPictureCapture(load) {
   });
   return (
     await import('../../experiments/native-architecture/src/drawing/pictureCaptureSurface.web.ts')
-  ).PictureCapture;
+  )[exportName];
 }
 
 it('loads capture only for a real packet, cancels a failed load and retries the next request', async () => {
@@ -109,3 +111,67 @@ it.each(['unmount', 'resize'])(
     expect(host.querySelector('[data-capture-id]')).toBeNull();
   }
 );
+
+it('reports a fixed capture chunk failure and retries a later mounted plan', async () => {
+  const load = vi.fn().mockRejectedValueOnce(CHUNK_FAILURE).mockResolvedValue(undefined);
+  const Fixed = await webPictureCapture(load, 'FixedInkCapture');
+  const onError = vi.fn();
+  const onReady = vi.fn();
+  await act(async () => root.render(createElement(Fixed, { plan: { id: 1 }, onError, onReady })));
+  await settle();
+  expect(onError).toHaveBeenCalledExactlyOnceWith(CHUNK_FAILURE);
+  expect(onReady).not.toHaveBeenCalled();
+  expect(host.querySelector('[data-fixed-id]')).toBeNull();
+  await act(async () => root.render(null));
+  const plan = { id: 2 };
+  await act(async () => root.render(createElement(Fixed, { plan, onError, onReady })));
+  await settle();
+  expect(load).toHaveBeenCalledTimes(2);
+  await act(async () => host.querySelector('[data-fixed-id="2"]').click());
+  expect(onReady).toHaveBeenCalledExactlyOnceWith(plan);
+});
+
+it('does not report a late fixed capture failure after its owner unmounts', async () => {
+  let refuse;
+  const load = vi.fn(
+    () =>
+      new Promise((_, reject) => {
+        refuse = reject;
+      })
+  );
+  const Fixed = await webPictureCapture(load, 'FixedInkCapture');
+  const onError = vi.fn();
+  const onReady = vi.fn();
+  await act(async () => root.render(createElement(Fixed, { plan: { id: 1 }, onError, onReady })));
+  await act(async () => root.render(null));
+  await act(async () => refuse(CHUNK_FAILURE));
+  expect(load).toHaveBeenCalledOnce();
+  expect(onError).not.toHaveBeenCalled();
+  expect(onReady).not.toHaveBeenCalled();
+});
+
+it('renders only the replacement fixed plan after a delayed capture chunk arrives', async () => {
+  let finish;
+  const load = vi.fn(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  const Fixed = await webPictureCapture(load, 'FixedInkCapture');
+  const onError = vi.fn();
+  const oldReady = vi.fn();
+  const newReady = vi.fn();
+  await act(async () =>
+    root.render(createElement(Fixed, { plan: { id: 1 }, onError, onReady: oldReady }))
+  );
+  const plan = { id: 2 };
+  await act(async () => root.render(createElement(Fixed, { plan, onError, onReady: newReady })));
+  await act(async () => finish());
+  await settle();
+  expect(host.querySelector('[data-fixed-id="1"]')).toBeNull();
+  await act(async () => host.querySelector('[data-fixed-id="2"]').click());
+  expect(oldReady).not.toHaveBeenCalled();
+  expect(newReady).toHaveBeenCalledExactlyOnceWith(plan);
+  expect(onError).not.toHaveBeenCalled();
+});

@@ -67,8 +67,8 @@ function fixedGrid(target: SVGSVGElement, expectedViewBox: unknown): PaperSize {
     target.getAttribute('viewBox') !== expectedViewBox ||
     viewBox.length !== 4 ||
     !viewBox.every(Number.isFinite) ||
-    Math.round(viewBox[2]) !== width ||
-    Math.round(viewBox[3]) !== height
+    viewBox[2] <= 0 ||
+    viewBox[3] <= 0
   )
     throw new Error('The fixed drawing paper is not ready to capture.');
   return { width, height };

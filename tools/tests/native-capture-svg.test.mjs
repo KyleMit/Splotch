@@ -129,6 +129,16 @@ describe('owned web fixed-grid SVG snapshot lifecycle', () => {
     expect(callback).toHaveBeenCalledExactlyOnceWith('aW5r');
   });
 
+  it('captures a CSS pixel grid whose semantic coordinate dimensions are different', async () => {
+    const viewBox = '-0.25 -0.125 1130 1306.5625';
+    await act(async () => root.render(createElement(CaptureSvg, { ref, ...DIMENSIONS, viewBox })));
+    const serialized = vi.spyOn(XMLSerializer.prototype, 'serializeToString');
+    const { callback, loaded } = capture();
+    expect(serialized.mock.results[0].value).toContain(`viewBox="${viewBox}"`);
+    loaded();
+    expect(callback).toHaveBeenCalledExactlyOnceWith('aW5r');
+  });
+
   it('refuses a stale translated view box with the same rounded sampling grid', async () => {
     const viewBox = '-0.25 -0.125 1023.75 768.25';
     await act(async () => root.render(createElement(CaptureSvg, { ref, ...DIMENSIONS, viewBox })));
@@ -137,7 +147,7 @@ describe('owned web fixed-grid SVG snapshot lifecycle', () => {
     expect(images).toHaveLength(0);
   });
 
-  it.each(['0 0 1 1', '0 0 Infinity 768', 'NaN 0 1024 768', '0 0 1024 0'])(
+  it.each(['0 0 -1 768', '0 0 Infinity 768', 'NaN 0 1024 768', '0 0 1024 0'])(
     'refuses an invalid projection view box %s',
     async (viewBox) => {
       await act(async () =>

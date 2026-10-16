@@ -21,10 +21,7 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
   let scene: ReactNode = checkpoint ? (
     <Image
       href={`data:image/png;base64,${checkpoint.base64}`}
-      x={x}
-      y={y}
-      width={width}
-      height={height}
+      {...checkpoint.bounds}
       preserveAspectRatio="none"
       onLoad={onImageLoad}
     />

@@ -240,14 +240,6 @@ export function paperBounds({ paper, extent }: PaperProjection): PaperBounds {
   };
 }
 
-export function paperRasterSize(projection: PaperProjection): PaperSize {
-  const bounds = paperBounds(projection);
-  return {
-    width: Math.max(1, Math.round(bounds.width)),
-    height: Math.max(1, Math.round(bounds.height)),
-  };
-}
-
 export function paperProjectionView(projection: PaperProjection, frame: PaperSize) {
   const bounds = paperBounds(projection);
   const view = paperView(frame.width, frame.height, bounds);

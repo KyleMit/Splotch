@@ -32,6 +32,7 @@ const state = vi.hoisted(() => ({
   layouts: [],
   frames: new Map(),
   nextFrame: 0,
+  screenListeners: new Set(),
 }));
 vi.mock('react-native', async () => {
   const { nativeCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
@@ -102,6 +103,7 @@ beforeEach(() => {
   state.imageLoads.length = 0;
   state.inputs.length = 0;
   state.layouts.length = 0;
+  state.screenListeners.clear();
   installCaptureFrames(state, vi);
   host = document.createElement('div');
   document.body.append(host);
@@ -304,6 +306,21 @@ describe('mounted canonical output identity', () => {
       expect(replacement.strokes).toBe(drawing.strokes);
     }
   );
+
+  it('cleans the screen watcher when a second capture is refused', async () => {
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
+    await surface(drawing);
+    const first = await beginOutput(drawing);
+    const refused = first.promise.catch((failure) => failure.message);
+    await expect(ref.current.captureInk(drawing)).rejects.toThrow('already being exported');
+    expect(state.screenListeners.size).toBe(1);
+    await act(async () => {
+      for (const listener of state.screenListeners) listener();
+    });
+    await expect(refused).resolves.toContain('changed');
+    expect(state.screenListeners.size).toBe(0);
+    first.release();
+  });
 
   it('requires a command lease and the exact rendered Drawing snapshot', async () => {
     const drawing = { ...legacyDrawing(), strokes: [marker] };

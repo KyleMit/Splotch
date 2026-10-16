@@ -5,6 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FixedInkCapture } from '../../experiments/native-architecture/src/drawing/FixedInkCapture.tsx';
 import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
+import {
+  assertPngGrid,
+  MAX_PNG_PIXELS,
+} from '../../experiments/native-architecture/src/drawing/pngLimits.ts';
+import { createInkObservation } from '../../experiments/native-architecture/src/drawing/inkCoverage.ts';
+import { rgbaPng } from './native-png-fixtures.mjs';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
 import {
@@ -14,6 +20,7 @@ import {
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import {
   adoptPaper,
+  paperBounds,
   paperKey,
   paperProjection,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
@@ -194,7 +201,7 @@ describe('snapshot paper ownership through asynchronous capture', () => {
     };
     await act(async () => root.render(fixture(createElement(PictureCapture, { packet }))));
     await flush();
-    const grid = { width: 567, height: 1024 };
+    const grid = { width: 390, height: 704 };
     expect(state.captures).toHaveLength(1);
     expect(state.captures[0].options).toEqual(grid);
     expect(state.captures[0]).toMatchObject({ ...grid, viewBox: '0 0 567 1024' });
@@ -213,7 +220,6 @@ describe('snapshot paper ownership through asynchronous capture', () => {
 describe('the saved picture', () => {
   // The 390x844 phone's paper: a 519x1024 sheet that shipping saves at 780x1538 on a 1x screen.
   const phonePaper = adoptPaper(390, 769, 1);
-  const sheet = { width: 519, height: 1024 };
 
   async function exportPicture(paper, theme = 'light') {
     const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
@@ -255,7 +261,7 @@ describe('the saved picture', () => {
       const grid = { width: 780, height: 1538 };
       const request = await exportPicture(phonePaper, theme);
       expect(state.captures[0].options).toEqual(grid);
-      expect(state.captures[0]).toMatchObject({ ...sheet, viewBox: '0 0 519 1024' });
+      expect(state.captures[0]).toMatchObject({ ...grid, viewBox: '0 0 519 1024' });
       await act(async () => state.captures[0].callback('ink'));
       await finishOutput('ink-and-outline');
       expect(state.captures[1].options).toEqual(grid);
@@ -270,10 +276,10 @@ describe('the saved picture', () => {
     state.platform.OS = 'ios';
     state.pixelRatio = 3;
     const request = await exportPicture(adoptPaper(390, 769, 3));
-    expect(state.captures[0].options).toEqual(sheet);
+    expect(state.captures[0].options).toEqual({ width: 390, height: 769 });
     await act(async () => state.captures[0].callback('ink'));
     await finishOutput('screen-scale-layer');
-    expect(state.captures[1].options).toEqual(sheet);
+    expect(state.captures[1].options).toEqual({ width: 390, height: 769 });
     await expect(request.promise).resolves.toMatchObject({ base64: 'composed:screen-scale-layer' });
     expect(state.composed[0].picture).toMatchObject({
       size: { width: 1170, height: 2307 },
@@ -297,4 +303,163 @@ describe('the saved picture', () => {
     await expect(request.promise).resolves.toMatchObject({ base64: 'composed:android-layer' });
     expect(state.composed[0].picture).toMatchObject({ size: grid, scale: 2.625 });
   });
+});
+
+describe('grown paper raster admission', () => {
+  it.each([
+    ['android', 2.625],
+    ['ios', 3],
+  ])('caps a %s device grid beyond the pixel budget', async (platform, density) => {
+    state.platform.OS = platform;
+    state.pixelRatio = density;
+    const paper = adoptPaper(400, 300, density);
+    const projection = paperProjection(paper, { width: 7000, height: 4000 });
+    const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
+    const request = createPngCapture().begin(drawing, () => true);
+    void request.promise.catch(() => {});
+    const packet = {
+      id: 1,
+      request,
+      kind: 'ink',
+      pixelRatio: density,
+      plan: {
+        paper,
+        projection,
+        checkpoint: null,
+        strokes: [pen],
+        prefix: [pen],
+        needsCheckpoint: false,
+      },
+      appearance: { pageId: 'blank', theme: 'light' },
+      isCurrent: () => true,
+    };
+    await act(async () =>
+      root.render(fixture(createElement(PictureCapture, { packet }), projection))
+    );
+    await flush();
+    const capture = state.captures[0];
+    const nativeScale = platform === 'ios' ? density : 1;
+    const grid = { width: capture.width * nativeScale, height: capture.height * nativeScale };
+    expect(() => assertPngGrid(grid)).not.toThrow();
+    expect(grid.width * grid.height).toBeLessThanOrEqual(MAX_PNG_PIXELS);
+    expect(grid.width * grid.height).toBeGreaterThan(MAX_PNG_PIXELS * 0.99);
+    request.cancel('test finished');
+  });
+
+  it.each([
+    ['android', 1, 400, 300, 2480, 1300],
+    ['ios', 2, 500, 380, 1300, 1000],
+  ])(
+    'captures a grown %s paper within the real sampling budget',
+    async (platform, density, width, height, grownWidth, grownHeight) => {
+      state.platform.OS = platform;
+      state.pixelRatio = density;
+      const paper = adoptPaper(width, height, density);
+      const projection = paperProjection(paper, { width: grownWidth, height: grownHeight });
+      const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
+      const request = createPngCapture().begin(drawing, () => true);
+      void request.promise.catch(() => {});
+      const plan = {
+        paper,
+        projection,
+        checkpoint: null,
+        strokes: [pen],
+        prefix: [pen],
+        needsCheckpoint: false,
+      };
+      const packet = {
+        id: 1,
+        request,
+        kind: 'ink',
+        pixelRatio: density,
+        plan,
+        appearance: { pageId: 'blank', theme: 'light' },
+        isCurrent: () => true,
+      };
+      await act(async () =>
+        root.render(fixture(createElement(PictureCapture, { packet }), projection))
+      );
+      await flush();
+      const capture = state.captures[0];
+      const actualScale = platform === 'ios' ? density : 1;
+      const grid = {
+        width: capture.options.width * actualScale,
+        height: capture.options.height * actualScale,
+      };
+      expect(grid.width * grid.height).toBeLessThanOrEqual(MAX_PNG_PIXELS);
+      expect(() => assertPngGrid(grid)).not.toThrow();
+      expect(capture.width * actualScale).toBe(grid.width);
+      expect(capture.height * actualScale).toBe(grid.height);
+      await act(async () =>
+        capture.callback(rgbaPng(grid.width, grid.height, 0).toString('base64'))
+      );
+      const result = await request.promise;
+      expect(result.size).toEqual(capture.options);
+      const observations = createInkObservation();
+      const observation = observations.begin(() => true, result.size);
+      await expect(observation.observe(result.base64)).resolves.toBe(true);
+      observations.dispose();
+    }
+  );
+});
+
+describe('flattened picture placement', () => {
+  it.each([
+    ['web', 1],
+    ['ios', 2],
+  ])(
+    'inverts the actual %s ink capture placement before the outline pass',
+    async (platform, density) => {
+      state.platform.OS = platform;
+      state.pixelRatio = density;
+      const paper = adoptPaper(400, 725, density);
+      const projection = paperProjection(paper, { width: 800.25, height: 925.5 });
+      const bounds = paperBounds(projection);
+      const drawing = { ...emptyDrawing(), paper, strokes: [pen] };
+      const request = createPngCapture().begin(drawing, () => true);
+      void request.promise.catch(() => {});
+      const packet = {
+        id: 1,
+        request,
+        kind: 'picture',
+        pixelRatio: density,
+        plan: {
+          paper,
+          projection,
+          checkpoint: null,
+          strokes: [pen],
+          prefix: [pen],
+          needsCheckpoint: false,
+        },
+        appearance: { pageId: 'blank', theme: 'light' },
+        isCurrent: () => true,
+      };
+      await act(async () =>
+        root.render(fixture(createElement(PictureCapture, { packet }), projection))
+      );
+      await flush();
+      const capture = state.captures[0];
+      await act(async () => capture.callback('flattened'));
+      await flush();
+      const image = state.svgTiles.findLast(
+        ({ href }) => href === 'data:image/png;base64,flattened'
+      );
+      const scale = Math.min(capture.width / bounds.width, capture.height / bounds.height);
+      expect(image.width / capture.width).toBeCloseTo(1 / scale, 12);
+      expect(image.height / capture.height).toBeCloseTo(1 / scale, 12);
+      expect(image.x + (capture.width - bounds.width * scale) / (2 * scale)).toBeCloseTo(
+        bounds.x,
+        12
+      );
+      expect(image.y + (capture.height - bounds.height * scale) / (2 * scale)).toBeCloseTo(
+        bounds.y,
+        12
+      );
+      await act(async () => state.captures[1].callback('picture'));
+      await expect(request.promise).resolves.toMatchObject({
+        base64: 'picture',
+        size: capture.options,
+      });
+    }
+  );
 });

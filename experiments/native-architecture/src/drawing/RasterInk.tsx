@@ -1,7 +1,6 @@
 import { InkPaperScope, useInkPaper, useInkProjection } from './InkPaper';
 import {
   paperBounds,
-  paperRasterSize,
   samePaperProjection,
   type PaperProjection,
   type PaperReference,
@@ -29,6 +28,7 @@ import {
   type InkCheckpoint,
   type InkPlan,
   type InkPreparation,
+  type InkRaster,
 } from './checkpoints';
 import { useInkAppearance } from './InkAppearance';
 import {
@@ -39,7 +39,7 @@ import {
 import type { PaintColor } from './palette';
 import type { Brush } from './brushes';
 import { InkScene } from './InkScene';
-import { FixedInkCapture } from './FixedInkCapture';
+import { FixedInkCapture } from './pictureCaptureSurface';
 import { DecodedPng } from './DecodedPng';
 import type { Stroke } from './model';
 import { createSvgCapture, PNG_TIMEOUT_MS, type SvgCaptureJob } from './svgCapture';
@@ -142,7 +142,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   const incomingRef = useRef(incoming);
   incomingRef.current = incoming;
   const fixedSvg = useRef<Svg>(null);
-  const [fixedReady, setFixedReady] = useState<InkPlan | null>(null);
+  const [fixedReady, setFixedReady] = useState<{ plan: InkPlan; sampling: InkRaster } | null>(null);
   const canonicalReady = !fault && !plan.needsCheckpoint && tiles.ready;
   const inputReady =
     canonicalReady &&
@@ -156,9 +156,10 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
       tiles.ready &&
       !incoming &&
       capturePlan !== null &&
-      fixedReady === capturePlan,
+      fixedReady?.plan === capturePlan,
+    sampling: fixedReady?.sampling ?? null,
     svg: fixedSvg,
-    onCheckpoint(base64, capturedPlan) {
+    onCheckpoint(base64, capturedPlan, sampling) {
       setPending({
         frame: {
           id: nextId.current++,
@@ -166,6 +167,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
           base64,
           paper: capturedPlan.paper,
           projection: capturedPlan.projection,
+          ...sampling,
         },
         plan: capturedPlan,
         brush: propsRef.current.brush,
@@ -210,17 +212,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
     },
     [reportFault]
   );
-  useEffect(() => {
-    if (!incoming) return;
-    const timeout = setTimeout(() => {
-      if (incomingRef.current !== incoming) return;
-      failImage(
-        incoming.frame,
-        new Error('The prepared picture did not load. Your saved drawing is unchanged.')
-      );
-    }, PNG_TIMEOUT_MS);
-    return () => clearTimeout(timeout);
-  }, [incoming, failImage]);
+  useIncomingImageTimeout(incoming, incomingRef, failImage);
   function imageLoaded(frame: InkCheckpoint) {
     const current = incomingRef.current;
     if (!current || current.frame !== frame) return;
@@ -233,7 +225,9 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
     tileResources,
     tileDecode: tiles.decode,
     capturePlan: capturePlan && !drafts.length && !incoming && !fault ? capturePlan : null,
-    captureReady: () => setFixedReady(capturePlan),
+    captureReady: (sampling: InkRaster) => {
+      if (capturePlan) setFixedReady({ plan: capturePlan, sampling });
+    },
     captureError: reportFault,
     fixedSvg,
     frames: createRasterFrames(
@@ -247,6 +241,24 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
     imageLoaded,
     failImage,
   };
+}
+
+function useIncomingImageTimeout(
+  incoming: Incoming | null,
+  incomingRef: RefObject<Incoming | null>,
+  failImage: (frame: InkCheckpoint, error: Error) => void
+) {
+  useEffect(() => {
+    if (!incoming) return;
+    const timeout = setTimeout(() => {
+      if (incomingRef.current !== incoming) return;
+      failImage(
+        incoming.frame,
+        new Error('The prepared picture did not load. Your saved drawing is unchanged.')
+      );
+    }, PNG_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [incoming, incomingRef, failImage]);
 }
 
 function createRasterFrames(
@@ -353,7 +365,8 @@ function useCheckpointJob(options: {
   plan: InkPlan;
   ready: boolean;
   svg: RefObject<Svg | null>;
-  onCheckpoint: (base64: string, plan: InkPlan) => void;
+  sampling: InkRaster | null;
+  onCheckpoint: (base64: string, plan: InkPlan, sampling: InkRaster) => void;
   onError: (error: unknown) => void;
 }) {
   const current = useRef(options);
@@ -361,11 +374,11 @@ function useCheckpointJob(options: {
   const active = useRef<SvgCaptureJob | null>(null);
   const epoch = useRef(0);
   const captures = useRef(createSvgCapture()).current;
-  const { plan, ready, svg } = options;
+  const { plan, ready, svg, sampling } = options;
   useEffect(() => {
     const revision = ++epoch.current;
-    if (!ready) return;
-    const job = captures.capture(svg.current, paperRasterSize(plan.projection));
+    if (!ready || !sampling) return;
+    const job = captures.capture(svg.current, sampling.raster);
     active.current = job;
     const valid = () =>
       epoch.current === revision &&
@@ -374,7 +387,7 @@ function useCheckpointJob(options: {
       current.current.ready;
     void job.promise
       .then((base64) => {
-        if (valid()) current.current.onCheckpoint(base64, plan);
+        if (valid()) current.current.onCheckpoint(base64, plan, sampling);
       })
       .catch((error: unknown) => {
         if (valid()) current.current.onError(error);
@@ -387,7 +400,7 @@ function useCheckpointJob(options: {
       if (active.current === job) active.current = null;
       job.cancel();
     };
-  }, [plan, ready, svg, captures]);
+  }, [plan, ready, svg, captures, sampling]);
   useEffect(
     () => () => {
       epoch.current += 1;
@@ -420,7 +433,7 @@ function RasterFrames({
             <DecodedPng
               key={frame.plan.checkpoint.id}
               base64={frame.plan.checkpoint.base64}
-              size={paperRasterSize(frame.plan.projection)}
+              size={frame.plan.checkpoint.raster}
               onLoad={() => {
                 if (frame.plan.checkpoint) onImageLoad(frame.plan.checkpoint);
               }}

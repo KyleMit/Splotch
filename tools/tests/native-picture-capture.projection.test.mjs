@@ -129,44 +129,53 @@ const surface = createPictureSurfaceFixture({
 
 const beginOutput = (drawing, kind) => beginFixtureOutput(ref, drawing, kind);
 
-it('loads cached Android checkpoints and flattened output through decoded RN callbacks', async () => {
-  state.platform.OS = 'android';
-  const drawing = { ...legacyDrawing(), strokes: [crayon, erase] };
-  const decode = async () => {
-    const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
-    await act(async () =>
-      image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
+it.each([
+  ['capturePng', 1024, 768],
+  ['exportPng', 2048, 1536],
+])(
+  'loads cached Android checkpoints and flattened %s output through their own decoded grids',
+  async (kind, width, height) => {
+    state.platform.OS = 'android';
+    const drawing = { ...legacyDrawing(), strokes: [crayon, erase] };
+    const decode = async (width = 1024, height = 768) => {
+      const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
+      await act(async () =>
+        image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width, height } } })
+      );
+    };
+    await surface(drawing);
+    await frames();
+    await png(0, 'cached-prefix');
+    await decode();
+    const { promise, release } = await beginOutput(drawing, kind);
+    void promise.catch(() => {});
+    await frames();
+    expect(state.captures).toHaveLength(1);
+    await load(String(width));
+    await frames();
+    expect(state.captures).toHaveLength(1);
+    await decode();
+    await frames();
+    expect(state.captures).toHaveLength(2);
+    await png(1, 'flattened-ink');
+    expect(state.captures).toHaveLength(2);
+    expect(host.querySelector('[data-output-image]').dataset.outputImage).toBe(
+      'data:image/png;base64,flattened-ink'
     );
-  };
-  await surface(drawing);
-  await frames();
-  await png(0, 'cached-prefix');
-  await decode();
-  const { promise, release } = await beginOutput(drawing, 'capturePng');
-  await frames();
-  expect(state.captures).toHaveLength(1);
-  await load('1024');
-  await frames();
-  expect(state.captures).toHaveLength(1);
-  await decode();
-  await frames();
-  expect(state.captures).toHaveLength(2);
-  await png(1, 'flattened-ink');
-  expect(state.captures).toHaveLength(2);
-  expect(host.querySelector('[data-output-image]').dataset.outputImage).toBe(
-    'data:image/png;base64,flattened-ink'
-  );
-  await act(async () => host.querySelector('[data-output-image]').click());
-  await frames();
-  expect(state.captures).toHaveLength(2);
-  await decode();
-  await frames();
-  expect(state.captures).toHaveLength(3);
-  await png(2, 'picture-output');
-  await expect(promise).resolves.toBe('picture-output');
-  expect(error).not.toHaveBeenCalled();
-  release();
-});
+    await act(async () => host.querySelector('[data-output-image]').click());
+    await frames();
+    expect(state.captures).toHaveLength(2);
+    await decode(width, height);
+    await frames();
+    expect(state.captures).toHaveLength(3);
+    await png(2, 'picture-output');
+    await expect(
+      promise.then((result) => (typeof result === 'string' ? result : result.base64))
+    ).resolves.toBe('picture-output');
+    expect(error).not.toHaveBeenCalled();
+    release();
+  }
+);
 
 it('pins resized AI output size and rejects a late result after the extent changes', async () => {
   const paper = adoptPaper(400, 800, 2);
@@ -193,7 +202,7 @@ it('pins resized AI output size and rejects a late result after the extent chang
   const second = await beginOutput(drawing, 'captureAiPng');
   await frames();
   await png(state.captures.length - 1, 'current-ink');
-  await load('1152');
+  await load('1800');
   await frames();
   expect(state.captures.at(-1).options).toEqual({ width: 1800, height: 2200 });
   await png(state.captures.length - 1, 'current-picture');

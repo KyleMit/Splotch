@@ -103,9 +103,15 @@ export function useSurfacePackets(owner: PacketOwner) {
       const lease = current.commandLock.current;
       if (!lease || current.currentDrawing() !== snapshot || !raster.current)
         throw new Error('The current drawing paper is not ready to capture.');
-      const screen = watchCaptureScreen(() => request.cancel(CAPTURE_CHANGED_MESSAGE));
       const ownsPaper = () => matches(packet);
-      const request = captures.begin(snapshot, ownsPaper);
+      let request: PngCaptureRequest | undefined;
+      const screen = watchCaptureScreen(() => request?.cancel(CAPTURE_CHANGED_MESSAGE));
+      try {
+        request = captures.begin(snapshot, ownsPaper);
+      } catch (error) {
+        screen.dispose();
+        throw error;
+      }
       captureLock.current = request;
       const packet: PendingPacket = {
         request,

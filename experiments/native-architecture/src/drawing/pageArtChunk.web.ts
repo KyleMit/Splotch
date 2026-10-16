@@ -3,3 +3,4 @@ export { PageArtMotion } from './PageArtMotion';
 export { prepareColoringPage } from './pageArtSelection';
 export { PictureCapture } from './PictureCapture';
 export { RsdClearUnderlay } from '../rsdDrawing/RsdClearUnderlay';
+export { FixedInkCapture } from './FixedInkCapture';

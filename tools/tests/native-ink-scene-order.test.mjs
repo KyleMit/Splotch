@@ -1,3 +1,13 @@
+import {
+  paperRasterSize,
+  paperRasterBounds,
+} from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
+import { InkPaperScope } from '../../experiments/native-architecture/src/drawing/InkPaper.tsx';
+import {
+  adoptPaper,
+  paperBounds,
+  paperProjection,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { canonicalPaper } from './native-paper-fixtures.mjs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -94,4 +104,59 @@ describe('complete chronological live mixed-contact scene', () => {
     expect((await output(saved.strokes)).data.equals(live.data)).toBe(true);
     expect(undoDrawing(history).drawing).toBe(drawing);
   });
+});
+
+describe('grown-paper checkpoint mapping', () => {
+  it.each([
+    [400, 725, 800, 925],
+    [660, 616, 1198, 1004],
+    [400, 725, 800.25, 925.5],
+    [400, 725, 400, 725],
+  ])(
+    'inverts capture placement exactly after growing %s/%s to %s/%s',
+    (width, height, grownWidth, grownHeight) => {
+      const paper = adoptPaper(width, height, 2);
+      const projection = paperProjection(paper, { width: grownWidth, height: grownHeight });
+      const bounds = paperBounds(projection);
+      const raster = paperRasterSize(projection);
+      const checkpoint = {
+        id: 1,
+        base64: 'checkpoint',
+        strokes: [],
+        paper,
+        projection,
+        raster,
+        bounds: paperRasterBounds(projection, raster),
+      };
+      const svg = renderToStaticMarkup(
+        createElement(
+          InkPaperScope.Provider,
+          { value: projection },
+          createElement(InkScene, { checkpoint, strokes: [], onImageLoad() {} })
+        )
+      );
+      const image = svg.match(/<image[^>]+>/)[0];
+      const attribute = (name) => Number(image.match(new RegExp(` ${name}="([^"]+)"`))[1]);
+      const scale = Math.min(raster.width / bounds.width, raster.height / bounds.height);
+      const padding = {
+        x: (raster.width - bounds.width * scale) / 2,
+        y: (raster.height - bounds.height * scale) / 2,
+      };
+      const point = { x: bounds.x + bounds.width * 0.8, y: bounds.y + bounds.height * 0.8 };
+      const captured = {
+        x: (point.x - bounds.x) * scale + padding.x,
+        y: (point.y - bounds.y) * scale + padding.y,
+      };
+      expect(attribute('width') / raster.width).toBeCloseTo(1 / scale, 12);
+      expect(attribute('height') / raster.height).toBeCloseTo(1 / scale, 12);
+      expect(attribute('x') + (captured.x * attribute('width')) / raster.width).toBeCloseTo(
+        point.x,
+        10
+      );
+      expect(attribute('y') + (captured.y * attribute('height')) / raster.height).toBeCloseTo(
+        point.y,
+        10
+      );
+    }
+  );
 });

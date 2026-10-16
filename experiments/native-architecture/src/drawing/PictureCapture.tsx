@@ -1,10 +1,4 @@
-import {
-  drawingPaper,
-  paperBounds,
-  paperRasterSize,
-  samePaper,
-  type PaperSize,
-} from './paperSpace';
+import { drawingPaper, paperBounds, samePaper, type PaperSize } from './paperSpace';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from '../platform/svg';
@@ -18,7 +12,13 @@ import { PAPER_THEMES } from './theme';
 import { InkPaperScope } from './InkPaper';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { DecodedPng } from './DecodedPng';
-import { pictureExport, type PictureExport } from './pictureExport';
+import {
+  pictureExport,
+  boundedRasterSize,
+  paperRasterBounds,
+  paperRasterSize,
+  type PictureExport,
+} from './pictureExport';
 
 type PictureKind = 'ink' | 'picture' | 'ai' | 'export';
 export type PictureRequest = Readonly<{
@@ -35,11 +35,15 @@ export type PictureRequest = Readonly<{
 type CaptureTarget = Readonly<{ raster: PaperSize; exported: PictureExport | null }>;
 
 // react-native-svg on iOS draws the view box into the view's laid-out bounds at the screen scale,
-// whatever size is requested (RNSVGSvgView drawRect), so there the capture keeps the paper's size
-// and composing scales it; Android and the web rasterize the view box into exactly the requested
-// pixels.
+// whatever size is requested (RNSVGSvgView drawRect). Its integer CSS layout stays within the
+// sampling budget at that actual scale; Android and web rasterize exactly the requested pixels.
 function captureTarget(packet: PictureRequest): CaptureTarget {
-  const size = paperRasterSize(packet.plan.projection);
+  const ios = Platform.OS === 'ios';
+  const size = paperRasterSize(
+    packet.plan.projection,
+    ios ? 1 : packet.pixelRatio,
+    ios ? packet.pixelRatio : 1
+  );
   if (packet.kind === 'ink' || packet.kind === 'picture') return { raster: size, exported: null };
   const exported = pictureExport(
     packet.plan.paper,
@@ -47,7 +51,7 @@ function captureTarget(packet: PictureRequest): CaptureTarget {
     packet.pixelRatio,
     packet.plan.projection.extent
   );
-  return { raster: Platform.OS === 'ios' ? size : exported.size, exported };
+  return { raster: ios ? size : boundedRasterSize(exported.size), exported };
 }
 
 function composeExport(
@@ -72,8 +76,8 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const current = useRef(true);
   const request = packet.request;
   const size = paperBounds(packet.plan.projection);
-  const raster = paperRasterSize(packet.plan.projection);
   const [target] = useState(() => captureTarget(packet));
+  const raster = target.raster;
   if (!samePaper(packet.plan.paper, drawingPaper(request.drawing)))
     throw new Error('The captured paper reference does not match the picture.');
 
@@ -154,6 +158,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
           {!base64 ? (
             <FixedInkCapture
               plan={packet.plan}
+              raster={raster}
               svgRef={ink}
               onReady={() => setReady(true)}
               onError={fail}
@@ -177,10 +182,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
               )}
               <Image
                 href={`data:image/png;base64,${base64}`}
-                x={size.x}
-                y={size.y}
-                width={size.width}
-                height={size.height}
+                {...paperRasterBounds(packet.plan.projection, raster)}
                 preserveAspectRatio="none"
                 onLoad={() => {
                   if (Platform.OS !== 'android') loaded();

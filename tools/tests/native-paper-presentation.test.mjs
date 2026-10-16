@@ -1,3 +1,4 @@
+import { paperRasterSize } from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
 import { describe, expect, it } from 'vitest';
 import {
   paperPresentationFor,
@@ -14,7 +15,6 @@ import {
   paperBounds,
   paperProjection,
   paperProjectionView,
-  paperRasterSize,
   paperSize,
   semanticWidth,
   textureScale,
