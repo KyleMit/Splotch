@@ -1,6 +1,6 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
-import { measurePaper } from '../drawing/measurePaper';
+import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useMeasuredPaperArea } from './useMeasuredPaperArea';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
@@ -17,6 +17,8 @@ import { RsdGlassPanes, RsdMarginRules, RsdRailGlass } from './bareGlass';
 import type { BareGlass } from './bareGlassLayout';
 import {
   EDGE_INSET_PX,
+  sameBox,
+  type AreaBox as Box,
   isPhoneLandscapeViewport,
   type AreaOffset,
   type AreaSize,
@@ -47,8 +49,6 @@ const docks = StyleSheet.create({
   controls: { position: 'absolute', top: 0, right: 0, left: 0 },
 });
 
-type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
-
 function paperOrigin(root: Box | undefined, column: Box | undefined, area: Box | undefined) {
   return {
     x: (root?.x ?? 0) + (column?.x ?? 0) + (area?.x ?? 0),
@@ -71,14 +71,6 @@ function unmeasuredPaperSpace(
     : window;
 }
 
-function sameSize(previous: AreaSize | undefined, next: AreaSize) {
-  return previous?.width === next.width && previous.height === next.height;
-}
-
-function sameBox(previous: Box | undefined, next: Box) {
-  return sameSize(previous, next) && previous?.x === next.x && previous.y === next.y;
-}
-
 // The paper area's distance from the layout's top and right edges, from the area's box inside its
 // column and the column's box inside the layout.
 function areaOffset(root: Box | undefined, column: Box | undefined, area: Box | undefined) {
@@ -99,45 +91,6 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
     const next = { x, y, width, height };
     set((previous) => (sameBox(previous, next) ? previous : next));
   };
-}
-
-type MeasuredPaperArea = Readonly<{ box: Box; window: AreaSize }>;
-
-function useMeasuredPaperArea({ width, height }: AreaSize) {
-  const host = useRef<View>(null);
-  const [measured, setMeasured] = useState<MeasuredPaperArea>();
-  const update = useCallback(
-    (boxFor: (previous: Box | undefined) => Box) => {
-      const window = { width, height };
-      setMeasured((previous) => {
-        const box = boxFor(previous?.box);
-        return sameBox(previous?.box, box) && sameSize(previous?.window, window)
-          ? previous
-          : { box, window };
-      });
-    },
-    [width, height]
-  );
-  const onLayout = useCallback(
-    ({ nativeEvent }: LayoutChangeEvent) => update(() => nativeEvent.layout),
-    [update]
-  );
-  useLayoutEffect(() => {
-    let active = true;
-    measurePaper(host.current, (frame) => {
-      if (!active || !frame) return;
-      update((previous) => ({
-        x: previous?.x ?? 0,
-        y: previous?.y ?? 0,
-        width: frame.width,
-        height: frame.height,
-      }));
-    });
-    return () => {
-      active = false;
-    };
-  }, [update]);
-  return { host, onLayout, area: measured?.box, window: measured?.window ?? { width, height } };
 }
 
 type NativeDrawingLayoutProps = {
@@ -167,7 +120,7 @@ type NativeDrawingLayoutProps = {
 };
 
 function usePresentedPaper(
-  { paper, empty, slot, origin, window, toolbarStyle }: PaperPresentationInputs,
+  { paper, empty, slot, origin, window, toolbarStyle, layoutOnly }: PaperPresentationInputs,
   departingPaper: PaperReference | null,
   memory: WeakMap<PaperReference, PaperPresentationState>
 ) {
@@ -180,6 +133,7 @@ function usePresentedPaper(
         origin: { x: origin.x, y: origin.y },
         window: { width: window.width, height: window.height },
         toolbarStyle,
+        layoutOnly,
       }) as const,
     [
       paper,
@@ -191,6 +145,7 @@ function usePresentedPaper(
       window.width,
       window.height,
       toolbarStyle,
+      layoutOnly,
     ]
   );
   const [presentation, setPresentation] = useState(INITIAL_PAPER_PRESENTATION);
@@ -297,7 +252,7 @@ export function NativeDrawingLayout({
   const viewportLength = axis === 'row' ? window.width : window.height;
   const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
-  const { area, host, onLayout, window: measuredWindow } = useMeasuredPaperArea(window);
+  const { area, host, onLayout, window: measuredWindow, layoutOnly } = useMeasuredPaperArea(window);
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
   const paperArea = area ?? window;
@@ -309,6 +264,7 @@ export function NativeDrawingLayout({
       slot: area ?? unmeasuredPaperSpace(paper, window, paperPresentations),
       origin: paperOrigin(root, column, area),
       window: measuredWindow,
+      layoutOnly,
       toolbarStyle: bareGlass ? 'bare' : 'buttons',
     },
     departingPaper,

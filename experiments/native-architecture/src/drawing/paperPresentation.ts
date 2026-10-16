@@ -25,6 +25,7 @@ export type PaperPresentationInputs = Readonly<{
   origin: Point;
   window: Size;
   toolbarStyle: ToolbarStyle;
+  layoutOnly?: boolean;
 }>;
 
 export type PaperPresentationState = Readonly<{
@@ -114,8 +115,9 @@ export function presentPaper(
     retained = null;
   if (retained) return { inputs, retained, extent, frame: retainedFrame(retained, inputs.origin) };
   const layoutOnly =
-    previous !== null &&
-    previous.window.width === inputs.window.width &&
-    previous.window.height === inputs.window.height;
+    inputs.layoutOnly ??
+    (previous !== null &&
+      previous.window.width === inputs.window.width &&
+      previous.window.height === inputs.window.height);
   return { inputs, retained: null, ...policyFrame(extent, slot, layoutOnly) };
 }
