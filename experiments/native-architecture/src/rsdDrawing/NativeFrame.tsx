@@ -4,14 +4,16 @@ import {
   useDrawingStyles,
 } from '../drawing/DrawingAppearance';
 import type { ReactNode } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
   SafeAreaView,
+  useSafeAreaInsets,
   type Edge,
 } from 'react-native-safe-area-context';
 import { useModalOrigin } from './modalOrigin';
+import { PaperTexture } from '../drawing/PaperTexture';
 
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
@@ -27,6 +29,35 @@ const themedStyles = createDrawingStyles((palette) =>
     inset: { flex: 1 },
   })
 );
+
+const grainStyles = StyleSheet.create({
+  strip: { position: 'absolute', overflow: 'hidden' },
+  top: { top: 0, left: 0, right: 0 },
+  left: { left: 0, bottom: 0 },
+  right: { right: 0, bottom: 0 },
+});
+
+// Only the padded strips need another grain layer; the paper slot paints the drawing area.
+function FlatSafeAreaPaper() {
+  const { top, left, right } = useSafeAreaInsets();
+  const strips = [
+    ['top', top, { height: top }],
+    ['left', left, { top, width: left }],
+    ['right', right, { top, width: right }],
+  ] as const;
+  return strips.map(([edge, inset, extent]) =>
+    inset > 0 ? (
+      <View
+        key={edge}
+        testID={`rsd-safe-area-grain-${edge}`}
+        pointerEvents="none"
+        style={[grainStyles.strip, grainStyles[edge], extent]}
+      >
+        <PaperTexture />
+      </View>
+    ) : null
+  );
+}
 
 const ALL_EDGES: readonly Edge[] = ['top', 'right', 'bottom', 'left'];
 // The drawing paper runs under the bottom inset (the home indicator) as shipping's canvas does;
@@ -59,6 +90,7 @@ export function NativeFrame({
       style={frame}
     >
       <DrawingStatusBar />
+      {variant === 'flatDrawing' ? <FlatSafeAreaPaper /> : null}
       <SafeAreaView
         testID="rsd-safe-area-frame"
         mode="padding"
