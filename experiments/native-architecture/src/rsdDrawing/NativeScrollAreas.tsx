@@ -1,5 +1,6 @@
-import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { measurePaper } from '../drawing/measurePaper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
@@ -98,6 +99,45 @@ function boxSetter(set: (update: (previous: Box | undefined) => Box | undefined)
     const next = { x, y, width, height };
     set((previous) => (sameBox(previous, next) ? previous : next));
   };
+}
+
+type MeasuredPaperArea = Readonly<{ box: Box; window: AreaSize }>;
+
+function useMeasuredPaperArea({ width, height }: AreaSize) {
+  const host = useRef<View>(null);
+  const [measured, setMeasured] = useState<MeasuredPaperArea>();
+  const update = useCallback(
+    (boxFor: (previous: Box | undefined) => Box) => {
+      const window = { width, height };
+      setMeasured((previous) => {
+        const box = boxFor(previous?.box);
+        return sameBox(previous?.box, box) && sameSize(previous?.window, window)
+          ? previous
+          : { box, window };
+      });
+    },
+    [width, height]
+  );
+  const onLayout = useCallback(
+    ({ nativeEvent }: LayoutChangeEvent) => update(() => nativeEvent.layout),
+    [update]
+  );
+  useLayoutEffect(() => {
+    let active = true;
+    measurePaper(host.current, (frame) => {
+      if (!active || !frame) return;
+      update((previous) => ({
+        x: previous?.x ?? 0,
+        y: previous?.y ?? 0,
+        width: frame.width,
+        height: frame.height,
+      }));
+    });
+    return () => {
+      active = false;
+    };
+  }, [update]);
+  return { host, onLayout, area: measured?.box, window: measured?.window ?? { width, height } };
 }
 
 type NativeDrawingLayoutProps = {
@@ -257,7 +297,7 @@ export function NativeDrawingLayout({
   const viewportLength = axis === 'row' ? window.width : window.height;
   const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
-  const [area, setArea] = useState<Box>();
+  const { area, host, onLayout, window: measuredWindow } = useMeasuredPaperArea(window);
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
   const paperArea = area ?? window;
@@ -268,7 +308,7 @@ export function NativeDrawingLayout({
       empty,
       slot: area ?? unmeasuredPaperSpace(paper, window, paperPresentations),
       origin: paperOrigin(root, column, area),
-      window,
+      window: measuredWindow,
       toolbarStyle: bareGlass ? 'bare' : 'buttons',
     },
     departingPaper,
@@ -317,8 +357,9 @@ export function NativeDrawingLayout({
       >
         <View
           testID="rsd-canvas-area"
+          ref={host}
           style={drawingScreenStyles.canvasArea}
-          onLayout={boxSetter(setArea)}
+          onLayout={onLayout}
         >
           {paperNode}
           {bareGlass ? (

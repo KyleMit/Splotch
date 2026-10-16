@@ -134,3 +134,53 @@ it('shares the retained paper frame with Clear after the Flat bar releases its c
   await act(async () => root.render(layoutElement(seen, RESTING_GLASS, paper)));
   expect(seen.paperFrame).toEqual({ left: 84, top: 0, width: 1096, height: 788 });
 });
+
+it.each(['window-first', 'area-first'])(
+  'adopts the current paper area when resize arrives %s',
+  async (order) => {
+    records.dimensions = { width: 400, height: 800, scale: 1, fontScale: 1 };
+    const paper = adoptPaper(400, 725, 1);
+    const seen = {};
+    const areaLayout = (width, height) =>
+      act(async () =>
+        records.props
+          .findLast((props) => props.testID === 'rsd-canvas-area')
+          .onLayout({ nativeEvent: { layout: { x: 0, y: 0, width, height } } })
+      );
+    await mount(layoutElement(seen, null, paper));
+    await areaLayout(400, 725);
+    const area = host.querySelector('[data-testid="rsd-canvas-area"]');
+    area.measure = (complete) => complete(0, 0, 800, 925, 0, 75);
+    if (order === 'area-first') await areaLayout(800, 925);
+    records.dimensions = { ...records.dimensions, width: 800, height: 1000 };
+    await act(async () => root.render(layoutElement(seen, null, paper)));
+    if (order === 'window-first') await areaLayout(800, 925);
+    expect(seen.paperFrame).toEqual({ left: 0, top: 0, width: 800, height: 925 });
+    expect(seen.clearFrame).toBe(seen.paperFrame);
+  }
+);
+
+it('ignores an obsolete paper-area measurement after another resize', async () => {
+  records.dimensions = { width: 400, height: 800, scale: 1, fontScale: 1 };
+  const paper = adoptPaper(400, 725, 1);
+  const seen = {};
+  await mount(layoutElement(seen, null, paper));
+  await act(async () =>
+    records.props
+      .findLast((props) => props.testID === 'rsd-canvas-area')
+      .onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 725 } } })
+  );
+  const callbacks = [];
+  host.querySelector('[data-testid="rsd-canvas-area"]').measure = (complete) =>
+    callbacks.push(complete);
+  records.dimensions = { ...records.dimensions, width: 800, height: 1000 };
+  await act(async () => root.render(layoutElement(seen, null, paper)));
+  records.dimensions = { ...records.dimensions, width: 900, height: 1100 };
+  await act(async () => root.render(layoutElement(seen, null, paper)));
+  expect(callbacks).toHaveLength(2);
+  await act(async () => callbacks[0](0, 0, 800, 925, 0, 75));
+  expect(seen.paperFrame).toEqual({ left: 0, top: 0, width: 400, height: 725 });
+  await act(async () => callbacks[1](0, 0, 900, 1025, 0, 75));
+  expect(seen.paperFrame).toEqual({ left: 0, top: 0, width: 900, height: 1025 });
+  expect(seen.clearFrame).toBe(seen.paperFrame);
+});

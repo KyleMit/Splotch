@@ -45,10 +45,17 @@ function captureSize(options: unknown): PaperSize {
 }
 
 // The paper's fixed grid: the SVG laid out at its own view box.
-function fixedGrid(target: SVGSVGElement): PaperSize {
+function fixedGrid(target: SVGSVGElement, expectedViewBox: unknown): PaperSize {
   const width = Number(target.getAttribute('width'));
   const height = Number(target.getAttribute('height'));
   const rect = target.getBoundingClientRect();
+  const viewBox =
+    typeof expectedViewBox === 'string'
+      ? expectedViewBox
+          .trim()
+          .split(/[\s,]+/)
+          .map(Number)
+      : [];
   // Browser layout can quantize fixed SVG dimensions to fractional CSS pixels.
   if (
     !Number.isSafeInteger(width) ||
@@ -57,7 +64,11 @@ function fixedGrid(target: SVGSVGElement): PaperSize {
     height <= 0 ||
     Math.round(rect.width) !== width ||
     Math.round(rect.height) !== height ||
-    target.getAttribute('viewBox') !== `0 0 ${width} ${height}`
+    target.getAttribute('viewBox') !== expectedViewBox ||
+    viewBox.length !== 4 ||
+    !viewBox.every(Number.isFinite) ||
+    Math.round(viewBox[2]) !== width ||
+    Math.round(viewBox[3]) !== height
   )
     throw new Error('The fixed drawing paper is not ready to capture.');
   return { width, height };
@@ -72,8 +83,8 @@ function sameShape(grid: PaperSize, size: PaperSize): boolean {
   );
 }
 
-function snapshotRoot(target: SVGSVGElement, size: PaperSize) {
-  const grid = fixedGrid(target);
+function snapshotRoot(target: SVGSVGElement, size: PaperSize, viewBox: unknown) {
+  const grid = fixedGrid(target, viewBox);
   if (!sameShape(grid, size)) throw new Error('The fixed drawing paper is not ready to capture.');
   const root = document.createElementNS(SVG_NAMESPACE, 'svg');
   root.setAttribute('viewBox', `0 0 ${grid.width} ${grid.height}`);
@@ -192,7 +203,7 @@ export class CaptureSvg extends Svg {
     this.active = job;
     try {
       const size = captureSize(options);
-      const clone = snapshotRoot(snapshotElement(this), size);
+      const clone = snapshotRoot(snapshotElement(this), size, this.props.viewBox);
       job.clone = clone;
       const external = externalImages(clone);
       if (external.length === 0) this.rasterize(job, clone, size, callback);
