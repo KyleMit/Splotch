@@ -25,17 +25,23 @@ export function RsdSectionReveal({
 }) {
   const reduced = useReduceMotion();
   const [request, setRequest] = useState({ visible, reduced, initial: true });
-  if (request.visible !== visible) setRequest({ visible, reduced, initial: false });
+  const [completed, setCompleted] = useState(request);
+  if (request.visible !== visible)
+    setRequest({
+      visible,
+      reduced: request.initial || completed === request ? reduced : request.reduced,
+      initial: false,
+    });
   const { shown, dismissed } = useModalPresence(visible ? true : null);
   const progress = useRef(new Animated.Value(visible ? 1 : 0)).current;
   const [height, setHeight] = useState<number | null>(null);
-  const [completed, setCompleted] = useState(request);
   const measured = height !== null;
   useLayoutEffect(() => {
     if (request.initial || completed === request) return;
     if (!request.reduced && !measured) {
       if (!request.visible) {
         progress.setValue(0);
+        setCompleted(request);
         dismissed();
       }
       return;

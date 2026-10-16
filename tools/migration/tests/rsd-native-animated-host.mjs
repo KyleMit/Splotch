@@ -24,6 +24,7 @@ class Value {
   interpolate(config) {
     const interpolation = new Value(0);
     interpolation.restsAt = config?.outputRange?.at(-1);
+    interpolation.interpolation = config;
     return interpolation;
   }
 }
