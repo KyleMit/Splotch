@@ -9,6 +9,8 @@ import { RsdIcon } from './RsdIcon';
 import type { OptionOutlineProps } from './optionOutline';
 import { RsdPressable } from './RsdPressable';
 import { RsdCameraFeedback } from './cameraFeedbackSurface';
+import { RsdUndoFeedback } from './undoFeedbackSurface';
+import type { UndoFeedback } from '../drawing/undoFeedback';
 import type { ScreenshotFeedback } from '../useSavePicture';
 import type { NativeIconName } from './icons.generated';
 import { useBareToolbar } from './toolbarSkin';
@@ -318,6 +320,9 @@ function iconSize(
 export type InkKeyline = 'white' | 'dark';
 
 type Selection = { selected?: boolean };
+type TileCue =
+  | { captureFeedback?: ScreenshotFeedback | null; undoFeedback?: never }
+  | { undoFeedback: UndoFeedback | null; captureFeedback?: never };
 
 type Common = {
   icon: NativeIconName;
@@ -348,11 +353,11 @@ export type IconButtonProps = Common &
         dimmed?: boolean;
         // Turns the icon into the spinning loading glyph while the tile's work runs.
         busy?: boolean;
-        captureFeedback?: ScreenshotFeedback | null;
         // A count pinned to the tile's corner (the AI Image Button's free pictures left).
         badge?: number | null;
       } & FaceInk &
-        Selection)
+        Selection &
+        TileCue)
     | ({
         skin: 'flyout';
         // An eraser size preview drawn at the eraser's true pixel size, with no padding.
@@ -471,6 +476,8 @@ export function RsdIconButton(props: IconButtonProps) {
         <SpinningIcon size={glyphPx} muted={disabled && !bare} filter={paint.filter} />
       ) : props.skin === 'tile' && props.captureFeedback !== undefined ? (
         <RsdCameraFeedback feedback={props.captureFeedback}>{glyph}</RsdCameraFeedback>
+      ) : props.skin === 'tile' && props.undoFeedback !== undefined ? (
+        <RsdUndoFeedback feedback={props.undoFeedback}>{glyph}</RsdUndoFeedback>
       ) : (
         glyph
       )}

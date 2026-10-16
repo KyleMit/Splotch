@@ -67,7 +67,7 @@ function readinessSource(name) {
     'utf8'
   );
 }
-function resourceArgument(code) {
+function resourceArgument(code, call = 'useCrayonTileResources', index = 0) {
   const file = ts.createSourceFile(
     'scene.tsx',
     code,
@@ -77,8 +77,8 @@ function resourceArgument(code) {
   );
   let argument;
   function visit(node) {
-    if (ts.isCallExpression(node) && node.expression.getText(file) === 'useCrayonTileResources')
-      argument = node.arguments[0]?.getText(file);
+    if (ts.isCallExpression(node) && node.expression.getText(file) === call)
+      argument = node.arguments[index]?.getText(file);
     ts.forEachChild(node, visit);
   }
   visit(file);
@@ -88,11 +88,16 @@ function resourceArgument(code) {
 describe('active Crayon tile ownership', () => {
   it('connects the live resource owner to the actual display tail rather than checkpointed history', () => {
     const live = readinessSource('RasterInk.tsx');
-    expect(resourceArgument(live)).toBe('displayStrokes');
+    expect(resourceArgument(live)).toBe('strokes');
+    expect(resourceArgument(live, 'useInkTiles', 1)).toBe('displayStrokes');
+    expect(resourceArgument(readinessSource('SvgUndoGhost.tsx'))).toBe('tileStrokes');
     expect(resourceArgument(readinessSource('FixedInkCapture.tsx'))).toBe('plan.strokes');
-    const changed = live.replace('    displayStrokes,', '    props.strokes,');
+    const changed = live.replace(
+      'useInkTiles(props, displayStrokes)',
+      'useInkTiles(props, props.strokes)'
+    );
     expect(changed).not.toBe(live);
-    expect(resourceArgument(changed)).not.toBe('displayStrokes');
+    expect(resourceArgument(changed, 'useInkTiles', 1)).not.toBe('displayStrokes');
   });
 
   it('reproduces the LRU eviction threshold with 16 and 17 distinct pigments', () => {
