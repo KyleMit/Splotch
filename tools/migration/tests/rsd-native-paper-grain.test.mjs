@@ -90,6 +90,14 @@ const INSET_CASES = [
     bandColors: ['transparent', PURPLE, PURPLE],
   },
   {
+    name: 'iPad landscape inset fixture',
+    insets: { top: 32, right: 0, bottom: 20, left: 0 },
+    dimensions: { width: 1210, height: 834, scale: 2, fontScale: 1 },
+    edges: ['top'],
+    boxes: [{ position: 'absolute', overflow: 'hidden', top: 0, left: 0, right: 0, height: 32 }],
+    bandColors: ['transparent', 'transparent', 'transparent'],
+  },
+  {
     name: 'small status-bar inset fixture',
     insets: { top: 24, right: 0, bottom: 20, left: 0 },
     dimensions: { width: 1024, height: 768, scale: 2, fontScale: 1 },
