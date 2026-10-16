@@ -115,7 +115,13 @@ it.each(['buttons', 'bare'].flatMap((style) => Object.keys(DIALOGS).map((name) =
     expect(chromeLook()).toEqual(live);
     await pressEveryControl();
     expect(host.querySelector('[aria-label="Brush Menu"]')).toBeNull();
-    for (const handler of ['setPagePickerOpen', 'save', 'undo', 'openColorPicker', 'clear'])
+    for (const handler of [
+      'setPagePickerOpen',
+      'save',
+      'undoFromButton',
+      'openColorPicker',
+      'clear',
+    ])
       expect(caller.screen[handler], handler).not.toHaveBeenCalled();
     expect(caller.screen.openSettings).not.toHaveBeenCalled();
     expect(setColor).not.toHaveBeenCalled();
@@ -135,7 +141,13 @@ it.each(['buttons', 'bare'].flatMap((style) => Object.keys(DIALOGS).map((name) =
       await act(async () => chrome(label).click());
     await act(async () => chrome(AI_BUTTON).click());
     await act(async () => activateClear());
-    for (const handler of ['setPagePickerOpen', 'save', 'undo', 'openColorPicker', 'clear'])
+    for (const handler of [
+      'setPagePickerOpen',
+      'save',
+      'undoFromButton',
+      'openColorPicker',
+      'clear',
+    ])
       expect(caller.screen[handler], handler).toHaveBeenCalledOnce();
     expect(caller.screen.openSettings).toHaveBeenCalledOnce();
     expect(startAi).toHaveBeenCalledOnce();

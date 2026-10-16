@@ -28,6 +28,7 @@ import { PaperInputView } from './PaperInputView';
 import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
+import type { UndoGhost } from './undoFeedback';
 
 export type DrawingSurfaceHandle = {
   capturePng: (snapshot: Drawing) => Promise<string>;
@@ -47,6 +48,7 @@ export type DrawingSurfaceHandle = {
 type Lease = Readonly<{ preempt: (() => void) | null }>;
 export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
+  undoGhost?: UndoGhost | null;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
   // What the paper shows beneath the ink, in place of a plain sheet: the drawing screen's paper
@@ -71,6 +73,10 @@ function useLiveDraft() {
     [halos]
   );
   return { draft, halos, show };
+}
+
+function surfaceUndoGhost(props: DrawingSurfaceProps, drafts: readonly Stroke[]) {
+  return !drafts.length && props.undoGhost?.after === props.drawing ? props.undoGhost : null;
 }
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
@@ -162,6 +168,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   key={`${appearance.pageId}:${appearance.theme}`}
                   ref={attachRaster}
                   strokes={props.drawing.strokes}
+                  undoGhost={surfaceUndoGhost(props, draft.strokes)}
+                  paperFrame={geometry.current()}
                   drafts={draft.strokes}
                   brush={props.brush}
                   color={props.color}

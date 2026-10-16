@@ -36,6 +36,9 @@ import { FixedInkCapture } from './FixedInkCapture';
 import { DecodedPng } from './DecodedPng';
 import type { Stroke } from './model';
 import { createSvgCapture, PNG_TIMEOUT_MS, type SvgCaptureJob } from './svgCapture';
+import type { UndoGhost } from './undoFeedback';
+import type { PaperFrame } from './paperGeometry';
+import { SvgUndoGhostLayer } from '../rsdDrawing/undoFeedbackSurface';
 
 export type RasterInkHandle = {
   readyPlan: (strokes: readonly Stroke[]) => InkPlan;
@@ -49,6 +52,8 @@ type Props = {
   color: PaintColor;
   onBusy: (busy: boolean) => void;
   onError: (error: unknown) => void;
+  undoGhost?: UndoGhost | null;
+  paperFrame?: PaperFrame | null;
 };
 const NO_DRAFTS: readonly Stroke[] = [];
 type Incoming = Readonly<{
@@ -77,28 +82,40 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
           onImageLoad={state.imageLoaded}
           onImageError={state.failImage}
         />
+        {props.undoGhost ? (
+          <SvgUndoGhostLayer
+            key={props.undoGhost.id}
+            feedback={props.undoGhost}
+            checkpoint={state.undoCheckpoint}
+            frame={props.paperFrame ?? null}
+          />
+        ) : null}
       </View>
     </CrayonTileResourceScope.Provider>
   );
 });
 
+function useInkTiles(props: Props, strokes: readonly Stroke[]) {
+  const { theme } = useInkAppearance();
+  const tileResources = useCrayonTileResources(
+    strokes,
+    theme,
+    props.brush === 'crayon' ? props.color : undefined
+  );
+  return { tileResources, ...useCrayonTileReadiness(tileResources.uris, props.onError) };
+}
+
 function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   const propsRef = useRef(props);
   propsRef.current = props;
   const drafts = props.drafts ?? NO_DRAFTS;
-  const { plan, available, capturePlan, commitFrame } = useInkPlan(props);
+  const { plan, available, capturePlan, commitFrame, undoCheckpoint } = useInkPlan(props);
   const checkpoint = (drafts.length ? available?.checkpoint : null) ?? plan.checkpoint;
   const displayStrokes = useMemo(
     () => [...props.strokes.slice(checkpoint?.strokes.length ?? 0), ...drafts],
     [props.strokes, checkpoint, drafts]
   );
-  const { theme } = useInkAppearance();
-  const tileResources = useCrayonTileResources(
-    displayStrokes,
-    theme,
-    props.brush === 'crayon' ? props.color : undefined
-  );
-  const tiles = useCrayonTileReadiness(tileResources.uris, props.onError);
+  const { tileResources, ...tiles } = useInkTiles(props, displayStrokes);
   const [pending, setPending] = useState<Incoming | null>(null);
   const [fault, setFault] = useState<unknown>(null);
   const nextId = useRef(1);
@@ -193,6 +210,7 @@ function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
     propsRef.current.onError(error);
   }
   return {
+    undoCheckpoint,
     tileResources,
     tileDecode: tiles.decode,
     capturePlan: capturePlan && !drafts.length && !incoming && !fault ? capturePlan : null,
@@ -295,7 +313,13 @@ function useInkPlan(props: Pick<Props, 'strokes' | 'drafts' | 'brush'>) {
       });
     else setCheckpoint(current.frame);
   }
-  return { plan, available, capturePlan, commitFrame };
+  return {
+    plan,
+    available,
+    capturePlan,
+    commitFrame,
+    undoCheckpoint: promoted?.checkpoint ?? checkpoint,
+  };
 }
 
 function useCheckpointJob(options: {
