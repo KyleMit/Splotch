@@ -5,6 +5,7 @@ private struct SplotchLibraryJob: Codable {
   let identity: String
   let allowMetered: Bool
   let token: String
+  // Retained for serial-job compatibility; verified files determine scheduled work.
   var nextFileIndex: Int
 }
 

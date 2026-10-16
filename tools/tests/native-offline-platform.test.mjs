@@ -246,6 +246,9 @@ describe('actual native library adapter with whole-book transfer ownership', () 
     );
     expect(await store.scan()).toEqual([]);
     await platform.write(assetPath(missing), await assetBytes(missing));
+    await expect(
+      store.install(pack, new AbortController().signal, false, () => {})
+    ).resolves.toEqual(pack);
     expect(await store.scan()).toEqual([pack]);
   });
 
