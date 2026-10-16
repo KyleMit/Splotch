@@ -333,15 +333,25 @@ export function RsdPageSheet({
               <BackLink label={backLabel} short={short} />
               <BrandMark phone={phone} />
             </html.div>
-            <RsdPageHero
-              title={title}
-              lede={lede}
-              titleRef={titleRef}
-              width={window.width}
-              phone={phone}
-              short={short}
-              collapsibleLede={collapsibleLede}
-            />
+            {/* RN Web does not report position-only layout changes on the body. */}
+            <View
+              testID="information-page-hero"
+              onLayout={({ nativeEvent }) =>
+                onBodyOffset?.(
+                  nativeEvent.layout.y + nativeEvent.layout.height + page.top + insets.top
+                )
+              }
+            >
+              <RsdPageHero
+                title={title}
+                lede={lede}
+                titleRef={titleRef}
+                width={window.width}
+                phone={phone}
+                short={short}
+                collapsibleLede={collapsibleLede}
+              />
+            </View>
             <View
               testID="information-page-body"
               onLayout={({ nativeEvent }) =>

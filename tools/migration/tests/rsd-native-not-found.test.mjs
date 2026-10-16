@@ -114,7 +114,8 @@ const pageTree = (theme = 'light', props = {}) =>
 const pageParts = () => {
   const page = host.querySelector('[data-testid="information-page-scroll"]').firstElementChild;
   const sheet = page.firstElementChild;
-  const [topbar, hero] = sheet.children;
+  const [topbar, heroHost] = sheet.children;
+  const hero = heroHost.firstElementChild;
   const title = hero.querySelector('[role="heading"]');
   const heroText = title.parentElement;
   return {
