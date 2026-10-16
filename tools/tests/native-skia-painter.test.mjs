@@ -11,6 +11,12 @@ import {
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { COLORING_FILLS } from '../../experiments/native-architecture/src/drawing/pages.ts';
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { createCrayonTileResources } from '../../experiments/native-architecture/src/drawing/crayonTiles.ts';
+import { makeSkiaUndoGhost } from '../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts';
+import {
+  undoGhostBounds,
+  undoGhostStrokes,
+} from '../../experiments/native-architecture/src/drawing/undoGhostGeometry.ts';
 
 // Awaited so this import settles before the static imports start: a concurrent import can take
 // Vitest's pending-mock queue, and a slow mock resolve then lets the painter load real Skia.
@@ -134,4 +140,141 @@ it('reveals a sample page Magic fill fitted and centered on a portrait paper', (
   expect(colorAt(surface, Math.floor(width / 2), height / 2)).toBe(sun);
   expect(colorAt(surface, Math.floor(width / 2), 100)).toBe(sky);
   expect(colorAt(surface, Math.floor(width / 2), height - 100)).toBe(sky);
+});
+
+const GHOST_PLANE = { width: 1024, height: 768 };
+function ghostFixture(brush = 'pen') {
+  const removed =
+    brush === 'magic'
+      ? { brush, rainbow: 0, width: 16, points: [{ x: 32, y: 32 }] }
+      : brush === 'crayon'
+        ? { brush, color: 'Green', seed: 1, width: 16, points: [{ x: 32, y: 32 }] }
+        : { brush, color: 'Green', width: 16, points: [{ x: 32, y: 32 }] };
+  const before = { version: 5, pageId: 'blank', rainbow: 0, strokes: [removed] };
+  return {
+    id: 1,
+    startedAt: 0,
+    reduced: false,
+    towards: null,
+    onFinished: vi.fn(),
+    before,
+    after: { ...before, strokes: [] },
+  };
+}
+function imagePixel(image, x, y) {
+  return [...image.readPixels(x, y, { width: 1, height: 1, colorType: 4, alphaType: 2 })];
+}
+function imageAlpha(image, x, y) {
+  return imagePixel(image, x, y)[3];
+}
+
+it('builds a bounded pen ghost from only the removed cohort with the renderer’s exact pixels', () => {
+  const feedback = ghostFixture();
+  const before = skia.Surface.Make(GHOST_PLANE.width, GHOST_PLANE.height);
+  paintStroke(before.getCanvas(), feedback.before.strokes[0], context);
+  const live = before.makeImageSnapshot();
+  const bounds = undoGhostBounds(feedback, GHOST_PLANE, 1);
+  expect(bounds).toEqual({ left: 22, top: 22, width: 20, height: 20 });
+  const ghost = makeSkiaUndoGhost({
+    before: live,
+    after: null,
+    removed: undoGhostStrokes(feedback),
+    context,
+    bounds,
+    size: GHOST_PLANE,
+    density: 1,
+  });
+  expect(ghost.width()).toBe(20);
+  expect(ghost.height()).toBe(20);
+  expect(imageAlpha(ghost, 10, 10)).toBe(255);
+  expect(imageAlpha(ghost, 0, 0)).toBe(0);
+  expect(imagePixel(ghost, 10, 10)).toEqual(imagePixel(live, 32, 32));
+});
+
+it.each(['crayon', 'magic'])(
+  'copies %s live pixels inside its footprint and subtracts surviving ink alpha',
+  (brush) => {
+    const feedback = ghostFixture(brush);
+    const before = skia.Surface.Make(GHOST_PLANE.width, GHOST_PLANE.height);
+    const after = skia.Surface.Make(GHOST_PLANE.width, GHOST_PLANE.height);
+    const rasterContext = {
+      ...context,
+      tiles: createCrayonTileResources()(feedback.before.strokes, context.theme),
+    };
+    const stroke = feedback.before.strokes[0];
+    paintStroke(before.getCanvas(), stroke, rasterContext);
+    const paint = skia.Paint();
+    paint.setColor(skia.Color('green'));
+    before.getCanvas().drawCircle(40, 40, 2, paint);
+    const live = before.makeImageSnapshot();
+    const center = stroke.points[0];
+    const coreRadius = stroke.width / 2 - 2;
+    const core = [];
+    for (let y = center.y - coreRadius; y <= center.y + coreRadius; y++)
+      for (let x = center.x - coreRadius; x <= center.x + coreRadius; x++)
+        if (Math.hypot(x - center.x, y - center.y) <= coreRadius) core.push({ x, y });
+    const wax = core.filter(({ x, y }) => imageAlpha(live, x, y) === 255);
+    expect(wax.length).toBeGreaterThan(0);
+    expect(wax.length < core.length).toBe(brush === 'crayon');
+    const surviving = wax[0];
+    const departing = wax.find(({ x, y }) => Math.hypot(x - surviving.x, y - surviving.y) > 4);
+    expect(departing).toBeDefined();
+    after.getCanvas().drawCircle(surviving.x, surviving.y, 2, paint);
+    const bounds = undoGhostBounds(feedback, GHOST_PLANE, 1);
+    expect(bounds).toEqual({ left: 22, top: 22, width: 20, height: 20 });
+    const ghost = makeSkiaUndoGhost({
+      before: live,
+      after: after.makeImageSnapshot(),
+      removed: undoGhostStrokes(feedback),
+      context: rasterContext,
+      bounds,
+      size: GHOST_PLANE,
+      density: 1,
+    });
+    expect(imageAlpha(ghost, surviving.x - bounds.left, surviving.y - bounds.top)).toBe(0);
+    expect(imageAlpha(ghost, departing.x - bounds.left, departing.y - bounds.top)).toBe(255);
+    expect(imageAlpha(ghost, 18, 18)).toBe(0);
+    expect(imagePixel(ghost, departing.x - bounds.left, departing.y - bounds.top)).toEqual(
+      imagePixel(live, departing.x, departing.y)
+    );
+  }
+);
+
+it.each(['reduced', 'eraser', 'clear', 'page', 'replacement'])(
+  'omits the shipping %s Undo ghost',
+  (kind) => {
+    const feedback = ghostFixture();
+    if (kind === 'reduced') feedback.reduced = true;
+    if (kind === 'eraser')
+      feedback.before.strokes[0] = { brush: 'eraser', width: 16, points: [{ x: 32, y: 32 }] };
+    if (kind === 'clear') [feedback.before, feedback.after] = [feedback.after, feedback.before];
+    if (kind === 'page') feedback.after = { ...feedback.before, pageId: 'sunshine' };
+    if (kind === 'replacement')
+      feedback.after = { ...feedback.before, strokes: [{ ...feedback.before.strokes[0] }] };
+    expect(undoGhostStrokes(feedback)).toEqual([]);
+    expect(undoGhostBounds(feedback, GHOST_PLANE, 1)).toBeNull();
+  }
+);
+
+it('bounds the same midpoint path the live renderer paints and pads it in physical pixels', () => {
+  const feedback = ghostFixture();
+  feedback.before.strokes[0] = {
+    ...feedback.before.strokes[0],
+    points: [
+      { x: 10, y: 10 },
+      { x: 90, y: 90 },
+    ],
+  };
+  expect(undoGhostBounds(feedback, GHOST_PLANE, 1)).toEqual({
+    left: 0,
+    top: 0,
+    width: 60,
+    height: 60,
+  });
+  expect(undoGhostBounds(feedback, GHOST_PLANE, 2)).toEqual({
+    left: 1,
+    top: 1,
+    width: 58,
+    height: 58,
+  });
 });

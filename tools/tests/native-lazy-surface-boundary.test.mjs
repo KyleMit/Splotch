@@ -1,5 +1,8 @@
 // @vitest-environment happy-dom
-import { act, createElement, useEffect } from 'react';
+import { act, createElement, StrictMode, useEffect, useRef, useState } from 'react';
+import { adoptedDrawing } from './native-paper-fixtures.mjs';
+import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
+import { addStroke, strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { STEP_NUMBER_SIZE_PX } from '../../experiments/native-architecture/src/rsdDrawing/stepNumberSize.ts';
@@ -108,6 +111,9 @@ afterEach(() => {
   act(() => root.unmount());
   host.remove();
   vi.restoreAllMocks();
+  vi.useRealTimers();
+  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
+  vi.doUnmock('../../experiments/native-architecture/src/rsdDrawing/undoFeedbackChunk.web.ts');
 });
 
 function Settings({ notice }) {
@@ -393,4 +399,120 @@ it('keeps instructions and Close mounted after a badge failure, then retries on 
   expect(host.querySelector('[aria-label="Close instructions"]')).not.toBeNull();
   vi.doUnmock('../../experiments/native-architecture/src/rsdDrawing/RsdStepNumberContent.tsx');
   vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
+});
+
+async function webUndoGhost(load) {
+  vi.resetModules();
+  vi.doMock(
+    '../../experiments/native-architecture/src/rsdDrawing/undoFeedbackChunk.web.ts',
+    () => ({
+      RsdUndoFeedback: ({ children }) => children,
+      SvgUndoGhostLayer: ({ feedback, checkpoint }) =>
+        createElement('div', {
+          'data-ghost-id': feedback.id,
+          'data-checkpoint-id': checkpoint.id,
+        }),
+    })
+  );
+  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+      ...actual,
+      createLazyExport: (importCue) => actual.createLazyExport(() => load().then(importCue)),
+    };
+  });
+  return (
+    await import('../../experiments/native-architecture/src/rsdDrawing/undoFeedbackSurface.web.ts')
+  ).SvgUndoGhostLayer;
+}
+
+function undoOwner(Ghost, expose) {
+  const blank = adoptedDrawing({ width: 400, height: 300, pixelRatio: 1 });
+  const stroke = { ...strokeStyle('pen', 'Green', blank), points: [{ x: 30, y: 30 }] };
+  const initial = addStroke(addStroke({ drawing: blank, undo: [] }, stroke), {
+    ...stroke,
+    points: [{ x: 60, y: 60 }],
+  });
+  return function Owner() {
+    const [history, setHistory] = useState(initial);
+    const historyRef = useRef(history);
+    historyRef.current = history;
+    const command = useRef(false);
+    const surface = useRef({ lockInput: () => () => {} });
+    const actions = useUndoAction({
+      historyRef,
+      setHistory,
+      command,
+      surface,
+      blocked: () => false,
+      inputActive: () => false,
+      setNotice: () => {},
+      report: (error) => {
+        throw error;
+      },
+    });
+    expose({ history, ...actions });
+    return actions.undoGhost
+      ? createElement(Ghost, {
+          key: actions.undoGhost.id,
+          feedback: actions.undoGhost,
+          checkpoint: { id: actions.undoGhost.id },
+          frame: null,
+        })
+      : null;
+  };
+}
+
+it('expires a held Undo transport through its real StrictMode owner before the chunk resolves', async () => {
+  vi.useFakeTimers();
+  const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
+  const requests = [];
+  const Ghost = await webUndoGhost(
+    () => new Promise((resolve, reject) => requests.push({ resolve, reject }))
+  );
+  let owner;
+  const Owner = undoOwner(Ghost, (value) => {
+    owner = value;
+  });
+  await act(async () => root.render(createElement(StrictMode, null, createElement(Owner))));
+  await act(async () => owner.undo(false, null));
+  const first = owner.undoGhost;
+  expect(first).not.toBeNull();
+  expect(requests).toHaveLength(1);
+  clock.mockReturnValue(420);
+  await act(async () => vi.advanceTimersByTime(420));
+  expect(owner.undoGhost).toBeNull();
+  expect(owner.history.drawing.strokes).toHaveLength(1);
+  await act(async () => requests[0].resolve());
+  expect(host.querySelector('[data-ghost-id]')).toBeNull();
+  clock.mockReturnValue(421);
+  await act(async () => owner.undo(false, null));
+  expect(owner.undoGhost.id).toBe(2);
+  expect(host.querySelector('[data-ghost-id="2"]')).not.toBeNull();
+  await act(async () => first.onFinished());
+  expect(owner.undoGhost.id).toBe(2);
+});
+
+it('retries the shared Undo transport on the next accepted action after its first failure', async () => {
+  vi.useFakeTimers();
+  vi.spyOn(performance, 'now').mockReturnValue(0);
+  const requests = [];
+  const Ghost = await webUndoGhost(
+    () => new Promise((resolve, reject) => requests.push({ resolve, reject }))
+  );
+  let owner;
+  const Owner = undoOwner(Ghost, (value) => {
+    owner = value;
+  });
+  await act(async () => root.render(createElement(Owner)));
+  await act(async () => owner.undo(false, null));
+  await act(async () => requests[0].reject(CHUNK_FAILURE));
+  expect(owner.undoGhost).toBeNull();
+  expect(host.querySelector('[data-ghost-id]')).toBeNull();
+  await act(async () => owner.undo(false, null));
+  expect(requests).toHaveLength(2);
+  expect(owner.history.drawing.strokes).toHaveLength(0);
+  await act(async () => requests[1].resolve());
+  expect(host.querySelector('[data-ghost-id="2"]')).not.toBeNull();
+  expect(owner.undoGhost.id).toBe(2);
 });

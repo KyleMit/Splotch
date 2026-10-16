@@ -1,19 +1,40 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
+import {
+  act,
+  createElement,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useSyncExternalStore,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { adoptedDrawing, createPaperInputView } from './native-paper-fixtures.mjs';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { PageArtMotion } from '../../experiments/native-architecture/src/drawing/PageArtMotion.tsx';
+import {
+  InkAppearanceScope,
+  useInkAppearance,
+} from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { ReduceMotionPreferenceProvider } from '../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
+import { Animated } from '../../experiments/native-architecture/src/platform/animated.ts';
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 
 // Android draws every layer of the view tree on every frame, occluded or not, so each full-paper
 // layer under the strokes costs GPU time for as long as a stroke is drawn.
-const views = vi.hoisted(() => ({ styles: [] }));
+const views = vi.hoisted(() => ({
+  styles: [],
+  props: [],
+  outlines: [],
+  ready: true,
+  readyListeners: new Set(),
+}));
 
 vi.mock('react-native', () => {
-  const View = forwardRef(({ children, onLayout, testID, style }, ref) => {
+  const View = forwardRef(({ children, onLayout, testID, style, ...props }, ref) => {
+    views.props.push({ testID, style, ...props });
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
@@ -39,6 +60,13 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+  const { animatedPort, easingPort } =
+    await import('../migration/tests/rsd-native-animated-host.mjs');
+  const { View } = await import('react-native');
+  return { Animated: animatedPort(View, View), Easing: easingPort };
+});
+
 vi.mock(
   '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
   () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
@@ -48,7 +76,19 @@ vi.mock(
 // react-native-svg view for it.
 vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', async (actual) => ({
   ...(await actual()),
-  PageOutline: ({ pageId }) => createElement('g', { 'data-outline': pageId }),
+  usePageOutlineReady: () =>
+    useSyncExternalStore(
+      (listener) => {
+        views.readyListeners.add(listener);
+        return () => views.readyListeners.delete(listener);
+      },
+      () => views.ready
+    ),
+  PageOutline: ({ pageId }) => {
+    const { theme } = useInkAppearance();
+    views.outlines.push({ pageId, theme });
+    return createElement('g', { 'data-outline': pageId, 'data-theme': theme });
+  },
 }));
 
 vi.mock('react-native-svg', () => {
@@ -83,23 +123,27 @@ function mount(pageId, extra = {}) {
   act(() =>
     root.render(
       createElement(
-        DrawingAppearanceProvider,
-        { preference: 'light' },
-        createElement(DrawingSurface, {
-          drawing,
-          currentDrawing: () => drawing,
-          onPreparingChange: vi.fn(),
-          onRendererFault: vi.fn(),
-          color: 'Green',
-          brush: 'pen',
-          strokeWidth: 'medium',
-          eraserWidth: 'medium',
-          disabled: false,
-          onCohort: vi.fn(),
-          onDrawingChange: vi.fn(),
-          onError: vi.fn(),
-          ...extra,
-        })
+        ReduceMotionPreferenceProvider,
+        { preference: 'full' },
+        createElement(
+          DrawingAppearanceProvider,
+          { preference: 'light' },
+          createElement(DrawingSurface, {
+            drawing,
+            currentDrawing: () => drawing,
+            onPreparingChange: vi.fn(),
+            onRendererFault: vi.fn(),
+            color: 'Green',
+            brush: 'pen',
+            strokeWidth: 'medium',
+            eraserWidth: 'medium',
+            disabled: false,
+            onCohort: vi.fn(),
+            onDrawingChange: vi.fn(),
+            onError: vi.fn(),
+            ...extra,
+          })
+        )
       )
     )
   );
@@ -122,6 +166,10 @@ beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', (callback) => setTimeout(() => callback(0), 0));
   vi.stubGlobal('cancelAnimationFrame', clearTimeout);
   views.styles.length = 0;
+  views.props.length = 0;
+  views.outlines.length = 0;
+  views.ready = true;
+  views.readyListeners.clear();
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -131,6 +179,7 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('native paper layers', () => {
@@ -156,4 +205,120 @@ describe('native paper layers', () => {
     expect(sheet().backgroundColor).toBeUndefined();
     expect(container.querySelector('[data-testid="grain"]')).not.toBeNull();
   });
+});
+
+const WIDE_ART = { width: 1024, height: 768 };
+const TALL_ART = { width: 768, height: 1024 };
+function setReady(ready) {
+  act(() => {
+    views.ready = ready;
+    for (const listener of views.readyListeners) listener();
+  });
+}
+function art(pageId, { size = WIDE_ART, theme = 'light', motion = 'full' } = {}) {
+  act(() =>
+    root.render(
+      createElement(
+        ReduceMotionPreferenceProvider,
+        { preference: motion },
+        createElement(
+          InkAppearanceScope.Provider,
+          { value: { pageId, theme } },
+          createElement(PageArtMotion, { pageId, size })
+        )
+      )
+    )
+  );
+}
+
+it('lands only ready page art and replays only when the composition changes', () => {
+  const timing = vi.spyOn(Animated, 'timing');
+  setReady(false);
+  art('farm/cat');
+  expect(outlineViews()).toEqual([]);
+  expect(timing).not.toHaveBeenCalled();
+  setReady(true);
+  art('farm/cat');
+  expect(outlineViews()).toHaveLength(1);
+  const arrivals = () =>
+    timing.mock.calls.map(([, config]) => config).filter((config) => config.duration === 350);
+  expect(arrivals()).toHaveLength(2);
+  art('farm/cat', { theme: 'dark' });
+  expect(container.querySelector('[data-outline]').dataset.theme).toBe('dark');
+  expect(arrivals()).toHaveLength(2);
+  art('farm/cat', { size: TALL_ART, theme: 'dark' });
+  expect(arrivals()).toHaveLength(4);
+});
+
+it.each(['full', 'reduce'])(
+  'removes cleared page art without retaining an outline under %s motion',
+  (motion) => {
+    art('sunshine', { motion });
+    const wrapper = views.props.findLast((props) => props.testID === 'page-art-motion');
+    expect(wrapper.pointerEvents).toBe('none');
+    expect(wrapper.accessibilityElementsHidden).toBe(true);
+    const timing = vi.spyOn(Animated, 'timing').mockImplementation(() => ({
+      start: vi.fn(),
+      stop: vi.fn(),
+    }));
+    art('blank', { theme: 'dark', motion });
+    expect(outlineViews()).toEqual([]);
+    expect(container.querySelector('[data-testid="page-art-motion"]')).toBeNull();
+    expect(timing).not.toHaveBeenCalled();
+  }
+);
+
+it('does not resurrect old art when a pending replacement is cleared', () => {
+  art('sunshine');
+  setReady(false);
+  art('farm/dog');
+  expect(outlineViews()).toEqual([]);
+  const timing = vi.spyOn(Animated, 'timing');
+  art('blank');
+  expect(outlineViews()).toEqual([]);
+  expect(timing).not.toHaveBeenCalled();
+});
+
+it('stamps the motion preference at each arrival without replaying it or adding an exit', () => {
+  const timing = vi.spyOn(Animated, 'timing');
+  art('sunshine', { motion: 'reduce' });
+  expect(timing.mock.calls.map(([, config]) => [config.toValue, config.duration])).toEqual([
+    [1, 200],
+  ]);
+  art('sunshine', { motion: 'full' });
+  expect(timing).toHaveBeenCalledTimes(1);
+  art('blank', { motion: 'full' });
+  expect(timing).toHaveBeenCalledTimes(1);
+  art('farm/cat', { motion: 'full' });
+  expect(timing.mock.calls.slice(1).map(([, config]) => config.duration)).toEqual([350, 350]);
+  art('farm/cat', { motion: 'reduce' });
+  expect(timing).toHaveBeenCalledTimes(3);
+  art('blank', { motion: 'reduce' });
+  expect(timing).toHaveBeenCalledTimes(3);
+  art('sunshine', { motion: 'reduce' });
+  expect(timing.mock.calls.at(-1)[1]).toMatchObject({ toValue: 1, duration: 200 });
+  expect(timing).toHaveBeenCalledTimes(4);
+});
+
+it('keeps settled page art static through same-size paper renders', async () => {
+  mount('sunshine');
+  await act(async () => {});
+  const rendered = views.outlines.length;
+  const timing = vi.spyOn(Animated, 'timing');
+  mount('sunshine');
+  expect(views.outlines).toHaveLength(rendered);
+  expect(timing).not.toHaveBeenCalled();
+});
+
+it('lands and removes art through the production DrawingSurface boundary', () => {
+  const timing = vi.spyOn(Animated, 'timing');
+  mount('blank');
+  mount('sunshine');
+  expect(
+    timing.mock.calls.map(([, config]) => config).filter((config) => config.duration === 350)
+  ).toHaveLength(2);
+  timing.mockClear();
+  mount('blank');
+  expect(outlineViews()).toEqual([]);
+  expect(timing).not.toHaveBeenCalled();
 });

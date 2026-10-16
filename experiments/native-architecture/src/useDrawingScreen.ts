@@ -5,13 +5,11 @@ import { useOfflineLibrary } from './offlineLibrary/useOfflineLibrary';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
-  changePage,
   clearColoringOverlay,
   addStrokes,
   hasDrawingInk,
   clearDrawing,
   emptyDrawing,
-  undoDrawing,
   type History,
   type Stroke,
   type Drawing,
@@ -28,11 +26,14 @@ import {
   type OptionalBrush,
 } from './settings/brushPreferences';
 import type { Brush } from './drawing/brushes';
-import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 import { useBackAwareDrawingState } from './platform/BrowserBack';
 import { useVisibleInk } from './drawing/inkVisibility';
 import { createEmptyScan, useInkObservers } from './drawingScan';
+import { useUndoAction } from './useUndoAction';
+import { pageArt } from './drawing/pageArtResource';
+import type { PagePickerLifetime } from './drawing/pageArtSelection';
+import type { PageId } from './drawing/pages';
 
 function useBlankPaper(
   history: History,
@@ -56,7 +57,6 @@ function useBlankPaper(
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
-  const replacementGuard = useHistoryReplacementGuard();
   const { history, historyRef, setHistory, currentDrawing } = historyOwner;
   const brushes = useBrushPreferences();
   const brush = brushes.state.brush;
@@ -114,13 +114,12 @@ export function useDrawingScreen() {
   // page: the chrome is held rather than disabled while one is open.
   const dialogOpen = pagePickerOpen || settings.sheetOpen;
 
-  const coloring = createColoringPageActions(
+  const coloring = useColoringPageActions(
     historyOwner,
     setPagePickerOpen,
     commandsBlocked,
     runCommand,
-    setNotice,
-    replacementGuard
+    setNotice
   );
 
   const save = useSaveAction({
@@ -249,39 +248,65 @@ function brushPreferenceActions(
   };
 }
 
-function createColoringPageActions(
+function cancelPagePicker(lifetime: PagePickerLifetime) {
+  lifetime.open = false;
+  lifetime.revision += 1;
+  lifetime.pending?.cancel();
+}
+
+function useColoringPageActions(
   history: ReturnType<typeof useDrawingHistory>,
   setPickerOpen: (open: boolean) => void,
   blocked: () => boolean,
   runCommand: (action: () => Promise<void>) => Promise<void>,
-  setNotice: (message: string) => void,
-  replacementGuard: () => () => boolean
+  setNotice: (message: string) => void
 ) {
+  const lifetime = useRef<PagePickerLifetime>({
+    open: false,
+    generation: 0,
+    revision: 0,
+  }).current;
+  useEffect(() => () => cancelPagePicker(lifetime), [lifetime]);
+  const generation = lifetime.generation;
   return {
-    // Opening waits for the lift and for any running command, as every other command does;
-    // closing is always allowed.
+    pagePickerDismissed(finalize: () => void) {
+      if (lifetime.generation !== generation) return;
+      lifetime.pending?.dismiss();
+      finalize();
+    },
     setPagePickerOpen(open: boolean) {
       if (open && blocked()) return;
-      setPickerOpen(open && history.coloringBookEnabled.current);
+      const enabled = open && history.coloringBookEnabled.current;
+      if (enabled && !lifetime.open) lifetime.generation += 1;
+      lifetime.open = enabled;
+      setPickerOpen(enabled);
     },
     setColoringBookEnabled(enabled: boolean) {
       history.applyColoringBookEnabled(enabled);
-      if (!enabled) setPickerOpen(false);
+      if (!enabled) {
+        cancelPagePicker(lifetime);
+        setPickerOpen(false);
+      }
       offlineLibrary.setFeatureEnabled(enabled);
     },
     choosePage(pageId: PageId) {
-      if (blocked() || !history.coloringBookEnabled.current) return;
-      void runCommand(async () => {
-        const isCurrent = replacementGuard();
-        await offlineLibrary.openPage(pageId);
-        if (!isCurrent() || !history.coloringBookEnabled.current) return;
-        const next = changePage(history.historyRef.current, pageId);
-        if (next !== history.historyRef.current) {
-          history.setHistory(next);
-          setNotice(`${pageLabel(pageId)} ready.`);
-        }
-        setPickerOpen(false);
-      });
+      if (
+        blocked() ||
+        !history.coloringBookEnabled.current ||
+        !lifetime.open ||
+        lifetime.generation !== generation
+      )
+        return;
+      void runCommand(async () =>
+        (await pageArt().load()).prepareColoringPage(
+          history,
+          lifetime,
+          setPickerOpen,
+          setNotice,
+          pageId,
+          generation
+        )
+      );
     },
   };
 }
@@ -300,22 +325,6 @@ function useColoringLibrary(
       await offlineLibrary.remove();
       if (offlineLibrary.snapshot().status === 'ready') setHistory(clearColoringOverlay);
     },
-  };
-}
-
-function useHistoryReplacementGuard() {
-  const lifetime = useRef({ active: true, revision: 0 });
-  useEffect(() => {
-    const mounted = lifetime.current;
-    mounted.active = true;
-    return () => {
-      mounted.active = false;
-      mounted.revision += 1;
-    };
-  }, []);
-  return () => {
-    const revision = lifetime.current.revision;
-    return () => lifetime.current.active && lifetime.current.revision === revision;
   };
 }
 
@@ -420,19 +429,16 @@ function useSurfaceCommands({
     }
   }
 
-  function undo() {
-    if (command.current || blocked() || historyRef.current.undo.length === 0) return;
-    let release: (() => void) | undefined;
-    try {
-      release = surface.current?.lockInput('undo');
-      setHistory(undoDrawing);
-      setNotice('');
-    } catch (error) {
-      report(error);
-    } finally {
-      release?.();
-    }
-  }
+  const undo = useUndoAction({
+    historyRef,
+    setHistory,
+    surface,
+    command,
+    blocked,
+    inputActive,
+    setNotice,
+    report,
+  });
 
   function clearSnapshot(snapshot: History, empty: boolean) {
     setHistory(clearDrawing(snapshot, empty));
@@ -500,7 +506,7 @@ function useSurfaceCommands({
       historyRef,
       blocked,
     }),
-    undo,
+    ...undo,
     clear: (saveOnDelete: boolean) => clearCurrentPicture(saveOnDelete),
   };
 }
