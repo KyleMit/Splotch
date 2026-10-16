@@ -14,7 +14,9 @@ import {
 } from '@shopify/react-native-skia';
 import {
   CANONICAL_PAPER_SIZE,
-  paperSize,
+  paperBounds,
+  type PaperProjection,
+  type PaperBounds,
   paperView,
   semanticWidth,
   textureScale,
@@ -33,6 +35,7 @@ import { smoothStroke, type Point, type Stroke } from './model';
 
 export type InkPaintContext = Readonly<{
   paper: PaperReference;
+  projection: PaperProjection;
   theme: 'light' | 'dark';
   pageId: PageId;
   tiles: CrayonTileResources;
@@ -115,22 +118,23 @@ function drawShape(
 }
 
 // Page art contain-fitted and centered on the paper, as PageOutline places it.
-function fitMatrix(paper: PaperSize, art: PaperSize) {
+function fitMatrix(paper: PaperBounds, art: PaperSize) {
   const { scale, left, top } = paperView(paper.width, paper.height, art);
   const matrix = Skia.Matrix();
-  matrix.translate(left, top);
+  matrix.translate(left + paper.x, top + paper.y);
   matrix.scale(scale, scale);
   return matrix;
 }
 
 // The fill over the whole paper, letterbox bands included (bookFillPlacement), in image
 // pixels rather than frame units: a compact fill is smaller than its art frame.
-function bookFillShader(image: SkImage, size: PaperSize) {
+function bookFillShader(image: SkImage, size: PaperBounds) {
   const pixels = { width: image.width(), height: image.height() };
   const placement = bookFillPlacement(size, pixels);
   const recorder = Skia.PictureRecorder();
-  const bounds = Skia.XYWHRect(0, 0, size.width, size.height);
+  const bounds = Skia.XYWHRect(size.x, size.y, size.width, size.height);
   const canvas = recorder.beginRecording(bounds);
+  canvas.translate(size.x, size.y);
   const draw = (
     source: readonly [number, number, number, number],
     target: readonly [number, number, number, number]
@@ -154,7 +158,7 @@ function bookFillShader(image: SkImage, size: PaperSize) {
 }
 
 function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPaintContext) {
-  const size = paperSize(context.paper);
+  const size = paperBounds(context.projection);
   if (context.bookFill) return bookFillShader(context.bookFill, size);
   const { pageId } = context;
   if (isFarmPageId(pageId) || isOfflinePageId(pageId))
@@ -162,7 +166,7 @@ function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPa
   const fill = pageId === 'blank' ? null : COLORING_FILLS[pageId];
   if (fill) {
     const recorder = Skia.PictureRecorder();
-    const bounds = Skia.XYWHRect(0, 0, size.width, size.height);
+    const bounds = Skia.XYWHRect(size.x, size.y, size.width, size.height);
     const fillCanvas = recorder.beginRecording(bounds);
     const paint = Skia.Paint();
     paint.setColor(Skia.Color(paletteHex(fill.background[context.theme])));
@@ -183,8 +187,8 @@ function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPa
   const line = rainbowLine(stroke.rainbow, size.width, size.height);
   const stops = rainbow(stroke.rainbow).stops;
   return Skia.Shader.MakeLinearGradient(
-    { x: line.x1, y: line.y1 },
-    { x: line.x2, y: line.y2 },
+    { x: line.x1 + size.x, y: line.y1 + size.y },
+    { x: line.x2 + size.x, y: line.y2 + size.y },
     stops.map((stop) => Skia.Color(stop.color)),
     stops.map((stop) => stop.offset),
     TileMode.Clamp

@@ -1,5 +1,13 @@
 import { InkPaperScope } from './InkPaper';
-import { drawingPaper, presentedPaperSize, type PaperReference } from './paperSpace';
+import type { CapturedPaper } from './interactions';
+export type { CapturedPaper } from './interactions';
+import {
+  drawingPaper,
+  paperBounds,
+  paperProjection,
+  type PaperProjection,
+  type PaperReference,
+} from './paperSpace';
 import { useDrawingAppearance } from './DrawingAppearance';
 import {
   forwardRef,
@@ -19,7 +27,7 @@ import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
 import { pageArt } from './pageArtResource';
 import { InkLayer } from './InkLayer';
-import { PictureCapture, type PictureRequest } from './PictureCapture';
+import { PictureCapture, type PictureRequest } from './pictureCaptureSurface';
 import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { useSurfacePackets } from './useSurfacePackets';
@@ -29,12 +37,14 @@ import { createHaloFeed } from './haloFeed';
 import type { Halo } from './haloModel';
 import type { UndoGhost } from './undoFeedback';
 
+export type ExportedPaper = CapturedPaper | Readonly<{ base64: null; isCurrent: () => boolean }>;
+
 export type DrawingSurfaceHandle = {
   capturePng: (snapshot: Drawing) => Promise<string>;
-  captureAiPng: (snapshot: Drawing) => Promise<string>;
+  captureAiPng: (snapshot: Drawing) => Promise<CapturedPaper>;
   // The saved picture: the shipping export's pixel grid, paper color and grain.
-  exportPng: (snapshot: Drawing) => Promise<string>;
-  captureInk: (snapshot: Drawing) => Promise<string>;
+  exportPng: (snapshot: Drawing) => Promise<ExportedPaper>;
+  captureInk: (snapshot: Drawing) => Promise<CapturedPaper>;
   lockInput: (mode?: 'command' | 'undo') => () => void;
   finishInput: () => void;
   // A lease for work the child never asked for. Any foreground claim on the paper (a fresh
@@ -47,6 +57,7 @@ export type DrawingSurfaceHandle = {
 type Lease = Readonly<{ preempt: (() => void) | null }>;
 export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
+  projection: PaperProjection;
   undoGhost?: UndoGhost | null;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
@@ -93,10 +104,12 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const geometry = useRef(createPaperGeometry()).current;
     const { draft, halos, show } = useLiveDraft();
     const paperReference = draft.paper ?? drawingPaper(props.drawing);
+    const projectionRef = useRef(paperProjection(paperReference));
     const input = useRef(
       createContactResponder(
         () => ({
           ...propsRef.current,
+          projection: projectionRef.current,
           disabled:
             propsRef.current.disabled ||
             commandLock.current !== null ||
@@ -119,7 +132,13 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const refreshGeometry = useCallback(() => {
       geometry.refresh((complete) => measurePaper(paper.current, complete));
     }, [geometry]);
-    const [presented, layoutPlane] = usePresentedPaper(paperReference, refreshGeometry);
+    const [projection, layoutPlane] = usePresentedPaper(
+      paperReference,
+      props.projection,
+      refreshGeometry
+    );
+    const presented = paperBounds(projection);
+    projectionRef.current = projection;
     const [packet, setPacket] = useState<PictureRequest | null>(null);
     const { captureLock, commandLock, preemptBackground, raster, attachRaster, resume } =
       useSurfaceCapture(
@@ -129,6 +148,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
         props.drawing,
         props.currentDrawing,
         appearance,
+        projection,
         refreshGeometry
       );
     useLayoutEffect(() => {
@@ -142,7 +162,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     useLayoutEffect(() => input.observeInputStyle(), [input, props.color, props.brush]);
 
     return (
-      <InkPaperScope.Provider value={paperReference}>
+      <InkPaperScope.Provider value={projection}>
         <InkAppearanceScope.Provider value={appearance}>
           <View style={styles.container}>
             <View
@@ -195,7 +215,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
 );
 
 // A blank picture shows as the paper it would adopt from the ink plane's live size.
-function usePresentedPaper(paper: PaperReference, refreshGeometry: () => void) {
+function usePresentedPaper(
+  paper: PaperReference,
+  supplied: PaperProjection,
+  refreshGeometry: () => void
+) {
   const [plane, setPlane] = useState({ width: 0, height: 0 });
   const layout = useCallback(
     ({ nativeEvent }: LayoutChangeEvent) => {
@@ -207,7 +231,17 @@ function usePresentedPaper(paper: PaperReference, refreshGeometry: () => void) {
     },
     [refreshGeometry]
   );
-  return [presentedPaperSize(paper, plane), layout] as const;
+  const projection = useMemo(
+    () =>
+      supplied.paper === paper
+        ? supplied
+        : paperProjection(
+            paper,
+            paper.kind === 'unadopted' && plane.width > 0 && plane.height > 0 ? plane : undefined
+          ),
+    [paper, supplied, plane]
+  );
+  return [projection, layout] as const;
 }
 
 function useSurfaceCapture(
@@ -217,6 +251,7 @@ function useSurfaceCapture(
   drawing: Drawing,
   currentDrawing: () => Drawing,
   appearance: InkAppearance,
+  projection: PaperProjection,
   refreshGeometry: () => void
 ) {
   const commandLock = useRef<Lease | null>(null);
@@ -225,6 +260,7 @@ function useSurfaceCapture(
     currentDrawing,
     drawing,
     appearance,
+    projection,
     commandLock,
     setPacket,
   });
@@ -261,10 +297,13 @@ function useSurfaceCapture(
   useImperativeHandle(
     ref,
     () => ({
-      capturePng: (snapshot) => capture(snapshot, 'picture'),
-      captureAiPng: (snapshot) => capture(snapshot, 'ai'),
-      exportPng: (snapshot) => capture(snapshot, 'export'),
-      captureInk: (snapshot) => capture(snapshot, 'ink'),
+      capturePng: async (snapshot) => (await capture(snapshot, 'picture').promise).base64,
+      captureAiPng: async (snapshot) => capture(snapshot, 'ai').promise,
+      exportPng: async (snapshot) => {
+        const output = capture(snapshot, 'export');
+        return output.promise.catch(() => ({ base64: null, isCurrent: output.isCurrent }));
+      },
+      captureInk: async (snapshot) => capture(snapshot, 'ink').promise,
       refreshGeometry,
       finishInput() {
         preemptBackground();

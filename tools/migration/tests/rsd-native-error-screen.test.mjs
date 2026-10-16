@@ -151,7 +151,11 @@ describe("the drawing screen's Error Screen", () => {
       expect(caller.liveScreen.commandBusy).toBe(false);
       if (finishCapture) {
         await act(async () => {
-          finishCapture('cmVhbC1wbmc=');
+          finishCapture({
+            base64: 'cmVhbC1wbmc=',
+            size: { width: 1024, height: 768 },
+            isCurrent: () => true,
+          });
           await clearing;
         });
       }

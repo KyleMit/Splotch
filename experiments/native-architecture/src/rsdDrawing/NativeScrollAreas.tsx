@@ -1,10 +1,11 @@
 import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useMeasuredPaperArea } from './useMeasuredPaperArea';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
 import { fittedPaper } from '../drawing/paperGeometry';
-import type { PaperReference } from '../drawing/paperSpace';
+import { paperProjection, type PaperProjection, type PaperReference } from '../drawing/paperSpace';
 import {
   INITIAL_PAPER_PRESENTATION,
   presentPaper,
@@ -16,6 +17,8 @@ import { RsdGlassPanes, RsdMarginRules, RsdRailGlass } from './bareGlass';
 import type { BareGlass } from './bareGlassLayout';
 import {
   EDGE_INSET_PX,
+  sameBox,
+  type AreaBox as Box,
   isPhoneLandscapeViewport,
   type AreaOffset,
   type AreaSize,
@@ -46,14 +49,26 @@ const docks = StyleSheet.create({
   controls: { position: 'absolute', top: 0, right: 0, left: 0 },
 });
 
-type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
-
-function sameSize(previous: AreaSize | undefined, next: AreaSize) {
-  return previous?.width === next.width && previous.height === next.height;
+function paperOrigin(root: Box | undefined, column: Box | undefined, area: Box | undefined) {
+  return {
+    x: (root?.x ?? 0) + (column?.x ?? 0) + (area?.x ?? 0),
+    y: (root?.y ?? 0) + (column?.y ?? 0) + (area?.y ?? 0),
+  };
 }
 
-function sameBox(previous: Box | undefined, next: Box) {
-  return sameSize(previous, next) && previous?.x === next.x && previous.y === next.y;
+function glassPaperSpace(area: AreaSize, insetBottom: number) {
+  return { width: area.width, height: area.height, insetBottom, paperTop: 0, paperLeft: 0 };
+}
+
+// A fallback window is not a measured paper area and cannot re-adopt existing ink.
+function unmeasuredPaperSpace(
+  paper: PaperReference,
+  window: AreaSize,
+  memory: WeakMap<PaperReference, PaperPresentationState>
+) {
+  return paper.kind === 'adopted'
+    ? paperProjection(paper, memory.get(paper)?.extent ?? undefined).extent
+    : window;
 }
 
 // The paper area's distance from the layout's top and right edges, from the area's box inside its
@@ -82,13 +97,16 @@ type NativeDrawingLayoutProps = {
   // The flat Button style's glass, or null for the raised style, whose bar sits beside the paper.
   bareGlass: BareGlass | null;
   paper: PaperReference;
+  paperPresentations: WeakMap<PaperReference, PaperPresentationState>;
   empty: boolean;
   departingPaper: PaperReference | null;
   palette: (layout: PaletteLayout) => ReactNode;
   clearUnderlay: (
     offset: AreaOffset,
     frame: PresentedFrame,
-    departingFrame: PresentedFrame | null
+    departingFrame: PresentedFrame | null,
+    projection: PaperProjection,
+    departingProjection: PaperProjection | null
   ) => ReactNode;
   clearOverlay: ReactNode;
   actionsPanel: (area: AreaSize, viewport: AreaSize) => ReactNode;
@@ -98,12 +116,13 @@ type NativeDrawingLayoutProps = {
   // Floats over the paper with the controls, clear of the bottom inset.
   overlays: ReactNode;
   // The paper, which runs under the bottom inset.
-  children: (frame: PresentedFrame, space: AreaSize) => ReactNode;
+  children: (frame: PresentedFrame, space: AreaSize, projection: PaperProjection) => ReactNode;
 };
 
 function usePresentedPaper(
-  { paper, empty, slot, origin, window, toolbarStyle }: PaperPresentationInputs,
-  departingPaper: PaperReference | null
+  { paper, empty, slot, origin, window, toolbarStyle, layoutOnly }: PaperPresentationInputs,
+  departingPaper: PaperReference | null,
+  memory: WeakMap<PaperReference, PaperPresentationState>
 ) {
   const inputs = useMemo(
     () =>
@@ -114,6 +133,7 @@ function usePresentedPaper(
         origin: { x: origin.x, y: origin.y },
         window: { width: window.width, height: window.height },
         toolbarStyle,
+        layoutOnly,
       }) as const,
     [
       paper,
@@ -125,10 +145,10 @@ function usePresentedPaper(
       window.width,
       window.height,
       toolbarStyle,
+      layoutOnly,
     ]
   );
   const [presentation, setPresentation] = useState(INITIAL_PAPER_PRESENTATION);
-  const [memory] = useState(() => new WeakMap<PaperReference, PaperPresentationState>());
   const remembered = presentation.inputs?.paper !== paper ? memory.get(paper) : undefined;
   const next =
     presentation.inputs === inputs
@@ -149,7 +169,17 @@ function usePresentedPaper(
           empty: false,
         }).frame ??
           fittedPaper(slot, departingPaper));
-  return { frame, departingFrame };
+  const projection = useMemo(
+    () => paperProjection(paper, next.extent ?? undefined),
+    [paper, next.extent]
+  );
+  const departingProjection = departingPaper
+    ? paperProjection(
+        departingPaper,
+        (departingPaper === paper ? next.extent : memory.get(departingPaper)?.extent) ?? undefined
+      )
+    : null;
+  return { frame, departingFrame, projection, departingProjection };
 }
 
 function NativePaletteBar({
@@ -193,6 +223,7 @@ function NativePaletteBar({
 export function NativeDrawingLayout({
   bareGlass,
   paper,
+  paperPresentations,
   empty,
   departingPaper,
   palette,
@@ -221,28 +252,27 @@ export function NativeDrawingLayout({
   const viewportLength = axis === 'row' ? window.width : window.height;
   const length = measured?.axis === axis ? measured.length : viewportLength;
   // Until the paper area reports its size, the window bounds it from above.
-  const [area, setArea] = useState<Box>();
+  const { area, host, onLayout, window: measuredWindow, layoutOnly } = useMeasuredPaperArea(window);
   const [root, setRoot] = useState<Box>();
   const [column, setColumn] = useState<Box>();
   const paperArea = area ?? window;
   const phoneLandscape = isPhoneLandscapeViewport(window);
-  const { frame, departingFrame } = usePresentedPaper(
+  const { frame, departingFrame, projection, departingProjection } = usePresentedPaper(
     {
       paper,
       empty,
-      slot: paperArea,
-      origin: {
-        x: (root?.x ?? 0) + (column?.x ?? 0) + (area?.x ?? 0),
-        y: (root?.y ?? 0) + (column?.y ?? 0) + (area?.y ?? 0),
-      },
-      window,
+      slot: area ?? unmeasuredPaperSpace(paper, window, paperPresentations),
+      origin: paperOrigin(root, column, area),
+      window: measuredWindow,
+      layoutOnly,
       toolbarStyle: bareGlass ? 'bare' : 'buttons',
     },
-    departingPaper
+    departingPaper,
+    paperPresentations
   );
   const paperNode = useMemo(
-    () => children(frame, { width: paperArea.width, height: paperArea.height }),
-    [children, frame, paperArea.width, paperArea.height]
+    () => children(frame, { width: paperArea.width, height: paperArea.height }, projection),
+    [children, frame, paperArea.width, paperArea.height, projection]
   );
   const controlsLeftPx =
     bareGlass && axis === 'column' && !phoneLandscape ? PALETTE_FLOWS.column.extentPx : 0;
@@ -283,23 +313,21 @@ export function NativeDrawingLayout({
       >
         <View
           testID="rsd-canvas-area"
+          ref={host}
           style={drawingScreenStyles.canvasArea}
-          onLayout={boxSetter(setArea)}
+          onLayout={onLayout}
         >
           {paperNode}
           {bareGlass ? (
-            <RsdGlassPanes
-              space={{
-                width: paperArea.width,
-                height: paperArea.height,
-                insetBottom,
-                paperTop: 0,
-                paperLeft: 0,
-              }}
-              glass={bareGlass}
-            />
+            <RsdGlassPanes space={glassPaperSpace(paperArea, insetBottom)} glass={bareGlass} />
           ) : null}
-          {clearUnderlay(areaOffset(root, column, area), frame, departingFrame)}
+          {clearUnderlay(
+            areaOffset(root, column, area),
+            frame,
+            departingFrame,
+            projection,
+            departingProjection
+          )}
           <View
             testID="rsd-controls-inset"
             pointerEvents="box-none"

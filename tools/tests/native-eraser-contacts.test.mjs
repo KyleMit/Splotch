@@ -1,3 +1,4 @@
+import { paperProjection } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { legacyDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import { describe, expect, it } from 'vitest';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
@@ -95,18 +96,26 @@ describe('joint contact cohort canonical ownership', () => {
     input.start('b', 'Yellow', 'eraser', { x: 80, y: 90 }, drawing);
     const erasers = input.interrupt();
     const strokes = [...prefix, ...erasers];
-    const prepare = planInk(strokes, null);
+    const prepare = planInk(strokes, null, LEGACY_PAPER, paperProjection(LEGACY_PAPER));
     expect(prepare.prefix).toEqual(prefix);
     expect(prepare.needsCheckpoint).toBe(true);
     const checkpoint = {
       id: 1,
       strokes: prefix,
       paper: LEGACY_PAPER,
+      projection: paperProjection(LEGACY_PAPER),
       base64: 'SDK fixture; no pixel claim',
     };
-    const plan = planInk(strokes, checkpoint);
+    const plan = planInk(strokes, checkpoint, LEGACY_PAPER, paperProjection(LEGACY_PAPER));
     expect(plan.strokes).toEqual(erasers);
     expect(plan.needsCheckpoint).toBe(false);
-    expect(planInk([...strokes, marker, ...erasers], checkpoint).needsCheckpoint).toBe(true);
+    expect(
+      planInk(
+        [...strokes, marker, ...erasers],
+        checkpoint,
+        LEGACY_PAPER,
+        paperProjection(LEGACY_PAPER)
+      ).needsCheckpoint
+    ).toBe(true);
   });
 });

@@ -1,8 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import type { CapturedPaper, DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { createInkObservation } from './drawing/inkCoverage';
 import type { Drawing, History } from './drawing/model';
-import { drawingPaperSize } from './drawing/paperSpace';
 
 // The eraser's idle blank-page check: it reads the ink back as Clear does, on its own observer so
 // it never holds Clear's, under the surface's background lease. Any foreground claim on the paper
@@ -44,13 +43,19 @@ export function createEmptyScan({
       mounted.current &&
       historyRef.current.drawing === snapshot &&
       surface.current === owner;
+    let captured: CapturedPaper | undefined;
     try {
-      observation = observations.current?.begin(isCurrent, drawingPaperSize(snapshot));
+      captured = await owner.captureInk(snapshot);
+      const pixels = captured;
+      observation = observations.current?.begin(
+        () => isCurrent() && pixels.isCurrent(),
+        pixels.size
+      );
       if (!observation) throw new Error('Picture observation is not ready.');
-      const empty = await observation.observe(await owner.captureInk(snapshot));
-      return preempted ? 'busy' : empty;
+      const empty = await observation.observe(captured.base64);
+      return preempted || !captured.isCurrent() ? 'busy' : empty;
     } catch (error) {
-      if (preempted) return 'busy';
+      if (preempted || (captured && !captured.isCurrent())) return 'busy';
       throw error;
     } finally {
       observation?.cancel();

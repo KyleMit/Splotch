@@ -23,6 +23,6 @@ export const RsdClearCoachmark = deferredLayer<ComponentProps<typeof Coachmark>>
   'The Clear coachmark'
 );
 export const RsdClearUnderlay = deferredLayer<ComponentProps<typeof Underlay>>(
-  () => import('./RsdClearUnderlay').then((module) => module.RsdClearUnderlay),
+  () => import('../drawing/pageArtChunk.web').then((module) => module.RsdClearUnderlay),
   'The Clear underlay'
 );

@@ -44,6 +44,7 @@ export function useDrawingHistory() {
   );
   return {
     history,
+    paperPresentations: owner.paperPresentations,
     ...references,
     setHistory: owner.setHistory,
     currentDrawing: owner.currentDrawing,

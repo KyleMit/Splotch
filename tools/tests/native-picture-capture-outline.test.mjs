@@ -3,8 +3,12 @@ import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
 import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
-import { drawingPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import {
+  drawingPaper,
+  paperProjection,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 
 // The web export loads a Farm page's line art on first use (bundledOutlines.web.ts), so picture
 // output must wait for it rather than capture paper and ink without the outline.
@@ -64,12 +68,19 @@ afterEach(() => act(() => root.unmount()));
 
 async function mountPictureCapture() {
   const drawing = legacyDrawing(0, 'farm/cat');
-  const request = { drawing, complete: vi.fn(() => true), cancel: vi.fn(() => true) };
+  const request = createPngCapture().begin(drawing, () => true);
+  vi.spyOn(request, 'complete');
   const packet = {
     id: 1,
     request,
     kind: 'picture',
-    plan: { paper: drawingPaper(drawing), strokes: [], checkpoint: null },
+    pixelRatio: 1,
+    plan: {
+      paper: drawingPaper(drawing),
+      projection: paperProjection(drawingPaper(drawing)),
+      strokes: [],
+      checkpoint: null,
+    },
     appearance: { pageId: 'farm/cat', theme: 'light' },
     isCurrent: () => true,
   };
@@ -88,5 +99,5 @@ it('captures the picture only after the page line art has loaded', async () => {
     for (const listener of state.listeners) listener();
   });
   expect(state.captures).toEqual(['ink', 'picture']);
-  expect(request.complete).toHaveBeenCalledExactlyOnceWith('picture');
+  expect(request.complete).toHaveBeenCalledExactlyOnceWith('picture', { width: 1024, height: 768 });
 });

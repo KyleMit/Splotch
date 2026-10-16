@@ -8,6 +8,10 @@ import { DrawingSurface } from '../../experiments/native-architecture/src/drawin
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingUndoShortcut } from '../../experiments/native-architecture/src/product/useDrawingUndoShortcut.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
+import {
+  drawingPaper,
+  paperProjection,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   DrawingSessionProvider,
@@ -37,6 +41,7 @@ const sdk = vi.hoisted(() => ({
   soundDispose: vi.fn(),
   screenRenders: 0,
   pageArt: null,
+  extent: null,
 }));
 vi.mock(
   '../../experiments/native-architecture/src/drawing/pageArtResource.ts',
@@ -172,6 +177,7 @@ function Consumer() {
     key: owner.recovery.generation,
     ref: owner.surface,
     drawing: owner.history.drawing,
+    projection: paperProjection(drawingPaper(owner.history.drawing), sdk.extent ?? undefined),
     currentDrawing: owner.currentDrawing,
     color: sound.settings.selectedColor,
     strokeWidth: sound.settings.strokeWidth,
@@ -267,6 +273,7 @@ beforeEach(async () => {
   sdk.fail = false;
   sdk.screenRenders = 0;
   sdk.pageArt = null;
+  sdk.extent = null;
   sdk.frame = [0, 0, 1024, 768, 40, 800];
   sdk.save.mockClear();
   sdk.soundStart.mockClear();

@@ -182,6 +182,10 @@ describe('chronological raster checkpoint lifecycle', () => {
     await act(async () => incoming.click());
     expect(ref.current.isReady()).toBe(true);
     expect(host.querySelectorAll('[data-checkpoint="2"]')).toHaveLength(1);
+    expect(ref.current.readyPlan(strokes).checkpoint).toMatchObject({
+      raster: { width: 1024, height: 768 },
+      bounds: { x: 0, y: 0, width: 1024, height: 768 },
+    });
     expect(error).not.toHaveBeenCalled();
   });
 

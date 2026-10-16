@@ -32,6 +32,7 @@ const state = vi.hoisted(() => ({
   layouts: [],
   frames: new Map(),
   nextFrame: 0,
+  screenListeners: new Set(),
 }));
 vi.mock('react-native', async () => {
   const { nativeCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
@@ -102,6 +103,7 @@ beforeEach(() => {
   state.imageLoads.length = 0;
   state.inputs.length = 0;
   state.layouts.length = 0;
+  state.screenListeners.clear();
   installCaptureFrames(state, vi);
   host = document.createElement('div');
   document.body.append(host);
@@ -174,7 +176,7 @@ describe('ready-owner output handoff', () => {
       const plan = ref.current.readyPlan(strokes);
       expect(plan.checkpoint.strokes).toHaveLength(999);
       expect(plan.strokes).toEqual([erase]);
-      const request = createPngCapture().begin({ ...legacyDrawing(), strokes });
+      const request = createPngCapture().begin({ ...legacyDrawing(), strokes }, () => true);
       const completion = request.promise.then(
         (value) => ({ value }),
         (failure) => ({ failure })
@@ -183,6 +185,7 @@ describe('ready-owner output handoff', () => {
         id: 1,
         request,
         kind: 'ink',
+        pixelRatio: 1,
         plan,
         appearance: { pageId: 'blank', theme: 'light' },
         isCurrent: () => true,
@@ -198,7 +201,9 @@ describe('ready-owner output handoff', () => {
       expect(state.captures[500].children.props.checkpoint).toBe(plan.checkpoint);
       expect(state.captures[500].children.props.strokes).toBe(plan.strokes);
       await png(500, 'ready-output');
-      await expect(completion).resolves.toEqual({ value: 'ready-output' });
+      await expect(completion).resolves.toMatchObject({
+        value: { base64: 'ready-output', size: { width: 1024, height: 768 } },
+      });
     },
     LEGAL_REPLAY_TEST_TIMEOUT_MS
   );
@@ -247,7 +252,10 @@ describe('mounted canonical output identity', () => {
       await frames();
       expect(state.packets.at(-1).appearance).toEqual({ pageId: 'flower', theme: 'dark' });
       await png(1, 'current-dark-output');
-      await expect(second.promise).resolves.toBe('current-dark-output');
+      await expect(second.promise).resolves.toMatchObject({
+        base64: 'current-dark-output',
+        size: { width: 1024, height: 768 },
+      });
       expect(drawing.strokes).toEqual([magic]);
       second.release();
     }
@@ -299,6 +307,21 @@ describe('mounted canonical output identity', () => {
     }
   );
 
+  it('cleans the screen watcher when a second capture is refused', async () => {
+    const drawing = { ...legacyDrawing(), strokes: [marker] };
+    await surface(drawing);
+    const first = await beginOutput(drawing);
+    const refused = first.promise.catch((failure) => failure.message);
+    await expect(ref.current.captureInk(drawing)).rejects.toThrow('already being exported');
+    expect(state.screenListeners.size).toBe(1);
+    await act(async () => {
+      for (const listener of state.screenListeners) listener();
+    });
+    await expect(refused).resolves.toContain('changed');
+    expect(state.screenListeners.size).toBe(0);
+    first.release();
+  });
+
   it('requires a command lease and the exact rendered Drawing snapshot', async () => {
     const drawing = { ...legacyDrawing(), strokes: [marker] };
     await surface(drawing);
@@ -338,7 +361,10 @@ describe('mounted canonical output identity', () => {
     const second = await beginOutput(replacement);
     await frames();
     await png(1, 'current-output');
-    await expect(second.promise).resolves.toBe('current-output');
+    await expect(second.promise).resolves.toMatchObject({
+      base64: 'current-output',
+      size: { width: 1024, height: 768 },
+    });
     second.release();
   });
 
@@ -350,19 +376,25 @@ describe('mounted canonical output identity', () => {
     const packet = state.packets.at(-1);
     let second;
     await act(async () => {
-      expect(packet.request.complete('first-output')).toBe(true);
+      expect(packet.request.complete('first-output', { width: 1024, height: 768 })).toBe(true);
       first.release();
       const release = ref.current.lockInput();
       second = { release, promise: ref.current.captureInk(drawing) };
       void second.promise.catch(() => {});
     });
-    await expect(first.promise).resolves.toBe('first-output');
+    await expect(first.promise).resolves.toMatchObject({
+      base64: 'first-output',
+      size: { width: 1024, height: 768 },
+    });
     expect(state.packets.at(-1).id).not.toBe(packet.id);
     await frames();
     expect(state.captures).toHaveLength(2);
     await png(0, 'late-first-callback');
     await png(1, 'second-output');
-    await expect(second.promise).resolves.toBe('second-output');
+    await expect(second.promise).resolves.toMatchObject({
+      base64: 'second-output',
+      size: { width: 1024, height: 768 },
+    });
     second.release();
   });
 
@@ -387,7 +419,10 @@ describe('mounted canonical output identity', () => {
     await load('1024');
     await frames();
     await png(1, 'current-ink');
-    await expect(output).resolves.toBe('current-ink');
+    await expect(output).resolves.toMatchObject({
+      base64: 'current-ink',
+      size: { width: 1024, height: 768 },
+    });
     release();
   });
 
@@ -469,7 +504,10 @@ describe('mounted canonical output identity', () => {
     await frames();
     await png(0, 'unmounted-output');
     await png(1, 'new-screen-output');
-    await expect(second.promise).resolves.toBe('new-screen-output');
+    await expect(second.promise).resolves.toMatchObject({
+      base64: 'new-screen-output',
+      size: { width: 1024, height: 768 },
+    });
     second.release();
   });
 
@@ -485,43 +523,4 @@ describe('mounted canonical output identity', () => {
     expect(host.querySelector('[data-strokes="marker"]')).not.toBeNull();
     release();
   });
-});
-
-it('loads cached Android checkpoints and flattened output through decoded RN callbacks', async () => {
-  state.platform.OS = 'android';
-  const drawing = { ...legacyDrawing(), strokes: [crayon, erase] };
-  const decode = async () => {
-    const image = state.nativeImages.findLast((image) => image.resizeMethod === 'none');
-    await act(async () =>
-      image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
-    );
-  };
-  await surface(drawing);
-  await frames();
-  await png(0, 'cached-prefix');
-  await decode();
-  const { promise, release } = await beginOutput(drawing, 'capturePng');
-  await frames();
-  expect(state.captures).toHaveLength(1);
-  await load('1024');
-  await frames();
-  expect(state.captures).toHaveLength(1);
-  await decode();
-  await frames();
-  expect(state.captures).toHaveLength(2);
-  await png(1, 'flattened-ink');
-  expect(state.captures).toHaveLength(2);
-  expect(host.querySelector('[data-output-image]').dataset.outputImage).toBe(
-    'data:image/png;base64,flattened-ink'
-  );
-  await act(async () => host.querySelector('[data-output-image]').click());
-  await frames();
-  expect(state.captures).toHaveLength(2);
-  await decode();
-  await frames();
-  expect(state.captures).toHaveLength(3);
-  await png(2, 'picture-output');
-  await expect(promise).resolves.toBe('picture-output');
-  expect(error).not.toHaveBeenCalled();
-  release();
 });

@@ -1,4 +1,10 @@
-import { drawingPaper, paperSize, paperView, semanticWidth } from './paperSpace';
+import {
+  drawingPaper,
+  paperProjection,
+  paperProjectionView,
+  semanticWidth,
+  type PaperProjection,
+} from './paperSpace';
 import type { UndoGhost } from './undoFeedback';
 export { UNDO_GHOST_MS } from './undoFeedback';
 import { smoothStroke, type Stroke } from './model';
@@ -25,12 +31,13 @@ function motionPoints(stroke: Stroke) {
 export function undoGhostBounds(
   feedback: UndoGhost,
   size: { width: number; height: number },
-  density: number
+  density: number,
+  projection: PaperProjection = paperProjection(drawingPaper(feedback.before))
 ): GhostBounds | null {
   const strokes = undoGhostStrokes(feedback);
   if (!strokes.length || size.width <= 0 || size.height <= 0) return null;
   const paper = drawingPaper(feedback.before);
-  const view = paperView(size.width, size.height, paperSize(paper));
+  const view = paperProjectionView(projection, size);
   let left = size.width,
     top = size.height,
     right = 0,

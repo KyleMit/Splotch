@@ -1,3 +1,7 @@
+import {
+  paperProjection,
+  drawingPaper,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { legacyDrawing, createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
@@ -147,6 +151,7 @@ beforeEach(() => {
   root = createRoot(container);
   props = {
     drawing: emptyDrawing(),
+    projection: paperProjection(drawingPaper(emptyDrawing())),
     currentDrawing: () => props.drawing,
     color: 'Purple',
     brush: 'pen',
@@ -197,14 +202,19 @@ describe('native paper terminal packets', () => {
       strokes: [{ color: 'Blue', brush: 'pencil', width: 7, points: [{ x: 1, y: 2 }] }],
     };
     let history = createHistory(baseline);
-    props = { ...props, drawing: history.drawing, currentDrawing: () => history.drawing };
+    props = {
+      ...props,
+      drawing: history.drawing,
+      projection: paperProjection(drawingPaper(history.drawing)),
+      currentDrawing: () => history.drawing,
+    };
     act(() => root.render(createElement(DrawingSurface, props)));
     props.onCohort.mockImplementation((strokes, paper) => {
       history = addStrokes(history, strokes, paper);
     });
     partialRelease();
     expect(props.onCohort).not.toHaveBeenCalled();
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true, expect.any(Object));
     terminal('end', [], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(history.drawing.strokes.slice(1).map(({ points }) => points)).toEqual([
@@ -216,7 +226,7 @@ describe('native paper terminal packets', () => {
     ]);
     expect(history.undo).toHaveLength(1);
     expect(undoDrawing(history).drawing).toEqual(baseline);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
     expect(props.onError).not.toHaveBeenCalled();
   });
 
@@ -232,11 +242,11 @@ describe('native paper terminal packets', () => {
     terminal('end', [touch(1, 30, 40, 200), touch(2, 50, 60, 200)], [touch(0, 10, 20, 200)]);
     terminal('end', [touch(2, 50, 60, 300)], [touch(1, 30, 40, 300)]);
     expect(props.onCohort).not.toHaveBeenCalled();
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true, expect.any(Object));
     terminal('end', [], [touch(2, 50, 60, 400)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0]).toHaveLength(3);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
   });
 
   it('flushes a native cancellation after a partial lift without appending its coordinates', () => {
@@ -244,7 +254,7 @@ describe('native paper terminal packets', () => {
     terminal('cancel', [touch(1, 500, 600, 300)], [touch(1, 500, 600, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0][1].points).toEqual([{ x: 80, y: 90 }]);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
     terminal('end', [], [touch(1, 500, 600, 300)]);
     send('cancel');
     act(() => root.render(null));
@@ -264,7 +274,7 @@ describe('native paper terminal packets', () => {
     terminal('end', [touch(2, -80, 900, 300)], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0]).toHaveLength(2);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
     terminal('end', [], [touch(2, 700, 710, 400)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
   });
@@ -282,7 +292,7 @@ describe('native paper terminal packets', () => {
       { x: 10, y: 20 },
       { x: 30, y: 40 },
     ]);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
   });
 
   it('accepts a final packet without waiting for a responder callback and preserves its endpoint', () => {
@@ -290,7 +300,7 @@ describe('native paper terminal packets', () => {
     const final = event([], [touch(0, 30, 40, 200)], { 0: 100 });
     terminal('end', [], final.nativeEvent.changedTouches);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
     send('end', final);
     send('end', final);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
@@ -298,7 +308,7 @@ describe('native paper terminal packets', () => {
       { x: 10, y: 20 },
       { x: 30, y: 40 },
     ]);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
   });
 
   it('keeps a known contact endpoint and refuses an ended contact with no start', () => {
@@ -315,19 +325,19 @@ describe('native paper terminal packets', () => {
         { x: 500, y: 600 },
       ],
     ]);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
   });
 
   it('retains the remaining contact through layout and commits its terminal packet only once', () => {
     partialRelease();
     act(() => native.layout({ nativeEvent: { layout: { width: 1024, height: 768 } } }));
     expect(props.onCohort).not.toHaveBeenCalled();
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(true, expect.any(Object));
     terminal('end', [], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
     expect(props.onCohort.mock.calls[0][0]).toHaveLength(2);
     terminal('end', [], [touch(1, 80, 90, 300)]);
     expect(props.onCohort).toHaveBeenCalledTimes(1);
-    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false);
+    expect(props.onDrawingChange).toHaveBeenLastCalledWith(false, null);
   });
 });

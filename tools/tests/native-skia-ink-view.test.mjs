@@ -1,10 +1,19 @@
 // @vitest-environment happy-dom
-import { act, createElement, StrictMode, useEffect, useRef } from 'react';
+import {
+  act,
+  createElement,
+  forwardRef,
+  StrictMode,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
 import {
   drawingPaper,
+  paperProjection,
   UNADOPTED_PAPER,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { useUndoAction } from '../../experiments/native-architecture/src/useUndoAction.ts';
@@ -38,34 +47,13 @@ const skia = vi.hoisted(() => ({
   nextFrame: 0,
   loadImages: true,
   imageLoads: 0,
+  plane: { width: 400, height: 300 },
+  redraws: [],
 }));
 
 vi.mock('react-native', async () => {
-  const { createElement: element, useEffect: effect } = await import('react');
-  const { animatedPort, easingPort } =
-    await import('../migration/tests/rsd-native-animated-host.mjs');
-  const View = ({ children, onLayout, testID }) => {
-    effect(() => {
-      onLayout?.({ nativeEvent: { layout: PLANE } });
-    }, [onLayout]);
-    return element('div', { 'data-testid': testID }, children);
-  };
-  return {
-    Animated: animatedPort(View, View),
-    Easing: easingPort,
-    AccessibilityInfo: {
-      isReduceMotionEnabled: async () => false,
-      addEventListener: () => ({ remove() {} }),
-    },
-    PixelRatio: { get: () => 1 },
-    Platform: { OS: 'web' },
-    Image: ({ source, onLoad }) => {
-      effect(() => loadImage(onLoad), [source.uri, onLoad]);
-      return null;
-    },
-    StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
-    View,
-  };
+  const { nativeInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
+  return nativeInkViewSdk(() => skia.plane, loadImage);
 });
 
 vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
@@ -120,42 +108,19 @@ vi.mock('@shopify/react-native-skia', () => ({
     skia.canvases += 1;
     return null;
   },
-  SkiaPictureView: ({ picture }) => {
+  SkiaPictureView: forwardRef(({ picture }, ref) => {
+    useImperativeHandle(ref, () => ({ redraw: () => skia.redraws.push(picture) }), [picture]);
     useEffect(() => {
       skia.views.push(picture);
     }, [picture]);
     return null;
-  },
+  }),
 }));
 
 // SVG hosts mount the real artwork resource consumers; CanvasKit tests own pixel assertions.
-vi.mock('react-native-svg', () => {
-  const group = ({ children }) => createElement('div', null, children);
-  return {
-    default: group,
-    G: group,
-    Defs: group,
-    Mask: group,
-    Pattern: group,
-    Filter: group,
-    LinearGradient: group,
-    Stop: group,
-    FeBlend: group,
-    FeComposite: group,
-    ClipPath: group,
-    RadialGradient: group,
-    SvgXml: group,
-    Path: () => null,
-    Use: () => null,
-    Circle: () => null,
-    Rect: () => null,
-    Ellipse: () => null,
-    Polygon: () => null,
-    Image: ({ href, onLoad }) => {
-      useEffect(() => loadImage(onLoad), [href, onLoad]);
-      return null;
-    },
-  };
+vi.mock('react-native-svg', async () => {
+  const { svgInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
+  return svgInkViewSdk(loadImage);
 });
 
 vi.mock('../../experiments/native-architecture/src/drawing/skiaInkPainter.ts', () => ({
@@ -228,6 +193,8 @@ beforeEach(() => {
   skia.ghosts.length = 0;
   skia.loadImages = true;
   skia.imageLoads = 0;
+  skia.plane = PLANE;
+  skia.redraws.length = 0;
   skia.frames.clear();
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++skia.nextFrame;
@@ -273,25 +240,72 @@ it('hands the ink view one picture per change, the committed ink beneath the str
   expect(live.calls[1][1].calls.at(-1)).toEqual(['drawStroke', 3]);
 });
 
-it('retains the pre-Undo raster for the removed cohort without creating ghosts for ordinary commits', () => {
+it('redraws the current picture after layout and cancels superseded or unmounted redraws', () => {
   render([]);
-  expect(skia.ghosts).toHaveLength(0);
-  const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
-  const after = { ...before, strokes: [] };
-  const feedback = feedbackFor(before, after);
-  render([], after.strokes, feedback);
-  expect(skia.ghosts).toHaveLength(1);
-  expect(skia.ghosts[0]).toMatchObject({
-    removed: committed,
-    before: { kind: 'ink' },
-    after: { kind: 'ink' },
-    density: 1,
-  });
-  expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
-  render([], committed);
-  expect(skia.ghosts).toHaveLength(1);
-  expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
+  paintFrame();
+  expect(skia.redraws).toHaveLength(0);
+  paintFrame();
+  expect(skia.redraws).toEqual([skia.views.at(-1)]);
+  render([
+    pen([
+      { x: 20, y: 20 },
+      { x: 60, y: 30 },
+    ]),
+  ]);
+  expect(skia.frames.size).toBe(0);
+  expect(skia.redraws).toHaveLength(1);
+
+  skia.plane = { width: 300, height: 400 };
+  render([]);
+  paintFrame();
+  const obsolete = [...skia.frames.values()][0];
+  skia.plane = { width: 800, height: 600 };
+  render([]);
+  expect(skia.frames.size).toBe(1);
+  act(() => obsolete(0));
+  expect(skia.redraws).toHaveLength(1);
+  paintFrame();
+  paintFrame();
+  expect(skia.redraws).toEqual([skia.views[0], skia.views.at(-1)]);
+
+  skia.plane = PLANE;
+  render([]);
+  const unmounted = [...skia.frames.values()][0];
+  act(() => root.unmount());
+  expect(skia.frames.size).toBe(0);
+  act(() => unmounted(0));
+  expect(skia.redraws).toHaveLength(2);
 });
+
+it.each([false, true])(
+  'retains the pre-Undo raster and reprojects an active ghost when resize=%s',
+  async (resize) => {
+    const projection = paperProjection(paper);
+    render([], committed, null, projection);
+    expect(skia.ghosts).toHaveLength(0);
+    const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
+    const after = { ...before, strokes: [] };
+    const feedback = feedbackFor(before, after);
+    render([], after.strokes, feedback, projection);
+    expect(skia.ghosts).toHaveLength(1);
+    expect(skia.ghosts[0]).toMatchObject({
+      removed: committed,
+      before: { kind: 'ink' },
+      after: { kind: 'ink' },
+      density: 1,
+    });
+    const current = resize ? paperProjection(paper, { width: 800, height: 600 }) : projection;
+    render([], after.strokes, feedback, current);
+    expect(skia.ghosts.at(-1).context.projection).toBe(current);
+    expect(feedback.onFinished).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="undo-ink-motion"]')).not.toBeNull();
+    const count = skia.ghosts.length;
+    render([], committed);
+    expect(skia.ghosts).toHaveLength(count);
+    expect(container.querySelector('[data-testid="undo-ink-motion"]')).toBeNull();
+    await act(async () => {});
+  }
+);
 
 function paintFrame() {
   const callbacks = [...skia.frames.values()];
@@ -320,6 +334,8 @@ it('disposes the last-stroke ghost after Undo returns to unadopted paper', () =>
 
 it('disposes an interrupted ghost once and cancels its pending paint frames', async () => {
   render([]);
+  paintFrame();
+  paintFrame();
   const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
   const after = { ...before, strokes: [] };
   const finished = vi.fn();
@@ -425,6 +441,7 @@ it.each(
     id: 1,
     base64: 'checkpoint',
     paper: kind === 'wrong-paper' ? paper : LEGACY_PAPER,
+    projection: paperProjection(kind === 'wrong-paper' ? paper : LEGACY_PAPER),
     strokes: kind === 'exact-after' ? after.strokes : [...prefix, separator],
   };
   const cached = kind === 'none' ? null : checkpoint;
@@ -468,9 +485,9 @@ it.each(
   expect(current.ghost?.remaining?.strokes).toEqual(raster ? afterTail : undefined);
   expect(current.ghost?.plan?.checkpoint).toBe(raster ? (valid ? cached : null) : undefined);
   expect(current.ghost?.remaining?.checkpoint).toBe(raster ? (valid ? cached : null) : undefined);
-  expect(planInk(before.strokes, cached, LEGACY_PAPER).needsCheckpoint).toBe(
-    raster || kind !== 'prefix'
-  );
+  expect(
+    planInk(before.strokes, cached, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).needsCheckpoint
+  ).toBe(raster || kind !== 'prefix');
   const consumers = requests.mock.calls.map(([strokes], index) => ({
     strokes,
     count: requests.mock.results[index].value.byKey.size,

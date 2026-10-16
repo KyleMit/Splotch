@@ -1,3 +1,7 @@
+import {
+  paperProjection,
+  drawingPaper,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { act, createElement, forwardRef, Profiler, useImperativeHandle } from 'react';
@@ -213,6 +217,7 @@ function mountSurface() {
   return mount(
     createElement(DrawingSurface, {
       drawing: emptyDrawing(),
+      projection: paperProjection(drawingPaper(emptyDrawing())),
       currentDrawing: () => emptyDrawing(),
       color: 'Purple',
       brush: 'pen',

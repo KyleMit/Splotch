@@ -14,7 +14,7 @@ type Point = Readonly<{ x: number; y: number }>;
 
 // Shipping's PaperLayoutSnapshot (paperLayout.ts): an inked paper held at a screen position and
 // scale, kept while the window stays within system-bar reach of the size it was taken at.
-type Retained = Readonly<{ paper: AdoptedPaper; screen: Point; scale: number; window: Size }>;
+type Retained = Readonly<{ paper: AdoptedPaper; screen: Point; size: Size; window: Size }>;
 
 export type PaperPresentationInputs = Readonly<{
   paper: PaperReference;
@@ -25,17 +25,20 @@ export type PaperPresentationInputs = Readonly<{
   origin: Point;
   window: Size;
   toolbarStyle: ToolbarStyle;
+  layoutOnly?: boolean;
 }>;
 
 export type PaperPresentationState = Readonly<{
   inputs: PaperPresentationInputs | null;
   frame: PresentedFrame | null;
+  extent: Size | null;
   retained: Retained | null;
 }>;
 
 export const INITIAL_PAPER_PRESENTATION: PaperPresentationState = {
   inputs: null,
   frame: null,
+  extent: null,
   retained: null,
 };
 
@@ -56,11 +59,7 @@ function fitted(paper: Size, slot: Size): PresentedFrame {
   return { left: offsetX, top: offsetY, width: paper.width * scale, height: paper.height * scale };
 }
 
-// Shipping's resize policy (paperPresentationFor) for a paper that is kept. Its `adopt` re-adopts
-// an inked paper at the new viewport; a native picture keeps the paper it adopted, so that case
-// contain-fits, as shipping's own layout-only resize does.
-function policyFrame(paper: AdoptedPaper, slot: Size, layoutOnly: boolean): PresentedFrame {
-  const size = { width: paper.cssWidth, height: paper.cssHeight };
+function policyFrame(size: Size, slot: Size, layoutOnly: boolean) {
   const presentation = paperPresentationFor({
     canvasEmpty: false,
     paper: size,
@@ -69,15 +68,17 @@ function policyFrame(paper: AdoptedPaper, slot: Size, layoutOnly: boolean): Pres
     viewport: slot,
     layoutOnly,
   });
-  return presentation === 'window' ? { left: 0, top: 0, ...size } : fitted(size, slot);
+  const extent = presentation === 'adopt' ? slot : size;
+  const frame = presentation === 'fit' ? fitted(size, slot) : { left: 0, top: 0, ...extent };
+  return { extent, frame };
 }
 
 function retainedFrame(retained: Retained, origin: Point): PresentedFrame {
   return {
     left: retained.screen.x - origin.x,
     top: retained.screen.y - origin.y,
-    width: retained.paper.cssWidth * retained.scale,
-    height: retained.paper.cssHeight * retained.scale,
+    width: retained.size.width,
+    height: retained.size.height,
   };
 }
 
@@ -89,7 +90,7 @@ function retainCurrent(state: PaperPresentationState, paper: AdoptedPaper): Reta
   return {
     paper,
     screen: { x: inputs.origin.x + frame.left, y: inputs.origin.y + frame.top },
-    scale: frame.width / paper.cssWidth,
+    size: { width: frame.width, height: frame.height },
     window: inputs.window,
   };
 }
@@ -100,18 +101,23 @@ export function presentPaper(
 ): PaperPresentationState {
   const { paper, slot } = inputs;
   if (paper.kind === 'unadopted' || (inputs.empty && paper.kind === 'adopted'))
-    return { inputs, retained: null, frame: { left: 0, top: 0, ...slot } };
-  if (paper.kind === 'legacy') return { inputs, retained: null, frame: null };
+    return { inputs, retained: null, extent: slot, frame: { left: 0, top: 0, ...slot } };
+  if (paper.kind === 'legacy') return { inputs, retained: null, extent: null, frame: null };
   const previous = state.inputs;
+  const extent =
+    previous?.paper === paper && state.extent
+      ? state.extent
+      : { width: paper.cssWidth, height: paper.cssHeight };
   const styleSwitched =
     previous !== null && previous.toolbarStyle !== inputs.toolbarStyle && previous.paper === paper;
   let retained = styleSwitched ? retainCurrent(state, paper) : state.retained;
   if (retained && (retained.paper !== paper || !stillApplies(retained, inputs.window)))
     retained = null;
-  if (retained) return { inputs, retained, frame: retainedFrame(retained, inputs.origin) };
+  if (retained) return { inputs, retained, extent, frame: retainedFrame(retained, inputs.origin) };
   const layoutOnly =
-    previous !== null &&
-    previous.window.width === inputs.window.width &&
-    previous.window.height === inputs.window.height;
-  return { inputs, retained: null, frame: policyFrame(paper, slot, layoutOnly) };
+    inputs.layoutOnly ??
+    (previous !== null &&
+      previous.window.width === inputs.window.width &&
+      previous.window.height === inputs.window.height);
+  return { inputs, retained: null, ...policyFrame(extent, slot, layoutOnly) };
 }

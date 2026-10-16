@@ -223,3 +223,13 @@ export function flyoutPlacement(
     direction: narrow ? 'column' : 'row',
   };
 }
+
+export type AreaBox = Readonly<AreaSize & { x: number; y: number }>;
+
+export function sameSize(previous: AreaSize | undefined, next: AreaSize) {
+  return previous?.width === next.width && previous.height === next.height;
+}
+
+export function sameBox(previous: AreaBox | undefined, next: AreaBox) {
+  return sameSize(previous, next) && previous?.x === next.x && previous.y === next.y;
+}

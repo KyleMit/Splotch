@@ -1,4 +1,5 @@
 import { appendPoint, type Drawing, type Point, type Stroke, type StrokeStyle } from './model';
+import type { PngGrid } from './pngLimits';
 
 export function createStrokeInput() {
   let current: { identifier: string; stroke: Stroke } | null = null;
@@ -28,31 +29,33 @@ export function createStrokeInput() {
   };
 }
 
+export type CapturedPaper = Readonly<{ base64: string; size: PngGrid; isCurrent: () => boolean }>;
+
 export type PngCaptureRequest = {
   drawing: Drawing;
-  promise: Promise<string>;
-  complete: (base64: string) => boolean;
+  promise: Promise<CapturedPaper>;
+  complete: (base64: string, size: PngGrid) => boolean;
   cancel: (message: string) => boolean;
 };
 
 export function createPngCapture() {
   let active: PngCaptureRequest | null = null;
   return {
-    begin(drawing: Drawing): PngCaptureRequest {
+    begin(drawing: Drawing, isCurrent: () => boolean): PngCaptureRequest {
       if (active) throw new Error('A picture is already being exported.');
-      let resolve: (value: string) => void = () => {};
+      let resolve: (value: CapturedPaper) => void = () => {};
       let reject: (error: Error) => void = () => {};
-      const promise = new Promise<string>((accept, refuse) => {
+      const promise = new Promise<CapturedPaper>((accept, refuse) => {
         resolve = accept;
         reject = refuse;
       });
       const request: PngCaptureRequest = {
         drawing,
         promise,
-        complete(base64) {
+        complete(base64, size) {
           if (active !== request) return false;
           active = null;
-          resolve(base64);
+          resolve({ base64, size, isCurrent });
           return true;
         },
         cancel(message) {

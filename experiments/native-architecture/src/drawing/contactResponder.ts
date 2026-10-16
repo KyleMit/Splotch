@@ -3,6 +3,10 @@ import {
   containsPaperPoint,
   drawingPaper,
   paperContactPoint,
+  paperBounds,
+  paperProjection,
+  paperProjectionView,
+  type PaperProjection,
   presentedPaperSize,
   textureScale,
   type AdoptedPaper,
@@ -23,6 +27,7 @@ import { haloKind, haloSize, type Halo } from './haloModel';
 
 export type ContactDrawingProps = {
   currentDrawing: () => Drawing;
+  projection?: PaperProjection;
   color: PaintColor;
   brush: Brush;
   strokeWidth: StrokeWidth;
@@ -30,7 +35,7 @@ export type ContactDrawingProps = {
   disabled: boolean;
   isChromeTouch?: (touch: ContactSample) => boolean;
   onCohort: (strokes: readonly Stroke[], paper: PaperReference) => void;
-  onDrawingChange: (drawing: boolean) => void;
+  onDrawingChange: (drawing: boolean, paper: PaperReference | null) => void;
   onError: (error: unknown) => void;
   sound?: ContactSound | null;
 };
@@ -112,7 +117,10 @@ class ContactResponder {
       this.input.hasActive() ? this.input.paper() : null,
       this.halos()
     );
-    this.current().onDrawingChange(this.input.hasActive());
+    this.current().onDrawingChange(
+      this.input.hasActive(),
+      this.input.hasActive() ? this.input.paper() : null
+    );
   }
 
   private halos(): readonly Halo[] {
@@ -127,7 +135,7 @@ class ContactResponder {
               kind: haloKind(admission.halo.brush),
               x: admission.halo.x,
               y: admission.halo.y,
-              size: haloSize(admission.halo.width, paper, frame),
+              size: haloSize(admission.halo.width, paper, frame, this.contactProjection(paper)),
             },
           ]
         : []
@@ -164,10 +172,19 @@ class ContactResponder {
       : drawingPaper(this.current().currentDrawing());
   }
 
+  private contactProjection(paper: PaperReference) {
+    const current = this.current().projection;
+    return current?.paper === paper ? current : paperProjection(paper);
+  }
+
   private contactSize(): PaperSize | null {
     const frame = this.frame();
     const paper = this.contactPaper();
-    return !frame || paper.kind === 'legacy' ? null : presentedPaperSize(paper, frame);
+    return !frame || paper.kind === 'legacy'
+      ? null
+      : paper.kind === 'unadopted'
+        ? presentedPaperSize(paper, frame)
+        : paperBounds(this.contactProjection(paper));
   }
 
   private adoption(frame: PaperFrame): AdoptedPaper | null {
@@ -178,15 +195,20 @@ class ContactResponder {
   }
 
   private paperSample(point: { x: number; y: number }, frame: PaperFrame, paper: PaperReference) {
-    return paper.kind === 'legacy'
-      ? paperPoint(point.x, point.y, frame.width, frame.height)
-      : paperContactPoint(
-          point.x,
-          point.y,
-          frame.width,
-          frame.height,
-          presentedPaperSize(paper, frame)
-        );
+    if (paper.kind === 'legacy') return paperPoint(point.x, point.y, frame.width, frame.height);
+    if (paper.kind === 'unadopted')
+      return paperContactPoint(
+        point.x,
+        point.y,
+        frame.width,
+        frame.height,
+        presentedPaperSize(paper, frame)
+      );
+    const view = paperProjectionView(this.contactProjection(paper), frame);
+    return {
+      x: Math.round(((point.x - view.left) / view.scale) * 100) / 100,
+      y: Math.round(((point.y - view.top) / view.scale) * 100) / 100,
+    };
   }
 
   private sample(touch: ContactSample, audible: boolean) {
@@ -271,7 +293,7 @@ class ContactResponder {
     this.contacts.clear();
     const completed = this.input.interrupt();
     if (completed) this.current().onCohort(completed, this.input.paper());
-    this.current().onDrawingChange(false);
+    this.current().onDrawingChange(false, null);
   }
 
   finishInput() {

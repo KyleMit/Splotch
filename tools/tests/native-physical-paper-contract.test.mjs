@@ -7,6 +7,7 @@ import {
   semanticWidth,
   textureScale,
   paperContactPoint,
+  paperProjection,
   containsPaperPoint,
   samePaper,
   CANONICAL_PAPER_SIZE,
@@ -191,11 +192,19 @@ describe('drawing-level physical paper reference', () => {
     const phone = adoptPaper(342, 256.5, 1);
     const tablet = adoptPaper(760, 570, 1);
     const strokes = [pen, crayon];
-    const checkpoint = { id: 1, strokes: [pen], base64: 'model-only', paper: phone };
-    expect(planInk(strokes, checkpoint, phone).checkpoint).toBe(checkpoint);
-    expect(planInk(strokes, checkpoint, tablet).checkpoint).toBeNull();
-    expect(planInk(strokes, checkpoint, LEGACY_PAPER).checkpoint).toBeNull();
-    expect(planInk(strokes, checkpoint, phone).paper).toBe(phone);
+    const checkpoint = {
+      id: 1,
+      strokes: [pen],
+      base64: 'model-only',
+      paper: phone,
+      projection: paperProjection(phone),
+    };
+    expect(planInk(strokes, checkpoint, phone, paperProjection(phone)).checkpoint).toBe(checkpoint);
+    expect(planInk(strokes, checkpoint, tablet, paperProjection(tablet)).checkpoint).toBeNull();
+    expect(
+      planInk(strokes, checkpoint, LEGACY_PAPER, paperProjection(LEGACY_PAPER)).checkpoint
+    ).toBeNull();
+    expect(planInk(strokes, checkpoint, phone, paperProjection(phone)).paper).toBe(phone);
   });
 
   it('preserves pass segmentation under a simultaneous stroke, width and texel coordinate transform', () => {
