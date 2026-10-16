@@ -244,7 +244,7 @@ export function RsdFeedbackSection({
             size={page ? 'lg' : 'md'}
             fullWidth={page && phone}
             busy={sending}
-            disabled={(!page && !state.draft.message.trim()) || !state.policyReady}
+            disabled={!page && (!state.draft.message.trim() || !state.policyReady)}
             onPress={page ? owner.submitPublic : owner.submit}
           >
             {sending

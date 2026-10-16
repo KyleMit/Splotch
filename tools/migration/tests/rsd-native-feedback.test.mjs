@@ -222,8 +222,8 @@ it.each(REPORT_KINDS)(
   }
 );
 
-it('keeps standalone submit disabled until the real owner loads its policy', async () => {
-  const transport = vi.fn();
+it('keeps standalone submission independent of policy loading', async () => {
+  const transport = vi.fn(async () => new Response('{"ok":true}'));
   const owner = createNativeFeedback({
     transport,
     device: () => ({ platform: 'iOS' }),
@@ -231,8 +231,32 @@ it('keeps standalone submit disabled until the real owner loads its policy', asy
   });
   try {
     await mount(createElement(RsdFeedbackSection, { owner, presentation: 'page' }));
-    expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(true);
     expect(owner.getState().policyReady).toBe(false);
+    await press(labelled(REPORT_FORM_COPY.send), REPORT_FORM_COPY.send);
+    expect(owner.getState().validation).toBe('Please type a short description.');
+    expect(transport).not.toHaveBeenCalled();
+    await act(async () => owner.setMessage('A report before policy loading'));
+    await press(labelled(REPORT_FORM_COPY.send), REPORT_FORM_COPY.send);
+    expect(transport).toHaveBeenCalledOnce();
+    expect(owner.getState().policyReady).toBe(false);
+    expect(host.querySelector(GATE_MODAL)).toBeNull();
+  } finally {
+    owner.dispose();
+  }
+});
+
+it('keeps Settings submission disabled until its real policy loads', async () => {
+  const transport = vi.fn();
+  const owner = createNativeFeedback({
+    transport,
+    device: () => ({ platform: 'iOS' }),
+    policyStorage: { read: async () => null, write: async () => {} },
+  });
+  try {
+    await mount(createElement(RsdFeedbackSection, { owner }));
+    await act(async () => owner.setMessage('A Settings report waiting for policy'));
+    expect(owner.getState().policyReady).toBe(false);
+    expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(true);
     await act(async () => owner.loadPolicy());
     expect(owner.getState().policyReady).toBe(true);
     expect(labelled(REPORT_FORM_COPY.send).disabled).toBe(false);
@@ -258,7 +282,7 @@ it('keeps standalone submit disabled while its real owner is sending', async () 
     await press(labelled(REPORT_FORM_COPY.send), REPORT_FORM_COPY.send);
     expect(caller.product.feedback.owner.getState().delivery.status).toBe('sending');
     expect(labelled(REPORT_FORM_COPY.sending).disabled).toBe(true);
-    await act(async () => labelled(REPORT_FORM_COPY.sending).click());
+    await act(async () => caller.product.feedback.owner.submitPublic());
     expect(caller.feedbackSend).toHaveBeenCalledOnce();
   } finally {
     await act(async () => {
