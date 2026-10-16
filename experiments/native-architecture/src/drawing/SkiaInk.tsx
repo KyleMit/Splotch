@@ -272,12 +272,35 @@ function useInkContext(
   );
 }
 
+function useLayoutRedraw(size: Size | null) {
+  const view = useRef<SkiaPictureView>(null);
+  useEffect(() => {
+    if (!size) return;
+    let current = true;
+    let secondFrame: number | undefined;
+    // Native drawable resizing can coalesce with picture submission before the new size lands.
+    const firstFrame = requestAnimationFrame(() => {
+      if (!current) return;
+      secondFrame = requestAnimationFrame(() => {
+        if (current) view.current?.redraw();
+      });
+    });
+    return () => {
+      current = false;
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
+    };
+  }, [size]);
+  return view;
+}
+
 export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props, ref) {
   const drafts = props.drafts ?? NO_DRAFTS;
   const paper = useInkPaper();
   const projection = useInkProjection();
   const { pageId, theme } = useInkAppearance();
   const [size, setSize] = useState<Size | null>(null);
+  const view = useLayoutRedraw(size);
   const allStrokes = useMemo(() => [...props.strokes, ...drafts], [props.strokes, drafts]);
   const tiles = useCrayonTileResources(
     allStrokes,
@@ -328,7 +351,7 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
       }}
     >
       {scene.value ? (
-        <SkiaPictureView picture={scene.value} style={StyleSheet.absoluteFill} />
+        <SkiaPictureView ref={view} picture={scene.value} style={StyleSheet.absoluteFill} />
       ) : null}
       <SkiaUndoGhost
         feedback={props.undoGhost}
@@ -342,7 +365,7 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
 });
 
 // The committed raster contain-fitted to the plane and the strokes in progress over it, as one
-// picture: the view draws it as soon as it arrives, once. A Skia Canvas element tree would
+// picture: the view draws it as soon as it arrives. A Skia Canvas element tree would
 // re-record on the UI thread and draw twice for each change (once on commit, once after it).
 function useInkScene(
   committed: SkImage | null,

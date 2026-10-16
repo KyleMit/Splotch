@@ -1,5 +1,13 @@
 // @vitest-environment happy-dom
-import { act, createElement, StrictMode, useEffect, useRef } from 'react';
+import {
+  act,
+  createElement,
+  forwardRef,
+  StrictMode,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { adoptedDrawing, LEGACY_PAPER } from './native-paper-fixtures.mjs';
@@ -39,11 +47,13 @@ const skia = vi.hoisted(() => ({
   nextFrame: 0,
   loadImages: true,
   imageLoads: 0,
+  plane: { width: 400, height: 300 },
+  redraws: [],
 }));
 
 vi.mock('react-native', async () => {
   const { nativeInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
-  return nativeInkViewSdk(() => PLANE, loadImage);
+  return nativeInkViewSdk(() => skia.plane, loadImage);
 });
 
 vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
@@ -98,12 +108,13 @@ vi.mock('@shopify/react-native-skia', () => ({
     skia.canvases += 1;
     return null;
   },
-  SkiaPictureView: ({ picture }) => {
+  SkiaPictureView: forwardRef(({ picture }, ref) => {
+    useImperativeHandle(ref, () => ({ redraw: () => skia.redraws.push(picture) }), [picture]);
     useEffect(() => {
       skia.views.push(picture);
     }, [picture]);
     return null;
-  },
+  }),
 }));
 
 // SVG hosts mount the real artwork resource consumers; CanvasKit tests own pixel assertions.
@@ -182,6 +193,8 @@ beforeEach(() => {
   skia.ghosts.length = 0;
   skia.loadImages = true;
   skia.imageLoads = 0;
+  skia.plane = PLANE;
+  skia.redraws.length = 0;
   skia.frames.clear();
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++skia.nextFrame;
@@ -225,6 +238,43 @@ it('hands the ink view one picture per change, the committed ink beneath the str
   const live = skia.views[1];
   expect(live.calls.map(([name]) => name)).toEqual(['drawImageRectOptions', 'drawPicture']);
   expect(live.calls[1][1].calls.at(-1)).toEqual(['drawStroke', 3]);
+});
+
+it('redraws the current picture after layout and cancels superseded or unmounted redraws', () => {
+  render([]);
+  paintFrame();
+  expect(skia.redraws).toHaveLength(0);
+  paintFrame();
+  expect(skia.redraws).toEqual([skia.views.at(-1)]);
+  render([
+    pen([
+      { x: 20, y: 20 },
+      { x: 60, y: 30 },
+    ]),
+  ]);
+  expect(skia.frames.size).toBe(0);
+  expect(skia.redraws).toHaveLength(1);
+
+  skia.plane = { width: 300, height: 400 };
+  render([]);
+  paintFrame();
+  const obsolete = [...skia.frames.values()][0];
+  skia.plane = { width: 800, height: 600 };
+  render([]);
+  expect(skia.frames.size).toBe(1);
+  act(() => obsolete(0));
+  expect(skia.redraws).toHaveLength(1);
+  paintFrame();
+  paintFrame();
+  expect(skia.redraws).toEqual([skia.views[0], skia.views.at(-1)]);
+
+  skia.plane = PLANE;
+  render([]);
+  const unmounted = [...skia.frames.values()][0];
+  act(() => root.unmount());
+  expect(skia.frames.size).toBe(0);
+  act(() => unmounted(0));
+  expect(skia.redraws).toHaveLength(2);
 });
 
 it.each([false, true])(
@@ -284,6 +334,8 @@ it('disposes the last-stroke ghost after Undo returns to unadopted paper', () =>
 
 it('disposes an interrupted ghost once and cancels its pending paint frames', async () => {
   render([]);
+  paintFrame();
+  paintFrame();
   const before = { version: 7, paper, pageId: 'blank', rainbow: 0, strokes: committed };
   const after = { ...before, strokes: [] };
   const finished = vi.fn();
