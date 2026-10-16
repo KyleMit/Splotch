@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import type { BrushPreferencesState, OptionalBrush } from '../settings/brushPreferences';
 import type {
@@ -17,6 +17,7 @@ import {
 import { PENCIL_ERASER_HELP, PENCIL_ERASER_LABEL } from '../settings/pencilEraser';
 import { focusedElementId, focusElementById } from './focusCarry';
 import { RsdButton } from './RsdButton';
+import { RsdSectionReveal } from './RsdSectionReveal';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { RsdSegmentedPicker } from './RsdSegmentedPicker';
 import { RsdSettingCard, RsdSettingSectionBody } from './RsdSettingCard';
@@ -34,7 +35,6 @@ const styles = css.create({
   after: { marginTop: TOOL_DRAWER_SPACING.pencilTop },
   failure: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
 });
-const layout = StyleSheet.create({ tools: { marginTop: TOOL_DRAWER_SPACING.toolsTop } });
 
 type ToolDrawerSettings = DrawingControlPreferences &
   Readonly<{ applePencilSeen: boolean; pencilEraserEnabled: boolean }>;
@@ -85,7 +85,7 @@ export function RsdToolDrawerSection({
             onToggle={onToolDrawerChange}
           />
         </RsdSettingCard>
-        {settings.toolDrawerEnabled ? (
+        <RsdSectionReveal visible={settings.toolDrawerEnabled}>
           <DrawingToolList
             isOn={(tool) => isDrawingToolOn(tool, settings, brushState.availability)}
             isBusy={(tool) => ('brush' in tool ? brushesBusy : busy)}
@@ -94,7 +94,7 @@ export function RsdToolDrawerSection({
               else controlSetters[tool.control](next);
             }}
           />
-        ) : null}
+        </RsdSectionReveal>
         {brushState.message ? (
           <html.div style={[styles.after, styles.failure]}>
             <RsdStatusMessage status="error">{brushState.message}</RsdStatusMessage>
@@ -105,21 +105,19 @@ export function RsdToolDrawerSection({
             )}
           </html.div>
         ) : null}
-        {pencilShown ? (
-          <html.div style={styles.after}>
-            <RsdSettingCard>
-              <RsdToggleRow
-                icon="brush-eraser"
-                label={PENCIL_ERASER_LABEL}
-                id="pencilEraserToggle"
-                checked={settings.pencilEraserEnabled}
-                disabled={busy}
-                help={PENCIL_ERASER_HELP}
-                onToggle={onPencilEraserChange}
-              />
-            </RsdSettingCard>
-          </html.div>
-        ) : null}
+        <RsdSectionReveal visible={pencilShown} marginTop={TOOL_DRAWER_SPACING.pencilTop}>
+          <RsdSettingCard>
+            <RsdToggleRow
+              icon="brush-eraser"
+              label={PENCIL_ERASER_LABEL}
+              id="pencilEraserToggle"
+              checked={settings.pencilEraserEnabled}
+              disabled={busy}
+              help={PENCIL_ERASER_HELP}
+              onToggle={onPencilEraserChange}
+            />
+          </RsdSettingCard>
+        </RsdSectionReveal>
       </html.section>
     </RsdSettingSectionBody>
   );
@@ -162,7 +160,7 @@ function DrawingToolList({
   return (
     <View
       testID="tool-drawer-tools"
-      style={layout.tools}
+      style={{ marginTop: TOOL_DRAWER_SPACING.toolsTop }}
       onLayout={({ nativeEvent }) => measure(nativeEvent.layout.width)}
     >
       <html.div style={styles.heading}>
