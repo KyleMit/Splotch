@@ -1,6 +1,7 @@
-import { useContext, type ReactElement, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import { css, html } from 'react-strict-dom';
 import { DialogScope } from './dialogScope';
+import { landFirstControl } from './landFocus';
 import { colors, dimensions, fonts } from './tokens.css';
 import { styles as controlStyles } from './controls';
 
@@ -70,8 +71,13 @@ export function RsdConfirmCard({
   actions: readonly [ReactElement, ReactElement];
 }) {
   const dialog = useContext(DialogScope);
+  const card = useRef<HTMLDivElement>(null);
+  const active = dialog?.active === true;
+  useEffect(() => {
+    if (active) landFirstControl(card.current);
+  }, [active]);
   return (
-    <html.div style={[styles.card, !dialog && styles.padded]}>
+    <html.div ref={card} style={[styles.card, !dialog && styles.padded]}>
       <html.div style={styles.heading}>
         <html.h2 id={dialog?.titleId} style={[controlStyles.boldText, styles.title]}>
           {title}

@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ModalShell } from '../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
 import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
+import { RsdConfirmCard } from '../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
+import { RsdButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
+import { DeviceCheckbox } from '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptInContent.tsx';
+import { DialogScope } from '../../experiments/native-architecture/src/rsdDrawing/dialogScope.ts';
 import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 
 // React Native Web's own Modal, focus trap, View and responder system decide where focus lands;
@@ -194,4 +200,135 @@ it('returns focus to the opener when the dialog closes', async () => {
   const opener = await open(undefined);
   await act(async () => root.render(null));
   expect(document.activeElement).toBe(opener);
+});
+
+function confirmation(ready, children) {
+  return createElement(
+    ModalShell,
+    { visible: true, label: 'Report this picture', size: 'confirm', onClose() {}, header: null },
+    ready
+      ? createElement(
+          RsdConfirmCard,
+          {
+            title: 'Report this picture',
+            copy: 'The AI picture and drawing go to a grown-up at Splotch.',
+            actions: [
+              createElement(RsdButton, { key: 'cancel', onPress() {} }, 'Cancel'),
+              createElement(RsdButton, { key: 'send', onPress() {} }, 'Send report'),
+            ],
+          },
+          children
+        )
+      : null
+  );
+}
+
+async function emptyConfirmation() {
+  await act(async () => root.render(confirmation(false)));
+  await act(async () => vi.waitFor(() => expect(scrollChunk.release).toBeTypeOf('function')));
+  await act(async () => scrollChunk.release());
+  await act(async () =>
+    vi.waitFor(() => expect(host.querySelector('[data-testid="modal-body"]')).not.toBeNull())
+  );
+}
+
+it('lands the shipping first choice when the confirmation body arrives after the web modal opens', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../web/src/lib/components/AiImageReport.svelte'),
+    'utf8'
+  );
+  const cancelAt = shipping.indexOf('>Cancel</Button>');
+  const sendAt = shipping.indexOf("{sending ? 'Sending…' : 'Send report'}");
+  expect(cancelAt).toBeGreaterThan(-1);
+  expect(sendAt).toBeGreaterThan(cancelAt);
+  expect(shipping).not.toContain('autofocus');
+  const opener = document.createElement('button');
+  opener.textContent = 'Report this picture';
+  document.body.append(opener);
+  opener.focus();
+  await emptyConfirmation();
+  expect(host.querySelector('[role="dialog"] button')).toBeNull();
+  expect(document.activeElement).not.toBe(opener);
+  await act(async () => root.render(confirmation(true)));
+  const [cancel, send] = host.querySelectorAll('[role="dialog"] button');
+  expect(cancel.textContent).toBe('Cancel');
+  expect(document.activeElement).toBe(cancel);
+  send.focus();
+  await act(async () => root.render(confirmation(true, createElement('p', null, 'Preview ready'))));
+  expect(document.activeElement).toBe(send);
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
+});
+
+it('focuses a preceding problem report device opt-in when that control is present', async () => {
+  const shipping = readFileSync(
+    join(import.meta.dirname, '../../web/src/lib/components/AiImageReport.svelte'),
+    'utf8'
+  );
+  const deviceAt = shipping.indexOf('mode="device-only"');
+  const actionsAt = shipping.indexOf('class="ai-report-confirm-actions"');
+  expect(deviceAt).toBeGreaterThan(-1);
+  expect(actionsAt).toBeGreaterThan(deviceAt);
+  await emptyConfirmation();
+  await act(async () =>
+    root.render(
+      confirmation(
+        true,
+        createElement(DeviceCheckbox, { checked: false, onToggle() {} })
+      )
+    )
+  );
+  expect(document.activeElement.getAttribute('role')).toBe('checkbox');
+  expect(document.activeElement.getAttribute('aria-checked')).toBe('false');
+});
+
+it('lands confirmation focus only when its dialog is active, including a retained reopening', async () => {
+  const opener = document.createElement('button');
+  document.body.append(opener);
+  opener.focus();
+  const card = (active) =>
+    createElement(
+      DialogScope,
+      { value: { titleId: 'confirm-title', active } },
+      createElement(RsdConfirmCard, {
+        title: 'Leave Splotch?',
+        copy: 'This drawing stays in the background.',
+        actions: [
+          createElement(RsdButton, { key: 'stay', onPress() {} }, 'Keep drawing'),
+          createElement(RsdButton, { key: 'leave', onPress() {} }, 'Leave'),
+        ],
+      })
+    );
+  await act(async () => root.render(card(false)));
+  expect(document.activeElement).toBe(opener);
+  await act(async () => root.render(card(true)));
+  const [stay, leave] = host.querySelectorAll('button');
+  expect(document.activeElement).toBe(stay);
+  leave.focus();
+  await act(async () => root.render(card(false)));
+  expect(document.activeElement).toBe(leave);
+  opener.focus();
+  await act(async () => root.render(card(true)));
+  expect(document.activeElement).toBe(stay);
+});
+
+
+it('preserves a control that already took focus while the confirmation body mounted', async () => {
+  await act(async () =>
+    root.render(
+      createElement(
+        DialogScope,
+        { value: { titleId: 'confirm-title', active: true } },
+        createElement(RsdConfirmCard, {
+          title: 'Report this picture',
+          copy: 'The AI picture and drawing go to a grown-up at Splotch.',
+          actions: [
+            createElement(RsdButton, { key: 'cancel', onPress() {} }, 'Cancel'),
+            createElement('button', { key: 'send', type: 'button', autoFocus: true }, 'Send report'),
+          ],
+        })
+      )
+    )
+  );
+  expect(document.activeElement.textContent).toBe('Send report');
 });
