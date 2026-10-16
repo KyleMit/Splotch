@@ -1,6 +1,7 @@
 import { lazySurface } from './lazySurface';
 
-// Sharing these controls between lazy report forms otherwise puts their styles in startup.
+// Feedback uses this lazy surface. The problem confirmation loads the controls with its parent
+// for initial checkbox focus; Expo places their shared content in startup.
 export const DeviceCheckbox = lazySurface(() =>
   import('./RsdDeviceOptInContent').then((module) => module.DeviceCheckbox)
 );
