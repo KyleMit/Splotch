@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
 import { Animated, Easing } from '../platform/animated';
@@ -9,6 +9,7 @@ import { useReduceMotion } from '../drawing/useReduceMotion';
 import { useDialogBack } from '../platform/BrowserBack';
 import { ModalKeyboardScope } from '../platform/KeyboardScope';
 import { DialogScope } from './dialogScope';
+import { useConfirmFocus } from './useConfirmFocus';
 import { fontTheme } from './fontTheme';
 import { FOLLOW_APP_ORIENTATION, useModalFrame } from './useModalFrame';
 import { ModalScrim } from './ModalScrim';
@@ -321,6 +322,15 @@ function ModalCard({
   children: ReactNode;
 }) {
   const theme = useDrawingAppearance();
+  const card = useRef<HTMLDivElement>(null);
+  const content =
+    size === 'confirm' ? (
+      <ConfirmBody card={card} active={active}>
+        {children}
+      </ConfirmBody>
+    ) : (
+      children
+    );
   const frame = useModalFrame(size);
   const { body } = frame;
   const fit = frame.height === null ? layout.hug : layout.fill;
@@ -329,6 +339,7 @@ function ModalCard({
   return (
     <html.div
       data-testid="modal-surface"
+      ref={card}
       inert={!active}
       style={[
         fontTheme,
@@ -352,17 +363,30 @@ function ModalCard({
               }}
               removeClippedSubviews={false}
             >
-              {children}
+              {content}
             </ScrollView>
           ) : (
             <View testID="modal-body" style={fit}>
-              {children}
+              {content}
             </View>
           )}
         </DialogScope>
       </html.div>
     </html.div>
   );
+}
+
+function ConfirmBody({
+  card,
+  active,
+  children,
+}: {
+  card: RefObject<HTMLElement | null>;
+  active: boolean;
+  children: ReactNode;
+}) {
+  useConfirmFocus(card, active, children);
+  return children;
 }
 
 const layout = StyleSheet.create({

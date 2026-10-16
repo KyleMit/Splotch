@@ -2,8 +2,6 @@
 // iOS belongs to the platform's accessibility service, so a page change moves nothing here.
 export function landFocus(_element: HTMLElement | null) {}
 
-export function landFirstControl(_element: HTMLElement | null) {}
-
 export function retainFocus() {
   return () => {};
 }
