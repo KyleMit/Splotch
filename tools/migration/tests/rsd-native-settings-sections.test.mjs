@@ -27,6 +27,10 @@ import { join } from 'node:path';
 import { Animated } from 'react-native';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
+import { RsdSettingsHub } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsHub.tsx';
+import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { FLY_IN_TRANSFORM } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 import {
   REDUCE_MOTION_HELP,
@@ -449,4 +453,89 @@ it('keeps a failed Parent Center save pending and retryable after the Apple Penc
   expect(settings.stored().parentPolicies.feedback).toBe('session');
   expect(product.getState().settings.saved).toBe(true);
   expect(feedback()).toBe('session');
+});
+
+it('starts the Settings exit without rendering unchanged native drill-in rows again', async () => {
+  records.os = 'android';
+  storedSettings();
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  const labels = hubRows()
+    .filter((row) => !row.closest('[data-testid="hub-tile"]').querySelector('[role="switch"]'))
+    .map((row) => row.getAttribute('aria-label'));
+  expect(labels).toHaveLength(NATIVE_SETTINGS_SECTIONS.length - hubSwitches().length);
+  const renderedRows = () =>
+    Object.fromEntries(
+      labels.map((label) => [
+        label,
+        records.props.filter((props) => props.accessibilityLabel === label).length,
+      ])
+    );
+  const before = renderedRows();
+  expect(Object.values(before).every((count) => count > 0)).toBe(true);
+  let atStart;
+  let finish;
+  const parallel = vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+    start(done) {
+      atStart = renderedRows();
+      animations.forEach((animation) => animation.start());
+      finish = () => done({ finished: true });
+    },
+    stop() {},
+  }));
+  try {
+    await rerender({ settingsOpen: false });
+    expect(atStart).toEqual(before);
+    expect(renderedRows()).toEqual(before);
+    for (const label of ['Night Mode', 'Sound', 'Close'])
+      expect(button(label).disabled, label).toBe(true);
+    expect(records.props.findLast((props) => props.testID === 'modal-card').pointerEvents).toBe('none');
+    expect(host.querySelector('[data-native-modal="Settings"]')).not.toBeNull();
+    await act(async () => finish());
+    expect(host.querySelector('[data-native-modal="Settings"]')).toBeNull();
+  } finally {
+    parallel.mockRestore();
+  }
+});
+
+it('keeps memoized hub rows current for callbacks, summaries, activity dots and theme', async () => {
+  let settings;
+  const owner = createSoundSettings({ read: async () => null, write: async () => {} }, (state) => {
+    settings = state;
+  });
+  await owner.load();
+  const props = nativeSettingsProps(owner, settings);
+  const context = { settings, brushes: props.brushState, downloadedBooks: 0, ai: null };
+  const initialOpen = vi.fn();
+  const latestOpen = vi.fn();
+  const hub = (onOpen, downloadedBooks = 0, unseen = false, preference = 'light') =>
+    createElement(
+      DrawingAppearanceProvider,
+      { preference },
+      createElement(RsdSettingsHub, {
+        sections: NATIVE_SETTINGS_SECTIONS,
+        context: { ...context, downloadedBooks },
+        toggles: {},
+        unseen: () => unseen,
+        returnTo: null,
+        onOpen,
+      })
+    );
+  try {
+    await mount(hub(initialOpen));
+    const soundMarkup = hubRow('Sound').querySelector('svg[data-xml]').getAttribute('data-xml');
+    const before = records.props.filter((record) => record.testID === 'hub-tile').length;
+    expect(before).toBeGreaterThan(0);
+    await act(async () => root.render(hub(latestOpen)));
+    expect(records.props.filter((record) => record.testID === 'hub-tile')).toHaveLength(before);
+    await act(async () => hubRow('Coloring').click());
+    expect(initialOpen).not.toHaveBeenCalled();
+    expect(latestOpen).toHaveBeenCalledExactlyOnceWith('coloring');
+    await act(async () => root.render(hub(latestOpen, 2, true, 'dark')));
+    expect(hubRow('Coloring').getAttribute('aria-label')).toBe('Coloring, 2 extra books ready, new');
+    expect(dottedRows()).toHaveLength(NATIVE_SETTINGS_SECTIONS.length);
+    expect(hubRow('Sound').querySelector('svg[data-xml]').getAttribute('data-xml')).not.toBe(soundMarkup);
+  } finally {
+    owner.dispose();
+  }
 });

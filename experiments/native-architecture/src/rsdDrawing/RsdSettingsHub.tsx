@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { memo, useRef, useSyncExternalStore, type RefObject } from 'react';
 import { sectionsSeen } from '../platform/sectionsSeen';
 import { useColorScheme } from 'react-native';
 import { css, html } from 'react-strict-dom';
@@ -97,6 +97,9 @@ export function RsdSettingsHub({
   returnTo: NativeSettingsSectionId | null;
   onOpen: (id: NativeSettingsSectionId) => void;
 }) {
+  // Changing action closures must not redraw every row before the modal exit starts.
+  const open = useRef(onOpen);
+  open.current = onOpen;
   const firstDrillIn = sections.findIndex((section) => !toggles[section.id]);
   return (
     <html.div role="list" style={styles.list}>
@@ -108,13 +111,12 @@ export function RsdSettingsHub({
             role="listitem"
             style={index === firstDrillIn && index > 0 && styles.groupBreak}
           >
-            <RsdHubRow
-              icon={section.icon}
-              title={section.label}
+            <HubSectionRow
+              section={section}
               subtitle={sectionSubtitle(section.id, context)}
               unseen={unseen(section.id)}
               focusOnMount={section.id === returnTo}
-              onOpen={() => onOpen(section.id)}
+              open={open}
               toggle={toggle}
             />
           </html.div>
@@ -123,3 +125,31 @@ export function RsdSettingsHub({
     </html.div>
   );
 }
+
+const HubSectionRow = memo(function HubSectionRow({
+  section,
+  subtitle,
+  unseen,
+  focusOnMount,
+  toggle,
+  open,
+}: {
+  section: NativeSettingsSection;
+  subtitle: string;
+  unseen: boolean;
+  focusOnMount: boolean;
+  toggle: HubToggle | undefined;
+  open: RefObject<(id: NativeSettingsSectionId) => void>;
+}) {
+  return (
+    <RsdHubRow
+      icon={section.icon}
+      title={section.label}
+      subtitle={subtitle}
+      unseen={unseen}
+      focusOnMount={focusOnMount}
+      toggle={toggle}
+      onOpen={() => open.current(section.id)}
+    />
+  );
+});
