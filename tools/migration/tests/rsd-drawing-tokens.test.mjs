@@ -377,8 +377,10 @@ it(
       join(root, 'web/src/lib/components/page/BackLink.svelte'),
       'utf8'
     );
-    expect(shipping).toContain('flex-shrink: 0;');
-    expect(shipping).toContain('white-space: nowrap;');
+    const back = shipping.match(/^\s*\.back\s*\{([^}]+)\}/m);
+    expect(back, 'Shipping Back link rule').not.toBeNull();
+    expect(back[1]).toContain('flex-shrink: 0;');
+    expect(back[1]).toContain('white-space: nowrap;');
     expect(
       computedWebStyles('src/rsdDrawing/RsdNotFoundPage.tsx', '{ back: styles.back }', [
         'flex-shrink',
