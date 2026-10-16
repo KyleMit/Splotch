@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { act } from 'react';
+import { flushSync } from 'react-dom';
 import { describe, expect, it, vi } from 'vitest';
 import {
   sdk,
   owner,
+  historyOwner,
+  root,
   host,
   touch,
   event,
@@ -15,6 +18,9 @@ import {
 } from './native-contacts-mounted-harness.mjs';
 import { createPaperScroll } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { measurePaper as measureWebPaper } from '../../experiments/native-architecture/src/drawing/measurePaper.web.ts';
+import { offlineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/runtime.ts';
+import { PageArtMotion } from '../../experiments/native-architecture/src/drawing/PageArtMotion.tsx';
+import { prepareColoringPage } from '../../experiments/native-architecture/src/drawing/pageArtSelection.ts';
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
 
 describe('mounted joint cohort, canonical history and capture ownership', () => {
@@ -248,4 +254,269 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       pageY: 530,
     });
   });
+});
+
+describe('the coloring page action after picker retirement', () => {
+  async function choose(pageId = 'turtle') {
+    await open({
+      ...legacyDrawing(),
+      strokes: [{ brush: 'magic', rainbow: 0, width: 30, points: [{ x: 40, y: 60 }] }],
+    });
+    await act(async () => owner.setPagePickerOpen(true));
+    const retired = owner.pagePickerDismissed;
+    const dismissed = () => retired(() => {});
+    const reopen = owner.setPagePickerOpen;
+    const before = owner.history;
+    await act(async () => owner.choosePage(pageId));
+    return { before, dismissed, reopen };
+  }
+
+  it('holds history and the input lease through actual dismissal and its next frame', async () => {
+    const { before, dismissed, reopen } = await choose();
+    expect(owner.pagePickerOpen).toBe(false);
+    expect(owner.history).toBe(before);
+    expect(owner.commandBusy).toBe(true);
+    await send('start', event([touch(9, 50, 60, 100)]));
+    await send('end', event([], [touch(9, 70, 80, 200)], { 9: 100 }));
+    expect(owner.history).toBe(before);
+    expect(owner.drawing).toBe(false);
+    await act(async () => {
+      owner.choosePage('flower');
+      dismissed();
+      dismissed();
+    });
+    expect(owner.history).toBe(before);
+    expect(owner.commandBusy).toBe(true);
+    expect(sdk.frames.size).toBe(1);
+    await act(async () => {
+      owner.setPagePickerOpen(true);
+      reopen(true);
+    });
+    expect(owner.pagePickerOpen).toBe(false);
+    expect(owner.history).toBe(before);
+    expect(sdk.frames.size).toBe(1);
+    await settle();
+    expect(owner.history.drawing.pageId).toBe('turtle');
+    expect(owner.history.undo).toEqual([before.drawing]);
+    expect(owner.notice).toBe('Little turtle ready.');
+    expect(owner.commandBusy).toBe(false);
+    const selected = owner.history;
+    await send('start', event([touch(10, 50, 60, 300)]));
+    await send('end', event([], [touch(10, 70, 80, 400)], { 10: 300 }));
+    expect(owner.history.drawing.strokes).toHaveLength(selected.drawing.strokes.length + 1);
+    const completed = owner.history;
+    await act(async () => dismissed());
+    await settle();
+    expect(owner.history).toBe(completed);
+  });
+
+  it('does not select anything when a picker merely closes', async () => {
+    await settle();
+    const before = owner.history;
+    await act(async () => owner.setPagePickerOpen(true));
+    const retired = owner.pagePickerDismissed;
+    const dismissed = () => retired(() => {});
+    await act(async () => owner.setPagePickerOpen(false));
+    await act(async () => dismissed());
+    await settle();
+    expect(owner.history).toBe(before);
+    expect(owner.commandBusy).toBe(false);
+  });
+
+  it('ignores a previous picker dismissal while a new choice waits', async () => {
+    const first = await choose();
+    await act(async () => first.dismissed());
+    await settle();
+    const second = await choose('flower');
+    await act(async () => first.dismissed());
+    await settle();
+    expect(owner.history).toBe(second.before);
+    expect(owner.commandBusy).toBe(true);
+    await act(async () => second.dismissed());
+    await settle();
+    expect(owner.history.drawing.pageId).toBe('flower');
+    expect(owner.history.undo).toEqual([...second.before.undo, second.before.drawing]);
+  });
+
+  it('keeps the picker open and releases its lease when page readiness fails', async () => {
+    const readiness = vi
+      .spyOn(offlineLibrary, 'openPage')
+      .mockRejectedValue(new Error('Page unavailable.'));
+    try {
+      const { before } = await choose();
+      expect(owner.pagePickerOpen).toBe(true);
+      expect(owner.history).toBe(before);
+      expect(owner.commandBusy).toBe(false);
+      expect(owner.failure.detail).toBe('Page unavailable.');
+      let release;
+      expect(() => {
+        release = owner.surface.current.lockInput();
+      }).not.toThrow();
+      release();
+    } finally {
+      readiness.mockRestore();
+    }
+  });
+
+  it('cancels a choice if its picker closes while readiness is pending', async () => {
+    let ready;
+    const readiness = vi.spyOn(offlineLibrary, 'openPage').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          ready = resolve;
+        })
+    );
+    try {
+      const { before, dismissed } = await choose();
+      expect(owner.pagePickerOpen).toBe(true);
+      await act(async () => {
+        owner.setPagePickerOpen(false);
+        dismissed();
+        ready();
+      });
+      await settle();
+      expect(owner.history).toBe(before);
+      expect(owner.commandBusy).toBe(false);
+    } finally {
+      readiness.mockRestore();
+    }
+  });
+
+  it.each(['dismissal', 'frame', 'completed frame'])(
+    'cancels feature-disabled selection during %s',
+    async (phase) => {
+      const { before, dismissed } = await choose();
+      if (phase !== 'dismissal') await act(async () => dismissed());
+      const lateFrames = [...sdk.frames.values()];
+      await act(async () => {
+        if (phase === 'completed frame') {
+          sdk.frames.clear();
+          lateFrames.forEach((frame) => frame(0));
+        }
+        owner.setColoringBookEnabled(false);
+        if (phase === 'completed frame') owner.setColoringBookEnabled(true);
+      });
+      await act(async () => {
+        dismissed();
+        lateFrames.forEach((frame) => frame(0));
+      });
+      await settle();
+      expect(owner.history).toBe(before);
+      expect(owner.commandBusy).toBe(false);
+    }
+  );
+
+  it.each(['dismissal', 'frame', 'completed frame'])(
+    'cancels an unmounted selection during %s',
+    async (phase) => {
+      const { before, dismissed } = await choose();
+      const history = historyOwner.historyRef;
+      if (phase !== 'dismissal') await act(async () => dismissed());
+      const lateFrames = [...sdk.frames.values()];
+      await act(async () => {
+        if (phase === 'completed frame') {
+          sdk.frames.clear();
+          lateFrames.forEach((frame) => frame(0));
+        }
+        flushSync(() => root.render(null));
+      });
+      await act(async () => {
+        dismissed();
+        lateFrames.forEach((frame) => frame(0));
+      });
+      expect(history.current).toBe(before);
+      expect(sdk.frames.size).toBe(0);
+    }
+  );
+});
+
+async function webPagePreparation() {
+  vi.resetModules();
+  const requests = [];
+  vi.doMock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts', () => ({
+    PageArtMotion,
+    prepareColoringPage,
+  }));
+  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (original) => {
+    const actual = await original();
+    return {
+      ...actual,
+      createLazyExport: (load) =>
+        actual.createLazyExport(() =>
+          new Promise((resolve, reject) => requests.push({ resolve, reject })).then(load)
+        ),
+    };
+  });
+  sdk.pageArt = (
+    await import('../../experiments/native-architecture/src/drawing/pageArtResource.web.ts')
+  ).pageArt();
+  return requests;
+}
+
+describe('web page preparation through the production command owner', () => {
+  async function select() {
+    await open({
+      ...legacyDrawing(),
+      strokes: [{ brush: 'magic', rainbow: 0, width: 30, points: [{ x: 40, y: 60 }] }],
+    });
+    const requests = await webPagePreparation();
+    await act(async () => owner.setPagePickerOpen(true));
+    const before = owner.history;
+    const paper = owner.surface.current;
+    const lock = paper.lockInput;
+    const releases = vi.fn();
+    vi.spyOn(paper, 'lockInput').mockImplementation(() => {
+      const release = lock();
+      return () => {
+        release();
+        releases();
+      };
+    });
+    await act(async () => owner.choosePage('turtle'));
+    expect(requests).toHaveLength(1);
+    expect(owner.history).toBe(before);
+    expect(owner.pagePickerOpen).toBe(true);
+    expect(owner.commandBusy).toBe(true);
+    return { requests, before, releases };
+  }
+
+  it('holds existing history through resource rejection, retry, picker retirement and its frame', async () => {
+    const { requests, before, releases } = await select();
+    await act(async () => requests[0].reject(new Error('Page Art chunk unavailable.')));
+    expect(owner.history).toBe(before);
+    expect(owner.pagePickerOpen).toBe(true);
+    expect(owner.commandBusy).toBe(false);
+    expect(owner.failure.detail).toBe('Page Art chunk unavailable.');
+    expect(releases).toHaveBeenCalledOnce();
+    await act(async () => owner.choosePage('turtle'));
+    expect(requests).toHaveLength(2);
+    await act(async () => requests[1].resolve());
+    expect(owner.pagePickerOpen).toBe(false);
+    expect(owner.history).toBe(before);
+    expect(owner.commandBusy).toBe(true);
+    await act(async () => owner.pagePickerDismissed(() => {}));
+    expect(owner.history).toBe(before);
+    await settle();
+    expect(owner.history.drawing.pageId).toBe('turtle');
+    expect(owner.history.undo).toEqual([before.drawing]);
+    expect(owner.commandBusy).toBe(false);
+    expect(releases).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['close', 'disable', 'unmount'])(
+    'cancels held resource preparation on %s without resurrecting art',
+    async (action) => {
+      const { requests, releases } = await select();
+      await act(async () => {
+        if (action === 'close') owner.setPagePickerOpen(false);
+        if (action === 'disable') owner.setColoringBookEnabled(false);
+        if (action === 'unmount') root.unmount();
+      });
+      const cancelled = historyOwner.historyRef.current;
+      await act(async () => requests[0].resolve());
+      await settle();
+      expect(historyOwner.historyRef.current).toBe(cancelled);
+      expect(releases).toHaveBeenCalledOnce();
+    }
+  );
 });

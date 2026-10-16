@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
+import { useDrawingUndoShortcut } from '../../experiments/native-architecture/src/product/useDrawingUndoShortcut.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 import { createHistory } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
@@ -19,6 +20,7 @@ vi.mock('../../experiments/native-architecture/src/platform/networkReturn.ts', (
 
 const sdk = vi.hoisted(() => ({
   input: null,
+  shortcut: null,
   sequence: 0,
   frames: new Map(),
   nextFrame: 0,
@@ -34,7 +36,20 @@ const sdk = vi.hoisted(() => ({
   soundVolume: vi.fn(),
   soundDispose: vi.fn(),
   screenRenders: 0,
+  pageArt: null,
 }));
+vi.mock(
+  '../../experiments/native-architecture/src/drawing/pageArtResource.ts',
+  async (original) => {
+    const { pageArt } = await original();
+    return {
+      pageArt: () => ({
+        current: () => (sdk.pageArt ? sdk.pageArt.current() : pageArt().current()),
+        load: () => (sdk.pageArt ? sdk.pageArt.load() : pageArt().load()),
+      }),
+    };
+  }
+);
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: vi.fn(async () => ({
     start: sdk.soundStart,
@@ -53,7 +68,8 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 vi.mock('react-native', () => {
-  const View = forwardRef(({ children, style }, ref) => {
+  const View = forwardRef(({ children, style, onShortcutKey }, ref) => {
+    if (onShortcutKey) sdk.shortcut = onShortcutKey;
     useImperativeHandle(ref, () => ({
       measure(complete) {
         sdk.measurements.push(complete);
@@ -93,6 +109,13 @@ vi.mock('react-native', () => {
     },
   };
 });
+vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
+  const { animatedPort, easingPort } =
+    await import('../migration/tests/rsd-native-animated-host.mjs');
+  const { View } = await import('react-native');
+  return { Animated: animatedPort(View, View), Easing: easingPort };
+});
+
 // The saved picture's compositor paints through Skia's native module, which Node cannot load;
 // native-picture-export.test.mjs covers what it paints.
 vi.mock('../../experiments/native-architecture/src/drawing/pictureCompose.ts', () => ({
@@ -142,6 +165,7 @@ function Consumer() {
   sdk.screenRenders += 1;
   historyOwner = useDrawingHistory();
   owner = useDrawingScreen();
+  useDrawingUndoShortcut(owner, false);
   const sound = useDrawingSound();
   return createElement(DrawingSurface, {
     sound: sound.owner?.contacts ?? null,
@@ -233,6 +257,7 @@ beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
   sdk.input = null;
+  sdk.shortcut = null;
   sdk.sequence = 0;
   sdk.frames.clear();
   sdk.captures.length = 0;
@@ -241,6 +266,7 @@ beforeEach(async () => {
   sdk.hold = false;
   sdk.fail = false;
   sdk.screenRenders = 0;
+  sdk.pageArt = null;
   sdk.frame = [0, 0, 1024, 768, 40, 800];
   sdk.save.mockClear();
   sdk.soundStart.mockClear();
@@ -266,6 +292,8 @@ afterEach(async () => {
   host.remove();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
+  vi.doUnmock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts');
 });
 
 export {
