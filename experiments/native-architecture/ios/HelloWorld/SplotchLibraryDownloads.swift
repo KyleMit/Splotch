@@ -5,6 +5,7 @@ private struct SplotchLibraryJob: Codable {
   let identity: String
   let allowMetered: Bool
   let token: String
+  // Retained for serial-job compatibility; verified files determine scheduled work.
   var nextFileIndex: Int
 }
 
@@ -23,6 +24,9 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
   private lazy var meteredSession = makeSession(allowMetered: true)
   private var job: SplotchLibraryJob?
   private var pack: SplotchLibraryPack?
+  private var verifiedFileIndices = Set<Int>()
+  private var taskIdentifiers: [Int: Int] = [:]
+  private var reconcilingTasks = false
   private var completions: [(Result<Void, Error>) -> Void] = []
   private var backgroundCompletions: [String: () -> Void] = [:]
 
@@ -49,13 +53,13 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
           self.completions.append(completion)
           return
         }
-        self.cancelCurrent()
+        self.cancelCurrent { _ in }
         self.job = SplotchLibraryJob(marker: marker, identity: identity, allowMetered: allowMetered, token: UUID().uuidString, nextFileIndex: 0)
         self.pack = pack
         self.completions.append(completion)
         try self.persist()
         try SplotchLibraryFiles.pruneSupersededStages(pack)
-        self.startNextFile()
+        self.startTransfers()
       } catch { self.fail(error) }
     }
   }
@@ -72,40 +76,48 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
         try SplotchLibraryFiles.pruneSupersededStages(pack)
         self.job = job
         self.pack = pack
-        let session = job.allowMetered ? self.meteredSession : self.wifiSession
-        session.getAllTasks { tasks in
-          self.queue.async {
-            guard self.job?.token == job.token else { return }
-            if !tasks.contains(where: { $0.taskDescription == "\(job.token):\(job.nextFileIndex)" }) { self.startNextFile() }
-          }
-        }
-      } catch { self.cancelCurrent() }
+        self.startTransfers()
+      } catch { self.cancelCurrent { _ in } }
     }
   }
 
   func cancelAll(completion: @escaping (Error?) -> Void) {
-    queue.async {
-      self.cancelCurrent()
-      do {
-        let pending = try self.jobURL()
-        guard !FileManager.default.fileExists(atPath: pending.path) else { throw SplotchLibraryError.cancelled }
-        completion(nil)
-      } catch { completion(error) }
-    }
+    queue.async { self.cancelCurrent(completion: completion) }
   }
 
-  private func cancelCurrent() {
+  private func clearActiveTransfer() {
     job = nil
     pack = nil
+    verifiedFileIndices.removeAll()
+    taskIdentifiers.removeAll()
+    reconcilingTasks = false
+  }
+
+  private func cancelCurrent(completion: @escaping (Error?) -> Void) {
+    clearActiveTransfer()
     if let url = try? jobURL() { try? FileManager.default.removeItem(at: url) }
+    let cancellationError: Error?
+    do {
+      let pending = try jobURL()
+      guard !FileManager.default.fileExists(atPath: pending.path) else { throw SplotchLibraryError.cancelled }
+      cancellationError = nil
+    } catch { cancellationError = error }
     settle(.failure(SplotchLibraryError.cancelled))
+    cancelStaleTasks { completion(cancellationError) }
+  }
+
+  private func cancelStaleTasks(completion: @escaping () -> Void) {
+    let pending = DispatchGroup()
     for session in [wifiSession, meteredSession] {
+      pending.enter()
       session.getAllTasks { tasks in
         self.queue.async {
           for task in tasks where !(self.job.map { task.taskDescription?.hasPrefix($0.token + ":") == true } ?? false) { task.cancel() }
+          pending.leave()
         }
       }
     }
+    pending.notify(queue: queue, execute: completion)
   }
 
   private func persist() throws {
@@ -115,41 +127,107 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
     try JSONEncoder().encode(job).write(to: url, options: .atomic)
   }
 
-  private func startNextFile() {
-    guard var job, let pack else { return }
-    do {
-      let staging = try SplotchLibraryFiles.stage(pack)
-      let current = try SplotchLibraryFiles.root().appendingPathComponent(SplotchLibraryFiles.directory(pack))
-      while job.nextFileIndex < pack.files.count {
-        let file = pack.files[job.nextFileIndex]
-        let target = SplotchLibraryFiles.destination(file, in: staging)
-        if !(try SplotchLibraryFiles.matches(target, file: file)) {
-          let previous = SplotchLibraryFiles.destination(file, in: current)
-          if try SplotchLibraryFiles.matches(previous, file: file) {
-            try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-            if FileManager.default.fileExists(atPath: target.path) { try FileManager.default.removeItem(at: target) }
-            try FileManager.default.copyItem(at: previous, to: target)
-          } else { break }
+  private func prepareFiles() throws {
+    guard job != nil, let pack else { return }
+    let staging = try SplotchLibraryFiles.stage(pack)
+    let current = try SplotchLibraryFiles.root().appendingPathComponent(SplotchLibraryFiles.directory(pack))
+    verifiedFileIndices.removeAll()
+    taskIdentifiers.removeAll()
+    for (index, file) in pack.files.enumerated() {
+      let target = SplotchLibraryFiles.destination(file, in: staging)
+      var verified = try SplotchLibraryFiles.matches(target, file: file)
+      if !verified {
+        let previous = SplotchLibraryFiles.destination(file, in: current)
+        if try SplotchLibraryFiles.matches(previous, file: file) {
+          try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+          if FileManager.default.fileExists(atPath: target.path) { try FileManager.default.removeItem(at: target) }
+          try FileManager.default.copyItem(at: previous, to: target)
+          verified = true
         }
-        job.nextFileIndex += 1
       }
-      self.job = job
-      try persist()
-      if job.nextFileIndex == pack.files.count { try finish(); return }
-      let file = pack.files[job.nextFileIndex]
-      let properties = try FileManager.default.attributesOfFileSystem(forPath: SplotchLibraryFiles.root().path)
-      if let free = properties[.systemFreeSize] as? NSNumber, free.int64Value < file.bytes + Self.storageReserveBytes { throw SplotchLibraryError.storageFull }
-      guard let url = URL(string: "https://splotch.art" + file.downloadPath) else { throw SplotchLibraryError.invalidPack }
-      let task = (job.allowMetered ? meteredSession : wifiSession).downloadTask(with: url)
-      task.taskDescription = "\(job.token):\(job.nextFileIndex)"
-      task.resume()
+      if verified { verifiedFileIndices.insert(index) }
+    }
+    try persistVerifiedProgress()
+  }
+
+  private func persistVerifiedProgress() throws {
+    guard var job, let pack else { return }
+    job.nextFileIndex = 0
+    while job.nextFileIndex < pack.files.count && verifiedFileIndices.contains(job.nextFileIndex) {
+      job.nextFileIndex += 1
+    }
+    self.job = job
+    try persist()
+  }
+
+  private func startTransfers() {
+    guard let job, let pack else { return }
+    do {
+      try prepareFiles()
+      if verifiedFileIndices.count == pack.files.count { try finish(); return }
+      let session = job.allowMetered ? meteredSession : wifiSession
+      reconcilingTasks = true
+      session.getAllTasks { tasks in
+        self.queue.async {
+          guard self.job?.token == job.token else { return }
+          do {
+            try self.enqueueMissingFiles(tasks, session: session)
+            self.reconcilingTasks = false
+          } catch { self.fail(error) }
+        }
+      }
     } catch { fail(error) }
   }
 
-  private func currentFile(_ task: URLSessionTask) -> SplotchLibraryFile? {
-    guard let job, let pack, job.nextFileIndex < pack.files.count,
-          task.taskDescription == "\(job.token):\(job.nextFileIndex)" else { return nil }
-    return pack.files[job.nextFileIndex]
+  private func enqueueMissingFiles(_ tasks: [URLSessionTask], session: URLSession) throws {
+    guard let job, let pack else { return }
+    let remainingBytes = pack.files.enumerated().reduce(Int64(0)) { total, item in
+      total + (verifiedFileIndices.contains(item.offset) ? 0 : item.element.bytes)
+    }
+    let properties = try FileManager.default.attributesOfFileSystem(forPath: SplotchLibraryFiles.root().path)
+    if let free = properties[.systemFreeSize] as? NSNumber, free.int64Value < remainingBytes + Self.storageReserveBytes { throw SplotchLibraryError.storageFull }
+    var retained: [Int: URLSessionTask] = [:]
+    for task in tasks {
+      guard let index = fileIndex(task), !verifiedFileIndices.contains(index), retained[index] == nil,
+            task.state == .running || task.state == .suspended,
+            task.originalRequest?.url?.absoluteString == "https://splotch.art" + pack.files[index].downloadPath else {
+        task.cancel()
+        continue
+      }
+      retained[index] = task
+    }
+    for index in pack.files.indices where !verifiedFileIndices.contains(index) {
+      let task: URLSessionTask
+      if let existing = retained[index] { task = existing }
+      else {
+        guard let url = URL(string: "https://splotch.art" + pack.files[index].downloadPath) else { throw SplotchLibraryError.invalidPack }
+        task = session.downloadTask(with: url)
+        task.taskDescription = "\(job.token):\(index)"
+      }
+      taskIdentifiers[index] = task.taskIdentifier
+      if task.state == .suspended { task.resume() }
+    }
+  }
+
+  private func fileIndex(_ task: URLSessionTask) -> Int? {
+    guard let job, let pack, let description = task.taskDescription,
+          description.hasPrefix(job.token + ":"),
+          let index = Int(description.dropFirst(job.token.count + 1)), pack.files.indices.contains(index),
+          description == "\(job.token):\(index)" else { return nil }
+    return index
+  }
+
+  private func registerReconcilingTask(_ task: URLSessionTask, completed: Bool) {
+    guard reconcilingTasks, let pack, let index = fileIndex(task),
+          !verifiedFileIndices.contains(index), completed || taskIdentifiers[index] == nil,
+          task.originalRequest?.url?.absoluteString == "https://splotch.art" + pack.files[index].downloadPath else { return }
+    taskIdentifiers[index] = task.taskIdentifier
+  }
+
+  private func currentFile(_ task: URLSessionTask) -> (index: Int, file: SplotchLibraryFile)? {
+    guard let pack, let index = fileIndex(task), !verifiedFileIndices.contains(index),
+          taskIdentifiers[index] == task.taskIdentifier else { return nil }
+    return (index, pack.files[index])
   }
 
   func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
@@ -157,13 +235,16 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
   }
 
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-    guard let file = currentFile(downloadTask), totalBytesWritten > file.bytes else { return }
+    registerReconcilingTask(downloadTask, completed: false)
+    guard let current = currentFile(downloadTask), totalBytesWritten > current.file.bytes else { return }
     downloadTask.cancel()
     fail(SplotchLibraryError.verificationFailed)
   }
 
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-    guard var job, let pack, let file = currentFile(downloadTask) else { return }
+    registerReconcilingTask(downloadTask, completed: true)
+    guard let pack, let current = currentFile(downloadTask) else { return }
+    let file = current.file
     do {
       guard (downloadTask.response as? HTTPURLResponse)?.statusCode == 200,
             downloadTask.response?.url?.absoluteString == "https://splotch.art" + file.downloadPath,
@@ -172,10 +253,10 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
       try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
       if FileManager.default.fileExists(atPath: target.path) { try FileManager.default.removeItem(at: target) }
       try FileManager.default.moveItem(at: location, to: target)
-      job.nextFileIndex += 1
-      self.job = job
-      try persist()
-      startNextFile()
+      verifiedFileIndices.insert(current.index)
+      taskIdentifiers.removeValue(forKey: current.index)
+      try persistVerifiedProgress()
+      if verifiedFileIndices.count == pack.files.count { try finish() }
     } catch { fail(error) }
   }
 
@@ -195,14 +276,14 @@ final class SplotchLibraryDownloads: NSObject, URLSessionDownloadDelegate {
     if FileManager.default.fileExists(atPath: directory.path) { try FileManager.default.removeItem(at: directory) }
     try FileManager.default.moveItem(at: staging, to: directory)
     try FileManager.default.removeItem(at: jobURL())
-    self.job = nil
-    self.pack = nil
+    clearActiveTransfer()
+    cancelStaleTasks {}
     settle(.success(()))
   }
 
   private func fail(_ error: Error) {
-    job = nil
-    pack = nil
+    clearActiveTransfer()
+    cancelStaleTasks {}
     settle(.failure(error))
   }
   private func settle(_ result: Result<Void, Error>) {

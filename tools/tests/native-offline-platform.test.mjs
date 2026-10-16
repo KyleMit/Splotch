@@ -15,7 +15,10 @@ import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLibraryPlatform } from '../../experiments/native-architecture/src/platform/offlineLibrary.ts';
 import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
-import { createLibraryStore } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
+import {
+  createLibraryStore,
+  packDirectory,
+} from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import {
   MAX_PACK_FILE_BYTES,
   PACK_ORIGIN,
@@ -213,6 +216,40 @@ describe('actual native library adapter with whole-book transfer ownership', () 
       store.install(catalogPack('dinosaur', 'full'), new AbortController().signal, false, () => {})
     ).rejects.toMatchObject({ code: 'corrupt' });
     expect(await store.scan()).toEqual([]);
+  });
+
+  it('rejects a native success with one missing file and accepts the completed verified book', async () => {
+    const pack = catalogPack('dinosaur', 'full');
+    const directory = packDirectory(pack);
+    const missing = pack.files.at(-1);
+    const assetPath = (file) => `${directory}/files/${file.path.split('/').at(-1)}`;
+    const assetBytes = (file) =>
+      readFile(new URL(`../../web/static${file.downloadPath}`, import.meta.url));
+    for (const file of pack.files.slice(0, -1))
+      await platform.write(assetPath(file), await assetBytes(file));
+    await platform.write(
+      `${directory}/identity.json`,
+      new TextEncoder().encode(JSON.stringify(pack.files))
+    );
+    await platform.write(
+      `${directory}/installed.json`,
+      new TextEncoder().encode(JSON.stringify(pack))
+    );
+    const store = createLibraryStore(platform);
+    await expect(
+      store.install(pack, new AbortController().signal, false, () => {})
+    ).rejects.toMatchObject({ code: 'corrupt' });
+    expect(fixture.bridge.install).toHaveBeenCalledExactlyOnceWith(
+      JSON.stringify(pack),
+      JSON.stringify(pack.files),
+      false
+    );
+    expect(await store.scan()).toEqual([]);
+    await platform.write(assetPath(missing), await assetBytes(missing));
+    await expect(
+      store.install(pack, new AbortController().signal, false, () => {})
+    ).resolves.toEqual(pack);
+    expect(await store.scan()).toEqual([pack]);
   });
 
   it.each([
