@@ -1,5 +1,6 @@
 import { css, html } from 'react-strict-dom';
 import { SOUND_VOLUME_DEFAULT, SOUND_VOLUME_MAX, SOUND_VOLUME_MIN } from '../settings/soundVolume';
+import { RsdSectionReveal } from './RsdSectionReveal';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { RsdSettingCard } from './RsdSettingCard';
 import { RsdSliderRow } from './RsdSlider';
@@ -18,11 +19,6 @@ export const SOUND_SECTION_SPACING = {
 
 const styles = css.create({
   group: { display: 'flex', flexDirection: 'column' },
-  slider: {
-    marginTop: SOUND_SECTION_SPACING.sliderTop,
-    marginBottom: SOUND_SECTION_SPACING.sliderBottom,
-  },
-  sources: { marginTop: SOUND_SECTION_SPACING.sourcesTop },
   heading: { marginBottom: SOUND_SECTION_SPACING.sourcesHeadingBottom },
   rows: { display: 'flex', flexDirection: 'column', gap: dimensions.space2 },
 });
@@ -55,52 +51,52 @@ export function RsdSoundSection(props: SoundSectionProps) {
             if (next !== soundEnabled) props.onToggle();
           }}
         />
-        {soundEnabled ? (
-          <html.div style={styles.slider}>
-            <RsdSliderRow
-              id="soundVolumeLabel"
-              label="Volume"
-              value={volume.value}
-              min={SOUND_VOLUME_MIN}
-              max={SOUND_VOLUME_MAX}
-              snap={SOUND_VOLUME_DEFAULT}
-              onInput={volume.onInput}
-              onActiveChange={volume.onActiveChange}
-            />
-          </html.div>
-        ) : null}
+        <RsdSectionReveal
+          visible={soundEnabled}
+          marginTop={SOUND_SECTION_SPACING.sliderTop}
+          marginBottom={SOUND_SECTION_SPACING.sliderBottom}
+        >
+          <RsdSliderRow
+            id="soundVolumeLabel"
+            label="Volume"
+            value={volume.value}
+            min={SOUND_VOLUME_MIN}
+            max={SOUND_VOLUME_MAX}
+            snap={SOUND_VOLUME_DEFAULT}
+            onInput={volume.onInput}
+            onActiveChange={volume.onActiveChange}
+          />
+        </RsdSectionReveal>
       </RsdSettingCard>
-      {soundEnabled ? (
-        <html.div style={styles.sources}>
-          <html.div style={styles.heading}>
-            <RsdRuleLabel as="h4" strong>
-              What makes sound
-            </RsdRuleLabel>
-          </html.div>
-          <html.div style={styles.rows}>
-            <RsdSettingCard>
-              <RsdToggleRow
-                icon="brush-pen"
-                label="Drawing"
-                id="drawingSoundToggle"
-                checked={props.drawingSoundEnabled}
-                disabled={busy}
-                onToggle={props.onDrawingSoundChange}
-              />
-            </RsdSettingCard>
-            <RsdSettingCard>
-              <RsdToggleRow
-                icon="trash-closed"
-                label="Deleting"
-                id="deleteSoundToggle"
-                checked={props.deleteSoundEnabled}
-                disabled={busy}
-                onToggle={props.onDeleteSoundChange}
-              />
-            </RsdSettingCard>
-          </html.div>
+      <RsdSectionReveal visible={soundEnabled} marginTop={SOUND_SECTION_SPACING.sourcesTop}>
+        <html.div style={styles.heading}>
+          <RsdRuleLabel as="h4" strong>
+            What makes sound
+          </RsdRuleLabel>
         </html.div>
-      ) : null}
+        <html.div style={styles.rows}>
+          <RsdSettingCard>
+            <RsdToggleRow
+              icon="brush-pen"
+              label="Drawing"
+              id="drawingSoundToggle"
+              checked={props.drawingSoundEnabled}
+              disabled={busy}
+              onToggle={props.onDrawingSoundChange}
+            />
+          </RsdSettingCard>
+          <RsdSettingCard>
+            <RsdToggleRow
+              icon="trash-closed"
+              label="Deleting"
+              id="deleteSoundToggle"
+              checked={props.deleteSoundEnabled}
+              disabled={busy}
+              onToggle={props.onDeleteSoundChange}
+            />
+          </RsdSettingCard>
+        </html.div>
+      </RsdSectionReveal>
     </html.section>
   );
 }
