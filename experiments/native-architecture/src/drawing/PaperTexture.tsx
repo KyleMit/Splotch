@@ -17,6 +17,9 @@ import { paperGrainDensity } from './paperGrainDensity';
 const source: ImageSourcePropType =
   typeof handmadePaper === 'string' ? { uri: handmadePaper } : handmadePaper;
 
+// Repeat images shrink a tile to fit a smaller view; the grain test pins this minimum to the asset.
+const PAPER_GRAIN_TILE_PX = 148;
+
 const styles = StyleSheet.create({
   fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
 });
@@ -31,6 +34,8 @@ function grainBox(density: number): ImageStyle {
     left: 0,
     width: extent,
     height: extent,
+    minWidth: PAPER_GRAIN_TILE_PX / density,
+    minHeight: PAPER_GRAIN_TILE_PX / density,
     transformOrigin: 'top left',
     transform: [{ scale: density }],
   };
