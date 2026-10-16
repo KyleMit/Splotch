@@ -8,7 +8,7 @@ import { ModalShell } from '../../experiments/native-architecture/src/rsdDrawing
 import { DialogHeader } from '../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
 import { RsdConfirmCard } from '../../experiments/native-architecture/src/rsdDrawing/RsdConfirmCard.tsx';
 import { RsdButton } from '../../experiments/native-architecture/src/rsdDrawing/RsdButton.tsx';
-import { DeviceCheckbox } from '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptInContent.tsx';
+import { lazySurface } from '../../experiments/native-architecture/src/rsdDrawing/lazySurface.ts';
 import { useConfirmFocus } from '../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.web.ts';
 import { RsdPageSheet } from '../../experiments/native-architecture/src/rsdDrawing/RsdNotFoundPage.tsx';
 
@@ -38,6 +38,20 @@ vi.mock('../../experiments/native-architecture/src/platform/ScrollViewContent.we
   });
   return { ScrollView: (await import('react-native-web')).ScrollView };
 });
+const deviceChunk = vi.hoisted(() => ({ release: null }));
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptInContent.tsx',
+  async (importOriginal) => {
+    await new Promise((resolve) => {
+      deviceChunk.release = resolve;
+    });
+    return importOriginal();
+  }
+);
+vi.mock(
+  '../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.tsx',
+  () => import('../../experiments/native-architecture/src/rsdDrawing/RsdDeviceOptIn.web.tsx')
+);
 vi.mock(
   '../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.ts',
   () => import('../../experiments/native-architecture/src/rsdDrawing/useConfirmFocus.web.ts')
@@ -69,7 +83,7 @@ vi.mock('react-native-svg', () => ({
 }));
 vi.mock('react-strict-dom', () => ({
   html: Object.fromEntries(
-    ['div', 'span', 'button', 'header', 'h1', 'h2', 'p', 'main'].map((tag) => [
+    ['div', 'span', 'button', 'header', 'h1', 'h2', 'h4', 'p', 'main', 'section'].map((tag) => [
       tag,
       ({ style: _style, 'data-testid': testId, ...props }) =>
         createElement(tag, { ...props, 'data-testid': testId }),
@@ -115,6 +129,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   scrollChunk.release?.();
+  deviceChunk.release?.();
   await act(async () => root.unmount());
   document.body.replaceChildren();
   HTMLElement.prototype.focus = domFocus;
@@ -299,7 +314,7 @@ it('returns focus after a retained confirmation retires and lands its first choi
   expect(document.activeElement).toBe(opener);
 });
 
-it('focuses a preceding problem report device opt-in when that control is present', async () => {
+it('loads the actual problem confirmation with its device opt-in before landing focus', async () => {
   const shipping = readFileSync(
     join(import.meta.dirname, '../../web/src/lib/components/AiImageReport.svelte'),
     'utf8'
@@ -309,13 +324,46 @@ it('focuses a preceding problem report device opt-in when that control is presen
   expect(deviceAt).toBeGreaterThan(-1);
   expect(actionsAt).toBeGreaterThan(deviceAt);
   await emptyConfirmation();
-  await act(async () =>
-    root.render(
-      confirmation(true, createElement(DeviceCheckbox, { checked: false, onToggle() {} }))
+  await act(async () => root.render(null));
+  const ProblemConfirmation = lazySurface(() =>
+    import('../../experiments/native-architecture/src/rsdDrawing/RsdAiProblemReport.tsx').then(
+      (module) => module.RsdAiProblemConfirm
     )
+  );
+  const opener = document.createElement('button');
+  opener.textContent = 'Report a problem';
+  document.body.append(opener);
+  opener.focus();
+  const owner = { cancelProblemReport() {}, setProblemDevice() {}, sendProblemReport() {} };
+  const problem = { phase: 'confirm', rows: [], includeDevice: false, deviceRows: [] };
+  await act(async () => root.render(createElement(ProblemConfirmation, { owner, problem })));
+  await act(async () => vi.waitFor(() => expect(deviceChunk.release).toBeTypeOf('function')));
+  const dialogBeforeDevice = document.querySelector('[role="dialog"]');
+  const focusBeforeDevice = document.activeElement;
+  await act(async () => deviceChunk.release());
+  await act(async () =>
+    vi.waitFor(() => expect(document.querySelector('[role="checkbox"]')).not.toBeNull())
   );
   expect(document.activeElement.getAttribute('role')).toBe('checkbox');
   expect(document.activeElement.getAttribute('aria-checked')).toBe('false');
+  expect(dialogBeforeDevice).toBeNull();
+  expect(focusBeforeDevice).toBe(opener);
+  const send = [...document.querySelectorAll('[role="dialog"] button')].find(
+    (button) => button.textContent === 'Send report'
+  );
+  expect(send).toBeDefined();
+  send.focus();
+  await act(async () =>
+    root.render(
+      createElement(ProblemConfirmation, {
+        owner,
+        problem: { ...problem, rows: [{ label: 'Attempts', value: '1 in a row' }] },
+      })
+    )
+  );
+  expect(document.activeElement).toBe(send);
+  await act(async () => root.render(null));
+  expect(document.activeElement).toBe(opener);
 });
 
 function RetainedConfirmation({ active }) {
