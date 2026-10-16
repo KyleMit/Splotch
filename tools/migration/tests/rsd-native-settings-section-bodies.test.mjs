@@ -36,6 +36,7 @@ import { RsdSectionReveal } from '../../../experiments/native-architecture/src/r
 import { ReduceMotionPreferenceProvider } from '../../../experiments/native-architecture/src/drawing/useReduceMotion.ts';
 import { CALM_FADE_MS, SECTION_SLIDE_MS } from '../../../web/src/lib/motionDurations.ts';
 import { SOUND_SECTION_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSoundSection.tsx';
+import { TOOL_DRAWER_SPACING } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToolDrawerSection.tsx';
 import { SEE_THROUGH_CARD_SHADOW } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingCard.tsx';
 import {
   BUTTON_SCALE_MAX,
@@ -256,6 +257,15 @@ it.each([
   }
 );
 
+it('keeps the Tool Drawer gap inside its clipped reveal', async () => {
+  storedSettings();
+  drawingScreen();
+  await mount(createElement(RsdDrawingScreen));
+  await openSettingsSection('Tool Drawer');
+  const tools = records.props.findLast((props) => props.testID === 'tool-drawer-tools');
+  expect(flat(tools.style ?? {}).marginTop).toBe(TOOL_DRAWER_SPACING.toolsTop);
+});
+
 it('mounts each AI Art alternative through its own shipping reveal', async () => {
   storedSettings({
     parentPolicies: {
@@ -336,6 +346,31 @@ it('measures new content before its full reveal and releases the fixed height af
   }
 });
 
+it.each([
+  ['full', SECTION_SLIDE_MS],
+  ['reduce', CALM_FADE_MS],
+])(
+  'reverses its %s transition over the remaining shipping distance',
+  async (preference, duration) => {
+    const { pending, timing } = holdReveals();
+    try {
+      await showReveal(true, preference);
+      await measureReveal();
+      await showReveal(false, preference);
+      await act(async () => pending[0].value.setValue(0.25));
+      await showReveal(true, preference);
+      expect(pending[0].stop).toHaveBeenCalledOnce();
+      expect(pending[1].config).toMatchObject({ toValue: 1, duration: duration * 0.75 });
+      await act(async () => pending[0].finish({ finished: true }));
+      expect(host.textContent).toContain('Revealed setting');
+      await act(async () => pending[1].finish({ finished: true }));
+      expect(host.textContent).toContain('Revealed setting');
+    } finally {
+      timing.mockRestore();
+    }
+  }
+);
+
 it('keeps the transition preference until the next reveal', async () => {
   const { pending, timing } = holdReveals();
   try {
@@ -345,6 +380,7 @@ it('keeps the transition preference until the next reveal', async () => {
     await showReveal(false, 'reduce');
     expect(pending).toHaveLength(1);
     expect(pending[0].config).toMatchObject({ duration: SECTION_SLIDE_MS, useNativeDriver: false });
+    await act(async () => pending[0].value.setValue(0));
     await showReveal(true, 'reduce');
     expect(pending[0].stop).toHaveBeenCalledOnce();
     expect(pending[1].config).toMatchObject({
@@ -384,6 +420,7 @@ it('can reveal with full motion after a completed calm exit on the same Animated
     await showReveal(true, 'reduce');
     await measureReveal();
     await showReveal(false, 'reduce');
+    await act(async () => pending[0].value.setValue(0));
     await act(async () => pending[0].finish({ finished: true }));
     expect(host.textContent).not.toContain('Revealed setting');
     await showReveal(true, 'full');

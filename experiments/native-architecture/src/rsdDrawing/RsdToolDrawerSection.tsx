@@ -85,10 +85,7 @@ export function RsdToolDrawerSection({
             onToggle={onToolDrawerChange}
           />
         </RsdSettingCard>
-        <RsdSectionReveal
-          visible={settings.toolDrawerEnabled}
-          marginTop={TOOL_DRAWER_SPACING.toolsTop}
-        >
+        <RsdSectionReveal visible={settings.toolDrawerEnabled}>
           <DrawingToolList
             isOn={(tool) => isDrawingToolOn(tool, settings, brushState.availability)}
             isBusy={(tool) => ('brush' in tool ? brushesBusy : busy)}
@@ -163,6 +160,7 @@ function DrawingToolList({
   return (
     <View
       testID="tool-drawer-tools"
+      style={{ marginTop: TOOL_DRAWER_SPACING.toolsTop }}
       onLayout={({ nativeEvent }) => measure(nativeEvent.layout.width)}
     >
       <html.div style={styles.heading}>

@@ -40,24 +40,30 @@ export function RsdSectionReveal({
       }
       return;
     }
-    const transition = Animated.timing(progress, {
-      toValue: request.visible ? 1 : 0,
-      duration: request.reduced ? CALM_FADE_MS : SECTION_SLIDE_MS,
-      easing: request.reduced ? Easing.linear : Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    });
     let active = true;
-    transition.start(({ finished }) => {
-      if (!finished || !active) return;
-      setCompleted(request);
-      if (!request.visible) {
-        dismissed();
-        setHeight(null);
-      }
+    let transition: ReturnType<typeof Animated.timing> | undefined;
+    progress.stopAnimation((current) => {
+      if (!active) return;
+      const target = request.visible ? 1 : 0;
+      const duration = request.reduced ? CALM_FADE_MS : SECTION_SLIDE_MS;
+      transition = Animated.timing(progress, {
+        toValue: target,
+        duration: duration * Math.abs(target - current),
+        easing: request.reduced ? Easing.linear : Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      });
+      transition.start(({ finished }) => {
+        if (!finished || !active) return;
+        setCompleted(request);
+        if (!request.visible) {
+          dismissed();
+          setHeight(null);
+        }
+      });
     });
     return () => {
       active = false;
-      transition.stop();
+      transition?.stop();
     };
   }, [request, completed, measured, progress, dismissed]);
   if (shown === null) return null;

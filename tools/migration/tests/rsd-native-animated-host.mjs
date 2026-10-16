@@ -18,7 +18,9 @@ class Value {
   setValue(value) {
     this.value = value;
   }
-  stopAnimation() {}
+  stopAnimation(callback) {
+    callback?.(this.value);
+  }
   interpolate(config) {
     const interpolation = new Value(0);
     interpolation.restsAt = config?.outputRange?.at(-1);
