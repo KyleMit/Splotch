@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 import { DEFAULT_BRUSH_AVAILABILITY } from '../../../experiments/native-architecture/src/settings/brushPreferences.ts';
 
@@ -16,6 +16,7 @@ export function drawingScreenPort(actual, caller, projectHistory) {
   // Center unlock) renders it; a test that stubs either one keeps its own.
   function useStubScreen() {
     const [, rerender] = useReducer((count) => count + 1, 0);
+    const [paperPresentations] = useState(() => new WeakMap());
     const setSettingsOpen = (open, section = null) => {
       caller.screen.settingsOpen = open;
       caller.screen.settingsSection = section;
@@ -23,6 +24,7 @@ export function drawingScreenPort(actual, caller, projectHistory) {
     };
     return {
       settingsSection: null,
+      paperPresentations,
       openSettings: () => setSettingsOpen(true),
       openAiSettings: () => setSettingsOpen(true, 'ai'),
       closeSettings: () => setSettingsOpen(false),
@@ -82,7 +84,12 @@ export function paperPort(React, strokeStyle, caller) {
         finishInput() {},
         refreshGeometry() {},
         // A save's photo library copy; what the library does with it is the test's port.
-        exportPng: async (drawing) => caller.exportPng?.(drawing) ?? 'cmVhbC1wbmc=',
+        exportPng: async (drawing) =>
+          caller.exportPng?.(drawing) ?? {
+            base64: 'cmVhbC1wbmc=',
+            size: { width: 1024, height: 768 },
+            isCurrent: () => true,
+          },
         captureInk: async (drawing) => {
           if (!caller.captureInk)
             throw new Error('Pixel observation is outside this caller fixture.');

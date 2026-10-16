@@ -1,3 +1,7 @@
+import {
+  paperProjection,
+  drawingPaper,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createPaperInputView } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
@@ -230,6 +234,7 @@ function HookSurface() {
     key: state.recovery.generation,
     ref: state.surface,
     drawing: state.history.drawing,
+    projection: paperProjection(drawingPaper(state.history.drawing)),
     currentDrawing: state.currentDrawing,
     color: 'Purple',
     brush: state.brush,
@@ -278,7 +283,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await act(async () => capture.callback(paintedPng));
     await decodeSettles();
     sdk.hold = false;
-    expect(state.notice).toContain('The picture changed before observation finished.');
+    expect(state.notice).toContain('The picture changed before capture finished.');
     expect(await saved()).toEqual(fixture);
     expect(sdk.dimensions.size).toBe(0);
     expect(state.recovery.failed).toBe(false);
@@ -421,6 +426,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     const ref = { current: null },
       props = {
         drawing: fixture,
+        projection: paperProjection(drawingPaper(fixture)),
         currentDrawing: () => props.drawing,
         color: 'Purple',
         brush: 'marker',
@@ -447,6 +453,7 @@ describe('mounted actual native Clear and decoder ownership', () => {
     const old = sdk.captures.at(-1);
     const replacement = emptyDrawing(2, 'turtle');
     props.drawing = replacement;
+    props.projection = paperProjection(drawingPaper(replacement));
     await act(async () =>
       root.render(createElement(DrawingSurface, { ...props, drawing: replacement, ref }))
     );
@@ -461,7 +468,10 @@ describe('mounted actual native Clear and decoder ownership', () => {
       next = handle.captureInk(replacement);
     });
     await frames();
-    await expect(next).resolves.toBe(paintedPng);
+    await expect(next).resolves.toMatchObject({
+      base64: paintedPng,
+      size: { width: 1024, height: 768 },
+    });
     releaseNext();
     expect(props.onRendererFault).not.toHaveBeenCalled();
   });

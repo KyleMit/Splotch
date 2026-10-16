@@ -1,3 +1,5 @@
+import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { pictureExport } from '../../experiments/native-architecture/src/drawing/pictureExport.ts';
 import { prepareAiPng } from '../../experiments/native-architecture/src/ai/prepare.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { describe, expect, it, vi } from 'vitest';
@@ -213,4 +215,13 @@ it.each([
         : null;
     expect(reported && { status: native.status, detail: native.detail }).toEqual(reported);
   }
+});
+
+it('admits the captured resized AI grid and rejects the original paper grid for those pixels', () => {
+  const paper = adoptPaper(400, 800, 2);
+  const original = pictureExport(paper, 'light', 1).size;
+  const current = pictureExport(paper, 'light', 1, { width: 800, height: 1000 }).size;
+  const pixels = rgbaPng(current.width, current.height).toString('base64');
+  expect(prepareAiPng(pixels, current).length).toBeGreaterThan(33);
+  expect(() => prepareAiPng(pixels, original)).toThrow('dimensions');
 });

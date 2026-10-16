@@ -136,14 +136,17 @@ describe('bundled Farm book and saved page identity', () => {
     'freezes %s and its mixed ink while a later page changes during export',
     async (pageId) => {
       const original = paintedPage(pageId);
-      const capture = createPngCapture().begin(original.drawing);
+      const capture = createPngCapture().begin(original.drawing, () => true);
       const later = changePage(original, 'sunshine');
       expect(capture.drawing).toBe(original.drawing);
       expect(capture.drawing.pageId).toBe(pageId);
       expect(capture.drawing.strokes).toBe(original.drawing.strokes);
       expect(later.drawing.pageId).toBe('sunshine');
-      expect(capture.complete('fixture-export-snapshot')).toBe(true);
-      await expect(capture.promise).resolves.toBe('fixture-export-snapshot');
+      expect(capture.complete('fixture-export-snapshot', { width: 1024, height: 768 })).toBe(true);
+      await expect(capture.promise).resolves.toMatchObject({
+        base64: 'fixture-export-snapshot',
+        size: { width: 1024, height: 768 },
+      });
     }
   );
 

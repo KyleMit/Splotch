@@ -7,6 +7,7 @@ import {
 import {
   adoptPaper,
   paperSize,
+  paperProjection,
   LEGACY_PAPER,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { COLORING_FILLS } from '../../experiments/native-architecture/src/drawing/pages.ts';
@@ -43,6 +44,7 @@ beforeAll(async () => {
 const SIZE = 64;
 const context = {
   paper: LEGACY_PAPER,
+  projection: paperProjection(LEGACY_PAPER),
   theme: 'light',
   pageId: 'blank',
   tiles: { byKey: new Map(), uris: [] },
@@ -132,7 +134,7 @@ it('reveals a sample page Magic fill fitted and centered on a portrait paper', (
   paintStroke(
     surface.getCanvas(),
     { brush: 'magic', rainbow: 0, width: 44, points: down },
-    { ...context, paper, pageId: 'sunshine' }
+    { ...context, paper, projection: paperProjection(paper), pageId: 'sunshine' }
   );
   const fill = COLORING_FILLS.sunshine;
   const sun = paletteHex(fill.regions[0].colors.light).toLowerCase();

@@ -27,6 +27,8 @@ export type AdoptedPaper = Readonly<{
 }>;
 export type DrawingPaper = Readonly<{ kind: 'unadopted' }> | AdoptedPaper;
 export type PaperReference = Readonly<{ kind: 'legacy' }> | DrawingPaper;
+export type PaperProjection = Readonly<{ paper: PaperReference; extent: PaperSize }>;
+export type PaperBounds = PaperSize & Readonly<{ x: number; y: number }>;
 export const LEGACY_PAPER: PaperReference = Object.freeze({ kind: 'legacy' });
 export const UNADOPTED_PAPER: DrawingPaper = Object.freeze({ kind: 'unadopted' });
 
@@ -119,7 +121,7 @@ function shapedSize(cssWidth: number, cssHeight: number): PaperSize {
 
 // A picture keeps the shape of the paper area it was first drawn in (ADR-0050). Its semantic
 // size is that shape in whole units within the turned canonical sheet, so a 4:3 landscape
-// adoption is exactly the canonical sheet and no export exceeds the canonical pixel count.
+// adoption is exactly the canonical sheet. Resizing keeps this coordinate basis.
 export function paperSize(paper: PaperReference): PaperSize {
   return paper.kind === 'adopted'
     ? shapedSize(paper.cssWidth, paper.cssHeight)
@@ -209,6 +211,53 @@ export function paperContactPoint(
   };
 }
 
+export function paperProjection(paper: PaperReference, extent?: PaperSize): PaperProjection {
+  return {
+    paper,
+    extent:
+      extent ??
+      (paper.kind === 'adopted'
+        ? { width: paper.cssWidth, height: paper.cssHeight }
+        : CANONICAL_PAPER_SIZE),
+  };
+}
+
+// The original contain-fit includes whole-unit rounding. Keeping its scale and origin avoids
+// moving existing points when a resized sheet exposes more of that coordinate plane.
+export function paperBounds({ paper, extent }: PaperProjection): PaperBounds {
+  const size = presentedPaperSize(paper, extent);
+  if (
+    paper.kind !== 'adopted' ||
+    (extent.width === paper.cssWidth && extent.height === paper.cssHeight)
+  )
+    return { x: 0, y: 0, ...size };
+  const view = paperView(paper.cssWidth, paper.cssHeight, paperSize(paper));
+  return {
+    x: view.left === 0 ? 0 : -view.left / view.scale,
+    y: view.top === 0 ? 0 : -view.top / view.scale,
+    width: extent.width / view.scale,
+    height: extent.height / view.scale,
+  };
+}
+
+export function paperProjectionView(projection: PaperProjection, frame: PaperSize) {
+  const bounds = paperBounds(projection);
+  const view = paperView(frame.width, frame.height, bounds);
+  return {
+    scale: view.scale,
+    left: view.left - bounds.x * view.scale,
+    top: view.top - bounds.y * view.scale,
+  };
+}
+
+export function samePaperProjection(left: PaperProjection, right: PaperProjection): boolean {
+  return (
+    samePaper(left.paper, right.paper) &&
+    left.extent.width === right.extent.width &&
+    left.extent.height === right.extent.height
+  );
+}
+
 // Book pages ship a tall and a wide composition; a picture uses the one matching its paper, as
 // the shipping picker keys the variant off the paper (describePaperView in paperView.ts), so a
 // square paper takes the tall art.
@@ -224,7 +273,7 @@ export function artOrientation(paper: PaperSize): ArtOrientation {
 // A coloring page's art frame sits contain-fitted and centered on the paper, the way the
 // shipping app's coloring overlay is object-fit: contain within its paper. The sample pages and
 // their Magic fills are drawn in the canonical frame.
-export function pageArtTransform(paper: PaperSize) {
+export function pageArtTransform(paper: PaperSize & Partial<Pick<PaperBounds, 'x' | 'y'>>) {
   const { scale, left, top } = paperView(paper.width, paper.height, CANONICAL_PAPER_SIZE);
-  return `translate(${left} ${top}) scale(${scale})`;
+  return `translate(${left + (paper.x ?? 0)} ${top + (paper.y ?? 0)}) scale(${scale})`;
 }

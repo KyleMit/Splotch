@@ -1,4 +1,7 @@
+import { watchCaptureScreen } from './captureScreen';
 import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
+import { PixelRatio } from 'react-native';
+import { samePaperProjection, type PaperProjection } from './paperSpace';
 import type { Drawing } from './model';
 import type { InkAppearance } from './InkAppearance';
 import type { PictureRequest } from './PictureCapture';
@@ -7,12 +10,17 @@ import type { InkPlan } from './checkpoints';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 import { PNG_TIMEOUT_MS } from './svgCapture';
 
+const CAPTURE_CHANGED_MESSAGE = 'The picture changed before capture finished.';
+
 type PendingPacket = {
   request: PngCaptureRequest;
   lease: object;
   kind: PictureRequest['kind'];
   appearance: InkAppearance;
   prepared: boolean;
+  projection: PaperProjection;
+  pixelRatio: number;
+  screen: ReturnType<typeof watchCaptureScreen>;
 };
 
 type PacketOwner = {
@@ -20,6 +28,7 @@ type PacketOwner = {
   currentDrawing: () => Drawing;
   drawing: Drawing;
   appearance: InkAppearance;
+  projection: PaperProjection;
   commandLock: RefObject<object | null>;
   setPacket: (packet: PictureRequest | null) => void;
 };
@@ -34,22 +43,29 @@ export function useSurfacePackets(owner: PacketOwner) {
   const nextId = useRef(1);
   const mounted = useRef(true);
 
-  const isCurrent = useCallback((packet: PendingPacket) => {
+  const matches = useCallback((packet: PendingPacket) => {
     const current = latest.current;
     return (
-      captureLock.current === packet.request &&
+      mounted.current &&
       current.commandLock.current === packet.lease &&
       current.currentDrawing() === packet.request.drawing &&
       (!packet.prepared || current.drawing === packet.request.drawing) &&
-      current.appearance === packet.appearance
+      current.appearance === packet.appearance &&
+      samePaperProjection(current.projection, packet.projection) &&
+      packet.screen.current()
     );
   }, []);
+
+  const isCurrent = useCallback(
+    (packet: PendingPacket) => captureLock.current === packet.request && matches(packet),
+    [matches]
+  );
 
   const resume = useCallback(() => {
     const packet = pending.current;
     if (!packet) return;
     if (!isCurrent(packet)) {
-      packet.request.cancel('The picture changed before capture finished.');
+      packet.request.cancel(CAPTURE_CHANGED_MESSAGE);
       return;
     }
     if (packet.prepared) return;
@@ -66,7 +82,8 @@ export function useSurfacePackets(owner: PacketOwner) {
       kind: packet.kind,
       appearance: packet.appearance,
       id: nextId.current++,
-      plan,
+      plan: { ...plan, projection: packet.projection },
+      pixelRatio: packet.pixelRatio,
       isCurrent: () => isCurrent(packet),
     });
   }, [isCurrent]);
@@ -80,34 +97,55 @@ export function useSurfacePackets(owner: PacketOwner) {
   );
 
   const capture = useCallback(
-    async (snapshot: Drawing, kind: PictureRequest['kind']) => {
+    (snapshot: Drawing, kind: PictureRequest['kind']) => {
       const current = latest.current;
       if (current.inputActive()) throw new Error('Lift your finger before capturing the picture.');
       const lease = current.commandLock.current;
       if (!lease || current.currentDrawing() !== snapshot || !raster.current)
         throw new Error('The current drawing paper is not ready to capture.');
-      const request = captures.begin(snapshot);
+      const ownsPaper = () => matches(packet);
+      let request: PngCaptureRequest | undefined;
+      const screen = watchCaptureScreen(() => request?.cancel(CAPTURE_CHANGED_MESSAGE));
+      try {
+        request = captures.begin(snapshot, ownsPaper);
+      } catch (error) {
+        screen.dispose();
+        throw error;
+      }
       captureLock.current = request;
-      pending.current = { request, lease, kind, appearance: current.appearance, prepared: false };
+      const packet: PendingPacket = {
+        request,
+        lease,
+        kind,
+        appearance: current.appearance,
+        prepared: false,
+        projection: current.projection,
+        pixelRatio: PixelRatio.get(),
+        screen,
+      };
+      pending.current = packet;
       const timeout = setTimeout(
         () => request.cancel('Picture capture did not finish. Your drawing is still here.'),
         PNG_TIMEOUT_MS
       );
       resume();
-      return request.promise.finally(() => {
+      const promise = request.promise.finally(() => {
+        screen.dispose();
         clearTimeout(timeout);
         if (captureLock.current !== request) return;
         captureLock.current = null;
         pending.current = null;
         if (mounted.current) latest.current.setPacket(null);
       });
+      return { promise, isCurrent: ownsPaper };
     },
-    [captures, resume]
+    [captures, resume, matches]
   );
 
-  const cancel = useCallback((message = 'The picture changed before capture finished.') => {
+  const cancel = useCallback((message = CAPTURE_CHANGED_MESSAGE) => {
     const request = captureLock.current;
     if (!request) return;
+    pending.current?.screen.dispose();
     captureLock.current = null;
     pending.current = null;
     request.cancel(message);

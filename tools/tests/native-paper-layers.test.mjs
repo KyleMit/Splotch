@@ -1,3 +1,7 @@
+import {
+  paperProjection,
+  drawingPaper,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import {
   act,
@@ -130,6 +134,7 @@ function mount(pageId, extra = {}) {
           { preference: 'light' },
           createElement(DrawingSurface, {
             drawing,
+            projection: paperProjection(drawingPaper(drawing)),
             currentDrawing: () => drawing,
             onPreparingChange: vi.fn(),
             onRendererFault: vi.fn(),

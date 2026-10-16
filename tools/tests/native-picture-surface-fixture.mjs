@@ -1,5 +1,9 @@
 import { act, createElement } from 'react';
 import { vi } from 'vitest';
+import {
+  drawingPaper,
+  paperProjection,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 
 vi.mock('../../experiments/native-architecture/src/platform/animated.ts', async () => {
   const { animatedPort, easingPort } =
@@ -14,7 +18,11 @@ export function createPictureSurfaceFixture({
   createSpy,
   readMount,
 }) {
-  return async function surface(drawing, preference = 'system') {
+  return async function surface(
+    drawing,
+    preference = 'system',
+    projection = paperProjection(drawingPaper(drawing))
+  ) {
     const { root, ref, error, busy } = readMount();
     await act(async () =>
       root.render(
@@ -24,6 +32,7 @@ export function createPictureSurfaceFixture({
           createElement(DrawingSurface, {
             ref,
             drawing,
+            projection,
             currentDrawing: () => drawing,
             color: 'Blue',
             brush: 'pen',

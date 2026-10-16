@@ -170,7 +170,7 @@ describe('native coloring-page composition', () => {
   it('holds the selected page and ink at the export cut while a later page changes', async () => {
     const original = picture();
     const captures = createPngCapture();
-    const request = captures.begin(original.drawing);
+    const request = captures.begin(original.drawing, () => true);
     const next = changePage(original, 'sunshine');
     expect(request.drawing).toBe(original.drawing);
     expect(request.drawing).toEqual({
@@ -178,7 +178,10 @@ describe('native coloring-page composition', () => {
       strokes: [stroke()],
     });
     expect(next.drawing.pageId).toBe('sunshine');
-    expect(request.complete('snapshot PNG')).toBe(true);
-    await expect(request.promise).resolves.toBe('snapshot PNG');
+    expect(request.complete('snapshot PNG', { width: 1024, height: 768 })).toBe(true);
+    await expect(request.promise).resolves.toMatchObject({
+      base64: 'snapshot PNG',
+      size: { width: 1024, height: 768 },
+    });
   });
 });

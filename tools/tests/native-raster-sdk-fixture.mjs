@@ -3,6 +3,10 @@ import { createElement, forwardRef, useEffect, useImperativeHandle } from 'react
 export function nativeRasterSdk(state, tileWidth) {
   return {
     Platform: state.platform,
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: state.pixelRatio ?? 1, fontScale: 1 }),
+      addEventListener: () => ({ remove() {} }),
+    },
     PixelRatio: { get: () => state.pixelRatio ?? 1 },
     Image: (props) => {
       state.nativeImages.push(props);
@@ -43,6 +47,62 @@ export function svgRasterSdk(state) {
         if (state.autoSvgTiles) props.onLoad?.();
       }, [props.href]);
       return null;
+    },
+  };
+}
+
+export async function nativeInkViewSdk(readPlane, loadImage) {
+  const { animatedPort, easingPort } =
+    await import('../migration/tests/rsd-native-animated-host.mjs');
+  const View = ({ children, onLayout, testID }) => {
+    useEffect(() => {
+      onLayout?.({ nativeEvent: { layout: readPlane() } });
+    }, [onLayout]);
+    return createElement('div', { 'data-testid': testID }, children);
+  };
+  return {
+    Animated: animatedPort(View, View),
+    Easing: easingPort,
+    AccessibilityInfo: {
+      isReduceMotionEnabled: async () => false,
+      addEventListener: () => ({ remove() {} }),
+    },
+    PixelRatio: { get: () => 1 },
+    Platform: { OS: 'web' },
+    Image: ({ source, onLoad }) => {
+      useEffect(() => loadImage(onLoad), [source.uri, onLoad]);
+      return null;
+    },
+    StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
+    View,
+  };
+}
+
+export function svgInkViewSdk(loadImage) {
+  const group = ({ children }) => createElement('div', null, children);
+  return {
+    default: group,
+    G: group,
+    Defs: group,
+    Mask: group,
+    Pattern: group,
+    Filter: group,
+    LinearGradient: group,
+    Stop: group,
+    FeBlend: group,
+    FeComposite: group,
+    ClipPath: group,
+    RadialGradient: group,
+    SvgXml: group,
+    Path: () => null,
+    Use: () => null,
+    Circle: () => null,
+    Rect: () => null,
+    Ellipse: () => null,
+    Polygon: () => null,
+    Image: ({ href, onLoad }) => {
+      useEffect(() => loadImage(onLoad), [href, onLoad]);
+      return createElement('div', { 'data-ghost-image': href });
     },
   };
 }

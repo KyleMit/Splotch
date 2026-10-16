@@ -15,23 +15,26 @@ import {
 describe('native drawing interaction ownership', () => {
   it('ignores an expired export callback after a new capture starts', async () => {
     const captures = createPngCapture();
-    const first = captures.begin(emptyDrawing());
+    const first = captures.begin(emptyDrawing(), () => true);
     const refused = first.promise.catch((error) => error.message);
     expect(first.cancel('expired')).toBe(true);
     expect(await refused).toBe('expired');
-    const second = captures.begin(emptyDrawing());
-    expect(first.complete('old PNG')).toBe(false);
-    expect(second.complete('new PNG')).toBe(true);
-    await expect(second.promise).resolves.toBe('new PNG');
-    expect(second.complete('duplicate PNG')).toBe(false);
+    const second = captures.begin(emptyDrawing(), () => true);
+    expect(first.complete('old PNG', { width: 1, height: 1 })).toBe(false);
+    expect(second.complete('new PNG', { width: 1, height: 1 })).toBe(true);
+    await expect(second.promise).resolves.toMatchObject({
+      base64: 'new PNG',
+      size: { width: 1, height: 1 },
+    });
+    expect(second.complete('duplicate PNG', { width: 1, height: 1 })).toBe(false);
   });
 
   it('rejects an owned pending capture when its view unmounts', async () => {
-    const request = createPngCapture().begin(emptyDrawing());
+    const request = createPngCapture().begin(emptyDrawing(), () => true);
     const refused = request.promise.catch((error) => error.message);
     expect(request.cancel('cancelled')).toBe(true);
     expect(await refused).toBe('cancelled');
-    expect(request.complete('late PNG')).toBe(false);
+    expect(request.complete('late PNG', { width: 1, height: 1 })).toBe(false);
   });
 
   it('keeps another finger out of the original stroke and preserves the original endpoint', () => {
@@ -75,4 +78,17 @@ describe('native drawing interaction ownership', () => {
     input.start('finger B', { color: 'Purple', brush: 'marker', width: 22 }, { x: 70, y: 80 });
     expect(input.finish('finger B', { x: 90, y: 100 }).points).toHaveLength(2);
   });
+});
+
+it('returns the exact producer grid and keeps its currentness live after completion', async () => {
+  let current = true;
+  const request = createPngCapture().begin(emptyDrawing(), () => current);
+  const size = { width: 1600, height: 2000 };
+  expect(request.complete('producer-png', size)).toBe(true);
+  const captured = await request.promise;
+  expect(captured.base64).toBe('producer-png');
+  expect(captured.size).toBe(size);
+  expect(captured.isCurrent()).toBe(true);
+  current = false;
+  expect(captured.isCurrent()).toBe(false);
 });

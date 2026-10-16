@@ -1,7 +1,17 @@
 // @vitest-environment happy-dom
-import { act } from 'react';
+import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { sdk, owner, touch, event, send, settle } from './native-contacts-mounted-harness.mjs';
+import {
+  sdk,
+  owner,
+  root,
+  Consumer,
+  touch,
+  event,
+  send,
+  settle,
+} from './native-contacts-mounted-harness.mjs';
+import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 import { EMPTY_SCAN_IDLE_MS } from '../../experiments/native-architecture/src/drawing/inkVisibility.ts';
 import { SCREENSHOT_COOLDOWN_MS } from '../../web/src/lib/drawing/screenshotTiming.ts';
 import { drawingPaperSize } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
@@ -305,4 +315,148 @@ describe('the screen’s visible-ink scan', () => {
     await act(async () => vi.advanceTimersByTimeAsync(EMPTY_SCAN_IDLE_MS));
     expect(owner.inkVisible).toBe(false);
   });
+});
+
+it('reads the resized idle-scan grid and refuses a late crop after another extent change', async () => {
+  await contact('pen', 10);
+  await contact('eraser', 10);
+  sdk.extent = { width: 1200, height: 900 };
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
+  sdk.hold = true;
+  await idle();
+  const capture = sdk.captures.at(-1);
+  expect(capture.options).toMatchObject({ width: 1200, height: 900 });
+  sdk.extent = { width: 1400, height: 1000 };
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
+  await act(async () => capture.callback(rgbaPng(1200, 900, 0).toString('base64')));
+  await settle();
+  expect(owner.inkVisible).toBe(true);
+});
+
+it('keeps Clear unchanged when its captured crop becomes stale', async () => {
+  await contact('pen', 10);
+  await contact('eraser', 10);
+  sdk.hold = true;
+  const drawing = owner.history.drawing;
+  await act(async () => void owner.clear(false));
+  await settle();
+  const capture = sdk.captures.at(-1);
+  sdk.extent = { width: 1200, height: 900 };
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
+  await act(async () =>
+    capture.callback(rgbaPng(capture.options.width, capture.options.height, 0).toString('base64'))
+  );
+  await settle();
+  expect(owner.history.drawing).toBe(drawing);
+  expect(owner.inkVisible).toBe(true);
+});
+
+it('keeps known ink and Undo unchanged when resize cancels the awaited Clear save capture', async () => {
+  await contact('pen', 10);
+  expect(owner.inkVisible).toBe(true);
+  const history = owner.history;
+  const drawing = history.drawing;
+  const stroke = drawing.strokes[0];
+  const paper = owner.surface.current;
+  const inkCapture = vi.spyOn(paper, 'captureInk');
+  const savedCapture = vi.spyOn(paper, 'exportPng');
+  const captures = sdk.captures.length;
+  sdk.hold = true;
+  let cleared;
+  await act(async () => {
+    cleared = owner.clear(true);
+  });
+  await settle();
+  expect(inkCapture).not.toHaveBeenCalled();
+  expect(savedCapture).toHaveBeenCalledExactlyOnceWith(drawing);
+  expect(sdk.captures).toHaveLength(captures + 1);
+  expect(owner.busy).toBe(true);
+  expect(owner.history).toBe(history);
+  sdk.extent = { width: 1200, height: 900 };
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
+  await settle();
+  await cleared;
+  expect(owner.surface.current).toBe(paper);
+  expect(owner.history).toBe(history);
+  expect(owner.history.drawing).toBe(drawing);
+  expect(owner.history.undo).toBe(history.undo);
+  expect(owner.history.drawing.strokes[0]).toBe(stroke);
+  expect(owner.history.drawing.strokes[0].points).toBe(stroke.points);
+  expect(owner.inkVisible).toBe(true);
+  expect(sdk.save).not.toHaveBeenCalled();
+  expect(owner.busy).toBe(false);
+  inkCapture.mockRestore();
+  savedCapture.mockRestore();
+});
+
+it('clears known ink after a current export failure while retaining its Undo picture', async () => {
+  await contact('pen', 10);
+  const drawing = owner.history.drawing;
+  const captureInk = vi.spyOn(owner.surface.current, 'captureInk');
+  sdk.fail = true;
+  await act(async () => void owner.clear(true));
+  await settle();
+  expect(captureInk).not.toHaveBeenCalled();
+  expect(owner.history.drawing.strokes).toEqual([]);
+  expect(owner.history.undo.at(-1)).toBe(drawing);
+  expect(sdk.save).not.toHaveBeenCalled();
+  expect(owner.saveFailure.pictureCount).toBe(0);
+  expect(owner.busy).toBe(false);
+  captureInk.mockRestore();
+});
+
+it('uses the actual resized export grid for the saved picture flight', async () => {
+  await contact('pen', 10);
+  sdk.extent = { width: 1200, height: 1000 };
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
+  await act(async () => void owner.save());
+  await settle();
+  expect(owner.flight.paper).toEqual({ width: 2400, height: 2000 });
+  expect(sdk.save).toHaveBeenCalledOnce();
+});
+
+it('refuses a completed save capture resized before the consumer accepts it', async () => {
+  await contact('pen', 10);
+  const history = owner.history;
+  const paper = owner.surface.current;
+  const exportPng = paper.exportPng;
+  let captured;
+  let accept;
+  const delayed = vi.spyOn(paper, 'exportPng').mockImplementation(async (drawing) => {
+    captured = await exportPng(drawing);
+    await new Promise((resolve) => {
+      accept = resolve;
+    });
+    return captured;
+  });
+  let saved;
+  await act(async () => {
+    saved = owner.save();
+  });
+  await settle();
+  expect(captured.base64).not.toBeNull();
+  expect(captured.isCurrent()).toBe(true);
+  sdk.extent = { width: 1200, height: 1000 };
+  await act(async () =>
+    root.render(createElement(DrawingSessionProvider, null, createElement(Consumer)))
+  );
+  expect(captured.isCurrent()).toBe(false);
+  await act(async () => accept());
+  await settle();
+  await saved;
+  expect(owner.history).toBe(history);
+  expect(owner.flight).toBeNull();
+  expect(sdk.save).not.toHaveBeenCalled();
+  expect(owner.busy).toBe(false);
+  delayed.mockRestore();
 });

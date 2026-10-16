@@ -10,6 +10,7 @@ type RecoveryOptions = {
   blocked: boolean;
   setPreparing: (busy: boolean) => void;
   setDrawing: (drawing: boolean) => void;
+  setActivePaper: (paper: PaperReference | null) => void;
   finishCohort: (strokes: readonly Stroke[], paper: PaperReference) => void;
   report: (error: unknown) => void;
   setNotice: (notice: string) => void;
@@ -71,8 +72,11 @@ export function useRendererRecovery(options: RecoveryOptions) {
       onCohort(strokes: readonly Stroke[], paper: PaperReference) {
         if (valid()) current.current.finishCohort(strokes, paper);
       },
-      onDrawingChange(drawing: boolean) {
-        if (valid()) current.current.setDrawing(drawing);
+      onDrawingChange(drawing: boolean, paper: PaperReference | null) {
+        if (valid()) {
+          current.current.setDrawing(drawing);
+          current.current.setActivePaper(paper);
+        }
       },
       onPreparingChange(busy: boolean) {
         if (!valid() || (!busy && faultGeneration.current === generation)) return;

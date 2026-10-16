@@ -1,3 +1,7 @@
+import {
+  paperProjection,
+  drawingPaper,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 // @vitest-environment happy-dom
 import { createPaperInputView, paperInputPacket } from './native-paper-fixtures.mjs';
 import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
@@ -125,6 +129,7 @@ function Paper() {
   return createElement(NativePaper, {
     screen,
     sound,
+    projection: paperProjection(drawingPaper(screen.history.drawing)),
     menuOpen: false,
     lifted: false,
     frame: { left: 0, top: 0, width: sdk.frame[2], height: sdk.frame[3] },

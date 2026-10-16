@@ -8,12 +8,20 @@ import {
   forwardRef,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useState,
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { drawingPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import {
+  drawingPaper,
+  paperProjection,
+} from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import {
+  INITIAL_PAPER_PRESENTATION,
+  presentPaper,
+} from '../../experiments/native-architecture/src/drawing/paperPresentation.ts';
 import { NativePaper } from '../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
@@ -196,6 +204,32 @@ function RsdPaper({ lifted = false }) {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
   const [space, setSpace] = useState(PORTRAIT_SLOT);
+  const paper = drawingPaper(screen.history.drawing);
+  const inputs = useMemo(
+    () => ({
+      paper,
+      empty: !screen.inkVisible,
+      slot: space,
+      window: space,
+      origin: { x: 0, y: 0 },
+      toolbarStyle: 'bare',
+    }),
+    [paper, screen.inkVisible, space]
+  );
+  const [presentation, setPresentation] = useState(INITIAL_PAPER_PRESENTATION);
+  const next =
+    presentation.inputs === inputs
+      ? presentation
+      : presentPaper(
+          presentation.inputs?.paper !== paper
+            ? (screen.paperPresentations.get(paper) ?? presentation)
+            : presentation,
+          inputs
+        );
+  if (next !== presentation) setPresentation(next);
+  useLayoutEffect(() => {
+    if (paper.kind === 'adopted') screen.paperPresentations.set(paper, next);
+  }, [paper, screen.paperPresentations, next]);
   return createElement(
     View,
     { onLayout: ({ nativeEvent }) => setSpace(nativeEvent.layout) },
@@ -204,7 +238,8 @@ function RsdPaper({ lifted = false }) {
       sound,
       menuOpen: false,
       lifted,
-      frame: fittedPaper(space, drawingPaper(screen.history.drawing)),
+      frame: next.frame ?? fittedPaper(space, paper),
+      projection: paperProjection(paper, next.extent ?? undefined),
     })
   );
 }
@@ -306,4 +341,41 @@ it('lays the RSD sheet grain under the ink once a rotation lifts the sheet', asy
   await rotate(LANDSCAPE_SLOT, LANDSCAPE_FRAME);
   expect(sdk.sized.at(-1).width).toBeCloseTo(FITTED_WIDTH, 9);
   grainUnderInk();
+});
+
+it('re-adopts a larger paper without changing ink identity or creating a resize Undo entry', async () => {
+  await act(async () => root.render(createElement(RsdPaper)));
+  const original = { width: 400, height: 800 };
+  const frame = [0, 0, 400, 800, 0, 0];
+  await rotate(original, frame);
+  await stroke(
+    frame,
+    [
+      [100, 200],
+      [120, 220],
+    ],
+    100
+  );
+  const history = owner.history;
+  const drawing = history.drawing;
+  const first = drawing.strokes[0];
+  const points = first.points;
+  await rotate({ width: 800, height: 1000 }, [0, 0, 800, 1000, 0, 0]);
+  expect(sdk.sized.at(-1)).toEqual({ width: 800, height: 1000 });
+  expect(owner.history).toBe(history);
+  expect(owner.history.drawing).toBe(drawing);
+  expect(owner.history.drawing.strokes[0]).toBe(first);
+  expect(owner.history.drawing.strokes[0].points).toBe(points);
+  await stroke(
+    [0, 0, 800, 1000, 0, 0],
+    [
+      [600, 900],
+      [620, 920],
+    ],
+    1000
+  );
+  expect(owner.history.drawing.paper).toBe(drawing.paper);
+  expect(owner.history.drawing.strokes[0]).toBe(first);
+  expect(owner.history.drawing.strokes[1].points[0]).toEqual({ x: 768, y: 1152 });
+  expect(owner.history.undo).toHaveLength(history.undo.length + 1);
 });

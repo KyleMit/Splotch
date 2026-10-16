@@ -1,5 +1,5 @@
-import { useInkPaper } from './InkPaper';
-import { paperSize, semanticWidth } from './paperSpace';
+import { useInkPaper, useInkBounds } from './InkPaper';
+import { semanticWidth } from './paperSpace';
 import { useId, type ReactNode } from 'react';
 import { Defs, G, Image, Mask, Rect } from '../platform/svg';
 import type { InkCheckpoint } from './checkpoints';
@@ -16,15 +16,12 @@ type Props = {
 export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
   const id = useId();
   const paper = useInkPaper();
-  const { width, height } = paperSize(paper);
+  const { x, y, width, height } = useInkBounds();
   const masks: ReactNode[] = [];
   let scene: ReactNode = checkpoint ? (
     <Image
       href={`data:image/png;base64,${checkpoint.base64}`}
-      x={0}
-      y={0}
-      width={width}
-      height={height}
+      {...checkpoint.bounds}
       preserveAspectRatio="none"
       onLoad={onImageLoad}
     />
@@ -42,12 +39,12 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
           id={maskId}
           style={{ maskType: 'luminance' }}
           maskUnits="userSpaceOnUse"
-          x={0}
-          y={0}
+          x={x}
+          y={y}
           width={width}
           height={height}
         >
-          <Rect width={width} height={height} fill="white" />
+          <Rect x={x} y={y} width={width} height={height} fill="white" />
           {run.map((stroke, offset) => (
             <StrokeShape
               key={start + offset}

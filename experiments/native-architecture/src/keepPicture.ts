@@ -1,8 +1,14 @@
 import { Platform } from 'react-native';
 import type { Drawing } from './drawing/model';
-import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import type { DrawingSurfaceHandle, ExportedPaper } from './drawing/DrawingSurface';
 import { pictureSave } from './platform/pictureSave';
-import type { PictureSaveOutcome, PictureSaveOptions, SaveOs } from './export/pictureSave';
+import {
+  isUnsaved,
+  type PictureSaveOutcome,
+  type PictureSaveOptions,
+  type SaveOs,
+  type UnsavedOutcome,
+} from './export/pictureSave';
 import type { PictureFormat } from './export/pictureFilename';
 
 export function saveOs(): SaveOs {
@@ -13,9 +19,9 @@ export function saveOs(): SaveOs {
 export async function capturePicture(
   drawing: Drawing,
   surface: DrawingSurfaceHandle | null
-): Promise<string | null> {
+): Promise<ExportedPaper | null> {
   try {
-    return (await surface?.exportPng(drawing)) || null;
+    return (await surface?.exportPng(drawing)) ?? null;
   } catch {
     return null;
   }
@@ -31,4 +37,17 @@ export async function savePicture(
   } catch {
     return 'failed';
   }
+}
+
+export function saveClearedPicture(
+  pngBase64: string | null,
+  reportFailure: (outcome: UnsavedOutcome, pngBase64: string | null) => void
+) {
+  if (!pngBase64) {
+    reportFailure('failed', null);
+    return;
+  }
+  void savePicture(pngBase64).then((outcome) => {
+    if (isUnsaved(outcome)) reportFailure(outcome, pngBase64);
+  });
 }

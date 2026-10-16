@@ -72,7 +72,7 @@ beforeEach(async () => {
   captures = 0;
   caller.exportPng = () => {
     captures += 1;
-    return `png-${captures}`;
+    return { base64: `png-${captures}`, size: { width: 1024, height: 768 }, isCurrent: () => true };
   };
   caller.realScreen = true;
   caller.settingsStorage = {
@@ -464,7 +464,13 @@ it('plays the shutter cue when capture starts before the PNG settles', async () 
   expect(overlay()).toBeNull();
   expect(host.querySelector('[data-testid="rsd-camera-feedback"]')).not.toBeNull();
   expect(timings.some((config) => config.duration === 460 && config.useNativeDriver)).toBe(true);
-  await act(async () => finishCapture('captured-png'));
+  await act(async () =>
+    finishCapture({
+      base64: 'captured-png',
+      size: { width: 1024, height: 768 },
+      isCurrent: () => true,
+    })
+  );
 });
 
 it('drops the shutter squash under Reduce Motion', async () => {

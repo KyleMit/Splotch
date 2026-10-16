@@ -350,11 +350,15 @@ it('runs the paper under the bottom inset and lifts the controls clear of it', a
   expect(seen.palette).toMatchObject({ axis: 'column', endInset: 34 });
 });
 
+const presentationOwners = new WeakMap();
 function layoutElement(seen) {
+  const paperPresentations = presentationOwners.get(seen) ?? new WeakMap();
+  presentationOwners.set(seen, paperPresentations);
   return createElement(
     NativeDrawingLayout,
     {
       paper: UNADOPTED_PAPER,
+      paperPresentations,
       empty: true,
       departingPaper: null,
       palette: (layout) => {

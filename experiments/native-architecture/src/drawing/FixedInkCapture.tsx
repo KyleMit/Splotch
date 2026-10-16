@@ -1,10 +1,11 @@
 import { InkPaperScope } from './InkPaper';
-import { paperSize, samePaper } from './paperSpace';
+import { paperBounds, samePaperProjection, type PaperSize } from './paperSpace';
+import { paperRasterBounds, paperRasterSize } from './pictureExport';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { Svg } from '../platform/svg';
 import { CaptureSvg } from './CaptureSvg';
-import type { InkPlan, InkCheckpoint } from './checkpoints';
+import type { InkPlan, InkCheckpoint, InkRaster } from './checkpoints';
 import { PNG_TIMEOUT_MS } from './svgCapture';
 import { InkScene } from './InkScene';
 import { DecodedPng } from './DecodedPng';
@@ -22,25 +23,30 @@ export function FixedInkCapture({
   svgRef,
   onReady,
   onError,
+  raster: suppliedRaster,
 }: {
   plan: InkPlan;
+  raster?: PaperSize;
   svgRef: RefObject<Svg | null>;
-  onReady: () => void;
+  onReady: (sampling: InkRaster) => void;
   onError: (error: unknown) => void;
 }) {
-  if (plan.checkpoint && !samePaper(plan.paper, plan.checkpoint.paper))
+  if (plan.checkpoint && !samePaperProjection(plan.projection, plan.checkpoint.projection))
     throw new Error('The checkpoint paper reference does not match the capture.');
   const { theme } = useInkAppearance();
-  const size = paperSize(plan.paper);
+  const projection = plan.projection;
+  const size = paperBounds(projection);
+  const raster = suppliedRaster ?? paperRasterSize(projection);
   const tileResources = useCrayonTileResources(plan.strokes, theme);
   const tiles = useCrayonTileReadiness(tileResources.uris, onError);
   const fill = useBundledFillReadiness(plan, onError);
   const [loaded, setLoaded] = useState<InkCheckpoint | null>(null);
-  const current = useRef({ plan, onReady, onError });
-  current.current = { plan, onReady, onError };
+  const current = useRef({ plan, onReady, onError, raster });
+  current.current = { plan, onReady, onError, raster };
   useEffect(() => {
     if ((!plan.checkpoint || loaded === plan.checkpoint) && fill.ready && tiles.ready) {
-      current.current.onReady();
+      const { plan, raster, onReady } = current.current;
+      onReady({ raster, bounds: paperRasterBounds(plan.projection, raster) });
       return;
     }
     const timeout = setTimeout(() => {
@@ -59,15 +65,21 @@ export function FixedInkCapture({
     if (current.current.plan.checkpoint === plan.checkpoint) setLoaded(plan.checkpoint);
   }
   return (
-    <InkPaperScope.Provider value={plan.paper}>
-      <View style={[styles.capture, size, { left: -size.width * 2 }]} pointerEvents="none">
+    <InkPaperScope.Provider value={projection}>
+      <View
+        style={[
+          styles.capture,
+          { width: raster.width, height: raster.height, left: -raster.width * 2 },
+        ]}
+        pointerEvents="none"
+      >
         {fill.decode}
         {tiles.decode}
         {plan.checkpoint ? (
           <DecodedPng
             key={plan.checkpoint.id}
             base64={plan.checkpoint.base64}
-            size={size}
+            size={plan.checkpoint.raster}
             onLoad={imageLoaded}
             onError={(error) => {
               if (current.current.plan === plan) current.current.onError(error);
@@ -78,9 +90,9 @@ export function FixedInkCapture({
           <BundledFillLoadScope.Provider value={fill.loaded}>
             <CaptureSvg
               ref={svgRef}
-              width={size.width}
-              height={size.height}
-              viewBox={`0 0 ${size.width} ${size.height}`}
+              width={raster.width}
+              height={raster.height}
+              viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
               preserveAspectRatio="xMidYMid meet"
             >
               <InkScene

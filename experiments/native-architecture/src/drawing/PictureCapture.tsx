@@ -1,6 +1,6 @@
-import { drawingPaper, paperSize, samePaper, type PaperSize } from './paperSpace';
+import { drawingPaper, paperBounds, samePaper, type PaperSize } from './paperSpace';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PixelRatio, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from '../platform/svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
@@ -9,9 +9,16 @@ import { PageOutline, usePageOutlineReady } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
 import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
 import { PAPER_THEMES } from './theme';
+import { InkPaperScope } from './InkPaper';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { DecodedPng } from './DecodedPng';
-import { pictureExport, type PictureExport } from './pictureExport';
+import {
+  pictureExport,
+  boundedRasterSize,
+  paperRasterBounds,
+  paperRasterSize,
+  type PictureExport,
+} from './pictureExport';
 
 type PictureKind = 'ink' | 'picture' | 'ai' | 'export';
 export type PictureRequest = Readonly<{
@@ -20,6 +27,7 @@ export type PictureRequest = Readonly<{
   kind: PictureKind;
   plan: InkPlan;
   appearance: InkAppearance;
+  pixelRatio: number;
   isCurrent: () => boolean;
 }>;
 
@@ -27,14 +35,23 @@ export type PictureRequest = Readonly<{
 type CaptureTarget = Readonly<{ raster: PaperSize; exported: PictureExport | null }>;
 
 // react-native-svg on iOS draws the view box into the view's laid-out bounds at the screen scale,
-// whatever size is requested (RNSVGSvgView drawRect), so there the capture keeps the paper's size
-// and composing scales it; Android and the web rasterize the view box into exactly the requested
-// pixels.
+// whatever size is requested (RNSVGSvgView drawRect). Its integer CSS layout stays within the
+// sampling budget at that actual scale; Android and web rasterize exactly the requested pixels.
 function captureTarget(packet: PictureRequest): CaptureTarget {
-  const size = paperSize(packet.plan.paper);
+  const ios = Platform.OS === 'ios';
+  const size = paperRasterSize(
+    packet.plan.projection,
+    ios ? 1 : packet.pixelRatio,
+    ios ? packet.pixelRatio : 1
+  );
   if (packet.kind === 'ink' || packet.kind === 'picture') return { raster: size, exported: null };
-  const exported = pictureExport(packet.plan.paper, packet.appearance.theme, PixelRatio.get());
-  return { raster: Platform.OS === 'ios' ? size : exported.size, exported };
+  const exported = pictureExport(
+    packet.plan.paper,
+    packet.appearance.theme,
+    packet.pixelRatio,
+    packet.plan.projection.extent
+  );
+  return { raster: ios ? size : boundedRasterSize(exported.size), exported };
 }
 
 function composeExport(
@@ -58,8 +75,9 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   const captures = useRef(createSvgCapture()).current;
   const current = useRef(true);
   const request = packet.request;
-  const size = paperSize(packet.plan.paper);
+  const size = paperBounds(packet.plan.projection);
   const [target] = useState(() => captureTarget(packet));
+  const raster = target.raster;
   if (!samePaper(packet.plan.paper, drawingPaper(request.drawing)))
     throw new Error('The captured paper reference does not match the picture.');
 
@@ -78,9 +96,9 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
         return;
       }
       if (kind === 'ink' && packet.kind !== 'ink') setBase64(pixels);
-      else request.complete(pixels);
+      else request.complete(pixels, target.exported?.size ?? target.raster);
     },
-    [packet, request]
+    [packet, request, target]
   );
   function loaded() {
     if (current.current && packet.isCurrent()) setImageLoaded(true);
@@ -125,49 +143,57 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   }, [captures, request, fail]);
 
   return (
-    <InkAppearanceScope.Provider value={packet.appearance}>
-      <View style={[styles.capture, size, { left: -size.width * 2 }]} pointerEvents="none">
-        {base64 ? (
-          <DecodedPng base64={base64} size={target.raster} onLoad={loaded} onError={fail} />
-        ) : null}
-        {!base64 ? (
-          <FixedInkCapture
-            plan={packet.plan}
-            svgRef={ink}
-            onReady={() => setReady(true)}
-            onError={fail}
-          />
-        ) : (
-          <CaptureSvg
-            ref={output}
-            width={size.width}
-            height={size.height}
-            viewBox={`0 0 ${size.width} ${size.height}`}
-            preserveAspectRatio="xMidYMid meet"
-          >
-            {target.exported ? null : (
-              <Rect
-                width={size.width}
-                height={size.height}
-                fill={PAPER_THEMES[packet.appearance.theme].paper}
-              />
-            )}
-            <Image
-              href={`data:image/png;base64,${base64}`}
-              x={0}
-              y={0}
-              width={size.width}
-              height={size.height}
-              preserveAspectRatio="none"
-              onLoad={() => {
-                if (Platform.OS !== 'android') loaded();
-              }}
+    <InkPaperScope.Provider value={packet.plan.projection}>
+      <InkAppearanceScope.Provider value={packet.appearance}>
+        <View
+          style={[
+            styles.capture,
+            { width: raster.width, height: raster.height, left: -raster.width * 2 },
+          ]}
+          pointerEvents="none"
+        >
+          {base64 ? (
+            <DecodedPng base64={base64} size={target.raster} onLoad={loaded} onError={fail} />
+          ) : null}
+          {!base64 ? (
+            <FixedInkCapture
+              plan={packet.plan}
+              raster={raster}
+              svgRef={ink}
+              onReady={() => setReady(true)}
+              onError={fail}
             />
-            <PageOutline pageId={request.drawing.pageId} size={size} />
-          </CaptureSvg>
-        )}
-      </View>
-    </InkAppearanceScope.Provider>
+          ) : (
+            <CaptureSvg
+              ref={output}
+              width={raster.width}
+              height={raster.height}
+              viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
+              preserveAspectRatio="xMidYMid meet"
+            >
+              {target.exported ? null : (
+                <Rect
+                  x={size.x}
+                  y={size.y}
+                  width={size.width}
+                  height={size.height}
+                  fill={PAPER_THEMES[packet.appearance.theme].paper}
+                />
+              )}
+              <Image
+                href={`data:image/png;base64,${base64}`}
+                {...paperRasterBounds(packet.plan.projection, raster)}
+                preserveAspectRatio="none"
+                onLoad={() => {
+                  if (Platform.OS !== 'android') loaded();
+                }}
+              />
+              <PageOutline pageId={request.drawing.pageId} size={size} />
+            </CaptureSvg>
+          )}
+        </View>
+      </InkAppearanceScope.Provider>
+    </InkPaperScope.Provider>
   );
 }
 

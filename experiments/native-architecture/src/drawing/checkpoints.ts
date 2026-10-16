@@ -1,15 +1,26 @@
-import { LEGACY_PAPER, samePaper, type PaperReference } from './paperSpace';
+import {
+  samePaperProjection,
+  type PaperProjection,
+  type PaperReference,
+  type PaperSize,
+  type PaperBounds,
+} from './paperSpace';
 import type { Stroke } from './model';
 import type { Brush } from './brushes';
 
-export type InkCheckpoint = Readonly<{
-  id: number;
-  strokes: readonly Stroke[];
-  base64: string;
-  paper: PaperReference;
-}>;
+export type InkRaster = Readonly<{ raster: PaperSize; bounds: PaperBounds }>;
+
+export type InkCheckpoint = InkRaster &
+  Readonly<{
+    id: number;
+    strokes: readonly Stroke[];
+    base64: string;
+    paper: PaperReference;
+    projection: PaperProjection;
+  }>;
 export type InkPlan = Readonly<{
   paper: PaperReference;
+  projection: PaperProjection;
   checkpoint: InkCheckpoint | null;
   strokes: readonly Stroke[];
   prefix: readonly Stroke[];
@@ -79,15 +90,21 @@ export function preparationWitnessed(
 export function planInk(
   strokes: readonly Stroke[],
   cached: InkCheckpoint | null,
-  paper: PaperReference = LEGACY_PAPER
+  paper: PaperReference,
+  projection: PaperProjection
 ): InkPlan {
   const checkpoint =
-    cached && samePaper(cached.paper, paper) && checkpointMatches(strokes, cached) ? cached : null;
+    cached &&
+    samePaperProjection(cached.projection, projection) &&
+    checkpointMatches(strokes, cached)
+      ? cached
+      : null;
   const start = checkpoint?.strokes.length ?? 0;
   for (let index = start + 1; index < strokes.length; index += 1) {
     if (inkBoundary(strokes, index))
       return {
         paper,
+        projection,
         checkpoint,
         strokes: strokes.slice(start, index),
         prefix: strokes.slice(0, index),
@@ -96,6 +113,7 @@ export function planInk(
   }
   return {
     paper,
+    projection,
     checkpoint,
     strokes: strokes.slice(start),
     prefix: strokes,

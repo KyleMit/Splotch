@@ -309,3 +309,15 @@ describe('composing the saved picture on Android and iOS', () => {
     expect(skia.log.some(([key]) => key === 'fromURI')).toBe(false);
   });
 });
+
+it.each(PIXEL_RATIOS)(
+  'exports the current extent at DPR %s while retaining the first basis',
+  (ratio) => {
+    const paper = adoptPaper(400, 800, 2);
+    const extent = { width: 800, height: 1000 };
+    expect(pictureExport(paper, 'light', ratio, extent).size).toEqual(
+      shippingExportSize(extent, ratio).size
+    );
+    expect(paper).toEqual({ kind: 'adopted', cssWidth: 400, cssHeight: 800, backingScale: 2 });
+  }
+);

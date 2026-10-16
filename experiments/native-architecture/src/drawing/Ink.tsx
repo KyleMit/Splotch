@@ -1,5 +1,5 @@
-import { useInkPaper } from './InkPaper';
-import { pageArtTransform, paperSize, semanticWidth, textureScale } from './paperSpace';
+import { useInkPaper, useInkBounds } from './InkPaper';
+import { pageArtTransform, semanticWidth, textureScale } from './paperSpace';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineMagicFill } from '../offlineLibrary/artwork';
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
@@ -89,7 +89,7 @@ function MagicPaint({
   const { pageId, theme } = useInkAppearance();
   const paper = useInkPaper();
   const width = semanticWidth(stroke.width, paper);
-  const size = paperSize(paper);
+  const size = useInkBounds();
   const bundledPattern = useContext(BundledMagicPatternScope);
   const fill =
     pageId === 'blank' || isFarmPageId(pageId) || isOfflinePageId(pageId)
@@ -104,14 +104,16 @@ function MagicPaint({
         {fill ? (
           <Pattern
             id={id}
-            x={0}
-            y={0}
+            x={size.x}
+            y={size.y}
             width={size.width}
             height={size.height}
             patternUnits="userSpaceOnUse"
             patternContentUnits="userSpaceOnUse"
           >
             <Rect
+              x={size.x}
+              y={size.y}
               width={size.width}
               height={size.height}
               fill={paletteHex(fill.background[theme])}
@@ -132,6 +134,7 @@ function MagicPaint({
             id={id}
             gradientUnits="userSpaceOnUse"
             {...rainbowLine(stroke.rainbow, size.width, size.height)}
+            gradientTransform={`translate(${size.x} ${size.y})`}
           >
             {rainbow(stroke.rainbow).stops.map((stop) => (
               <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
@@ -162,7 +165,7 @@ export function InkArtwork({
 }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const appearance = useContext(InkAppearanceScope);
-  const size = paperSize(useInkPaper());
+  const size = useInkBounds();
   const tileResources = useCrayonTileResources(strokes, appearance?.theme ?? 'light');
   const bookPage =
     appearance && (isFarmPageId(appearance.pageId) || isOfflinePageId(appearance.pageId))
@@ -183,18 +186,20 @@ export function InkArtwork({
           {bookPattern && bookPage && appearance ? (
             <Pattern
               id={bookPattern}
-              x={0}
-              y={0}
+              x={size.x}
+              y={size.y}
               width={size.width}
               height={size.height}
               patternUnits="userSpaceOnUse"
               patternContentUnits="userSpaceOnUse"
             >
-              {isOfflinePageId(bookPage) ? (
-                <OfflineMagicFill pageId={bookPage} theme={appearance.theme} size={size} />
-              ) : (
-                <BundledMagicFill pageId={bookPage} theme={appearance.theme} size={size} />
-              )}
+              <G transform={`translate(${size.x} ${size.y})`}>
+                {isOfflinePageId(bookPage) ? (
+                  <OfflineMagicFill pageId={bookPage} theme={appearance.theme} size={size} />
+                ) : (
+                  <BundledMagicFill pageId={bookPage} theme={appearance.theme} size={size} />
+                )}
+              </G>
             </Pattern>
           ) : null}
           {Array.from(colors).flatMap(([colorId, hex]) =>
