@@ -18,6 +18,7 @@ import { DrawingAppearanceProvider } from '../../../experiments/native-architect
 import { SHORT_PAGE_HEIGHT_PX } from '../../../web/src/lib/breakpoints.ts';
 import releases from '../../../web/src/lib/releases.json';
 import { ProbeApp } from '../../../experiments/native-architecture/src/ProbeApp.tsx';
+import { openAppPage } from '../../../experiments/native-architecture/src/platform/appPath.ts';
 import { ABOUT_COPY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdAboutSection.tsx';
 import { GATE_MODAL } from './rsd-parent-gate-keypad.mjs';
 import { useCaller, click, settle } from './rsd-native-ai-fixture.mjs';
@@ -233,4 +234,19 @@ it('preserves an already prevented not-found link activation', async () => {
   event.preventDefault();
   await act(async () => link.dispatchEvent(event));
   expect(location.pathname).toBe('/unknown-page');
+});
+
+it('applies browser typography after actual information-page navigation remounts its nodes', async () => {
+  records.os = 'web';
+  history.replaceState(null, '', '/privacy');
+  useCaller();
+  await mount(createElement(ProbeApp));
+  const first = host.querySelector('[role="heading"]');
+  for (const page of ['changelog', 'privacy']) {
+    await act(async () => openAppPage(page));
+    const title = host.querySelector('[role="heading"]');
+    expect(title).not.toBe(first);
+    expect(title.style.getPropertyValue('text-wrap')).toBe('balance');
+    expect(title.parentElement.lastElementChild.style.maxWidth).toBe('62ch');
+  }
 });

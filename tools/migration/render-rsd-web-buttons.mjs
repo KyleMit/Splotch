@@ -117,15 +117,21 @@ const SPECIMENS = {
   }),
 };
 
+const NOT_FOUND_ACTIONS = [
+  ['drawing', 'brand', 'Start drawing'],
+  ['changelog', 'wash', 'Changelog'],
+  ['privacy', 'wash', 'Privacy'],
+];
+
 console.log(
   JSON.stringify({
     defaultClasses: merge(defaultStyles.button).className,
-    notFoundLinks: [
-      ['drawing', 'brand', 'Start drawing'],
-      ['changelog', 'wash', 'Changelog'],
-      ['privacy', 'wash', 'Privacy'],
-    ].map(([page, variant, label]) =>
+    defaultLabelClasses: merge(defaultStyles.span).className,
+    notFoundLinks: NOT_FOUND_ACTIONS.map(([page, variant, label]) =>
       renderToStaticMarkup(h(RsdNotFoundLink, { page, variant }, label))
+    ),
+    notFoundButtons: NOT_FOUND_ACTIONS.map(([, variant, label]) =>
+      renderToStaticMarkup(h(RsdButton, { variant, size: 'lg', onPress: noop }, label))
     ),
     markup: Object.fromEntries(
       Object.entries(SPECIMENS).map(([name, element]) => [name, renderToStaticMarkup(element)])
