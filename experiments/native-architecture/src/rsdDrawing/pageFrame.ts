@@ -1,0 +1,1 @@
+export const PAGE_FRAMED_MAX_WIDTH_PX = 920;
