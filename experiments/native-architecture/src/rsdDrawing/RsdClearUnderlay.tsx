@@ -18,6 +18,7 @@ import { InkPaperScope } from '../drawing/InkPaper';
 import { InkScene } from '../drawing/InkScene';
 import type { Drawing } from '../drawing/model';
 import { PageOutline } from '../drawing/PageOutline';
+import { PaperTexture } from '../drawing/PaperTexture';
 import type { PresentedFrame } from '../drawing/paperPresentation';
 import {
   drawingPaper,
@@ -64,19 +65,14 @@ function PaperArt({
   return (
     <InkAppearanceScope.Provider value={{ pageId: drawing.pageId, theme }}>
       <InkPaperScope.Provider value={projection}>
+        <PaperTexture />
         <Svg
+          style={layer.fill}
           width="100%"
           height="100%"
           viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
           preserveAspectRatio="none"
         >
-          <Rect
-            x={size.x}
-            y={size.y}
-            width={size.width}
-            height={size.height}
-            fill={PAPER_THEMES[theme].paper}
-          />
           {ink ? (
             <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={() => {}} />
           ) : null}
