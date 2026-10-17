@@ -7,6 +7,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { PAGE_CONTENTS } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPageContents.tsx';
 import { PRIVACY_LINK_GEOMETRY } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyHeading.tsx';
 import { scale } from '../../../web/src/lib/design/tokens.ts';
+import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { RsdPrivacyContent } from '../../../experiments/native-architecture/src/rsdDrawing/RsdPrivacyContent.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import privacy from '../../../experiments/native-architecture/src/information/privacy.generated.json';
@@ -165,23 +166,75 @@ it('renders the shipping metadata row and compact contents geometry', async () =
   expect(host.textContent).toContain(privacy.native.updated);
 });
 
-it('copies a canonical section link, updates the fragment and clears its visible and spoken confirmation', async () => {
-  vi.useFakeTimers();
-  clipboard.copy.mockResolvedValue(true);
-  clipboard.replace.mockClear();
-  await mount(content(0));
-  const anchor = host.querySelector(`[aria-label='Copy link to “${SECTIONS[0].label}”']`);
-  await act(async () => anchor.click());
-  expect(clipboard.copy).toHaveBeenCalledWith('on-device');
-  expect(clipboard.replace).toHaveBeenCalledWith('on-device');
-  expect(host.querySelector('[role="status"]').textContent).toBe(
-    'Link to “What stays on your device” copied.'
-  );
-  expect(anchor.textContent).not.toContain('#');
-  await act(async () => vi.advanceTimersByTime(COPIED_DURATION_MS));
-  expect(host.querySelector('[role="status"]').textContent).toBe('');
-  expect(anchor.textContent).toBe('#');
-});
+function expectForegroundGlyph(anchor) {
+  const [mark, glyph] = anchor.children;
+  const background = JSON.parse(mark.getAttribute('data-committed-props')).style;
+  const foreground = JSON.parse(glyph.getAttribute('data-committed-props')).style;
+  expect(background.position).toBe('absolute');
+  expect(foreground.position).toBe('relative');
+  expect(foreground.zIndex ?? 0).toBeGreaterThanOrEqual(background.zIndex ?? 0);
+  return glyph;
+}
+
+it.each([
+  ['light', 'compact', 390, 844],
+  ['dark', 'compact', 390, 844],
+  ['light', 'wide', 1366, 1024],
+  ['dark', 'wide', 1366, 1024],
+])(
+  'keeps the %s %s section-link glyph above its blob through copying and timeout',
+  async (theme, _, width, height) => {
+    vi.useFakeTimers();
+    records.journalHostProps = true;
+    records.dimensions = { width, height, scale: 1, fontScale: 1 };
+    clipboard.copy.mockClear().mockResolvedValue(true);
+    clipboard.replace.mockClear();
+    const jump = vi.fn();
+    await mount(
+      createElement(
+        DrawingAppearanceProvider,
+        { preference: theme },
+        createElement(RsdPrivacyContent, {
+          policy: privacy.native,
+          onLink: jump,
+          onSectionLayout: vi.fn(),
+          scrollY: 0,
+        })
+      )
+    );
+    const anchor = host.querySelector(`[aria-label='Copy link to “${SECTIONS[0].label}”']`);
+    const glyph = expectForegroundGlyph(anchor);
+    expect(glyph.textContent).toBe('#');
+    const palette = DRAWING_THEMES[theme];
+    expect(anchor.querySelector('path').getAttribute('fill')).toBe(palette.brandWash);
+    await act(async () => anchor.click());
+    expect(clipboard.copy).toHaveBeenCalledOnce();
+    expect(clipboard.copy).toHaveBeenCalledWith('on-device');
+    expect(clipboard.replace).toHaveBeenCalledOnce();
+    expect(clipboard.replace).toHaveBeenCalledWith('on-device');
+    expect(jump).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="status"]').textContent).toBe(
+      'Link to “What stays on your device” copied.'
+    );
+    expect(expectForegroundGlyph(anchor)).toBe(glyph);
+    expect(glyph.textContent).toBe('');
+    expect(anchor.querySelector('path').getAttribute('fill')).toBe(palette.successWash);
+    await vi.waitFor(() =>
+      expect(glyph.querySelector('svg[data-xml]').dataset.xml).toContain(palette.successText)
+    );
+    const check = glyph.querySelector('svg[data-xml]');
+    expect([check.getAttribute('width'), check.getAttribute('height')]).toEqual([
+      String(PRIVACY_LINK_GEOMETRY.icon),
+      String(PRIVACY_LINK_GEOMETRY.icon),
+    ]);
+    await act(async () => vi.advanceTimersByTime(COPIED_DURATION_MS));
+    expect(host.querySelector('[role="status"]').textContent).toBe('');
+    expect(expectForegroundGlyph(anchor)).toBe(glyph);
+    expect(glyph.textContent).toBe('#');
+    expect(glyph.querySelector('svg[data-xml]')).toBeNull();
+    expect(anchor.querySelector('path').getAttribute('fill')).toBe(palette.brandWash);
+  }
+);
 
 it('keeps section navigation available when clipboard writing is unavailable', async () => {
   clipboard.copy.mockResolvedValue(false);
