@@ -24,7 +24,10 @@ const PNG_SIGNATURE_BYTES = 8;
 function nativeProps(element) {
   const key = Object.keys(element).find((name) => name.startsWith('__reactFiber$'));
   const owner = key ? element[key].return : null;
-  return owner?.type?.$$typeof === FORWARD_REF ? owner.memoizedProps : {};
+  let root = owner;
+  while (root?.return) root = root.return;
+  const current = root?.stateNode?.current === root ? owner : owner?.alternate;
+  return current?.type?.$$typeof === FORWARD_REF ? current.memoizedProps : {};
 }
 
 const panes = () => [...host.querySelectorAll('[data-testid="rsd-glass-pane"]')];
@@ -155,15 +158,30 @@ describe('the native pane composition lifetime', () => {
       { preference: theme },
       createElement(RsdGlassPanes, { space, glass })
     );
-  const renderedPanes = () =>
-    records.props.filter((props) => props.testID === 'rsd-glass-pane').slice(-panes().length);
+  const renderedPanes = () => panes().map(nativeProps);
+  const pendingPanes = () => [...host.querySelectorAll('[data-testid="rsd-glass-pane-pending"]')];
+  const loadPanes = (elements) =>
+    act(async () => elements.forEach((element) => nativeProps(element).onLoad()));
   const imageUris = () => renderedPanes().map(({ source }) => source.uri);
+  function pendingTextures() {
+    const pending = [];
+    vi.mocked(glassPaneImage).mockImplementation(
+      (raster) =>
+        new Promise((resolve) => pending.push({ resolve, uri: glassPanePng(raster, [1, 2, 3]) }))
+    );
+    return pending;
+  }
   async function changingPane() {
     let change;
     function PaneFixture() {
-      const [state, setState] = useState({ theme: 'light', space: SPACE, visible: true });
+      const [state, setState] = useState({
+        theme: 'light',
+        space: SPACE,
+        glass: GLASS,
+        visible: true,
+      });
       change = (next) => setState((previous) => ({ ...previous, ...next }));
-      return state.visible ? tree(state.theme, state.space) : null;
+      return state.visible ? tree(state.theme, state.space, state.glass) : null;
     }
     await mount(createElement(PaneFixture));
     return (next) => act(async () => change(next));
@@ -180,14 +198,8 @@ describe('the native pane composition lifetime', () => {
     }
   });
 
-  it('retains the mean fallback until every pane has a settled texture', async () => {
-    const pending = [];
-    vi.mocked(glassPaneImage).mockImplementation(
-      (raster) =>
-        new Promise((resolve) => {
-          pending.push({ resolve, uri: glassPanePng(raster, [1, 2, 3]) });
-        })
-    );
+  it('retains the mean fallback until every texture has loaded in its native Image', async () => {
+    const pending = pendingTextures();
     await mount(tree('light'));
     const fallback = imageUris();
     expect(panes().map((element) => paneLayout(element).pane.rgb)).toEqual(
@@ -196,6 +208,17 @@ describe('the native pane composition lifetime', () => {
     await act(async () => pending[0].resolve(pending[0].uri));
     expect(imageUris()).toEqual(fallback);
     await act(async () => pending.slice(1).forEach(({ resolve, uri }) => resolve(uri)));
+    expect(imageUris()).toEqual(fallback);
+    const decoding = pendingPanes();
+    expect(decoding).toHaveLength(panes().length);
+    expect(decoding.map((element) => flat(nativeProps(element).style).opacity)).toEqual(
+      decoding.map(() => 0)
+    );
+    await loadPanes(decoding.slice(0, 1));
+    expect(imageUris()).toEqual(fallback);
+    await loadPanes(decoding.slice(1));
+    expect(panes()).toEqual(decoding);
+    expect(pendingPanes()).toEqual([]);
     expect(imageUris()).toEqual(pending.map(({ uri }) => uri));
     for (const [index, element] of panes().entries()) {
       const { clip } = paneLayout(element);
@@ -206,13 +229,7 @@ describe('the native pane composition lifetime', () => {
   });
 
   it.each(['theme', 'layout'])('ignores late textures after the %s changes', async (change) => {
-    const pending = [];
-    vi.mocked(glassPaneImage).mockImplementation(
-      (raster) =>
-        new Promise((resolve) => {
-          pending.push({ resolve, uri: glassPanePng(raster, [1, 2, 3]) });
-        })
-    );
+    const pending = pendingTextures();
     const changePane = await changingPane();
     const old = pending.splice(0);
     const theme = change === 'theme' ? 'dark' : 'light';
@@ -222,17 +239,74 @@ describe('the native pane composition lifetime', () => {
     await act(async () => old.forEach(({ resolve, uri }) => resolve(uri)));
     expect(imageUris()).toEqual(fallback);
     await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+    expect(imageUris()).toEqual(fallback);
+    await loadPanes(pendingPanes());
     expect(imageUris()).toEqual(pending.map(({ uri }) => uri));
   });
 
+  it.each(['theme', 'layout'])(
+    'retains decoded geometry through %s and ignores stale native loads',
+    async (change) => {
+      const pending = pendingTextures();
+      const changePane = await changingPane();
+      await act(async () => pending.splice(0).forEach(({ resolve, uri }) => resolve(uri)));
+      await loadPanes(pendingPanes());
+      const displayed = panes();
+      const oldLoads = displayed.map((element) => nativeProps(element).onLoad);
+      const geometry = displayed.map((element) => paneLayout(element).clip);
+      await changePane(
+        change === 'theme'
+          ? { theme: 'dark' }
+          : {
+              space: { ...SPACE, width: 844, height: 390 },
+              glass: { ...GLASS, panel: { ...GLASS.panel, mode: 'phoneLandscape' } },
+            }
+      );
+      const abandoned = pendingPanes().map((element) => nativeProps(element).onLoad);
+      expect(panes()).toEqual(displayed);
+      expect(panes().map((element) => paneLayout(element).clip)).toEqual(geometry);
+      await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+      const replacement = pendingPanes();
+      await act(async () => abandoned.forEach((onLoad) => onLoad()));
+      expect(panes()).toEqual(displayed);
+      await loadPanes(replacement.slice(0, -1));
+      expect(panes()).toEqual(displayed);
+      await loadPanes(replacement.slice(-1));
+      expect(panes()).toEqual(replacement);
+      expect(panes()).toHaveLength(change === 'layout' ? 1 : 2);
+      await act(async () => [...oldLoads, ...abandoned].forEach((onLoad) => onLoad()));
+      expect(panes()).toEqual(replacement);
+      for (const element of panes()) {
+        expect(layered(flat(nativeProps(element).style))).toEqual(PLAIN);
+        expect(nativeProps(element.parentElement)).toMatchObject({
+          accessible: false,
+          accessibilityElementsHidden: true,
+          importantForAccessibility: 'no-hide-descendants',
+        });
+      }
+    }
+  );
+
+  it.each(['null', 'rejection'])(
+    'keeps the native fallback through composition %s',
+    async (failure) => {
+      const changePane = await changingPane();
+      const displayed = panes();
+      if (failure === 'rejection') vi.mocked(glassPaneImage).mockRejectedValue(new Error('decode'));
+      await changePane({ theme: 'dark' });
+      expect(panes()).toEqual(displayed);
+      const replacement = pendingPanes();
+      expect(replacement).toHaveLength(displayed.length);
+      await loadPanes(replacement);
+      expect(panes()).toEqual(replacement);
+      expect(panes().map((element) => paneLayout(element).pane.rgb)).toEqual(
+        panes().map(() => GLASS_PANE_INKS.dark.rgb)
+      );
+    }
+  );
+
   it('forgets a composition after its pane unmounts', async () => {
-    const pending = [];
-    vi.mocked(glassPaneImage).mockImplementation(
-      (raster) =>
-        new Promise((resolve) => {
-          pending.push({ resolve, uri: glassPanePng(raster, [1, 2, 3]) });
-        })
-    );
+    const pending = pendingTextures();
     const changePane = await changingPane();
     await changePane({ visible: false });
     await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));

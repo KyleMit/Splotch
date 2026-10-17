@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { glassPaneShapes } from '../../../../web/src/lib/glassPaneGeometry';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -14,6 +14,7 @@ import { MARGIN_RULE_GAP_PX, MARGIN_RULE_INK_STOPS, MARGIN_RULE_WIDTH_PX } from 
 import { MARGIN_RULE_INKS } from './marginRuleInk';
 import type { LayoutAxis } from './edgeLayout';
 import { PALETTE_FLOWS } from './paletteGeometry';
+import { RsdPaneImages } from './RsdPaneImages';
 
 const styles = StyleSheet.create({
   fill: { position: 'absolute', bottom: 0 },
@@ -22,8 +23,6 @@ const styles = StyleSheet.create({
   // Over the paper with the palette bar, as shipping's rules share the rail glass's layer.
   rule: { position: 'absolute', zIndex: 1 },
   panes: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
-  paneClip: { position: 'absolute', overflow: 'hidden' },
-  pane: { position: 'absolute' },
 });
 
 // The native renderers have no backdrop blur, so the rail takes shipping's own fallback for a
@@ -80,7 +79,7 @@ export function RsdMarginRules({ axis }: { axis: LayoutAxis }) {
 // area that holds it.
 export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: BareGlass }) {
   const theme = useDrawingAppearance();
-  // Keep the mean coat until all pane textures settle, including when the bundled tile fails.
+  // Keep the mean coat if the bundled tile fails.
   const ink = GLASS_PANE_INKS[theme];
   const { left: frameLeft, top: frameTop } = useSafeAreaInsets();
   const { width, height, insetBottom, paperTop, paperLeft } = space;
@@ -136,24 +135,21 @@ export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: Bare
       active = false;
     };
   }, [panes, theme]);
+  const images = useMemo(
+    () =>
+      panes.map(({ uri, box, image }, index) => {
+        const texture = textured?.panes === panes ? textured.images[index] : null;
+        return {
+          uri: texture ?? uri,
+          box,
+          image: texture ? { left: 0, top: 0, width: box.width, height: box.height } : image,
+        };
+      }),
+    [panes, textured]
+  );
   return (
     <View pointerEvents="none" style={styles.panes}>
-      {panes.map(({ uri, box, image }, index) => (
-        <View key={index} style={[styles.paneClip, box]}>
-          <Image
-            testID="rsd-glass-pane"
-            source={{ uri: textured?.panes === panes ? (textured.images[index] ?? uri) : uri }}
-            resizeMode="stretch"
-            fadeDuration={0}
-            style={[
-              styles.pane,
-              textured?.panes === panes && textured.images[index]
-                ? { left: 0, top: 0, width: box.width, height: box.height }
-                : image,
-            ]}
-          />
-        </View>
-      ))}
+      <RsdPaneImages panes={images} />
     </View>
   );
 }
