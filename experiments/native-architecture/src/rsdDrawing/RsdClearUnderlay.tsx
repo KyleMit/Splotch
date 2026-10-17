@@ -129,7 +129,7 @@ function DepartingSheet({
       style={{
         position: 'absolute',
         ...frame,
-        transformOrigin: `${origin.x - frame.left}px ${origin.y - frame.top}px`,
+        transformOrigin: [origin.x - frame.left, origin.y - frame.top, 0],
         transform: [
           {
             scale: flight.interpolate({

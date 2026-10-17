@@ -55,13 +55,17 @@ import {
   clearIcon,
   clearProps,
   clearScreen,
+  commitClear,
   drag,
   everRendered,
   inkedDrawing,
+  layout,
   lift,
   mountClear,
   offset,
   press,
+  processNativeTransformOrigin,
+  preprocessWebStyle,
   radius,
   rendered,
   responderEvent,
@@ -74,20 +78,6 @@ afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
-
-const layout = (testID, box) =>
-  act(async () =>
-    records.props
-      .findLast((props) => props.testID === testID)
-      .onLayout({ nativeEvent: { layout: box } })
-  );
-
-async function commitClear() {
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  await act(async () => {});
-}
 
 it('forwards distance beyond the ring to the available bubble player without clipping the wash', async () => {
   caller.clearSound.notes = 'available';
@@ -522,8 +512,13 @@ it('flies the departing page into the docked tab from the paper area it sits in'
   // below the 68px palette bar.
   const origin = clearSheetOrigin({ x: 402 - 20, y: 120 - 68 }, area);
   expect(byTestID('rsd-clear-sheet')).toMatchObject(frame);
-  expect(byTestID('rsd-clear-sheet').transformOrigin).toBe(
-    `${origin.x - frame.left}px ${origin.y - frame.top}px`
+  const expected = [origin.x - frame.left, origin.y - frame.top, 0];
+  expect(expected.slice(0, 2).map(Number.isInteger)).toEqual([false, false]);
+  expect(expected[1]).toBeLessThan(0);
+  const transformOrigin = byTestID('rsd-clear-sheet').transformOrigin;
+  expect(processNativeTransformOrigin(transformOrigin)).toEqual(expected);
+  expect(preprocessWebStyle({ transformOrigin }).transformOrigin).toBe(
+    `${expected[0]}px ${expected[1]}px 0px`
   );
 });
 
