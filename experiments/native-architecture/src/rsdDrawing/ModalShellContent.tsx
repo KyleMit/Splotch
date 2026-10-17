@@ -1,4 +1,12 @@
-import { useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
 import { Animated, Easing } from '../platform/animated';
@@ -124,39 +132,95 @@ function exit(motion: Motion, from: Point, reduced: boolean) {
 // Holds the dialog on screen through its exit, and reports the dismissal once the exit is done:
 // natively on iOS, which cannot present the next dialog until UIKit has dismissed this one, and
 // from here everywhere else.
-function useModalMotion(visible: boolean, onDismiss: (() => void) | undefined) {
+function useModalMotion(
+  visible: boolean,
+  onDismiss: (() => void) | undefined,
+  exitTrigger: RefObject<(() => void) | null> | undefined
+) {
   const reduced = useReduceMotion();
   const origin = useModalOrigin();
   const window = useWindowDimensions();
   const [motion] = useState(createMotion);
   const [phase, setPhase] = useState<Phase>(visible ? 'entering' : 'gone');
-  if (visible && (phase === 'gone' || phase === 'exiting')) setPhase('entering');
+  const exitRequested = useRef(false);
+  const pendingDismissal = useRef(false);
+  const visibleRef = useRef(visible);
+  if (visible && !visibleRef.current) {
+    exitRequested.current = false;
+    pendingDismissal.current = false;
+  }
+  visibleRef.current = visible;
+  if (visible && !exitRequested.current && (phase === 'gone' || phase === 'exiting'))
+    setPhase('entering');
   if (!visible && (phase === 'entering' || phase === 'open')) setPhase('exiting');
   const from = useRef<Point>({ x: 0, y: 0 });
   const windowRef = useRef(window);
   windowRef.current = window;
   const dismissal = useRef(onDismiss);
   dismissal.current = onDismiss;
+  const running = useRef<{
+    phase: 'entering' | 'exiting';
+    animation: ReturnType<typeof enter>;
+    active: boolean;
+  } | null>(null);
+  const finishExit = useCallback(() => {
+    // A synchronous driver can finish before the Close caller's closing route commits.
+    pendingDismissal.current = visibleRef.current;
+    if (visibleRef.current) return;
+    setPhase('gone');
+    if (Platform.OS !== 'ios') dismissal.current?.();
+  }, []);
+  const start = useCallback(
+    (next: 'entering' | 'exiting') => {
+      // Close can dispatch the exit before the phase's layout effect.
+      if (running.current?.phase === next) return;
+      if (running.current) {
+        running.current.active = false;
+        running.current.animation.stop();
+      }
+      if (next === 'entering') from.current = origin?.take(windowRef.current) ?? { x: 0, y: 0 };
+      const animation =
+        next === 'entering'
+          ? enter(motion, from.current, reduced)
+          : exit(motion, from.current, reduced);
+      const current = { phase: next, animation, active: true };
+      running.current = current;
+      animation.start(({ finished }) => {
+        if (!current.active || running.current !== current) return;
+        current.active = false;
+        if (!finished) return;
+        if (next === 'entering') setPhase('open');
+        else finishExit();
+      });
+    },
+    [motion, origin, reduced, finishExit]
+  );
   useLayoutEffect(() => {
-    if (phase !== 'entering' && phase !== 'exiting') return;
-    if (phase === 'entering') from.current = origin?.take(windowRef.current) ?? { x: 0, y: 0 };
-    const animation =
-      phase === 'entering'
-        ? enter(motion, from.current, reduced)
-        : exit(motion, from.current, reduced);
-    let active = true;
-    animation.start(({ finished }) => {
-      if (!active) return;
-      active = false;
-      if (!finished) return;
-      setPhase(phase === 'entering' ? 'open' : 'gone');
-      if (phase === 'exiting' && Platform.OS !== 'ios') dismissal.current?.();
-    });
-    return () => {
-      active = false;
-      animation.stop();
+    if (pendingDismissal.current && !visible) finishExit();
+    else if (phase === 'entering' || phase === 'exiting') start(phase);
+  }, [phase, visible, start, finishExit]);
+  useLayoutEffect(() => {
+    if (!exitTrigger) return;
+    const request = () => {
+      if (!visibleRef.current || exitRequested.current) return;
+      exitRequested.current = true;
+      setPhase('exiting');
+      start('exiting');
     };
-  }, [phase, motion, origin, reduced]);
+    exitTrigger.current = request;
+    return () => {
+      if (exitTrigger.current === request) exitTrigger.current = null;
+    };
+  }, [exitTrigger, start]);
+  useLayoutEffect(
+    () => () => {
+      if (!running.current) return;
+      running.current.active = false;
+      running.current.animation.stop();
+      running.current = null;
+    },
+    []
+  );
   return { presented: phase !== 'gone', motion };
 }
 
@@ -169,6 +233,7 @@ type ModalStageProps = {
   labelledBy?: string;
   onClose: () => void;
   onDismiss?: () => void;
+  exitTrigger?: RefObject<(() => void) | null>;
   children: ReactNode;
   overlay?: ReactNode;
 };
@@ -184,10 +249,11 @@ export function ModalStage({
   labelledBy,
   onClose,
   onDismiss,
+  exitTrigger,
   children,
   overlay,
 }: ModalStageProps) {
-  const { presented, motion } = useModalMotion(visible, onDismiss);
+  const { presented, motion } = useModalMotion(visible, onDismiss, exitTrigger);
   const origin = useModalOrigin();
   useDialogBack(visible, onClose);
   return (
