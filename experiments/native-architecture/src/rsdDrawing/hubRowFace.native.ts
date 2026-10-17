@@ -10,3 +10,11 @@ export const hubRowFace = css.create({
   row: { fontFamily: 'system-ui', flexWrap: 'wrap' },
   title: { fontWeight: scale.fontWeightSemibold },
 });
+
+const minimum = css.create({
+  row: (width: number) => ({ minWidth: width }),
+});
+
+export function hubRowMinWidth(wordWidth: number) {
+  return minimum.row(wordWidth + Number.parseFloat(scale.space4) * 2);
+}

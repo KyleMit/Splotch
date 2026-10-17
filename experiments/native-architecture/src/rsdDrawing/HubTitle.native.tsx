@@ -22,7 +22,7 @@ function fontKey(text: string, props: ResolvedTextProps, fontScale: number) {
   ]);
 }
 
-export function HubTitle({ children, style }: HubTitleProps) {
+export function HubTitle({ children, style, onWordWidth }: HubTitleProps) {
   const { fontScale, width } = useWindowDimensions();
   return (
     <compat.native<ResolvedTextProps> as="span" style={style}>
@@ -32,6 +32,7 @@ export function HubTitle({ children, style }: HubTitleProps) {
           text={children}
           resolved={resolved}
           measurementWidth={width * fontScale}
+          onWordWidth={onWordWidth}
         />
       )}
     </compat.native>
@@ -42,10 +43,12 @@ function MeasuredTitle({
   text,
   resolved,
   measurementWidth,
+  onWordWidth,
 }: {
   text: string;
   resolved: ResolvedTextProps;
   measurementWidth: number;
+  onWordWidth: (width: number) => void;
 }) {
   const words = [...new Set(text.split(' ').filter(Boolean))];
   const [widths, setWidths] = useState<ReadonlyMap<string, number>>(() => new Map());
@@ -64,7 +67,9 @@ function MeasuredTitle({
       current.get(word) === width ? current : new Map(current).set(word, width)
     );
   };
-  const titleWidth = Math.max(columnWidth, ...words.map((word) => widths.get(word) ?? 0));
+  const widestWord = Math.max(0, ...words.map((word) => widths.get(word) ?? 0));
+  useLayoutEffect(() => onWordWidth(widestWord), [onWordWidth, widestWord]);
+  const titleWidth = Math.max(columnWidth, widestWord);
   return (
     <View onLayout={({ nativeEvent }) => setColumnWidth(nativeEvent.layout.width)}>
       <View

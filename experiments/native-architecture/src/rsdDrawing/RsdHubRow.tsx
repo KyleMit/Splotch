@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { css, html } from 'react-strict-dom';
 import { landFocus } from './landFocus';
 import { colors, dimensions, motion } from './tokens.css';
-import { hubRowFace } from './hubRowFace';
+import { hubRowFace, hubRowMinWidth } from './hubRowFace';
 import { HubTitle } from './HubTitle';
 import { RsdActivityDot } from './RsdActivityDot';
 import { LineClampBox } from './lineClampBox';
@@ -118,6 +118,7 @@ export function RsdHubRow({
   toggle?: HubToggle;
 }) {
   const theme = useDrawingTheme();
+  const [titleWordWidth, setTitleWordWidth] = useState(0);
   const body = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (focusOnMount) landFocus(body.current);
@@ -128,7 +129,7 @@ export function RsdHubRow({
       <html.button
         ref={body}
         aria-label={name}
-        style={[styles.row, hubRowFace.row]}
+        style={[styles.row, hubRowFace.row, hubRowMinWidth(titleWordWidth)]}
         onClick={onOpen}
       >
         <html.div style={styles.icon}>
@@ -136,7 +137,9 @@ export function RsdHubRow({
           <RsdActivityDot unseen={unseen} surface="surface2" />
         </html.div>
         <html.div style={styles.text}>
-          <HubTitle style={[styles.title, hubRowFace.title]}>{title}</HubTitle>
+          <HubTitle style={[styles.title, hubRowFace.title]} onWordWidth={setTitleWordWidth}>
+            {title}
+          </HubTitle>
           <html.span data-testid="hub-subtitle" style={styles.subtitle}>
             <LineClampBox lines={SUBTITLE_LINES}>{subtitle}</LineClampBox>
           </html.span>

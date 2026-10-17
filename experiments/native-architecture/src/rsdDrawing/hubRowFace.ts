@@ -9,3 +9,7 @@ export const hubRowFace = css.create({
   row: {},
   title: { fontFamily: fonts.semiboldFamily, fontWeight: fonts.semiboldWeight },
 });
+
+export function hubRowMinWidth(_wordWidth: number) {
+  return null;
+}

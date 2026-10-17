@@ -142,7 +142,7 @@ describe('RsdHubRow', () => {
         flexShrink: 1,
       });
       expect(styleOf(container.querySelector('button'))).toMatchObject({
-        minWidth: 0,
+        minWidth: widest + Number.parseFloat(scale.space4) * 2,
         flexShrink: 1,
       });
       expect(native(byTestId('hub-subtitle')).props.numberOfLines).toBe(2);
