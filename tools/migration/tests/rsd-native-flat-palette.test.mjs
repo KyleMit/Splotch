@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
-import { host, records } from './rsd-native-selection-host.mjs';
+import { act } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { caller, host, records } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { themes } from '../../../web/src/lib/design/tokens.ts';
+import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
+import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+import {
+  BUTTON_SCALE_MAX,
+  DEFAULT_BUTTON_SCALE,
+} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 import { MARGIN_RULE_INKS } from '../../../experiments/native-architecture/src/rsdDrawing/marginRuleInk.ts';
 
 // React Native's Fabric paint order over the recorded hosts, as sliceChildShadowNodeViewPairs.cpp
@@ -224,4 +232,99 @@ describe('the pre-blended margin rule ink', () => {
       });
     }
   });
+});
+
+const fullscreen = vi.hoisted(() => ({ supported: false, active: false, toggle: vi.fn() }));
+vi.mock('../../../experiments/native-architecture/src/platform/useFullscreen.ts', () => ({
+  useFullscreen: () => ({
+    ...fullscreen,
+    pending: false,
+    message: '',
+    label: fullscreen.active ? 'Exit fullscreen' : 'Enter fullscreen',
+  }),
+}));
+afterEach(() => {
+  fullscreen.supported = false;
+  fullscreen.active = false;
+  fullscreen.toggle.mockReset();
+});
+
+describe('the Fullscreen Toggle in the drawing screen', () => {
+  it.each([
+    ['Raised portrait', 'buttons', 402, 874, DEFAULT_BUTTON_SCALE, 0, 0],
+    ['Flat portrait', 'bare', 402, 874, DEFAULT_BUTTON_SCALE, PALETTE_FLOWS.row.extentPx, 0],
+    ['Flat square', 'bare', 768, 768, DEFAULT_BUTTON_SCALE, PALETTE_FLOWS.row.extentPx, 0],
+    ['Flat enlarged buttons', 'bare', 402, 874, BUTTON_SCALE_MAX, PALETTE_FLOWS.row.extentPx, 0],
+    ['Raised phone landscape', 'buttons', 874, 402, BUTTON_SCALE_MAX, 0, 0],
+    ['Flat phone landscape', 'bare', 874, 402, BUTTON_SCALE_MAX, 0, 0],
+    ['Raised tablet landscape', 'buttons', 1024, 768, DEFAULT_BUTTON_SCALE, 0, 0],
+    [
+      'Flat tablet landscape',
+      'bare',
+      1024,
+      768,
+      BUTTON_SCALE_MAX,
+      0,
+      PALETTE_FLOWS.column.extentPx,
+    ],
+  ])(
+    'keeps the Fullscreen Toggle clear of the %s palette without moving its controls owner',
+    async (_, toolbarStyle, width, height, buttonScale, paletteTop, controlsLeft) => {
+      fullscreen.supported = true;
+      records.dimensions = { width, height, scale: 1, fontScale: 1 };
+      records.insets = { top: 47, right: 0, bottom: INSET_BOTTOM_PX, left: 0 };
+      storedSettings({ toolbarStyle, buttonScale, aiEnabled: true });
+      await mountToolbar(toolbarScreen());
+      expect(caller.product.sound.settings).toMatchObject({ toolbarStyle, buttonScale });
+      const dock = byTestId('rsd-fullscreen-dock');
+      expect(dock.closest('[data-testid="rsd-controls-inset"]')).not.toBeNull();
+      expect(
+        flat(records.props.findLast((props) => props.testID === 'rsd-fullscreen-dock').style)
+      ).toEqual({
+        position: 'absolute',
+        top: EDGE_INSET_PX + paletteTop,
+        left: EDGE_INSET_PX,
+      });
+      expect(
+        flat(records.props.findLast((props) => props.testID === 'rsd-controls-inset').style)
+      ).toMatchObject({
+        top: 0,
+        bottom: INSET_BOTTOM_PX,
+        left: controlsLeft,
+      });
+      const button = dock.querySelector('[aria-label="Enter fullscreen"]');
+      expect(button).not.toBeNull();
+      expect(
+        flat(
+          records.props.findLast((props) => props.accessibilityLabel === 'Enter fullscreen').style
+        )
+      ).toMatchObject({
+        width: CORNER_BUTTON_SIZE_PX,
+        height: CORNER_BUTTON_SIZE_PX,
+      });
+      await act(async () => button.click());
+      expect(fullscreen.toggle).toHaveBeenCalledOnce();
+    }
+  );
+
+  it('keeps the active fullscreen action wired to the same owner', async () => {
+    fullscreen.supported = true;
+    fullscreen.active = true;
+    await mountFlat(390, 844);
+    await act(async () => host.querySelector('[aria-label="Exit fullscreen"]').click());
+    expect(fullscreen.toggle).toHaveBeenCalledOnce();
+    expect(host.querySelector('[aria-label="Enter fullscreen"]')).toBeNull();
+  });
+
+  it.each(['buttons', 'bare'])(
+    'offers no toggle in unsupported %s targets',
+    async (toolbarStyle) => {
+      storedSettings({ toolbarStyle, aiEnabled: true });
+      await mountToolbar(toolbarScreen());
+      expect(byTestId('rsd-fullscreen-dock')).toBeNull();
+      expect(host.querySelector('[aria-label="Enter fullscreen"]')).toBeNull();
+      expect(host.querySelector('[aria-label="Exit fullscreen"]')).toBeNull();
+      expect(fullscreen.toggle).not.toHaveBeenCalled();
+    }
+  );
 });
