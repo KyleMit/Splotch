@@ -19,7 +19,7 @@ import { usePrivacySectionLinks } from './usePrivacySectionLinks';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
-import { RsdPageContents } from './RsdPageContents';
+import { PAGE_CONTENTS, RsdPageContents } from './RsdPageContents';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
@@ -195,6 +195,16 @@ type PrivacyContentProps = {
   scrollY: number;
 };
 
+function reportPrivacySectionPositions(
+  y: number,
+  top: { current: number },
+  positions: Record<string, number>,
+  report: PrivacyContentProps['onSectionLayout']
+) {
+  top.current = y;
+  for (const [id, offset] of Object.entries(positions)) report(id, y + offset);
+}
+
 function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyContentProps) {
   const wide = useWindowDimensions().width > PAGE_FRAMED_MAX_WIDTH_PX;
   const links = usePrivacySectionLinks(onLink);
@@ -243,13 +253,21 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
             pendingJump.current = id;
             setContentsOpen(false);
           }}
-          onLayout={({ nativeEvent }) =>
+          onLayout={({ nativeEvent }) => {
+            const { y, height } = nativeEvent.layout;
+            const detailsTop = y + height + PAGE_CONTENTS.inset;
+            reportPrivacySectionPositions(detailsTop, top, positions.current, onSectionLayout);
             setGeometry((old) => ({
               ...old,
-              contentsTop: nativeEvent.layout.y,
-              contentsHeight: nativeEvent.layout.height,
-            }))
-          }
+              top: detailsTop,
+              contentsTop: y,
+              contentsHeight: height,
+            }));
+            if (!contentsOpen && pendingJump.current) {
+              onLink(`#${pendingJump.current}`);
+              pendingJump.current = null;
+            }
+          }}
         />
       ) : null}
       <RsdVisuallyHidden live>{links.announcement}</RsdVisuallyHidden>
@@ -258,14 +276,8 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
         style={{ flexDirection: wide ? 'row' : 'column', gap: PRIVACY_LAYOUT.railGap }}
         onLayout={({ nativeEvent }) => {
           const { y, height } = nativeEvent.layout;
-          top.current = y;
+          reportPrivacySectionPositions(y, top, positions.current, onSectionLayout);
           setGeometry((old) => ({ ...old, top: y, height, measured: true }));
-          for (const [id, offset] of Object.entries(positions.current))
-            onSectionLayout(id, y + offset);
-          if (pendingJump.current) {
-            onLink(`#${pendingJump.current}`);
-            pendingJump.current = null;
-          }
         }}
       >
         {wide ? (

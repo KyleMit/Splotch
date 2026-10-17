@@ -31,14 +31,14 @@ afterEach(() => {
 });
 const props = (id) => records.props.findLast((entry) => entry.testID === id);
 const layout = (id, y, height) => props(id).onLayout({ nativeEvent: { layout: { y, height } } });
-const content = (scrollY, onLink = vi.fn()) =>
+const content = (scrollY, onLink = vi.fn(), onSectionLayout = vi.fn()) =>
   createElement(
     DrawingAppearanceProvider,
     { preference: 'light' },
     createElement(RsdPrivacyContent, {
       policy: privacy.native,
       onLink,
-      onSectionLayout: vi.fn(),
+      onSectionLayout,
       scrollY,
     })
   );
@@ -68,10 +68,12 @@ it('pins the desktop contents beside the reading column and tracks the section c
   expect(props('privacy-contents-rail').style.transform).toEqual([{ translateY: 1600 }]);
 });
 
-it('keeps compact contents closed, collapses before measuring a picked jump, and pins its readout while scrolling', async () => {
+it('keeps compact contents closed and jumps after its measured collapse without a section resize', async () => {
   records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
   const jump = vi.fn();
-  await mount(content(0, jump));
+  const sectionLayouts = vi.fn();
+  await mount(content(0, jump, sectionLayouts));
+  expect(props('page-contents-disclosure').style.marginBottom).toBe(PAGE_CONTENTS.inset);
   expect(host.querySelector('[data-testid="privacy-contents-rail"]')).toBeNull();
   const disclosure = host.querySelector('[aria-label="Privacy policy contents, 8 sections"]');
   expect(
@@ -84,15 +86,24 @@ it('keeps compact contents closed, collapses before measuring a picked jump, and
   await act(async () => disclosure.click());
   const nav = host.querySelector('[aria-label="Privacy policy contents"]');
   expect(nav.querySelectorAll('[data-testid="sidebar-row"]')).toHaveLength(SECTIONS.length);
+  await act(async () => {
+    layout('privacy-details', 700, 2000);
+    layout('page-contents-disclosure', 300, 386);
+    SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
+  });
   await act(async () => nav.querySelectorAll('[data-testid="sidebar-row"]')[5].click());
   expect(host.querySelector('[aria-label="Privacy policy contents"]')).toBeNull();
   expect(jump).not.toHaveBeenCalled();
+  sectionLayouts.mockClear();
   await act(async () => {
-    layout('privacy-details', 400, 2000);
     layout('page-contents-disclosure', 300, 86);
-    SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
   });
+  expect(sectionLayouts).toHaveBeenCalledWith('hosting', 300 + 86 + PAGE_CONTENTS.inset + 5 * 300);
   expect(jump).toHaveBeenCalledWith('#hosting');
+  const targetReport = sectionLayouts.mock.calls.findIndex(([id]) => id === 'hosting');
+  expect(sectionLayouts.mock.invocationCallOrder[targetReport]).toBeLessThan(
+    jump.mock.invocationCallOrder[0]
+  );
   await act(async () => root.render(content(700, jump)));
   expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 400 }]);
   expect(
