@@ -5,6 +5,15 @@ import { fonts } from './tokens.css';
 // but strict.css hands every form control the page font, and that unlayered rule outranks any
 // layered StyleX style that would revert the row to the browser's face.
 export const hubRowFace = css.create({
+  tile: {},
   row: {},
   title: { fontFamily: fonts.semiboldFamily, fontWeight: fonts.semiboldWeight },
 });
+
+export function hubRowMinWidth(_wordWidth: number) {
+  return null;
+}
+
+export function hubTextMinWidth(_wordWidth: number) {
+  return null;
+}
