@@ -172,8 +172,10 @@ export function createClearSound(load: ClearPageTurnLoader) {
       if (!value) release();
     },
     setForeground(value: boolean) {
+      const becameForeground = !foreground && value;
       foreground = value;
       if (!value) release();
+      else if (becameForeground) prepare();
     },
     dispose() {
       enabled = false;
