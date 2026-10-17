@@ -28,6 +28,7 @@ class MainApplication : Application(), ReactApplication {
           add(SplotchGateKeyboardPackage())
           add(SplotchAIEnvironmentPackage())
           add(SplotchPhotoLibraryPackage())
+          add(SplotchClearSoundPackage())
         }
     )
   }

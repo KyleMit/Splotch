@@ -3,7 +3,7 @@ diff --git a/ios/AudioPlayer.swift b/ios/AudioPlayer.swift
 +++ b/ios/AudioPlayer.swift
 @@ -286,36 +286,12 @@
    }
- 
+
    func handleMediaServicesReset() {
 -    guard let source else {
 -      updateStatus(with: ["mediaServicesDidReset": true])
@@ -41,7 +41,7 @@ diff --git a/ios/AudioPlayer.swift b/ios/AudioPlayer.swift
 -    }
 +    updateStatus(with: ["mediaServicesDidReset": true])
    }
- 
+
    private func teardownPlayer() {
 @@ -342,14 +318,6 @@
        .first()
@@ -56,5 +56,63 @@ diff --git a/ios/AudioPlayer.swift b/ios/AudioPlayer.swift
 -      self.play(at: rate)
 -    }
    }
- 
+
    private func installTap() {
+diff --git a/ios/AudioModule.swift b/ios/AudioModule.swift
+--- a/ios/AudioModule.swift
++++ b/ios/AudioModule.swift
+@@ -3,6 +3,7 @@
+ public class AudioModule: Module {
+   private var sessionIsActive = true
+   private let registry = AudioComponentRegistry()
++  private var externalClearNotes = Set<String>()
+
+   // MARK: Properties
+   private var recordingSettings = [String: Any]()
+@@ -26,6 +27,9 @@
+       #endif
+
+       setupInterruptionHandling()
++      NotificationCenter.default.addObserver(self,
++        selector: #selector(handleClearAudioActivity),
++        name: Notification.Name("SplotchClearAudioActivity"), object: nil)
+     }
+
+     AsyncFunction("setAudioModeAsync") { (mode: AudioMode) in
+@@ -825,18 +829,28 @@
+     try AVAudioSession.sharedInstance().setActive(true)
+   }
+
++  @objc private func handleClearAudioActivity(_ notification: Notification) {
++    guard let id = notification.userInfo?["id"] as? String,
++      let active = notification.userInfo?["active"] as? Bool else { return }
++    if active { externalClearNotes.insert(id) }
++    else {
++      externalClearNotes.remove(id)
++      deactivateSession()
++    }
++  }
++
+   private func deactivateSession() {
+     Task {
+       // Give isPlaying time to update before deciding whether to deactivate.
+       try? await Task.sleep(for: .milliseconds(100))
+-      let hasActivePlayables = registry.allPlayables.contains { $0.isPlaying }
+-      guard !hasActivePlayables else {
+-        return
+-      }
+-      do {
+-        try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+-      } catch {
+-        print("Failed to deactivate audio session: \(error)")
++      await MainActor.run {
++        let hasActivePlayables = registry.allPlayables.contains { $0.isPlaying }
++        guard !hasActivePlayables, externalClearNotes.isEmpty else { return }
++        do {
++          try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
++        } catch {
++          print("Failed to deactivate audio session: \(error)")
++        }
+       }
+     }
+   }
