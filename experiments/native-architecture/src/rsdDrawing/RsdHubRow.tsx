@@ -124,7 +124,7 @@ export function RsdHubRow({
   }, [focusOnMount]);
   const name = [title, subtitle, ...(unseen ? ['new'] : [])].join(', ');
   return (
-    <html.div data-testid="hub-tile" style={styles.tile}>
+    <html.div data-testid="hub-tile" style={[styles.tile, hubRowFace.tile]}>
       <html.button
         ref={body}
         aria-label={name}

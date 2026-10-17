@@ -80,12 +80,13 @@ describe('RsdSidebarRow', () => {
   );
 });
 
-const hub = (title) =>
+const hub = (title, toggle) =>
   h(RsdHubRow, {
     icon: 'sound',
     title,
     subtitle: 'Volume 50%',
     unseen: false,
+    toggle,
     onOpen() {},
   });
 const hubTitle = () =>
@@ -103,6 +104,15 @@ async function deliverWordWidth(word, width) {
 }
 
 describe('RsdHubRow', () => {
+  it('lets native row content and its trailing switch reflow when a whole word cannot fit beside them', async () => {
+    await render(
+      hub('Appearance', { id: 'zoom-night', label: 'Night Mode', checked: false, onToggle() {} })
+    );
+    expect(container.querySelector('[aria-label="Night Mode"]')).not.toBeNull();
+    expect(styleOf(byTestId('hub-tile')).flexWrap).toBe('wrap');
+    expect(styleOf(container.querySelector('button')).flexWrap).toBe('wrap');
+  });
+
   it('leaves the first native title unconstrained until a positive layout arrives', async () => {
     await render(hub('Appearance'));
     expect(styleOf(hubTitle()).width).toBeUndefined();

@@ -6,6 +6,7 @@ import { scale } from '../../../../web/src/lib/design/tokens';
 // resolves it itself, and Android's MainApplication registers it as the system typeface so it takes
 // a real weight, not one of the app font's per-weight families.
 export const hubRowFace = css.create({
-  row: { fontFamily: 'system-ui' },
+  tile: { flexWrap: 'wrap' },
+  row: { fontFamily: 'system-ui', flexWrap: 'wrap' },
   title: { fontWeight: scale.fontWeightSemibold },
 });
