@@ -136,14 +136,20 @@ function assertRsdWeightsUseFontTokens(files) {
 const rsdFiles = () =>
   [...sources].filter(([file, code]) => file.startsWith('rsdDrawing/') && /html\./.test(code));
 
-// Every React Native text goes through drawing/Text.tsx, which picks the face.
-function assertTextThroughWrapper(files) {
+const NATIVE_TEXT_OWNERS = new Map([
+  ['drawing/Text.tsx', new Set(['Text', 'TextInput'])],
+  // RSD compat resolves this adapter's system face; drawing/Text would replace it.
+  ['rsdDrawing/HubTitle.native.tsx', new Set(['Text'])],
+]);
+
+// Native text has one font owner: the wrapper or the adapter's resolved RSD style.
+function assertNativeTextOwners(files) {
   const offenders = [];
   for (const [file, code] of files) {
-    if (file === 'drawing/Text.tsx') continue;
     for (const [, names] of code.matchAll(/import \{([^}]*)\} from 'react-native';/g))
       for (const name of names.split(',').map((part) => part.trim()))
-        if (name === 'Text' || name === 'TextInput') offenders.push(`${file}: ${name}`);
+        if ((name === 'Text' || name === 'TextInput') && !NATIVE_TEXT_OWNERS.get(file)?.has(name))
+          offenders.push(`${file}: ${name}`);
   }
   assert.deepEqual(offenders, []);
 }
@@ -352,13 +358,21 @@ describe('RN shipping font on Android and iOS', () => {
     expect(styles.at(-1).fontFamily).toBe(NATIVE_FONT_FAMILIES[face]);
   });
 
-  it('routes every React Native text through the font wrapper', () => {
-    expect(() => assertTextThroughWrapper(sources)).not.toThrow();
+  it('rejects React Native text without its declared font owner', () => {
+    expect(() => assertNativeTextOwners(sources)).not.toThrow();
     const direct = new Map(sources).set(
       'fixture.tsx',
       "import { Text, View } from 'react-native';"
     );
-    expect(() => assertTextThroughWrapper(direct)).toThrow();
+    expect(() => assertNativeTextOwners(direct)).toThrow();
+  });
+
+  it.each([
+    ['rsdDrawing/HubTitle.sibling.tsx', 'Text'],
+    ['rsdDrawing/HubTitle.native.tsx', 'TextInput'],
+  ])('rejects %s importing %s outside the exact title-font exception', (file, name) => {
+    const direct = new Map(sources).set(file, `import { ${name} } from 'react-native';`);
+    expect(() => assertNativeTextOwners(direct)).toThrow();
   });
 
   it('holds the first render until the bundled faces load, then renders', () => {
