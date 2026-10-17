@@ -5,44 +5,18 @@ import {
   type SkImage,
   type SkJSIInstance,
 } from '@shopify/react-native-skia';
-import { Image } from 'react-native';
-import handmadePaper from '../../assets/paper/handmade-paper.webp';
+import { loadPaperGrain, PAPER_GRAIN_CUBIC } from './paperGrain';
 import type { PictureExport } from './pictureExport';
 
 // Mitchell cubic resampling, Skia's high-quality filter, for the grain each texel spans several
 // pixels of and for the captured picture scaled onto the saved grid.
-const MITCHELL_B = 1 / 3;
-const MITCHELL_C = 1 / 3;
+const [MITCHELL_B, MITCHELL_C] = PAPER_GRAIN_CUBIC;
 const PNG_QUALITY = 100;
-
-// Skia resolves a bundled asset through React Native's resolver (a drawable name in an Android
-// release, a file or dev-server URL otherwise), as its own image hooks do.
-function grainUri(): string {
-  return typeof handmadePaper === 'string'
-    ? handmadePaper
-    : Image.resolveAssetSource(handmadePaper).uri;
-}
 
 function decode(bytes: Parameters<typeof Skia.Image.MakeImageFromEncoded>[0]): SkImage {
   const image = Skia.Image.MakeImageFromEncoded(bytes);
   if (!image) throw new Error('The picture could not be decoded for saving.');
   return image;
-}
-
-// A pure memoization cache: a grain that failed to load is forgotten, so the next save retries it.
-let grain: Promise<SkImage | null> | null = null;
-
-// As the shipping export does, a grain that will not load leaves the plain paper color.
-function loadGrain(): Promise<SkImage | null> {
-  if (grain) return grain;
-  const loading = Skia.Data.fromURI(grainUri())
-    .then(decode)
-    .catch(() => {
-      if (grain === loading) grain = null;
-      return null;
-    });
-  grain = loading;
-  return loading;
 }
 
 function release(...instances: Array<SkJSIInstance<string> | null>) {
@@ -62,7 +36,7 @@ export async function composePicture(
   const paint = Skia.Paint();
   try {
     if (!surface) throw new Error('Picture export is unavailable.');
-    const texture = includePaperTexture ? await loadGrain() : null;
+    const texture = includePaperTexture ? await loadPaperGrain() : null;
     const canvas = surface.getCanvas();
     canvas.drawColor(Skia.Color(picture.paper));
     if (texture) {

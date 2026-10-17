@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { scale, themes } from '../../web/src/lib/design/tokens.ts';
 import { featherAlpha, glassPaneShapes, paneBox } from '../../web/src/lib/glassPaneGeometry.ts';
@@ -9,8 +10,37 @@ import {
 } from '../../experiments/native-architecture/src/rsdDrawing/glassPaneInk.ts';
 import { glassPanePng } from '../../experiments/native-architecture/src/rsdDrawing/glassPanePng.ts';
 import { glassPaneRaster } from '../../experiments/native-architecture/src/rsdDrawing/glassPaneRaster.ts';
+import { glassPaneImage } from '../../experiments/native-architecture/src/rsdDrawing/glassPaneImage.ts';
+
+const runtime = await vi.hoisted(async () => {
+  const { createRequire } = await import('node:module');
+  return { skia: null, texture: null, require: createRequire(import.meta.url) };
+});
+vi.mock('@shopify/react-native-skia', () => ({
+  ...runtime.require('@shopify/react-native-skia/lib/commonjs/skia/types'),
+  get Skia() {
+    return runtime.skia;
+  },
+}));
+vi.mock('../../experiments/native-architecture/src/drawing/paperGrain.ts', () => ({
+  PAPER_GRAIN_CUBIC: [1 / 3, 1 / 3],
+  loadPaperGrain: async () => runtime.texture,
+}));
 
 const GRAIN = new URL('../../web/src/lib/assets/handmade-paper.webp', import.meta.url);
+let grainPixels;
+beforeAll(async () => {
+  const CanvasKitInit = runtime.require('canvaskit-wasm');
+  const { JsiSkApi } = runtime.require('@shopify/react-native-skia/lib/commonjs/skia/web/JsiSkia');
+  runtime.skia = JsiSkApi(await CanvasKitInit());
+  runtime.texture = runtime.skia.Image.MakeImageFromEncoded(
+    runtime.skia.Data.fromBytes(readFileSync(GRAIN))
+  );
+  grainPixels = await sharp(GRAIN.pathname)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+});
 const INK_ALPHA = GLASS_PANE_INKS.light.alpha;
 const CHANNEL_TOLERANCE = 1 / 255;
 // How far the stretched raster may stray from shipping's mask, in composited alpha.
@@ -268,4 +298,58 @@ describe('the native glass pane ink', () => {
         expect(Math.abs(native - shipping)).toBeLessThanOrEqual(CHANNEL_TOLERANCE);
       });
   });
+});
+
+describe('the native pane’s static paper grain', () => {
+  const SHAPE = {
+    rects: [{ x: 50, y: 50, width: 120, height: 120 }],
+    clip: { x: 0, y: 0, width: 220, height: 220 },
+    sigma: 12,
+  };
+  const ORIGINS = [
+    { x: 14, y: 14 },
+    { x: 61, y: 73 },
+  ];
+  const MAX_CHANNEL_ERROR = 3;
+
+  // The oracle samples shipping's actual tile, then frost and mask, over three distinct backdrops.
+  // A uniform mean, a second ink-strength multiplier, or a pane-local tile phase fails this check.
+  it.each(['light', 'dark'])(
+    'premixes shipping’s texels in %s at the window phase',
+    async (theme) => {
+      const raster = glassPaneRaster(SHAPE, 1);
+      const mask = sampler(raster);
+      const tint = themes[theme].glassTintRgb.split(' ').map(Number);
+      const frost = parseFloat(scale.glassStrip) / 100;
+      for (const origin of ORIGINS) {
+        const uri = await glassPaneImage(raster, theme, origin);
+        const { data, info } = await sharp(Buffer.from(uri.split(',')[1], 'base64'))
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        expect([info.width, info.height]).toEqual([raster.box.width, raster.box.height]);
+        let worst = 0;
+        for (let y = 8; y < info.height - 8; y += 7)
+          for (let x = 8; x < info.width - 8; x += 7) {
+            const gx = (origin.x + x) % grainPixels.info.width;
+            const gy = (origin.y + y) % grainPixels.info.height;
+            const grainAt = (gy * grainPixels.info.width + gx) * 4;
+            const grainAlpha = grainPixels.data[grainAt + 3] / 255;
+            const feather = mask(raster.box.x + x + 0.5, raster.box.y + y + 0.5);
+            const at = (y * info.width + x) * 4;
+            const alpha = data[at + 3] / 255;
+            for (const backdrop of [0, 128, 255])
+              for (let channel = 0; channel < 3; channel++) {
+                const pane =
+                  grainAlpha * grainPixels.data[grainAt + channel] +
+                  (1 - grainAlpha) * (frost * tint[channel] + (1 - frost) * backdrop);
+                const shipping = feather * pane + (1 - feather) * backdrop;
+                const native = alpha * data[at + channel] + (1 - alpha) * backdrop;
+                worst = Math.max(worst, Math.abs(shipping - native));
+              }
+          }
+        expect(worst, `${theme} at ${origin.x},${origin.y}`).toBeLessThan(MAX_CHANNEL_ERROR);
+      }
+    }
+  );
 });
