@@ -204,6 +204,19 @@ describe('the shipping modal frame', () => {
     expect(frame.width).toBe(maxWidth(rule(APP_CSS, '.confirm-card')));
     expect(frame.body).toEqual(box(declaration(rule(APP_CSS, '.confirm-card-content'), 'padding')));
   });
+
+  it('caps a short confirmation at the shipping dialog viewport reserve', () => {
+    const frame = modalFrame('confirm', PHONE_LANDSCAPE, GUTTER);
+    expect(frame).toMatchObject({ width: 336, maxHeight: 352, height: null });
+    expect((PHONE_LANDSCAPE.height - frame.maxHeight) / 2).toBe(19);
+  });
+
+  it('keeps the confirmation inside wider gutters and retains other modal caps', () => {
+    expect(modalFrame('confirm', PHONE, GUTTER).maxHeight).toBe(806);
+    expect(modalFrame('confirm', PHONE_LANDSCAPE, GUTTER + 8).maxHeight).toBe(342);
+    expect(modalFrame('gate', PHONE_LANDSCAPE, GUTTER).maxHeight).toBe(358);
+    expect(modalFrame('settings', PHONE_LANDSCAPE, GUTTER).maxHeight).toBe(331.5);
+  });
 });
 
 describe('blobPath inset for the outlined close blob', () => {

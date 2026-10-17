@@ -4,6 +4,7 @@ import {
   TABLET_MIN_SIDE_PX,
   isPhoneLandscape,
 } from '../../../../web/src/lib/breakpoints';
+import { DRAWING_SCALE } from '../drawing/theme';
 import { AI_PROMPT_LAYOUTS, aiPromptStep } from './aiPromptGeometry';
 
 // The shipping modal frame: app.css .modal-dialog / .modal-shell / .modal-close-btn /
@@ -37,6 +38,9 @@ const SETTINGS_COMPACT_MAX_WIDTH_PX = 640;
 // SettingsModal.svelte's narrow-phone step for its header and scroll padding.
 const SETTINGS_NARROW_MAX_WIDTH_PX = 480;
 const CONFIRM_MAX_WIDTH_PX = 336;
+// The shipping dialog retains the UA's 2em + 6px height reserve after its border is removed.
+const CONFIRM_UA_BORDER_RESERVE_PX = 6;
+const CONFIRM_BLOCK_RESERVE_PX = 2 * DRAWING_SCALE.fontSizeMd + CONFIRM_UA_BORDER_RESERVE_PX;
 export const COLORING_MAX_WIDTH_PX = 920;
 // ColoringBook.svelte's content padding steps down on a phone and again on a narrow one; the
 // header row stands its own gap above the grid.
@@ -174,7 +178,7 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
   if (size === 'confirm')
     return {
       width: fitWidth(window, gutter, CONFIRM_MAX_WIDTH_PX),
-      maxHeight: fill,
+      maxHeight: Math.min(fill, window.height - CONFIRM_BLOCK_RESERVE_PX),
       height: null,
       header: CONFIRM_CONTENT,
       body: CONFIRM_CONTENT,
