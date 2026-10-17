@@ -45,6 +45,7 @@ const styles = css.create({
   margin: (marginLeft: number) => ({ marginLeft }),
   revealed: { opacity: 1 },
   mark: { position: 'absolute', width: LINK_BLOB_PX, height: LINK_BLOB_PX },
+  glyph: { position: 'relative', zIndex: 1 },
   text: { color: colors.brandText, fontSize: dimensions.fontSizeMd },
 });
 const LINK_PATH = blobPath('radiusBlob2', LINK_BLOB_PX, LINK_BLOB_PX);
@@ -80,11 +81,13 @@ export function RsdPrivacyHeading({
           <Path d={LINK_PATH} fill={copied ? theme.successWash : theme.brandWash} />
         </Svg>
       </html.div>
-      {copied ? (
-        <RsdIcon name="check" size={LINK_ICON_PX} ink={theme.successText} muted={false} />
-      ) : (
-        <html.span style={[controls.boldText, styles.text]}>#</html.span>
-      )}
+      <html.div style={styles.glyph}>
+        {copied ? (
+          <RsdIcon name="check" size={LINK_ICON_PX} ink={theme.successText} muted={false} />
+        ) : (
+          <html.span style={[controls.boldText, styles.text]}>#</html.span>
+        )}
+      </html.div>
     </RsdPressable>
   );
   return (
