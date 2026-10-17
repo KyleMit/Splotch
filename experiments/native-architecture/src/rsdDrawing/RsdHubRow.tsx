@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { css, html } from 'react-strict-dom';
 import { landFocus } from './landFocus';
 import { colors, dimensions, motion } from './tokens.css';
-import { hubRowFace } from './hubRowFace';
+import { hubRowFace, hubRowMinWidth, hubTextMinWidth } from './hubRowFace';
+import { HubTitle } from './HubTitle';
 import { RsdActivityDot } from './RsdActivityDot';
 import { LineClampBox } from './lineClampBox';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
@@ -117,25 +118,28 @@ export function RsdHubRow({
   toggle?: HubToggle;
 }) {
   const theme = useDrawingTheme();
+  const [titleWordWidth, setTitleWordWidth] = useState(0);
   const body = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (focusOnMount) landFocus(body.current);
   }, [focusOnMount]);
   const name = [title, subtitle, ...(unseen ? ['new'] : [])].join(', ');
   return (
-    <html.div data-testid="hub-tile" style={styles.tile}>
+    <html.div data-testid="hub-tile" style={[styles.tile, hubRowFace.tile]}>
       <html.button
         ref={body}
         aria-label={name}
-        style={[styles.row, hubRowFace.row]}
+        style={[styles.row, hubRowFace.row, hubRowMinWidth(titleWordWidth)]}
         onClick={onOpen}
       >
         <html.div style={styles.icon}>
           <RsdSectionIcon icon={icon} size={ICON_PX} ink={theme.brandText} />
           <RsdActivityDot unseen={unseen} surface="surface2" />
         </html.div>
-        <html.div style={styles.text}>
-          <html.span style={[styles.title, hubRowFace.title]}>{title}</html.span>
+        <html.div style={[styles.text, hubTextMinWidth(titleWordWidth)]}>
+          <HubTitle style={[styles.title, hubRowFace.title]} onWordWidth={setTitleWordWidth}>
+            {title}
+          </HubTitle>
           <html.span data-testid="hub-subtitle" style={styles.subtitle}>
             <LineClampBox lines={SUBTITLE_LINES}>{subtitle}</LineClampBox>
           </html.span>

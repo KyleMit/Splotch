@@ -1,12 +1,23 @@
 import { UNADOPTED_PAPER } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { act, createElement, Fragment, useEffect, useLayoutEffect } from 'react';
+import {
+  act,
+  createElement,
+  Fragment,
+  StrictMode,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import { Animated } from 'react-native';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ModalOriginProvider } from '../../../experiments/native-architecture/src/rsdDrawing/modalOrigin.tsx';
 import { NativeFrame } from '../../../experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx';
 import { NativeDrawingLayout } from '../../../experiments/native-architecture/src/rsdDrawing/NativeScrollAreas.tsx';
 import { RsdIconButton } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
+import { NativeSoundSettingsDialog } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSettingsDialog.tsx';
+import { createSoundSettings } from '../../../experiments/native-architecture/src/settings/soundSettings.ts';
+import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import { ModalShell } from '../../../experiments/native-architecture/src/rsdDrawing/ModalShell.tsx';
 import { useProductModalRoute } from '../../../experiments/native-architecture/src/product/useProductModalRoute.ts';
 import { DialogHeader } from '../../../experiments/native-architecture/src/rsdDrawing/DialogHeader.tsx';
@@ -21,12 +32,15 @@ import {
   MODAL_SCRIM_PLAIN,
 } from '../../../experiments/native-architecture/src/rsdDrawing/modalGeometry.ts';
 
+afterEach(() => vi.restoreAllMocks());
+
 function dialog({
   visible = true,
   seeThrough = false,
   touchBackdrop,
   onClose = () => {},
   onDismiss,
+  exitTrigger,
 } = {}) {
   return createElement(
     ModalShell,
@@ -38,6 +52,7 @@ function dialog({
       size: 'sheet',
       onClose,
       onDismiss,
+      exitTrigger,
       header: createElement(DialogHeader, { title: 'Drawing tools', onClose }),
     },
     createElement('span', null, 'body')
@@ -186,31 +201,43 @@ it.each(['android', 'web'])(
   }
 );
 
-it('ignores a canceled exit callback after the dialog reopens', async () => {
-  records.os = 'android';
-  const onDismiss = vi.fn();
-  await mount(dialog({ onDismiss }));
-  const exit = {};
-  vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
-    start(done) {
-      animations.forEach((animation) => animation.start());
-      exit.finish = (finished) => done({ finished });
-    },
-    stop() {},
-  }));
-  try {
-    await act(async () => root.render(dialog({ visible: false, onDismiss })));
-    await act(async () => exit.finish(false));
-    expect(onDismiss).not.toHaveBeenCalled();
-    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
-    await act(async () => root.render(dialog({ onDismiss })));
-    await act(async () => exit.finish(true));
-    expect(onDismiss).not.toHaveBeenCalled();
-    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
-  } finally {
-    vi.restoreAllMocks();
+it.each([false, true])(
+  'ignores a canceled exit callback after reopen with early trigger %s',
+  async (early) => {
+    records.os = 'android';
+    const onDismiss = vi.fn();
+    const exitTrigger = { current: null };
+    await mount(dialog({ onDismiss, exitTrigger }));
+    const exit = {};
+    vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+      start(done) {
+        animations.forEach((animation) => animation.start());
+        exit.finish = (finished) => done({ finished });
+      },
+      stop() {},
+    }));
+    try {
+      await act(async () => {
+        if (early) exitTrigger.current();
+        root.render(dialog({ visible: false, onDismiss, exitTrigger }));
+      });
+      await act(async () => exit.finish(false));
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+      await act(async () => root.render(dialog({ onDismiss, exitTrigger })));
+      await act(async () => exit.finish(true));
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+      const next = holdMotion([]);
+      await act(async () => root.render(dialog({ visible: false, onDismiss, exitTrigger })));
+      expect(onDismiss).not.toHaveBeenCalled();
+      await act(async () => next.finish());
+      expect(onDismiss).toHaveBeenCalledOnce();
+    } finally {
+      vi.restoreAllMocks();
+    }
   }
-});
+);
 
 describe('the dialog backdrop', () => {
   it('blurs the screen behind on iOS under the frosted dim, and unblurs with the exit', async () => {
@@ -346,4 +373,137 @@ it('routes native Escape to the visible modal and ignores its departed receiver'
   await act(async () => root.render(null));
   await act(async () => receiver.onShortcutKey({ nativeEvent: { key: 'escape' } }));
   expect(close).toHaveBeenCalledOnce();
+});
+
+async function settingsOnset(order) {
+  let current;
+  const owner = createSoundSettings({ read: async () => null, write: async () => {} }, (state) => {
+    current = state;
+  });
+  await owner.load();
+  const dismissed = vi.fn(() => order.push('dismiss'));
+  const state = {};
+  function Descendant({ visible }) {
+    useLayoutEffect(() => {
+      if (!visible) order.push('descendant-layout');
+    }, [visible]);
+    return null;
+  }
+  function Settings() {
+    const [target, setTarget] = useState('settings');
+    const route = useProductModalRoute('reported', target, dismissed);
+    state.route = route;
+    if (route.shown === 'none') return null;
+    return createElement(NativeSoundSettingsDialog, {
+      ...nativeSettingsProps(owner, current),
+      visible: route.visible,
+      onDismiss: route.dismissed,
+      onClose() {
+        order.push('caller');
+        setTarget('none');
+      },
+      gate: createElement(Descendant, { visible: route.visible }),
+    });
+  }
+  await mount(createElement(StrictMode, null, createElement(Settings)));
+  return { state, dismissed, dispose: () => owner.dispose() };
+}
+
+function holdMotion(order, synchronous = false) {
+  const held = { stop: vi.fn() };
+  held.parallel = vi.spyOn(Animated, 'parallel').mockImplementationOnce((animations) => ({
+    start(done) {
+      order.push('exit-start');
+      animations.forEach((animation) => animation.start());
+      held.finish = (finished = true) => done({ finished });
+      if (synchronous) held.finish();
+    },
+    stop: held.stop,
+  }));
+  return held;
+}
+
+it('starts Settings exit in Close before descendant commit and keeps duplicate requests on one motion', async () => {
+  records.os = 'android';
+  const order = [];
+  const settings = await settingsOnset(order);
+  const exit = holdMotion(order);
+  const timing = vi.spyOn(Animated, 'timing');
+  try {
+    const close = host.querySelector('[aria-label="Close"]');
+    await act(async () => {
+      close.click();
+      close.click();
+    });
+    expect(order[0]).toBe('caller');
+    expect(order.indexOf('exit-start')).toBeLessThan(order.indexOf('descendant-layout'));
+    expect(order.at(-1)).toBe('descendant-layout');
+    expect(exit.parallel).toHaveBeenCalledOnce();
+    expect(timing.mock.calls.map(([, config]) => config.duration)).toEqual(
+      Array(5).fill(MODAL_EXIT_MS)
+    );
+    expect(latest('modal-card').pointerEvents).toBe('none');
+    expect(host.querySelector('[aria-label="Close"]').disabled).toBe(true);
+    expect(settings.dismissed).not.toHaveBeenCalled();
+    await act(async () => exit.finish());
+    expect(settings.state.route.shown).toBe('none');
+    expect(settings.dismissed).toHaveBeenCalledExactlyOnceWith('settings');
+    await act(async () => exit.finish());
+    expect(settings.dismissed).toHaveBeenCalledOnce();
+  } finally {
+    settings.dispose();
+  }
+});
+
+it.each(['android', 'web', 'ios'])(
+  'keeps synchronous Settings exit completion until its parent route closes on %s',
+  async (os) => {
+    records.os = os;
+    records.reduceMotion = true;
+    const order = [];
+    const settings = await settingsOnset(order);
+    holdMotion(order, true);
+    try {
+      await act(async () => host.querySelector('[aria-label="Close"]').click());
+      expect(order).toEqual(['caller', 'exit-start', 'descendant-layout', 'dismiss']);
+      expect(settings.state.route).toMatchObject({ shown: 'none', closing: false, epoch: 2 });
+      expect(settings.dismissed).toHaveBeenCalledExactlyOnceWith('settings');
+      expect(records.dismissals).toEqual(os === 'ios' ? ['Settings'] : []);
+    } finally {
+      settings.dispose();
+    }
+  }
+);
+
+it('cancels early Settings exit on unmount and ignores its late completion', async () => {
+  records.os = 'android';
+  const settings = await settingsOnset([]);
+  const exit = holdMotion([]);
+  try {
+    await act(async () => host.querySelector('[aria-label="Close"]').click());
+    await act(async () => root.render(null));
+    expect(exit.stop).toHaveBeenCalledOnce();
+    await act(async () => exit.finish());
+    expect(settings.dismissed).not.toHaveBeenCalled();
+  } finally {
+    settings.dispose();
+  }
+});
+
+it('cancels entering motion before early exit and ignores the superseded entry completion', async () => {
+  records.os = 'android';
+  const entering = holdMotion([]);
+  const exitTrigger = { current: null };
+  const onDismiss = vi.fn();
+  await mount(dialog({ exitTrigger, onDismiss }));
+  await act(async () => {
+    exitTrigger.current();
+    exitTrigger.current();
+  });
+  expect(entering.stop).toHaveBeenCalledOnce();
+  await act(async () => entering.finish());
+  expect(onDismiss).not.toHaveBeenCalled();
+  await act(async () => root.render(dialog({ visible: false, exitTrigger, onDismiss })));
+  expect(onDismiss).toHaveBeenCalledOnce();
+  expect(host.querySelector('[role="dialog"]')).toBeNull();
 });
