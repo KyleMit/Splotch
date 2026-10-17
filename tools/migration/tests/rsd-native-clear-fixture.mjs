@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { act, createElement } from 'react';
 import { vi } from 'vitest';
 import { caller, records, host, mount } from './rsd-native-selection-host.mjs';
@@ -8,6 +10,38 @@ import {
 } from '../../../experiments/native-architecture/src/drawing/model.ts';
 import { acceptRadius } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
+
+const runtimeRequire = createRequire(import.meta.url);
+const presetRequire = createRequire(runtimeRequire.resolve('@react-native/babel-preset'));
+const babel = presetRequire('@babel/core');
+
+function loadNativeTransformOrigin() {
+  const source = runtimeRequire.resolve(
+    'react-native/Libraries/StyleSheet/processTransformOrigin.js'
+  );
+  const { code } = babel.transformSync(readFileSync(source, 'utf8'), {
+    babelrc: false,
+    configFile: false,
+    plugins: [
+      presetRequire.resolve('babel-plugin-syntax-hermes-parser'),
+      presetRequire.resolve('@babel/plugin-transform-flow-strip-types'),
+      presetRequire.resolve('@babel/plugin-transform-modules-commonjs'),
+    ],
+  });
+  const module = { exports: {} };
+  new Function('require', 'module', 'exports', '__DEV__', code)(
+    createRequire(source),
+    module,
+    module.exports,
+    true
+  );
+  return module.exports.default;
+}
+
+export const processNativeTransformOrigin = loadNativeTransformOrigin();
+export const preprocessWebStyle = runtimeRequire(
+  'react-native-web/dist/cjs/exports/StyleSheet/preprocess'
+).preprocess;
 
 // The Clear Button suites' screen, mount and responder helpers.
 // The fixture window is 402 wide, so the shipping accept radius is 40% of that, and the docked
@@ -132,3 +166,17 @@ export const rendered = (testID) => host.querySelector(`[data-testid="${testID}"
 export const everRendered = (testID) => records.props.some((props) => props.testID === testID);
 export const clearIcon = () =>
   host.querySelector('[aria-label="Clear drawing"] svg[data-xml]').dataset.xml;
+
+export const layout = (testID, box) =>
+  act(async () =>
+    records.props
+      .findLast((props) => props.testID === testID)
+      .onLayout({ nativeEvent: { layout: box } })
+  );
+
+export async function commitClear() {
+  await press();
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  await act(async () => {});
+}

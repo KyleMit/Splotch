@@ -10,6 +10,7 @@ import {
 import handmadePaper from '../../assets/paper/handmade-paper.webp';
 import { useDrawingTheme } from './DrawingAppearance';
 import { paperGrainDensity } from './paperGrainDensity';
+import type { Point } from './model';
 
 // The shipping handmade-paper grain: a low-alpha tile, so one texture serves both themes and only
 // the paper color beneath it changes. rsd-native-drawing-frame.test.mjs holds the bundled copy
@@ -44,20 +45,26 @@ function grainBox(density: number): ImageStyle {
 // No drawing state reaches the grain, so landing ink does not re-render it.
 export const PaperTexture = memo(function PaperTexture({
   rightInset = 0,
+  origin = { x: 0, y: 0 },
 }: {
   rightInset?: number;
+  origin?: Point;
 }) {
   const { paper } = useDrawingTheme();
   const window = useWindowDimensions();
   const density = paperGrainDensity(window.scale);
-  const leftOffset = rightInset ? (window.width - rightInset) % PAPER_GRAIN_TILE_PX : 0;
+  const x = origin.x + (rightInset ? window.width - rightInset : 0);
+  const left = 0 - (((x % PAPER_GRAIN_TILE_PX) + PAPER_GRAIN_TILE_PX) % PAPER_GRAIN_TILE_PX);
+  const top = 0 - (((origin.y % PAPER_GRAIN_TILE_PX) + PAPER_GRAIN_TILE_PX) % PAPER_GRAIN_TILE_PX);
   return (
     <View
       testID="paper-texture"
       pointerEvents="none"
-      style={[styles.fill, { backgroundColor: paper, left: -leftOffset }]}
+      style={[styles.fill, { backgroundColor: paper }]}
     >
-      <Image testID="paper-grain" source={source} resizeMode="repeat" style={grainBox(density)} />
+      <View testID="paper-grain-phase" style={[styles.fill, { left, top }]}>
+        <Image testID="paper-grain" source={source} resizeMode="repeat" style={grainBox(density)} />
+      </View>
     </View>
   );
 });

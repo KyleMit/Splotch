@@ -16,8 +16,10 @@ import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { InkAppearanceScope } from '../drawing/InkAppearance';
 import { InkPaperScope } from '../drawing/InkPaper';
 import { InkScene } from '../drawing/InkScene';
-import type { Drawing } from '../drawing/model';
+import { hasDrawingInk, type Drawing } from '../drawing/model';
 import { PageOutline } from '../drawing/PageOutline';
+import { PaperTexture } from '../drawing/PaperTexture';
+import { paperLifted } from '../drawing/paperGeometry';
 import type { PresentedFrame } from '../drawing/paperPresentation';
 import {
   drawingPaper,
@@ -45,13 +47,15 @@ const layer = StyleSheet.create({
 });
 function PaperArt({
   drawing,
-  ink,
+  content,
+  area,
   frame,
   projection: supplied,
 }: {
   drawing: Drawing;
-  ink: boolean;
-  frame: AreaSize;
+  content: 'none' | 'outline' | 'ink';
+  area: AreaSize;
+  frame: PresentedFrame;
   projection?: PaperProjection | null;
 }) {
   const theme = useDrawingAppearance();
@@ -64,24 +68,23 @@ function PaperArt({
   return (
     <InkAppearanceScope.Provider value={{ pageId: drawing.pageId, theme }}>
       <InkPaperScope.Provider value={projection}>
-        <Svg
-          width="100%"
-          height="100%"
-          viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
-          preserveAspectRatio="none"
-        >
-          <Rect
-            x={size.x}
-            y={size.y}
-            width={size.width}
-            height={size.height}
-            fill={PAPER_THEMES[theme].paper}
-          />
-          {ink ? (
-            <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={() => {}} />
-          ) : null}
-          {outline ? <PageOutline pageId={drawing.pageId} size={size} /> : null}
-        </Svg>
+        <PaperTexture
+          origin={paperLifted(area, frame) ? { x: 0, y: 0 } : { x: frame.left, y: frame.top }}
+        />
+        {content !== 'none' ? (
+          <Svg
+            style={layer.fill}
+            width="100%"
+            height="100%"
+            viewBox={`${size.x} ${size.y} ${size.width} ${size.height}`}
+            preserveAspectRatio="none"
+          >
+            {content === 'ink' ? (
+              <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={() => {}} />
+            ) : null}
+            {outline ? <PageOutline pageId={drawing.pageId} size={size} /> : null}
+          </Svg>
+        ) : null}
       </InkPaperScope.Provider>
     </InkAppearanceScope.Provider>
   );
@@ -93,12 +96,16 @@ function DepartingSheet({
   control,
   area,
   offset,
-  frame,
+  drawing,
+  currentFrame,
+  frame: departingFrame,
   projection,
 }: {
   control: ClearControl;
   area: AreaSize;
   offset: AreaOffset;
+  drawing: Drawing;
+  currentFrame: PresentedFrame;
   frame: PresentedFrame | null;
   projection?: PaperProjection | null;
 }) {
@@ -122,18 +129,24 @@ function DepartingSheet({
     });
     return () => animation.stop();
   }, [flight, sheet, finishSheet]);
-  if (!sheet || !frame) return null;
+  const prepared = control.dragging && !control.reduced && hasDrawingInk(drawing);
+  const frame = sheet ? departingFrame : currentFrame;
+  if ((!sheet && !prepared) || !frame) return null;
   const dock = dockCenterFromTopRight(control.dock);
   const bin = { x: area.width + offset.right - dock.x, y: dock.y - offset.top };
   const origin = clearSheetOrigin(bin, area);
   return (
     <Animated.View
-      testID="rsd-clear-sheet"
+      testID={sheet ? 'rsd-clear-sheet' : 'rsd-clear-prepared-sheet'}
       pointerEvents="none"
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
       style={{
         position: 'absolute',
+        opacity: sheet ? 1 : 0,
         ...frame,
-        transformOrigin: `${origin.x - frame.left}px ${origin.y - frame.top}px`,
+        transformOrigin: [origin.x - frame.left, origin.y - frame.top, 0],
         transform: [
           {
             scale: flight.interpolate({
@@ -150,7 +163,13 @@ function DepartingSheet({
         ],
       }}
     >
-      <PaperArt drawing={sheet.drawing} ink frame={frame} projection={projection} />
+      <PaperArt
+        drawing={sheet?.drawing ?? drawing}
+        content={sheet ? 'ink' : 'none'}
+        area={area}
+        frame={frame}
+        projection={projection}
+      />
     </Animated.View>
   );
 }
@@ -192,16 +211,24 @@ function PaperGradient({
 
 function ClearCover({
   drawing,
+  area,
   frame,
   projection,
 }: {
   drawing: Drawing;
+  area: AreaSize;
   frame: PresentedFrame;
   projection?: PaperProjection;
 }) {
   return (
     <View testID="rsd-clear-cover" style={[{ position: 'absolute' }, frame]}>
-      <PaperArt drawing={drawing} ink={false} frame={frame} projection={projection} />
+      <PaperArt
+        drawing={drawing}
+        content="outline"
+        area={area}
+        frame={frame}
+        projection={projection}
+      />
     </View>
   );
 }
@@ -244,7 +271,7 @@ export function RsdClearUnderlay({
       }}
     >
       {control.covered ? (
-        <ClearCover drawing={drawing} frame={frame} projection={projection} />
+        <ClearCover drawing={drawing} area={area} frame={frame} projection={projection} />
       ) : null}
       <Animated.View
         testID="rsd-clear-wash"
@@ -289,6 +316,8 @@ export function RsdClearUnderlay({
         control={control}
         area={area}
         offset={offset}
+        drawing={drawing}
+        currentFrame={frame}
         frame={departingFrame}
         projection={departingProjection}
       />
