@@ -204,12 +204,14 @@ describe('RsdHubRow', () => {
     expect(styleOf(hubTitle()).width).toBe(45.25);
   });
 
-  it('ignores a departed title word after the row receives another label', async () => {
+  it('remounts the measurement nodes when a row receives another title', async () => {
     await render(hub('Appearance'));
     await deliverWordWidth('Appearance', 93.25);
     expect(styleOf(hubTitle()).width).toBe(93.25);
+    const staleNode = wordLayouts('Appearance')[0].node.parentElement;
     const stale = wordLayouts('Appearance')[0].deliver;
     await render(hub('Sound'));
+    expect(staleNode.isConnected).toBe(false);
     await deliverWordWidth('Sound', 48.5);
     expect(styleOf(hubTitle()).width).toBe(48.5);
     await act(async () =>
@@ -218,7 +220,7 @@ describe('RsdHubRow', () => {
     expect(styleOf(hubTitle()).width).toBe(48.5);
   });
 
-  it('rejects old font-scale deliveries after measuring the current system font size', async () => {
+  it('remounts the measurement nodes when the system font scale changes', async () => {
     let fontScale = 1;
     const dimensions = vi.spyOn(ReactNative, 'useWindowDimensions').mockImplementation(() => ({
       width: 402,
@@ -230,9 +232,11 @@ describe('RsdHubRow', () => {
       await render(hub('Sound'));
       await deliverWordWidth('Sound', 48.5);
       expect(styleOf(hubTitle()).width).toBe(48.5);
+      const staleNode = wordLayouts('Sound')[0].node.parentElement;
       const stale = wordLayouts('Sound')[0].deliver;
       fontScale = 2;
       await render(hub('Sound'));
+      expect(staleNode.isConnected).toBe(false);
       await deliverWordWidth('Sound', 97);
       expect(styleOf(hubTitle()).width).toBe(97);
       await act(async () =>
