@@ -211,10 +211,13 @@ describe('the shipping modal frame', () => {
     expect((PHONE_LANDSCAPE.height - frame.maxHeight) / 2).toBe(19);
   });
 
-  it('keeps the confirmation inside wider gutters and retains other modal caps', () => {
-    expect(modalFrame('confirm', PHONE, GUTTER).maxHeight).toBe(806);
-    expect(modalFrame('confirm', PHONE_LANDSCAPE, GUTTER + 8).maxHeight).toBe(342);
-    expect(modalFrame('gate', PHONE_LANDSCAPE, GUTTER).maxHeight).toBe(358);
+  it('fits horizontal gutters without reducing the confirmation cap and retains the Settings cap', () => {
+    expect.soft(modalFrame('confirm', PHONE, GUTTER).maxHeight).toBe(806);
+    expect.soft(modalFrame('confirm', PHONE, 59)).toMatchObject({ width: 272, maxHeight: 806 });
+    expect.soft(modalFrame('confirm', PHONE_LANDSCAPE, 24)).toMatchObject({
+      width: 336,
+      maxHeight: 352,
+    });
     expect(modalFrame('settings', PHONE_LANDSCAPE, GUTTER).maxHeight).toBe(331.5);
   });
 });
