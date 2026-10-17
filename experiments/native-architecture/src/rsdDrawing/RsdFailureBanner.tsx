@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import {
   BANNER_ENTER_MS,
@@ -15,6 +15,8 @@ import { RsdButton } from './RsdButton';
 import { RsdIcon } from './RsdIcon';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
+import { PALETTE_FLOWS } from './paletteGeometry';
+import { useBareToolbar } from './toolbarSkin';
 
 // SaveFailureBanner.svelte's literals that no token carries. Local because the StyleX web compile
 // resolves only local constants inside css.create; rsd-native-drawing-frame.test.mjs reads the
@@ -255,8 +257,16 @@ function BannerCard({
 // The announcement is RsdDrawingStatus's, which stays mounted while this one comes and goes.
 export function RsdFailureBanner({ failures }: { failures: readonly FailureBannerModel[] }) {
   const { shown, gone } = useBannerPresence(failures);
+  const window = useWindowDimensions();
+  const bare = useBareToolbar();
+  // Raised's paper starts after the palette; Flat's paper runs beneath it.
+  const paletteTop = bare && window.height >= window.width ? PALETTE_FLOWS.row.extentPx : 0;
   return (
-    <View testID="rsd-failure-banners" pointerEvents="box-none" style={dock.stack}>
+    <View
+      testID="rsd-failure-banners"
+      pointerEvents="box-none"
+      style={[dock.stack, { top: DRAWING_SCALE.space4 + paletteTop }]}
+    >
       {shown.map(({ model, present }) => (
         <BannerCard
           key={model.key}
