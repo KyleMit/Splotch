@@ -138,7 +138,7 @@ describe('RsdHubRow', () => {
       expect(styleOf(hubTitle()).width).toBe(widest);
       expect(hubTitle().textContent).toBe(title);
       expect(styleOf(hubTitle().parentElement.parentElement)).toMatchObject({
-        minWidth: 0,
+        minWidth: widest,
         flexShrink: 1,
       });
       expect(styleOf(container.querySelector('button'))).toMatchObject({

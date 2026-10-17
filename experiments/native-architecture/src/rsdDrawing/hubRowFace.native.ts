@@ -18,3 +18,7 @@ const minimum = css.create({
 export function hubRowMinWidth(wordWidth: number) {
   return minimum.row(wordWidth + Number.parseFloat(scale.space4) * 2);
 }
+
+export function hubTextMinWidth(wordWidth: number) {
+  return minimum.row(wordWidth);
+}

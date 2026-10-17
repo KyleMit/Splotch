@@ -13,3 +13,7 @@ export const hubRowFace = css.create({
 export function hubRowMinWidth(_wordWidth: number) {
   return null;
 }
+
+export function hubTextMinWidth(_wordWidth: number) {
+  return null;
+}

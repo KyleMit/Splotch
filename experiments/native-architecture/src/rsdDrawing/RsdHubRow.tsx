@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { css, html } from 'react-strict-dom';
 import { landFocus } from './landFocus';
 import { colors, dimensions, motion } from './tokens.css';
-import { hubRowFace, hubRowMinWidth } from './hubRowFace';
+import { hubRowFace, hubRowMinWidth, hubTextMinWidth } from './hubRowFace';
 import { HubTitle } from './HubTitle';
 import { RsdActivityDot } from './RsdActivityDot';
 import { LineClampBox } from './lineClampBox';
@@ -136,7 +136,7 @@ export function RsdHubRow({
           <RsdSectionIcon icon={icon} size={ICON_PX} ink={theme.brandText} />
           <RsdActivityDot unseen={unseen} surface="surface2" />
         </html.div>
-        <html.div style={styles.text}>
+        <html.div style={[styles.text, hubTextMinWidth(titleWordWidth)]}>
           <HubTitle style={[styles.title, hubRowFace.title]} onWordWidth={setTitleWordWidth}>
             {title}
           </HubTitle>
