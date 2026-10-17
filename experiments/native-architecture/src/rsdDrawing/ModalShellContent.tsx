@@ -233,6 +233,7 @@ type ModalStageProps = {
   labelledBy?: string;
   onClose: () => void;
   onDismiss?: () => void;
+  // Early exit relies on the Close caller committing visible=false in the same batch.
   exitTrigger?: RefObject<(() => void) | null>;
   children: ReactNode;
   overlay?: ReactNode;

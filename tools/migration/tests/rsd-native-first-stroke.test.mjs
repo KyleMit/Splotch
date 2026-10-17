@@ -27,6 +27,8 @@ const SEED_STROKE_POINTS = [
 
 // Node cannot execute Skia. The real surface, input packets, contact owner and history stay mounted;
 // this boundary supplies a ready renderer and exposes its committed and live semantic strokes.
+// The renderer seam guards admission after retirement; the separate onset-order tests and native
+// comparisons qualify the timing change.
 vi.mock('../../../experiments/native-architecture/src/drawing/InkLayer.tsx', async () => {
   const { createElement, forwardRef, useImperativeHandle, useLayoutEffect } = await import('react');
   return {
