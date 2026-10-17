@@ -37,6 +37,10 @@ const SETTINGS_COMPACT_MAX_WIDTH_PX = 640;
 // SettingsModal.svelte's narrow-phone step for its header and scroll padding.
 const SETTINGS_NARROW_MAX_WIDTH_PX = 480;
 const CONFIRM_MAX_WIDTH_PX = 336;
+// The shipping UA reserve uses the browser's default medium font, independently of design tokens.
+const UA_DEFAULT_MEDIUM_FONT_SIZE_PX = 16;
+const CONFIRM_UA_BORDER_RESERVE_PX = 6;
+const CONFIRM_BLOCK_RESERVE_PX = 2 * UA_DEFAULT_MEDIUM_FONT_SIZE_PX + CONFIRM_UA_BORDER_RESERVE_PX;
 export const COLORING_MAX_WIDTH_PX = 920;
 // ColoringBook.svelte's content padding steps down on a phone and again on a narrow one; the
 // header row stands its own gap above the grid.
@@ -174,7 +178,7 @@ export function modalFrame(size: ModalSize, window: Window, gutter: number): Mod
   if (size === 'confirm')
     return {
       width: fitWidth(window, gutter, CONFIRM_MAX_WIDTH_PX),
-      maxHeight: fill,
+      maxHeight: window.height - CONFIRM_BLOCK_RESERVE_PX,
       height: null,
       header: CONFIRM_CONTENT,
       body: CONFIRM_CONTENT,
