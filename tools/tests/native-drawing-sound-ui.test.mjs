@@ -8,6 +8,7 @@ const sound = vi.hoisted(() => ({
   read: vi.fn(),
   write: vi.fn(),
   load: vi.fn(),
+  clearLoad: vi.fn(),
   current: 'active',
   listeners: new Set(),
   remove: vi.fn(),
@@ -20,7 +21,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', ()
   loadDrawingLoop: sound.load,
 }));
 vi.mock('../../experiments/native-architecture/src/platform/clearSound.ts', () => ({
-  loadClearPageTurn: vi.fn(),
+  loadClearPageTurn: sound.clearLoad,
 }));
 vi.mock('react-native', () => ({
   AppState: {
@@ -35,7 +36,7 @@ function pending() {
   const { promise, resolve, reject } = Promise.withResolvers();
   return { promise, resolve, reject };
 }
-let ui, loop, latest;
+let ui, loop, turn, latest;
 function Probe() {
   latest = useDrawingSound();
   return createElement('span', { 'aria-live': 'polite' }, latest.audioMessage);
@@ -77,6 +78,8 @@ beforeEach(() => {
   sound.write.mockReset().mockResolvedValue();
   loop = { start: vi.fn(), stop: vi.fn(), setVolume: vi.fn(), dispose: vi.fn() };
   sound.load.mockReset().mockResolvedValue(loop);
+  turn = { play: vi.fn(), dispose: vi.fn() };
+  sound.clearLoad.mockReset().mockResolvedValue(turn);
   latest = null;
   ui = null;
 });
@@ -177,12 +180,16 @@ describe('live drawing sound hook ownership', () => {
     expect(sound.subscribe).toHaveBeenCalledWith('change', expect.any(Function));
     await act(async () => latest.owner.audio.begin({ x: 10, y: 20 }, 100));
     expect(sound.load).not.toHaveBeenCalled();
+    expect(sound.clearLoad).not.toHaveBeenCalled();
     await appState('active');
+    expect(sound.clearLoad).toHaveBeenCalledOnce();
     await act(async () => latest.owner.audio.begin({ x: 10, y: 20 }, 200));
     await act(async () => latest.owner.audio.sample({ x: 60, y: 20 }, 300));
     await appState('background');
     expect(loop.dispose).toHaveBeenCalledOnce();
+    expect(turn.dispose).toHaveBeenCalledOnce();
     await appState('active');
+    expect(sound.clearLoad).toHaveBeenCalledTimes(2);
     await act(async () => latest.owner.audio.sample({ x: 80, y: 20 }, 400));
     expect(loop.start).toHaveBeenCalledOnce();
     ui.close();

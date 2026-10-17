@@ -23,7 +23,7 @@ const notes = vi.hoisted(() => ({
   dispose: vi.fn(),
   load: vi.fn(),
 }));
-vi.mock('../../experiments/native-architecture/src/platform/clearNotes.ts', () => ({
+vi.mock('../../experiments/native-architecture/src/platform/clearNotes.native.ts', () => ({
   loadClearNotes: notes.load,
 }));
 const audio = vi.hoisted(() => ({ create: vi.fn(), mode: vi.fn(async () => {}) }));

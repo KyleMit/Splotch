@@ -2,7 +2,7 @@ import clearPageTurn from '../audio/clear-page-turn-amplified.wav';
 import { AUDIO_LOAD_TIMEOUT_MS } from '../audio/drawingAudio';
 import { CLEAR_PAGE_TURN_ASSET_GAIN, type ClearPageTurnLoader } from '../audio/pageTurnSound';
 import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
-import { loadClearNotes } from './clearNotes';
+import { loadClearNotes } from './clearNotes.native';
 
 const MAX_PLAYER_VOLUME = 1;
 

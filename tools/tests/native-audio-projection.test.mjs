@@ -169,7 +169,7 @@ beforeEach(() => {
 
 async function nativeNotesFixture() {
   const { loadClearNotes } = await vi.importActual(
-    '../../experiments/native-architecture/src/platform/clearNotes.ts'
+    '../../experiments/native-architecture/src/platform/clearNotes.native.ts'
   );
   const request = new NativeAbortController();
   const sound = await loadClearNotes(request.signal);
@@ -267,7 +267,7 @@ describe('native Clear sampler binding', () => {
       })
     );
     const { loadClearNotes } = await vi.importActual(
-      '../../experiments/native-architecture/src/platform/clearNotes.ts'
+      '../../experiments/native-architecture/src/platform/clearNotes.native.ts'
     );
     const request = new NativeAbortController();
     const outcome = loadClearNotes(request.signal).catch((error) => error.message);
@@ -393,7 +393,7 @@ describe('native Clear audio session boundary', () => {
   });
 
   it('registers the same Clear sampler and methods on Android and iOS', () => {
-    const ts = sourceText('experiments/native-architecture/src/platform/clearNotes.ts');
+    const ts = sourceText('experiments/native-architecture/src/platform/clearNotes.native.ts');
     const swift = clearActivitySources.sampler;
     const bridge = sourceText('experiments/native-architecture/ios/HelloWorld/SplotchClearSound.m');
     const kotlin = sourceText(
