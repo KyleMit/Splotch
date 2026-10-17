@@ -38,8 +38,10 @@ const CALLER = pathToFileURL(
 ).href;
 const CALLER_SOURCE = [
   "import { css } from 'react-strict-dom';",
+  `import { RsdGateEquation } from '${join(app, 'src/rsdDrawing/RsdGateEquation')}';`,
   `import { RsdPressable } from '${join(app, 'src/rsdDrawing/RsdPressable')}';`,
   'const styles = css.create({',
+  "  equation: { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },",
   "  control: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'transparent' },",
   "  raised: { boxShadow: '0 1px 4px rgba(0, 0, 0, 0.18)', opacity: { default: 1, ':active': 0.7 } },",
   '});',
@@ -47,6 +49,9 @@ const CALLER_SOURCE = [
   '  return (',
   '    <RsdPressable type="button" aria-label="Close" style={[styles.control, styles.raised]} onClick={() => {}} />',
   '  );',
+  '}',
+  'export function GateEquationCaller({ x, y }) {',
+  '  return <RsdGateEquation role="img" aria-label={`What is ${x} times ${y}?`} style={styles.equation}><span aria-hidden="true">{x}×{y}=</span></RsdGateEquation>;',
   '}',
 ].join('\n');
 // Metro runs the app's Babel config over react-strict-dom's web build too: its runtime declares
@@ -99,7 +104,7 @@ const src = (path) => require(join(app, 'src', path));
 const { RsdButton } = src('rsdDrawing/RsdButton.tsx');
 const { RsdNotFoundLink } = src('rsdDrawing/notFoundLink.web.tsx');
 const { RsdIconButton } = src('rsdDrawing/RsdIconButton.tsx');
-const { PressableCaller } = require(fileURLToPath(CALLER));
+const { PressableCaller, GateEquationCaller } = require(fileURLToPath(CALLER));
 const { merge, defaultStyles } = require('react-strict-dom/runtime');
 const noop = () => {};
 const SPECIMENS = {
@@ -126,6 +131,11 @@ const NOT_FOUND_ACTIONS = [
 console.log(
   JSON.stringify({
     defaultClasses: merge(defaultStyles.button).className,
+    defaultDivClasses: merge(defaultStyles.div).className,
+    gateEquations: [
+      [6, 6],
+      [3, 4],
+    ].map(([x, y]) => renderToStaticMarkup(h(GateEquationCaller, { x, y }))),
     defaultLabelClasses: merge(defaultStyles.span).className,
     notFoundLinks: NOT_FOUND_ACTIONS.map(([page, variant, label]) =>
       renderToStaticMarkup(h(RsdNotFoundLink, { page, variant }, label))

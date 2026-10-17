@@ -106,3 +106,23 @@ it(
   },
   RENDER_TIMEOUT_MS
 );
+
+it(
+  'preserves the gate equation image label and compiled row on web without a tab stop',
+  () => {
+    const { gateEquations, defaultDivClasses } = render();
+    const defaults = new Set(defaultDivClasses.split(' '));
+    expect(gateEquations).toHaveLength(2);
+    for (const [index, label] of ['What is 6 times 6?', 'What is 3 times 4?'].entries()) {
+      const markup = gateEquations[index];
+      const opening = /^<div\b[^>]*>/.exec(markup)[0];
+      expect(opening).toContain('role="img"');
+      expect(opening).toContain(`aria-label="${label}"`);
+      expect(opening).not.toMatch(/tabindex|onclick|\[object Object\]/i);
+      expect(markup).toContain('aria-hidden="true"');
+      const classes = /class="([^"]*)"/.exec(opening)[1].split(' ');
+      expect(classes.filter((name) => !defaults.has(name)).length).toBeGreaterThanOrEqual(5);
+    }
+  },
+  RENDER_TIMEOUT_MS
+);
