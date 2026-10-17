@@ -23,7 +23,7 @@ function fontKey(text: string, props: ResolvedTextProps, fontScale: number) {
 }
 
 export function HubTitle({ children, style }: HubTitleProps) {
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, width } = useWindowDimensions();
   return (
     <compat.native<ResolvedTextProps> as="span" style={style}>
       {(resolved) => (
@@ -31,15 +31,25 @@ export function HubTitle({ children, style }: HubTitleProps) {
           key={fontKey(children, resolved, fontScale)}
           text={children}
           resolved={resolved}
+          measurementWidth={width * fontScale}
         />
       )}
     </compat.native>
   );
 }
 
-function MeasuredTitle({ text, resolved }: { text: string; resolved: ResolvedTextProps }) {
+function MeasuredTitle({
+  text,
+  resolved,
+  measurementWidth,
+}: {
+  text: string;
+  resolved: ResolvedTextProps;
+  measurementWidth: number;
+}) {
   const words = [...new Set(text.split(' ').filter(Boolean))];
   const [widths, setWidths] = useState<ReadonlyMap<string, number>>(() => new Map());
+  const [columnWidth, setColumnWidth] = useState(0);
   const mounted = useRef(true);
   useLayoutEffect(() => {
     mounted.current = true;
@@ -54,21 +64,22 @@ function MeasuredTitle({ text, resolved }: { text: string; resolved: ResolvedTex
       current.get(word) === width ? current : new Map(current).set(word, width)
     );
   };
-  const minWidth = Math.max(0, ...words.map((word) => widths.get(word) ?? 0));
+  const titleWidth = Math.max(columnWidth, ...words.map((word) => widths.get(word) ?? 0));
   return (
-    <>
+    <View onLayout={({ nativeEvent }) => setColumnWidth(nativeEvent.layout.width)}>
       <View
         accessible={false}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
         pointerEvents="none"
-        style={styles.measurement}
+        style={[styles.measurement, { width: measurementWidth }]}
       >
         {words.map((word) => (
           <Text
             {...resolved}
             key={word}
             ref={undefined}
+            numberOfLines={1}
             accessible={false}
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
@@ -79,18 +90,17 @@ function MeasuredTitle({ text, resolved }: { text: string; resolved: ResolvedTex
           </Text>
         ))}
       </View>
-      <Text {...resolved} style={[resolved.style, { minWidth }]}>
+      <Text {...resolved} style={[resolved.style, titleWidth > 0 ? { width: titleWidth } : null]}>
         {text}
       </Text>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Yoga leaves an auto-sized absolute child of a row unconstrained in width.
+  // A collapsed zoom column cannot supply the intrinsic width of its words.
   measurement: {
     position: 'absolute',
-    width: 0,
     height: 0,
     opacity: 0,
     flexDirection: 'row',
