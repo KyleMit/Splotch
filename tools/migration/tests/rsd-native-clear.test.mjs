@@ -46,6 +46,7 @@ import {
   HOLD_DURATION_MS,
   MOVEMENT_THRESHOLD_PX,
 } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
+import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
 import { NATIVE_ICONS } from '../../../experiments/native-architecture/src/rsdDrawing/icons.generated.ts';
 import {
   HOME,
@@ -54,13 +55,17 @@ import {
   clearIcon,
   clearProps,
   clearScreen,
+  commitClear,
   drag,
   everRendered,
   inkedDrawing,
+  layout,
   lift,
   mountClear,
   offset,
   press,
+  processNativeTransformOrigin,
+  preprocessWebStyle,
   radius,
   rendered,
   responderEvent,
@@ -71,6 +76,7 @@ import {
 afterEach(() => {
   underlayChunk.loaded = true;
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 it('forwards distance beyond the ring to the available bubble player without clipping the wash', async () => {
@@ -120,24 +126,15 @@ it('clears once past the accept ring with one threshold haptic and the page-turn
   expect(caller.screen.clear).toHaveBeenCalledOnce();
 });
 
-it("plays the page turn at the parent's Loud sound level", async () => {
-  await mountClear({ level: 'loud' });
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  await act(async () => {});
-  expect(caller.clearSound.play).toHaveBeenCalledExactlyOnceWith(2);
-});
-
-it('keeps sound off silent through a committed clear', async () => {
-  await mountClear({ sound: false });
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  await act(async () => {});
+it.each([
+  ['loud', true, 2],
+  ['silent', false, null],
+])("plays the committed page turn at the parent's %s sound level", async (level, sound, volume) => {
+  await mountClear({ sound, level: sound ? level : undefined });
+  await commitClear();
   expect(caller.screen.clear).toHaveBeenCalledOnce();
-  expect(caller.clearSound.load).not.toHaveBeenCalled();
-  expect(caller.clearSound.play).not.toHaveBeenCalled();
+  expect(caller.clearSound.play.mock.calls).toEqual(volume === null ? [] : [[volume]]);
+  expect(caller.clearSound.load).toHaveBeenCalledTimes(volume === null ? 0 : 1);
 });
 
 it('turns a plain tap into nothing, a run of three taps or a held press into the coachmark', async () => {
@@ -231,26 +228,38 @@ it('skips the departing page and keeps every cue under reduced motion', async ()
   expect(ghost.style[1].transform[0].translateX).toBeCloseTo(-(radius() * 1.18) / Math.SQRT2);
 });
 
-it('uncovers the next drawing while the cleared page still flies away', async () => {
+it('grains the cover and departing art, uncovering the next drawing before the flight ends', async () => {
+  expect(readFileSync(join(import.meta.dirname, '../../../web/src/app.css'), 'utf8')).toContain(
+    'background: var(--paper) var(--paper-texture) repeat;'
+  );
+  vi.spyOn(Animated, 'timing').mockReturnValue({ start: vi.fn(), stop: vi.fn() });
   let finish;
-  await mountClear({ clear: vi.fn(() => new Promise((resolve) => (finish = resolve))) });
+  const drawing = { ...inkedDrawing(), pageId: 'sunshine' };
+  await mountClear({ drawing, clear: vi.fn(() => new Promise((resolve) => (finish = resolve))) });
+  await layout('rsd-canvas-area', { x: 0, y: 0, width: 402, height: 760 });
   vi.useFakeTimers();
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  expect(rendered('rsd-clear-cover')).toBe(true);
+  await commitClear();
+  const cover = host.querySelector('[data-testid="rsd-clear-cover"]');
   await act(async () => finish());
   expect(rendered('rsd-clear-cover')).toBe(false);
-  expect(everRendered('rsd-clear-sheet')).toBe(true);
-  await settle(CLEAR_SHEET_DURATION_MS);
+  const sheet = host.querySelector('[data-testid="rsd-clear-sheet"]');
+  for (const paper of [cover, sheet]) {
+    expect(paper.children).toHaveLength(2);
+    expect(paper.firstElementChild.dataset.testid).toBe('paper-texture');
+    expect(paper.querySelector('[data-testid="paper-grain"]')).not.toBeNull();
+  }
+  // The SVG host preserves each primitive: an opaque Rect adds a child before the outline.
+  expect(cover.lastElementChild.childElementCount).toBe(1);
+  expect(sheet.querySelectorAll('path').length).toBe(cover.querySelectorAll('path').length + 1);
+  await settle(CLEAR_SHEET_DURATION_MS - 1);
+  expect(rendered('rsd-clear-sheet')).toBe(true);
+  await settle(1);
+  expect(rendered('rsd-clear-sheet')).toBe(false);
 });
 
 it('does not fly an empty page', async () => {
   await mountClear({ drawing: emptyDrawing() });
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  await act(async () => {});
+  await commitClear();
   expect(caller.screen.clear).toHaveBeenCalledOnce();
   expect(everRendered('rsd-clear-sheet')).toBe(false);
 });
@@ -261,10 +270,7 @@ it('never flies or covers an already cleared page when the underlay arrives late
   await mountClear();
   vi.useFakeTimers();
   expect(rendered('rsd-clear-underlay')).toBe(false);
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  await act(async () => {});
+  await commitClear();
   expect(caller.screen.clear).toHaveBeenCalledOnce();
   await settle(800);
   const nextStroke = inkedDrawing();
@@ -284,10 +290,7 @@ it('leaves fresh ink uncovered when the underlay arrives during the departing pa
   underlayChunk.loaded = false;
   await mountClear();
   vi.useFakeTimers();
-  await press();
-  await drag(offset(radius() + 10));
-  await lift(offset(radius() + 10));
-  await act(async () => {});
+  await commitClear();
   await settle(CLEAR_SHEET_DURATION_MS / 2);
   const before = records.props.length;
   await act(async () => underlayChunk.set(true));
@@ -375,10 +378,7 @@ it.each([true, false])(
   async (saveOnDelete) => {
     await mountClear({ saveOnDelete });
     vi.useFakeTimers();
-    await press();
-    await drag(offset(radius() + 10));
-    await lift(offset(radius() + 10));
-    await act(async () => {});
+    await commitClear();
     expect(caller.screen.clear).toHaveBeenCalledExactlyOnceWith(saveOnDelete);
     await settle(CLEAR_SHEET_DURATION_MS);
     await act(async () => clearProps().onAccessibilityTap());
@@ -495,12 +495,6 @@ it('centres the accept ring on the docked tab and spreads its wash to the box co
 
 it('flies the departing page into the docked tab from the paper area it sits in', async () => {
   await mountClear();
-  const layout = (testID, box) =>
-    act(async () =>
-      records.props
-        .findLast((props) => props.testID === testID)
-        .onLayout({ nativeEvent: { layout: box } })
-    );
   const area = { width: 402, height: 760 };
   await layout('rsd-drawing-layout', { x: 0, y: 0, width: 402, height: 874 });
   await layout('rsd-canvas-column', { x: 0, y: 68, width: 402, height: 806 });
@@ -518,14 +512,17 @@ it('flies the departing page into the docked tab from the paper area it sits in'
   // below the 68px palette bar.
   const origin = clearSheetOrigin({ x: 402 - 20, y: 120 - 68 }, area);
   expect(byTestID('rsd-clear-sheet')).toMatchObject(frame);
-  expect(byTestID('rsd-clear-sheet').transformOrigin).toBe(
-    `${origin.x - frame.left}px ${origin.y - frame.top}px`
+  const expected = [origin.x - frame.left, origin.y - frame.top, 0];
+  expect(expected.slice(0, 2).map(Number.isInteger)).toEqual([false, false]);
+  expect(expected[1]).toBeLessThan(0);
+  const transformOrigin = byTestID('rsd-clear-sheet').transformOrigin;
+  expect(processNativeTransformOrigin(transformOrigin)).toEqual(expected);
+  expect(preprocessWebStyle({ transformOrigin }).transformOrigin).toBe(
+    `${expected[0]}px ${expected[1]}px 0px`
   );
 });
 
 it("reveals Clear's opacity and scale on shipping's separate clocks", async () => {
-  const { Animated } =
-    await import('../../../experiments/native-architecture/src/platform/animated.ts');
   const timing = vi.spyOn(Animated, 'timing');
   await mountClear();
   timing.mockClear();

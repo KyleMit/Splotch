@@ -1,9 +1,31 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, createElement } from 'react';
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { records, root, host, mount } from './rsd-native-selection-host.mjs';
+import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
+import {
+  HOME,
+  commitClear,
+  drag,
+  inkedDrawing,
+  layout,
+  lift,
+  mountClear,
+  offset,
+  press,
+  radius,
+  settle,
+} from './rsd-native-clear-fixture.mjs';
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { CLEAR_SHEET_DURATION_MS } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
+import { storedSettings } from './rsd-native-settings-fixture.mjs';
+import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
+import { adoptPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import {
+  fittedPaper,
+  paperLifted,
+} from '../../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
 import { flat } from './rsd-native-toolbar-fixture.mjs';
 import { PaperTexture } from '../../../experiments/native-architecture/src/drawing/PaperTexture.tsx';
@@ -16,6 +38,11 @@ import { PAPER_THEMES } from '../../../experiments/native-architecture/src/drawi
 
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
+const committedStyle = (node) => JSON.parse(node.dataset.committedProps).style;
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 // Every shipping surface that paints the grain (paperTexture.test.ts's consumers).
 const PAPER_SITES = [
@@ -232,8 +259,8 @@ it.each(
     ).metadata();
     expect(
       records.props
-        .filter((props) => props.testID === 'paper-texture')
-        .map((props) => flat(props.style).left + 0)
+        .filter((props) => props.testID === 'paper-grain-phase')
+        .map((props) => flat(props.style).left)
     ).toEqual(
       edges.map((edge) =>
         edge === 'right' ? -((dimensions.width - insets.right) % tile.width) : 0
@@ -272,3 +299,180 @@ it.each(['screen', 'drawing', 'overlay'])(
     expect(host.querySelector('[data-testid="paper-texture"]')).toBeNull();
   }
 );
+
+it.each([
+  { origin: { x: -84, y: -68 }, rightInset: 0 },
+  { origin: { x: -380.5, y: -194.25 }, rightInset: 48 },
+  { origin: { x: 310.5, y: 168.25 }, rightInset: 48 },
+])(
+  'composes frame grain origin $origin with right inset $rightInset on both targets',
+  async (props) => {
+    records.dimensions = { width: 1210, height: 834, scale: 3, fontScale: 1 };
+    records.journalHostProps = true;
+    await mount(
+      createElement(
+        'section',
+        null,
+        createElement(PaperTexture, props),
+        createElement(WebPaperTexture, props)
+      )
+    );
+    const phase = host.querySelector('[data-testid="paper-grain-phase"]');
+    const texture = phase.parentElement;
+    expect(committedStyle(texture)).toMatchObject({
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'hidden',
+      backgroundColor: PAPER_THEMES.light.paper,
+    });
+    const tile = await sharp(
+      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+    ).metadata();
+    const anchor = {
+      x: props.origin.x + (props.rightInset ? records.dimensions.width - props.rightInset : 0),
+      y: props.origin.y,
+    };
+    const native = committedStyle(phase);
+    for (const [axis, offset, extent] of [
+      ['x', 'left', tile.width],
+      ['y', 'top', tile.height],
+    ]) {
+      expect(native[offset]).toBeLessThanOrEqual(0);
+      expect(native[offset]).toBeGreaterThan(-extent);
+      expect(((anchor[axis] + native[offset]) % extent) + 0).toBe(0);
+    }
+    expect(native).toMatchObject({ right: 0, bottom: 0 });
+    expect(texture.nextElementSibling.style.backgroundPosition).toBe(
+      `${props.rightInset ? `calc(${props.rightInset - props.origin.x}px - 100vw)` : `${-props.origin.x}px`} ${-props.origin.y}px`
+    );
+  }
+);
+
+it.each([
+  {
+    name: 'portrait negative top',
+    window: { width: 402, height: 874 },
+    column: { x: 0, y: 68, width: 402, height: 806 },
+    lifted: false,
+  },
+  {
+    name: 'landscape negative left',
+    window: { width: 1210, height: 834 },
+    column: { x: 84, y: 0, width: 1126, height: 834 },
+    lifted: false,
+  },
+  {
+    name: 'lifted portrait sheet in landscape',
+    window: { width: 1210, height: 834 },
+    column: { x: 84, y: 0, width: 1126, height: 834 },
+    lifted: true,
+  },
+])(
+  'keeps Clear grain aligned after an inked Bare-to-Buttons switch with $name',
+  async ({ window, column, lifted }) => {
+    records.dimensions = { ...window, scale: 3, fontScale: 1 };
+    records.journalHostProps = true;
+    storedSettings({ toolbarStyle: 'bare' });
+    const drawing = {
+      ...inkedDrawing(),
+      paper: adoptPaper(lifted ? 402 : window.width, lifted ? 874 : window.height, 3),
+    };
+    const initial = fittedPaper(window, drawing.paper);
+    const frame = { ...initial, left: initial.left - column.x, top: initial.top - column.y };
+    vi.spyOn(Animated, 'timing').mockReturnValue({ start: vi.fn(), stop: vi.fn() });
+    await mountClear({ drawing, clear: vi.fn(() => new Promise(() => {})) });
+    await layout('rsd-drawing-layout', { x: 0, y: 0, ...window });
+    await layout('rsd-canvas-column', { x: 0, y: 0, ...window });
+    await layout('rsd-canvas-area', { x: 0, y: 0, ...window });
+    expect(caller.product.sound.settings.toolbarStyle).toBe('bare');
+    await act(async () => caller.product.sound.owner.settings.setToolbarStyle('buttons'));
+    expect(caller.product.sound.settings.toolbarStyle).toBe('buttons');
+    await layout('rsd-canvas-column', column);
+    await layout('rsd-canvas-area', { x: 0, y: 0, width: column.width, height: column.height });
+    await layout('rsd-clear-underlay', { x: 0, y: 0, width: column.width, height: column.height });
+    expect(paperLifted(column, frame)).toBe(lifted);
+    const slot = host.querySelector('[data-testid="rsd-paper-slot"]');
+    expect(slot.querySelector('[data-testid="paper-grain-phase"]') === null).toBe(lifted);
+    await commitClear();
+    const tile = await sharp(
+      readFileSync(join(REPOSITORY, 'web/src/lib/assets/handmade-paper.webp'))
+    ).metadata();
+    for (const id of ['rsd-clear-cover', 'rsd-clear-sheet']) {
+      const paper = host.querySelector(`[data-testid="${id}"]`);
+      expect(committedStyle(paper), id).toMatchObject(frame);
+      const texture = paper.querySelector('[data-testid="paper-texture"]');
+      expect(committedStyle(texture)).toMatchObject({
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+        backgroundColor: PAPER_THEMES.light.paper,
+      });
+      const phase = committedStyle(paper.querySelector('[data-testid="paper-grain-phase"]'));
+      const origin = lifted ? { x: 0, y: 0 } : { x: frame.left, y: frame.top };
+      expect(phase.left).toBe(0 - (((origin.x % tile.width) + tile.width) % tile.width));
+      expect(phase.top).toBe(0 - (((origin.y % tile.height) + tile.height) % tile.height));
+      expect(phase).toMatchObject({ right: 0, bottom: 0 });
+    }
+  }
+);
+
+it('keeps the prepared native grain image through release and removes it on cancellation or the flight deadline', async () => {
+  records.journalHostProps = true;
+  vi.spyOn(Animated, 'timing').mockReturnValue({ start: vi.fn(), stop: vi.fn() });
+  await mountClear();
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  vi.useFakeTimers();
+  await press();
+  const prepared = host.querySelector('[data-testid="rsd-clear-prepared-sheet"]');
+  expect(prepared).not.toBeNull();
+  const grain = prepared.querySelector('[data-testid="paper-grain"]');
+  expect(committedStyle(prepared).opacity).toBe(0);
+  expect(prepared.children).toHaveLength(1);
+  const props = records.props.findLast((props) => props.testID === 'rsd-clear-prepared-sheet');
+  expect(props).toMatchObject({
+    pointerEvents: 'none',
+    accessible: false,
+    accessibilityElementsHidden: true,
+    importantForAccessibility: 'no-hide-descendants',
+  });
+  await drag(offset(radius() / 2));
+  expect(
+    host.querySelector('[data-testid="rsd-clear-prepared-sheet"] [data-testid="paper-grain"]')
+  ).toBe(grain);
+  await lift(HOME);
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  expect(grain.isConnected).toBe(false);
+  expect(caller.screen.clear).not.toHaveBeenCalled();
+  await press();
+  const next = host.querySelector(
+    '[data-testid="rsd-clear-prepared-sheet"] [data-testid="paper-grain"]'
+  );
+  expect(next).not.toBe(grain);
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  const sheet = host.querySelector('[data-testid="rsd-clear-sheet"]');
+  expect(sheet.querySelector('[data-testid="paper-grain"]')).toBe(next);
+  expect(sheet.children).toHaveLength(2);
+  expect(sheet.querySelector('path')).not.toBeNull();
+  expect(committedStyle(sheet).opacity).toBe(1);
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+  await settle(CLEAR_SHEET_DURATION_MS - 1);
+  expect(next.isConnected).toBe(true);
+  await settle(1);
+  expect(next.isConnected).toBe(false);
+});
+
+it.each([
+  { name: 'reduced motion', reduceMotion: true },
+  { name: 'an empty drawing', drawing: emptyDrawing() },
+])('prepares no departing texture for $name', async ({ name: _name, ...options }) => {
+  await mountClear(options);
+  await press();
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  await lift(HOME);
+});
