@@ -118,6 +118,11 @@ function pageLabel(page: SettingsPage) {
 // quick toggles only. A rotation re-picks the shell live.
 export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps) {
   const { settings, notice, onRetry, onClose, visible = true, onDismiss } = props;
+  const exitTrigger = useRef<(() => void) | null>(null);
+  const close = () => {
+    onClose();
+    exitTrigger.current?.();
+  };
   const busy = settings.status !== 'ready' || !visible;
   const shell = settingsShell(useWindowDimensions());
   const { unlocked } = props.parentCenter;
@@ -169,11 +174,12 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
       overlay={props.informationPage}
       seeThrough={props.buttonScale.active}
       onDismiss={onDismiss}
+      exitTrigger={exitTrigger}
       label={props.informationPage ? 'Information page' : 'Settings'}
       size={subpage?.section === 'ai' ? 'aiSettings' : 'settings'}
       // Escape, the scrim, Android Back and browser Back close Settings from any page, as
       // shipping's dialog does; only the header's Back returns to the hub.
-      onClose={props.informationPage ? () => openAppPage('drawing') : onClose}
+      onClose={props.informationPage ? () => openAppPage('drawing') : close}
       scrolls={false}
       header={
         subpage ? (
@@ -182,13 +188,13 @@ export function NativeSoundSettingsDialog(props: NativeSoundSettingsDialogProps)
             titleSize="lg"
             titleRef={sectionTitle}
             onBack={back}
-            onClose={onClose}
+            onClose={close}
           />
         ) : (
           <DialogHeader
             title={pageLabel(HUB)}
             titleSize={shell === 'compact' ? 'lg' : 'xl'}
-            onClose={onClose}
+            onClose={close}
           />
         )
       }
