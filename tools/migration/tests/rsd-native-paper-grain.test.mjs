@@ -4,7 +4,21 @@ import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
-import { commitClear, inkedDrawing, layout, mountClear } from './rsd-native-clear-fixture.mjs';
+import {
+  HOME,
+  commitClear,
+  drag,
+  inkedDrawing,
+  layout,
+  lift,
+  mountClear,
+  offset,
+  press,
+  radius,
+  settle,
+} from './rsd-native-clear-fixture.mjs';
+import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model.ts';
+import { CLEAR_SHEET_DURATION_MS } from '../../../experiments/native-architecture/src/clear/dragToClear.ts';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { Animated } from '../../../experiments/native-architecture/src/platform/animated.ts';
 import { adoptPaper } from '../../../experiments/native-architecture/src/drawing/paperSpace.ts';
@@ -25,7 +39,10 @@ import { PAPER_THEMES } from '../../../experiments/native-architecture/src/drawi
 const REPOSITORY = join(import.meta.dirname, '../../..');
 const read = (path) => readFileSync(join(REPOSITORY, path), 'utf8');
 const committedStyle = (node) => JSON.parse(node.dataset.committedProps).style;
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 // Every shipping surface that paints the grain (paperTexture.test.ts's consumers).
 const PAPER_SITES = [
@@ -402,3 +419,60 @@ it.each([
     }
   }
 );
+
+it('keeps the prepared native grain image through release and removes it on cancellation or the flight deadline', async () => {
+  records.journalHostProps = true;
+  vi.spyOn(Animated, 'timing').mockReturnValue({ start: vi.fn(), stop: vi.fn() });
+  await mountClear();
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  vi.useFakeTimers();
+  await press();
+  const prepared = host.querySelector('[data-testid="rsd-clear-prepared-sheet"]');
+  expect(prepared).not.toBeNull();
+  const grain = prepared.querySelector('[data-testid="paper-grain"]');
+  expect(committedStyle(prepared).opacity).toBe(0);
+  expect(prepared.children).toHaveLength(1);
+  const props = records.props.findLast((props) => props.testID === 'rsd-clear-prepared-sheet');
+  expect(props).toMatchObject({
+    pointerEvents: 'none',
+    accessible: false,
+    accessibilityElementsHidden: true,
+    importantForAccessibility: 'no-hide-descendants',
+  });
+  await drag(offset(radius() / 2));
+  expect(
+    host.querySelector('[data-testid="rsd-clear-prepared-sheet"] [data-testid="paper-grain"]')
+  ).toBe(grain);
+  await lift(HOME);
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  expect(grain.isConnected).toBe(false);
+  expect(caller.screen.clear).not.toHaveBeenCalled();
+  await press();
+  const next = host.querySelector(
+    '[data-testid="rsd-clear-prepared-sheet"] [data-testid="paper-grain"]'
+  );
+  expect(next).not.toBe(grain);
+  await drag(offset(radius() + 10));
+  await lift(offset(radius() + 10));
+  const sheet = host.querySelector('[data-testid="rsd-clear-sheet"]');
+  expect(sheet.querySelector('[data-testid="paper-grain"]')).toBe(next);
+  expect(sheet.children).toHaveLength(2);
+  expect(sheet.querySelector('path')).not.toBeNull();
+  expect(committedStyle(sheet).opacity).toBe(1);
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  expect(caller.screen.clear).toHaveBeenCalledOnce();
+  await settle(CLEAR_SHEET_DURATION_MS - 1);
+  expect(next.isConnected).toBe(true);
+  await settle(1);
+  expect(next.isConnected).toBe(false);
+});
+
+it.each([
+  { name: 'reduced motion', reduceMotion: true },
+  { name: 'an empty drawing', drawing: emptyDrawing() },
+])('prepares no departing texture for $name', async ({ name: _name, ...options }) => {
+  await mountClear(options);
+  await press();
+  expect(host.querySelector('[data-testid="rsd-clear-prepared-sheet"]')).toBeNull();
+  await lift(HOME);
+});
