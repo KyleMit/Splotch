@@ -29,6 +29,8 @@ import { PARENT_GATE_KEY_LABELS } from '../../../experiments/native-architecture
 import {
   GATE_MODAL,
   finishGateHold,
+  expectGateEquation,
+  expectGateEquationGeometry,
   gateKey,
   gateProblem,
   solveParentGate,
@@ -393,6 +395,7 @@ describe('RSD Parental Gate card', () => {
   });
 
   it('heads the challenge with the mascot, the shipping title and paint-daub operands', async () => {
+    records.journalHostProps = true;
     await openGateOnFixedProblem();
     const modal = host.querySelector(GATE_MODAL);
     const heading = modal.querySelector('[role="heading"]');
@@ -403,7 +406,8 @@ describe('RSD Parental Gate card', () => {
     expect(header.hasAttribute('role')).toBe(false);
     expect(modal.textContent).toContain(PARENT_GATE_COPY.managingSubtitle);
     const equation = modal.querySelector('[role="img"]');
-    expect(equation.getAttribute('aria-label')).toBe('What is 6 times 6?');
+    expectGateEquation('What is 6 times 6?');
+    expectGateEquationGeometry();
     const fills = [...equation.querySelectorAll('path')].map((path) => path.getAttribute('fill'));
     expect(fills.slice(0, 2)).toEqual([paletteHex('Purple'), colorFamilyShade('blues', 4)]);
     expect(dabs()).toEqual(['', '']);
@@ -487,7 +491,9 @@ describe('RSD Parental Gate card', () => {
 
   it('treats a wrong answer, and a digit past the answer, as a miss on a fresh problem', async () => {
     const owner = await openGateOnFixedProblem();
+    vi.mocked(Math.random).mockReturnValue(0.9);
     await answerWrong();
+    expectGateEquation('What is 9 times 9?');
     expect(host.querySelector(SECTION)).toBeNull();
     expect(host.textContent).toContain(PARENT_GATE_ERROR_MESSAGE);
     expect(dabs()).toEqual(['', '']);
@@ -501,6 +507,7 @@ describe('RSD Parental Gate card', () => {
     for (let miss = 0; miss < 3; miss += 1) await answerWrong();
     expect(host.textContent).toContain('Too many tries — wait 30 seconds');
     expect(keyLocks()).toEqual(PARENT_GATE_KEYPAD_KEYS.map(() => true));
+    expectGateEquation('What is 6 times 6?');
     await tapGateKeys(...FIXED_ANSWER_DIGITS, 'Check answer');
     expect(dabs()).toEqual(['', '']);
     expect(host.textContent).toContain('Too many tries — wait 30 seconds');

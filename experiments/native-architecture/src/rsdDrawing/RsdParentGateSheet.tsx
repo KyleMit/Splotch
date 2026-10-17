@@ -23,6 +23,7 @@ import type { ParentGateState } from '../parentCenter/parentGate';
 import type { DrawingProductOwner } from '../product/createDrawingProduct';
 import { useParentGateMotion } from '../parentCenter/useParentGateMotion';
 import { GateKeyboard } from '../platform/gateKeyboard';
+import { RsdGateEquation } from './RsdGateEquation';
 
 // Operand splats wear crayon hues, not chrome tokens: palette Purple, and the picker's mid-blue
 // because palette Blue misses 3:1 against the white digit (ParentalGateProblem.svelte).
@@ -173,7 +174,7 @@ function GateProblem({ state, size }: { state: ParentGateState; size: GateSizeCl
     <html.div data-testid="gate-problem">
       {/* The row's label carries the whole equation for assistive tech; the digits inside are
           hidden so the only "5" a screen reader finds is the keypad key. */}
-      <html.div
+      <RsdGateEquation
         role="img"
         aria-label={`What is ${state.x} times ${state.y}?`}
         style={[styles.equation, styles.gap(metrics.equationGap)]}
@@ -192,7 +193,7 @@ function GateProblem({ state, size }: { state: ParentGateState; size: GateSizeCl
             height={metrics.dab.height}
           />
         ))}
-      </html.div>
+      </RsdGateEquation>
       <html.p
         aria-hidden
         style={[
@@ -345,6 +346,8 @@ const styles = css.create({
     minWidth: 0,
   },
   equation: {
+    position: 'static',
+    boxSizing: 'content-box',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',

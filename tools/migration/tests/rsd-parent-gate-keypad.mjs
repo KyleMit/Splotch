@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { expect, vi } from 'vitest';
-import { host } from './rsd-native-selection-host.mjs';
+import { host, records } from './rsd-native-selection-host.mjs';
+import { PARENT_GATE_METRICS } from '../../../experiments/native-architecture/src/parentCenter/parentGateMetrics.ts';
 import { PARENT_GATE_SUCCESS_HOLD_MS } from '../../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 
 export const GATE_MODAL = '[data-native-modal="Grown-Ups Only"]';
@@ -44,4 +45,41 @@ export async function solveParentGate() {
   const { x, y } = gateProblem();
   await tapGateKeys(...[...String(x * y)].map(Number), 'Check answer');
   await finishGateHold();
+}
+
+export function expectGateEquation(label) {
+  const images = [...host.querySelectorAll(`${GATE_MODAL} [role="img"]`)];
+  expect(images).toHaveLength(1);
+  expect(images[0].getAttribute('aria-label')).toBe(label);
+  expect(records.props.findLast((props) => props.role === 'img')).toMatchObject({
+    accessible: true,
+    role: 'img',
+    accessibilityLabel: label,
+  });
+}
+
+export function expectGateEquationGeometry() {
+  const image = host.querySelector(`${GATE_MODAL} [role="img"]`);
+  const props = JSON.parse(image.getAttribute('data-committed-props'));
+  expect(image.textContent).toBe('6×6=');
+  expect(props.style).toEqual({
+    position: 'static',
+    boxSizing: 'content-box',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: PARENT_GATE_METRICS.phone.equationGap,
+    alignContent: 'stretch',
+    flexBasis: 'auto',
+    flexShrink: 1,
+    flexWrap: 'nowrap',
+  });
+  const decorations = [...image.children].map((node) =>
+    JSON.parse(node.getAttribute('data-committed-props'))
+  );
+  expect(
+    decorations.map((props) => [props.accessibilityElementsHidden, props.importantForAccessibility])
+  ).toEqual(Array.from({ length: image.children.length }, () => [true, 'no-hide-descendants']));
+  expect(image.children).toHaveLength(4);
 }
