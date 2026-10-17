@@ -124,6 +124,7 @@ describe('the Save Failure Banner on the drawing screen', () => {
   it.each([
     ['Raised portrait', 'buttons', 402, 874, DEFAULT_BUTTON_SCALE, 0],
     ['Flat portrait', 'bare', 402, 874, DEFAULT_BUTTON_SCALE, PALETTE_FLOWS.row.extentPx],
+    ['Flat square window', 'bare', 768, 768, DEFAULT_BUTTON_SCALE, PALETTE_FLOWS.row.extentPx],
     [
       'Flat portrait with enlarged buttons',
       'bare',
