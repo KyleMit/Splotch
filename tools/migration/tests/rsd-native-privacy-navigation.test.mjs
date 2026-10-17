@@ -68,7 +68,7 @@ it('pins the desktop contents beside the reading column and tracks the section c
   expect(props('privacy-contents-rail').style.transform).toEqual([{ translateY: 1600 }]);
 });
 
-it('keeps compact contents closed, collapses before measuring a picked jump, and pins its readout while scrolling', async () => {
+it('keeps compact contents closed and jumps after its measured collapse without a section resize', async () => {
   records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
   const jump = vi.fn();
   await mount(content(0, jump));
@@ -84,13 +84,16 @@ it('keeps compact contents closed, collapses before measuring a picked jump, and
   await act(async () => disclosure.click());
   const nav = host.querySelector('[aria-label="Privacy policy contents"]');
   expect(nav.querySelectorAll('[data-testid="sidebar-row"]')).toHaveLength(SECTIONS.length);
+  await act(async () => {
+    layout('privacy-details', 700, 2000);
+    layout('page-contents-disclosure', 300, 386);
+    SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
+  });
   await act(async () => nav.querySelectorAll('[data-testid="sidebar-row"]')[5].click());
   expect(host.querySelector('[aria-label="Privacy policy contents"]')).toBeNull();
   expect(jump).not.toHaveBeenCalled();
   await act(async () => {
-    layout('privacy-details', 400, 2000);
     layout('page-contents-disclosure', 300, 86);
-    SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
   });
   expect(jump).toHaveBeenCalledWith('#hosting');
   await act(async () => root.render(content(700, jump)));
