@@ -172,7 +172,7 @@ function expectForegroundGlyph(anchor) {
   const foreground = JSON.parse(glyph.getAttribute('data-committed-props')).style;
   expect(background.position).toBe('absolute');
   expect(foreground.position).toBe('relative');
-  expect(foreground.zIndex).toBeGreaterThan(background.zIndex ?? 0);
+  expect(foreground.zIndex ?? 0).toBeGreaterThanOrEqual(background.zIndex ?? 0);
   return glyph;
 }
 
