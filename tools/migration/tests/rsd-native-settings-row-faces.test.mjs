@@ -1,8 +1,9 @@
 import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { native, resetHost } from './rsd-native-control-host.mjs';
+import { host, native, resetHost } from './rsd-native-control-host.mjs';
 import { html } from 'react-strict-dom';
+import * as ReactNative from 'react-native';
 import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import {
   SHIPPING_HUB_ROW_KEEPS_UA_FACE,
@@ -19,14 +20,26 @@ vi.mock(
   () => import('../../../experiments/native-architecture/src/rsdDrawing/hubRowFace.native.ts')
 );
 vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/HubTitle.tsx',
+  () => import('../../../experiments/native-architecture/src/rsdDrawing/HubTitle.native.tsx')
+);
+vi.mock(
   '../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.ts',
   () => import('../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.native.ts')
 );
 
 let root, container;
+const measuredWordWidths = new Map();
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   resetHost();
+  measuredWordWidths.clear();
+  host.layoutOf = (node) => ({
+    x: 0,
+    y: 0,
+    width: measuredWordWidths.get(node.textContent) ?? 0,
+    height: 20,
+  });
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -63,7 +76,131 @@ describe('RsdSidebarRow', () => {
   );
 });
 
+const hub = (title) =>
+  h(RsdHubRow, {
+    icon: 'sound',
+    title,
+    subtitle: 'Volume 50%',
+    unseen: false,
+    onOpen() {},
+  });
+const hubTitle = () => byTestId('hub-subtitle').previousElementSibling;
+const wordLayouts = (word) =>
+  [...container.querySelectorAll('span')]
+    .filter((node) => node.textContent === word && native(node)?.props.onLayout)
+    .map((node) => ({ node, deliver: native(node).props.onLayout }));
+async function deliverWordWidth(word, width) {
+  measuredWordWidths.set(word, width);
+  await act(async () => {
+    for (const { deliver } of wordLayouts(word))
+      deliver({ nativeEvent: { layout: { x: 0, y: 0, width, height: 20 } } });
+  });
+}
+
 describe('RsdHubRow', () => {
+  it.each([
+    ['Appearance', [['Appearance', 93.25]], 93.25],
+    ['Sound', [['Sound', 48.5]], 48.5],
+    [
+      'Tool Drawer',
+      [
+        ['Tool', 31.75],
+        ['Drawer', 52.25],
+      ],
+      52.25,
+    ],
+  ])(
+    'budgets the measured whole-word width of %s in a squeezed text column',
+    async (title, words, widest) => {
+      await render(hub(title));
+      for (const [word, width] of words) await deliverWordWidth(word, width);
+      expect(styleOf(hubTitle()).minWidth).toBe(widest);
+      expect(hubTitle().textContent).toBe(title);
+      expect(styleOf(hubTitle().parentElement)).toMatchObject({ minWidth: 0, flexShrink: 1 });
+      expect(styleOf(container.querySelector('button'))).toMatchObject({
+        minWidth: 0,
+        flexShrink: 1,
+      });
+      expect(native(byTestId('hub-subtitle')).props.numberOfLines).toBe(2);
+    }
+  );
+
+  it('uses the visible native title face for noninteractive, hidden word measurements', async () => {
+    await render(hub('Tool Drawer'));
+    await deliverWordWidth('Tool', 31.75);
+    await deliverWordWidth('Drawer', 52.25);
+    expect(styleOf(hubTitle()).minWidth).toBe(52.25);
+    const titleStyle = styleOf(hubTitle());
+    const measured = wordLayouts('Drawer')[0].node;
+    expect(styleOf(measured)).toMatchObject({
+      fontFamily: titleStyle.fontFamily,
+      fontWeight: titleStyle.fontWeight,
+      fontSize: titleStyle.fontSize,
+      position: 'absolute',
+    });
+    expect(native(measured).props.accessible).toBe(false);
+    expect(native(measured.parentElement).props).toMatchObject({
+      pointerEvents: 'none',
+      accessibilityElementsHidden: true,
+      importantForAccessibility: 'no-hide-descendants',
+    });
+    expect(styleOf(measured.parentElement)).toMatchObject({
+      width: 0,
+      height: 0,
+      flexDirection: 'row',
+      opacity: 0,
+    });
+  });
+
+  it('replaces measured word widths when the native layout becomes smaller', async () => {
+    await render(hub('Tool Drawer'));
+    await deliverWordWidth('Tool', 31.75);
+    await deliverWordWidth('Drawer', 72.5);
+    expect(styleOf(hubTitle()).minWidth).toBe(72.5);
+    await deliverWordWidth('Drawer', 45.25);
+    expect(styleOf(hubTitle()).minWidth).toBe(45.25);
+  });
+
+  it('ignores a departed title word after the row receives another label', async () => {
+    await render(hub('Appearance'));
+    await deliverWordWidth('Appearance', 93.25);
+    expect(styleOf(hubTitle()).minWidth).toBe(93.25);
+    const stale = wordLayouts('Appearance')[0].deliver;
+    await render(hub('Sound'));
+    await deliverWordWidth('Sound', 48.5);
+    expect(styleOf(hubTitle()).minWidth).toBe(48.5);
+    await act(async () =>
+      stale({ nativeEvent: { layout: { x: 0, y: 0, width: 140, height: 30 } } })
+    );
+    expect(styleOf(hubTitle()).minWidth).toBe(48.5);
+  });
+
+  it('rejects old font-scale deliveries after measuring the current system font size', async () => {
+    let fontScale = 1;
+    const dimensions = vi.spyOn(ReactNative, 'useWindowDimensions').mockImplementation(() => ({
+      width: 402,
+      height: 874,
+      scale: 3,
+      fontScale,
+    }));
+    try {
+      await render(hub('Sound'));
+      await deliverWordWidth('Sound', 48.5);
+      expect(styleOf(hubTitle()).minWidth).toBe(48.5);
+      const stale = wordLayouts('Sound')[0].deliver;
+      fontScale = 2;
+      await render(hub('Sound'));
+      await deliverWordWidth('Sound', 97);
+      expect(styleOf(hubTitle()).minWidth).toBe(97);
+      await act(async () =>
+        stale({ nativeEvent: { layout: { x: 0, y: 0, width: 48.5, height: 20 } } })
+      );
+      expect(styleOf(hubTitle()).minWidth).toBe(97);
+    } finally {
+      dimensions.mockRestore();
+    }
+  });
+
   // The face shipping's unreset <button> takes in a WebView: San Francisco on iOS, Roboto on Android.
   it('sets the title and subtitle in the system face, the title at the shipping weight', async () => {
     expect(SHIPPING_HUB_ROW_KEEPS_UA_FACE).toBe(true);

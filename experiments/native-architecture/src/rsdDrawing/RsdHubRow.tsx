@@ -3,6 +3,7 @@ import { css, html } from 'react-strict-dom';
 import { landFocus } from './landFocus';
 import { colors, dimensions, motion } from './tokens.css';
 import { hubRowFace } from './hubRowFace';
+import { HubTitle } from './HubTitle';
 import { RsdActivityDot } from './RsdActivityDot';
 import { LineClampBox } from './lineClampBox';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
@@ -135,7 +136,7 @@ export function RsdHubRow({
           <RsdActivityDot unseen={unseen} surface="surface2" />
         </html.div>
         <html.div style={styles.text}>
-          <html.span style={[styles.title, hubRowFace.title]}>{title}</html.span>
+          <HubTitle style={[styles.title, hubRowFace.title]}>{title}</HubTitle>
           <html.span data-testid="hub-subtitle" style={styles.subtitle}>
             <LineClampBox lines={SUBTITLE_LINES}>{subtitle}</LineClampBox>
           </html.span>
