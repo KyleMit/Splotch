@@ -23,6 +23,7 @@ import {
   pickPencilTake,
 } from '../../experiments/native-architecture/src/audio/pencilSounds.ts';
 import { PLAYBACK_AUDIO_MODE } from '../../experiments/native-architecture/src/audio/playbackMode.ts';
+import { createClearSound } from '../../experiments/native-architecture/src/audio/pageTurnSound.ts';
 
 const loadFirstClip = (signal, failure) => loadPencilClip(PENCIL_SOUNDS[0], signal, failure);
 function nativePlayer() {
@@ -109,6 +110,66 @@ beforeEach(() => {
   native.mode.mockReset().mockResolvedValue();
 });
 afterEach(() => vi.useRealTimers());
+
+function clearSoundFixture() {
+  const note = vi.fn();
+  const turn = { play: vi.fn(), dispose: vi.fn() };
+  const load = vi.fn(async (_signal, publishNotes) => {
+    publishNotes(note);
+    return turn;
+  });
+  return { note, turn, load, sound: createClearSound(load) };
+}
+
+describe('Clear foreground preparation', () => {
+  it('leaves initial foreground preparation to the drawing-paint idle gate', () => {
+    const { sound, load } = clearSoundFixture();
+    sound.setEnabled(true);
+    sound.setForeground(true);
+    expect(load).not.toHaveBeenCalled();
+    sound.dispose();
+  });
+
+  it('does not prepare a disabled foreground return', () => {
+    const { sound, load } = clearSoundFixture();
+    sound.setForeground(false);
+    sound.setForeground(true);
+    expect(load).not.toHaveBeenCalled();
+    sound.dispose();
+  });
+
+  it('prepares on return before first contact and ignores the prior bank publication', async () => {
+    const { sound, load, note, turn } = clearSoundFixture();
+    sound.setEnabled(true);
+    sound.prepare();
+    await Promise.resolve();
+    const oldPublication = load.mock.calls[0][1];
+    sound.setForeground(false);
+    expect(turn.dispose).toHaveBeenCalledOnce();
+    sound.setForeground(true);
+    expect(load).toHaveBeenCalledTimes(2);
+    const stale = vi.fn();
+    oldPublication(stale);
+    expect(note).not.toHaveBeenCalled();
+    expect(turn.play).not.toHaveBeenCalled();
+    sound.start();
+    sound.update(0);
+    expect(note).toHaveBeenCalledOnce();
+    expect(stale).not.toHaveBeenCalled();
+    sound.dispose();
+  });
+
+  it('does not reload a prepared bank for duplicate foreground notifications', async () => {
+    const { sound, load } = clearSoundFixture();
+    sound.setEnabled(true);
+    sound.setForeground(false);
+    sound.setForeground(true);
+    await Promise.resolve();
+    sound.setForeground(true);
+    expect(load).toHaveBeenCalledOnce();
+    sound.dispose();
+  });
+});
 
 describe('supported Expo native audio binding', () => {
   it('loads with the actual React Native signal without DOM throwIfAborted', async () => {

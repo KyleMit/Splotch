@@ -9,7 +9,7 @@ import {
 } from '../../../../web/src/lib/audio/clearSoundNotes';
 
 type ClearPageTurn = { play(volume: number): void; dispose(): void };
-type ClearNotePlayer = (frequency: number, volume: number) => void;
+type ClearNotePlayer = (frequency: number, volume: number) => void | Promise<void>;
 export type ClearPageTurnLoader = (
   signal: AbortSignal,
   publishNotes: (play: ClearNotePlayer) => void
@@ -85,18 +85,19 @@ export function createClearSound(load: ClearPageTurnLoader) {
   let foreground = true;
   let volume = SOUND_VOLUME_DEFAULT;
   let requested = false;
-  let notes: ClearNotePlayer | null = null;
+  let notes: { play: ClearNotePlayer } | null = null;
   let resource: Resource = { status: 'idle' };
 
   const canPlay = () => enabled && foreground;
   const gesture = createClearGestureSound(canPlay, note);
 
-  function note(frequency: number, gain = 1) {
+  async function note(frequency: number, gain = 1) {
     if (!canPlay() || notes === null) return;
+    const current = notes;
     try {
-      notes(frequency, soundVolumeGain(volume) * gain);
+      await current.play(frequency, soundVolumeGain(volume) * gain);
     } catch {
-      release();
+      if (notes === current) release();
     }
   }
 
@@ -124,12 +125,12 @@ export function createClearSound(load: ClearPageTurnLoader) {
     if (resource.status !== 'idle' || !canPlay()) return;
     const request = new AbortController();
     resource = { status: 'loading', request };
+    const isCurrentLoad = () => resource.status === 'loading' && resource.request === request;
     void load(request.signal, (play) => {
-      if (!request.signal.aborted && resource.status === 'loading' && resource.request === request)
-        notes = play;
+      if (isCurrentLoad()) notes = { play };
     })
       .then((turn) => {
-        if (request.signal.aborted || resource.status !== 'loading') {
+        if (!isCurrentLoad()) {
           turn.dispose();
           return;
         }
@@ -137,7 +138,7 @@ export function createClearSound(load: ClearPageTurnLoader) {
         playIfReady();
       })
       .catch(() => {
-        if (resource.status === 'loading' && resource.request === request) {
+        if (isCurrentLoad()) {
           notes = null;
           resource = { status: 'idle' };
         }
@@ -171,8 +172,10 @@ export function createClearSound(load: ClearPageTurnLoader) {
       if (!value) release();
     },
     setForeground(value: boolean) {
+      const becameForeground = !foreground && value;
       foreground = value;
       if (!value) release();
+      else if (becameForeground) prepare();
     },
     dispose() {
       enabled = false;
