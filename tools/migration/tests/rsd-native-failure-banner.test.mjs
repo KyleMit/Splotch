@@ -14,6 +14,12 @@ import {
 } from '../../../experiments/native-architecture/src/rsdDrawing/RsdFailureBanner.tsx';
 import { useDrawingMessages } from '../../../experiments/native-architecture/src/drawingMessages.ts';
 import { saveFailureCopy } from '../../../web/src/lib/drawing/saveFailureCopy.ts';
+import { PALETTE_FLOWS } from '../../../experiments/native-architecture/src/rsdDrawing/paletteGeometry.ts';
+import { DRAWING_SCALE } from '../../../experiments/native-architecture/src/drawing/theme.ts';
+import {
+  BUTTON_SCALE_MAX,
+  DEFAULT_BUTTON_SCALE,
+} from '../../../experiments/native-architecture/src/settings/buttonSize.ts';
 
 // The photo library's answer to a save, and the PNGs it was handed.
 const library = vi.hoisted(() => ({ outcome: 'photos', saves: [] }));
@@ -115,29 +121,68 @@ describe('the Save Failure Banner on the drawing screen', () => {
     expect(messages).toMatchObject({ routineNotice: 'Picture opened.', failure: null });
   });
 
-  it('shows a denied photo save in the visible banner, with its explanation, until dismissed', async () => {
-    library.outcome = 'denied';
-    caller.realScreen = true;
-    caller.settingsStorage = {
-      read: vi.fn(async () => '{"version":1,"soundEnabled":false}'),
-      write: vi.fn(async () => {}),
-    };
-    await mount(createElement(RsdDrawingScreen));
-    await act(async () => host.querySelector('[aria-label="Draw RSD fixture stroke"]').click());
-    await act(async () => host.querySelector('[aria-label="Expand controls"]').click());
-    await act(async () => host.querySelector('[aria-label="Save screenshot"]').click());
-    await vi.waitFor(() => expect(banners()).toHaveLength(1));
-    const refused = saveFailureCopy('denied', 1, 'ios');
-    expect(banners()).toEqual([`${refused.heading}${refused.detail}Open SettingsTry again`]);
-    expect(library.saves).toEqual(['cmVhbC1wbmc=']);
-    const banner = flat(
-      records.props.findLast((props) => props.testID === 'rsd-failure-banner')?.style
-    );
-    expect(banner).toMatchObject({ maxWidth: BANNER_MAX_WIDTH_PX, borderStyle: 'solid' });
-    expect(records.announcements).toContain(`${refused.heading}. ${refused.detail}`);
-    // The refusal is the banner's to say; the save's own notice may not say it again.
-    expect(spoken(refused.detail)).toEqual({ announced: 1, regions: 1 });
-    await act(async () => host.querySelector('[aria-label="Dismiss"]').click());
-    await vi.waitFor(() => expect(banners()).toEqual([]));
-  });
+  it.each([
+    ['Raised portrait', 'buttons', 402, 874, DEFAULT_BUTTON_SCALE, 0],
+    ['Flat portrait', 'bare', 402, 874, DEFAULT_BUTTON_SCALE, PALETTE_FLOWS.row.extentPx],
+    [
+      'Flat portrait with enlarged buttons',
+      'bare',
+      402,
+      874,
+      BUTTON_SCALE_MAX,
+      PALETTE_FLOWS.row.extentPx,
+    ],
+    ['Raised tablet landscape', 'buttons', 1024, 768, DEFAULT_BUTTON_SCALE, 0],
+    ['Flat tablet landscape', 'bare', 1024, 768, BUTTON_SCALE_MAX, 0],
+    ['Flat phone landscape', 'bare', 874, 402, DEFAULT_BUTTON_SCALE, 0],
+  ])(
+    'shows a denied photo save clear of the %s palette until dismissed',
+    async (_, toolbarStyle, width, height, buttonScale, paletteTop) => {
+      library.outcome = 'denied';
+      library.saves = [];
+      records.dimensions = { ...records.dimensions, width, height };
+      records.insets = { top: 62, right: 0, bottom: 34, left: 0 };
+      caller.realScreen = true;
+      caller.settingsStorage = {
+        read: vi.fn(async () => '{"version":1,"soundEnabled":false}'),
+        write: vi.fn(async () => {}),
+      };
+      await mount(createElement(RsdDrawingScreen));
+      await act(async () => caller.product.sound.owner.settings.setToolbarStyle(toolbarStyle));
+      await act(async () => caller.product.sound.owner.settings.setButtonScale(buttonScale));
+      await act(async () => host.querySelector('[aria-label="Draw RSD fixture stroke"]').click());
+      await act(async () => host.querySelector('[aria-label="Expand controls"]').click());
+      await act(async () => host.querySelector('[aria-label="Save screenshot"]').click());
+      await vi.waitFor(() => expect(banners()).toHaveLength(1));
+      const refused = saveFailureCopy('denied', 1, 'ios');
+      expect(banners()).toEqual([`${refused.heading}${refused.detail}Open SettingsTry again`]);
+      expect(library.saves).toEqual(['cmVhbC1wbmc=']);
+      const banner = flat(
+        records.props.findLast((props) => props.testID === 'rsd-failure-banner')?.style
+      );
+      expect(banner).toMatchObject({ maxWidth: BANNER_MAX_WIDTH_PX, borderStyle: 'solid' });
+      const dock = flat(
+        records.props.findLast((props) => props.testID === 'rsd-failure-banners')?.style
+      );
+      expect(dock).toMatchObject({
+        position: 'absolute',
+        top: DRAWING_SCALE.space4 + paletteTop,
+        left: DRAWING_SCALE.space4,
+        right: BANNER_CLEAR_RESERVE_PX,
+      });
+      expect(
+        host
+          .querySelector('[data-testid="rsd-failure-banners"]')
+          .closest('[data-testid="rsd-controls-inset"]')
+      ).not.toBeNull();
+      expect(
+        records.props.findLast((props) => props.testID === 'rsd-safe-area-frame')?.edges
+      ).toContain('top');
+      expect(records.announcements).toContain(`${refused.heading}. ${refused.detail}`);
+      // The refusal is the banner's to say; the save's own notice may not say it again.
+      expect(spoken(refused.detail)).toEqual({ announced: 1, regions: 1 });
+      await act(async () => host.querySelector('[aria-label="Dismiss"]').click());
+      await vi.waitFor(() => expect(banners()).toEqual([]));
+    }
+  );
 });
