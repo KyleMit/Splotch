@@ -13,13 +13,17 @@ const styles = StyleSheet.create({
 function PaneImages({
   batch,
   visible,
-  onReady,
+  onSettled,
 }: {
   batch: PaneBatch;
   visible: boolean;
-  onReady: (batch: PaneBatch) => void;
+  onSettled: (batch: PaneBatch) => void;
 }) {
-  const loaded = useRef(new Set<number>());
+  const settled = useRef(new Set<number>());
+  const settle = (index: number) => {
+    settled.current.add(index);
+    if (settled.current.size === batch.panes.length) onSettled(batch);
+  };
   return batch.panes.map(({ uri, box, image }, index) => (
     <View
       key={index}
@@ -33,10 +37,8 @@ function PaneImages({
         source={{ uri }}
         resizeMode="stretch"
         fadeDuration={0}
-        onLoad={() => {
-          loaded.current.add(index);
-          if (loaded.current.size === batch.panes.length) onReady(batch);
-        }}
+        onLoad={() => settle(index)}
+        onError={() => settle(index)}
         style={[styles.image, image, { opacity: visible ? 1 : 0 }]}
       />
     </View>
@@ -44,7 +46,7 @@ function PaneImages({
 }
 
 // Encoded PNG readiness precedes native Image readiness. Retain the whole displayed set, including
-// its geometry, until the replacement hosts have decoded; promotion preserves those same hosts.
+// its geometry, until replacement hosts load or fail; promotion preserves those same hosts.
 export function RsdPaneImages({ panes }: { panes: readonly PaneImage[] }) {
   const serial = useRef(0);
   const candidate = useMemo(() => ({ key: serial.current++, panes }), [panes]);
@@ -63,8 +65,8 @@ export function RsdPaneImages({ panes }: { panes: readonly PaneImage[] }) {
       key={batch.key}
       batch={batch}
       visible={batch === displayed}
-      onReady={(ready) => {
-        if (ready === current.current) setDisplayed(ready);
+      onSettled={(settled) => {
+        if (settled === current.current) setDisplayed(settled);
       }}
     />
   ));

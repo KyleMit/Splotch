@@ -135,6 +135,7 @@ export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: Bare
       active = false;
     };
   }, [panes, theme]);
+  // Offer the mean coat while composition runs so new controls attenuate ink without waiting.
   const images = useMemo(
     () =>
       panes.map(({ uri, box, image }, index) => {

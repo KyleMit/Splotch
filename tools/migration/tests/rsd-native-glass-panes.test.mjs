@@ -245,6 +245,40 @@ describe('the native pane composition lifetime', () => {
   });
 
   it.each(['theme', 'layout'])(
+    'retains replacement textures when an older %s composition resolves last',
+    async (change) => {
+      const pending = pendingTextures();
+      const changePane = await changingPane();
+      const old = pending.splice(0);
+      await changePane(
+        change === 'theme' ? { theme: 'dark' } : { space: { ...SPACE, width: 430 } }
+      );
+      await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+      await loadPanes(pendingPanes());
+      const replacement = panes();
+      await act(async () => old.forEach(({ resolve, uri }) => resolve(uri)));
+      await loadPanes(pendingPanes());
+      expect(panes()).toEqual(replacement);
+      expect(imageUris()).toEqual(pending.map(({ uri }) => uri));
+    }
+  );
+
+  it('settles a failed native image without retaining retired pane geometry', async () => {
+    const changePane = await changingPane();
+    const displayed = panes();
+    const geometry = displayed.map((element) => paneLayout(element).clip);
+    await changePane({ space: { ...SPACE, width: 430 } });
+    const replacement = pendingPanes();
+    expect(replacement).toHaveLength(displayed.length);
+    await loadPanes(replacement.slice(1));
+    expect(panes()).toEqual(displayed);
+    await act(async () => nativeProps(replacement[0]).onError());
+    expect(panes()).toEqual(replacement);
+    expect(pendingPanes()).toEqual([]);
+    expect(panes().map((element) => paneLayout(element).clip)).not.toEqual(geometry);
+  });
+
+  it.each(['theme', 'layout'])(
     'retains decoded geometry through %s and ignores stale native loads',
     async (change) => {
       const pending = pendingTextures();
