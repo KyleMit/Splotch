@@ -15,7 +15,7 @@ import { RsdButton } from './RsdButton';
 import { RsdIcon } from './RsdIcon';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
-import { PALETTE_FLOWS } from './paletteGeometry';
+import { PALETTE_FLOWS, paletteAxis } from './paletteGeometry';
 import { useBareToolbar } from './toolbarSkin';
 
 // SaveFailureBanner.svelte's literals that no token carries. Local because the StyleX web compile
@@ -260,7 +260,7 @@ export function RsdFailureBanner({ failures }: { failures: readonly FailureBanne
   const window = useWindowDimensions();
   const bare = useBareToolbar();
   // Raised's paper starts after the palette; Flat's paper runs beneath it.
-  const paletteTop = bare && window.height >= window.width ? PALETTE_FLOWS.row.extentPx : 0;
+  const paletteTop = bare && paletteAxis(window) === 'row' ? PALETTE_FLOWS.row.extentPx : 0;
   return (
     <View
       testID="rsd-failure-banners"

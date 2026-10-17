@@ -1,4 +1,4 @@
-import { EDGE_INSET_PX, type LayoutAxis } from './edgeLayout';
+import { EDGE_INSET_PX, type AreaSize, type LayoutAxis } from './edgeLayout';
 
 // The shipping Color Palette's flow, per axis: a portrait row of 55px swatches or a landscape
 // column of 60px ones, each a fixed size the Button Size slider leaves alone. The candidate
@@ -38,6 +38,10 @@ export const PALETTE_FLOWS = {
     shadow: '2px 0 10px rgba(0, 0, 0, 0.1)',
   },
 } as const satisfies Record<LayoutAxis, PaletteFlow>;
+
+export function paletteAxis(area: AreaSize): LayoutAxis {
+  return area.width > area.height ? 'column' : 'row';
+}
 
 // Selection Ring geometry from shipping's colorRing.ts: a 4px ring outside the swatch, over a
 // 1px seam of the bar surface, around a 4px band of that surface inside the swatch's edge.

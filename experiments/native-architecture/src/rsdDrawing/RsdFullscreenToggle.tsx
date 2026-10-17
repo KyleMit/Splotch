@@ -3,7 +3,7 @@ import type { useFullscreen } from '../platform/useFullscreen';
 import { RsdIconButton } from './RsdIconButton';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';
 import { EDGE_INSET_PX } from './edgeLayout';
-import { PALETTE_FLOWS } from './paletteGeometry';
+import { PALETTE_FLOWS, paletteAxis } from './paletteGeometry';
 import { useBareToolbar } from './toolbarSkin';
 
 // The shipping Fullscreen Toggle: a muted corner button in the paper area's top-left corner, under
@@ -20,7 +20,7 @@ export function RsdFullscreenToggle({
 }) {
   const window = useWindowDimensions();
   const bare = useBareToolbar();
-  const paletteTop = bare && window.height >= window.width ? PALETTE_FLOWS.row.extentPx : 0;
+  const paletteTop = bare && paletteAxis(window) === 'row' ? PALETTE_FLOWS.row.extentPx : 0;
   return (
     <>
       {fullscreen.supported ? (

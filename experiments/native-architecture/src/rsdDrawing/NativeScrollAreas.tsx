@@ -3,7 +3,7 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useMeasuredPaperArea } from './useMeasuredPaperArea';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
-import { PALETTE_FLOWS, paletteSlots } from './paletteGeometry';
+import { PALETTE_FLOWS, paletteAxis, paletteSlots } from './paletteGeometry';
 import { fittedPaper } from '../drawing/paperGeometry';
 import { paperProjection, type PaperProjection, type PaperReference } from '../drawing/paperSpace';
 import {
@@ -239,7 +239,7 @@ export function NativeDrawingLayout({
   const drawingScreenStyles = useDrawingScreenStyles();
   const { contacts, handlers } = useSecondTouchLayout(capturePress);
   const window = useWindowDimensions();
-  const axis = window.width > window.height ? 'column' : 'row';
+  const axis = paletteAxis(window);
   const [measured, setMeasured] = useState<{ axis: LayoutAxis; length: number }>();
   // Shipping's paper runs under the home indicator while its controls sit clear of it; the frame
   // leaves the bottom inset unpadded (NativeFrame) and the controls take it back here.
