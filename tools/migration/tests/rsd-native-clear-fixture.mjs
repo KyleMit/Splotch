@@ -12,8 +12,8 @@ import { acceptRadius } from '../../../experiments/native-architecture/src/clear
 import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
 
 const runtimeRequire = createRequire(import.meta.url);
-const babelPreset = createRequire(runtimeRequire.resolve('@react-native/babel-preset'));
-const babel = babelPreset('@babel/core');
+const presetRequire = createRequire(runtimeRequire.resolve('@react-native/babel-preset'));
+const babel = presetRequire('@babel/core');
 
 function loadNativeTransformOrigin() {
   const source = runtimeRequire.resolve(
@@ -23,9 +23,9 @@ function loadNativeTransformOrigin() {
     babelrc: false,
     configFile: false,
     plugins: [
-      babelPreset.resolve('babel-plugin-syntax-hermes-parser'),
-      babelPreset.resolve('@babel/plugin-transform-flow-strip-types'),
-      babelPreset.resolve('@babel/plugin-transform-modules-commonjs'),
+      presetRequire.resolve('babel-plugin-syntax-hermes-parser'),
+      presetRequire.resolve('@babel/plugin-transform-flow-strip-types'),
+      presetRequire.resolve('@babel/plugin-transform-modules-commonjs'),
     ],
   });
   const module = { exports: {} };

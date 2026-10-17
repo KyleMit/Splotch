@@ -19,6 +19,7 @@ import { InkScene } from '../drawing/InkScene';
 import type { Drawing } from '../drawing/model';
 import { PageOutline } from '../drawing/PageOutline';
 import { PaperTexture } from '../drawing/PaperTexture';
+import { paperLifted } from '../drawing/paperGeometry';
 import type { PresentedFrame } from '../drawing/paperPresentation';
 import {
   drawingPaper,
@@ -47,12 +48,14 @@ const layer = StyleSheet.create({
 function PaperArt({
   drawing,
   ink,
+  area,
   frame,
   projection: supplied,
 }: {
   drawing: Drawing;
   ink: boolean;
-  frame: AreaSize;
+  area: AreaSize;
+  frame: PresentedFrame;
   projection?: PaperProjection | null;
 }) {
   const theme = useDrawingAppearance();
@@ -65,7 +68,9 @@ function PaperArt({
   return (
     <InkAppearanceScope.Provider value={{ pageId: drawing.pageId, theme }}>
       <InkPaperScope.Provider value={projection}>
-        <PaperTexture />
+        <PaperTexture
+          origin={paperLifted(area, frame) ? { x: 0, y: 0 } : { x: frame.left, y: frame.top }}
+        />
         <Svg
           style={layer.fill}
           width="100%"
@@ -146,7 +151,7 @@ function DepartingSheet({
         ],
       }}
     >
-      <PaperArt drawing={sheet.drawing} ink frame={frame} projection={projection} />
+      <PaperArt drawing={sheet.drawing} ink area={area} frame={frame} projection={projection} />
     </Animated.View>
   );
 }
@@ -188,16 +193,18 @@ function PaperGradient({
 
 function ClearCover({
   drawing,
+  area,
   frame,
   projection,
 }: {
   drawing: Drawing;
+  area: AreaSize;
   frame: PresentedFrame;
   projection?: PaperProjection;
 }) {
   return (
     <View testID="rsd-clear-cover" style={[{ position: 'absolute' }, frame]}>
-      <PaperArt drawing={drawing} ink={false} frame={frame} projection={projection} />
+      <PaperArt drawing={drawing} ink={false} area={area} frame={frame} projection={projection} />
     </View>
   );
 }
@@ -240,7 +247,7 @@ export function RsdClearUnderlay({
       }}
     >
       {control.covered ? (
-        <ClearCover drawing={drawing} frame={frame} projection={projection} />
+        <ClearCover drawing={drawing} area={area} frame={frame} projection={projection} />
       ) : null}
       <Animated.View
         testID="rsd-clear-wash"
