@@ -10,6 +10,11 @@ import { displayOrientation, Orientation, orientationCalls } from './rsd-orienta
 import './rsd-native-settings-hub-mocks.mjs';
 import { clearSoundPort } from './rsd-native-launch-stores.mjs';
 
+// Native Skia cannot load in Node; native-glass-pane-raster tests the compositor's CanvasKit pixels.
+vi.mock('../../../experiments/native-architecture/src/rsdDrawing/glassPaneImage.ts', () => ({
+  glassPaneImage: vi.fn(async () => null),
+}));
+
 const caller = vi.hoisted(() => {
   let journal = null;
   let upload = new Uint8Array();

@@ -1,11 +1,20 @@
 import { inflateSync } from 'node:zlib';
-import { describe, expect, it, vi } from 'vitest';
-import { host, records } from './rsd-native-selection-host.mjs';
+import { act, createElement, useState } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { host, mount, records } from './rsd-native-selection-host.mjs';
 import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
 import { GLASS_PANE_INKS } from '../../../experiments/native-architecture/src/rsdDrawing/glassPaneInk.ts';
 import { CORNER_BUTTON_SIZE_PX } from '../../../experiments/native-architecture/src/rsdDrawing/RsdIconButton.tsx';
 import { EDGE_INSET_PX } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
+import { glassPaneImage } from '../../../experiments/native-architecture/src/rsdDrawing/glassPaneImage.ts';
+import { glassPanePng } from '../../../experiments/native-architecture/src/rsdDrawing/glassPanePng.ts';
+import { RsdGlassPanes } from '../../../experiments/native-architecture/src/rsdDrawing/RsdBareGlass.tsx';
+import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
+
+beforeEach(() => {
+  vi.mocked(glassPaneImage).mockReset().mockResolvedValue(null);
+});
 
 const FORWARD_REF = Symbol.for('react.forward_ref');
 const PNG_PREFIX = 'data:image/png;base64,';
@@ -15,7 +24,10 @@ const PNG_SIGNATURE_BYTES = 8;
 function nativeProps(element) {
   const key = Object.keys(element).find((name) => name.startsWith('__reactFiber$'));
   const owner = key ? element[key].return : null;
-  return owner?.type?.$$typeof === FORWARD_REF ? owner.memoizedProps : {};
+  let root = owner;
+  while (root?.return) root = root.return;
+  const current = root?.stateNode?.current === root ? owner : owner?.alternate;
+  return current?.type?.$$typeof === FORWARD_REF ? current.memoizedProps : {};
 }
 
 const panes = () => [...host.querySelectorAll('[data-testid="rsd-glass-pane"]')];
@@ -129,5 +141,241 @@ describe('the native flat glass panes', () => {
     await mountFlat(390, 844, { appearance: 'dark' });
     for (const element of panes())
       expect(paneLayout(element).pane.rgb).toEqual(GLASS_PANE_INKS.dark.rgb);
+  });
+});
+
+describe('the native pane composition lifetime', () => {
+  const SPACE = { width: 390, height: 844, insetBottom: 0, paperTop: 0, paperLeft: 0 };
+  const GLASS = {
+    panel: { mode: 'column', count: 5, size: 50, optionSize: 50, brushOptions: 4, stroke: true },
+    expanded: false,
+    open: null,
+    fullscreen: false,
+  };
+  const tree = (theme, space = SPACE, glass = GLASS) =>
+    createElement(
+      DrawingAppearanceProvider,
+      { preference: theme },
+      createElement(RsdGlassPanes, { space, glass })
+    );
+  const renderedPanes = () => panes().map(nativeProps);
+  const pendingPanes = () => [...host.querySelectorAll('[data-testid="rsd-glass-pane-pending"]')];
+  const loadPanes = (elements) =>
+    act(async () => elements.forEach((element) => nativeProps(element).onLoad()));
+  const imageUris = () => renderedPanes().map(({ source }) => source.uri);
+  function pendingTextures() {
+    const pending = [];
+    vi.mocked(glassPaneImage).mockImplementation(
+      (raster) =>
+        new Promise((resolve) => pending.push({ resolve, uri: glassPanePng(raster, [1, 2, 3]) }))
+    );
+    return pending;
+  }
+  async function changingPane() {
+    let change;
+    function PaneFixture() {
+      const [state, setState] = useState({
+        theme: 'light',
+        space: SPACE,
+        glass: GLASS,
+        visible: true,
+      });
+      change = (next) => setState((previous) => ({ ...previous, ...next }));
+      return state.visible ? tree(state.theme, state.space, state.glass) : null;
+    }
+    await mount(createElement(PaneFixture));
+    return (next) => act(async () => change(next));
+  }
+
+  it('passes the full feather and inset-adjusted window origin into each image', async () => {
+    records.insets = { top: 47, left: 31, right: 0, bottom: 0 };
+    await mount(tree('dark'));
+    expect(glassPaneImage).toHaveBeenCalledTimes(panes().length);
+    for (const [raster, theme, origin] of vi.mocked(glassPaneImage).mock.calls) {
+      expect(theme).toBe('dark');
+      expect(origin).toEqual({ x: raster.box.x + 31, y: raster.box.y + 47 });
+      expect(Math.max(...raster.alpha)).toBe(255);
+    }
+  });
+
+  it('retains the mean fallback until every texture has loaded in its native Image', async () => {
+    const pending = pendingTextures();
+    await mount(tree('light'));
+    const fallback = imageUris();
+    expect(panes().map((element) => paneLayout(element).pane.rgb)).toEqual(
+      panes().map(() => GLASS_PANE_INKS.light.rgb)
+    );
+    await act(async () => pending[0].resolve(pending[0].uri));
+    expect(imageUris()).toEqual(fallback);
+    await act(async () => pending.slice(1).forEach(({ resolve, uri }) => resolve(uri)));
+    expect(imageUris()).toEqual(fallback);
+    const decoding = pendingPanes();
+    expect(decoding).toHaveLength(panes().length);
+    expect(decoding.map((element) => flat(nativeProps(element).style).opacity)).toEqual(
+      decoding.map(() => 0)
+    );
+    await loadPanes(decoding.slice(0, 1));
+    expect(imageUris()).toEqual(fallback);
+    await loadPanes(decoding.slice(1));
+    expect(panes()).toEqual(decoding);
+    expect(pendingPanes()).toEqual([]);
+    expect(imageUris()).toEqual(pending.map(({ uri }) => uri));
+    for (const [index, element] of panes().entries()) {
+      const { clip } = paneLayout(element);
+      const place = flat(renderedPanes()[index].style);
+      expect(place).toMatchObject({ left: 0, top: 0, width: clip.width, height: clip.height });
+      expect(layered(place)).toEqual(PLAIN);
+    }
+  });
+
+  it.each(['theme', 'layout'])('ignores late textures after the %s changes', async (change) => {
+    const pending = pendingTextures();
+    const changePane = await changingPane();
+    const old = pending.splice(0);
+    const theme = change === 'theme' ? 'dark' : 'light';
+    const space = change === 'layout' ? { ...SPACE, width: 430 } : SPACE;
+    await changePane({ theme, space });
+    const fallback = imageUris();
+    await act(async () => old.forEach(({ resolve, uri }) => resolve(uri)));
+    expect(imageUris()).toEqual(fallback);
+    await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+    expect(imageUris()).toEqual(fallback);
+    await loadPanes(pendingPanes());
+    expect(imageUris()).toEqual(pending.map(({ uri }) => uri));
+  });
+
+  it.each(['theme', 'layout'])(
+    'retains replacement textures when an older %s composition resolves last',
+    async (change) => {
+      const pending = pendingTextures();
+      const changePane = await changingPane();
+      const old = pending.splice(0);
+      await changePane(
+        change === 'theme' ? { theme: 'dark' } : { space: { ...SPACE, width: 430 } }
+      );
+      await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+      await loadPanes(pendingPanes());
+      const replacement = panes();
+      await act(async () => old.forEach(({ resolve, uri }) => resolve(uri)));
+      await loadPanes(pendingPanes());
+      expect(panes()).toEqual(replacement);
+      expect(imageUris()).toEqual(pending.map(({ uri }) => uri));
+    }
+  );
+
+  it('keeps the mean coat when a native texture fails to decode', async () => {
+    const pending = pendingTextures();
+    await changingPane();
+    const displayed = panes();
+    const fallback = displayed.map((element) => nativeProps(element));
+    await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+    const replacement = pendingPanes();
+    const staleLoad = nativeProps(replacement[0]).onLoad;
+    await loadPanes(replacement.slice(1));
+    await act(async () => nativeProps(replacement[0]).onError());
+    expect(panes()).toEqual(displayed);
+    const retry = pendingPanes()[0];
+    expect(retry).not.toBe(replacement[0]);
+    expect(nativeProps(retry).source.uri).toBe(fallback[0].source.uri);
+    const { left, top, width, height } = flat(fallback[0].style);
+    expect(flat(nativeProps(retry).style)).toMatchObject({ left, top, width, height, opacity: 0 });
+    await act(async () => staleLoad());
+    expect(panes()).toEqual(displayed);
+    await loadPanes([retry]);
+    expect(panes()[0]).toBe(retry);
+    expect(imageUris()).toEqual([
+      fallback[0].source.uri,
+      ...pending.slice(1).map(({ uri }) => uri),
+    ]);
+    expect(paneLayout(panes()[0]).pane.rgb).toEqual(GLASS_PANE_INKS.light.rgb);
+    expect(pendingPanes()).toEqual([]);
+  });
+
+  it('settles a failed native image without retaining retired pane geometry', async () => {
+    const changePane = await changingPane();
+    const displayed = panes();
+    const geometry = displayed.map((element) => paneLayout(element).clip);
+    await changePane({ space: { ...SPACE, width: 430 } });
+    const replacement = pendingPanes();
+    expect(replacement).toHaveLength(displayed.length);
+    await loadPanes(replacement.slice(1));
+    expect(panes()).toEqual(displayed);
+    await act(async () => nativeProps(replacement[0]).onError());
+    expect(panes()).toEqual(replacement);
+    expect(pendingPanes()).toEqual([]);
+    expect(panes().map((element) => paneLayout(element).clip)).not.toEqual(geometry);
+  });
+
+  it.each(['theme', 'layout'])(
+    'retains decoded geometry through %s and ignores stale native loads',
+    async (change) => {
+      const pending = pendingTextures();
+      const changePane = await changingPane();
+      await act(async () => pending.splice(0).forEach(({ resolve, uri }) => resolve(uri)));
+      await loadPanes(pendingPanes());
+      const displayed = panes();
+      const oldLoads = displayed.map((element) => nativeProps(element).onLoad);
+      const geometry = displayed.map((element) => paneLayout(element).clip);
+      await changePane(
+        change === 'theme'
+          ? { theme: 'dark' }
+          : {
+              space: { ...SPACE, width: 844, height: 390 },
+              glass: { ...GLASS, panel: { ...GLASS.panel, mode: 'phoneLandscape' } },
+            }
+      );
+      const abandoned = pendingPanes().map((element) => nativeProps(element).onLoad);
+      expect(panes()).toEqual(displayed);
+      expect(panes().map((element) => paneLayout(element).clip)).toEqual(geometry);
+      await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+      const replacement = pendingPanes();
+      await act(async () => abandoned.forEach((onLoad) => onLoad()));
+      expect(panes()).toEqual(displayed);
+      await loadPanes(replacement.slice(0, -1));
+      expect(panes()).toEqual(displayed);
+      await loadPanes(replacement.slice(-1));
+      expect(panes()).toEqual(replacement);
+      expect(panes()).toHaveLength(change === 'layout' ? 1 : 2);
+      await act(async () => [...oldLoads, ...abandoned].forEach((onLoad) => onLoad()));
+      expect(panes()).toEqual(replacement);
+      for (const element of panes()) {
+        expect(layered(flat(nativeProps(element).style))).toEqual(PLAIN);
+        expect(nativeProps(element.parentElement)).toMatchObject({
+          accessible: false,
+          accessibilityElementsHidden: true,
+          importantForAccessibility: 'no-hide-descendants',
+        });
+      }
+    }
+  );
+
+  it.each(['null', 'rejection'])(
+    'keeps the native fallback through composition %s',
+    async (failure) => {
+      const changePane = await changingPane();
+      const displayed = panes();
+      if (failure === 'rejection') vi.mocked(glassPaneImage).mockRejectedValue(new Error('decode'));
+      await changePane({ theme: 'dark' });
+      expect(panes()).toEqual(displayed);
+      const replacement = pendingPanes();
+      expect(replacement).toHaveLength(displayed.length);
+      await loadPanes(replacement);
+      expect(panes()).toEqual(replacement);
+      expect(panes().map((element) => paneLayout(element).pane.rgb)).toEqual(
+        panes().map(() => GLASS_PANE_INKS.dark.rgb)
+      );
+    }
+  );
+
+  it('forgets a composition after its pane unmounts', async () => {
+    const pending = pendingTextures();
+    const changePane = await changingPane();
+    await changePane({ visible: false });
+    await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+    expect(panes()).toEqual([]);
+    await changePane({ visible: true });
+    expect(panes().map((element) => paneLayout(element).pane.rgb)).toEqual(
+      panes().map(() => GLASS_PANE_INKS.light.rgb)
+    );
   });
 });
