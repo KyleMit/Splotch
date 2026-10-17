@@ -106,6 +106,35 @@ describe('candidate-owned audio and Settings projections', () => {
 });
 
 const runtimeRequire = createRequire(import.meta.url);
+const { getAssetLocalPath } = runtimeRequire('@expo/cli/build/src/export/metroAssetLocalPath');
+const { getAndroidResourceIdentifier } = runtimeRequire(
+  '@react-native/assets-registry/path-support'
+);
+const clearNoteSource = readFileSync(
+  join(root, 'experiments/native-architecture/src/audio/clearNoteAssets.ts'),
+  'utf8'
+);
+function clearNoteAndroidAssets(source) {
+  return [...source.matchAll(/import \w+ from '\.\/clear-bubbles\/([^']+)\.wav';/g)].map(
+    ([, name]) => ({ name, type: 'wav', httpServerLocation: '/assets/src/audio/clear-bubbles' })
+  );
+}
+function assertClearNoteAndroidResources(source) {
+  const assets = clearNoteAndroidAssets(source);
+  assert.ok(assets.length > 0, 'Clear note imports must exist');
+  const destinations = assets.map((asset) =>
+    getAssetLocalPath(asset, { platform: 'android', scale: 1 })
+  );
+  assert.equal(
+    new Set(destinations).size,
+    assets.length,
+    'Clear notes need unique Android resources'
+  );
+  assets.forEach((asset, index) =>
+    assert.equal(destinations[index], join('raw', `${getAndroidResourceIdentifier(asset)}.wav`))
+  );
+}
+
 const reactNativeRequire = createRequire(runtimeRequire.resolve('react-native/package.json'));
 const { AbortController: NativeAbortController } = reactNativeRequire(
   'abort-controller/dist/abort-controller'
@@ -148,6 +177,25 @@ async function nativeNotesFixture() {
 }
 
 describe('native Clear sampler binding', () => {
+  it('keeps every Clear note in a unique Android raw resource', async () => {
+    const { CLEAR_NOTE_ASSETS } = await vi.importActual(
+      '../../experiments/native-architecture/src/audio/clearNoteAssets.ts'
+    );
+    expect(clearNoteAndroidAssets(clearNoteSource)).toHaveLength(CLEAR_NOTE_ASSETS.length);
+    expect(() => assertClearNoteAndroidResources(clearNoteSource)).not.toThrow();
+  });
+
+  it('rejects the prior negative filenames that collide with positive Android resources', () => {
+    const prior = clearNoteSource.replace(
+      /clear-bubbles\/minus(\d+)\.wav/g,
+      'clear-bubbles/-$1.wav'
+    );
+    expect(prior).not.toBe(clearNoteSource);
+    expect(() => assertClearNoteAndroidResources(prior)).toThrow(
+      'Clear notes need unique Android resources'
+    );
+  });
+
   it('prepares the full shipping pitch vocabulary before playback', async () => {
     const { CLEAR_NOTE_ASSETS } = await vi.importActual(
       '../../experiments/native-architecture/src/audio/clearNoteAssets.ts'
