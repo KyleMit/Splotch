@@ -5,6 +5,7 @@ import { act, createElement } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { BASE_SCRATCH_GAIN } from '../../../experiments/native-architecture/src/audio/drawingAudio.ts';
+import * as drawingPaint from '../../../experiments/native-architecture/src/product/afterDrawingPaint.ts';
 
 // The Volume and Button Size sliders mounted through the real Settings caller and settings owner:
 // a nudge made while the previous one is still writing, and the pencil heard while Volume moves.
@@ -29,6 +30,7 @@ const SLIDER_WIDTH_PX = 400;
 // The selection host refuses audio unless a case hands it a pencil loop to load.
 afterEach(() => {
   caller.drawingLoop = undefined;
+  vi.restoreAllMocks();
 });
 
 async function grab(label) {
@@ -101,6 +103,35 @@ function pencilLoop() {
   });
   return { current: () => loops.at(-1), loops };
 }
+
+it('prepares Clear after first paint and once per real foreground return', async () => {
+  const painted = Promise.withResolvers();
+  const afterPaint = vi.spyOn(drawingPaint, 'afterDrawingPaint').mockReturnValue(painted.promise);
+  storedSettings({ soundEnabled: true, drawingSoundEnabled: false });
+  drawingScreen({ settingsOpen: false });
+  await mount(createElement(RsdDrawingScreen));
+  const appState = (value) =>
+    act(async () => records.appStateListeners.forEach((listener) => listener(value)));
+  expect(caller.product.sound.settings).toMatchObject({
+    status: 'ready',
+    deleteSoundEnabled: true,
+  });
+  expect(afterPaint).toHaveBeenCalled();
+  expect(caller.clearSound.load).not.toHaveBeenCalled();
+  await appState('active');
+  expect(caller.clearSound.load).not.toHaveBeenCalled();
+  await act(async () => painted.resolve());
+  expect(caller.clearSound.load).toHaveBeenCalledOnce();
+  for (const loads of [2, 3]) {
+    await appState('background');
+    expect(caller.clearSound.load).toHaveBeenCalledTimes(loads - 1);
+    await appState('active');
+    expect(caller.clearSound.load).toHaveBeenCalledTimes(loads);
+    await appState('active');
+    expect(caller.clearSound.load).toHaveBeenCalledTimes(loads);
+  }
+  expect(caller.clearSound.play).not.toHaveBeenCalled();
+});
 
 const gainAt = (volume) => BASE_SCRATCH_GAIN * (volume / 50);
 

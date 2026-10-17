@@ -20,7 +20,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', ()
   loadDrawingLoop: sound.load,
 }));
 vi.mock('../../experiments/native-architecture/src/platform/clearSound.ts', () => ({
-  loadClearPageTurn: vi.fn(),
+  loadClearPageTurn: async () => ({ play() {}, dispose() {} }),
 }));
 vi.mock('react-native', () => ({
   AppState: {
