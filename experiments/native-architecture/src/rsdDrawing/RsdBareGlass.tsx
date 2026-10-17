@@ -144,6 +144,7 @@ export function RsdGlassPanes({ space, glass }: { space: GlassSpace; glass: Bare
           uri: texture ?? uri,
           box,
           image: texture ? { left: 0, top: 0, width: box.width, height: box.height } : image,
+          fallback: { uri, image },
         };
       }),
     [panes, textured]

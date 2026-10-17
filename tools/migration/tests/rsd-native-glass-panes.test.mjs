@@ -263,6 +263,34 @@ describe('the native pane composition lifetime', () => {
     }
   );
 
+  it('keeps the mean coat when a native texture fails to decode', async () => {
+    const pending = pendingTextures();
+    await changingPane();
+    const displayed = panes();
+    const fallback = displayed.map((element) => nativeProps(element));
+    await act(async () => pending.forEach(({ resolve, uri }) => resolve(uri)));
+    const replacement = pendingPanes();
+    const staleLoad = nativeProps(replacement[0]).onLoad;
+    await loadPanes(replacement.slice(1));
+    await act(async () => nativeProps(replacement[0]).onError());
+    expect(panes()).toEqual(displayed);
+    const retry = pendingPanes()[0];
+    expect(retry).not.toBe(replacement[0]);
+    expect(nativeProps(retry).source.uri).toBe(fallback[0].source.uri);
+    const { left, top, width, height } = flat(fallback[0].style);
+    expect(flat(nativeProps(retry).style)).toMatchObject({ left, top, width, height, opacity: 0 });
+    await act(async () => staleLoad());
+    expect(panes()).toEqual(displayed);
+    await loadPanes([retry]);
+    expect(panes()[0]).toBe(retry);
+    expect(imageUris()).toEqual([
+      fallback[0].source.uri,
+      ...pending.slice(1).map(({ uri }) => uri),
+    ]);
+    expect(paneLayout(panes()[0]).pane.rgb).toEqual(GLASS_PANE_INKS.light.rgb);
+    expect(pendingPanes()).toEqual([]);
+  });
+
   it('settles a failed native image without retaining retired pane geometry', async () => {
     const changePane = await changingPane();
     const displayed = panes();

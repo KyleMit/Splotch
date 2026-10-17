@@ -2,13 +2,51 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Image, StyleSheet, View, type ViewStyle } from 'react-native';
 
 type ImageBox = Pick<ViewStyle, 'left' | 'top' | 'width' | 'height'>;
-type PaneImage = { uri: string; box: ImageBox; image: ImageBox };
+type PaneSource = { uri: string; image: ImageBox };
+type PaneImage = PaneSource & { box: ImageBox; fallback: PaneSource };
 type PaneBatch = { key: number; panes: readonly PaneImage[] };
 
 const styles = StyleSheet.create({
   clip: { position: 'absolute', overflow: 'hidden' },
   image: { position: 'absolute' },
 });
+
+function PaneImageHost({
+  pane,
+  visible,
+  onSettled,
+}: {
+  pane: PaneImage;
+  visible: boolean;
+  onSettled: () => void;
+}) {
+  const [failed, setFailed] = useState(false);
+  const { uri, image } = failed ? pane.fallback : pane;
+  const settleSource = (error: boolean) => {
+    if (error && uri !== pane.fallback.uri) {
+      setFailed(true);
+    } else onSettled();
+  };
+  return (
+    <View
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.clip, pane.box]}
+    >
+      <Image
+        key={failed ? 'fallback' : 'primary'}
+        testID={visible ? 'rsd-glass-pane' : 'rsd-glass-pane-pending'}
+        source={{ uri }}
+        resizeMode="stretch"
+        fadeDuration={0}
+        onLoad={() => settleSource(false)}
+        onError={() => settleSource(true)}
+        style={[styles.image, image, { opacity: visible ? 1 : 0 }]}
+      />
+    </View>
+  );
+}
 
 function PaneImages({
   batch,
@@ -24,24 +62,8 @@ function PaneImages({
     settled.current.add(index);
     if (settled.current.size === batch.panes.length) onSettled(batch);
   };
-  return batch.panes.map(({ uri, box, image }, index) => (
-    <View
-      key={index}
-      accessible={false}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={[styles.clip, box]}
-    >
-      <Image
-        testID={visible ? 'rsd-glass-pane' : 'rsd-glass-pane-pending'}
-        source={{ uri }}
-        resizeMode="stretch"
-        fadeDuration={0}
-        onLoad={() => settle(index)}
-        onError={() => settle(index)}
-        style={[styles.image, image, { opacity: visible ? 1 : 0 }]}
-      />
-    </View>
+  return batch.panes.map((pane, index) => (
+    <PaneImageHost key={index} pane={pane} visible={visible} onSettled={() => settle(index)} />
   ));
 }
 
