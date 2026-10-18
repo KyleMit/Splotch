@@ -257,8 +257,9 @@ Both matter, for opposite reasons.
 
 WDA can join several down/up pairs in one W3C actions request into one drawn contact (issue #2921).
 `dispatchTrustedGestureStrokes` sends exactly one complete stroke per request, preserving every
-planned move, duration and between-stroke pause. Both trusted iOS capture paths record the intended
-stroke count and refuse a capture when the page's trusted pointerdown count differs. Failed captures
+planned move and duration. The client waits out each between-stroke and repeat pause because WDA
+ignores pauses after a request's last event. Both trusted iOS capture paths count completed stroke
+requests and refuse a capture when the page's trusted pointerdown count differs. Failed captures
 remain evidence; a successful HTTP reply does not establish that ink was drawn.
 
 Before trusting a new native input transport, separately prove actual drawing/history cardinality:

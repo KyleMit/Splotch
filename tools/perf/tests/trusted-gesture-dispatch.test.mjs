@@ -1,4 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { sleep } from '../../lib/proc.mjs';
+
+vi.mock('../../lib/proc.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
+  sleep: vi.fn(),
+}));
+
+beforeEach(() => {
+  vi.mocked(sleep).mockReset().mockResolvedValue(undefined);
+});
 import {
   dispatchTrustedGestureStrokes,
   trustedGestureActions,
@@ -26,9 +36,20 @@ describe('WDA stroke request boundaries', () => {
   it('preserves the complete measured gesture and pauses across repeated passes', async () => {
     const plan = trustedGestureActions(BOUNDS, 2, REPEAT_PAUSE_MS);
     const requests = [];
-    await dispatchTrustedGestureStrokes(plan, async (sources) => requests.push(sources));
+    const playback = [];
+    vi.mocked(sleep).mockImplementation(async (duration) => {
+      playback.push({ type: 'pause', duration });
+    });
+    await dispatchTrustedGestureStrokes(plan, async (sources) => {
+      requests.push(sources);
+      playback.push(...sources[0].actions);
+    });
     expect(requests).toHaveLength(STROKES * 2);
-    expect(requests.flatMap(([source]) => source.actions)).toEqual(plan);
+    expect(playback).toEqual(plan);
+    expect(requests.every(([source]) => source.actions.at(-1).type === 'pointerUp')).toBe(true);
+    expect(vi.mocked(sleep).mock.calls.map(([duration]) => duration)).toEqual(
+      plan.filter((action) => action.type === 'pause').map((action) => action.duration)
+    );
     expect(
       requests.map(([source]) => source.actions.filter((a) => a.type === 'pointerDown').length)
     ).toEqual(Array(STROKES * 2).fill(1));

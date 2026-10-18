@@ -1,3 +1,5 @@
+import { sleep } from '../../lib/proc.mjs';
+
 // One interpolated native move emits digitizer-like samples without making WDA
 // serialize hundreds of tiny action commands.
 const LONG_STROKE_DURATION_MS = 2_000;
@@ -133,10 +135,19 @@ export async function dispatchTrustedGestureStrokes(actions, perform) {
   }
   if (contact || stroke.length) throw new Error('The gesture ends without a complete stroke.');
   // WDA can join separate down/up pairs inside one request into one physical contact.
-  for (const batch of batches)
+  for (const batch of batches) {
+    const end = batch.findLastIndex((action) => action.type !== 'pause') + 1;
     await perform([
-      { type: 'pointer', id: 'finger', parameters: { pointerType: 'touch' }, actions: batch },
+      {
+        type: 'pointer',
+        id: 'finger',
+        parameters: { pointerType: 'touch' },
+        actions: batch.slice(0, end),
+      },
     ]);
+    // WDA emits no event for a trailing pause, so the client owns idle after release.
+    for (const pause of batch.slice(end)) await sleep(pause.duration);
+  }
   return batches.length;
 }
 

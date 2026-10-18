@@ -289,7 +289,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/android/capture-bundled-frames.mjs': 761,
   'tools/perf/gen-performance-matrix.mjs': 2874,
   'tools/perf/ios/capture-xcuitest-actions.mjs': 2624,
-  'tools/perf/ios/capture-xcuitest-screen.mjs': 1165,
+  'tools/perf/ios/capture-xcuitest-screen.mjs': 1163,
   'tools/perf/lib/campaign-plan.mjs': 742,
   'tools/perf/lib/person-session.mjs': 502,
   'tools/perf/lib/real-screen-stats.mjs': 787,

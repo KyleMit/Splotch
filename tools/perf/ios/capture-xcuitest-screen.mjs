@@ -35,7 +35,6 @@ import { probeConfigScript } from '../lib/probe-config.mjs';
 import {
   dispatchTrustedGestureStrokes,
   driveTrustedGesturePasses,
-  STROKES_PER_GESTURE_REPEAT,
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../lib/trusted-gesture-plan.mjs';
@@ -292,10 +291,7 @@ export function isWebContext(context) {
   return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
 }
 
-export function selectWebContext(
-  contexts,
-  { nativeApp = false, platformName = 'iOS' } = {}
-) {
+export function selectWebContext(contexts, { nativeApp = false, platformName = 'iOS' } = {}) {
   const webContexts = contexts.filter(isWebContext);
   if (!nativeApp) {
     return (
@@ -952,6 +948,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       includeBrowserChrome: !nativeApp,
     });
 
+    let dispatchedStrokes = 0;
     let eraserRefills = brush === 'eraser' ? [] : null;
     if (handInput) {
       console.log(`\nDraw ${brush} strokes on the iPad for ~${handSeconds}s.`);
@@ -965,11 +962,12 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       console.log('  window closed');
       if (spokenCues) speak('Stop. Lift your finger.');
     } else {
-      const perform = (repeats) =>
-        dispatchTrustedGestureStrokes(
+      const perform = async (repeats) => {
+        dispatchedStrokes += await dispatchTrustedGestureStrokes(
           trustedGestureActions(canvasBounds, repeats, repeatPauseMs),
           (actions) => client.request('POST', `/session/${sessionId}/actions`, { actions })
         );
+      };
       const refillBetweenPasses =
         brush === 'eraser'
           ? (() => {
@@ -1209,7 +1207,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           serviceWorkerRegistration,
         },
       },
-      dispatchedStrokes: handInput ? null : gestureRepeats * STROKES_PER_GESTURE_REPEAT,
+      dispatchedStrokes: handInput ? null : dispatchedStrokes,
       fidelity,
       drawing,
       undo,
