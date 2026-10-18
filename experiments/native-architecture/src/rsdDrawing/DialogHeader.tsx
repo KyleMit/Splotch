@@ -1,9 +1,10 @@
-import { useContext, useMemo, useState, type ReactNode, type Ref } from 'react';
-import { StyleSheet } from 'react-native';
+import { useContext, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import { Svg, Path } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { RsdIcon } from './RsdIcon';
+import { DialogTitle } from './DialogTitle';
 import { RsdPressable } from './RsdPressable';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions, motion } from './tokens.css';
@@ -141,36 +142,59 @@ export function DialogHeader({
   closeInset = MODAL_CLOSE_INSET_PX,
 }: DialogHeaderProps) {
   const scope = useContext(DialogScope);
+  const { width, height, fontScale } = useWindowDimensions();
+  const layoutKey = JSON.stringify([title, titleSize, width, height, fontScale]);
+  const currentLayoutKey = useRef(layoutKey);
+  currentLayoutKey.current = layoutKey;
+  const [wordWrapKey, setWordWrapKey] = useState<string | null>(null);
+  const titleOwnRow = wordWrapKey === layoutKey;
   const close = (
     <HeaderControl kind="close" label={closeLabel} disabled={closeDisabled} onClick={onClose} />
   );
   if (title === undefined) return <html.div style={styles.floating(closeInset)}>{close}</html.div>;
   const box = scope?.header;
+  const back = onBack ? <HeaderControl kind="back" disabled={false} onClick={onBack} /> : null;
+  const heading = (
+    <DialogTitle
+      key={layoutKey}
+      ref={titleRef}
+      id={scope?.titleId}
+      tabIndex={titleRef ? -1 : undefined}
+      onWordWrap={() => {
+        if (currentLayoutKey.current === layoutKey) setWordWrapKey(layoutKey);
+      }}
+      style={[
+        styles.title,
+        titleSize === 'xl' && styles.titleXl,
+        titleSize === 'lg' && styles.titleLg,
+        titleSize === 'md' && styles.titleMd,
+        titleOwnRow && styles.titleOwnRow,
+      ]}
+    >
+      {title}
+    </DialogTitle>
+  );
   return (
     <html.header
       style={[
         styles.header,
         box && styles.padding(box.top, box.inline, box.bottom),
+        titleOwnRow && styles.reflow,
         scope?.seeThrough && styles.hidden,
       ]}
     >
-      {onBack ? <HeaderControl kind="back" disabled={false} onClick={onBack} /> : null}
-      <html.h2
-        ref={titleRef}
-        id={scope?.titleId}
-        tabIndex={titleRef ? -1 : undefined}
-        style={[
-          controlStyles.semiboldText,
-          styles.title,
-          titleSize === 'xl' && styles.titleXl,
-          titleSize === 'lg' && styles.titleLg,
-          titleSize === 'md' && styles.titleMd,
-        ]}
-      >
-        {title}
-      </html.h2>
-      {actions}
-      {close}
+      {titleOwnRow ? (
+        <html.div style={styles.headerControls}>
+          {back}
+          {actions}
+          <html.div style={styles.trailingClose}>{close}</html.div>
+        </html.div>
+      ) : (
+        back
+      )}
+      {heading}
+      {!titleOwnRow ? actions : null}
+      {!titleOwnRow ? close : null}
     </html.header>
   );
 }
@@ -187,6 +211,15 @@ const styles = css.create({
     gap: dimensions.space2,
     flexShrink: 0,
   },
+  reflow: { flexDirection: 'column', alignItems: 'stretch' },
+  headerControls: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: dimensions.space2,
+  },
+  trailingClose: { marginLeft: 'auto' },
+  titleOwnRow: { flexGrow: 0, flexShrink: 0 },
   padding: (top: number, inline: number, bottom: number) => ({
     paddingTop: top,
     paddingBottom: bottom,
