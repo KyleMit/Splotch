@@ -78,6 +78,7 @@ it('keeps paper and product mounted through an internal page and closes Settings
   );
   expect(host.querySelector('[data-testid="rsd-real-history-paper"]')).toBe(paper);
   expect(caller.product.owner).toBe(owner);
+  expect(caller.product.ai.owner).toBe(ai);
   expect(caller.paper).toBe(drawing);
   expect(records.props.findLast((props) => props.testID === 'drawing-page').pointerEvents).toBe(
     'auto'

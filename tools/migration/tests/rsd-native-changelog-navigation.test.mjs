@@ -85,8 +85,9 @@ it('reveals an older release from compact contents and jumps only after collapse
   expect(jump).toHaveBeenCalledWith(`#${releases[5].id}`);
 });
 
-it('pins wide contents beside the releases and follows the reading band', async () => {
+it('pins wide contents below the safe top and follows the reading band', async () => {
   records.dimensions = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
+  records.insets = { top: 24, right: 0, bottom: 20, left: 0 };
   await mount(render());
   expect(host.querySelector('[data-testid="page-contents-disclosure"]')).toBeNull();
   const nav = host.querySelector('[aria-label="Changelog contents"]');
@@ -101,7 +102,7 @@ it('pins wide contents beside the releases and follows the reading band', async 
       .forEach(({ id }, index) => layout(`changelog-position-${id}`, index * 1000, 1000));
   });
   await act(async () => root.render(render(800)));
-  expect(props('changelog-contents-rail').style.transform).toEqual([{ translateY: 824 }]);
+  expect(props('changelog-contents-rail').style.transform).toEqual([{ translateY: 848 }]);
   expect(nav.textContent).toContain(releases[1].dateLabel);
   expect(host.textContent).toContain(`That's every release since ${releases.at(-1).dateLabel}.`);
 });
@@ -119,6 +120,7 @@ it('pins release tape, bullets and narrow-header geometry to the shipping page',
 });
 
 it('pins the release contents below the safe top and fits its panel inside both safe edges', async () => {
+  records.journalHostProps = true;
   records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
   records.insets = { top: 54, right: 0, bottom: 34, left: 0 };
   await mount(render());
@@ -126,7 +128,24 @@ it('pins the release contents below the safe top and fits its panel inside both 
     layout('changelog-history', 300, 6000);
     layout('changelog-body', 86, 5800);
     layout('page-contents-disclosure', 0, 86);
+    releases
+      .slice(0, RELEASES_SHOWN_OPEN)
+      .forEach(({ id }, index) => layout(`changelog-position-${id}`, index * 1000, 1000));
   });
+  await act(async () => root.render(render(120)));
+  expect(
+    host.querySelector(`[aria-label="Changelog contents, Version ${releases[0].version}"]`)
+  ).not.toBeNull();
+  await act(async () => root.render(render(1110)));
+  expect(
+    host.querySelector(`[aria-label="Changelog contents, Version ${releases[1].version}"]`)
+  ).not.toBeNull();
+  const end = [...host.querySelectorAll('[data-committed-props]')].find(
+    (node) =>
+      node.textContent.startsWith("That's every release since ") &&
+      JSON.parse(node.getAttribute('data-committed-props')).style?.minHeight !== undefined
+  );
+  expect(JSON.parse(end.getAttribute('data-committed-props')).style.minHeight).toBeCloseTo(369.2);
   await act(async () => root.render(render(800)));
   expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 554 }]);
   await act(async () => host.querySelector('[aria-label^="Changelog contents,"]').click());

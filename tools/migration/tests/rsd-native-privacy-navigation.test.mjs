@@ -68,8 +68,9 @@ it('reserves the shipping final-section scrollport and recalculates it after rot
   expect(props('privacy-section-contact').style?.minHeight).toBe(720);
 });
 
-it('pins the desktop contents beside the reading column and tracks the section crossing the reading line', async () => {
+it('pins the desktop contents below the safe top and tracks the section crossing the reading line', async () => {
   records.dimensions = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
+  records.insets = { top: 24, right: 0, bottom: 20, left: 0 };
   const jump = vi.fn();
   await mount(content(0, jump));
   expect(host.querySelector('[aria-expanded]')).toBeNull();
@@ -82,7 +83,7 @@ it('pins the desktop contents beside the reading column and tracks the section c
     SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
   });
   await act(async () => root.render(content(600, jump)));
-  expect(props('privacy-contents-rail').style.transform).toEqual([{ translateY: 224 }]);
+  expect(props('privacy-contents-rail').style.transform).toEqual([{ translateY: 248 }]);
   const activeRow = records.props.findLast(
     (entry) => entry.testID === 'sidebar-row' && entry.accessibilityLabel === SECTIONS[1].label
   );
@@ -308,6 +309,14 @@ it('pins compact contents below the safe top and fits its panel and final sectio
     layout('page-contents-disclosure', 300, 86);
     SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
   });
+  await act(async () => root.render(content(230)));
+  expect(
+    host.querySelector('[aria-label="Privacy policy contents, What stays on your device"]')
+  ).not.toBeNull();
+  await act(async () => root.render(content(530)));
+  expect(
+    host.querySelector('[aria-label="Privacy policy contents, Making an AI picture"]')
+  ).not.toBeNull();
   await act(async () => root.render(content(700)));
   expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 454 }]);
   expect(props('privacy-section-contact').style.minHeight).toBe(452);
