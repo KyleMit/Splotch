@@ -1,0 +1,18 @@
+targetClass,availability,OS,qualification
+iphone-notch,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+ipad-mini,"owned fresh simulators on26.5 and27; unchanged store launch on26.5, diagnostic RN before/after on27; paired final-head acceptance pending",must record live,must verify artifact/source/certificate before use
+ipad-13,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+physical-ipad,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+physical-galaxy,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+android-api34,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+rn-web-chromium,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+rn-web-firefox,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+rn-web-edge,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+rn-web-safari,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+android-api24,official ARM64 image and API24 platform installed; emulator creation and source/signature/Display0 qualification pending,must record live,must verify artifact/source/certificate before use
+android-api26,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+android-api29,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+ios16.4,blocked: official Xcode download reports unavailable; no extra physical device,must record live,must verify artifact/source/certificate before use
+safari16.4,blocked: no supplied environment; Playwright WebKit is not Safari16.4,must record live,must verify artifact/source/certificate before use
+ios-floor16.4,blocked: official download redirects to Apple authentication; active Xcode catalog excludes16.4; user may download compatible Xcode/runtime later,16.4 required,qualification pending
+safari-floor16.4,blocked: no compatible real Safari16.4 environment supplied,Safari16.4 required,Playwright WebKit does not substitute

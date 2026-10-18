@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "state": "draft: not capture-ready",
+  "trackingIssue": 2978,
+  "epic": 2690,
+  "candidateSource": "7f7fdb9f62f500193d3c206abc40884cbd19f6af",
+  "originalRequirements": {
+    "acceptance": 59,
+    "behavior": 355,
+    "logic": 275,
+    "shipping-e2e": 787,
+    "difference": 65
+  },
+  "subcells": 4798,
+  "currentEpicChildren": 91,
+  "historicalClosedChildren": 90,
+  "statuses": {
+    "pending": 1537,
+    "explicitly accepted difference": 4
+  },
+  "finalHeadDeviceEvidence": 0,
+  "sourceOwnership": "conservative prefix matches; a later change invalidates all dependent verified cells; pending cells remain pending",
+  "privacy": "No device IDs, private media, media paths, media hashes, credentials or operator records"
+}
