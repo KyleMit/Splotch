@@ -37,6 +37,7 @@ import {
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
+  dispatchTrustedGestureStrokes,
   driveTrustedGesturePasses,
   nativeCanvasBounds,
   trustedGestureActions,
@@ -546,17 +547,12 @@ export function iosDriver({
         offset: { x: 0, y: 0 },
       };
     },
+    dispatchedStrokes: 0,
     async dispatch({ bounds }, repeats) {
-      await request('POST', `/session/${sessionId}/actions`, {
-        actions: [
-          {
-            type: 'pointer',
-            id: 'finger',
-            parameters: { pointerType: 'touch' },
-            actions: trustedGestureActions(bounds, repeats, 0),
-          },
-        ],
-      });
+      this.dispatchedStrokes += await dispatchTrustedGestureStrokes(
+        trustedGestureActions(bounds, repeats, 0),
+        (actions) => request('POST', `/session/${sessionId}/actions`, { actions })
+      );
     },
   };
 }
@@ -651,8 +647,7 @@ export function drivenCaptureArtifact({
     // request-versus-observation split as the theme.
     requestedReduceMotion: reduceMotion,
     observedReducedMotion: ready?.reducedMotion ?? null,
-    // Android only: one per `adb shell input swipe`, each a separate
-    // down/up. Null where the transport does not count them.
+    // One per Android swipe or WDA stroke request. Null for an uncounted transport.
     dispatchedStrokes,
     // Android only: each swipe's planned start beside each trusted pointerdown
     // the page recorded, both in page CSS px and in dispatch order. Null where

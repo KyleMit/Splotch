@@ -296,7 +296,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/prepare-capture.mjs': 858,
   'tools/perf/probes/real-screen-probe.js': 684,
   'tools/perf/run-campaign.mjs': 631,
-  'tools/perf/split-capture/capture-device-frames.mjs': 815,
+  'tools/perf/split-capture/capture-device-frames.mjs': 811,
   'tools/perf/split-capture/lib/page-bootstrap.mjs': 542,
   'tools/perf/tests/bootstrap-theme.test.mjs': 834,
   'tools/perf/tests/campaign-artifact-acceptance.test.mjs': 685,

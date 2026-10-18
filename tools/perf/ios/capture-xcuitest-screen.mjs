@@ -23,6 +23,7 @@ import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { PERF_RUN_PARAM } from '../lib/capture-date.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity, runtimeUaProblem } from '../lib/input-fidelity.mjs';
+import { strokeDeliveryProblem } from '../lib/stroke-delivery.mjs';
 import { BRUSH_BUTTON_BY_MODE } from '../lib/brush-buttons.mjs';
 import {
   describeRefreshRegime,
@@ -32,7 +33,9 @@ import {
 } from '../lib/refresh-regime.mjs';
 import { probeConfigScript } from '../lib/probe-config.mjs';
 import {
+  dispatchTrustedGestureStrokes,
   driveTrustedGesturePasses,
+  STROKES_PER_GESTURE_REPEAT,
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../lib/trusted-gesture-plan.mjs';
@@ -963,16 +966,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       if (spokenCues) speak('Stop. Lift your finger.');
     } else {
       const perform = (repeats) =>
-        client.request('POST', `/session/${sessionId}/actions`, {
-          actions: [
-            {
-              type: 'pointer',
-              id: 'finger',
-              parameters: { pointerType: 'touch' },
-              actions: trustedGestureActions(canvasBounds, repeats, repeatPauseMs),
-            },
-          ],
-        });
+        dispatchTrustedGestureStrokes(
+          trustedGestureActions(canvasBounds, repeats, repeatPauseMs),
+          (actions) => client.request('POST', `/session/${sessionId}/actions`, { actions })
+        );
       const refillBetweenPasses =
         brush === 'eraser'
           ? (() => {
@@ -1212,6 +1209,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           serviceWorkerRegistration,
         },
       },
+      dispatchedStrokes: handInput ? null : gestureRepeats * STROKES_PER_GESTURE_REPEAT,
       fidelity,
       drawing,
       undo,
@@ -1260,6 +1258,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} · ${JSON.stringify(fidelity.checks)}`
     );
     console.log(`Wrote ${output}`);
+    const deliveryProblem = strokeDeliveryProblem(artifact);
+    if (deliveryProblem) throw new Error(`Stroke delivery failed: ${deliveryProblem}. Do not score it.`);
     if (!fidelity.passed && !has('report-only')) {
       throw new Error(
         'The capture failed the trusted-input fidelity gate; do not use its lag score.'

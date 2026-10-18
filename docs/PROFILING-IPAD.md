@@ -253,6 +253,22 @@ Both matter, for opposite reasons.
 > delay — a constructed event's `timeStamp` is set when the probe builds it, so `at - stamp` is ~0
 > by construction. Read those columns from a hand-drawn run only.
 
+### Stroke cardinality on WDA — ⟨Mac⟩
+
+WDA can join several down/up pairs in one W3C actions request into one drawn contact (issue #2921).
+`dispatchTrustedGestureStrokes` sends exactly one complete stroke per request, preserving every
+planned move, duration and between-stroke pause. Both trusted iOS capture paths record the intended
+stroke count and refuse a capture when the page's trusted pointerdown count differs. Failed captures
+remain evidence; a successful HTTP reply does not establish that ink was drawn.
+
+Before trusting a new native input transport, separately prove actual drawing/history cardinality:
+start blank, draw separated harmless strokes, and verify that each Undo removes exactly one stroke
+until the expected final Undo first returns to blank. Preserve the joined-request negative control.
+RN Skia has no WebView pointer-event probe, so the page-event count cannot qualify its ink. Physical
+WDA cardinality evidence must name its observed OS/build and cannot be inferred from a simulator or
+unit test. Changing the dispatch boundary invalidates historical timing comparisons made through the
+old instrument; request gaps are part of the recorded input cadence.
+
 ### Trusted automation — `perf:ios:xcuitest:screen`
 
 Start Appium in one terminal, keep the USB-connected iPad unlocked, and run:

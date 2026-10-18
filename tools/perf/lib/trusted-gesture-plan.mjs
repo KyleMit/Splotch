@@ -110,6 +110,36 @@ export function trustedGestureActions(bounds, repeats = 1, repeatPauseMs = 0) {
   return actions;
 }
 
+export async function dispatchTrustedGestureStrokes(actions, perform) {
+  const batches = [];
+  let stroke = [];
+  let contact = false;
+  for (const action of actions) {
+    if (action.type === 'pause' && !stroke.length && batches.length) {
+      batches.at(-1).push(action);
+      continue;
+    }
+    stroke.push(action);
+    if (action.type === 'pointerDown') {
+      if (contact) throw new Error('The gesture starts a second contact before release.');
+      contact = true;
+    }
+    if (action.type === 'pointerUp') {
+      if (!contact) throw new Error('The gesture releases a contact that was not started.');
+      contact = false;
+      batches.push(stroke);
+      stroke = [];
+    }
+  }
+  if (contact || stroke.length) throw new Error('The gesture ends without a complete stroke.');
+  // WDA can join separate down/up pairs inside one request into one physical contact.
+  for (const batch of batches)
+    await perform([
+      { type: 'pointer', id: 'finger', parameters: { pointerType: 'touch' }, actions: batch },
+    ]);
+  return batches.length;
+}
+
 export async function driveTrustedGesturePasses({ repeats, perform, refillBetweenPasses = null }) {
   if (!refillBetweenPasses) {
     await perform(repeats);
