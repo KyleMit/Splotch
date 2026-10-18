@@ -19,6 +19,7 @@ import { usePrivacySectionLinks } from './usePrivacySectionLinks';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
+import { DRAWING_SCALE } from '../drawing/theme';
 import { PAGE_CONTENTS, RsdPageContents } from './RsdPageContents';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { styles as controlStyles } from './controls';
@@ -205,6 +206,47 @@ function reportPrivacySectionPositions(
   for (const [id, offset] of Object.entries(positions)) report(id, y + offset);
 }
 
+function PrivacyReadingColumn({
+  policy,
+  onLink,
+  onSectionLayout,
+  wide,
+  links,
+}: Omit<PrivacyContentProps, 'scrollY'> & {
+  wide: boolean;
+  links: ReturnType<typeof usePrivacySectionLinks>;
+}) {
+  const { height } = useWindowDimensions();
+  const lastSectionMinHeight = Math.max(
+    0,
+    height - SPY_LINE_PX - DRAWING_SCALE.space4 - PRIVACY_LAYOUT.footerReserve
+  );
+  return (
+    <View testID="privacy-reading-column" style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
+      {policy.sections.map((section, index) => (
+        <View
+          key={section.id}
+          testID={`privacy-section-${section.id}`}
+          style={
+            index === policy.sections.length - 1 ? { minHeight: lastSectionMinHeight } : undefined
+          }
+          onLayout={({ nativeEvent }) => onSectionLayout(section.id, nativeEvent.layout.y)}
+        >
+          <html.section style={[styles.section, index === 0 && styles.first]}>
+            <RsdPrivacyHeading
+              section={SECTIONS[index]}
+              copied={links.copied === section.id}
+              wide={wide}
+              onCopy={() => void links.copy(SECTIONS[index].id)}
+            />
+            <PolicyBlocks blocks={section.blocks} onLink={onLink} />
+          </html.section>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyContentProps) {
   const wide = useWindowDimensions().width > PAGE_FRAMED_MAX_WIDTH_PX;
   const links = usePrivacySectionLinks(onLink);
@@ -304,28 +346,16 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
             </html.nav>
           </View>
         ) : null}
-        <View testID="privacy-reading-column" style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
-          {policy.sections.map((section, index) => (
-            <View
-              key={section.id}
-              testID={`privacy-section-${section.id}`}
-              onLayout={({ nativeEvent }) => {
-                positions.current[section.id] = nativeEvent.layout.y;
-                onSectionLayout(section.id, top.current + nativeEvent.layout.y);
-              }}
-            >
-              <html.section style={[styles.section, index === 0 && styles.first]}>
-                <RsdPrivacyHeading
-                  section={SECTIONS[index]}
-                  copied={links.copied === section.id}
-                  wide={wide}
-                  onCopy={() => void links.copy(SECTIONS[index].id)}
-                />
-                <PolicyBlocks blocks={section.blocks} onLink={onLink} />
-              </html.section>
-            </View>
-          ))}
-        </View>
+        <PrivacyReadingColumn
+          policy={policy}
+          onLink={onLink}
+          wide={wide}
+          links={links}
+          onSectionLayout={(id, y) => {
+            positions.current[id] = y;
+            onSectionLayout(id, top.current + y);
+          }}
+        />
       </View>
     </>
   );
