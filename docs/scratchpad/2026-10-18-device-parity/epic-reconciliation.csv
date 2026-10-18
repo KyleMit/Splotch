@@ -90,4 +90,4 @@ issue,state,bucket,evidence,qualification,parentIssue
 2927,closed,done,https://github.com/KyleMit/Splotch/issues/2927#issuecomment-6227507066,Historical implementation/disposition only; new device requirements remain separate.,2690
 2931,closed,done,https://github.com/KyleMit/Splotch/issues/2931#issuecomment-6228576281,Historical implementation/disposition only; new device requirements remain separate.,2690
 2978,open,in flight,https://github.com/KyleMit/Splotch/issues/2978,Current full-parity campaign; historical90 closures are not device parity evidence.,2690
-2985,open,actionable,https://github.com/KyleMit/Splotch/issues/2985,"API child of campaign2978, nested under epic2690; maximum-font full-width word/choice readability and live font restoration remain unresolved, not accepted.",2978
+2985,open,actionable,https://github.com/KyleMit/Splotch/issues/2985,"API child of campaign2978, nested under epic2690; maximum-font full-width titles, Settings choices, active-page/book-caption clipping and live font restoration remain unresolved, not accepted.",2978

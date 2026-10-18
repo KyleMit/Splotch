@@ -32,11 +32,12 @@ after unrelated-looking changes inside those prefixes. Narrowing a dependency re
 inspection and a recorded rationale. `targets.csv` records target availability separately from a
 passed cell. `epic-reconciliation.csv` reconciles the 90 direct closed children against the API;
 comment threads were retrieved, but semantic reconciliation remains in progress. The new tracking
-issue is an API-linked open child; the current total is 91 (90 historical closed children plus
-#2978).
+issue is an API-linked open child; there are 91 direct children (90 historical closed children plus
+#2978). The tracking issue has the open readability child #2985, giving 92 recursive children.
+Neither count establishes device acceptance.
 
 The historical inventory source is 64a9ca53a1361afde8d4104b661bbec93892b2c0. This draft candidate is
-7f7fdb9f62f500193d3c206abc40884cbd19f6af. Later candidate heads require dependency invalidation. The
+46fe2dfc9f00ba0c4d4b63dae61ca7f6f04ee5db. Later candidate heads require dependency invalidation. The
 acceptance source is the
 [59-row table](https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6207540788). Its edited
 limitation dispositions are not carried forward as verified states.
