@@ -169,7 +169,7 @@ it('force-opens the drawer for Button Size without the user-toggle cascade', asy
   const timing = vi.spyOn(Animated, 'timing');
   const slider = () =>
     records.props.findLast(
-      (props) => props.role === 'slider' && props['aria-label'] === 'Button Size'
+      (props) => props.accessibilityRole === 'adjustable' && props['aria-label'] === 'Button Size'
     );
   await act(async () => slider().onResponderGrant({ nativeEvent: { identifier: 1, pageX: 100 } }));
   expect(drawerTiles().length).toBeGreaterThan(0);

@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 // Reanimated stand-in records every shared-value write so a thumb's travel can be read.
 export const host = {
   windowWidth: 402,
+  platform: 'ios',
   reduceMotion: false,
   rtl: false,
   layoutOf: () => ({ x: 0, y: 0, width: 0, height: 0 }),
@@ -14,6 +15,8 @@ export const host = {
 
 vi.mock('react-native', async () => {
   const React = await import('react');
+  const { default: propsToAriaRole } =
+    await import('react-native-web/dist/cjs/modules/AccessibilityUtil/propsToAriaRole.js');
   const { animatedPort, easingPort } = await import('./rsd-native-animated-host.mjs');
   const flat = (style) => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
   const hostView = (tag) =>
@@ -33,7 +36,7 @@ vi.mock('react-native', async () => {
         tag,
         {
           ref: node,
-          role: props.role,
+          role: propsToAriaRole(props),
           id: props.nativeID,
           'aria-label': props['aria-label'] ?? props.accessibilityLabel,
           'aria-labelledby': props['aria-labelledby'] ?? props.accessibilityLabelledBy?.join(' '),
@@ -64,9 +67,11 @@ vi.mock('react-native', async () => {
   const View = hostView('div');
   return {
     Platform: {
-      OS: 'ios',
+      get OS() {
+        return host.platform;
+      },
       constants: { reactNativeVersion: { major: 0, minor: 86, patch: 3 } },
-      select: (values) => values.ios ?? values.native ?? values.default,
+      select: (values) => values[host.platform] ?? values.native ?? values.default,
     },
     I18nManager: {
       get isRTL() {
@@ -136,6 +141,7 @@ vi.mock('react-native-reanimated', async () => {
 
 export function resetHost() {
   host.windowWidth = 402;
+  host.platform = 'ios';
   host.reduceMotion = false;
   host.rtl = false;
   host.layoutOf = () => ({ x: 0, y: 0, width: 0, height: 0 });
