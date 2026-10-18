@@ -12,7 +12,7 @@ import * as drawingPaint from '../../../experiments/native-architecture/src/prod
 
 function sliderProps(label) {
   const props = records.props.findLast(
-    (entry) => entry.role === 'slider' && entry['aria-label'] === label
+    (entry) => entry.accessibilityRole === 'adjustable' && entry['aria-label'] === label
   );
   expect(props, label).toBeDefined();
   return props;

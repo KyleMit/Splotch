@@ -269,7 +269,7 @@ function rootColoringSettings() {
   return caller.settingsStorage;
 }
 function volumeSlider() {
-  const props = records.props.findLast((entry) => entry.role === 'slider');
+  const props = records.props.findLast((entry) => entry.accessibilityRole === 'adjustable');
   expect(props?.['aria-label']).toBe('Volume');
   return props;
 }

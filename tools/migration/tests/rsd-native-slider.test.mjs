@@ -122,7 +122,9 @@ describe('semantics', () => {
     expect(container.querySelector('#size-help').textContent).toBe(
       'Bigger buttons are easier to tap'
     );
-    expect(props().accessibilityActions).toEqual([{ name: 'increment' }, { name: 'decrement' }]);
+    expect(props().role).toBeUndefined();
+    expect(props().accessibilityRole).toBe('adjustable');
+    expect(props().accessibilityActions).toBeUndefined();
   });
 
   it('adjusts by one step for each assistive increment and decrement', async () => {
@@ -136,6 +138,34 @@ describe('semantics', () => {
     expect(inputs).toEqual([60 + KEY_STEP, 60 + 2 * KEY_STEP, 60 + KEY_STEP]);
     expect(slider().getAttribute('aria-valuetext')).toBe(`${60 + KEY_STEP}%`);
   });
+
+  it.each(['ios', 'android', 'web'])(
+    'keeps adjustable semantics and bounded actions on %s',
+    async (platform) => {
+      host.platform = platform;
+      await mount({ initial: MAX });
+      expect(slider().getAttribute('role')).toBe('slider');
+      expect(props().accessibilityRole).toBe('adjustable');
+      expect(props().role).toBeUndefined();
+      expect(props().accessibilityActions).toEqual(
+        platform === 'android' ? [{ name: 'increment' }, { name: 'decrement' }] : undefined
+      );
+      const action = (actionName) =>
+        act(async () => props().onAccessibilityAction({ nativeEvent: { actionName } }));
+      await action('increment');
+      expect(inputs).toEqual([]);
+      await action('decrement');
+      expect(inputs).toEqual([MAX - KEY_STEP]);
+      expect(slider().getAttribute('aria-valuetext')).toBe(`${MAX - KEY_STEP}%`);
+      await mount({ initial: MIN, key: 'lower-end' });
+      inputs.length = 0;
+      await action('decrement');
+      expect(inputs).toEqual([]);
+      await action('increment');
+      expect(inputs).toEqual([MIN + KEY_STEP]);
+      expect(slider().getAttribute('aria-valuetext')).toBe(`${MIN + KEY_STEP}%`);
+    }
+  );
 
   it('indents an icon-less row under its toggle and leads an icon row with the icon', async () => {
     await mount({ initial: 60 });
