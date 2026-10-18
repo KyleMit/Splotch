@@ -299,8 +299,6 @@ afterEach(async () => {
   host.remove();
   vi.useRealTimers();
   vi.unstubAllGlobals();
-  vi.doUnmock('../../experiments/native-architecture/src/lazyExport.ts');
-  vi.doUnmock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts');
 });
 
 export {

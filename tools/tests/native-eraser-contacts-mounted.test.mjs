@@ -21,6 +21,7 @@ import { measurePaper as measureWebPaper } from '../../experiments/native-archit
 import { offlineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/runtime.ts';
 import { PageArtMotion } from '../../experiments/native-architecture/src/drawing/PageArtMotion.tsx';
 import { prepareColoringPage } from '../../experiments/native-architecture/src/drawing/pageArtSelection.ts';
+import { createLazyExport } from '../../experiments/native-architecture/src/lazyExport.ts';
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
 
 describe('mounted joint cohort, canonical history and capture ownership', () => {
@@ -430,26 +431,14 @@ describe('the coloring page action after picker retirement', () => {
   );
 });
 
-async function webPagePreparation() {
-  vi.resetModules();
+function webPagePreparation() {
   const requests = [];
-  vi.doMock('../../experiments/native-architecture/src/drawing/pageArtChunk.web.ts', () => ({
-    PageArtMotion,
-    prepareColoringPage,
-  }));
-  vi.doMock('../../experiments/native-architecture/src/lazyExport.ts', async (original) => {
-    const actual = await original();
-    return {
-      ...actual,
-      createLazyExport: (load) =>
-        actual.createLazyExport(() =>
-          new Promise((resolve, reject) => requests.push({ resolve, reject })).then(load)
-        ),
-    };
-  });
-  sdk.pageArt = (
-    await import('../../experiments/native-architecture/src/drawing/pageArtResource.web.ts')
-  ).pageArt();
+  sdk.pageArt = createLazyExport(() =>
+    new Promise((resolve, reject) => requests.push({ resolve, reject })).then(() => ({
+      PageArtMotion,
+      prepareColoringPage,
+    }))
+  );
   return requests;
 }
 
@@ -459,7 +448,7 @@ describe('web page preparation through the production command owner', () => {
       ...legacyDrawing(),
       strokes: [{ brush: 'magic', rainbow: 0, width: 30, points: [{ x: 40, y: 60 }] }],
     });
-    const requests = await webPagePreparation();
+    const requests = webPagePreparation();
     await act(async () => owner.setPagePickerOpen(true));
     const before = owner.history;
     const paper = owner.surface.current;
