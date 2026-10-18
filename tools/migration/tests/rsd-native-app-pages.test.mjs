@@ -37,7 +37,7 @@ afterEach(async () => {
   await act(async () => openAppPage('drawing'));
 });
 
-it('keeps the mounted paper, product and Settings section beneath an internal page', async () => {
+it('keeps paper and product mounted through an internal page and closes Settings on explicit drawing return', async () => {
   useCaller();
   caller.realScreen = true;
   await mount(createElement(ProbeApp));
@@ -49,7 +49,7 @@ it('keeps the mounted paper, product and Settings section beneath an internal pa
   await expandControls();
   await click('Settings');
   await openSettingsSection('About');
-  const about = host.querySelector(`[role="img"][aria-label="${ABOUT_COPY.mascot}"]`);
+  expect(host.querySelector(`[role="img"][aria-label="${ABOUT_COPY.mascot}"]`)).not.toBeNull();
   const modalCard = host.querySelector('[data-testid="modal-card"]');
   const privacy = [...host.querySelectorAll('[role="link"]')].find((node) =>
     node.textContent.startsWith(ABOUT_COPY.privacy)
@@ -73,11 +73,16 @@ it('keeps the mounted paper, product and Settings section beneath an internal pa
   );
   expect(back).toBeDefined();
   await act(async () => back.click());
-  expect(host.querySelector(`[role="img"][aria-label="${ABOUT_COPY.mascot}"]`)).toBe(about);
-  expect(host.querySelector('[data-testid="modal-card"]')).toBe(modalCard);
+  await settle(() =>
+    expect(host.querySelector(`[role="img"][aria-label="${ABOUT_COPY.mascot}"]`)).toBeNull()
+  );
+  expect(host.querySelector('[data-testid="rsd-real-history-paper"]')).toBe(paper);
   expect(caller.product.owner).toBe(owner);
+  expect(caller.product.ai.owner).toBe(ai);
   expect(caller.paper).toBe(drawing);
-  expect(stage().accessibilityElementsHidden).toBe(false);
+  expect(records.props.findLast((props) => props.testID === 'drawing-page').pointerEvents).toBe(
+    'auto'
+  );
 });
 
 it(
@@ -378,14 +383,14 @@ it.each([0, 47])(
     ).style;
     await act(async () => latest.click());
     expect(scroll.scrollTo).toHaveBeenLastCalledWith({
-      y: 188 + pageStyle.paddingTop + 600 - PRIVACY_LAYOUT.compactPark,
+      y: 188 + pageStyle.paddingTop + 600 - inset - PRIVACY_LAYOUT.compactPark,
       animated: false,
     });
     await act(async () => toggle.click());
     await act(async () => layout('information-page-hero', 50, 58));
     await act(async () => latest.click());
     expect(scroll.scrollTo).toHaveBeenLastCalledWith({
-      y: 108 + pageStyle.paddingTop + 600 - PRIVACY_LAYOUT.compactPark,
+      y: 108 + pageStyle.paddingTop + 600 - inset - PRIVACY_LAYOUT.compactPark,
       animated: false,
     });
   }

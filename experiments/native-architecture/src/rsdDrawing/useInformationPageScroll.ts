@@ -6,6 +6,7 @@ import { informationFragmentAtLaunch } from '../platform/informationFragment';
 import { privacySectionAtLaunch } from '../platform/privacySectionLink';
 import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
+import { useInformationViewport } from './useInformationViewport';
 
 export function useInformationPageScroll(page: Exclude<AppPage, 'drawing'>) {
   const scroll = useRef<ScrollView>(null);
@@ -14,8 +15,10 @@ export function useInformationPageScroll(page: Exclude<AppPage, 'drawing'>) {
   const pending = useRef<string | null>(null);
   const [offset, setOffset] = useState(0);
   const width = useWindowDimensions().width;
+  const { top } = useInformationViewport();
   const park =
-    width > PAGE_FRAMED_MAX_WIDTH_PX ? PRIVACY_LAYOUT.stickyTop : PRIVACY_LAYOUT.compactPark;
+    top +
+    (width > PAGE_FRAMED_MAX_WIDTH_PX ? PRIVACY_LAYOUT.stickyTop : PRIVACY_LAYOUT.compactPark);
   const jump = useCallback(
     (id: string) => {
       scroll.current?.scrollTo({
