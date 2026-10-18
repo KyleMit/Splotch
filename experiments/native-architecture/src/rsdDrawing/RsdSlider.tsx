@@ -52,7 +52,7 @@ export const SLIDER_METRICS = {
   SETTING_ICON_PX,
 } as const;
 
-// iOS emits standard adjustable actions without adding custom rotor entries.
+// Android requires declared adjustment actions; iOS uses the Adjustable trait without custom rotor entries.
 const ADJUST_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 const ADJUST_KEYS: Readonly<Record<string, string>> = {
   increment: 'ArrowUp',
