@@ -53,6 +53,7 @@ it('gives a split native word its own row without reducing text scaling or losin
   const headingRef = ref.current;
   await lines('Setting', 's');
   expect(direction()).toBe('column');
+  expect(native(title()).style).toMatchObject({ flexGrow: 0, flexShrink: 0 });
   expect(title().textContent).toBe('Settings');
   expect(ref.current).not.toBeNull();
   expect(ref.current.textContent).toBe('Settings');
@@ -91,7 +92,12 @@ it('keeps Back and additional actions available before the reflowed heading', as
   expect(direction()).toBe('column');
   const controls = title().previousElementSibling;
   expect(controls.textContent).toContain('Action');
-  expect(controls.querySelector('[aria-label="Close"]')).not.toBeNull();
+  const close = controls.querySelector('[aria-label="Close"]');
+  expect(close).not.toBeNull();
+  const trailing = close.parentElement;
+  expect(native(trailing).style).toMatchObject({ marginLeft: 'auto', flexDirection: 'row' });
+  expect(trailing.textContent).toContain('Action');
+  expect(trailing.querySelector('[aria-label="Back"]')).toBeNull();
   await act(async () => controls.querySelector('[aria-label="Back"]').click());
   await act(async () =>
     [...controls.querySelectorAll('button')].find((node) => node.textContent === 'Action').click()
@@ -113,25 +119,33 @@ it('reconsiders a word after the viewport, title, title size or OS font changes 
   const stale = native(title()).props.onTextLayout;
   await lines('Setting', 's');
   expect(direction()).toBe('column');
+  const narrow = title();
   host.windowWidth = 874;
   await render();
+  expect(title()).not.toBe(narrow);
   expect(direction()).toBe('row');
   await lines('Settings');
   expect(direction()).toBe('row');
   await lines('Setting', 's');
   expect(direction()).toBe('column');
+  const large = title();
   fontScale = 1;
   await render();
+  expect(title()).not.toBe(large);
   expect(direction()).toBe('row');
   await lines('Setting', 's');
   expect(direction()).toBe('column');
+  const extraLarge = title();
   await render({ titleSize: 'lg' });
+  expect(title()).not.toBe(extraLarge);
   expect(direction()).toBe('row');
   await lines('Setting', 's');
   expect(direction()).toBe('column');
+  const beforeHeight = title();
   height = 390;
   await render({ titleSize: 'lg' });
-  expect(direction()).toBe('row');
+  expect(title()).toBe(beforeHeight);
+  expect(direction()).toBe('column');
   await render({ title: 'About', titleSize: 'lg' });
   expect(direction()).toBe('row');
   await lines('Abo', 'ut');
@@ -139,4 +153,13 @@ it('reconsiders a word after the viewport, title, title size or OS font changes 
   await act(async () => stale({ nativeEvent: { lines: [{ text: 'Setting' }, { text: 's' }] } }));
   expect(direction()).toBe('column');
   expect(title().textContent).toBe('About');
+});
+
+it.each([
+  ['Go Go', ['Go G', 'o']],
+  ['Draw Drawing', ['Dr', 'aw Drawing']],
+])('detects each occurrence of a split word in %s', async (text, wrapped) => {
+  await render({ title: text });
+  await lines(...wrapped);
+  expect(direction()).toBe('column');
 });

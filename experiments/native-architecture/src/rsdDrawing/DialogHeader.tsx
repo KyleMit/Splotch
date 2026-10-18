@@ -142,8 +142,8 @@ export function DialogHeader({
   closeInset = MODAL_CLOSE_INSET_PX,
 }: DialogHeaderProps) {
   const scope = useContext(DialogScope);
-  const { width, height, fontScale } = useWindowDimensions();
-  const layoutKey = JSON.stringify([title, titleSize, width, height, fontScale]);
+  const { width, fontScale } = useWindowDimensions();
+  const layoutKey = JSON.stringify([title, titleSize, width, fontScale]);
   const currentLayoutKey = useRef(layoutKey);
   currentLayoutKey.current = layoutKey;
   const [wordWrapKey, setWordWrapKey] = useState<string | null>(null);
@@ -156,7 +156,6 @@ export function DialogHeader({
   const back = onBack ? <HeaderControl kind="back" disabled={false} onClick={onBack} /> : null;
   const heading = (
     <DialogTitle
-      key={layoutKey}
       ref={titleRef}
       id={scope?.titleId}
       tabIndex={titleRef ? -1 : undefined}
@@ -186,8 +185,10 @@ export function DialogHeader({
       {titleOwnRow ? (
         <html.div style={styles.headerControls}>
           {back}
-          {actions}
-          <html.div style={styles.trailingClose}>{close}</html.div>
+          <html.div style={styles.trailingControls}>
+            {actions}
+            {close}
+          </html.div>
         </html.div>
       ) : (
         back
@@ -218,7 +219,13 @@ const styles = css.create({
     alignItems: 'center',
     gap: dimensions.space2,
   },
-  trailingClose: { marginLeft: 'auto' },
+  trailingControls: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: dimensions.space2,
+    marginLeft: 'auto',
+  },
   titleOwnRow: { flexGrow: 0, flexShrink: 0 },
   padding: (top: number, inline: number, bottom: number) => ({
     paddingTop: top,
