@@ -49,9 +49,10 @@ type InformationPageProps = {
   product: InformationProduct;
   drawingVisited: boolean;
   standalone: boolean;
+  onDrawingReturn: () => void;
 };
 
-function PageContent({ page, product, drawingVisited }: InformationPageProps) {
+function PageContent({ page, product, drawingVisited, onDrawingReturn }: InformationPageProps) {
   const { owner, state, feedback } = product;
   const delivery = useNativeFeedbackState(feedback.owner)?.delivery;
   const sent = page === 'feedback' && delivery?.status === 'success';
@@ -67,6 +68,10 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
   const card = useModalPresence(gate?.open ? gate : null);
   const parentCenter = useModalPresence(state?.parentCenterOpen ? true : null);
   const reading = useInformationPageScroll(page);
+  const returnToDrawing = () => {
+    onDrawingReturn();
+    openAppPage('drawing');
+  };
   useDialogBack(true, () => openAppPage('drawing'));
   const onLink = (href: string) => {
     if (href.startsWith('#')) {
@@ -92,6 +97,7 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
     <>
       <RsdPageSheet
         title={sent ? FEEDBACK_PAGE_COPY.sentTitle : PAGE_TITLES[page]}
+        onDrawingReturn={returnToDrawing}
         backLabel={resolveBackLabel({
           fromPath: drawingVisited ? DRAWING_ROUTE : null,
           sessionFlag: null,
@@ -119,7 +125,7 @@ function PageContent({ page, product, drawingVisited }: InformationPageProps) {
         ) : (
           <RsdFeedbackPageContent owner={feedback.owner} onPrivacy={() => openAppPage('privacy')} />
         )}
-        <RsdInformationFooter page={page} onExternal={onLink} />
+        <RsdInformationFooter page={page} onExternal={onLink} onDrawingReturn={returnToDrawing} />
       </RsdPageSheet>
       {owner && card.shown ? (
         <RsdParentGateSheet
@@ -153,6 +159,7 @@ export function RsdInformationPage({
   product,
   drawingVisited,
   standalone,
+  onDrawingReturn,
 }: InformationPageProps) {
   const close = () => openAppPage('drawing');
   useEffect(() => {
@@ -172,6 +179,7 @@ export function RsdInformationPage({
           product={product}
           drawingVisited={drawingVisited}
           standalone={standalone}
+          onDrawingReturn={onDrawingReturn}
         />
       </SafeAreaProvider>
     </DrawingAppearanceProvider>

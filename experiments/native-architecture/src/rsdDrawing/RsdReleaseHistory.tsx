@@ -18,6 +18,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import { styles as controls } from './controls';
 import { useReleaseHistory } from './useReleaseHistory';
+import { useInformationViewport } from './useInformationViewport';
 import { RsdTextLink } from './RsdTextLink';
 import { PAGE_FRAMED_MAX_WIDTH_PX } from './pageFrame';
 import { colors, dimensions, fonts } from './tokens.css';
@@ -25,6 +26,7 @@ import { colors, dimensions, fonts } from './tokens.css';
 const RELEASES_SHOWN_OPEN = releaseHistoryPolicy.releasesShownOpen;
 const RELEASE_SPY_BAND_BOTTOM_PERCENT = 70;
 const PERCENT = 100;
+const RELEASE_SPY_LINE_FRACTION = (PERCENT - RELEASE_SPY_BAND_BOTTOM_PERCENT) / PERCENT;
 const FOOTER_RESERVE_PX = 160;
 const END_TOP_PX = 24;
 const OLDER_TOP_PX = 18;
@@ -101,10 +103,11 @@ type HistoryProps = {
 
 export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryProps) {
   const window = useWindowDimensions();
+  const viewport = useInformationViewport();
   const wide = window.width > PAGE_FRAMED_MAX_WIDTH_PX;
   const navigation = useReleaseHistory(CONTENTS, onSectionLayout, onLink);
   const { geometry, positions, olderOpen, contentsOpen } = navigation;
-  const line = scrollY + window.height * ((PERCENT - RELEASE_SPY_BAND_BOTTOM_PERCENT) / PERCENT);
+  const line = scrollY + viewport.top + viewport.height * RELEASE_SPY_LINE_FRACTION;
   const active =
     CONTENTS.findLast(({ id }) => (positions[id] ?? Infinity) + geometry.columnTop <= line)?.id ??
     CONTENTS[0].id;
@@ -115,7 +118,7 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
   const railOffset = Math.max(
     0,
     Math.min(
-      scrollY + PRIVACY_LAYOUT.stickyTop - geometry.top,
+      scrollY + viewport.top + PRIVACY_LAYOUT.stickyTop - geometry.top,
       geometry.height - geometry.railHeight
     )
   );
@@ -131,7 +134,10 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
           open={contentsOpen}
           offset={Math.max(
             0,
-            Math.min(scrollY - geometry.contentsTop, geometry.height - geometry.contentsHeight)
+            Math.min(
+              scrollY + viewport.top - geometry.contentsTop,
+              geometry.height - geometry.contentsHeight
+            )
           )}
           onToggle={navigation.toggleContents}
           onSelect={navigation.pick}
@@ -213,7 +219,7 @@ export function RsdReleaseHistory({ scrollY, onSectionLayout, onLink }: HistoryP
               </RsdPressable>
             </html.div>
           ) : null}
-          <ReleaseHistoryEnd height={window.height} onLink={onLink} />
+          <ReleaseHistoryEnd height={viewport.height} onLink={onLink} />
         </View>
       </View>
     </View>

@@ -197,7 +197,15 @@ function startDrawing() {
 }
 
 // BackLink.svelte on a cold visit: the brand paint blob holding a chevron, then its label.
-function BackLink({ label, short }: { label: BackLabel; short: boolean }) {
+function BackLink({
+  label,
+  short,
+  onDrawingReturn,
+}: {
+  label: BackLabel;
+  short: boolean;
+  onDrawingReturn: () => void;
+}) {
   const size = short ? SHORT_BACK_BLOB_PX : BACK_BLOB_PX;
   const theme = useDrawingAppearance();
   const chevron = useNativeIconMarkup('chevron-left')?.[theme];
@@ -217,7 +225,7 @@ function BackLink({ label, short }: { label: BackLabel; short: boolean }) {
       type="button"
       role="link"
       style={styles.back(short ? SHORT_BACK_OVERHANG_PX : BACK_OVERHANG_PX)}
-      onClick={startDrawing}
+      onClick={onDrawingReturn}
     >
       <html.div aria-hidden style={[styles.blob(blobShadow(brandSolid)), styles.blobSize(size)]}>
         <SvgXml xml={xml} width={size} height={size} />
@@ -267,6 +275,7 @@ export function RsdPageSheet({
   backLabel = NOT_FOUND_COPY.startDrawing,
   onScroll,
   collapsibleLede = true,
+  onDrawingReturn = startDrawing,
 }: {
   title: string;
   lede: string;
@@ -276,6 +285,7 @@ export function RsdPageSheet({
   backLabel?: BackLabel;
   onScroll?: (y: number) => void;
   collapsibleLede?: boolean;
+  onDrawingReturn?: () => void;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
 
@@ -340,7 +350,7 @@ export function RsdPageSheet({
             ]}
           >
             <html.div style={[styles.topbar, short && styles.shortTopbar]}>
-              <BackLink label={backLabel} short={short} />
+              <BackLink label={backLabel} short={short} onDrawingReturn={onDrawingReturn} />
               <BrandMark phone={phone} narrow={narrow} />
             </html.div>
             {/* RN Web does not report position-only layout changes on the body. */}

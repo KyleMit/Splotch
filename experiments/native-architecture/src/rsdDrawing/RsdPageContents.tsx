@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { View, type LayoutChangeEvent } from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
+import { useInformationViewport } from './useInformationViewport';
 import { css, html } from 'react-strict-dom';
 import type { ReleaseHue } from '../../../../web/src/lib/releaseHues';
 import { paletteHex } from '../drawing/palette';
@@ -141,7 +142,7 @@ function ContentsPanel<Id extends string>({
 }) {
   const theme = useDrawingTheme();
   const indicatorStyle = useScrollIndicatorStyle();
-  const height = useWindowDimensions().height;
+  const { height } = useInformationViewport();
   const maxHeight = Math.max(
     PAGE_CONTENTS.panelMin,
     height - INSET_PX - BORDER_PX - ROW_PX - PAGE_CONTENTS.panelTail
