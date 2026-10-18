@@ -206,6 +206,8 @@ vi.mock('react-native-safe-area-context', async () => {
 // A click is a press: a Pressable's onPress, or a responder's release once it would be granted.
 vi.mock('react-native', async () => {
   const React = await import('react');
+  const { default: propsToAriaRole } =
+    await import('react-native-web/dist/cjs/modules/AccessibilityUtil/propsToAriaRole.js');
   const {
     accessibilityPort,
     animatedPort,
@@ -229,7 +231,7 @@ vi.mock('react-native', async () => {
           'data-shown-opacity': shown.opacity,
           // Only a case that journals host commits pays for writing every prop out.
           'data-committed-props': records.journalHostProps ? committedHostProps(props) : undefined,
-          role: props.role ?? props.accessibilityRole,
+          role: propsToAriaRole(props),
           id: props.nativeID,
           'aria-label': props.accessibilityLabel,
           'aria-labelledby': props['aria-labelledby'],

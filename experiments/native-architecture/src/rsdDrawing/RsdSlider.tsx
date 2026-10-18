@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   View,
   type AccessibilityActionEvent,
@@ -51,7 +52,7 @@ export const SLIDER_METRICS = {
   SETTING_ICON_PX,
 } as const;
 
-// VoiceOver's swipe and TalkBack's volume keys adjust a slider through these actions.
+// Android requires declared adjustment actions; iOS uses the Adjustable trait without custom rotor entries.
 const ADJUST_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 const ADJUST_KEYS: Readonly<Record<string, string>> = {
   increment: 'ArrowUp',
@@ -164,7 +165,7 @@ function RsdSlider({
     <View
       style={[layout.host, HOST_POINTER]}
       accessible
-      role="slider"
+      accessibilityRole="adjustable"
       tabIndex={0}
       aria-label={label}
       aria-labelledby={labelId}
@@ -172,7 +173,7 @@ function RsdSlider({
       aria-valuemax={max}
       aria-valuenow={value}
       aria-valuetext={valueText}
-      accessibilityActions={ADJUST_ACTIONS}
+      accessibilityActions={Platform.OS === 'android' ? ADJUST_ACTIONS : undefined}
       onAccessibilityAction={({ nativeEvent }: AccessibilityActionEvent) => {
         const key = ADJUST_KEYS[nativeEvent.actionName];
         const next = key ? keyedValue(key, value, range) : null;

@@ -21,6 +21,7 @@ import { PRIVACY_LAYOUT } from '../information/privacyLayout';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE } from '../drawing/theme';
 import { PAGE_CONTENTS, RsdPageContents } from './RsdPageContents';
+import { useInformationViewport } from './useInformationViewport';
 import { RsdRuleLabel } from './RsdRuleLabel';
 import { styles as controlStyles } from './controls';
 import { colors, dimensions } from './tokens.css';
@@ -216,7 +217,7 @@ function PrivacyReadingColumn({
   wide: boolean;
   links: ReturnType<typeof usePrivacySectionLinks>;
 }) {
-  const { height } = useWindowDimensions();
+  const { height } = useInformationViewport();
   const lastSectionMinHeight = Math.max(
     0,
     height - SPY_LINE_PX - DRAWING_SCALE.space4 - PRIVACY_LAYOUT.footerReserve
@@ -249,6 +250,7 @@ function PrivacyReadingColumn({
 
 function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyContentProps) {
   const wide = useWindowDimensions().width > PAGE_FRAMED_MAX_WIDTH_PX;
+  const viewport = useInformationViewport();
   const links = usePrivacySectionLinks(onLink);
   const [geometry, setGeometry] = useState({
     top: 0,
@@ -264,12 +266,13 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
   const top = useRef(0);
   const active =
     SECTIONS.findLast(
-      ({ id }) => (positions.current[id] ?? Infinity) + geometry.top <= scrollY + SPY_LINE_PX
+      ({ id }) =>
+        (positions.current[id] ?? Infinity) + geometry.top <= scrollY + viewport.top + SPY_LINE_PX
     )?.id ?? SECTIONS[0].id;
   const railOffset = Math.max(
     0,
     Math.min(
-      scrollY + PRIVACY_LAYOUT.stickyTop - geometry.top,
+      scrollY + viewport.top + PRIVACY_LAYOUT.stickyTop - geometry.top,
       geometry.height - geometry.railHeight
     )
   );
@@ -281,12 +284,12 @@ function PrivacyDetails({ policy, onLink, onSectionLayout, scrollY }: PrivacyCon
           label="Privacy policy contents"
           noun="sections"
           active={active}
-          entered={geometry.measured && scrollY + SPY_LINE_PX >= geometry.top}
+          entered={geometry.measured && scrollY + viewport.top + SPY_LINE_PX >= geometry.top}
           open={contentsOpen}
           offset={Math.max(
             0,
             Math.min(
-              scrollY - geometry.contentsTop,
+              scrollY + viewport.top - geometry.contentsTop,
               geometry.top + geometry.height - geometry.contentsTop - geometry.contentsHeight
             )
           )}

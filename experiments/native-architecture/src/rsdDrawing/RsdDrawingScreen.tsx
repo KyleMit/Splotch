@@ -104,6 +104,7 @@ export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
       product={product}
       drawingVisited={drawingVisited}
       standalone={route.shown === 'none'}
+      onDrawingReturn={screen.closeSettings}
     />
   ) : null;
   return (

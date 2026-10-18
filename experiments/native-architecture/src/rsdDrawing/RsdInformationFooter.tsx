@@ -92,9 +92,11 @@ const LINKS = [
 export function RsdInformationFooter({
   page,
   onExternal,
+  onDrawingReturn,
 }: {
   page: Exclude<AppPage, 'drawing'> | null;
   onExternal: (href: string) => void;
+  onDrawingReturn?: () => void;
 }) {
   const theme = useDrawingTheme();
   const window = useWindowDimensions();
@@ -105,7 +107,10 @@ export function RsdInformationFooter({
         <RsdReleaseRule hue="Orange" />
       </html.div>
       <html.div style={[styles.row, narrow && styles.narrow]}>
-        <RsdTextLink onPress={() => openAppPage('drawing')} style={styles.brand}>
+        <RsdTextLink
+          onPress={onDrawingReturn ?? (() => openAppPage('drawing'))}
+          style={styles.brand}
+        >
           <html.div aria-hidden>
             <RsdSplotchyIcon size={FOOTER_MARK_PX} />
           </html.div>
