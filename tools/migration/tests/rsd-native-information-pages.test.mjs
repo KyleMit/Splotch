@@ -323,3 +323,30 @@ it('keeps the native footer’s feedback link behind its external-link owner', a
   expect(onExternal).toHaveBeenCalledExactlyOnceWith(FEEDBACK_URL);
   expect(openAppPage).not.toHaveBeenCalled();
 });
+
+it('returns from a Settings reading page to drawing without reopening the previous About section', async () => {
+  useCaller();
+  await mount(createElement(RsdDrawingScreen));
+  await act(async () => host.querySelector('[aria-label="Settings"]').click());
+  const about = [...host.querySelectorAll('button')].find((node) =>
+    node.getAttribute('aria-label')?.startsWith('About,')
+  );
+  expect(about).toBeDefined();
+  await act(async () => about.click());
+  const privacyLink = [...host.querySelectorAll('[role="link"]')].find(
+    (node) => node.textContent === 'Privacy Policy'
+  );
+  expect(privacyLink).toBeDefined();
+  await act(async () => privacyLink.click());
+  expect(openAppPage).toHaveBeenLastCalledWith('privacy');
+  await act(async () => root.render(createElement(RsdDrawingScreen, { page: 'privacy' })));
+  expect(caller.screen.settingsOpen).toBe(true);
+  const footer = [...host.querySelectorAll('[role="link"]')].find(
+    (node) => node.textContent === 'Splotch'
+  );
+  expect(footer).toBeDefined();
+  await act(async () => footer.click());
+  expect(openAppPage).toHaveBeenLastCalledWith('drawing');
+  await act(async () => root.render(createElement(RsdDrawingScreen)));
+  expect(caller.screen.settingsOpen).toBe(false);
+});

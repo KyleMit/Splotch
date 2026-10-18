@@ -298,3 +298,44 @@ it('pins the section-link target, blob, icon and heading spacing to shipping', (
   expect(heading).toContain(`margin-bottom: ${PRIVACY_LINK_GEOMETRY.headingGap}px;`);
   expect(PRIVACY_LINK_GEOMETRY.icon).toBe(Number.parseFloat(scale.fontSizeMd));
 });
+
+it('pins compact contents below the safe top and fits its panel and final section to the usable height', async () => {
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  records.insets = { top: 54, right: 0, bottom: 34, left: 0 };
+  await mount(content(0));
+  await act(async () => {
+    layout('privacy-details', 400, 2000);
+    layout('page-contents-disclosure', 300, 86);
+    SECTIONS.forEach(({ id }, index) => layout(`privacy-section-${id}`, index * 300, 300));
+  });
+  await act(async () => root.render(content(700)));
+  expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 454 }]);
+  expect(props('privacy-section-contact').style.minHeight).toBe(452);
+  await act(async () => host.querySelector('[aria-label^="Privacy policy contents,"]').click());
+  expect(
+    records.viewports.findLast((entry) => entry.testID === 'page-contents-panel').style.maxHeight
+  ).toBe(680);
+  records.dimensions = { width: 844, height: 390, scale: 1, fontScale: 1 };
+  records.insets = { top: 0, right: 54, bottom: 21, left: 54 };
+  await act(async () => root.render(content(700)));
+  expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 400 }]);
+  expect(props('privacy-section-contact').style.minHeight).toBe(65);
+  expect(
+    records.viewports.findLast((entry) => entry.testID === 'page-contents-panel').style.maxHeight
+  ).toBe(293);
+});
+
+it('parks an incoming section below the safe top after both body and section geometry arrive', async () => {
+  clipboard.launch = 'hosting';
+  records.insets = { top: 54, right: 0, bottom: 34, left: 0 };
+  useCaller();
+  await mount(createElement(RsdDrawingScreen, { page: 'privacy' }));
+  const scroll = host.querySelector('[data-testid="information-page-scroll"]');
+  scroll.scrollTo = vi.fn();
+  await act(async () => {
+    layout('information-page-body', 200, 2000);
+    layout('privacy-details', 500, 2000);
+    layout('privacy-section-hosting', 1500, 300);
+  });
+  expect(scroll.scrollTo).toHaveBeenLastCalledWith({ y: 2104, animated: false });
+});

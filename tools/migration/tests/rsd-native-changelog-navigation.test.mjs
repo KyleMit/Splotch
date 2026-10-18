@@ -117,3 +117,20 @@ it('pins release tape, bullets and narrow-header geometry to the shipping page',
   expect(source).toContain(`@media (max-width: ${RELEASE_PAGE.narrowHeader}px)`);
   expect(source).toContain('clip-path: polygon(3% 0, 100% 8%, 97% 100%, 0 90%);');
 });
+
+it('pins the release contents below the safe top and fits its panel inside both safe edges', async () => {
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  records.insets = { top: 54, right: 0, bottom: 34, left: 0 };
+  await mount(render());
+  await act(async () => {
+    layout('changelog-history', 300, 6000);
+    layout('changelog-body', 86, 5800);
+    layout('page-contents-disclosure', 0, 86);
+  });
+  await act(async () => root.render(render(800)));
+  expect(props('page-contents-disclosure').style.transform).toEqual([{ translateY: 554 }]);
+  await act(async () => host.querySelector('[aria-label^="Changelog contents,"]').click());
+  expect(
+    records.viewports.findLast((entry) => entry.testID === 'page-contents-panel').style.maxHeight
+  ).toBe(680);
+});
