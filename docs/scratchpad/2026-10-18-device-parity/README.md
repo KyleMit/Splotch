@@ -48,15 +48,18 @@ Production web was independently identified through its public version response 
 Netlify production deployment: version 1.6.2682, source dd6b86a2343d400bb654bc664020c09768e6c7f5.
 Native store metadata identifies version 1.6.0. The repository tag
 d8b86469f63c57a06a9de45664a42eea15b99eb0 is followed by copy-only source
-6572ed535f243d06e3f7bcaa5986218cac006d86. An independent Claude investigation matched the web
-payload in both signed repository release artifacts to that child source: 217 of 217 comparable
-files after explicit build-version, derived namespace and one-to-one reference-name substitution,
-with derived CSP hashes and one explained chunk import-order/minifier-alias difference. The child
-contains the three release-note phrase edits that distinguished a fresh tag build. This binds the
-repository assets' web layer; native executable/resource provenance and the actual store upload
-remain unproved. Neither the approved historical control nor a same-version retained install is
-promoted to store equivalence. A targeted store-provenance follow-up is in progress. Artifact
-receipts and reproduction details remain private.
+6572ed535f243d06e3f7bcaa5986218cac006d86. A stricter independent Claude reproduction matched the web
+payload in both signed repository release artifacts to that child source. Each 224-file comparison
+has 219 files equal after explicit build-version, derived namespace and one-to-one reference-name
+substitution, four derived CSP-hash differences and one chunk verified with a scope-aware
+import-order/minifier-alias check. The tag build is a negative control: the three release-note
+phrase edits remain different. The child contains those copy edits. This binds the repository
+assets' web layer; native executable/resource provenance and the actual store upload remain
+unproved. Safe local archive/export metadata and public history did not yield an upload receipt or
+store-delivered binary. Surviving local distribution candidates equal the repository assets, which
+is still insufficient to establish actual store source. Neither the approved historical control nor
+a same-version retained install is promoted to store equivalence. Artifact receipts and the
+reproducible matcher remain private.
 
 The approved historical control 54f56ba892827a336b37087dcaeb3e0c7860fd84 differs from main in 151
 shipping-source files. It is not independently established as production equivalence. Source
@@ -89,6 +92,17 @@ only. It declares minimum API24 and target API36, with `WRITE_EXTERNAL_STORAGE` 
 the corresponding implied legacy read permission. This corrects the stale development guide. The
 artifact has not established an API24/26/29 save result, accessibility activation, runtime smoke or
 performance result. The earlier recovered APK remains a separately labeled historical control.
+
+A fresh API29 diagnostic used the current qualified APK and a direct accessibility-action driver.
+The official runtime archive checksum and all 14 installed runtime files were verified. Actual
+`ACTION_CLICK` opened Settings and AI Settings, operated the drawer and Undo, and invoked Save;
+wrong foreground and disabled Undo were refused. Three separate contacts produced three distinct
+Undo units. Save published an app-owned, non-pending MediaStore PNG; its device/host bytes and
+actual ink were verified. The 583-second batch restored blank ink and the original collapsed drawer
+before releasing the owned emulator. This private driver is a diagnostic prototype awaiting
+reusable-source review. Shipping pairing, auto-save/Clear, API24/26 paths and final matrix
+acceptance remain pending. Raw text descendants are not interchangeable with the uniquely named
+activatable button; both action lists and actual activation are recorded.
 
 ## Target-to-feature plan
 
