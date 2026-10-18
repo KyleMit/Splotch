@@ -71,6 +71,20 @@ is zero-generation capability probing, not proof of generation or report accepta
 integration stays blocked on a deployment decision. A preview could provide separately labeled
 integration evidence only after explicit approval. Production is not deployed or rerouted.
 
+`shipping-source-classification.csv` accounts for all 151 changed `web/src` paths between the
+deployed web source and the approved historical control. It separates tests/fixtures,
+server/recovery changes, credential failure behavior, renderer instrumentation, lifecycle changes
+and provisional extractions. Every equivalence conclusion remains explicitly unproved; a shared
+module or generic extraction label is not a two-sided production oracle.
+
+A recovered historical RN Release APK was requalified for compiled-manifest inspection:
+artifact/bundle/map hashes and signature match its original receipt, 582 app source-map files match
+source 49e97f68cea803ee27247389870737048ddb1979, and native Android inputs are unchanged through the
+draft candidate. It declares minimum API24 and target API36, with `WRITE_EXTERNAL_STORAGE` through
+API28 and the corresponding implied legacy read permission. This corrects the stale development
+guide. It does not establish an API24/26/29 save result, current UI build admission or final-head
+evidence.
+
 ## Target-to-feature plan
 
 | Target class                     | Required emphasis                                                                                       | Present qualification                                                        |
@@ -180,8 +194,11 @@ value/adjustment/focus, and physical reading-page interaction remain pending.
 Private diagnostic inspections include the adjustable slider and reading-page before/after states. A
 separate maximum-font Settings fix is in draft PR #2983. It has one inspected whole-word
 maximum-font comparison and ordinary-header geometry checks; live font-reduction rows and all other
-maximum-font states remain pending. The first Claude review is in progress. No diagnostic
-observation is counted as a final candidate matrix pass.
+maximum-font states remain pending. Claude’s first review found and is addressing a web focus
+regression and additional guard gaps. Unresolved full-width word/choice readability and live
+font-reduction behavior are tracked by #2985, an API child of #2978; neither is an accepted
+difference. The epic still has 91 direct children, with this additional open nested child. No
+diagnostic observation is counted as a final candidate matrix pass.
 
 ## Merge and completion boundary
 
