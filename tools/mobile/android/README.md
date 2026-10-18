@@ -55,3 +55,43 @@ Run focused verification with:
 ```sh
 npm run test:tools -- tools/mobile/android
 ```
+
+## Direct accessibility-action diagnostic
+
+`npm run android:accessibility:build -- --output <fresh-private-directory> --signing-init <existing-opaque-Gradle-init>`
+builds `probes/accessibility-action` through the RN Android project's existing SDK/plugin and
+candidate Release signing configuration. The supplied init file makes the existing signing
+configuration available to Gradle. The handler never opens or prints credential values. No identity
+is created, and nothing is installed or launched. Commit source first; output must be new and
+outside the checkout. A failed build keeps its output, log and record for diagnosis. The settings
+injection applies only to the admitted main project, including when React Native has its own
+included Gradle builds.
+
+The resulting package is `art.splotch.parity.driver`, with self-targeted instrumentation
+`art.splotch.parity.driver.AccessibilityActionProbe`. It observes only the foreground
+`art.splotch.migration.probe` app. `operation=inspect` returns native names, geometry, semantics and
+action lists; `operation=click label=<exact-name>` invokes `ACTION_CLICK` only for one enabled,
+visible exact match. It records whether the action was listed and whether activation succeeded. A
+raw text descendant is distinct from its activatable button. Duplicate names remain an error.
+
+Before installation or use, independently verify package/instrumentation identity, APK bytes, source
+record and the expected existing certificate. Use fresh owned emulators for this campaign; this
+helper grants no physical-device installation authority. Bind host foreground/window checks to
+Display0 immediately before every input. API30+ additionally verifies the active accessibility
+window's display. On older APIs, the host must separately prove the default-display context and
+foreground identity. Retained installs remain read-only.
+
+A local invocation after those checks is
+`adb -s <owned-emulator> shell am instrument -w -r -e expectedPackage art.splotch.migration.probe -e operation inspect art.splotch.parity.driver/art.splotch.parity.driver.AccessibilityActionProbe`.
+For a click, set `operation` to `click` and supply the complete exact `label`, shell-quoted as one
+argument. The driver does not launch or navigate to the app, provide coordinate fallback, grant
+permissions, force internal state, or recover a failed route. Check the resulting public UI
+separately.
+
+Keep output and device records private with byte-verified recovery. Editable/password nodes are
+redacted, but collection must still stop completely during credential entry. UiAutomation uses
+`FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES`; labels or action success are not observed speech.
+Qualify a driver with a wrong-foreground refusal, actual public navigation, disabled-action refusal
+and separate-contact/Undo cardinality before trusting drawing/history results. A simulated result
+does not establish the physical gesture requirements. Screenshots and Save animations alone do not
+prove a published storage file.
