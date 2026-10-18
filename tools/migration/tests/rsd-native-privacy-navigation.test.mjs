@@ -44,6 +44,30 @@ const content = (scrollY, onLink = vi.fn(), onSectionLayout = vi.fn()) =>
     })
   );
 
+it('reserves the shipping final-section scrollport and recalculates it after rotation', async () => {
+  const policy = readFileSync(
+    join(import.meta.dirname, '../../../web/src/routes/privacy/+page.svelte'),
+    'utf8'
+  );
+  const shell = readFileSync(
+    join(import.meta.dirname, '../../../web/src/lib/components/page/PageShell.svelte'),
+    'utf8'
+  );
+  expect(policy).toContain('--page-tail: calc(var(--space-4) + var(--page-footer-reserve));');
+  expect(policy).toContain('min-height: calc(100dvh - var(--spy-line) - var(--page-tail));');
+  expect(shell).toContain(`--page-footer-reserve: ${PRIVACY_LAYOUT.footerReserve}px;`);
+  records.dimensions = { width: 390, height: 844, scale: 1, fontScale: 1 };
+  await mount(content(0));
+  expect(props('privacy-section-contact').style?.minHeight).toBe(540);
+  expect(props('privacy-section-children').style?.minHeight).toBeUndefined();
+  records.dimensions = { width: 844, height: 390, scale: 1, fontScale: 1 };
+  await act(async () => root.render(content(0)));
+  expect(props('privacy-section-contact').style?.minHeight).toBe(86);
+  records.dimensions = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
+  await act(async () => root.render(content(0)));
+  expect(props('privacy-section-contact').style?.minHeight).toBe(720);
+});
+
 it('pins the desktop contents beside the reading column and tracks the section crossing the reading line', async () => {
   records.dimensions = { width: 1366, height: 1024, scale: 1, fontScale: 1 };
   const jump = vi.fn();

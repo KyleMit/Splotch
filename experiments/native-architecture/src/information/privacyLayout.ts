@@ -3,4 +3,5 @@ export const PRIVACY_LAYOUT = {
   railGap: 48,
   stickyTop: 24,
   compactPark: 96,
+  footerReserve: 160,
 } as const;
