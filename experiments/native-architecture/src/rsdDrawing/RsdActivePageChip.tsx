@@ -90,14 +90,14 @@ const thumbnail = StyleSheet.create({
 });
 
 const styles = css.create({
-  chip: (height: number) => ({
+  chip: (minimumHeight: number) => ({
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: dimensions.space2,
     flexShrink: 0,
-    height,
+    minHeight: minimumHeight,
     overflow: 'hidden',
     padding: dimensions.space1,
     cursor: 'pointer',
