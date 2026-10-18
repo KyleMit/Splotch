@@ -23,6 +23,7 @@ import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { PERF_RUN_PARAM } from '../lib/capture-date.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity, runtimeUaProblem } from '../lib/input-fidelity.mjs';
+import { strokeDeliveryProblem } from '../lib/stroke-delivery.mjs';
 import { BRUSH_BUTTON_BY_MODE } from '../lib/brush-buttons.mjs';
 import {
   describeRefreshRegime,
@@ -32,6 +33,7 @@ import {
 } from '../lib/refresh-regime.mjs';
 import { probeConfigScript } from '../lib/probe-config.mjs';
 import {
+  dispatchTrustedGestureStrokes,
   driveTrustedGesturePasses,
   nativeCanvasBounds,
   trustedGestureActions,
@@ -289,10 +291,7 @@ export function isWebContext(context) {
   return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
 }
 
-export function selectWebContext(
-  contexts,
-  { nativeApp = false, platformName = 'iOS' } = {}
-) {
+export function selectWebContext(contexts, { nativeApp = false, platformName = 'iOS' } = {}) {
   const webContexts = contexts.filter(isWebContext);
   if (!nativeApp) {
     return (
@@ -949,6 +948,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       includeBrowserChrome: !nativeApp,
     });
 
+    let dispatchedStrokes = 0;
     let eraserRefills = brush === 'eraser' ? [] : null;
     if (handInput) {
       console.log(`\nDraw ${brush} strokes on the iPad for ~${handSeconds}s.`);
@@ -962,17 +962,12 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       console.log('  window closed');
       if (spokenCues) speak('Stop. Lift your finger.');
     } else {
-      const perform = (repeats) =>
-        client.request('POST', `/session/${sessionId}/actions`, {
-          actions: [
-            {
-              type: 'pointer',
-              id: 'finger',
-              parameters: { pointerType: 'touch' },
-              actions: trustedGestureActions(canvasBounds, repeats, repeatPauseMs),
-            },
-          ],
-        });
+      const perform = async (repeats) => {
+        dispatchedStrokes += await dispatchTrustedGestureStrokes(
+          trustedGestureActions(canvasBounds, repeats, repeatPauseMs),
+          (actions) => client.request('POST', `/session/${sessionId}/actions`, { actions })
+        );
+      };
       const refillBetweenPasses =
         brush === 'eraser'
           ? (() => {
@@ -1212,6 +1207,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           serviceWorkerRegistration,
         },
       },
+      dispatchedStrokes: handInput ? null : dispatchedStrokes,
       fidelity,
       drawing,
       undo,
@@ -1260,6 +1256,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} · ${JSON.stringify(fidelity.checks)}`
     );
     console.log(`Wrote ${output}`);
+    const deliveryProblem = strokeDeliveryProblem(artifact);
+    if (deliveryProblem) throw new Error(`Stroke delivery failed: ${deliveryProblem}. Do not score it.`);
     if (!fidelity.passed && !has('report-only')) {
       throw new Error(
         'The capture failed the trusted-input fidelity gate; do not use its lag score.'

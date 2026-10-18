@@ -1,4 +1,4 @@
-// Whether every stroke a driven Android capture dispatched reached the page,
+// Whether every stroke a driven capture dispatched reached the page,
 // and landed where it was planned.
 //
 // Each `adb shell input swipe` is its own down/up, so a page that recorded
@@ -26,7 +26,7 @@ export function trustedPointerdowns(report) {
 
 // `required` is for a caller that knows the capture was driven through adb and
 // so must carry the count. Elsewhere an absent count is the transports that do
-// not record one (iPadOS, hand captures) and artifacts predating the field.
+// not record one (hand captures) and artifacts predating the field.
 export function strokeDeliveryProblem(artifact, { required = false } = {}) {
   const dispatched = artifact?.dispatchedStrokes;
   const downs = trustedPointerdowns(artifact?.report);
