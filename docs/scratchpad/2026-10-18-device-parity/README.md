@@ -37,7 +37,7 @@ issue is an API-linked open child; there are 91 direct children (90 historical c
 Neither count establishes device acceptance.
 
 The historical inventory source is 64a9ca53a1361afde8d4104b661bbec93892b2c0. This draft candidate is
-46fe2dfc9f00ba0c4d4b63dae61ca7f6f04ee5db. Later candidate heads require dependency invalidation. The
+1e84110dbd06e5d14e3fce9f4927988a8cf129eb. Later candidate heads require dependency invalidation. The
 acceptance source is the
 [59-row table](https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6207540788). Its edited
 limitation dispositions are not carried forward as verified states.
@@ -47,13 +47,16 @@ limitation dispositions are not carried forward as verified states.
 Production web was independently identified through its public version response and the published
 Netlify production deployment: version 1.6.2682, source dd6b86a2343d400bb654bc664020c09768e6c7f5.
 Native store metadata identifies version 1.6.0. The repository tag
-d8b86469f63c57a06a9de45664a42eea15b99eb0 and signed release artifacts provide a reproducible
-version-matched comparator candidate; confirming the store-build/source linkage through release
-provenance is still required. The two repository release assets have 93 JavaScript modules matching
-after build metadata and one-to-one reference-name substitution. A fresh tag build additionally
-differs in three release-note phrases, each emitted in two modules. Those differences remain
-explicit; neither the approved historical control nor a same-version retained install is promoted to
-store equivalence. Artifact receipts remain private.
+d8b86469f63c57a06a9de45664a42eea15b99eb0 is followed by copy-only source
+6572ed535f243d06e3f7bcaa5986218cac006d86. An independent Claude investigation matched the web
+payload in both signed repository release artifacts to that child source: 217 of 217 comparable
+files after explicit build-version, derived namespace and one-to-one reference-name substitution,
+with derived CSP hashes and one explained chunk import-order/minifier-alias difference. The child
+contains the three release-note phrase edits that distinguished a fresh tag build. This binds the
+repository assets' web layer; native executable/resource provenance and the actual store upload
+remain unproved. Neither the approved historical control nor a same-version retained install is
+promoted to store equivalence. A targeted store-provenance follow-up is in progress. Artifact
+receipts and reproduction details remain private.
 
 The approved historical control 54f56ba892827a336b37087dcaeb3e0c7860fd84 differs from main in 151
 shipping-source files. It is not independently established as production equivalence. Source
@@ -78,13 +81,14 @@ server/recovery changes, credential failure behavior, renderer instrumentation, 
 and provisional extractions. Every equivalence conclusion remains explicitly unproved; a shared
 module or generic extraction label is not a two-sided production oracle.
 
-A recovered historical RN Release APK was requalified for compiled-manifest inspection:
-artifact/bundle/map hashes and signature match its original receipt, 582 app source-map files match
-source 49e97f68cea803ee27247389870737048ddb1979, and native Android inputs are unchanged through the
-draft candidate. It declares minimum API24 and target API36, with `WRITE_EXTERNAL_STORAGE` through
-API28 and the corresponding implied legacy read permission. This corrects the stale development
-guide. It does not establish an API24/26/29 save result, current UI build admission or final-head
-evidence.
+A fresh full Android Release APK at candidate 1e84110dbd06e5d14e3fce9f4927988a8cf129eb passed
+artifact qualification with the existing candidate signer: probe package identity, cryptographic
+signature, non-debuggable Release manifest, Hermes bundle and source binding. All 578 application
+source-map code files, 53 audio assets and 90 native build inputs match Git. This build is ARM64
+only. It declares minimum API24 and target API36, with `WRITE_EXTERNAL_STORAGE` through API28 and
+the corresponding implied legacy read permission. This corrects the stale development guide. The
+artifact has not established an API24/26/29 save result, accessibility activation, runtime smoke or
+performance result. The earlier recovered APK remains a separately labeled historical control.
 
 ## Target-to-feature plan
 
@@ -185,21 +189,21 @@ performance results are trusted.
 
 ## Merged causal units and pending evidence
 
-The physical gesture request boundary (#2979), an independent PageArt test-fixture race (#2980),
-native adjustable slider semantics (#2981), and reading safe-area/public-return behavior (#2982) are
+The physical gesture request boundary (#2979), independent PageArt test-fixture race (#2980), native
+adjustable slider semantics (#2981), reading safe-area/public-return behavior (#2982), Settings
+title wrapping and web focus (#2983), and maximum-font active-page chip containment (#2986) are
 merged. Each exact implementation head completed independent Claude review and applicable hosted CI.
-The campaign candidate includes merge 7f7fdb9f62f500193d3c206abc40884cbd19f6af. These fixes do not
+The draft candidate includes merge 1e84110dbd06e5d14e3fce9f4927988a8cf129eb. These fixes do not
 establish their physical acceptance cells: actual stroke cardinality, spoken slider
-value/adjustment/focus, and physical reading-page interaction remain pending.
+value/adjustment/focus and physical reading-page interaction remain pending.
 
-Private diagnostic inspections include the adjustable slider and reading-page before/after states. A
-separate maximum-font Settings fix is in draft PR #2983. It has one inspected whole-word
-maximum-font comparison and ordinary-header geometry checks; live font-reduction rows and all other
-maximum-font states remain pending. Claude’s first review found and is addressing a web focus
-regression and additional guard gaps. Unresolved full-width word/choice readability and live
-font-reduction behavior are tracked by #2985, an API child of #2978; neither is an accepted
-difference. The epic still has 91 direct children, with this additional open nested child. No
-diagnostic observation is counted as a final candidate matrix pass.
+Private diagnostic inspections include adjustable slider, reading-page, Settings title and selected
+page-chip comparisons. The chip's ordinary-font before/after originals are byte-identical; its
+maximum-font frame grows to contain the complete label. Long dialog titles, Settings choices, picker
+captions and live font-reduction behavior remain under #2985, an API child of #2978. They are
+unresolved product work. Source invalidation has advanced the ledger without promoting any
+diagnostic observation to a final candidate matrix pass. The epic still has 91 direct children and
+92 recursive children.
 
 ## Merge and completion boundary
 
