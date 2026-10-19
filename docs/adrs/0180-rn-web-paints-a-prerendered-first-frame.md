@@ -228,9 +228,9 @@ script has run. There is no early ink and no second drawing engine.
   The boot script stops the press at the window in the capture phase, so the app never sees it, and
   React has nothing to replay. A press it stopped stays stopped through its release and click, even
   when the controls go live while it is held: React Native Web calls `onPress` on the click alone.
-  The next pointer press or key press is the app's again. The drawing content stamps
-  `data-controls-live` in the commit that attaches its handlers
-  (`platform/firstFrameControls.web.ts`).
+  Only that press is held. Once the controls are live, any other press is the app's, even one made
+  while a stopped finger is still down. The drawing content stamps `data-controls-live` in the
+  commit that attaches its handlers (`platform/firstFrameControls.web.ts`).
 * `platform/firstFrameContract.ts` declares the property, the attributes, the global, the drawing
   button and the paper's test id once, and the build imports them.
 * `tools/tests/native-web-early-input.test.mjs` runs the boot script against a shell. It also mounts
@@ -294,7 +294,7 @@ sheet (the evidence package's `results/`, `results/sdk58/` and `results/quiet-ho
 
 ### Startup cap (proposed split, awaiting the owner)
 
-The build measures 860,582 bytes against the 850,230 cap, so `native:web:build`'s post-check fails.
+The build measures 861,191 bytes against the 850,230 cap, so `native:web:build`'s post-check fails.
 No CI job runs that build. The cap structure is unchanged until the owner decides.
 
 | Part of the startup path                                   | Bytes   |
@@ -304,27 +304,27 @@ No CI job runs that build. The cap structure is unchanged until the owner decide
 | Inline CSS: React Native Web's critical rules              | 2,716   |
 | Inline CSS: the feedback styles                            | 814     |
 | Inline CSS: Expo's reset and the boot theme                | 528     |
-| Inline JS: the boot scripts (theme, surface, frame, input) | 3,703   |
-| The bundle: Expo's runtime and the entry chunk             | 815,513 |
+| Inline JS: the boot scripts (theme, surface, frame, input) | 4,186   |
+| The bundle: Expo's runtime and the entry chunk             | 815,639 |
 
-Against the SDK 58 baseline (838,334), the prerender adds 22,248 bytes:
+Against the SDK 58 baseline (838,334), the prerender adds 22,857 bytes:
 
 * 10,493 for the texture;
-* 4,837 for the entry chunk's server snapshots, window seam, guards, adoption and live stamps;
-* 3,388 for the boot scripts;
+* 4,963 for the entry chunk's server snapshots, window seam, guards, adoption and live stamps;
+* 3,871 for the boot scripts;
 * 3,530 for the critical and feedback CSS.
 
 With the bundle held until after first paint, one cap measures two different things. The proposal
 splits it, each part set from measurement plus headroom by ADR-0179's rule:
 
 * **A first-paint cap** on what the first frame needs before it can paint: the shell's inline CSS
-  and inline scripts, now 45,069 bytes. The template markup is not in it; the shell document is
-  23,335 bytes brotli. ADR-0179's 11,896 bytes of headroom would be a quarter of this cap, so it
+  and inline scripts, now 45,552 bytes. The template markup is not in it; the shell document is
+  23,474 bytes brotli. ADR-0179's 11,896 bytes of headroom would be a quarter of this cap, so it
   would catch nothing smaller than the whole feedback layer. A headroom below the smallest
   first-paint lever taken here, the 1,649-byte boot script, would catch it. One choice is 1,500
-  bytes, giving a cap of 46,569.
+  bytes, giving a cap of 47,052.
 * **A core-controls cap** on the bundle tier 2 needs. Without tiers that is Expo's runtime plus the
-  entry chunk: 815,513 bytes, with ADR-0179's 11,896 bytes of headroom giving 827,409.
+  entry chunk: 815,639 bytes, with ADR-0179's 11,896 bytes of headroom giving 827,535.
 
 ### Interactivity tiers (proposed, awaiting the owner)
 
@@ -434,7 +434,7 @@ and the held finger becomes ink at 2,642 without lifting.
   Expo upgrade that moves either fails the build. Both survived the SDK 57 to 58 upgrade unchanged.
 * − The build depends on happy-dom, a development dependency, for `DOMParser`. Shipping the web
   export from Netlify would need it moved (ADR-0070), or the icons pre-parsed.
-* − The startup path is 22,248 bytes over the SDK 58 baseline and 10,352 over the cap, until the
+* − The startup path is 22,857 bytes over the SDK 58 baseline and 10,961 over the cap, until the
   owner decides the split.
 
 ### Follow-ups

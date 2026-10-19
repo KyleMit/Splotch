@@ -185,6 +185,11 @@ showed one burst at the touch and ended with one ink path, a stroke started wher
 when the engine took it over (`results/early-input/probes.log.txt`). The pixel and
 hydrated-versus-fresh DOM checks pass again on `after` (`results/early-input/`).
 
+These timings are from bf609492c. Codex's two review rounds then changed only the boot script's
+input handling and the early-pointer hand-over. Together they add 483 bytes of inline script and 126
+in the entry chunk, measured at a79d1bcc5 (`results/early-input/startup-bytes.json`: 861,191 bytes
+in all). The timing probes were not rerun.
+
 * **Item 4, the tiers.** `harness/attribute-entry.mjs` attributes the entry chunk through a
   source-mapped export (`results/early-input/entry-attribution.json`). Libraries are 390,497 bytes,
   the drawing engine 100,093, the drawing chrome 122,111, and product, settings and the library
