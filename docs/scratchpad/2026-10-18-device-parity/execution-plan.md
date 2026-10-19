@@ -270,9 +270,14 @@ minutes.
 3. Launch the arm, open "Settings", and choose the batch style under Appearance → Button style:
    "Raised" or "Flat". Where an Orientation picker is shown, choose Auto. Close Settings. Every
    other setting stays at its fresh-install default: Pen at the default size, Purple, drawer
-   collapsed, Crayon, Magic and Eraser enabled, AI off, sound on.
+   collapsed, Crayon, Magic and Eraser enabled, AI off, sound on. v1.6.0 shows "Lock device
+   rotation" instead; turn it off. Its Android WebView reports every toggle unchecked, so read the
+   lock from the "Force landscape orientation" row, which shows only while the lock is on.
 4. Set the batch orientation through the driver: `XCUIDevice` orientation through WebDriverAgent on
-   iOS, the emulator console `rotate` on Android, a viewport swap on web.
+   iOS, the emulator console `rotate` on Android with Auto-rotate on, a viewport swap on web. On
+   Android, pin one landscape rotation for both arms of a pair, so the camera cutout is on the same
+   side. Check the rotation at every capture, because the display can turn back to portrait at the
+   cold launch.
 5. Terminate the app.
 
 **Reaching each state on both arms.** Controls are found by their shipping accessible names: "Expand
@@ -321,7 +326,9 @@ Fixture strokes, in paper-normalized coordinates at the default size:
 * F2: Crayon in "Purple". A circle centred at (0.35, 0.60) with radius 0.12, in 72 samples.
 * F3: "Magic brush". A diagonal from (0.55, 0.45) to (0.85, 0.80), in 40 samples.
 
-S12 waits for the Farm page art to land before drawing, then applies the settle rule after F3.
+S12 waits for the Farm page art to land before drawing, then applies the settle rule after F3. On
+the emulators, v1.6.0 lays down offset copies of each driven stroke, so its S12 ink is compared only
+on simulators and devices (`results/ds1-android-slice-2026-10-19.md`).
 
 **Settle.** The shared rule applies to every still. S0 is a recording from before launch to the
 first settled frame. Its pass rule covers the first-frame colour, any theme flash, and the band.
@@ -505,12 +512,17 @@ that row's targets.
 ### KEY-1: Hardware-keyboard input
 
 * **Fixture:** Both arms on the iPad simulators and the API 36 tablet emulator, and on RN web.
-* **Steps:** Send hardware key events: WebDriverAgent key events through UIKit's hardware-key path
-  on iPad, `adb shell input keycombination` on Android, and the Playwright keyboard on web. Cover
-  Cmd or Ctrl+Z on the drawing screen and inside a text field, Escape on flyouts and dialogs, gate
-  digits, Backspace and Enter, and arrow keys in segmented pickers (P15, X49, B0020, B0206).
+* **Steps:** Send hardware key events: on iPad, XCUITest's `typeKey` for Cmd+Z (Command is
+  `XCUIKeyModifierCommand`, 1 << 4, not UIKit's 1 << 20), and HID keyboard usages through
+  `mobile: performIoHidEvent` for Delete, Escape and Return, which `typeKey` does not deliver as
+  UIKit key commands; `adb shell input keyevent` and `keycombination` on Android; and the Playwright
+  keyboard on web. Cover Cmd or Ctrl+Z on the drawing screen and inside a text field, Escape on
+  flyouts and dialogs, gate digits, Backspace and Enter, and arrow keys in segmented pickers (P15,
+  X49, B0020, B0206).
 * **Compared:** The resulting drawing, dialog and focus state.
-* **Pass:** The same result as the reference.
+* **Pass:** The same result as the reference. On iOS, v1.6.0 ignores hardware keys (X49, X38), so
+  judge iOS cells against `web-prod` (`results/key1-slice-2026-10-19.md`). Its iPad Settings sidebar
+  reports frames detached from its rows; tap a row where it renders.
 
 ### PHY-6: Assistive speech
 
