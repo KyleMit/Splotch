@@ -112,10 +112,21 @@ raw) with twelve variants. The pixel and DOM checks below reproduce on this base
 
 The RN performance campaign reported that Lighthouse's simulated mode scatters the shipping app's
 LCP between 1.1 and 3.9 s. It named the devtools throttling method as the trustworthy comparison. It
-also flagged native Release builds loading this host from 14:22Z for about 20 minutes. Of this
-package's runs, that window overlaps only the SDK 57 `shell`, `shell2` and repeat-visit Lighthouse
-rows (14:27–14:40Z) and the SDK 57 applied-throttling timelines (14:41Z). The SDK 58 measurements
-above ran from 15:0x to 15:37Z.
+also gave the exact windows when it loaded this host:
+
+* native iOS and Android Release builds, heavy CPU: 14:19:05–14:24:23Z;
+* an install and web export, moderate load: about 14:28–14:30Z;
+* one Lighthouse run of its own, one Chromium at a time: 14:30:50–14:33:06Z.
+
+Each run's `fetchTime` was checked against those windows.
+
+* **Overlapping the heavy builds.** The SDK 57 `proto4` unthrottled tablet cells
+  (14:18:52–14:22:11Z) and the first sample of `shell`'s simulated phone first visit (from
+  14:24:16Z). Its 2,818 ms matches the clean tablet cell's 2,816.
+* **Overlapping the moderate install and the campaign's own Lighthouse run.** The SDK 57
+  repeat-visit rows of `shell`, `baseline` and `proto4` (14:27:26–14:33:59Z).
+* **Clean.** Every other run: `proto2`'s repeat rows, `shell2`, `proto5`, the SDK 57
+  applied-throttling timelines (14:40–14:41Z), and everything on the SDK 58 base.
 
 The rows below were taken from 15:44 to 16:01Z while this session held the campaign's `rig.lock`, so
 no build ran. `shipping` is `npm run build`'s `web/build` from this branch, served by the same
