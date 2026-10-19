@@ -31,6 +31,7 @@ function image(width, height) {
     height: () => height,
     dispose() {},
     encodeToBase64: () => 'committed ink',
+    makeShaderOptions: recorder,
   };
 }
 
@@ -62,6 +63,8 @@ export function recordingSkiaModule({
       Matrix: recorder,
       PathBuilder: { Make: recorder },
       Shader: { MakeLinearGradient: recorder },
+      Data: { fromBase64: recorder },
+      Image: { MakeImageFromEncoded: () => image(1, 1) },
       PictureRecorder: () => {
         const canvas = recorder();
         return {

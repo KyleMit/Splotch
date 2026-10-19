@@ -5,6 +5,10 @@ import {
   PERF_LINE_VERSION,
   PERF_LOG_TAG,
 } from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
+import {
+  appendPoint,
+  sampleOutcome,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const CLOCK_JOIN = { clock: 'mach_absolute_time', errorMs: 0 };
 
@@ -61,6 +65,25 @@ const stroke = (points) => ({
   points: Array.from({ length: points }, (_, x) => ({ x, y: 0 })),
 });
 
+describe('sampleOutcome', () => {
+  // Negative control: classifying by whether the stroke grew would call both rejections duplicates.
+  it('names what the stroke keeps of each sample, as appendPoint keeps it', () => {
+    const points = [{ x: 10, y: 10 }];
+    for (const [point, includeEndpoint, outcome] of [
+      [{ x: 20, y: 20 }, false, 'appended'],
+      [{ x: 10, y: 10 }, true, 'duplicate'],
+      [{ x: 10, y: 10 }, false, 'duplicate'],
+      [{ x: 10.5, y: 10 }, false, 'minDistanceRejected'],
+      [{ x: 10.5, y: 10 }, true, 'appended'],
+    ]) {
+      expect(sampleOutcome(points, point, includeEndpoint)).toBe(outcome);
+      expect(appendPoint(points, point, includeEndpoint).length > points.length).toBe(
+        outcome === 'appended'
+      );
+    }
+  });
+});
+
 describe('createPerfCohorts', () => {
   it('counts one cohort from its first packet to the packet that leaves no contact held', () => {
     const { cohorts, lines, advance } = harness();
@@ -68,7 +91,8 @@ describe('createPerfCohorts', () => {
     cohorts.stroke(0);
     advance(8);
     cohorts.packet(packet('move', [{ identifier: 'a', samples: 4 }]));
-    for (const outcome of ['appended', 'duplicate', 'appended']) cohorts.append(outcome);
+    for (const outcome of ['appended', 'duplicate', 'appended', 'minDistanceRejected'])
+      cohorts.append(outcome);
     advance(8);
     cohorts.packet(packet('end', [{ identifier: 'a', samples: 1 }]));
     cohorts.append('duplicate');
@@ -93,6 +117,7 @@ describe('createPerfCohorts', () => {
         maxSamplesPerPacket: 4,
         appended: 2,
         duplicate: 2,
+        minDistanceRejected: 1,
         inkLayoutEffectCommits: 0,
         surfaceLayoutEffectCommits: 0,
         liveFlush: { n: 0, totalMs: 0, maxMs: 0 },

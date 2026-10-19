@@ -1,4 +1,4 @@
-import type { Stroke } from './model';
+import type { AppendOutcome, Stroke } from './model';
 import type { PaperInput } from './paperInput';
 
 // The native log tag (Android) and category (iOS) every line is written under, and the line's
@@ -13,7 +13,6 @@ export const PERF_LINE_VERSION = 2;
 // commits it caused count toward it. The next contact closes it sooner.
 export const COHORT_SETTLE_MS = 250;
 
-export type AppendOutcome = 'appended' | 'duplicate';
 export type PerfTimer = 'liveFlush' | 'sceneRecord';
 export type PerfClock<Handle> = Readonly<{
   now: () => number;
@@ -105,7 +104,7 @@ function openCohort(index: number, openedAt: number): Cohort {
     packets: 0,
     samples: 0,
     maxSamplesPerPacket: 0,
-    outcomes: { appended: 0, duplicate: 0 },
+    outcomes: { appended: 0, duplicate: 0, minDistanceRejected: 0 },
     strokes: 0,
     points: 0,
     inkCommits: 0,

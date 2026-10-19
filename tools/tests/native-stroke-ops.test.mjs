@@ -291,15 +291,21 @@ describe('the live cohort records ops as frames flush', () => {
     expect(stroke.points).toEqual([at(10, 10), at(20, 10)]);
   });
 
-  it('keeps a stroke snapshot until the stroke changes', () => {
+  it('publishes a new stroke and drafts list per change, over the contact’s own buffer', () => {
     const cohort = createContactCohort();
     opened(cohort, 'a', at(10, 10));
     const [live] = cohort.live();
     const first = live.snapshot();
+    const drafts = cohort.drafts();
     expect(live.snapshot()).toBe(first);
+    expect(cohort.drafts()).toBe(drafts);
     cohort.sample('a', at(20, 10));
     expect(live.snapshot()).not.toBe(first);
-    expect(first.points).toEqual([at(10, 10)]);
+    expect(cohort.drafts()).not.toBe(drafts);
+    expect(live.snapshot().points).toBe(first.points);
+    expect(first.points).toEqual([at(10, 10), at(20, 10)]);
+    const last = cohort.drafts();
+    expect(cohort.finish('a')).toBe(last);
   });
 });
 

@@ -2,6 +2,7 @@ import { drawingPaper, type AdoptedPaper, type PaperReference } from './paperSpa
 import type { PaintColor } from './palette';
 import {
   cohortFrame,
+  sampleOutcome,
   strokeStyle,
   type Drawing,
   type Point,
@@ -14,9 +15,11 @@ import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
 import type { InkStep } from './inkOps';
 import { PERF_PROBE, perfAppend, perfDrained } from './perfProbe';
 
-// A stroke the cohort is still drawing. Its points and ops grow in place, so following a contact
-// copies nothing; `snapshot` is the immutable stroke as it stands, kept until the stroke changes.
-// Once the cohort completes it never changes again, and its snapshot is the committed stroke.
+// A stroke the cohort is still drawing. Its points and ops are its contact's own buffers, grown in
+// place, so a kept sample costs O(1) rather than a copy of the stroke. `snapshot` is a new Stroke
+// over the same buffers each time the stroke changes, so a consumer keyed on identity sees every
+// change; an earlier snapshot reads the buffers as they grow. Nothing writes them once the cohort
+// completes, so the last snapshot is the committed stroke and never changes again.
 export type LiveStroke = Stroke &
   Readonly<{
     ops: readonly StrokeOp[];
@@ -38,9 +41,7 @@ function liveEntry(style: StrokeStyle, first: Point): Entry {
     ops,
     finished: () => state.done,
     snapshot: () =>
-      (state.cached ??= ops.length
-        ? { ...style, points: [...points], ops: [...ops] }
-        : { ...style, points: [...points] }),
+      (state.cached ??= ops.length ? { ...style, points, ops } : { ...style, points }),
   };
   return { stroke, points, ops, state };
 }
@@ -50,6 +51,8 @@ export function createContactCohort() {
   let entries: Entry[] = [];
   let paper: PaperReference | null = null;
   let frame = 0;
+  // One drafts list per change to the cohort, so a consumer keyed on the list sees each change.
+  let drafts: readonly Stroke[] | null = null;
 
   // Every sample taken since the last flush becomes ops in one frame: a stroke's first flush is
   // its dot, and each flush after paints the samples since as one path.
@@ -67,9 +70,15 @@ export function createContactCohort() {
       }
       entry.state.flushed = entry.points.length;
       entry.state.cached = null;
+      drafts = null;
     }
     if (recorded.length > 0) frame += 1;
     return recorded;
+  }
+
+  function currentDrafts(): readonly Stroke[] {
+    drafts ??= entries.map((entry) => entry.stroke.snapshot());
+    return drafts;
   }
 
   // A cohort no renderer flushed keeps whole-stroke ops; one it did is flushed to its last sample.
@@ -77,8 +86,9 @@ export function createContactCohort() {
     if (active.size > 0 || entries.length === 0) return null;
     if (entries.some((entry) => entry.ops.length > 0)) flush();
     for (const entry of entries) entry.state.done = true;
-    const completed = entries.map((entry) => entry.stroke.snapshot());
+    const completed = currentDrafts();
     entries = [];
+    drafts = null;
     if (PERF_PROBE) perfDrained(completed);
     return completed;
   }
@@ -109,19 +119,19 @@ export function createContactCohort() {
       );
       active.set(identifier, entries.length);
       entries.push(liveEntry(style, point));
+      drafts = null;
     },
     sample(identifier: string, point: Point) {
       const index = active.get(identifier);
       if (index === undefined) return;
       const entry = entries[index];
-      const last = entry.points.at(-1);
-      if (last && last.x === point.x && last.y === point.y) {
-        if (PERF_PROBE) perfAppend('duplicate');
-        return;
-      }
+      // The responder keeps every sample that moved, a contact's last included.
+      const outcome = sampleOutcome(entry.points, point, true);
+      if (PERF_PROBE) perfAppend(outcome);
+      if (outcome !== 'appended') return;
       entry.points.push(point);
       entry.state.cached = null;
-      if (PERF_PROBE) perfAppend('appended');
+      drafts = null;
     },
     finish(identifier: string): readonly Stroke[] | null {
       if (!active.delete(identifier)) return null;
@@ -138,9 +148,7 @@ export function createContactCohort() {
       if (!paper) throw new Error('The drawing paper is not ready.');
       return paper;
     },
-    drafts(): readonly Stroke[] {
-      return entries.map((entry) => entry.stroke.snapshot());
-    },
+    drafts: currentDrafts,
     live(): readonly LiveStroke[] {
       return entries.map((entry) => entry.stroke);
     },

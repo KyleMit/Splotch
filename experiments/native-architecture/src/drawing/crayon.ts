@@ -101,21 +101,62 @@ export function crayonPassSeed(stroke: Extract<Stroke, { brush: 'crayon' }>, pas
   return stroke.seed * PASS_SEED_MULTIPLIER + pass;
 }
 
+type CrayonStroke = Extract<Stroke, { brush: 'crayon' }>;
+type PassScan = Readonly<{
+  resumes: (stroke: CrayonStroke, width: number, texelScale: number) => boolean;
+  passes: () => readonly CrayonPass[];
+}>;
+
 // A pass opened at point k continues the curve from the point before it (its first point) with
 // the one before that as its lead, so splitting a stroke into passes leaves its shape unchanged.
+function openScan(stroke: CrayonStroke, width: number, texelScale: number): PassScan {
+  const source = stroke.points;
+  const tracker = createCrayonPassTracker(source[0], width, texelScale);
+  const closed: CrayonPass[] = [];
+  const pass = (from: number, to: number): CrayonPass => {
+    const seed = crayonPassSeed(stroke, closed.length);
+    return from === 0
+      ? { seed, points: source.slice(0, to), lead: undefined }
+      : { seed, points: source.slice(from - 1, to), lead: source[from - 2] };
+  };
+  let open = 0;
+  let scanned = 1;
+  let last = source[0];
+  return {
+    resumes: (candidate, candidateWidth, candidateTexelScale) =>
+      candidate.points === source &&
+      candidate.seed === stroke.seed &&
+      candidateWidth === width &&
+      candidateTexelScale === texelScale &&
+      source[scanned - 1] === last,
+    passes() {
+      for (; scanned < source.length; scanned++) {
+        if (tracker.advance(source[scanned])) {
+          closed.push(pass(open, scanned));
+          open = scanned;
+        }
+      }
+      last = source[scanned - 1];
+      return [...closed, pass(open, source.length)];
+    },
+  };
+}
+
+// The last stroke scanned, resumable: a web draft's points array only grows while its contact is
+// down (contactCohort), so each packet's draft scans only the samples appended since the last.
+// The passes are a function of the points, seed, width and texel scale alone; a list whose last
+// scanned sample is no longer in place is scanned afresh.
+let lastScan: PassScan | null = null;
+
 export function crayonPasses(
-  stroke: Extract<Stroke, { brush: 'crayon' }>,
+  stroke: CrayonStroke,
   width: number,
   texelScale = 1
 ): readonly CrayonPass[] {
-  const points = stroke.points;
-  if (points.length === 0) return [];
-  const starts = [0, ...crayonPassBreaks(points, width, texelScale)];
-  return starts.map((start, pass) => {
-    const end = starts[pass + 1] ?? points.length;
-    const seed = crayonPassSeed(stroke, pass);
-    return start === 0
-      ? { seed, points: points.slice(0, end), lead: undefined }
-      : { seed, points: points.slice(start - 1, end), lead: points[start - 2] };
-  });
+  if (stroke.points.length === 0) return [];
+  const scan = lastScan?.resumes(stroke, width, texelScale)
+    ? lastScan
+    : openScan(stroke, width, texelScale);
+  lastScan = scan;
+  return scan.passes();
 }

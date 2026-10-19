@@ -1,6 +1,6 @@
-import type { Stroke } from './model';
+import type { AppendOutcome, Stroke } from './model';
 import type { PaperInput } from './paperInput';
-import type { AppendOutcome, PerfTimer } from './perfCohort';
+import type { PerfTimer } from './perfCohort';
 
 // The perf probe's contract, and the build without it: the web export, Node and the type checker
 // resolve this file, where every export does nothing and PERF_PROBE stays false. Metro's Android

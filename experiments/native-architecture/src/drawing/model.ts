@@ -58,6 +58,26 @@ export type History = Readonly<{
 
 // An Undo copy that only changes the next Magic choice retains every existing pixel and scan.
 const inkIdentities = new WeakMap<Drawing, Drawing>();
+// The list each addStrokes list appended to, so a renderer holding the earlier list learns of the
+// append without comparing every stroke. A list's own entry is dropped once it is appended to in
+// turn, so no entry keeps a chain of ancestor lists alive.
+const appendedTo = new WeakMap<readonly Stroke[], readonly Stroke[]>();
+
+function appendStrokes(strokes: readonly Stroke[], additions: readonly Stroke[]) {
+  const appended = [...strokes, ...additions];
+  appendedTo.delete(strokes);
+  appendedTo.set(appended, strokes);
+  return appended;
+}
+
+// Whether `next` starts with every stroke of `base`, by identity.
+export function extendsStrokes(base: readonly Stroke[], next: readonly Stroke[]): boolean {
+  return (
+    next === base ||
+    appendedTo.get(next) === base ||
+    (base.length <= next.length && base.every((stroke, index) => next[index] === stroke))
+  );
+}
 
 export function drawingInkIdentity(drawing: Drawing): Drawing {
   return inkIdentities.get(drawing) ?? drawing;
@@ -131,7 +151,7 @@ export function addStrokes(
     if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
     return commitDrawing(history, {
       ...drawing,
-      strokes: [...drawing.strokes, ...additions.map(withoutOps)],
+      strokes: appendStrokes(drawing.strokes, additions.map(withoutOps)),
     });
   }
   const reference = drawing.paper.kind === 'adopted' ? drawing.paper : paper;
@@ -151,7 +171,7 @@ export function addStrokes(
     ...drawing,
     version: 8,
     paper: drawing.paper.kind === 'adopted' ? drawing.paper : adopted,
-    strokes: [...drawing.strokes, ...additions],
+    strokes: appendStrokes(drawing.strokes, additions),
   });
 }
 
@@ -204,20 +224,31 @@ export function paperPoint(x: number, y: number, width: number, height: number):
   };
 }
 
-export function appendPoint(
+export type AppendOutcome = 'appended' | 'duplicate' | 'minDistanceRejected';
+
+// What a stroke keeps of a sample that follows `points`.
+export function sampleOutcome(
   points: readonly Point[],
   point: Point,
   includeEndpoint = false
-): readonly Point[] {
+): AppendOutcome {
   const last = points.at(-1);
-  if (last && last.x === point.x && last.y === point.y) return points;
+  if (last && last.x === point.x && last.y === point.y) return 'duplicate';
   if (
     !includeEndpoint &&
     last &&
     Math.hypot(point.x - last.x, point.y - last.y) < MIN_SAMPLE_DISTANCE
   )
-    return points;
-  return [...points, point];
+    return 'minDistanceRejected';
+  return 'appended';
+}
+
+export function appendPoint(
+  points: readonly Point[],
+  point: Point,
+  includeEndpoint = false
+): readonly Point[] {
+  return sampleOutcome(points, point, includeEndpoint) === 'appended' ? [...points, point] : points;
 }
 
 type SmoothStroke = Readonly<{ start: Point; segments: readonly PathSeg[] }>;
