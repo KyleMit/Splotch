@@ -11,7 +11,7 @@ rn-web-edge,pending fresh qualification,must record live,must verify artifact/so
 rn-web-safari,pending fresh qualification,must record live,must verify artifact/source/certificate before use
 android-api24,official ARM64 image and API24 platform installed; emulator creation and source/signature/Display0 qualification pending,must record live,must verify artifact/source/certificate before use
 android-api26,pending fresh qualification,must record live,must verify artifact/source/certificate before use
-android-api29,pending fresh qualification,must record live,must verify artifact/source/certificate before use
+android-api29,owned fresh official API29 runtime and signed APK admitted for activation/storage diagnostics; final acceptance pending,Android API29; official archive and installed runtime bytes verified,application1e84110dbd06e5d14e3fce9f4927988a8cf129eb; driver e5a69978819c6a3ef38c8d74779ab7c7a6bfa51b; artifact/source/signature verified privately
 ios16.4,blocked: official Xcode download reports unavailable; no extra physical device,must record live,must verify artifact/source/certificate before use
 safari16.4,blocked: no supplied environment; Playwright WebKit is not Safari16.4,must record live,must verify artifact/source/certificate before use
 ios-floor16.4,blocked: official download redirects to Apple authentication; active Xcode catalog excludes16.4; user may download compatible Xcode/runtime later,16.4 required,qualification pending

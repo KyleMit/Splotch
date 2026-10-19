@@ -37,7 +37,7 @@ issue is an API-linked open child; there are 91 direct children (90 historical c
 Neither count establishes device acceptance.
 
 The historical inventory source is 64a9ca53a1361afde8d4104b661bbec93892b2c0. This draft candidate is
-1e84110dbd06e5d14e3fce9f4927988a8cf129eb. Later candidate heads require dependency invalidation. The
+3906800dbef51ed69f5648bb5c5bc5b8ef596925. Later candidate heads require dependency invalidation. The
 acceptance source is the
 [59-row table](https://github.com/KyleMit/Splotch/issues/2690#issuecomment-6207540788). Its edited
 limitation dispositions are not carried forward as verified states.
@@ -90,8 +90,9 @@ signature, non-debuggable Release manifest, Hermes bundle and source binding. Al
 source-map code files, 53 audio assets and 90 native build inputs match Git. This build is ARM64
 only. It declares minimum API24 and target API36, with `WRITE_EXTERNAL_STORAGE` through API28 and
 the corresponding implied legacy read permission. This corrects the stale development guide. The
-artifact has not established an API24/26/29 save result, accessibility activation, runtime smoke or
-performance result. The earlier recovered APK remains a separately labeled historical control.
+artifact qualification alone establishes no save, accessibility, runtime or performance result. The
+API29 diagnostic below provides separate observations; API24/26 storage remains pending. The earlier
+recovered APK remains a separately labeled historical control.
 
 A fresh API29 diagnostic used the current qualified APK and a direct accessibility-action driver.
 The official runtime archive checksum and all 14 installed runtime files were verified. Actual
@@ -99,10 +100,23 @@ The official runtime archive checksum and all 14 installed runtime files were ve
 wrong foreground and disabled Undo were refused. Three separate contacts produced three distinct
 Undo units. Save published an app-owned, non-pending MediaStore PNG; its device/host bytes and
 actual ink were verified. The 583-second batch restored blank ink and the original collapsed drawer
-before releasing the owned emulator. This private driver is a diagnostic prototype awaiting
-reusable-source review. Shipping pairing, auto-save/Clear, API24/26 paths and final matrix
-acceptance remain pending. Raw text descendants are not interchangeable with the uniquely named
-activatable button; both action lists and actual activation are recorded.
+before releasing the owned emulator. That driver was a diagnostic prototype. The reusable-source
+successor is under independent review in #2987. Shipping pairing, auto-save/Clear, API24/26 paths
+and final matrix acceptance remain pending. Raw text descendants are not interchangeable with the
+uniquely named activatable button; both action lists and actual activation are recorded.
+
+The reusable driver at e5a69978819c6a3ef38c8d74779ab7c7a6bfa51b builds with the existing signer; all
+three source inputs match Git. A 141-second fresh-API29 requalification verifies wrong-foreground
+refusal, duplicate-name refusal without input, and explicitly class-selected switch activation on
+and off. The default does not silently discard repeated names. AI was restored off and the app
+returned to drawing before the owned emulator was released. Older APIs explicitly report the
+driver's display observation as unknown; separate host checks prove Display0 before every input. The
+failed launch-transition and stale-label helper takes remain preserved and diagnosed. No AI request
+was made. These are instrumentation diagnostics, not physical, speech or final-matrix acceptance.
+Both review rounds are posted from the same Claude conversation; the exact head passed all 17
+applicable hosted checks and merged through #2987. One non-blocking candidate-summary truncation nit
+is explicitly recorded on the PR. A separate inspect remains necessary when that summary is partial.
+No third review round was started.
 
 ## Target-to-feature plan
 
@@ -113,7 +127,7 @@ activatable button; both action lists and actual activation are recorded.
 | Physical iPad                    | Real contacts/palm, held-contact rotation, speech, Photos, audio, idle, launch/drawing/Undo             | Operator grant/window and faithful mutable shipping comparator pending       |
 | Physical Galaxy                  | Display0 public behavior, TalkBack, Save/files, system navigation, idle constraints, paired performance | Ownership, artifact and driver qualification pending; stay-awake remains 15  |
 | API34 emulator                   | Display0 qualification, current Android behavior, permissions and system navigation                     | Fresh emulator admission pending                                             |
-| API29 emulator                   | Actual accessibility activation, scoped-storage Save and auto-save/Clear files                          | Fresh emulator admission pending                                             |
+| API29 emulator                   | Actual accessibility activation, scoped-storage Save and auto-save/Clear files                          | Admitted for private activation/storage diagnostics; final matrix pending    |
 | API26 and API24 emulators        | Exact APK permission/maxSdk inspection, request/deny/grant and actual old-storage files                 | Official API24 image installed; fresh emulator/storage qualification pending |
 | RN web in Chromium               | Full web visual/behavior cells, install banner/guide, actual installation, offline/update, folder save  | Current export passes startup/precache checks; browser acceptance pending    |
 | Firefox and Edge                 | Real browser compatibility, core drawing/settings/routes and relevant web contracts                     | Exact browser/version qualification pending                                  |
@@ -205,11 +219,15 @@ performance results are trusted.
 
 The physical gesture request boundary (#2979), independent PageArt test-fixture race (#2980), native
 adjustable slider semantics (#2981), reading safe-area/public-return behavior (#2982), Settings
-title wrapping and web focus (#2983), and maximum-font active-page chip containment (#2986) are
-merged. Each exact implementation head completed independent Claude review and applicable hosted CI.
-The draft candidate includes merge 1e84110dbd06e5d14e3fce9f4927988a8cf129eb. These fixes do not
-establish their physical acceptance cells: actual stroke cardinality, spoken slider
-value/adjustment/focus and physical reading-page interaction remain pending.
+title wrapping and web focus (#2983), maximum-font active-page chip containment (#2986), and guarded
+Android accessibility-action diagnostics (#2987) are merged. Each exact implementation head
+completed independent Claude review and applicable hosted CI. The draft candidate includes merge
+3906800dbef51ed69f5648bb5c5bc5b8ef596925. The latter unit changes only diagnostic tooling,
+documentation and script metadata; application/native inputs and dependency metadata are
+byte-identical to the qualified 1e84110dbd06e5d14e3fce9f4927988a8cf129eb application. Its diagnostic
+observations keep that original source binding. These fixes do not establish their physical
+acceptance cells: actual stroke cardinality, spoken slider value/adjustment/focus and physical
+reading-page interaction remain pending.
 
 Private diagnostic inspections include adjustable slider, reading-page, Settings title and selected
 page-chip comparisons. The chip's ordinary-font before/after originals are byte-identical; its
@@ -218,6 +236,25 @@ captions and live font-reduction behavior remain under #2985, an API child of #2
 unresolved product work. Source invalidation has advanced the ledger without promoting any
 diagnostic observation to a final candidate matrix pass. The epic still has 91 direct children and
 92 recursive children.
+
+## Stopping checkpoint and next work
+
+At the owner's request, this campaign is stopping at a recoverable unit boundary. The inventory
+still contains zero final-matrix verified cells. Android diagnostic PR #2987 completed its two
+independent review rounds and exact-head CI and is merged into the migration branch. The coverage PR
+#2984 remains a draft, preserving unfinished reconciliation rather than implying acceptance. Private
+originals, signed artifacts, build receipts and review records have local byte-verified recovery;
+detailed recovery locations and device records stay private.
+
+Resume by refreshing remote heads and the API-linked issue/comment inventory, then complete the
+operational protocols and actual source-to-requirement reconciliation. Finish #2985's remaining font
+defects in causal units, and extend the admitted Android driver to API24/26 storage, API29
+auto-save/Clear and API34 Display0. Establish physical driver cardinality and prepare the
+consolidated operator windows before accepting physical drawing, speech, sound, rotation or idle
+cells. Actual store-source identity, compatible iOS16.4/Safari16.4 environments and hosted recovery
+capability remain concrete blockers. Required live AI/report flows, final matrix comparisons and
+faithful paired performance are unfinished. The cumulative AI count remains one possible generation,
+zero pictures and zero reports.
 
 ## Merge and completion boundary
 
