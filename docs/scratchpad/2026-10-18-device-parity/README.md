@@ -4,10 +4,34 @@ Refs #2690 and [tracking issue #2978](https://github.com/KyleMit/Splotch/issues/
 stays open for the owner's cutover decision. Issue #2917 records the earlier campaign's disposition;
 its closure is not evidence of complete device parity.
 
-This is a **draft inventory, not capture-ready acceptance**. It preserves every historical
-requirement and proposed observable subcell, but current-code reconciliation, exact protocols,
-target qualification and final-head evidence are unfinished. There are no accepted final-head device
-passes in this inventory. Diagnostic build inspections are recorded separately.
+This is an **inventory with an execution plan, not accepted parity**. It preserves every historical
+requirement and proposed observable subcell. `execution-plan.md` groups the requirements into
+representative protocols, and `protocol-mapping.csv` routes each requirement to its protocols,
+targets and arms, or to an explicit classification. Target qualification, current-code
+reconciliation inside each protocol, and final-head evidence are unfinished. There are no accepted
+final-head device passes in this inventory: **zero requirements and zero cells are verified.**
+Diagnostic build inspections are recorded separately.
+
+## Execution plan
+
+The plan defines 23 protocols in nine families, ordered by user impact. The drawing screen comes
+first, with DS-1, its chrome visual matrix, spelled out in full. Routine visual and layout coverage
+runs on fresh iOS 26.5 simulators (notched iPhone, iPad mini, 13-inch iPad) and on API 34 and API 36
+emulators. A native target pairs the RN candidate with the reconstructed v1.6.0 reference on the
+same runtime; RN web pairs with production web source. Physical devices are reserved for
+physical-only properties and one drawing-screen sanity check.
+
+| Classification   | Requirements | Status today                                        |
+| ---------------- | -----------: | --------------------------------------------------- |
+| `protocol`       |         1229 | `unverified`                                        |
+| `physical-only`  |          129 | `unverified`; 3 `blocked` without a physical iPhone |
+| `automated-test` |           29 | `unverified` until AC-1 confirms a shipping oracle  |
+| `settled`        |           18 | Accepted owner decisions, never defects             |
+| `out-of-scope`   |          136 | Each with a stated reason                           |
+| **Total**        |         1541 | **0 `verified`**                                    |
+
+A mapping to a protocol or test is not a pass. A row becomes `verified` only when its protocols have
+run on all their targets and arms at one candidate head and the public result record is linked.
 
 ## Inventory and provenance
 
@@ -22,8 +46,10 @@ passes in this inventory. Diagnostic build inspections are recorded separately.
 `requirements.csv` retains the original wording, source location, historical classification,
 candidate mappings and exact aliases. An old test name or implementation claim is a reconciliation
 lead, not an accepted two-sided contract. `acceptance-subcells.csv` proposes 4,798 observable cells
-before pruning source-proven skips and deduplicating shared evidence. Its generic setup/expected
-fields must be replaced by operational protocols before a capture can qualify.
+before pruning source-proven skips and deduplicating shared evidence. Each subcell takes the
+protocols of its requirement, and a protocol's own states replace the generic setup and expected
+fields. `execution-plan.md` counts the 1,211 physical cells on routine rows that the targets policy
+supersedes.
 
 `source-ownership.csv` is deliberately conservative: any changed path matching a requirement's
 prefix invalidates its dependent source-sensitive evidence. This initial map includes broad shared
@@ -121,6 +147,10 @@ No third review round was started.
 
 ## Target-to-feature plan
 
+This table records each target's emphasis and qualification state. `execution-plan.md` assigns each
+requirement to targets under the owner's targets policy, and `targets.csv` lists every target class
+the mapping uses.
+
 | Target class                     | Required emphasis                                                                                       | Present qualification                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | Notched iPhone simulator         | Compact/wide transitions, safe areas, maximum font, dialogs, both orientations/themes                   | Fresh target admitted for causal-unit diagnostics; final matrix pending      |
@@ -128,6 +158,7 @@ No third review round was started.
 | Physical iPad                    | Real contacts/palm, held-contact rotation, speech, Photos, audio, idle, launch/drawing/Undo             | Operator grant/window and faithful mutable shipping comparator pending       |
 | Physical Galaxy                  | Display0 public behavior, TalkBack, Save/files, system navigation, idle constraints, paired performance | Ownership, artifact and driver qualification pending; stay-awake remains 15  |
 | API34 emulator                   | Display0 qualification, current Android behavior, permissions and system navigation                     | Fresh emulator admission pending                                             |
+| API36 phone and tablet emulators | Routine native coverage with edge-to-edge enforced, tablet layout                                       | Fresh emulator admission pending                                             |
 | API29 emulator                   | Actual accessibility activation, scoped-storage Save and auto-save/Clear files                          | Admitted for private activation/storage diagnostics; final matrix pending    |
 | API26 and API24 emulators        | Exact APK permission/maxSdk inspection, request/deny/grant and actual old-storage files                 | Official API24 image installed; fresh emulator/storage qualification pending |
 | RN web in Chromium               | Full web visual/behavior cells, install banner/guide, actual installation, offline/update, folder save  | Current export passes startup/precache checks; browser acceptance pending    |
@@ -140,8 +171,10 @@ and Safari16.4. Declared configuration is not a successful floor smoke. Modern P
 does not establish Safari16.4 behavior. The official iOS16.4 download still redirects to Apple
 authentication after retry, and the active Xcode catalog excludes it. The owner can download a
 compatible Xcode/runtime later using an existing login; credentials are not read. No additional
-physical devices are available. Hardware-keyboard and physical-iPhone silent-control cells stay
-blocked until an appropriate target exists; a simulator is not substituted.
+physical devices are available. Physical-iPhone silent-control cells stay blocked until an
+appropriate target exists; a simulator is not substituted. The owner's physical-only list does not
+include the keyboard, so hardware-keyboard cells run as KEY-1 on the iPad simulators and the Android
+emulator. Driver key events there travel the platform's hardware-key path.
 
 The proposed cells include explicit form-factor/orientation skip candidates. Confirm their public
 shell and measured breakpoint before treating the conditional skip as final. Original ledger fields
@@ -183,9 +216,10 @@ concrete blockers remain.
 
 The current raw proposal has 3,360 T1 cells, 952 T2 cells and 486 P cells. A naive two-arm still for
 every T1/T2 cell would mean 8,624 originals, plus behavioral videos/records. This is a planning
-upper bound before explicit skips and evidence-sharing; it is not a completed capture count. Final
-batching and human-window estimates require the semantic/protocol pass. Physical work is not ready
-for an operator window yet.
+upper bound before explicit skips and evidence-sharing; it is not a completed capture count. The
+protocol pass now sizes its own work. DS-1 alone is 128 independent batches: 2,592 stills and 128
+cold-launch recordings across six simulators and emulators and two web viewports. Physical work is
+not ready for an operator window yet.
 
 ## Operator and AI prerequisites
 
@@ -247,15 +281,16 @@ independent review rounds and exact-head CI and is merged into the migration bra
 originals, signed artifacts, build receipts and review records have local byte-verified recovery;
 detailed recovery locations and device records stay private.
 
-Resume by refreshing remote heads and the API-linked issue/comment inventory, then complete the
-operational protocols and actual source-to-requirement reconciliation. Finish #2985's remaining font
-defects in causal units, and extend the admitted Android driver to API24/26 storage, API29
-auto-save/Clear and API34 Display0. Establish physical driver cardinality and prepare the
-consolidated operator windows before accepting physical drawing, speech, sound, rotation or idle
-cells. Actual store-source identity, compatible iOS16.4/Safari16.4 environments and hosted recovery
-capability remain concrete blockers. Required live AI/report flows, final matrix comparisons and
-faithful paired performance are unfinished. The cumulative AI count remains one possible generation,
-zero pictures and zero reports.
+Resume by refreshing remote heads and the API-linked issue/comment inventory. The operational
+protocols now exist in `execution-plan.md`. Next, admit the simulator, emulator and browser targets
+and both arms, then run DS-1 and the rest of the drawing-screen family, reconciling each requirement
+against current source as its protocol runs. Finish #2985's remaining font defects in causal units,
+and extend the admitted Android driver to API24/26 storage, API29 auto-save/Clear and API34
+Display0. Establish physical driver cardinality and prepare the consolidated operator windows before
+accepting physical drawing, speech, sound, rotation or idle cells. Actual store-source identity,
+compatible iOS16.4/Safari16.4 environments and hosted recovery capability remain concrete blockers.
+Required live AI/report flows, final matrix comparisons and faithful paired performance are
+unfinished. The cumulative AI count remains one possible generation, zero pictures and zero reports.
 
 ## Merge and completion boundary
 

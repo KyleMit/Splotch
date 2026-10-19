@@ -42,10 +42,12 @@ from a screenshot.
 | Network policy           | Perform the prepared offline, network-return and OS data-policy cases.                                                                       | Record actual policy state, queue admission/retry and files; classify #2941's shared shipping/RN defect separately from a migration regression.                                                                   |
 | Idle and system gestures | Leave the suitable named physical target idle, then perform normal system navigation.                                                        | Measure past its actual configured auto-lock interval, inspect the app-owned wake mechanism separately, and check for stray ink. The Galaxy's configured awake rig does not prove an app wake lock.               |
 
-The hardware keyboard and a physical iPhone silent control are unavailable. Hardware Cmd+Z, Escape,
-gate-digit input and the physical silent-ringer property therefore remain blocked; synthetic keys,
-simulator mute or labels do not replace them. A later window can cover them only if a suitable
-physical target becomes available or the owner explicitly changes the required scope.
+A physical iPhone silent control is unavailable, so the physical silent-ringer property remains
+blocked; simulator mute or labels do not replace it. A later window can cover it only if a suitable
+physical target becomes available or the owner explicitly changes the required scope. The owner's
+physical-only list does not include the keyboard. Hardware Cmd+Z, Escape and gate-digit input
+therefore run as KEY-1 in `execution-plan.md`, on the iPad simulators and the Android emulator,
+rather than in an operator window.
 
 ## Existing credentials and live AI
 
