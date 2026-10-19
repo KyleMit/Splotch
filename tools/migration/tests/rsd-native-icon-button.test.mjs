@@ -269,6 +269,39 @@ describe('RsdIconButton', () => {
     await keylinedPen('dark', 'light');
     expect(markup()).toBe(NATIVE_ICONS['brush-pen'].light.replaceAll('currentColor', '#ffffff'));
   });
+
+  // react-native-svg's iOS renderer keeps a reused element's transform when the markup now at its
+  // index carries none. The eraser's first width wave is moved and scaled and the pen's is not, so
+  // the Stroke Width Button left the eraser held drawing a sliver of the pen's waves. Negative
+  // control: an unkeyed glyph keeps one svg across the switch and fails the first identity check.
+  it('mounts a new glyph or keyline afresh and repaints a recolored glyph in place', async () => {
+    const purple = '#ab71e1';
+    const strokeTile = (icon, props) =>
+      h(RsdIconButton, {
+        skin: 'tile',
+        size: TILE_PX,
+        icon,
+        label: 'Stroke width',
+        ink: purple,
+        onPress: vi.fn(),
+        ...props,
+      });
+    const svg = () => view().querySelector('svg[data-xml]');
+    await mount(strokeTile('line-weight-eraser'));
+    await vi.waitFor(() => expect(markup()).toContain('transform='));
+    const eraser = svg();
+    await mount(strokeTile('line-weight-brush'));
+    await vi.waitFor(() => expect(markup()).toContain(purple));
+    expect(markup()).not.toContain('transform=');
+    const pen = svg();
+    expect(pen).not.toBe(eraser);
+    await mount(strokeTile('line-weight-brush', { dimmed: true }));
+    expect(markup()).not.toContain(purple);
+    expect(svg()).toBe(pen);
+    await mount(strokeTile('line-weight-brush', { keyline: 'white' }));
+    expect(markup()).toContain('stroke="#000"');
+    expect(svg()).not.toBe(pen);
+  });
 });
 
 describe('RsdFlyoutMenu', () => {
