@@ -147,12 +147,12 @@ The replay writes one line to the same log as the cohort lines, with the trace i
 field, when its last packet has gone out; the last cohort's line follows within `COHORT_SETTLE_MS`.
 A replay that fails writes `replay` and `error` instead.
 
-| Field                   | Counts                                                                                                                                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                 |
-| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                          |
-| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                              |
-| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines |
+| Field                   | Counts                                                                                                                                                                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                                                                         |
+| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                                                                                  |
+| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                                                                                      |
+| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min, and `maxAtMs`, the scheduled time of the latest packet. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines |
 
 ## Web
 

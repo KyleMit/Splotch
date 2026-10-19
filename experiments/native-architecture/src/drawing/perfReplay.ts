@@ -11,7 +11,7 @@ import {
   REPLAY_LAUNCH_KEY,
   REPLAY_MODULE,
   REPLAY_SETTLE_MS,
-  type ReplayTiming,
+  type ReplayTrace,
   type ReplayTraceName,
 } from './replayTrace';
 
@@ -89,20 +89,27 @@ const lineHead = (context: PerfLineContext, name: string) => ({
   replay: name,
 });
 
+// maxAtMs is the scheduled time of the latest packet, which says whether the worst stall hit the
+// replay's first strokes or the middle of one.
 export function formatReplayLine(
-  name: ReplayTraceName,
-  timing: ReplayTiming,
+  trace: ReplayTrace,
   result: ReplayResult,
   context: PerfLineContext
 ) {
+  if (result.packets !== trace.packets.length)
+    throw new Error(`The replay reported ${result.packets} of ${trace.packets.length} packets`);
+  const latest = result.latenessMs.indexOf(Math.max(...result.latenessMs));
   return JSON.stringify({
-    ...lineHead(context, name),
-    timing,
+    ...lineHead(context, trace.name),
+    timing: trace.timing,
     packets: result.packets,
     delivered: result.delivered,
     traceMs: hundredths(result.traceMs),
     durationMs: hundredths(result.durationMs),
-    emissionLateness: intervalSummary(result.latenessMs),
+    emissionLateness: {
+      ...intervalSummary(result.latenessMs),
+      maxAtMs: hundredths(trace.packets[latest].t),
+    },
   });
 }
 
@@ -110,7 +117,7 @@ async function replay(module: PaperReplay, name: string, context: PerfLineContex
   if (!isReplayTraceName(name)) throw new Error(`No replay trace is named ${name}`);
   const trace = readReplayTrace((await TRACES[name]()).default);
   const report = await module.start(name, JSON.stringify(trace.packets), REPLAY_SETTLE_MS);
-  return formatReplayLine(name, trace.timing, readReplayResult(report), context);
+  return formatReplayLine(trace, readReplayResult(report), context);
 }
 
 // Writes nothing unless the launch named a trace; a failed replay writes its error instead.

@@ -107,13 +107,31 @@ describe('replayRequestedTrace', () => {
         delivered: trace.packets.length,
         traceMs: Math.round(trace.packets.at(-1).t * 100) / 100,
         durationMs: Math.round(trace.packets.at(-1).t * 100) / 100,
-        emissionLateness: { n: trace.packets.length, p50Ms: 4, p95Ms: 9, maxMs: 9, minMs: 0 },
+        emissionLateness: {
+          n: trace.packets.length,
+          p50Ms: 4,
+          p95Ms: 9,
+          maxMs: 9,
+          minMs: 0,
+          maxAtMs: Math.round(trace.packets[9].t * 100) / 100,
+        },
       },
     ]);
   });
 
   it.each([
     ['an unknown trace', nativeReplay('scribble'), /No replay trace is named scribble/],
+    [
+      'a report of another trace',
+      nativeReplay('long-no-lift', {
+        packets: 3,
+        delivered: 3,
+        traceMs: 1,
+        durationMs: 1,
+        latenessMs: [0, 0, 0],
+      }),
+      /reported 3 of 2401 packets/,
+    ],
     [
       'a malformed report',
       nativeReplay('long-no-lift', {

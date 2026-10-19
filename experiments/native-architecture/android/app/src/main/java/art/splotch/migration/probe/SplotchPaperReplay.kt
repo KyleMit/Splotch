@@ -5,6 +5,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.HandlerCompat
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
@@ -76,7 +77,9 @@ private class ReplayRun(
   private val finish: (WritableMap) -> Unit,
 ) : Runnable {
   private val paper = WeakReference(paper)
-  private val handler = Handler(Looper.getMainLooper())
+  // Asynchronous messages pass the sync barrier a pending traversal posts, so a packet waits only
+  // for main-thread work already running, not for the next frame.
+  private val handler = HandlerCompat.createAsync(Looper.getMainLooper())
   private val startNs = System.nanoTime()
   private var next = 0
   private var delivered = 0

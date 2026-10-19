@@ -23,7 +23,7 @@ export const REPLAY_SETTLE_MS = 3000;
 
 // generated: every sample's time is when a digitizer would have taken it. web-handler-arrival:
 // each sample's time is when a web pointer handler received the event, one sample per packet.
-export type ReplayTiming = 'generated' | 'web-handler-arrival';
+type ReplayTiming = 'generated' | 'web-handler-arrival';
 type ReplayPhase = 'start' | 'move' | 'end' | 'cancel';
 // dt is the sample's offset from its packet's emission, never after it; x and y are fractions of
 // the paper input view's width and height.
