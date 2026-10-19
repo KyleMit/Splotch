@@ -10,7 +10,7 @@ representative protocols, and `protocol-mapping.csv` routes each requirement to 
 targets and arms, or to an explicit classification. Target qualification, current-code
 reconciliation inside each protocol, and final-head evidence are unfinished. There are no accepted
 final-head device passes in this inventory: **zero device, simulator and browser cells are
-verified.** The first desk protocol, AC-1, verified 29 logic requirements by two-sided automated
+verified.** The first desk protocol, AC-1, verified 25 logic requirements by two-sided automated
 contract and failed one (`results/ac-1-2026-10-19.md`). Diagnostic build inspections are recorded
 separately.
 
@@ -25,12 +25,12 @@ physical-only properties and one drawing-screen sanity check.
 
 | Classification   | Requirements | Status today                                         |
 | ---------------- | -----------: | ---------------------------------------------------- |
-| `protocol`       |         1229 | `unverified`; 14 `blocked` by an iOS network subcase |
+| `protocol`       |         1233 | `unverified`; 14 `blocked` by an iOS network subcase |
 | `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone  |
-| `automated-test` |           30 | AC-1: 29 `verified`, 1 `failed` (L0161, #3008)       |
+| `automated-test` |           26 | AC-1: 25 `verified`, 1 `failed` (L0161, #3008)       |
 | `settled`        |           18 | Accepted owner decisions, never defects              |
 | `out-of-scope`   |          136 | Each with a stated reason                            |
-| **Total**        |         1541 | **29 `verified`** (logic contracts only)             |
+| **Total**        |         1541 | **25 `verified`** (logic contracts only)             |
 
 A mapping to a protocol or test is not a pass. A row becomes `verified` only when its protocols have
 run on all their targets and arms at one candidate head and the public result record is linked.

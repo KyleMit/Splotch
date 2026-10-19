@@ -557,7 +557,7 @@ AC1_REPAIRED = {
     'L0136': [T + 'native-section-icon-mounted.test.mjs', T + 'native-icons.test.mjs',
               T + 'native-section-icon-routing.test.mjs'],
 }
-AC1_REPAIRED_RUN = None
+AC1_REPAIRED_RUN = 'AC-1 2026-10-19 (27f8ba1, CI run 39305957793)'
 
 # Passed at the exact head with a confirmed shipping oracle: the qualifying named tests.
 AC1_VERIFIED = {
