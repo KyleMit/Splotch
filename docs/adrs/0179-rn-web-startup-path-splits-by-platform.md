@@ -341,7 +341,24 @@ Measured on `claude/rn-expo-sdk58` at a88c0144b:
 
 Tree shaking alone is measured against the base, tree shaking on granular against granular chunking.
 
-FLOW_EVIDENCE_PLACEHOLDER
+After PR 3000 merged, the merged branch measured 838,334 bytes again. Each export was driven in
+Chromium at 390×844, with splotch.art's `/api` mocked. The flows covered:
+
+* drawing a stroke, Undo, and Clear;
+* opening and closing Settings;
+* picking the Farm book's Cat page;
+* turning on AI images and opening the style prompt from the drawer;
+* reloading offline from the service worker and opening Settings offline;
+* a lazy chunk that fails to load, then Try again.
+
+The flows passed under each lever and under both. Thirteen screenshots of each export are
+pixel-identical to the baseline's. With granular chunking, Try again also fetches the shared chunks
+a surface needs: Expo's async-require forgets a failed URL and skips one that already completed.
+
+The native apps' JavaScript is byte-identical with and without granular chunking
+(`expo export --platform ios --platform android --no-bytecode`). Two runs of the same config can
+still differ, but only in Metro's module ids, because both platforms bundle concurrently from one id
+factory.
 
 Levers measured and not taken:
 
