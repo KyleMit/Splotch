@@ -34,7 +34,15 @@ function travelTo(value: SharedValue<number>, target: number, travel: boolean) {
 // under `fill`. It glides on the UI thread when the selection moves and snaps on first placement,
 // on a resize and under reduced motion, so a travel never renders React. The web export slides it
 // by a CSS transition instead (segmentThumb.web.tsx).
-export function SegmentThumb({ cell, index }: SegmentThumbProps) {
+export function SegmentThumb({ cell, index, stacked }: SegmentThumbProps) {
+  return stacked ? (
+    <StackedThumb key="stacked" cell={cell} index={index} />
+  ) : (
+    <RowThumb key="row" cell={cell} index={index} />
+  );
+}
+
+function RowThumb({ cell, index }: Omit<SegmentThumbProps, 'stacked'>) {
   const reduced = useReduceMotion();
   const x = useSharedValue(cell.x);
   const width = useSharedValue(cell.width);
@@ -52,6 +60,29 @@ export function SegmentThumb({ cell, index }: SegmentThumbProps) {
   return (
     <Animated.View aria-hidden style={[thumbLayout.frame, thumbOrigin(I18nManager), frame]}>
       <html.div style={thumbStyles.face} />
+    </Animated.View>
+  );
+}
+
+// The stacked track's thumb spans the track's width and glides between rows.
+function StackedThumb({ cell, index }: Omit<SegmentThumbProps, 'stacked'>) {
+  const reduced = useReduceMotion();
+  const y = useSharedValue(cell.y);
+  const height = useSharedValue(cell.height);
+  const placed = useRef(index);
+  useLayoutEffect(() => {
+    const travel = placed.current !== index && !reduced;
+    placed.current = index;
+    travelTo(y, cell.y, travel);
+    travelTo(height, cell.height, travel);
+  }, [cell.y, cell.height, index, reduced, y, height]);
+  const frame = useAnimatedStyle(() => ({
+    height: height.value,
+    transform: [{ translateY: y.value }],
+  }));
+  return (
+    <Animated.View aria-hidden style={[thumbLayout.stackedFrame, frame]}>
+      <html.div style={[thumbStyles.face, thumbStyles.stackedFace]} />
     </Animated.View>
   );
 }

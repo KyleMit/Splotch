@@ -162,6 +162,7 @@ export function DialogHeader({
       onWordWrap={() => {
         if (currentLayoutKey.current === layoutKey) setWordWrapKey(layoutKey);
       }}
+      fitWords={titleOwnRow}
       style={[
         styles.title,
         titleSize === 'xl' && styles.titleXl,

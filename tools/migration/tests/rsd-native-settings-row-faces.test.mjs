@@ -24,6 +24,10 @@ vi.mock(
   () => import('../../../experiments/native-architecture/src/rsdDrawing/HubTitle.native.tsx')
 );
 vi.mock(
+  '../../../experiments/native-architecture/src/rsdDrawing/HubTileFrame.tsx',
+  () => import('../../../experiments/native-architecture/src/rsdDrawing/HubTileFrame.native.tsx')
+);
+vi.mock(
   '../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.ts',
   () => import('../../../experiments/native-architecture/src/rsdDrawing/sidebarRowFade.native.ts')
 );
@@ -148,6 +152,28 @@ describe('RsdHubRow', () => {
       expect(native(byTestId('hub-subtitle')).props.numberOfLines).toBe(2);
     }
   );
+
+  it('shrinks a title word wider than its whole row to fit inside the card', async () => {
+    const TILE_PX = 330;
+    const ROW_INSET_PX = Number.parseFloat(scale.space4) * 2;
+    const measure = host.layoutOf;
+    host.layoutOf = (node) =>
+      node.firstElementChild?.dataset.testid === 'hub-tile'
+        ? { x: 0, y: 0, width: TILE_PX, height: 80 }
+        : measure(node);
+    await render(hub('Appearance'));
+    const size = styleOf(hubTitle()).fontSize;
+    await deliverWordWidth('Appearance', 360);
+    const room = TILE_PX - ROW_INSET_PX;
+    const fitted = room * 0.98;
+    expect(styleOf(hubTitle()).fontSize).toBeCloseTo((size * fitted) / 360);
+    expect(styleOf(hubTitle()).width).toBeCloseTo(fitted);
+    expect(styleOf(container.querySelector('button')).minWidth).toBeCloseTo(fitted + ROW_INSET_PX);
+    expect(hubTitle().textContent).toBe('Appearance');
+    await deliverWordWidth('Appearance', 200);
+    expect(styleOf(hubTitle()).fontSize).toBe(size);
+    expect(styleOf(hubTitle()).width).toBe(200);
+  });
 
   it('uses the visible native title face for noninteractive, hidden word measurements', async () => {
     await render(hub('Tool Drawer'));

@@ -1,6 +1,7 @@
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, fonts } from './tokens.css';
 import { RsdIcon } from './RsdIcon';
+import { WholeWordText } from './WholeWordText';
 import { RsdSwitchLabel, RsdToggleSwitch } from './RsdToggleSwitch';
 import type { NativeIconName } from './icons.generated';
 
@@ -63,7 +64,9 @@ export function RsdToggleRow({
       <html.div data-testid={`${id}-row`} style={[styles.row, disabled && styles.disabled]}>
         <RsdSwitchLabel id={id} checked={checked} disabled={disabled} onToggle={onToggle}>
           <RsdIcon name={icon} size={SETTING_ICON_PX} ink={undefined} muted={false} />
-          <html.span style={styles.label}>{label}</html.span>
+          <WholeWordText style={styles.label} fit>
+            {label}
+          </WholeWordText>
         </RsdSwitchLabel>
         <RsdToggleSwitch
           id={id}
