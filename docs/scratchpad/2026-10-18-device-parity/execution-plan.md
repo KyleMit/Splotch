@@ -24,6 +24,12 @@ requirements and zero cells are verified today.
 On an `automated-test` row, `namedTests` is the check itself once AC-1 confirms it. On any other row
 those tests only support the protocol; they never replace it.
 
+`build-protocol-mapping.py` builds the CSV from `requirements.csv`, the tracked test files and the
+per-requirement decisions it holds. Run it from the repository root with `python3 -I`; `--check`
+exits 1 when the committed CSV differs from what it builds. Change a mapping in the script, not by
+hand. Once a protocol records its first result in `status` or `evidence`, the CSV becomes the record
+and the script is no longer rerun.
+
 ## Counts
 
 Classification of the 1,541 requirements:
