@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { act, createElement, forwardRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BURST_CLASS,
   BURST_DOTS,
@@ -16,6 +18,16 @@ import {
   EARLY_POINTERS_GLOBAL,
   PAPER_INPUT_TEST_ID,
 } from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+
+vi.mock('react-native', () => ({
+  View: forwardRef(function View({ children, testID }, ref) {
+    return createElement('div', { ref, 'data-testid': testID }, children);
+  }),
+}));
+vi.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }));
+const { PaperInputView } =
+  await import('../../experiments/native-architecture/src/drawing/PaperInputView.web.tsx');
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const STYLESHEET = '/_expo/static/css/strict-1.css';
 const TEXTURE = '/assets/paper/handmade-paper.0123.webp';
@@ -64,17 +76,19 @@ afterEach(() => {
   document.documentElement.removeAttribute(CONTROLS_LIVE_ATTRIBUTE);
   document.documentElement.removeAttribute(DRAWING_LIVE_ATTRIBUTE);
   for (const burst of document.querySelectorAll(`.${BURST_CLASS}`)) burst.remove();
+  for (const id of Object.keys(early())) delete early()[id];
 });
 
 const paper = () => document.querySelector(`#root [data-testid="${PAPER_INPUT_TEST_ID}"]`);
 const swatch = () => document.querySelector('#root button');
 const early = () => window[EARLY_POINTERS_GLOBAL];
-function pointer(target, type, { id = 1, x = 120, y = 300 } = {}) {
+function pointer(target, type, { id = 1, x = 120, y = 300, button = 0, kind = 'touch' } = {}) {
   target.dispatchEvent(
     new PointerEvent(type, {
       bubbles: true,
       pointerId: id,
-      pointerType: 'touch',
+      pointerType: kind,
+      button,
       clientX: x,
       clientY: y,
     })
@@ -108,6 +122,12 @@ describe('a touch on the prerendered paper before the engine listens', () => {
     pointer(paper(), 'pointerdown', { id: 8 });
     pointer(paper(), 'pointerup', { id: 8 });
     expect(early()[8]).toBeUndefined();
+  });
+
+  it('ignores a press with any button the engine does not draw with', () => {
+    pointer(paper(), 'pointerdown', { id: 10, button: 2, kind: 'mouse' });
+    expect(document.querySelectorAll(`.${BURST_CLASS}`)).toHaveLength(0);
+    expect(early()[10]).toBeUndefined();
   });
 
   it('leaves the paper to the engine once it listens', () => {
@@ -149,5 +169,101 @@ describe('a press on a control before its handler attaches', () => {
     swatch().click();
     expect(reachedApp).toEqual(['pointerdown', 'click']);
     expect(animate).not.toHaveBeenCalled();
+  });
+
+  it('keeps a press it stopped from the app through its release, after the controls listen', () => {
+    pointer(swatch(), 'pointerdown');
+    document.documentElement.setAttribute(CONTROLS_LIVE_ATTRIBUTE, '');
+    pointer(swatch(), 'pointerup');
+    swatch().click();
+    expect(reachedApp).toEqual([]);
+    pointer(swatch(), 'pointerdown', { id: 2 });
+    pointer(swatch(), 'pointerup', { id: 2 });
+    swatch().click();
+    expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click']);
+  });
+
+  it('lets a keyboard press through after a press it stopped', () => {
+    pointer(swatch(), 'pointerdown');
+    pointer(swatch(), 'pointerup');
+    document.documentElement.setAttribute(CONTROLS_LIVE_ATTRIBUTE, '');
+    swatch().dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+    swatch().click();
+    expect(reachedApp).toEqual(['click']);
+  });
+});
+
+describe('the shell and the real paper input together', () => {
+  const FINGER = { x: 50, y: 60 };
+  let root;
+  let ready = false;
+  let frames = [];
+  let frameSpy;
+  beforeEach(() => {
+    frameSpy = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => frames.push(callback));
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    ready = false;
+    frames = [];
+    frameSpy.mockRestore();
+    document.getElementById('paper-host')?.remove();
+  });
+
+  function mountPaper() {
+    const onInput = vi.fn();
+    let host = document.getElementById('paper-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'paper-host';
+      document.body.appendChild(host);
+    }
+    root = createRoot(host);
+    act(() =>
+      root.render(
+        createElement(PaperInputView, {
+          testID: PAPER_INPUT_TEST_ID,
+          onInput,
+          onClaim: vi.fn(),
+          engineReady: () => ready,
+        })
+      )
+    );
+    const node = host.querySelector(`[data-testid="${PAPER_INPUT_TEST_ID}"]`);
+    document.elementFromPoint = (x, y) => (x === FINGER.x && y === FINGER.y ? node : document.body);
+    return { onInput, node };
+  }
+  const engineReadies = () => {
+    ready = true;
+    frames.splice(0).forEach((callback) => callback());
+  };
+  const starts = (onInput) =>
+    onInput.mock.calls
+      .filter(([packet]) => packet.phase === 'start')
+      .map(([packet]) => packet.changed);
+
+  it('hands a finger held through a later mount’s wait to that mount’s engine', () => {
+    let mounted = mountPaper();
+    pointer(mounted.node, 'pointerdown', { id: 21, ...FINGER });
+    engineReadies();
+    expect(starts(mounted.onInput)).toEqual([['21']]);
+    pointer(mounted.node, 'pointerup', { id: 21, ...FINGER });
+    act(() => root.unmount());
+    ready = false;
+    mounted = mountPaper();
+    pointer(mounted.node, 'pointerdown', { id: 22, ...FINGER });
+    expect(document.querySelectorAll(`.${BURST_CLASS}`)).toHaveLength(2);
+    engineReadies();
+    expect(starts(mounted.onInput)).toEqual([['22']]);
+  });
+
+  it('gives the engine no early press it would have refused', () => {
+    const { onInput, node } = mountPaper();
+    pointer(node, 'pointerdown', { id: 23, button: 2, kind: 'mouse', ...FINGER });
+    engineReadies();
+    expect(onInput).not.toHaveBeenCalled();
   });
 });

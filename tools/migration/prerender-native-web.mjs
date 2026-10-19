@@ -28,6 +28,7 @@ import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
 import {
   CONTROLS_LIVE_ATTRIBUTE,
   DRAWING_LIVE_ATTRIBUTE,
+  DRAWING_POINTER_BUTTON,
   EARLY_POINTERS_GLOBAL,
   PAPER_INPUT_TEST_ID,
   PAPER_TEXTURE_PROPERTY,
@@ -218,8 +219,10 @@ function burstColors() {
 }
 
 // Runs once a frame is cloned, before any app code. It never draws: a pointer down on the paper is
-// only remembered (where it is, under EARLY_POINTERS_GLOBAL) for the engine to take over. Presses on
-// controls are kept from the app until its controls listen, so one cannot act late.
+// only remembered (where it is, under EARLY_POINTERS_GLOBAL) for the engine to take over, and only
+// with the button the engine draws with. Presses on controls are kept from the app until its controls
+// listen, so one cannot act late. A press stopped then stays stopped through its release and click,
+// even once they listen: React Native Web presses on the click alone.
 function earlyInputScript() {
   const paper = `[data-testid=${JSON.stringify(PAPER_INPUT_TEST_ID)}]`;
   // Squished through the wiggle as well: a touch press does not always match :active.
@@ -229,23 +232,27 @@ function earlyInputScript() {
   );
   return [
     '(function(){',
-    `var P=window[${JSON.stringify(EARLY_POINTERS_GLOBAL)}]={},d=document.documentElement;`,
+    `var P=window[${JSON.stringify(EARLY_POINTERS_GLOBAL)}]={},R={},K=[],d=document.documentElement;`,
     'function live(a){return d.hasAttribute(a)}',
     "function still(){return matchMedia('(prefers-reduced-motion: reduce)').matches}",
-    `function control(e){var t=e.target;return t&&t.closest&&!live(${JSON.stringify(CONTROLS_LIVE_ATTRIBUTE)})&&t.closest('#root button')}`,
+    "function button(e){var t=e.target;return t&&t.closest&&t.closest('#root button')}",
+    `function control(e){return !live(${JSON.stringify(CONTROLS_LIVE_ATTRIBUTE)})&&button(e)}`,
+    'function held(e){return K.indexOf(button(e))>=0}',
+    'function settled(){for(var k in R)return false;return true}',
     `var C=${JSON.stringify(burstColors())};`,
     'function burst(x,y){var b=document.createElement("div");',
     `b.className=${JSON.stringify(BURST_CLASS)};b.style.left=x+"px";b.style.top=y+"px";`,
     `for(var i=0;i<C.length;i++){var s=document.createElement("i");s.style.setProperty(${JSON.stringify(BURST_ANGLE_PROPERTY)},i*${360 / BURST_DOTS}+"deg");s.style.background=C[i];b.appendChild(s)}`,
     `document.body.appendChild(b);setTimeout(function(){b.remove()},${BURST_MS})}`,
-    'addEventListener("pointerdown",function(e){var c=control(e);',
-    `if(c){e.stopPropagation();c.animate(still()?[{opacity:1},{opacity:${REDUCED_NOT_YET_OPACITY}},{opacity:1}]:[${wiggle.join(',')}],${NOT_YET_WIGGLE_MS});return}`,
-    `if(live(${JSON.stringify(DRAWING_LIVE_ATTRIBUTE)})||!e.target.closest||!e.target.closest(${JSON.stringify(paper)}))return;`,
+    'addEventListener("pointerdown",function(e){delete R[e.pointerId];if(settled())K=[];var c=control(e);',
+    `if(c){R[e.pointerId]=1;K.push(c);e.stopPropagation();c.animate(still()?[{opacity:1},{opacity:${REDUCED_NOT_YET_OPACITY}},{opacity:1}]:[${wiggle.join(',')}],${NOT_YET_WIGGLE_MS});return}`,
+    `if(e.button!==${DRAWING_POINTER_BUTTON}||live(${JSON.stringify(DRAWING_LIVE_ATTRIBUTE)})||!e.target.closest||!e.target.closest(${JSON.stringify(paper)}))return;`,
     'P[e.pointerId]={pointerId:e.pointerId,pointerType:e.pointerType,pageX:e.pageX,pageY:e.pageY,clientX:e.clientX,clientY:e.clientY};',
     'burst(e.clientX,e.clientY)},true);',
     'addEventListener("pointermove",function(e){var p=P[e.pointerId];if(p){p.pageX=e.pageX;p.pageY=e.pageY;p.clientX=e.clientX;p.clientY=e.clientY}},true);',
-    '["pointerup","pointercancel"].forEach(function(n){addEventListener(n,function(e){delete P[e.pointerId]},true)});',
-    '["pointerup","click","mousedown","mouseup","touchstart","touchend"].forEach(function(n){addEventListener(n,function(e){if(control(e))e.stopPropagation()},true)});',
+    '["pointerup","pointercancel"].forEach(function(n){addEventListener(n,function(e){delete P[e.pointerId];delete R[e.pointerId]},true)});',
+    'addEventListener("keydown",function(){if(settled())K=[]},true);',
+    '["pointerup","click","mousedown","mouseup","touchstart","touchend"].forEach(function(n){addEventListener(n,function(e){if(control(e)||held(e))e.stopPropagation()},true)});',
     '})();',
   ].join('');
 }

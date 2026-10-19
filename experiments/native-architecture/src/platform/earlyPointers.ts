@@ -22,13 +22,15 @@ function isEarlyPointer(value: unknown): value is EarlyPointer {
   );
 }
 
-// The pointers still down, each handed over once: the record is cleared as it is read.
+// The pointers still down, each handed over once. The record is emptied in place rather than
+// removed: the shell's listeners keep writing to that one object for the page's life, so a paper
+// mounted later still takes the fingers that land while it waits for its engine.
 export function takeEarlyPointers(window: Window): EarlyPointer[] {
-  const host = window as unknown as Record<string, unknown>;
-  const recorded = host[EARLY_POINTERS_GLOBAL];
-  delete host[EARLY_POINTERS_GLOBAL];
+  const recorded = (window as unknown as Record<string, unknown>)[EARLY_POINTERS_GLOBAL];
   if (typeof recorded !== 'object' || recorded === null) return [];
-  const pointers = Object.values(recorded);
+  const record = recorded as Record<string, unknown>;
+  const pointers = Object.values(record);
+  for (const key of Object.keys(record)) delete record[key];
   if (!pointers.every(isEarlyPointer))
     throw new Error('The shell recorded an early pointer this app cannot read.');
   return pointers;

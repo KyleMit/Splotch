@@ -70,7 +70,8 @@ const down = (node, pointerId) =>
   );
 
 it('holds the shell’s early fingers until the engine is ready, then starts each where it is now', () => {
-  window[EARLY_POINTERS_GLOBAL] = { 4: ON_PAPER, 5: OFF_PAPER };
+  const record = { 4: ON_PAPER, 5: OFF_PAPER };
+  window[EARLY_POINTERS_GLOBAL] = record;
   const { onInput, onClaim, node } = mountPaper();
   down(node, 6);
   nextFrame();
@@ -90,7 +91,8 @@ it('holds the shell’s early fingers until the engine is ready, then starts eac
       samples: [expect.objectContaining({ pageX: 50, pageY: 60 })],
     }),
   ]);
-  expect(window[EARLY_POINTERS_GLOBAL]).toBeUndefined();
+  expect(window[EARLY_POINTERS_GLOBAL]).toBe(record);
+  expect(record).toEqual({});
   node.dispatchEvent(new PointerEvent('pointermove', { pointerId: 4, clientX: 70, clientY: 80 }));
   expect(onInput.mock.calls[1][0]).toMatchObject({ phase: 'move', changed: ['4'] });
 });

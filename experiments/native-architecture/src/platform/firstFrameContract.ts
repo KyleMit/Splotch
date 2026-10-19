@@ -14,3 +14,6 @@ export const CONTROLS_LIVE_ATTRIBUTE = 'data-controls-live';
 // The window property where the boot script keeps the pointers down on the paper before the engine
 // listens, by pointer id, so the engine can take each one over where it is.
 export const EARLY_POINTERS_GLOBAL = '__splotchEarlyPointers';
+// The one mouse button the paper draws with. The boot script records no other press, so it never
+// hands the engine a finger the engine would have refused.
+export const DRAWING_POINTER_BUTTON = 0;

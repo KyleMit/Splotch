@@ -205,6 +205,8 @@ script has run. There is no early ink and no second drawing engine.
     `#root`: 520 ms, still dots that only fade under Reduce Motion.
   * The boot script records each finger that is down on the paper, and where it is, under
     `window.__splotchEarlyPointers` (`EARLY_POINTERS_GLOBAL`). It never draws or buffers a stroke.
+    It records only the button the engine draws with (`DRAWING_POINTER_BUTTON`), so a right-click
+    gets no burst and is never adopted.
   * `PaperInputView.web.tsx` attaches its listeners at hydration, then checks once a frame whether
     the engine would admit a stroke (`contactResponder.isReady()`, passed as `engineReady`). The
     paper must be measured and its ink ready, about 120 ms after hydration.
@@ -212,8 +214,11 @@ script has run. There is no early ink and no second drawing engine.
     through its own start path (`setPointerCapture`, then the same `start` packet a fresh pointer
     sends). It then stamps `data-drawing-live`, which stops the bursts.
   * A finger that lands between hydration and readiness is left to the shell in the same way.
-  * `takeEarlyPointers` validates the record and fails loudly on one it cannot read. The engine goes
-    live regardless.
+  * The same holds whenever the paper mounts again. Its unmount removes the stamp, so the shell
+    answers and records touches until the new paper's engine is ready.
+  * `takeEarlyPointers` empties the record in place rather than removing it, because the shell's
+    listeners write to that one object for the page's life. It validates the record and fails loudly
+    on one it cannot read. The engine goes live regardless.
 * **The controls.** Until `data-controls-live`, a press on a control does two things:
   * it squishes, through CSS `:active` (`scale`, which composes with the Clear Button's inline
     transform) and through the boot script's "not yet" animation, because a touch press does not
@@ -221,12 +226,18 @@ script has run. There is no early ink and no second drawing engine.
   * it wiggles "not yet", a 320 ms translate. Under Reduce Motion the control only dims.
 
   The boot script stops the press at the window in the capture phase, so the app never sees it, and
-  React has nothing to replay. The drawing content stamps `data-controls-live` in the commit that
-  attaches its handlers (`platform/firstFrameControls.web.ts`).
-* `platform/firstFrameContract.ts` declares the property, the attributes, the global and the paper's
-  test id once, and the build imports them. `tools/tests/native-web-early-input.test.mjs` runs the
-  boot script against a shell. `native-web-paper-adoption.test.mjs` mounts the real input view and
-  holds the adoption: nothing before readiness, then a `start` at the finger's current position.
+  React has nothing to replay. A press it stopped stays stopped through its release and click, even
+  when the controls go live while it is held: React Native Web calls `onPress` on the click alone.
+  The next pointer press or key press is the app's again. The drawing content stamps
+  `data-controls-live` in the commit that attaches its handlers
+  (`platform/firstFrameControls.web.ts`).
+* `platform/firstFrameContract.ts` declares the property, the attributes, the global, the drawing
+  button and the paper's test id once, and the build imports them.
+* `tools/tests/native-web-early-input.test.mjs` runs the boot script against a shell. It also mounts
+  the real input view beside it, for a finger held through a second mount's wait and for a refused
+  button.
+* `native-web-paper-adoption.test.mjs` mounts the real input view and holds the adoption: nothing
+  before readiness, then a `start` at the finger's current position.
 
 ### Client
 

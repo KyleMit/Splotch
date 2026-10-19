@@ -3,7 +3,7 @@ import { View, type ViewProps, type ViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { InputContact, InputSample, InputTool } from './paperInput';
 import { takeEarlyPointers } from '../platform/earlyPointers';
-import { DRAWING_LIVE_ATTRIBUTE } from '../platform/firstFrameContract';
+import { DRAWING_LIVE_ATTRIBUTE, DRAWING_POINTER_BUTTON } from '../platform/firstFrameContract';
 
 type Props = ViewProps & {
   onInput: (value: unknown) => void;
@@ -114,7 +114,7 @@ export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInpu
     }
     let live = false;
     function start(event: PointerEvent) {
-      if (event.button !== 0 || !live) return;
+      if (event.button !== DRAWING_POINTER_BUTTON || !live) return;
       event.preventDefault();
       begin(event.pointerId, event.pointerType, inputSample(event));
     }
