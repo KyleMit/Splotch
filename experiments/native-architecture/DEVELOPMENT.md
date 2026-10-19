@@ -109,7 +109,9 @@ main thread at its scheduled time, open loop, through the same payload builder a
 dispatch real touches use (`ios/HelloWorld/SplotchPaperReplay.swift`,
 `android/app/src/main/java/art/splotch/migration/probe/SplotchPaperReplay.kt`). A sample carries the
 time it was due at on the touch clock, so emission that runs late shows up in `inputToSubmission` as
-late touch delivery would. Only the probe's JavaScript asks the native driver for a trace
+late touch delivery would. Android delivers a real finger's moves batched once per frame, while the
+replay emits each packet at its own time, so there it drives the packet path at the trace's rate
+rather than the frame-aligned one. Only the probe's JavaScript asks the native driver for a trace
 (`src/drawing/perfReplay.ts`); a build without the probe ignores the launch argument, and its bundle
 holds neither the driver's caller nor the traces.
 
