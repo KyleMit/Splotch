@@ -1,4 +1,5 @@
-"""Build protocol-mapping.csv from requirements.csv and the execution plan's decisions.
+"""Build protocol-mapping.csv from requirements.csv, the execution plan's decisions and the
+protocol results recorded below (the AC1_* tables).
 
 Usage, from the repository root:
   python3 -I docs/scratchpad/2026-10-18-device-parity/build-protocol-mapping.py [--check]
@@ -523,6 +524,117 @@ def classify(rid, spec, text, extra_tests, note, blocked, kind=None):
     return dict(classification=cls, protocols=protos, targets=ts, arms=arms, tests=tests,
                 basis=basis, status=status)
 
+# AC-1 results. Each run names its public record; a row's status and evidence come from here, so
+# the CSV stays generated after results land. results/ac-1-2026-10-19.md holds the source SHA,
+# CI run, per-row oracle lines and inspector behind every entry below.
+AC1_RECORD = 'results/ac-1-2026-10-19.md'
+AC1_RUN = 'AC-1 2026-10-19 (00fcc5c, CI run 39270922979)'
+ISSUE = 'https://github.com/KyleMit/Splotch/issues/'
+T = 'tools/tests/'
+M = 'tools/migration/tests/'
+
+# Rows a triage pass moved into AC-1 because an existing or new two-sided test covers them.
+AC1_ADMITTED = {}
+
+# Passed at the exact head with a confirmed shipping oracle: the qualifying named tests.
+AC1_VERIFIED = {
+    'L0008': [T + 'native-stroke-smoothing.test.mjs'],
+    'L0013': [T + 'native-crayon-grain.test.mjs', T + 'native-crayon-phase.test.mjs'],
+    'L0040': [M + 'rsd-native-color-picker.test.mjs', M + 'rsd-native-parent-center.test.mjs'],
+    'L0041': [M + 'rsd-native-color-control.test.mjs', M + 'rsd-native-bare-toolbar.test.mjs'],
+    'L0042': [M + 'rsd-native-actions-panel.test.mjs', M + 'rsd-native-color-control.test.mjs'],
+    'L0044': [M + 'rsd-native-actions-panel.test.mjs'],
+    'L0045': [T + 'native-drawing-tokens.test.mjs', M + 'rsd-native-bare-toolbar.test.mjs',
+              T + 'native-polaroid-flight.test.mjs'],
+    'L0085': [T + 'native-icons.test.mjs'],
+    'L0099': [T + 'native-feedback-contract.test.mjs'],
+    'L0102': [T + 'native-feedback-contract.test.mjs'],
+    'L0106': [T + 'native-settings-info-drift.test.mjs'],
+    'L0107': [T + 'native-settings-sections.test.mjs'],
+    'L0108': [T + 'native-settings-info-drift.test.mjs', T + 'native-feedback-contract.test.mjs'],
+    'L0116': [M + 'rsd-native-settings-layouts.test.mjs'],
+    'L0118': [M + 'rsd-native-settings-layouts.test.mjs'],
+    'L0122': [M + 'rsd-native-tool-drawer-settings.test.mjs', T + 'native-pencil-double-tap.test.mjs'],
+    'L0132': [M + 'rsd-native-settings-rows.test.mjs', M + 'rsd-native-slider.test.mjs',
+              T + 'native-focus-ring.test.mjs'],
+    'L0133': [M + 'rsd-native-button-chrome.test.mjs', M + 'modal-geometry.test.mjs',
+              T + 'native-design-primitives-drift.test.mjs', M + 'rsd-native-segmented-picker.test.mjs',
+              M + 'rsd-native-settings-rows.test.mjs', M + 'rsd-native-design-primitives.test.mjs'],
+    'L0136': [T + 'native-section-icon-mounted.test.mjs', T + 'native-icons.test.mjs'],
+    'L0206': [T + 'native-web-not-found.test.mjs'],
+    'L0259': [M + 'modal-geometry.test.mjs', M + 'rsd-native-settings-rows.test.mjs'],
+    'L0267': [T + 'native-icons.test.mjs'],
+    'L0269': [M + 'rsd-native-drawing-frame.test.mjs'],
+    'L0270': [M + 'rsd-native-not-found.test.mjs', T + 'native-web-not-found.test.mjs'],
+}
+
+# The named tests passed, but a rule the module owns is checked only against hand-written
+# expectations, so the row leaves AC-1 for its surface protocol.
+AC1_MOVED = {
+    'L0094': (['OV-2'], 'milestone constants read from sessionCounters.svelte.ts, but once-per-launch '
+              'counting, saturation and corrupt-count clamping are hand-written expectations'),
+    'L0124': (['OV-2'], 'copy and status line height read from ColoringSection.svelte, but which status '
+              'line shows and the megabyte figure are not checked against shipping'),
+    'L0128': (['OV-2'], 'install-guide steps are checked one way (each RN step appears in the shipping '
+              'markup), so a dropped or reordered step passes'),
+    'L0211': (['WEB-1'], 'install-guide steps are checked one way (each RN step appears in the shipping '
+              'markup), so a dropped or reordered step passes'),
+}
+
+# The named test passes, but inspection shows the oracle covers the native arm only and RN web differs.
+AC1_FAILED = {
+    'L0161': (3008, 'test pins FEEDBACK_APP_VERSION to package.json, which is shipping\'s Capacitor '
+              'version only; shipping web shows deriveWebVersion (web/buildVersion.ts) and RN web does not'),
+}
+
+# Rows mapped to AC-1 and other protocols: the AC-1 result is recorded and the status waits on the rest.
+AC1_RECORDED = {
+    'T1-11': ([T + 'native-feedback-contract.test.mjs'], 'partial: gate timings, wrong-answer copy, '
+              'features, modes and card measures read from shipping; gate-card and mash tests are RN-only'),
+    'P12': ([], 'partial: request timeout and poll-deadline copy read from shipping; offline and the '
+            '33rd generation are not covered by the named tests'),
+    'B0245': ([T + 'native-feedback-contract.test.mjs'], 'passed: report.ts projected byte for byte; AI '
+              'report fields and reply parsing read from imageReport.ts and reportReply.ts'),
+    'L0019': ([], 'passed: clear-sheet duration, pull, scale, turn and curve read from inkMotion.ts and app.css'),
+    'L0137': ([], 'partial: only the confirm action basis is read from LeaveConfirm.svelte; '
+              'state/leaveConfirm.ts is untested and native-system-back-mounted does not exist at this head'),
+}
+
+
+def ac1_spec(rid, spec, note):
+    if rid in AC1_ADMITTED:
+        return ['AC-1'], f'{note}; admitted to AC-1 by the {AC1_RUN} triage'
+    if rid in AC1_MOVED:
+        protos, reason = AC1_MOVED[rid]
+        return list(protos), f'{note}; {AC1_RUN}: oracle does not qualify ({reason}); moved to {", ".join(protos)}'
+    return spec, note
+
+
+def ac1_result(rid, res):
+    res.setdefault('evidence', '')
+    if rid in AC1_ADMITTED:
+        res['tests'] = list(AC1_ADMITTED[rid])
+    if rid in AC1_VERIFIED:
+        assert res['classification'] == 'automated-test', rid
+        res['tests'] = list(AC1_VERIFIED[rid])
+        res['status'], res['evidence'] = 'verified', AC1_RECORD
+        res['basis'] += f'; {AC1_RUN}: passed with a shipping oracle'
+    elif rid in AC1_FAILED:
+        issue, reason = AC1_FAILED[rid]
+        res['status'], res['evidence'] = 'failed', f'{AC1_RECORD};{ISSUE}{issue}'
+        res['basis'] += f'; {AC1_RUN}: failed ({reason})'
+    elif rid in AC1_RECORDED:
+        extra, result = AC1_RECORDED[rid]
+        assert 'AC-1' in res['protocols'] and len(res['protocols']) > 1, rid
+        res['tests'] += [t for t in extra if t not in res['tests']]
+        res['evidence'] = AC1_RECORD
+        others = ', '.join(p for p in res['protocols'] if p != 'AC-1')
+        res['basis'] += f'; {AC1_RUN}: {result}; status waits on {others}'
+    for t in res['tests']:
+        assert t in TESTFILES, (rid, t)
+    return res
+
+
 def main():
     rows = list(csv.DictReader(open(f'{LEDGER}/requirements.csv')))
     out = []
@@ -578,7 +690,8 @@ def main():
             note = E_NOTES.get(rid, ('explicit decision; ' if rid in E else '') + f'shipping spec {d["spec"]}')
         else:
             raise SystemExit(f'unknown kind {kind}')
-        res = classify(rid, spec, text, tests, note, blocked, kind)
+        spec, note = ac1_spec(rid, spec, note)
+        res = ac1_result(rid, classify(rid, spec, text, tests, note, blocked, kind))
         if res['classification'] == 'automated-test' and not res['tests']:
             raise SystemExit(f'{rid}: automated-test without a resolved test')
         out.append((r, res))
@@ -586,6 +699,8 @@ def main():
     # validation
     ids = [r['id'] for r, _ in out]
     assert len(ids) == len(set(ids)) == 1541, len(ids)
+    for table in (AC1_ADMITTED, AC1_VERIFIED, AC1_MOVED, AC1_FAILED, AC1_RECORDED):
+        assert set(table) <= set(ids), set(table) - set(ids)
     for r, res in out:
         for p in res['protocols']:
             assert p in PROTOCOLS, (r['id'], p)
@@ -601,7 +716,7 @@ def main():
     for r, res in out:
         w.writerow([r['id'], r['kind'], r['surface'], res['classification'], ';'.join(res['protocols']),
                     ';'.join(res['targets']), ';'.join(res['arms']), ';'.join(res['tests']), res['basis'],
-                    res['status'], ''])
+                    res['status'], res['evidence']])
     path = f'{LEDGER}/protocol-mapping.csv'
     if '--check' in sys.argv:
         current = open(path).read() if os.path.exists(path) else ''
