@@ -13,13 +13,18 @@ vi.mock('expo-haptics', () => ({
   impactAsync,
 }));
 
+// Shipping's web branch runs here as-is: it vibrates whenever the build is not Capacitor.
+vi.mock('../../web/src/lib/platform/index.ts', () => ({ isNative: () => false }));
+vi.mock('../../web/src/lib/nativePlugin.ts', () => ({
+  lazyPluginModule: () => () => Promise.reject(new Error('native-only plugin')),
+}));
+
 const SHIPPING = readFileSync(
   new URL('../../web/src/lib/platform/haptics.ts', import.meta.url),
   'utf8'
 );
-// The impact the shipping app asks @capacitor/haptics for, and its Vibration API stand-in.
+// The impact the shipping app asks @capacitor/haptics for.
 const SHIPPING_STYLE = /Haptics\.impact\(\{ style: ImpactStyle\.(\w+) \}\)/.exec(SHIPPING)?.[1];
-const SHIPPING_WEB_IMPACT_MS = Number(/const WEB_IMPACT_MS = (\d+);/.exec(SHIPPING)?.[1]);
 
 afterEach(() => {
   impactAsync.mockClear();
@@ -36,12 +41,17 @@ it('asks the native motor for the impact style haptics.ts asks for', async () =>
   expect(impactAsync).toHaveBeenCalledWith(ImpactFeedbackStyle[SHIPPING_STYLE]);
 });
 
-it('vibrates the web for the duration haptics.ts uses', async () => {
-  expect(SHIPPING_WEB_IMPACT_MS).toBeGreaterThan(0);
-  const vibrate = vi.fn();
-  vi.stubGlobal('navigator', { vibrate });
-  const { impactThreshold } =
+it('vibrates the web exactly as haptics.ts does', async () => {
+  vi.stubGlobal('__IS_CAPACITOR__', false);
+  const shippingVibrate = vi.fn();
+  vi.stubGlobal('navigator', { vibrate: shippingVibrate });
+  const shipping = await import('../../web/src/lib/platform/haptics.ts');
+  shipping.impactThreshold();
+  const nativeVibrate = vi.fn();
+  vi.stubGlobal('navigator', { vibrate: nativeVibrate });
+  const native =
     await import('../../experiments/native-architecture/src/platform/clearHaptics.web.ts');
-  impactThreshold();
-  expect(vibrate).toHaveBeenCalledExactlyOnceWith(SHIPPING_WEB_IMPACT_MS);
+  native.impactThreshold();
+  expect(shippingVibrate).toHaveBeenCalledOnce();
+  expect(nativeVibrate.mock.calls).toEqual(shippingVibrate.mock.calls);
 });

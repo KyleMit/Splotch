@@ -548,28 +548,30 @@ AC1_ADMITTED = {
     'L0252': [T + 'native-haptics-parity.test.mjs', T + 'native-clear-projection.test.mjs'],
 }
 
-# Rows the first review round showed were checked only by hand-written expectations for a rule
-# the module owns, each repaired with a new test that runs or reads shipping's rule. They stay
+# Rows the review rounds showed were checked only by hand-written expectations for a rule the
+# module owns, each repaired with a test change that runs or reads shipping's rule. They stay
 # unverified until AC1_REPAIRED_RUN names the CI run that passed those tests.
 AC1_REPAIRED = {
+    'L0041': [M + 'rsd-native-color-control.test.mjs', M + 'rsd-native-bare-toolbar.test.mjs'],
+    'L0085': [T + 'native-icons.test.mjs', T + 'native-icon-recolor-parity.test.mjs'],
+    'L0142': [T + 'native-ai-transport.test.mjs', T + 'native-ai-style-previews.test.mjs',
+              T + 'native-ai-style-order.test.mjs'],
+    'L0252': [T + 'native-haptics-parity.test.mjs', T + 'native-clear-projection.test.mjs'],
     'L0116': [M + 'rsd-native-settings-layouts.test.mjs', T + 'native-settings-shell-parity.test.mjs'],
     'L0118': [M + 'rsd-native-settings-layouts.test.mjs', T + 'native-pane-scroll-parity.test.mjs'],
     'L0136': [T + 'native-section-icon-mounted.test.mjs', T + 'native-icons.test.mjs',
               T + 'native-section-icon-routing.test.mjs'],
 }
-AC1_REPAIRED_RUN = 'AC-1 2026-10-19 (27f8ba1, CI run 39305957793)'
+AC1_REPAIRED_RUN = None
 
 # Passed at the exact head with a confirmed shipping oracle: the qualifying named tests.
 AC1_VERIFIED = {
-    'L0008': [T + 'native-stroke-smoothing.test.mjs'],
     'L0013': [T + 'native-crayon-grain.test.mjs', T + 'native-crayon-phase.test.mjs'],
     'L0040': [M + 'rsd-native-color-picker.test.mjs', M + 'rsd-native-parent-center.test.mjs'],
-    'L0041': [M + 'rsd-native-color-control.test.mjs', M + 'rsd-native-bare-toolbar.test.mjs'],
     'L0042': [M + 'rsd-native-actions-panel.test.mjs', M + 'rsd-native-color-control.test.mjs'],
     'L0044': [M + 'rsd-native-actions-panel.test.mjs'],
     'L0045': [T + 'native-drawing-tokens.test.mjs', M + 'rsd-native-bare-toolbar.test.mjs',
               T + 'native-polaroid-flight.test.mjs'],
-    'L0085': [T + 'native-icons.test.mjs'],
     'L0099': [T + 'native-feedback-contract.test.mjs'],
     'L0102': [T + 'native-feedback-contract.test.mjs'],
     'L0106': [T + 'native-settings-info-drift.test.mjs'],
@@ -579,13 +581,16 @@ AC1_VERIFIED = {
     'L0259': [M + 'modal-geometry.test.mjs', M + 'rsd-native-settings-rows.test.mjs'],
     'L0267': [T + 'native-icons.test.mjs'],
     'L0269': [M + 'rsd-native-drawing-frame.test.mjs'],
-    **AC1_ADMITTED,
+    **{rid: tests for rid, tests in AC1_ADMITTED.items() if rid not in AC1_REPAIRED},
     **({} if AC1_REPAIRED_RUN is None else AC1_REPAIRED),
 }
 
 # The named tests passed, but a rule the module owns is checked only against hand-written
 # expectations, so the row leaves AC-1 for its surface protocol.
 AC1_MOVED = {
+    'L0008': (['DS-3'], 'shipping paintOpShape and appendSmoothSegments run beside the native path, but '
+              'the painted line width, dot radius and width scale are discarded; doubling shipping\'s '
+              'lineWidth left the named test passing (review round 2)'),
     'L0094': (['OV-2'], 'milestone constants read from sessionCounters.svelte.ts, but once-per-launch '
               'counting, saturation and corrupt-count clamping are hand-written expectations'),
     'L0124': (['OV-2'], 'copy and status line height read from ColoringSection.svelte, but which status '
@@ -656,7 +661,7 @@ def ac1_result(rid, res):
         res['status'], res['evidence'] = 'verified', AC1_RECORD
         res['basis'] += f'; {run}: passed with a shipping oracle'
     elif rid in AC1_REPAIRED:
-        res['basis'] += f'; {AC1_RUN}: a rule the module owns was hand-checked (review round 1); a new test now runs or reads shipping\'s rule, awaiting its CI run'
+        res['basis'] += f'; {AC1_RUN}: a rule the module owns was hand-checked (review); a test change now runs or reads shipping\'s rule, awaiting its CI run'
     elif rid in AC1_FAILED:
         issue, reason = AC1_FAILED[rid]
         res['status'], res['evidence'] = 'failed', f'{AC1_RECORD};{ISSUE}{issue}'

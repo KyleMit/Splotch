@@ -35,6 +35,15 @@ function shippingBranchOrder() {
   return [...MODAL.matchAll(/\{(?:#if|:else if) shell\.(\w+)\}/g)].map(([, shell]) => shell);
 }
 
+// The shell component each query-named branch renders, read from the branch's own body.
+function shippingBranchShells() {
+  return Object.fromEntries(
+    [...MODAL.matchAll(/\{(?:#if|:else if) shell\.(\w+)\}([\s\S]*?)(?=\{:else)/g)].map(
+      ([, shell, body]) => [shell, /<(\w+Shell)\b/.exec(body)?.[1]]
+    )
+  );
+}
+
 // A browser's answer for the media features these queries use, at a window of this size.
 function matches(query, { width, height }) {
   return query.split(' and ').every((feature) => {
@@ -62,6 +71,10 @@ WINDOWS.push(
 describe('the native Settings shell against SettingsModal.svelte', () => {
   it('reads a template branch for every query-named shell', () => {
     expect([...shippingBranchOrder()].sort()).toEqual(Object.keys(shippingQueries()).sort());
+  });
+
+  it('renders the shell component each native shell name stands for', () => {
+    expect(shippingBranchShells()).toEqual({ compact: 'CompactShell', wide: 'WideShell' });
   });
 
   it('picks the shell shipping picks for every window', () => {
