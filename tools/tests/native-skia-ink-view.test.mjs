@@ -259,6 +259,20 @@ it('shows the first packet of a display frame at once and the rest of that frame
   expect(skia.shown).toHaveLength(6);
 });
 
+// Negative control: counting a packet that changed no ink as the frame's painting makes the moved
+// sample after it wait for the frame callback.
+it('leaves a frame free to paint at once after a packet that changed no ink', () => {
+  render();
+  contact.start('a', { x: 100, y: 100 });
+  paintFrame();
+  paintFrame();
+  const shown = skia.shown.length;
+  feed.publish();
+  expect(skia.shown).toHaveLength(shown);
+  contact.sample('a', { x: 140, y: 100 });
+  expect(skia.shown).toHaveLength(shown + 1);
+});
+
 // A blank picture's paper is adopted by its first contact, which records its ops until the layer
 // for that paper replays them. Negative control: requiring a layer before a contact may start
 // refuses the first contact on every fresh drawing.

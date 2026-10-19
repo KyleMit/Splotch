@@ -18,6 +18,7 @@ overrides:
   tar: ^7.5.19
 
 patchedDependencies:
+  '@shopify/react-native-skia@2.6.2': fe7bcd4abe5713686d612dd170d86fa26bd840eb87970c2cb9a4166d2500582a
   '@stylexjs/stylex@0.15.4': d96eec90bde11ca281efe27b04ab11688ccd2e9902f01497f499778b2a5078d5
   expo-audio@57.0.5: 7503b993dc85b5aac198f4ef1ef9a98ebd4ff9bf0dc3f67e64095460c8419ea5
   expo-screen-orientation@57.0.2: d4057e612fef647d45c88aef18ef6b04df9413ae26039bf729b340fe7e71cc74
@@ -226,7 +227,7 @@ importers:
         version: 5.3.0
       '@shopify/react-native-skia':
         specifier: 2.6.2
-        version: 2.6.2(97eaa1b691e79eedeb8b56d706d6c075)
+        version: 2.6.2(patch_hash=fe7bcd4abe5713686d612dd170d86fa26bd840eb87970c2cb9a4166d2500582a)(97eaa1b691e79eedeb8b56d706d6c075)
       '@types/react':
         specifier: 19.2.2
         version: 19.2.2
@@ -9839,7 +9840,7 @@ snapshots:
       '@sentry/conventions': 0.16.0
       '@sentry/core': 10.73.0
 
-  '@shopify/react-native-skia@2.6.2(97eaa1b691e79eedeb8b56d706d6c075)':
+  '@shopify/react-native-skia@2.6.2(patch_hash=fe7bcd4abe5713686d612dd170d86fa26bd840eb87970c2cb9a4166d2500582a)(97eaa1b691e79eedeb8b56d706d6c075)':
     dependencies:
       canvaskit-wasm: 0.41.0
       react: 19.2.3

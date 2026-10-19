@@ -14,7 +14,6 @@ import { createInkLayer, type InkLayer } from './skiaInkLayer';
 import type { InkPaintContext } from './skiaInkPainter';
 import { orderedOps } from './inkOps';
 import { perfTimed } from './perfProbe';
-import { createPictureRetirement } from './skiaViewPicture';
 
 type Size = Readonly<{ width: number; height: number }>;
 export type SceneInput = Readonly<{
@@ -94,7 +93,6 @@ export function createInkScene() {
   const painted = new Map<LiveStroke, number>();
   let shown = false;
   let picture: SkPicture | null = null;
-  const retirement = createPictureRetirement();
 
   function rebuild(next: SceneInput, live: readonly LiveStroke[]) {
     const previous = layer;
@@ -171,14 +169,22 @@ export function createInkScene() {
       );
     },
     rebuild,
-    // The picture to hand the view, when ink changed since the last one. The one before is
-    // retired, not released (skiaViewPicture.ts); with it go the tile images only it still drew.
-    picture(): SkPicture | null {
-      if (!layer || shown) return null;
+    // Hands `show` a new picture when ink changed since the last one, then releases the one
+    // before, and with it the tile images only it still drew. The view keeps its own reference to
+    // the picture it holds (skiaViewPicture.ts).
+    present(show: (next: SkPicture) => void): boolean {
+      if (!layer || shown) return false;
+      const next = recordScene(layer);
+      try {
+        show(next);
+      } catch (error) {
+        next.dispose();
+        throw error;
+      }
       shown = true;
-      if (picture) retirement.retire(picture);
-      picture = recordScene(layer);
-      return picture;
+      picture?.dispose();
+      picture = next;
+      return true;
     },
     ready: () => layer !== null,
     base: () => base,
@@ -191,7 +197,7 @@ export function createInkScene() {
       return captureLayer(layer, projection, grid);
     },
     dispose() {
-      if (picture) retirement.retire(picture);
+      picture?.dispose();
       picture = null;
       layer?.dispose();
       layer = null;

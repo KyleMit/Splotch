@@ -130,7 +130,7 @@ function drawCohort({
       }
     }
     scene.flush(cohort);
-    scene.picture();
+    scene.present(() => {});
     onFrame(index, cohort, session);
   }
   return { cohort, ...session };

@@ -212,12 +212,10 @@ function useLayoutRedraw(size: Size | null) {
 }
 
 // Hands the view the scene's newest picture, if ink changed since the last one.
-function present(scene: InkScene, view: SkiaPictureView | null) {
-  if (!view) return;
-  const picture = scene.picture();
-  if (!picture) return;
-  showPicture(view, picture);
+function present(scene: InkScene, view: SkiaPictureView | null): boolean {
+  if (!view || !scene.present((picture) => showPicture(view, picture))) return false;
   perfSubmitted();
+  return true;
 }
 
 // Live ink renders no React (ADR-0178). The first packet of a display frame paints at once, so a
@@ -245,13 +243,14 @@ function useLiveFrames(
     let pending = false;
     // A fault detaches the input, which settles the feed again: report it once.
     let failed = false;
+    // Whether it handed the view new ink.
     const run = () => {
       pending = false;
       const source = live.source();
-      if (!source || failed) return;
+      if (!source || failed) return false;
       try {
         scene.flush(source);
-        present(scene, view.current);
+        const shown = present(scene, view.current);
         if (check === null && scene.orphaned(latest.current.strokes))
           check = requestAnimationFrame(() => {
             check = null;
@@ -260,20 +259,23 @@ function useLiveFrames(
             scene.rebuild(input, source.live());
             present(scene, view.current);
           });
+        return shown;
       } catch (error) {
         failed = true;
         latest.current.onError(error);
+        return false;
       }
     };
+    // A packet that changed no ink leaves the frame free to paint the next one at once.
     const paintNow = () => {
-      run();
+      if (!run()) return;
       painted = true;
       frame ??= requestAnimationFrame(nextFrame);
     };
     const nextFrame = () => {
       frame = null;
+      painted = false;
       if (pending) paintNow();
-      else painted = false;
     };
     const unsubscribe = live.subscribe((event) => {
       if (event === 'sample' && painted) pending = true;

@@ -70,6 +70,7 @@ patchedDependencies:
   expo-screen-orientation@57.0.2: patches/expo-screen-orientation@57.0.2.patch
   react-native-reanimated@4.5.1: patches/react-native-reanimated@4.5.1.patch
   react-native@0.86.3: patches/react-native@0.86.3.patch
+  '@shopify/react-native-skia@2.6.2': patches/@shopify__react-native-skia@2.6.2.patch
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the
