@@ -1,7 +1,5 @@
 package art.splotch.migration.probe
 
-import android.content.Context
-import android.net.ConnectivityManager
 import androidx.lifecycle.Observer
 import androidx.work.Constraints
 import androidx.work.Data
@@ -69,8 +67,7 @@ internal class SplotchLibraryDownloads(private val context: ReactApplicationCont
         observers.remove(subscription)
         if (info.state == WorkInfo.State.SUCCEEDED) promise.resolve(true)
         else {
-          val network = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-          val dataSaver = allowMetered && network.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
+          val dataSaver = SplotchLibraryWorker.dataSaverDefers(context, allowMetered)
           val code = info.outputData.getString("fault") ?: if (deferred && dataSaver) "library_metered" else "library_download"
           promise.reject(code, "Coloring download did not complete")
         }
