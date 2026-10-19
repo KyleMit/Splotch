@@ -6,7 +6,7 @@ import type { ContactCohort } from './contactCohort';
 export type LiveInkSource = Pick<ContactCohort, 'drafts' | 'live' | 'flush'>;
 // 'sample': new samples to paint by the next display frame. 'settle': a contact is ending or the
 // cohort is being interrupted, so everything sampled so far must be painted now.
-export type LiveInkEvent = 'sample' | 'settle';
+type LiveInkEvent = 'sample' | 'settle';
 
 // The contact responder publishes every packet here and the ink layer subscribes, so following a
 // finger never renders the drawing surface (the halo feed's pattern).

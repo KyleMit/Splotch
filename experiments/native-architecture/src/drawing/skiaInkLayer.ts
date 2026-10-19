@@ -26,7 +26,7 @@ import { opRange, rangeShape, type InkStep, type OpRange, type OpShape } from '.
 
 // Live ink uploads only the tiles a frame changed (the view draws a raster per tile), so a frame
 // costs its new ink, not the paper. Smaller tiles upload less per frame and record more draws.
-export const INK_TILE_PX = 256;
+const INK_TILE_PX = 256;
 // Antialiasing reaches past an op's geometric bounds; dirty boxes cover it.
 const AA_PAD_PX = 2;
 
