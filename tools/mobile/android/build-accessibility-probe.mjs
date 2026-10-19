@@ -53,8 +53,8 @@ export function prepareAccessibilityProbeProject({ outputDir, nativeDir, signing
   regularFile(join(native, 'settings.gradle'));
   regularFile(join(native, 'app/build.gradle'));
   regularFile(signing);
-  const canonicalOutput = join(realpathSync(dirname(output)), basename(output));
-  if (!outsideDirectory(realpathSync(ROOT), canonicalOutput))
+  const canonicalOutput = join(realpathSync.native(dirname(output)), basename(output));
+  if (!outsideDirectory(realpathSync.native(ROOT), canonicalOutput))
     throw new Error('Output parent resolves inside the checkout');
   const sources = PROBE_SOURCES.map((path) => ({
     path,

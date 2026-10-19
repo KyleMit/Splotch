@@ -72,14 +72,21 @@ The resulting package is `art.splotch.parity.driver`, with self-targeted instrum
 `art.splotch.migration.probe` app. `operation=inspect` returns native names, geometry, semantics and
 action lists; `operation=click label=<exact-name>` invokes `ACTION_CLICK` only for one enabled,
 visible exact match. It records whether the action was listed and whether activation succeeded. A
-raw text descendant is distinct from its activatable button. Duplicate names remain an error.
+raw text descendant is distinct from its activatable button. Duplicate names remain an error. An
+optional `class=<exact-native-class>` explicitly narrows candidates before the uniqueness check; the
+result records both selector fields. It never silently filters by accessibility importance. Refusals
+include a bounded candidate summary with the total count and a truncation flag. Oversized snapshots
+refuse before dispatch; an exception after attempted activation reports an unknown outcome in a
+fresh, small error bundle.
 
 Before installation or use, independently verify package/instrumentation identity, APK bytes, source
 record and the expected existing certificate. Use fresh owned emulators for this campaign; this
 helper grants no physical-device installation authority. Bind host foreground/window checks to
 Display0 immediately before every input. API30+ additionally verifies the active accessibility
 window's display. On older APIs, the host must separately prove the default-display context and
-foreground identity. Retained installs remain read-only.
+foreground identity. Below API30, output records `display: null` and
+`displayVerifiedByDriver: false`; the host admission record supplies the separate proof. Retained
+installs remain read-only.
 
 A local invocation after those checks is
 `adb -s <owned-emulator> shell am instrument -w -r -e expectedPackage art.splotch.migration.probe -e operation inspect art.splotch.parity.driver/art.splotch.parity.driver.AccessibilityActionProbe`.

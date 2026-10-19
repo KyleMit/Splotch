@@ -18,7 +18,19 @@ public final class AccessibilityActionProbe extends Instrumentation {
     private static final long ROOT_TIMEOUT_MS = 5000;
     private static final long ROOT_POLL_MS = 100;
     private static final int MAX_NODES = 3000;
+    private static final int MAX_RESULT_CHARS = 300000;
+    private static final int MAX_REFUSAL_CANDIDATES = 16;
+    private static final int MAX_ERROR_CHARS = 1024;
     private Bundle arguments;
+    private Integer observedDisplay;
+
+    private static final class AmbiguousTarget extends IllegalStateException {
+        final String candidates;
+        AmbiguousTarget(String message, String candidates) {
+            super(message);
+            this.candidates = candidates;
+        }
+    }
     private boolean actionAttempted;
 
     @Override public void onCreate(Bundle value) {
@@ -33,7 +45,10 @@ public final class AccessibilityActionProbe extends Instrumentation {
             result.putString("result", runProbe().toString());
             finish(-1, result);
         } catch (Exception error) {
-            result.putString("error", error.getClass().getSimpleName() + ": " + error.getMessage());
+            result = new Bundle();
+            String message = error.getClass().getSimpleName() + ": " + error.getMessage();
+            result.putString("error", message.substring(0, Math.min(message.length(), MAX_ERROR_CHARS)));
+            if (error instanceof AmbiguousTarget) result.putString("candidates", ((AmbiguousTarget) error).candidates);
             result.putBoolean("inputDispatched", actionAttempted);
             result.putString("outcome", actionAttempted ? "unknown" : "refused");
             finish(0, result);
@@ -63,8 +78,11 @@ public final class AccessibilityActionProbe extends Instrumentation {
         for (AccessibilityWindowInfo window : automation.getWindows()) {
             if (window.getId() == root.getWindowId()) {
                 windows++;
-                if (Build.VERSION.SDK_INT >= 30 && window.getDisplayId() != 0) {
-                    throw new IllegalStateException("Active accessibility window is not on Display0");
+                if (Build.VERSION.SDK_INT >= 30) {
+                    observedDisplay = window.getDisplayId();
+                    if (observedDisplay != 0) {
+                        throw new IllegalStateException("Active accessibility window is not on Display0");
+                    }
                 }
             }
         }
@@ -126,6 +144,24 @@ public final class AccessibilityActionProbe extends Instrumentation {
             || label.contentEquals(node.getContentDescription() == null ? "" : node.getContentDescription()));
     }
 
+    private boolean matchesTarget(AccessibilityNodeInfo node, String label, String className) {
+        return matchesLabel(node, label) && (className.isEmpty() || className.contentEquals(node.getClassName()));
+    }
+
+    private String refusalCandidates(List<AccessibilityNodeInfo> matching) throws Exception {
+        JSONObject result = new JSONObject();
+        JSONArray candidates = new JSONArray();
+        for (int index = 0; index < Math.min(matching.size(), MAX_REFUSAL_CANDIDATES); index++) {
+            JSONObject candidate = describe(matching.get(index));
+            if (candidates.toString().length() + candidate.toString().length() > MAX_ERROR_CHARS) break;
+            candidates.put(candidate);
+        }
+        result.put("total", matching.size());
+        result.put("truncated", candidates.length() != matching.size());
+        result.put("nodes", candidates);
+        return result.toString();
+    }
+
     private JSONObject runProbe() throws Exception {
         String expected = arguments.getString("expectedPackage", "");
         if (!expected.equals("art.splotch.migration.probe")) {
@@ -141,19 +177,25 @@ public final class AccessibilityActionProbe extends Instrumentation {
         JSONArray snapshot = new JSONArray();
         List<AccessibilityNodeInfo> matching = new ArrayList<>();
         String label = arguments.getString("label", "");
+        String className = arguments.getString("class", "");
         for (AccessibilityNodeInfo node : nodes) {
             snapshot.put(describe(node));
-            if (matchesLabel(node, label)) matching.add(node);
+            if (matchesTarget(node, label, className)) matching.add(node);
         }
         JSONObject result = new JSONObject();
         result.put("package", expected);
         result.put("api", Build.VERSION.SDK_INT);
-        result.put("display", 0);
+        result.put("display", observedDisplay == null ? JSONObject.NULL : observedDisplay);
+        result.put("displayVerifiedByDriver", observedDisplay != null);
+        result.put("selector", new JSONObject().put("label", label).put("class", className));
         result.put("nodes", snapshot);
         result.put("inputDispatched", false);
+        if (result.toString().length() > MAX_RESULT_CHARS) {
+            throw new IllegalStateException("Accessibility result exceeds transport budget; no input dispatched");
+        }
         if (operation.equals("click")) {
             if (label.isEmpty() || matching.size() != 1) {
-                throw new IllegalStateException("Exact enabled visible label is not unique: " + matching.size());
+                throw new AmbiguousTarget("Exact enabled visible selector is not unique: " + matching.size(), refusalCandidates(matching));
             }
             AccessibilityNodeInfo target = matching.get(0);
             boolean hasAction = false;
@@ -163,7 +205,7 @@ public final class AccessibilityActionProbe extends Instrumentation {
             result.put("actionListed", hasAction);
             AccessibilityNodeInfo activeRoot = admittedRoot(automation, expected);
             if (!target.refresh() || !expected.contentEquals(target.getPackageName())
-                || target.getWindowId() != activeRoot.getWindowId() || !matchesLabel(target, label)) {
+                || target.getWindowId() != activeRoot.getWindowId() || !matchesTarget(target, label, className)) {
                 throw new IllegalStateException("Target changed before activation; no input dispatched");
             }
             result.put("inputDispatched", true);
