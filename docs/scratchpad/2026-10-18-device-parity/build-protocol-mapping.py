@@ -647,6 +647,8 @@ PROTOCOL_FAILED = {
               'iphone-notch: no RN counterpart replays the unavailable cue'),
     'B0119': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
               'iphone-notch: a triple tap on Clear shows no coachmark; a hold does'),
+    'E0174': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
+              'iphone-notch: a triple tap on Clear shows no coachmark'),
 }
 
 

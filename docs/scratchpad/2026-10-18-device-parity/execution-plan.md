@@ -6,7 +6,7 @@ classification. **A mapping is not a pass.** Every row stays `unverified` until 
 on the exact candidate head and the result record is linked in the row's `evidence` column. No
 device, simulator or browser cell is verified today. The first AC-1 run verified 24 logic rows by
 two-sided automated contract and failed one (`results/ac-1-2026-10-19.md`). The DS-2 slice failed
-four rows (`results/ds2-slice-2026-10-19.md`).
+five rows (`results/ds2-slice-2026-10-19.md`).
 
 `protocol-mapping.csv` is the machine-readable half of this plan, with one row per requirement:
 
@@ -56,12 +56,12 @@ By kind:
 | Differences (X)   |   65 |       53 |             6 |              0 |       6 |            0 |
 | **Total**         | 1541 |     1234 |           128 |             25 |      18 |          136 |
 
-Status: 1,341 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
+Status: 1,340 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
 switch, which the rig does not have. Fourteen more rows carry an iOS offline or Low Data Mode
 subcase with no permitted target (see Targets); their Android and web subcases still run. 18 rows
 are `settled` and 136 `out-of-scope`. AC-1 verified 24 logic rows and failed one, L0161. The DS-2
-slice failed B0022, B0100 and L0047 (#3012) and B0119 (#3013); **no device, simulator or browser
-cell is `verified`.**
+slice failed B0022, B0100 and L0047 (#3012) and B0119 and E0174 (#3013); **no device, simulator or
+browser cell is `verified`.**
 
 Requirements per protocol. "Mapped" counts every row that names the protocol; "primary" counts the
 rows that list it first. 192 rows map to two protocols, and 6 rows to three or four.
