@@ -1,5 +1,16 @@
 # Migration contract
 
+> **Correction, 2026-10-18.** This document is history, with two corrections to what it says about
+> the framework and parity. The framework is React Native (Expo, React Native new architecture),
+> with native ink rendered through `@shopify/react-native-skia`
+> ([ADR-0178](../adrs/0178-native-ink-renders-through-skia.md)) and the React Native web startup
+> path split by platform ([ADR-0179](../adrs/0179-rn-web-startup-path-splits-by-platform.md)).
+> Visual and behavioral parity with the shipping app is required: match shipping behavior by
+> default, and record each settled difference as a decision. The React Native app remains a
+> candidate under evaluation: the go/no-go decision is deferred and nothing is cut over. Below, the
+> statements that no framework is selected and the waiver of old-UI parity, including the "Old UI
+> layout and flows" row, no longer hold; the retirement of legacy data transfer stands.
+
 ## Scope and decision status
 
 Select the drawing product architecture across web, Android, and iOS through the Codex/Claude pair,
@@ -18,15 +29,17 @@ On 2026-10-08 the maintainer gave this direct instruction:
 > A fresh start is acceptable for the roughly ten beta users. Prioritize the new drawing product
 > rather than legacy settings/data migration or old-app UI parity. Retain reliable new-app
 > saving/exporting, permissions, lifecycle, security and release quality. Reconcile the
-> authoritative contract accordingly. No framework is selected.
+> authoritative contract accordingly. No framework is selected. [Superseded 2026-10-18 on the
+> framework and old-app UI parity; see the correction note at the top.]
 
 This scope applies to the full campaign: web browser tabs and installed PWAs, Android and iOS.
 Public hosting does not create a platform exception or establish a separate non-beta audience beyond
-the maintainer's stated roughly ten beta users. It replaces earlier mandatory legacy-transfer and
-exact old-UI parity requirements in the migration documents. Historical source inventories, failed
-attempts, accepted units and review provenance retain their original identities and claim limits.
-Retirement is a scope disposition, not a passing validation result or permission to change the
-shipping app before target cutover.
+the maintainer's stated roughly ten beta users. It replaces earlier mandatory legacy-transfer
+requirements in the migration documents; it does not waive parity with the shipping app, which the
+correction note at the top requires. Historical source inventories, failed attempts, accepted units
+and review provenance retain their original identities and claim limits. Retirement is a scope
+disposition, not a passing validation result or permission to change the shipping app before target
+cutover.
 
 In the remaining rules, continuity means applicable new-app data/lifecycle reliability and native
 update installability. Fidelity and visual semantics retain substantive drawing/output requirements;
@@ -42,7 +55,7 @@ and workloads, and a concrete product change must be reviewed before changing th
 | New-app data and services                                                                                     | Reliable saves/exports, exact failed-save recovery, permissions, secure credentials, offline behavior, lifecycle, accessibility and failure handling remain required for the selected product. Later updates protect data created by that product.                                                              |
 | Hosted web/API/admin                                                                                          | Applicable startup, CSP, PWA, browser, navigation, admin and server contracts remain. Supported installed clients retain their API/CORS contracts while they depend on them.                                                                                                                                    |
 | Native distribution                                                                                           | Existing app identity, signing lineage, monotonic release versions, supported floors, channel installability, privacy and release quality remain required. Same-identity updates may initialize fresh app data; clean installs alone do not prove update installability.                                        |
-| Architecture and evidence                                                                                     | No framework is selected. Fair alternatives, source/toolchain security, calibrated matched comparisons, burden rules, physical final gates, independent review and exact-head release evidence remain required.                                                                                                 |
+| Architecture and evidence                                                                                     | React Native is the framework under evaluation (ADR-0178, ADR-0179); go/no-go is deferred. Fair alternatives, source/toolchain security, calibrated matched comparisons, burden rules, physical final gates, independent review and exact-head release evidence remain required.                                |
 
 The next product milestone is an observable drawing candidate: runnable paper, real ink, controls,
 undo and exported output, with exact source and claim limits. Follow it with full fidelity and
