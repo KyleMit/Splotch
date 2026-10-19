@@ -81,11 +81,24 @@ xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration R
 Read the lines from the host:
 
 * **Android:** `adb logcat -s SplotchPerf:I -v raw`.
-* **iOS device:**
-  `pymobiledevice3 syslog live --udid <udid> -pn HelloWorld -m '"probe":"SplotchPerf"'`. On iPadOS
-  26.5, `idevicesyslog -p HelloWorld` printed nothing for the whole 2026-10-19 campaign. The unified
-  log caps a message near 1 KB, so a long cohort line arrives cut off and fails to parse as JSON.
-  Fields past the cut are missing from the device log, though the earlier ones survive.
+* **iOS device:** collect the log after the run rather than streaming it whenever the line's timing
+  matters (`emissionLateness`, input-to-submission). A live stream
+  (`pymobiledevice3 syslog live --udid <udid> -pn HelloWorld -m '"probe":"SplotchPerf"'`) keeps
+  `diagnosticd` and the USB link busy about once a second. On the iPad that held the main thread 25
+  to 50 ms in Skia's `CAMetalLayer` drawable wait and put every replay past a frame (issue 3003).
+  The same replays measured with a collected archive stayed under 26 ms with the drawing sound off:
+
+  ```sh
+  T0=$(date +%s)   # just before launching the app
+  pymobiledevice3 syslog collect --udid <udid> --start-time $((T0 - 2)) run.logarchive
+  log show --archive run.logarchive --style compact \
+    --predicate 'process == "HelloWorld" AND eventMessage CONTAINS "SplotchPerf"'
+  ```
+
+  On iPadOS 26.5, `idevicesyslog -p HelloWorld` printed nothing for the whole 2026-10-19 campaign.
+  The unified log caps a message near 1 KB, live or archived, so a long cohort line arrives cut off
+  and fails to parse as JSON. Fields past the cut are missing from the device log, though the
+  earlier ones survive.
 * **iOS simulator:**
   `xcrun simctl spawn <udid> log stream --style compact --predicate 'category == "SplotchPerf"'`.
 
@@ -159,12 +172,12 @@ The replay writes one line to the same log as the cohort lines, with the trace i
 field, when its last packet has gone out; the last cohort's line follows within `COHORT_SETTLE_MS`.
 A replay that fails writes `replay` and `error` instead.
 
-| Field                   | Counts                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                                                                                                                                                                                                                                                                                                                          |
-| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min, and `maxAtMs`, the scheduled time of the latest packet. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines. On the iPad most replays do: Skia's main-thread render waits 25–50 ms for a free `CAMetalLayer` drawable about once a second, and the first play of a pencil take waits on an `AVPlayerItem` media-selection callback (issue 3003) |
+| Field                   | Counts                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                                                                                                                                                                                       |
+| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                                                                                                                                                                                                |
+| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                                                                                                                                                                                                    |
+| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min, and `maxAtMs`, the scheduled time of the latest packet. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines. On the iPad a live log stream alone makes most replays do so; read the line from a collected archive (above) |
 
 ## Web
 
