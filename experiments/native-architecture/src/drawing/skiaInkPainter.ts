@@ -10,6 +10,7 @@ import {
   type SkCanvas,
   type SkImage,
   type SkPaint,
+  type SkPath,
   type SkShader,
 } from '@shopify/react-native-skia';
 import {
@@ -30,7 +31,7 @@ import { crayonResourceUri, type CrayonTileResources } from './crayonTiles';
 import { COLORING_FILLS, type PageId } from './pages';
 import { isFarmPageId } from './bundledBooks';
 import { isOfflinePageId } from '../offlineLibrary/identity';
-import { paintAppearance, paletteHex } from './palette';
+import { paintAppearance, paletteHex, type PaletteLabel } from './palette';
 import { smoothStroke, type Point, type Stroke } from './model';
 
 export type InkPaintContext = Readonly<{
@@ -126,9 +127,72 @@ function fitMatrix(paper: PaperBounds, art: PaperSize) {
   return matrix;
 }
 
+function sameFields<Input extends Readonly<Record<string, unknown>>>(a: Input, b: Input) {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => Object.is(a[key], b[key]));
+}
+
+// Every Magic stroke in a scene paints with one context, so a paint asks for the shader the last
+// one built until the page, theme, fill image or paper bounds change. Building one records the
+// whole fill, which a live stroke would otherwise repeat on every input packet. The shader is a
+// function of its flat input alone (an image by identity), so a cached one paints the same pixels.
+function createLastShader<Input extends Readonly<Record<string, unknown>>>(
+  build: (input: Input) => SkShader
+) {
+  let last: Readonly<{ input: Input; shader: SkShader }> | null = null;
+  return (input: Input) => {
+    if (last && sameFields(last.input, input)) return last.shader;
+    const shader = build(input);
+    last = { input, shader };
+    return shader;
+  };
+}
+
+type InkTheme = InkPaintContext['theme'];
+type FillPageId = keyof typeof COLORING_FILLS;
+type FillRegion = Readonly<{ path: SkPath; colors: Readonly<Record<InkTheme, PaletteLabel>> }>;
+
+// Region outlines are constants, so each page's are parsed once for the life of the process.
+const fillRegionPaths = new Map<FillPageId, readonly FillRegion[]>();
+
+function fillRegions(pageId: FillPageId): readonly FillRegion[] {
+  const parsed = fillRegionPaths.get(pageId);
+  if (parsed) return parsed;
+  const regions = COLORING_FILLS[pageId].regions.flatMap((region) => {
+    const path = Skia.Path.MakeFromSVGString(region.path);
+    return path ? [{ path, colors: region.colors }] : [];
+  });
+  fillRegionPaths.set(pageId, regions);
+  return regions;
+}
+
+function recordPageFill({
+  pageId,
+  theme,
+  ...size
+}: PaperBounds & Readonly<{ pageId: FillPageId; theme: InkTheme }>) {
+  const fill = COLORING_FILLS[pageId];
+  const recorder = Skia.PictureRecorder();
+  const bounds = Skia.XYWHRect(size.x, size.y, size.width, size.height);
+  const fillCanvas = recorder.beginRecording(bounds);
+  const paint = Skia.Paint();
+  paint.setColor(Skia.Color(paletteHex(fill.background[theme])));
+  fillCanvas.drawRect(bounds, paint);
+  fillCanvas.concat(fitMatrix(size, CANONICAL_PAPER_SIZE));
+  for (const region of fillRegions(pageId)) {
+    const regionPaint = Skia.Paint();
+    regionPaint.setAntiAlias(true);
+    regionPaint.setColor(Skia.Color(paletteHex(region.colors[theme])));
+    fillCanvas.drawPath(region.path, regionPaint);
+  }
+  return recorder
+    .finishRecordingAsPicture()
+    .makeShader(TileMode.Decal, TileMode.Decal, FilterMode.Linear, undefined, bounds);
+}
+
 // The fill over the whole paper, letterbox bands included (bookFillPlacement), in image
 // pixels rather than frame units: a compact fill is smaller than its art frame.
-function bookFillShader(image: SkImage, size: PaperBounds) {
+function recordBookFill({ image, ...size }: PaperBounds & Readonly<{ image: SkImage }>) {
   const pixels = { width: image.width(), height: image.height() };
   const placement = bookFillPlacement(size, pixels);
   const recorder = Skia.PictureRecorder();
@@ -157,33 +221,16 @@ function bookFillShader(image: SkImage, size: PaperBounds) {
     .makeShader(TileMode.Decal, TileMode.Decal, FilterMode.Linear, undefined, bounds);
 }
 
+const pageFillShader = createLastShader(recordPageFill);
+const bookFillShader = createLastShader(recordBookFill);
+
 function magicShader(stroke: Extract<Stroke, { brush: 'magic' }>, context: InkPaintContext) {
   const size = paperBounds(context.projection);
-  if (context.bookFill) return bookFillShader(context.bookFill, size);
-  const { pageId } = context;
+  if (context.bookFill) return bookFillShader({ ...size, image: context.bookFill });
+  const { pageId, theme } = context;
   if (isFarmPageId(pageId) || isOfflinePageId(pageId))
     throw new Error('Magic ink on a coloring book page needs its fill artwork.');
-  const fill = pageId === 'blank' ? null : COLORING_FILLS[pageId];
-  if (fill) {
-    const recorder = Skia.PictureRecorder();
-    const bounds = Skia.XYWHRect(size.x, size.y, size.width, size.height);
-    const fillCanvas = recorder.beginRecording(bounds);
-    const paint = Skia.Paint();
-    paint.setColor(Skia.Color(paletteHex(fill.background[context.theme])));
-    fillCanvas.drawRect(bounds, paint);
-    fillCanvas.concat(fitMatrix(size, CANONICAL_PAPER_SIZE));
-    for (const region of fill.regions) {
-      const path = Skia.Path.MakeFromSVGString(region.path);
-      if (!path) continue;
-      const regionPaint = Skia.Paint();
-      regionPaint.setAntiAlias(true);
-      regionPaint.setColor(Skia.Color(paletteHex(region.colors[context.theme])));
-      fillCanvas.drawPath(path, regionPaint);
-    }
-    return recorder
-      .finishRecordingAsPicture()
-      .makeShader(TileMode.Decal, TileMode.Decal, FilterMode.Linear, undefined, bounds);
-  }
+  if (pageId !== 'blank') return pageFillShader({ ...size, pageId, theme });
   const line = rainbowLine(stroke.rainbow, size.width, size.height);
   const stops = rainbow(stroke.rainbow).stops;
   return Skia.Shader.MakeLinearGradient(
