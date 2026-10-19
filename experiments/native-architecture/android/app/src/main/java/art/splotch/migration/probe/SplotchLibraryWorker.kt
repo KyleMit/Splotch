@@ -17,6 +17,18 @@ class SplotchLibraryWorker(context: Context, parameters: WorkerParameters) : Wor
     private const val TRANSFER_TIMEOUT_MS = 30000
     private const val BUFFER_BYTES = 65536
     private const val STORAGE_RESERVE_BYTES = 8388608L
+
+    fun dataSaverDefers(context: Context, allowMetered: Boolean): Boolean {
+      val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+      return dataSaverDefers(allowMetered, manager.isActiveNetworkMetered, manager.restrictBackgroundStatus)
+    }
+
+    // Data Saver restricts background data on metered networks only, so an unmetered network
+    // never defers while restriction is on. ColoringPackWorker.java applies the same table,
+    // pinned by tools/tests/native-data-saver-deferral.test.mjs.
+    fun dataSaverDefers(allowMetered: Boolean, activeNetworkMetered: Boolean, restrictBackgroundStatus: Int): Boolean {
+      return allowMetered && activeNetworkMetered && restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
+    }
   }
   private class RetiredAsset : Exception()
   private class Cancelled : Exception()
@@ -34,7 +46,7 @@ class SplotchLibraryWorker(context: Context, parameters: WorkerParameters) : Wor
       val marker = stored.getString("marker")
       val identity = stored.getString("identity")
       val pack = SplotchLibraryFiles.parse(marker, identity)
-      if (stored.getBoolean("allowMetered") && dataSaverEnabled()) return Result.retry()
+      if (dataSaverDefers(applicationContext, stored.getBoolean("allowMetered"))) return Result.retry()
       val staging = SplotchLibraryFiles.stage(applicationContext, pack, token)
       val current = File(root, SplotchLibraryFiles.directory(pack))
       val files = pack.getJSONArray("files")
@@ -99,11 +111,6 @@ class SplotchLibraryWorker(context: Context, parameters: WorkerParameters) : Wor
 
   private fun checkActive(job: File, token: String) {
     if (isStopped || !SplotchLibraryFiles.active(job, token)) throw Cancelled()
-  }
-
-  private fun dataSaverEnabled(): Boolean {
-    val manager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    return manager.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
   }
 
   private fun download(entry: JSONObject, destination: File, job: File, token: String) {

@@ -76,7 +76,7 @@ The same TypeScript store contract has platform-specific implementations:
 * **Android:** a constrained WorkManager job streams the selected `downloadPath` into the canonical
   relative filename under `noBackupFilesDir/coloring`, verifies SHA-256 while writing, atomically
   renames each `.part` file, and writes the marker last. Work is unmetered by default and pauses
-  under Data Saver.
+  under Data Saver only while the active network is metered, the only networks Data Saver restricts.
 * **iOS:** a discretionary background `URLSession` downloads the selected path into the canonical
   relative filename in Application Support. The coloring root is excluded from backup, job progress
   is persisted, and AppDelegate reconnects background session events after suspension or system
