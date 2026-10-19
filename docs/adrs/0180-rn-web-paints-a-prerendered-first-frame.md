@@ -1,8 +1,8 @@
 # ADR-0180: The React Native Web Export Paints a Prerendered First Frame, Then Hydrates It
 
 **Status:** Proposed — amends [ADR-0179](0179-rn-web-startup-path-splits-by-platform.md) **Date:**
-2026-10. On 2026-10-19 the owner decided three parts: the inlined paper texture, the pre-engine
-burst with finger adoption, and the pre-hydration press feedback. The startup cap, the interactivity
+2026-10. On 2026-10-19 the owner decided four parts: the inlined paper texture, the pre-engine burst
+with finger adoption, the pre-hydration press feedback, and the split startup cap. The interactivity
 tiers and the prerender mechanism are still proposals, with numbers below.
 
 ## Context
@@ -292,10 +292,11 @@ sheet (the evidence package's `results/`, `results/sdk58/` and `results/quiet-ho
   variants, and for a visitor with a saved record. This is the check that would catch an attribute
   React kept silently.
 
-### Startup cap (proposed split, awaiting the owner)
+### Startup cap: split in two
 
-The build measures 861,191 bytes against the 850,230 cap, so `native:web:build`'s post-check fails.
-No CI job runs that build. The cap structure is unchanged until the owner decides.
+Once the bundle is held until after first paint, ADR-0179's single cap adds two different waits
+together. This build measured 861,191 bytes against its 850,230. On 2026-10-19 the owner split it:
+"a first-paint cap of 47,052 and a core-controls cap of 827,535".
 
 | Part of the startup path                                   | Bytes   |
 | ---------------------------------------------------------- | ------- |
@@ -314,17 +315,30 @@ Against the SDK 58 baseline (838,334), the prerender adds 22,857 bytes:
 * 3,871 for the boot scripts;
 * 3,530 for the critical and feedback CSS.
 
-With the bundle held until after first paint, one cap measures two different things. The proposal
-splits it, each part set from measurement plus headroom by ADR-0179's rule:
+`check-native-web-startup.mjs` holds each part to its own cap. Each is set from measurement plus
+headroom, by ADR-0179's rule:
 
-* **A first-paint cap** on what the first frame needs before it can paint: the shell's inline CSS
-  and inline scripts, now 45,552 bytes. The template markup is not in it; the shell document is
-  23,474 bytes brotli. ADR-0179's 11,896 bytes of headroom would be a quarter of this cap, so it
-  would catch nothing smaller than the whole feedback layer. A headroom below the smallest
-  first-paint lever taken here, the 1,649-byte boot script, would catch it. One choice is 1,500
-  bytes, giving a cap of 47,052.
-* **A core-controls cap** on the bundle tier 2 needs. Without tiers that is Expo's runtime plus the
-  entry chunk: 815,639 bytes, with ADR-0179's 11,896 bytes of headroom giving 827,535.
+* **`MAX_NATIVE_WEB_FIRST_PAINT_BYTES`, 47,052.** It counts what the first frame needs before it can
+  paint: the shell's inline CSS and executable inline scripts, plus any script, stylesheet or
+  preload the document itself names.
+  * This build measures 45,552.
+  * The template markup is not counted; the shell document is 23,474 bytes brotli.
+  * ADR-0179's 11,896 bytes of headroom would be a quarter of this cap, so it would catch nothing
+    smaller than the whole feedback layer. The cap keeps 1,500 bytes instead: less than the smallest
+    first-paint lever taken here, the 1,649-byte boot script.
+  * A document that loads the bundle itself again fails by the whole bundle.
+* **`MAX_NATIVE_WEB_CORE_CONTROLS_BYTES`, 827,535.** It counts every script and stylesheet the
+  drawing controls wait for, whether the document or the boot script loads it. Without tiers, that
+  is Expo's runtime plus the entry chunk.
+  * This build measures 815,639.
+  * It keeps ADR-0179's 11,896 bytes of headroom and carries its ratchet: consuming the headroom is
+    the cue to take the next lever.
+  * If the tiers land, it covers what tier 2 waits for.
+
+The check still reports the whole startup path and ADR-0179's parity target
+(`NATIVE_WEB_STARTUP_TARGET_BYTES`). `check-native-web-startup.test.mjs` covers each cap one byte
+over. It also counts the held bundle toward the core controls and a bundle the document loads toward
+the first paint.
 
 ### Interactivity tiers (proposed, awaiting the owner)
 
@@ -434,8 +448,11 @@ and the held finger becomes ink at 2,642 without lifting.
   Expo upgrade that moves either fails the build. Both survived the SDK 57 to 58 upgrade unchanged.
 * − The build depends on happy-dom, a development dependency, for `DOMParser`. Shipping the web
   export from Netlify would need it moved (ADR-0070), or the icons pre-parsed.
-* − The startup path is 22,857 bytes over the SDK 58 baseline and 10,961 over the cap, until the
-  owner decides the split.
+* − The startup path is 22,857 bytes over the SDK 58 baseline.
+  * 17,894 of them are first-paint bytes that made the frame paint sooner.
+  * The other 4,963 are in the entry chunk, which the core-controls cap now holds.
+* − Together the two caps allow 874,587 bytes, 24,357 more than the single cap did. The whole
+  startup path is no longer held to one number; each wait is held separately.
 
 ### Follow-ups
 
@@ -443,6 +460,6 @@ and the held finger becomes ink at 2,642 without lifting.
    the first frame, as ADR-0040 does. Then clone a matching variant instead of none.
 2. **The hydrated-vs-fresh DOM comparison in CI.** Also a development-build pass that fails on
    React's hydration warnings.
-3. **The cap split, the tiers and the mechanism** await the owner (above).
+3. **The tiers and the mechanism** await the owner (above).
 4. **Port first-frame geometry to CSS where it is cheap**, such as the palette gap, to shrink the
    post-hydration relayout.

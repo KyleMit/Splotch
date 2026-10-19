@@ -195,7 +195,8 @@ in all). The timing probes were not rerun.
   the drawing engine 100,093, the drawing chrome 122,111, and product, settings and the library
   75,576. The entry is 197,360 bytes brotli, about 1.05 s on Slow 4G. The library share alone is
   about 0.5 s, and a tier-1 chunk would save about 0.3 s.
-* **Item 5, the cap.** The per-part bytes are in ADR-0180's Startup cap table.
+* **Item 5, the cap.** The per-part bytes are in ADR-0180's Startup cap table. The owner chose the
+  split on 2026-10-19, and `check-native-web-startup.mjs` holds both caps.
 * **Item 6, the mechanism.** `harness/snapshot-prerender.mjs` builds the headless-browser
   alternative: Playwright renders the export at each variant, 46 s for 12. It captures React Native
   Web's sheet from the CSSOM; the element's text is empty. Its frame is pixel-identical to the
