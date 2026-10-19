@@ -102,9 +102,9 @@ native keeps its synchronous, offline-complete bundle unchanged.
     headroom, the margin the 906,000 cap kept over 894,104: 870,798 after the fourth cut, 850,230
     after the fifth. The headroom stays below every move through the third cut (the smallest, the
     offline library controller, is 24,471 bytes) and below both fifth-cut levers, so undoing one
-    fails the build. So does statically importing the AI sheet (measured at 1,099,429
-    bytes against the earlier base). Two of the fourth cut's levers are smaller than the headroom,
-    so each of its three fails its own check instead.
+    fails the build. So does statically importing the AI sheet (measured at 1,099,429 bytes against
+    the earlier base). Two of the fourth cut's levers are smaller than the headroom, so each of its
+    three fails its own check instead.
   * The cap is a ratchet. Consuming the headroom is the cue to take the next lever, not to raise the
     number.
   * Amended 2026-10-19: the owner raised the cap for the Expo SDK 58 / React 19.3 upgrade (PR 3000).
@@ -112,9 +112,8 @@ native keeps its synchronous, offline-complete bundle unchanged.
     (`react-dom-client.production.js` grows 89,152 bytes unminified), which no app-code lever in
     that upgrade could offset: the base measured 869,511 bytes and the upgrade 900,361. The owner's
     words: "I would like to do both 1. merge 2. fix startup budget. Whatever order is fine for me."
-    The cap was 900,361 + 11,896 = 912,257 bytes, the same headroom over the reviewed startup,
-    until the fifth cut (below) took Expo's tree shaking and granular chunking and ratcheted it back
-    down.
+    The cap was 900,361 + 11,896 = 912,257 bytes, the same headroom over the reviewed startup, until
+    the fifth cut (below) took Expo's tree shaking and granular chunking and ratcheted it back down.
 * **The app's `Animated` leaves out React Native Web's list components.**
   * RNW's `Animated` export spreads its animation implementation over six animated hosts. Three of
     them (`FlatList`, `SectionList`, `ScrollView`) import `VirtualizedList` and the list machinery,

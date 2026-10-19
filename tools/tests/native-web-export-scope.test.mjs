@@ -38,9 +38,9 @@ describe('the web export’s bundler levers stay off the native bundles', () => 
     const options = readFileSync(METRO_OPTIONS, 'utf8');
     for (const name of Object.keys(NATIVE_WEB_EXPORT_ENV))
       expect(readsFromProcessEnv(options, name)).toBe(true);
-    expect(readsFromProcessEnv('const optimize = props.optimize;', 'EXPO_UNSTABLE_TREE_SHAKING')).toBe(
-      false
-    );
+    expect(
+      readsFromProcessEnv('const optimize = props.optimize;', 'EXPO_UNSTABLE_TREE_SHAKING')
+    ).toBe(false);
     for (const input of NATIVE_BUNDLE_INPUTS)
       expect(readFileSync(join(APP_DIR, input), 'utf8')).not.toContain('EXPO_UNSTABLE_');
   });
