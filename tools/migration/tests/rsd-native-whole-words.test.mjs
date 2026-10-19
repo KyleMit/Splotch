@@ -13,7 +13,7 @@ import { RsdColoringTile } from '../../../experiments/native-architecture/src/rs
 import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.tsx';
 import { RsdToggleRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToggleRow.tsx';
 import { RsdSliderRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
-import { SettledTextZoom } from '../../../experiments/native-architecture/src/platform/settledTextZoom.ts';
+import { TextZoomRevision } from '../../../experiments/native-architecture/src/platform/textZoomRevision.ts';
 import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import {
   COVER_CAPTION_HEIGHT_PX,
@@ -182,13 +182,14 @@ describe('segment track at a large OS font', () => {
     expect(native(thumb()).style.right).toBeUndefined();
   });
 
-  it('asks afresh once a finished pinch changes the Settings zoom', async () => {
-    const zoomed = (zoom) => h(SettledTextZoom, { value: zoom }, h(Picker, { initial: 'light' }));
-    await render(zoomed(2));
-    await layOut(label('System'), ['Syst', 90], ['em', 50]);
-    await render(zoomed(2));
-    expect(native(group()).style.flexDirection).toBe('column');
+  it('asks afresh once a Settings zoom pinch finishes', async () => {
+    const zoomed = (pinches) =>
+      h(TextZoomRevision, { value: pinches }, h(Picker, { initial: 'light' }));
     await render(zoomed(1));
+    await layOut(label('System'), ['Syst', 90], ['em', 50]);
+    await render(zoomed(1));
+    expect(native(group()).style.flexDirection).toBe('column');
+    await render(zoomed(2));
     expect(native(group()).style.flexDirection).toBe('row');
   });
 
@@ -356,10 +357,10 @@ describe('settings slider name at a large OS font', () => {
 describe('fitted text when its room changes without a new window or font scale', () => {
   const WORD_PX = 190;
   let roomPx;
-  const row = (zoom) =>
+  const row = (pinches) =>
     h(
-      SettledTextZoom,
-      { value: zoom },
+      TextZoomRevision,
+      { value: pinches },
       h(RsdToggleRow, { icon: 'sound', label: 'Volume', id: 'v', checked: false, onToggle() {} })
     );
   const text = () => container.querySelector('[data-testid="v-row"] span');
@@ -376,7 +377,7 @@ describe('fitted text when its room changes without a new window or font scale',
     );
 
   it('fits a word that broke before its narrower width was reported', async () => {
-    await render(row(1));
+    await render(row(0));
     const size = native(text()).style.fontSize;
     await layOut(text(), ['Volu', 95], ['me', 50]);
     expect(native(text()).style.fontSize).toBe(size);
@@ -385,9 +386,27 @@ describe('fitted text when its room changes without a new window or font scale',
     expect(native(text()).style.fontSize).toBeCloseTo((size * 100 * 0.98) / WORD_PX);
   });
 
+  it('fits a word whose break and narrower width arrive in one batch', async () => {
+    await render(row(0));
+    const size = native(text()).style.fontSize;
+    const { onTextLayout, onLayout } = native(text()).props;
+    await act(async () => {
+      onTextLayout({
+        nativeEvent: {
+          lines: [
+            { text: 'Volu', width: 95 },
+            { text: 'me', width: 50 },
+          ],
+        },
+      });
+      onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 100, height: 50 } } });
+    });
+    expect(native(text()).style.fontSize).toBeCloseTo((size * 100 * 0.98) / WORD_PX);
+  });
+
   it('grows back to its full size once a finished pinch gives it room again', async () => {
     roomPx = 100;
-    await render(row(2));
+    await render(row(0));
     const size = native(text()).style.fontSize;
     await layOut(text(), ['Volu', 95], ['me', 50]);
     expect(native(text()).style.fontSize).toBeCloseTo((size * 100 * 0.98) / WORD_PX);
