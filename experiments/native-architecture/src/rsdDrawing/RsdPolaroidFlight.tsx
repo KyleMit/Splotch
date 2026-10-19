@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, type ViewInstance } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { polaroidCssSize } from '../../../../web/src/lib/drawing/polaroidGeometry';
 import { POLAROID_FLIGHT_MS } from '../../../../web/src/lib/drawing/screenshotTiming';
@@ -26,7 +26,11 @@ type Offset = Readonly<{ x: number; y: number }>;
 
 // The polaroid flies from the Save screenshot button's center; the offset is measured from the
 // overlay's own center, where the frame rests.
-function measureOrigin(overlay: View | null, button: View | null, done: (offset: Offset) => void) {
+function measureOrigin(
+  overlay: ViewInstance | null,
+  button: ViewInstance | null,
+  done: (offset: Offset) => void
+) {
   if (!overlay) return;
   overlay.measureInWindow((left, top, width, height) => {
     if (!button) return done({ x: 0, y: 0 });
@@ -134,13 +138,13 @@ function Flight({
   onLanded,
 }: {
   flight: PolaroidFlight;
-  cameraTile: RefObject<View | null>;
+  cameraTile: RefObject<ViewInstance | null>;
   onLanded: (id: number) => void;
 }) {
   const reduceMotion = useReduceMotion();
   const [calm] = useState(reduceMotion);
   const window = useWindowDimensions();
-  const overlay = useRef<View>(null);
+  const overlay = useRef<ViewInstance>(null);
   const [origin, setOrigin] = useState<Offset | null>(null);
   const [land] = useState(() => () => onLanded(flight.id));
   const { progress, flash } = useFlightMotion(origin, calm, land);
@@ -195,7 +199,7 @@ export function RsdPolaroidFlight({
   onLanded,
 }: {
   flight: PolaroidFlight | null;
-  cameraTile: RefObject<View | null>;
+  cameraTile: RefObject<ViewInstance | null>;
   onLanded: (id: number) => void;
 }) {
   return flight ? (

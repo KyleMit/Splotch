@@ -20,7 +20,13 @@ import {
   type ForwardedRef,
   type ReactNode,
 } from 'react';
-import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import {
+  PixelRatio,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  type ViewInstance,
+} from 'react-native';
 import type { Drawing, Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
@@ -101,7 +107,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     );
     const propsRef = useRef(props);
     propsRef.current = props;
-    const paper = useRef<View>(null);
+    const paper = useRef<ViewInstance>(null);
     const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
     const geometry = useRef(createPaperGeometry()).current;
     const { draft, halos, show } = useLiveDraft();

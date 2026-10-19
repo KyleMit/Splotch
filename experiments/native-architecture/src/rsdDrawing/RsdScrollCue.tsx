@@ -1,5 +1,9 @@
 import { useRef, useState, type ReactNode, type Ref } from 'react';
-import { type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import {
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollViewInstance,
+} from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
 import { css, html } from 'react-strict-dom';
 import { motion } from './tokens.css';
@@ -73,7 +77,7 @@ export function RsdScrollCue({
   children: ReactNode;
   inset?: Inset;
   cueHeight?: number;
-  scrollRef?: Ref<ScrollView>;
+  scrollRef?: Ref<ScrollViewInstance>;
   onExtent?: (extent: ScrollExtent) => void;
   onUserScroll?: () => void;
 }) {

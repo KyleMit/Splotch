@@ -7,9 +7,10 @@ export const PAPER_GRAIN_CUBIC = [1 / 3, 1 / 3] as const;
 
 // Native assets resolve to an Android drawable name or an iOS file URL, as Skia's image hooks do.
 function grainUri(): string {
-  return typeof handmadePaper === 'string'
-    ? handmadePaper
-    : Image.resolveAssetSource(handmadePaper).uri;
+  if (typeof handmadePaper === 'string') return handmadePaper;
+  const source = Image.resolveAssetSource(handmadePaper);
+  if (!source) throw new Error('The paper grain asset did not resolve');
+  return source.uri;
 }
 
 let grain: Promise<SkImage | null> | null = null;

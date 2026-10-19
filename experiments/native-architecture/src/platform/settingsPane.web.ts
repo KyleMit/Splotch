@@ -1,4 +1,4 @@
-import type { ScrollView } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import {
   sectionScrollTop,
   spiedSectionAt,
@@ -6,14 +6,14 @@ import {
 import type { NativeSettingsSectionId } from '../settings/settingsSections';
 import type { ScrollExtent } from '../rsdDrawing/RsdScrollCue';
 
-function scrollElement(pane: ScrollView) {
+function scrollElement(pane: ScrollViewInstance) {
   const element: unknown = pane.getScrollableNode();
   if (!(element instanceof HTMLElement)) throw new Error('Settings scroll element is unavailable.');
   return element;
 }
 
 export function scrollSettingsPaneToSection(
-  pane: ScrollView | null,
+  pane: ScrollViewInstance | null,
   id: NativeSettingsSectionId,
   _offset: number,
   animated: boolean
@@ -26,7 +26,7 @@ export function scrollSettingsPaneToSection(
 }
 
 export function spiedSettingsSection(
-  pane: ScrollView | null,
+  pane: ScrollViewInstance | null,
   ids: readonly NativeSettingsSectionId[],
   _offsets: readonly number[],
   _extent: ScrollExtent

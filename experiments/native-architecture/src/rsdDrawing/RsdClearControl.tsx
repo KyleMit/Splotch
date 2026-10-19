@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, type ViewInstance } from 'react-native';
 import { useRef, useState } from 'react';
 import { Animated } from '../platform/animated';
 import type { ClearDock } from '../clear/clearDock';
@@ -21,7 +21,7 @@ function dockFrame(dock: ClearDock) {
 // into a full disc that follows the finger, and past the accept ring it turns alarm red and glows.
 function RsdClearButton({ control, disabled }: { control: ClearControl; disabled: boolean }) {
   const { values, dragging, reached, clearing, dock } = control;
-  const host = useRef<View | null>(null);
+  const host = useRef<ViewInstance | null>(null);
   const current = useRef({ control, disabled });
   current.current = { control, disabled };
   const [target] = useState(() => ({
