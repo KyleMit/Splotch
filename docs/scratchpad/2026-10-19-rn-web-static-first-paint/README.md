@@ -243,6 +243,12 @@ hydrated-versus-fresh DOM checks pass again on `after` (`results/early-input/`).
 
   React 19 keeps a mismatched attribute silently in production, so this is the check that would
   catch one.
+* **A stopped control press cannot act late** (`harness/latch-probe.mjs`,
+  `results/early-input/latch-probe.log.txt`), after Codex's second review. In headless Chromium a
+  finger goes down on one control before the controls are live and stays down while they go live.
+  * While it is held, mouse, touch and keyboard presses on either control reach the app.
+  * The held finger's own release and click do not.
+  * The next tap after it lifts reaches the app.
 
 ## Reproduce
 

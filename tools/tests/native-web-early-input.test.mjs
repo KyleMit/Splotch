@@ -183,6 +183,30 @@ describe('a press on a control before its handler attaches', () => {
     expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click']);
   });
 
+  it('lets fresh presses through while a press it stopped is still held', () => {
+    pointer(swatch(), 'pointerdown', { id: 1 });
+    document.documentElement.setAttribute(CONTROLS_LIVE_ATTRIBUTE, '');
+    pointer(swatch(), 'pointerdown', { id: 2 });
+    pointer(swatch(), 'pointerup', { id: 2 });
+    swatch().click();
+    swatch().dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+    swatch().click();
+    expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click', 'click']);
+    pointer(swatch(), 'pointerup', { id: 1 });
+    swatch().click();
+    expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click', 'click']);
+  });
+
+  it('owes no click to a press it stopped that was released elsewhere', () => {
+    pointer(swatch(), 'pointerdown', { id: 1 });
+    document.documentElement.setAttribute(CONTROLS_LIVE_ATTRIBUTE, '');
+    pointer(paper(), 'pointerup', { id: 1 });
+    pointer(swatch(), 'pointerdown', { id: 2 });
+    pointer(swatch(), 'pointerup', { id: 2 });
+    swatch().click();
+    expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click']);
+  });
+
   it('lets a keyboard press through after a press it stopped', () => {
     pointer(swatch(), 'pointerdown');
     pointer(swatch(), 'pointerup');

@@ -1,0 +1,6 @@
+{"stage":"finger on B before live (stopped)","reached":[]}
+{"stage":"mouse click on A while B held","reached":["pointerdown:a","pointerup:a","click:a"]}
+{"stage":"mouse click on B while B held","reached":["pointerdown:b","pointerup:b","click:b"]}
+{"stage":"Enter on focused A while B held","reached":["click:a"]}
+{"stage":"stopped finger lifts from B","reached":[]}
+{"stage":"fresh tap on B after","reached":["pointerdown:b","pointerup:b","click:b"]}
