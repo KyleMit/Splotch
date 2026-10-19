@@ -3,8 +3,8 @@ import {
   addStrokes,
   createHistory,
   emptyDrawing,
-  parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import { adoptPaper } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { legacyDrawing } from './native-paper-fixtures.mjs';

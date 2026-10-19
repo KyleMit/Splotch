@@ -13,10 +13,10 @@ import {
   commitDrawing,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   strokeStyle,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
 import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';

@@ -6,14 +6,14 @@ import {
   cohortFrame,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import {
   orderedOps,
   opRange,
   rangeShape,
-} from '../../experiments/native-architecture/src/drawing/strokeOps.ts';
+} from '../../experiments/native-architecture/src/drawing/inkOps.ts';
 import {
   createCrayonPassTracker,
   crayonPassBreaks,

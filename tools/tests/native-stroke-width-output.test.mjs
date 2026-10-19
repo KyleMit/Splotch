@@ -9,10 +9,10 @@ import {
   clearDrawing,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   strokeStyle,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));

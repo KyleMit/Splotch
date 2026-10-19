@@ -1,4 +1,4 @@
-import { parseDrawing } from '../drawing/model';
+import { parseDrawing } from '../drawing/drawingFormat';
 
 export const MAX_AI_MODEL_BYTES = 8 * 1024 * 1024;
 export const AI_ORIGINAL_CURRENT_VERSIONS = [5, 7, 8] as const;

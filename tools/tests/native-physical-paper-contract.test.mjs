@@ -18,9 +18,9 @@ import {
   clearDrawing,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import {
   STROKE_WIDTHS,

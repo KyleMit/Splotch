@@ -6,10 +6,10 @@ import {
   clearDrawing,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   strokeStyle,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import {
   COLORING_PAGES,
   PAGE_IDS,

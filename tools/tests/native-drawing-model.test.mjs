@@ -13,10 +13,10 @@ import {
   commitDrawing,
   createHistory,
   strokeStyle,
-  parseDrawing,
   paperPoint,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 
 const firstStroke = {
   color: 'Purple',

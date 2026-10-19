@@ -23,8 +23,8 @@ import { validateAiOriginalModel } from '../../experiments/native-architecture/s
 import {
   addStrokes,
   createHistory,
-  parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
 import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
