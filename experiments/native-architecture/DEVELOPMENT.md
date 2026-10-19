@@ -81,8 +81,11 @@ xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration R
 Read the lines from the host:
 
 * **Android:** `adb logcat -s SplotchPerf:I -v raw`.
-* **iOS device:** `idevicesyslog -p HelloWorld -m '"probe":"SplotchPerf"'` (or
-  `pymobiledevice3 syslog live -pn HelloWorld -m '"probe":"SplotchPerf"'`).
+* **iOS device:**
+  `pymobiledevice3 syslog live --udid <udid> -pn HelloWorld -m '"probe":"SplotchPerf"'`. On iPadOS
+  26.5, `idevicesyslog -p HelloWorld` printed nothing for the whole 2026-10-19 campaign. The unified
+  log caps a message near 1 KB, so a long cohort line arrives cut off and fails to parse as JSON.
+  Fields past the cut are missing from the device log, though the earlier ones survive.
 * **iOS simulator:**
   `xcrun simctl spawn <udid> log stream --style compact --predicate 'category == "SplotchPerf"'`.
 
@@ -156,12 +159,12 @@ The replay writes one line to the same log as the cohort lines, with the trace i
 field, when its last packet has gone out; the last cohort's line follows within `COHORT_SETTLE_MS`.
 A replay that fails writes `replay` and `error` instead.
 
-| Field                   | Counts                                                                                                                                                                                                                                                                |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                                                                         |
-| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                                                                                  |
-| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                                                                                      |
-| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min, and `maxAtMs`, the scheduled time of the latest packet. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines |
+| Field                   | Counts                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                                                                                                                                                            |
+| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                                                                                                                                                                     |
+| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                                                                                                                                                                         |
+| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min, and `maxAtMs`, the scheduled time of the latest packet. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines. On the iPad every replay currently does, once near each stroke start (issue 3003) |
 
 ## Web
 
