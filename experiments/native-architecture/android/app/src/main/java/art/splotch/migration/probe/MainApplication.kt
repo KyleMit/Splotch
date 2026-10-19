@@ -29,6 +29,7 @@ class MainApplication : Application(), ReactApplication {
           add(SplotchAIEnvironmentPackage())
           add(SplotchPhotoLibraryPackage())
           add(SplotchClearSoundPackage())
+          add(SplotchPerfLogPackage())
         }
     )
   }

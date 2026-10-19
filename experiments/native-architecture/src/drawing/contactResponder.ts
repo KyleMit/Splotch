@@ -24,6 +24,7 @@ import type { PaintColor } from './palette';
 import { paperLocation, type PaperFrame } from './paperGeometry';
 import { strokeWidthPx, type StrokeWidth } from './strokeWidth';
 import { haloKind, haloSize, type Halo } from './haloModel';
+import { PERF_PROBE, perfSampleTime, perfStroke } from './perfProbe';
 
 export type ContactDrawingProps = {
   currentDrawing: () => Drawing;
@@ -219,6 +220,7 @@ class ContactResponder {
       if (!frame || !point) throw new Error(INPUT_INTERRUPTED_MESSAGE);
       const paper = this.input.paper();
       const sample = this.paperSample(point, frame, paper);
+      if (PERF_PROBE) perfSampleTime(touch.timestamp);
       this.input.sample(touch.identifier, sample, true);
       const contact = this.contacts.get(touch.identifier);
       if (audible) {
@@ -259,6 +261,7 @@ class ContactResponder {
         width,
         adoption ? () => adoption : undefined
       );
+      if (PERF_PROBE) perfStroke(touch.timestamp);
       contact.admission = {
         kind: 'accepted',
         halo: {

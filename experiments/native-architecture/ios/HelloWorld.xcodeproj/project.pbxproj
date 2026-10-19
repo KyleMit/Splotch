@@ -35,6 +35,8 @@
 		D29120000000000000000002 /* SplotchPaperInput.m in Sources */ = {isa = PBXBuildFile; fileRef = D29120000000000000000004 /* SplotchPaperInput.m */; };
 		D29300000000000000000003 /* SplotchClearSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29300000000000000000001 /* SplotchClearSound.swift */; };
 		D29300000000000000000004 /* SplotchClearSound.m in Sources */ = {isa = PBXBuildFile; fileRef = D29300000000000000000002 /* SplotchClearSound.m */; };
+		297800000000000000000003 /* SplotchPerfLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000001 /* SplotchPerfLog.swift */; };
+		297800000000000000000004 /* SplotchPerfLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 297800000000000000000002 /* SplotchPerfLog.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -72,6 +74,8 @@
 		D29120000000000000000004 /* SplotchPaperInput.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchPaperInput.m; sourceTree = "<group>"; };
 		D29300000000000000000001 /* SplotchClearSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchClearSound.swift; sourceTree = "<group>"; };
 		D29300000000000000000002 /* SplotchClearSound.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchClearSound.m; sourceTree = "<group>"; };
+		297800000000000000000001 /* SplotchPerfLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloWorld/SplotchPerfLog.swift; sourceTree = "<group>"; };
+		297800000000000000000002 /* SplotchPerfLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorld/SplotchPerfLog.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +95,8 @@
 			children = (
 				D29300000000000000000001 /* SplotchClearSound.swift */,
 				D29300000000000000000002 /* SplotchClearSound.m */,
+				297800000000000000000001 /* SplotchPerfLog.swift */,
+				297800000000000000000002 /* SplotchPerfLog.m */,
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				A12863000000000000000003 /* SplotchAIEnvironment.swift */,
 				D29150000000000000000008 /* SplotchFeedbackDevice.m */,
@@ -418,6 +424,8 @@
 				276400000000000000000004 /* SplotchPencil.m in Sources */,
 				D29300000000000000000003 /* SplotchClearSound.swift in Sources */,
 				D29300000000000000000004 /* SplotchClearSound.m in Sources */,
+				297800000000000000000003 /* SplotchPerfLog.swift in Sources */,
+				297800000000000000000004 /* SplotchPerfLog.m in Sources */,
 				276400000000000000000003 /* SplotchPencil.swift in Sources */,
 				282900000000000000000004 /* SplotchDeviceLock.m in Sources */,
 				282900000000000000000003 /* SplotchDeviceLock.swift in Sources */,
