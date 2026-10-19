@@ -162,7 +162,7 @@ export function RsdEdgeLayout({
             />
           )}
           clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
-          sideBand={<RsdNotchBand ink={ink} eraser={screen.brush === 'eraser'} layer="sides" />}
+          dockBand={<RsdNotchBand ink={ink} eraser={screen.brush === 'eraser'} layer="dockSide" />}
           actionsPanel={(area, viewport) => (
             <RsdActionsPanel
               {...controls}

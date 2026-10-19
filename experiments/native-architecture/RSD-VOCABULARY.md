@@ -418,10 +418,10 @@ the paper column and under the palette bar (the shipping `--z-palette` stacking)
 the accept ring, the dock and the coachmark. Its clip stops at the safe-area top but reaches the
 screen's sides, because the docked tab overhangs a landscape side inset over the Notch Band, as
 shipping's does. The accept ring, which shipping stacks under the band, keeps its own clip to the
-frame; the band's side strips paint just under the clear overlay and its top strip over the whole
-drawing screen (`RsdNotchBand`'s layers). The clear underlay stays in the paper area and receives
-the area's offset inside the layout, so the wash grows from the screen's top-right corner and the
-departing page flies into the docked tab.
+frame; the band's right strip, the side the tab docks to, paints just under the clear overlay and
+the rest of the band over the whole drawing screen (`RsdNotchBand`'s layers). The clear underlay
+stays in the paper area and receives the area's offset inside the layout, so the wash grows from the
+screen's top-right corner and the departing page flies into the docked tab.
 
 * `experiments/native-architecture/src/clear/clearDock.ts` projects the dock geometry: the tab's
   10px overhang past the right edge, 90px down and 60px tall in portrait, and 48px down (or 20px

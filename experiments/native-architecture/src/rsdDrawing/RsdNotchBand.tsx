@@ -71,17 +71,19 @@ function BandStatusBar({ band }: { band: NotchBandState }) {
   return <StatusBar barStyle={style} hidden={hidden === true} />;
 }
 
-// Shipping stacks the band (--z-notch) over the Flat rail glass, which runs up through the top
-// inset, and over the Actions Panel's shadows, but under the Clear Button, whose docked tab
-// overhangs a landscape side inset. The rail glass rides in the palette bar, which RN stacks above
-// the Clear Button, so the top strip paints over the whole drawing screen (NativeFrame) and the side
-// strips paint just under the clear overlay (NativeDrawingLayout).
-export type NotchBandLayer = 'top' | 'sides';
+// Shipping stacks the band (--z-notch) over the Actions Panel and the Flat rail glass, which runs
+// out through the insets, and under the Clear Button, whose docked tab overhangs the right inset.
+// RN's palette bar carries the rail glass and stacks above the Clear Button, so no single layer sits
+// where --z-notch does. The right strip, the side the Clear Button docks to, paints just under the
+// clear overlay (NativeDrawingLayout); the rest of the band paints over the whole drawing screen
+// (NativeFrame). No rail glass reaches the right inset while that strip is painted: the band paints
+// the sides only in landscape, where the palette runs down the left edge or gives way altogether.
+export type NotchBandLayer = 'cover' | 'dockSide';
 
 // The Notch Band: the drawing color (the paper's, while erasing) in the safe-area strip a display
 // cutout sits in, so the hole-punch reads as part of the drawing. Each layer is mounted in a box
-// whose edges are the screen's along its strips; the top layer also owns the status bar and theme
-// color the band sets.
+// that spans the whole window; the cover layer also owns the status bar and theme color the band
+// sets.
 export function RsdNotchBand({
   ink,
   eraser,
@@ -108,19 +110,17 @@ export function RsdNotchBand({
     paperColor: paper,
   });
   const fills = band.backgroundColors;
-  const top = layer === 'top';
+  const cover = layer === 'cover';
   useEffect(() => {
-    if (top) setThemeColor(band.themeColor);
-  }, [top, band.themeColor]);
-  return top ? (
+    if (cover) setThemeColor(band.themeColor);
+  }, [cover, band.themeColor]);
+  return cover ? (
     <>
       <html.div aria-hidden style={[styles.edge, styles.top(insets.top, fills.top)]} />
+      <html.div aria-hidden style={[styles.edge, styles.left(insets.left, fills.left)]} />
       <BandStatusBar band={band} />
     </>
   ) : (
-    <>
-      <html.div aria-hidden style={[styles.edge, styles.left(insets.left, fills.left)]} />
-      <html.div aria-hidden style={[styles.edge, styles.right(insets.right, fills.right)]} />
-    </>
+    <html.div aria-hidden style={[styles.edge, styles.right(insets.right, fills.right)]} />
   );
 }
