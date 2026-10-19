@@ -119,12 +119,15 @@ heading or weight bypasses the font tokens, or a component imports `Text` from `
 
 ## Permissions
 
-The Android manifest removes the `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, and
-`READ_MEDIA_VISUAL_USER_SELECTED` declarations that Expo FileSystem and expo-media-library merge in.
-Editable copies use app-private storage, sharing uses a cache PNG, and saving to the photo library
-inserts into MediaStore under `Pictures/Splotch/`, the shipping app's album, which needs no
-permission on Android 11 and later. On Android 7–10 it is not attempted: the in-app copy is kept and
-the notice says the gallery needs Android 11. iOS asks only for add-only Photos access
+The Android manifest removes broad photo-read declarations merged by Expo FileSystem and
+expo-media-library and declares `WRITE_EXTERNAL_STORAGE` with `maxSdkVersion=28`. Android 7–9
+(API24–28) requests that write permission when first saving to the photo library. With permission,
+`SplotchPhotoLibrary.kt` writes under public `Pictures/Splotch/`; after denial it attempts the
+app-specific external media directory and scans the saved file. Android 10 and later (API29+) insert
+into MediaStore under `Pictures/Splotch/` without a storage permission. Android's compiled manifest
+can also report `READ_EXTERNAL_STORAGE` as an implied permission through API28 because write access
+was requested; it is not a broad modern photo-library read request. Editable copies use app-private
+storage and sharing uses a cache PNG. iOS asks only for add-only Photos access
 (`NSPhotoLibraryAddUsageDescription`), never read access. expo-media-library's config plugin is
 deliberately not registered in `app.json`: it would add the read permissions and
 `requestLegacyExternalStorage`. `tools/migration/tests/native-permissions.test.mjs` guards the
