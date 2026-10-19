@@ -1,12 +1,19 @@
 import { drawingPaper, type AdoptedPaper, type PaperReference } from './paperSpace';
 import type { PaintColor } from './palette';
-import { appendPoint, strokeStyle, type Drawing, type Point, type Stroke } from './model';
+import { sampleOutcome, strokeStyle, type Drawing, type Point, type Stroke } from './model';
 import type { Brush } from './brushes';
 import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
 import { PERF_PROBE, perfAppend, perfDrained } from './perfProbe';
 
+// A live stroke's points are its contact's own buffer, appended in place, so a kept sample costs
+// O(1) rather than a copy of the whole stroke. Each kept sample still publishes a new Stroke in a
+// new drafts list, so a consumer keyed on either identity sees every change; an earlier drafts list
+// reads the buffer as it grows. Nothing writes a buffer once its contact ends, so a committed
+// stroke never changes.
+type LiveContact = Readonly<{ index: number; points: Point[] }>;
+
 export function createContactCohort() {
-  const active = new Map<string, number>();
+  const active = new Map<string, LiveContact>();
   let strokes: readonly Stroke[] = [];
   let paper: PaperReference | null = null;
 
@@ -41,19 +48,19 @@ export function createContactCohort() {
         reserved ? { ...drawing, strokes: [reserved] } : drawing,
         width
       );
-      active.set(identifier, strokes.length);
-      strokes = [...strokes, { ...style, points: [point] }];
+      const points = [point];
+      active.set(identifier, { index: strokes.length, points });
+      strokes = [...strokes, { ...style, points }];
     },
     sample(identifier: string, point: Point, endpoint = false) {
-      const index = active.get(identifier);
-      if (index === undefined) return;
-      const stroke = strokes[index];
-      const points = appendPoint(stroke.points, point, endpoint);
-      if (PERF_PROBE) perfAppend(stroke.points, points, point);
-      const added = points.length - stroke.points.length;
-      if (added === 0) return;
+      const live = active.get(identifier);
+      if (!live) return;
+      const outcome = sampleOutcome(live.points, point, endpoint);
+      if (PERF_PROBE) perfAppend(outcome);
+      if (outcome !== 'appended') return;
+      live.points.push(point);
       strokes = strokes.map((item, position) =>
-        position === index ? { ...stroke, points } : item
+        position === live.index ? { ...item, points: live.points } : item
       );
     },
     finish(identifier: string): readonly Stroke[] | null {

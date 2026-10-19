@@ -8,10 +8,12 @@ import {
 } from '../../web/src/lib/drawing/magicSheetGradient.ts';
 import {
   addStroke,
+  addStrokes,
   appendPoint,
   clearDrawing,
   commitDrawing,
   createHistory,
+  extendsStrokes,
   strokeStyle,
   parseDrawing,
   paperPoint,
@@ -108,6 +110,60 @@ describe('native development drawing model', () => {
     const final = { x: 10.25, y: 20.25 };
     expect(appendPoint(points, final)).toBe(points);
     expect(appendPoint(points, final, true)).toEqual([...points, final]);
+  });
+
+  // A layer holding `base` learns of an append from the model, not by reading every stroke: the
+  // read counter is the evidence, and the fallback keeps every other list exact.
+  describe('extendsStrokes', () => {
+    const stroke = (x) => ({ ...firstStroke, brush: 'pen', width: 22, points: [{ x, y: 20 }] });
+    function counted(strokes) {
+      const reads = { count: 0 };
+      const list = new Proxy(strokes, {
+        get(target, name, receiver) {
+          if (typeof name === 'string' && /^\d+$/.test(name)) reads.count += 1;
+          return Reflect.get(target, name, receiver);
+        },
+      });
+      return { list, reads };
+    }
+    function historyOf(strokes) {
+      return createHistory({ ...legacyDrawing(), strokes });
+    }
+
+    // Negative control: without the model's append record every check reads the whole base list.
+    it('recognizes an addStrokes append without reading the strokes it extends', () => {
+      const { list, reads } = counted([stroke(1), stroke(2), stroke(3)]);
+      const next = addStrokes(historyOf(list), [stroke(4), stroke(5)]).drawing.strokes;
+      reads.count = 0;
+      expect(extendsStrokes(list, next)).toBe(true);
+      expect(reads.count).toBe(0);
+      expect(extendsStrokes(list, list)).toBe(true);
+      expect(reads.count).toBe(0);
+    });
+
+    it('answers exactly for lists the model did not append in one step', () => {
+      const base = [stroke(1), stroke(2)];
+      const once = addStroke(historyOf(base), stroke(3));
+      const twice = addStroke(once, stroke(4));
+      expect(extendsStrokes(base, twice.drawing.strokes)).toBe(true);
+      const branched = addStroke(undoDrawing(once), stroke(5)).drawing.strokes;
+      expect(extendsStrokes(once.drawing.strokes, branched)).toBe(false);
+      expect(extendsStrokes(base, branched)).toBe(true);
+      expect(extendsStrokes(once.drawing.strokes, base)).toBe(false);
+      expect(extendsStrokes(base, [stroke(1), stroke(2)])).toBe(false);
+      expect(extendsStrokes(base, [...base])).toBe(true);
+    });
+
+    // Negative control: keeping the earlier list's own record lets the newest list reach every
+    // ancestor, and this check then skips its read.
+    it('keeps no record for a list once it has been appended to', () => {
+      const { list, reads } = counted([stroke(1)]);
+      const once = addStroke(historyOf(list), stroke(2));
+      addStroke(once, stroke(3));
+      reads.count = 0;
+      expect(extendsStrokes(list, once.drawing.strokes)).toBe(true);
+      expect(reads.count).toBeGreaterThan(0);
+    });
   });
 
   it('undoes clear and reopening without mutating an earlier save snapshot', () => {

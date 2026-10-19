@@ -1,4 +1,4 @@
-import type { Point, Stroke } from './model';
+import type { AppendOutcome, Stroke } from './model';
 import type { PaperInput } from './paperInput';
 import type { PerfTimer } from './perfCohort';
 
@@ -20,7 +20,7 @@ export function perfPacket(_packet: PaperInput) {}
 export function perfIdle() {}
 export function perfStroke(_timestamp: number) {}
 export function perfSampleTime(_timestamp: number) {}
-export function perfAppend(_before: readonly Point[], _after: readonly Point[], _point: Point) {}
+export function perfAppend(_outcome: AppendOutcome) {}
 export function perfDrained(_strokes: readonly Stroke[]) {}
 export function useSurfaceCommitProbe() {}
 export function useInkCommitProbe(_picture: unknown) {}

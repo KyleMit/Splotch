@@ -1,4 +1,4 @@
-import type { Point, Stroke } from './model';
+import type { AppendOutcome, Stroke } from './model';
 import type { PaperInput } from './paperInput';
 
 // The native log tag (Android) and category (iOS) every line is written under, and the line's
@@ -13,7 +13,6 @@ export const PERF_LINE_VERSION = 1;
 // commits it caused count toward it. The next contact closes it sooner.
 export const COHORT_SETTLE_MS = 250;
 
-export type AppendOutcome = 'appended' | 'duplicate' | 'minDistanceRejected';
 export type PerfTimer = 'draftRecord' | 'sceneRecord';
 export type PerfClock<Handle> = Readonly<{
   now: () => number;
@@ -41,17 +40,6 @@ type Cohort = {
   timers: Record<PerfTimer, Timing>;
   submissions: number[];
 };
-
-// appendPoint returns its input array unchanged when it keeps no new point.
-export function appendOutcome(
-  before: readonly Point[],
-  after: readonly Point[],
-  point: Point
-): AppendOutcome {
-  if (after.length > before.length) return 'appended';
-  const last = before.at(-1);
-  return last && last.x === point.x && last.y === point.y ? 'duplicate' : 'minDistanceRejected';
-}
 
 function changedSamples(packet: PaperInput) {
   const changed = new Set(packet.changed);

@@ -49,6 +49,7 @@ const skia = vi.hoisted(() => ({
   imageLoads: 0,
   plane: { width: 400, height: 300 },
   redraws: [],
+  contexts: [],
 }));
 
 vi.mock('react-native', async () => {
@@ -124,7 +125,10 @@ vi.mock('react-native-svg', async () => {
 });
 
 vi.mock('../../experiments/native-architecture/src/drawing/skiaInkPainter.ts', () => ({
-  paintStroke: (canvas, stroke) => canvas.drawStroke(stroke.points.length),
+  paintStroke: (canvas, stroke, context) => {
+    skia.contexts.push(context);
+    canvas.drawStroke(stroke.points.length);
+  },
   decodeDataUriImage: () => null,
 }));
 
@@ -162,7 +166,7 @@ function drawingAppearance(child) {
   );
 }
 
-function DrawingInk({ reference = paper, ...props }) {
+function DrawingInk({ reference = paper, brush = 'pen', color = 'Green', ...props }) {
   return drawingAppearance(
     createElement(
       InkPaperScope.Provider,
@@ -170,8 +174,8 @@ function DrawingInk({ reference = paper, ...props }) {
       createElement(SkiaInk, {
         ...props,
         paperFrame: { ...PLANE, pageX: 0, pageY: 0 },
-        brush: 'pen',
-        color: 'Green',
+        brush,
+        color,
         onBusy: () => {},
         onError: (error) => {
           throw error;
@@ -195,6 +199,7 @@ beforeEach(() => {
   skia.imageLoads = 0;
   skia.plane = PLANE;
   skia.redraws.length = 0;
+  skia.contexts.length = 0;
   skia.frames.clear();
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++skia.nextFrame;
@@ -238,6 +243,51 @@ it('hands the ink view one picture per change, the committed ink beneath the str
   const live = skia.views[1];
   expect(live.calls.map(([name]) => name)).toEqual(['drawImageRectOptions', 'drawPicture']);
   expect(live.calls[1][1].calls.at(-1)).toEqual(['drawStroke', 3]);
+});
+
+// Every scene memo downstream of the paint context reruns when it changes, and the context holds
+// the Crayon tiles. Negative controls: building the tiles from a per-packet concatenation of the
+// history and the drafts fails the argument check, and a fresh resources object per call hands
+// each packet a new context.
+it('keeps one paint context across a live stroke’s packets until a new pigment arrives', () => {
+  const requests = vi.spyOn(tileOwner, 'useCrayonTileResources');
+  const crayon = (color, points) => ({ ...strokeStyle('crayon', color, emptyDrawing()), points });
+  const history = [...committed, crayon('Red', [{ x: 5, y: 5 }])];
+  const draw = (drafts, brush = 'pen', color = 'Green') =>
+    act(() => root.render(createElement(DrawingInk, { strokes: history, drafts, brush, color })));
+  draw([]);
+  const packets = [];
+  for (let count = 2; count <= 6; count++) {
+    skia.contexts.length = 0;
+    draw([pen(Array.from({ length: count }, (_, x) => ({ x: x * 10, y: 20 })))]);
+    packets.push(...skia.contexts);
+  }
+  expect(packets).toHaveLength(5);
+  expect(new Set(packets).size).toBe(1);
+  skia.contexts.length = 0;
+  const red = [
+    crayon('Red', [
+      { x: 1, y: 1 },
+      { x: 9, y: 9 },
+    ]),
+  ];
+  draw(red, 'crayon', 'Red');
+  expect(skia.contexts).toHaveLength(1);
+  expect(skia.contexts[0]).toBe(packets[0]);
+  skia.contexts.length = 0;
+  const blue = [
+    crayon('Blue', [
+      { x: 1, y: 1 },
+      { x: 9, y: 9 },
+    ]),
+  ];
+  draw(blue, 'crayon', 'Blue');
+  expect(skia.contexts).toHaveLength(1);
+  expect(skia.contexts[0]).not.toBe(packets[0]);
+  expect(skia.contexts[0].tiles.byKey.size).toBe(2 * CRAYON_BANDS.length);
+  expect(requests).toHaveBeenCalled();
+  for (const [strokes] of requests.mock.calls) expect(strokes).toBe(history);
+  expect(requests.mock.calls.at(-1)[3]).toBe(blue);
 });
 
 it('redraws the current picture after layout and cancels superseded or unmounted redraws', () => {

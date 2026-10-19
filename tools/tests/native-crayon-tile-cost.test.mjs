@@ -201,14 +201,86 @@ describe('active Crayon tile ownership', () => {
     expect(owner.crayonResourceUri(dark, '#ffffff', 0)).toContain('#ffffff');
   });
   it('detects removal of retained-resource reuse after LRU eviction', () => {
-    const before = 'retained.get(key) ?? inherited?.byKey.get(key) ?? crayonTileUri(hex, index)';
+    const before =
+      'retained.byKey.get(key) ?? inherited?.byKey.get(key) ?? crayonTileUri(hex, index)';
     expect(source).toContain(before);
     const changed = subject(source.replace(before, 'crayonTileUri(hex, index)'));
     const retained = changed.createCrayonTileResources();
     retained(strokes(17), 'light');
     changed.calls.length = 0;
-    retained(strokes(17), 'light');
-    expect(changed.calls).toHaveLength(17 * CRAYON_BANDS.length);
+    retained(strokes(18), 'light');
+    expect(changed.calls).toHaveLength(18 * CRAYON_BANDS.length);
+    const owner = subject();
+    const kept = owner.createCrayonTileResources();
+    kept(strokes(17), 'light');
+    owner.calls.length = 0;
+    kept(strokes(18), 'light');
+    expect(owner.calls).toHaveLength(CRAYON_BANDS.length);
+  });
+
+  // The ink scene memoizes its paint context on these resources, so a fresh object on every
+  // packet would rebuild every memo downstream of it. Negative control: dropping the unchanged-
+  // pigment answer hands each packet a new identity.
+  it('answers every packet with one identity until the pigments needed change', () => {
+    const check = (code) => {
+      const owner = subject(code).createCrayonTileResources();
+      const committed = [...strokes(3), { brush: 'pen', color: 'Red', width: 8, points: [] }];
+      const first = owner(committed, 'light', undefined, null, []);
+      const identities = new Set([first]);
+      for (let point = 1; point <= 20; point++) {
+        const pen = { brush: 'pen', color: 'Red', width: 8, points: [{ x: point, y: 0 }] };
+        identities.add(owner(committed, 'light', undefined, null, [pen]));
+        identities.add(
+          owner(committed, 'light', undefined, null, [{ ...committed[1], points: pen.points }])
+        );
+      }
+      return { owner, committed, first, identities };
+    };
+    const { owner, committed, first, identities } = check(source);
+    expect([...identities]).toEqual([first]);
+    const green = { ...strokes(1)[0], color: 'Green', points: [{ x: 1, y: 1 }] };
+    const live = owner(committed, 'light', undefined, null, [green]);
+    expect(live).not.toBe(first);
+    expect(live.byKey.size).toBe(4 * CRAYON_BANDS.length);
+    expect(owner([...committed, green], 'light')).toBe(live);
+    expect(owner(committed, 'light', 'Green')).toBe(live);
+    expect(owner(committed, 'dark', 'Green')).toBe(live);
+    const black = owner(committed, 'light', 'Black');
+    expect(black).not.toBe(live);
+    expect(owner(committed, 'dark', 'Black')).not.toBe(black);
+    const answer = 'if (holdsExactly(retained, colors)) return retained;';
+    expect(source).toContain(answer);
+    expect(check(source.replace(answer, '')).identities.size).toBe(41);
+  });
+
+  // Negative control: scanning the committed list on every call reads each of its strokes again.
+  it('scans the committed strokes once per list, and only the drafts per packet', () => {
+    const check = (code) => {
+      const reads = { count: 0 };
+      const committed = strokes(40).map((stroke) =>
+        Object.defineProperty({ ...stroke }, 'brush', {
+          get: () => {
+            reads.count += 1;
+            return 'crayon';
+          },
+          enumerable: true,
+        })
+      );
+      const owner = subject(code).createCrayonTileResources();
+      owner(committed, 'light');
+      const scanned = reads.count;
+      for (let point = 0; point < 20; point++)
+        owner(committed, 'light', 'Red', null, [
+          { ...strokes(1)[0], points: [{ x: point, y: 1 }] },
+        ]);
+      return { scanned, total: reads.count };
+    };
+    const { scanned, total } = check(source);
+    expect(scanned).toBe(40);
+    expect(total).toBe(scanned);
+    const memo = 'committed?.strokes !== strokes || committed.theme !== theme';
+    expect(source).toContain(memo);
+    expect(check(source.replace(memo, 'true')).total).toBe(21 * 40);
   });
   it('detects removal of inherited-resource sharing on capture mount', () => {
     const before = 'inherited?.byKey.get(key) ?? ';

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  appendOutcome,
   COHORT_SETTLE_MS,
   createPerfCohorts,
   PERF_LINE_VERSION,
   PERF_LOG_TAG,
 } from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
-import { appendPoint } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  appendPoint,
+  sampleOutcome,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const CLOCK_JOIN = { clock: 'mach_absolute_time', errorMs: 0 };
 
@@ -63,17 +65,22 @@ const stroke = (points) => ({
   points: Array.from({ length: points }, (_, x) => ({ x, y: 0 })),
 });
 
-describe('appendOutcome', () => {
-  // Negative control: classifying by array identity alone would call both rejections duplicates.
-  it('names what appendPoint did with each sample', () => {
+describe('sampleOutcome', () => {
+  // Negative control: classifying by whether the stroke grew would call both rejections duplicates.
+  it('names what the stroke keeps of each sample, as appendPoint keeps it', () => {
     const points = [{ x: 10, y: 10 }];
-    const classify = (point, includeEndpoint) =>
-      appendOutcome(points, appendPoint(points, point, includeEndpoint), point);
-    expect(classify({ x: 20, y: 20 }, false)).toBe('appended');
-    expect(classify({ x: 10, y: 10 }, true)).toBe('duplicate');
-    expect(classify({ x: 10, y: 10 }, false)).toBe('duplicate');
-    expect(classify({ x: 10.5, y: 10 }, false)).toBe('minDistanceRejected');
-    expect(classify({ x: 10.5, y: 10 }, true)).toBe('appended');
+    for (const [point, includeEndpoint, outcome] of [
+      [{ x: 20, y: 20 }, false, 'appended'],
+      [{ x: 10, y: 10 }, true, 'duplicate'],
+      [{ x: 10, y: 10 }, false, 'duplicate'],
+      [{ x: 10.5, y: 10 }, false, 'minDistanceRejected'],
+      [{ x: 10.5, y: 10 }, true, 'appended'],
+    ]) {
+      expect(sampleOutcome(points, point, includeEndpoint)).toBe(outcome);
+      expect(appendPoint(points, point, includeEndpoint).length > points.length).toBe(
+        outcome === 'appended'
+      );
+    }
   });
 });
 

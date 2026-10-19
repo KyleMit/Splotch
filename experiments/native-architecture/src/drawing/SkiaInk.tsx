@@ -42,7 +42,7 @@ import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import type { PageId } from './pages';
 import type { PaperTheme } from './theme';
 import { decodeDataUriImage, paintStroke, type InkPaintContext } from './skiaInkPainter';
-import type { Stroke } from './model';
+import { extendsStrokes, type Stroke } from './model';
 import type { RasterInkHandle } from './RasterInk';
 import type { UndoGhost } from './undoFeedback';
 import type { PaperFrame } from './paperGeometry';
@@ -70,10 +70,6 @@ type CommittedLayer = {
 };
 
 const NO_DRAFTS: readonly Stroke[] = [];
-
-function extendsStrokes(base: readonly Stroke[], next: readonly Stroke[]) {
-  return base.length <= next.length && base.every((stroke, index) => next[index] === stroke);
-}
 
 async function loadUriImage(uri: string): Promise<SkImage> {
   if (uri.startsWith('data:')) return decodeDataUriImage(uri);
@@ -303,11 +299,11 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
   const { pageId, theme } = useInkAppearance();
   const [size, setSize] = useState<Size | null>(null);
   const view = useLayoutRedraw(size);
-  const allStrokes = useMemo(() => [...props.strokes, ...drafts], [props.strokes, drafts]);
   const tiles = useCrayonTileResources(
-    allStrokes,
+    props.strokes,
     theme,
-    props.brush === 'crayon' ? props.color : undefined
+    props.brush === 'crayon' ? props.color : undefined,
+    drafts
   );
   const bookFill = useBookFill(pageId, theme, paperBounds(projection), props.onError);
   const context = useInkContext(projection, tiles, bookFill);
