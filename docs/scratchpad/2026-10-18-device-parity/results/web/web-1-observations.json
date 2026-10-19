@@ -55,6 +55,4351 @@
         "external": [],
         "consoleErrors": []
       }
+    },
+    "install-android": {
+      "ranAt": "2026-10-19T17:51:48.078Z",
+      "ms": 22883,
+      "rn-web": {
+        "beforeGate": false,
+        "afterGate": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 687,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your home",
+              "screen"
+            ],
+            [
+              "Opens full-screen, just like a real",
+              "app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 685,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 786,
+                "w": 346,
+                "h": 44
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 687,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shown": {
+          "settled": true,
+          "settleMs": 1677,
+          "frames": 6,
+          "shot": "shots/install-android-rn-web.webp",
+          "digest": "96ba7738d0a2cd4de8dfac622d58e96c24d0f3544df711946b7ed6c92284f9eb"
+        },
+        "expanded": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 620,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your home",
+              "screen"
+            ],
+            [
+              "Opens full-screen, just like a real",
+              "app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 618,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 33,
+                "y": 719,
+                "w": 346,
+                "h": 44
+              }
+            }
+          ],
+          "hint": [
+            "Open the three-dot menu, then tap \"Install app\" or \"Add to Home screen\"."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 620,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "hint": {
+          "settled": true,
+          "settleMs": 1647,
+          "frames": 6,
+          "shot": "shots/install-android-how-rn-web.webp",
+          "digest": "23da93689376c15e5017357da35f1f1b9e72c220ed8ff93c34dfe4e36b08b0e1"
+        },
+        "corners": {
+          "expand": true,
+          "settings": true,
+          "clear": true
+        },
+        "storage": {},
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "beforeGate": false,
+        "afterGate": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 691,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just like a",
+              "real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 790,
+                "w": 346,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 689,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 691,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shown": {
+          "settled": true,
+          "settleMs": 1668,
+          "frames": 6,
+          "shot": "shots/install-android-web-prod.webp",
+          "digest": "b67f4125bdb54eefbc0b7f0548df890b60b9d9b1ad264c996326bcd09e28bac0"
+        },
+        "expanded": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 624,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just like a",
+              "real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 33,
+                "y": 723,
+                "w": 346,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 622,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [
+            "Open the three-dot menu, then tap \"Install app\" or \"Add to Home screen\"."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 624,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "hint": {
+          "settled": true,
+          "settleMs": 1642,
+          "frames": 6,
+          "shot": "shots/install-android-how-web-prod.webp",
+          "digest": "0b410ea4fcee303bf7eccd6a59ac0f952ca4c482a40cf7629ef11b557fea6249"
+        },
+        "corners": {
+          "expand": true,
+          "settings": true,
+          "clear": true
+        },
+        "storage": {},
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-iphone-rotate": {
+      "ranAt": "2026-10-19T17:55:45.764Z",
+      "ms": 28619,
+      "rn-web": {
+        "earned": true,
+        "portrait": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 512,
+            "w": 324,
+            "h": 143
+          },
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just like a",
+              "real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 311,
+                "y": 510,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 33,
+                "y": 611,
+                "w": 324,
+                "h": 44
+              }
+            }
+          ],
+          "hint": [
+            "1 Tap Share at the bottom of the screen. 2 Choose Add to Home Screen. 3 Don't see it? Tap View More first."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 512,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "portraitShot": {
+          "settled": true,
+          "settleMs": 1638,
+          "frames": 6,
+          "shot": "shots/install-iphone-portrait-rn-web.webp",
+          "digest": "725afb44911380eb3cfbf48bb709e4eeb7a75621e533c48b0570efc6a91c6d9b"
+        },
+        "landscape": {
+          "present": true,
+          "card": {
+            "x": 229,
+            "y": 170,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 472,
+                "y": 170,
+                "w": 85,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 569,
+                "y": 168,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [
+            "1 Tap Share in the Safari toolbar. 2 Choose Add to Home Screen. 3 Don't see it? Tap View More first."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 233,
+              "y": 170,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "landscapeShot": {
+          "settled": true,
+          "settleMs": 1726,
+          "frames": 7,
+          "shot": "shots/install-iphone-landscape-rn-web.webp",
+          "digest": "5f7e5286eb518f8a01b8801d1572aa69a6cf493e4fb3c1d5d33f2ca1dcfe38ea"
+        },
+        "collapsed": {
+          "present": true,
+          "card": {
+            "x": 229,
+            "y": 274,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 465,
+                "y": 274,
+                "w": 92,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 569,
+                "y": 272,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 233,
+              "y": 274,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "earned": true,
+        "portrait": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 516,
+            "w": 324,
+            "h": 143
+          },
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just like a",
+              "real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 33,
+                "y": 615,
+                "w": 324,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 311,
+                "y": 514,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [
+            "1 Tap Share at the bottom of the screen. 2 Choose Add to Home Screen. 3 Don't see it? Tap View More first."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 516,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "portraitShot": {
+          "settled": true,
+          "settleMs": 1959,
+          "frames": 7,
+          "shot": "shots/install-iphone-portrait-web-prod.webp",
+          "digest": "26c704cc552cabfa84e0ac6310d9eed00c71c021e9af1e380293ea3d8c909d34"
+        },
+        "landscape": {
+          "present": true,
+          "card": {
+            "x": 229,
+            "y": 170,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 472,
+                "y": 170,
+                "w": 85,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 569,
+                "y": 168,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [
+            "1 Tap Share in the Safari toolbar. 2 Choose Add to Home Screen. 3 Don't see it? Tap View More first."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 233,
+              "y": 170,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "landscapeShot": {
+          "settled": true,
+          "settleMs": 1725,
+          "frames": 7,
+          "shot": "shots/install-iphone-landscape-web-prod.webp",
+          "digest": "f3e34a4980d80b1191c4d7f56567b77f186bdd977a882aa6f22764e969166bbb"
+        },
+        "collapsed": {
+          "present": true,
+          "card": {
+            "x": 229,
+            "y": 274,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 463,
+                "y": 274,
+                "w": 94,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 569,
+                "y": 272,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 233,
+              "y": 274,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-ipad": {
+      "ranAt": "2026-10-19T17:56:14.388Z",
+      "ms": 19809,
+      "rn-web": {
+        "earned": {
+          "present": true,
+          "card": {
+            "x": 217,
+            "y": 1064,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 820,
+            "h": 1180
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 453,
+                "y": 1064,
+                "w": 92,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 557,
+                "y": 1062,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 221,
+              "y": 1064,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "expanded": {
+          "present": true,
+          "card": {
+            "x": 217,
+            "y": 960,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 820,
+            "h": 1180
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 460,
+                "y": 960,
+                "w": 85,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 557,
+                "y": 958,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [
+            "1 Tap Share in the Safari toolbar. 2 Choose Add to Home Screen. 3 Don't see it? Tap View More first."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 221,
+              "y": 960,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 2008,
+          "frames": 6,
+          "shot": "shots/install-ipad-rn-web.webp",
+          "digest": "0829439831aa5a3b1678f80b9a3fa012de4656059c8d3e144ad0f5db7549e115"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "earned": {
+          "present": true,
+          "card": {
+            "x": 217,
+            "y": 1064,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 820,
+            "h": 1180
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 451,
+                "y": 1064,
+                "w": 94,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 557,
+                "y": 1062,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 221,
+              "y": 1064,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "expanded": {
+          "present": true,
+          "card": {
+            "x": 217,
+            "y": 960,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 820,
+            "h": 1180
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Hide",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "Hide"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Hide",
+              "expanded": "true",
+              "box": {
+                "x": 460,
+                "y": 960,
+                "w": 85,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 557,
+                "y": 958,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [
+            "1 Tap Share in the Safari toolbar. 2 Choose Add to Home Screen. 3 Don't see it? Tap View More first."
+          ],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 221,
+              "y": 960,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1997,
+          "frames": 6,
+          "shot": "shots/install-ipad-web-prod.webp",
+          "digest": "4d7a5a8c0d09db8cfe46259b7aa98f99c48522d0a318bc5f5546a24c4bd5aa71"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-desktop-one-tap": {
+      "ranAt": "2026-10-19T17:50:58.168Z",
+      "ms": 19822,
+      "rn-web": {
+        "withoutPrompt": false,
+        "offered": {
+          "present": true,
+          "card": {
+            "x": 489,
+            "y": 684,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Install",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "Install"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Install",
+              "expanded": null,
+              "box": {
+                "x": 720,
+                "y": 684,
+                "w": 97,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 829,
+                "y": 682,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "listItems": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 493,
+              "y": 684,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1929,
+          "frames": 6,
+          "shot": "shots/install-desktop-one-tap-rn-web.webp",
+          "digest": "633b5f494b9a0d8dedfd0b5b2b55ccae49312ec1b6c9a323e7731117c332bb42"
+        },
+        "promptCalls": 1,
+        "after": {
+          "present": false,
+          "parting": null
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "withoutPrompt": false,
+        "offered": {
+          "present": true,
+          "card": {
+            "x": 489,
+            "y": 684,
+            "w": 386,
+            "h": 83
+          },
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app Install",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home screen"
+            ],
+            [
+              "Opens full-screen, just",
+              "like a real app"
+            ],
+            [
+              "Install"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Install",
+              "expanded": null,
+              "box": {
+                "x": 721,
+                "y": 684,
+                "w": 96,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 829,
+                "y": 682,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "listItems": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 493,
+              "y": 684,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1913,
+          "frames": 6,
+          "shot": "shots/install-desktop-one-tap-web-prod.webp",
+          "digest": "a322df669de8351db57e7ea1d9bf3ab2910cfeaf3b891895a464bfd0f0219601"
+        },
+        "promptCalls": 1,
+        "after": {
+          "present": false,
+          "parting": null
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-drawer-opened-over": {
+      "ranAt": "2026-10-19T17:52:59.395Z",
+      "ms": 44716,
+      "rn-web": {
+        "earned": true,
+        "underDrawer": false,
+        "afterDrawerStrokes": false,
+        "afterCollapse": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 687,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your home",
+              "screen"
+            ],
+            [
+              "Opens full-screen, just like a real",
+              "app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 685,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 786,
+                "w": 346,
+                "h": 44
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 687,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "afterOneMore": true,
+        "storage": {},
+        "shot": {
+          "settled": true,
+          "settleMs": 1667,
+          "frames": 6,
+          "shot": "shots/install-drawer-opened-over-rn-web.webp",
+          "digest": "169f9125bc522a05643181b335cba5d7efdfce9a6ca66f5b47c46fcc9cf89cf3"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "earned": true,
+        "underDrawer": false,
+        "afterDrawerStrokes": false,
+        "afterCollapse": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 691,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just like a",
+              "real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 790,
+                "w": 346,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 689,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 691,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "afterOneMore": true,
+        "storage": {},
+        "shot": {
+          "settled": true,
+          "settleMs": 1706,
+          "frames": 6,
+          "shot": "shots/install-drawer-opened-over-web-prod.webp",
+          "digest": "162b64ce83cb577d3dd6253a8e9898d7ea668cdda47755b47ccf905e337e36fd"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-drawer-persisted": {
+      "ranAt": "2026-10-19T17:53:44.113Z",
+      "ms": 36169,
+      "rn-web": {
+        "drawerOpenAfterReload": true,
+        "whileOpen": false,
+        "afterCollapse": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 687,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your home",
+              "screen"
+            ],
+            [
+              "Opens full-screen, just like a real",
+              "app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 685,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 786,
+                "w": 346,
+                "h": 44
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 687,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "afterOneMore": true,
+        "storage": {},
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "drawerOpenAfterReload": true,
+        "whileOpen": false,
+        "afterCollapse": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 691,
+            "w": 346,
+            "h": 143
+          },
+          "viewport": {
+            "w": 412,
+            "h": 915
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to your",
+              "home screen"
+            ],
+            [
+              "Opens full-screen, just like a",
+              "real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 790,
+                "w": 346,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 333,
+                "y": 689,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 691,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "afterOneMore": true,
+        "storage": {},
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-auto-clear": {
+      "ranAt": "2026-10-19T17:54:20.283Z",
+      "ms": 38864,
+      "rn-web": {
+        "earned": true,
+        "presentAfterEach": [
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "partingAfterEach": [
+          null,
+          null,
+          null,
+          null,
+          "No rush — these steps are always in Settings."
+        ],
+        "partingShot": {
+          "settled": true,
+          "settleMs": 1684,
+          "frames": 6,
+          "shot": "shots/install-auto-clear-parting-rn-web.webp",
+          "digest": "ef4c70a28663078e3ca4573f37519aa0d799dbbe3c8b62d23fd1fe7a88019148"
+        },
+        "afterParting": {
+          "present": false,
+          "parting": null
+        },
+        "storage": {
+          "splotch-install-dismissed": "true"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "earned": true,
+        "presentAfterEach": [
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "partingAfterEach": [
+          null,
+          null,
+          null,
+          null,
+          "No rush — these steps are always in Settings."
+        ],
+        "partingShot": {
+          "settled": true,
+          "settleMs": 1792,
+          "frames": 6,
+          "shot": "shots/install-auto-clear-parting-web-prod.webp",
+          "digest": "6f8780fc2219c25f7dcc13700b46e17c27a0a30aa52a29fea4198cf75e4f1b81"
+        },
+        "afterParting": {
+          "present": false,
+          "parting": null
+        },
+        "storage": {
+          "splotch-install-dismissed": "true"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-dismiss-persists": {
+      "ranAt": "2026-10-19T17:54:59.148Z",
+      "ms": 28600,
+      "rn-web": {
+        "earned": true,
+        "afterDismiss": false,
+        "storageAfterDismiss": {
+          "splotch-install-dismissed": "true"
+        },
+        "reopened": false,
+        "storageAfterReopen": {
+          "splotch-install-dismissed": "true",
+          "splotch-install-reprompt-session-count": "1"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "earned": true,
+        "afterDismiss": false,
+        "storageAfterDismiss": {
+          "splotch-install-dismissed": "true"
+        },
+        "reopened": false,
+        "storageAfterReopen": {
+          "splotch-install-dismissed": "true",
+          "splotch-install-reprompt-session-count": "1"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-reprompt-sessions": {
+      "ranAt": "2026-10-19T17:56:40.314Z",
+      "ms": 195733,
+      "rn-web": {
+        "shownAt": [
+          6,
+          11
+        ],
+        "sessions": [
+          {
+            "session": 2,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "1"
+            }
+          },
+          {
+            "session": 3,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "2"
+            }
+          },
+          {
+            "session": 4,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "3"
+            }
+          },
+          {
+            "session": 5,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "4"
+            }
+          },
+          {
+            "session": 6,
+            "present": true,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "5"
+            },
+            "text": "Splotch Welcome back! Add Splotch to your home screen Opens full-screen, just like a real app How?",
+            "shot": {
+              "settled": true,
+              "settleMs": 1672,
+              "frames": 6,
+              "shot": "shots/install-reprompt-session-6-rn-web.webp",
+              "digest": "e904cfe10a68174c732c5a6a2da0c73db149a1587c4e3b1f9d54635eb9ace580"
+            }
+          },
+          {
+            "session": 7,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "6",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 8,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "7",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 9,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "8",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 10,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "9",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 11,
+            "present": true,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "1"
+            },
+            "text": "Splotch One last reminder — install Splotch We won't ask again — it's always in Settings How?",
+            "shot": {
+              "settled": true,
+              "settleMs": 1692,
+              "frames": 6,
+              "shot": "shots/install-reprompt-session-11-rn-web.webp",
+              "digest": "c2e62cb31e4460d7bbb10643819bbfead75bc993a7f5d11a92920bc923235faf"
+            }
+          },
+          {
+            "session": 12,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "2"
+            }
+          },
+          {
+            "session": 13,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "2"
+            }
+          },
+          {
+            "session": 14,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "2"
+            }
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "shownAt": [
+          6,
+          11
+        ],
+        "sessions": [
+          {
+            "session": 2,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "1"
+            }
+          },
+          {
+            "session": 3,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "2"
+            }
+          },
+          {
+            "session": 4,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "3"
+            }
+          },
+          {
+            "session": 5,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "4"
+            }
+          },
+          {
+            "session": 6,
+            "present": true,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "5"
+            },
+            "text": "Splotch Welcome back! Add Splotch to your home screen Opens full-screen, just like a real app How?",
+            "shot": {
+              "settled": true,
+              "settleMs": 1705,
+              "frames": 6,
+              "shot": "shots/install-reprompt-session-6-web-prod.webp",
+              "digest": "2623361f2a33bf7ae57839d4eeb83abafdbe8d8e56acec983fd2cafed258dced"
+            }
+          },
+          {
+            "session": 7,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "6",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 8,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "7",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 9,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "8",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 10,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "9",
+              "splotch-install-reprompts-used": "1"
+            }
+          },
+          {
+            "session": 11,
+            "present": true,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "1"
+            },
+            "text": "Splotch One last reminder — install Splotch We won't ask again — it's always in Settings How?",
+            "shot": {
+              "settled": true,
+              "settleMs": 1663,
+              "frames": 6,
+              "shot": "shots/install-reprompt-session-11-web-prod.webp",
+              "digest": "25980b80e261beaa2fbfcb82fd7a50e16021d3d02c00f5f34f4df1bb673c429b"
+            }
+          },
+          {
+            "session": 12,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "2"
+            }
+          },
+          {
+            "session": 13,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "2"
+            }
+          },
+          {
+            "session": 14,
+            "present": false,
+            "storage": {
+              "splotch-install-dismissed": "true",
+              "splotch-install-reprompt-session-count": "10",
+              "splotch-install-reprompts-used": "2"
+            }
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-empty-dock-band": {
+      "ranAt": "2026-10-19T17:59:56.050Z",
+      "ms": 24638,
+      "rn-web": {
+        "target": "div[drawing-paper]",
+        "undoEnabledAfter": true,
+        "shot": {
+          "settled": true,
+          "settleMs": 1705,
+          "frames": 6,
+          "shot": "shots/install-empty-dock-band-rn-web.webp",
+          "digest": "91b6d1ef10d8e00db21e1a94ae480b67949ed8b9e62d1bcef94bbe5058000fa4"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "target": "canvas#drawingCanvas",
+        "undoEnabledAfter": true,
+        "shot": {
+          "settled": true,
+          "settleMs": 1688,
+          "frames": 6,
+          "shot": "shots/install-empty-dock-band-web-prod.webp",
+          "digest": "3530e65c3bbb55ebaa0c3bb91ad328457a4af00d3239b82898f584c7fb5cf5bd"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-preview-appearance": {
+      "ranAt": "2026-10-19T18:00:20.689Z",
+      "ms": 34520,
+      "light": {
+        "rn-web": {
+          "preview": {
+            "boxShadow": "none",
+            "parentShadow": "rgba(0, 0, 0, 0.18) 0px 1px 2px 0px, rgba(0, 0, 0, 0.1) 0px 2px 6px 0px",
+            "filter": "none",
+            "naturalWidth": 180,
+            "label": ""
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1952,
+            "frames": 6,
+            "shot": "shots/install-preview-light-rn-web.webp",
+            "digest": "7528d5ddb7d81e479d6289275ccc9736d6a56f770fc1a2419da8bbe29912db79"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "preview": {
+            "boxShadow": "rgba(0, 0, 0, 0.18) 0px 1px 2px 0px, rgba(0, 0, 0, 0.1) 0px 2px 6px 0px",
+            "parentShadow": "none",
+            "filter": "none",
+            "naturalWidth": 180,
+            "label": "Splotch"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1987,
+            "frames": 6,
+            "shot": "shots/install-preview-light-web-prod.webp",
+            "digest": "96487c3f80f0aed0a627fc50ca2f8f9a371e9385204548a0bcfb0b039bb7436d"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "dark": {
+        "rn-web": {
+          "preview": {
+            "boxShadow": "none",
+            "parentShadow": "rgba(255, 255, 255, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.5) 0px 3px 10px 0px",
+            "filter": "none",
+            "naturalWidth": 180,
+            "label": ""
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1912,
+            "frames": 6,
+            "shot": "shots/install-preview-dark-rn-web.webp",
+            "digest": "e0e4f7f396e158545dc1b487db145df5a6405a56c2bb7c1ae6118c4d4566035c"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "preview": {
+            "boxShadow": "rgba(255, 255, 255, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.5) 0px 3px 10px 0px",
+            "parentShadow": "none",
+            "filter": "none",
+            "naturalWidth": 180,
+            "label": "Splotch"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 2050,
+            "frames": 6,
+            "shot": "shots/install-preview-dark-web-prod.webp",
+            "digest": "158d629a608a46fabbbb915fed8f3ce58636a98406edf9def687b8bb4281d15f"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "install-preview-forced-colors": {
+      "ranAt": "2026-10-19T18:00:55.211Z",
+      "ms": 16933,
+      "rn-web": {
+        "preview": {
+          "decoded": true,
+          "labelColor": "rgb(0, 0, 0)",
+          "canvasText": "rgb(0, 0, 0)"
+        },
+        "banner": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 320,
+            "w": 254,
+            "h": 163
+          },
+          "viewport": {
+            "w": 320,
+            "h": 568
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home",
+              "screen"
+            ],
+            [
+              "Opens full-screen,",
+              "just like a real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 241,
+                "y": 318,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 439,
+                "w": 254,
+                "h": 44
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 320,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1770,
+          "frames": 7,
+          "shot": "shots/install-preview-forced-rn-web.webp",
+          "digest": "936bd5e0e0cf20efe60c7963bae5425e5b84849a253b92f95cc01c3455371ebe"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "preview": {
+          "decoded": true,
+          "labelColor": "rgb(0, 0, 0)",
+          "canvasText": "rgb(0, 0, 0)"
+        },
+        "banner": {
+          "present": true,
+          "card": {
+            "x": 33,
+            "y": 324,
+            "w": 254,
+            "h": 163
+          },
+          "viewport": {
+            "w": 320,
+            "h": 568
+          },
+          "text": "Splotch Add Splotch to your home screen Opens full-screen, just like a real app How?",
+          "lines": [
+            [
+              "Splotch"
+            ],
+            [
+              "Add Splotch to",
+              "your home",
+              "screen"
+            ],
+            [
+              "Opens full-screen,",
+              "just like a real app"
+            ],
+            [
+              "How?"
+            ]
+          ],
+          "buttons": [
+            {
+              "name": "How?",
+              "expanded": "false",
+              "box": {
+                "x": 33,
+                "y": 443,
+                "w": 254,
+                "h": 44
+              }
+            },
+            {
+              "name": "Not now",
+              "expanded": null,
+              "box": {
+                "x": 241,
+                "y": 322,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "hint": [],
+          "image": {
+            "src": "/apple-touch-icon.png",
+            "complete": true,
+            "naturalWidth": 180,
+            "box": {
+              "x": 37,
+              "y": 324,
+              "w": 52,
+              "h": 52
+            }
+          },
+          "overflow": 2
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1816,
+          "frames": 7,
+          "shot": "shots/install-preview-forced-web-prod.webp",
+          "digest": "dd0e053b000819fa33ff321587872819b335282c871a50ba95ce234bfba86bb3"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "install-guide": {
+      "ranAt": "2026-10-19T18:15:50.040Z",
+      "ms": 84398,
+      "iphone": {
+        "rn-web": {
+          "index": "Install as App › 2 Enable Guided Access ›",
+          "steps": "Install as App › 1. Tap the Share button at the bottom of the screen 2. Scroll and tap \"Add to Home Screen\" 3. Tap \"Add\" in the top right 4. Launch from your home screen for fullscreen mode 2 Enable Guided Access ›",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1860,
+            "frames": 7,
+            "shot": "shots/install-guide-iphone-rn-web.webp",
+            "digest": "6ab703455d0d3338f2e90ec34d0bd3c58b6f4ea3a0eed97ccfcb0a8e14bded58"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Enable Guided Access",
+          "steps": "Install as App Tap the Share button at the bottom of the screen Scroll and tap \"Add to Home Screen\" Tap \"Add\" in the top right Launch from your home screen for fullscreen mode 2 Enable Guided Access",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1843,
+            "frames": 7,
+            "shot": "shots/install-guide-iphone-web-prod.webp",
+            "digest": "42bb348636aa98a5a84fc5d4fc0442232054637e2578b71a1a1281b418332a86"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "iphone-chrome": {
+        "rn-web": {
+          "index": "Install as App › 2 Enable Guided Access ›",
+          "steps": "Install as App › 1. Open this page in Safari — the steps below are Safari's 2. Tap the Share button at the bottom of the screen 3. Scroll and tap \"Add to Home Screen\" 4. Tap \"Add\" in the top right 5. Launch from your home screen for fullscreen mode 2 Enable Guided Access ›",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1883,
+            "frames": 7,
+            "shot": "shots/install-guide-iphone-chrome-rn-web.webp",
+            "digest": "99f24fb19ed85747a41ccc8a39b773376fd71d245fecbb5eebac4326776cd67d"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Enable Guided Access",
+          "steps": "Install as App Open this page in Safari — the steps below are Safari's Tap the Share button at the bottom of the screen Scroll and tap \"Add to Home Screen\" Tap \"Add\" in the top right Launch from your home screen for fullscreen mode 2 Enable Guided Access",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1818,
+            "frames": 7,
+            "shot": "shots/install-guide-iphone-chrome-web-prod.webp",
+            "digest": "3ac28da50f6a6a8f5a4fe6c9164f48b49e4bfa120cec12b317cb1161395daf8b"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "ipad": {
+        "rn-web": {
+          "index": "Install as App › 2 Enable Guided Access › Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reacts on error screens. Improved AI pictures are opt-in, with clearer errors and retries. Playful motion: menus pop from buttons, undo spins, clearing swe",
+          "steps": "Install as App › 1. Tap the Share button in the Safari toolbar 2. Scroll and tap \"Add to Home Screen\" 3. Tap \"Add\" in the top right 4. Launch from your home screen for fullscreen mode 2 Enable Guided Access › Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 2146,
+            "frames": 6,
+            "shot": "shots/install-guide-ipad-rn-web.webp",
+            "digest": "8b84478879a05add55842aa944ec1b955eae048a1c4a4c062138b6dff42b839c"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Enable Guided Access Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reacts on error screens. Improved AI pictures are opt-in, with clearer errors and retries. Playful motion: menus pop from buttons, undo spins, clearing sweeps ",
+          "steps": "Install as App Tap the Share button in the Safari toolbar Scroll and tap \"Add to Home Screen\" Tap \"Add\" in the top right Launch from your home screen for fullscreen mode 2 Enable Guided Access Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reac",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1761,
+            "frames": 6,
+            "shot": "shots/install-guide-ipad-web-prod.webp",
+            "digest": "65516aba77f31e4a7d2e6ec598f7c70bb00ed13350224688d64aa3514b917e10"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "android": {
+        "rn-web": {
+          "index": "Install as App › 2 Enable App Pinning ›",
+          "steps": "Install as App › 1. Tap the menu (three dots) 2. Tap \"Install app\" or \"Add to Home screen\" 3. Follow the prompts 4. Launch from your home screen for fullscreen mode 2 Enable App Pinning ›",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1902,
+            "frames": 7,
+            "shot": "shots/install-guide-android-rn-web.webp",
+            "digest": "7df9aab8464b72a839ccb40a1c4a334a2daee361d1ae129fef51c96d09678c09"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Enable App Pinning",
+          "steps": "Install as App Tap the menu (three dots) Tap \"Install app\" or \"Add to Home screen\" Follow the prompts Launch from your home screen for fullscreen mode 2 Enable App Pinning",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1623,
+            "frames": 6,
+            "shot": "shots/install-guide-android-web-prod.webp",
+            "digest": "787a201165d8b317678753a4100b3f9052535c29dddda4840f15b85d4f3fcf8c"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "index": "Install as App › 2 Keep kids in the app › Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reacts on error screens. Improved AI pictures are opt-in, with clearer errors and retries. Playful motion: menus pop from buttons, undo spins, clearing swe",
+          "steps": "Install as App › 1. In Chrome or Edge, click the install icon at the end of the address bar — or open the browser menu and choose \"Install Splotch\" 2. In Safari on macOS Sonoma or later, choose File → Add to Dock 3. Follow the prompts 4. Launch it from your dock, desktop, or taskbar for fullscreen mode Firefox has no install of its own, so it keeps Splotch in a tab — that works too. 2 Keep kids in the app › Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our pri",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1952,
+            "frames": 6,
+            "shot": "shots/install-guide-desktop-rn-web.webp",
+            "digest": "22d1aae8ab7410812f346d23f02f023828151e1790254d29a86a790e2b801be1"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Keep kids in the app Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reacts on error screens. Improved AI pictures are opt-in, with clearer errors and retries. Playful motion: menus pop from buttons, undo spins, clearing sweeps ",
+          "steps": "Install as App In Chrome or Edge, click the install icon at the end of the address bar — or open the browser menu and choose \"Install Splotch\" In Safari on macOS Sonoma or later, choose File → Add to Dock Follow the prompts Launch it from your dock, desktop, or taskbar for fullscreen mode Firefox has no install of its own, so it keeps Splotch in a tab — that works too. 2 Keep kids in the app Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tra",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1969,
+            "frames": 6,
+            "shot": "shots/install-guide-desktop-web-prod.webp",
+            "digest": "41c51eebf75987cef22040c10b38bc8f1fc307ed31db588a4773feb10eeef685"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "sw-first-visit-gate": {
+      "ranAt": "2026-10-19T18:10:40.649Z",
+      "ms": 19803,
+      "rn-web": {
+        "atLoad": {
+          "registered": false,
+          "active": null,
+          "waiting": null,
+          "installing": null,
+          "controlled": false,
+          "script": null,
+          "swFetches": 0
+        },
+        "afterTwo": {
+          "registered": false,
+          "active": null,
+          "waiting": null,
+          "installing": null,
+          "controlled": false,
+          "script": null,
+          "swFetches": 0
+        },
+        "afterThree": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1531
+        },
+        "firstSwFetchAfterThirdMs": null,
+        "caches": {
+          "workbox-precache-v2-http://127.0.0.1:34961/": 150
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "atLoad": {
+          "registered": false,
+          "active": null,
+          "waiting": null,
+          "installing": null,
+          "controlled": false,
+          "script": null,
+          "swFetches": 0
+        },
+        "afterTwo": {
+          "registered": false,
+          "active": null,
+          "waiting": null,
+          "installing": null,
+          "controlled": false,
+          "script": null,
+          "swFetches": 0
+        },
+        "afterThree": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 2803
+        },
+        "firstSwFetchAfterThirdMs": null,
+        "caches": {
+          "coloring-packs-v2-full": 199,
+          "workbox-precache-v2-http://127.0.0.1:33819/": 276
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "sw-save-data": {
+      "ranAt": "2026-10-19T18:11:00.454Z",
+      "ms": 27604,
+      "rn-web": {
+        "saveData": true,
+        "state": {
+          "registered": false,
+          "active": null,
+          "waiting": null,
+          "installing": null,
+          "controlled": false,
+          "script": null
+        },
+        "swFetches": 0,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "saveData": true,
+        "state": {
+          "registered": false,
+          "active": null,
+          "waiting": null,
+          "installing": null,
+          "controlled": false,
+          "script": null
+        },
+        "swFetches": 0,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "sw-repeat-visit-and-offline": {
+      "ranAt": "2026-10-19T18:19:07.726Z",
+      "ms": 54331,
+      "rn-web": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1526
+        },
+        "repeat": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "offlineBoot": true,
+        "offlineShot": {
+          "settled": true,
+          "settleMs": 1907,
+          "frames": 6,
+          "shot": "shots/sw-offline-reload-rn-web.webp",
+          "digest": "01205d801d4e9e6a6a284e8f1a7360bc08e4e7a3e30779cb4f40db44ea051b6f"
+        },
+        "offlineInk": true,
+        "privacyHeadings": [
+          "Settings",
+          "Privacy policy",
+          "THE SHORT VERSION",
+          "THE DETAILS"
+        ],
+        "survivedNavigation": {
+          "sameInk": false,
+          "url": "/"
+        },
+        "direct": {
+          "/privacy": {
+            "ok": true,
+            "error": null,
+            "title": "Privacy policy · Splotch",
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ]
+          },
+          "/changelog": {
+            "ok": true,
+            "error": null,
+            "title": "Changelog · Splotch",
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0",
+              "Version 1.5.0",
+              "Version 1.4.0"
+            ]
+          },
+          "/feedback": {
+            "ok": true,
+            "error": null,
+            "title": "Send Feedback · Splotch",
+            "headings": [
+              "Send us feedback",
+              "What happens next"
+            ]
+          },
+          "/no-such-page": {
+            "ok": false,
+            "error": "page.goto: net::ERR_INTERNET_DISCONNECTED at http://127.0.0.1:37791/no-such-page",
+            "title": "127.0.0.1",
+            "headings": [
+              "No internet"
+            ]
+          }
+        },
+        "icon": {
+          "ok": true,
+          "width": 180,
+          "height": 180
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+        ]
+      },
+      "web-prod": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 3066
+        },
+        "repeat": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "offlineBoot": true,
+        "offlineShot": {
+          "settled": true,
+          "settleMs": 1926,
+          "frames": 6,
+          "shot": "shots/sw-offline-reload-web-prod.webp",
+          "digest": "394571c3346672798daddb2c36384825c4047a1c8310f19760096cacc2d0a107"
+        },
+        "offlineInk": true,
+        "privacyHeadings": [
+          "Privacy policy",
+          "THE SHORT VERSION",
+          "THE DETAILS"
+        ],
+        "survivedNavigation": {
+          "sameInk": false,
+          "url": "/"
+        },
+        "direct": {
+          "/privacy": {
+            "ok": true,
+            "error": null,
+            "title": "Privacy Policy · Splotch",
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ]
+          },
+          "/changelog": {
+            "ok": true,
+            "error": null,
+            "title": "Changelog · Splotch",
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0",
+              "Version 1.5.0",
+              "Version 1.4.0"
+            ]
+          },
+          "/feedback": {
+            "ok": true,
+            "error": null,
+            "title": "Send Feedback · Splotch",
+            "headings": [
+              "Send us feedback",
+              "What happens next"
+            ]
+          },
+          "/no-such-page": {
+            "ok": true,
+            "error": null,
+            "title": "Page not found · Splotch",
+            "headings": [
+              "This page wandered off"
+            ]
+          }
+        },
+        "icon": {
+          "ok": true,
+          "width": 180,
+          "height": 180
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_FAILED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        ]
+      }
+    },
+    "sw-legacy-page-cache": {
+      "ranAt": "2026-10-19T18:18:04.937Z",
+      "ms": 19078,
+      "rn-web": {
+        "before": {
+          "pages": 3
+        },
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1524
+        },
+        "after": {
+          "pages": 3,
+          "workbox-precache-v2-http://127.0.0.1:36265/": 150
+        },
+        "legacyDeleted": false,
+        "worker": {
+          "imported": null,
+          "status": null,
+          "bytes": 47934
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "before": {
+          "pages": 3
+        },
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 3061
+        },
+        "after": {
+          "coloring-packs-v2-full": 374,
+          "workbox-precache-v2-http://127.0.0.1:38177/": 276
+        },
+        "legacyDeleted": true,
+        "worker": {
+          "imported": "sw-page-cache-cleanup-09c341cd.js",
+          "status": 200,
+          "bytes": 27204
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "sw-update-lifecycle": {
+      "ranAt": "2026-10-19T18:41:23.533Z",
+      "ms": 112656,
+      "rn-web": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1527
+        },
+        "found": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 6
+        },
+        "hiddenWithInk": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "navigations": 0
+        },
+        "undone": 1,
+        "cleared": true,
+        "navigationsAfterHiddenBlank": 5,
+        "navigations": [
+          "/",
+          "/",
+          "?v=9.9.9%2Bnext",
+          "?v=9.9.9%2Bnext",
+          "/"
+        ],
+        "afterHiddenBlank": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "proxyOverrides": [
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/sw.js",
+          "/version.json",
+          "/version.json",
+          "/sw.js",
+          "/sw.js"
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 3323
+        },
+        "found": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 11
+        },
+        "hiddenWithInk": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "navigations": 0
+        },
+        "undone": 1,
+        "cleared": true,
+        "navigationsAfterHiddenBlank": 4,
+        "navigations": [
+          "/",
+          "?v=9.9.9%2Bnext",
+          "?v=9.9.9%2Bnext",
+          "/"
+        ],
+        "afterHiddenBlank": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "proxyOverrides": [
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/sw.js"
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "sw-stale-launch": {
+      "ranAt": "2026-10-19T18:21:53.973Z",
+      "ms": 51204,
+      "rn-web": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1523
+        },
+        "blankLaunch": {
+          "url": "http://127.0.0.1:35345/",
+          "navigations": [
+            "http://127.0.0.1:35345/",
+            "http://127.0.0.1:35345/",
+            "http://127.0.0.1:35345/?v=9.9.9%2Bnext",
+            "http://127.0.0.1:35345/?v=9.9.9%2Bnext",
+            "http://127.0.0.1:35345/"
+          ],
+          "state": {
+            "registered": true,
+            "active": "activated",
+            "waiting": "installed",
+            "installing": null,
+            "controlled": true,
+            "script": "/sw.js"
+          }
+        },
+        "offlineAfterDeploy": false,
+        "shot": {
+          "settled": true,
+          "settleMs": 1710,
+          "frames": 7,
+          "shot": "shots/sw-stale-launch-offline-rn-web.webp",
+          "digest": "6355a9317d6853e3aad37f7d60929492b8b32d22a89e98bf78cf1de4b75e2687"
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_FAILED",
+          "Failed to load resource: net::ERR_FAILED",
+          "pageerror: __d is not defined"
+        ]
+      },
+      "web-prod": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 3063
+        },
+        "blankLaunch": {
+          "url": "http://127.0.0.1:44583/",
+          "navigations": [
+            "http://127.0.0.1:44583/",
+            "http://127.0.0.1:44583/?v=9.9.9%2Bnext",
+            "http://127.0.0.1:44583/?v=9.9.9%2Bnext",
+            "http://127.0.0.1:44583/"
+          ],
+          "state": {
+            "registered": true,
+            "active": "activated",
+            "waiting": "installed",
+            "installing": null,
+            "controlled": true,
+            "script": "/sw.js"
+          }
+        },
+        "offlineAfterDeploy": true,
+        "shot": {
+          "settled": true,
+          "settleMs": 1941,
+          "frames": 6,
+          "shot": "shots/sw-stale-launch-offline-web-prod.webp",
+          "digest": "394571c3346672798daddb2c36384825c4047a1c8310f19760096cacc2d0a107"
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+        ]
+      }
+    },
+    "dialog-names": {
+      "ranAt": "2026-10-19T18:28:18.197Z",
+      "ms": 7170,
+      "rn-web": {
+        "settings": [
+          "Settings"
+        ],
+        "closeVisible": true,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "settings": [
+          "Settings"
+        ],
+        "closeVisible": true,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-desktop-dialog-then-page": {
+      "ranAt": "2026-10-19T18:28:25.373Z",
+      "ms": 18376,
+      "rn-web": {
+        "open": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 4
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "second": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "open": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 4
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "second": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-repeated-close-and-escape": {
+      "ranAt": "2026-10-19T18:28:43.752Z",
+      "ms": 45120,
+      "rn-web": {
+        "start": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "cycles": [
+          {
+            "how": "Close",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Close",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Close",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Escape",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Escape",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Escape",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          }
+        ],
+        "back": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "start": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "cycles": [
+          {
+            "how": "Close",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Close",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Close",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Escape",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Escape",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          {
+            "how": "Escape",
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          }
+        ],
+        "back": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-touch-guard": {
+      "ranAt": "2026-10-19T18:29:28.873Z",
+      "ms": 23045,
+      "rn-web": {
+        "beforeInk": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "inked": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "settingsOpen": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "redrawn": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "third": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 5
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "beforeInk": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "inked": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "settingsOpen": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "redrawn": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "third": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-standalone-fine-pointer": {
+      "ranAt": "2026-10-19T18:29:51.920Z",
+      "ms": 14905,
+      "rn-web": {
+        "standalone": true,
+        "inked": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "second": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "standalone": true,
+        "inked": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "second": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-desktop-no-guard": {
+      "ranAt": "2026-10-19T18:30:06.830Z",
+      "ms": 11700,
+      "rn-web": {
+        "inked": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "first": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 3
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "inked": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "first": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-refresh-with-dialog": {
+      "ranAt": "2026-10-19T18:30:34.197Z",
+      "ms": 18517,
+      "rn-web": {
+        "open": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 4
+        },
+        "reloaded": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "first": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "open": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 4
+        },
+        "reloaded": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "first": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-direct-privacy-entry": {
+      "ranAt": "2026-10-19T18:30:52.716Z",
+      "ms": 11849,
+      "rn-web": {
+        "atPrivacy": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 3
+        },
+        "first": {
+          "path": "/feedback",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 3
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "atPrivacy": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "first": {
+          "path": "/feedback",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-in-app-restores-dialog": {
+      "ranAt": "2026-10-19T18:31:04.567Z",
+      "ms": 70544,
+      "rn-web": {
+        "error": "locator.click: Timeout 30000ms exceeded.",
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "error": "locator.click: Timeout 30000ms exceeded.",
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-nested-gate": {
+      "ranAt": "2026-10-19T18:39:29.941Z",
+      "ms": 30939,
+      "rn-web": {
+        "armed": true,
+        "stacked": {
+          "path": "/",
+          "dialogs": [
+            "Grown-Ups Only"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "armed": true,
+        "stacked": {
+          "path": "/",
+          "dialogs": [
+            "Grown-Ups Only",
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-unmounted-confirm": {
+      "ranAt": "2026-10-19T18:43:50.856Z",
+      "ms": 43434,
+      "rn-web": {
+        "gate": "What is 4 times 8?",
+        "confirmOpen": {
+          "path": "/",
+          "dialogs": [
+            "Turn off the Parent Center check?"
+          ],
+          "historyLength": 5
+        },
+        "narrowed": {
+          "path": "/",
+          "dialogs": [
+            "Turn off the Parent Center check?"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "gate": "What is 5 times 6?",
+        "confirmOpen": {
+          "path": "/",
+          "dialogs": [
+            "Settings",
+            "unnamed"
+          ],
+          "historyLength": 5
+        },
+        "narrowed": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "back-drilled-settings-section": {
+      "ranAt": "2026-10-19T18:40:43.953Z",
+      "ms": 39578,
+      "back": {
+        "rn-web": {
+          "drilled": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "after": {
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "then": {
+            "path": "/privacy",
+            "dialogs": [
+              "Information page"
+            ],
+            "historyLength": 4
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "drilled": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "after": {
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "then": {
+            "path": "/privacy",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "escape": {
+        "rn-web": {
+          "drilled": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "after": {
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "then": {
+            "path": "/privacy",
+            "dialogs": [
+              "Information page"
+            ],
+            "historyLength": 4
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "drilled": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "after": {
+            "path": "/",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "then": {
+            "path": "/privacy",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "surface-locks": {
+      "ranAt": "2026-10-19T18:46:02.103Z",
+      "ms": 41817,
+      "android": {
+        "rn-web": {
+          "drawing": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch"
+          },
+          "privacy": {
+            "appSurface": false,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/privacy",
+            "title": "Privacy policy · Splotch"
+          },
+          "backLinks": [
+            {
+              "text": "Back to drawing",
+              "href": null
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1711,
+            "frames": 7,
+            "shot": "shots/surface-privacy-in-app-android-rn-web.webp",
+            "digest": "8d401cb64c16dcfb53fec55f806e2883a433e94109b4dae71f36ebe1a5ec9820"
+          },
+          "returned": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "drawing": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch - Drawing for Kids"
+          },
+          "privacy": {
+            "appSurface": false,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/privacy",
+            "title": "Privacy Policy · Splotch"
+          },
+          "backLinks": [
+            {
+              "text": "Back to drawing",
+              "href": "/"
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1691,
+            "frames": 7,
+            "shot": "shots/surface-privacy-in-app-android-web-prod.webp",
+            "digest": "03768877b2b78504ae72e264d461a1e092eef3b9defc46f744fcf23b942efcf1"
+          },
+          "returned": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch - Drawing for Kids"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "drawing": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch"
+          },
+          "privacy": {
+            "appSurface": false,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/privacy",
+            "title": "Privacy policy · Splotch"
+          },
+          "backLinks": [
+            {
+              "text": "Back to drawing",
+              "href": null
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1824,
+            "frames": 7,
+            "shot": "shots/surface-privacy-in-app-desktop-rn-web.webp",
+            "digest": "dd3fab48455dd47afc4d817064d5e2181228388162cc20089c9d3187a817b7b9"
+          },
+          "returned": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "drawing": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch - Drawing for Kids"
+          },
+          "privacy": {
+            "appSurface": false,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/privacy",
+            "title": "Privacy Policy · Splotch"
+          },
+          "backLinks": [
+            {
+              "text": "Back to drawing",
+              "href": "/"
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1871,
+            "frames": 7,
+            "shot": "shots/surface-privacy-in-app-desktop-web-prod.webp",
+            "digest": "6ce7ef39894fc0ca4e6af97c5f1e4e5b3ded6259a526612a51bed95ec5b46a9b"
+          },
+          "returned": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch - Drawing for Kids"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "context-menu-guard": {
+      "ranAt": "2026-10-19T18:46:43.922Z",
+      "ms": 15667,
+      "android": {
+        "rn-web": {
+          "events": [
+            {
+              "target": "div",
+              "prevented": true
+            }
+          ],
+          "synthetic": true,
+          "locks": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "events": [
+            {
+              "target": "canvas",
+              "prevented": true
+            }
+          ],
+          "synthetic": true,
+          "locks": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch - Drawing for Kids"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "events": [
+            {
+              "target": "div",
+              "prevented": true
+            },
+            {
+              "target": "path",
+              "prevented": true
+            },
+            {
+              "target": "div",
+              "prevented": true
+            }
+          ],
+          "synthetic": true,
+          "locks": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "events": [
+            {
+              "target": "canvas",
+              "prevented": true
+            },
+            {
+              "target": "path",
+              "prevented": true
+            },
+            {
+              "target": "canvas",
+              "prevented": true
+            }
+          ],
+          "synthetic": true,
+          "locks": {
+            "appSurface": true,
+            "html": {
+              "touchAction": "auto",
+              "userSelect": "auto",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "visible"
+            },
+            "body": {
+              "touchAction": "none",
+              "userSelect": "none",
+              "touchCallout": "",
+              "overscroll": "auto",
+              "overflow": "hidden"
+            },
+            "viewport": "width=device-width, initial-scale=1.0, viewport-fit=cover",
+            "path": "/",
+            "title": "Splotch - Drawing for Kids"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "engine-remount-in-app": {
+      "ranAt": "2026-10-19T18:55:19.405Z",
+      "ms": 25256,
+      "rn-web": {
+        "inkDrawn": true,
+        "away": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 4
+        },
+        "restored": [
+          "Settings"
+        ],
+        "kept": true,
+        "undoDepthAfterMore": 2,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "inkDrawn": true,
+        "away": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "restored": [
+          "Settings"
+        ],
+        "kept": true,
+        "undoDepthAfterMore": 2,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "engine-launch-param-remount": {
+      "ranAt": "2026-10-19T18:48:19.687Z",
+      "ms": 42355,
+      "invite": {
+        "rn-web": {
+          "stripped": "",
+          "away": {
+            "path": "/privacy",
+            "dialogs": [
+              "Information page"
+            ],
+            "historyLength": 4
+          },
+          "back": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "paperVisible": true,
+          "headings": [
+            "Settings"
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "stripped": "",
+          "away": {
+            "path": "/privacy",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "back": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "paperVisible": true,
+          "headings": [
+            "Settings"
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "stale-recovery": {
+        "rn-web": {
+          "stripped": "",
+          "away": {
+            "path": "/privacy",
+            "dialogs": [
+              "Information page"
+            ],
+            "historyLength": 3
+          },
+          "back": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 3
+          },
+          "paperVisible": true,
+          "headings": [
+            "Settings"
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "stripped": "",
+          "away": {
+            "path": "/privacy",
+            "dialogs": [],
+            "historyLength": 4
+          },
+          "back": {
+            "path": "/",
+            "dialogs": [
+              "Settings"
+            ],
+            "historyLength": 4
+          },
+          "paperVisible": true,
+          "headings": [
+            "Settings"
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "engine-held-pointer-remount": {
+      "ranAt": "2026-10-19T18:58:54.557Z",
+      "ms": 23736,
+      "rn-web": {
+        "linkText": "Start drawing",
+        "atDrawing": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "away": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 3
+        },
+        "sameDocument": true,
+        "tailPainted": false,
+        "shot": {
+          "settled": true,
+          "settleMs": 1924,
+          "frames": 6,
+          "shot": "shots/engine-held-pointer-rn-web.webp",
+          "digest": "87fe8a1fa3c3854f65e243f4a94bfb963ec6cd966b777b4ded27b7fccfd14145"
+        },
+        "undoDepth": 1,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "linkText": "Start drawing",
+        "atDrawing": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "away": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 3
+        },
+        "sameDocument": true,
+        "tailPainted": false,
+        "shot": {
+          "settled": true,
+          "settleMs": 1919,
+          "frames": 6,
+          "shot": "shots/engine-held-pointer-web-prod.webp",
+          "digest": "db0722cd714f58a96b146940b41e6de1ec1b81fc1a75c354c8cc09da88e0ffc3"
+        },
+        "undoDepth": 1,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "engine-idle-gap-jump": {
+      "ranAt": "2026-10-19T18:54:49.355Z",
+      "ms": 14832,
+      "rn-web": {
+        "connectingLine": true,
+        "shot": {
+          "settled": true,
+          "settleMs": 1901,
+          "frames": 6,
+          "shot": "shots/engine-idle-gap-rn-web.webp",
+          "digest": "c54c10da11327d9feedca58a461b390ea6d00c7f576ff4574dc3605a7387b468"
+        },
+        "undoDepth": 1,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "connectingLine": false,
+        "shot": {
+          "settled": true,
+          "settleMs": 1878,
+          "frames": 6,
+          "shot": "shots/engine-idle-gap-web-prod.webp",
+          "digest": "6162d2c3796da50335e41cbee32a7cc5453b1e467c04162be31224bc4c59f5a0"
+        },
+        "undoDepth": 1,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "engine-hover-leave": {
+      "ranAt": "2026-10-19T18:50:43.407Z",
+      "ms": 7396,
+      "rn-web": {
+        "undoDepth": 0,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "undoDepth": 0,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "eraser-hover": {
+      "ranAt": "2026-10-19T18:50:50.805Z",
+      "ms": 21481,
+      "rn-web": {
+        "eraserFound": true,
+        "hovering": {
+          "cursor": "auto",
+          "touchAction": "auto"
+        },
+        "hoverShot": {
+          "settled": true,
+          "settleMs": 1960,
+          "frames": 6,
+          "shot": "shots/eraser-hover-rn-web.webp",
+          "digest": "ef3f55cf51c4fd53d18a42a68c956c0d17646a0df460ee25cd79cb021eab97e9"
+        },
+        "leftShot": {
+          "settled": true,
+          "settleMs": 1891,
+          "frames": 6,
+          "shot": "shots/eraser-left-rn-web.webp",
+          "digest": "ef3f55cf51c4fd53d18a42a68c956c0d17646a0df460ee25cd79cb021eab97e9"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "eraserFound": true,
+        "hovering": {
+          "cursor": "none",
+          "touchAction": "none"
+        },
+        "hoverShot": {
+          "settled": true,
+          "settleMs": 1881,
+          "frames": 6,
+          "shot": "shots/eraser-hover-web-prod.webp",
+          "digest": "669ba3ef0f84ad9275b79397c4e653ad4aa0698921606928d6fa5f082b5d8cdb"
+        },
+        "leftShot": {
+          "settled": true,
+          "settleMs": 1955,
+          "frames": 6,
+          "shot": "shots/eraser-left-web-prod.webp",
+          "digest": "c9e7d4e4560358be512178c2f5975bbb677cb5d0319fe7036d392a1831d7bf39"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
     }
   },
   "browser": "chromium 141.0.7390.37 (headless)"

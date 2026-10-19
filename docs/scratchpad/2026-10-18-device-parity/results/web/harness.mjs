@@ -73,7 +73,11 @@ export const PROFILES = {
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
 
 export async function launch() {
-  return chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
+  return chromium.launch({
+    executablePath: chromiumExecutablePath(chromium),
+    // Keep the browser's own background services (sync, GCM, component updates) off the network.
+    args: ['--disable-background-networking', '--disable-component-update', '--disable-sync'],
+  });
 }
 
 // A context whose only network is the two local arms. Anything else is recorded and aborted
@@ -104,7 +108,17 @@ export async function openArm(browser, armName, profileName, options = {}) {
     if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 300));
   });
   const cdp = await ctx.newCDPSession(page);
-  return { arm: armName, profile: profileName, ...arm, ctx, page, cdp, external, consoleErrors };
+  return {
+    arm: armName,
+    profile: profileName,
+    ...arm,
+    base: options.base ?? arm.base,
+    ctx,
+    page,
+    cdp,
+    external,
+    consoleErrors,
+  };
 }
 
 // Shipping's own spec shim for an installed launch (web/tests/web-back.spec.ts): headless
@@ -116,6 +130,20 @@ export function standaloneShim() {
     if (query === '(display-mode: standalone)')
       Object.defineProperty(result, 'matches', { value: true });
     return result;
+  };
+}
+
+// Headless Chromium keeps every page visible, so a cell that needs the hidden edge of a
+// background/foreground transition flips this shim instead; both arms get the same one.
+export function visibilityShim() {
+  let hidden = false;
+  Object.defineProperty(Document.prototype, 'visibilityState', {
+    get: () => (hidden ? 'hidden' : 'visible'),
+  });
+  Object.defineProperty(Document.prototype, 'hidden', { get: () => hidden });
+  window.__setHidden = (next) => {
+    hidden = next;
+    document.dispatchEvent(new Event('visibilitychange'));
   };
 }
 
@@ -374,7 +402,14 @@ export async function onBothArms(browser, profile, run, options = {}) {
     try {
       result[arm] = await run(session);
     } catch (error) {
-      result[arm] = { error: String(error?.message ?? error).split('\n')[0] };
+      result[arm] = {
+        error: String(error?.message ?? error)
+          .split('\n')
+          .filter((line) => line.trim() && !line.includes('Call log'))
+          .slice(0, 2)
+          .join(' | ')
+          .replace(/\u001b\[[0-9;]*m/g, ''),
+      };
     } finally {
       result[arm] = {
         ...result[arm],
@@ -385,4 +420,66 @@ export async function onBothArms(browser, profile, run, options = {}) {
     }
   }
   return result;
+}
+
+// The names of the dialogs on screen, outermost first.
+export function openDialogs(session) {
+  return session.page.evaluate(() =>
+    [...document.querySelectorAll('dialog[open], [role="dialog"], [data-native-modal]')]
+      .filter((element) => element.checkVisibility())
+      .map(
+        (element) =>
+          element.getAttribute('aria-label') ||
+          element.getAttribute('data-native-modal') ||
+          element.querySelector('h1, h2')?.innerText?.trim() ||
+          'unnamed'
+      )
+      .filter((name, index, all) => all.indexOf(name) === index)
+  );
+}
+
+// The grown-up check in either arm: read the multiplication from its accessible label and tap
+// the answer on the keypad, then let the "Unlocked!" hold run out.
+export async function solveGate(session) {
+  const equation = session.page.locator('[aria-label^="What is "]').filter({ visible: true }).first();
+  const label = await equation.getAttribute('aria-label', { timeout: 5000 });
+  const [x, y] = label.match(/\d+/g).map(Number);
+  for (const digit of String(x * y)) {
+    await session.page.getByRole('button', { name: digit, exact: true }).filter({ visible: true }).first().click();
+    await session.page.waitForTimeout(300);
+  }
+  await session.page.getByRole('button', { name: 'Check answer' }).filter({ visible: true }).first().click();
+  await session.page.waitForTimeout(2500);
+  return label;
+}
+
+export async function openSettings(session) {
+  await button(session, 'Settings').click();
+  await session.page.getByRole('dialog').first().waitFor({ state: 'visible', timeout: 5000 });
+  await session.page.waitForTimeout(1500);
+}
+
+// A Settings section: the phone hub's row (named "Title, summary") or the wide shell's nav entry.
+export async function openSection(session, title) {
+  const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const candidates = [
+    session.page.getByRole('button', { name: title, exact: true }),
+    session.page.getByRole('button', { name: new RegExp(`^${escaped}\\b`) }),
+  ];
+  for (const candidate of candidates) {
+    const row = candidate.filter({ visible: true }).first();
+    if ((await row.count()) === 0) continue;
+    await row.click();
+    await session.page.waitForTimeout(1500);
+    return;
+  }
+  throw new Error(`No Settings row named ${title}`);
+}
+
+export async function where(session) {
+  return {
+    path: new URL(session.page.url()).pathname,
+    dialogs: await openDialogs(session),
+    historyLength: await session.page.evaluate(() => history.length),
+  };
 }
