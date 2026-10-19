@@ -22,7 +22,7 @@ import {
   type CrayonBands,
   type InkPaintContext,
 } from './skiaInkPainter';
-import { opRange, rangeShape, type InkStep, type OpRange, type OpShape } from './strokeOps';
+import { opRange, rangeShape, type InkStep, type OpRange, type OpShape } from './inkOps';
 
 // Live ink uploads only the tiles a frame changed (the view draws a raster per tile), so a frame
 // costs its new ink, not the paper. Smaller tiles upload less per frame and record more draws.

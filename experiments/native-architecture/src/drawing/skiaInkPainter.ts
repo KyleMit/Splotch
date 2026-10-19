@@ -39,7 +39,7 @@ import { isFarmPageId } from './bundledBooks';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { paintAppearance, paletteHex, type PaletteLabel } from './palette';
 import { smoothStroke, type Point, type Stroke } from './model';
-import { opCount, opRange, rangeShape, type OpShape } from './strokeOps';
+import { opCount, opRange, rangeShape, type OpShape } from './inkOps';
 
 export type InkPaintContext = Readonly<{
   paper: PaperReference;

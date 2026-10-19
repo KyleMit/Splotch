@@ -107,12 +107,12 @@ React commit per input packet, and the stroke so far re-recorded and rasterized 
 Galaxy, skipping only the draft picture took a long pen stroke from 5.58% janky frames to 0.31%. The
 decision above stands; how a cohort reaches the committed layer changed.
 
-* **Strokes keep their ops.** A stroke records shipping's op boundaries (`strokeOps.ts`): a dot at
-  its first point, then one path per display frame that took samples, continuing from the previous
-  op's pen. Each op also records the frame it was painted in. Drawing version 8 saves them; a stroke
-  saved without ops replays as one op, as it was drawn before. Live ink, every committed rebuild
-  (Undo, page, theme, resize, renderer recovery) and capture paint the same ops, so they produce the
-  same pixels.
+* **Strokes keep their ops.** A stroke records shipping's op boundaries
+  (`web/src/lib/drawing/strokeOps.ts`; natively `inkOps.ts`): a dot at its first point, then one
+  path per display frame that took samples, continuing from the previous op's pen. Each op also
+  records the frame it was painted in. Drawing version 8 saves them; a stroke saved without ops
+  replays as one op, as it was drawn before. Live ink, every committed rebuild (Undo, page, theme,
+  resize, renderer recovery) and capture paint the same ops, so they produce the same pixels.
 * **"In their existing order" becomes "in the order they were painted."** A cohort's contacts replay
   interleaved by frame, as shipping's stroke-group command does, so a contact that reaches a
   crossing later lies on top. Painting each whole stroke in turn reversed that at every crossing

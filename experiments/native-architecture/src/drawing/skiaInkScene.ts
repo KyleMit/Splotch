@@ -12,7 +12,7 @@ import { samePaperProjection, type PaperProjection, type PaperSize } from './pap
 import { paperRasterBounds } from './pictureExport';
 import { createInkLayer, type InkLayer } from './skiaInkLayer';
 import type { InkPaintContext } from './skiaInkPainter';
-import { orderedOps } from './strokeOps';
+import { orderedOps } from './inkOps';
 import { perfTimed } from './perfProbe';
 
 type Size = Readonly<{ width: number; height: number }>;

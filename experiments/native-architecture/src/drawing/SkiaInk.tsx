@@ -39,7 +39,7 @@ import type { InkLayerProps } from './inkLayerProps';
 import type { LiveInkFeed } from './liveInk';
 import { createInkScene, type InkScene, type SceneInput } from './skiaInkScene';
 import { createInkLayer } from './skiaInkLayer';
-import { orderedOps } from './strokeOps';
+import { orderedOps } from './inkOps';
 import { showPicture } from './skiaViewPicture';
 
 type Size = Readonly<{ width: number; height: number }>;

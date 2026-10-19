@@ -11,7 +11,7 @@ import {
 } from './model';
 import type { Brush } from './brushes';
 import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
-import type { InkStep } from './strokeOps';
+import type { InkStep } from './inkOps';
 import { PERF_PROBE, perfAppend, perfDrained } from './perfProbe';
 
 // A stroke the cohort is still drawing. Its points and ops grow in place, so following a contact

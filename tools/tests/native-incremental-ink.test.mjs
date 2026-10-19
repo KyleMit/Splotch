@@ -15,7 +15,7 @@ import {
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
 import { paintAppearance } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { CRAYON_COLOR_MIX } from '../../experiments/native-architecture/src/drawing/crayon.ts';
-import { orderedOps } from '../../experiments/native-architecture/src/drawing/strokeOps.ts';
+import { orderedOps } from '../../experiments/native-architecture/src/drawing/inkOps.ts';
 
 // The incremental live-ink contract (ADR-0178): live ink painted frame by frame, the committed
 // layer the cohort leaves, a replay of the saved drawing, and a capture of it are the same pixels.
