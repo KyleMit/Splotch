@@ -1,10 +1,10 @@
 import type { Stroke } from './model';
 import type { ContactCohort } from './contactCohort';
 
-// The live cohort as the ink layer sees it. Native ink flushes it into ops once per display frame
-// (ADR-0178), so a stroke's ops are the frames it was painted in; the web renderer reads drafts.
+// The live cohort as the ink layer sees it. Native ink flushes it into ops as each packet arrives
+// (ADR-0178), so a stroke's ops are the flushes it was painted in; the web renderer reads drafts.
 export type LiveInkSource = Pick<ContactCohort, 'drafts' | 'live' | 'flush'>;
-// 'sample': new samples to paint by the next display frame. 'settle': a contact is ending or the
+// 'sample': new samples to paint now, or by the next display frame. 'settle': a contact is ending or the
 // cohort is being interrupted, so everything sampled so far must be painted now.
 type LiveInkEvent = 'sample' | 'settle';
 

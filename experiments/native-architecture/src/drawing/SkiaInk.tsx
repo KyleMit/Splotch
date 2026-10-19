@@ -34,13 +34,14 @@ import type { Stroke } from './model';
 import type { RasterInkHandle } from './RasterInk';
 import type { UndoGhost } from './undoFeedback';
 import { SkiaUndoGhost, type PreviousInk } from './SkiaUndoGhost';
-import { perfSubmitted, useInkCommitProbe } from './perfProbe';
+import { perfSubmitted, perfTimed, useInkCommitProbe } from './perfProbe';
 import type { InkLayerProps } from './inkLayerProps';
 import type { LiveInkFeed } from './liveInk';
 import { createInkScene, type InkScene, type SceneInput } from './skiaInkScene';
 import { createInkLayer } from './skiaInkLayer';
 import { orderedOps } from './inkOps';
 import { showPicture } from './skiaViewPicture';
+import { createHandoffCadence } from './handoffCadence';
 
 type Size = Readonly<{ width: number; height: number }>;
 type GhostCue = { feedback: UndoGhost; size: Size | null; ink: PreviousInk | null };
@@ -211,18 +212,26 @@ function useLayoutRedraw(size: Size | null) {
   return view;
 }
 
+const handOff = perfTimed('handoff', showPicture);
+
 // Hands the view the scene's newest picture, if ink changed since the last one.
 function present(scene: InkScene, view: SkiaPictureView | null): boolean {
-  if (!view || !scene.present((picture) => showPicture(view, picture))) return false;
+  if (!view || !scene.present((picture) => handOff(view, picture))) return false;
   perfSubmitted();
   return true;
 }
 
-// Live ink renders no React (ADR-0178). The first packet of a display frame paints at once, so a
-// sample waits for no frame callback; packets after it in the same frame wait for the next frame
-// callback and paint together, so the view takes at most one new picture per display frame. A
-// contact that ends paints at once whatever the frame. A cohort that finished and was not
-// committed after all leaves the layer by the frame after its commit would have rendered.
+const FRAME_CLOCK = {
+  now: () => performance.now(),
+  requestFrame: (callback: () => void) => requestAnimationFrame(callback),
+  cancelFrame: (handle: number) => cancelAnimationFrame(handle),
+};
+
+// Live ink renders no React (ADR-0178). Each packet paints its samples and hands the view a new
+// picture as it arrives, unless it reached JavaScript too soon after the last hand-off to be
+// shown before the next one (handoffCadence.ts). A contact that ends paints at once. A cohort
+// that finished and was not committed after all leaves the layer by the frame after its commit
+// would have rendered.
 function useLiveFrames(
   scene: InkScene,
   live: LiveInkFeed,
@@ -236,16 +245,11 @@ function useLiveFrames(
   }
 ) {
   useEffect(() => {
-    let frame: number | null = null;
     let check: number | null = null;
-    // Whether this display frame has painted, and whether samples have arrived since it did.
-    let painted = false;
-    let pending = false;
     // A fault detaches the input, which settles the feed again: report it once.
     let failed = false;
     // Whether it handed the view new ink.
-    const run = () => {
-      pending = false;
+    const paint = () => {
       const source = live.source();
       if (!source || failed) return false;
       try {
@@ -266,24 +270,14 @@ function useLiveFrames(
         return false;
       }
     };
-    // A packet that changed no ink leaves the frame free to paint the next one at once.
-    const paintNow = () => {
-      if (!run()) return;
-      painted = true;
-      frame ??= requestAnimationFrame(nextFrame);
-    };
-    const nextFrame = () => {
-      frame = null;
-      painted = false;
-      if (pending) paintNow();
-    };
+    const cadence = createHandoffCadence(FRAME_CLOCK, paint);
     const unsubscribe = live.subscribe((event) => {
-      if (event === 'sample' && painted) pending = true;
-      else paintNow();
+      if (event === 'sample') cadence.sample();
+      else cadence.settle();
     });
     return () => {
       unsubscribe();
-      if (frame !== null) cancelAnimationFrame(frame);
+      cadence.dispose();
       if (check !== null) cancelAnimationFrame(check);
     };
   }, [scene, live, view, latest]);

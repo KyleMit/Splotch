@@ -82,7 +82,7 @@ function differing(a, b) {
   return count;
 }
 
-// A cohort drawn the way the ink view draws one: samples arrive, and once per display frame the
+// A cohort drawn the way the ink view draws one: samples arrive, and once per input packet the
 // scene flushes them into ops, paints them and presents a picture. `script` lists each frame's
 // events; a contact's last frame ends it, which first paints everything sampled (the responder's
 // settle). `onFrame` may change the session's history, appearance or plane between frames, as
