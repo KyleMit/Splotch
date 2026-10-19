@@ -29,29 +29,59 @@ export type CrayonTileResources = Readonly<{
   uris: readonly string[];
 }>;
 
-// The cross-scene LRU can evict tiles still required by an active artwork.
+const NO_STROKES: readonly Stroke[] = [];
+
+function addCrayonHexes(colors: Set<string>, strokes: readonly Stroke[], theme: 'light' | 'dark') {
+  for (const stroke of strokes)
+    if (stroke.brush === 'crayon')
+      colors.add(paintAppearance(stroke.color, theme).hex.toLowerCase());
+}
+
+function holdsExactly(resources: CrayonTileResources, colors: ReadonlySet<string>) {
+  if (resources.byKey.size !== colors.size * CRAYON_BANDS.length) return false;
+  for (const hex of colors) if (!resources.byKey.has(`${hex}:0`)) return false;
+  return true;
+}
+
+// The cross-scene LRU can evict tiles still required by an active artwork. A tile is a function of
+// its pigment and band alone, so while the pigments needed stay the same the owner answers with the
+// resources it last built: a live stroke's packets keep one identity, and so does every scene memo
+// keyed on it. The committed list is scanned once per list; the drafts on every call.
 export function createCrayonTileResources() {
-  let retained: ReadonlyMap<string, string> = new Map();
+  let retained: CrayonTileResources = { byKey: new Map(), uris: [] };
+  let committed: Readonly<{
+    strokes: readonly Stroke[];
+    theme: 'light' | 'dark';
+    colors: ReadonlySet<string>;
+  }> | null = null;
   return (
     strokes: readonly Stroke[],
     theme: 'light' | 'dark',
     selected?: PaintColor,
-    inherited?: CrayonTileResources | null
+    inherited?: CrayonTileResources | null,
+    drafts: readonly Stroke[] = NO_STROKES
   ): CrayonTileResources => {
-    const colors = new Set<string>();
-    for (const stroke of strokes)
-      if (stroke.brush === 'crayon')
-        colors.add(paintAppearance(stroke.color, theme).hex.toLowerCase());
+    if (committed?.strokes !== strokes || committed.theme !== theme) {
+      const scanned = new Set<string>();
+      addCrayonHexes(scanned, strokes, theme);
+      committed = { strokes, theme, colors: scanned };
+    }
+    const colors = new Set(committed.colors);
+    addCrayonHexes(colors, drafts, theme);
     if (selected) colors.add(paintAppearance(selected, theme).hex.toLowerCase());
+    if (holdsExactly(retained, colors)) return retained;
     const byKey = new Map<string, string>();
     for (const hex of colors) {
       for (const [index] of CRAYON_BANDS.entries()) {
         const key = `${hex}:${index}`;
-        byKey.set(key, retained.get(key) ?? inherited?.byKey.get(key) ?? crayonTileUri(hex, index));
+        byKey.set(
+          key,
+          retained.byKey.get(key) ?? inherited?.byKey.get(key) ?? crayonTileUri(hex, index)
+        );
       }
     }
-    retained = byKey;
-    return { byKey, uris: [...byKey.values()] };
+    retained = { byKey, uris: [...byKey.values()] };
+    return retained;
   };
 }
 

@@ -1,5 +1,5 @@
 import { useReduceMotion } from '../drawing/useReduceMotion';
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { memo, useState, type ComponentProps, type ReactNode } from 'react';
 import { drawingPaper } from '../drawing/paperSpace';
 import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
@@ -25,6 +25,7 @@ import { colors } from './tokens.css';
 import { useClearGesture } from '../clear/useClearGesture';
 import { RsdClearOverlay } from './RsdClearControl';
 import { RsdClearUnderlay } from './clearSurfaces';
+import { RsdNotchBand } from './notchBandSurface';
 import { NativeDrawingLayout, type PaletteLayout } from './NativeScrollAreas';
 import { RsdActionsPanel, useFlyoutSlot } from './RsdActionsPanel';
 import { RsdFullscreenToggle } from './RsdFullscreenToggle';
@@ -78,9 +79,10 @@ function useRememberedDrawer() {
   return [open, choose] as const;
 }
 
-// The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
-// and the overlay that reads the drawer state, never the strokes on the paper.
-export function RsdEdgeLayout({
+// The paper arrives as a render function NativeDrawingLayout memoizes, so a drawer toggle or a
+// flyout re-renders only this layout and the overlay that reads the drawer state, never the
+// paper. Memoized: a Settings slider's draft re-renders the drawing content above it every tick.
+export const RsdEdgeLayout = memo(function RsdEdgeLayout({
   covered,
   buttonScale,
   onScaleCeiling,
@@ -161,6 +163,7 @@ export function RsdEdgeLayout({
             />
           )}
           clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
+          dockBand={<RsdNotchBand ink={ink} eraser={screen.brush === 'eraser'} layer="dockSide" />}
           actionsPanel={(area, viewport) => (
             <RsdActionsPanel
               {...controls}
@@ -203,7 +206,7 @@ export function RsdEdgeLayout({
       </InertRegion.Provider>
     </ToolbarSkin.Provider>
   );
-}
+});
 
 // The shipping Color Palette's plate: the bar surface with a soft shadow cast onto the paper.
 const paletteStyles = css.create({

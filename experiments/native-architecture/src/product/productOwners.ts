@@ -4,7 +4,7 @@ import { createNativeAi } from '../ai/generation';
 import { feedbackDevice, feedbackPolicyStorage, feedbackTransport } from '../platform/feedback';
 import { aiDismissal, aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { aiOriginalId, prepareAiPng } from '../ai/prepare';
-import { parseDrawing } from '../drawing/model';
+import { serializeDrawing } from '../drawing/drawingFormat';
 import type { ParentOperationPort } from '../parentCenter/parentPolicy';
 import type { useDrawingScreen } from '../useDrawingScreen';
 
@@ -49,7 +49,7 @@ export function createProductOwners(
         return {
           bytes,
           originalId: aiOriginalId(),
-          originalModel: JSON.stringify(parseDrawing(drawing)),
+          originalModel: serializeDrawing(drawing),
         };
       } finally {
         release();

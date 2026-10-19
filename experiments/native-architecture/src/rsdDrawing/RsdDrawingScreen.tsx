@@ -20,7 +20,14 @@ import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/Draw
 import { colors, darkTheme } from './tokens.css';
 import { fontTheme } from './fontTheme';
 import { bootAppearance } from '../platform/bootAppearance';
-import { useEffect, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { css, html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
@@ -311,6 +318,15 @@ function RsdDrawingContent({
   const paperBlocked = modalBlocked;
   useDrawingUndoShortcut(screen, disabled || covered || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
+  const { paper, paperOverlay, status } = useChromeParts({
+    screen,
+    sound,
+    product,
+    paperBlocked,
+    bannerControlSize: controlSize(buttonScale.value),
+    notice,
+    soundNotice,
+  });
   return (
     <LibraryProvider {...screen.library}>
       <NativeFrame
@@ -319,6 +335,7 @@ function RsdDrawingContent({
           <RsdNotchBand
             ink={paintAppearance(sound.settings.selectedColor, theme).hex}
             eraser={screen.brush === 'eraser'}
+            layer="cover"
           />
         }
       >
@@ -335,36 +352,10 @@ function RsdDrawingContent({
             buttonScale={buttonScale.value}
             onScaleCeiling={setScaleCeiling}
             resizing={buttonScale.active}
-            paperOverlay={(drawerOpen) => (
-              <RsdInstallBanner
-                strokes={screen.committedStrokes}
-                controlSize={controlSize(buttonScale.value)}
-                hidden={
-                  drawerOpen || paperBlocked || screen.pagePickerOpen || screen.colorPickerOpen
-                }
-              />
-            )}
-            status={
-              <RsdDrawingStatus
-                screen={screen}
-                notice={notice}
-                soundNotice={soundNotice}
-                openAppSettings={product.owner ? product.openAppSettings : null}
-                aiMinimized={product.ai.state?.open === true && product.ai.state.minimized}
-              />
-            }
+            paperOverlay={paperOverlay}
+            status={status}
           >
-            {(frame, space, projection) => (
-              <RsdPaperSlot
-                screen={screen}
-                sound={sound}
-                ai={product.ai}
-                menuOpen={paperBlocked}
-                frame={frame}
-                projection={projection}
-                space={space}
-              />
-            )}
+            {paper}
           </RsdEdgeLayout>
           <RsdPolaroidFlight
             flight={screen.flight}
@@ -397,6 +388,73 @@ function RsdDrawingContent({
       </NativeFrame>
     </LibraryProvider>
   );
+}
+
+type ChromePartInputs = {
+  screen: Screen;
+  sound: Sound;
+  product: ReturnType<typeof useDrawingProduct>;
+  paperBlocked: boolean;
+  bannerControlSize: number;
+  notice: string;
+  soundNotice: string;
+};
+
+// What the drawing content hands its chrome, unchanged while only the content's own state moves:
+// a Settings slider's draft re-renders neither the chrome a Volume drag leaves alone (RsdEdgeLayout
+// is memoized) nor the paper a Button Size drag resizes the controls around (NativeDrawingLayout
+// keeps the paper while its render function stays the same).
+function useChromeParts({
+  screen,
+  sound,
+  product,
+  paperBlocked,
+  bannerControlSize,
+  notice,
+  soundNotice,
+}: ChromePartInputs) {
+  const { ai } = product;
+  const paper = useCallback<ComponentProps<typeof RsdEdgeLayout>['children']>(
+    (frame, space, projection) => (
+      <RsdPaperSlot
+        screen={screen}
+        sound={sound}
+        ai={ai}
+        menuOpen={paperBlocked}
+        frame={frame}
+        projection={projection}
+        space={space}
+      />
+    ),
+    [screen, sound, ai, paperBlocked]
+  );
+  const { committedStrokes, pagePickerOpen, colorPickerOpen } = screen;
+  const bannerHeld = paperBlocked || pagePickerOpen || colorPickerOpen;
+  const paperOverlay = useCallback(
+    (drawerOpen: boolean) => (
+      <RsdInstallBanner
+        strokes={committedStrokes}
+        controlSize={bannerControlSize}
+        hidden={drawerOpen || bannerHeld}
+      />
+    ),
+    [committedStrokes, bannerControlSize, bannerHeld]
+  );
+  const openAppSettings = product.owner ? product.openAppSettings : null;
+  const aiMinimized = ai.state?.open === true && ai.state.minimized;
+  const status = useMemo(
+    () => (
+      <RsdDrawingStatus
+        screen={screen}
+        notice={notice}
+        soundNotice={soundNotice}
+        openAppSettings={openAppSettings}
+        aiMinimized={aiMinimized}
+      />
+    ),
+    [screen, notice, soundNotice, openAppSettings, aiMinimized]
+  );
+  return { paper, paperOverlay, status };
 }
 
 // The page picker stays mounted through its exit, after the screen has closed it.

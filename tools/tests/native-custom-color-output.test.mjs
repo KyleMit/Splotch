@@ -6,13 +6,13 @@ import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 import {
   emptyDrawing,
-  parseDrawing,
   strokeStyle,
   createHistory,
   addStrokes,
   clearDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));

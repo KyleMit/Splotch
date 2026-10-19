@@ -150,7 +150,8 @@ function expanded(label) {
     .expanded;
 }
 
-const ringedPaints = () => [...paintGroup().children].filter((node) => node.childElementCount > 0);
+// Every swatch holds the box its float shadow hangs from; a ringed one adds its disc, seam and ring.
+const ringedPaints = () => [...paintGroup().children].filter((node) => node.childElementCount > 1);
 
 it('selects paint through text-free round buttons and keeps Custom Color outside the paint row', async () => {
   await mountToolbar(toolbarScreen());
@@ -405,15 +406,20 @@ it('floats the edge controls over a paper area that fills the rest of the screen
     );
   }
   // Clear docks to the screen, not the paper: its overlay spans the whole layout, after the
-  // paper column, and the palette stacks above it as the shipping --z-palette does.
+  // paper column, inside a clip that reaches the screen's sides, and the palette stacks above it
+  // as the shipping --z-palette does.
   const layout = host.querySelector('[data-testid="rsd-drawing-layout"]');
+  const clip = host.querySelector('[data-testid="rsd-clear-clip"]');
   const overlay = host.querySelector('[data-testid="rsd-clear-overlay"]');
-  expect(overlay.parentElement).toBe(layout);
-  expect(layout.lastElementChild).toBe(overlay);
+  expect(clip.parentElement).toBe(layout);
+  expect(layout.lastElementChild).toBe(clip);
+  expect(overlay.parentElement).toBe(clip);
   expect(area.contains(overlay)).toBe(false);
   expect(overlay.textContent).toBe('Clear drawing');
   const props = (testID) => records.props.findLast((candidate) => candidate.testID === testID);
-  expect(props('rsd-clear-overlay').style).toMatchObject({ position: 'absolute', top: 0, left: 0 });
+  expect(flat(props('rsd-clear-overlay').style)).toMatchObject({ position: 'absolute', top: 0 });
+  expect(flat(props('rsd-clear-clip').style)).toMatchObject({ top: 0, overflow: 'hidden' });
+  expect(props('rsd-clear-clip').pointerEvents).toBe('box-none');
   expect(props('rsd-clear-overlay').pointerEvents).toBe('box-none');
   expect(flat(props('rsd-palette-bar').style).zIndex).toBeGreaterThan(0);
   const box = (x, y, width, height) => ({ nativeEvent: { layout: { x, y, width, height } } });

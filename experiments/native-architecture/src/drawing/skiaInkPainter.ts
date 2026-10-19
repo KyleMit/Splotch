@@ -26,13 +26,20 @@ import {
 } from './paperSpace';
 import { rainbow, rainbowLine } from './brushes';
 import { bookFillPlacement } from './bookFill';
-import { CRAYON_BANDS, CRAYON_COLOR_MIX, crayonPasses, crayonPhase } from './crayon';
-import { crayonResourceUri, type CrayonTileResources } from './crayonTiles';
+import {
+  CRAYON_BANDS,
+  CRAYON_COLOR_MIX,
+  crayonPasses,
+  crayonPassSeed,
+  crayonPhase,
+} from './crayon';
+import { crayonTileUri, type CrayonTileResources } from './crayonTiles';
 import { COLORING_FILLS, type PageId } from './pages';
 import { isFarmPageId } from './bundledBooks';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { paintAppearance, paletteHex, type PaletteLabel } from './palette';
 import { smoothStroke, type Point, type Stroke } from './model';
+import { opCount, opRange, rangeShape, type OpShape } from './inkOps';
 
 export type InkPaintContext = Readonly<{
   paper: PaperReference;
@@ -255,6 +262,38 @@ function tileShader(tile: SkImage, texel: number, phase: Point): SkShader {
   );
 }
 
+// The scene's tile set is computed from committed ink and the selected paint; a live stroke's
+// paint can fall outside it, and Skia decodes a tile synchronously, so it is made on demand.
+function crayonTile(context: InkPaintContext, hex: string, bandIndex: number): SkImage {
+  const uri =
+    context.tiles.byKey.get(`${hex.toLowerCase()}:${bandIndex}`) ?? crayonTileUri(hex, bandIndex);
+  return decodeDataUriImage(uri);
+}
+
+export type CrayonBands = readonly Readonly<{ width: number; paint: SkPaint }>[];
+
+// One pass's wax: each density band's stroke paint, filled with the paper-tooth tile at the
+// pass's phase.
+export function crayonPassBands(
+  stroke: Extract<Stroke, { brush: 'crayon' }>,
+  pass: number,
+  width: number,
+  context: InkPaintContext
+): CrayonBands {
+  const hex = paintAppearance(stroke.color, context.theme).hex;
+  const texel = textureScale(context.paper);
+  const phase = crayonPhase(crayonPassSeed(stroke, pass));
+  return CRAYON_BANDS.map((band, bandIndex) => {
+    const bandPaint = strokePaint(width * band.widthScale);
+    bandPaint.setShader(tileShader(crayonTile(context, hex, bandIndex), texel, phase));
+    return { width: width * band.widthScale, paint: bandPaint };
+  });
+}
+
+export function paintCrayonShape(canvas: SkCanvas, shape: OpShape, bands: CrayonBands) {
+  for (const band of bands) drawShape(canvas, shape.points, band.width, band.paint, shape.lead);
+}
+
 // Each pass's bands composite as one group, as the shipping crayon stamps its pass buffer
 // (ADR-0065): once darkened against the ink beneath, then once unblended at 1 - CRAYON_COLOR_MIX.
 // A bounded layer per pass keeps that grouping, so overlapping bands are not counted twice.
@@ -268,21 +307,9 @@ function paintCrayon(
   width: number,
   context: InkPaintContext
 ) {
-  const paint = paintAppearance(stroke.color, context.theme);
   const texel = textureScale(context.paper);
-  for (const pass of crayonPasses(stroke, width, texel)) {
-    const phase = crayonPhase(pass.seed);
-    const bands = CRAYON_BANDS.map((band, bandIndex) => {
-      const bandPaint = strokePaint(width * band.widthScale);
-      bandPaint.setShader(
-        tileShader(
-          decodeDataUriImage(crayonResourceUri(context.tiles, paint.hex, bandIndex)),
-          texel,
-          phase
-        )
-      );
-      return { width: width * band.widthScale, paint: bandPaint };
-    });
+  for (const [index, pass] of crayonPasses(stroke, width, texel).entries()) {
+    const bands = crayonPassBands(stroke, index, width, context);
     // A continuing pass's curve starts between its lead and first point.
     const bounds = shapeBounds(pass.lead ? [pass.lead, ...pass.points] : pass.points, width);
     for (const [blend, alpha] of [
@@ -293,21 +320,39 @@ function paintCrayon(
       layer.setBlendMode(blend);
       layer.setAlphaf(alpha);
       canvas.saveLayer(layer, bounds);
-      for (const band of bands) drawShape(canvas, pass.points, band.width, band.paint, pass.lead);
+      paintCrayonShape(canvas, pass, bands);
       canvas.restore();
     }
   }
 }
 
+// A pen, Magic or eraser op's paint: the stroke's color, the page's Magic fill, or a clear.
+export function plainOpPaint(
+  stroke: Exclude<Stroke, { brush: 'crayon' }>,
+  width: number,
+  context: InkPaintContext
+): SkPaint {
+  const paint = strokePaint(width);
+  if (stroke.brush === 'eraser') paint.setBlendMode(BlendMode.Clear);
+  else if (stroke.brush === 'magic') paint.setShader(magicShader(stroke, context));
+  else paint.setColor(Skia.Color(paintAppearance(stroke.color, context.theme).hex));
+  return paint;
+}
+
+export function paintPlainShape(canvas: SkCanvas, shape: OpShape, width: number, paint: SkPaint) {
+  drawShape(canvas, shape.points, width, paint, shape.lead);
+}
+
+// One stroke on its own, op by op. A scene paints its strokes through the ink layer
+// (skiaInkLayer.ts), which orders a cohort's ops and glazes Crayon passes onto the ink beneath;
+// a Crayon stroke here glazes each whole pass over this canvas.
 export function paintStroke(canvas: SkCanvas, stroke: Stroke, context: InkPaintContext) {
   const width = semanticWidth(stroke.width, context.paper);
   if (stroke.brush === 'crayon') {
     paintCrayon(canvas, stroke, width, context);
     return;
   }
-  const paint = strokePaint(width);
-  if (stroke.brush === 'eraser') paint.setBlendMode(BlendMode.Clear);
-  else if (stroke.brush === 'magic') paint.setShader(magicShader(stroke, context));
-  else paint.setColor(Skia.Color(paintAppearance(stroke.color, context.theme).hex));
-  drawShape(canvas, stroke.points, width, paint);
+  const paint = plainOpPaint(stroke, width, context);
+  for (let op = 0; op < opCount(stroke); op++)
+    paintPlainShape(canvas, rangeShape(stroke.points, opRange(stroke, op)), width, paint);
 }

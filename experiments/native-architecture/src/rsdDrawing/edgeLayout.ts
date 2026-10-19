@@ -17,9 +17,12 @@ export const EDGE_INSET_PX = CONTROL_GAP;
 // boundary excludes shipping web source; rsd-native-actions-panel.test.mjs reads both and fails
 // on divergence.
 export const ACTION_BUTTON_GAP_PX = 12;
+// The phone-landscape L's leg pitch and its size budget. app.css also restates this gap and the
+// chevron margin for the L's row, but ActionsPanel.svelte's scoped rules match those elements at
+// the same specificity and load after app.css, so the row ships with the 12px gap and 4px margin.
 export const PHONE_TOOLBAR_GAP_PX = 10;
 // The drawer's margin toward its chevron: with the chevron's own 8px icon padding it keeps the
-// row's 12px rhythm. The phone-landscape L spaces it by its own gap instead.
+// row's 12px rhythm.
 export const DRAWER_TOGGLE_MARGIN_PX = 4;
 export const TABLET_MIN_SIDE_PX = 600;
 export const LARGE_TABLET_MIN_SIDE_PX = 1000;
@@ -162,18 +165,17 @@ export function actionPanelLayout({
     };
   }
   const phone = mode === 'phoneLandscape';
-  const gap = phone ? PHONE_TOOLBAR_GAP_PX : ACTION_BUTTON_GAP_PX;
-  const margin = phone ? PHONE_TOOLBAR_GAP_PX : DRAWER_TOGGLE_MARGIN_PX;
-  const pitch = size + gap;
+  const pitch = size + ACTION_BUTTON_GAP_PX;
+  const legPitch = size + PHONE_TOOLBAR_GAP_PX;
   const climbing = phone ? Math.min(leg, count) : 0;
   const along = count - climbing;
   const rowBottom = centred(size);
   const tools = Array.from({ length: count }, (_, index) =>
     index < climbing
-      ? { left: EDGE_INSET_PX, bottom: rowBottom + (climbing - index) * pitch }
+      ? { left: EDGE_INSET_PX, bottom: rowBottom + (climbing - index) * legPitch }
       : { left: EDGE_INSET_PX + (index - climbing) * pitch, bottom: rowBottom }
   );
-  const run = along > 0 ? along * pitch - gap + margin : 0;
+  const run = along > 0 ? along * pitch - ACTION_BUTTON_GAP_PX + DRAWER_TOGGLE_MARGIN_PX : 0;
   return {
     mode,
     size,
@@ -186,7 +188,7 @@ export function actionPanelLayout({
           left: EDGE_INSET_PX,
           bottom:
             open && count > 0
-              ? rowBottom + (climbing + 1) * pitch
+              ? rowBottom + (climbing + 1) * legPitch
               : (viewport.height - size) / 2 - bottomInset,
         }
       : null,

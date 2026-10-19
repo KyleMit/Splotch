@@ -10,10 +10,8 @@ import {
   paintId,
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
-import {
-  parseDrawing,
-  strokeStyle,
-} from '../../experiments/native-architecture/src/drawing/model.ts';
+import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { readFileSync } from 'node:fs';
 const WHITE_INK = /export const WHITE_INK = '([^']+)'/.exec(
   readFileSync(new URL('../../web/src/lib/state/colors.svelte.ts', import.meta.url), 'utf8')

@@ -43,8 +43,13 @@ const docks = StyleSheet.create({
   palette: { zIndex: PALETTE_OVER_CLEAR_Z_INDEX },
   floatingRow: { position: 'absolute', top: 0, left: 0, right: 0 },
   floatingColumn: { position: 'absolute', top: 0, bottom: 0, left: 0 },
-  // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
-  clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
+  // Clipped at the safe-area top, so nothing the Clear gesture draws paints over the system status
+  // bar, and at the screen's sides, which shipping's fixed Clear Button reaches: docked, its tab
+  // overhangs the frame's edge into a landscape side inset. The overlay itself keeps the frame's
+  // box, the coordinates the dock is measured in.
+  clearClip: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden' },
+  clearOverlay: { position: 'absolute', top: 0, bottom: 0 },
+  window: { position: 'absolute', bottom: 0 },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
   controls: { position: 'absolute', top: 0, right: 0, left: 0 },
 });
@@ -109,6 +114,8 @@ type NativeDrawingLayoutProps = {
     departingProjection: PaperProjection | null
   ) => ReactNode;
   clearOverlay: ReactNode;
+  // The Notch Band's strip on the side the Clear Button docks to, which its tab overhangs.
+  dockBand: ReactNode;
   actionsPanel: (area: AreaSize, viewport: AreaSize) => ReactNode;
   settings: ReactNode;
   status: ReactNode;
@@ -182,6 +189,39 @@ function usePresentedPaper(
   return { frame, departingFrame, projection, departingProjection };
 }
 
+function ClearOverlayLayer({ children }: { children: ReactNode }) {
+  const { left, right } = useSafeAreaInsets();
+  return (
+    <View
+      testID="rsd-clear-clip"
+      pointerEvents="box-none"
+      style={[docks.clearClip, { left: -left, right: -right }]}
+    >
+      <View
+        testID="rsd-clear-overlay"
+        pointerEvents="box-none"
+        style={[docks.clearOverlay, { left, right }]}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
+// The whole window, in the layout's coordinates, for the band strip the Clear Button docks against.
+function DockBandLayer({ children }: { children: ReactNode }) {
+  const { top, left, right } = useSafeAreaInsets();
+  return (
+    <View
+      testID="rsd-dock-band"
+      pointerEvents="none"
+      style={[docks.window, { top: -top, left: -left, right: -right }]}
+    >
+      {children}
+    </View>
+  );
+}
+
 function NativePaletteBar({
   axis,
   bare,
@@ -229,6 +269,7 @@ export function NativeDrawingLayout({
   palette,
   clearUnderlay,
   clearOverlay,
+  dockBand,
   actionsPanel,
   settings,
   status,
@@ -342,9 +383,8 @@ export function NativeDrawingLayout({
           </View>
         </View>
       </View>
-      <View testID="rsd-clear-overlay" pointerEvents="box-none" style={docks.clearOverlay}>
-        {clearOverlay}
-      </View>
+      <DockBandLayer>{dockBand}</DockBandLayer>
+      <ClearOverlayLayer>{clearOverlay}</ClearOverlayLayer>
     </View>
   );
   return <SecondTouchRouteScope value={contacts}>{content}</SecondTouchRouteScope>;

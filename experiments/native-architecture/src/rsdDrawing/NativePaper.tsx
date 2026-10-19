@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View } from 'react-native';
 import { DrawingSurface } from '../drawing/DrawingSurface';
 import { PaperTexture } from '../drawing/PaperTexture';
@@ -9,6 +10,11 @@ import type { useDrawingSound } from '../useDrawingSound';
 import { useSecondTouchRoutes } from './secondTouchPress';
 
 const paperGrain = <PaperTexture />;
+
+// The drawing screen renders for every change it owns (a product publish, a notice, the stroke
+// flag, a dialog's route); the surface, and the ink layer with it, renders only when one of its
+// own props changes. This paper passes each as a value or a reference stable between renders.
+const PaperSurface = memo(DrawingSurface);
 
 export function NativePaper({
   screen,
@@ -40,7 +46,7 @@ export function NativePaper({
         style={{ position: 'absolute', ...frame }}
         onLayout={() => screen.surface.current?.refreshGeometry()}
       >
-        <DrawingSurface
+        <PaperSurface
           key={screen.recovery.generation}
           ref={screen.surface}
           drawing={screen.history.drawing}

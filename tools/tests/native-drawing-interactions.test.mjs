@@ -8,9 +8,9 @@ import {
   addStroke,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 
 describe('native drawing interaction ownership', () => {
   it('ignores an expired export callback after a new capture starts', async () => {

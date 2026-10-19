@@ -7,9 +7,9 @@ import {
 } from '../../experiments/native-architecture/src/drawing/brushes.ts';
 import {
   emptyDrawing,
-  parseDrawing,
   strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 
 const point = { x: 512, y: 384 };
 

@@ -199,17 +199,40 @@ describe('Actions Panel geometry', () => {
     );
     const l = layout({ width: 844, height: 390 }, { width: 760, height: 390 }, 1);
     expect(l).toMatchObject({ mode: 'phoneLandscape', size: 48, padding: 6 });
-    // The L: Brush above Stroke Width on the vertical leg, the rest along the bottom row.
-    const pitch = 48 + PHONE_TOOLBAR_GAP_PX;
+    // The L: Brush above Stroke Width on the vertical leg, the rest along the bottom row, which
+    // keeps the panel's own gap and chevron margin.
+    const legPitch = 48 + PHONE_TOOLBAR_GAP_PX;
+    const rowPitch = 48 + ACTION_BUTTON_GAP_PX;
     expect(l.tools).toEqual([
-      { left: 8, bottom: 8 + 2 * pitch },
-      { left: 8, bottom: 8 + pitch },
+      { left: 8, bottom: 8 + 2 * legPitch },
+      { left: 8, bottom: 8 + legPitch },
       { left: 8, bottom: 8 },
-      { left: 8 + pitch, bottom: 8 },
-      { left: 8 + 2 * pitch, bottom: 8 },
-      { left: 8 + 3 * pitch, bottom: 8 },
+      { left: 8 + rowPitch, bottom: 8 },
+      { left: 8 + 2 * rowPitch, bottom: 8 },
+      { left: 8 + 3 * rowPitch, bottom: 8 },
     ]);
-    expect(l.toggle).toEqual({ left: 8 + 4 * pitch, bottom: 8 });
+    expect(l.toggle).toEqual({
+      left: 8 + 4 * rowPitch - ACTION_BUTTON_GAP_PX + DRAWER_TOGGLE_MARGIN_PX,
+      bottom: 8,
+    });
+  });
+
+  // Shipping as the DS-1 slice measured it on an iPhone 16e in landscape, less its 47pt left
+  // inset: Coloring books, Save screenshot and Undo on the row at 8, 68 and 128pt, the chevron at
+  // 180pt, and the leg's Stroke Width, Brushes and Color Button 58pt apart above the corner.
+  it('lays the landscape phone L out where shipping draws it', () => {
+    const l = actionPanelLayout({
+      area: { width: 750, height: 369 },
+      viewport: { width: 844, height: 390 },
+      scale: 1,
+      count: 5,
+      leg: 2,
+      open: true,
+    });
+    expect(l.tools.map(({ left }) => left)).toEqual([8, 8, 8, 68, 128]);
+    expect(l.tools.map(({ bottom }) => bottom)).toEqual([124, 66, 8, 8, 8]);
+    expect(l.toggle.left).toBe(180);
+    expect(l.color?.bottom).toBe(182);
   });
 
   it('keeps the chevron in the corner while closed and after the tools while open', () => {
@@ -279,7 +302,25 @@ describe('shipping parity', () => {
     expect(APP_CSS).toMatch(
       new RegExp(`\\.actions-panel \\.action-button \\{\\s*padding: ${PHONE_TOOLBAR_PADDING_PX}px;`)
     );
-    expect(APP_CSS).toContain(`margin-right: ${PHONE_TOOLBAR_GAP_PX}px;`);
+    // The L's leg climbs by app.css's phone pitch. app.css restates the row's gap and chevron
+    // margin for the phone too, at the same specificity as ActionsPanel.svelte's scoped rules,
+    // which load after it and win: a heavier phone selector here would change what ships.
+    expect(APP_CSS).toContain(
+      `--landscape-pitch: calc(var(--action-btn-size) + ${PHONE_TOOLBAR_GAP_PX}px);`
+    );
+    expect(APP_CSS).toMatch(
+      new RegExp(
+        `\\n  \\.actions-panel \\.actions-drawer \\{\\s*margin-right: ${PHONE_TOOLBAR_GAP_PX}px;`
+      )
+    );
+    expect(APP_CSS).toMatch(
+      new RegExp(
+        `\\n  \\.actions-panel \\.actions-drawer-inner \\{\\s*gap: ${PHONE_TOOLBAR_GAP_PX}px;`
+      )
+    );
+    expect(PANEL).toMatch(
+      new RegExp(`\\n  \\.actions-drawer-inner \\{[^}]*gap: ${ACTION_BUTTON_GAP_PX}px;`)
+    );
   });
 
   it('turns the chevron and greys the panel the way the shipping stylesheets do', () => {

@@ -25,6 +25,9 @@ export type InkPlan = Readonly<{
   strokes: readonly Stroke[];
   prefix: readonly Stroke[];
   needsCheckpoint: boolean;
+  // Native ink: the committed ink's own pixels on a capture grid, as a base64 PNG (ADR-0178).
+  // The web renderer leaves it out and captures its SVG scene instead.
+  ink?: (grid: PaperSize, projection: PaperProjection) => string;
 }>;
 export type InkPreparation = Readonly<{
   checkpoint: InkCheckpoint;

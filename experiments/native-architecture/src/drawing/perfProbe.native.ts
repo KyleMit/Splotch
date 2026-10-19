@@ -2,7 +2,6 @@ import { useLayoutEffect } from 'react';
 import { NativeModules, Platform } from 'react-native';
 import type * as Contract from './perfProbe';
 import {
-  appendOutcome,
   createPerfCohorts,
   PERF_LOG_MODULE,
   PERF_LOG_TAG,
@@ -73,9 +72,9 @@ export const perfIdle: typeof Contract.perfIdle = () => cohorts?.idle();
 export const perfStroke: typeof Contract.perfStroke = (timestamp) => cohorts?.stroke(timestamp);
 export const perfSampleTime: typeof Contract.perfSampleTime = (timestamp) =>
   cohorts?.sampleTime(timestamp);
-export const perfAppend: typeof Contract.perfAppend = (before, after, point) =>
-  cohorts?.append(appendOutcome(before, after, point));
+export const perfAppend: typeof Contract.perfAppend = (outcome) => cohorts?.append(outcome);
 export const perfDrained: typeof Contract.perfDrained = (strokes) => cohorts?.drained(strokes);
+export const perfFlushed: typeof Contract.perfFlushed = () => cohorts?.flushed();
 
 export const perfTimed: typeof Contract.perfTimed = (timer, record) => {
   if (!PERF_PROBE) return record;
@@ -99,16 +98,14 @@ function useSurfaceCommits() {
   });
 }
 
-// SkiaPictureView hands a new picture to its native view with a JSI setter in its own
-// componentDidUpdate (or constructor, on mount), which React runs before this parent's layout
-// effects in the same commit, so the stamp falls just after the hand-off.
-function useInkCommits(picture: unknown) {
+// The ink layer hands each new picture to its native view through Skia's JSI setter itself, on
+// a display frame or a commit, and stamps the hand-off just after it.
+export const perfSubmitted: typeof Contract.perfSubmitted = () => cohorts?.submitted();
+
+function useInkCommits() {
   useLayoutEffect(() => {
     cohorts?.inkCommit();
   });
-  useLayoutEffect(() => {
-    if (picture) cohorts?.submitted();
-  }, [picture]);
 }
 
 export const useSurfaceCommitProbe: typeof Contract.useSurfaceCommitProbe = PERF_PROBE
