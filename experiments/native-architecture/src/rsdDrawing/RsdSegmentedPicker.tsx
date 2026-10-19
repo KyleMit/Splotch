@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactElement } from 'react';
+import { useContext, useRef, useState, type ReactElement } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,7 +11,9 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import type { NativeIconName } from './icons.generated';
 import { optionFades, pressedState } from './pickerPlatform';
+import { TextZoomRevision } from '../platform/textZoomRevision';
 import { RsdIcon } from './RsdIcon';
+import { WholeWordText } from './WholeWordText';
 import { arrowDelta, nextEnabledIndex, rovingTabIndex } from './rovingRadio';
 import { brandColors, colors, dimensions, fonts } from './tokens.css';
 import { SegmentThumb } from './segmentThumb';
@@ -138,16 +140,38 @@ function useCells() {
   const measure =
     (index: number) =>
     ({ nativeEvent }: LayoutChangeEvent) => {
-      const { x, width } = nativeEvent.layout;
+      const { x, y, width, height } = nativeEvent.layout;
       setCells((previous) => {
         const known = previous[index];
-        if (known?.x === x && known.width === width) return previous;
+        if (known?.x === x && known.y === y && known.width === width && known.height === height)
+          return previous;
         const next = [...previous];
-        next[index] = { x, width };
+        next[index] = { x, y, width, height };
         return next;
       });
     };
   return { cells, measure };
+}
+
+// A segment track whose labels cannot all stay whole side by side stacks its options, each across
+// the full track, rather than breaking a word. The answer holds for one window width, OS font
+// scale and set of labels, until a Settings zoom pinch finishes; any change lays the options side by
+// side again and asks afresh.
+function useStacking(enabled: boolean, labels: readonly string[]) {
+  const { width, fontScale } = useWindowDimensions();
+  const pinches = useContext(TextZoomRevision);
+  const key = JSON.stringify([labels, width, fontScale, pinches]);
+  const currentKey = useRef(key);
+  currentKey.current = key;
+  const [stackedKey, setStackedKey] = useState<string | null>(null);
+  return {
+    stacked: enabled && stackedKey === key,
+    onLabelSplit: enabled
+      ? () => {
+          if (currentKey.current === key) setStackedKey(key);
+        }
+      : undefined,
+  };
 }
 
 export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | ToggleProps<T>) {
@@ -168,6 +192,10 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
   const { cells, measure } = useCells();
   const phone = useWindowDimensions().width <= PHONE_MAX_WIDTH_PX;
   const marks = props.labels === 'marks';
+  const { stacked, onLabelSplit } = useStacking(
+    variant === 'segment' && (props.labels ?? 'shown') === 'shown',
+    options.map((option) => option.label)
+  );
   const thumbIndex =
     variant === 'segment' && props.mode !== 'toggle' && props.selected !== null && !marks
       ? options.findIndex((option) => option.value === props.selected)
@@ -194,7 +222,7 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
     return (
       <View
         key={option.value}
-        style={cellLayout(variant, fill, phone)}
+        style={stacked ? cellLayouts.hug : cellLayout(variant, fill, phone)}
         onLayout={measure(index)}
         {...keyHandlers(index)}
       >
@@ -217,13 +245,23 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
             VARIANT_OPTION[variant],
             optionFades[variant],
             variant === 'segment' && !fill && styles.hugOption,
-            variant === 'segment' && optionDirection === 'column' && styles.columnOption,
-            variant === 'segment' && tight && styles.tightOption,
+            variant === 'segment' &&
+              optionDirection === 'column' &&
+              !stacked &&
+              styles.columnOption,
+            variant === 'segment' && tight && !stacked && styles.tightOption,
             active && (marks ? styles.markActive : ACTIVE_OPTION[variant]),
             option.disabled && styles.disabled,
           ]}
         >
-          <OptionBody option={option} variant={variant} active={active} labels={props.labels} />
+          <OptionBody
+            option={option}
+            variant={variant}
+            active={active}
+            labels={props.labels}
+            stacked={stacked}
+            onLabelSplit={onLabelSplit}
+          />
         </html.button>
       </View>
     );
@@ -238,11 +276,12 @@ export function RsdSegmentedPicker<T extends string>(props: RadioProps<T> | Togg
       style={[
         TRACK[variant],
         variant === 'segment' && !fill && styles.hug,
-        variant === 'segment' && tight && styles.tightTrack,
+        variant === 'segment' && tight && !stacked && styles.tightTrack,
+        stacked && styles.stackedTrack,
         variant === 'underline' && phone && styles.underlinePhone,
       ]}
     >
-      {thumbCell ? <SegmentThumb cell={thumbCell} index={thumbIndex} /> : null}
+      {thumbCell ? <SegmentThumb cell={thumbCell} index={thumbIndex} stacked={stacked} /> : null}
       {variant === 'chip' ? chipRows(rendered) : rendered}
     </html.div>
   );
@@ -269,11 +308,15 @@ function OptionBody<T extends string>({
   variant,
   active,
   labels = 'shown',
+  stacked,
+  onLabelSplit,
 }: {
   option: SegmentedPickerOption<T>;
   variant: Variant;
   active: boolean;
   labels: Labels | undefined;
+  stacked: boolean;
+  onLabelSplit: (() => void) | undefined;
 }) {
   const theme = useDrawingTheme();
   if (labels === 'marks')
@@ -298,7 +341,13 @@ function OptionBody<T extends string>({
         </html.div>
       ) : null}
       {labels === 'shown' ? (
-        <html.span style={variant === 'chip' && styles.chipLabel}>{option.label}</html.span>
+        <WholeWordText
+          style={variant === 'chip' && styles.chipLabel}
+          onWordSplit={onLabelSplit}
+          fit={stacked || variant === 'chip'}
+        >
+          {option.label}
+        </WholeWordText>
       ) : null}
       {variant === 'chip' ? (
         <html.span aria-hidden style={styles.check}>
@@ -341,6 +390,7 @@ const styles = css.create({
     borderRadius: dimensions.radiusMd,
   },
   hug: { alignSelf: 'flex-start' },
+  stackedTrack: { flexDirection: 'column' },
   tightTrack: { gap: TIGHT_TRACK_GAP_PX, padding: TIGHT_TRACK_PADDING_PX },
   chipTrack: { display: 'flex', flexDirection: 'column', gap: CHIP_GAP_PX },
   chipRow: { display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: CHIP_GAP_PX },

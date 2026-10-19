@@ -11,6 +11,7 @@ import { css, html } from 'react-strict-dom';
 import { focusRingHostView, focusRingPart } from './focusRing';
 import type { NativeIconName } from './icons.generated';
 import { RsdIcon } from './RsdIcon';
+import { WholeWordText } from './WholeWordText';
 import {
   clampToRange,
   draggedValue,
@@ -253,7 +254,7 @@ export function RsdSliderRow({
           {icon ? (
             <RsdIcon name={icon} size={SETTING_ICON_PX} ink={undefined} muted={false} />
           ) : null}
-          <html.span>{label}</html.span>
+          <WholeWordText fit>{label}</WholeWordText>
         </html.div>
         <html.span>{valueText}</html.span>
       </html.div>

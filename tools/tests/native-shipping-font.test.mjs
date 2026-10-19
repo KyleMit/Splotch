@@ -138,9 +138,9 @@ const rsdFiles = () =>
 
 const NATIVE_TEXT_OWNERS = new Map([
   ['drawing/Text.tsx', new Set(['Text', 'TextInput'])],
-  // RSD compat resolves this adapter's system face; drawing/Text would replace it.
+  // RSD compat resolves these adapters' faces; drawing/Text would replace them.
   ['rsdDrawing/HubTitle.native.tsx', new Set(['Text'])],
-  ['rsdDrawing/DialogTitle.native.tsx', new Set(['Text'])],
+  ['rsdDrawing/fittedText.native.tsx', new Set(['Text'])],
 ]);
 
 // Native text has one font owner: the wrapper or the adapter's resolved RSD style.
@@ -371,9 +371,10 @@ describe('RN shipping font on Android and iOS', () => {
   it.each([
     ['rsdDrawing/HubTitle.sibling.tsx', 'Text'],
     ['rsdDrawing/HubTitle.native.tsx', 'TextInput'],
-    ['rsdDrawing/DialogTitle.sibling.tsx', 'Text'],
-    ['rsdDrawing/DialogTitle.native.tsx', 'TextInput'],
-  ])('rejects %s importing %s outside the exact title-font exception', (file, name) => {
+    ['rsdDrawing/fittedText.sibling.tsx', 'Text'],
+    ['rsdDrawing/fittedText.native.tsx', 'TextInput'],
+    ['rsdDrawing/DialogTitle.native.tsx', 'Text'],
+  ])('rejects %s importing %s outside the exact native text adapter exceptions', (file, name) => {
     const direct = new Map(sources).set(file, `import { ${name} } from 'react-native';`);
     expect(() => assertNativeTextOwners(direct)).toThrow();
   });

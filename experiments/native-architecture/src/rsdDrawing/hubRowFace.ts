@@ -17,3 +17,7 @@ export function hubRowMinWidth(_wordWidth: number) {
 export function hubTextMinWidth(_wordWidth: number) {
   return null;
 }
+
+export function hubTitleRoom(_tileWidth: number) {
+  return null;
+}
