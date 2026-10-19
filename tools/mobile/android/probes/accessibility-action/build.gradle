@@ -1,0 +1,27 @@
+evaluationDependsOn(':app')
+apply plugin: 'com.android.application'
+android {
+    namespace 'art.splotch.parity.driver'
+    compileSdk rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    defaultConfig {
+        applicationId 'art.splotch.parity.driver'
+        minSdk rootProject.ext.minSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName '1.0'
+    }
+    sourceSets.main {
+        manifest.srcFile 'AndroidManifest.xml'
+        java.srcDirs = ['src']
+    }
+    signingConfigs {
+        candidateRelease {
+            initWith project(':app').android.signingConfigs.candidateRelease
+        }
+    }
+    buildTypes.release {
+        signingConfig signingConfigs.candidateRelease
+        minifyEnabled false
+    }
+}
