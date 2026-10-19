@@ -19,6 +19,7 @@ public final class AccessibilityActionProbe extends Instrumentation {
     private static final long ROOT_POLL_MS = 100;
     private static final int MAX_NODES = 3000;
     private Bundle arguments;
+    private boolean actionAttempted;
 
     @Override public void onCreate(Bundle value) {
         super.onCreate(value);
@@ -33,6 +34,8 @@ public final class AccessibilityActionProbe extends Instrumentation {
             finish(-1, result);
         } catch (Exception error) {
             result.putString("error", error.getClass().getSimpleName() + ": " + error.getMessage());
+            result.putBoolean("inputDispatched", actionAttempted);
+            result.putString("outcome", actionAttempted ? "unknown" : "refused");
             finish(0, result);
         }
     }
@@ -165,6 +168,7 @@ public final class AccessibilityActionProbe extends Instrumentation {
             }
             result.put("inputDispatched", true);
             result.put("action", AccessibilityNodeInfo.ACTION_CLICK);
+            actionAttempted = true;
             result.put("performed", target.performAction(AccessibilityNodeInfo.ACTION_CLICK));
         }
         return result;
