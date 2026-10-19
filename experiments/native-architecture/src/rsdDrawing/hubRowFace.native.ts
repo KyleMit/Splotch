@@ -22,3 +22,8 @@ export function hubRowMinWidth(wordWidth: number) {
 export function hubTextMinWidth(wordWidth: number) {
   return minimum.row(wordWidth);
 }
+
+// The widest a title can be laid out: the tile less the row's padding on either side.
+export function hubTitleRoom(tileWidth: number) {
+  return tileWidth - Number.parseFloat(scale.space4) * 2;
+}

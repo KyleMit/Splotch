@@ -162,6 +162,17 @@ Native text imports `Text` and `TextInput` from `src/drawing/Text.tsx`, never fr
 stylesheet, a family stops matching the static package's exports, another weight is bundled, an RSD
 heading or weight bypasses the font tokens, or a component imports `Text` from `react-native`.
 
+### Large OS text
+
+Native text follows the OS text size (iOS Dynamic Type reaches 3.571× at its largest accessibility
+category); shipping's WebView does not, so these layouts have no shipping precedent to copy. A word
+must never break across lines. Where a label can meet a narrow box, render it with `WholeWordText`
+(`src/rsdDrawing/WholeWordText.native.tsx`): it reports a word the layout broke, and with `fit` it
+shrinks only that text until its widest word fits. Dialog titles take their own row before they fit,
+and a segmented track stacks its options once a label breaks. A live change of the OS text size
+leaves already measured React Native text at its old frame until it remounts, so these adapters
+remount on a font-scale key; other text corrects itself when the dialog reopens.
+
 ## Permissions
 
 The Android manifest removes broad photo-read declarations merged by Expo FileSystem and

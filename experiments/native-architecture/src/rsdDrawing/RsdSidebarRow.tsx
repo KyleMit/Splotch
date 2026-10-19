@@ -8,6 +8,7 @@ import { RsdActivityDot } from './RsdActivityDot';
 import { RsdSectionIcon, type SectionIconName } from './RsdSectionIcon';
 import { styles as controlStyles } from './controls';
 import { sidebarRowFade } from './sidebarRowFade';
+import { WholeWordText } from './WholeWordText';
 import { DRAWING_SCALE } from '../drawing/theme';
 
 // The shipping SidebarToc.svelte row; rsd-native-settings-rows.test.mjs reads each from that
@@ -116,10 +117,15 @@ export function RsdSidebarRow({
   active,
   onSelect,
 }: SidebarRowProps) {
+  // The table of contents keeps its shipping width, so at a large OS font a section name too wide
+  // for it shrinks to fit rather than breaking mid-word.
   const text = (
-    <html.span style={[styles.label, active && !!hue && controlStyles.boldText, styles.front]}>
+    <WholeWordText
+      style={[styles.label, active && !!hue && controlStyles.boldText, styles.front]}
+      fit
+    >
       {label}
-    </html.span>
+    </WholeWordText>
   );
   return (
     <html.button

@@ -8,12 +8,19 @@ export const THUMB_TRAVEL_MS = 220;
 // --ease-glide: on Android and iOS the thumb travels in Reanimated, which cannot read a style token.
 export const EASE_GLIDE = [0.22, 1, 0.36, 1] as const;
 
-export type Cell = { readonly x: number; readonly width: number };
+export type Cell = {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+};
 
-export type SegmentThumbProps = { cell: Cell; index: number };
+// stacked: the options run down the track, so the thumb travels vertically across its full width.
+export type SegmentThumbProps = { cell: Cell; index: number; stacked: boolean };
 
 export const thumbLayout = StyleSheet.create({
   frame: { position: 'absolute', top: 0, bottom: 0, pointerEvents: 'none' },
+  stackedFrame: { position: 'absolute', top: 0, left: 0, right: 0, pointerEvents: 'none' },
   physicalLeftLtr: { left: 0 },
   physicalLeftSwapped: { right: 0 },
 });
@@ -35,4 +42,6 @@ export const thumbStyles = css.create({
     backgroundColor: colors.brandSolid,
     boxShadow: shadows.shadowControl,
   },
+  // Inset from the track's sides as the row's face is from its top and bottom.
+  stackedFace: { marginBlock: 0, marginInline: dimensions.space1 },
 });
