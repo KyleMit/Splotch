@@ -23,10 +23,7 @@ import {
   PHONE_TOOLBAR_BUTTON_PX,
   PHONE_TOOLBAR_GAP_PX,
 } from '../../../experiments/native-architecture/src/rsdDrawing/edgeLayout.ts';
-import {
-  PALETTE_COLORS,
-  PALETTE_TRIM_ORDER,
-} from '../../../experiments/native-architecture/src/drawing/palette.ts';
+import { PALETTE_COLORS } from '../../../experiments/native-architecture/src/drawing/palette.ts';
 import {
   COLOR_MENU_GEOMETRY,
   colorMenuTrimSteps,
@@ -34,6 +31,7 @@ import {
 import {
   LANDSCAPE_COLORS,
   LANDSCAPE_FIRST_TRIM_RANK,
+  landscapeTrimRank,
 } from '../../../web/src/lib/landscapeToolbar.ts';
 import { PHONE_LANDSCAPE_QUERY } from '../../../web/src/lib/breakpoints.ts';
 
@@ -86,8 +84,8 @@ function shippingMenuRanks(room) {
       .filter(({ thresholdPx }) => room <= thresholdPx)
       .flatMap(({ ranks }) => ranks)
   );
-  return LANDSCAPE_COLORS.map(({ label }) => label).filter(
-    (label) => !hidden.has(PALETTE_TRIM_ORDER.indexOf(label))
+  return LANDSCAPE_COLORS.filter(({ hex }) => !hidden.has(landscapeTrimRank(hex))).map(
+    ({ label }) => label
   );
 }
 
