@@ -111,8 +111,10 @@ decision above stands; how a cohort reaches the committed layer changed.
   (`web/src/lib/drawing/strokeOps.ts`; natively `inkOps.ts`): a dot at its first point, then one
   path per display frame that took samples, continuing from the previous op's pen. Each op also
   records the frame it was painted in. Drawing version 8 saves them; a stroke saved without ops
-  replays as one op, as it was drawn before. Live ink, every committed rebuild (Undo, page, theme,
-  resize, renderer recovery) and capture paint the same ops, so they produce the same pixels.
+  replays as one op, as it was drawn before. A version-5 picture, whose format cannot hold ops,
+  keeps its new strokes' ops while it is open and saves those strokes without them. Live ink, every
+  committed rebuild (Undo, page, theme, resize, renderer recovery) and capture paint the same ops,
+  so they produce the same pixels.
 * **"In their existing order" becomes "in the order they were painted."** A cohort's contacts replay
   interleaved by frame, as shipping's stroke-group command does, so a contact that reaches a
   crossing later lies on top. Painting each whole stroke in turn reversed that at every crossing
