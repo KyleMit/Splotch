@@ -1,0 +1,309 @@
+{
+  "cells": {
+    "sw-update-lifecycle": {
+      "ranAt": "2026-10-19T20:13:48.136Z",
+      "ms": 112071,
+      "rn-web": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1529
+        },
+        "found": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 6
+        },
+        "hiddenWithInk": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "navigations": 0
+        },
+        "undone": 1,
+        "cleared": true,
+        "navigationsAfterHiddenBlank": 5,
+        "navigations": [
+          "/",
+          "/",
+          "?v=9.9.9%2Bnext",
+          "?v=9.9.9%2Bnext",
+          "/"
+        ],
+        "afterHiddenBlank": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "proxyOverrides": [
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/version.json",
+          "/sw.js"
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 2801
+        },
+        "found": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 6
+        },
+        "hiddenWithInk": {
+          "registered": true,
+          "active": "activated",
+          "waiting": "installed",
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "navigations": 0
+        },
+        "undone": 1,
+        "cleared": true,
+        "navigationsAfterHiddenBlank": 4,
+        "navigations": [
+          "/",
+          "?v=9.9.9%2Bnext",
+          "?v=9.9.9%2Bnext",
+          "/"
+        ],
+        "afterHiddenBlank": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "proxyOverrides": [
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/version.json",
+          "/sw.js",
+          "/sw.js"
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "sw-repeat-visit-and-offline": {
+      "ranAt": "2026-10-19T20:16:27.381Z",
+      "ms": 56934,
+      "rn-web": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 1531
+        },
+        "repeat": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "offlineBoot": true,
+        "offlineShot": {
+          "settled": true,
+          "settleMs": 1899,
+          "frames": 6,
+          "shot": "shots/sw-offline-reload-rn-web.webp",
+          "digest": "01205d801d4e9e6a6a284e8f1a7360bc08e4e7a3e30779cb4f40db44ea051b6f"
+        },
+        "offlineInk": true,
+        "privacyHeadings": [
+          "Settings",
+          "Privacy policy",
+          "THE SHORT VERSION",
+          "THE DETAILS"
+        ],
+        "survivedNavigation": {
+          "sameInk": true,
+          "url": "/"
+        },
+        "direct": {
+          "/privacy": {
+            "ok": true,
+            "error": null,
+            "title": "Privacy policy · Splotch",
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ]
+          },
+          "/changelog": {
+            "ok": true,
+            "error": null,
+            "title": "Changelog · Splotch",
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0",
+              "Version 1.5.0",
+              "Version 1.4.0"
+            ]
+          },
+          "/feedback": {
+            "ok": true,
+            "error": null,
+            "title": "Send Feedback · Splotch",
+            "headings": [
+              "Send us feedback",
+              "What happens next"
+            ]
+          },
+          "/no-such-page": {
+            "ok": false,
+            "error": "page.goto: net::ERR_INTERNET_DISCONNECTED at http://127.0.0.1:41255/no-such-page",
+            "title": "127.0.0.1",
+            "headings": [
+              "No internet"
+            ]
+          }
+        },
+        "icon": {
+          "ok": true,
+          "width": 180,
+          "height": 180
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+        ]
+      },
+      "web-prod": {
+        "first": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js",
+          "waitedMs": 3070
+        },
+        "repeat": {
+          "registered": true,
+          "active": "activated",
+          "waiting": null,
+          "installing": null,
+          "controlled": true,
+          "script": "/sw.js"
+        },
+        "offlineBoot": true,
+        "offlineShot": {
+          "settled": true,
+          "settleMs": 1900,
+          "frames": 6,
+          "shot": "shots/sw-offline-reload-web-prod.webp",
+          "digest": "394571c3346672798daddb2c36384825c4047a1c8310f19760096cacc2d0a107"
+        },
+        "offlineInk": true,
+        "privacyHeadings": [
+          "Privacy policy",
+          "THE SHORT VERSION",
+          "THE DETAILS"
+        ],
+        "survivedNavigation": {
+          "sameInk": true,
+          "url": "/"
+        },
+        "direct": {
+          "/privacy": {
+            "ok": true,
+            "error": null,
+            "title": "Privacy Policy · Splotch",
+            "headings": [
+              "Privacy policy",
+              "THE SHORT VERSION",
+              "THE DETAILS"
+            ]
+          },
+          "/changelog": {
+            "ok": true,
+            "error": null,
+            "title": "Changelog · Splotch",
+            "headings": [
+              "Changelog",
+              "CONTENTS",
+              "Version 1.6.0",
+              "Version 1.5.0",
+              "Version 1.4.0"
+            ]
+          },
+          "/feedback": {
+            "ok": true,
+            "error": null,
+            "title": "Send Feedback · Splotch",
+            "headings": [
+              "Send us feedback",
+              "What happens next"
+            ]
+          },
+          "/no-such-page": {
+            "ok": true,
+            "error": null,
+            "title": "Page not found · Splotch",
+            "headings": [
+              "This page wandered off"
+            ]
+          }
+        },
+        "icon": {
+          "ok": true,
+          "width": 180,
+          "height": 180
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_FAILED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        ]
+      }
+    }
+  },
+  "browser": "chromium 141.0.7390.37 (headless)"
+}
