@@ -30,8 +30,10 @@ export const NATIVE_WEB_STARTUP_TARGET_BYTES =
 // undoing one fails here; the last three, two of them smaller than the headroom, each fail their
 // own check instead (the precache check's release-note samples, native-web-expo-runtime.test.mjs,
 // native-web-strict-dom-imports.test.mjs). Consuming the headroom is the cue to take the next
-// lever, not to raise the number.
-export const MAX_NATIVE_WEB_STARTUP_BYTES = 870_798;
+// lever, not to raise the number. The owner raised it once, for the Expo SDK 58 upgrade: React
+// 19.3's react-dom alone added 29,198 bytes, so the cap is that upgrade's reviewed startup, 900,361
+// bytes, plus the same 11,896 bytes of headroom (ADR-0179).
+export const MAX_NATIVE_WEB_STARTUP_BYTES = 912_257;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(
