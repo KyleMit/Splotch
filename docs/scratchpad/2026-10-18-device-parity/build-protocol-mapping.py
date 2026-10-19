@@ -637,7 +637,8 @@ AC1_RECORDED = {
 
 # Rows a protocol slice observed failing on a target, with the slice's record and the defect issue.
 # A failed cell leaves the row failed whatever its other cells show (execution-plan.md, "Evidence
-# and status").
+# and status"). A shipping E2E spec testing the same behavior is not linked to its behavior row, so
+# search the shipping-e2e rows of the surface too: E0174 fails with B0119.
 PROTOCOL_FAILED = {
     'B0022': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
               'iphone-notch: Undo at end of history plays no cue; the RN tile is a disabled button'),
