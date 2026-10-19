@@ -223,7 +223,9 @@ function burstColors() {
 // with the button the engine draws with. Presses on controls are kept from the app until its controls
 // listen, so one cannot act late. A press stopped then stays stopped through its own release and
 // click, even once they listen: React Native Web presses on the click alone. Only that gesture's click
-// is owed; a new press on the control, or a key press, is the app's.
+// is owed. A browser dispatches it straight after its release, so a release by any other pointer
+// first means it is not coming (a drag off the control makes none), and a new press on the control,
+// or a key press, is the app's.
 function earlyInputScript() {
   const paper = `[data-testid=${JSON.stringify(PAPER_INPUT_TEST_ID)}]`;
   // Squished through the wiggle as well: a touch press does not always match :active.
@@ -250,7 +252,7 @@ function earlyInputScript() {
     'P[e.pointerId]={pointerId:e.pointerId,pointerType:e.pointerType,pageX:e.pageX,pageY:e.pageY,clientX:e.clientX,clientY:e.clientY};',
     'burst(e.clientX,e.clientY)},true);',
     'addEventListener("pointermove",function(e){var p=P[e.pointerId];if(p){p.pageX=e.pageX;p.pageY=e.pageY;p.clientX=e.clientX;p.clientY=e.clientY}},true);',
-    '["pointerup","pointercancel"].forEach(function(n){addEventListener(n,function(e){delete P[e.pointerId];var c=R[e.pointerId];if(!c)return;delete R[e.pointerId];if(n==="pointerup"){Q.push(c);e.stopPropagation()}},true)});',
+    '["pointerup","pointercancel"].forEach(function(n){addEventListener(n,function(e){delete P[e.pointerId];var c=R[e.pointerId];if(!c){if(n==="pointerup")Q=[];return}delete R[e.pointerId];if(n==="pointerup"){Q.push(c);e.stopPropagation()}},true)});',
     'addEventListener("keydown",function(){Q=[]},true);',
     'addEventListener("click",function(e){if(owed(e)||control(e))e.stopPropagation()},true);',
     '["pointerup","mousedown","mouseup","touchstart","touchend"].forEach(function(n){addEventListener(n,function(e){if(control(e))e.stopPropagation()},true)});',

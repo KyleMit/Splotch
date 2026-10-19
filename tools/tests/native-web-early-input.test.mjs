@@ -207,6 +207,16 @@ describe('a press on a control before its handler attaches', () => {
     expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click']);
   });
 
+  it('owes no click once another pointer releases first, as when a stopped touch drags off', () => {
+    pointer(swatch(), 'pointerdown', { id: 1 });
+    document.documentElement.setAttribute(CONTROLS_LIVE_ATTRIBUTE, '');
+    pointer(swatch(), 'pointerdown', { id: 2, kind: 'mouse' });
+    pointer(swatch(), 'pointerup', { id: 1, x: 380, y: 800 });
+    pointer(swatch(), 'pointerup', { id: 2, kind: 'mouse' });
+    swatch().click();
+    expect(reachedApp).toEqual(['pointerdown', 'pointerup', 'click']);
+  });
+
   it('lets a keyboard press through after a press it stopped', () => {
     pointer(swatch(), 'pointerdown');
     pointer(swatch(), 'pointerup');
