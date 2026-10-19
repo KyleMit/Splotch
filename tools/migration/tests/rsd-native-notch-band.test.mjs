@@ -4,7 +4,8 @@ import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, host } from './rsd-native-selection-host.mjs';
 import { displayOrientation, Orientation } from './rsd-orientation-port.mjs';
-import { flat, mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
+import { mountToolbar, toolbarScreen } from './rsd-native-toolbar-fixture.mjs';
+import { storedSettings } from './rsd-native-settings-fixture.mjs';
 import { DRAWING_THEMES } from '../../../experiments/native-architecture/src/drawing/theme.ts';
 import { paletteHex } from '../../../experiments/native-architecture/src/drawing/palette.ts';
 import { THEME_COLOR_META_SELECTOR } from '../../../experiments/native-architecture/src/platform/notchBandPlatform.web.ts';
@@ -18,14 +19,24 @@ const STATUS_BAR_INSET_PX = 24;
 const ANDROID_CUTOUT_INSET_PX = 42;
 const LANDSCAPE = { width: 874, height: 402 };
 
-// The band's strips are the absolute fills NativeFrame mounts after its padded safe-area view.
+// The band's strips as last committed: the top and left strips are the fills NativeFrame mounts
+// after its padded safe-area view, over the drawing screen, and the right strip, on the side the
+// Clear Button docks to, fills the layout's dock band layer under the clear overlay. Reading the
+// mounted nodes rather than the props journal keeps a band that rerenders alone (its rotation
+// resolving after mount, below) from being read stale.
 function strips() {
-  const frame = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
-  const after = records.props.slice(records.props.lastIndexOf(frame) + 1);
-  return after
-    .map((props) => flat(props.style))
-    .filter((style) => style?.position === 'absolute' && style.pointerEvents === 'none')
-    .slice(-3);
+  const committed = (node) =>
+    node.dataset.committedProps === undefined
+      ? []
+      : [JSON.parse(node.dataset.committedProps).style];
+  const frame = host.querySelector('[data-testid="rsd-safe-area-frame"]');
+  const cover = [];
+  for (let node = frame.nextElementSibling; node; node = node.nextElementSibling)
+    cover.push(...committed(node));
+  const dock = [...host.querySelector('[data-testid="rsd-dock-band"]').children].flatMap(committed);
+  return [...cover, ...dock].filter(
+    (style) => style.position === 'absolute' && style.pointerEvents === 'none'
+  );
 }
 
 function painted() {
@@ -49,6 +60,7 @@ async function mountWith({ insets, dimensions, os = 'ios', brush = 'crayon', set
   records.insets = { top: 0, right: 0, bottom: 0, left: 0, ...insets };
   if (dimensions) records.dimensions = { scale: 1, fontScale: 1, ...dimensions };
   records.os = os;
+  records.journalHostProps = true;
   await mountToolbar(toolbarScreen({ brush }), settings);
   if (color) await act(async () => caller.product.sound.owner.settings.setColor(color));
 }
@@ -106,6 +118,28 @@ describe('the Notch Band', () => {
       { backgroundColor: PURPLE, width: NOTCH_INSET_PX, side: 'left' },
       { backgroundColor: PURPLE, width: NOTCH_INSET_PX, side: 'right' },
     ]);
+  });
+
+  // Shipping's band covers the Flat rail glass, which runs out through the left inset beside a
+  // landscape palette column, while the Clear Button docks over the right strip. Negative control:
+  // a left strip mounted in the layout's dock band layer, under the palette bar, is painted over by
+  // the rail glass.
+  it('paints the left strip over the whole screen and the right one under the Clear Button', async () => {
+    storedSettings({ toolbarStyle: 'bare', aiEnabled: true });
+    await mountWith({
+      insets: { left: NOTCH_INSET_PX, right: NOTCH_INSET_PX },
+      dimensions: { width: 1180, height: 820 },
+    });
+    await vi.waitFor(() =>
+      expect(host.querySelector('[data-testid="rsd-rail-glass"]')).not.toBeNull()
+    );
+    const frame = host.querySelector('[data-testid="rsd-safe-area-frame"]');
+    expect(frame.contains(host.querySelector('[data-testid="rsd-rail-glass"]'))).toBe(true);
+    expect(painted()).toEqual([
+      { backgroundColor: PURPLE, width: NOTCH_INSET_PX, side: 'left' },
+      { backgroundColor: PURPLE, width: NOTCH_INSET_PX, side: 'right' },
+    ]);
+    expect(host.querySelector('[data-testid="rsd-dock-band"]').children).toHaveLength(1);
   });
 
   // Android reports one side's inset, the cutout's, so the display rotation names the side.

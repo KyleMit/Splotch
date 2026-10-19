@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { caller, records, root, host, mount } from './rsd-native-selection-host.mjs';
+import { themes } from '../../../web/src/lib/design/tokens.ts';
 
 import {
   flat,
@@ -199,6 +200,12 @@ function viewport(width, height) {
   records.dimensions = { width, height, scale: 1, fontScale: 1 };
 }
 
+// The light theme's --float-shadow, as React Native writes it.
+const SHIPPING_LIGHT_FLOAT_SHADOW = themes.light.floatShadow.replace(
+  /rgb\((\d+) (\d+) (\d+) \/ (\d+)%\)/g,
+  (_, red, green, blue, alpha) => `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`
+);
+
 // A landscape phone shows no bar at all; rsd-native-color-control.test.mjs covers its Color Button.
 const LAYOUTS = [
   [390, 844, 'row'],
@@ -247,7 +254,20 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
     borderRadius: TOUCH_TARGET / 2,
     backgroundColor: surface,
   });
-  expect(swatchStyle().boxShadow).toBeTruthy();
+  // The float shadow hangs from a box of its own, the swatch's size: React Native's iOS view paints
+  // its own box shadow over the children that overhang it, as the seam and ring do.
+  expect(swatchStyle().boxShadow).toBeUndefined();
+  expect(drawn((style) => style.boxShadow != null)).toEqual([
+    expect.objectContaining({
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: TOUCH_TARGET,
+      height: TOUCH_TARGET,
+      borderRadius: TOUCH_TARGET / 2,
+      boxShadow: SHIPPING_LIGHT_FLOAT_SHADOW,
+    }),
+  ]);
   const inner = TOUCH_TARGET - 2 * SELECTION_RING_GAP_PX;
   expect(drawn((style) => style.backgroundColor === blue)).toEqual([
     expect.objectContaining({ width: inner, height: inner, borderRadius: inner / 2 }),
@@ -272,10 +292,14 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   // Seam and ring snap to the pixel grid as separate circles, about a pixel apart on Android's
   // fractional densities. Negative control: a seam drawn over a 4px ring and sharing its inner
   // edge bares that edge as a second arc on one side, and fails the ordering and reach below.
+  // The shadow's box comes first, so both draw over its shadow; negative control: the shadow back
+  // on the swatch, or its box after the ring.
   const styles = records.props.map((entry) => flatStyle(entry.style));
+  const liftAt = styles.findIndex((style) => style.boxShadow != null);
   const seamAt = styles.findIndex((style) => style.borderColor === surface && style.position);
   const ringAt = styles.findIndex((style) => style.borderColor === ring);
-  expect(seamAt).toBeGreaterThanOrEqual(0);
+  expect(liftAt).toBeGreaterThanOrEqual(0);
+  expect(liftAt).toBeLessThan(seamAt);
   expect(seamAt).toBeLessThan(ringAt);
   const edge = TOUCH_TARGET / 2;
   const band = (style) => {
@@ -300,7 +324,9 @@ it('renders paint as a raised round swatch with its name, the shipping Selection
   expect(unselectedNode.dataset.checked).toBeUndefined();
   expect(swatchStyle().backgroundColor).toBe(blue);
   expect(drawn((style) => style.borderColor === ring)).toEqual([]);
-  expect(drawn((style) => style.position === 'absolute')).toEqual([]);
+  expect(drawn((style) => style.position === 'absolute')).toEqual([
+    expect.objectContaining({ width: TOUCH_TARGET, boxShadow: SHIPPING_LIGHT_FLOAT_SHADOW }),
+  ]);
 });
 
 describe('the mounted drawing screen frame', () => {
@@ -405,7 +431,15 @@ describe('the mounted drawing screen frame', () => {
     await mountToolbar(toolbarScreen());
     const more = resolved((props) => props.accessibilityLabel === 'Custom Color');
     expect(more.backgroundColor).toBe(DRAWING_THEMES.light.surface);
-    expect(more.boxShadow).toBeTruthy();
+    expect(more.boxShadow).toBeUndefined();
+    const custom = host.querySelector('[aria-label="Custom Color"]');
+    expect(custom.firstElementChild.tagName).toBe('DIV');
+    expect(
+      records.props
+        .map((props) => flat(props.style) ?? {})
+        .filter((style) => style.boxShadow === SHIPPING_LIGHT_FLOAT_SHADOW)
+        .map(({ width }) => width)
+    ).toContain(PALETTE_FLOWS.row.swatchPx);
     expect(more.borderRadius).toBe(PALETTE_FLOWS.row.swatchPx / 2);
     const icon = host.querySelector('[aria-label="Custom Color"] svg');
     expect(Number(icon.getAttribute('width'))).toBeCloseTo(

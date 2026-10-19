@@ -63,5 +63,9 @@ export function RsdIcon({
     const inked = ringed.replaceAll('currentColor', color);
     return filter ? filteredMarkup(inked, filter) : inked;
   }, [markup, color, keyline, size, filter]);
-  return <SvgXml xml={xml} width={size} height={size} />;
+  // react-native-svg's iOS renderer keeps a reused element's transform when its new props carry
+  // none, so a new glyph, or a keyline that shifts each ink path down one, mounts fresh elements
+  // rather than taking over the previous markup's at the same index.
+  const glyph = `${theme}/${name}/${keyline ? 'keylined' : 'plain'}`;
+  return <SvgXml key={glyph} xml={xml} width={size} height={size} />;
 }
