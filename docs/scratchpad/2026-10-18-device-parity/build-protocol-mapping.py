@@ -533,8 +533,17 @@ ISSUE = 'https://github.com/KyleMit/Splotch/issues/'
 T = 'tools/tests/'
 M = 'tools/migration/tests/'
 
-# Rows a triage pass moved into AC-1 because an existing or new two-sided test covers them.
-AC1_ADMITTED = {}
+# Logic rows the 2026-10-19 triage moved into AC-1: group (a) rows an existing two-sided test
+# already covers, and group (b) rows a new two-sided test covers. The record's triage table has
+# every logic row's group.
+AC1_ADMITTED = {
+    'L0003': [T + 'native-stroke-widths.test.mjs', T + 'native-stroke-settings-parity.test.mjs'],
+    'L0142': [T + 'native-ai-transport.test.mjs', T + 'native-ai-style-previews.test.mjs'],
+    'L0196': [T + 'native-picture-save-web.test.mjs', T + 'native-saved-file-parity.test.mjs'],
+    'L0212': [T + 'native-share-location-parity.test.mjs', T + 'native-install-banner-drift.test.mjs',
+              T + 'native-shipping-font.test.mjs'],
+    'L0252': [T + 'native-haptics-parity.test.mjs', T + 'native-clear-projection.test.mjs'],
+}
 
 # Passed at the exact head with a confirmed shipping oracle: the qualifying named tests.
 AC1_VERIFIED = {
@@ -576,9 +585,13 @@ AC1_MOVED = {
     'L0124': (['OV-2'], 'copy and status line height read from ColoringSection.svelte, but which status '
               'line shows and the megabyte figure are not checked against shipping'),
     'L0128': (['OV-2'], 'install-guide steps are checked one way (each RN step appears in the shipping '
-              'markup), so a dropped or reordered step passes'),
+              'markup), so a dropped or reordered step passes; native-install-guide-order now holds the '
+              'steps in full, but which checklist shows (native, locked, web) is not compared',
+              [T + 'native-install-guide-order.test.mjs']),
     'L0211': (['WEB-1'], 'install-guide steps are checked one way (each RN step appears in the shipping '
-              'markup), so a dropped or reordered step passes'),
+              'markup), so a dropped or reordered step passes; native-install-guide-order now holds the '
+              'steps in full, but which checklist shows (device family, Safari, one-tap) is not compared',
+              [T + 'native-install-guide-order.test.mjs']),
 }
 
 # The named test passes, but inspection shows the oracle covers the native arm only and RN web differs.
@@ -605,7 +618,7 @@ def ac1_spec(rid, spec, note):
     if rid in AC1_ADMITTED:
         return ['AC-1'], f'{note}; admitted to AC-1 by the {AC1_RUN} triage'
     if rid in AC1_MOVED:
-        protos, reason = AC1_MOVED[rid]
+        protos, reason = AC1_MOVED[rid][:2]
         return list(protos), f'{note}; {AC1_RUN}: oracle does not qualify ({reason}); moved to {", ".join(protos)}'
     return spec, note
 
@@ -614,6 +627,9 @@ def ac1_result(rid, res):
     res.setdefault('evidence', '')
     if rid in AC1_ADMITTED:
         res['tests'] = list(AC1_ADMITTED[rid])
+    if rid in AC1_MOVED:
+        extra = AC1_MOVED[rid][2] if len(AC1_MOVED[rid]) > 2 else []
+        res['tests'] += [t for t in extra if t not in res['tests']]
     if rid in AC1_VERIFIED:
         assert res['classification'] == 'automated-test', rid
         res['tests'] = list(AC1_VERIFIED[rid])
