@@ -150,24 +150,28 @@ describe('a live stroke appended in place', () => {
     const copying = copyingCohort();
     const appended = [];
     const copies = [];
-    let previous = null;
+    const published = [];
     const { completed, copied } = drive(
       cohort,
       copying,
       CONTACTS,
       legacyDrawing(),
       (drafts, copy) => {
-        if (previous && previous.length === drafts.length) {
-          expect(drafts).not.toBe(previous);
-          expect(drafts.some((stroke, index) => stroke !== previous[index])).toBe(true);
-        }
-        previous = drafts;
+        published.push(drafts);
         expect(JSON.stringify(drafts)).toBe(JSON.stringify(copy));
         appended.push(pixels(drafts));
         copies.push(copy);
       }
     );
     expect(appended).toHaveLength(30);
+    // Every packet that kept a sample publishes a new list with a new Stroke in it; the last one
+    // publishes the drained, empty list.
+    expect(published.at(-1)).toEqual([]);
+    const unchanged = published.slice(1, -1).filter((drafts, index) => {
+      const previous = published[index];
+      return drafts === previous || drafts.every((stroke, at) => stroke === previous[at]);
+    });
+    expect(unchanged).toEqual([]);
     for (const [index, copy] of copies.entries())
       expect(Buffer.compare(appended[index], pixels(copy))).toBe(0);
 
@@ -200,10 +204,9 @@ describe('a live stroke appended in place', () => {
   it('leaves a lifted contact’s stroke alone while another contact draws', () => {
     const cohort = createContactCohort();
     const drawing = legacyDrawing();
-    const [first, second] = scribble(200, 200, 20, 0).reduce(
-      (halves, point, index) => (halves[index % 2].push(point), halves),
-      [[], []]
-    );
+    const points = scribble(200, 200, 20, 0);
+    const first = points.filter((_, index) => index % 2 === 0);
+    const second = points.filter((_, index) => index % 2 === 1);
     cohort.start('a', 'Red', 'pen', first[0], drawing);
     cohort.start('b', 'Blue', 'pen', second[0], drawing);
     for (const point of first.slice(1)) cohort.sample('a', point, true);
