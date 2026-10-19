@@ -1,5 +1,5 @@
 import { webAssetUri } from './webAsset';
-import { PENCIL_SOUNDS, pickPencilTake, usableTakes } from '../audio/pencilSounds';
+import { PENCIL_SOUNDS, pickPencilStart, pickPencilTake, usableTakes } from '../audio/pencilSounds';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
   GAIN_RAMP_S,
@@ -92,12 +92,12 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
         const gain = context.createGain();
         gain.gain.value = 0;
         gain.connect(context.destination);
-        const { take, at } = pickPencilTake(buffers);
+        const take = pickPencilTake(buffers);
         const source = context.createBufferSource();
         source.buffer = take;
         source.loop = true;
         source.connect(gain);
-        source.start(0, at * take.duration);
+        source.start(0, pickPencilStart() * take.duration);
         playback = { source, gain };
       },
       setVolume(volume) {

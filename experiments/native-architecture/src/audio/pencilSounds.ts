@@ -5,8 +5,13 @@ import pencilThree from './pencil-3.mp3';
 // The shipping app's three pencil scratches; each stroke plays one at random from a random point.
 export const PENCIL_SOUNDS = [pencilOne, pencilTwo, pencilThree] as const;
 
-export function pickPencilTake<T>(takes: readonly T[]): { take: T; at: number } {
-  return { take: takes[Math.floor(Math.random() * takes.length)], at: Math.random() };
+export function pickPencilTake<T>(takes: readonly T[]): T {
+  return takes[Math.floor(Math.random() * takes.length)];
+}
+
+// Where a take starts playing, as a fraction of its length.
+export function pickPencilStart(): number {
+  return Math.random();
 }
 
 // As in the shipping scratch, a take that fails to load leaves the others playing.
