@@ -96,11 +96,13 @@ native keeps its synchronous, offline-complete bundle unchanged.
     startup at 993,619 bytes, 144,635 over the target. The third cut (below) took the startup icon
     set and `react-native-svg` off the path, reached 877,862 bytes, and with the AI flow (PR 2869)
     merged was reviewed at 894,104, 45,120 over. The fourth cut (below) reviewed it at 858,902,
-    9,918 over.
-  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES` = 870,798, is that measurement plus 11,896 bytes of
-    headroom, the margin the 906,000 cap kept over 894,104. The headroom stays below every move
-    through the third cut (the smallest, the offline library controller, is 24,471 bytes), so
-    undoing one fails the build. So does statically importing the AI sheet (measured at 1,099,429
+    9,918 over. Expo SDK 58's React 19.3 took it to 900,361, and the fifth cut (below) reviewed it
+    at 838,334, 10,650 under the target.
+  * The cap, `MAX_NATIVE_WEB_STARTUP_BYTES`, is the reviewed measurement plus 11,896 bytes of
+    headroom, the margin the 906,000 cap kept over 894,104: 870,798 after the fourth cut, 850,230
+    after the fifth. The headroom stays below every move through the third cut (the smallest, the
+    offline library controller, is 24,471 bytes) and below both fifth-cut levers, so undoing one
+    fails the build. So does statically importing the AI sheet (measured at 1,099,429
     bytes against the earlier base). Two of the fourth cut's levers are smaller than the headroom,
     so each of its three fails its own check instead.
   * The cap is a ratchet. Consuming the headroom is the cue to take the next lever, not to raise the
@@ -144,7 +146,8 @@ native keeps its synchronous, offline-complete bundle unchanged.
   * Expo's serializer moves every module that two lazy chunks share into `__common`, a chunk
     `index.html` loads before first paint. So the owners, the AI and feedback sheets, the waiting
     print and the invite's vault are one chunk, `productChunk.web.ts`. A second chunk for any of
-    them put about 76 KB of AI modules back on the startup path.
+    them put about 76 KB of AI modules back on the startup path. Since the fifth cut's granular
+    chunking, a split would cost requests after first paint instead.
 * **The offline library's controller and its launch inventory wait on web.**
   * `offlineLibrary/runtime.web.ts` stands `deferredLibrary.ts` in for the controller:
     * Calls that only set state (feature enabled, foreground, drawing, cancel) replay in order when
@@ -297,22 +300,49 @@ Settings' What's New, the color picker, the Brushes flyout, the Coloring Book Pi
 Magic Brush fill and the Flat button style. First contentful paint under 4× CPU throttling is
 unchanged (280 ms local median of seven runs each).
 
+### The fifth cut: granular chunking and tree shaking
+
+Expo SDK 58 brought React 19.3, whose `react-dom` put the startup at 900,361 bytes, 29,563 over the
+870,798 cap. The fourth cut had measured two Expo levers and not taken them. Both now are, scoped to
+the web export:
+
+* **Granular chunking.** `app.json` sets `experiments.chunking.mode` to `granular`, new in SDK 58.
+  * Expo's legacy strategy moves every module that two lazy chunks share into `__common`, which
+    `index.html` loads before first paint (46,898 bytes at SDK 58).
+  * The granular strategy groups each shared module by the lazy entries that need it into a
+    `__shared-*` chunk. Expo's async-require fetches those chunks alongside the entry that needs
+    them. `index.html` now loads only the runtime, the entry and the stylesheet; the export carries
+    21 shared chunks, and the service worker precaches them all.
+  * Expo applies it only to a production web client export: `isGranularEligible` in
+    `@expo/metro-config`'s `withExpoSerializers.js` requires `platform === 'web'`.
+* **Tree shaking.** `build-native-web.mjs` sets `EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH` and
+  `EXPO_UNSTABLE_TREE_SHAKING` (`NATIVE_WEB_EXPORT_ENV`) on its `expo export --platform web`
+  process. Expo reads both from the environment, and nothing Gradle or Xcode runs sets them, so the
+  native bundles are built without them. Both flags are still marked unstable.
+* `tools/tests/native-web-export-scope.test.mjs` fails if a flag leaves `NATIVE_WEB_EXPORT_ENV`, if
+  a native bundle input sets one, if `app.json` drops granular chunking, or if Expo's granular
+  eligibility stops requiring a web export.
+
+Measured on `claude/rn-expo-sdk58` at a88c0144b:
+
+| Step                     | Startup bytes | Change  |
+| ------------------------ | ------------- | ------- |
+| Before (Expo SDK 58)     | 900,361       |         |
+| Granular chunking        | 863,431       | −36,930 |
+| Tree shaking alone       | 872,536       | −27,825 |
+| Tree shaking on granular | 838,334       | −25,097 |
+
+Tree shaking alone is measured against the base, tree shaking on granular against granular chunking.
+
+FLOW_EVIDENCE_PLACEHOLDER
+
 Levers measured and not taken:
 
-* **Expo's experimental tree shaking** (`EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH` and
-  `EXPO_UNSTABLE_TREE_SHAKING`) removes about 26.8 KB more from the cut's startup, mostly unused
-  exports. It is a build-wide flag still marked unstable, and no app flow has run under it.
-* **Expo's `__common` chunk**, 27.8 KB, holds only modules that two lazy chunks share. `index.html`
-  loads it before first paint, yet no startup module uses it. Most of it is shared between Settings
-  and the product chunk (the buttons, confirm card, disclosure and device opt-in, about 17 KB).
-  Taking it off needs either one chunk for Settings and the product, which loads Settings after
-  every launch, or a runtime change to Expo's async-require.
 * **React Native Web's `Animated`**, about 62 KB, drives the startup chrome's press motion and the
   clear gesture as well as the dialogs, so it cannot leave without a second animation driver.
 * **The surface failure dialog** (`RsdSurfaceBoundary`) keeps `ModalShell`, `DialogHeader`, React
   Native Web's `Modal` and `ScrollView` on the path, about 36 KB, by design: it is the answer to a
-  chunk that failed to load. Every lazy dialog shares those modules, so moving them off the entry
-  would put them in `__common` instead.
+  chunk that failed to load, so it cannot itself wait on a chunk.
 * **React Native Web's development-only style validator** (`StyleSheet/validate.js` with
   `postcss-value-parser`, about 6 KB) is imported unconditionally. Only a resolver alias would drop
   it, which this ADR rejects for library internals.
@@ -363,4 +393,11 @@ Levers measured and not taken:
   Expo upgrade that moves it fails `native-web-expo-runtime.test.mjs`; one that changes its globals
   can fail the native type check.
 * − The RSD element library now loads with the Settings chunk. A second lazy chunk that reads
-  `html.*` as a value would move it into `__common`, back on the startup path.
+  `html.*` as a value would move it into a shared chunk both wait on.
+* \+ The fifth cut took 62,027 bytes off the startup path, leaving it 10,650 bytes under the target.
+* − Both fifth-cut levers are Expo experiments. An Expo upgrade that drops or changes either shows
+  as a startup over the cap, or fails `native-web-export-scope.test.mjs`. No committed E2E tier
+  drives the RN web export, so the flows they were proven under ran from a review script.
+* − On web, a lazy surface's first open can fetch its shared chunks as well as its own, more
+  requests than the one `__common` load they replace. After install they come from the service
+  worker cache.

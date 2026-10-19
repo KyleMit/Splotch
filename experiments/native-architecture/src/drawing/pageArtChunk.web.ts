@@ -1,4 +1,5 @@
-// These consumers share PageOutline; separate async roots hoist it into Metro's startup common chunk.
+// These consumers share PageOutline; separate async roots would split it into a shared chunk that
+// each of them also fetches.
 export { PageArtMotion } from './PageArtMotion';
 export { prepareColoringPage } from './pageArtSelection';
 export { PictureCapture } from './PictureCapture';
