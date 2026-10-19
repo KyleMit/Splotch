@@ -14,7 +14,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../../web/src/lib/breakpoints.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { DRAWING_PATHS } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
@@ -45,6 +45,10 @@ export const STARTUP_SCRIPTS_ELEMENT_ID = 'startup-scripts';
 // A first contentful paint that has not been reported by then is not coming soon (a stalled style
 // sheet, or a browser without Paint Timing); the bundle loads anyway rather than wait on it.
 const FIRST_PAINT_FALLBACK_MS = 2000;
+// Expo links its extracted style sheet render-blocking. The frame is inlined in its place, as the
+// shipping drawing route inlines its CSS (ADR-0176): otherwise first paint waits one more round trip.
+const EXPO_STYLESHEET =
+  /<link rel="preload" href="([^"]+\.css)" as="style">\s*<link rel="stylesheet" href="\1">/g;
 const EXPO_SCRIPT = /<script src="([^"]+)" defer><\/script>/g;
 const STARTUP_SCRIPTS_ELEMENT = new RegExp(
   `<script type="application/json" id="${STARTUP_SCRIPTS_ELEMENT_ID}">([^<]*)</script>`
@@ -209,7 +213,7 @@ export function renderFirstFrames(prerenderFirstFrame) {
   return { variants, sheet };
 }
 
-export function withFirstFrames(indexHtml, { variants, sheet }) {
+export function withFirstFrames(indexHtml, { variants, sheet }, readStylesheet) {
   if (!indexHtml.includes(EMPTY_ROOT)) throw new Error('The export has no empty root to fill.');
   if (!indexHtml.includes('<head>')) throw new Error('The export has no <head> to extend.');
   const markup = variants.map(({ html }) => html).join('');
@@ -223,7 +227,10 @@ export function withFirstFrames(indexHtml, { variants, sheet }) {
   );
   const scripts = [...indexHtml.matchAll(EXPO_SCRIPT)].map((match) => match[1]);
   if (scripts.length === 0) throw new Error('The export loads no deferred script to hold back.');
+  if (indexHtml.search(EXPO_STYLESHEET) < 0)
+    throw new Error('The export links no style sheet to inline.');
   return indexHtml
+    .replace(EXPO_STYLESHEET, (_, href) => `<style>${readStylesheet(href)}</style>`)
     .replace('<head>', `<head>\n${style}\n${preloads.join('\n')}`)
     .replace(EXPO_SCRIPT, '')
     .replace(
@@ -241,7 +248,11 @@ export async function prerenderNativeWeb(indexPath) {
   await lendXmlParser();
   const { prerenderFirstFrame } = evaluateRenderer(await bundleFirstFrameRenderer());
   const frames = renderFirstFrames(prerenderFirstFrame);
-  writeFileSync(indexPath, withFirstFrames(readFileSync(indexPath, 'utf8'), frames));
+  const readStylesheet = (href) => readFileSync(join(dirname(indexPath), href), 'utf8');
+  writeFileSync(
+    indexPath,
+    withFirstFrames(readFileSync(indexPath, 'utf8'), frames, readStylesheet)
+  );
   return frames;
 }
 

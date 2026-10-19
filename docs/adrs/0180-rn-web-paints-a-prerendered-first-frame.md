@@ -17,15 +17,19 @@ three runs. The investigation itself ran on 0cc444886 (SDK 57); the alternatives
 there. The evidence and harness are in
 [`docs/scratchpad/2026-10-19-rn-web-static-first-paint/`](../scratchpad/2026-10-19-rn-web-static-first-paint/README.md).
 
-| Simulated Slow 4G, 4× CPU | FCP      | LCP      | Speed Index |
-| ------------------------- | -------- | -------- | ----------- |
-| Phone, first visit        | 1,051 ms | 2,785 ms | 1,107 ms    |
-| Tablet, first visit       | 1,051 ms | 2,784 ms | 1,107 ms    |
-| Repeat visit              | 609 ms   | 750 ms   | 609 ms      |
+| Phone, first visit, Slow 4G and 4× CPU       | FCP      | LCP      |
+| -------------------------------------------- | -------- | -------- |
+| Lighthouse devtools throttling, RN baseline  | 3,034 ms | 3,651 ms |
+| Lighthouse devtools throttling, shipping app | 830 ms   | 830 ms   |
+| Lighthouse simulated throttling, RN baseline | 1,051 ms | 2,785 ms |
 
-Unthrottled, LCP is 70–73 ms. Under applied throttling the phone's LCP is 3,628 ms and its controls
-take taps at 2,958 ms. The LCP element is the paper texture (`PaperTexture.web.tsx`): a `div` whose
-CSS background is the handmade-paper WebP, not the flat paper colour the boot script paints.
+The devtools rows ran on a quiet host, under the RN performance campaign's rig lock. The campaign
+found Lighthouse's simulated mode scatters the shipping app between 1.1 and 3.9 s, so the devtools
+rows are the comparison to trust. The simulated rows are what the `tools/page-load` gate reports.
+Under applied throttling (a CDP probe), the RN baseline's controls take taps at 2,987 ms. Its
+simulated repeat visit is 750 ms, and the tablet matches the phone. The LCP element is the paper
+texture (`PaperTexture.web.tsx`): a `div` whose CSS background is the handmade-paper WebP, not the
+flat paper colour the boot script paints.
 
 ### Why the first frame could not simply be server-rendered
 
@@ -147,11 +151,16 @@ document.
   * The build lends happy-dom's `DOMParser`, and nothing else, so `SvgXml` can parse icons. The
     render has no `window`.
 * **The document.** Each variant becomes an inert `<template>`. Twelve are 210,748 bytes raw and
-  7,265 brotli, against 910 for an empty shell. The document also gets:
+  7,265 brotli, against 910 for an empty shell; with the inlined style sheet the shell is 14,599
+  bytes brotli. The document also gets:
   * React Native Web's sheet as `<style id="react-native-stylesheet">`, cut to the rules the markup
     uses plus the sheet's group markers: 2,716 bytes, about a fifth of the full server sheet.
   * The paper texture, preloaded at `fetchpriority="high"`.
   * The bundle's `<script defer>` tags, moved into a JSON list.
+* **The style sheet is inlined.** Expo links its extracted `strict.css` render-blocking, which cost
+  the first paint one more round trip. The prerender inlines it where the link was, as the shipping
+  drawing route inlines its CSS (ADR-0176). The startup bytes are unchanged, and the precache still
+  holds the file for the 404 shell.
 * **Expo's `getStyleElement` is not used.** It looks `getSheet` up on React Native Web's module
   object instead of its default export and returns an empty `<style>`.
   `platform/reactNativeWebSheet.ts` reads `StyleSheet.getSheet()` directly.
@@ -219,8 +228,8 @@ Node before its fix.
 | Palette gap off a variant's viewport | `edgeLayout.ts`                                                            | variant    | variant, then live         | one relayout (390×844: 12.4 → 8 px, 3.6% of pixels)        |
 | Saved settings that change the frame | toolbar style, button size, drawer, colours                                | defaults   | —                          | no frame for a visitor with a record; today's render       |
 
-Verification, on both the SDK 57 and the SDK 58 build (the evidence package's `results/` and
-`results/sdk58/`):
+Verification, on the SDK 57 build, the SDK 58 build and the SDK 58 build with the inlined style
+sheet (the evidence package's `results/`, `results/sdk58/` and `results/quiet-host/`):
 
 * **Pixels.** The static frame (bundle blocked) and the hydrated, settled screen differ in 0 pixels
   at every variant viewport, light and dark.
@@ -250,23 +259,27 @@ ADR-0179 treats consumed headroom as the cue to take the next lever. Two are mea
 
 ## Consequences
 
-* \+ Throttled first-visit LCP fell from 2,785 ms to 1,201 ms on phone and tablet, inside the
-  shipping app's 0.9–1.3 s.
-  * FCP fell from 1,051 to 751 ms and Speed Index from 1,107 to 861 ms (phone); CLS stayed 0.
-  * Under applied throttling, LCP fell from 3,628 to 1,260 ms on a first visit and from 684 to 608
-    ms on a repeat visit.
-  * Unthrottled, LCP fell from 73 to 27 ms.
+* \+ On a phone's first visit under Lighthouse devtools throttling, LCP fell from 3,651 to 1,229 ms,
+  against shipping's 830.
+  * FCP fell from 3,034 to 680 ms, ahead of shipping's 830.
+  * Under a CDP probe the repeat visit's LCP fell from 688 to 600 ms; shipping's is 636.
+  * Lighthouse's simulated LCP fell from 2,785 to 1,351 ms on phone and tablet; CLS stayed 0.
+  * The remaining first-visit gap is the paper texture's own request. Inlined as a data URI, it
+    brings LCP to FCP, 725 ms (an experiment, follow-up 6).
 * \+ The first paint shows the whole drawing screen in the visitor's size class and theme: palette,
   Clear Button, drawer toggle, Settings Button and textured paper. It is pixel-identical to the
   hydrated screen on the variants' viewports.
-* − **A visible screen that does not respond.** Under applied throttling the phone's frame paints at
-  1,260 ms and its controls take taps at 3,058 ms, against 2,958 ms today. Today that wait shows
-  flat paper instead.
-  * For about 1.8 s a toddler who taps a swatch or draws gets no response.
+* − **A visible screen that does not respond.** Under the CDP probe the phone's frame paints at 672
+  ms and its controls take taps at 2,466 ms.
+  * For about 1.8 s a toddler who taps a swatch or draws gets no response. Today's 2,987 ms of
+    waiting shows flat paper instead.
+  * The controls answer 521 ms sooner than today. The bundle starts once the earlier paint lands,
+    and hydration attaches handlers to swatches that are already there, without waiting for the
+    settings to load.
   * Nothing replays those taps: React's event replay starts only once hydration has begun, and no
     listeners exist before the bundle loads.
-  * Holding the bundle until after the paint costs 33–47 ms of that against requesting it with the
-    document (measured on SDK 57).
+  * Holding the bundle until after the paint cost 33–47 ms of interactivity against requesting it
+    with the document (measured on SDK 57, style sheet linked).
 * − Two renderers' discipline. Every first-frame read of the browser needs a server value and a
   matching hydration value.
   * A new `useSyncExternalStore` without a server snapshot, or a browser read at import or during
@@ -275,7 +288,7 @@ ADR-0179 treats consumed headroom as the cue to take the next lever. Two are mea
     query, would be kept stale by React in production. The evidence package's DOM comparison catches
     one, but it is not in CI.
 * − A returning visitor with any saved choice gets no prerendered frame and paints as before.
-* − Lighthouse's simulated repeat visit got 150 ms worse (750 to 900 ms), though the applied repeat
+* − Lighthouse's simulated repeat visit got 150 ms worse (750 to 900 ms), though the probed repeat
   visit paints sooner.
   * Holding the bundle lets the `load` event fire before the paint is presented.
   * Lantern then counts the favicon and manifest-icon revalidations that `load` triggers.
@@ -299,3 +312,7 @@ ADR-0179 treats consumed headroom as the cue to take the next lever. Two are mea
    post-hydration relayout.
 5. **Acknowledge early taps.** Design what a tap does before hydration, for example a CSS `:active`
    state on the swatches, so the dead window is not silent.
+6. **Inline the paper texture.** Inlined into the shell as a data URI (14.6 to 22.5 KB brotli), it
+   took devtools-throttled LCP from 1,229 to 725 ms. ADR-0179 keeps base64 images off the startup
+   path, so this needs its own decision. One CSS rule carrying the image, not a copy per variant,
+   would keep the shell small.

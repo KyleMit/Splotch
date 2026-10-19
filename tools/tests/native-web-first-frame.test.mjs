@@ -22,7 +22,8 @@ import { ROOT } from '../lib/proc.mjs';
 
 const SRC = join(ROOT, 'experiments/native-architecture/src');
 const SCRIPTS = ['/_expo/static/js/web/runtime-1.js', '/_expo/static/js/web/index-2.js'];
-const EXPORTED_SHELL = `<!DOCTYPE html><html><head><title>Splotch</title></head><body><div id="root"></div>${SCRIPTS.map((src) => `<script src="${src}" defer></script>`).join('')}</body></html>`;
+const STYLESHEET = '/_expo/static/css/strict-1.css';
+const EXPORTED_SHELL = `<!DOCTYPE html><html><head><title>Splotch</title><link rel="preload" href="${STYLESHEET}" as="style">\n<link rel="stylesheet" href="${STYLESHEET}"></head><body><div id="root"></div>${SCRIPTS.map((src) => `<script src="${src}" defer></script>`).join('')}</body></html>`;
 const TEXTURE = '/assets/paper/handmade-paper.0123.webp';
 
 // One stand-in frame per variant, naming its own key so a test can see which one was cloned.
@@ -51,7 +52,10 @@ function frames() {
   };
 }
 
-const shell = withFirstFrames(EXPORTED_SHELL, frames());
+const STYLESHEET_TEXT = '.x1{display:flex}';
+const shell = withFirstFrames(EXPORTED_SHELL, frames(), (href) =>
+  href === STYLESHEET ? STYLESHEET_TEXT : ''
+);
 const bootScript = /<script>(\(function\(\)\{var painted[\s\S]*?)<\/script>/.exec(shell)[1];
 
 // Lays the shell's body out in this document and runs its boot script there, as the parser does.
@@ -180,6 +184,11 @@ describe('the prerendered first frame', () => {
       ].join('\n')
     );
     expect(shell).toContain('<style id="react-native-stylesheet">');
+  });
+
+  it('inlines the exported style sheet in its place instead of linking it', () => {
+    expect(shell).toContain(`<style>${STYLESHEET_TEXT}</style>`);
+    expect(shell).not.toContain(STYLESHEET);
   });
 
   it('preloads the paper texture its markup paints', () => {

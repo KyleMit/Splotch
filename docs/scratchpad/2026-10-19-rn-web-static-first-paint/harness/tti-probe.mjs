@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 // Applied (not simulated) throttling: DevTools' Slow 4G values + 4x CPU through CDP, cold cache.
 // Records FCP, LCP, and "handlers at" — the moment the Purple swatch carries React props, i.e. a
 // tap would be handled — plus "settled at", when the clear underlay (client-only) mounts.
-// node tti-probe.mjs <url> <label> <samples> [width]x[height] [repeat]
+// node tti-probe.mjs <url> <label> <samples> [width]x[height] [first|repeat] [paint]
+// `paint` records only FCP and LCP, for a page that is not a React app (the shipping SvelteKit app).
 // With `repeat`, each sample first loads the page unthrottled (installing the service worker and
 // filling the HTTP cache), then measures a throttled reload with the cache left on.
 import { createRequire } from 'node:module';
@@ -12,6 +13,7 @@ const require = createRequire(join(REPO, 'package.json'));
 const { chromium } = require('playwright');
 const [url, label, samplesArg = '3', size = '412x915', visit = 'first'] = process.argv.slice(2);
 const repeat = visit === 'repeat';
+const paintOnly = process.argv[7] === 'paint';
 const [width, height] = size.split('x').map(Number);
 const SLOW_4G = {
   offline: false,
@@ -60,10 +62,13 @@ for (let i = 0; i < Number(samplesArg); i++) {
     requestAnimationFrame(poll);
   });
   await page.goto(url, { waitUntil: 'load', timeout: 120_000 });
-  await page.waitForFunction(() => window.__marks.handlers && window.__marks.settled, null, {
-    timeout: 120_000,
-  });
-  await page.waitForTimeout(1500);
+  if (paintOnly) await page.waitForTimeout(5000);
+  else {
+    await page.waitForFunction(() => window.__marks.handlers && window.__marks.settled, null, {
+      timeout: 120_000,
+    });
+    await page.waitForTimeout(1500);
+  }
   const m = await page.evaluate(() => window.__marks);
   const row = {
     label,

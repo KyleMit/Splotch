@@ -45,7 +45,9 @@ createServer((req, res) => {
   }
   const headers = { 'content-type': TYPES[ext] ?? 'application/octet-stream' };
   headers['cache-control'] =
-    req.url.startsWith('/_expo/static/') || req.url.startsWith('/assets/')
+    req.url.startsWith('/_expo/static/') ||
+    req.url.startsWith('/_app/immutable/') ||
+    req.url.startsWith('/assets/')
       ? 'public, max-age=31536000, immutable'
       : 'no-cache';
   if (accepts && COMPRESSIBLE.has(ext)) {

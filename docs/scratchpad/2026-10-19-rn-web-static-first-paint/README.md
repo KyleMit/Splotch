@@ -78,8 +78,8 @@ The shell is 925 bytes brotli at baseline and 7,304 (210,790 raw) with twelve va
 
 ## Final measurement on the SDK 58 base
 
-`baseline` is 00fcc5c78 built in a scratch worktree; `prerender` is this PR's merge of it. Rows are
-in `results/sdk58/`.
+`baseline` is 00fcc5c78 built in a scratch worktree; `prerender` is this PR's merge of it, before
+the style sheet was inlined (see the quiet-host comparison). Rows are in `results/sdk58/`.
 
 | Simulated (Slow 4G, 4× CPU), medians of three | Baseline      | Prerender     |
 | --------------------------------------------- | ------------- | ------------- |
@@ -107,6 +107,49 @@ against the 850,230 cap. The build passes. The prerender adds +2,365 in the entr
 boot script and +2,716 of critical CSS. The shell is 910 bytes brotli at baseline and 7,265 (210,748
 raw) with twelve variants. The pixel and DOM checks below reproduce on this base
 (`results/sdk58/pixel-compare.log.txt`, `results/sdk58/hydrated-vs-fresh.log.txt`).
+
+## Quiet-host comparison with shipping
+
+The RN performance campaign reported that Lighthouse's simulated mode scatters the shipping app's
+LCP between 1.1 and 3.9 s. It named the devtools throttling method as the trustworthy comparison. It
+also flagged native Release builds loading this host from 14:22Z for about 20 minutes. Of this
+package's runs, that window overlaps only the SDK 57 `shell`, `shell2` and repeat-visit Lighthouse
+rows (14:27–14:40Z) and the SDK 57 applied-throttling timelines (14:41Z). The SDK 58 measurements
+above ran from 15:0x to 15:37Z.
+
+The rows below were taken from 15:44 to 16:01Z while this session held the campaign's `rig.lock`, so
+no build ran. `shipping` is `npm run build`'s `web/build` from this branch, served by the same
+server with SvelteKit's `_app/immutable/` immutable. Results are in `results/quiet-host/`. All are
+phone, first visit, median of three, ms.
+
+| Variant                                              | Lighthouse devtools FCP | Lighthouse devtools LCP | CDP LCP | CDP handlers | Simulated LCP |
+| ---------------------------------------------------- | ----------------------- | ----------------------- | ------- | ------------ | ------------- |
+| Shipping SvelteKit                                   | 830                     | 830                     | 832     | —            | —             |
+| RN baseline (00fcc5c78)                              | 3,034                   | 3,651                   | 3,656   | 2,987        | 2,785         |
+| Prerender, style sheet linked                        | 1,292                   | 1,292                   | 1,276   | 3,083        | 1,201         |
+| **Prerender, style sheet inlined (the PR's build)**  | **680**                 | **1,229**               | 1,224   | **2,466**    | 1,351         |
+| Prerender, style sheet and paper texture inlined (*) | 725                     | 725                     | 716     | 2,514        | 1,051         |
+
+(*) An experiment, not committed. The texture is inlined as a data URI into the post-processed
+shell, which grows from 14,599 to 22,548 bytes brotli.
+
+Repeat visits, CDP, warm cache: shipping 636 ms, RN baseline 688 ms, linked prerender 612 ms,
+inlined prerender 600 ms.
+
+* **The remaining gap to shipping is on the critical path, not in the bundle.** The linked prerender
+  paints only after `strict.css`, one more round trip. Inlining it, as shipping inlines its CSS
+  (ADR-0176), makes no difference to the startup cap: 845,064 bytes either way. FCP drops to 680 ms,
+  ahead of shipping's 830.
+* **What LCP waits on now.** LCP then waits for the paper texture's own request. With the texture
+  inlined as well, LCP equals FCP at 725 ms.
+* **Interactivity moves too.** Controls take taps earlier than baseline, at 2,466 against 2,987 ms.
+  The bundle starts once the earlier paint lands. Hydration then attaches handlers to swatches that
+  are already there, without waiting for the settings to load.
+* **Lantern disagrees.** It scores the inlined build's LCP worse, 1,351 against 1,201 ms, because
+  the texture request now starts before the observed paint.
+* **The checks still hold.** The inlined build's pixel and hydrated-versus-fresh checks pass
+  (`results/quiet-host/*-inline-css.log.txt`). Its hydrated screen is pixel-identical to the linked
+  build's.
 
 ## Findings
 
