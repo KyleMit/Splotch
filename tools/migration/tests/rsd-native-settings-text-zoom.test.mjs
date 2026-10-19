@@ -43,6 +43,48 @@ it('claims two fingers, reflows enlarged content and releases only after every f
   expect(host.textContent).toContain('Keep drawing');
 });
 
+it('counts each finished pinch for fitted text, even one that ends where it began', async () => {
+  const { useContext } = await import('react');
+  const { TextZoomRevision } =
+    await import('../../../experiments/native-architecture/src/platform/textZoomRevision.ts');
+  function Pinches() {
+    return createElement(
+      html.span,
+      { 'data-testid': 'pinches' },
+      String(useContext(TextZoomRevision))
+    );
+  }
+  const pinches = () => host.querySelector('[data-testid="pinches"]').textContent;
+  await mount(createElement(SettingsTextZoom, { enabled: true }, createElement(Pinches)));
+  await act(async () => {
+    boundary().onResponderGrant(touches([0, 0], [100, 0]));
+    boundary().onResponderMove(touches([0, 0], [200, 0]));
+  });
+  expect(content().style.transform).toEqual([{ scale: 2 }]);
+  expect(pinches()).toBe('0');
+  await act(async () => boundary().onResponderMove(touches([0, 0], [100, 0])));
+  expect(content().style.transform).toEqual([{ scale: 1 }]);
+  await act(async () => {
+    boundary().onResponderEnd(touches());
+    boundary().onResponderRelease(touches());
+  });
+  expect(pinches()).toBe('1');
+  await act(async () => {
+    boundary().onResponderGrant(touches([0, 0], [100, 0]));
+    boundary().onResponderMove(touches([0, 0], [150, 0]));
+    boundary().onResponderRelease(touches());
+  });
+  expect(pinches()).toBe('2');
+  await act(async () =>
+    root.render(createElement(SettingsTextZoom, { enabled: false }, createElement(Pinches)))
+  );
+  expect(pinches()).toBe('3');
+  await act(async () =>
+    root.render(createElement(SettingsTextZoom, { enabled: false }, createElement(Pinches)))
+  );
+  expect(pinches()).toBe('3');
+});
+
 it('pins the shared zoom range and clamps a large or reversed pinch', async () => {
   await mount(createElement(SettingsTextZoom, { enabled: true }, children));
   await act(async () => {
