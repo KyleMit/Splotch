@@ -27,7 +27,7 @@ physical-only properties and one drawing-screen sanity check.
 
 | Classification   | Requirements | Status today                                             |
 | ---------------- | -----------: | -------------------------------------------------------- |
-| `protocol`       |         1234 | `unverified`; 14 `blocked`; 4 `failed` by the DS-2 slice |
+| `protocol`       |         1234 | `unverified`; 14 `blocked`; 5 `failed` by the DS-2 slice |
 | `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone      |
 | `automated-test` |           25 | AC-1: 24 `verified`, 1 `failed` (L0161, #3008)           |
 | `settled`        |           18 | Accepted owner decisions, never defects                  |
