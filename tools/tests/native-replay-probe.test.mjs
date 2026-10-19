@@ -185,9 +185,13 @@ describe('the probe gate on the replay', () => {
     expect(read(`${APP}src/drawing/perfProbe.native.ts`)).toMatch(
       /^if \(PERF_PROBE\)\n {2}void import\('\.\/perfReplay'\)/m
     );
+    // Each committed trace has its own lazy import, matched by pattern so the specifier guard in
+    // tool-specifier-resolution.test.mjs does not read it as an import of this test's own.
     const traces = read(`${APP}src/drawing/perfReplay.ts`);
     for (const name of REPLAY_TRACE_NAMES)
-      expect(traces).toContain(`'${name}': () => import('../../perf/replay/${name}.json'),`);
+      expect(traces).toMatch(
+        new RegExp(`'${name}': \\(\\) => import\\('[./]+perf/replay/${name}\\.json'\\)`)
+      );
   });
 });
 
