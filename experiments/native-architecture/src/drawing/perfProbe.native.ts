@@ -74,6 +74,7 @@ export const perfSampleTime: typeof Contract.perfSampleTime = (timestamp) =>
   cohorts?.sampleTime(timestamp);
 export const perfAppend: typeof Contract.perfAppend = (outcome) => cohorts?.append(outcome);
 export const perfDrained: typeof Contract.perfDrained = (strokes) => cohorts?.drained(strokes);
+export const perfFlushed: typeof Contract.perfFlushed = () => cohorts?.flushed();
 
 export const perfTimed: typeof Contract.perfTimed = (timer, record) => {
   if (!PERF_PROBE) return record;

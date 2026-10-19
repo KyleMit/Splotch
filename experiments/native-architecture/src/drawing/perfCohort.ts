@@ -150,10 +150,16 @@ export function createPerfCohorts<Handle>(
   let settle: Handle | null = null;
   const lines: string[] = [];
   let sampleAt = 0;
-  // The newest and oldest native sample timestamps taken into ink that no submitted picture has
-  // carried yet.
-  let newest: number | null = null;
-  let oldest: number | null = null;
+  // The newest and oldest native sample timestamps taken since the last flush, and those a flush
+  // has recorded as ops that no submitted picture has carried yet. A picture carries only
+  // recorded samples: one built before the next flush (a rebuild) lacks the samples taken since.
+  type Span = { newest: number; oldest: number };
+  let taken: Span | null = null;
+  let recorded: Span | null = null;
+  const widen = (span: Span | null, next: Span): Span =>
+    span
+      ? { newest: Math.max(span.newest, next.newest), oldest: Math.min(span.oldest, next.oldest) }
+      : next;
 
   function finalize() {
     if (closing) lines.push(formatPerfLine(closing, context));
@@ -170,8 +176,7 @@ export function createPerfCohorts<Handle>(
   const active = () => open ?? closing;
 
   function include(timestamp: number) {
-    newest = Math.max(newest ?? timestamp, timestamp);
-    oldest = Math.min(oldest ?? timestamp, timestamp);
+    taken = widen(taken, { newest: timestamp, oldest: timestamp });
   }
 
   return {
@@ -179,8 +184,8 @@ export function createPerfCohorts<Handle>(
       if (!open) {
         finalize();
         open = openCohort(nextIndex++, clock.now());
-        newest = null;
-        oldest = null;
+        taken = null;
+        recorded = null;
       }
       const samples = changedSamples(packet);
       open.packets += 1;
@@ -231,7 +236,12 @@ export function createPerfCohorts<Handle>(
       record.totalMs += elapsedMs;
       record.maxMs = Math.max(record.maxMs, elapsedMs);
     },
-    // A hand-off carries every sample taken into ink since the last one.
+    // The samples taken since the last flush have become ops.
+    flushed() {
+      if (taken) recorded = widen(recorded, taken);
+      taken = null;
+    },
+    // A hand-off carries every sample recorded as ops since the last one.
     submitted() {
       const cohort = active();
       if (!cohort) return;
@@ -241,13 +251,12 @@ export function createPerfCohorts<Handle>(
         if (cohort.lastHandoffAt !== null) cohort.handoffGaps.push(now - cohort.lastHandoffAt);
         cohort.lastHandoffAt = now;
       }
-      if (newest === null || oldest === null) return;
-      cohort.submissions.push(now - newest);
-      cohort.oldestSubmissions.push(now - oldest);
+      if (!recorded) return;
+      cohort.submissions.push(now - recorded.newest);
+      cohort.oldestSubmissions.push(now - recorded.oldest);
       if (cohort.firstDotMs === null && cohort.firstSampleAt !== null)
         cohort.firstDotMs = now - cohort.firstSampleAt;
-      newest = null;
-      oldest = null;
+      recorded = null;
     },
   };
 }

@@ -13,7 +13,7 @@ import {
 import type { Brush } from './brushes';
 import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
 import type { InkStep } from './inkOps';
-import { PERF_PROBE, perfAppend, perfDrained } from './perfProbe';
+import { PERF_PROBE, perfAppend, perfDrained, perfFlushed } from './perfProbe';
 
 // A stroke the cohort is still drawing. Its points and ops are its contact's own buffers, grown in
 // place, so a kept sample costs O(1) rather than a copy of the stroke. `snapshot` is a new Stroke
@@ -72,7 +72,10 @@ export function createContactCohort() {
       entry.state.cached = null;
       drafts = null;
     }
-    if (recorded.length > 0) frame += 1;
+    if (recorded.length > 0) {
+      frame += 1;
+      if (PERF_PROBE) perfFlushed();
+    }
     return recorded;
   }
 

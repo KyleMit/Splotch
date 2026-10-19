@@ -158,8 +158,10 @@ async function createScene() {
     return null;
   }
   return {
+    // The ink layer's flush records the samples taken as ops, then hands the picture over.
     async submit() {
       await act(async () => root.render(createElement(Scene)));
+      probe.perfFlushed();
       probe.perfSubmitted();
     },
     unmount() {

@@ -243,6 +243,7 @@ describe('createPerfCohorts', () => {
     clock.at = 1000;
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     cohorts.stroke(990);
+    cohorts.flushed();
     advance(4);
     cohorts.submitted();
     cohorts.submitted();
@@ -254,6 +255,7 @@ describe('createPerfCohorts', () => {
       cohorts.sampleTime(sample);
       cohorts.append(appended ? 'appended' : 'duplicate');
     }
+    cohorts.flushed();
     advance(16);
     cohorts.submitted();
     cohorts.idle();
@@ -275,12 +277,43 @@ describe('createPerfCohorts', () => {
     expect(lines[0].firstDotMs).toBe(14);
   });
 
+  // A picture built before the next flush, as a rebuild is, lacks the samples taken since the last
+  // one; they are measured at the hand-off that carries them. Negative control: counting every
+  // sample taken at any hand-off reads 8 ms here and then nothing for the hand-off that carried it.
+  it('measures a sample at the first hand-off after a flush records it', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    clock.at = 100;
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    cohorts.stroke(100);
+    cohorts.flushed();
+    cohorts.submitted();
+    cohorts.sampleTime(108);
+    cohorts.append('appended');
+    advance(16);
+    cohorts.submitted();
+    advance(14);
+    cohorts.flushed();
+    advance(5);
+    cohorts.submitted();
+    cohorts.idle();
+    advance(COHORT_SETTLE_MS);
+    expect(lines[0].inputToSubmission).toEqual({
+      n: 2,
+      p50Ms: 0,
+      p95Ms: 27,
+      maxMs: 27,
+      minMs: 0,
+    });
+    expect(lines[0].handoffs).toBe(3);
+  });
+
   // Negative control: counting a hand-off made after the last lift adds one more hand-off and a
   // gap across the settle, which is not ink cadence.
   it('counts hand-offs while a contact is held and the gaps between them', () => {
     const { cohorts, lines, clock, advance } = harness();
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     cohorts.stroke(clock.at);
+    cohorts.flushed();
     for (const gap of [0, 8, 16]) {
       advance(gap);
       cohorts.submitted();
@@ -301,6 +334,7 @@ describe('createPerfCohorts', () => {
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     for (let interval = 1; interval <= 20; interval += 1) {
       cohorts.stroke(clock.at - interval);
+      cohorts.flushed();
       cohorts.submitted();
     }
     cohorts.idle();
@@ -318,6 +352,11 @@ describe('createPerfCohorts', () => {
     const { cohorts, lines, advance } = harness();
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
     cohorts.stroke(-100);
+    cohorts.sampleTime(-90);
+    cohorts.append('appended');
+    cohorts.flushed();
+    cohorts.sampleTime(-80);
+    cohorts.append('appended');
     cohorts.idle();
     advance(COHORT_SETTLE_MS);
     cohorts.packet(packet('start', [{ identifier: 'b', samples: 1 }]));

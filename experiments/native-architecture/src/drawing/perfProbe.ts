@@ -22,6 +22,7 @@ export function perfStroke(_timestamp: number) {}
 export function perfSampleTime(_timestamp: number) {}
 export function perfAppend(_outcome: AppendOutcome) {}
 export function perfDrained(_strokes: readonly Stroke[]) {}
+export function perfFlushed() {}
 export function useSurfaceCommitProbe() {}
 export function perfSubmitted() {}
 export function useInkCommitProbe() {}
