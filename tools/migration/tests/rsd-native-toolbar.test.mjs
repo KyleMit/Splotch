@@ -150,7 +150,8 @@ function expanded(label) {
     .expanded;
 }
 
-const ringedPaints = () => [...paintGroup().children].filter((node) => node.childElementCount > 0);
+// Every swatch holds the box its float shadow hangs from; a ringed one adds its disc, seam and ring.
+const ringedPaints = () => [...paintGroup().children].filter((node) => node.childElementCount > 1);
 
 it('selects paint through text-free round buttons and keeps Custom Color outside the paint row', async () => {
   await mountToolbar(toolbarScreen());
