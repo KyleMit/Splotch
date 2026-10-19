@@ -300,7 +300,7 @@ describe('native Clear sampler binding', () => {
 const sourceText = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const clearActivitySources = {
   sampler: sourceText('experiments/native-architecture/ios/HelloWorld/SplotchClearSound.swift'),
-  expoPatch: sourceText('patches/expo-audio@57.0.5.patch'),
+  expoPatch: sourceText('patches/expo-audio@58.0.9.patch'),
 };
 function assertClearAudioActivity(sources) {
   const event = /private let clearAudioActivity = Notification.Name\("([^"]+)"\)/.exec(

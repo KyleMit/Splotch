@@ -31,7 +31,7 @@ const processBackgroundImage = loadProcessBackgroundImage();
 const positions = (css) => processBackgroundImage(css)[0].colorStops.map((stop) => stop.position);
 
 // React Native Android parses each stop position as a length and logs a null one as
-// "Unsupported type for radius property: Null" (patches/react-native@0.86.3.patch).
+// "Unsupported type for radius property: Null" (the react-native patch in patches/).
 it('states the CSS endpoint positions of unpositioned first and last stops', () => {
   expect(positions('linear-gradient(135deg, #ff6b6b, #ee5a6f)')).toEqual(['0%', '100%']);
   expect(positions('linear-gradient(to bottom, #fff0, #fff 40%)')).toEqual(['0%', '40%']);
