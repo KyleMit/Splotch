@@ -30,6 +30,7 @@ class MainApplication : Application(), ReactApplication {
           add(SplotchPhotoLibraryPackage())
           add(SplotchClearSoundPackage())
           add(SplotchPerfLogPackage())
+          add(SplotchPaperReplayPackage())
         }
     )
   }

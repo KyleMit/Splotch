@@ -101,6 +101,61 @@ passes or the next contact begins; the line is written then, never while a later
 | `inputToSubmission`                                    | For each new scene picture handed to `SkiaPictureView`: from the newest native sample it newly carries to the hand-off, as count and nearest-rank p50, p95, max and min. It ends at submission, not at a presented frame                                                              |
 | `clockJoin`                                            | The clock both ends read: `performance.now()` is React Native's `HighResTimeStamp`, `mach_absolute_time` on iOS like `UITouch.timestamp`, and `CLOCK_MONOTONIC` on Android like `MotionEvent.getEventTime()`, whose whole milliseconds can make an interval read up to `errorMs` long |
 
+### Replay
+
+A probe build can also draw without a finger. Launched with a trace name, it waits for the paper
+input view's first layout and `REPLAY_SETTLE_MS` more, then sends every packet of that trace on the
+main thread at its scheduled time, open loop, through the same payload builder and `onPaperInput`
+dispatch real touches use (`ios/HelloWorld/SplotchPaperReplay.swift`,
+`android/app/src/main/java/art/splotch/migration/probe/SplotchPaperReplay.kt`). A sample carries the
+time it was due at on the touch clock, so emission that runs late shows up in `inputToSubmission` as
+late touch delivery would. Android delivers a real finger's moves batched once per frame, while the
+replay emits each packet at its own time, so there it drives the packet path at the trace's rate
+rather than the frame-aligned one. Only the probe's JavaScript asks the native driver for a trace
+(`src/drawing/perfReplay.ts`); a build without the probe ignores the launch argument, and its bundle
+holds neither the driver's caller nor the traces.
+
+The traces live in `perf/replay/` (`src/drawing/replayTrace.ts` has their format). Positions are
+fractions of the paper input view, so one trace covers any device and orientation.
+
+| Trace              | Packets | Duration | What it holds                                                                                                                                 |
+| ------------------ | ------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `finger-session-1` | 2466    | 35.6 s   | An iPad finger session from the web input recorder: 23 strokes, up to two at once, one sample per packet at web handler-arrival times (~69/s) |
+| `finger-session-2` | 1777    | 27.5 s   | A second such session: 30 strokes, up to three at once (~65/s)                                                                                |
+| `long-no-lift`     | 2401    | 20.0 s   | One finger held down for 20 s, one sample per packet at 120 Hz                                                                                |
+| `bursty-120-240`   | 1428    | 13.4 s   | Five strokes; packets at 120 Hz carry one or two 240 Hz samples, and every 60 frames a late packet carries three or four                      |
+| `two-contact`      | 691     | 5.8 s    | Two fingers held together for 5 s, as one contact cohort                                                                                      |
+
+`npm run gen:native-replay-traces` rewrites the three generated traces from their seed; adding
+`-- --recordings=<folder>` also converts `session1.json` and `session2.json` from that folder, which
+stays out of the repository.
+
+Build and install a probe Release as above, then launch it with a trace name. Leave the screen
+untouched until the replay's line appears:
+
+```sh
+# iOS device (devicectl hands the app DEVICECTL_CHILD_* variables, not dash arguments)
+xcrun devicectl device install app --device <device> <derived data>/Build/Products/Release-iphoneos/HelloWorld.app
+DEVICECTL_CHILD_SplotchReplay=long-no-lift xcrun devicectl device process launch \
+  --device <device> --terminate-existing art.splotch.migration.probe
+# iOS simulator
+xcrun simctl launch --terminate-running-process <udid> art.splotch.migration.probe -SplotchReplay long-no-lift
+# Android (-S stops the running app first, so the extra reaches a fresh launch)
+adb -s <serial> install -r android/app/build/outputs/apk/release/app-release.apk
+adb -s <serial> shell am start -S -n art.splotch.migration.probe/.MainActivity -e SplotchReplay long-no-lift
+```
+
+The replay writes one line to the same log as the cohort lines, with the trace in its `replay`
+field, when its last packet has gone out; the last cohort's line follows within `COHORT_SETTLE_MS`.
+A replay that fails writes `replay` and `error` instead.
+
+| Field                   | Counts                                                                                                                                                                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timing`                | `generated`, or `web-handler-arrival` for the finger sessions                                                                                                                                                                                                         |
+| `packets`, `delivered`  | Packets emitted, and those that reached an attached paper input view                                                                                                                                                                                                  |
+| `traceMs`, `durationMs` | The last packet's scheduled time, and the time from the first packet's scheduled time to the last one's emission                                                                                                                                                      |
+| `emissionLateness`      | Each packet's emission time minus its scheduled time, as count and nearest-rank p50, p95, max and min, and `maxAtMs`, the scheduled time of the latest packet. Lateness beyond a frame means the main thread held the replay back; discard that replay's cohort lines |
+
 ## Web
 
 `npm run native:web:build` exports the production web build into `dist/web` (gitignored) with
