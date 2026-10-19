@@ -29,7 +29,9 @@ export const SWATCH_PRESS_SCALE = 0.9;
 // that a press sinks. Selected, a band of the bar surface steps in from the edge and a ring a
 // shade off the paint sits outside it, over a one-pixel seam of the surface. Both are drawn as
 // boxes rather than one stacked box-shadow so each layer takes its color the same way on every
-// renderer: the seam underneath, the ring's visible width over it.
+// renderer: the seam underneath, the ring's visible width over it. The float shadow is a box of
+// its own, first under them: React Native's iOS view paints its box shadow over any child that
+// overhangs the view, and the seam and ring do.
 const styles = css.create({
   swatch: {
     boxSizing: 'border-box',
@@ -40,7 +42,6 @@ const styles = css.create({
     padding: 0,
     borderWidth: 0,
     flexShrink: 0,
-    boxShadow: colors.floatShadow,
     cursor: 'pointer',
     transform: { default: 'scale(1)', ':active': `scale(${SWATCH_PRESS_SCALE})` },
     transitionProperty: 'transform',
@@ -52,7 +53,14 @@ const styles = css.create({
   surface: { backgroundColor: colors.surface },
   // The flat style's palette sits on the paper itself, so its bands and seams are paper.
   paper: { backgroundColor: colors.paper },
-  bare: { backgroundColor: 'transparent', boxShadow: 'none' },
+  bare: { backgroundColor: 'transparent' },
+  lift: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    boxShadow: colors.floatShadow,
+    pointerEvents: 'none',
+  },
   ring: (inset: number, size: number, borderWidth: number) => ({
     boxSizing: 'border-box',
     position: 'absolute',
@@ -156,6 +164,7 @@ export function RsdPaintAction({
       onClick={onClick}
       onPressBegin={onPressBegin}
     >
+      <html.div aria-hidden style={[styles.lift, styles.disc(size)]} />
       {bloom ? (
         <RsdSwatchBloom size={size} color={selectionRingColor(hex)} reduced={bloom.reduced} />
       ) : null}
@@ -203,6 +212,7 @@ export function RsdMoreColorsSwatch({
       onClick={onClick}
       onPressBegin={onPressBegin}
     >
+      {bare ? null : <html.div aria-hidden style={[styles.lift, styles.disc(size)]} />}
       <RsdIcon name="more-colors" size={icon} ink={undefined} muted={disabled} />
       {custom?.color ? (
         <SelectionRing size={size} color={custom.color} surface={bare ? 'paper' : 'surface'} />
