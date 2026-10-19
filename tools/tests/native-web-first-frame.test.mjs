@@ -7,7 +7,8 @@ import {
   FIRST_FRAME_THEMES,
   FIRST_FRAME_VIEWPORTS,
   criticalSheetText,
-  preloadedImages,
+  firstFrameFeedbackCss,
+  paperTextureRule,
   startupScriptList,
   variantKey,
   withFirstFrames,
@@ -36,7 +37,7 @@ function frames() {
           key,
           id: `first-frame-${key}`,
           viewport,
-          html: `<div class="css-used" data-frame="${key}" style="background:url(&quot;${TEXTURE}&quot;)"></div>`,
+          html: `<div class="css-used" data-frame="${key}" style="background:var(--paper-texture, url(&quot;${TEXTURE}&quot;))"></div>`,
         };
       })
     ),
@@ -53,9 +54,10 @@ function frames() {
 }
 
 const STYLESHEET_TEXT = '.x1{display:flex}';
-const shell = withFirstFrames(EXPORTED_SHELL, frames(), (href) =>
-  href === STYLESHEET ? STYLESHEET_TEXT : ''
-);
+const TEXTURE_BYTES = Buffer.from('texture bytes');
+const EXPORT_FILES = { [STYLESHEET]: Buffer.from(STYLESHEET_TEXT), [TEXTURE]: TEXTURE_BYTES };
+const readExportFile = (href) => EXPORT_FILES[href];
+const shell = withFirstFrames(EXPORTED_SHELL, frames(), readExportFile);
 const bootScript = /<script>(\(function\(\)\{var painted[\s\S]*?)<\/script>/.exec(shell)[1];
 
 // Lays the shell's body out in this document and runs its boot script there, as the parser does.
@@ -191,11 +193,22 @@ describe('the prerendered first frame', () => {
     expect(shell).not.toContain(STYLESHEET);
   });
 
-  it('preloads the paper texture its markup paints', () => {
-    expect(preloadedImages(frames().variants[0].html)).toEqual([TEXTURE]);
-    expect(shell).toContain(
-      `<link rel="preload" as="image" href="${TEXTURE}" fetchpriority="high">`
+  it('carries the paper texture once, as the property the paper reads', () => {
+    const rule = `:root{--paper-texture:url("data:image/webp;base64,${TEXTURE_BYTES.toString('base64')}")}`;
+    expect(paperTextureRule(frames().variants[0].html, readExportFile)).toBe(rule);
+    expect(shell.split(rule)).toHaveLength(2);
+    expect(shell).not.toContain('rel="preload" as="image"');
+    expect(() =>
+      paperTextureRule('<div style="background:url(&quot;/a.webp&quot;)"></div>', readExportFile)
+    ).toThrow('The first frame paints no paper texture to inline.');
+  });
+
+  it('styles the pre-hydration feedback in the shell itself', () => {
+    expect(shell).toContain(firstFrameFeedbackCss());
+    expect(firstFrameFeedbackCss()).toContain(
+      'html:not([data-controls-live]) #root button:active{scale:'
     );
+    expect(firstFrameFeedbackCss()).toContain('@media (prefers-reduced-motion:reduce){');
   });
 
   it('names each viewport in a form the client reads back', () => {

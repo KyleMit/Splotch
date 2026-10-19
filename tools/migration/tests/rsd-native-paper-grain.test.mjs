@@ -108,8 +108,10 @@ it.each(['light', 'dark'].flatMap((theme) => [0, 48].map((rightInset) => ({ them
     color.style.backgroundColor = PAPER_THEMES[theme].paper;
     expect(paper.style.backgroundColor).toBe(color.style.backgroundColor);
     expect(paper.style.backgroundImage).toMatch(/handmade-paper\.webp/);
-    expect(paper.style.backgroundSize).toMatch(/^(auto|initial)$/);
-    expect(paper.style.backgroundRepeat).toMatch(/^(repeat|initial)$/);
+    // Unset reads back empty: the paper sets its texture as longhands, so no tile size or repeat
+    // is set at all, and the texture keeps its own pixels.
+    expect(paper.style.backgroundSize).toMatch(/^(auto|initial|)$/);
+    expect(paper.style.backgroundRepeat).toMatch(/^(repeat|initial|)$/);
     expect(paper.style.backgroundPosition).toMatch(
       rightInset ? /^calc\(48px - 100vw\) 0(?:px|%)?$/ : /^(0% 0%|0px 0px|initial)$/
     );

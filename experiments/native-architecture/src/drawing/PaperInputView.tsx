@@ -10,12 +10,14 @@ import {
 type Props = Omit<ViewProps, 'pointerEvents'> & {
   onInput: (value: unknown) => void;
   onClaim: () => void;
+  // Read only on web, where a prerendered shell can hold fingers down before the engine is ready.
+  engineReady: () => boolean;
 };
 type NativeProps = ViewProps & { onPaperInput?: (event: NativeSyntheticEvent<unknown>) => void };
 const InputView = requireNativeComponent<NativeProps>('SplotchPaperInput');
 
 export const PaperInputView = forwardRef<ViewInstance, Props>(function PaperInputView(
-  { onInput, onClaim, ...props },
+  { onInput, onClaim, engineReady: _engineReady, ...props },
   ref
 ) {
   return (

@@ -163,6 +163,12 @@ class ContactResponder {
     return !this.current().disabled && this.frame() !== null;
   }
 
+  // Whether a stroke started now would be admitted, so the web paper can hold the fingers the
+  // prerendered shell saw land until it is (PaperInputView.web.tsx).
+  isReady() {
+    return this.ready();
+  }
+
   // The paper a new contact draws on: the live cohort's, or the picture's own. A blank picture
   // has none yet; it takes the shape of the measured ink plane.
   private contactPaper(): PaperReference {

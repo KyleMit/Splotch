@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import { APP_SHELL_FILE, NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
 import { startupScriptList } from './prerender-native-web.mjs';
-import { isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 // An empty app (registerRootComponent of one View) exported by this Expo and React Native Web
 // pair loads this much JavaScript, which the shipping Svelte app never pays: React DOM, React
@@ -45,6 +45,15 @@ const INLINED_IMAGE = new RegExp(
   `data:image/[a-z+.-]+;base64,[A-Za-z0-9+/]{${MIN_INLINED_IMAGE_CHARS},}`,
   'g'
 );
+// The images the startup path may inline, each with its decision. Each is allowed once, in the
+// shell's inline CSS only: never in a script, and never twice. Every other inlined image fails.
+export const INLINED_IMAGE_EXCEPTIONS = [
+  {
+    asset: 'experiments/native-architecture/assets/paper/handmade-paper.webp',
+    reason:
+      "The paper texture, the prerendered first frame's largest paint, carried once by the shell's CSS so it paints without a request (ADR-0180).",
+  },
+];
 const SCRIPT_ELEMENT = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
 const LINK_ELEMENT = /<link\b([^>]*)>/gi;
 const INLINE_STYLE = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi;
@@ -117,6 +126,7 @@ export function startupResources(indexHtml) {
     ],
     inlineScripts,
     inlineScriptBytes: inlineScripts.reduce((total, body) => total + Buffer.byteLength(body), 0),
+    inlineStyles: [...indexHtml.matchAll(INLINE_STYLE)].map((match) => match[1]),
     inlineStyleBytes: [...indexHtml.matchAll(INLINE_STYLE)].reduce(
       (total, match) => total + Buffer.byteLength(match[1]),
       0
@@ -124,8 +134,25 @@ export function startupResources(indexHtml) {
   };
 }
 
-export function inlinedImageCount(source) {
-  return [...source.matchAll(INLINED_IMAGE)].length;
+export function exceptedImagePayloads(exceptions = INLINED_IMAGE_EXCEPTIONS, root = ROOT) {
+  return exceptions.map(({ asset }) =>
+    readFileSync(join(root, asset)).toString('base64').replace(/=+$/, '')
+  );
+}
+
+// Inlined images in `sources`, less one copy of each excepted payload across all of them.
+export function inlinedImageCount(sources, excepted = []) {
+  const payloads = [sources]
+    .flat()
+    .flatMap((source) => [...source.matchAll(INLINED_IMAGE)])
+    .map(([run]) => run.slice(run.indexOf(',') + 1));
+  const allowance = new Map(excepted.map((payload) => [payload, 1]));
+  return payloads.filter((payload) => {
+    const left = allowance.get(payload) ?? 0;
+    if (left === 0) return true;
+    allowance.set(payload, left - 1);
+    return false;
+  }).length;
 }
 
 export function nativeWebStartupProblems({
@@ -148,18 +175,15 @@ export function nativeWebStartupProblems({
 export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR) {
   const indexPath = join(exportDir, APP_SHELL_FILE);
   if (!existsSync(indexPath)) throw new Error(`The export has no app shell: ${indexPath}`);
-  const { files, inlineScripts, inlineScriptBytes, inlineStyleBytes } = startupResources(
-    readFileSync(indexPath, 'utf8')
-  );
+  const { files, inlineScripts, inlineStyles, inlineScriptBytes, inlineStyleBytes } =
+    startupResources(readFileSync(indexPath, 'utf8'));
   if (!files.some((file) => file.endsWith('.js')) && inlineScripts.length === 0)
     throw new Error(`${indexPath} loads no script`);
   for (const file of files)
     if (!existsSync(join(exportDir, file)))
       throw new Error(`The app shell loads a missing file: ${file}`);
-  const inlineImageCount = inlineScripts.reduce(
-    (total, body) => total + inlinedImageCount(body),
-    0
-  );
+  const inlineImageCount = inlinedImageCount(inlineScripts);
+  const inlineStyleImageCount = inlinedImageCount(inlineStyles, exceptedImagePayloads());
   return {
     files,
     inlineScriptBytes,
@@ -174,6 +198,7 @@ export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR) {
         count: inlinedImageCount(readFileSync(join(exportDir, file), 'utf8')),
       })),
       { file: `${APP_SHELL_FILE} inline scripts`, count: inlineImageCount },
+      { file: `${APP_SHELL_FILE} inline styles`, count: inlineStyleImageCount },
     ].filter(({ count }) => count > 0),
   };
 }

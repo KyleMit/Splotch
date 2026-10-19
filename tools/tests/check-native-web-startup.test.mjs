@@ -1,13 +1,15 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import {
   MAX_NATIVE_WEB_STARTUP_BYTES,
   NATIVE_WEB_STARTUP_TARGET_BYTES,
   REACT_NATIVE_WEB_FLOOR_BYTES,
   checkNativeWebStartup,
+  INLINED_IMAGE_EXCEPTIONS,
+  exceptedImagePayloads,
   inlinedImageCount,
   measureNativeWebStartup,
 } from '../migration/check-native-web-startup.mjs';
@@ -104,6 +106,47 @@ it('tells inlined image bytes from a data-URI prefix the code completes at runti
   expect(inlinedImageCount('src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s)')).toBe(
     0
   );
+});
+
+// The paper texture is the one image the shell may inline (ADR-0180): once, in its CSS. These are
+// the rule's positive controls: anything else inlined there, a second copy, or the texture in a
+// script still fails.
+describe('the inlined-image exceptions', () => {
+  const [texture] = exceptedImagePayloads();
+  const textureUri = `data:image/webp;base64,${texture}`;
+  const rule = (uri) => `<style>:root{--paper-texture:url("${uri}")}</style>`;
+  const measure = (head, body = '') => measureNativeWebStartup(shellFixture(head, body));
+
+  it('names each exception with its reason', () => {
+    expect(INLINED_IMAGE_EXCEPTIONS.map(({ asset }) => asset)).toEqual([
+      'experiments/native-architecture/assets/paper/handmade-paper.webp',
+    ]);
+    expect(INLINED_IMAGE_EXCEPTIONS.every(({ reason }) => reason.includes('ADR-0180'))).toBe(true);
+  });
+
+  it('allows the paper texture once in the shell’s inline CSS, and counts its bytes', () => {
+    const measured = measure(rule(textureUri));
+    expect(measured.inlinedImages).toEqual([]);
+    expect(measured.inlineStyleBytes).toBe(rule(textureUri).length - '<style></style>'.length);
+  });
+
+  it('rejects any other image inlined into the shell’s CSS', () => {
+    expect(measure(rule(INLINED_WEBP)).inlinedImages).toEqual([
+      { file: 'index.html inline styles', count: 1 },
+    ]);
+  });
+
+  it('rejects a second copy of the paper texture', () => {
+    expect(measure(`${rule(textureUri)}${rule(textureUri)}`).inlinedImages).toEqual([
+      { file: 'index.html inline styles', count: 1 },
+    ]);
+  });
+
+  it('rejects the paper texture in a script', () => {
+    expect(measure('', `<script>var t="${textureUri}";</script>`).inlinedImages).toEqual([
+      { file: 'index.html inline scripts', count: 1 },
+    ]);
+  });
 });
 
 it('rejects a shell that loads a file the export lacks', () => {

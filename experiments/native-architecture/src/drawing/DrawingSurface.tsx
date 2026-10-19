@@ -39,6 +39,7 @@ import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { useSurfacePackets } from './useSurfacePackets';
 import { PaperInputView } from './PaperInputView';
+import { PAPER_INPUT_TEST_ID } from '../platform/firstFrameContract';
 import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
 import { createLiveInkFeed } from './liveInk';
@@ -187,10 +188,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
               <PaperInputView
                 ref={paper}
                 accessibilityLabel="Drawing paper"
-                testID="drawing-paper"
+                testID={PAPER_INPUT_TEST_ID}
                 style={styles.inkPlane}
                 onLayout={layoutPlane}
                 onClaim={preemptBackground}
+                engineReady={() => input.isReady()}
                 onInput={(value) => input.receiveInput(value)}
               >
                 {/* Committed ink holds Magic colors; appearance changes must replay semantic strokes. */}

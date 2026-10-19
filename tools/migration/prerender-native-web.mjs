@@ -14,7 +14,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../../web/src/lib/breakpoints.ts';
 import { BOOT_THEME_ATTRIBUTE } from '../../experiments/native-architecture/src/platform/bootTheme.ts';
 import { DRAWING_PATHS } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
@@ -25,6 +25,14 @@ import {
 import { SOUND_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/soundSettings.web.ts';
 import { BRUSH_SETTINGS_KEY } from '../../experiments/native-architecture/src/platform/brushPreferences.web.ts';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
+import {
+  CONTROLS_LIVE_ATTRIBUTE,
+  DRAWING_LIVE_ATTRIBUTE,
+  EARLY_POINTERS_GLOBAL,
+  PAPER_INPUT_TEST_ID,
+  PAPER_TEXTURE_PROPERTY,
+} from '../../experiments/native-architecture/src/platform/firstFrameContract.ts';
+import { PALETTE_COLORS } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 const require = createRequire(import.meta.url);
@@ -151,8 +159,95 @@ export function criticalSheetText(textContent, markup) {
     .join('\n');
 }
 
-export function preloadedImages(markup) {
-  return [...new Set([...markup.matchAll(/url\(&quot;(\/[^&]+)&quot;\)/g)].map((m) => m[1]))];
+const IMAGE_TYPES = { '.webp': 'image/webp', '.png': 'image/png' };
+const PAPER_TEXTURE_FALLBACK = new RegExp(
+  `var\\(${PAPER_TEXTURE_PROPERTY}, url\\(&quot;(/[^&]+)&quot;\\)\\)`
+);
+
+// The paper texture is the frame's largest paint. Requested on its own it held Largest Contentful
+// Paint a round trip behind first paint, so the shell carries it once, as a custom property the
+// paper reads (PaperTexture.web.tsx), and check-native-web-startup.mjs allows exactly this image.
+export function paperTextureRule(markup, readExportFile) {
+  const href = PAPER_TEXTURE_FALLBACK.exec(markup)?.[1];
+  if (!href) throw new Error('The first frame paints no paper texture to inline.');
+  const type = IMAGE_TYPES[extname(href)];
+  if (!type) throw new Error(`The paper texture is not an image this shell inlines: ${href}`);
+  const data = readExportFile(href).toString('base64');
+  return `:root{${PAPER_TEXTURE_PROPERTY}:url("data:${type};base64,${data}")}`;
+}
+
+// What a press on a control does before its handler attaches: the button squishes while held and
+// wiggles "not yet" when it lands. A touch on the paper before the engine listens throws a little
+// burst of paint instead. Reduce Motion keeps both still.
+const PRESS_SCALE = 0.94;
+const REDUCED_PRESS_OPACITY = 0.7;
+export const NOT_YET_WIGGLE_MS = 320;
+const NOT_YET_WIGGLE_PX = 4;
+const REDUCED_NOT_YET_OPACITY = 0.5;
+export const BURST_DOTS = 6;
+export const BURST_MS = 520;
+const BURST_DOT_PX = 12;
+const BURST_REACH_PX = 40;
+const REDUCED_BURST_REACH_PX = 20;
+const BURST_END_SCALE = 0.4;
+// Above every layer the app paints: the burst answers the touch wherever it lands.
+const BURST_LAYER = 2147483647;
+export const BURST_CLASS = 'first-frame-burst';
+const BURST_ANGLE_PROPERTY = '--first-frame-burst-angle';
+
+export function firstFrameFeedbackCss() {
+  const pending = `html:not([${CONTROLS_LIVE_ATTRIBUTE}]) #root button:active`;
+  const dot = `.${BURST_CLASS} i`;
+  const half = BURST_DOT_PX / 2;
+  return [
+    `${pending}{scale:${PRESS_SCALE}}`,
+    `.${BURST_CLASS}{position:fixed;width:0;height:0;pointer-events:none;z-index:${BURST_LAYER}}`,
+    `${dot}{position:absolute;left:-${half}px;top:-${half}px;width:${BURST_DOT_PX}px;height:${BURST_DOT_PX}px;border-radius:50%;animation:first-frame-burst ${BURST_MS}ms ease-out forwards}`,
+    `@keyframes first-frame-burst{from{transform:rotate(var(${BURST_ANGLE_PROPERTY})) translateX(0) scale(1);opacity:1}to{transform:rotate(var(${BURST_ANGLE_PROPERTY})) translateX(${BURST_REACH_PX}px) scale(${BURST_END_SCALE});opacity:0}}`,
+    '@media (prefers-reduced-motion:reduce){',
+    `${pending}{scale:none;opacity:${REDUCED_PRESS_OPACITY}}`,
+    `${dot}{transform:rotate(var(${BURST_ANGLE_PROPERTY})) translateX(${REDUCED_BURST_REACH_PX}px);animation-name:first-frame-burst-still}`,
+    '@keyframes first-frame-burst-still{from{opacity:1}to{opacity:0}}',
+    '}',
+  ].join('');
+}
+
+function burstColors() {
+  const step = PALETTE_COLORS.length / BURST_DOTS;
+  return Array.from({ length: BURST_DOTS }, (_, dot) => PALETTE_COLORS[Math.floor(dot * step)].hex);
+}
+
+// Runs once a frame is cloned, before any app code. It never draws: a pointer down on the paper is
+// only remembered (where it is, under EARLY_POINTERS_GLOBAL) for the engine to take over. Presses on
+// controls are kept from the app until its controls listen, so one cannot act late.
+function earlyInputScript() {
+  const paper = `[data-testid=${JSON.stringify(PAPER_INPUT_TEST_ID)}]`;
+  // Squished through the wiggle as well: a touch press does not always match :active.
+  const wiggle = [0, -NOT_YET_WIGGLE_PX, NOT_YET_WIGGLE_PX, -NOT_YET_WIGGLE_PX / 2, 0].map(
+    (px, frame, frames) =>
+      `{translate:'${px}px',scale:${frame === 0 || frame === frames.length - 1 ? 1 : PRESS_SCALE}}`
+  );
+  return [
+    '(function(){',
+    `var P=window[${JSON.stringify(EARLY_POINTERS_GLOBAL)}]={},d=document.documentElement;`,
+    'function live(a){return d.hasAttribute(a)}',
+    "function still(){return matchMedia('(prefers-reduced-motion: reduce)').matches}",
+    `function control(e){var t=e.target;return t&&t.closest&&!live(${JSON.stringify(CONTROLS_LIVE_ATTRIBUTE)})&&t.closest('#root button')}`,
+    `var C=${JSON.stringify(burstColors())};`,
+    'function burst(x,y){var b=document.createElement("div");',
+    `b.className=${JSON.stringify(BURST_CLASS)};b.style.left=x+"px";b.style.top=y+"px";`,
+    `for(var i=0;i<C.length;i++){var s=document.createElement("i");s.style.setProperty(${JSON.stringify(BURST_ANGLE_PROPERTY)},i*${360 / BURST_DOTS}+"deg");s.style.background=C[i];b.appendChild(s)}`,
+    `document.body.appendChild(b);setTimeout(function(){b.remove()},${BURST_MS})}`,
+    'addEventListener("pointerdown",function(e){var c=control(e);',
+    `if(c){e.stopPropagation();c.animate(still()?[{opacity:1},{opacity:${REDUCED_NOT_YET_OPACITY}},{opacity:1}]:[${wiggle.join(',')}],${NOT_YET_WIGGLE_MS});return}`,
+    `if(live(${JSON.stringify(DRAWING_LIVE_ATTRIBUTE)})||!e.target.closest||!e.target.closest(${JSON.stringify(paper)}))return;`,
+    'P[e.pointerId]={pointerId:e.pointerId,pointerType:e.pointerType,pageX:e.pageX,pageY:e.pageY,clientX:e.clientX,clientY:e.clientY};',
+    'burst(e.clientX,e.clientY)},true);',
+    'addEventListener("pointermove",function(e){var p=P[e.pointerId];if(p){p.pageX=e.pageX;p.pageY=e.pageY;p.clientX=e.clientX;p.clientY=e.clientY}},true);',
+    '["pointerup","pointercancel"].forEach(function(n){addEventListener(n,function(e){delete P[e.pointerId]},true)});',
+    '["pointerup","click","mousedown","mouseup","touchstart","touchend"].forEach(function(n){addEventListener(n,function(e){if(control(e))e.stopPropagation()},true)});',
+    '})();',
+  ].join('');
 }
 
 export function startupScriptList(indexHtml) {
@@ -186,6 +281,7 @@ export function firstFrameBootScript(variants) {
     `r.setAttribute(${JSON.stringify(FIRST_FRAME_VIEWPORT_ATTRIBUTE)},f.getAttribute(${JSON.stringify(FIRST_FRAME_VIEWPORT_ATTRIBUTE)}));`,
     hydrationFlagScriptContents(),
     "painted=document.visibilityState==='visible';",
+    earlyInputScript(),
     '}}}catch(e){}',
     'function load(){',
     `var l=JSON.parse(document.getElementById(${JSON.stringify(STARTUP_SCRIPTS_ELEMENT_ID)}).textContent);`,
@@ -213,14 +309,12 @@ export function renderFirstFrames(prerenderFirstFrame) {
   return { variants, sheet };
 }
 
-export function withFirstFrames(indexHtml, { variants, sheet }, readStylesheet) {
+export function withFirstFrames(indexHtml, { variants, sheet }, readExportFile) {
   if (!indexHtml.includes(EMPTY_ROOT)) throw new Error('The export has no empty root to fill.');
   if (!indexHtml.includes('<head>')) throw new Error('The export has no <head> to extend.');
   const markup = variants.map(({ html }) => html).join('');
   const style = `<style id="${sheet.id}">${criticalSheetText(sheet.textContent, markup)}</style>`;
-  const preloads = preloadedImages(markup).map(
-    (href) => `<link rel="preload" as="image" href="${href}" fetchpriority="high">`
-  );
+  const shellStyle = `<style>${paperTextureRule(markup, readExportFile)}${firstFrameFeedbackCss()}</style>`;
   const templates = variants.map(
     ({ id, viewport, html }) =>
       `<template id="${id}" ${FIRST_FRAME_VIEWPORT_ATTRIBUTE}="${formatFirstFrameViewport(viewport)}">${html}</template>`
@@ -230,8 +324,11 @@ export function withFirstFrames(indexHtml, { variants, sheet }, readStylesheet) 
   if (indexHtml.search(EXPO_STYLESHEET) < 0)
     throw new Error('The export links no style sheet to inline.');
   return indexHtml
-    .replace(EXPO_STYLESHEET, (_, href) => `<style>${readStylesheet(href)}</style>`)
-    .replace('<head>', `<head>\n${style}\n${preloads.join('\n')}`)
+    .replace(
+      EXPO_STYLESHEET,
+      (_, href) => `<style>${readExportFile(href).toString('utf8')}</style>`
+    )
+    .replace('<head>', `<head>\n${style}\n${shellStyle}`)
     .replace(EXPO_SCRIPT, '')
     .replace(
       EMPTY_ROOT,
@@ -248,10 +345,10 @@ export async function prerenderNativeWeb(indexPath) {
   await lendXmlParser();
   const { prerenderFirstFrame } = evaluateRenderer(await bundleFirstFrameRenderer());
   const frames = renderFirstFrames(prerenderFirstFrame);
-  const readStylesheet = (href) => readFileSync(join(dirname(indexPath), href), 'utf8');
+  const readExportFile = (href) => readFileSync(join(dirname(indexPath), href));
   writeFileSync(
     indexPath,
-    withFirstFrames(readFileSync(indexPath, 'utf8'), frames, readStylesheet)
+    withFirstFrames(readFileSync(indexPath, 'utf8'), frames, readExportFile)
   );
   return frames;
 }

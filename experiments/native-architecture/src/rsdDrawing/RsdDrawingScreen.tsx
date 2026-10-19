@@ -51,6 +51,7 @@ import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { BUTTON_SCALE_MAX, controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
 import { FIRST_FRAME_PRERENDERED } from '../platform/firstFrame';
+import { useControlsLive } from '../platform/firstFrameControls';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
@@ -320,6 +321,7 @@ function RsdDrawingContent({
   const covered = !!informationPage || screen.dialogOpen || modalBlocked;
   const paperBlocked = modalBlocked;
   useDrawingUndoShortcut(screen, disabled || covered || buttonScale.active);
+  useControlsLive();
   useDeviceOrientation(sound.settings.orientation);
   const { paper, paperOverlay, status } = useChromeParts({
     screen,
