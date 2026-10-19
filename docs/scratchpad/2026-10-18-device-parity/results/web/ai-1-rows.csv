@@ -1,0 +1,138 @@
+requirementId,requirement,ledgerStatus,outcome,cells,issues,note
+T1-12,AI prompt/dial/minimized/result,unverified,fail,ai-prompt; ai-success; ai-minimize-and-ready; ai-focus-after-close,#3015; #3018,"Prompt, dial, polaroid and result states match; while minimized RN blocks drawing on the paper, and closing the result drops focus to the page"
+T2-12,AI safety refusal,unverified,pass,ai-refusal-and-report,,
+T2-13,AI retry,unverified,pass,ai-retry-then-success,,
+T2-14,AI Still not working,unverified,pass,ai-still-not-working,,
+T2-15,AI report confirmation,unverified,pass,ai-picture-report,,"Confirmation, cancel, send and the thank-you copy with the report reference match"
+P12,Offline AI/timeout/33rd generation,blocked,pass,ai-offline-button; ai-timeout; ai-attempt-33,,"Web subcases: AI hidden offline, timeout to the retry card, a 33rd generation goes through. Row stays blocked for iOS"
+B0087,"AI button hidden offline, so the others resize",blocked,pass,ai-offline-button,,AI button gone offline and the drawer closes the gap in both (inspected)
+B0144,"AI-button ""set up AI"" deep link lands on AI Art in both shells",unverified,pass,ai-settings-deep-link,,Lands on AI Art with the key field on the phone hub and the wide shell
+B0252,"AI off by default; off-state explainer, no setup controls",unverified,pass,ai-fresh-install,,
+B0253,"Fresh install requests no allowance, no canvas action",unverified,pass,ai-fresh-install,,No grant request and no AI button on a fresh install in either
+B0254,Wand badge shows free count from first paint,unverified,pass,ai-badge-before-grant,,"Both show Checking AI image availability until the grant answers, then 7 free left"
+B0255,AI button hidden while offline,blocked,pass,ai-offline-button,,Web subcase
+B0256,Visible return retries a failed allowance,unverified,pass,ai-grant-retry-on-return,,
+B0257,Wand -> parental gate -> style prompt,unverified,pass,ai-prompt; ai-success,,"Grown-up checks default to Never on web, so the wand opens the style prompt directly in both"
+B0258,"Customization off -> direct generation, no style",unverified,pass,ai-customization-off,,
+B0259,No credential and 0 free -> AI Settings,unverified,pass,ai-settings-deep-link,,
+B0260,"Save key / access code (verify first, mask, storage note)",unverified,pass,vault-save-reload-and-connection-loss (WEB-1),,"Key verified first, masked, storage note shown in both"
+B0261,"Retired Gemini key named, never sent",unverified,accepted difference,ai-legacy-plaintext-credentials,#3016,"accepted difference (cutover data loss): RN never reads a retired key, so none is named or sent. The leftover plaintext itself is filed separately"
+B0262,"Invite link `?ai_access_token=` saves code, AI stays off (web)",unverified,pass,invite-link (WEB-1),,
+B0264,Unreadable secret can be replaced,unverified,blocked,,,Needs an unreadable vault record; no public path to create one
+B0265,"Upload: drawing at >=2x, WebP when encodable",unverified,pass,ai-success,,"image/webp 780x1538 in both (4,014 vs 4,022 bytes on phone)"
+B0266,"Dial, loading copy, reveal, confetti",unverified,pass,ai-success; ai-layout,,
+B0267,"Minimize to polaroid, restore without gate",unverified,fail,ai-minimize-and-ready,#3015,Minimize and restore match; while minimized RN puts a layer over the whole paper and strokes do not ink
+B0268,"Picture arriving while minimized shows ""ready""",unverified,pass,ai-minimize-and-ready,,
+B0269,A run killed with the app is gone; next tap starts fresh,unverified,pass,ai-reload-mid-run,,No card or polaroid after a reload mid-run in either
+B0270,Download -> Photos / download; failure -> banner; send-off,unverified,pass,ai-download-and-auto-save,,Download and auto-save match; the save-failure banner was not exercised
+B0271,"Auto-save AI picture + drawing, dedupe",unverified,pass,ai-download-and-auto-save,,"AI JPEG plus drawing PNG, same names and footer"
+B0273,"Try again resends the same drawing; 2 failures -> ""Still not working""; counter resets on close",unverified,pass,ai-retry-then-success; ai-still-not-working,,Counter resets after close in both
+B0274,"Timeout / 5xx / bare 502 -> retry card, can generate at once",unverified,pass,ai-timeout; ai-throttled-and-malformed,,Hang turns into the retry card by 30 s; bare 502 retry card in both
+B0275,429 on start -> retry card,unverified,pass,ai-throttled-and-malformed,,429 on start shows the retry card and Try again succeeds in both
+B0276,Poll past 240 s -> retry card,unverified,pass,ai-poll-past-240s,,"Still waiting at 230 s, retry card by 260 s, 79 polls, in both"
+B0277,Free exhausted / daily limit mid-run -> close + AI Settings,unverified,fail,ai-exhausted-mid-run,#3024,"Both close the card and open AI Art; RN still says 10 free creations left, shipping says they are used up"
+B0278,Safety refusal card + refusal report,unverified,pass,ai-refusal-and-report,,
+B0279,Picture report: gate -> confirm -> send; failure -> Try again,unverified,pass,ai-picture-report; ai-report-rejected-then-retry,,
+B0280,Problem report diagnostics,unverified,fail,ai-still-not-working,#3008,"Diagnostics match except the version line: 1.6.0 (web) on RN, 1.6.0+ef3d1eb20 (web) on shipping (already #3008)"
+B0314,AI button hidden while offline; last state stamped at first paint,blocked,pass,ai-offline-button; ai-offline-first-paint,,Web subcase
+B0315,Free-grant fetch retried on reconnect,blocked,fail,ai-offline-button; ai-grant-retry-on-return,#3027,As WEB-1
+L0046,actionButtonLayout.ts,unverified,pass,ai-drawer-button; ai-offline-button,,AI button joins the drawer at identical positions and leaves it offline; the Button Size ceiling was not varied
+L0138,"ai/dialProgress.ts, ai/dialColors.ts, ai/confettiField.ts, ai/loadingCopy.ts, components/aiDialGeometry.ts",unverified,pass,ai-success; ai-layout,,Dial and confetti frames match at the sampled instants; motion timing not measured
+L0139,"ai/keyFormat.ts, ai/styles.ts (hasPunchedBackground), freeGenerations.ts, inviteLink.ts, latestRequest.ts (copy only), digestHex.ts, appIdentity.ts",unverified,pass,ai-prompt,,Same eight styles in the same order
+L0140,ai/generationAttempt.ts,unverified,blocked,,,RN recovery actions appear only with a stored recovery record; no public path
+L0141,ai/limits.ts,unverified,pass,ai-timeout; ai-poll-past-240s,,
+L0142,ai/styles.ts (STYLE_NAMES order),unverified,pass,ai-prompt,,
+L0143,ai/credentials.ts,unverified,pass,ai-success; ai-picture-report,,Same credential headers per request
+L0144,ai/failureReport.ts,unverified,fail,ai-still-not-working,#3008,As B0280
+L0145,"ai/generationResult.ts, drawing/aiImageResponse.ts",unverified,fail,ai-throttled-and-malformed,,A 200 carrying malformed JSON or HTML: RN shows the retry card; shipping shows Your picture is ready with an undecodable picture. RN is the sound behaviour; no RN issue filed
+L0146,drawing/aiImage.ts,unverified,fail,ai-success; ai-originals-storage,#3025,"Upload, retry and timeout match; RN persists each picture (X31)"
+L0147,drawing/aiGenerationPoll.ts,unverified,pass,ai-poll-past-240s,,
+L0148,drawing/aiUploadEncoding.ts,unverified,pass,ai-success,,
+L0149,drawing/aiAutoSave.ts,unverified,pass,ai-download-and-auto-save,,
+L0150,"ai/resultSave.ts, ai/autoSaveCopy.ts",unverified,pass,ai-download-and-auto-save,,Downloaded footer matches; the chosen-folder caption was not exercised
+L0153,secureStorage.ts,unverified,blocked,vault-save-reload-and-connection-loss (WEB-1),,Connection loss and replacement pass; the unreadable-secret subcase is blocked as B0264
+L0154,"state/aiKey.ts, state/aiAccessToken.ts, state/secureCredentialCoordinator.ts",unverified,fail,ai-legacy-plaintext-credentials; vault-save-reload-and-connection-loss,#3016; #3023,As WEB-1
+L0155,state/freeGenerations.svelte.ts,unverified,fail,ai-badge-before-grant; ai-exhausted-mid-run,#3024,Badge before the grant matches; the exhausted answer is not applied (B0277)
+L0156,"installationId.ts, state/webInstallationId.ts",unverified,accepted difference,invite-link (WEB-1),,accepted difference (cutover data loss)
+L0157,state/aiGeneration.svelte.ts,unverified,pass,ai-still-not-working; ai-reload-mid-run,,
+L0158,state/aiProgress.svelte.ts,unverified,pass,ai-success,,Dial frames match at the sampled instants; the journal-switch restart was not timed
+L0159,state/network.svelte.ts (AI parts),blocked,pass,ai-offline-button,,Web subcase
+L0160,"api.ts, apiParams.ts, apiHeaders.ts",unverified,fail,ai-success,#3027,RN calls https://splotch.art cross-origin (with Origin) from any host; shipping calls its own origin
+L0162,"imageReport.ts, components/imageReportFlow.svelte.ts, components/AiImageReport.svelte",unverified,pass,ai-picture-report; ai-report-rejected-then-retry; ai-report-hangs,,Same multipart parts and Origin; a rejected send offers another confirmation; a hung send times out to the retry state in both
+L0164,components/AiImageButton.svelte,unverified,pass,ai-offline-button; ai-badge-before-grant,,
+L0165,"components/AiImagePrompt.svelte, aiPreview.ts",unverified,pass,ai-prompt,,Prompt frames match by inspection
+L0166,"components/AiImageResult.svelte, AiResultStage.svelte, AiResultFooter.svelte, AiResultDisclosure.svelte",unverified,pass,ai-layout; ai-result-pixels,,Visible picture identical (0.90 % / 0 % of pixels differ by more than 24); pinch zoom is physical-only
+L0167,"components/AiResultError.svelte, AiErrorCard.svelte",unverified,fail,ai-retry-then-success,#3027,Same cards and copy; the RN error card sits 8 px higher and its Report a problem strip 8 px lower
+L0168,"components/AiWaitingPolaroid.svelte, AiDial.svelte, AiConfetti.svelte",unverified,fail,ai-minimize-and-ready,#3015,
+L0169,"components/settings/AiKeyManager.svelte, AiValueProp.svelte, OpenAiKeyHowTo.svelte, aiSettingsCopy.ts, AiFeatureToggles.svelte",unverified,pass,ai-fresh-install,,
+L0213,state/network.svelte.ts,blocked,pass,ai-offline-button,,Web subcase
+E0020,opted-in AI button paints without moving the drawer when ${scenario.name},unverified,pass,ai-drawer-button,,
+E0021,offline status leaves no gap in the first painted row (cached ${cached}),blocked,pass,ai-offline-first-paint,,"Web subcase, inspected"
+E0022,a changed network state replaces the stored first-paint guess,blocked,not run,,,Network change against a stored first-paint guess not run
+E0023,AI-only drawer paints its count before the grant arrives,unverified,pass,ai-badge-before-grant,,
+E0024,a usable AI button stays hidden with the closed drawer,unverified,not run,ai-drawer-button,,"checkVisibility reported shipping's AI button with the drawer closed, which a clipped button can do; not judged"
+E0041,${theme} ${viewport.width}: first and repeated failures fit and preserve the drawing,unverified,pass,ai-retry-then-success; ai-still-not-working,,"Phone, light only"
+E0042,"sends only previewed diagnostics, device opt-in ${device}",unverified,not run,,,Problem report not sent
+E0043,requires the configured parental gate before preview or send,unverified,not run,,,Configured gate before the problem report not run
+E0044,a rejected report offers another confirmation without losing the generation retry,unverified,pass,ai-report-rejected-then-retry,,
+E0045,keeps the close control reachable after scrolling report feedback,unverified,not run,,,
+E0046,safety refusal stays centered without a report strip at ${viewport.width},unverified,pass,ai-refusal-and-report,,
+E0047,"goes to the polaroid, and the polaroid brings it back",unverified,pass,ai-minimize-and-ready,,
+E0048,"says how to leave, rather than leaving it to the X",unverified,pass,ai-success,,Keep drawing while you wait in both
+E0049,is what the Magic Button reveals while it is still running,unverified,pass,ai-polaroid-mid-run,,
+E0050,"comes back to the picture, not to a dial catching up to it",unverified,pass,ai-minimize-and-ready,,
+E0051,keeps the run where it got to while it waited,unverified,not run,,,Progress kept while minimized not measured
+E0052,stops calling the picture unfinished once it is finished,unverified,pass,ai-minimize-and-ready,,
+E0053,says the run failed rather than promising a picture that is not coming,unverified,not run,,,Failure while minimized not run
+E0054,never wiggles itself off the top of the screen,unverified,not run,,,
+E0055,keeps its polaroid above the chrome it is pinned beside,unverified,pass,ai-minimize-and-ready,,Inspected
+E0056,leaves every color on the palette uncovered,unverified,pass,ai-minimize-and-ready,,Inspected
+E0057,confirms and sends an AI picture report from the result,unverified,pass,ai-picture-report,,
+E0058,cancelling the report confirmation returns to an untouched result,unverified,pass,ai-picture-report,,
+E0059,dismissing the confirmation with ${dismissal} hands focus back to Report,unverified,pass,ai-picture-report,,Cancel case; the Escape case not run
+E0060,a report send that never settles times out into the retry state,unverified,pass,ai-report-hangs,,"Sending at 10 s; That is taking too long, please try again by 45 s in both"
+E0061,a report whose response body stalls times out into the retry state,unverified,blocked,,,A response body that stalls mid-stream cannot be produced through Playwright routing
+E0062,the confirmation stays up through repeated Escape presses while sending,unverified,not run,,,
+E0063,reports a free-tier picture with the signed report token,unverified,pass,ai-picture-report,,X-Report-Token carried in both
+E0064,confirms and sends a free-tier false-positive refusal report,unverified,pass,ai-refusal-and-report,,
+E0065,cancelling a refusal report restores focus at ${viewport.width}×${viewport.height},unverified,pass,ai-refusal-and-report,,
+E0066,a failed refusal report offers an in-place retry without another generation,unverified,not run,,,Failed refusal report not run
+E0069,closing the result returns focus to the AI button,unverified,fail,ai-focus-after-close,#3018,RN focus goes to body; shipping returns it to the AI button
+E0070,closing the result with the drawer folded focuses the drawer toggle,unverified,fail,ai-focus-after-close,#3018,RN focus goes to body; shipping moves it to Expand controls
+E0071,paints the strip on backdrop colors in ${colorScheme} mode,unverified,pass,ai-layout,,
+E0072,disclosure text and glyphs keep full opacity in ${colorScheme},unverified,pass,ai-layout,,
+E0073,keeps loading and reveal geometry stable on ${viewport.label}${saveMode},unverified,pass,ai-success; ai-layout,,
+E0074,anchors the disclosure strip below the result card on ${viewport.label},unverified,pass,ai-layout,,"Close, Download and Report within 2 px in all four layouts"
+E0075,draws the picture at the full height its band allows,unverified,pass,ai-result-pixels,,
+E0076,frames the card in a ${screen.label}-sized gutter,unverified,pass,ai-layout; ai-result-pixels,,
+E0077,clears the display's safe areas on a notched phone while ${state},unverified,not run,,,Safe-area insets not emulated
+E0078,keeps result content inside the card at ${viewport.width}×${viewport.height},unverified,pass,ai-layout,,
+E0079,uploads the live canvas as a non-empty image POST,unverified,pass,ai-success,,
+E0081,plays the dial and reveals the result image,unverified,pass,ai-success,,
+E0082,reserves the picture area while the first preview image decodes,unverified,not run,,,
+E0083,reserves a minimized result while its image decodes,unverified,not run,,,
+E0084,caps the loading dial once the stage outgrows it,unverified,pass,ai-success (desktop),,Inspected
+E0085,shows the error state,unverified,pass,ai-retry-then-success,,
+E0086,shows the safety refusal state,unverified,pass,ai-refusal-and-report,,
+E0088,reflects the stage element’s real rendered height,unverified,not run,,,Asserts an internal height declaration
+E0089,declares the height on a fresh .ai-stage after an error-then-retry,unverified,not run,,,As E0088
+E0090,cuts the confetti hole a clearance wider than the dial on ${label},unverified,pass,ai-success,,Inspected
+E0329,"a stalled provider lets the child keep drawing, then recovers after failure",unverified,fail,ai-timeout; ai-minimize-and-ready,#3015,Recovery after the timeout matches; keeping drawing while waiting fails on RN
+E0362,the phone toolbar generates directly when style customization is disabled,unverified,pass,ai-customization-off,,
+E0363,a fresh installation does not fetch an AI allowance or show the canvas action,unverified,pass,ai-fresh-install,,
+E0364,returning to the visible app recovers a failed free allowance,unverified,pass,ai-grant-retry-on-return,,
+E0365,an access-code invite saves the credential without enabling AI,unverified,pass,invite-link (WEB-1),,
+E0366,AI Settings explains the off feature without mounting its setup controls,unverified,pass,ai-fresh-install,,
+E0367,the off explanation reuses a known exhausted allowance,unverified,not run,,,
+E0368,an exhausted free installation keeps the AI affordance and opens BYOK setup,unverified,pass,ai-settings-deep-link,,
+E0370,the AI button posts the drawing and reveals the generated result,unverified,pass,ai-success,,
+E0371,a cutout style cover carries no plate of its own,unverified,pass,ai-prompt,,Inspected
+X2,"AI attempt journal capped at 32, never evicted, so AI stops",unverified,pass,ai-attempt-33,,33 posts and 33 pictures in both
+X3,"AI reports multipart without Origin, so probably a 403, and no retry",unverified,pass,ai-picture-report,,Origin present on the report POST in both; same multipart parts
+X14,AI timeout / non-JSON / 502 holds AI for up to 20 min; past 240 s never resolves,unverified,pass,ai-timeout; ai-poll-past-240s; ai-throttled-and-malformed,,
+X15,AI button not hidden offline; no connectivity state at all,blocked,pass,ai-offline-button,,Web subcase; iOS blocked
+X28,AI failure counter never resets; 429 refuses Try again; Try again re-captures the canvas,unverified,pass,ai-still-not-working; ai-throttled-and-malformed,,"Counter resets, 429 allows Try again; re-capture on Try again not checked"
+X29,Background or Parent Center closes the AI card and the polaroid,unverified,not run,,,Parent Center part not run; background is PHY-4
+X30,AI upload is a 1x PNG vs ≥2x (WebP where encodable); reports and auto-save use the 1x,unverified,pass,ai-success,,
+X31,Every AI original stored and never pruned (web `localStorage` up to 8 MB each),unverified,fail,ai-originals-storage,#3025,After three pictures RN holds about 309 KB in IndexedDB splotch-beta-ai-jobs-v1; shipping keeps none. Pruning not observed
+X40,AI deep link ignored by the tablet Settings shell,unverified,pass,ai-settings-deep-link,,
