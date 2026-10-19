@@ -3,8 +3,9 @@
 Refs #2978 and #2690. This plan turns the inventory in this folder into a small set of repeatable
 protocols. It routes every one of the 1,541 original requirements to a protocol or to an explicit
 classification. **A mapping is not a pass.** Every row stays `unverified` until its protocol has run
-on the exact candidate head and the result record is linked in the row's `evidence` column. Zero
-requirements and zero cells are verified today.
+on the exact candidate head and the result record is linked in the row's `evidence` column. No
+device, simulator or browser cell is verified today. The first AC-1 run verified 29 logic rows by
+two-sided automated contract and failed one (`results/ac-1-2026-10-19.md`).
 
 `protocol-mapping.csv` is the machine-readable half of this plan, with one row per requirement:
 
@@ -27,20 +28,21 @@ those tests only support the protocol; they never replace it.
 `build-protocol-mapping.py` builds the CSV from `requirements.csv`, the tracked test files and the
 per-requirement decisions it holds. Run it from the repository root with `python3 -I`; `--check`
 exits 1 when the committed CSV differs from what it builds. Change a mapping in the script, not by
-hand. Once a protocol records its first result in `status` or `evidence`, the CSV becomes the record
-and the script is no longer rerun.
+hand. Protocol results live in the script too, in tables that name each result's public record under
+`results/`, so `status`, `evidence` and `namedTests` stay generated and `--check` still guards the
+CSV.
 
 ## Counts
 
 Classification of the 1,541 requirements:
 
-| Classification   | Rows | Meaning                                                                                                     |
-| ---------------- | ---: | ----------------------------------------------------------------------------------------------------------- |
-| `protocol`       | 1229 | Runs on fresh simulators, emulators or browsers; some rows add a physical subcase                           |
-| `physical-only`  |  129 | Needs a property only physical hardware has (the owner's list below)                                        |
-| `automated-test` |   29 | A named existing test is the two-sided check, pending AC-1 confirmation that its oracle reads shipping code |
-| `settled`        |   18 | Governed by a settled owner decision; recorded as accepted, never as a defect                               |
-| `out-of-scope`   |  136 | Hosted SvelteKit routes, server behavior, shipping harness seams, or internals RN replaces                  |
+| Classification   | Rows | Meaning                                                                                    |
+| ---------------- | ---: | ------------------------------------------------------------------------------------------ |
+| `protocol`       | 1229 | Runs on fresh simulators, emulators or browsers; some rows add a physical subcase          |
+| `physical-only`  |  128 | Needs a property only physical hardware has (the owner's list below)                       |
+| `automated-test` |   30 | A named test is the two-sided check, and AC-1 confirms that its oracle reads shipping code |
+| `settled`        |   18 | Governed by a settled owner decision; recorded as accepted, never as a defect              |
+| `out-of-scope`   |  136 | Hosted SvelteKit routes, server behavior, shipping harness seams, or internals RN replaces |
 
 By kind:
 
@@ -48,15 +50,16 @@ By kind:
 | ----------------- | ---: | -------: | ------------: | -------------: | ------: | -----------: |
 | Acceptance (T, P) |   59 |       49 |             9 |              0 |       1 |            0 |
 | Behavior (B)      |  355 |      313 |            35 |              0 |       5 |            2 |
-| Logic (L)         |  275 |      203 |            14 |             29 |       4 |           25 |
+| Logic (L)         |  275 |      203 |            13 |             30 |       4 |           25 |
 | Shipping E2E (E)  |  787 |      611 |            65 |              0 |       2 |          109 |
 | Differences (X)   |   65 |       53 |             6 |              0 |       6 |            0 |
-| **Total**         | 1541 |     1229 |           129 |             29 |      18 |          136 |
+| **Total**         | 1541 |     1229 |           128 |             30 |      18 |          136 |
 
-Status: 1,370 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
+Status: 1,340 `unverified` and 17 `blocked`. P10, B0352 and X24 need a physical iPhone ring/silent
 switch, which the rig does not have. Fourteen more rows carry an iOS offline or Low Data Mode
 subcase with no permitted target (see Targets); their Android and web subcases still run. 18 rows
-are `settled` and 136 `out-of-scope`. **0 are `verified`.**
+are `settled` and 136 `out-of-scope`. AC-1 verified 29 logic rows and failed one, L0161; **no
+device, simulator or browser cell is `verified`.**
 
 Requirements per protocol. "Mapped" counts every row that names the protocol; "primary" counts the
 rows that list it first. 192 rows map to two protocols, and 6 rows to three or four.
@@ -65,10 +68,10 @@ rows that list it first. 192 rows map to two protocols, and 6 rows to three or f
 | -------- | ----------------------------------------------------------- | -----: | ------: | ------------: | --------: | ------: |
 | DS-1     | Drawing-screen chrome visual matrix                         |    106 |      79 |             0 |         0 |       3 |
 | DS-2     | Drawing-screen chrome interaction and motion                |    143 |     129 |             0 |         0 |       0 |
-| DS-3     | Ink, brushes, Undo and Clear output                         |    107 |     102 |             0 |         0 |       2 |
+| DS-3     | Ink, brushes, Undo and Clear output                         |    106 |     101 |             0 |         0 |       2 |
 | PHY-1    | Physical drawing sanity and input fidelity                  |     87 |      81 |            77 |         0 |       0 |
 | OV-1     | Overlay visual matrix                                       |    112 |     101 |             0 |         0 |       0 |
-| OV-2     | Settings, Parent Center and gate behavior                   |    179 |     166 |             0 |         0 |       0 |
+| OV-2     | Settings, Parent Center and gate behavior                   |    182 |     169 |             0 |         0 |       0 |
 | A11Y-1   | OS text size, Button Size and Reduce Motion                 |     51 |      46 |             0 |         0 |       0 |
 | A11Y-2   | Accessibility tree: names, roles, states, targets, focus    |     45 |      38 |             0 |         0 |       0 |
 | KEY-1    | Hardware-keyboard input                                     |     40 |      26 |             0 |         0 |       0 |
@@ -77,15 +80,15 @@ rows that list it first. 192 rows map to two protocols, and 6 rows to three or f
 | SAVE-2   | Older-Android storage                                       |      8 |       6 |             0 |         0 |       0 |
 | PHY-3    | Photos permission round trip                                |      6 |       4 |             3 |         0 |       0 |
 | COL-1    | Coloring library, downloads and network policy              |     64 |      55 |             0 |         0 |       0 |
-| LIFE-1   | Restart, cold launch, Back, orientation and recovery        |     94 |      70 |             0 |         0 |       2 |
+| LIFE-1   | Restart, cold launch, Back, orientation and recovery        |     93 |      69 |             0 |         0 |       2 |
 | PHY-4    | Background, resume, idle and system navigation              |     32 |      23 |            18 |         0 |       0 |
-| AI-1     | AI flow through deterministic fixtures                      |    137 |     129 |             0 |         0 |       0 |
+| AI-1     | AI flow through deterministic fixtures                      |    136 |     128 |             0 |         0 |       0 |
 | AI-2     | Live generation and picture report (human session)          |     12 |       1 |             0 |         0 |       0 |
-| PHY-2    | Audio and haptics                                           |     19 |      18 |            16 |         0 |       0 |
+| PHY-2    | Audio and haptics                                           |     18 |      17 |            15 |         0 |       0 |
 | PHY-5    | Performance, refresh and thermal                            |     17 |      17 |            14 |         0 |       0 |
 | INFO-1   | Information pages                                           |    100 |     100 |             0 |         0 |       0 |
 | WEB-1    | RN web platform behavior                                    |    153 |     131 |             0 |         0 |       0 |
-| AC-1     | Two-sided automated contract confirmation                   |     34 |      29 |             0 |        29 |       0 |
+| AC-1     | Two-sided automated contract confirmation                   |     35 |      30 |             0 |        30 |       0 |
 
 Subcells. `acceptance-subcells.csv` keeps its 4,798 proposed cells unchanged, and a subcell takes
 the protocols of its `requirement`. Of those cells, 3,330 fall on a target that their requirement's
@@ -661,13 +664,19 @@ that row's targets.
 
 * **Fixture:** The exact-head CI run, through the Browserless tests job's repo-script and RSD tiers.
 * **Steps:**
-  1. Confirm that each named test exists and passed at that head.
+  1. Confirm that each named test exists and passed at that head. CI prints one line per test file
+     with its test count and skips; a container rerun of the same tier, recorded as such, adds
+     per-test titles.
   2. Read the test, and confirm that its oracle comes from shipping source: `web/src`, shipping
-     assets, or a shipping-derived fixture, not the RN implementation.
+     assets, or a shipping-derived fixture, not the RN implementation. A rule the module owns that
+     the test checks only against hand-written expectations, or a one-way check of ordered content,
+     does not qualify.
   3. If it does not, move the row to its surface protocol in the CSV.
 * **Compared:** The test's oracle against the RN side.
 * **Pass:** The test passed at the exact head with a confirmed shipping oracle, and the CI run is
   linked as evidence.
+* **Results:** `results/ac-1-2026-10-19.md` holds the first run, with each row's oracle line and a
+  triage of every remaining logic row.
 
 ## Out-of-scope and settled rows
 

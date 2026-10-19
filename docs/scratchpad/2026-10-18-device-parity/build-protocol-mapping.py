@@ -529,6 +529,9 @@ def classify(rid, spec, text, extra_tests, note, blocked, kind=None):
 # CI run, per-row oracle lines and inspector behind every entry below.
 AC1_RECORD = 'results/ac-1-2026-10-19.md'
 AC1_RUN = 'AC-1 2026-10-19 (00fcc5c, CI run 39270922979)'
+# The admitted rows' tests run on the record's branch: f500db3 adds them over a byte-identical web/
+# and experiments/ tree.
+AC1_ADMITTED_RUN = 'AC-1 2026-10-19 (f500db3, CI run 39300375422)'
 ISSUE = 'https://github.com/KyleMit/Splotch/issues/'
 T = 'tools/tests/'
 M = 'tools/migration/tests/'
@@ -575,6 +578,7 @@ AC1_VERIFIED = {
     'L0267': [T + 'native-icons.test.mjs'],
     'L0269': [M + 'rsd-native-drawing-frame.test.mjs'],
     'L0270': [M + 'rsd-native-not-found.test.mjs', T + 'native-web-not-found.test.mjs'],
+    **AC1_ADMITTED,
 }
 
 # The named tests passed, but a rule the module owns is checked only against hand-written
@@ -633,8 +637,9 @@ def ac1_result(rid, res):
     if rid in AC1_VERIFIED:
         assert res['classification'] == 'automated-test', rid
         res['tests'] = list(AC1_VERIFIED[rid])
+        run = AC1_ADMITTED_RUN if rid in AC1_ADMITTED else AC1_RUN
         res['status'], res['evidence'] = 'verified', AC1_RECORD
-        res['basis'] += f'; {AC1_RUN}: passed with a shipping oracle'
+        res['basis'] += f'; {run}: passed with a shipping oracle'
     elif rid in AC1_FAILED:
         issue, reason = AC1_FAILED[rid]
         res['status'], res['evidence'] = 'failed', f'{AC1_RECORD};{ISSUE}{issue}'
