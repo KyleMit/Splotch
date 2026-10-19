@@ -1,5 +1,5 @@
 import { useReduceMotion } from '../drawing/useReduceMotion';
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { memo, useState, type ComponentProps, type ReactNode } from 'react';
 import { drawingPaper } from '../drawing/paperSpace';
 import { StyleSheet, View } from 'react-native';
 import { css, html } from 'react-strict-dom';
@@ -79,9 +79,10 @@ function useRememberedDrawer() {
   return [open, choose] as const;
 }
 
-// The paper arrives as prebuilt children, so a drawer toggle re-renders only this layout
-// and the overlay that reads the drawer state, never the strokes on the paper.
-export function RsdEdgeLayout({
+// The paper arrives as a render function NativeDrawingLayout memoizes, so a drawer toggle or a
+// flyout re-renders only this layout and the overlay that reads the drawer state, never the
+// paper. Memoized: a Settings slider's draft re-renders the drawing content above it every tick.
+export const RsdEdgeLayout = memo(function RsdEdgeLayout({
   covered,
   buttonScale,
   onScaleCeiling,
@@ -205,7 +206,7 @@ export function RsdEdgeLayout({
       </InertRegion.Provider>
     </ToolbarSkin.Provider>
   );
-}
+});
 
 // The shipping Color Palette's plate: the bar surface with a soft shadow cast onto the paper.
 const paletteStyles = css.create({

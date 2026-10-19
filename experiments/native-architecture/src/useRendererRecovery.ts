@@ -1,5 +1,5 @@
 import type { PaperReference } from './drawing/paperSpace';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import type { Stroke } from './drawing/model';
 
@@ -63,12 +63,12 @@ export function useRendererRecovery(options: RecoveryOptions) {
     }
   }
 
-  return {
-    generation,
-    failed,
-    retry,
-    retryDisabled: options.blocked,
-    callbacks: {
+  // The paper's handlers stay the same objects for a generation, so a drawing-screen render that
+  // changes nothing the paper shows leaves its memoized surface alone (NativePaper.tsx). Each reads
+  // the latest options through `current`.
+  const callbacks = useMemo(() => {
+    const valid = () => mounted.current && currentGeneration.current === generation;
+    return {
       onCohort(strokes: readonly Stroke[], paper: PaperReference) {
         if (valid()) current.current.finishCohort(strokes, paper);
       },
@@ -106,6 +106,14 @@ export function useRendererRecovery(options: RecoveryOptions) {
         setFailed(true);
         current.current.report(error);
       },
-    },
+    };
+  }, [generation]);
+
+  return {
+    generation,
+    failed,
+    retry,
+    retryDisabled: options.blocked,
+    callbacks,
   };
 }
