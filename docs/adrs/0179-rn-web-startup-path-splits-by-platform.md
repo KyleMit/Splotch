@@ -376,6 +376,13 @@ Levers measured and not taken:
 * \+ First paint on a throttled phone dropped from 13.2 s LCP and 2,346 KB transferred to about
   2.7–2.9 s and 351 KB (Lighthouse, simulated Slow 4G and 4× CPU, local brotli server). The shipping
   app on the same server measured 0.9–1.3 s.
+  * Amended 2026-10-19 (issue 2978): Lighthouse's simulated estimate for the shipping app is
+    unstable. Twelve runs on a local brotli server and on `vite preview` ranged from 1.1 to 3.9 s
+    LCP, because the simulation sometimes counts the prerendered page's modulepreloads as paint
+    dependencies. Compare the two apps with `--throttling-method=devtools` (real Slow 4G and 4× CPU)
+    instead. Under that method shipping paints its whole page at 0.83 s and is interactive at about
+    7.3 s. At 838,334 startup bytes, the RN export reaches FCP at 3.0 s and LCP at 3.6 s (the paper
+    texture), and is interactive at about 3.1 s.
 * \+ Issue 2844's levers moved the throttled first load from 2.9 s LCP to 2.7 s on phone and tablet.
   The entry fell from 269 KB to 220 KB over the wire. The shipping app measured 1.1–1.2 s in
   production. Its first paint is server-rendered HTML; the RN export paints only after its entry
