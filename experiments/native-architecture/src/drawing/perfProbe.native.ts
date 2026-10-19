@@ -13,8 +13,7 @@ import {
 // process.env.EXPO_PUBLIC_* with the bundling process's value when it builds a production bundle,
 // so a Release bundle built without the variable holds `false` here and each probe call site costs
 // one falsy check. DEVELOPMENT.md has the probe build recipe.
-export const PERF_PROBE: typeof Contract.PERF_PROBE =
-  process.env.EXPO_PUBLIC_SPLOTCH_PERF_PROBE === '1';
+export const PERF_PROBE = process.env.EXPO_PUBLIC_SPLOTCH_PERF_PROBE === '1';
 
 // React Native's performance.now() is HighResTimeStamp::now(): mach_absolute_time on iOS, the
 // clock UITouch.timestamp reads, and steady_clock (CLOCK_MONOTONIC) on Android, the clock
