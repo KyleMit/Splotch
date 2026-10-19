@@ -562,7 +562,7 @@ AC1_REPAIRED = {
     'L0136': [T + 'native-section-icon-mounted.test.mjs', T + 'native-icons.test.mjs',
               T + 'native-section-icon-routing.test.mjs'],
 }
-AC1_REPAIRED_RUN = None
+AC1_REPAIRED_RUN = 'AC-1 2026-10-19 (37fff59, CI run 39310410379)'
 
 # Passed at the exact head with a confirmed shipping oracle: the qualifying named tests.
 AC1_VERIFIED = {
@@ -656,8 +656,8 @@ def ac1_result(rid, res):
     if rid in AC1_VERIFIED:
         assert res['classification'] == 'automated-test', rid
         res['tests'] = list(AC1_VERIFIED[rid])
-        run = (AC1_ADMITTED_RUN if rid in AC1_ADMITTED
-               else AC1_REPAIRED_RUN if rid in AC1_REPAIRED else AC1_RUN)
+        run = (AC1_REPAIRED_RUN if rid in AC1_REPAIRED
+               else AC1_ADMITTED_RUN if rid in AC1_ADMITTED else AC1_RUN)
         res['status'], res['evidence'] = 'verified', AC1_RECORD
         res['basis'] += f'; {run}: passed with a shipping oracle'
     elif rid in AC1_REPAIRED:
