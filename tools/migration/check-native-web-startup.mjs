@@ -35,7 +35,8 @@ export const NATIVE_WEB_STARTUP_TARGET_BYTES =
 // here; the fourth cut's three moves, two of them smaller than the headroom, each fail their own
 // check instead (the precache check's release-note samples, native-web-expo-runtime.test.mjs,
 // native-web-strict-dom-imports.test.mjs). Consuming the headroom is the cue to take the next
-// lever, not to raise the number.
+// lever, not to raise the number. The owner raised it once, to 912,257 for the Expo SDK 58
+// upgrade (that upgrade's reviewed 900,361 plus the same headroom); the fifth cut took it back down.
 export const MAX_NATIVE_WEB_STARTUP_BYTES = 850_230;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;

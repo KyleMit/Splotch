@@ -13,7 +13,7 @@ import {
 const CLOCK_JOIN = { clock: 'mach_absolute_time', errorMs: 0 };
 
 function harness(context = { platform: 'ios', build: 'abc1234', clockJoin: CLOCK_JOIN }) {
-  const clock = { at: 0, timers: new Map(), nextTimer: 0 };
+  const clock = { at: 0, timers: new Map(), nextTimer: 0, gc: { count: 0, ms: 0 } };
   const lines = [];
   const cohorts = createPerfCohorts(
     {
@@ -26,7 +26,8 @@ function harness(context = { platform: 'ios', build: 'abc1234', clockJoin: CLOCK
       cancel: (id) => clock.timers.delete(id),
     },
     context,
-    (line) => lines.push(JSON.parse(line))
+    (line) => lines.push(JSON.parse(line)),
+    () => clock.gc
   );
   function advance(ms) {
     clock.at += ms;
@@ -122,11 +123,19 @@ describe('createPerfCohorts', () => {
         surfaceLayoutEffectCommits: 0,
         liveFlush: { n: 0, totalMs: 0, maxMs: 0 },
         sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
+        handoff: { n: 0, totalMs: 0, maxMs: 0 },
+        pictureRelease: { n: 0, totalMs: 0, maxMs: 0 },
+        audioVolume: { n: 0, totalMs: 0, maxMs: 0 },
         inputToSubmission: { n: 0 },
         oldestToSubmission: { n: 0 },
         firstDotMs: null,
         handoffs: 0,
         submissionGap: { n: 0 },
+        longestGap: null,
+        packetGap: { n: 2, p50Ms: 8, p95Ms: 8, maxMs: 8, minMs: 8 },
+        receiptLag: { n: 3, p50Ms: 5, p95Ms: 16, maxMs: 16, minMs: 0 },
+        memoryWarnings: 0,
+        gc: { n: 0, ms: 0 },
         clockJoin: CLOCK_JOIN,
       },
     ]);
@@ -381,5 +390,69 @@ describe('createPerfCohorts', () => {
     advance(COHORT_SETTLE_MS);
     expect(lines[0]).not.toHaveProperty('build');
     expect(lines[0]).toMatchObject({ platform: 'android', strokes: 0, appended: 0 });
+  });
+
+  // Negative controls: attributing the first gap instead of the longest reads 8 ms and no
+  // collection; counting from the cohort's opening instead of the gap's start counts every packet.
+  it('attributes the longest gap between hand-offs to the packets, warnings and collections in it', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    clock.gc = { count: 4, ms: 30 };
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    cohorts.submitted();
+    advance(8);
+    cohorts.packet(packet('move', [{ identifier: 'a', samples: 1 }]));
+    cohorts.submitted();
+    advance(2);
+    cohorts.memoryWarning();
+    clock.gc = { count: 5, ms: 170 };
+    advance(138);
+    for (let packets = 0; packets < 3; packets += 1)
+      cohorts.packet(packet('move', [{ identifier: 'a', samples: 1 }]));
+    cohorts.submitted();
+    advance(8);
+    cohorts.packet(packet('end', [{ identifier: 'a', samples: 1 }]));
+    cohorts.submitted();
+    cohorts.idle();
+    clock.gc = { count: 6, ms: 171 };
+    advance(COHORT_SETTLE_MS);
+    expect(lines[0]).toMatchObject({
+      handoffs: 4,
+      submissionGap: { n: 3, maxMs: 140 },
+      longestGap: { ms: 140, atMs: 8, packets: 3, memoryWarnings: 1, gcs: 1, gcMs: 140 },
+      memoryWarnings: 1,
+      gc: { n: 2, ms: 141 },
+    });
+  });
+
+  it('reports no collections where the runtime does not count them', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    clock.gc = null;
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    cohorts.submitted();
+    advance(10);
+    cohorts.submitted();
+    cohorts.idle();
+    advance(COHORT_SETTLE_MS);
+    expect(lines[0]).toMatchObject({
+      gc: null,
+      longestGap: { ms: 10, atMs: 0, packets: 0, memoryWarnings: 0, gcs: null, gcMs: null },
+    });
+  });
+
+  // Negative control: measuring a packet's lag from its oldest sample reads the second as 14 ms.
+  it('measures packet arrival gaps and the lag from each packet’s newest sample', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    clock.at = 10;
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    advance(4);
+    cohorts.packet(packet('move', [{ identifier: 'a', samples: 5 }]));
+    advance(30);
+    cohorts.packet(packet('end', [{ identifier: 'a', samples: 1 }], []));
+    cohorts.idle();
+    advance(COHORT_SETTLE_MS);
+    expect(lines[0]).toMatchObject({
+      packetGap: { n: 2, p50Ms: 4, p95Ms: 30, maxMs: 30, minMs: 4 },
+      receiptLag: { n: 2, p50Ms: 10, p95Ms: 10, maxMs: 10, minMs: 10 },
+    });
   });
 });

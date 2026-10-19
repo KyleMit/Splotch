@@ -73,7 +73,8 @@ async function resetRefusalMutation() {
   });
   const body = outputText.replace(/^import .*;$/gm, '').replace(/^export /gm, '');
   const fixtureSource = `export function createLoader({createAudioPlayer, setAudioModeAsync,
-    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, PLAYBACK_AUDIO_MODE, PENCIL_SOUNDS, pickPencilTake}) {
+    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, PLAYBACK_AUDIO_MODE, PENCIL_SOUNDS, pickPencilTake,
+    perfTimed}) {
     ${body}; return (signal, failure) => loadPencilClip(PENCIL_SOUNDS[0], signal, failure); }`;
   const module = await import(
     `data:text/javascript;base64,${Buffer.from(fixtureSource).toString('base64')}`
@@ -86,6 +87,7 @@ async function resetRefusalMutation() {
     PLAYBACK_AUDIO_MODE,
     PENCIL_SOUNDS,
     pickPencilTake,
+    perfTimed: (_timer, record) => record,
   });
 }
 async function stationaryActive(f) {
