@@ -635,6 +635,31 @@ AC1_RECORDED = {
 }
 
 
+# Rows a protocol slice observed failing on a target, with the slice's record and the defect issue.
+# A failed cell leaves the row failed whatever its other cells show (execution-plan.md, "Evidence
+# and status").
+PROTOCOL_FAILED = {
+    'B0022': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
+              'iphone-notch: Undo at end of history plays no cue; the RN tile is a disabled button'),
+    'B0100': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
+              'iphone-notch: Undo at end of history neither shakes nor flashes'),
+    'L0047': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3012,
+              'iphone-notch: no RN counterpart replays the unavailable cue'),
+    'B0119': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
+              'iphone-notch: a triple tap on Clear shows no coachmark; a hold does'),
+}
+
+
+def protocol_result(rid, res):
+    if rid not in PROTOCOL_FAILED:
+        return res
+    proto, record, issue, reason = PROTOCOL_FAILED[rid]
+    assert proto in res['protocols'] and res['status'] == 'unverified', rid
+    res['status'], res['evidence'] = 'failed', f'{record};{ISSUE}{issue}'
+    res['basis'] += f'; {proto} slice 2026-10-19: failed ({reason})'
+    return res
+
+
 def ac1_spec(rid, spec, note):
     if rid in AC1_ADMITTED:
         return ['AC-1'], f'{note}; admitted to AC-1 by the {AC1_RUN} triage'
@@ -734,7 +759,7 @@ def main():
         else:
             raise SystemExit(f'unknown kind {kind}')
         spec, note = ac1_spec(rid, spec, note)
-        res = ac1_result(rid, classify(rid, spec, text, tests, note, blocked, kind))
+        res = protocol_result(rid, ac1_result(rid, classify(rid, spec, text, tests, note, blocked, kind)))
         if res['classification'] == 'automated-test' and not res['tests']:
             raise SystemExit(f'{rid}: automated-test without a resolved test')
         out.append((r, res))
