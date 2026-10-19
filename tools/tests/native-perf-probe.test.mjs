@@ -1,0 +1,430 @@
+// @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { legacyDrawing } from './native-paper-fixtures.mjs';
+import {
+  COHORT_SETTLE_MS,
+  PERF_LOG_MODULE,
+  PERF_LOG_TAG,
+} from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
+
+// Paths, not new URL(..., import.meta.url): happy-dom runs this file through Vite's browser
+// transforms, which rewrite that form as an asset URL.
+const ROOT = join(fileURLToPath(import.meta.url), '../../..');
+const APP = 'experiments/native-architecture/';
+const drawingModule = (file) => import(pathToFileURL(join(ROOT, `${APP}src/drawing/${file}`)).href);
+const PLANE = { width: 400, height: 300 };
+const VIEWPORT = { width: 1024, height: 768, bottomInset: 0 };
+const BUILD = 'abc1234';
+
+// Handing a picture to the view takes this long on the mocked clock, so a stamp taken before the
+// hand-off reads short by exactly this much.
+const HANDOFF_MS = 5;
+const host = vi.hoisted(() => ({ modules: {}, touched: [], now: 0, frames: [] }));
+
+vi.mock('react-native', async () => {
+  const { nativeInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
+  const sdk = await nativeInkViewSdk(
+    () => ({ width: 400, height: 300 }),
+    (onLoad) => onLoad?.()
+  );
+  return {
+    ...sdk,
+    Platform: { OS: 'android' },
+    NativeModules: new Proxy(
+      {},
+      {
+        get: (_target, name) => {
+          host.touched.push(name);
+          return host.modules[name];
+        },
+      }
+    ),
+  };
+});
+
+// Shaped like the real SkiaPictureView: the picture reaches the native view from the class's own
+// constructor or componentDidUpdate, which here moves the mocked clock on by HANDOFF_MS.
+vi.mock('@shopify/react-native-skia', async () => {
+  const { Component } = await import('react');
+  const recording = () => {
+    const calls = [];
+    return new Proxy(
+      {},
+      {
+        get:
+          () =>
+          (...args) =>
+            void calls.push(args),
+      }
+    );
+  };
+  class SkiaPictureView extends Component {
+    constructor(props) {
+      super(props);
+      if (props.picture) host.now += HANDOFF_MS;
+    }
+    componentDidUpdate(previous) {
+      if (this.props.picture !== previous.picture) host.now += HANDOFF_MS;
+    }
+    redraw() {}
+    render() {
+      return null;
+    }
+  }
+  return {
+    FilterMode: { Linear: 1 },
+    MipmapMode: { None: 0 },
+    fitRects: (_fit, src, dst) => ({ src, dst }),
+    Skia: {
+      XYWHRect: (x, y, width, height) => ({ x, y, width, height }),
+      Paint: () => ({}),
+      PictureRecorder: () => ({
+        beginRecording: recording,
+        finishRecordingAsPicture: () => ({ kind: 'picture' }),
+      }),
+      Surface: {
+        Make: (width, height) => ({
+          getCanvas: recording,
+          flush: () => {},
+          makeImageSnapshot: () => ({ width: () => width, height: () => height }),
+        }),
+      },
+    },
+    SkiaPictureView,
+  };
+});
+vi.mock('../../experiments/native-architecture/src/drawing/skiaUndoGhostImage.ts', () => ({
+  makeSkiaUndoGhost: () => null,
+}));
+vi.mock('react-native-svg', async () => {
+  const { svgInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
+  return svgInkViewSdk((onLoad) => onLoad?.());
+});
+vi.mock('../../experiments/native-architecture/src/drawing/skiaInkPainter.ts', () => ({
+  paintStroke: () => {},
+  decodeDataUriImage: () => null,
+}));
+
+const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+const ANDROID = `${APP}android/app/src/main/java/art/splotch/migration/probe/`;
+
+// The input path and the ink import ./perfProbe, which resolves to the no-op contract outside
+// Metro's native bundles; each test hands them a freshly evaluated native probe instead.
+async function loadProbe(flag) {
+  vi.resetModules();
+  vi.stubEnv('EXPO_PUBLIC_SPLOTCH_PERF_PROBE', flag);
+  vi.stubEnv('EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD', BUILD);
+  const probe = await drawingModule('perfProbe.native.ts');
+  vi.doMock('../../experiments/native-architecture/src/drawing/perfProbe.ts', () => probe);
+  return probe;
+}
+
+function writes() {
+  return host.modules[PERF_LOG_MODULE]?.write.mock.calls.map(([line]) => JSON.parse(line)) ?? [];
+}
+
+// Each contact is [identifier, [[pageX, pageY, timestamp], ...]]; a contact starts at its first
+// sample's time.
+function createInput() {
+  const starts = new Map();
+  let sequence = 0;
+  return function packet(phase, changed, contacts) {
+    return {
+      sequence: sequence++,
+      phase,
+      changed,
+      viewport: VIEWPORT,
+      contacts: contacts.map(([identifier, samples]) => {
+        if (!starts.has(identifier)) starts.set(identifier, samples[0][2]);
+        return {
+          identifier,
+          startedAt: starts.get(identifier),
+          tool: 'touch',
+          samples: samples.map(([pageX, pageY, timestamp]) => ({ pageX, pageY, timestamp })),
+        };
+      }),
+    };
+  };
+}
+
+async function createResponder() {
+  const { createContactResponder } = await drawingModule('contactResponder.ts');
+  const drawing = legacyDrawing();
+  const responder = createContactResponder(
+    () => ({
+      currentDrawing: () => drawing,
+      color: 'Red',
+      brush: 'pen',
+      strokeWidth: 'medium',
+      eraserWidth: 'medium',
+      disabled: false,
+      onCohort: () => {},
+      onDrawingChange: () => {},
+      onError: (error) => {
+        throw error;
+      },
+    }),
+    () => ({ width: 1024, height: 768, pageX: 0, pageY: 0 }),
+    () => {},
+    () => 1
+  );
+  return { responder, packet: createInput() };
+}
+
+// After each packet, `submit` hands the scene a new picture, as SkiaInk does when the drafts change.
+async function drawOneStroke(submit = () => {}) {
+  const { responder, packet } = await createResponder();
+  host.now = 1000;
+  responder.receiveInput(packet('start', ['a'], [['a', [[500, 400, 995]]]]));
+  await submit();
+  host.now = 1008;
+  const move = [
+    [510, 400, 1003],
+    [510, 400, 1005],
+    [520, 400, 1007],
+  ];
+  responder.receiveInput(packet('move', ['a'], [['a', move]]));
+  await submit();
+  host.now = 1030;
+  responder.receiveInput(packet('end', ['a'], [['a', [[520, 400, 1010]]]]));
+  await submit();
+}
+
+// A stand-in for the drawing surface and its ink, rendering a new picture each time it is told to.
+async function createScene() {
+  const probe = await drawingModule('perfProbe.native.ts');
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  function Scene({ picture }) {
+    probe.useSurfaceCommitProbe();
+    probe.useInkCommitProbe(picture);
+    return null;
+  }
+  return {
+    submit: () => act(async () => root.render(createElement(Scene, { picture: {} }))),
+    unmount() {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+}
+
+async function inkHarness() {
+  const { SkiaInk } = await drawingModule('SkiaInk.tsx');
+  const { InkPaperScope } = await drawingModule('InkPaper.tsx');
+  const { InkAppearanceScope } = await drawingModule('InkAppearance.tsx');
+  const { ReduceMotionPreferenceProvider } = await drawingModule('useReduceMotion.ts');
+  const { adoptedDrawing } = await import('./native-paper-fixtures.mjs');
+  const { emptyDrawing, strokeStyle } = await drawingModule('model.ts');
+  const paper = adoptedDrawing({ ...PLANE, pixelRatio: 1 }).paper;
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  const pen = (points) => ({ ...strokeStyle('pen', 'Green', emptyDrawing()), points });
+  async function render(drafts) {
+    const ink = createElement(SkiaInk, {
+      strokes: [],
+      drafts,
+      paperFrame: { ...PLANE, pageX: 0, pageY: 0 },
+      brush: 'pen',
+      color: 'Green',
+      onBusy: () => {},
+      onError: (error) => {
+        throw error;
+      },
+    });
+    await act(async () =>
+      root.render(
+        createElement(
+          ReduceMotionPreferenceProvider,
+          { preference: 'full' },
+          createElement(
+            InkAppearanceScope.Provider,
+            { value: { pageId: 'blank', theme: 'light' } },
+            createElement(InkPaperScope.Provider, { value: paper }, ink)
+          )
+        )
+      )
+    );
+  }
+  return {
+    pen,
+    render,
+    unmount() {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+}
+
+beforeEach(() => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  host.modules = { [PERF_LOG_MODULE]: { write: vi.fn() } };
+  host.touched.length = 0;
+  host.now = 0;
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  vi.spyOn(performance, 'now').mockImplementation(() => host.now);
+  vi.stubGlobal('requestAnimationFrame', (callback) => host.frames.push(callback));
+  vi.stubGlobal('cancelAnimationFrame', () => {});
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe('the SplotchPerfLog native module', () => {
+  it('registers the name JavaScript writes to and logs under the probe tag on both platforms', () => {
+    const swift = read(`${APP}ios/HelloWorld/SplotchPerfLog.swift`);
+    const bridge = read(`${APP}ios/HelloWorld/SplotchPerfLog.m`);
+    const project = read(`${APP}ios/HelloWorld.xcodeproj/project.pbxproj`);
+    const kotlin = read(`${ANDROID}SplotchPerfLog.kt`);
+    expect(swift).toContain(`@objc(${PERF_LOG_MODULE})`);
+    expect(swift).toContain(`category: "${PERF_LOG_TAG}"`);
+    expect(swift).toContain('privacy: .public');
+    expect(bridge).toContain(`RCT_EXTERN_MODULE(${PERF_LOG_MODULE}, NSObject)`);
+    expect(bridge).toContain('RCT_EXTERN_METHOD(write:(NSString *)line)');
+    for (const file of [`${PERF_LOG_MODULE}.swift`, `${PERF_LOG_MODULE}.m`])
+      expect(project.match(new RegExp(`${file} in Sources \\*/,`, 'g'))).toHaveLength(1);
+    expect(kotlin).toContain(`override fun getName() = "${PERF_LOG_MODULE}"`);
+    expect(kotlin).toContain(`private const val PERF_LOG_TAG = "${PERF_LOG_TAG}"`);
+    expect(kotlin).toContain('Log.i(PERF_LOG_TAG, line)');
+    expect(read(`${ANDROID}MainApplication.kt`)).toContain('add(SplotchPerfLogPackage())');
+  });
+
+  // The mounted ink test below covers SkiaInk's probe; DrawingSurface needs the drawing screen.
+  it('counts every DrawingSurface commit', () => {
+    const surface = read(`${APP}src/drawing/DrawingSurface.tsx`);
+    expect(surface.match(/^ {4}useSurfaceCommitProbe\(\);$/gm)).toHaveLength(1);
+  });
+
+  it('implements every export of the no-op contract the web export and Node resolve', async () => {
+    const native = await loadProbe('1');
+    const contract = await vi.importActual(
+      '../../experiments/native-architecture/src/drawing/perfProbe.ts'
+    );
+    expect(Object.keys(native).sort()).toEqual(Object.keys(contract).sort());
+    expect(contract.PERF_PROBE).toBe(false);
+    const record = () => 1;
+    expect(contract.perfTimed('draftRecord', record)).toBe(record);
+  });
+});
+
+describe('without EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
+  // Negative control: enabling the probe for any defined flag value fails the '0' and 'true' runs.
+  it.each([undefined, '0', 'true'])('stays inert with the flag %s', async (flag) => {
+    const probe = await loadProbe(flag);
+    expect(probe.PERF_PROBE).toBe(false);
+    const record = () => 1;
+    expect(probe.perfTimed('sceneRecord', record)).toBe(record);
+    expect(probe.useInkCommitProbe).toBe(probe.useSurfaceCommitProbe);
+    await drawOneStroke();
+    const ink = await inkHarness();
+    await ink.render([ink.pen([{ x: 1, y: 1 }])]);
+    await ink.render([]);
+    ink.unmount();
+    vi.advanceTimersByTime(COHORT_SETTLE_MS);
+    expect(host.touched).not.toContain(PERF_LOG_MODULE);
+    expect(writes()).toEqual([]);
+  });
+});
+
+describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
+  // Negative control: dropping any one probe call from the input path zeroes its count here.
+  it('counts what the input path did with one stroke and writes one line once it settles', async () => {
+    await loadProbe('1');
+    const scene = await createScene();
+    await drawOneStroke(scene.submit);
+    scene.unmount();
+    vi.advanceTimersByTime(COHORT_SETTLE_MS - 1);
+    expect(writes()).toEqual([]);
+    vi.advanceTimersByTime(1);
+    expect(writes()).toEqual([
+      expect.objectContaining({
+        probe: PERF_LOG_TAG,
+        v: 1,
+        build: BUILD,
+        platform: 'android',
+        cohort: 1,
+        cohortMs: 30,
+        strokes: 1,
+        points: 3,
+        packets: 3,
+        samples: 5,
+        maxSamplesPerPacket: 3,
+        appended: 2,
+        duplicate: 2,
+        minDistanceRejected: 0,
+        inkLayoutEffectCommits: 3,
+        surfaceLayoutEffectCommits: 3,
+        inputToSubmission: { n: 2, p50Ms: 1, p95Ms: 5, maxMs: 5, minMs: 1 },
+        clockJoin: { clock: 'CLOCK_MONOTONIC', errorMs: 1 },
+      }),
+    ]);
+  });
+
+  it('holds two overlapping contacts in one cohort', async () => {
+    await loadProbe('1');
+    const { responder, packet } = await createResponder();
+    const a = (samples) => ['a', samples];
+    const b = (samples) => ['b', samples];
+    responder.receiveInput(packet('start', ['a'], [a([[500, 400, 200]])]));
+    responder.receiveInput(packet('start', ['b'], [a([[500, 400, 200]]), b([[600, 400, 204]])]));
+    responder.receiveInput(
+      packet('move', ['a', 'b'], [a([[510, 400, 208]]), b([[610, 400, 208]])])
+    );
+    responder.receiveInput(packet('end', ['a'], [a([[510, 400, 212]]), b([[610, 400, 208]])]));
+    vi.advanceTimersByTime(COHORT_SETTLE_MS);
+    expect(writes()).toEqual([]);
+    responder.receiveInput(packet('end', ['b'], [b([[620, 400, 216]])]));
+    responder.receiveInput(packet('start', ['c'], [['c', [[500, 300, 300]]]]));
+    responder.receiveInput(packet('end', ['c'], [['c', [[500, 300, 304]]]]));
+    vi.advanceTimersByTime(COHORT_SETTLE_MS);
+    expect(
+      writes().map(({ cohort, packets, samples, appended, duplicate, strokes, points }) => ({
+        cohort,
+        packets,
+        samples,
+        appended,
+        duplicate,
+        strokes,
+        points,
+      }))
+    ).toEqual([
+      { cohort: 1, packets: 5, samples: 6, appended: 3, duplicate: 1, strokes: 2, points: 3 },
+      { cohort: 2, packets: 2, samples: 2, appended: 0, duplicate: 1, strokes: 1, points: 1 },
+    ]);
+  });
+
+  // Negative control: stamping while the picture is recorded puts the stamp before the hand-off.
+  it('times the ink recordings and stamps each new picture just after the view receives it', async () => {
+    const probe = await loadProbe('1');
+    const ink = await inkHarness();
+    const packet = createInput();
+    await ink.render([]);
+    host.now = 2000;
+    probe.perfPacket(packet('start', ['a'], [['a', [[500, 400, 1990]]]]));
+    probe.perfStroke(1990);
+    host.now = 2012.5;
+    await ink.render([ink.pen([{ x: 10, y: 10 }])]);
+    probe.perfIdle();
+    ink.unmount();
+    vi.advanceTimersByTime(COHORT_SETTLE_MS);
+    expect(writes()).toEqual([
+      expect.objectContaining({
+        inkLayoutEffectCommits: 1,
+        draftRecord: { n: 1, totalMs: 0, maxMs: 0 },
+        sceneRecord: { n: 1, totalMs: 0, maxMs: 0 },
+        inputToSubmission: { n: 1, p50Ms: 27.5, p95Ms: 27.5, maxMs: 27.5, minMs: 27.5 },
+      }),
+    ]);
+  });
+});

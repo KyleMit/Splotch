@@ -56,6 +56,49 @@ cd experiments/native-architecture/android
 The signed APK is `android/app/build/outputs/apk/release/app-release.apk`; install it with
 `adb install -r`. A local keystore supports development only and is not store signing.
 
+## Performance probe
+
+A Release bundle built with `EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1` in the environment counts the live
+stroke's work and writes one JSON line per contact cohort to the device log. Without it the probe is
+`false` at every call site (`src/drawing/perfProbe.native.ts`); the web export, Node and the type
+checker resolve the no-op `src/drawing/perfProbe.ts` instead. `babel-preset-expo` inlines
+`EXPO_PUBLIC_*` values into a production bundle when Metro transforms it, and both Release bundle
+steps pass `--reset-cache`, so a cached transform never carries an earlier build's value. Gradle
+does not treat the environment as an input of `:app:createBundleReleaseJsAndAssets`, so an Android
+probe build reruns that task. `EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD` sets the line's `build` field.
+
+```sh
+export EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1 EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD="$(git rev-parse --short HEAD)"
+# iOS, from ios/ (after pod install)
+xcodebuild -workspace HelloWorld.xcworkspace -scheme HelloWorld -configuration Release \
+  -destination generic/platform=iOS build
+# Android, from android/, with the signing properties from the Android section
+./gradlew :app:createBundleReleaseJsAndAssets --rerun :app:assembleRelease
+```
+
+Read the lines from the host:
+
+* **Android:** `adb logcat -s SplotchPerf:I -v raw`.
+* **iOS device:** `idevicesyslog -p HelloWorld -m '"probe":"SplotchPerf"'` (or
+  `pymobiledevice3 syslog live -pn HelloWorld -m '"probe":"SplotchPerf"'`).
+* **iOS simulator:**
+  `xcrun simctl spawn <udid> log stream --style compact --predicate 'category == "SplotchPerf"'`.
+
+A cohort runs from the first input packet received while no contact is held to the packet that
+leaves none held. Render work after the last lift still counts toward it until `COHORT_SETTLE_MS`
+passes or the next contact begins; the line is written then, never while a later cohort is drawing
+(`src/drawing/perfCohort.ts`).
+
+| Field                                                  | Counts                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packets`, `samples`, `maxSamplesPerPacket`            | Packets `paperInputOwner` accepted, and the native samples they carried for the contacts each one changed                                                                                                                                                                             |
+| `appended`, `duplicate`, `minDistanceRejected`         | What `appendPoint` did with each sample after a stroke's first point                                                                                                                                                                                                                  |
+| `strokes`, `points`                                    | Strokes the cohort committed, and the points in its longest                                                                                                                                                                                                                           |
+| `inkLayoutEffectCommits`, `surfaceLayoutEffectCommits` | Commits in which `SkiaInk` or `DrawingSurface` rendered, counted by a layout effect without dependencies (React's `<Profiler>` does not report in a production renderer)                                                                                                              |
+| `draftRecord`, `sceneRecord`                           | Count, total and slowest milliseconds of recording the live strokes' picture and the scene picture                                                                                                                                                                                    |
+| `inputToSubmission`                                    | For each new scene picture handed to `SkiaPictureView`: from the newest native sample it newly carries to the hand-off, as count and nearest-rank p50, p95, max and min. It ends at submission, not at a presented frame                                                              |
+| `clockJoin`                                            | The clock both ends read: `performance.now()` is React Native's `HighResTimeStamp`, `mach_absolute_time` on iOS like `UITouch.timestamp`, and `CLOCK_MONOTONIC` on Android like `MotionEvent.getEventTime()`, whose whole milliseconds can make an interval read up to `errorMs` long |
+
 ## Web
 
 `npm run native:web:build` exports the production web build into `dist/web` (gitignored) with

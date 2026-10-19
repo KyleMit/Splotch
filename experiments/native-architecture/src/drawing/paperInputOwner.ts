@@ -12,6 +12,7 @@ import {
   type InputViewport,
 } from './paperInput';
 import type { ContactSample, ContactStyle, OwnedContact } from './contactResponder';
+import { PERF_PROBE, perfIdle, perfPacket } from './perfProbe';
 
 type InputOwner = {
   contacts: Map<string, OwnedContact>;
@@ -123,20 +124,24 @@ export function createPaperInputOwner(owner: InputOwner) {
     },
     detach() {
       detached = true;
+      if (PERF_PROBE) perfIdle();
     },
     receive(value: unknown) {
       if (detached) return;
       const packet = readPaperInput(value);
       if (!packet) {
         owner.interrupt();
+        if (PERF_PROBE) perfIdle();
         owner.error(new Error(INPUT_INTERRUPTED_MESSAGE));
         return;
       }
       if (packet.sequence <= sequence) return;
       sequence = packet.sequence;
+      if (PERF_PROBE) perfPacket(packet);
       if (packet.phase === 'cancel') {
         for (const identifier of packet.changed) finish(identifier);
         owner.publish();
+        if (PERF_PROBE && owner.contacts.size === 0) perfIdle();
         return;
       }
       const present = new Set(packet.contacts.map(({ identifier }) => identifier));
@@ -161,6 +166,7 @@ export function createPaperInputOwner(owner: InputOwner) {
         if (packet.phase === 'end' && changing) finish(source.identifier);
       }
       owner.publish();
+      if (PERF_PROBE && owner.contacts.size === 0) perfIdle();
     },
   };
 }
