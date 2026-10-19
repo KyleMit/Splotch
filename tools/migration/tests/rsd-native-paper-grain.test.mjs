@@ -219,10 +219,7 @@ it.each(
           NativeFrame,
           {
             variant: 'flatDrawing',
-            edges: {
-              under: createElement(RsdNotchBand, { ink: PURPLE, eraser: false, layer: 'under' }),
-              over: createElement(RsdNotchBand, { ink: PURPLE, eraser: false, layer: 'over' }),
-            },
+            edges: createElement(RsdNotchBand, { ink: PURPLE, eraser: false, layer: 'top' }),
           },
           createElement('i', { 'data-testid': 'drawing-content' })
         )
@@ -270,16 +267,16 @@ it.each(
       )
     );
     const frame = provider.querySelector('[data-testid="rsd-safe-area-frame"]');
+    expect([...provider.children].indexOf(strips.at(-1))).toBeLessThan(
+      [...provider.children].indexOf(frame)
+    );
     const siblings = [...provider.children];
-    const fills = (nodes) =>
-      nodes
-        .filter((node) => node.dataset.committedProps !== undefined)
-        .map((node) => JSON.parse(node.dataset.committedProps).style.backgroundColor);
-    // The band's side strips sit between the grain and the content; its top strip covers both.
     expect(
-      fills(siblings.slice(siblings.indexOf(strips.at(-1)) + 1, siblings.indexOf(frame)))
-    ).toEqual(bandColors.slice(1));
-    expect(fills(siblings.slice(siblings.indexOf(frame) + 1))).toEqual(bandColors.slice(0, 1));
+      siblings
+        .slice(siblings.indexOf(frame) + 1)
+        .filter((node) => node.dataset.committedProps !== undefined)
+        .map((node) => JSON.parse(node.dataset.committedProps).style.backgroundColor)
+    ).toEqual(bandColors.slice(0, 1));
   }
 );
 

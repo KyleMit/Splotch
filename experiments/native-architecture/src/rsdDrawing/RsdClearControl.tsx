@@ -17,7 +17,7 @@ function dockFrame(dock: ClearDock) {
   return { position: 'absolute', top: dock.top, right: dock.right } as const;
 }
 // Shipping's accept ring sits under the Notch Band (--z-clear-accept-zone), so it stays inside the
-// safe-area frame while the button and coachmark over the band may reach a side inset.
+// safe-area frame while the button and coachmark, over the band, may reach a side inset.
 const frameClip = StyleSheet.create({
   ring: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
 });

@@ -18,18 +18,19 @@ const STATUS_BAR_INSET_PX = 24;
 const ANDROID_CUTOUT_INSET_PX = 42;
 const LANDSCAPE = { width: 874, height: 402 };
 
-// The band's strips are the absolute fills NativeFrame mounts around its padded safe-area view:
-// the side strips before it, under the drawing screen, and the top strip after it, over it.
+// The band's strips are absolute fills: its top strip the last NativeFrame mounts, after its padded
+// safe-area view and over the drawing screen, and its side strips the first in the layer that runs
+// the frame out to the screen's sides, under the clear overlay.
 function strips() {
-  const frame = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
-  const at = records.props.lastIndexOf(frame);
+  const last = (testID) =>
+    records.props.lastIndexOf(records.props.findLast((props) => props.testID === testID));
   const fills = (journal) =>
     journal
       .map((props) => flat(props.style))
       .filter((style) => style?.position === 'absolute' && style.pointerEvents === 'none');
   return [
-    ...fills(records.props.slice(at + 1)).slice(-1),
-    ...fills(records.props.slice(0, at)).slice(-2),
+    ...fills(records.props.slice(last('rsd-safe-area-frame') + 1)).slice(-1),
+    ...fills(records.props.slice(last('rsd-side-insets') + 1)).slice(0, 2),
   ];
 }
 

@@ -72,15 +72,16 @@ function BandStatusBar({ band }: { band: NotchBandState }) {
 }
 
 // Shipping stacks the band (--z-notch) over the Flat rail glass, which runs up through the top
-// inset, and under the Clear Button, whose docked tab overhangs a landscape side inset. The rail
-// glass rides in the palette bar above the Clear Button, so no one layer sits between them: the
-// top strip paints over the drawing screen's content and the side strips under it.
-export type NotchBandLayer = 'over' | 'under';
+// inset, and over the Actions Panel's shadows, but under the Clear Button, whose docked tab
+// overhangs a landscape side inset. The rail glass rides in the palette bar, which RN stacks above
+// the Clear Button, so the top strip paints over the whole drawing screen (NativeFrame) and the side
+// strips paint just under the clear overlay (NativeDrawingLayout).
+export type NotchBandLayer = 'top' | 'sides';
 
 // The Notch Band: the drawing color (the paper's, while erasing) in the safe-area strip a display
-// cutout sits in, so the hole-punch reads as part of the drawing. NativeFrame mounts each layer's
-// strips in the strips its safe-area padding leaves, inside the window's own inset provider; the
-// over layer also owns the status bar and theme color the band sets.
+// cutout sits in, so the hole-punch reads as part of the drawing. Each layer is mounted in a box
+// whose edges are the screen's along its strips; the top layer also owns the status bar and theme
+// color the band sets.
 export function RsdNotchBand({
   ink,
   eraser,
@@ -107,11 +108,11 @@ export function RsdNotchBand({
     paperColor: paper,
   });
   const fills = band.backgroundColors;
-  const over = layer === 'over';
+  const top = layer === 'top';
   useEffect(() => {
-    if (over) setThemeColor(band.themeColor);
-  }, [over, band.themeColor]);
-  return over ? (
+    if (top) setThemeColor(band.themeColor);
+  }, [top, band.themeColor]);
+  return top ? (
     <>
       <html.div aria-hidden style={[styles.edge, styles.top(insets.top, fills.top)]} />
       <BandStatusBar band={band} />

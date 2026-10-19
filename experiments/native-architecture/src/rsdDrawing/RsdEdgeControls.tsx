@@ -25,6 +25,7 @@ import { colors } from './tokens.css';
 import { useClearGesture } from '../clear/useClearGesture';
 import { RsdClearOverlay } from './RsdClearControl';
 import { RsdClearUnderlay } from './clearSurfaces';
+import { RsdNotchBand } from './notchBandSurface';
 import { NativeDrawingLayout, type PaletteLayout } from './NativeScrollAreas';
 import { RsdActionsPanel, useFlyoutSlot } from './RsdActionsPanel';
 import { RsdFullscreenToggle } from './RsdFullscreenToggle';
@@ -161,6 +162,7 @@ export function RsdEdgeLayout({
             />
           )}
           clearOverlay={<RsdClearOverlay control={clear} disabled={disabled} />}
+          sideBand={<RsdNotchBand ink={ink} eraser={screen.brush === 'eraser'} layer="sides" />}
           actionsPanel={(area, viewport) => (
             <RsdActionsPanel
               {...controls}
