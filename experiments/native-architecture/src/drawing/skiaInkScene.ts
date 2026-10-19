@@ -7,7 +7,7 @@ import {
 } from '@shopify/react-native-skia';
 import type { LiveStroke } from './contactCohort';
 import type { LiveInkSource } from './liveInk';
-import type { Stroke } from './model';
+import { extendsStrokes, type Stroke } from './model';
 import { samePaperProjection, type PaperProjection, type PaperSize } from './paperSpace';
 import { paperRasterBounds } from './pictureExport';
 import { createInkLayer, type InkLayer } from './skiaInkLayer';
@@ -118,9 +118,7 @@ export function createInkScene() {
   // The committed strokes are the layer's base followed by live strokes it painted in full, in
   // the order it painted them.
   function adopts(strokes: readonly Stroke[]) {
-    if (strokes.length < base.length) return false;
-    for (let index = 0; index < base.length; index++)
-      if (strokes[index] !== base[index]) return false;
+    if (!extendsStrokes(base, strokes)) return false;
     const added = strokes.length - base.length;
     if (added > pending.length) return false;
     for (let index = 0; index < added; index++) {
