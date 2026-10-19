@@ -4,8 +4,9 @@ import { SPLOTCHY_ICON_NAME } from '../../experiments/native-architecture/src/rs
 
 // native-section-icon-mounted.test.mjs drives the native routing: the mascot name paints the
 // splotchy artwork, every other name its icon. This holds that routing to SectionIcon.svelte's.
-const read = (path) =>
-  readFileSync(new URL(`../../web/src/lib/components/${path}`, import.meta.url), 'utf8');
+const COMPONENTS = new URL('../../web/src/lib/components/', import.meta.url);
+const ICONS = new URL('../../web/src/lib/icons/', import.meta.url);
+const read = (path) => readFileSync(new URL(path, COMPONENTS), 'utf8');
 const SECTION_ICON = read('SectionIcon.svelte');
 const SPLOTCHY_ICON = read('SplotchyIcon.svelte');
 
@@ -22,6 +23,8 @@ it('routes only the mascot name to the splotchy artwork, as SectionIcon.svelte d
 });
 
 it('draws the splotchy artwork from splotchy.svg, which the native registry copies byte for byte', () => {
-  expect(SPLOTCHY_ICON).toContain("import splotchyUrl from '../icons/splotchy.svg';");
+  const imported = /import splotchyUrl from '([^']+)';/.exec(SPLOTCHY_ICON)?.[1];
+  expect(imported).toBeTypeOf('string');
+  expect(new URL(imported, COMPONENTS).href).toBe(new URL('splotchy.svg', ICONS).href);
   expect(SPLOTCHY_ICON).toContain('<img src={splotchyUrl}');
 });
