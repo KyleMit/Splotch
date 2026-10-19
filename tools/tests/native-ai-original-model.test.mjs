@@ -35,6 +35,7 @@ const IMPORTS = [
   { version: 4, pageId: 'blank', rainbow: 0, strokes: [] },
   { version: 5, pageId: 'blank', rainbow: 0, strokes: [] },
   { version: 7, pageId: 'blank', rainbow: 0, paper: { kind: 'unadopted' }, strokes: [] },
+  { version: 8, pageId: 'blank', rainbow: 0, paper: { kind: 'unadopted' }, strokes: [] },
 ];
 describe('native opaque original-model admission', () => {
   it.each(IMPORTS)('preserves the existing imported decode format$version', (value) => {

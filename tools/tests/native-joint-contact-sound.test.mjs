@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDrawingAudio } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
 import { createContactSound } from '../../experiments/native-architecture/src/audio/contactSound.ts';
 import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 import {
   addStrokes,
   createHistory,
@@ -58,7 +59,8 @@ async function fixture(brush = 'pen', width = 1024, pixelRatio = 1) {
     }),
     () => ({ width, height: width * 0.75, pageX: 0, pageY: 0 }),
     vi.fn(),
-    () => pixelRatio
+    () => pixelRatio,
+    createLiveInkFeed()
   );
   let sequence = 0;
   function send(phase, next) {
@@ -118,7 +120,7 @@ describe('joint admitted contact sound lifecycle', () => {
       expect(f.loop.stop).toHaveBeenCalledOnce();
       expect(f.cohort).toHaveBeenCalledOnce();
       expect(f.history().drawing).toMatchObject({
-        version: 7,
+        version: 8,
         paper: { kind: 'adopted', cssWidth: 1024, cssHeight: 768, backingScale: 1 },
         pageId: 'flower',
         rainbow: 3,

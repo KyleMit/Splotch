@@ -27,6 +27,7 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { fittedPaper } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
 import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 
@@ -90,7 +91,7 @@ describe('a picture takes the shape of the paper area it is first drawn in', () 
     ];
     const drawing = addStrokes(createHistory(), strokes, paper).drawing;
     const wire = JSON.parse(JSON.stringify(drawing));
-    expect(wire.version).toBe(7);
+    expect(wire.version).toBe(8);
     expect(wire.paper).toEqual({ kind: 'adopted', cssWidth: 390, cssHeight: 704, backingScale: 2 });
     expect(parseDrawing(wire)).toEqual(drawing);
     for (const invalid of [NaN, Infinity, -Infinity])
@@ -130,6 +131,7 @@ function event(touches, changedTouches = touches, starts = {}) {
 function responder(frame) {
   let history = createHistory();
   const drafts = vi.fn();
+  const live = createLiveInkFeed();
   const input = createContactResponder(
     () => ({
       currentDrawing: () => history.drawing,
@@ -147,8 +149,9 @@ function responder(frame) {
       },
     }),
     () => frame.current,
-    drafts,
-    () => 3
+    (paper, halos) => drafts(live.drafts(), paper, halos),
+    () => 3,
+    live
   );
   let sequence = 0;
   function send(phase, value) {

@@ -43,11 +43,22 @@ type BrushStyle =
   | Readonly<{ brush: 'magic'; rainbow: number }>
   | Readonly<{ brush: 'eraser' }>;
 export type StrokeStyle = BrushStyle & Readonly<{ width: StoredStrokeWidthPx }>;
-export type Stroke = StrokeStyle & Readonly<{ points: readonly Point[] }>;
+// One retained op of a stroke (ADR-0178): the point count the stroke had reached when the op was
+// painted, and the drawing-wide frame it was painted in. Op 0 is the dot at the first point; each
+// later op paints the points after the previous op's end as one path continuing from its pen.
+// Frames order every op of a drawing, so a cohort's contacts replay interleaved as they were drawn.
+export type StrokeOp = readonly [end: number, frame: number];
+export type Stroke = StrokeStyle &
+  Readonly<{ points: readonly Point[]; ops?: readonly StrokeOp[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
 type DrawingContents = Readonly<{ pageId: PageId; rainbow: number; strokes: readonly Stroke[] }>;
+// Version 8 is version 7 whose strokes may carry ops; version 5 and 7 strokes never do.
 export type Drawing = DrawingContents &
-  (Readonly<{ version: 5 }> | Readonly<{ version: 7; paper: DrawingPaper }>);
+  (
+    | Readonly<{ version: 5 }>
+    | Readonly<{ version: 7; paper: DrawingPaper }>
+    | Readonly<{ version: 8; paper: DrawingPaper }>
+  );
 export type History = Readonly<{
   drawing: Drawing;
   undo: readonly Drawing[];
@@ -63,8 +74,26 @@ export function drawingInkIdentity(drawing: Drawing): Drawing {
 export function emptyDrawing(
   rainbow = INITIAL_RAINBOW,
   pageId: PageId = 'blank'
-): Extract<Drawing, { version: 7 }> {
-  return { version: 7, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
+): Extract<Drawing, { version: 8 }> {
+  return { version: 8, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
+}
+
+// The frame a new cohort's first ops take. A cohort's frames run without a gap, and the next
+// cohort skips one frame past every op the drawing holds, so adjacent frames always mean the same
+// cohort (the ink layer shares a Crayon glaze only between contacts drawn together).
+export function cohortFrame(drawing: Drawing): number {
+  let next = 0;
+  for (const stroke of drawing.strokes) {
+    const last = stroke.ops?.at(-1);
+    if (last && last[1] + 2 > next) next = last[1] + 2;
+  }
+  return next;
+}
+
+function withoutOps(stroke: Stroke): Stroke {
+  if (!stroke.ops) return stroke;
+  const { ops: _ops, ...rest } = stroke;
+  return rest;
 }
 
 export function strokeStyle(
@@ -104,9 +133,14 @@ export function addStrokes(
   const additions = strokes.filter((stroke) => stroke.points.length > 0);
   if (additions.length === 0) return history;
   const drawing = history.drawing;
+  // A version-5 picture's saved format has no ops, so its new strokes keep the single-op
+  // replay its old strokes have. Only an imported picture is version 5; a session starts at 8.
   if (drawing.version === 5) {
     if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
-    return commitDrawing(history, { ...drawing, strokes: [...drawing.strokes, ...additions] });
+    return commitDrawing(history, {
+      ...drawing,
+      strokes: [...drawing.strokes, ...additions.map(withoutOps)],
+    });
   }
   const reference = drawing.paper.kind === 'adopted' ? drawing.paper : paper;
   if (!reference || reference.kind !== 'adopted' || (paper && !samePaper(reference, paper)))
@@ -123,6 +157,7 @@ export function addStrokes(
   }
   return commitDrawing(history, {
     ...drawing,
+    version: 8,
     paper: drawing.paper.kind === 'adopted' ? drawing.paper : adopted,
     strokes: [...drawing.strokes, ...additions],
   });
@@ -219,7 +254,7 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width' | 'color' | 'paper';
+type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width' | 'color' | 'paper' | 'ops';
 
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
   return (
@@ -239,6 +274,8 @@ function savedFormat(value: Record<string, unknown>): SavedFormat {
     return 'color';
   if (value.version === 7 && exactKeys(value, ['version', 'paper', 'pageId', 'rainbow', 'strokes']))
     return 'paper';
+  if (value.version === 8 && exactKeys(value, ['version', 'paper', 'pageId', 'rainbow', 'strokes']))
+    return 'ops';
   throw new Error('This saved picture is not a supported drawing.');
 }
 
@@ -316,29 +353,57 @@ function readPoint(point: unknown, size: PaperSize | null): Point {
   return { x: point.x, y: point.y };
 }
 
+function readOpNumber(value: unknown, least: number): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < least)
+    throw new Error('This saved picture contains an invalid stroke op.');
+  return value;
+}
+
+// Op 0 is the first point's dot; every later op ends past the one before it, the last at the
+// stroke's final point, and frames never run backwards within a stroke.
+function readOps(value: unknown, points: number): readonly StrokeOp[] {
+  if (!Array.isArray(value) || value.length === 0)
+    throw new Error('This saved picture contains an invalid stroke op.');
+  let end = 0;
+  let frame = 0;
+  const ops = value.map((item: unknown, index): StrokeOp => {
+    if (!Array.isArray(item) || item.length !== 2)
+      throw new Error('This saved picture contains an invalid stroke op.');
+    const opEnd = readOpNumber(item[0], index === 0 ? 1 : end + 1);
+    if (index === 0 && opEnd !== 1)
+      throw new Error('This saved picture contains an invalid stroke op.');
+    frame = readOpNumber(item[1], frame);
+    end = opEnd;
+    return [opEnd, frame];
+  });
+  if (end !== points) throw new Error('This saved picture contains an invalid stroke op.');
+  return ops;
+}
+
 export function parseDrawing(value: unknown): Drawing {
   if (!record(value) || !Array.isArray(value.strokes))
     throw new Error('This saved picture is not a supported drawing.');
-  const format = savedFormat(value);
+  const saved = savedFormat(value);
+  // Version 8 saves version 7's strokes, each optionally with its ops.
+  const format = saved === 'ops' ? 'paper' : saved;
   const pageId = format === 'legacy' || format === 'brush' ? 'blank' : value.pageId;
   if (!isPageId(pageId)) throw new Error('This saved picture contains an invalid coloring page.');
   const rainbow =
     format === 'legacy' || format === 'page' ? INITIAL_RAINBOW : readRainbow(value.rainbow);
   const paper = format === 'paper' ? readDrawingPaper(value.paper) : LEGACY_PAPER;
   const size = paperSize(paper);
+  const sized = format === 'width' || format === 'color' || format === 'paper';
   const strokes = value.strokes.map((item: unknown): Stroke => {
     if (!record(item) || !Array.isArray(item.points) || item.points.length === 0)
       throw new Error('This saved picture contains an invalid stroke.');
     const { width, ...withoutWidth } = item;
+    const { ops, ...withoutOps } = withoutWidth;
     const style = readStyle(
-      format === 'width' || format === 'color' || format === 'paper' ? withoutWidth : item,
+      saved === 'ops' ? withoutOps : sized ? withoutWidth : item,
       format,
       rainbow
     );
-    const actualWidth =
-      format === 'width' || format === 'color' || format === 'paper'
-        ? width
-        : defaultStoredStrokeWidth(style.brush);
+    const actualWidth = sized ? width : defaultStoredStrokeWidth(style.brush);
     if (
       format === 'paper' &&
       (style.brush === 'pencil' ||
@@ -348,18 +413,17 @@ export function parseDrawing(value: unknown): Drawing {
       throw new Error('This saved picture contains an invalid stroke width.');
     if (!isStoredStrokeWidth(style.brush, actualWidth))
       throw new Error('This saved picture contains an invalid stroke width.');
-    return {
-      ...style,
-      width: actualWidth,
-      points: item.points.map((point: unknown) =>
-        readPoint(point, format === 'paper' ? null : size)
-      ),
-    };
+    const points = item.points.map((point: unknown) =>
+      readPoint(point, format === 'paper' ? null : size)
+    );
+    return saved === 'ops' && ops !== undefined
+      ? { ...style, width: actualWidth, points, ops: readOps(ops, points.length) }
+      : { ...style, width: actualWidth, points };
   });
   if (paper.kind !== 'legacy') {
     if (paper.kind === 'unadopted' && strokes.length > 0)
       throw new Error('This saved picture contains ink without a paper reference.');
-    return { version: 7, paper, pageId, rainbow, strokes };
+    return { version: saved === 'ops' ? 8 : 7, paper, pageId, rainbow, strokes };
   }
   return { version: 5, pageId, rainbow, strokes };
 }

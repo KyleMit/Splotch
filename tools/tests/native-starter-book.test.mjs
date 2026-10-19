@@ -103,12 +103,12 @@ describe('bundled Farm book and saved page identity', () => {
   );
 
   it.each(PAGE_IDS)(
-    'round-trips %s with custom paint, Magic, eraser and exact widths and adopted paper in v7',
+    'round-trips %s with custom paint, Magic, eraser and exact widths and adopted paper in v8',
     (pageId) => {
       const original = paintedPage(pageId).drawing;
       const restored = parseDrawing(JSON.parse(JSON.stringify(original)));
       expect(restored).toEqual(original);
-      expect(restored.version).toBe(7);
+      expect(restored.version).toBe(8);
       expect(restored.paper).toEqual(canonicalPaper());
       expect(restored.pageId).toBe(pageId);
       expect(restored.strokes[0]).toMatchObject({ brush: 'pen', color: '#123ABC', width: 4 });

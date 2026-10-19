@@ -73,7 +73,7 @@ describe('drawing-level physical paper reference', () => {
     expect(owner.finish('a')).toBeNull();
     expect(drawing).toEqual(emptyDrawing());
     const history = addStrokes(createHistory(drawing), owner.finish('b'), owner.paper());
-    expect(history.drawing.version).toBe(7);
+    expect(history.drawing.version).toBe(8);
     expect(history.drawing.paper).toBe(previewPaper);
     expect(history.undo).toEqual([drawing]);
     expect(history.drawing.strokes.map(({ width }) => width)).toEqual([22, 4]);
