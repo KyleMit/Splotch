@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import type { NativeFeedbackOwner } from '../feedback/feedback';
 import { useNativeFeedbackState } from '../feedback/useNativeFeedback';

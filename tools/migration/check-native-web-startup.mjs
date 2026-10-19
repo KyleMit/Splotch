@@ -1,12 +1,15 @@
-// Holds the React Native web export's startup path to a byte budget, the way
-// tools/check-bundle-budgets.mjs holds the shipping app's: every script, stylesheet and script or
-// style preload the app shell loads before first paint, each URL once, plus its executable inline
-// scripts and inline CSS, and no image inlined into any of them.
+// Holds the React Native web export's startup path to two byte budgets, the way
+// tools/check-bundle-budgets.mjs holds the shipping app's to one, and allows no image inlined into
+// any of it. The first paint is the shell's executable inline scripts and inline CSS plus every
+// script, stylesheet and script or style preload the document names. The core controls are every
+// script and stylesheet the drawing controls wait for, including the bundle a prerendered shell's
+// boot script loads after its first frame paints. Each URL counts once.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import { APP_SHELL_FILE, NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
-import { isMain, runMain } from '../lib/proc.mjs';
+import { startupScriptList } from './prerender-native-web.mjs';
+import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
 // An empty app (registerRootComponent of one View) exported by this Expo and React Native Web
 // pair loads this much JavaScript, which the shipping Svelte app never pays: React DOM, React
@@ -29,21 +32,40 @@ export const NATIVE_WEB_STARTUP_TARGET_BYTES =
 // NATIVE_WEB_STARTUP_TARGET_BYTES: granular chunking (app.json) gives the modules lazy chunks share
 // their own chunks instead of Expo's __common chunk, which index.html loaded before first paint,
 // and Expo's tree shaking (NATIVE_WEB_EXPORT_ENV in build-native-web.mjs) drops unused exports.
-// The cap keeps the same 11,896 bytes of headroom. It stays below every move up to react-native-svg
+// That one startup cap kept 11,896 bytes of headroom, at 850,230. The owner raised it once, to
+// 912,257 for the Expo SDK 58 upgrade (that upgrade's reviewed 900,361 plus the same headroom), and
+// the fifth cut took it back down. ADR-0180 split it in two once the prerendered shell held the
+// bundle until its first frame had painted, so one sum no longer added two different waits.
+//
+// This cap carries the bundle's ratchet. The core controls measured 815,639 bytes (ADR-0180), and
+// it keeps the same 11,896 bytes of headroom. That stays below every move up to react-native-svg
 // (the smallest, the offline library controller, is 24,471 bytes) and below both fifth-cut levers
 // (the smaller, tree shaking, is 25,097 bytes on top of granular chunking), so undoing one fails
 // here; the fourth cut's three moves, two of them smaller than the headroom, each fail their own
 // check instead (the precache check's release-note samples, native-web-expo-runtime.test.mjs,
 // native-web-strict-dom-imports.test.mjs). Consuming the headroom is the cue to take the next
-// lever, not to raise the number. The owner raised it once, to 912,257 for the Expo SDK 58
-// upgrade (that upgrade's reviewed 900,361 plus the same headroom); the fifth cut took it back down.
-export const MAX_NATIVE_WEB_STARTUP_BYTES = 850_230;
+// lever, not to raise the number.
+export const MAX_NATIVE_WEB_CORE_CONTROLS_BYTES = 827_535;
+// The first paint measured 45,552 bytes (ADR-0180). The single cap's headroom would be a quarter of
+// this one, so it keeps 1,500 bytes instead: less than the smallest first-paint lever ADR-0180 took,
+// the 1,649-byte boot script that holds the bundle, so undoing one fails here. A document that
+// loads the bundle itself again fails by the whole bundle.
+export const MAX_NATIVE_WEB_FIRST_PAINT_BYTES = 47_052;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(
   `data:image/[a-z+.-]+;base64,[A-Za-z0-9+/]{${MIN_INLINED_IMAGE_CHARS},}`,
   'g'
 );
+// The images the startup path may inline, each with its decision. Each is allowed once, in the
+// shell's inline CSS only: never in a script, and never twice. Every other inlined image fails.
+export const INLINED_IMAGE_EXCEPTIONS = [
+  {
+    asset: 'experiments/native-architecture/assets/paper/handmade-paper.webp',
+    reason:
+      "The paper texture, the prerendered first frame's largest paint, carried once by the shell's CSS so it paints without a request (ADR-0180).",
+  },
+];
 const SCRIPT_ELEMENT = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
 const LINK_ELEMENT = /<link\b([^>]*)>/gi;
 const INLINE_STYLE = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi;
@@ -104,17 +126,16 @@ export function startupResources(indexHtml) {
   const links = [...indexHtml.matchAll(LINK_ELEMENT)].map(([, attributes]) =>
     attributesOf(attributes)
   );
+  const scriptSources = executable.filter((script) => script.src).map((script) => script.src);
+  const linked = links.filter(isStartupLink).map((link) => link.href);
   return {
     files: [
-      ...new Set(
-        [
-          ...executable.filter((script) => script.src).map((script) => script.src),
-          ...links.filter(isStartupLink).map((link) => link.href),
-        ].map(exportPath)
-      ),
+      ...new Set([...scriptSources, ...startupScriptList(indexHtml), ...linked].map(exportPath)),
     ],
+    paintFiles: [...new Set([...scriptSources, ...linked].map(exportPath))],
     inlineScripts,
     inlineScriptBytes: inlineScripts.reduce((total, body) => total + Buffer.byteLength(body), 0),
+    inlineStyles: [...indexHtml.matchAll(INLINE_STYLE)].map((match) => match[1]),
     inlineStyleBytes: [...indexHtml.matchAll(INLINE_STYLE)].reduce(
       (total, match) => total + Buffer.byteLength(match[1]),
       0
@@ -122,19 +143,42 @@ export function startupResources(indexHtml) {
   };
 }
 
-export function inlinedImageCount(source) {
-  return [...source.matchAll(INLINED_IMAGE)].length;
+export function exceptedImagePayloads(exceptions = INLINED_IMAGE_EXCEPTIONS, root = ROOT) {
+  return exceptions.map(({ asset }) =>
+    readFileSync(join(root, asset)).toString('base64').replace(/=+$/, '')
+  );
+}
+
+// Inlined images in `sources`, less one copy of each excepted payload across all of them.
+export function inlinedImageCount(sources, excepted = []) {
+  const payloads = [sources]
+    .flat()
+    .flatMap((source) => [...source.matchAll(INLINED_IMAGE)])
+    .map(([run]) => run.slice(run.indexOf(',') + 1));
+  const allowance = new Map(excepted.map((payload) => [payload, 1]));
+  return payloads.filter((payload) => {
+    const left = allowance.get(payload) ?? 0;
+    if (left === 0) return true;
+    allowance.set(payload, left - 1);
+    return false;
+  }).length;
 }
 
 export function nativeWebStartupProblems({
-  startupBytes,
+  firstPaintBytes,
+  coreControlsBytes,
   inlinedImages,
-  maxStartupBytes = MAX_NATIVE_WEB_STARTUP_BYTES,
+  maxFirstPaintBytes = MAX_NATIVE_WEB_FIRST_PAINT_BYTES,
+  maxCoreControlsBytes = MAX_NATIVE_WEB_CORE_CONTROLS_BYTES,
 }) {
   const problems = [];
-  if (startupBytes > maxStartupBytes)
+  if (firstPaintBytes > maxFirstPaintBytes)
     problems.push(
-      `Startup JS/CSS is ${startupBytes} bytes, above the ${maxStartupBytes}-byte budget: something heavy now loads before first paint. Load it on first use with a dynamic import (drawingSheets.web.ts, bundledOutlines.web.ts, productChunk.web.ts), and keep app.json's granular chunking and build-native-web.mjs's tree shaking on, instead of raising MAX_NATIVE_WEB_STARTUP_BYTES`
+      `First-paint JS/CSS is ${firstPaintBytes} bytes, above the ${maxFirstPaintBytes}-byte budget: something heavy now loads before the first frame paints. Keep the bundle held until first paint (prerender-native-web.mjs) and inline only what the frame paints with, instead of raising MAX_NATIVE_WEB_FIRST_PAINT_BYTES`
+    );
+  if (coreControlsBytes > maxCoreControlsBytes)
+    problems.push(
+      `Core-controls JS/CSS is ${coreControlsBytes} bytes, above the ${maxCoreControlsBytes}-byte budget: something heavy now loads before the drawing controls are live. Load it on first use with a dynamic import (drawingSheets.web.ts, bundledOutlines.web.ts, productChunk.web.ts), and keep app.json's granular chunking and build-native-web.mjs's tree shaking on, instead of raising MAX_NATIVE_WEB_CORE_CONTROLS_BYTES`
     );
   for (const { file, count } of inlinedImages)
     problems.push(
@@ -146,46 +190,53 @@ export function nativeWebStartupProblems({
 export function measureNativeWebStartup(exportDir = NATIVE_WEB_EXPORT_DIR) {
   const indexPath = join(exportDir, APP_SHELL_FILE);
   if (!existsSync(indexPath)) throw new Error(`The export has no app shell: ${indexPath}`);
-  const { files, inlineScripts, inlineScriptBytes, inlineStyleBytes } = startupResources(
-    readFileSync(indexPath, 'utf8')
-  );
+  const { files, paintFiles, inlineScripts, inlineStyles, inlineScriptBytes, inlineStyleBytes } =
+    startupResources(readFileSync(indexPath, 'utf8'));
   if (!files.some((file) => file.endsWith('.js')) && inlineScripts.length === 0)
     throw new Error(`${indexPath} loads no script`);
   for (const file of files)
     if (!existsSync(join(exportDir, file)))
       throw new Error(`The app shell loads a missing file: ${file}`);
-  const inlineImageCount = inlineScripts.reduce(
-    (total, body) => total + inlinedImageCount(body),
-    0
-  );
+  const inlineImageCount = inlinedImageCount(inlineScripts);
+  const inlineStyleImageCount = inlinedImageCount(inlineStyles, exceptedImagePayloads());
+  const sizeOf = (list) =>
+    list.reduce((total, file) => total + statSync(join(exportDir, file)).size, 0);
+  const inlineBytes = inlineScriptBytes + inlineStyleBytes;
   return {
     files,
+    paintFiles,
     inlineScriptBytes,
     inlineStyleBytes,
-    startupBytes: files.reduce(
-      (total, file) => total + statSync(join(exportDir, file)).size,
-      inlineScriptBytes + inlineStyleBytes
-    ),
+    firstPaintBytes: inlineBytes + sizeOf(paintFiles),
+    coreControlsBytes: sizeOf(files),
+    startupBytes: inlineBytes + sizeOf(files),
     inlinedImages: [
       ...files.map((file) => ({
         file,
         count: inlinedImageCount(readFileSync(join(exportDir, file), 'utf8')),
       })),
       { file: `${APP_SHELL_FILE} inline scripts`, count: inlineImageCount },
+      { file: `${APP_SHELL_FILE} inline styles`, count: inlineStyleImageCount },
     ].filter(({ count }) => count > 0),
   };
 }
 
 export function checkNativeWebStartup({
   exportDir = NATIVE_WEB_EXPORT_DIR,
-  maxStartupBytes = MAX_NATIVE_WEB_STARTUP_BYTES,
+  maxFirstPaintBytes = MAX_NATIVE_WEB_FIRST_PAINT_BYTES,
+  maxCoreControlsBytes = MAX_NATIVE_WEB_CORE_CONTROLS_BYTES,
   log = console.log,
 } = {}) {
   const measurement = measureNativeWebStartup(exportDir);
-  const problems = nativeWebStartupProblems({ ...measurement, maxStartupBytes });
+  const problems = nativeWebStartupProblems({
+    ...measurement,
+    maxFirstPaintBytes,
+    maxCoreControlsBytes,
+  });
   if (problems.length) throw new Error(problems.join('\n'));
+  const { firstPaintBytes, coreControlsBytes, startupBytes, files, paintFiles } = measurement;
   log(
-    `[native-web-startup] startup JS/CSS ${measurement.startupBytes}/${maxStartupBytes} bytes (${measurement.files.length} files plus ${measurement.inlineScriptBytes} inline JS and ${measurement.inlineStyleBytes} inline CSS bytes; React Native Web floor ${REACT_NATIVE_WEB_FLOOR_BYTES}, floor plus shipping budget ${NATIVE_WEB_STARTUP_TARGET_BYTES}); no inlined images`
+    `[native-web-startup] first paint ${firstPaintBytes}/${maxFirstPaintBytes} bytes (${measurement.inlineScriptBytes} inline JS and ${measurement.inlineStyleBytes} inline CSS bytes plus ${paintFiles.length} files); core controls ${coreControlsBytes}/${maxCoreControlsBytes} bytes (${files.length} files); startup path ${startupBytes} bytes (React Native Web floor ${REACT_NATIVE_WEB_FLOOR_BYTES}, floor plus shipping budget ${NATIVE_WEB_STARTUP_TARGET_BYTES}); no inlined images`
   );
 }
 

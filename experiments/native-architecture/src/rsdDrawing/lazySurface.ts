@@ -43,7 +43,7 @@ export function lazySurface<P extends object>(load: () => Promise<ComponentType<
   );
   warmSurface(surface.load);
   return function LazySurface(props: P) {
-    const Loaded = useSyncExternalStore(surface.subscribe, surface.current);
+    const Loaded = useSyncExternalStore(surface.subscribe, surface.current, surface.current);
     const [failure, setFailure] = useState<{ error: unknown } | null>(null);
     useEffect(() => {
       if (Loaded) return;

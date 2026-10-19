@@ -1,0 +1,68 @@
+[
+ {
+  "label": "devtools-sdk58-prerender-inlinecss",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 680,
+  "lcp": 1230,
+  "tbt": 145,
+  "si": 1201,
+  "cls": 0,
+  "score": 99,
+  "bytes": 739492,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2844,
+  "phases": {
+   "timeToFirstByte": 74,
+   "resourceLoadDelay": 510,
+   "resourceLoadDuration": 627,
+   "elementRenderDelay": 19
+  }
+ },
+ {
+  "label": "devtools-sdk58-prerender-inlinecss",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 679,
+  "lcp": 1229,
+  "tbt": 140,
+  "si": 1198,
+  "cls": 0,
+  "score": 99,
+  "bytes": 744296,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2655,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 584,
+   "resourceLoadDuration": 628,
+   "elementRenderDelay": 16
+  }
+ },
+ {
+  "label": "devtools-sdk58-prerender-inlinecss",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 681,
+  "lcp": 1216,
+  "tbt": 145,
+  "si": 1186,
+  "cls": 0,
+  "score": 99,
+  "bytes": 744296,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 2659,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 587,
+   "resourceLoadDuration": 610,
+   "elementRenderDelay": 18
+  }
+ }
+]

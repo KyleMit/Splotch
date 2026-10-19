@@ -1,0 +1,68 @@
+[
+ {
+  "label": "devtools-sdk58-prerender",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 1292,
+  "lcp": 1292,
+  "tbt": 173,
+  "si": 1313,
+  "cls": 0,
+  "score": 97,
+  "bytes": 744968,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 3499,
+  "phases": {
+   "timeToFirstByte": 50,
+   "resourceLoadDelay": 532,
+   "resourceLoadDuration": 665,
+   "elementRenderDelay": 46
+  }
+ },
+ {
+  "label": "devtools-sdk58-prerender",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 1295,
+  "lcp": 1295,
+  "tbt": 158,
+  "si": 1314,
+  "cls": 0,
+  "score": 98,
+  "bytes": 744968,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 3389,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 587,
+   "resourceLoadDuration": 666,
+   "elementRenderDelay": 41
+  }
+ },
+ {
+  "label": "devtools-sdk58-prerender",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 1292,
+  "lcp": 1292,
+  "tbt": 159,
+  "si": 1312,
+  "cls": 0,
+  "score": 98,
+  "bytes": 744968,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 3386,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 582,
+   "resourceLoadDuration": 666,
+   "elementRenderDelay": 44
+  }
+ }
+]

@@ -1,0 +1,17 @@
+{
+ "entryBytes": 811898,
+ "attributed": 811190,
+ "unmapped": 70367,
+ "groups": {
+  "react-dom": 211589,
+  "react": 8142,
+  "react-native-web": 140669,
+  "expo runtime": 6064,
+  "other libraries": 24033,
+  "tier 1: drawing engine": 100093,
+  "tier 2-3: drawing chrome": 122111,
+  "tier 3-4: product, settings, library": 75576,
+  "platform seams": 27517,
+  "other app code": 25029
+ }
+}

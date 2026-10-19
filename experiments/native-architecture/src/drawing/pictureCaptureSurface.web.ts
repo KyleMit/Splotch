@@ -8,7 +8,7 @@ export type { PictureRequest } from './PictureCapture';
 const capture = createLazyExport(() => import('./pageArtChunk.web'));
 
 export function PictureCapture({ packet }: { packet: PictureRequest }) {
-  const Loaded = useSyncExternalStore(capture.subscribe, capture.current);
+  const Loaded = useSyncExternalStore(capture.subscribe, capture.current, capture.current);
   useEffect(() => {
     let mounted = true;
     capture.load().catch((error: unknown) => {
@@ -24,7 +24,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
 }
 
 export function FixedInkCapture(props: ComponentProps<typeof Fixed>) {
-  const Loaded = useSyncExternalStore(capture.subscribe, capture.current);
+  const Loaded = useSyncExternalStore(capture.subscribe, capture.current, capture.current);
   const { onError } = props;
   useEffect(() => {
     let mounted = true;

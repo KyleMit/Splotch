@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { AppState, Platform, StatusBar, useWindowDimensions } from 'react-native';
+import { AppState, Platform, StatusBar } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
 import {

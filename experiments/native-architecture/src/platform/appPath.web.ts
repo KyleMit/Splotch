@@ -46,5 +46,8 @@ export function createBrowserAppPages() {
 }
 const pages = createBrowserAppPages();
 export const currentAppPage = pages.current;
+// The page the build prerenders into the shell (prerenderFirstFrame.tsx); the shell's boot script
+// hydrates it only on a drawing path.
+export const prerenderedAppPage = (): AppPage => 'drawing';
 export const subscribeAppPage = pages.subscribe;
 export const openAppPage = pages.open;

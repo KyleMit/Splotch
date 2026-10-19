@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from './windowDimensions';
 import { getOrientationAsync, Orientation } from 'expo-screen-orientation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CUTOUT_LEFT_ANGLE, CUTOUT_RIGHT_ANGLE } from '../../../../web/src/lib/platform/notchBand';

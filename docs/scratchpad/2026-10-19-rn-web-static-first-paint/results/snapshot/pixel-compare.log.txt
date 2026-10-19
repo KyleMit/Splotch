@@ -1,0 +1,2 @@
+{"size":"412x915","scheme":"light","pixels":1507920,"differing":0,"share":0}
+{"size":"1133x744","scheme":"dark","pixels":3371808,"differing":0,"share":0}

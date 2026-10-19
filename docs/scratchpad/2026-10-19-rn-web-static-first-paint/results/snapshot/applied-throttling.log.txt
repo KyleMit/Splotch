@@ -1,0 +1,4 @@
+{"label":"snapshot-tti","fcp":756,"lcp":756,"handlers":2617,"settled":743}
+{"label":"snapshot-tti","fcp":736,"lcp":736,"handlers":2545,"settled":731}
+{"label":"snapshot-tti","fcp":744,"lcp":744,"handlers":2555,"settled":738}
+snapshot-tti median: FCP 744 LCP 744 handlers 2555 settled 738

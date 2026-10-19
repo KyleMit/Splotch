@@ -1,4 +1,5 @@
-import { Platform, useWindowDimensions } from 'react-native';
+import { Platform } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { paletteHex } from '../drawing/palette';

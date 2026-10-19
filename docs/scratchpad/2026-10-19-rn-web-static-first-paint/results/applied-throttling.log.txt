@@ -1,0 +1,20 @@
+{"label":"baseline","fcp":3172,"lcp":3848,"handlers":3164,"settled":3879}
+{"label":"baseline","fcp":3068,"lcp":3772,"handlers":3062,"settled":3802}
+{"label":"baseline","fcp":3060,"lcp":3772,"handlers":3055,"settled":3787}
+baseline median: FCP 3068 LCP 3772 handlers 3062 settled 3802
+{"label":"proto4","fcp":1280,"lcp":1280,"handlers":3146,"settled":3803}
+{"label":"proto4","fcp":1284,"lcp":1284,"handlers":3137,"settled":3786}
+{"label":"proto4","fcp":1276,"lcp":1276,"handlers":3127,"settled":3786}
+proto4 median: FCP 1280 LCP 1280 handlers 3137 settled 3786
+{"label":"proto2","fcp":1284,"lcp":1284,"handlers":3093,"settled":3754}
+{"label":"proto2","fcp":1276,"lcp":1276,"handlers":3084,"settled":3752}
+{"label":"proto2","fcp":1276,"lcp":1276,"handlers":3090,"settled":3738}
+proto2 median: FCP 1276 LCP 1276 handlers 3090 settled 3752
+{"label":"shell2","fcp":1260,"lcp":1260,"handlers":3138,"settled":3819}
+{"label":"shell2","fcp":1264,"lcp":1264,"handlers":3143,"settled":3833}
+{"label":"shell2","fcp":1264,"lcp":1264,"handlers":3145,"settled":3836}
+shell2 median: FCP 1264 LCP 1264 handlers 3143 settled 3833
+{"label":"proto5","fcp":1292,"lcp":1292,"handlers":3150,"settled":3805}
+{"label":"proto5","fcp":1276,"lcp":1276,"handlers":3113,"settled":3786}
+{"label":"proto5","fcp":1284,"lcp":1284,"handlers":3123,"settled":3800}
+proto5 median: FCP 1284 LCP 1284 handlers 3123 settled 3800

@@ -1,0 +1,3 @@
+dist-plain startup bytes 325042 brotli 81520 files 1 html 1169 hydrateFlag false
+dist-router-single startup bytes 1089327 brotli 227065 files 1 html 1169 hydrateFlag false
+dist-router-static startup bytes 1105622 brotli 227182 files 1 html 17292 hydrateFlag true

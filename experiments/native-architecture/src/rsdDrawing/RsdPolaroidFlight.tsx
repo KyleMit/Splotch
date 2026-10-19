@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { StyleSheet, View, useWindowDimensions, type ViewInstance } from 'react-native';
+import { StyleSheet, View, type ViewInstance } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { polaroidCssSize } from '../../../../web/src/lib/drawing/polaroidGeometry';
 import { POLAROID_FLIGHT_MS } from '../../../../web/src/lib/drawing/screenshotTiming';

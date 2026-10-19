@@ -28,5 +28,5 @@ export function useAiProgressOwner(state: AiState | null): AiProgressOwner {
 }
 
 export function useAiProgress(owner: AiProgressOwner) {
-  return useSyncExternalStore(owner.subscribe, owner.snapshot);
+  return useSyncExternalStore(owner.subscribe, owner.snapshot, owner.snapshot);
 }

@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
-import { useWindowDimensions, type Modal } from 'react-native';
+import { type Modal } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MODAL_GUTTER_MIN_PX, modalFrame, type ModalFrame, type ModalSize } from './modalGeometry';
 

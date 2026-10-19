@@ -12,7 +12,8 @@ const subscribeToNothing = () => () => {};
 export function useInstallSnapshot(owner: InstallPromptOwner | null) {
   return useSyncExternalStore(
     owner?.subscribe ?? subscribeToNothing,
-    owner?.snapshot ?? (() => NO_INSTALL)
+    owner?.snapshot ?? (() => NO_INSTALL),
+    () => NO_INSTALL
   );
 }
 

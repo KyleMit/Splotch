@@ -1,12 +1,6 @@
 import { memo } from 'react';
-import {
-  Image,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-  type ImageSourcePropType,
-  type ImageStyle,
-} from 'react-native';
+import { Image, StyleSheet, View, type ImageSourcePropType, type ImageStyle } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import handmadePaper from '../../assets/paper/handmade-paper.webp';
 import { useDrawingTheme } from './DrawingAppearance';
 import { paperGrainDensity } from './paperGrainDensity';

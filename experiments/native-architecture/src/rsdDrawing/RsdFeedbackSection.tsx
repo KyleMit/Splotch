@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import type { NativeFeedbackOwner, NativeFeedbackState } from '../feedback/feedback';
 import { MAX_REPORT_MESSAGE_LENGTH, REPORT_KINDS } from '../feedback/report';

@@ -1,11 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  useWindowDimensions,
-  type GestureResponderEvent,
-  type PointerEvent,
-} from 'react-native';
+import { StyleSheet, View, type GestureResponderEvent, type PointerEvent } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { css, html } from 'react-strict-dom';
 import { Svg, Polygon } from '../platform/svg';

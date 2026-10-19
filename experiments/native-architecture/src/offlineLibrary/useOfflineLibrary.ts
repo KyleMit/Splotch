@@ -5,7 +5,11 @@ import { offlineLibrary } from './runtime';
 import { SETTLED_IN_STROKES } from '../install/installPolicy';
 
 export function useOfflineLibrary(drawing: boolean, pickerOpen: boolean, committedStrokes: number) {
-  const snapshot = useSyncExternalStore(offlineLibrary.subscribe, offlineLibrary.snapshot);
+  const snapshot = useSyncExternalStore(
+    offlineLibrary.subscribe,
+    offlineLibrary.snapshot,
+    offlineLibrary.snapshot
+  );
   useEffect(() => {
     void offlineLibrary.initialize();
     offlineLibrary.setActive(AppState.currentState === 'active');

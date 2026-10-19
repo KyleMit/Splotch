@@ -31,8 +31,10 @@ function lockApplies(): boolean {
   );
 }
 
+// Read after mount: the first render matches the frame the build prerendered without a window,
+// and the effect below reads the browser straight away.
 export function useOrientationLockApplies(): boolean {
-  const [applies, setApplies] = useState(lockApplies);
+  const [applies, setApplies] = useState(false);
   useEffect(() => {
     const changed = () => setApplies(lockApplies());
     changed();

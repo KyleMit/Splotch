@@ -1,4 +1,5 @@
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { type ComponentProps } from 'react';
 import { NativePaper } from './NativePaper';

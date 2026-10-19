@@ -63,15 +63,27 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   `Button.svelte` and `app.css`.
 * `build-native-web.mjs` (`npm run native:web:build`) exports the installable, offline web build.
   Its post hook runs `check-native-web-precache.mjs`, which verifies the service worker, then
-  `check-native-web-startup.mjs`, which holds the scripts, stylesheets, preloads and inline code the
-  app shell loads before first paint to `MAX_NATIVE_WEB_STARTUP_BYTES` and rejects an image inlined
-  into them. That cap is set from the measured export against the shipping
-  `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor; the constant's comment
-  carries the numbers. A surface the drawing screen shows only on request loads through
+  `check-native-web-startup.mjs`, which holds the startup path to two caps (ADR-0180) and rejects an
+  image inlined into it. `MAX_NATIVE_WEB_FIRST_PAINT_BYTES` holds the shell's inline code and the
+  scripts, stylesheets and preloads the document names. `MAX_NATIVE_WEB_CORE_CONTROLS_BYTES` holds
+  every script and stylesheet the controls wait for, including the bundle the boot script loads
+  after first paint. Both are set from the measured export, and the check reports them against the
+  shipping `MAX_STARTUP_JS_CSS_BYTES` plus the measured React Native Web floor. The constants'
+  comments carry the numbers. A surface the drawing screen shows only on request loads through
   `drawingSheets.web.ts`, so it stays off that path, and mounts inside an `RsdSurfaceBoundary`, so a
   failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
   drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
   load only leaves the banner out.
+* `prerender-native-web.mjs` runs inside `native:web:build` (ADR-0180). It bundles
+  `experiments/native-architecture/src/prerenderFirstFrame.tsx` for Node through Expo's own bundle
+  request, renders the drawing screen's first frame for each size class, orientation and theme, and
+  writes them into `index.html` as `<template>`s with a boot script that clones the fitting one into
+  the root, sets Expo's hydration flag and loads the bundle after that frame's first contentful
+  paint. It also inlines the exported style sheet, which would otherwise hold first paint for a
+  round trip. `tools/tests/native-web-first-frame.test.mjs` runs the boot script against the
+  generated shell. A module the drawing screen's first frame reads must render in Node (no `window`
+  at import or during render, a server snapshot on every `useSyncExternalStore`), or this step fails
+  the build.
 
 ## Layout
 

@@ -1,0 +1,68 @@
+[
+ {
+  "label": "devtools-baseline",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 1,
+  "fcp": 3271,
+  "lcp": 3888,
+  "tbt": 70,
+  "si": 3839,
+  "cls": 0.009,
+  "score": 80,
+  "bytes": 738618,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 3396,
+  "phases": {
+   "timeToFirstByte": 5,
+   "resourceLoadDelay": 3204,
+   "resourceLoadDuration": 665,
+   "elementRenderDelay": 14
+  }
+ },
+ {
+  "label": "devtools-baseline",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 2,
+  "fcp": 3027,
+  "lcp": 3652,
+  "tbt": 81,
+  "si": 3601,
+  "cls": 0.009,
+  "score": 83,
+  "bytes": 738618,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 3167,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 2970,
+   "resourceLoadDuration": 669,
+   "elementRenderDelay": 12
+  }
+ },
+ {
+  "label": "devtools-baseline",
+  "throttle": "devtools",
+  "device": "phone",
+  "visit": "first",
+  "sample": 3,
+  "fcp": 3037,
+  "lcp": 3651,
+  "tbt": 68,
+  "si": 3602,
+  "cls": 0.009,
+  "score": 83,
+  "bytes": 738618,
+  "lcpNode": "<div aria-hidden=\"true\" data-testid=\"paper-texture\" style=\"position: absolute; inset: 0px;",
+  "tti": 3164,
+  "phases": {
+   "timeToFirstByte": 1,
+   "resourceLoadDelay": 2980,
+   "resourceLoadDuration": 667,
+   "elementRenderDelay": 3
+  }
+ }
+]

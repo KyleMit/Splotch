@@ -5,7 +5,7 @@ import type { SoundSettingsState } from '../settings/soundSettings';
 import type { ToolbarStyle } from '../settings/toolbarStyle';
 import { RsdAction, styles as controlStyles } from './controls';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { RsdInstallGuide } from './RsdInstallGuide';
 import { RsdAboutSection } from './RsdAboutSection';
 import { RsdFeedbackSection } from './RsdFeedbackSection';

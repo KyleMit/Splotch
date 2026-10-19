@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useWindowDimensions, type ScrollViewInstance } from 'react-native';
+import { type ScrollViewInstance } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { INFORMATION_TOP_ID, type AppPage } from '../information/appPages';
 import releases from '../../../../web/src/lib/releases.json';
 import { informationFragmentAtLaunch } from '../platform/informationFragment';
