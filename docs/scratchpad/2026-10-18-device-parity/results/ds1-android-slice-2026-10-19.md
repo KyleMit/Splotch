@@ -77,8 +77,9 @@ option as selected. The A11Y-2 record carries this.
 **S12 ink is not compared.** `rn`'s ink follows the driven paths: one zigzag, one loop and one
 diagonal. On this emulator, `ref160` lays down extra copies of the same strokes, offset sideways:
 two in landscape, more in portrait. Both arms received the same taps and stroke samples, and each
-batch began from a fresh install. Why v1.6.0 does this under synthetic touch was not investigated.
-The portrait page placement matches.
+batch began from a fresh install. Why v1.6.0 does this on the emulator was not investigated: the
+emulator renders with a software GPU, and the input is synthetic. The portrait page placement
+matches.
 
 Everywhere else in the 28 pairs, `rn` matched `ref160` within 2 dp on control frames and 2/255 on
 the sampled colours. That includes the portrait drawer, both width menus and the brush menu.

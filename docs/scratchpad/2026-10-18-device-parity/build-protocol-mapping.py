@@ -649,6 +649,10 @@ PROTOCOL_FAILED = {
               'iphone-notch: a triple tap on Clear shows no coachmark; a hold does'),
     'E0174': ('DS-2', 'results/ds2-slice-2026-10-19.md', 3013,
               'iphone-notch: a triple tap on Clear shows no coachmark'),
+    'B0206': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
+              'android-api36 phone: hardware digits, Delete and Enter do not reach the grown-up check'),
+    'E0450': ('KEY-1', 'results/key1-slice-2026-10-19.md', 3031,
+              'android-api36 phone: a typed answer never reaches the grown-up check, so Enter checks nothing'),
 }
 
 
