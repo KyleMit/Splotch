@@ -4,6 +4,7 @@ import android.view.MotionEvent
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.UIManagerHelper
@@ -38,7 +39,6 @@ class PaperInputView(private val reactContext: ThemedReactContext) : ReactViewGr
     val actionId = event.getPointerId(event.actionIndex)
     if (phase == "start") starts[actionId] = event.eventTime
     getLocationInWindow(origin)
-    val density = resources.displayMetrics.density.toDouble()
     val changed = Arguments.createArray()
     val contacts = Arguments.createArray()
     for (index in 0 until event.pointerCount) {
@@ -50,31 +50,50 @@ class PaperInputView(private val reactContext: ThemedReactContext) : ReactViewGr
       if (changing && phase == "move") {
         for (history in 0 until event.historySize) {
           val time = event.getHistoricalEventTime(history)
-          if (time >= startedAt) samples.pushMap(Arguments.createMap().apply {
-            putDouble("pageX", (event.getHistoricalX(index, history) + origin[0]) / density)
-            putDouble("pageY", (event.getHistoricalY(index, history) + origin[1]) / density)
-            putDouble("timestamp", time.toDouble())
-          })
+          if (time >= startedAt) samples.pushMap(
+            samplePayload(event.getHistoricalX(index, history), event.getHistoricalY(index, history), time.toDouble())
+          )
         }
       }
-      samples.pushMap(Arguments.createMap().apply {
-        putDouble("pageX", (event.getX(index) + origin[0]) / density)
-        putDouble("pageY", (event.getY(index) + origin[1]) / density)
-        putDouble("timestamp", event.eventTime.toDouble())
-      })
-      contacts.pushMap(Arguments.createMap().apply {
-        putString("identifier", identifier.toString())
-        putDouble("startedAt", startedAt.toDouble())
-        putString("tool", when (event.getToolType(index)) {
-          MotionEvent.TOOL_TYPE_FINGER -> "touch"
-          MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER -> "pen"
-          MotionEvent.TOOL_TYPE_MOUSE -> "mouse"
-          else -> "unknown"
-        })
-        putArray("samples", samples)
-      })
+      samples.pushMap(samplePayload(event.getX(index), event.getY(index), event.eventTime.toDouble()))
+      contacts.pushMap(contactPayload(identifier.toString(), startedAt.toDouble(), when (event.getToolType(index)) {
+        MotionEvent.TOOL_TYPE_FINGER -> "touch"
+        MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER -> "pen"
+        MotionEvent.TOOL_TYPE_MOUSE -> "mouse"
+        else -> "unknown"
+      }, samples))
     }
     if (changed.size() == 0) return true
+    dispatchInput(phase, changed, contacts)
+    if (phase == "end") starts.remove(actionId)
+    if (phase == "cancel") starts.clear()
+    return true
+  }
+
+  // A sample, a contact and a packet as src/drawing/paperInput.ts reads them. The probe build's
+  // replay (SplotchPaperReplay.kt) sends its packets through these three as well, after
+  // locateInWindow(). A sample's x and y are view pixels.
+  internal fun locateInWindow() = getLocationInWindow(origin)
+
+  internal fun samplePayload(x: Float, y: Float, timestamp: Double): WritableMap {
+    val density = resources.displayMetrics.density.toDouble()
+    return Arguments.createMap().apply {
+      putDouble("pageX", (x + origin[0]) / density)
+      putDouble("pageY", (y + origin[1]) / density)
+      putDouble("timestamp", timestamp)
+    }
+  }
+
+  internal fun contactPayload(identifier: String, startedAt: Double, tool: String, samples: WritableArray): WritableMap =
+    Arguments.createMap().apply {
+      putString("identifier", identifier)
+      putDouble("startedAt", startedAt)
+      putString("tool", tool)
+      putArray("samples", samples)
+    }
+
+  internal fun dispatchInput(phase: String, changed: WritableArray, contacts: WritableArray): Boolean {
+    val density = resources.displayMetrics.density.toDouble()
     val payload = Arguments.createMap().apply {
       putDouble("sequence", sequence++.toDouble())
       putString("phase", phase)
@@ -87,11 +106,8 @@ class PaperInputView(private val reactContext: ThemedReactContext) : ReactViewGr
         putDouble("bottomInset", bottom / density)
       })
     }
-    UIManagerHelper.getEventDispatcherForReactTag(reactContext, id)?.dispatchEvent(
-      PaperInputEvent(UIManagerHelper.getSurfaceId(this), id, payload)
-    )
-    if (phase == "end") starts.remove(actionId)
-    if (phase == "cancel") starts.clear()
+    val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, id) ?: return false
+    dispatcher.dispatchEvent(PaperInputEvent(UIManagerHelper.getSurfaceId(this), id, payload))
     return true
   }
 

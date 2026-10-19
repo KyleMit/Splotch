@@ -29,9 +29,29 @@ final class SplotchPaperInputView: RCTView {
     return self
   }
 
+  // A sample, a contact and a packet as src/drawing/paperInput.ts reads them. The probe build's
+  // replay (SplotchPaperReplay.swift) sends its packets through these three as well.
+  func samplePayload(at point: CGPoint, timestampMs: Double) -> [String: Any] {
+    ["pageX": point.x, "pageY": point.y, "timestamp": timestampMs]
+  }
+
+  func contactPayload(identifier: String, startedAtMs: Double, tool: String, samples: [[String: Any]]) -> [String: Any] {
+    ["identifier": identifier, "startedAt": startedAtMs, "tool": tool, "samples": samples]
+  }
+
+  @discardableResult
+  func dispatch(_ phase: String, changed: [String], contacts: [[String: Any]]) -> Bool {
+    guard let window else { return false }
+    onPaperInput?(["sequence": sequence, "phase": phase,
+      "changed": changed, "contacts": contacts,
+      "viewport": ["width": window.bounds.width, "height": window.bounds.height,
+        "bottomInset": window.safeAreaInsets.bottom]])
+    sequence += 1
+    return onPaperInput != nil
+  }
+
   private func sample(_ touch: UITouch, in window: UIWindow) -> [String: Any] {
-    let point = touch.location(in: window)
-    return ["pageX": point.x, "pageY": point.y, "timestamp": touch.timestamp * millisecondsPerSecond]
+    samplePayload(at: touch.location(in: window), timestampMs: touch.timestamp * millisecondsPerSecond)
   }
 
   private func tool(_ touch: UITouch) -> String {
@@ -53,14 +73,10 @@ final class SplotchPaperInputView: RCTView {
         ? event?.coalescedTouches(for: contact.touch) ?? [contact.touch] : [contact.touch]
       var samples = history.filter { $0.timestamp >= contact.startedAt }.map { sample($0, in: window) }
       if history.last !== contact.touch { samples.append(sample(contact.touch, in: window)) }
-      return ["identifier": contact.identifier, "startedAt": contact.startedAt * millisecondsPerSecond,
-        "tool": tool(contact.touch), "samples": samples]
+      return contactPayload(identifier: contact.identifier, startedAtMs: contact.startedAt * millisecondsPerSecond,
+        tool: tool(contact.touch), samples: samples)
     }
-    onPaperInput?(["sequence": sequence, "phase": phase,
-      "changed": identifiers, "contacts": payload,
-      "viewport": ["width": window.bounds.width, "height": window.bounds.height,
-        "bottomInset": window.safeAreaInsets.bottom]])
-    sequence += 1
+    dispatch(phase, changed: identifiers, contacts: payload)
   }
 
   override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
