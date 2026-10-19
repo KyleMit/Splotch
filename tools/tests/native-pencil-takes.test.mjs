@@ -128,6 +128,55 @@ describe('pencil take variety', () => {
     expect(second.play).toHaveBeenCalledOnce();
     loop.dispose();
   });
+  function holdSeeks(player) {
+    const lands = [];
+    player.seekTo = vi.fn(() => new Promise((resolve) => lands.push(resolve)));
+    return async () => {
+      lands.shift()();
+      await Promise.resolve();
+      await Promise.resolve();
+    };
+  }
+  it('defers a stroke that finds every take mid-seek until its take lands', async () => {
+    const f = takes();
+    const loop = await ready(f);
+    const lands = f.players.map(holdSeeks);
+    for (const pick of [0, 0.5, 0.9]) {
+      vi.spyOn(Math, 'random').mockReturnValueOnce(pick);
+      loop.start();
+      loop.stop();
+    }
+    expect(f.players.every((player) => player.seekTo.mock.calls.length === 1)).toBe(true);
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5);
+    loop.start();
+    const [, second] = f.players;
+    expect(second.play).toHaveBeenCalledOnce();
+    await lands[1]();
+    expect(second.play).toHaveBeenCalledTimes(2);
+    loop.dispose();
+  });
+  it('restarts a lone take only after its seek lands, and not at all once the stroke ended', async () => {
+    const f = takes();
+    await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));
+    f.players[0].listener({ isLoaded: true, playing: false, error: null });
+    f.players[1].listener({ isLoaded: false, playing: false, error: 'decoder error' });
+    f.players[2].listener({ isLoaded: false, playing: false, error: 'decoder error' });
+    const loop = await f.promise;
+    const [only] = f.players;
+    const land = holdSeeks(only);
+    loop.start();
+    loop.stop();
+    loop.start();
+    expect(only.play).toHaveBeenCalledOnce();
+    await land();
+    expect(only.play).toHaveBeenCalledTimes(2);
+    loop.stop();
+    loop.start();
+    loop.stop();
+    await land();
+    expect(only.play).toHaveBeenCalledTimes(2);
+    loop.dispose();
+  });
   it('keeps playing the takes that loaded when one take fails', async () => {
     const f = takes();
     await vi.waitFor(() => expect(native.create).toHaveBeenCalledTimes(PENCIL_SOUNDS.length));

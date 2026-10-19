@@ -58,19 +58,41 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
 }
 
 // A play() that lands on a seek still in flight blocks the iPad main thread for a sixth of a second
-// or more (issue 3003), so a take moves to its next random start point while it is paused: as part
-// of loading, and after each stroke.
-function createCue(player: AudioPlayer) {
-  let seeking = false;
+// or more (issue 3003), so a take moves to its next random start point only while it is paused: as
+// part of loading, and after each stroke it sounded in. A stroke that reaches a take mid-seek plays
+// it once the seek lands, unless the stroke has ended by then.
+function createCuedPlayback(player: AudioPlayer) {
+  let seeks = 0;
+  let wanted = false;
+  let sounded = false;
+  function play() {
+    if (!wanted || sounded || seeks > 0) return;
+    sounded = true;
+    player.play();
+  }
+  function cue(): Promise<void> {
+    const offset = pickPencilStart() * player.duration;
+    if (!Number.isFinite(offset) || offset <= 0) return Promise.resolve();
+    seeks += 1;
+    return player.seekTo(offset).then(() => {
+      seeks -= 1;
+      play();
+    });
+  }
   return {
-    seeking: () => seeking,
-    next(): Promise<void> {
-      const offset = pickPencilStart() * player.duration;
-      if (!Number.isFinite(offset) || offset <= 0) return Promise.resolve();
-      seeking = true;
-      return player.seekTo(offset).then(() => {
-        seeking = false;
-      });
+    cue,
+    seeking: () => seeks > 0,
+    wanted: () => wanted,
+    start() {
+      wanted = true;
+      play();
+    },
+    stop(): Promise<void> {
+      wanted = false;
+      player.pause();
+      if (!sounded) return Promise.resolve();
+      sounded = false;
+      return cue();
     },
   };
 }
@@ -90,10 +112,9 @@ export async function loadPencilClip(
   let disposed = false;
   let loaded = false;
   let settled = false;
-  let active = false;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   const gain = createNativeGain(player, onFailure);
-  const cue = createCue(player);
+  const playback = createCuedPlayback(player);
   let subscription: { remove: () => void } | null = null;
   function dispose() {
     if (disposed) return;
@@ -144,7 +165,7 @@ export async function loadPencilClip(
             failed();
             return;
           }
-          if (status.playing && !active) {
+          if (status.playing && !playback.wanted()) {
             gain.mute();
             player.pause();
           }
@@ -154,26 +175,21 @@ export async function loadPencilClip(
           }
           if (!status.isLoaded || loaded) return;
           loaded = true;
-          void cue.next().then(() => {
+          void playback.cue().then(() => {
             if (disposed) return;
             settled = true;
             if (timeout !== null) clearTimeout(timeout);
             resolve({
               start() {
-                if (disposed) return;
-                active = true;
-                player.play();
+                if (!disposed) playback.start();
               },
               setVolume: gain.setVolume,
               stop() {
-                const played = active;
-                active = false;
                 if (disposed) return;
                 gain.mute();
-                player.pause();
-                if (played) void cue.next().catch(failed);
+                void playback.stop().catch(failed);
               },
-              seeking: cue.seeking,
+              seeking: playback.seeking,
               dispose,
             });
           }, failed);
