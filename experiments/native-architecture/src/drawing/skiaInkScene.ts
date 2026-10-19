@@ -14,6 +14,7 @@ import { createInkLayer, type InkLayer } from './skiaInkLayer';
 import type { InkPaintContext } from './skiaInkPainter';
 import { orderedOps } from './inkOps';
 import { perfTimed } from './perfProbe';
+import { createPictureRetirement } from './skiaViewPicture';
 
 type Size = Readonly<{ width: number; height: number }>;
 export type SceneInput = Readonly<{
@@ -93,6 +94,7 @@ export function createInkScene() {
   const painted = new Map<LiveStroke, number>();
   let shown = false;
   let picture: SkPicture | null = null;
+  const retirement = createPictureRetirement();
 
   function rebuild(next: SceneInput, live: readonly LiveStroke[]) {
     const previous = layer;
@@ -169,13 +171,12 @@ export function createInkScene() {
       );
     },
     rebuild,
-    // The picture to hand the view, when ink changed since the last one. The view holds its own
-    // reference to each picture it is given, so the scene releases the one before; with it go the
-    // tile images only it still drew.
+    // The picture to hand the view, when ink changed since the last one. The one before is
+    // retired, not released (skiaViewPicture.ts); with it go the tile images only it still drew.
     picture(): SkPicture | null {
       if (!layer || shown) return null;
       shown = true;
-      picture?.dispose();
+      if (picture) retirement.retire(picture);
       picture = recordScene(layer);
       return picture;
     },
@@ -190,7 +191,7 @@ export function createInkScene() {
       return captureLayer(layer, projection, grid);
     },
     dispose() {
-      picture?.dispose();
+      if (picture) retirement.retire(picture);
       picture = null;
       layer?.dispose();
       layer = null;
