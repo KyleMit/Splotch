@@ -27,6 +27,7 @@ import {
 } from '../../experiments/native-architecture/src/drawing/haloModel.ts';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 
 vi.mock('react-native', () => ({ findNodeHandle: (owner) => owner }));
 
@@ -125,8 +126,9 @@ function responder(brush) {
       sound: null,
     }),
     () => FRAME,
-    (_drafts, _paper, halos) => published.push(halos),
-    () => 1
+    (_paper, halos) => published.push(halos),
+    () => 1,
+    createLiveInkFeed()
   );
   let sequence = 0;
   const send = (phase, value) => {

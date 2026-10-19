@@ -14,8 +14,8 @@ import {
   createHistory,
   emptyDrawing,
   undoDrawing,
-  parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { createOfflineLibrary } from '../../experiments/native-architecture/src/offlineLibrary/controller.ts';
 
 const widths = { soundEnabled: false, strokeWidth: 'medium', eraserWidth: 'medium' };

@@ -1,10 +1,9 @@
 import { MAX_UNDO_DEPTH } from '../../../../web/src/lib/drawing/undoHistory';
-import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
-import { isPageId, type PageId } from './pages';
+import { isPaintColor, type PaintColor } from './palette';
+import type { PageId } from './pages';
 import {
   INITIAL_RAINBOW,
   pickRainbow,
-  MAGIC_RAINBOW_COUNT,
   MAX_CRAYON_SEED,
   type Brush,
   type LegacySolidBrush,
@@ -18,36 +17,41 @@ import {
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
-  LEGACY_PAPER,
   UNADOPTED_PAPER,
-  paperSize,
   readDrawingPaper,
   samePaper,
   type DrawingPaper,
   type PaperReference,
-  type PaperSize,
 } from './paperSpace';
 export { PAPER_WIDTH, PAPER_HEIGHT } from './paperSpace';
 import { appendSmoothSegments, type PathSeg } from '../../../../web/src/lib/drawing/strokeMath';
-import {
-  defaultStoredStrokeWidth,
-  isStoredStrokeWidth,
-  type StoredStrokeWidthPx,
-} from './storedStrokeWidth';
+import type { StoredStrokeWidthPx } from './storedStrokeWidth';
 
 const MIN_SAMPLE_DISTANCE = 1;
 export type Point = Readonly<{ x: number; y: number }>;
-type BrushStyle =
+export type BrushStyle =
   | Readonly<{ color: PaintColor; brush: 'pen' | LegacySolidBrush }>
   | Readonly<{ color: PaintColor; brush: 'crayon'; seed: number }>
   | Readonly<{ brush: 'magic'; rainbow: number }>
   | Readonly<{ brush: 'eraser' }>;
 export type StrokeStyle = BrushStyle & Readonly<{ width: StoredStrokeWidthPx }>;
-export type Stroke = StrokeStyle & Readonly<{ points: readonly Point[] }>;
+// One retained op of a stroke (ADR-0178): the point count the stroke had reached when the op was
+// painted, and the drawing-wide frame it was painted in. Op 0 is the dot at the first point; each
+// later op paints the points after the previous op's end as one path continuing from its pen.
+// Frames order every op of a drawing, so a cohort's contacts replay interleaved as they were drawn.
+export type StrokeOp = readonly [end: number, frame: number];
+export type Stroke = StrokeStyle &
+  Readonly<{ points: readonly Point[]; ops?: readonly StrokeOp[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
 type DrawingContents = Readonly<{ pageId: PageId; rainbow: number; strokes: readonly Stroke[] }>;
+// Version 8 is version 7 whose strokes may carry ops; version 7 strokes never do. A version-5
+// picture's strokes carry ops only while it is open: its saved format has none (drawingFormat.ts).
 export type Drawing = DrawingContents &
-  (Readonly<{ version: 5 }> | Readonly<{ version: 7; paper: DrawingPaper }>);
+  (
+    | Readonly<{ version: 5 }>
+    | Readonly<{ version: 7; paper: DrawingPaper }>
+    | Readonly<{ version: 8; paper: DrawingPaper }>
+  );
 export type History = Readonly<{
   drawing: Drawing;
   undo: readonly Drawing[];
@@ -55,6 +59,26 @@ export type History = Readonly<{
 
 // An Undo copy that only changes the next Magic choice retains every existing pixel and scan.
 const inkIdentities = new WeakMap<Drawing, Drawing>();
+// The list each addStrokes list appended to, so a renderer holding the earlier list learns of the
+// append without comparing every stroke. A list's own entry is dropped once it is appended to in
+// turn, so no entry keeps a chain of ancestor lists alive.
+const appendedTo = new WeakMap<readonly Stroke[], readonly Stroke[]>();
+
+function appendStrokes(strokes: readonly Stroke[], additions: readonly Stroke[]) {
+  const appended = [...strokes, ...additions];
+  appendedTo.delete(strokes);
+  appendedTo.set(appended, strokes);
+  return appended;
+}
+
+// Whether `next` starts with every stroke of `base`, by identity.
+export function extendsStrokes(base: readonly Stroke[], next: readonly Stroke[]): boolean {
+  return (
+    next === base ||
+    appendedTo.get(next) === base ||
+    (base.length <= next.length && base.every((stroke, index) => next[index] === stroke))
+  );
+}
 
 export function drawingInkIdentity(drawing: Drawing): Drawing {
   return inkIdentities.get(drawing) ?? drawing;
@@ -63,8 +87,20 @@ export function drawingInkIdentity(drawing: Drawing): Drawing {
 export function emptyDrawing(
   rainbow = INITIAL_RAINBOW,
   pageId: PageId = 'blank'
-): Extract<Drawing, { version: 7 }> {
-  return { version: 7, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
+): Extract<Drawing, { version: 8 }> {
+  return { version: 8, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
+}
+
+// The frame a new cohort's first ops take. A cohort's frames run without a gap, and the next
+// cohort skips one frame past every op the drawing holds, so adjacent frames always mean the same
+// cohort (the ink layer shares a Crayon glaze only between contacts drawn together).
+export function cohortFrame(drawing: Drawing): number {
+  let next = 0;
+  for (const stroke of drawing.strokes) {
+    const last = stroke.ops?.at(-1);
+    if (last && last[1] + 2 > next) next = last[1] + 2;
+  }
+  return next;
 }
 
 export function strokeStyle(
@@ -104,9 +140,14 @@ export function addStrokes(
   const additions = strokes.filter((stroke) => stroke.points.length > 0);
   if (additions.length === 0) return history;
   const drawing = history.drawing;
+  // A version-5 picture stays version 5; its new strokes keep their ops while it is open, so
+  // they replay as they were drawn. Only an imported picture is version 5; a session starts at 8.
   if (drawing.version === 5) {
     if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
-    return commitDrawing(history, { ...drawing, strokes: [...drawing.strokes, ...additions] });
+    return commitDrawing(history, {
+      ...drawing,
+      strokes: appendStrokes(drawing.strokes, additions),
+    });
   }
   const reference = drawing.paper.kind === 'adopted' ? drawing.paper : paper;
   if (!reference || reference.kind !== 'adopted' || (paper && !samePaper(reference, paper)))
@@ -123,8 +164,9 @@ export function addStrokes(
   }
   return commitDrawing(history, {
     ...drawing,
+    version: 8,
     paper: drawing.paper.kind === 'adopted' ? drawing.paper : adopted,
-    strokes: [...drawing.strokes, ...additions],
+    strokes: appendStrokes(drawing.strokes, additions),
   });
 }
 
@@ -177,20 +219,31 @@ export function paperPoint(x: number, y: number, width: number, height: number):
   };
 }
 
-export function appendPoint(
+export type AppendOutcome = 'appended' | 'duplicate' | 'minDistanceRejected';
+
+// What a stroke keeps of a sample that follows `points`.
+export function sampleOutcome(
   points: readonly Point[],
   point: Point,
   includeEndpoint = false
-): readonly Point[] {
+): AppendOutcome {
   const last = points.at(-1);
-  if (last && last.x === point.x && last.y === point.y) return points;
+  if (last && last.x === point.x && last.y === point.y) return 'duplicate';
   if (
     !includeEndpoint &&
     last &&
     Math.hypot(point.x - last.x, point.y - last.y) < MIN_SAMPLE_DISTANCE
   )
-    return points;
-  return [...points, point];
+    return 'minDistanceRejected';
+  return 'appended';
+}
+
+export function appendPoint(
+  points: readonly Point[],
+  point: Point,
+  includeEndpoint = false
+): readonly Point[] {
+  return sampleOutcome(points, point, includeEndpoint) === 'appended' ? [...points, point] : points;
 }
 
 type SmoothStroke = Readonly<{ start: Point; segments: readonly PathSeg[] }>;
@@ -213,155 +266,6 @@ export function strokePath(points: readonly Point[], lead?: Point): string {
   let path = `M${start.x} ${start.y}`;
   for (const segment of segments) path += ` Q${segment.cx} ${segment.cy} ${segment.x} ${segment.y}`;
   return path;
-}
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width' | 'color' | 'paper';
-
-function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
-  return (
-    Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key))
-  );
-}
-
-function savedFormat(value: Record<string, unknown>): SavedFormat {
-  if (value.version === 1 && exactKeys(value, ['version', 'strokes'])) return 'legacy';
-  if (value.version === 2 && exactKeys(value, ['version', 'pageId', 'strokes'])) return 'page';
-  if (value.version === 2 && exactKeys(value, ['version', 'rainbow', 'strokes'])) return 'brush';
-  if (value.version === 3 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
-    return 'joint';
-  if (value.version === 4 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
-    return 'width';
-  if (value.version === 5 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
-    return 'color';
-  if (value.version === 7 && exactKeys(value, ['version', 'paper', 'pageId', 'rainbow', 'strokes']))
-    return 'paper';
-  throw new Error('This saved picture is not a supported drawing.');
-}
-
-function readRainbow(value: unknown): number {
-  if (
-    typeof value !== 'number' ||
-    !Number.isInteger(value) ||
-    value < 0 ||
-    value >= MAGIC_RAINBOW_COUNT
-  )
-    throw new Error('This saved picture contains an invalid rainbow.');
-  return value;
-}
-
-function readStyle(
-  item: Record<string, unknown>,
-  format: SavedFormat,
-  rainbow: number
-): BrushStyle {
-  if (
-    (format === 'joint' || format === 'width' || format === 'color' || format === 'paper') &&
-    item.brush === 'eraser' &&
-    exactKeys(item, ['brush', 'points'])
-  )
-    return { brush: 'eraser' };
-  const rich =
-    format === 'brush' ||
-    format === 'joint' ||
-    format === 'width' ||
-    format === 'color' ||
-    format === 'paper';
-  if (
-    rich &&
-    item.brush === 'magic' &&
-    item.rainbow === rainbow &&
-    exactKeys(item, ['brush', 'rainbow', 'points'])
-  )
-    return { brush: 'magic', rainbow };
-  if (
-    format === 'color' || format === 'paper' ? isPaintColor(item.color) : isPaletteLabel(item.color)
-  ) {
-    const color = item.color;
-    if (!isPaintColor(color)) throw new Error('This saved picture contains an invalid color.');
-    if (
-      ((format !== 'paper' && (item.brush === 'pencil' || item.brush === 'marker')) ||
-        ((format === 'color' || format === 'paper') && item.brush === 'pen')) &&
-      exactKeys(item, ['brush', 'color', 'points'])
-    )
-      return { brush: item.brush, color };
-    if (
-      rich &&
-      item.brush === 'crayon' &&
-      typeof item.seed === 'number' &&
-      Number.isSafeInteger(item.seed) &&
-      item.seed > 0 &&
-      item.seed <= MAX_CRAYON_SEED &&
-      exactKeys(item, ['brush', 'color', 'seed', 'points'])
-    )
-      return { brush: 'crayon', color, seed: item.seed };
-  }
-  throw new Error('This saved picture contains an invalid brush.');
-}
-
-function readPoint(point: unknown, size: PaperSize | null): Point {
-  if (
-    !record(point) ||
-    !exactKeys(point, ['x', 'y']) ||
-    typeof point.x !== 'number' ||
-    typeof point.y !== 'number' ||
-    !Number.isFinite(point.x) ||
-    !Number.isFinite(point.y) ||
-    (size !== null && (point.x < 0 || point.x > size.width || point.y < 0 || point.y > size.height))
-  )
-    throw new Error('This saved picture contains an invalid point.');
-  return { x: point.x, y: point.y };
-}
-
-export function parseDrawing(value: unknown): Drawing {
-  if (!record(value) || !Array.isArray(value.strokes))
-    throw new Error('This saved picture is not a supported drawing.');
-  const format = savedFormat(value);
-  const pageId = format === 'legacy' || format === 'brush' ? 'blank' : value.pageId;
-  if (!isPageId(pageId)) throw new Error('This saved picture contains an invalid coloring page.');
-  const rainbow =
-    format === 'legacy' || format === 'page' ? INITIAL_RAINBOW : readRainbow(value.rainbow);
-  const paper = format === 'paper' ? readDrawingPaper(value.paper) : LEGACY_PAPER;
-  const size = paperSize(paper);
-  const strokes = value.strokes.map((item: unknown): Stroke => {
-    if (!record(item) || !Array.isArray(item.points) || item.points.length === 0)
-      throw new Error('This saved picture contains an invalid stroke.');
-    const { width, ...withoutWidth } = item;
-    const style = readStyle(
-      format === 'width' || format === 'color' || format === 'paper' ? withoutWidth : item,
-      format,
-      rainbow
-    );
-    const actualWidth =
-      format === 'width' || format === 'color' || format === 'paper'
-        ? width
-        : defaultStoredStrokeWidth(style.brush);
-    if (
-      format === 'paper' &&
-      (style.brush === 'pencil' ||
-        style.brush === 'marker' ||
-        !isStrokeWidthPx(style.brush, actualWidth))
-    )
-      throw new Error('This saved picture contains an invalid stroke width.');
-    if (!isStoredStrokeWidth(style.brush, actualWidth))
-      throw new Error('This saved picture contains an invalid stroke width.');
-    return {
-      ...style,
-      width: actualWidth,
-      points: item.points.map((point: unknown) =>
-        readPoint(point, format === 'paper' ? null : size)
-      ),
-    };
-  });
-  if (paper.kind !== 'legacy') {
-    if (paper.kind === 'unadopted' && strokes.length > 0)
-      throw new Error('This saved picture contains ink without a paper reference.');
-    return { version: 7, paper, pageId, rainbow, strokes };
-  }
-  return { version: 5, pageId, rainbow, strokes };
 }
 
 export function hasDrawingInk(drawing: Drawing): boolean {

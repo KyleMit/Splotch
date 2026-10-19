@@ -19,9 +19,9 @@ import {
   addStrokes,
   createHistory,
   emptyDrawing,
-  parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import { createContactCohort } from '../../experiments/native-architecture/src/drawing/contactCohort.ts';
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 
