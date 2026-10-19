@@ -163,3 +163,56 @@ it.each([
   await lines(...wrapped);
   expect(direction()).toBe('column');
 });
+
+const ROW_PX = 330;
+const WORD_PX = 520;
+const measuredWords = () =>
+  [...container.querySelectorAll('span[aria-hidden="true"]')]
+    .map((node) => node.textContent)
+    .filter(Boolean);
+async function widthLines(...text) {
+  await act(async () =>
+    native(title()).props.onTextLayout({
+      nativeEvent: { lines: text.map(([line, width]) => ({ text: line, width })) },
+    })
+  );
+}
+
+it('shrinks a word wider than its own full row just enough to fit, keeping OS scaling', async () => {
+  host.layoutOf = (node) => ({
+    x: 0,
+    y: 0,
+    width: node.getAttribute('role') === 'heading' ? ROW_PX : WORD_PX,
+    height: 40,
+  });
+  await render({ title: 'Appearance' });
+  const size = native(title()).style.fontSize;
+  await widthLines(['Appearan', 300], ['ce', 40]);
+  expect(direction()).toBe('column');
+  expect(native(title()).style.fontSize).toBe(size);
+  expect(measuredWords()).toEqual([]);
+  await widthLines(['Appearanc', 320], ['e', 20]);
+  expect(measuredWords()).toEqual(['Appearance']);
+  const fitted = (size * ROW_PX * 0.98) / WORD_PX;
+  expect(native(title()).style.fontSize).toBeCloseTo(fitted);
+  expect(native(title()).props.allowFontScaling).not.toBe(false);
+  expect(native(title()).props.maxFontSizeMultiplier).toBeUndefined();
+  expect(native(title()).props.adjustsFontSizeToFit).toBeUndefined();
+  expect(title().textContent).toBe('Appearance');
+  expect(container.querySelectorAll('[role="heading"]')).toHaveLength(1);
+  await widthLines(['Appearance', 318]);
+  expect(native(title()).style.fontSize).toBeCloseTo(fitted);
+  await widthLines(['Appearanc', 318], ['e', 4]);
+  expect(native(title()).style.fontSize).toBeCloseTo(fitted * 0.95);
+});
+
+it('lets a word that fits its own row keep its full scaled size', async () => {
+  host.layoutOf = () => ({ x: 0, y: 0, width: ROW_PX, height: 40 });
+  await render({ title: 'Settings' });
+  const size = native(title()).style.fontSize;
+  await widthLines(['Setting', 300], ['s', 20]);
+  expect(direction()).toBe('column');
+  await widthLines(['Settings', 320]);
+  expect(native(title()).style.fontSize).toBe(size);
+  expect(measuredWords()).toEqual([]);
+});

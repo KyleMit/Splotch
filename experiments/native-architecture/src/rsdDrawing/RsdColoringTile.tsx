@@ -7,6 +7,7 @@ import { DRAWING_BRAND } from '../drawing/theme';
 import { rgba } from './colorMix';
 import { COVER_CAPTION_HEIGHT_PX, TILE_ART_INSET_PX, tileHeight } from './coloringGrid';
 import { RsdPressable } from './RsdPressable';
+import { WholeWordText } from './WholeWordText';
 import { tapPoint, type TapPoint } from './tapZone';
 import { brandColors, colors, dimensions, motion } from './tokens.css';
 import { styles as controlStyles } from './controls';
@@ -45,8 +46,11 @@ export function RsdColoringTile({
   onPress: (point: TapPoint | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  // The caption band grows past its reserve for scaled OS text; the art keeps clear of it.
+  const [captionHeight, setCaptionHeight] = useState(COVER_CAPTION_HEIGHT_PX);
   const height = tileHeight(tile.shape, width);
-  const artBottom = tile.shape === 'cover' ? COVER_CAPTION_HEIGHT_PX : TILE_ART_INSET_PX;
+  const artBottom =
+    tile.shape === 'cover' ? Math.max(COVER_CAPTION_HEIGHT_PX, captionHeight) : TILE_ART_INSET_PX;
   return (
     <RsdPressable
       type="button"
@@ -84,15 +88,18 @@ export function RsdColoringTile({
         </View>
       ) : null}
       {tile.shape === 'cover' ? (
-        <html.span
-          style={[
-            controlStyles.semiboldText,
-            styles.caption(COVER_CAPTION_HEIGHT_PX),
-            styles.captionText,
-          ]}
+        <View
+          testID="cover-caption"
+          pointerEvents="none"
+          style={art.caption}
+          onLayout={({ nativeEvent }) => setCaptionHeight(nativeEvent.layout.height)}
         >
-          {tile.label}
-        </html.span>
+          <html.div style={styles.caption(COVER_CAPTION_HEIGHT_PX)}>
+            <WholeWordText style={[controlStyles.semiboldText, styles.captionText]} fit>
+              {tile.label}
+            </WholeWordText>
+          </html.div>
+        </View>
       ) : null}
     </RsdPressable>
   );
@@ -106,6 +113,7 @@ const art = StyleSheet.create({
     right: TILE_ART_INSET_PX,
   },
   image: { width: '100%', height: '100%' },
+  caption: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
 
 const styles = css.create({
@@ -137,12 +145,8 @@ const styles = css.create({
     boxShadow: shadow,
     transform: { default: lift, ':active': pressed },
   }),
-  caption: (height: number) => ({
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height,
+  caption: (minHeight: number) => ({
+    minHeight,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
