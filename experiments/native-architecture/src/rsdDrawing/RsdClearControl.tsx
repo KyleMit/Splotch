@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRef, useState } from 'react';
 import { Animated } from '../platform/animated';
 import type { ClearDock } from '../clear/clearDock';
@@ -16,6 +16,11 @@ const RING_REVEAL_FROM_SCALE = 0.85;
 function dockFrame(dock: ClearDock) {
   return { position: 'absolute', top: dock.top, right: dock.right } as const;
 }
+// Shipping's accept ring sits under the Notch Band (--z-clear-accept-zone), so it stays inside the
+// safe-area frame while the button and coachmark over the band may reach a side inset.
+const frameClip = StyleSheet.create({
+  ring: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
+});
 
 // The Clear Button docks as a red half-disc tab against the screen's right edge; a drag lifts it
 // into a full disc that follows the finger, and past the accept ring it turns alarm red and glows.
@@ -103,34 +108,36 @@ export function RsdClearOverlay({
   return (
     <>
       {control.ringShown ? (
-        <Animated.View
-          testID="rsd-clear-accept-ring"
-          pointerEvents="none"
-          style={[
-            ringFrame(radius, dock),
-            {
-              opacity: values.ring.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 1],
-                extrapolate: 'clamp',
-              }),
-              transform: [
-                {
-                  scale: values.ringScale.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [RING_REVEAL_FROM_SCALE, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <RsdClearRing
-            radius={radius}
-            ink={reached ? ACCEPT_RING.reached : ACCEPT_RING.short}
-            id="rsd-clear-accept"
-          />
-        </Animated.View>
+        <View testID="rsd-clear-ring-clip" pointerEvents="none" style={frameClip.ring}>
+          <Animated.View
+            testID="rsd-clear-accept-ring"
+            pointerEvents="none"
+            style={[
+              ringFrame(radius, dock),
+              {
+                opacity: values.ring.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                  extrapolate: 'clamp',
+                }),
+                transform: [
+                  {
+                    scale: values.ringScale.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [RING_REVEAL_FROM_SCALE, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <RsdClearRing
+              radius={radius}
+              ink={reached ? ACCEPT_RING.reached : ACCEPT_RING.short}
+              id="rsd-clear-accept"
+            />
+          </Animated.View>
+        </View>
       ) : null}
       <View testID="rsd-clear-dock" pointerEvents="box-none" style={dockFrame(dock)}>
         <RsdClearButton control={control} disabled={disabled} />

@@ -311,16 +311,16 @@ function RsdDrawingContent({
   const paperBlocked = modalBlocked;
   useDrawingUndoShortcut(screen, disabled || covered || buttonScale.active);
   useDeviceOrientation(sound.settings.orientation);
+  const bandInk = paintAppearance(sound.settings.selectedColor, theme).hex;
+  const erasing = screen.brush === 'eraser';
   return (
     <LibraryProvider {...screen.library}>
       <NativeFrame
         variant={sound.settings.toolbarStyle === 'bare' ? 'flatDrawing' : 'drawing'}
-        edges={
-          <RsdNotchBand
-            ink={paintAppearance(sound.settings.selectedColor, theme).hex}
-            eraser={screen.brush === 'eraser'}
-          />
-        }
+        edges={{
+          under: <RsdNotchBand ink={bandInk} eraser={erasing} layer="under" />,
+          over: <RsdNotchBand ink={bandInk} eraser={erasing} layer="over" />,
+        }}
       >
         <html.div
           data-layoutconformance="strict"

@@ -43,8 +43,12 @@ const docks = StyleSheet.create({
   palette: { zIndex: PALETTE_OVER_CLEAR_Z_INDEX },
   floatingRow: { position: 'absolute', top: 0, left: 0, right: 0 },
   floatingColumn: { position: 'absolute', top: 0, bottom: 0, left: 0 },
-  // Clipped to the safe-area frame, so the accept ring never paints over the system status bar.
-  clearOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflow: 'hidden' },
+  // Clipped at the safe-area top, so nothing the Clear gesture draws paints over the system status
+  // bar, and at the screen's sides, which shipping's fixed Clear Button reaches: docked, its tab
+  // overhangs the frame's edge into a landscape side inset. The overlay itself keeps the frame's
+  // box, the coordinates the dock is measured in.
+  clearClip: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden' },
+  clearOverlay: { position: 'absolute', top: 0, bottom: 0 },
   settings: { position: 'absolute', bottom: EDGE_INSET_PX, right: EDGE_INSET_PX },
   controls: { position: 'absolute', top: 0, right: 0, left: 0 },
 });
@@ -180,6 +184,25 @@ function usePresentedPaper(
       )
     : null;
   return { frame, departingFrame, projection, departingProjection };
+}
+
+function ClearOverlayLayer({ children }: { children: ReactNode }) {
+  const { left, right } = useSafeAreaInsets();
+  return (
+    <View
+      testID="rsd-clear-clip"
+      pointerEvents="box-none"
+      style={[docks.clearClip, { left: -left, right: -right }]}
+    >
+      <View
+        testID="rsd-clear-overlay"
+        pointerEvents="box-none"
+        style={[docks.clearOverlay, { left, right }]}
+      >
+        {children}
+      </View>
+    </View>
+  );
 }
 
 function NativePaletteBar({
@@ -342,9 +365,7 @@ export function NativeDrawingLayout({
           </View>
         </View>
       </View>
-      <View testID="rsd-clear-overlay" pointerEvents="box-none" style={docks.clearOverlay}>
-        {clearOverlay}
-      </View>
+      <ClearOverlayLayer>{clearOverlay}</ClearOverlayLayer>
     </View>
   );
   return <SecondTouchRouteScope value={contacts}>{content}</SecondTouchRouteScope>;

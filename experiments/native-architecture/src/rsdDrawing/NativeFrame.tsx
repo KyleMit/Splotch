@@ -71,9 +71,9 @@ export function NativeFrame({
 }: {
   children: ReactNode;
   variant?: 'screen' | 'drawing' | 'flatDrawing' | 'overlay';
-  // Painted over the safe-area strips the frame's padding leaves (the drawing screen's Notch Band),
-  // in this frame's own inset coordinates.
-  edges?: ReactNode;
+  // Painted in the safe-area strips the frame's padding leaves (the drawing screen's Notch Band),
+  // in this frame's own inset coordinates: `under` beneath the frame's content, `over` above it.
+  edges?: Readonly<{ under: ReactNode; over: ReactNode }>;
 }) {
   const styles = useDrawingStyles(themedStyles);
   const frame = {
@@ -91,6 +91,7 @@ export function NativeFrame({
     >
       <DrawingStatusBar />
       {variant === 'flatDrawing' ? <FlatSafeAreaPaper /> : null}
+      {edges?.under}
       <SafeAreaView
         testID="rsd-safe-area-frame"
         mode="padding"
@@ -100,7 +101,7 @@ export function NativeFrame({
       >
         {children}
       </SafeAreaView>
-      {edges}
+      {edges?.over}
     </SafeAreaProvider>
   );
 }
