@@ -101,9 +101,10 @@ wrong foreground and disabled Undo were refused. Three separate contacts produce
 Undo units. Save published an app-owned, non-pending MediaStore PNG; its device/host bytes and
 actual ink were verified. The 583-second batch restored blank ink and the original collapsed drawer
 before releasing the owned emulator. That driver was a diagnostic prototype. The reusable-source
-successor is under independent review in #2987. Shipping pairing, auto-save/Clear, API24/26 paths
-and final matrix acceptance remain pending. Raw text descendants are not interchangeable with the
-uniquely named activatable button; both action lists and actual activation are recorded.
+successor completed independent review and merged through #2987. Shipping pairing, auto-save/Clear,
+API24/26 paths and final matrix acceptance remain pending. Raw text descendants are not
+interchangeable with the uniquely named activatable button; both action lists and actual activation
+are recorded.
 
 The reusable driver at e5a69978819c6a3ef38c8d74779ab7c7a6bfa51b builds with the existing signer; all
 three source inputs match Git. A 141-second fresh-API29 requalification verifies wrong-foreground
