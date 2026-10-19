@@ -410,7 +410,9 @@ it('preserves shipping native network and background transfer policy', async () 
   const origins = (source) => new Set(source.match(/https:\/\/[a-z0-9.-]+/g) ?? []);
   expect(origins(worker)).toEqual(new Set([PACK_ORIGIN]));
   expect(origins(ios)).toEqual(new Set([PACK_ORIGIN]));
-  expect(worker).toContain('stored.getBoolean("allowMetered") && dataSaverEnabled()');
+  expect(worker).toContain(
+    'dataSaverDefers(applicationContext, stored.getBoolean("allowMetered"))'
+  );
   expect(worker).toContain('SplotchLibraryFiles.write(File(staging, "installed.json"), marker)');
   expect(worker).toContain('staging.renameTo(current)');
   expect(worker).toContain('prepareStaging(pack, current, staging, job, token)');
