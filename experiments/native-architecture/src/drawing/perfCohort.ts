@@ -67,7 +67,8 @@ function nearestRank(sorted: readonly number[], fraction: number) {
   return sorted[Math.max(0, Math.ceil(fraction * sorted.length) - 1)];
 }
 
-function submissionSummary(intervals: readonly number[]) {
+// Count and nearest-rank p50, p95, max and min of a set of millisecond intervals.
+export function intervalSummary(intervals: readonly number[]) {
   if (intervals.length === 0) return { n: 0 };
   const sorted = [...intervals].sort((a, b) => a - b);
   return {
@@ -103,7 +104,7 @@ function formatPerfLine(cohort: Cohort, context: PerfLineContext): string {
     surfaceLayoutEffectCommits: cohort.surfaceCommits,
     draftRecord: timing(cohort.timers.draftRecord),
     sceneRecord: timing(cohort.timers.sceneRecord),
-    inputToSubmission: submissionSummary(cohort.submissions),
+    inputToSubmission: intervalSummary(cohort.submissions),
     clockJoin: context.clockJoin,
   });
 }
