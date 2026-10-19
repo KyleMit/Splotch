@@ -1,4 +1,5 @@
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import releases from '../../../../web/src/lib/releases.json';
 import { parseReleaseHue } from '../../../../web/src/lib/releaseHues';

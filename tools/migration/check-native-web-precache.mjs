@@ -30,6 +30,7 @@ import {
 } from './build-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 import { VERSION_JSON_FILENAME } from '../../web/src/lib/pwa/versionEndpoint.ts';
+import { startupScriptList } from './prerender-native-web.mjs';
 
 // The RN web export makes the same offline promise as the shipping PWA it is meant to
 // replace, so it answers to the same budget.
@@ -129,7 +130,12 @@ export function precacheEntriesFromSource(source) {
 }
 
 export function shellAssetReferences(indexHtml) {
-  return [...new Set([...indexHtml.matchAll(SHELL_ASSET_REFERENCE)].map((match) => match[1]))];
+  return [
+    ...new Set([
+      ...[...indexHtml.matchAll(SHELL_ASSET_REFERENCE)].map((match) => match[1]),
+      ...startupScriptList(indexHtml).map((src) => src.replace(/^\//, '')),
+    ]),
+  ];
 }
 
 function shellProblems({ precacheUrls, expectedShellUrl, appShellFallbackLookups }) {

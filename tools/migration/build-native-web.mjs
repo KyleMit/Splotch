@@ -26,6 +26,7 @@ import {
   DRAWING_PATHS,
 } from '../../experiments/native-architecture/src/platform/appSurfacePolicy.ts';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
+import { prerenderNativeWeb } from './prerender-native-web.mjs';
 
 export const NATIVE_APP_DIR = join(ROOT, 'experiments/native-architecture');
 export const NATIVE_WEB_EXPORT_DIR = join(NATIVE_APP_DIR, 'dist/web');
@@ -226,6 +227,7 @@ export async function buildNativeWeb({ outputDir = NATIVE_WEB_EXPORT_DIR } = {})
     throw new Error(`Expo exported no ${APP_SHELL_FILE} into ${outputDir}`);
   copyShippingInstallAssets(outputDir, appVersion);
   copyFileSync(join(outputDir, APP_SHELL_FILE), join(outputDir, NOT_FOUND_FILE));
+  await prerenderNativeWeb(join(outputDir, APP_SHELL_FILE));
   const shell = contentAddressedShell(readFileSync(join(outputDir, APP_SHELL_FILE)));
   const { count, size, warnings } = await generateSW(
     nativeWebServiceWorkerConfig(outputDir, shell)

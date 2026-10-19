@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { Animated } from '../platform/animated';
 import { css, html } from 'react-strict-dom';
 import { APP_HOME_SCREEN_NAME } from '../../../../web/src/lib/appIdentity';

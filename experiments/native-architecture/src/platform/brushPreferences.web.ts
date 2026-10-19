@@ -1,5 +1,5 @@
 import type { BrushPreferencesStorage } from '../settings/brushPreferences';
-const BRUSH_SETTINGS_KEY = 'splotch-candidate:brush-v1';
+export const BRUSH_SETTINGS_KEY = 'splotch-candidate:brush-v1';
 export const brushPreferencesStorage: BrushPreferencesStorage = {
   async read() {
     return localStorage.getItem(BRUSH_SETTINGS_KEY);

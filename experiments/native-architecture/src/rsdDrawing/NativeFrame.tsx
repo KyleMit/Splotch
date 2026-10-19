@@ -6,7 +6,6 @@ import {
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
-  initialWindowMetrics,
   SafeAreaProvider,
   SafeAreaView,
   useSafeAreaInsets,
@@ -14,6 +13,7 @@ import {
 } from 'react-native-safe-area-context';
 import { useModalOrigin } from './modalOrigin';
 import { PaperTexture } from '../drawing/PaperTexture';
+import { useInitialSafeAreaMetrics } from '../platform/safeAreaMetrics';
 
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
@@ -83,12 +83,9 @@ export function NativeFrame({
     overlay: styles.overlay,
   }[variant];
   const origin = useModalOrigin();
+  const initialMetrics = useInitialSafeAreaMetrics();
   return (
-    <SafeAreaProvider
-      testID="rsd-window-insets"
-      initialMetrics={initialWindowMetrics}
-      style={frame}
-    >
+    <SafeAreaProvider testID="rsd-window-insets" initialMetrics={initialMetrics} style={frame}>
       <DrawingStatusBar />
       {variant === 'flatDrawing' ? <FlatSafeAreaPaper /> : null}
       <SafeAreaView

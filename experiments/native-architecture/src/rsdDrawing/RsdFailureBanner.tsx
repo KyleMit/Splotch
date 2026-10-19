@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import {
   BANNER_ENTER_MS,

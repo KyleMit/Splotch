@@ -18,6 +18,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/shippingFont.tsx'
 const tab = vi.hoisted(() => ({ title: 'Splotch' }));
 vi.mock('../../../experiments/native-architecture/src/platform/appPath.ts', () => ({
   currentAppPage: () => 'drawing',
+  prerenderedAppPage: () => 'drawing',
   subscribeAppPage: () => () => {},
   setDocumentTitle(title) {
     const previous = tab.title;

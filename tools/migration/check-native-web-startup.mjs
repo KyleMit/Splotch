@@ -6,6 +6,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { MAX_STARTUP_JS_CSS_BYTES } from '../check-bundle-budgets.mjs';
 import { APP_SHELL_FILE, NATIVE_WEB_EXPORT_DIR } from './build-native-web.mjs';
+import { startupScriptList } from './prerender-native-web.mjs';
 import { isMain, runMain } from '../lib/proc.mjs';
 
 // An empty app (registerRootComponent of one View) exported by this Expo and React Native Web
@@ -103,6 +104,7 @@ export function startupResources(indexHtml) {
       ...new Set(
         [
           ...executable.filter((script) => script.src).map((script) => script.src),
+          ...startupScriptList(indexHtml),
           ...links.filter(isStartupLink).map((link) => link.href),
         ].map(exportPath)
       ),

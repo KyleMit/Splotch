@@ -43,10 +43,11 @@ export function useLazyValue<T, V>(
   select: ((loaded: T) => V) | undefined,
   description: string
 ): V | undefined {
-  const value = useSyncExternalStore(lazy?.subscribe ?? NO_SUBSCRIPTION, () => {
+  const read = () => {
     const loaded = lazy?.current();
     return select && loaded !== undefined ? select(loaded) : undefined;
-  });
+  };
+  const value = useSyncExternalStore(lazy?.subscribe ?? NO_SUBSCRIPTION, read, read);
   const needed = lazy !== null && select !== undefined && value === undefined;
   useEffect(() => {
     if (!needed || !lazy) return;

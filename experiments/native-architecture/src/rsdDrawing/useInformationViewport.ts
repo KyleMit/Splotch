@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function useInformationViewport() {

@@ -1,5 +1,6 @@
 import { useContext, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { Svg, Path } from '../platform/svg';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';

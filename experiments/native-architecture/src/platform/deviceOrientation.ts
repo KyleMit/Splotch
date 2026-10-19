@@ -41,7 +41,7 @@ function subscribeToScreen(changed: () => void) {
 // Live, so a foldable or a resized window crossing the tablet line shows or
 // hides the picker and takes or releases the lock in the same render.
 export function useOrientationLockApplies(): boolean {
-  return useSyncExternalStore(subscribeToScreen, orientationLockApplies);
+  return useSyncExternalStore(subscribeToScreen, orientationLockApplies, orientationLockApplies);
 }
 
 function lockDeviceOrientation(choice: OrientationChoice): Promise<void> {

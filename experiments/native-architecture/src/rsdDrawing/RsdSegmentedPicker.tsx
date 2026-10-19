@@ -1,11 +1,6 @@
 import { useContext, useRef, useState, type ReactElement } from 'react';
-import {
-  StyleSheet,
-  View,
-  useWindowDimensions,
-  type LayoutChangeEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { StyleSheet, View, type LayoutChangeEvent, type NativeSyntheticEvent } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_ON_BRAND } from '../drawing/theme';

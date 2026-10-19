@@ -1,4 +1,5 @@
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import type { useFullscreen } from '../platform/useFullscreen';
 import { RsdIconButton } from './RsdIconButton';
 import { RsdVisuallyHidden } from './RsdVisuallyHidden';

@@ -7,7 +7,8 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { Modal, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { ScrollView } from '../platform/ScrollView';
 import { Animated, Easing } from '../platform/animated';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';

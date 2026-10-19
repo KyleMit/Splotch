@@ -48,7 +48,7 @@ export const BARE_GLASS_HOLD_MS = 1000;
 // its controls until the glass has arrived rather than showing them a beat before their margin. A
 // failed or stalled load lets the controls through: the glass retries as it mounts.
 export function useBareGlassReady(bare: boolean) {
-  const ready = useSyncExternalStore(glass.subscribe, loaded);
+  const ready = useSyncExternalStore(glass.subscribe, loaded, loaded);
   const [released, setReleased] = useState(false);
   useEffect(() => {
     if (!bare || ready) return;

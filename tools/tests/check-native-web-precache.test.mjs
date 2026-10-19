@@ -8,9 +8,11 @@ import {
   lazyIconSamples,
   lazyModuleSamples,
   releaseNoteSamples,
+  shellAssetReferences,
   starterBookImages,
   starterOutlineSamples,
 } from '../migration/check-native-web-precache.mjs';
+import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import { NATIVE_DEFERRED_ICONS } from '../../experiments/native-architecture/src/rsdDrawing/icons.deferred.generated.ts';
 import { NATIVE_SPLOTCHY } from '../../experiments/native-architecture/src/rsdDrawing/splotchy.generated.ts';
@@ -281,4 +283,12 @@ it('runs after the native web export with type stripping', () => {
   expect(scripts['postnative:web:build']).toMatch(
     /^node --experimental-strip-types .*tools\/migration\/check-native-web-precache\.mjs && node --experimental-strip-types .*tools\/migration\/check-native-web-startup\.mjs$/
   );
+});
+
+it('references the scripts a prerendered shell loads after its first frame paints', () => {
+  const shell = `<link rel="stylesheet" href="/_expo/static/css/strict-1.css"><script type="application/json" id="${STARTUP_SCRIPTS_ELEMENT_ID}">["/_expo/static/js/web/index-1.js"]</script>`;
+  expect(shellAssetReferences(shell)).toEqual([
+    '_expo/static/css/strict-1.css',
+    '_expo/static/js/web/index-1.js',
+  ]);
 });

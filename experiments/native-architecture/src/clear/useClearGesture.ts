@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { useWindowDimensions, type GestureResponderEvent } from 'react-native';
+import { type GestureResponderEvent } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { Animated, Easing } from '../platform/animated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { impactThreshold } from '../platform/clearHaptics';

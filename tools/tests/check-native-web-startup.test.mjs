@@ -11,6 +11,7 @@ import {
   inlinedImageCount,
   measureNativeWebStartup,
 } from '../migration/check-native-web-startup.mjs';
+import { STARTUP_SCRIPTS_ELEMENT_ID } from '../migration/prerender-native-web.mjs';
 
 const RUNTIME = '_expo/static/js/web/__expo-metro-runtime-1.js';
 const ENTRY = '_expo/static/js/web/index-1.js';
@@ -56,6 +57,18 @@ it('counts the scripts, stylesheets and inline CSS the app shell loads, and noth
   expect(measured.inlineStyleBytes).toBe(INLINE_CSS.length);
   expect(measured.startupBytes).toBe(shellBytes);
   expect(measured.inlinedImages).toEqual([]);
+});
+
+// A prerendered shell lists its bundle for the boot script to load after first paint
+// (prerender-native-web.mjs); those scripts are still the startup path.
+it('counts the scripts a prerendered shell loads after its first frame paints', () => {
+  const held = INDEX.replace(/<script src="[^"]+" defer><\/script>/g, '').replace(
+    '</body>',
+    `<script type="application/json" id="${STARTUP_SCRIPTS_ELEMENT_ID}">${JSON.stringify([`/${RUNTIME}`, `/${ENTRY}`])}</script></body>`
+  );
+  const measured = measureNativeWebStartup(exportFixture({ ...FILES, 'index.html': held }));
+  expect(measured.files).toEqual([RUNTIME, ENTRY, CSS]);
+  expect(measured.startupBytes).toBe(shellBytes);
 });
 
 it('accepts a startup path inside its budget', () => {

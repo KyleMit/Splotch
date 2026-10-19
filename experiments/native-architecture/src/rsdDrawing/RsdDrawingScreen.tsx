@@ -28,7 +28,8 @@ import {
   type ComponentProps,
   type ReactNode,
 } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { artOrientation, drawingPaper, presentedPaperSize } from '../drawing/paperSpace';
 import { useDrawingScreen } from '../useDrawingScreen';
@@ -49,6 +50,7 @@ import { useDeviceOrientation } from '../platform/deviceOrientation';
 import { ReduceMotionPreferenceProvider } from '../drawing/useReduceMotion';
 import { BUTTON_SCALE_MAX, controlSize } from '../settings/buttonSize';
 import { useDrawingPainted } from '../product/drawingPaint';
+import { FIRST_FRAME_PRERENDERED } from '../platform/firstFrame';
 import { ModalOriginProvider } from './modalOrigin';
 import { useModalPresence } from './useModalPresence';
 import { useSliderDraft } from './useSliderDraft';
@@ -100,10 +102,9 @@ export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
   });
   const dismissed = route.dismissed;
   const glassReady = useBareGlassReady(sound.settings.toolbarStyle === 'bare');
-  const loading = useFirstPaintHeld(
-    sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading',
-    glassReady
-  );
+  const settingsLoading =
+    sound.settings.status === 'loading' || screen.brushPreferences.status === 'loading';
+  const loading = useFirstPaintHeld(settingsLoading && !FIRST_FRAME_PRERENDERED, glassReady);
   useDrawingPainted(!loading);
   const informationPage = informationOpen ? (
     <RsdInformationPage
@@ -115,7 +116,9 @@ export function RsdDrawingScreen({ page = 'drawing' }: { page?: AppPage }) {
     />
   ) : null;
   return (
-    <DrawingAppearanceProvider preference={loading ? bootAppearance() : sound.settings.appearance}>
+    <DrawingAppearanceProvider
+      preference={loading || settingsLoading ? bootAppearance() : sound.settings.appearance}
+    >
       <ModalOriginProvider>
         <ReduceMotionPreferenceProvider preference={sound.settings.reduceMotion}>
           <View

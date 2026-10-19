@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from '../platform/windowDimensions';
 import { css, html } from 'react-strict-dom';
 import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useDialogBack } from '../platform/BrowserBack';
