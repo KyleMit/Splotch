@@ -1,7 +1,7 @@
 import { PALETTE_COLORS, PALETTE_TRIM_ORDER, type PaletteLabel } from '../drawing/palette';
 
 // ColorMenu.svelte's geometry, restated rather than imported: shipping's trimGeometry.ts is also in
-// the Color Picker's chunk, and a module two lazy chunks share is hoisted onto the web startup path.
+// the Color Picker's chunk, and a module two lazy chunks share becomes a third chunk both wait on.
 // rsd-native-color-control.test.mjs holds every value, and the whole trim ladder, to shipping.
 // The menu takes the portrait palette row's swatch, gap and padding (both ends together).
 export const COLOR_MENU_SWATCH_PX = 55;

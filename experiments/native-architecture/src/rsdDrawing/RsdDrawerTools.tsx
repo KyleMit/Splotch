@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { View, type ViewInstance } from 'react-native';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { ActionPanelLayout } from './edgeLayout';
 import type { useFlyoutSlot } from './RsdActionsPanel';
@@ -26,7 +26,7 @@ function triggerRef(triggers: Slot['triggers'], key: DrawerTool['key'], screen: 
   if (key === 'camera') return screen.cameraTile;
   if (key === 'undo') return screen.undoTile;
   if (key !== 'brush' && key !== 'stroke') return undefined;
-  return (node: View | null) => {
+  return (node: ViewInstance | null) => {
     triggers.current[key] = node;
   };
 }

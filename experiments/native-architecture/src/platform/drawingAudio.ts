@@ -7,8 +7,14 @@ import {
   type DrawingLoop,
   type DrawingLoopLoader,
 } from '../audio/drawingAudio';
+import { perfTimed } from '../drawing/perfProbe';
 
 const GAIN_FRAME_MS = 16;
+
+// A synchronous call into the platform player on the JavaScript thread, made on every sample.
+const setPlayerVolume = perfTimed('audioVolume', (player: AudioPlayer, volume: number) => {
+  player.volume = volume;
+});
 
 function createNativeGain(player: AudioPlayer, onFailure: () => void) {
   let disposed = false;
@@ -27,7 +33,7 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
       const progress = Math.min((performance.now() - started) / (GAIN_RAMP_S * 1000), 1);
       currentVolume = from + (target - from) * progress;
       try {
-        player.volume = currentVolume;
+        setPlayerVolume(player, currentVolume);
       } catch {
         onFailure();
         return;
@@ -39,7 +45,7 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
   function mute() {
     stopRamp();
     currentVolume = 0;
-    player.volume = 0;
+    setPlayerVolume(player, 0);
   }
   return {
     setVolume,

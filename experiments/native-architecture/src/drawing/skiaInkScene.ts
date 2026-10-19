@@ -41,6 +41,8 @@ function sameLayer(a: SceneInput, b: SceneInput) {
 
 const recordScene = perfTimed('sceneRecord', (layer: InkLayer) => layer.scene());
 
+const releasePicture = perfTimed('pictureRelease', (picture: SkPicture) => picture.dispose());
+
 const paintLive = perfTimed('liveFlush', (layer: InkLayer, source: LiveInkSource) => {
   const steps = source.flush();
   layer.paint(steps);
@@ -182,7 +184,7 @@ export function createInkScene() {
         throw error;
       }
       shown = true;
-      picture?.dispose();
+      if (picture) releasePicture(picture);
       picture = next;
       return true;
     },

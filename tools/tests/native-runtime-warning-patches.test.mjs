@@ -22,7 +22,8 @@ it('skips a synchronous Reanimated prop update for a view that is no longer moun
 
 it('locks iOS orientation without the UIDevice orientation setter UIKit rejects', () => {
   const registry = installed('expo-screen-orientation', 'ios/ScreenOrientationRegistry.swift');
-  const legacy = /if #available\(iOS 16\.0, \*\) \{[^}]*\} else \{\s*UIDevice\.current\.setValue/;
-  expect(registry).toMatch(legacy);
-  expect(registry.match(/UIDevice\.current\.setValue/g)).toHaveLength(1);
+  expect(registry).toMatch(
+    /requestGeometryUpdate\(\.iOS\(interfaceOrientations: orientationMask\)\)/
+  );
+  expect(registry).not.toMatch(/UIDevice\.current\.setValue/);
 });

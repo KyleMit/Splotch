@@ -61,6 +61,23 @@ export default defineConfig({
                 )
               ),
             },
+            // react-native-svg's web elements resolve image hrefs through a .web.js module that
+            // only a web bundler's platform extensions select; Node would load the native one.
+            {
+              find: /^(\.\.\/)+lib\/resolveAssetUri$/,
+              replacement: fileURLToPath(
+                new URL(
+                  '../node_modules/react-native-svg/lib/module/lib/resolveAssetUri.web.js',
+                  import.meta.url
+                )
+              ),
+            },
+            {
+              find: /^@react-native\/assets-registry\/registry$/,
+              replacement: fileURLToPath(
+                new URL('./tests/native-svg-assets-registry-stub.mjs', import.meta.url)
+              ),
+            },
           ],
         },
         test: {

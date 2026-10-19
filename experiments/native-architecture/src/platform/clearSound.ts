@@ -9,7 +9,6 @@ const MAX_PLAYER_VOLUME = 1;
 export const loadClearPageTurn: ClearPageTurnLoader = async (signal, publishNotes) => {
   const { createAudioPlayer, setAudioModeAsync } = await import('expo-audio');
   await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
-  // React Native's AbortSignal has no throwIfAborted().
   if (signal.aborted) throw new Error('Clear sound was cancelled.');
   const request = new AbortController();
   const abort = () => request.abort();

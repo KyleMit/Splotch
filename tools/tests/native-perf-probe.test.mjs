@@ -24,7 +24,13 @@ const BUILD = 'abc1234';
 // Handing a picture to the view takes this long on the mocked clock, so a stamp taken before the
 // hand-off reads short by exactly this much.
 const HANDOFF_MS = 5;
-const host = vi.hoisted(() => ({ modules: {}, touched: [], now: 0, frames: [] }));
+const host = vi.hoisted(() => ({
+  modules: {},
+  touched: [],
+  now: 0,
+  frames: [],
+  appState: new Map(),
+}));
 
 vi.mock('react-native', async () => {
   const { nativeInkViewSdk } = await import('./native-raster-sdk-fixture.mjs');
@@ -35,6 +41,12 @@ vi.mock('react-native', async () => {
   return {
     ...sdk,
     Platform: { OS: 'android' },
+    AppState: {
+      addEventListener: (event, listener) => {
+        host.appState.set(event, listener);
+        return { remove: () => host.appState.delete(event) };
+      },
+    },
     NativeModules: new Proxy(
       {},
       {
@@ -221,6 +233,11 @@ async function inkHarness() {
       cohort.sample('a', point);
       feed.publish();
     },
+    // One packet's samples, published once, as the responder does.
+    move(points) {
+      for (const point of points) cohort.sample('a', point);
+      feed.publish();
+    },
     frame() {
       act(() => {
         for (const callback of host.frames.splice(0)) callback(0);
@@ -328,7 +345,7 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
     expect(writes()).toEqual([
       expect.objectContaining({
         probe: PERF_LOG_TAG,
-        v: 2,
+        v: 3,
         build: BUILD,
         platform: 'android',
         cohort: 1,
@@ -385,19 +402,24 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
     ]);
   });
 
-  // Live ink renders no SkiaInk commit. The first packet of a display frame flushes, records a
-  // scene and hands it over at once; a later packet in that frame waits for the frame callback.
-  // Negative controls: stamping before Skia's JSI setter puts the stamp before the hand-off;
-  // waiting for the frame callback to paint the first packet measures it as 27.5 ms, not 15.
-  it('hands the first packet of a frame over at once and the rest at the frame callback', async () => {
+  // Live ink renders no SkiaInk commit. Each packet flushes, records a scene and hands it over as
+  // it arrives; the hand-off timer wraps Skia's JSI setter, which moves the mocked clock 5 ms.
+  // Negative controls: stamping before the JSI setter reads every hand-off 5 ms short; PR 2998's
+  // first-packet-per-frame cadence holds the second packet for the frame callback and reads it as
+  // 19 ms, not 9; reading Hermes' js_gcTime as milliseconds reports the collection as 0.14 ms.
+  it('hands each packet over as it arrives and attributes the time around it', async () => {
     const probe = await loadProbe('1');
+    const stats = { js_numGCs: 3, js_gcTime: 0.25 };
+    vi.stubGlobal('HermesInternal', { getInstrumentedStats: () => ({ ...stats }) });
     const ink = await inkHarness();
     const packet = createInput();
     host.now = 2000;
     probe.perfPacket(packet('start', ['a'], [['a', [[500, 400, 1990]]]]));
     probe.perfStroke(1990);
     ink.start({ x: 10, y: 10 });
-    host.now = 2008;
+    host.now = 2010;
+    host.appState.get('memoryWarning')();
+    Object.assign(stats, { js_numGCs: 4, js_gcTime: 0.39 });
     probe.perfPacket(
       packet(
         'move',
@@ -413,15 +435,15 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
         ]
       )
     );
-    for (const [x, timestamp] of [
-      [20, 2003],
-      [30, 2006],
-    ]) {
+    for (const timestamp of [2003, 2006]) {
       probe.perfSampleTime(timestamp);
       probe.perfAppend('appended');
-      ink.sample({ x, y: 10 });
     }
-    host.now = 2012.5;
+    ink.move([
+      { x: 20, y: 10 },
+      { x: 30, y: 10 },
+    ]);
+    host.now = 2020;
     ink.frame();
     probe.perfIdle();
     ink.unmount();
@@ -431,11 +453,18 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
         inkLayoutEffectCommits: 0,
         liveFlush: { n: 2, totalMs: 0, maxMs: 0 },
         sceneRecord: { n: 2, totalMs: 0, maxMs: 0 },
-        inputToSubmission: { n: 2, p50Ms: 11.5, p95Ms: 15, maxMs: 15, minMs: 11.5 },
-        oldestToSubmission: { n: 2, p50Ms: 14.5, p95Ms: 15, maxMs: 15, minMs: 14.5 },
+        handoff: { n: 2, totalMs: 10, maxMs: 5 },
+        pictureRelease: { n: 2, totalMs: 0, maxMs: 0 },
+        inputToSubmission: { n: 2, p50Ms: 9, p95Ms: 15, maxMs: 15, minMs: 9 },
+        oldestToSubmission: { n: 2, p50Ms: 12, p95Ms: 15, maxMs: 15, minMs: 12 },
         firstDotMs: 15,
         handoffs: 2,
-        submissionGap: { n: 1, p50Ms: 12.5, p95Ms: 12.5, maxMs: 12.5, minMs: 12.5 },
+        submissionGap: { n: 1, p50Ms: 10, p95Ms: 10, maxMs: 10, minMs: 10 },
+        longestGap: { ms: 10, atMs: 5, packets: 1, memoryWarnings: 1, gcs: 1, gcMs: 140 },
+        packetGap: { n: 1, p50Ms: 10, p95Ms: 10, maxMs: 10, minMs: 10 },
+        receiptLag: { n: 2, p50Ms: 4, p95Ms: 10, maxMs: 10, minMs: 4 },
+        memoryWarnings: 1,
+        gc: { n: 1, ms: 140 },
       }),
     ]);
   });

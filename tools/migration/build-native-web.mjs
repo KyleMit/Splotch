@@ -115,11 +115,19 @@ export function bootAppSurfaceHeadTag() {
   return `<script>if(${JSON.stringify(DRAWING_PATHS)}.includes(location.pathname))document.documentElement.setAttribute(${JSON.stringify(APP_SURFACE_ATTRIBUTE)},'');</script>`;
 }
 
+// Expo's tree shaking, still flagged unstable in SDK 58, drops the exports no module reads
+// (ADR-0179's fifth cut). Expo reads both flags from the environment, so setting them on this
+// process alone keeps them off the bundles Gradle and Xcode build through expo export:embed.
+export const NATIVE_WEB_EXPORT_ENV = {
+  EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: '1',
+  EXPO_UNSTABLE_TREE_SHAKING: '1',
+};
+
 function exportWebBundle(outputDir) {
   run(
     join(ROOT, 'node_modules/.bin/expo'),
     ['export', '--platform', 'web', '--output-dir', outputDir],
-    { cwd: NATIVE_APP_DIR }
+    { cwd: NATIVE_APP_DIR, env: { ...process.env, ...NATIVE_WEB_EXPORT_ENV } }
   );
 }
 

@@ -8,10 +8,10 @@ import { useDialogBody } from './dialogScope';
 import { motion } from './tokens.css';
 
 // ScrollCue's fade over the Coloring Book Picker's grid. Deliberately a copy of RsdScrollCue's, not
-// an import of it: Settings' lazy chunk already carries RsdScrollCue, and Expo moves every module two
-// lazy chunks share into the common chunk index.html loads before first paint
-// (tools/migration/check-native-web-startup.mjs). rsd-native-coloring-picker.test.mjs renders both
-// and fails when this fade drifts from RsdScrollCue's.
+// an import of it: Settings' lazy chunk already carries RsdScrollCue, and a module two lazy chunks
+// share becomes a third chunk each of them waits on (ADR-0179's granular chunking).
+// rsd-native-coloring-picker.test.mjs renders both and fails when this fade drifts from
+// RsdScrollCue's.
 export const COLORING_CUE_HEIGHT_PX = 72;
 export const COLORING_CUE_OPAQUE_FROM_PERCENT = 80;
 export const COLORING_CUE_END_SLACK_PX = 2;

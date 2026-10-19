@@ -1,7 +1,10 @@
-import type { View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import { paperFrame, type PaperFrame } from './paperGeometry';
 
-export function measurePaper(host: View | null, complete: (frame: PaperFrame | null) => void) {
+export function measurePaper(
+  host: ViewInstance | null,
+  complete: (frame: PaperFrame | null) => void
+) {
   const element: unknown = host;
   if (
     typeof element !== 'object' ||

@@ -44,12 +44,11 @@ function loadReleased(entry, skia) {
 function onUiRuntime(worklet, name = worklet.name) {
   if (typeof worklet !== 'function' || !worklet.__workletHash)
     throw new Error(`${name} is not a worklet`);
-  const closure = Object.fromEntries(
-    Object.entries(worklet.__closure).map(([key, value]) => {
-      if (value === undefined) throw new Error(`${name} captured ${key} before it was defined`);
-      return [key, typeof value === 'function' ? onUiRuntime(value, key) : value];
-    })
-  );
+  // The plugin stores the captures positionally and omits the property when there are none.
+  const closure = (worklet.__closure ?? []).map((value, slot) => {
+    if (value === undefined) throw new Error(`${name} captured slot ${slot} before it was defined`);
+    return typeof value === 'function' ? onUiRuntime(value, `${name} slot ${slot}`) : value;
+  });
   const ui = runInContext(`(${worklet.__initData.code})`, createContext({}));
   return (...args) => ui.apply({ __closure: closure }, args);
 }

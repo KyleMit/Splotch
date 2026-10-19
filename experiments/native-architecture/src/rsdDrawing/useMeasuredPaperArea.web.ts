@@ -1,11 +1,11 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import type { View, LayoutChangeEvent } from 'react-native';
+import type { LayoutChangeEvent, ViewInstance } from 'react-native';
 import { measurePaper } from '../drawing/measurePaper';
 import { sameBox, sameSize, type AreaBox as Box, type AreaSize } from './edgeLayout';
 import type { MeasuredPaperArea, MeasuredPaperAreaResult } from './useMeasuredPaperArea';
 
 export function useMeasuredPaperArea({ width, height }: AreaSize): MeasuredPaperAreaResult {
-  const host = useRef<View>(null);
+  const host = useRef<ViewInstance>(null);
   const [measured, setMeasured] = useState<MeasuredPaperArea>();
   const update = useCallback(
     (boxFor: (previous: Box | undefined) => Box) => {

@@ -3,7 +3,7 @@ import type { History } from './drawing/model';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { isUnsaved, type UnsavedOutcome } from './export/pictureSave';
 import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react';
-import type { View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import type { PaperSize } from './drawing/paperSpace';
 import { createSaveFailure } from './export/saveFailure';
 import { capturePicture, savePicture } from './keepPicture';
@@ -52,7 +52,7 @@ export function usePolaroidFlights() {
     });
   }, []);
   const nextId = useRef(0);
-  const cameraTile = useRef<View>(null);
+  const cameraTile = useRef<ViewInstance>(null);
   // The flight finishes through `land`, so it keeps one identity for the flight's lifetime.
   const land = useCallback(
     (id: number) => setFlight((current) => (current?.id === id ? null : current)),

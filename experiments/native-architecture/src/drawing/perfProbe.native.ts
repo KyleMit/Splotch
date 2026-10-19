@@ -1,11 +1,12 @@
 import { useLayoutEffect } from 'react';
-import { NativeModules, Platform } from 'react-native';
+import { AppState, NativeModules, Platform } from 'react-native';
 import type * as Contract from './perfProbe';
 import {
   createPerfCohorts,
   PERF_LOG_MODULE,
   PERF_LOG_TAG,
   type ClockJoin,
+  type GcTotals,
   type PerfLineContext,
 } from './perfCohort';
 
@@ -41,6 +42,29 @@ function writeLine(line: string) {
   else console.warn(`${PERF_LOG_TAG} ${line}`);
 }
 
+type InstrumentedStats = { js_numGCs: number; js_gcTime: number };
+
+function isInstrumentedStats(value: unknown): value is InstrumentedStats {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'js_numGCs' in value &&
+    typeof value.js_numGCs === 'number' &&
+    'js_gcTime' in value &&
+    typeof value.js_gcTime === 'number'
+  );
+}
+
+// Hermes counts every collection it ran and their total wall time in seconds.
+function gcTotals(): GcTotals | null {
+  const internal: unknown = Reflect.get(globalThis, 'HermesInternal');
+  if (typeof internal !== 'object' || internal === null) return null;
+  const read: unknown = Reflect.get(internal, 'getInstrumentedStats');
+  if (typeof read !== 'function') return null;
+  const stats: unknown = read.call(internal);
+  return isInstrumentedStats(stats) ? { count: stats.js_numGCs, ms: stats.js_gcTime * 1000 } : null;
+}
+
 const lineContext = (): PerfLineContext => ({
   platform: Platform.OS,
   build: process.env.EXPO_PUBLIC_SPLOTCH_PERF_PROBE_BUILD,
@@ -55,9 +79,12 @@ const cohorts = PERF_PROBE
         cancel: (handle) => clearTimeout(handle),
       },
       lineContext(),
-      writeLine
+      writeLine,
+      gcTotals
     )
   : null;
+
+if (cohorts) AppState.addEventListener('memoryWarning', () => cohorts.memoryWarning());
 
 // The replay and its traces exist only in a probe build: in any other production bundle this
 // branch folds away before Metro collects dependencies, so nothing can ask the native driver to

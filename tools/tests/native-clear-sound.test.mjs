@@ -1,5 +1,5 @@
-import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NativeAbortController } from './native-rn-abort-controller.mjs';
 import {
   CLEAR_PAGE_TURN_ASSET_GAIN,
   createClearSound,
@@ -10,13 +10,6 @@ import {
   clearLadderFrequency,
   CLEAR_CANCEL_SPACING_MS,
 } from '../../web/src/lib/audio/clearSoundNotes.ts';
-
-// React Native's own AbortController, whose signal lacks throwIfAborted(), as on a device.
-const runtimeRequire = createRequire(import.meta.url);
-const reactNativeRequire = createRequire(runtimeRequire.resolve('react-native/package.json'));
-const { AbortController: NativeAbortController } = reactNativeRequire(
-  'abort-controller/dist/abort-controller'
-);
 
 const notes = vi.hoisted(() => ({
   play: vi.fn(async () => {}),
@@ -418,7 +411,6 @@ describe('native page-turn player', () => {
   it('uses compensated audio to preserve shipping gain through the Loud level', async () => {
     const player = nativePlayer();
     const signal = new NativeAbortController().signal;
-    expect(signal.throwIfAborted).toBeUndefined();
     const pending = loadClearPageTurn(signal, vi.fn());
     await vi.waitFor(() => expect(player.listener).not.toBeNull());
     expect(audio.mode).toHaveBeenCalledExactlyOnceWith(PLAYBACK_AUDIO_MODE);

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { SettingsTextZoom } from '../platform/SettingsTextZoom';
 import { scrollSettingsPaneToSection, spiedSettingsSection } from '../platform/settingsPane';
-import { View, type LayoutChangeEvent } from 'react-native';
+import { View, type LayoutChangeEvent, type ScrollViewInstance } from 'react-native';
 import { ScrollView } from '../platform/ScrollView';
 import { css, html } from 'react-strict-dom';
 import { useDrawingTheme, useScrollIndicatorStyle } from '../drawing/DrawingAppearance';
@@ -113,7 +113,7 @@ function SettingsToc({
   const border = useDrawingTheme().border;
   const indicatorStyle = useScrollIndicatorStyle();
   const reduced = useReduceMotion();
-  const nav = useRef<ScrollView>(null);
+  const nav = useRef<ScrollViewInstance>(null);
   const [extent, setExtent] = useState<ScrollExtent>(AT_REST);
   const latest = useRef(extent);
   const rows = useHeights();
@@ -271,7 +271,7 @@ export function RsdSettingsWide({
   const [spied, setSpied] = useState<NativeSettingsSectionId>(paneIds[0]);
   const spiedNow = useRef(spied);
   const { seenInitial, markSeen } = useMarkSeen(onSeen);
-  const pane = useRef<ScrollView>(null);
+  const pane = useRef<ScrollViewInstance>(null);
   const paneExtent = useRef<ScrollExtent>(AT_REST);
   const sectionHeights = useHeights();
   // A smooth jump crosses sections the parent did not choose to visit; none of them is seen.

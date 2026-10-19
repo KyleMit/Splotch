@@ -26,7 +26,7 @@ export async function startInviteLinks(
   Linking.addEventListener('url', ({ url }) => void apply(url));
   let initial: string | null;
   try {
-    initial = await Linking.getInitialURL();
+    initial = (await Linking.getInitialURL()) ?? null;
   } catch (error) {
     console.warn(INVITE_SAVE_FAILED_WARNING, error);
     return;

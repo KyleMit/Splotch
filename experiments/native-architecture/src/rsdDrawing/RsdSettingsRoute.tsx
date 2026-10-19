@@ -6,7 +6,7 @@ import type { useDrawingSound } from '../useDrawingSound';
 import { NativeSoundSettingsDialog } from './RsdSettingsDialog';
 import { RsdParentCenterSection } from './RsdParentCenterSection';
 // The gate's own lazy chunk on web, which the drawing screen also shows it from: a direct import
-// would put it in two lazy chunks, which Expo hoists into the startup chunk.
+// would put it in two lazy chunks, which split it into a shared chunk both wait on.
 import { RsdParentGateSheet } from './drawingSheets';
 import { useModalPresence } from './useModalPresence';
 import type { ParentGateView } from '../parentCenter/useParentGateCard';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { type ScrollView } from 'react-native';
+import { type ScrollViewInstance } from 'react-native';
 import { useWindowDimensions } from '../platform/windowDimensions';
 import { INFORMATION_TOP_ID, type AppPage } from '../information/appPages';
 import releases from '../../../../web/src/lib/releases.json';
@@ -10,7 +10,7 @@ import { PAGE_FRAMED_MAX_WIDTH_PX } from './RsdNotFoundPage';
 import { useInformationViewport } from './useInformationViewport';
 
 export function useInformationPageScroll(page: Exclude<AppPage, 'drawing'>) {
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const bodyOffset = useRef<number | null>(null);
   const sections = useRef<Record<string, number>>({});
   const pending = useRef<string | null>(null);

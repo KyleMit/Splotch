@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { StyleSheet, View, type GestureResponderEvent, type ViewInstance } from 'react-native';
 import { PRESS_CLICK_CONSUME_WINDOW_MS } from '../../../../web/src/lib/actions/clickConsumeWindow';
 import { DRAWING_SCALE } from '../drawing/theme';
 import { useReduceMotion } from '../drawing/useReduceMotion';
@@ -101,7 +101,7 @@ export function RsdColorButton({
   drawerOpen: boolean;
   // Folding needs a drawer with something in it.
   foldable: boolean;
-  slotRef: (node: View | null) => void;
+  slotRef: (node: ViewInstance | null) => void;
   onCapture: (() => boolean) | undefined;
   onToggle: () => void;
   onFold: () => void;
