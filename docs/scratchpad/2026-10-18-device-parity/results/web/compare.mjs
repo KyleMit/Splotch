@@ -24,6 +24,24 @@ function boxDelta(a, b) {
   );
 }
 
+// A cell that threw on either arm observed nothing, so matching errors are not parity.
+function harnessErrors(observation, path = '') {
+  if (!observation || typeof observation !== 'object') return [];
+  return Object.entries(observation).flatMap(([key, value]) => {
+    if (IGNORED.has(key)) return [];
+    const at = path ? `${path}.${key}` : key;
+    return key === 'error' && value ? [at] : harnessErrors(value, at);
+  });
+}
+
+function armDifferences(rn, prod) {
+  const errors = [
+    ...harnessErrors(rn).map((path) => ({ path: `rn-web.${path}`, harnessError: true })),
+    ...harnessErrors(prod).map((path) => ({ path: `web-prod.${path}`, harnessError: true })),
+  ];
+  return [...errors, ...differences(rn, prod)];
+}
+
 export function differences(a, b, path = '') {
   if (isBox(a) && isBox(b)) {
     const delta = boxDelta(a, b);
@@ -41,13 +59,13 @@ export function differences(a, b, path = '') {
 // A cell holds either {rn-web, web-prod} or variants keyed by name, each holding both arms.
 export function cellDifferences(cell) {
   if (cell['rn-web'] || cell['web-prod'])
-    return { '': differences(cell['rn-web'], cell['web-prod']) };
+    return { '': armDifferences(cell['rn-web'], cell['web-prod']) };
   return Object.fromEntries(
     Object.entries(cell)
       .filter(
         ([, value]) => value && typeof value === 'object' && (value['rn-web'] || value['web-prod'])
       )
-      .map(([variant, value]) => [variant, differences(value['rn-web'], value['web-prod'])])
+      .map(([variant, value]) => [variant, armDifferences(value['rn-web'], value['web-prod'])])
   );
 }
 
@@ -65,7 +83,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`## ${name}${variant ? ` [${variant}]` : ''}: ${diffs.length} difference(s)`);
       for (const diff of diffs)
         console.log(
-          `  ${diff.path}: rn=${JSON.stringify(diff.rn)} prod=${JSON.stringify(diff.prod)}${diff.edgeDeltaPx ? ` (Δ${diff.edgeDeltaPx}px)` : ''}`
+          diff.harnessError
+            ? `  ${diff.path}: harness error, nothing observed`
+            : `  ${diff.path}: rn=${JSON.stringify(diff.rn)} prod=${JSON.stringify(diff.prod)}${diff.edgeDeltaPx ? ` (Δ${diff.edgeDeltaPx}px)` : ''}`
         );
     }
   }

@@ -22,7 +22,7 @@ import { readHeadings } from './page-probes.mjs';
 const REGISTRATION_WAIT_MS = 30_000;
 const POLL_MS = 250;
 
-function workerState() {
+export function workerState() {
   return navigator.serviceWorker.getRegistration().then((registration) => ({
     registered: !!registration,
     active: registration?.active?.state ?? null,
@@ -53,7 +53,7 @@ async function cacheInventory(s) {
 }
 
 // Runs `run` once per arm, each behind a fresh proxy origin.
-async function perArmBehindProxy(browser, profile, run, options = {}) {
+export async function perArmBehindProxy(browser, profile, run, options = {}) {
   const result = {};
   for (const arm of ARM_NAMES) {
     const proxy = await startArmProxy(ARMS[arm].base);
@@ -79,7 +79,7 @@ async function perArmBehindProxy(browser, profile, run, options = {}) {
   return result;
 }
 
-async function registerByStrokes(s) {
+export async function registerByStrokes(s) {
   await drawStrokes(s, 3);
   return waitFor(s, (state) => state.active === 'activated');
 }

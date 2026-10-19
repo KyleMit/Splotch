@@ -8,6 +8,7 @@ import {
   expandDrawer,
   collapseDrawer,
   onBothArms,
+  undoDepth,
 } from './harness.mjs';
 import { readBanner, readDialogText } from './page-probes.mjs';
 
@@ -334,15 +335,8 @@ export const INSTALL_CELLS = {
         ],
       ]);
       await settleUi(s);
-      await expandDrawer(s);
-      const undo = s.page.getByRole('button', { name: 'Undo', exact: true });
-      return {
-        target,
-        undoEnabledAfter: await undo.evaluate(
-          (element) => !element.disabled && element.getAttribute('aria-disabled') !== 'true'
-        ),
-        shot: await capture(s, `install-empty-dock-band-${s.arm}`),
-      };
+      const shot = await capture(s, `install-empty-dock-band-${s.arm}`);
+      return { target, undoDepthAfter: await undoDepth(s), shot };
     }),
 
   'install-preview-appearance': async (browser) => {

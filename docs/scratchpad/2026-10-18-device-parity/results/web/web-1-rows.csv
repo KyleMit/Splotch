@@ -21,7 +21,7 @@ B0309,Banner hidden while the drawer is open; auto-clear after 5 strokes; re-pro
 B0310,Settings install guide per OS; native lock guide (Guided Access / pinning status),unverified,pass,install-guide,N,,Web install guide per OS matches; native lock guide is native-only
 B0312,SW registers after the stroke gate + idle; skipped under Save-Data,unverified,pass,sw-first-visit-gate; sw-save-data,Y,,"No registration before the third stroke, registration after it; none under Save-Data"
 B0313,Hourly/visibility/focus update checks; silent activation; reload at hidden edge on a blank canvas,unverified,fail,sw-update-lifecycle,Y,#3027,"Update found on return, held while ink is on the paper, applied at the hidden edge once blank in both; RN makes one extra document navigation in that sequence"
-B0314,AI button hidden while offline; last state stamped at first paint,blocked,pass,ai-offline-button; ai-offline-first-paint (AI-1),N,,Web subcase: AI button hidden offline and after an offline reload in both. Row stays blocked for its iOS subcase
+B0314,AI button hidden while offline; last state stamped at first paint,blocked,pass,ai-offline-button; ai-offline-first-paint (AI-1),N,,"Web subcase: with a service worker controlling the page, the AI button shows online; after an offline reload the shell boots, the button is gone and Undo takes its slot at the same position, so no gap, in both (second take: the first errored at a shipping click before a 1.2 s settle was added). Row stays blocked for its iOS subcase"
 B0315,Free-grant fetch retried on reconnect,blocked,fail,ai-offline-button; ai-grant-retry-on-return (AI-1),N,#3027,Failed grant retried on return in both; RN also refetches a grant that had succeeded when the network returns
 B0316,"Root render crash shows Error Screen ""Oops!"" with Start over; inline fallback if its chunk fails",unverified,blocked,root-crash-lazy-chunk,N,,No symmetric public fault path: blocking unloaded scripts leaves shipping working (its chunks are already loaded) and shows a Did not load dialog in RN
 B0318,"Tab title ""Oops! · Splotch""",unverified,blocked,root-crash-lazy-chunk,N,,As B0316
@@ -89,7 +89,7 @@ E0529,both banner states fit the safe area and leave corner controls reachable,u
 E0530,manual instructions collapse and update when the device rotates,unverified,pass,install-iphone-rotate,Y,,
 E0531,corner controls work while instructions are open,unverified,pass,install-android,Y,,
 E0532,drawing while the drawer is ${initiallyOpen ? 'persisted open' : 'opened over the banner'} preserves the install prompt,unverified,pass,install-drawer-opened-over; install-drawer-persisted,Y,,
-E0533,the empty dock band passes a stroke through to the drawing canvas,unverified,pass,install-empty-dock-band,Y,,
+E0533,the empty dock band passes a stroke through to the drawing canvas,unverified,pass,install-empty-dock-band,Y,,"Undo depth reads 4 after the three earning strokes and the band stroke in both, so the band stroke painted"
 E0534,dismissal persists after reopening the app,unverified,pass,install-dismiss-persists,Y,,
 E0535,the one-tap button invokes the captured install prompt,unverified,pass,install-desktop-one-tap,Y,,"Synthetic beforeinstallprompt: Install offered, prompt() called once, banner gone, in both"
 E0536,Android without a captured prompt keeps its browser-menu instructions,unverified,pass,install-android,Y,,
@@ -142,7 +142,7 @@ E0780,Back closes nested dialogs from the top down,unverified,pass,back-nested-g
 E0781,a dialog unmounted while open leaves no stray Back layer,unverified,pass,back-unmounted-confirm,N,,The shell swap unmounts shipping's confirm but RN keeps it open; neither leaves a stray Back layer
 E0782,refreshing with a dialog open retires its stale history entry,unverified,pass,back-refresh-with-dialog,N,,
 E0783,direct privacy entry keeps ordinary browser history,unverified,pass,back-direct-privacy-entry,N,,
-E0784,in-app navigation restores an open dialog without adding a stray layer,unverified,pass,back-in-app-restores-dialog,N,,RN drops the forward entry to /privacy after the restore; Back behaviour matches
+E0784,in-app navigation restores an open dialog without adding a stray layer,unverified,pass,back-in-app-restores-dialog,N,,"Second take (the first timed out on both arms). Back from /privacy restores Settings over the drawing, Back closes it, Back reaches /feedback, with no extra layer in either; RN drops the forward entry (history 4 against 5) and shows its pages as an Information page dialog (#3026)"
 E0785,"closes a dialog, consumes the drawing guard once, then navigates normally",unverified,pass,back-touch-guard,Y,,
 E0786,standalone display mode guards a drawing even with a fine pointer,unverified,pass,back-standalone-fine-pointer,Y,,
 E0787,desktop tabs do not add a drawing guard,unverified,pass,back-desktop-no-guard,Y,,

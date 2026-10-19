@@ -1971,30 +1971,30 @@
       }
     },
     "install-empty-dock-band": {
-      "ranAt": "2026-10-19T17:59:56.050Z",
-      "ms": 24638,
+      "ranAt": "2026-10-19T21:02:01.710Z",
+      "ms": 27809,
       "rn-web": {
         "target": "div[drawing-paper]",
-        "undoEnabledAfter": true,
+        "undoDepthAfter": 4,
         "shot": {
           "settled": true,
-          "settleMs": 1705,
+          "settleMs": 1644,
           "frames": 6,
           "shot": "shots/install-empty-dock-band-rn-web.webp",
-          "digest": "91b6d1ef10d8e00db21e1a94ae480b67949ed8b9e62d1bcef94bbe5058000fa4"
+          "digest": "e783260eab279ebfe6f00ed842b39dc0bbe8244901e7a72d3e1080b82aedba82"
         },
         "external": [],
         "consoleErrors": []
       },
       "web-prod": {
         "target": "canvas#drawingCanvas",
-        "undoEnabledAfter": true,
+        "undoDepthAfter": 4,
         "shot": {
           "settled": true,
-          "settleMs": 1688,
-          "frames": 6,
+          "settleMs": 1938,
+          "frames": 7,
           "shot": "shots/install-empty-dock-band-web-prod.webp",
-          "digest": "3530e65c3bbb55ebaa0c3bb91ad328457a4af00d3239b82898f584c7fb5cf5bd"
+          "digest": "06aa1c9f960e482dcf0a4f202f6fd267adc39bb6c71e0e1fe79b8949742fa063"
         },
         "external": [],
         "consoleErrors": []
@@ -3428,15 +3428,61 @@
       }
     },
     "back-in-app-restores-dialog": {
-      "ranAt": "2026-10-19T18:31:04.567Z",
-      "ms": 70544,
+      "ranAt": "2026-10-19T21:01:34.181Z",
+      "ms": 27526,
       "rn-web": {
-        "error": "locator.click: Timeout 30000ms exceeded.",
+        "atPrivacy": {
+          "path": "/privacy",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 4
+        },
+        "third": {
+          "path": "/feedback",
+          "dialogs": [
+            "Information page"
+          ],
+          "historyLength": 4
+        },
         "external": [],
         "consoleErrors": []
       },
       "web-prod": {
-        "error": "locator.click: Timeout 30000ms exceeded.",
+        "atPrivacy": {
+          "path": "/privacy",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "first": {
+          "path": "/",
+          "dialogs": [
+            "Settings"
+          ],
+          "historyLength": 5
+        },
+        "second": {
+          "path": "/",
+          "dialogs": [],
+          "historyLength": 5
+        },
+        "third": {
+          "path": "/feedback",
+          "dialogs": [],
+          "historyLength": 5
+        },
         "external": [],
         "consoleErrors": []
       }

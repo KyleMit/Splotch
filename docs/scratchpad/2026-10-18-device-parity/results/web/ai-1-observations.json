@@ -5458,34 +5458,229 @@
       }
     },
     "ai-offline-first-paint": {
-      "ranAt": "2026-10-19T19:49:48.374Z",
-      "ms": 51828,
+      "ranAt": "2026-10-19T21:04:13.405Z",
+      "ms": 39633,
       "rn-web": {
-        "wandOfflineAfterReload": null,
+        "worker": "activated",
+        "controlled": true,
+        "bannerDismissed": false,
+        "online": {
+          "wand": "Create AI image, 10 free left",
+          "row": [
+            {
+              "name": "Brushes",
+              "x": 8,
+              "y": 786,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Stroke width",
+              "x": 8,
+              "y": 724,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Coloring books",
+              "x": 8,
+              "y": 662,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Save screenshot",
+              "x": 8,
+              "y": 600,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Create AI image, 10 free left",
+              "x": 8,
+              "y": 538,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Settings",
+              "x": 334,
+              "y": 788,
+              "w": 48,
+              "h": 48
+            }
+          ]
+        },
+        "offline": {
+          "wand": null,
+          "row": [
+            {
+              "name": "Brushes",
+              "x": 8,
+              "y": 786,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Stroke width",
+              "x": 8,
+              "y": 724,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Coloring books",
+              "x": 8,
+              "y": 662,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Save screenshot",
+              "x": 8,
+              "y": 600,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Undo",
+              "x": 8,
+              "y": 538,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Settings",
+              "x": 334,
+              "y": 788,
+              "w": 48,
+              "h": 48
+            }
+          ]
+        },
         "shot": {
           "settled": true,
-          "settleMs": 1677,
-          "frames": 7,
+          "settleMs": 1718,
+          "frames": 6,
           "shot": "shots/ai-offline-first-paint-rn-web.webp",
-          "digest": "6875c853a25d412542352660e5524ac47bb7e76eefac8726cfe9c525f4eee782"
+          "digest": "a1bc49ae99c7360f45ca7826d77561049cfbd8791b6227e694fe3fbaa8d237c3"
         },
         "external": [],
         "consoleErrors": [
-          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
           "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
         ]
       },
       "web-prod": {
-        "wandOfflineAfterReload": null,
+        "worker": "activated",
+        "controlled": true,
+        "bannerDismissed": false,
+        "online": {
+          "wand": "Create AI image, 10 free left",
+          "row": [
+            {
+              "name": "Brushes",
+              "x": 8,
+              "y": 786,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Stroke width",
+              "x": 8,
+              "y": 724,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Coloring books",
+              "x": 8,
+              "y": 662,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Save screenshot",
+              "x": 8,
+              "y": 600,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Create AI image, 10 free left",
+              "x": 8,
+              "y": 538,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Settings",
+              "x": 334,
+              "y": 788,
+              "w": 48,
+              "h": 48
+            }
+          ]
+        },
+        "offline": {
+          "wand": null,
+          "row": [
+            {
+              "name": "Brushes",
+              "x": 8,
+              "y": 786,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Stroke width",
+              "x": 8,
+              "y": 724,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Coloring books",
+              "x": 8,
+              "y": 662,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Save screenshot",
+              "x": 8,
+              "y": 600,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Undo",
+              "x": 8,
+              "y": 538,
+              "w": 50,
+              "h": 50
+            },
+            {
+              "name": "Settings",
+              "x": 334,
+              "y": 788,
+              "w": 48,
+              "h": 48
+            }
+          ]
+        },
         "shot": {
           "settled": true,
-          "settleMs": 1655,
-          "frames": 7,
+          "settleMs": 1769,
+          "frames": 6,
           "shot": "shots/ai-offline-first-paint-web-prod.webp",
-          "digest": "6875c853a25d412542352660e5524ac47bb7e76eefac8726cfe9c525f4eee782"
+          "digest": "35e310bfb4a7eb7789f01d5fce770221b9b5f34838d57cbcf8c118fb63831a29"
         },
         "external": [],
-        "consoleErrors": []
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_FAILED",
+          "Failed to load resource: net::ERR_FAILED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+        ]
       }
     },
     "ai-grant-retry-on-return": {
@@ -5597,8 +5792,8 @@
       }
     },
     "ai-layout": {
-      "ranAt": "2026-10-19T19:52:04.577Z",
-      "ms": 114263,
+      "ranAt": "2026-10-19T21:04:01.239Z",
+      "ms": 146242,
       "phone-light": {
         "rn-web": {
           "card": {
@@ -5647,10 +5842,10 @@
           ],
           "shot": {
             "settled": true,
-            "settleMs": 1904,
+            "settleMs": 1891,
             "frames": 6,
             "shot": "shots/ai-layout-phone-light-rn-web.webp",
-            "digest": "db65804c61d94a5dbb7ac8166db8a7dd70626d707a049e21f3e4e73f6abadb48"
+            "digest": "e2448d4323c4b4aef15721efed405f29ade6a33bd7d74fcdd006bf73a767a2ac"
           },
           "external": [],
           "consoleErrors": []
@@ -5702,7 +5897,7 @@
           ],
           "shot": {
             "settled": true,
-            "settleMs": 1904,
+            "settleMs": 1902,
             "frames": 6,
             "shot": "shots/ai-layout-phone-light-web-prod.webp",
             "digest": "ebf92ebf0d9e97078bcdba93f57f1140d2d933c8330a8e47d5ef3a716a78b405"
@@ -5759,10 +5954,10 @@
           ],
           "shot": {
             "settled": true,
-            "settleMs": 1880,
+            "settleMs": 1871,
             "frames": 6,
             "shot": "shots/ai-layout-phone-dark-rn-web.webp",
-            "digest": "0b980440f5b44e646f9a032e8c31cf8ecc8e53467579947709261aa17740d075"
+            "digest": "774f8a422c580cb4faff0118ec956aa36f07d780ef83541fc8ccf6148acd69a7"
           },
           "external": [],
           "consoleErrors": []
@@ -5814,7 +6009,7 @@
           ],
           "shot": {
             "settled": true,
-            "settleMs": 1829,
+            "settleMs": 1837,
             "frames": 6,
             "shot": "shots/ai-layout-phone-dark-web-prod.webp",
             "digest": "426c476add3b2e80d11a858d2d450110e6af5918d6772cfc9fd979d4857399a9"
@@ -5825,12 +6020,112 @@
       },
       "landscape": {
         "rn-web": {
-          "error": "No Settings row named AI Art",
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 844,
+            "h": 390
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 239,
+              "y": 22,
+              "w": 365,
+              "h": 243
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 554,
+                "y": 23,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 353,
+                "y": 273,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 463,
+                "y": 342,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1642,
+            "frames": 6,
+            "shot": "shots/ai-layout-landscape-rn-web.webp",
+            "digest": "1b9ab013e3a8754bafa8406243a2e1a2223030ff5b88209b85edd05dbd7be741"
+          },
           "external": [],
           "consoleErrors": []
         },
         "web-prod": {
-          "error": "No Settings row named AI Art",
+          "card": {
+            "x": 231,
+            "y": 11,
+            "w": 383,
+            "h": 326
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 247,
+              "y": 27,
+              "w": 351,
+              "h": 234
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 554,
+                "y": 23,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 354,
+                "y": 273,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 462,
+                "y": 342,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1836,
+            "frames": 7,
+            "shot": "shots/ai-layout-landscape-web-prod.webp",
+            "digest": "2f9acbbbdc5f5522f69d8f1b79f35579f6ff65433e95d0ee1ded72149fb36a3e"
+          },
           "external": [],
           "consoleErrors": []
         }
@@ -5883,10 +6178,10 @@
           ],
           "shot": {
             "settled": true,
-            "settleMs": 1919,
+            "settleMs": 1939,
             "frames": 5,
             "shot": "shots/ai-layout-desktop-rn-web.webp",
-            "digest": "4008ddca7b207c7ebd3dee86f624bab81817f3a5baa93671911de3320427c69d"
+            "digest": "f73385d83744a4d4a5583b6b2fc142ed4cf2b74aa1bc07e81e5277e4a7dd8783"
           },
           "external": [],
           "consoleErrors": []
@@ -5938,7 +6233,7 @@
           ],
           "shot": {
             "settled": true,
-            "settleMs": 2055,
+            "settleMs": 2123,
             "frames": 5,
             "shot": "shots/ai-layout-desktop-web-prod.webp",
             "digest": "11165ec9ccc5f41a66b873c188c5e63c67177e569bbd773d091405142ff4e4af"

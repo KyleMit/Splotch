@@ -34,7 +34,7 @@ B0277,Free exhausted / daily limit mid-run -> close + AI Settings,unverified,fai
 B0278,Safety refusal card + refusal report,unverified,pass,ai-refusal-and-report,,
 B0279,Picture report: gate -> confirm -> send; failure -> Try again,unverified,pass,ai-picture-report; ai-report-rejected-then-retry,,
 B0280,Problem report diagnostics,unverified,fail,ai-still-not-working,#3008,"Diagnostics match except the version line: 1.6.0 (web) on RN, 1.6.0+ef3d1eb20 (web) on shipping (already #3008)"
-B0314,AI button hidden while offline; last state stamped at first paint,blocked,pass,ai-offline-button; ai-offline-first-paint,,Web subcase
+B0314,AI button hidden while offline; last state stamped at first paint,blocked,pass,ai-offline-button; ai-offline-first-paint,,"Web subcase: with a service worker controlling the page, the AI button shows online; after an offline reload the shell boots, the button is gone and Undo takes its slot at the same position, so no gap, in both (second take: the first errored at a shipping click before a 1.2 s settle was added)"
 B0315,Free-grant fetch retried on reconnect,blocked,fail,ai-offline-button; ai-grant-retry-on-return,#3027,As WEB-1
 L0046,actionButtonLayout.ts,unverified,pass,ai-drawer-button; ai-offline-button,,AI button joins the drawer at identical positions and leaves it offline; the Button Size ceiling was not varied
 L0138,"ai/dialProgress.ts, ai/dialColors.ts, ai/confettiField.ts, ai/loadingCopy.ts, components/aiDialGeometry.ts",unverified,pass,ai-success; ai-layout,,Dial and confetti frames match at the sampled instants; motion timing not measured
@@ -66,7 +66,7 @@ L0168,"components/AiWaitingPolaroid.svelte, AiDial.svelte, AiConfetti.svelte",un
 L0169,"components/settings/AiKeyManager.svelte, AiValueProp.svelte, OpenAiKeyHowTo.svelte, aiSettingsCopy.ts, AiFeatureToggles.svelte",unverified,pass,ai-fresh-install,,
 L0213,state/network.svelte.ts,blocked,pass,ai-offline-button,,Web subcase
 E0020,opted-in AI button paints without moving the drawer when ${scenario.name},unverified,pass,ai-drawer-button,,
-E0021,offline status leaves no gap in the first painted row (cached ${cached}),blocked,pass,ai-offline-first-paint,,"Web subcase, inspected"
+E0021,offline status leaves no gap in the first painted row (cached ${cached}),blocked,pass,ai-offline-first-paint,,"Web subcase: with a service worker controlling the page, the AI button shows online; after an offline reload the shell boots, the button is gone and Undo takes its slot at the same position, so no gap, in both (second take: the first errored at a shipping click before a 1.2 s settle was added); captures inspected"
 E0022,a changed network state replaces the stored first-paint guess,blocked,not run,,,Network change against a stored first-paint guess not run
 E0023,AI-only drawer paints its count before the grant arrives,unverified,pass,ai-badge-before-grant,,
 E0024,a usable AI button stays hidden with the closed drawer,unverified,not run,ai-drawer-button,,"checkVisibility reported shipping's AI button with the drawer closed, which a clipped button can do; not judged"
@@ -101,7 +101,7 @@ E0070,closing the result with the drawer folded focuses the drawer toggle,unveri
 E0071,paints the strip on backdrop colors in ${colorScheme} mode,unverified,pass,ai-layout,,
 E0072,disclosure text and glyphs keep full opacity in ${colorScheme},unverified,pass,ai-layout,,
 E0073,keeps loading and reveal geometry stable on ${viewport.label}${saveMode},unverified,pass,ai-success; ai-layout,,
-E0074,anchors the disclosure strip below the result card on ${viewport.label},unverified,pass,ai-layout,,"Close, Download and Report within 2 px in all four layouts"
+E0074,anchors the disclosure strip below the result card on ${viewport.label},unverified,pass,ai-layout,,"Close, Download and Report within 2 px in all four layouts (second take: the landscape variant now enables AI upright, then turns the phone)"
 E0075,draws the picture at the full height its band allows,unverified,pass,ai-result-pixels,,
 E0076,frames the card in a ${screen.label}-sized gutter,unverified,pass,ai-layout; ai-result-pixels,,
 E0077,clears the display's safe areas on a notched phone while ${state},unverified,not run,,,Safe-area insets not emulated

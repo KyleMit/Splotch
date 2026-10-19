@@ -28,19 +28,19 @@ file, so a long cell such as `ai-poll-past-240s` can run beside another batch.
 
 ## Files
 
-| File                              | Role                                                                              |
-| --------------------------------- | --------------------------------------------------------------------------------- |
-| `harness.mjs`                     | Arms, profiles, external-request guard, 8 ms stroke driver, settle rule, captures |
-| `page-probes.mjs`                 | In-page readers of public DOM: banner, dialogs, surface locks, headings, links    |
-| `serve-rn-web.mjs`                | Static host for the RN export with an SPA fallback                                |
-| `arm-proxy.mjs`                   | Per-cell proxy origin that can serve a next deploy's `sw.js` and `version.json`   |
-| `ai-fixture.mjs`                  | Labeled fixture for `/api/*`, recording every request                             |
-| `web-1-*.mjs`, `ai-1-cells.mjs`   | The cells                                                                         |
-| `run-cells.mjs`                   | Runs named cells and merges their observations into a record file                 |
-| `compare.mjs`, `pair-shots.mjs`   | The mechanical diff and the inspector's side-by-side view                         |
-| `*-observations.json`             | Raw observations per cell and arm                                                 |
-| `web-1-rows.csv`, `ai-1-rows.csv` | Per-row outcomes, cells, issues and notes                                         |
-| `shots/`                          | 360 px webp captures named `<cell>-<arm>.webp`                                    |
+| File                              | Role                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `harness.mjs`                     | Arms, profiles, external-request guard, 8 ms stroke driver, settle rule, captures                                |
+| `page-probes.mjs`                 | In-page readers of public DOM: banner, dialogs, surface locks, headings, links                                   |
+| `serve-rn-web.mjs`                | Static host for the RN export with an SPA fallback                                                               |
+| `arm-proxy.mjs`                   | Per-cell proxy origin that can serve a next deploy's `sw.js` and `version.json`                                  |
+| `ai-fixture.mjs`                  | Labeled fixture for `/api/*`, recording every request                                                            |
+| `web-1-*.mjs`, `ai-1-cells.mjs`   | The cells                                                                                                        |
+| `run-cells.mjs`                   | Runs named cells and merges their observations into a record file                                                |
+| `compare.mjs`, `pair-shots.mjs`   | The mechanical diff (a harness error on either arm counts as a difference) and the inspector's side-by-side view |
+| `*-observations.json`             | Raw observations per cell and arm                                                                                |
+| `web-1-rows.csv`, `ai-1-rows.csv` | Per-row outcomes, cells, issues and notes                                                                        |
+| `shots/`                          | 360 px webp captures named `<cell>-<arm>.webp`                                                                   |
 
 ## Emulation and its limits
 

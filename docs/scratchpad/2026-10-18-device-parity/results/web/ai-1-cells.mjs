@@ -15,9 +15,11 @@ import {
   openDialogs,
   openSection,
   openSettings,
+  PROFILES,
   visibilityShim,
 } from './harness.mjs';
 import { readBanner } from './page-probes.mjs';
+import { perArmBehindProxy, registerByStrokes, workerState } from './web-1-sw.mjs';
 
 export const RECORD = 'ai-1-observations.json';
 
@@ -151,6 +153,23 @@ function readAi() {
 }
 
 const ai = (s) => s.page.evaluate(readAi);
+
+// The open drawer's controls, left to right: a hidden AI button must leave no gap between them.
+function drawerRow() {
+  const bottomBand = innerHeight * 0.6;
+  return [...document.querySelectorAll('button, [role="button"]')]
+    .filter((element) => element.checkVisibility())
+    .map((element) => ({ element, box: element.getBoundingClientRect() }))
+    .filter(({ box }) => box.top > bottomBand && box.width > 0)
+    .sort((a, b) => a.box.left - b.box.left)
+    .map(({ element, box }) => ({
+      name: (element.getAttribute('aria-label') ?? element.innerText).trim(),
+      x: Math.round(box.left),
+      y: Math.round(box.top),
+      w: Math.round(box.width),
+      h: Math.round(box.height),
+    }));
+}
 
 async function frame(s, name) {
   const image = await s.page.screenshot();
@@ -600,20 +619,34 @@ export const CELLS = {
       };
     }),
 
+  // Each arm behind its own proxy origin, so the worker it registers controls the offline reload.
   'ai-offline-first-paint': (browser) =>
-    onBothArms(browser, 'iphone', async (s) => {
+    perArmBehindProxy(browser, 'iphone', async (s) => {
       await installAiFixture(s.ctx);
       await aiReady(s);
+      const worker = await registerByStrokes(s);
+      await boot(s);
+      const controlled = (await s.page.evaluate(workerState)).controlled;
+      // The strokes that register the worker also earn the install banner; it is set aside alike.
+      const notNow = s.page
+        .getByRole('button', { name: 'Not now', exact: true })
+        .filter({ visible: true });
+      const bannerDismissed = (await notNow.count()) > 0;
+      if (bannerDismissed) await notNow.first().click();
+      await s.page.waitForTimeout(1200);
+      await expandDrawer(s);
+      const online = { wand: (await ai(s)).wand, row: await s.page.evaluate(drawerRow) };
       await s.ctx.setOffline(true);
       await s.page.waitForTimeout(1500);
-      await s.page.reload().catch(() => {});
-      await s.page
-        .locator(s.paper)
-        .waitFor({ state: 'visible', timeout: 15_000 })
-        .catch(() => {});
-      await expandDrawer(s).catch(() => {});
+      await s.page.reload();
+      await s.page.locator(s.paper).waitFor({ state: 'visible', timeout: 15_000 });
+      await expandDrawer(s);
       return {
-        wandOfflineAfterReload: (await ai(s)).wand,
+        worker: worker.active,
+        controlled,
+        bannerDismissed,
+        online,
+        offline: { wand: (await ai(s)).wand, row: await s.page.evaluate(drawerRow) },
         shot: await capture(s, `ai-offline-first-paint-${s.arm}`),
       };
     }),
@@ -680,10 +713,10 @@ export const CELLS = {
 
   'ai-layout': async (browser) => {
     const result = {};
-    for (const [name, profile, colorScheme] of [
+    for (const [name, profile, colorScheme, turnTo] of [
       ['phone-light', 'iphone', 'light'],
       ['phone-dark', 'iphone', 'dark'],
-      ['landscape', 'iphone-landscape', 'light'],
+      ['landscape', 'iphone', 'light', PROFILES['iphone-landscape'].viewport],
       ['desktop', 'desktop', 'light'],
     ]) {
       result[name] = await onBothArms(
@@ -692,10 +725,14 @@ export const CELLS = {
         async (s) => {
           await installAiFixture(s.ctx, {
             '/api/generate-image': [
-              AI_REPLIES.picture(profile === 'iphone' ? 'portrait' : 'landscape'),
+              AI_REPLIES.picture(profile === 'iphone' && !turnTo ? 'portrait' : 'landscape'),
             ],
           });
           await aiReady(s);
+          if (turnTo) {
+            await s.page.setViewportSize(turnTo);
+            await s.page.waitForTimeout(1500);
+          }
           await generate(s);
           await s.page.waitForTimeout(PICTURE_WAIT_MS);
           const state = await ai(s);
