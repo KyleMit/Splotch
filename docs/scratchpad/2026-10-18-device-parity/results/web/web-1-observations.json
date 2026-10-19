@@ -6927,6 +6927,123 @@
         "external": [],
         "consoleErrors": []
       }
+    },
+    "not-found-back-label": {
+      "ranAt": "2026-10-19T20:29:56.438Z",
+      "ms": 26862,
+      "rn-web": {
+        "cold": "Start drawing",
+        "referredByCanvas": "Start drawing",
+        "referredByChangelog": "Start drawing",
+        "afterDrawingRan": "Start drawing",
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "cold": "Start drawing",
+        "referredByCanvas": "Back to drawing",
+        "referredByChangelog": "Start drawing",
+        "afterDrawingRan": "Back to drawing",
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        ]
+      }
+    },
+    "install-guide-one-tap": {
+      "ranAt": "2026-10-19T20:32:36.177Z",
+      "ms": 43901,
+      "android": {
+        "rn-web": {
+          "index": "Install as App › 2 Enable App Pinning ›",
+          "steps": "Install as App › 1. Tap the menu (three dots) 2. Tap \"Install app\" or \"Add to Home screen\" 3. Follow the prompts 4. Launch from your home screen for fullscreen mode 2 Enable App Pinning ›",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "oneTapName": "Install Splotch",
+          "hint": 1,
+          "shot": {
+            "settled": true,
+            "settleMs": 1604,
+            "frames": 6,
+            "shot": "shots/install-guide-one-tap-android-rn-web.webp",
+            "digest": "e33cd2fe236e3c5eeae125346feedfb882921d495751e1cdc037f368fe23af48"
+          },
+          "promptCalls": 1,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Enable App Pinning",
+          "steps": "Install as App Tap the menu (three dots) Tap \"Install app\" or \"Add to Home screen\" Follow the prompts Launch from your home screen for fullscreen mode 2 Enable App Pinning",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "oneTapName": "Install Splotch",
+          "hint": 1,
+          "shot": {
+            "settled": true,
+            "settleMs": 1884,
+            "frames": 7,
+            "shot": "shots/install-guide-one-tap-android-web-prod.webp",
+            "digest": "1a70f70198625316c00ad57f6dd29016f1c40816432f96b4c76600f5a3fa9d3a"
+          },
+          "promptCalls": 1,
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "index": "Install as App › 2 Keep kids in the app › Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reacts on error screens. Improved AI pictures are opt-in, with clearer errors and retries. Playful motion: menus pop from buttons, undo spins, clearing swe",
+          "steps": "Install as App › 1. In Chrome or Edge, click the install icon at the end of the address bar — or open the browser menu and choose \"Install Splotch\" 2. In Safari on macOS Sonoma or later, choose File → Add to Dock 3. Follow the prompts 4. Launch it from your dock, desktop, or taskbar for fullscreen mode Firefox has no install of its own, so it keeps Splotch in a tab — that works too. 2 Keep kids in the app › Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our pri",
+          "disclosure": {
+            "tag": "button",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "oneTapName": "Install Splotch",
+          "hint": 1,
+          "shot": {
+            "settled": true,
+            "settleMs": 2058,
+            "frames": 6,
+            "shot": "shots/install-guide-one-tap-desktop-rn-web.webp",
+            "digest": "c0823cc93cbbb4fe2a461eb186a994dff42cd0edfe96f91fb24adec7b2c18632"
+          },
+          "promptCalls": 1,
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "index": "Install as App 2 Keep kids in the app Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tracker. Please don't include personal details like names or email addresses. Send report Updates September 9, 2026 New Pick sounds for each part of the app — plus a clear sound. Dottie the mascot now reacts on error screens. Improved AI pictures are opt-in, with clearer errors and retries. Playful motion: menus pop from buttons, undo spins, clearing sweeps ",
+          "steps": "Install as App In Chrome or Edge, click the install icon at the end of the address bar — or open the browser menu and choose \"Install Splotch\" In Safari on macOS Sonoma or later, choose File → Add to Dock Follow the prompts Launch it from your dock, desktop, or taskbar for fullscreen mode Firefox has no install of its own, so it keeps Splotch in a tab — that works too. 2 Keep kids in the app Feedback SEND FEEDBACK Found a bug or have an idea? Tell us here — it opens a private support issue that only the Splotch maintainer can read. No account needed. Something's broken I have an idea What went wrong? Include device info (helps us reproduce the bug) Your report goes to our private support tra",
+          "disclosure": {
+            "tag": "summary",
+            "expandedBefore": "false",
+            "expandedAfter": "true"
+          },
+          "oneTapName": "Install Splotch",
+          "hint": 1,
+          "shot": {
+            "settled": true,
+            "settleMs": 1983,
+            "frames": 6,
+            "shot": "shots/install-guide-one-tap-desktop-web-prod.webp",
+            "digest": "418b47a1336332b0f6e2791953d3d8b967ab699182169926041eabac747e2679"
+          },
+          "promptCalls": 1,
+          "external": [],
+          "consoleErrors": []
+        }
+      }
     }
   },
   "browser": "chromium 141.0.7390.37 (headless)"

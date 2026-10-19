@@ -777,6 +777,29 @@ export const MISC_CELLS = {
     return result;
   },
 
+  // L0270: the not-found page's back label for each arrival backLabel.ts distinguishes.
+  'not-found-back-label': (browser) =>
+    onBothArms(browser, 'desktop', async (s) => {
+      const label = () =>
+        s.page
+          .getByRole('link', { name: /drawing/i })
+          .filter({ visible: true })
+          .first()
+          .innerText();
+      const load = async (options) => {
+        await s.page.goto(`${s.base}/no-such-page`, options);
+        await s.page.waitForTimeout(2500);
+        return label();
+      };
+      const cold = await load();
+      const referredByCanvas = await load({ referer: `${s.base}/` });
+      const referredByChangelog = await load({ referer: `${s.base}/changelog` });
+      await boot(s);
+      await s.page.waitForTimeout(1000);
+      const afterDrawingRan = await load();
+      return { cold, referredByCanvas, referredByChangelog, afterDrawingRan };
+    }),
+
   // A render crash, induced the same way in both arms: every script the page has not yet loaded
   // fails, then Settings (lazy in both) is opened.
   'root-crash-lazy-chunk': (browser) =>

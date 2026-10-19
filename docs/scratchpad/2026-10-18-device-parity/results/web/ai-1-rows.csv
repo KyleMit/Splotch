@@ -41,7 +41,6 @@ L0138,"ai/dialProgress.ts, ai/dialColors.ts, ai/confettiField.ts, ai/loadingCopy
 L0139,"ai/keyFormat.ts, ai/styles.ts (hasPunchedBackground), freeGenerations.ts, inviteLink.ts, latestRequest.ts (copy only), digestHex.ts, appIdentity.ts",unverified,pass,ai-prompt,,Same eight styles in the same order
 L0140,ai/generationAttempt.ts,unverified,blocked,,,RN recovery actions appear only with a stored recovery record; no public path
 L0141,ai/limits.ts,unverified,pass,ai-timeout; ai-poll-past-240s,,
-L0142,ai/styles.ts (STYLE_NAMES order),unverified,pass,ai-prompt,,
 L0143,ai/credentials.ts,unverified,pass,ai-success; ai-picture-report,,Same credential headers per request
 L0144,ai/failureReport.ts,unverified,fail,ai-still-not-working,#3008,As B0280
 L0145,"ai/generationResult.ts, drawing/aiImageResponse.ts",unverified,fail,ai-throttled-and-malformed,,A 200 carrying malformed JSON or HTML: RN shows the retry card; shipping shows Your picture is ready with an undecodable picture. RN is the sound behaviour; no RN issue filed

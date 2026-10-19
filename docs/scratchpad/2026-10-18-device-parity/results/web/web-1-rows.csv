@@ -41,13 +41,13 @@ L0156,"installationId.ts, state/webInstallationId.ts",unverified,accepted differ
 L0180,coloringPacks/webStore.ts,unverified,fail,coloring-connection-policy,N,#3014,
 L0191,drawing/imageSave.ts,unverified,pass,save-download; folder-save-opfs-diagnostic,N,,
 L0193,"drawing/folderSave.ts, state/saveFolder.svelte.ts",unverified,blocked,folder-save-row-and-picker; folder-save-opfs-diagnostic,N,,Real folder choice blocked by the headless picker; the substituted-picker diagnostic matches
-L0196,"saveNaming.ts, savedFile.ts",unverified,pass,save-download,N,,
 L0202,settings/SavingSection.svelte,unverified,pass,folder-save-row-and-picker,N,,
 L0204,pwa/updates.ts,unverified,fail,sw-update-lifecycle; sw-stale-launch,Y,#3027,Lifecycle present and matching except the extra navigation noted under B0313
 L0205,vite.config.ts VitePWA/workbox config,unverified,fail,sw-repeat-visit-and-offline,Y,#3027,No runtime pages cache: an unknown path loaded offline shows Chrome's No internet page on RN and the app's not-found page on shipping
 L0207,pwa/versionEndpoint.ts,unverified,pass,sw-stale-launch,Y,,RN serves version.json and performs the ?v= cache-bust navigation as shipping does
 L0209,state/install.svelte.ts (+ sessionCounters),unverified,pass,install-* cells,Y,,
 L0210,components/InstallBanner.svelte,unverified,fail,ai-install-banner-suppression,Y,#3021,
+L0211,settings/SetupInstructions.svelte (PWA install guide),unverified,pass,install-guide; install-guide-one-tap,N,,"The checklist for each device family (iPhone, iPhone Chrome sent to Safari, iPad, Android, desktop) and the one-tap Install Splotch button above it once the browser offers a prompt match; one tap calls prompt() once in both"
 L0213,state/network.svelte.ts,blocked,pass,ai-offline-button (AI-1),N,,Web subcase passes; row stays blocked for iOS
 L0217,boot/appSurfaceRoute.ts (+ app.css/app.html page locks),unverified,pass,surface-locks; context-menu-guard,N,,"touch-action, user-select and overscroll locks match; -webkit-touch-callout is unobservable in Chromium"
 L0221,boot/settledIn.svelte.ts,unverified,pass,sw-first-visit-gate,Y,,
@@ -58,6 +58,7 @@ L0227,warmDisplayFont.ts,unverified,not run,,N,,First-use display-font swap not 
 L0228,app.html boot script,unverified,fail,boot-head,Y,#3017,"No Content-Security-Policy on the RN document; shipping authorizes its 2 inline scripts by hash without unsafe-inline. Shipping's data-orientation and data-toolbar stamps are absent; #3006 replaced the first-paint path, so those stamps need re-judging there"
 L0230,"platform/index.ts (lock gates, isStandalone, platform)",unverified,pass,orientation-and-fullscreen; back-standalone-fine-pointer,N,,
 L0238,state/fullscreen.svelte.ts (+ FullscreenToggle),unverified,pass,orientation-and-fullscreen,N,,
+L0270,"components/page/NotFoundPage, NativeNotFoundPage, PageShell, BackLink, backLabel, CrayonStrip",unverified,fail,not-found-back-label; not-found-layouts,N,#3026,"Cold visits read Start drawing in both; with the drawing as referrer, or after the drawing ran in the tab, shipping says Back to drawing and RN still says Start drawing"
 E0091,Bare glass ships a prefixed dynamic mask for the Chromium browser floor,unverified,not run,,N,,Prefixed mask for the Chromium floor not checked
 E0104,Bare compact fullscreen shares one pane with the toolbar,unverified,pass,orientation-and-fullscreen,N,,Fullscreen Android frames match by inspection
 E0178,books already downloaded show in the picker on a ${name} connection without new downloads,blocked,blocked,coloring-connection-policy,N,#3014,As B0286

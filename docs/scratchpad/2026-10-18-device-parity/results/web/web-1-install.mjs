@@ -429,6 +429,43 @@ export const INSTALL_CELLS = {
     return result;
   },
 
+  // L0211: the guide's one-tap mode, which replaces the checklist once the browser has offered
+  // an install prompt.
+  'install-guide-one-tap': async (browser) => {
+    const result = {};
+    for (const profile of ['android', 'desktop']) {
+      result[profile] = await onBothArms(browser, profile, async (s) => {
+        await boot(s);
+        await s.page.evaluate(fireInstallPrompt);
+        await settleUi(s);
+        const text = await installGuideText(s);
+        const shot = await capture(s, `install-guide-one-tap-${profile}-${s.arm}`);
+        const hint = await s.page
+          .getByText('One tap — your browser will do the rest.', { exact: true })
+          .filter({ visible: true })
+          .count();
+        const oneTap = s.page
+          .getByRole('dialog')
+          .getByRole('button', { name: 'Install Splotch', exact: true })
+          .filter({ visible: true })
+          .first();
+        const oneTapName = (await oneTap.count()) ? await oneTap.innerText() : null;
+        if (oneTapName) {
+          await oneTap.click();
+          await settleUi(s);
+        }
+        return {
+          ...text,
+          oneTapName,
+          hint,
+          shot,
+          promptCalls: await s.page.evaluate(() => window.__promptCalls),
+        };
+      });
+    }
+    return result;
+  },
+
   // L0006: one two-finger contact plus one stroke. Counted per finger that is three strokes and
   // earns the banner; counted per stroke group it is two.
   'install-gate-multitouch': (browser) =>
