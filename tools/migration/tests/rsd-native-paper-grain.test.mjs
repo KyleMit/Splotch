@@ -219,7 +219,7 @@ it.each(
           NativeFrame,
           {
             variant: 'flatDrawing',
-            edges: createElement(RsdNotchBand, { ink: PURPLE, eraser: false }),
+            edges: createElement(RsdNotchBand, { ink: PURPLE, eraser: false, layer: 'cover' }),
           },
           createElement('i', { 'data-testid': 'drawing-content' })
         )
@@ -276,7 +276,7 @@ it.each(
         .slice(siblings.indexOf(frame) + 1)
         .filter((node) => node.dataset.committedProps !== undefined)
         .map((node) => JSON.parse(node.dataset.committedProps).style.backgroundColor)
-    ).toEqual(bandColors);
+    ).toEqual(bandColors.slice(0, 2));
   }
 );
 

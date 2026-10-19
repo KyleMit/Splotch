@@ -335,6 +335,7 @@ function RsdDrawingContent({
           <RsdNotchBand
             ink={paintAppearance(sound.settings.selectedColor, theme).hex}
             eraser={screen.brush === 'eraser'}
+            layer="cover"
           />
         }
       >
