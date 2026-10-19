@@ -548,6 +548,17 @@ AC1_ADMITTED = {
     'L0252': [T + 'native-haptics-parity.test.mjs', T + 'native-clear-projection.test.mjs'],
 }
 
+# Rows the first review round showed were checked only by hand-written expectations for a rule
+# the module owns, each repaired with a new test that runs or reads shipping's rule. They stay
+# unverified until AC1_REPAIRED_RUN names the CI run that passed those tests.
+AC1_REPAIRED = {
+    'L0116': [M + 'rsd-native-settings-layouts.test.mjs', T + 'native-settings-shell-parity.test.mjs'],
+    'L0118': [M + 'rsd-native-settings-layouts.test.mjs', T + 'native-pane-scroll-parity.test.mjs'],
+    'L0136': [T + 'native-section-icon-mounted.test.mjs', T + 'native-icons.test.mjs',
+              T + 'native-section-icon-routing.test.mjs'],
+}
+AC1_REPAIRED_RUN = None
+
 # Passed at the exact head with a confirmed shipping oracle: the qualifying named tests.
 AC1_VERIFIED = {
     'L0008': [T + 'native-stroke-smoothing.test.mjs'],
@@ -564,21 +575,12 @@ AC1_VERIFIED = {
     'L0106': [T + 'native-settings-info-drift.test.mjs'],
     'L0107': [T + 'native-settings-sections.test.mjs'],
     'L0108': [T + 'native-settings-info-drift.test.mjs', T + 'native-feedback-contract.test.mjs'],
-    'L0116': [M + 'rsd-native-settings-layouts.test.mjs'],
-    'L0118': [M + 'rsd-native-settings-layouts.test.mjs'],
-    'L0122': [M + 'rsd-native-tool-drawer-settings.test.mjs', T + 'native-pencil-double-tap.test.mjs'],
-    'L0132': [M + 'rsd-native-settings-rows.test.mjs', M + 'rsd-native-slider.test.mjs',
-              T + 'native-focus-ring.test.mjs'],
-    'L0133': [M + 'rsd-native-button-chrome.test.mjs', M + 'modal-geometry.test.mjs',
-              T + 'native-design-primitives-drift.test.mjs', M + 'rsd-native-segmented-picker.test.mjs',
-              M + 'rsd-native-settings-rows.test.mjs', M + 'rsd-native-design-primitives.test.mjs'],
-    'L0136': [T + 'native-section-icon-mounted.test.mjs', T + 'native-icons.test.mjs'],
     'L0206': [T + 'native-web-not-found.test.mjs'],
     'L0259': [M + 'modal-geometry.test.mjs', M + 'rsd-native-settings-rows.test.mjs'],
     'L0267': [T + 'native-icons.test.mjs'],
     'L0269': [M + 'rsd-native-drawing-frame.test.mjs'],
-    'L0270': [M + 'rsd-native-not-found.test.mjs', T + 'native-web-not-found.test.mjs'],
     **AC1_ADMITTED,
+    **({} if AC1_REPAIRED_RUN is None else AC1_REPAIRED),
 }
 
 # The named tests passed, but a rule the module owns is checked only against hand-written
@@ -592,6 +594,16 @@ AC1_MOVED = {
               'markup), so a dropped or reordered step passes; native-install-guide-order now holds the '
               'steps in full, but which checklist shows (native, locked, web) is not compared',
               [T + 'native-install-guide-order.test.mjs']),
+    'L0122': (['OV-2'], 'tool order, ids, labels, icons and the chip width are read from shipping, but the '
+              'chip switch, the tools shown only with the drawer on, the Pencil eraser row and '
+              'isDrawingToolOn are hand-written expectations'),
+    'L0132': (['OV-2'], 'slider constants and paint tokens are read from Slider.svelte, but drag, snap and '
+              'key behaviour are hand-written; flipping shipping\'s snap test left the named tests passing '
+              '(review round 1)'),
+    'L0133': (['OV-2'], 'rovingRadio runs on both sides and the primitives\' literals are read from shipping, '
+              'but rules such as StatusMessage\'s role and live-region choice are hand-written tables'),
+    'L0270': (['WEB-1'], 'copy, gutter, sheet and decoration literals are read from shipping, but backLabel.ts '
+              'resolveBackLabel (cold visit or from the drawing) is not compared'),
     'L0211': (['WEB-1'], 'install-guide steps are checked one way (each RN step appears in the shipping '
               'markup), so a dropped or reordered step passes; native-install-guide-order now holds the '
               'steps in full, but which checklist shows (device family, Safari, one-tap) is not compared',
@@ -631,15 +643,20 @@ def ac1_result(rid, res):
     res.setdefault('evidence', '')
     if rid in AC1_ADMITTED:
         res['tests'] = list(AC1_ADMITTED[rid])
+    if rid in AC1_REPAIRED:
+        res['tests'] = list(AC1_REPAIRED[rid])
     if rid in AC1_MOVED:
         extra = AC1_MOVED[rid][2] if len(AC1_MOVED[rid]) > 2 else []
         res['tests'] += [t for t in extra if t not in res['tests']]
     if rid in AC1_VERIFIED:
         assert res['classification'] == 'automated-test', rid
         res['tests'] = list(AC1_VERIFIED[rid])
-        run = AC1_ADMITTED_RUN if rid in AC1_ADMITTED else AC1_RUN
+        run = (AC1_ADMITTED_RUN if rid in AC1_ADMITTED
+               else AC1_REPAIRED_RUN if rid in AC1_REPAIRED else AC1_RUN)
         res['status'], res['evidence'] = 'verified', AC1_RECORD
         res['basis'] += f'; {run}: passed with a shipping oracle'
+    elif rid in AC1_REPAIRED:
+        res['basis'] += f'; {AC1_RUN}: a rule the module owns was hand-checked (review round 1); a new test now runs or reads shipping\'s rule, awaiting its CI run'
     elif rid in AC1_FAILED:
         issue, reason = AC1_FAILED[rid]
         res['status'], res['evidence'] = 'failed', f'{AC1_RECORD};{ISSUE}{issue}'
@@ -720,7 +737,7 @@ def main():
     # validation
     ids = [r['id'] for r, _ in out]
     assert len(ids) == len(set(ids)) == 1541, len(ids)
-    for table in (AC1_ADMITTED, AC1_VERIFIED, AC1_MOVED, AC1_FAILED, AC1_RECORDED):
+    for table in (AC1_ADMITTED, AC1_REPAIRED, AC1_VERIFIED, AC1_MOVED, AC1_FAILED, AC1_RECORDED):
         assert set(table) <= set(ids), set(table) - set(ids)
     for r, res in out:
         for p in res['protocols']:
