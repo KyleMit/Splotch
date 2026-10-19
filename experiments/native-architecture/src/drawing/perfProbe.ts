@@ -1,6 +1,6 @@
-import type { Point, Stroke } from './model';
+import type { Stroke } from './model';
 import type { PaperInput } from './paperInput';
-import type { PerfTimer } from './perfCohort';
+import type { AppendOutcome, PerfTimer } from './perfCohort';
 
 // The perf probe's contract, and the build without it: the web export, Node and the type checker
 // resolve this file, where every export does nothing and PERF_PROBE stays false. Metro's Android
@@ -20,7 +20,8 @@ export function perfPacket(_packet: PaperInput) {}
 export function perfIdle() {}
 export function perfStroke(_timestamp: number) {}
 export function perfSampleTime(_timestamp: number) {}
-export function perfAppend(_before: readonly Point[], _after: readonly Point[], _point: Point) {}
+export function perfAppend(_outcome: AppendOutcome) {}
 export function perfDrained(_strokes: readonly Stroke[]) {}
 export function useSurfaceCommitProbe() {}
-export function useInkCommitProbe(_picture: unknown) {}
+export function perfSubmitted() {}
+export function useInkCommitProbe() {}

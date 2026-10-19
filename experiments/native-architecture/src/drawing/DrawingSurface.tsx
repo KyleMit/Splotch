@@ -21,7 +21,7 @@ import {
   type ReactNode,
 } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import type { Drawing, Stroke } from './model';
+import type { Drawing } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
@@ -34,6 +34,7 @@ import { useSurfacePackets } from './useSurfacePackets';
 import { PaperInputView } from './PaperInputView';
 import { PointerHalos } from './PointerHalos';
 import { createHaloFeed } from './haloFeed';
+import { createLiveInkFeed } from './liveInk';
 import type { Halo } from './haloModel';
 import type { UndoGhost } from './undoFeedback';
 import { useSurfaceCommitProbe } from './perfProbe';
@@ -67,27 +68,24 @@ export type DrawingSurfaceProps = ContactDrawingProps & {
   underlay?: ReactNode;
 };
 
-type LiveDraft = {
-  strokes: readonly Stroke[];
-  paper: PaperReference | null;
-};
-
-// Drafts render the surface; halos go straight to their own layer.
-function useLiveDraft() {
-  const [draft, setDraft] = useState<LiveDraft>({ strokes: [], paper: null });
+// The surface renders only when a cohort starts or ends (its paper is the live paper while one
+// is drawing); live ink and halos go straight to their own layers.
+function useLiveCohort() {
+  const [paper, setPaper] = useState<PaperReference | null>(null);
   const halos = useRef(createHaloFeed()).current;
+  const ink = useRef(createLiveInkFeed()).current;
   const show = useCallback(
-    (strokes: readonly Stroke[], paper: PaperReference | null, live: readonly Halo[]) => {
-      setDraft({ strokes, paper });
+    (next: PaperReference | null, live: readonly Halo[]) => {
+      setPaper(next);
       halos.publish(live);
     },
     [halos]
   );
-  return { draft, halos, show };
+  return { paper, halos, ink, show };
 }
 
-function surfaceUndoGhost(props: DrawingSurfaceProps, drafts: readonly Stroke[]) {
-  return !drafts.length && props.undoGhost?.after === props.drawing ? props.undoGhost : null;
+function surfaceUndoGhost(props: DrawingSurfaceProps, drawing: boolean) {
+  return !drawing && props.undoGhost?.after === props.drawing ? props.undoGhost : null;
 }
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
@@ -104,10 +102,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const paper = useRef<View>(null);
     const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
     const geometry = useRef(createPaperGeometry()).current;
-    const { draft, halos, show } = useLiveDraft();
-    const paperReference = draft.paper ?? drawingPaper(props.drawing);
+    const live = useLiveCohort();
+    const paperReference = live.paper ?? drawingPaper(props.drawing);
     const projectionRef = useRef(paperProjection(paperReference));
-    const input = useRef(
+    // Created once: the responder connects its cohort to the live ink feed.
+    const [input] = useState(() =>
       createContactResponder(
         () => ({
           ...propsRef.current,
@@ -123,10 +122,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
             ) !== true,
         }),
         geometry.current,
-        show,
-        () => PixelRatio.get()
+        live.show,
+        () => PixelRatio.get(),
+        live.ink
       )
-    ).current;
+    );
     inputRef.current = input;
     useLayoutEffect(() => {
       if (props.disabled) input.silence();
@@ -190,9 +190,9 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   key={`${appearance.pageId}:${appearance.theme}`}
                   ref={attachRaster}
                   strokes={props.drawing.strokes}
-                  undoGhost={surfaceUndoGhost(props, draft.strokes)}
+                  undoGhost={surfaceUndoGhost(props, live.paper !== null)}
                   paperFrame={geometry.current()}
-                  drafts={draft.strokes}
+                  live={live.ink}
                   brush={props.brush}
                   color={props.color}
                   onBusy={(busy) => {
@@ -205,7 +205,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
                   }}
                 />
                 {PageArt ? <PageArt pageId={props.drawing.pageId} size={presented} /> : null}
-                <PointerHalos feed={halos} />
+                <PointerHalos feed={live.halos} />
               </PaperInputView>
             </View>
             {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}

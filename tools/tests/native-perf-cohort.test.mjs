@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  appendOutcome,
   COHORT_SETTLE_MS,
   createPerfCohorts,
   PERF_LINE_VERSION,
   PERF_LOG_TAG,
 } from '../../experiments/native-architecture/src/drawing/perfCohort.ts';
-import { appendPoint } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const CLOCK_JOIN = { clock: 'mach_absolute_time', errorMs: 0 };
 
@@ -63,20 +61,6 @@ const stroke = (points) => ({
   points: Array.from({ length: points }, (_, x) => ({ x, y: 0 })),
 });
 
-describe('appendOutcome', () => {
-  // Negative control: classifying by array identity alone would call both rejections duplicates.
-  it('names what appendPoint did with each sample', () => {
-    const points = [{ x: 10, y: 10 }];
-    const classify = (point, includeEndpoint) =>
-      appendOutcome(points, appendPoint(points, point, includeEndpoint), point);
-    expect(classify({ x: 20, y: 20 }, false)).toBe('appended');
-    expect(classify({ x: 10, y: 10 }, true)).toBe('duplicate');
-    expect(classify({ x: 10, y: 10 }, false)).toBe('duplicate');
-    expect(classify({ x: 10.5, y: 10 }, false)).toBe('minDistanceRejected');
-    expect(classify({ x: 10.5, y: 10 }, true)).toBe('appended');
-  });
-});
-
 describe('createPerfCohorts', () => {
   it('counts one cohort from its first packet to the packet that leaves no contact held', () => {
     const { cohorts, lines, advance } = harness();
@@ -84,8 +68,7 @@ describe('createPerfCohorts', () => {
     cohorts.stroke(0);
     advance(8);
     cohorts.packet(packet('move', [{ identifier: 'a', samples: 4 }]));
-    for (const outcome of ['appended', 'duplicate', 'appended', 'minDistanceRejected'])
-      cohorts.append(outcome);
+    for (const outcome of ['appended', 'duplicate', 'appended']) cohorts.append(outcome);
     advance(8);
     cohorts.packet(packet('end', [{ identifier: 'a', samples: 1 }]));
     cohorts.append('duplicate');
@@ -110,10 +93,9 @@ describe('createPerfCohorts', () => {
         maxSamplesPerPacket: 4,
         appended: 2,
         duplicate: 2,
-        minDistanceRejected: 1,
         inkLayoutEffectCommits: 0,
         surfaceLayoutEffectCommits: 0,
-        draftRecord: { n: 0, totalMs: 0, maxMs: 0 },
+        liveFlush: { n: 0, totalMs: 0, maxMs: 0 },
         sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
         inputToSubmission: { n: 0 },
         clockJoin: CLOCK_JOIN,
@@ -217,11 +199,11 @@ describe('createPerfCohorts', () => {
   it('times each recording and keeps its count, total and slowest', () => {
     const { cohorts, lines, advance } = harness();
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
-    for (const ms of [1.234, 3.5, 0.25]) cohorts.timed('draftRecord', ms);
+    for (const ms of [1.234, 3.5, 0.25]) cohorts.timed('liveFlush', ms);
     cohorts.timed('sceneRecord', 0.5);
     cohorts.idle();
     advance(COHORT_SETTLE_MS);
-    expect(lines[0].draftRecord).toEqual({ n: 3, totalMs: 4.98, maxMs: 3.5 });
+    expect(lines[0].liveFlush).toEqual({ n: 3, totalMs: 4.98, maxMs: 3.5 });
     expect(lines[0].sceneRecord).toEqual({ n: 1, totalMs: 0.5, maxMs: 0.5 });
   });
 
@@ -290,7 +272,7 @@ describe('createPerfCohorts', () => {
     cohorts.idle();
     cohorts.append('appended');
     cohorts.drained([stroke(4)]);
-    cohorts.timed('draftRecord', 9);
+    cohorts.timed('liveFlush', 9);
     cohorts.inkCommit();
     cohorts.surfaceCommit();
     advance(COHORT_SETTLE_MS);

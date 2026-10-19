@@ -19,6 +19,7 @@ import type { GuardEdge } from '../../../../web/src/lib/drawing/strokeMath';
 import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
 import { paperPoint, type Drawing, type Stroke } from './model';
+import type { LiveInkFeed } from './liveInk';
 import type { Brush } from './brushes';
 import type { PaintColor } from './palette';
 import { paperLocation, type PaperFrame } from './paperGeometry';
@@ -103,21 +104,17 @@ class ContactResponder {
   constructor(
     private readonly current: () => ContactDrawingProps,
     private readonly frame: () => PaperFrame | null,
-    private readonly showDrafts: (
-      drafts: readonly Stroke[],
-      paper: PaperReference | null,
-      halos: readonly Halo[]
-    ) => void,
-    private readonly pixelRatio: () => number
-  ) {}
+    private readonly showLive: (paper: PaperReference | null, halos: readonly Halo[]) => void,
+    private readonly pixelRatio: () => number,
+    private readonly live: LiveInkFeed
+  ) {
+    live.connect(this.input);
+  }
 
   private publish(completed: readonly Stroke[] | null = null) {
     if (completed) this.current().onCohort(completed, this.input.paper());
-    this.showDrafts(
-      this.input.drafts(),
-      this.input.hasActive() ? this.input.paper() : null,
-      this.halos()
-    );
+    this.live.publish();
+    this.showLive(this.input.hasActive() ? this.input.paper() : null, this.halos());
     this.current().onDrawingChange(
       this.input.hasActive(),
       this.input.hasActive() ? this.input.paper() : null
@@ -143,10 +140,13 @@ class ContactResponder {
     );
   }
 
+  // Shipping flushes every contact's queued samples when any contact lifts (stopDrawing), so the
+  // lifting stroke's last samples land before its cohort can commit.
   private finish(identifier: string) {
     const contact = this.contacts.get(identifier);
     contact?.sound?.end();
     if (contact) contact.admission = { kind: 'ignored' };
+    this.live.settle();
     this.publish(this.input.finish(identifier));
   }
 
@@ -221,7 +221,7 @@ class ContactResponder {
       const paper = this.input.paper();
       const sample = this.paperSample(point, frame, paper);
       if (PERF_PROBE) perfSampleTime(touch.timestamp);
-      this.input.sample(touch.identifier, sample, true);
+      this.input.sample(touch.identifier, sample);
       const contact = this.contacts.get(touch.identifier);
       if (audible) {
         const texel = textureScale(paper);
@@ -283,6 +283,7 @@ class ContactResponder {
   interrupt() {
     this.silence();
     this.contacts.clear();
+    this.live.settle();
     this.publish(this.input.interrupt());
   }
 
@@ -294,6 +295,7 @@ class ContactResponder {
     this.packetInput.detach();
     this.silence();
     this.contacts.clear();
+    this.live.settle();
     const completed = this.input.interrupt();
     if (completed) this.current().onCohort(completed, this.input.paper());
     this.current().onDrawingChange(false, null);
@@ -304,6 +306,7 @@ class ContactResponder {
     for (const contact of this.contacts.values()) {
       contact.admission = { kind: 'ignored' };
     }
+    this.live.settle();
     this.publish(this.input.interrupt());
   }
 }
@@ -311,12 +314,9 @@ class ContactResponder {
 export function createContactResponder(
   current: () => ContactDrawingProps,
   frame: () => PaperFrame | null,
-  showDrafts: (
-    drafts: readonly Stroke[],
-    paper: PaperReference | null,
-    halos: readonly Halo[]
-  ) => void,
-  pixelRatio: () => number
+  showLive: (paper: PaperReference | null, halos: readonly Halo[]) => void,
+  pixelRatio: () => number,
+  live: LiveInkFeed
 ) {
-  return new ContactResponder(current, frame, showDrafts, pixelRatio);
+  return new ContactResponder(current, frame, showLive, pixelRatio, live);
 }

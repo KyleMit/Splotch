@@ -1,4 +1,4 @@
-import type { Point, Stroke } from './model';
+import type { Stroke } from './model';
 import type { PaperInput } from './paperInput';
 
 // The native log tag (Android) and category (iOS) every line is written under, and the line's
@@ -7,14 +7,14 @@ export const PERF_LOG_TAG = 'SplotchPerf';
 // SplotchPerfLog (ios/HelloWorld/SplotchPerfLog.swift, android .../SplotchPerfLog.kt) writes one
 // line to the device log under PERF_LOG_TAG; native-perf-probe.test.mjs reads both sides.
 export const PERF_LOG_MODULE = 'SplotchPerfLog';
-export const PERF_LINE_VERSION = 1;
+export const PERF_LINE_VERSION = 2;
 // React commits the lifting packet's render after its handler returns, and the committed raster
 // repaints in that commit; a cohort's line waits this long after its last contact lifts so the
 // commits it caused count toward it. The next contact closes it sooner.
 export const COHORT_SETTLE_MS = 250;
 
-export type AppendOutcome = 'appended' | 'duplicate' | 'minDistanceRejected';
-export type PerfTimer = 'draftRecord' | 'sceneRecord';
+export type AppendOutcome = 'appended' | 'duplicate';
+export type PerfTimer = 'liveFlush' | 'sceneRecord';
 export type PerfClock<Handle> = Readonly<{
   now: () => number;
   schedule: (run: () => void, delayMs: number) => Handle;
@@ -41,17 +41,6 @@ type Cohort = {
   timers: Record<PerfTimer, Timing>;
   submissions: number[];
 };
-
-// appendPoint returns its input array unchanged when it keeps no new point.
-export function appendOutcome(
-  before: readonly Point[],
-  after: readonly Point[],
-  point: Point
-): AppendOutcome {
-  if (after.length > before.length) return 'appended';
-  const last = before.at(-1);
-  return last && last.x === point.x && last.y === point.y ? 'duplicate' : 'minDistanceRejected';
-}
 
 function changedSamples(packet: PaperInput) {
   const changed = new Set(packet.changed);
@@ -101,7 +90,7 @@ function formatPerfLine(cohort: Cohort, context: PerfLineContext): string {
     ...cohort.outcomes,
     inkLayoutEffectCommits: cohort.inkCommits,
     surfaceLayoutEffectCommits: cohort.surfaceCommits,
-    draftRecord: timing(cohort.timers.draftRecord),
+    liveFlush: timing(cohort.timers.liveFlush),
     sceneRecord: timing(cohort.timers.sceneRecord),
     inputToSubmission: submissionSummary(cohort.submissions),
     clockJoin: context.clockJoin,
@@ -116,13 +105,13 @@ function openCohort(index: number, openedAt: number): Cohort {
     packets: 0,
     samples: 0,
     maxSamplesPerPacket: 0,
-    outcomes: { appended: 0, duplicate: 0, minDistanceRejected: 0 },
+    outcomes: { appended: 0, duplicate: 0 },
     strokes: 0,
     points: 0,
     inkCommits: 0,
     surfaceCommits: 0,
     timers: {
-      draftRecord: { n: 0, totalMs: 0, maxMs: 0 },
+      liveFlush: { n: 0, totalMs: 0, maxMs: 0 },
       sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
     },
     submissions: [],

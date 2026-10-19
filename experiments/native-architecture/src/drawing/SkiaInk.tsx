@@ -3,7 +3,6 @@ import {
   artOrientation,
   paperKey,
   paperBounds,
-  paperProjectionView,
   samePaperProjection,
   type PaperProjection,
   type PaperSize,
@@ -13,67 +12,44 @@ import {
   useContext,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import {
-  FilterMode,
-  MipmapMode,
-  Skia,
-  SkiaPictureView,
-  fitRects,
-  type SkCanvas,
-  type SkImage,
-  type SkPicture,
-  type SkSurface,
-} from '@shopify/react-native-skia';
+import { Skia, SkiaPictureView, type SkImage } from '@shopify/react-native-skia';
 import { sameStrokes, type InkPlan } from './checkpoints';
 import { useInkAppearance } from './InkAppearance';
 import { useCrayonTileResources } from './useCrayonTileReadiness';
 import type { CrayonTileResources } from './crayonTiles';
-import type { PaintColor } from './palette';
-import type { Brush } from './brushes';
 import { isFarmPageId } from './bundledBooks';
 import { bundledFill } from './bundledBookAssets';
 import { isOfflinePageId } from '../offlineLibrary/identity';
 import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
 import type { PageId } from './pages';
 import type { PaperTheme } from './theme';
-import { decodeDataUriImage, paintStroke, type InkPaintContext } from './skiaInkPainter';
+import { decodeDataUriImage, type InkPaintContext } from './skiaInkPainter';
 import type { Stroke } from './model';
 import type { RasterInkHandle } from './RasterInk';
 import type { UndoGhost } from './undoFeedback';
-import type { PaperFrame } from './paperGeometry';
 import { SkiaUndoGhost, type PreviousInk } from './SkiaUndoGhost';
-import { perfTimed, useInkCommitProbe } from './perfProbe';
+import { perfSubmitted, useInkCommitProbe } from './perfProbe';
+import type { InkLayerProps } from './inkLayerProps';
+import type { LiveInkFeed } from './liveInk';
+import { createInkScene, type InkScene, type SceneInput } from './skiaInkScene';
+import { createInkLayer } from './skiaInkLayer';
+import { orderedOps } from './strokeOps';
+import { showPicture } from './skiaViewPicture';
 
-type Props = {
-  strokes: readonly Stroke[];
-  drafts?: readonly Stroke[];
-  brush: Brush;
-  color: PaintColor;
-  onBusy: (busy: boolean) => void;
-  onError: (error: unknown) => void;
-  undoGhost?: UndoGhost | null;
-  paperFrame?: PaperFrame | null;
-};
 type Size = Readonly<{ width: number; height: number }>;
-type Rendered<T> = Readonly<{ value: T | null; error: unknown }>;
-type CommittedLayer = {
-  key: string;
-  surface: SkSurface;
-  strokes: readonly Stroke[];
-  image: SkImage;
-  context: InkPaintContext;
-};
-
-const NO_DRAFTS: readonly Stroke[] = [];
-
-function extendsStrokes(base: readonly Stroke[], next: readonly Stroke[]) {
-  return base.length <= next.length && base.every((stroke, index) => next[index] === stroke);
-}
+type GhostCue = { feedback: UndoGhost; size: Size | null; ink: PreviousInk | null };
+type SceneState = Readonly<{
+  input: SceneInput | null;
+  error: unknown;
+  previous: PreviousInk | null;
+  after: SkImage | null;
+}>;
 
 async function loadUriImage(uri: string): Promise<SkImage> {
   if (uri.startsWith('data:')) return decodeDataUriImage(uri);
@@ -119,145 +95,6 @@ function useBookFill(
   return { needed, image, ready: !needed || image !== null };
 }
 
-// Paper units onto a canvas of the given pixel size, contain-fitted and centered exactly as
-// contacts are mapped back (paperView).
-function presentPaper(canvas: SkCanvas, pixels: Size, context: InkPaintContext) {
-  const view = paperProjectionView(context.projection, pixels);
-  canvas.translate(view.left, view.top);
-  canvas.scale(view.scale, view.scale);
-}
-
-function paintAll(
-  surface: SkSurface,
-  strokes: readonly Stroke[],
-  pixels: Size,
-  context: InkPaintContext
-) {
-  const canvas = surface.getCanvas();
-  canvas.save();
-  presentPaper(canvas, pixels, context);
-  for (const stroke of strokes) paintStroke(canvas, stroke, context);
-  canvas.restore();
-  surface.flush();
-  return surface.makeImageSnapshot();
-}
-
-// Committed ink lives in one offscreen raster that only ever grows by the strokes appended since
-// the last commit (ADR-0178); any other change to the stroke list or its appearance replays it.
-function useCommittedLayer(
-  strokes: readonly Stroke[],
-  size: Size | null,
-  context: InkPaintContext | null,
-  key: string,
-  feedback: UndoGhost | null | undefined
-) {
-  const layer = useRef<CommittedLayer | null>(null);
-  // Memo replay needs the same pre-Undo image after commitLayer replaces the live cache.
-  const previousCue = useRef<{
-    feedback: UndoGhost;
-    ink: PreviousInk | null;
-    size: Size | null;
-  } | null>(null);
-  return useMemo(() => {
-    const current = layer.current;
-    if (previousCue.current?.feedback !== feedback)
-      previousCue.current = feedback
-        ? {
-            feedback,
-            size,
-            ink:
-              current &&
-              !feedback.reduced &&
-              current.strokes === feedback.before.strokes &&
-              strokes === feedback.after.strokes
-                ? { image: current.image, strokes: current.strokes, context: current.context }
-                : null,
-          }
-        : null;
-    const cue = previousCue.current;
-    let previous = cue && cue.size === size ? cue.ink : null;
-    if (!size || !context) {
-      layer.current = null;
-      return { value: null, error: null, previous };
-    }
-    try {
-      if (cue?.ink) {
-        if (
-          cue.size !== size ||
-          !samePaperProjection(cue.ink.context.projection, context.projection)
-        ) {
-          const image = commitLayer({ current: null }, cue.ink.strokes, size, context, key);
-          cue.ink = { image, strokes: cue.ink.strokes, context };
-          cue.size = size;
-        }
-        previous = cue.ink;
-      }
-      return { value: commitLayer(layer, strokes, size, context, key), error: null, previous };
-    } catch (error) {
-      layer.current = null;
-      return { value: null, error, previous: null };
-    }
-  }, [strokes, size, context, key, feedback]);
-}
-
-function commitLayer(
-  layer: { current: CommittedLayer | null },
-  strokes: readonly Stroke[],
-  size: Size,
-  context: InkPaintContext,
-  key: string
-) {
-  {
-    const pixelWidth = Math.max(1, Math.round(size.width * PixelRatio.get()));
-    const pixelHeight = Math.max(1, Math.round(size.height * PixelRatio.get()));
-    const pixels = { width: pixelWidth, height: pixelHeight };
-    const layerKey = `${key}:${pixelWidth}x${pixelHeight}`;
-    const current = layer.current;
-    if (current && current.key === layerKey && extendsStrokes(current.strokes, strokes)) {
-      if (current.strokes.length === strokes.length) return current.image;
-      current.image = paintAll(
-        current.surface,
-        strokes.slice(current.strokes.length),
-        pixels,
-        context
-      );
-      current.strokes = strokes;
-      return current.image;
-    }
-    const surface = Skia.Surface.Make(pixelWidth, pixelHeight);
-    if (!surface) throw new Error('The drawing paper could not be prepared.');
-    const image = paintAll(surface, strokes, pixels, context);
-    layer.current = { key: layerKey, surface, strokes, image, context };
-    return image;
-  }
-}
-
-function useDraftPicture(
-  drafts: readonly Stroke[],
-  size: Size | null,
-  context: InkPaintContext | null
-) {
-  return useMemo((): Rendered<SkPicture> => {
-    if (!size || !context || drafts.length === 0) return { value: null, error: null };
-    try {
-      return { value: recordDrafts(drafts, size, context), error: null };
-    } catch (error) {
-      return { value: null, error };
-    }
-  }, [drafts, size, context]);
-}
-
-const recordDrafts = perfTimed(
-  'draftRecord',
-  (drafts: readonly Stroke[], size: Size, context: InkPaintContext) => {
-    const recorder = Skia.PictureRecorder();
-    const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
-    presentPaper(canvas, size, context);
-    for (const stroke of drafts) paintStroke(canvas, stroke, context);
-    return recorder.finishRecordingAsPicture();
-  }
-);
-
 function useInkContext(
   projection: PaperProjection,
   tiles: CrayonTileResources,
@@ -272,6 +109,84 @@ function useInkContext(
         : null,
     [paper, projection, theme, pageId, tiles, bookFill.ready, bookFill.image]
   );
+}
+
+function pixelSize(size: Size): Size {
+  return {
+    width: Math.max(1, Math.round(size.width * PixelRatio.get())),
+    height: Math.max(1, Math.round(size.height * PixelRatio.get())),
+  };
+}
+
+// The pre-Undo ink an Undo ghost lifts away: the layer's own pixels when it held exactly the
+// strokes the Undo removed, replayed at the current size if the paper has since changed.
+function ghostInk(cue: GhostCue | null, next: SceneInput, size: Size): PreviousInk | null {
+  if (!cue?.ink) return null;
+  if (
+    cue.size !== size ||
+    !samePaperProjection(cue.ink.context.projection, next.context.projection)
+  ) {
+    const layer = createInkLayer(size, next.pixels, next.context);
+    try {
+      layer.paint(orderedOps(cue.ink.strokes));
+      cue.ink = { image: layer.snapshot(), strokes: cue.ink.strokes, context: next.context };
+    } finally {
+      layer.dispose();
+    }
+    cue.size = size;
+  }
+  return cue.ink;
+}
+
+// Brings the scene to the committed strokes in render, as the committed raster always was: the
+// Undo ghost below needs the pre-Undo pixels in the same render that replaces them.
+function useSceneSync(
+  scene: InkScene,
+  live: LiveInkFeed,
+  strokes: readonly Stroke[],
+  size: Size | null,
+  context: InkPaintContext | null,
+  key: string,
+  feedback: UndoGhost | null | undefined
+): SceneState {
+  const cue = useRef<GhostCue | null>(null);
+  return useMemo(() => {
+    const drawing = live.source()?.live() ?? [];
+    if (cue.current?.feedback !== feedback) {
+      const before = scene.base();
+      const drawn = scene.context();
+      const matches =
+        feedback &&
+        drawn &&
+        scene.idle() &&
+        drawing.length === 0 &&
+        !feedback.reduced &&
+        before === feedback.before.strokes &&
+        strokes === feedback.after.strokes;
+      const image = matches ? scene.snapshot() : null;
+      cue.current = feedback
+        ? {
+            feedback,
+            size,
+            ink: image && drawn ? { image, strokes: before, context: drawn } : null,
+          }
+        : null;
+    }
+    if (!size || !context) {
+      scene.dispose();
+      const previous = cue.current && cue.current.size === size ? cue.current.ink : null;
+      return { input: null, error: null, previous, after: null };
+    }
+    const next: SceneInput = { strokes, size, pixels: pixelSize(size), key, context };
+    try {
+      scene.sync(next, drawing);
+      const previous = ghostInk(cue.current, next, size);
+      return { input: next, error: null, previous, after: previous ? scene.snapshot() : null };
+    } catch (error) {
+      scene.dispose();
+      return { input: null, error, previous: null, after: null };
+    }
+  }, [scene, live, strokes, size, context, key, feedback]);
 }
 
 function useLayoutRedraw(size: Size | null) {
@@ -296,28 +211,111 @@ function useLayoutRedraw(size: Size | null) {
   return view;
 }
 
-export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props, ref) {
-  const drafts = props.drafts ?? NO_DRAFTS;
+// Hands the view the scene's newest picture, if ink changed since the last one.
+function present(scene: InkScene, view: SkiaPictureView | null) {
+  if (!view) return;
+  const picture = scene.picture();
+  if (!picture) return;
+  showPicture(view, picture);
+  perfSubmitted();
+}
+
+// Live ink paints once per display frame, however many packets arrived in it, and at once when a
+// contact ends; neither renders React (ADR-0178). A cohort that finished and was not committed
+// after all leaves the layer by the frame after its commit would have rendered.
+function useLiveFrames(
+  scene: InkScene,
+  live: LiveInkFeed,
+  view: { current: SkiaPictureView | null },
+  latest: {
+    current: {
+      strokes: readonly Stroke[];
+      input: SceneInput | null;
+      onError: (error: unknown) => void;
+    };
+  }
+) {
+  useEffect(() => {
+    let frame: number | null = null;
+    let check: number | null = null;
+    // A fault detaches the input, which settles the feed again: report it once.
+    let failed = false;
+    const run = () => {
+      frame = null;
+      const source = live.source();
+      if (!source || failed) return;
+      try {
+        scene.flush(source);
+        present(scene, view.current);
+        if (check === null && scene.orphaned(latest.current.strokes))
+          check = requestAnimationFrame(() => {
+            check = null;
+            const { strokes, input } = latest.current;
+            if (!input || !scene.orphaned(strokes)) return;
+            scene.rebuild(input, source.live());
+            present(scene, view.current);
+          });
+      } catch (error) {
+        failed = true;
+        latest.current.onError(error);
+      }
+    };
+    const unsubscribe = live.subscribe((event) => {
+      if (event === 'settle') {
+        if (frame !== null) cancelAnimationFrame(frame);
+        run();
+      } else frame ??= requestAnimationFrame(run);
+    });
+    return () => {
+      unsubscribe();
+      if (frame !== null) cancelAnimationFrame(frame);
+      if (check !== null) cancelAnimationFrame(check);
+    };
+  }, [scene, live, view, latest]);
+}
+
+export const SkiaInk = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaInk(props, ref) {
   const paper = useInkPaper();
   const projection = useInkProjection();
   const { pageId, theme } = useInkAppearance();
   const [size, setSize] = useState<Size | null>(null);
   const view = useLayoutRedraw(size);
-  const allStrokes = useMemo(() => [...props.strokes, ...drafts], [props.strokes, drafts]);
   const tiles = useCrayonTileResources(
-    allStrokes,
+    props.strokes,
     theme,
     props.brush === 'crayon' ? props.color : undefined
   );
   const bookFill = useBookFill(pageId, theme, paperBounds(projection), props.onError);
   const context = useInkContext(projection, tiles, bookFill);
   const key = `${pageId}:${theme}:${paper.kind === 'unadopted' ? 'unadopted' : paperKey(paper)}:${projection.extent.width}x${projection.extent.height}`;
-  const committed = useCommittedLayer(props.strokes, size, context, key, props.undoGhost);
-  const draftPicture = useDraftPicture(drafts, size, context);
-  const scene = useInkScene(committed.value, draftPicture.value, size);
-  useInkCommitProbe(scene.value);
-  const failure = committed.error ?? draftPicture.error ?? scene.error;
-  const ready = size !== null && bookFill.ready && failure === null;
+  const [scene] = useState(createInkScene);
+  const state = useSceneSync(scene, props.live, props.strokes, size, context, key, props.undoGhost);
+  useInkCommitProbe();
+  const failure = state.error;
+  const ready = state.input !== null && bookFill.ready && failure === null;
+  const latest = useRef({ strokes: props.strokes, input: state.input, onError: props.onError });
+  latest.current = { strokes: props.strokes, input: state.input, onError: props.onError };
+  useLiveFrames(scene, props.live, view, latest);
+  // The layer's rasters are released on unmount. An effect replay (StrictMode) mounts again
+  // without a render, so the layer is rebuilt from what the last render drew.
+  useLayoutEffect(() => {
+    const { input, onError } = latest.current;
+    if (input && !scene.ready()) {
+      try {
+        scene.rebuild(input, props.live.source()?.live() ?? []);
+      } catch (error) {
+        onError(error);
+      }
+    }
+    return () => scene.dispose();
+  }, [scene, props.live]);
+  useLayoutEffect(() => {
+    try {
+      present(scene, view.current);
+    } catch (error) {
+      latest.current.onError(error);
+    }
+  });
   const propsRef = useRef(props);
   propsRef.current = props;
   useEffect(() => {
@@ -328,7 +326,14 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
     isReady: () => ready,
     canStart: () => ready,
     readyPlan(requested): InkPlan {
-      if (!ready || drafts.length > 0 || !sameStrokes(requested, props.strokes))
+      const live = props.live.source()?.live() ?? [];
+      if (
+        !ready ||
+        live.length > 0 ||
+        !scene.idle() ||
+        scene.base() !== props.strokes ||
+        !sameStrokes(requested, props.strokes)
+      )
         throw new Error('This picture is still being prepared.');
       return {
         paper,
@@ -337,6 +342,11 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
         strokes: requested,
         prefix: [],
         needsCheckpoint: false,
+        ink: (grid, captured) => {
+          if (!sameStrokes(scene.base(), requested))
+            throw new Error('This picture is still being prepared.');
+          return scene.capture(captured, grid);
+        },
       };
     },
   }));
@@ -353,62 +363,17 @@ export const SkiaInk = forwardRef<RasterInkHandle, Props>(function SkiaInk(props
         );
       }}
     >
-      {scene.value ? (
-        <SkiaPictureView ref={view} picture={scene.value} style={StyleSheet.absoluteFill} />
-      ) : null}
+      {state.input ? <SkiaPictureView ref={view} style={StyleSheet.absoluteFill} /> : null}
       <SkiaUndoGhost
         feedback={props.undoGhost}
-        previous={committed.previous}
-        after={committed.value}
+        previous={state.previous}
+        after={state.after}
         size={size}
         frame={props.paperFrame ?? null}
       />
     </View>
   );
 });
-
-// The committed raster contain-fitted to the plane and the strokes in progress over it, as one
-// picture: the view draws it as soon as it arrives. A Skia Canvas element tree would
-// re-record on the UI thread and draw twice for each change (once on commit, once after it).
-function useInkScene(
-  committed: SkImage | null,
-  draft: SkPicture | null,
-  size: Size | null
-): Rendered<SkPicture> {
-  return useMemo(() => {
-    if (!size) return { value: null, error: null };
-    try {
-      return { value: recordScene(committed, draft, size), error: null };
-    } catch (error) {
-      return { value: null, error };
-    }
-  }, [committed, draft, size]);
-}
-
-const recordScene = perfTimed(
-  'sceneRecord',
-  (committed: SkImage | null, draft: SkPicture | null, size: Size) => {
-    const recorder = Skia.PictureRecorder();
-    const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size.width, size.height));
-    if (committed) {
-      const { src, dst } = fitRects(
-        'contain',
-        { x: 0, y: 0, width: committed.width(), height: committed.height() },
-        { x: 0, y: 0, width: size.width, height: size.height }
-      );
-      canvas.drawImageRectOptions(
-        committed,
-        src,
-        dst,
-        FilterMode.Linear,
-        MipmapMode.None,
-        Skia.Paint()
-      );
-    }
-    if (draft) canvas.drawPicture(draft);
-    return recorder.finishRecordingAsPicture();
-  }
-);
 
 const styles = StyleSheet.create({
   scene: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },

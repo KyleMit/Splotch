@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readPaperInput } from '../../experiments/native-architecture/src/drawing/paperInput.ts';
 import { COLOR_CHANGE_DEBOUNCE_MS } from '../../web/src/lib/drawing/strokeMath.ts';
 import { createContactResponder } from '../../experiments/native-architecture/src/drawing/contactResponder.ts';
+import { createLiveInkFeed } from '../../experiments/native-architecture/src/drawing/liveInk.ts';
 import {
   addStrokes,
   createHistory,
@@ -42,6 +43,7 @@ function fixture(overrides = {}) {
   let ratio = 3;
   const pixelRatio = vi.fn(() => ratio);
   const drafts = vi.fn();
+  const live = createLiveInkFeed();
   const failure = vi.fn();
   const commit = vi.fn((strokes, paper) => {
     history = addStrokes(history, strokes, paper);
@@ -60,8 +62,9 @@ function fixture(overrides = {}) {
       ...overrides,
     }),
     () => frame,
-    drafts,
-    pixelRatio
+    (paper, halos) => drafts(live.drafts(), paper, halos),
+    pixelRatio,
+    live
   );
   let sequence = 0;
   function send(phase, next) {
