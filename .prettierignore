@@ -33,6 +33,7 @@ scrapbook/
 docs/scratchpad/perf/
 docs/scratchpad/triage/
 docs/scratchpad/icon-toolbar-alignment/
+docs/scratchpad/2026-10-18-device-parity/results/web/*-observations.json
 pnpm-lock.yaml
 web/src/lib/components/icon-names.d.ts
 web/src/lib/components/page/ReleaseHistory.svelte

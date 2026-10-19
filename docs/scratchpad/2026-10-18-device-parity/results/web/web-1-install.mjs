@@ -82,12 +82,16 @@ async function installGuideText(s) {
   await openSettingsSection(s, 'Install');
   const index = await s.page.evaluate(readDialogText);
   const step = s.page
-    .locator('summary:has-text("Install as App"), button:has-text("Install as App"), [role="button"]:has-text("Install as App")')
+    .locator(
+      'summary:has-text("Install as App"), button:has-text("Install as App"), [role="button"]:has-text("Install as App")'
+    )
     .filter({ visible: true })
     .first();
   const before = await step.evaluate((element) => ({
     tag: element.tagName.toLowerCase(),
-    expanded: element.getAttribute('aria-expanded') ?? (element.parentElement?.open === undefined ? null : String(element.parentElement.open)),
+    expanded:
+      element.getAttribute('aria-expanded') ??
+      (element.parentElement?.open === undefined ? null : String(element.parentElement.open)),
   }));
   await step.click();
   await settleUi(s, 1500);
@@ -97,7 +101,9 @@ async function installGuideText(s) {
     return at < 0 ? text?.slice(0, 700) : text.slice(at, at + 700);
   };
   const after = await step.evaluate((element) => ({
-    expanded: element.getAttribute('aria-expanded') ?? (element.parentElement?.open === undefined ? null : String(element.parentElement.open)),
+    expanded:
+      element.getAttribute('aria-expanded') ??
+      (element.parentElement?.open === undefined ? null : String(element.parentElement.open)),
   }));
   return {
     index: from(index, 'Install'),
@@ -422,4 +428,56 @@ export const INSTALL_CELLS = {
     }
     return result;
   },
+
+  // L0006: one two-finger contact plus one stroke. Counted per finger that is three strokes and
+  // earns the banner; counted per stroke group it is two.
+  'install-gate-multitouch': (browser) =>
+    onBothArms(browser, 'android', async (s) => {
+      await boot(s);
+      const box = await s.page.locator(s.paper).boundingBox();
+      const at = (x, y, id) => ({
+        x: box.x + x * box.width,
+        y: box.y + y * box.height,
+        id,
+        radiusX: 4,
+        radiusY: 4,
+        force: 0.5,
+      });
+      await s.cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [at(0.25, 0.3, 1), at(0.25, 0.6, 2)],
+      });
+      for (let i = 1; i <= 20; i += 1) {
+        await s.page.waitForTimeout(8);
+        await s.cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [at(0.25 + i * 0.02, 0.3, 1), at(0.25 + i * 0.02, 0.6, 2)],
+        });
+      }
+      await s.cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await s.page.waitForTimeout(600);
+      const afterTwoFinger = await banner(s);
+      await contact(s, [
+        [
+          [0.3, 0.75],
+          [0.6, 0.78],
+        ],
+      ]);
+      await settleUi(s);
+      const afterOneMore = await banner(s);
+      const shot = await capture(s, `install-gate-multitouch-${s.arm}`);
+      await contact(s, [
+        [
+          [0.3, 0.82],
+          [0.6, 0.84],
+        ],
+      ]);
+      await settleUi(s);
+      return {
+        afterTwoFinger: afterTwoFinger.present,
+        afterOneMore: afterOneMore.present,
+        afterTwoMore: (await banner(s)).present,
+        shot,
+      };
+    }),
 };

@@ -13,12 +13,21 @@ const { values, positionals } = parseArgs({
 });
 if (!values.out) throw new Error('Usage: --out <dir> <capture name>...');
 for (const name of positionals) {
-  const left = await sharp(join(SHOTS_DIR, `${name}-rn-web.webp`)).png().toBuffer();
-  const right = await sharp(join(SHOTS_DIR, `${name}-web-prod.webp`)).png().toBuffer();
+  const left = await sharp(join(SHOTS_DIR, `${name}-rn-web.webp`))
+    .png()
+    .toBuffer();
+  const right = await sharp(join(SHOTS_DIR, `${name}-web-prod.webp`))
+    .png()
+    .toBuffer();
   const [a, b] = await Promise.all([sharp(left).metadata(), sharp(right).metadata()]);
   const file = join(values.out, `${name}.png`);
   await sharp({
-    create: { width: a.width + b.width + GUTTER_PX, height: Math.max(a.height, b.height), channels: 3, background: '#ff00ff' },
+    create: {
+      width: a.width + b.width + GUTTER_PX,
+      height: Math.max(a.height, b.height),
+      channels: 3,
+      background: '#ff00ff',
+    },
   })
     .composite([
       { input: left, left: 0, top: 0 },

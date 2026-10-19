@@ -6895,6 +6895,38 @@
         "external": [],
         "consoleErrors": []
       }
+    },
+    "install-gate-multitouch": {
+      "ranAt": "2026-10-19T19:57:02.480Z",
+      "ms": 17952,
+      "rn-web": {
+        "afterTwoFinger": false,
+        "afterOneMore": true,
+        "afterTwoMore": true,
+        "shot": {
+          "settled": true,
+          "settleMs": 1694,
+          "frames": 6,
+          "shot": "shots/install-gate-multitouch-rn-web.webp",
+          "digest": "5260a58565da8895c9474c2000a7376bfb9ea49618fb3fe4000549a4245d0dc4"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "afterTwoFinger": false,
+        "afterOneMore": false,
+        "afterTwoMore": true,
+        "shot": {
+          "settled": true,
+          "settleMs": 1757,
+          "frames": 6,
+          "shot": "shots/install-gate-multitouch-web-prod.webp",
+          "digest": "7259b8e8df6393ff8b0070aba23471bb1c9c1f3102eb6dee8862bd4b1107b2a3"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
     }
   },
   "browser": "chromium 141.0.7390.37 (headless)"

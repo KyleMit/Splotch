@@ -1,6 +1,5 @@
 // In-page readers shared by the cells. Each runs inside the arm's page and reads only public DOM:
 // roles, names, rendered text, boxes and computed styles, never either app's internal state.
-/* global document, window, getComputedStyle, innerWidth, innerHeight */
 
 export function readBanner() {
   const named = (element) => (element.getAttribute('aria-label') || element.innerText || '').trim();

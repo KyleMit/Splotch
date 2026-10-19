@@ -6,11 +6,18 @@ import { launch, readJson, writeJson } from './harness.mjs';
 const BATCH_LIMIT_MS = 600_000;
 
 const { values } = parseArgs({
-  options: { module: { type: 'string' }, cells: { type: 'string' }, list: { type: 'boolean' } },
+  options: {
+    module: { type: 'string' },
+    cells: { type: 'string' },
+    record: { type: 'string' },
+    list: { type: 'boolean' },
+  },
   strict: true,
 });
 if (!values.module) throw new Error('Usage: --module <web-1|ai-1> [--cells a,b] [--list]');
-const { CELLS, RECORD } = await import(`./${values.module}-cells.mjs`);
+const { CELLS, RECORD: DEFAULT_RECORD } = await import(`./${values.module}-cells.mjs`);
+// A long cell can run beside another batch when it writes its own record file.
+const RECORD = values.record ?? DEFAULT_RECORD;
 if (values.list) {
   console.log(Object.keys(CELLS).join('\n'));
   process.exit(0);

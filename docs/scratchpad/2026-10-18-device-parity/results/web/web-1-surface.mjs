@@ -179,7 +179,10 @@ export const SURFACE_CELLS = {
     onBothArms(browser, 'desktop', async (s) => {
       await s.page.goto(`${s.base}/privacy`);
       await s.page.waitForTimeout(2000);
-      const link = s.page.getByRole('link', { name: /drawing/i }).filter({ visible: true }).first();
+      const link = s.page
+        .getByRole('link', { name: /drawing/i })
+        .filter({ visible: true })
+        .first();
       const linkText = await link.innerText();
       await link.click();
       await s.page.locator(s.paper).waitFor({ state: 'visible' });
@@ -201,12 +204,22 @@ export const SURFACE_CELLS = {
       await s.page.locator(s.paper).waitFor({ state: 'visible' });
       await s.page.waitForTimeout(1500);
       const sameDocument = await s.page.evaluate(() => window.__sameDocument === true);
-      await s.page.mouse.move(box.x + box.width * tail[0], box.y + box.height * tail[1], { steps: 20 });
+      await s.page.mouse.move(box.x + box.width * tail[0], box.y + box.height * tail[1], {
+        steps: 20,
+      });
       await s.page.mouse.up();
       await s.page.waitForTimeout(800);
       const tailPainted = (await regionDigest(s, tail)) !== blankTail;
       const shot = await capture(s, `engine-held-pointer-${s.arm}`);
-      return { linkText, atDrawing, away, sameDocument, tailPainted, shot, undoDepth: await undoDepth(s) };
+      return {
+        linkText,
+        atDrawing,
+        away,
+        sameDocument,
+        tailPainted,
+        shot,
+        undoDepth: await undoDepth(s),
+      };
     }),
 
   'engine-idle-gap-jump': (browser) =>

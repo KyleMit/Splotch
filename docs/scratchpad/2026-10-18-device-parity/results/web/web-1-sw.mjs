@@ -11,6 +11,7 @@ import {
   contact,
   drawStrokes,
   openArm,
+  openDialogs,
   regionDigest,
   undoDepth,
   collapseDrawer,
@@ -162,15 +163,28 @@ export const SW_CELLS = {
       let privacyHeadings = null;
       if (offlineBoot) {
         const blank = await regionDigest(s, [0.45, 0.425]);
-        await contact(s, [[[0.3, 0.4], [0.6, 0.45]]]);
+        await contact(s, [
+          [
+            [0.3, 0.4],
+            [0.6, 0.45],
+          ],
+        ]);
         const inked = await regionDigest(s, [0.45, 0.425]);
         offlineInk = inked !== blank;
         await openPrivacyInApp(s).catch(() => {});
         privacyHeadings = await s.page.evaluate(readHeadings);
         await capture(s, `sw-offline-inapp-privacy-${s.arm}`);
         await s.page.goBack();
-        await s.page.locator(s.paper).waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+        await s.page
+          .locator(s.paper)
+          .waitFor({ state: 'visible', timeout: 10_000 })
+          .catch(() => {});
         await s.page.waitForTimeout(1500);
+        // In-app navigation brings Settings back on return (E0784); close it before reading ink.
+        if ((await openDialogs(s)).length) {
+          await s.page.keyboard.press('Escape');
+          await s.page.waitForTimeout(1200);
+        }
         survivedNavigation = {
           sameInk: (await regionDigest(s, [0.45, 0.425]).catch(() => null)) === inked,
           url: new URL(s.page.url()).pathname,

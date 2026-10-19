@@ -409,7 +409,8 @@ export async function onBothArms(browser, profile, run, options = {}) {
           .filter((line) => line.trim() && !line.includes('Call log'))
           .slice(0, 2)
           .join(' | ')
-          .replace(/\u001b\[[0-9;]*m/g, ''),
+          .replaceAll(`${String.fromCharCode(27)}[22m`, '')
+          .replaceAll(`${String.fromCharCode(27)}[2m`, ''),
       };
     } finally {
       result[arm] = {
@@ -442,14 +443,25 @@ export function openDialogs(session) {
 // The grown-up check in either arm: read the multiplication from its accessible label and tap
 // the answer on the keypad, then let the "Unlocked!" hold run out.
 export async function solveGate(session) {
-  const equation = session.page.locator('[aria-label^="What is "]').filter({ visible: true }).first();
+  const equation = session.page
+    .locator('[aria-label^="What is "]')
+    .filter({ visible: true })
+    .first();
   const label = await equation.getAttribute('aria-label', { timeout: 5000 });
   const [x, y] = label.match(/\d+/g).map(Number);
   for (const digit of String(x * y)) {
-    await session.page.getByRole('button', { name: digit, exact: true }).filter({ visible: true }).first().click();
+    await session.page
+      .getByRole('button', { name: digit, exact: true })
+      .filter({ visible: true })
+      .first()
+      .click();
     await session.page.waitForTimeout(300);
   }
-  await session.page.getByRole('button', { name: 'Check answer' }).filter({ visible: true }).first().click();
+  await session.page
+    .getByRole('button', { name: 'Check answer' })
+    .filter({ visible: true })
+    .first()
+    .click();
   await session.page.waitForTimeout(2500);
   return label;
 }

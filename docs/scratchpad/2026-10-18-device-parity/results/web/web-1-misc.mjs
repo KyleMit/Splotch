@@ -396,9 +396,18 @@ export const MISC_CELLS = {
             inFullscreen.afterExit = {
               element: await s.page.evaluate(() => document.fullscreenElement?.tagName ?? null),
               unlocks: await s.page.evaluate(() => window.__unlocks),
-              buttons: await s.page.getByRole('button', { name: /full ?screen/i }).filter({ visible: true }).evaluateAll((elements) => elements.map((element) => element.getAttribute('aria-label'))),
+              buttons: await s.page
+                .getByRole('button', { name: /full ?screen/i })
+                .filter({ visible: true })
+                .evaluateAll((elements) =>
+                  elements.map((element) => element.getAttribute('aria-label'))
+                ),
             };
-            await s.page.getByRole('button', { name: /full ?screen/i }).filter({ visible: true }).first().click();
+            await s.page
+              .getByRole('button', { name: /full ?screen/i })
+              .filter({ visible: true })
+              .first()
+              .click();
             await s.page.waitForTimeout(1500);
             inFullscreen.reentered = { locks: await s.page.evaluate(() => window.__locks) };
           }
@@ -417,7 +426,9 @@ export const MISC_CELLS = {
                 window.__unlocks += 1;
               };
               ScreenOrientation.prototype.lock = function (orientation) {
-                window.__locks.push(`${orientation}${document.fullscreenElement ? '@fullscreen' : '@tab'}`);
+                window.__locks.push(
+                  `${orientation}${document.fullscreenElement ? '@fullscreen' : '@tab'}`
+                );
                 return document.fullscreenElement
                   ? Promise.resolve()
                   : Promise.reject(new DOMException('not fullscreen', 'NotSupportedError'));
@@ -527,7 +538,9 @@ export const MISC_CELLS = {
         await s.page.waitForTimeout(Math.max(0, atMs - (Date.now() - started)));
         const frame = await s.page.screenshot({ clip });
         const name = `drawer-first-open-${atMs}ms-${s.arm}`;
-        await sharp(frame).webp({ quality: 55 }).toFile(new URL(`./shots/${name}.webp`, import.meta.url).pathname);
+        await sharp(frame)
+          .webp({ quality: 55 })
+          .toFile(new URL(`./shots/${name}.webp`, import.meta.url).pathname);
         frames.push({ atMs: Date.now() - started, shot: `shots/${name}.webp` });
       }
       return { frames };
@@ -538,16 +551,34 @@ export const MISC_CELLS = {
       await boot(s);
       await openSettings(s);
       await openSection(s, 'About');
-      await s.page.getByRole('link', { name: 'Privacy Policy' }).filter({ visible: true }).first().click();
+      await s.page
+        .getByRole('link', { name: 'Privacy Policy' })
+        .filter({ visible: true })
+        .first()
+        .click();
       await s.page.waitForTimeout(2000);
-      const label = () => s.page.getByRole('link', { name: /drawing/i }).filter({ visible: true }).first().innerText();
+      const label = () =>
+        s.page
+          .getByRole('link', { name: /drawing/i })
+          .filter({ visible: true })
+          .first()
+          .innerText();
       const beforeReload = await label();
       await s.page.reload();
       await s.page.waitForTimeout(2500);
       const afterReload = await label();
-      await s.page.getByRole('link', { name: /drawing/i }).filter({ visible: true }).first().click();
+      await s.page
+        .getByRole('link', { name: /drawing/i })
+        .filter({ visible: true })
+        .first()
+        .click();
       await s.page.waitForTimeout(2500);
-      return { beforeReload, afterReload, followed: await where(s), paper: await s.page.locator(s.paper).isVisible() };
+      return {
+        beforeReload,
+        afterReload,
+        followed: await where(s),
+        paper: await s.page.locator(s.paper).isVisible(),
+      };
     }),
 
   'boot-head': (browser) =>
@@ -821,7 +852,10 @@ export const MISC_CELLS = {
         };
       });
       const clearIndexedDb = () =>
-        s.cdp.send('Storage.clearDataForOrigin', { origin: new URL(s.page.url()).origin, storageTypes: 'indexeddb' });
+        s.cdp.send('Storage.clearDataForOrigin', {
+          origin: new URL(s.page.url()).origin,
+          storageTypes: 'indexeddb',
+        });
       const reopen = async () => {
         await s.page.reload();
         await s.page.locator(s.paper).waitFor({ state: 'visible' });
@@ -834,17 +868,31 @@ export const MISC_CELLS = {
       await clearIndexedDb();
       await s.page.waitForTimeout(800);
       await submitKey(s, TEST_KEY);
-      const savedAfterConnectionLoss = { ...(await vaultState(s)), persistCalls: await s.page.evaluate(() => window.__persistCalls) };
+      const savedAfterConnectionLoss = {
+        ...(await vaultState(s)),
+        persistCalls: await s.page.evaluate(() => window.__persistCalls),
+      };
       const savedShot = await capture(s, `vault-saved-${s.arm}`);
       const afterReload = await reopen();
       await clearIndexedDb();
       await s.page.waitForTimeout(800);
-      await s.page.getByRole('button', { name: 'Forget' }).filter({ visible: true }).first().click();
+      await s.page
+        .getByRole('button', { name: 'Forget' })
+        .filter({ visible: true })
+        .first()
+        .click();
       await s.page.waitForTimeout(1500);
       const afterForget = await vaultState(s);
       await submitKey(s, `${TEST_KEY.slice(0, -4)}9999`);
       const replacement = await vaultState(s);
-      return { api, savedAfterConnectionLoss, savedShot, afterReload, afterForget, replacement, replacementAfterReload: await reopen() };
+      return {
+        api,
+        savedAfterConnectionLoss,
+        savedShot,
+        afterReload,
+        afterForget,
+        replacement,
+        replacementAfterReload: await reopen(),
+      };
     }),
 };
-
