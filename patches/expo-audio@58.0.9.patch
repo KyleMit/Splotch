@@ -1,5 +1,5 @@
 diff --git a/ios/AudioModule.swift b/ios/AudioModule.swift
-index 42ce9e8..39821bc 100644
+index 42ce9e8..7c85a2c 100644
 --- a/ios/AudioModule.swift
 +++ b/ios/AudioModule.swift
 @@ -7,6 +7,7 @@ public class AudioModule: Module {
@@ -20,7 +20,7 @@ index 42ce9e8..39821bc 100644
      }
  
      AsyncFunction("setAudioModeAsync") { (mode: AudioMode) in
-@@ -953,11 +957,25 @@ public class AudioModule: Module {
+@@ -953,11 +957,29 @@ public class AudioModule: Module {
      return [.notifyOthersOnDeactivation]
    }
  
@@ -29,8 +29,12 @@ index 42ce9e8..39821bc 100644
 +      let active = notification.userInfo?["active"] as? Bool else { return }
 +    sessionQueue.async { [weak self] in
 +      guard let self else { return }
-+      if active { self.externalClearNotes.insert(id) }
-+      else {
++      if active {
++        // The Clear sampler activates the shared session itself; record it so the deactivation
++        // guard, which skips a session it believes inactive, releases it after the last note.
++        self.externalClearNotes.insert(id)
++        self.sessionIsActive = true
++      } else {
 +        self.externalClearNotes.remove(id)
 +        self.deactivateSession()
 +      }

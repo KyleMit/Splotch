@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NativeAbortController } from './native-rn-abort-controller.mjs';
 import { createRequire } from 'node:module';
 import {
   clearLadderFrequency,
@@ -107,9 +108,7 @@ describe('candidate-owned audio and Settings projections', () => {
 
 const runtimeRequire = createRequire(import.meta.url);
 const { getAssetLocalPath } = runtimeRequire('@expo/cli/build/src/export/metroAssetLocalPath');
-const { getAndroidResourceIdentifier } = runtimeRequire(
-  '@react-native/assets-registry/path-support'
-);
+const { getAndroidResourceIdentifier } = runtimeRequire('@react-native/asset-utils');
 const clearNoteSource = readFileSync(
   join(root, 'experiments/native-architecture/src/audio/clearNoteAssets.ts'),
   'utf8'
@@ -135,10 +134,6 @@ function assertClearNoteAndroidResources(source) {
   );
 }
 
-const reactNativeRequire = createRequire(runtimeRequire.resolve('react-native/package.json'));
-const { AbortController: NativeAbortController } = reactNativeRequire(
-  'abort-controller/dist/abort-controller'
-);
 const native = vi.hoisted(() => ({
   impact: vi.fn(async () => {}),
   clear: {
@@ -315,6 +310,13 @@ function assertClearAudioActivity(sources) {
   assert.ok(keys, 'Missing native Clear audio activity payload');
   assert.ok(sources.expoPatch.includes(`notification.userInfo?["${keys[1]}"] as? String`));
   assert.ok(sources.expoPatch.includes(`notification.userInfo?["${keys[2]}"] as? Bool`));
+  // Expo deactivates only a session it believes active, and the sampler activates it directly.
+  assert.match(
+    sources.expoPatch,
+    /\+\s+self\.externalClearNotes\.insert\(id\)\n\+\s+self\.sessionIsActive = true/,
+    'A Clear note must mark the session active so the last note releases it'
+  );
+  assert.match(sources.expoPatch, /\+\s+self\.externalClearNotes\.isEmpty,/);
 }
 
 const nativeMediaPolicy = {
@@ -383,6 +385,8 @@ describe('native Clear audio session boundary', () => {
     ['sampler', '"active": active', '"playing": active'],
     ['expoPatch', 'userInfo?["id"]', 'userInfo?["identity"]'],
     ['expoPatch', 'userInfo?["active"]', 'userInfo?["playing"]'],
+    ['expoPatch', 'self.sessionIsActive = true', '_ = true'],
+    ['expoPatch', 'self.externalClearNotes.isEmpty,', 'true,'],
   ])('rejects a disconnected activity payload in %s (%s)', (owner, before, after) => {
     const changed = {
       ...clearActivitySources,

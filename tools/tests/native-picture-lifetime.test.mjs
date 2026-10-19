@@ -25,6 +25,7 @@ const LOCK = 'std::lock_guard<std::mutex> lock(_mutex);';
 
 // Each read or write of `_picture`, with the statements of its innermost enclosing block that
 // precede it. Blocks already closed by then are dropped: a lock taken inside one has been released.
+// The lock must open that block, so no condition can skip it.
 function pictureAccesses(source) {
   const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, (comment) =>
     ' '.repeat(comment.length)
@@ -46,11 +47,13 @@ function pictureAccesses(source) {
 }
 
 function unlockedPictureAccesses(...sources) {
-  return sources.flatMap(pictureAccesses).filter((scope) => !scope.includes(LOCK));
+  return sources.flatMap(pictureAccesses).filter((scope) => !scope.trimStart().startsWith(LOCK));
 }
 
 // Negative control: react-native-skia 2.6.2's header declares no lock, and its setPicture,
-// getPicture and performDraw each touch `_picture` outside one, so both tests fail on it.
+// getPicture and performDraw each touch `_picture` outside one, so both tests fail on it. Moving
+// 2.14's `_picture = picture;` past its lock block, or guarding that lock with `if (false)`, fails
+// the first.
 describe('the installed react-native-skia picture view', () => {
   const header = read(`${RENDERER}.h`);
   const source = read(`${RENDERER}.cpp`);
