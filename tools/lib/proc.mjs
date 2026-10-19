@@ -158,11 +158,13 @@ export function argNumber(name, fallback, rule, argv = process.argv) {
 }
 
 // Run a command with live output; exits the script with the command's exit
-// code if it fails. Pass `input` to answer interactive prompts.
-export function run(cmd, args = [], { input, cwd = ROOT, echo = true } = {}) {
+// code if it fails. Pass `input` to answer interactive prompts, and `env` to replace the
+// inherited environment.
+export function run(cmd, args = [], { input, cwd = ROOT, echo = true, env } = {}) {
   if (echo) console.log('$', cmd, ...args);
   const result = spawnSync(cmd, args, {
     cwd,
+    env,
     input,
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
   });

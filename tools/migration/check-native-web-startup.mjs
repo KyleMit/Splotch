@@ -16,7 +16,7 @@ export const REACT_NATIVE_WEB_FLOOR_BYTES = 323_984;
 // its app code were as lean as the shipping app's.
 export const NATIVE_WEB_STARTUP_TARGET_BYTES =
   MAX_STARTUP_JS_CSS_BYTES + REACT_NATIVE_WEB_FLOOR_BYTES;
-// The reviewed 2026-10-14 startup is 858,902 bytes, after the bundled Farm images became hashed
+// The 2026-10-14 review measured 858,902 bytes, after the bundled Farm images became hashed
 // assets, each page's line art and every on-request sheet moved into lazy chunks, Reanimated left
 // the web bundle, the app's Animated stopped importing React Native Web's animated list components,
 // feedback, AI generation and recovery, and the offline library began loading after the drawing
@@ -24,16 +24,20 @@ export const NATIVE_WEB_STARTUP_TARGET_BYTES =
 // react-native-svg left the web bundle (platform/svg.web.ts), the release notes moved to Settings'
 // chunk (settings/whatsNewStamp.ts), Expo's native-module runtime left the web bundle
 // (platform/webAsset.ts, platform/registerRoot.web.ts), and the React Strict DOM imports its web
-// preset compiles away stopped loading RSD's element library (babel.config.cjs). That is 9,918
-// bytes over NATIVE_WEB_STARTUP_TARGET_BYTES. The 11,896 bytes of headroom stay below every move
-// up to react-native-svg (the smallest, the offline library controller, is 24,471 bytes), so
-// undoing one fails here; the last three, two of them smaller than the headroom, each fail their
-// own check instead (the precache check's release-note samples, native-web-expo-runtime.test.mjs,
+// preset compiles away stopped loading RSD's element library (babel.config.cjs). Expo SDK 58's
+// React 19.3 then took it to 900,361 bytes. The fifth cut reviewed it at 838,334, 10,650 under
+// NATIVE_WEB_STARTUP_TARGET_BYTES: granular chunking (app.json) gives the modules lazy chunks share
+// their own chunks instead of Expo's __common chunk, which index.html loaded before first paint,
+// and Expo's tree shaking (NATIVE_WEB_EXPORT_ENV in build-native-web.mjs) drops unused exports.
+// The cap keeps the same 11,896 bytes of headroom. It stays below every move up to react-native-svg
+// (the smallest, the offline library controller, is 24,471 bytes) and below both fifth-cut levers
+// (the smaller, tree shaking, is 25,097 bytes on top of granular chunking), so undoing one fails
+// here; the fourth cut's three moves, two of them smaller than the headroom, each fail their own
+// check instead (the precache check's release-note samples, native-web-expo-runtime.test.mjs,
 // native-web-strict-dom-imports.test.mjs). Consuming the headroom is the cue to take the next
-// lever, not to raise the number. The owner raised it once, for the Expo SDK 58 upgrade: React
-// 19.3's react-dom alone added 29,198 bytes, so the cap is that upgrade's reviewed startup, 900,361
-// bytes, plus the same 11,896 bytes of headroom (ADR-0179).
-export const MAX_NATIVE_WEB_STARTUP_BYTES = 912_257;
+// lever, not to raise the number. The owner raised it once, to 912,257 for the Expo SDK 58
+// upgrade (that upgrade's reviewed 900,361 plus the same headroom); the fifth cut took it back down.
+export const MAX_NATIVE_WEB_STARTUP_BYTES = 850_230;
 // A base64 run this long is image bytes, not a data-URI prefix the code assembles at runtime.
 const MIN_INLINED_IMAGE_CHARS = 256;
 const INLINED_IMAGE = new RegExp(
@@ -130,7 +134,7 @@ export function nativeWebStartupProblems({
   const problems = [];
   if (startupBytes > maxStartupBytes)
     problems.push(
-      `Startup JS/CSS is ${startupBytes} bytes, above the ${maxStartupBytes}-byte budget: something heavy now loads before first paint. Load it on first use with a dynamic import (drawingSheets.web.ts, bundledOutlines.web.ts, productChunk.web.ts), and keep a module out of two lazy chunks, which Expo moves into its startup common chunk, instead of raising MAX_NATIVE_WEB_STARTUP_BYTES`
+      `Startup JS/CSS is ${startupBytes} bytes, above the ${maxStartupBytes}-byte budget: something heavy now loads before first paint. Load it on first use with a dynamic import (drawingSheets.web.ts, bundledOutlines.web.ts, productChunk.web.ts), and keep app.json's granular chunking and build-native-web.mjs's tree shaking on, instead of raising MAX_NATIVE_WEB_STARTUP_BYTES`
     );
   for (const { file, count } of inlinedImages)
     problems.push(
