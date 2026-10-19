@@ -1,5 +1,5 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
-import { PENCIL_SOUNDS, pickPencilTake, usableTakes } from '../audio/pencilSounds';
+import { PENCIL_SOUNDS, pickPencilStart, pickPencilTake, usableTakes } from '../audio/pencilSounds';
 import { PLAYBACK_AUDIO_MODE } from '../audio/playbackMode';
 import {
   AUDIO_LOAD_TIMEOUT_MS,
@@ -57,8 +57,26 @@ function createNativeGain(player: AudioPlayer, onFailure: () => void) {
   };
 }
 
+// A play() that lands on a seek still in flight blocks the iPad main thread for a sixth of a second
+// or more (issue 3003), so a take moves to its next random start point while it is paused: as part
+// of loading, and after each stroke.
+function createCue(player: AudioPlayer) {
+  let seeking = false;
+  return {
+    seeking: () => seeking,
+    next(): Promise<void> {
+      const offset = pickPencilStart() * player.duration;
+      if (!Number.isFinite(offset) || offset <= 0) return Promise.resolve();
+      seeking = true;
+      return player.seekTo(offset).then(() => {
+        seeking = false;
+      });
+    },
+  };
+}
+
 type PencilSound = (typeof PENCIL_SOUNDS)[number];
-type PencilClip = Omit<DrawingLoop, 'start'> & { start: (at: number) => void };
+type PencilClip = DrawingLoop & { seeking: () => boolean };
 
 // Exported only so native-audio-adapter.test.mjs can drive one take's player lifecycle.
 export async function loadPencilClip(
@@ -70,10 +88,12 @@ export async function loadPencilClip(
   if (signal.aborted) throw new Error('Drawing sound was cancelled.');
   const player = createAudioPlayer(null, { keepAudioSessionActive: false });
   let disposed = false;
+  let loaded = false;
   let settled = false;
   let active = false;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   const gain = createNativeGain(player, onFailure);
+  const cue = createCue(player);
   let subscription: { remove: () => void } | null = null;
   function dispose() {
     if (disposed) return;
@@ -132,27 +152,31 @@ export async function loadPencilClip(
             failed();
             return;
           }
-          if (!status.isLoaded || settled) return;
-          settled = true;
-          if (timeout !== null) clearTimeout(timeout);
-          resolve({
-            start(at) {
-              if (disposed) return;
-              active = true;
-              const offset = at * player.duration;
-              if (Number.isFinite(offset) && offset > 0) void player.seekTo(offset).catch(failed);
-              player.play();
-            },
-            setVolume: gain.setVolume,
-            stop() {
-              active = false;
-              if (!disposed) {
+          if (!status.isLoaded || loaded) return;
+          loaded = true;
+          void cue.next().then(() => {
+            if (disposed) return;
+            settled = true;
+            if (timeout !== null) clearTimeout(timeout);
+            resolve({
+              start() {
+                if (disposed) return;
+                active = true;
+                player.play();
+              },
+              setVolume: gain.setVolume,
+              stop() {
+                const played = active;
+                active = false;
+                if (disposed) return;
                 gain.mute();
                 player.pause();
-              }
-            },
-            dispose,
-          });
+                if (played) void cue.next().catch(failed);
+              },
+              seeking: cue.seeking,
+              dispose,
+            });
+          }, failed);
         } catch {
           failed();
         }
@@ -186,9 +210,11 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
   return {
     start() {
       playing?.stop();
-      const { take, at } = pickPencilTake(clips);
+      // A take still moving to its next start point sits this stroke out.
+      const settled = clips.filter((clip) => !clip.seeking());
+      const take = pickPencilTake(settled.length > 0 ? settled : clips);
       playing = take;
-      take.start(at);
+      take.start();
     },
     setVolume(volume) {
       playing?.setVolume(volume);
