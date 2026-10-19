@@ -21,9 +21,7 @@
   "finalHeadDeviceEvidence": 0,
   "sourceOwnership": "conservative prefix matches; a later change invalidates all dependent verified cells; pending cells remain pending",
   "privacy": "No device IDs, private media, media paths, media hashes, credentials or operator records",
-  "nestedOpenCampaignChildren": [
-    2985
-  ],
+  "nestedOpenCampaignChildren": [2985],
   "recursiveEpicChildren": 92,
   "sourceClassificationPaths": 151
 }
