@@ -9,10 +9,12 @@ import {
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   adoptPaper,
+  LEGACY_PAPER,
   paperProjection,
   paperProjectionView,
   semanticWidth,
 } from '../../experiments/native-architecture/src/drawing/paperSpace.ts';
+import { legacyDrawing } from './native-paper-fixtures.mjs';
 import { paintAppearance } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { CRAYON_COLOR_MIX } from '../../experiments/native-architecture/src/drawing/crayon.ts';
 import { orderedOps } from '../../experiments/native-architecture/src/drawing/inkOps.ts';
@@ -84,20 +86,22 @@ function differing(a, b) {
 // scene flushes them into ops, paints them and presents a picture. `script` lists each frame's
 // events; a contact's last frame ends it, which first paints everything sampled (the responder's
 // settle). `onFrame` may change the session's history, appearance or plane between frames, as
-// Undo, a theme change or a resize would. Returns the session the cohort left.
+// Undo, a theme change or a resize would. `paper` is the reference a contact commits with.
+// Returns the session the cohort left.
 function drawCohort({
   scene,
   history,
   script,
   ink = context(),
   plane = PLANE,
+  paper = PAPER,
   onFrame = () => {},
 }) {
   const cohort = createContactCohort();
   const session = { history, ink, plane };
   const commit = (completed) => {
     if (!completed) return;
-    session.history = addStrokes(session.history, completed, PAPER);
+    session.history = addStrokes(session.history, completed, paper);
     scene.sync(
       sceneInput(session.history.drawing.strokes, session.ink, session.plane),
       cohort.live()
@@ -114,7 +118,7 @@ function drawCohort({
           event.at,
           session.history.drawing,
           event.width ?? 'medium',
-          () => PAPER
+          () => paper
         );
       else if (event.sample) cohort.sample(event.sample, event.at);
       else if (event.end) {
@@ -178,15 +182,20 @@ function pixelAt(pixels, x, y) {
 }
 
 // A paper point's device pixel on the plane.
-function device(point) {
-  const view = paperProjectionView(PROJECTION, PLANE);
+function device(point, projection = PROJECTION) {
+  const view = paperProjectionView(projection, PLANE);
   return { x: view.left + point.x * view.scale, y: view.top + point.y * view.scale };
 }
 
 const across = line({ x: 100, y: 384 }, { x: 924, y: 384 }, 40);
 const down = line({ x: 512, y: 100 }, { x: 512, y: 668 }, 30);
 
-function expectIdentity({ script, ink = context(), history = createHistory(emptyDrawing()) }) {
+function expectIdentity({
+  script,
+  ink = context(),
+  history = createHistory(emptyDrawing()),
+  paper = PAPER,
+}) {
   const scene = createInkScene();
   const midCohort = [];
   const drawn = drawCohort({
@@ -194,6 +203,7 @@ function expectIdentity({ script, ink = context(), history = createHistory(empty
     history,
     script,
     ink,
+    paper,
     onFrame(index, cohort, session) {
       if (index % 7 !== 3 || cohort.live().length === 0) return;
       const live = pixelsOf(scene.snapshot());
@@ -203,7 +213,7 @@ function expectIdentity({ script, ink = context(), history = createHistory(empty
   const committed = drawn.history.drawing.strokes;
   const live = pixelsOf(scene.snapshot());
   const replay = rebuilt(committed, ink);
-  const captured = decodePng(scene.capture(PROJECTION, PLANE));
+  const captured = decodePng(scene.capture(ink.projection, PLANE));
   scene.dispose();
   return { live, replay, captured, midCohort, committed };
 }
@@ -249,6 +259,31 @@ describe('native incremental ink', () => {
     expect(hex(pixelAt(strokeOrder, crossing.x, crossing.y))).not.toBe(blue.toLowerCase());
     expect(orderedOps(committed).map(({ stroke: item }) => committed.indexOf(item))).not.toEqual(
       committed.flatMap((item, index) => item.ops.map(() => index))
+    );
+  });
+
+  // Negative control: committing a version-5 picture's strokes without their ops replays the
+  // cohort whole, in stroke order, so the crossing turns Red as the contacts lift.
+  it('keeps the crossings of a version-5 picture as they were drawn once it commits', () => {
+    const ink = { ...context(), paper: LEGACY_PAPER, projection: paperProjection(LEGACY_PAPER) };
+    const script = merge(
+      stroke('a', across, 1, { color: 'Blue' }),
+      stroke('b', down, 4, { color: 'Red' })
+    );
+    const { live, replay, captured, midCohort, committed } = expectIdentity({
+      script,
+      ink,
+      history: createHistory(legacyDrawing()),
+      paper: LEGACY_PAPER,
+    });
+    expect(committed.every((item) => item.ops.length > 2)).toBe(true);
+    expect(midCohort).toEqual(midCohort.map(() => 0));
+    expect(differing(live, replay)).toBe(0);
+    expect(differing(live, captured)).toBe(0);
+    const crossing = device({ x: 512, y: 384 }, ink.projection);
+    const [r, g, b] = pixelAt(live, crossing.x, crossing.y);
+    expect(paintAppearance('Blue', 'light').hex.toLowerCase()).toBe(
+      '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')
     );
   });
 

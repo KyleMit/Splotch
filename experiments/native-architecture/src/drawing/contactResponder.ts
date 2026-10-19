@@ -107,9 +107,7 @@ class ContactResponder {
     private readonly showLive: (paper: PaperReference | null, halos: readonly Halo[]) => void,
     private readonly pixelRatio: () => number,
     private readonly live: LiveInkFeed
-  ) {
-    live.connect(this.input);
-  }
+  ) {}
 
   private publish(completed: readonly Stroke[] | null = null) {
     if (completed) this.current().onCohort(completed, this.input.paper());
@@ -287,7 +285,10 @@ class ContactResponder {
     this.publish(this.input.interrupt());
   }
 
+  // Construction stays free of effects: StrictMode builds a surface's responder twice and keeps
+  // one, so only the attached responder may own the live ink feed.
   attach() {
+    this.live.connect(this.input);
     this.packetInput.attach();
   }
 

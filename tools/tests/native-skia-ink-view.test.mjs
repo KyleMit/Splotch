@@ -251,6 +251,26 @@ it('shows committed ink once, then one picture per display frame without renderi
   expect(skia.shown).toHaveLength(4);
 });
 
+// A blank picture's paper is adopted by its first contact, which records its ops until the layer
+// for that paper replays them. Negative control: requiring a layer before a contact may start
+// refuses the first contact on every fresh drawing.
+it('admits the first contact on unadopted paper and shows it once the paper is adopted', () => {
+  render([], null, UNADOPTED_PAPER);
+  expect(handle.canStart()).toBe(true);
+  expect(handle.readyPlan([]).ink).toBeUndefined();
+  contact.start('a', { x: 100, y: 100 }, emptyDrawing());
+  contact.sample('a', { x: 140, y: 100 });
+  paintFrame();
+  expect(skia.shown).toHaveLength(0);
+  render([], null, paper);
+  expect(skia.shown).toHaveLength(1);
+  expect(drawn(skia.shown[0][1]).length).toBeGreaterThan(0);
+  contact.sample('a', { x: 180, y: 100 });
+  paintFrame();
+  expect(skia.shown).toHaveLength(2);
+  expect(cohort.live()[0].ops).toHaveLength(3);
+});
+
 it('replays the live cohort when its committed ink changes mid-stroke, and leaves a dropped cohort', () => {
   render();
   contact.start('a', { x: 100, y: 100 });

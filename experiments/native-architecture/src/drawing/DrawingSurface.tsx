@@ -105,7 +105,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfacePro
     const live = useLiveCohort();
     const paperReference = live.paper ?? drawingPaper(props.drawing);
     const projectionRef = useRef(paperProjection(paperReference));
-    // Created once: the responder connects its cohort to the live ink feed.
+    // Created once; the responder connects its cohort to the live ink feed when it attaches.
     const [input] = useState(() =>
       createContactResponder(
         () => ({

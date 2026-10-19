@@ -8,7 +8,10 @@ import {
   emptyDrawing,
   strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { parseDrawing } from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
+import {
+  parseDrawing,
+  serializeDrawing,
+} from '../../experiments/native-architecture/src/drawing/drawingFormat.ts';
 import {
   orderedOps,
   opRange,
@@ -158,16 +161,35 @@ describe('stroke ops in the saved drawing', () => {
     );
   });
 
-  it('keeps a version 5 picture saveable by dropping the ops it cannot hold', () => {
-    const history = addStrokes(createHistory(legacyDrawing()), [
-      pen(points, [
-        [1, 0],
-        [4, 0],
-      ]),
-    ]);
+  // Negative control: dropping the ops as the stroke commits leaves its saved form unchanged but
+  // replays the open picture's cohort whole (native-incremental-ink.test.mjs).
+  it('keeps the ops of an open version 5 picture and saves it without them', () => {
+    const ops = [
+      [1, 0],
+      [4, 0],
+    ];
+    const history = addStrokes(createHistory(legacyDrawing()), [pen(points, ops)]);
     expect(history.drawing.version).toBe(5);
-    expect(history.drawing.strokes[0].ops).toBeUndefined();
-    expect(() => parseDrawing(JSON.parse(JSON.stringify(history.drawing)))).not.toThrow();
+    expect(history.drawing.strokes[0].ops).toEqual(ops);
+    expect(() => parseDrawing(JSON.parse(JSON.stringify(history.drawing)))).toThrow();
+    const reread = parseDrawing(JSON.parse(serializeDrawing(history.drawing)));
+    expect(reread.version).toBe(5);
+    expect(reread.strokes[0].ops).toBeUndefined();
+    expect(reread.strokes[0].points).toEqual(points);
+  });
+
+  it('saves an op-carrying session through the same serializer, ops included', () => {
+    const history = addStrokes(
+      createHistory(),
+      [
+        pen(points, [
+          [1, 0],
+          [4, 1],
+        ]),
+      ],
+      PAPER
+    );
+    expect(parseDrawing(JSON.parse(serializeDrawing(history.drawing)))).toEqual(history.drawing);
   });
 
   it('continues each op from the point before its first, as shipping continues from its pen', () => {

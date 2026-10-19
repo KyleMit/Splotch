@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, createElement, StrictMode } from 'react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import {
   sdk,
   owner,
@@ -23,6 +23,21 @@ import { adoptedDrawing } from './native-paper-fixtures.mjs';
 // root's services the same way.
 const FRAME_MS = 16;
 const MOVES = 4;
+
+// Every live ink feed a surface creates, so a stroke's live samples can be read where the ink
+// layer reads them. StrictMode builds the surface's responder twice and keeps one.
+const ink = vi.hoisted(() => ({ feeds: [] }));
+vi.mock('../../experiments/native-architecture/src/drawing/liveInk.ts', async (original) => {
+  const module = await original();
+  return {
+    ...module,
+    createLiveInkFeed: () => {
+      const feed = module.createLiveInkFeed();
+      ink.feeds.push(feed);
+      return feed;
+    },
+  };
+});
 
 async function launch(strict) {
   const drawing = {
@@ -47,6 +62,13 @@ async function launch(strict) {
       event([touch(0, 10 + move * 9, 20 + move * 9, 100 + move * FRAME_MS)], undefined, { 0: 100 }),
       false
     );
+  const live = ink.feeds.flatMap(
+    (feed) =>
+      feed
+        .source()
+        ?.live()
+        .map((stroke) => stroke.points.length) ?? []
+  );
   await send('end', event([], [touch(0, 60, 70, 300)], { 0: 100 }), false);
   await settle();
   const drawn = {
@@ -57,12 +79,15 @@ async function launch(strict) {
     soundStops: sdk.soundStop.mock.calls.length,
   };
   await act(async () => owner.undo());
-  return { restored, drawn, undone: owner.history.drawing.strokes.length };
+  return { restored, live, drawn, undone: owner.history.drawing.strokes.length };
 }
 
 it('draws on the real surface under StrictMode as it does without it', async () => {
   const plain = await launch(false);
   expect(plain.restored).toEqual({ strokes: 1, undo: 0 });
+  // Negative control: a responder that connects the feed as it is constructed leaves StrictMode's
+  // discarded responder owning it, so the ink layer reads no live stroke.
+  expect(plain.live).toEqual([MOVES + 1]);
   expect(plain.drawn).toMatchObject({ strokes: 2, drawing: false, soundStarts: 1, soundStops: 1 });
   expect(plain.undone).toBe(1);
   await act(async () => root.render(null));

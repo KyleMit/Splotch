@@ -292,7 +292,9 @@ export const SkiaInk = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaI
   const state = useSceneSync(scene, props.live, props.strokes, size, context, key, props.undoGhost);
   useInkCommitProbe();
   const failure = state.error;
-  const ready = state.input !== null && bookFill.ready && failure === null;
+  // A blank picture has no layer until its first contact adopts the paper: that contact's ops are
+  // recorded meanwhile, and the layer built for the adopted paper replays them.
+  const ready = size !== null && bookFill.ready && failure === null;
   const latest = useRef({ strokes: props.strokes, input: state.input, onError: props.onError });
   latest.current = { strokes: props.strokes, input: state.input, onError: props.onError };
   useLiveFrames(scene, props.live, view, latest);
@@ -327,21 +329,22 @@ export const SkiaInk = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaI
     canStart: () => ready,
     readyPlan(requested): InkPlan {
       const live = props.live.source()?.live() ?? [];
-      if (
-        !ready ||
-        live.length > 0 ||
-        !scene.idle() ||
-        scene.base() !== props.strokes ||
-        !sameStrokes(requested, props.strokes)
-      )
+      if (!ready || live.length > 0 || !sameStrokes(requested, props.strokes))
         throw new Error('This picture is still being prepared.');
-      return {
+      const plan = {
         paper,
         projection,
         checkpoint: null,
         strokes: requested,
         prefix: [],
         needsCheckpoint: false,
+      };
+      // Unadopted paper holds no ink, so it has no layer: its capture is the empty SVG scene.
+      if (!state.input) return plan;
+      if (!scene.idle() || scene.base() !== props.strokes)
+        throw new Error('This picture is still being prepared.');
+      return {
+        ...plan,
         ink: (grid, captured) => {
           if (!sameStrokes(scene.base(), requested))
             throw new Error('This picture is still being prepared.');

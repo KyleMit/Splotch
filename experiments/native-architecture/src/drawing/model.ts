@@ -44,7 +44,8 @@ export type Stroke = StrokeStyle &
   Readonly<{ points: readonly Point[]; ops?: readonly StrokeOp[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
 type DrawingContents = Readonly<{ pageId: PageId; rainbow: number; strokes: readonly Stroke[] }>;
-// Version 8 is version 7 whose strokes may carry ops; version 5 and 7 strokes never do.
+// Version 8 is version 7 whose strokes may carry ops; version 7 strokes never do. A version-5
+// picture's strokes carry ops only while it is open: its saved format has none (drawingFormat.ts).
 export type Drawing = DrawingContents &
   (
     | Readonly<{ version: 5 }>
@@ -102,12 +103,6 @@ export function cohortFrame(drawing: Drawing): number {
   return next;
 }
 
-function withoutOps(stroke: Stroke): Stroke {
-  if (!stroke.ops) return stroke;
-  const { ops: _ops, ...rest } = stroke;
-  return rest;
-}
-
 export function strokeStyle(
   brush: Brush,
   color: PaintColor,
@@ -145,13 +140,13 @@ export function addStrokes(
   const additions = strokes.filter((stroke) => stroke.points.length > 0);
   if (additions.length === 0) return history;
   const drawing = history.drawing;
-  // A version-5 picture's saved format has no ops, so its new strokes keep the single-op
-  // replay its old strokes have. Only an imported picture is version 5; a session starts at 8.
+  // A version-5 picture stays version 5; its new strokes keep their ops while it is open, so
+  // they replay as they were drawn. Only an imported picture is version 5; a session starts at 8.
   if (drawing.version === 5) {
     if (paper && paper.kind !== 'legacy') throw new Error('The drawing paper reference changed.');
     return commitDrawing(history, {
       ...drawing,
-      strokes: appendStrokes(drawing.strokes, additions.map(withoutOps)),
+      strokes: appendStrokes(drawing.strokes, additions),
     });
   }
   const reference = drawing.paper.kind === 'adopted' ? drawing.paper : paper;

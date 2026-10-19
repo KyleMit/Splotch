@@ -186,3 +186,19 @@ export function parseDrawing(value: unknown): Drawing {
   }
   return { version: 5, pageId, rainbow, strokes };
 }
+
+function strokeWithoutOps(stroke: Stroke): Stroke {
+  if (!stroke.ops) return stroke;
+  const { ops: _ops, ...rest } = stroke;
+  return rest;
+}
+
+// The drawing in its saved format, validated by the reader that will read it back. Version 5
+// cannot hold ops, so its strokes save whole.
+export function serializeDrawing(drawing: Drawing): string {
+  const saved =
+    drawing.version === 5
+      ? { ...drawing, strokes: drawing.strokes.map(strokeWithoutOps) }
+      : drawing;
+  return JSON.stringify(parseDrawing(saved));
+}
