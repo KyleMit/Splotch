@@ -153,6 +153,8 @@ function responder(frame) {
     () => 3,
     live
   );
+  // The surface attaches its responder before any packet arrives; attaching connects the feed.
+  input.attach();
   let sequence = 0;
   function send(phase, value) {
     input.receiveInput(
