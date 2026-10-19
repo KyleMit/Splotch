@@ -9,6 +9,7 @@ import {
 } from './paperSpace';
 import {
   forwardRef,
+  memo,
   useContext,
   useEffect,
   useImperativeHandle,
@@ -289,7 +290,7 @@ function useLiveFrames(
   }, [scene, live, view, latest]);
 }
 
-export const SkiaInk = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaInk(props, ref) {
+const SkiaInkLayer = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaInk(props, ref) {
   const paper = useInkPaper();
   const projection = useInkProjection();
   const { pageId, theme } = useInkAppearance();
@@ -392,6 +393,10 @@ export const SkiaInk = forwardRef<RasterInkHandle, InkLayerProps>(function SkiaI
     </View>
   );
 });
+
+// Memoized: the drawing surface renders for its input's disabled flag, a stroke width and a cohort
+// starting, none of which changes the ink (DrawingSurface hands it stable handlers).
+export const SkiaInk = memo(SkiaInkLayer);
 
 const styles = StyleSheet.create({
   scene: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
