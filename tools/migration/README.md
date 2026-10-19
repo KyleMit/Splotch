@@ -74,7 +74,7 @@ the native app itself is covered in `experiments/native-architecture/DEVELOPMENT
   failed load cannot blank the drawing screen. The Install Banner, which waits for settled-in
   drawing, loads through `installBannerSurface.web.ts` once the browser offers an install; a failed
   load only leaves the banner out.
-* `prerender-native-web.mjs` runs inside `native:web:build` (ADR-0180, proposed). It bundles
+* `prerender-native-web.mjs` runs inside `native:web:build` (ADR-0180). It bundles
   `experiments/native-architecture/src/prerenderFirstFrame.tsx` for Node through Expo's own bundle
   request, renders the drawing screen's first frame for each size class, orientation and theme, and
   writes them into `index.html` as `<template>`s with a boot script that clones the fitting one into

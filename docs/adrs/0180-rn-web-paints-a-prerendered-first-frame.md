@@ -1,9 +1,9 @@
 # ADR-0180: The React Native Web Export Paints a Prerendered First Frame, Then Hydrates It
 
-**Status:** Proposed — amends [ADR-0179](0179-rn-web-startup-path-splits-by-platform.md) **Date:**
-2026-10. On 2026-10-19 the owner decided four parts: the inlined paper texture, the pre-engine burst
-with finger adoption, the pre-hydration press feedback, and the split startup cap. The interactivity
-tiers and the prerender mechanism are still proposals, with numbers below.
+**Status:** Active — amends [ADR-0179](0179-rn-web-startup-path-splits-by-platform.md) **Date:**
+2026-10. On 2026-10-19 the owner decided the inlined paper texture, the pre-engine burst with finger
+adoption, the pre-hydration press feedback, the split startup cap and the Node render. Interactivity
+tiers are not built; issue #3011 holds that proposal.
 
 ## Context
 
@@ -229,8 +229,10 @@ script has run. There is no early ink and no second drawing engine.
   React has nothing to replay. A press it stopped stays stopped through its release and click, even
   when the controls go live while it is held: React Native Web calls `onPress` on the click alone.
   Only that press is held. Once the controls are live, any other press is the app's, even one made
-  while a stopped finger is still down. The drawing content stamps `data-controls-live` in the
-  commit that attaches its handlers (`platform/firstFrameControls.web.ts`).
+  while a stopped finger is still down. A browser dispatches a gesture's click straight after its
+  release, so a release by any other pointer first drops the held click: a drag off the control
+  makes none. The drawing content stamps `data-controls-live` in the commit that attaches its
+  handlers (`platform/firstFrameControls.web.ts`).
 * `platform/firstFrameContract.ts` declares the property, the attributes, the global, the drawing
   button and the paper's test id once, and the build imports them.
 * `tools/tests/native-web-early-input.test.mjs` runs the boot script against a shell. It also mounts
@@ -340,48 +342,21 @@ The check still reports the whole startup path and ADR-0179's parity target
 over. It also counts the held bundle toward the core controls and a bundle the document loads toward
 the first paint.
 
-### Interactivity tiers (proposed, awaiting the owner)
+### Interactivity tiers: not built
 
-The owner's order: (0) everything visible; (1) the drawing engine, as soon as possible; (2) palette,
-brushes, stroke width and Undo; (3) Clear, drawer, coloring book and AI; (4) the settings cog and
-parent gate, last. Today one whole-tree hydration makes every tier live at once. Measured on a phone
-under applied throttling, from navigation start, in ms:
+One whole-tree hydration makes every part live at once: the controls at 2,519 ms and the drawing
+engine at 2,642 ms on a throttled phone (Consequences). The owner's order for going live in tiers,
+the entry chunk's byte attribution and the bound it implies (the engine about 0.3 s earlier, with a
+library floor of about 0.5 s) are in issue #3011. The boot script already keeps a press on a part
+that is not live from the app, so tiers would need no React event replay.
 
-| Tier                                         | RN baseline   | This draft |
-| -------------------------------------------- | ------------- | ---------- |
-| 0: first paint and LCP                       | 2,972 / 3,628 | 724 / 724  |
-| 1: a finger on the paper draws               | about 3,000   | 2,642      |
-| 2–4: controls take presses (`controls-live`) | 2,961         | 2,519      |
-
-The baseline's tier 1 is when its paper first appears. Before that a touch lands on nothing.
-
-The entry chunk's source map (`results/early-input/entry-attribution.json`) bounds what tiering
-could buy:
-
-* **Libraries** load before anything can hydrate: React DOM 211,589 bytes, React Native Web 140,669,
-  React 8,142, Expo's runtime 6,064 and others 24,033, about 390 KB.
-* **The drawing engine** is 100,093 bytes.
-* **The drawing chrome** (palette, actions panel, Clear, drawer) is 122,111 bytes.
-* **Product, settings and the library** are 75,576 bytes.
-* **Platform seams** are 27,517 bytes and other app code 25,029.
-
-A tier-1 chunk needs the libraries, the engine and most of the seams: about 70% of the entry's
-bytes. At Slow 4G's throughput (the entry is 197,360 bytes brotli) that brings the engine forward by
-about 0.3 s, not to first paint. The library floor alone takes about 0.5 s to arrive. Suspense
-boundaries with lazy chunks would split hydration that way.
-
-The boot script already keeps a press on a part that is not live from the app, so the design needs
-no React event replay. React 19's replay of a click on a still-dehydrated boundary was not verified
-with React Native Web's pressables, because nothing here depends on it. Per-tier stamps would let
-the same guard release each tier as it goes live.
-
-### Prerender mechanism (proposed, awaiting the owner)
+### Prerender mechanism
 
 Two options were measured through the same shell and checks.
 
 | Mechanism                                                | Hydrates          | Devtools LCP | Controls live | Build cost                     |
 | -------------------------------------------------------- | ----------------- | ------------ | ------------- | ------------------------------ |
-| Node render (this draft: Metro `environment: node`)      | yes, 0 mismatches | 724 ms       | 2,513 ms      | 7 s, warm cache; no browser    |
+| Node render (built: Metro `environment: node`)           | yes, 0 mismatches | 724 ms       | 2,513 ms      | 7 s, warm cache; no browser    |
 | Headless-browser snapshot (react-snap style, Playwright) | no: error #418    | 733 ms       | 2,555 ms      | 46 s for 12 variants; Chromium |
 
 The snapshot is the settled screen: it already holds measured layout and client-only elements, so it
@@ -393,8 +368,8 @@ The snapshot pattern also needs a browser at build time. Playwright is a develop
 a Netlify web build would have to install it and its Chromium. It remains fit for a static
 placeholder that is replaced rather than hydrated.
 
-**Recommendation: keep the Node render.** It is the mechanism Expo Router's own static export uses.
-Two parts are off that path and can be narrowed:
+**The owner chose the Node render on 2026-10-19.** It is the mechanism Expo Router's own static
+export uses. Two parts are off that path and can be narrowed:
 
 * The deep import of `@expo/cli`'s `exportEmbedAsync.js`. Pin it with a test that fails when Expo
   moves it, or reach Metro through Expo's public `expo export:embed` command.
@@ -406,7 +381,7 @@ Two parts are off that path and can be narrowed:
 Phone, first visit, quiet host, medians of three, in ms. "Before" is the draft with only the frame
 and inlined style sheet, before the owner's decisions.
 
-| Tier                                    | Shipping | RN baseline | Before  | This draft                    |
+| Tier                                    | Shipping | RN baseline | Before  | Built                         |
 | --------------------------------------- | -------- | ----------- | ------- | ----------------------------- |
 | 0: first paint (devtools method)        | 824      | 3,037       | 682     | 724                           |
 | 0: LCP (devtools method)                | 824      | 3,652       | 1,231   | 724                           |
@@ -427,7 +402,7 @@ and the held finger becomes ink at 2,642 without lifting.
   burst, and a finger held from then becomes a real stroke as soon as the engine can take it.
   Controls squish and wiggle "not yet", and their press reaches the app only once they listen.
 * − The engine still takes about 1.9 s after first paint to listen, and the controls a little less.
-  Interactivity tiers (proposed) would bring the engine forward by about 0.3 s. The library floor
+  Interactivity tiers (issue #3011) would bring the engine forward by about 0.3 s. The library floor
   bounds anything more.
 * − Two renderers' discipline. Every first-frame read of the browser needs a server value and a
   matching hydration value.
@@ -460,6 +435,7 @@ and the held finger becomes ink at 2,642 without lifting.
    the first frame, as ADR-0040 does. Then clone a matching variant instead of none.
 2. **The hydrated-vs-fresh DOM comparison in CI.** Also a development-build pass that fails on
    React's hydration warnings.
-3. **The tiers and the mechanism** await the owner (above).
+3. **Narrow the Node render's off-path parts:** pin or replace the `exportEmbedAsync.js` deep
+   import, and pre-parse the icons so the build drops happy-dom (Prerender mechanism).
 4. **Port first-frame geometry to CSS where it is cheap**, such as the palette gap, to shrink the
    post-hydration relayout.

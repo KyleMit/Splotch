@@ -177,7 +177,7 @@ entry carries the subresource integrity of the bytes this build wrote, so an ins
 another deploy's document or chunks fails rather than pairing them
 (`tools/tests/native-web-deploy-race.test.mjs`). Before the worker is generated,
 `tools/migration/prerender-native-web.mjs` writes the drawing screen's prerendered first frame into
-the shell, which the client hydrates (ADR-0180, proposed). Its post hook,
+the shell, which the client hydrates (ADR-0180). Its post hook,
 `tools/migration/check-native-web-precache.mjs`, fails when the shell is not first or not at its
 content address, an entry is not pinned to the exported bytes, an exported file or a file the shell
 names is not precached, a bundled Farm page is missing from the precached chunks, a lazily loaded

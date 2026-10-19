@@ -2,12 +2,10 @@
 
 **Status:** Active **Date:** 2026-10
 
-> **Amended by [ADR-0180](0180-rn-web-paints-a-prerendered-first-frame.md)**, which is still a
-> proposal. Its inlined paper texture, its pre-hydration feedback and its split of this ADR's
-> startup cap are decided. It prerenders the drawing screen's first frame into the shell, hydrates
-> it, and holds the bundle until that frame has painted. The paper texture is the one image this
-> ADR's startup check now lets the shell inline. The check holds the first paint and the core
-> controls to separate caps instead of one.
+> **Amended by [ADR-0180](0180-rn-web-paints-a-prerendered-first-frame.md).** It prerenders the
+> drawing screen's first frame into the shell, hydrates it, and holds the bundle until that frame
+> has painted. The paper texture is the one image this ADR's startup check now lets the shell
+> inline. The check holds the first paint and the core controls to separate caps instead of one.
 
 ## Context
 
