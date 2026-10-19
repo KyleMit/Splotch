@@ -37,7 +37,7 @@ public class ColoringPackWorker extends Worker {
             // A job written before storage was keyed by resolution names a version directory the
             // next scan drains, and carries no marker to publish.
             if (!job.has("resolution") || !job.has("marker")) throw new StaleJobException();
-            if (job.getBoolean("allowMetered") && dataSaverEnabled()) return Result.retry();
+            if (dataSaverDefers(job.getBoolean("allowMetered"))) return Result.retry();
 
             String marker = job.getString("marker");
             File bookDirectory = ColoringPackStorage.bookDirectory(
@@ -75,12 +75,22 @@ public class ColoringPackWorker extends Worker {
         }
     }
 
-    private boolean dataSaverEnabled() {
+    private boolean dataSaverDefers(boolean allowMetered) {
         ConnectivityManager manager =
                 (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         return manager != null
-                && manager.getRestrictBackgroundStatus()
-                == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED;
+                && dataSaverDefers(
+                        allowMetered, manager.isActiveNetworkMetered(), manager.getRestrictBackgroundStatus());
+    }
+
+    // Data Saver restricts background data on metered networks only, so an unmetered network
+    // never defers while restriction is on. SplotchLibraryWorker.kt applies the same table,
+    // pinned by tools/tests/native-data-saver-deferral.test.mjs.
+    static boolean dataSaverDefers(
+            boolean allowMetered, boolean activeNetworkMetered, int restrictBackgroundStatus) {
+        return allowMetered
+                && activeNetworkMetered
+                && restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED;
     }
 
     // An unchanged file is kept, so an app update or an interrupted install transfers only the
