@@ -1,0 +1,61 @@
+{
+  "cells": {
+    "driver-mouse": {
+      "ranAt": "2026-10-19T17:43:42.442Z",
+      "ms": 24622,
+      "rn-web": {
+        "separate": 3,
+        "joined": 1,
+        "admitted": true,
+        "settled": true,
+        "settleMs": 1905,
+        "frames": 6,
+        "shot": "shots/driver-mouse-rn-web.webp",
+        "digest": "01205d801d4e9e6a6a284e8f1a7360bc08e4e7a3e30779cb4f40db44ea051b6f",
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "separate": 3,
+        "joined": 1,
+        "admitted": true,
+        "settled": true,
+        "settleMs": 1918,
+        "frames": 6,
+        "shot": "shots/driver-mouse-web-prod.webp",
+        "digest": "394571c3346672798daddb2c36384825c4047a1c8310f19760096cacc2d0a107",
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "driver-touch": {
+      "ranAt": "2026-10-19T17:44:07.067Z",
+      "ms": 28292,
+      "rn-web": {
+        "separate": 3,
+        "joined": 1,
+        "admitted": true,
+        "settled": true,
+        "settleMs": 1685,
+        "frames": 6,
+        "shot": "shots/driver-touch-rn-web.webp",
+        "digest": "3e6f291eb98e6e6bb77fe4134e6d80d3f0b0c6bd590ca7f759c8a98ffb1dd4df",
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "separate": 3,
+        "joined": 1,
+        "admitted": true,
+        "settled": true,
+        "settleMs": 1736,
+        "frames": 6,
+        "shot": "shots/driver-touch-web-prod.webp",
+        "digest": "fce728e8547dd62798f8bda194dbd9547d451337bab743c080b91d1ff8747c2a",
+        "external": [],
+        "consoleErrors": []
+      }
+    }
+  },
+  "browser": "chromium 141.0.7390.37 (headless)"
+}
