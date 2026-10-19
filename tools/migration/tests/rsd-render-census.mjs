@@ -4,10 +4,12 @@
 // react-dom loads, so a test imports this module before anything that loads react-dom.
 //
 // A fiber whose parent bailed out keeps its children's fibers from the last commit; one that was
-// re-entered carries React's PerformedWork flag only if its function ran this time. Walking the
-// committed tree beside its alternate, as DevTools does, therefore counts exactly the components
-// React executed. rsd-native-render-budgets.test.mjs holds a positive control for each counter, so
-// a React that stops reporting fails there rather than reading every budget as met.
+// re-entered carries React's PerformedWork flag only if its render went on to its children this
+// time. Walking the committed tree beside its alternate, as DevTools does, therefore counts the
+// components React rendered. Like DevTools it leaves out a component that ran only to find its own
+// state unchanged and bailed out before its children. rsd-native-render-budgets.test.mjs holds a
+// positive control for each budget, so a React that stops reporting fails there rather than
+// reading every budget as met.
 
 const FUNCTION_COMPONENT = 0;
 const CLASS_COMPONENT = 1;
