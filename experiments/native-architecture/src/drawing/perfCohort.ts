@@ -38,7 +38,15 @@ type Cohort = {
   inkCommits: number;
   surfaceCommits: number;
   timers: Record<PerfTimer, Timing>;
+  // Per hand-off that carried new samples: from its newest sample, and from its oldest.
   submissions: number[];
+  oldestSubmissions: number[];
+  // Hand-offs while a contact was held, and the intervals between consecutive ones.
+  handoffs: number;
+  handoffGaps: number[];
+  lastHandoffAt: number | null;
+  firstSampleAt: number | null;
+  firstDotMs: number | null;
 };
 
 function changedSamples(packet: PaperInput) {
@@ -55,7 +63,7 @@ function nearestRank(sorted: readonly number[], fraction: number) {
   return sorted[Math.max(0, Math.ceil(fraction * sorted.length) - 1)];
 }
 
-function submissionSummary(intervals: readonly number[]) {
+function intervalSummary(intervals: readonly number[]) {
   if (intervals.length === 0) return { n: 0 };
   const sorted = [...intervals].sort((a, b) => a - b);
   return {
@@ -91,7 +99,11 @@ function formatPerfLine(cohort: Cohort, context: PerfLineContext): string {
     surfaceLayoutEffectCommits: cohort.surfaceCommits,
     liveFlush: timing(cohort.timers.liveFlush),
     sceneRecord: timing(cohort.timers.sceneRecord),
-    inputToSubmission: submissionSummary(cohort.submissions),
+    inputToSubmission: intervalSummary(cohort.submissions),
+    oldestToSubmission: intervalSummary(cohort.oldestSubmissions),
+    firstDotMs: cohort.firstDotMs === null ? null : round(cohort.firstDotMs),
+    handoffs: cohort.handoffs,
+    submissionGap: intervalSummary(cohort.handoffGaps),
     clockJoin: context.clockJoin,
   });
 }
@@ -114,6 +126,12 @@ function openCohort(index: number, openedAt: number): Cohort {
       sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
     },
     submissions: [],
+    oldestSubmissions: [],
+    handoffs: 0,
+    handoffGaps: [],
+    lastHandoffAt: null,
+    firstSampleAt: null,
+    firstDotMs: null,
   };
 }
 
@@ -131,8 +149,10 @@ export function createPerfCohorts<Handle>(
   let settle: Handle | null = null;
   const lines: string[] = [];
   let sampleAt = 0;
-  // The newest native sample timestamp taken into ink that no submitted picture has carried yet.
-  let unsubmitted: number | null = null;
+  // The newest and oldest native sample timestamps taken into ink that no submitted picture has
+  // carried yet.
+  let newest: number | null = null;
+  let oldest: number | null = null;
 
   function finalize() {
     if (closing) lines.push(formatPerfLine(closing, context));
@@ -149,7 +169,8 @@ export function createPerfCohorts<Handle>(
   const active = () => open ?? closing;
 
   function include(timestamp: number) {
-    unsubmitted = Math.max(unsubmitted ?? timestamp, timestamp);
+    newest = Math.max(newest ?? timestamp, timestamp);
+    oldest = Math.min(oldest ?? timestamp, timestamp);
   }
 
   return {
@@ -157,7 +178,8 @@ export function createPerfCohorts<Handle>(
       if (!open) {
         finalize();
         open = openCohort(nextIndex++, clock.now());
-        unsubmitted = null;
+        newest = null;
+        oldest = null;
       }
       const samples = changedSamples(packet);
       open.packets += 1;
@@ -173,7 +195,10 @@ export function createPerfCohorts<Handle>(
       settle = clock.schedule(flush, COHORT_SETTLE_MS);
     },
     stroke(timestamp: number) {
-      if (active()) include(timestamp);
+      const cohort = active();
+      if (!cohort) return;
+      cohort.firstSampleAt ??= timestamp;
+      include(timestamp);
     },
     sampleTime(timestamp: number) {
       sampleAt = timestamp;
@@ -205,11 +230,23 @@ export function createPerfCohorts<Handle>(
       record.totalMs += elapsedMs;
       record.maxMs = Math.max(record.maxMs, elapsedMs);
     },
+    // A hand-off carries every sample taken into ink since the last one.
     submitted() {
       const cohort = active();
-      if (!cohort || unsubmitted === null) return;
-      cohort.submissions.push(clock.now() - unsubmitted);
-      unsubmitted = null;
+      if (!cohort) return;
+      const now = clock.now();
+      if (cohort === open) {
+        cohort.handoffs += 1;
+        if (cohort.lastHandoffAt !== null) cohort.handoffGaps.push(now - cohort.lastHandoffAt);
+        cohort.lastHandoffAt = now;
+      }
+      if (newest === null || oldest === null) return;
+      cohort.submissions.push(now - newest);
+      cohort.oldestSubmissions.push(now - oldest);
+      if (cohort.firstDotMs === null && cohort.firstSampleAt !== null)
+        cohort.firstDotMs = now - cohort.firstSampleAt;
+      newest = null;
+      oldest = null;
     },
   };
 }

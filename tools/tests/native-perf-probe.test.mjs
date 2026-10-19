@@ -337,6 +337,10 @@ describe('with EXPO_PUBLIC_SPLOTCH_PERF_PROBE=1', () => {
         inkLayoutEffectCommits: 3,
         surfaceLayoutEffectCommits: 3,
         inputToSubmission: { n: 2, p50Ms: 1, p95Ms: 5, maxMs: 5, minMs: 1 },
+        oldestToSubmission: { n: 2, p50Ms: 5, p95Ms: 5, maxMs: 5, minMs: 5 },
+        firstDotMs: 5,
+        handoffs: 2,
+        submissionGap: { n: 1, p50Ms: 8, p95Ms: 8, maxMs: 8, minMs: 8 },
         clockJoin: { clock: 'CLOCK_MONOTONIC', errorMs: 1 },
       }),
     ]);

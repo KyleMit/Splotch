@@ -123,6 +123,10 @@ describe('createPerfCohorts', () => {
         liveFlush: { n: 0, totalMs: 0, maxMs: 0 },
         sceneRecord: { n: 0, totalMs: 0, maxMs: 0 },
         inputToSubmission: { n: 0 },
+        oldestToSubmission: { n: 0 },
+        firstDotMs: null,
+        handoffs: 0,
+        submissionGap: { n: 0 },
         clockJoin: CLOCK_JOIN,
       },
     ]);
@@ -232,7 +236,9 @@ describe('createPerfCohorts', () => {
     expect(lines[0].sceneRecord).toEqual({ n: 1, totalMs: 0.5, maxMs: 0.5 });
   });
 
-  it('measures each submitted picture from the newest sample it carries', () => {
+  // Negative controls: measuring each hand-off from its newest sample in place of its oldest, or
+  // timing the first dot at the latest hand-off instead of the first, fails here.
+  it('measures each submitted picture from the newest and the oldest sample it carries', () => {
     const { cohorts, lines, clock, advance } = harness();
     clock.at = 1000;
     cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
@@ -258,6 +264,35 @@ describe('createPerfCohorts', () => {
       p95Ms: 20,
       maxMs: 20,
       minMs: 14,
+    });
+    expect(lines[0].oldestToSubmission).toEqual({
+      n: 2,
+      p50Ms: 14,
+      p95Ms: 24,
+      maxMs: 24,
+      minMs: 14,
+    });
+    expect(lines[0].firstDotMs).toBe(14);
+  });
+
+  // Negative control: counting a hand-off made after the last lift adds one more hand-off and a
+  // gap across the settle, which is not ink cadence.
+  it('counts hand-offs while a contact is held and the gaps between them', () => {
+    const { cohorts, lines, clock, advance } = harness();
+    cohorts.packet(packet('start', [{ identifier: 'a', samples: 1 }]));
+    cohorts.stroke(clock.at);
+    for (const gap of [0, 8, 16]) {
+      advance(gap);
+      cohorts.submitted();
+    }
+    cohorts.idle();
+    advance(COHORT_SETTLE_MS - 1);
+    cohorts.submitted();
+    advance(1);
+    expect(lines[0]).toMatchObject({
+      handoffs: 3,
+      submissionGap: { n: 2, p50Ms: 8, p95Ms: 16, maxMs: 16, minMs: 8 },
+      firstDotMs: 0,
     });
   });
 
