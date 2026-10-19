@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, type GestureResponderEvent } from 'react-native';
 import { MIN_TEXT_ZOOM, nextTextZoom } from '../../../../web/src/lib/actions/textZoom';
+import { SettledTextZoom } from './settledTextZoom';
 
 type Props = { children: ReactNode; enabled: boolean; onZoom?: (zoom: number) => void };
 function spread(event: GestureResponderEvent) {
@@ -10,6 +11,7 @@ function spread(event: GestureResponderEvent) {
 
 export function SettingsTextZoom({ children, enabled, onZoom }: Props) {
   const [zoom, setZoom] = useState(MIN_TEXT_ZOOM);
+  const [settled, setSettled] = useState(MIN_TEXT_ZOOM);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const current = useRef(zoom);
   const pinch = useRef<{ zoom: number; spread: number; fingers: number } | null>(null);
@@ -23,6 +25,7 @@ export function SettingsTextZoom({ children, enabled, onZoom }: Props) {
       current.current = MIN_TEXT_ZOOM;
       pinch.current = null;
       setZoom(MIN_TEXT_ZOOM);
+      setSettled(MIN_TEXT_ZOOM);
       onZoom?.(MIN_TEXT_ZOOM);
     }
   }, [enabled, onZoom]);
@@ -45,8 +48,12 @@ export function SettingsTextZoom({ children, enabled, onZoom }: Props) {
     }
     apply(nextTextZoom(active.zoom, active.spread, spread(event)));
   };
+  const settle = () => {
+    pinch.current = null;
+    setSettled(current.current);
+  };
   const end = (event: GestureResponderEvent) => {
-    if (event.nativeEvent.touches.length === 0) pinch.current = null;
+    if (event.nativeEvent.touches.length === 0) settle();
     else if (event.nativeEvent.touches.length >= 2) begin(event);
   };
   return (
@@ -61,12 +68,8 @@ export function SettingsTextZoom({ children, enabled, onZoom }: Props) {
       onResponderMove={move}
       onResponderStart={begin}
       onResponderEnd={end}
-      onResponderRelease={() => {
-        pinch.current = null;
-      }}
-      onResponderTerminate={() => {
-        pinch.current = null;
-      }}
+      onResponderRelease={settle}
+      onResponderTerminate={settle}
       onResponderTerminationRequest={() => false}
       style={
         zoom === MIN_TEXT_ZOOM
@@ -85,7 +88,7 @@ export function SettingsTextZoom({ children, enabled, onZoom }: Props) {
           transformOrigin: 'top left',
         }}
       >
-        {children}
+        <SettledTextZoom value={settled}>{children}</SettledTextZoom>
       </View>
     </View>
   );

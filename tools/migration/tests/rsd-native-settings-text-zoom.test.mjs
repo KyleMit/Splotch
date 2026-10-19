@@ -43,6 +43,33 @@ it('claims two fingers, reflows enlarged content and releases only after every f
   expect(host.textContent).toContain('Keep drawing');
 });
 
+it('hands fitted text the zoom only once the pinch ends, and the reset when disabled', async () => {
+  const { useContext } = await import('react');
+  const { SettledTextZoom } =
+    await import('../../../experiments/native-architecture/src/platform/settledTextZoom.ts');
+  function Settled() {
+    return createElement(
+      html.span,
+      { 'data-testid': 'settled' },
+      String(useContext(SettledTextZoom))
+    );
+  }
+  const settled = () => host.querySelector('[data-testid="settled"]').textContent;
+  await mount(createElement(SettingsTextZoom, { enabled: true }, createElement(Settled)));
+  await act(async () => {
+    boundary().onResponderGrant(touches([0, 0], [100, 0]));
+    boundary().onResponderMove(touches([0, 0], [200, 0]));
+  });
+  expect(content().style.transform).toEqual([{ scale: 2 }]);
+  expect(settled()).toBe('1');
+  await act(async () => boundary().onResponderRelease(touches()));
+  expect(settled()).toBe('2');
+  await act(async () =>
+    root.render(createElement(SettingsTextZoom, { enabled: false }, createElement(Settled)))
+  );
+  expect(settled()).toBe('1');
+});
+
 it('pins the shared zoom range and clamps a large or reversed pinch', async () => {
   await mount(createElement(SettingsTextZoom, { enabled: true }, children));
   await act(async () => {

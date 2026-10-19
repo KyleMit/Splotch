@@ -13,6 +13,7 @@ import { RsdColoringTile } from '../../../experiments/native-architecture/src/rs
 import { RsdSidebarRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSidebarRow.tsx';
 import { RsdToggleRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdToggleRow.tsx';
 import { RsdSliderRow } from '../../../experiments/native-architecture/src/rsdDrawing/RsdSlider.tsx';
+import { SettledTextZoom } from '../../../experiments/native-architecture/src/platform/settledTextZoom.ts';
 import { scale, themes } from '../../../web/src/lib/design/tokens.ts';
 import {
   COVER_CAPTION_HEIGHT_PX,
@@ -181,6 +182,16 @@ describe('segment track at a large OS font', () => {
     expect(native(thumb()).style.right).toBeUndefined();
   });
 
+  it('asks afresh once a finished pinch changes the Settings zoom', async () => {
+    const zoomed = (zoom) => h(SettledTextZoom, { value: zoom }, h(Picker, { initial: 'light' }));
+    await render(zoomed(2));
+    await layOut(label('System'), ['Syst', 90], ['em', 50]);
+    await render(zoomed(2));
+    expect(native(group()).style.flexDirection).toBe('column');
+    await render(zoomed(1));
+    expect(native(group()).style.flexDirection).toBe('row');
+  });
+
   it('keeps a whole-word wrap side by side', async () => {
     const options = [
       { value: 'bug', label: "Something's broken" },
@@ -339,5 +350,51 @@ describe('settings slider name at a large OS font', () => {
     await layOut(name(), ['Volum', 148], ['e', 30]);
     expect(native(name()).style.fontSize).toBeCloseTo((size * 150 * 0.98) / 190);
     expect(container.textContent).toContain('50%');
+  });
+});
+
+describe('fitted text when its room changes without a new window or font scale', () => {
+  const WORD_PX = 190;
+  let roomPx;
+  const row = (zoom) =>
+    h(
+      SettledTextZoom,
+      { value: zoom },
+      h(RsdToggleRow, { icon: 'sound', label: 'Volume', id: 'v', checked: false, onToggle() {} })
+    );
+  const text = () => container.querySelector('[data-testid="v-row"] span');
+  beforeEach(() => {
+    roomPx = 200;
+    host.layoutOf = (node) =>
+      node.getAttribute('aria-hidden') === 'true' && node.tagName === 'SPAN'
+        ? { x: 0, y: 0, width: WORD_PX, height: 50 }
+        : { x: 0, y: 0, width: roomPx, height: 50 };
+  });
+  const relayout = async (width) =>
+    act(async () =>
+      native(text()).props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width, height: 50 } } })
+    );
+
+  it('fits a word that broke before its narrower width was reported', async () => {
+    await render(row(1));
+    const size = native(text()).style.fontSize;
+    await layOut(text(), ['Volu', 95], ['me', 50]);
+    expect(native(text()).style.fontSize).toBe(size);
+    roomPx = 100;
+    await relayout(100);
+    expect(native(text()).style.fontSize).toBeCloseTo((size * 100 * 0.98) / WORD_PX);
+  });
+
+  it('grows back to its full size once a finished pinch gives it room again', async () => {
+    roomPx = 100;
+    await render(row(2));
+    const size = native(text()).style.fontSize;
+    await layOut(text(), ['Volu', 95], ['me', 50]);
+    expect(native(text()).style.fontSize).toBeCloseTo((size * 100 * 0.98) / WORD_PX);
+    roomPx = 200;
+    await render(row(1));
+    expect(native(text()).style.fontSize).toBe(size);
+    await layOut(text(), ['Volume', 190]);
+    expect(native(text()).style.fontSize).toBe(size);
   });
 });

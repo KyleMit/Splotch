@@ -83,7 +83,8 @@ type Split = Readonly<{ room: number }>;
 // with `fit` it then shrinks just enough for its widest word to fit the width it had when the word
 // broke. Text whose words fit keeps its size and the OS font scale, and renders exactly as the
 // plain span: words are measured only after one breaks. The owner remounts it (by key) when the
-// window width, OS font scale or resolved size changes, which starts any fit over.
+// window width, OS font scale, settled Settings zoom or resolved size changes, which starts any fit
+// over: that is how a fitted text grows back when its room widens.
 export function FittedText({
   text,
   resolved,
@@ -116,7 +117,12 @@ export function FittedText({
         {...resolved}
         style={scale === 1 ? resolved.style : [resolved.style, scaledType(resolved.style, scale)]}
         onLayout={(event) => {
-          room.current = event.nativeEvent.layout.width;
+          const { width } = event.nativeEvent.layout;
+          room.current = width;
+          // A break reported before this layout's width arrived took the previous, wider room.
+          // Only before any shrink: a fitted text's own width follows its smaller words.
+          if (scale === 1 && split !== null && width > 0 && width < split.room)
+            setSplit({ room: width });
           onLayout?.(event);
         }}
         onTextLayout={(event) => {

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactElement } from 'react';
+import { useContext, useRef, useState, type ReactElement } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,6 +11,7 @@ import { useDrawingTheme } from '../drawing/DrawingAppearance';
 import { DRAWING_ON_BRAND } from '../drawing/theme';
 import type { NativeIconName } from './icons.generated';
 import { optionFades, pressedState } from './pickerPlatform';
+import { SettledTextZoom } from '../platform/settledTextZoom';
 import { RsdIcon } from './RsdIcon';
 import { WholeWordText } from './WholeWordText';
 import { arrowDelta, nextEnabledIndex, rovingTabIndex } from './rovingRadio';
@@ -153,11 +154,13 @@ function useCells() {
 }
 
 // A segment track whose labels cannot all stay whole side by side stacks its options, each across
-// the full track, rather than breaking a word. The answer holds for one window width, OS font scale
-// and set of labels; any change to them lays the options side by side again and asks afresh.
+// the full track, rather than breaking a word. The answer holds for one window width, OS font
+// scale, settled Settings zoom and set of labels; any change to them lays the options side by side
+// again and asks afresh.
 function useStacking(enabled: boolean, labels: readonly string[]) {
   const { width, fontScale } = useWindowDimensions();
-  const key = JSON.stringify([labels, width, fontScale]);
+  const zoom = useContext(SettledTextZoom);
+  const key = JSON.stringify([labels, width, fontScale, zoom]);
   const currentKey = useRef(key);
   currentKey.current = key;
   const [stackedKey, setStackedKey] = useState<string | null>(null);
