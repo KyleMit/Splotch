@@ -1,0 +1,6182 @@
+{
+  "cells": {
+    "ai-fresh-install": {
+      "ranAt": "2026-10-19T19:29:32.815Z",
+      "ms": 16494,
+      "rn-web": {
+        "requests": [],
+        "drawerWand": null,
+        "aiSwitch": "false",
+        "keyField": 0,
+        "settings": "AI Art Create AI Images Turns a finished drawing into an AI picture based on it. What turning this on does One tap on a finished drawing, and it comes back as a storybook picture — same colors, same character, same big smile. 1 They draw 2 One magic tap 3 Ta-da! The first 10 pictures are free — nothing to set up, no card. After that, use your own OpenAI key — saved on this device only.",
+        "shot": {
+          "settled": true,
+          "settleMs": 1882,
+          "frames": 7,
+          "shot": "shots/ai-fresh-settings-rn-web.webp",
+          "digest": "80f42c5d1d393a6f5742b1dfd954f068a267152ef8b58025970fcdca56063e8b"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "requests": [],
+        "drawerWand": null,
+        "aiSwitch": "false",
+        "keyField": 0,
+        "settings": "AI Art Create AI Images Turns a finished drawing into an AI picture based on it. What turning this on does One tap on a finished drawing, and it comes back as a storybook picture — same colors, same character, same big smile. 1 They draw 2 One magic tap 3 Ta-da! The first 10 pictures are free — nothing to set up, no card. After that, use your own OpenAI key — saved on this device only.",
+        "shot": {
+          "settled": true,
+          "settleMs": 1847,
+          "frames": 7,
+          "shot": "shots/ai-fresh-settings-web-prod.webp",
+          "digest": "5174b482997111acdb1857ee46784cde64e4fc5161004c7b86d00782754e9d63"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-success": {
+      "ranAt": "2026-10-19T19:29:49.310Z",
+      "ms": 83609,
+      "iphone": {
+        "rn-web": {
+          "started": {
+            "wandLabel": "Create AI image, 10 free left",
+            "prompt": [
+              "Pick a style"
+            ],
+            "styled": true
+          },
+          "promptShot": null,
+          "waiting": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 727,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 29,
+                "y": 14,
+                "w": 331,
+                "h": 653
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Making your picture…"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "dialShot": "shots/ai-dial-iphone-rn-web.webp",
+          "shown": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 126,
+                  "y": 636,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 236,
+                  "y": 705,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 107,
+                "w": 352,
+                "h": 527
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "resultShot": {
+            "settled": true,
+            "settleMs": 1917,
+            "frames": 6,
+            "shot": "shots/ai-result-iphone-rn-web.webp",
+            "digest": "6b683fe852241e0d8f4f4f8fb5c3d94fcfb86f5f32e40f02adfcce964bd92c44"
+          },
+          "closed": {
+            "dialogs": [],
+            "card": null,
+            "text": null,
+            "controls": [],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved."
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved."
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "started": {
+            "wandLabel": "Create AI image, 10 free left",
+            "prompt": [
+              "unnamed"
+            ],
+            "styled": true
+          },
+          "promptShot": null,
+          "waiting": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 20,
+              "y": 11,
+              "w": 351,
+              "h": 780
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 726,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 36,
+                "y": 27,
+                "w": 318,
+                "h": 628
+              }
+            },
+            "statuses": [
+              "Making your picture…",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "dialShot": "shots/ai-dial-iphone-web-prod.webp",
+          "shown": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 101,
+              "w": 370,
+              "h": 599
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 636,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 705,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 26,
+                "y": 117,
+                "w": 338,
+                "h": 507
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "resultShot": {
+            "settled": true,
+            "settleMs": 1830,
+            "frames": 6,
+            "shot": "shots/ai-result-iphone-web-prod.webp",
+            "digest": "ebf92ebf0d9e97078bcdba93f57f1140d2d933c8330a8e47d5ef3a716a78b405"
+          },
+          "closed": {
+            "dialogs": [],
+            "card": null,
+            "text": null,
+            "controls": [],
+            "picture": null,
+            "statuses": [
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Create AI image, 9 free left"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "started": {
+            "wandLabel": "Create AI image, 10 free left",
+            "prompt": [
+              "Pick a style"
+            ],
+            "styled": true
+          },
+          "promptShot": null,
+          "waiting": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 1280,
+              "h": 800
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 979,
+                  "y": 80,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 522,
+                  "y": 668,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 242,
+                "y": 74,
+                "w": 796,
+                "h": 533
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Making your picture…"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "dialShot": "shots/ai-dial-desktop-rn-web.webp",
+          "shown": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 1280,
+              "h": 800
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 1025,
+                  "y": 80,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 571,
+                  "y": 668,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 681,
+                  "y": 737,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 194,
+                "y": 72,
+                "w": 893,
+                "h": 595
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "resultShot": {
+            "settled": true,
+            "settleMs": 1926,
+            "frames": 5,
+            "shot": "shots/ai-result-desktop-rn-web.webp",
+            "digest": "4008ddca7b207c7ebd3dee86f624bab81817f3a5baa93671911de3320427c69d"
+          },
+          "closed": {
+            "dialogs": [],
+            "card": null,
+            "text": null,
+            "controls": [],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved."
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved."
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 9860,
+                "format": "webp",
+                "width": 2392,
+                "height": 1600
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "started": {
+            "wandLabel": "Create AI image, 10 free left",
+            "prompt": [
+              "unnamed"
+            ],
+            "styled": true
+          },
+          "promptShot": null,
+          "waiting": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 241,
+              "y": 68,
+              "w": 798,
+              "h": 664
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 979,
+                  "y": 80,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 522,
+                  "y": 668,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 257,
+                "y": 84,
+                "w": 766,
+                "h": 512
+              }
+            },
+            "statuses": [
+              "Making your picture…",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "dialShot": "shots/ai-dial-desktop-web-prod.webp",
+          "shown": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 195,
+              "y": 68,
+              "w": 890,
+              "h": 664
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 1025,
+                  "y": 80,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 572,
+                  "y": 668,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 680,
+                  "y": 737,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 211,
+                "y": 84,
+                "w": 858,
+                "h": 572
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "resultShot": {
+            "settled": true,
+            "settleMs": 2038,
+            "frames": 5,
+            "shot": "shots/ai-result-desktop-web-prod.webp",
+            "digest": "11165ec9ccc5f41a66b873c188c5e63c67177e569bbd773d091405142ff4e4af"
+          },
+          "closed": {
+            "dialogs": [],
+            "card": null,
+            "text": null,
+            "controls": [],
+            "picture": null,
+            "statuses": [
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Create AI image, 9 free left"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 9886,
+                "format": "webp",
+                "width": 2392,
+                "height": 1600
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "ai-prompt": {
+      "ranAt": "2026-10-19T19:31:12.922Z",
+      "ms": 23550,
+      "rn-web": {
+        "wandLabel": "Create AI image, 10 free left",
+        "dialogs": [
+          "Pick a style"
+        ],
+        "styles": [
+          "Close",
+          "Magical",
+          "Crayon",
+          "Watercolor",
+          "Paper",
+          "Felt",
+          "Sticker",
+          "Cartoon",
+          "Clay"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1805,
+          "frames": 6,
+          "shot": "shots/ai-prompt-rn-web.webp",
+          "digest": "0c2413fcc0d0d3ef6500838e66bb07dbf5d2224ac2c5ca33040010885e83ae93"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "wandLabel": "Create AI image, 10 free left",
+        "dialogs": [
+          "unnamed"
+        ],
+        "styles": [
+          "Close",
+          "Magical",
+          "Crayon",
+          "Watercolor",
+          "Paper",
+          "Felt",
+          "Sticker",
+          "Cartoon",
+          "Clay"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1779,
+          "frames": 6,
+          "shot": "shots/ai-prompt-web-prod.webp",
+          "digest": "a26e6e123478b3e5a2f756e135d0fd1f22be118b8b28d82b604b028fd7f8bf69"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-customization-off": {
+      "ranAt": "2026-10-19T19:31:36.473Z",
+      "ms": 33467,
+      "rn-web": {
+        "wandLabel": "Create AI image, 10 free left",
+        "dialogsAfterTap": [
+          "AI Result"
+        ],
+        "shown": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "wandLabel": "Create AI image, 10 free left",
+        "dialogsAfterTap": [
+          "AI Result"
+        ],
+        "shown": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-refusal-and-report": {
+      "ranAt": "2026-10-19T19:32:41.569Z",
+      "ms": 55485,
+      "rn-web": {
+        "refused": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Let's try drawing something else! That picture didn't work — try drawing something different! For grown-ups Report this refusal",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 298,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this refusal",
+              "box": {
+                "x": 113,
+                "y": 452,
+                "w": 164,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "refusedShot": {
+          "settled": true,
+          "settleMs": 1611,
+          "frames": 6,
+          "shot": "shots/ai-refusal-rn-web.webp",
+          "digest": "03b115f2c08d61b66a728c2aff57555ccdbe325ecba52e4a3f610f295839a9d8"
+        },
+        "reportOpened": true,
+        "confirm": [
+          "Report this refusal"
+        ],
+        "confirmShot": {
+          "settled": true,
+          "settleMs": 1654,
+          "frames": 6,
+          "shot": "shots/ai-refusal-report-confirm-rn-web.webp",
+          "digest": "360f86c2143288edddfae29340f5a5712e89cc0924ceb95e6802a6161a9d8151"
+        },
+        "cancelled": true,
+        "focusAfterCancel": "Report this refusal",
+        "sent": true,
+        "afterSend": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Let's try drawing something else! That picture didn't work — try drawing something different! For grown-ups Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 298,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work",
+            "Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 422
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 33328,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+        ]
+      },
+      "web-prod": {
+        "refused": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 286,
+            "w": 370,
+            "h": 272
+          },
+          "text": "That didn't work Let's try drawing something else! That picture didn't work — try drawing something different! For grown-ups Report this refusal",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 298,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this refusal",
+              "box": {
+                "x": 113,
+                "y": 452,
+                "w": 164,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "refusedShot": {
+          "settled": true,
+          "settleMs": 1648,
+          "frames": 6,
+          "shot": "shots/ai-refusal-web-prod.webp",
+          "digest": "1bcfeb6d879d9ec734679e5ef6bdb259d7789fd8b1e8a3e6b9e50b6e57330d9d"
+        },
+        "reportOpened": true,
+        "confirm": [
+          "AI Result",
+          "unnamed"
+        ],
+        "confirmShot": {
+          "settled": true,
+          "settleMs": 1874,
+          "frames": 7,
+          "shot": "shots/ai-refusal-report-confirm-web-prod.webp",
+          "digest": "8c558268af2538bb220dce66da194480f178959641c2343dfa85f793dae9f9d4"
+        },
+        "cancelled": true,
+        "focusAfterCancel": "Report this refusal",
+        "sent": true,
+        "afterSend": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 286,
+            "w": 370,
+            "h": 272
+          },
+          "text": "That didn't work Let's try drawing something else! That picture didn't work — try drawing something different! For grown-ups Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 298,
+                "w": 48,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "That didn't work Let's try drawing something else! That picture didn't work — try drawing something different! For grown-ups Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001 Splotch - Drawing for Kids"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 422
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 34915,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+        ]
+      }
+    },
+    "ai-retry-then-success": {
+      "ranAt": "2026-10-19T19:33:37.056Z",
+      "ms": 51060,
+      "rn-web": {
+        "failed": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 265,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 452,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 250,
+                "y": 553,
+                "w": 116,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "failedShot": {
+          "settled": true,
+          "settleMs": 1899,
+          "frames": 7,
+          "shot": "shots/ai-failed-once-rn-web.webp",
+          "digest": "9e19127f0726aa9859e45a059ab4444a31da023172ff00e68bce5fbb4265acb6"
+        },
+        "retried": true,
+        "afterRetry": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        ]
+      },
+      "web-prod": {
+        "failed": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 261,
+            "w": 370,
+            "h": 280
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 273,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 460,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 246,
+                "y": 545,
+                "w": 120,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "failedShot": {
+          "settled": true,
+          "settleMs": 1740,
+          "frames": 6,
+          "shot": "shots/ai-failed-once-web-prod.webp",
+          "digest": "4f37049ac15a9eec588d8e3f3693f4b734e729f0732c7199aef1b263d4713ea5"
+        },
+        "retried": true,
+        "afterRetry": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Your picture is ready Download AI-generated picture · Report Splotch - Drawing for Kids"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "AI image request failed (500): Fixture: generation failed."
+        ]
+      }
+    },
+    "ai-still-not-working": {
+      "ranAt": "2026-10-19T19:35:33.924Z",
+      "ms": 74718,
+      "rn-web": {
+        "first": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 265,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 452,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 250,
+                "y": 553,
+                "w": 116,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "second": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Still not working The picture-maker needs a little rest. Let's keep drawing! Keep drawing Try the wand again in a few minutes. Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 239,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Keep drawing",
+              "box": {
+                "x": 34,
+                "y": 448,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 250,
+                "y": 579,
+                "w": 116,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "10 AI Art choice saved. That didn't work Still not working The picture-maker needs a little rest. Let's keep drawing! Keep drawing Try the wand again in a few minutes. Report a problem"
+        },
+        "secondShot": {
+          "settled": true,
+          "settleMs": 1614,
+          "frames": 6,
+          "shot": "shots/ai-still-not-working-rn-web.webp",
+          "digest": "34facd2566ae7ff90d64d75d494df5b372c09bc6b46e57b6274b758b77ad0398"
+        },
+        "problemReport": true,
+        "problemDialogs": [
+          "Report this problem"
+        ],
+        "problemText": [
+          "Report this problem The error below and your app version go to a grown-up at Splotch in our private support tracker. What will be sent Error: 500 · /api/generate-image Message: Fixture: generation failed. Attempts: 2 in a row App version: 1.6.0 (web) Art style: Sticker Not sent: the drawing, names, accounts, or location. Include device info (helps us reproduce the bug) Cancel Send report"
+        ],
+        "afterReopen": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 265,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 452,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 250,
+                "y": 553,
+                "w": 116,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 5194,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        ]
+      },
+      "web-prod": {
+        "first": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 261,
+            "w": 370,
+            "h": 280
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 273,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 460,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 246,
+                "y": 545,
+                "w": 120,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "second": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 235,
+            "w": 370,
+            "h": 332
+          },
+          "text": "That didn't work Still not working The picture-maker needs a little rest. Let's keep drawing! Keep drawing Try the wand again in a few minutes. Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 247,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Keep drawing",
+              "box": {
+                "x": 34,
+                "y": 456,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 246,
+                "y": 571,
+                "w": 120,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "That didn't work Still not working The picture-maker needs a little rest. Let's keep drawing! Keep drawing Try the wand again in a few minutes. Report a problem Splotch - Drawing for Kids"
+        },
+        "secondShot": {
+          "settled": true,
+          "settleMs": 1655,
+          "frames": 6,
+          "shot": "shots/ai-still-not-working-web-prod.webp",
+          "digest": "f728c878691718513a64af534a5a3e8a421f01b6bf22ec3cdbd7e1092fd38ec3"
+        },
+        "problemReport": true,
+        "problemDialogs": [
+          "AI Result",
+          "unnamed"
+        ],
+        "problemText": [
+          "That didn't work Still not working The picture-maker needs a little rest. Let's keep drawing! Keep drawing Try the wand again in a few minutes. Report this problem The error below and your app version go to a grown-up at Splotch in our private support tracker. What will be sent Error: 500 · /api/generate-image Message: Fixture: generation failed. Attempts: 2 in a row App version: 1.6.0+ef3d1eb20 (",
+          "Report this problem The error below and your app version go to a grown-up at Splotch in our private support tracker. What will be sent Error: 500 · /api/generate-image Message: Fixture: generation failed. Attempts: 2 in a row App version: 1.6.0+ef3d1eb20 (web) Art style: Sticker Not sent: the drawing, names, accounts, or location. Include device info (helps us reproduce the bug) Cancel Send report"
+        ],
+        "afterReopen": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 261,
+            "w": 370,
+            "h": 280
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 273,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 460,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 246,
+                "y": 545,
+                "w": 120,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 5212,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 500
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "AI image request failed (500): Fixture: generation failed.",
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "AI image request failed (500): Fixture: generation failed.",
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        ]
+      }
+    },
+    "ai-timeout": {
+      "ranAt": "2026-10-19T19:36:48.643Z",
+      "ms": 120349,
+      "rn-web": {
+        "marks": {
+          "10s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 727,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 29,
+                "y": 14,
+                "w": 331,
+                "h": 653
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Making your picture…"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "30s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "40s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          }
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1896,
+          "frames": 7,
+          "shot": "shots/ai-timeout-40s-rn-web.webp",
+          "digest": "209a22613395705f9f39b986226584a42fc2197e045091c06250baadad49284f"
+        },
+        "minimized": false,
+        "drewWhileWaiting": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 265,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 452,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 250,
+                "y": 553,
+                "w": 116,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "That didn't work"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "retried": true,
+        "afterRetry": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": "hang"
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "marks": {
+          "10s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 20,
+              "y": 11,
+              "w": 351,
+              "h": 780
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 726,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 36,
+                "y": 27,
+                "w": 318,
+                "h": 628
+              }
+            },
+            "statuses": [
+              "Making your picture…",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "30s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 261,
+              "w": 370,
+              "h": 280
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 273,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 460,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 246,
+                  "y": 545,
+                  "w": 120,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "That didn't work",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "40s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 261,
+              "w": 370,
+              "h": 280
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 273,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 460,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 246,
+                  "y": 545,
+                  "w": 120,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "That didn't work",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          }
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1653,
+          "frames": 6,
+          "shot": "shots/ai-timeout-40s-web-prod.webp",
+          "digest": "4f37049ac15a9eec588d8e3f3693f4b734e729f0732c7199aef1b263d4713ea5"
+        },
+        "minimized": false,
+        "drewWhileWaiting": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 261,
+            "w": 370,
+            "h": 280
+          },
+          "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 273,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Try again",
+              "box": {
+                "x": 34,
+                "y": 460,
+                "w": 322,
+                "h": 56
+              }
+            },
+            {
+              "name": "Report a problem",
+              "box": {
+                "x": 246,
+                "y": 545,
+                "w": 120,
+                "h": 48
+              }
+            }
+          ],
+          "picture": null,
+          "statuses": [
+            "That didn't work",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "retried": true,
+        "afterRetry": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Your picture is ready Download AI-generated picture · Report Splotch - Drawing for Kids"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": "hang"
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "AbortError: signal is aborted without reason\n    at http://127.0.0.1:5400/_app/immutable/chunks/CcwmR15G.js:2:5754"
+        ]
+      }
+    },
+    "ai-throttled-and-malformed": {
+      "429": {
+        "rn-web": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1620,
+            "frames": 6,
+            "shot": "shots/ai-429-rn-web.webp",
+            "digest": "0273e6309b36acf64ed4504ef9f7faa175781900fcd25a440b6fdd6ab6e099cf"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 126,
+                  "y": 636,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 236,
+                  "y": 705,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 107,
+                "w": 352,
+                "h": 527
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 429
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+          ]
+        },
+        "web-prod": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 261,
+              "w": 370,
+              "h": 280
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 273,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 460,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 246,
+                  "y": 545,
+                  "w": 120,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "That didn't work",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1663,
+            "frames": 6,
+            "shot": "shots/ai-429-web-prod.webp",
+            "digest": "4f37049ac15a9eec588d8e3f3693f4b734e729f0732c7199aef1b263d4713ea5"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 101,
+              "w": 370,
+              "h": 599
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 636,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 705,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 26,
+                "y": 117,
+                "w": 338,
+                "h": 507
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Your picture is ready Download AI-generated picture · Report Splotch - Drawing for Kids"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 429
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+            "AI image request throttled (retry after 60s): Fixture: too many requests."
+          ]
+        }
+      },
+      "ranAt": "2026-10-19T19:39:00.041Z",
+      "ms": 251037,
+      "bare-502": {
+        "rn-web": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1905,
+            "frames": 7,
+            "shot": "shots/ai-bare-502-rn-web.webp",
+            "digest": "ccb0632812af765b568b0ed2c1f5ca5f4ae548172b19ca6449bc6b3db0b24e13"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 126,
+                  "y": 636,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 236,
+                  "y": 705,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 107,
+                "w": 352,
+                "h": 527
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 502
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+          ]
+        },
+        "web-prod": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 261,
+              "w": 370,
+              "h": 280
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 273,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 460,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 246,
+                  "y": 545,
+                  "w": 120,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "That didn't work",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1694,
+            "frames": 6,
+            "shot": "shots/ai-bare-502-web-prod.webp",
+            "digest": "4f37049ac15a9eec588d8e3f3693f4b734e729f0732c7199aef1b263d4713ea5"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 101,
+              "w": 370,
+              "h": 599
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 636,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 705,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 26,
+                "y": 117,
+                "w": 338,
+                "h": 507
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Your picture is ready Download AI-generated picture · Report Splotch - Drawing for Kids"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 502
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+            "AI image request failed (502): <html><body>Bad gateway</body></html>"
+          ]
+        }
+      },
+      "malformed-json": {
+        "rn-web": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1916,
+            "frames": 7,
+            "shot": "shots/ai-malformed-json-rn-web.webp",
+            "digest": "0273e6309b36acf64ed4504ef9f7faa175781900fcd25a440b6fdd6ab6e099cf"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 126,
+                  "y": 636,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 236,
+                  "y": 705,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 107,
+                "w": 352,
+                "h": 527
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 21,
+              "w": 370,
+              "h": 758
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 33,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 716,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 785,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 24,
+                "w": 352,
+                "h": 693
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1776,
+            "frames": 7,
+            "shot": "shots/ai-malformed-json-web-prod.webp",
+            "digest": "266db08f3468908a9cbfd6c15b8166876802f226a2038a15294d043aa1e03389"
+          },
+          "retried": false,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 21,
+              "w": 370,
+              "h": 758
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 33,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 716,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 785,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 24,
+                "w": 352,
+                "h": 693
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "wrong-type": {
+        "rn-web": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1866,
+            "frames": 7,
+            "shot": "shots/ai-wrong-type-rn-web.webp",
+            "digest": "209a22613395705f9f39b986226584a42fc2197e045091c06250baadad49284f"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 126,
+                  "y": 636,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 236,
+                  "y": 705,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 107,
+                "w": 352,
+                "h": 527
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 21,
+              "w": 370,
+              "h": 758
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 33,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 716,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 785,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 24,
+                "w": 352,
+                "h": 693
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1796,
+            "frames": 7,
+            "shot": "shots/ai-wrong-type-web-prod.webp",
+            "digest": "266db08f3468908a9cbfd6c15b8166876802f226a2038a15294d043aa1e03389"
+          },
+          "retried": false,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 21,
+              "w": 370,
+              "h": 758
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 33,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 716,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 785,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 24,
+                "w": 352,
+                "h": 693
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "unexpected-fields": {
+        "rn-web": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1892,
+            "frames": 7,
+            "shot": "shots/ai-unexpected-fields-rn-web.webp",
+            "digest": "0273e6309b36acf64ed4504ef9f7faa175781900fcd25a440b6fdd6ab6e099cf"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 126,
+                  "y": 636,
+                  "w": 138,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 236,
+                  "y": 705,
+                  "w": 56,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 19,
+                "y": 107,
+                "w": 352,
+                "h": 527
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Your picture is ready"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 500
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4014,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ]
+        },
+        "web-prod": {
+          "state": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 261,
+              "w": 370,
+              "h": 280
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 273,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 460,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 246,
+                  "y": 545,
+                  "w": 120,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "That didn't work",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          },
+          "shot": {
+            "settled": true,
+            "settleMs": 1711,
+            "frames": 6,
+            "shot": "shots/ai-unexpected-fields-web-prod.webp",
+            "digest": "4f37049ac15a9eec588d8e3f3693f4b734e729f0732c7199aef1b263d4713ea5"
+          },
+          "retried": true,
+          "afterRetry": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 101,
+              "w": 370,
+              "h": 599
+            },
+            "text": "Your picture is ready Download AI-generated picture · Report",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 113,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Download",
+                "box": {
+                  "x": 127,
+                  "y": 636,
+                  "w": 137,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Report this picture",
+                "box": {
+                  "x": 235,
+                  "y": 705,
+                  "w": 58,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 26,
+                "y": 117,
+                "w": 338,
+                "h": 507
+              }
+            },
+            "statuses": [
+              "Your picture is ready",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 9 free left",
+            "polaroid": null,
+            "focus": "Your picture is ready Download AI-generated picture · Report Splotch - Drawing for Kids"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 500
+            },
+            {
+              "request": "POST /api/generate-image",
+              "crossOrigin": false,
+              "origin": "present",
+              "upload": {
+                "contentType": "image/webp",
+                "bytes": 4022,
+                "format": "webp",
+                "width": 780,
+                "height": 1538
+              },
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "AI image request failed (500): Fixture"
+          ]
+        }
+      }
+    },
+    "ai-minimize-and-ready": {
+      "ranAt": "2026-10-19T19:43:11.083Z",
+      "ms": 70140,
+      "rn-web": {
+        "waiting": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+          "controls": [
+            {
+              "name": "Keep drawing while this is made",
+              "box": {
+                "x": 310,
+                "y": 23,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Keep drawing while you wait",
+              "box": {
+                "x": 77,
+                "y": 727,
+                "w": 237,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 29,
+              "y": 14,
+              "w": 331,
+              "h": 653
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Making your picture…"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Keep drawing while this is made"
+        },
+        "minimized": true,
+        "asPolaroid": {
+          "dialogs": [],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved."
+          ],
+          "wand": null,
+          "polaroid": "Your picture is being made — tap to watch",
+          "focus": "10 AI Art choice saved."
+        },
+        "polaroidShot": {
+          "settled": false,
+          "settleMs": 10061,
+          "frames": 30,
+          "shot": "shots/ai-polaroid-waiting-rn-web.webp",
+          "digest": "fe6d5d94aacb07b9f07db6e66c35844dff55259b878520c3d234b84d32cc17ac"
+        },
+        "ready": {
+          "dialogs": [],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved."
+          ],
+          "wand": null,
+          "polaroid": "Your picture is ready — tap to see it",
+          "focus": "Ready! 9 AI Art choice saved."
+        },
+        "readyShot": {
+          "settled": true,
+          "settleMs": 1731,
+          "frames": 6,
+          "shot": "shots/ai-polaroid-ready-rn-web.webp",
+          "digest": "a6dd115fb9c2855374827fb50292b7f0d09442657287a64e8e884ec32f480534"
+        },
+        "reopened": true,
+        "restored": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "waiting": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 20,
+            "y": 11,
+            "w": 351,
+            "h": 780
+          },
+          "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+          "controls": [
+            {
+              "name": "Keep drawing while this is made",
+              "box": {
+                "x": 310,
+                "y": 23,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Keep drawing while you wait",
+              "box": {
+                "x": 77,
+                "y": 726,
+                "w": 237,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 36,
+              "y": 27,
+              "w": 318,
+              "h": 628
+            }
+          },
+          "statuses": [
+            "Making your picture…",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "Keep drawing while this is made"
+        },
+        "minimized": true,
+        "asPolaroid": {
+          "dialogs": [],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": null,
+          "polaroid": "Your picture is being made — tap to watch",
+          "focus": "Show the picture being made"
+        },
+        "polaroidShot": {
+          "settled": false,
+          "settleMs": 10321,
+          "frames": 30,
+          "shot": "shots/ai-polaroid-waiting-web-prod.webp",
+          "digest": "bef29aff5cca325e7c71b1c065ab43525cba79df628577665bc9028d58404998"
+        },
+        "ready": {
+          "dialogs": [],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": null,
+          "polaroid": "Your picture is ready — tap to see it",
+          "focus": "Show your finished picture"
+        },
+        "readyShot": {
+          "settled": true,
+          "settleMs": 1797,
+          "frames": 6,
+          "shot": "shots/ai-polaroid-ready-web-prod.webp",
+          "digest": "e9c856c9a2a87233d19b43a4dd7c4013fd737f38a0045cfcacbdaaea87bea8c5"
+        },
+        "reopened": true,
+        "restored": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-picture-report": {
+      "ranAt": "2026-10-19T19:46:35.175Z",
+      "ms": 57162,
+      "rn-web": {
+        "confirm": [
+          "Report this picture"
+        ],
+        "confirmText": "Report this picture The AI picture, drawing behind it, selected art style, and exact instruction sent to the AI go to a grown-up at Splotch. We look within 24 hours, and the report is deleted after 30 days. The AI picture The drawing behind it Cancel Send report",
+        "confirmShot": {
+          "settled": true,
+          "settleMs": 1710,
+          "frames": 6,
+          "shot": "shots/ai-report-confirm-rn-web.webp",
+          "digest": "d530d17f47c28a402a8c3b09e46d4dfc3003cc6031a6c1e9260e06e3cf8ff4c5"
+        },
+        "afterCancel": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Report this picture"
+        },
+        "afterSend": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 70,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 593,
+                "w": 138,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 63,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready",
+            "Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Close"
+        },
+        "sentShot": {
+          "settled": true,
+          "settleMs": 1931,
+          "frames": 6,
+          "shot": "shots/ai-report-sent-rn-web.webp",
+          "digest": "3df1a8f0b460a576a134c9d258ead285a8ec1b963b2a7a9c5be931149169f8c0"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 145799,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "output:image/jpeg",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "confirm": [
+          "AI Result",
+          "unnamed"
+        ],
+        "confirmText": "Report this picture The AI picture, drawing behind it, selected art style, and exact instruction sent to the AI go to a grown-up at Splotch. We look within 24 hours, and the report is deleted after 30 days. The AI picture The drawing behind it Cancel Send report",
+        "confirmShot": {
+          "settled": true,
+          "settleMs": 1930,
+          "frames": 7,
+          "shot": "shots/ai-report-confirm-web-prod.webp",
+          "digest": "9974fb831716c49226d0d2c2b9af079942780cc1bd26bd88ecbcbcb6d415690b"
+        },
+        "afterCancel": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Report this picture"
+        },
+        "afterSend": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 58,
+            "w": 370,
+            "h": 686
+          },
+          "text": "Your picture is ready Download Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 70,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 593,
+                "w": 137,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 74,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Your picture is ready Download Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: 17-00000000-0000-0000-0000-000000000001 Splotch - Drawing for Kids"
+        },
+        "sentShot": {
+          "settled": true,
+          "settleMs": 1810,
+          "frames": 6,
+          "shot": "shots/ai-report-sent-web-prod.webp",
+          "digest": "de1c71cd11e1102538ac7cf246cda88b8b34d4e6faf70998223dd0939687069d"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 147408,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "output:image/jpeg",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-report-rejected-then-retry": {
+      "ranAt": "2026-10-19T19:47:32.344Z",
+      "ms": 55076,
+      "rn-web": {
+        "rejected": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "text": "Your picture is ready Download Fixture: report failed. Try again"
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1860,
+          "frames": 6,
+          "shot": "shots/ai-report-rejected-rn-web.webp",
+          "digest": "bb9cf38fbab8df3d861b8da8f5d7154be2af0f43abf9ec89026a0cf71c03787f"
+        },
+        "retried": true,
+        "after": {
+          "dialogs": [
+            "Report this picture"
+          ],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Cancel"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 145799,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "output:image/jpeg",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": 500
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        ]
+      },
+      "web-prod": {
+        "rejected": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "text": "Your picture is ready Download Fixture: report failed. Try again"
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1837,
+          "frames": 6,
+          "shot": "shots/ai-report-rejected-web-prod.webp",
+          "digest": "b79522be9b693442f2bc57f881026869902b04db0de9fc1cec9750fd4defbe85"
+        },
+        "retried": true,
+        "after": {
+          "dialogs": [
+            "AI Result",
+            "unnamed"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download Report this picture The AI picture, drawing behind it, selected art style, and exact instruction sent to the AI go to a grown-up at Splotch. We look within 24 hours, and the report is deleted after 30 days. The AI picture The drawing behind it Cancel Send report AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Cancel",
+              "box": {
+                "x": 51,
+                "y": 563,
+                "w": 140,
+                "h": 48
+              }
+            },
+            {
+              "name": "Send report",
+              "box": {
+                "x": 199,
+                "y": 563,
+                "w": 140,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Cancel"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 147408,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "output:image/jpeg",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": 500
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        ]
+      }
+    },
+    "ai-settings-deep-link": {
+      "ranAt": "2026-10-19T19:48:27.425Z",
+      "ms": 47010,
+      "iphone": {
+        "rn-web": {
+          "wandLabel": "Set up AI image",
+          "dialogs": [
+            "Settings"
+          ],
+          "settingsText": "AI Art Create AI Images A finished drawing can now be turned into an AI picture based on it. Your 10 free AI creations are used up. Add your own OpenAI API key to keep creating. Your key is saved only on this device, used only for pictures made here, and billed to your OpenAI account. We never keep ",
+          "keyFieldVisible": true,
+          "shot": {
+            "settled": true,
+            "settleMs": 1636,
+            "frames": 6,
+            "shot": "shots/ai-deep-link-iphone-rn-web.webp",
+            "digest": "c82fe35697559998a2d862b64621f80cd4ce27a735f8adfa670eabf9a9d39ea1"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "wandLabel": "Set up AI image",
+          "dialogs": [
+            "Settings"
+          ],
+          "settingsText": "AI Art Create AI Images A finished drawing can now be turned into an AI picture based on it. Your 10 free AI creations are used up. Add your own OpenAI API key to keep creating. Your key is saved only on this device, used only for pictures made here, and billed to your OpenAI account. We never keep ",
+          "keyFieldVisible": true,
+          "shot": {
+            "settled": true,
+            "settleMs": 1851,
+            "frames": 7,
+            "shot": "shots/ai-deep-link-iphone-web-prod.webp",
+            "digest": "d21201f001a73adb5e4cddc35584f3fb18efbd62452735e835be8eaa128fa9e8"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "wandLabel": "Set up AI image",
+          "dialogs": [
+            "Settings"
+          ],
+          "settingsText": "Settings Appearance Sound Tool Drawer Accessibility Coloring AI Art Saving Parent Center Install Feedback What's New About Appearance Theme Light Dark System Button style Raised Flat Sound Sound Volume 50% WHAT MAKES SOUND Drawing Deleting Tool Drawer Enable tool drawer Shows the brushes, stroke wid",
+          "keyFieldVisible": true,
+          "shot": {
+            "settled": true,
+            "settleMs": 1830,
+            "frames": 5,
+            "shot": "shots/ai-deep-link-desktop-rn-web.webp",
+            "digest": "ce6f84193257c443923cb4e569ecc1480029a34074af61b1d770857f281f9ab9"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            },
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": true,
+              "origin": "present",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "wandLabel": "Set up AI image",
+          "dialogs": [
+            "Settings"
+          ],
+          "settingsText": "Settings Appearance Sound Tool Drawer Accessibility Coloring AI Art Saving Parent Center Install Feedback What's New About Appearance Theme Light Dark System Button style Raised Flat Sound Sound Volume 50% WHAT MAKES SOUND Drawing Deleting Tool Drawer Enable tool drawer Shows the brushes, stroke wid",
+          "keyFieldVisible": true,
+          "shot": {
+            "settled": true,
+            "settleMs": 2079,
+            "frames": 6,
+            "shot": "shots/ai-deep-link-desktop-web-prod.webp",
+            "digest": "ec911056bccfeea4bb0be6f644dd3fc642a602330e8ab84de04ba5ae11d8d3b2"
+          },
+          "requests": [
+            {
+              "request": "GET /api/free-generation-grant",
+              "crossOrigin": false,
+              "origin": "absent",
+              "upload": null,
+              "credential": [
+                "x-installation-id"
+              ],
+              "reply": 200
+            }
+          ],
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "ai-offline-button": {
+      "ranAt": "2026-10-19T19:49:14.440Z",
+      "ms": 33926,
+      "rn-web": {
+        "online": "Create AI image, 10 free left",
+        "offline": null,
+        "offlineShot": {
+          "settled": true,
+          "settleMs": 1726,
+          "frames": 6,
+          "shot": "shots/ai-offline-drawer-rn-web.webp",
+          "digest": "9eb00bb73fc4fc743ab6038ad9869bebddcd2600f9c18299b42924be03bc50af"
+        },
+        "onlineShot": {
+          "settled": true,
+          "settleMs": 1738,
+          "frames": 6,
+          "shot": "shots/ai-online-drawer-rn-web.webp",
+          "digest": "c9a16db625396e2ab2cc649e3c61dae639e16dba932fa4fae03fabc5b1c64ac9"
+        },
+        "back": "Create AI image, 10 free left",
+        "grantsAfterReconnect": 1,
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+        ]
+      },
+      "web-prod": {
+        "online": "Create AI image, 10 free left",
+        "offline": null,
+        "offlineShot": {
+          "settled": true,
+          "settleMs": 1742,
+          "frames": 6,
+          "shot": "shots/ai-offline-drawer-web-prod.webp",
+          "digest": "86f6f2cfedffcbb57d0250a5f9805b3b22fe5c748ee5d12b0da104fa41971192"
+        },
+        "onlineShot": {
+          "settled": true,
+          "settleMs": 1741,
+          "frames": 6,
+          "shot": "shots/ai-online-drawer-web-prod.webp",
+          "digest": "5a6dcdc014e4395ac1d3e1d60737ccd09589e8e0b6c362781dc98a3094f62558"
+        },
+        "back": "Create AI image, 10 free left",
+        "grantsAfterReconnect": 0,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-offline-first-paint": {
+      "ranAt": "2026-10-19T19:49:48.374Z",
+      "ms": 51828,
+      "rn-web": {
+        "wandOfflineAfterReload": null,
+        "shot": {
+          "settled": true,
+          "settleMs": 1677,
+          "frames": 7,
+          "shot": "shots/ai-offline-first-paint-rn-web.webp",
+          "digest": "6875c853a25d412542352660e5524ac47bb7e76eefac8726cfe9c525f4eee782"
+        },
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+          "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+        ]
+      },
+      "web-prod": {
+        "wandOfflineAfterReload": null,
+        "shot": {
+          "settled": true,
+          "settleMs": 1655,
+          "frames": 7,
+          "shot": "shots/ai-offline-first-paint-web-prod.webp",
+          "digest": "6875c853a25d412542352660e5524ac47bb7e76eefac8726cfe9c525f4eee782"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-grant-retry-on-return": {
+      "ranAt": "2026-10-19T19:50:40.205Z",
+      "ms": 22634,
+      "rn-web": {
+        "failed": "AI image unavailable",
+        "recovered": "Create AI image, 10 free left",
+        "grants": [
+          503,
+          200
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        ]
+      },
+      "web-prod": {
+        "failed": "AI image unavailable",
+        "recovered": "Create AI image, 10 free left",
+        "grants": [
+          503,
+          200
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        ]
+      }
+    },
+    "ai-download-and-auto-save": {
+      "ranAt": "2026-10-19T19:51:22.034Z",
+      "ms": 42538,
+      "rn-web": {
+        "autoSaved": [
+          "splotch-ai-####-##-##_##-##-##.jpg",
+          "splotch-####-##-##_##-##-##.png"
+        ],
+        "footer": "Your picture is ready ✓ Downloaded AI-generated picture · Report",
+        "afterDownload": [],
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 9860,
+              "format": "webp",
+              "width": 2392,
+              "height": 1600
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "autoSaved": [
+          "splotch-ai-####-##-##_##-##-##.jpg",
+          "splotch-####-##-##_##-##-##.png"
+        ],
+        "footer": "Your picture is ready ✓ Downloaded AI-generated picture · Report",
+        "afterDownload": [],
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 9886,
+              "format": "webp",
+              "width": 2392,
+              "height": 1600
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-layout": {
+      "ranAt": "2026-10-19T19:52:04.577Z",
+      "ms": 114263,
+      "phone-light": {
+        "rn-web": {
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1904,
+            "frames": 6,
+            "shot": "shots/ai-layout-phone-light-rn-web.webp",
+            "digest": "db65804c61d94a5dbb7ac8166db8a7dd70626d707a049e21f3e4e73f6abadb48"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1904,
+            "frames": 6,
+            "shot": "shots/ai-layout-phone-light-web-prod.webp",
+            "digest": "ebf92ebf0d9e97078bcdba93f57f1140d2d933c8330a8e47d5ef3a716a78b405"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "phone-dark": {
+        "rn-web": {
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1880,
+            "frames": 6,
+            "shot": "shots/ai-layout-phone-dark-rn-web.webp",
+            "digest": "0b980440f5b44e646f9a032e8c31cf8ecc8e53467579947709261aa17740d075"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1829,
+            "frames": 6,
+            "shot": "shots/ai-layout-phone-dark-web-prod.webp",
+            "digest": "426c476add3b2e80d11a858d2d450110e6af5918d6772cfc9fd979d4857399a9"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "landscape": {
+        "rn-web": {
+          "error": "No Settings row named AI Art",
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "error": "No Settings row named AI Art",
+          "external": [],
+          "consoleErrors": []
+        }
+      },
+      "desktop": {
+        "rn-web": {
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 1280,
+            "h": 800
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 194,
+              "y": 72,
+              "w": 893,
+              "h": 595
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 1025,
+                "y": 80,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 571,
+                "y": 668,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 681,
+                "y": 737,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 1919,
+            "frames": 5,
+            "shot": "shots/ai-layout-desktop-rn-web.webp",
+            "digest": "4008ddca7b207c7ebd3dee86f624bab81817f3a5baa93671911de3320427c69d"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "card": {
+            "x": 195,
+            "y": 68,
+            "w": 890,
+            "h": 664
+          },
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 211,
+              "y": 84,
+              "w": 858,
+              "h": 572
+            }
+          },
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 1025,
+                "y": 80,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 572,
+                "y": 668,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 680,
+                "y": 737,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "shot": {
+            "settled": true,
+            "settleMs": 2055,
+            "frames": 5,
+            "shot": "shots/ai-layout-desktop-web-prod.webp",
+            "digest": "11165ec9ccc5f41a66b873c188c5e63c67177e569bbd773d091405142ff4e4af"
+          },
+          "external": [],
+          "consoleErrors": []
+        }
+      }
+    },
+    "ai-install-banner-suppression": {
+      "ranAt": "2026-10-19T19:53:58.847Z",
+      "ms": 60377,
+      "rn-web": {
+        "bannerBefore": true,
+        "whileMinimized": {
+          "banner": true,
+          "polaroid": "Your picture is being made — tap to watch"
+        },
+        "shot": {
+          "settled": false,
+          "settleMs": 10322,
+          "frames": 31,
+          "shot": "shots/ai-banner-minimized-rn-web.webp",
+          "digest": "338016932c2fa48af9a0b00abf00f6b33fa41c8f1268357d80ed4aab4f546ab3"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "bannerBefore": true,
+        "whileMinimized": {
+          "banner": false,
+          "polaroid": "Your picture is being made — tap to watch"
+        },
+        "shot": {
+          "settled": false,
+          "settleMs": 10241,
+          "frames": 30,
+          "shot": "shots/ai-banner-minimized-web-prod.webp",
+          "digest": "f1c390eb01fae1de805de72a34626ca14ee297014e1b557cbf6ebf6809cb6d2f"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-focus-after-close": {
+      "ranAt": "2026-10-19T20:00:49.133Z",
+      "ms": 55062,
+      "rn-web": {
+        "drawerOpen": "body 9",
+        "drawerFolded": "body",
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "drawerOpen": "button Create AI image, 9 free left",
+        "drawerFolded": "button Expand controls",
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-result-pixels": {
+      "ranAt": "2026-10-19T19:58:16.405Z",
+      "ms": 72619,
+      "iphone": {
+        "rn-web": {
+          "shot": {
+            "settled": true,
+            "settleMs": 1954,
+            "frames": 6,
+            "shot": "shots/ai-result-pixels-iphone-rn-web.webp",
+            "digest": "4eb89378cc8f3d8f54e453d95139b47d96abdd22933dcf06275726e7f13187d3"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "shot": {
+            "settled": true,
+            "settleMs": 1858,
+            "frames": 6,
+            "shot": "shots/ai-result-pixels-iphone-web-prod.webp",
+            "digest": "ebf92ebf0d9e97078bcdba93f57f1140d2d933c8330a8e47d5ef3a716a78b405"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "clip": {
+          "left": 24,
+          "top": 115,
+          "width": 342,
+          "height": 512
+        },
+        "differingPercent": 0.9,
+        "meanAbsDelta": 3.02
+      },
+      "desktop": {
+        "rn-web": {
+          "shot": {
+            "settled": true,
+            "settleMs": 1937,
+            "frames": 5,
+            "shot": "shots/ai-result-pixels-desktop-rn-web.webp",
+            "digest": "d50ca8f1888ebe036550452cd028e693a60b9c4a0f88910c286abfcadd426129"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "web-prod": {
+          "shot": {
+            "settled": true,
+            "settleMs": 2056,
+            "frames": 5,
+            "shot": "shots/ai-result-pixels-desktop-web-prod.webp",
+            "digest": "11165ec9ccc5f41a66b873c188c5e63c67177e569bbd773d091405142ff4e4af"
+          },
+          "external": [],
+          "consoleErrors": []
+        },
+        "clip": {
+          "left": 215,
+          "top": 88,
+          "width": 850,
+          "height": 564
+        },
+        "differingPercent": 0,
+        "meanAbsDelta": 0.67
+      }
+    },
+    "ai-originals-storage": {
+      "ranAt": "2026-10-19T20:01:59.706Z",
+      "ms": 49404,
+      "rn-web": {
+        "before": {
+          "usage": 4046,
+          "localStorageBytes": 827,
+          "databases": [
+            "splotch-beta-ai-vault-v1",
+            "splotch-beta-offline-library-v1",
+            "splotch-candidate-unsaved-pictures"
+          ]
+        },
+        "after": {
+          "usage": 313345,
+          "localStorageBytes": 903,
+          "databases": [
+            "splotch-beta-ai-jobs-v1",
+            "splotch-beta-ai-vault-v1",
+            "splotch-beta-offline-library-v1",
+            "splotch-candidate-unsaved-pictures"
+          ]
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "before": {
+          "usage": 1028,
+          "localStorageBytes": 351,
+          "databases": [
+            "splotch-secure"
+          ]
+        },
+        "after": {
+          "usage": 1028,
+          "localStorageBytes": 373,
+          "databases": [
+            "splotch-secure"
+          ]
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-attempt-33": {
+      "ranAt": "2026-10-19T20:02:49.113Z",
+      "ms": 293690,
+      "rn-web": {
+        "posts": 33,
+        "readyCount": 33,
+        "last": [
+          {
+            "attempt": 31,
+            "label": "Create AI image, 9 free left",
+            "ready": true
+          },
+          {
+            "attempt": 32,
+            "label": "Create AI image, 9 free left",
+            "ready": true
+          },
+          {
+            "attempt": 33,
+            "label": "Create AI image, 9 free left",
+            "ready": true
+          }
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1803,
+          "frames": 6,
+          "shot": "shots/ai-attempt-33-rn-web.webp",
+          "digest": "df9af6f8a1fc741b273e436036e4a180bb54c5684a7c7857449b654e7fa15d7a"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "posts": 33,
+        "readyCount": 33,
+        "last": [
+          {
+            "attempt": 31,
+            "label": "Create AI image, 9 free left",
+            "ready": true
+          },
+          {
+            "attempt": 32,
+            "label": "Create AI image, 9 free left",
+            "ready": true
+          },
+          {
+            "attempt": 33,
+            "label": "Create AI image, 9 free left",
+            "ready": true
+          }
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1793,
+          "frames": 6,
+          "shot": "shots/ai-attempt-33-web-prod.webp",
+          "digest": "ff9a32fa37aaf05ed2040ff846b814287f3854287a8dcc9778f42341baccebd6"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    }
+  },
+  "browser": "chromium 141.0.7390.37 (headless)"
+}

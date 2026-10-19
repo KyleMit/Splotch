@@ -1,0 +1,541 @@
+{
+  "cells": {
+    "ai-poll-past-240s": {
+      "ranAt": "2026-10-19T19:56:17.371Z",
+      "ms": 559181,
+      "rn-web": {
+        "marks": {
+          "60s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 727,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 29,
+                "y": 14,
+                "w": 331,
+                "h": 653
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Making your picture…"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "230s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 727,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 29,
+                "y": 14,
+                "w": 331,
+                "h": 653
+              }
+            },
+            "statuses": [
+              "AI Art choice saved.",
+              "Making your picture…"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "260s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 0,
+              "y": 0,
+              "w": 390,
+              "h": 844
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 265,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 452,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 250,
+                  "y": 553,
+                  "w": 116,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "AI Art choice saved.",
+              "That didn't work"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          }
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1927,
+          "frames": 7,
+          "shot": "shots/ai-poll-260s-rn-web.webp",
+          "digest": "7b826627903b893ccaa5c65791876d79176eda11f1611571c19d88786b8787df"
+        },
+        "polls": 79,
+        "retried": true,
+        "afterRetry": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 0,
+            "y": 0,
+            "w": 390,
+            "h": 844
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 126,
+                "y": 636,
+                "w": 138,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 236,
+                "y": 705,
+                "w": 56,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 19,
+              "y": 107,
+              "w": 352,
+              "h": 527
+            }
+          },
+          "statuses": [
+            "AI Art choice saved.",
+            "Your picture is ready"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "9 AI Art choice saved. Your picture is ready Download AI-generated picture · Report"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 202
+          },
+          {
+            "request": "GET /api/generation-result",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 202
+          },
+          {
+            "request": "GET /api/generation-result",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 202
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "marks": {
+          "60s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 20,
+              "y": 11,
+              "w": 351,
+              "h": 780
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 726,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 36,
+                "y": 27,
+                "w": 318,
+                "h": 628
+              }
+            },
+            "statuses": [
+              "Making your picture…",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "230s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 20,
+              "y": 11,
+              "w": 351,
+              "h": 780
+            },
+            "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait",
+            "controls": [
+              {
+                "name": "Keep drawing while this is made",
+                "box": {
+                  "x": 310,
+                  "y": 23,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Keep drawing while you wait",
+                "box": {
+                  "x": 77,
+                  "y": 726,
+                  "w": 237,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": {
+              "decoded": true,
+              "box": {
+                "x": 36,
+                "y": 27,
+                "w": 318,
+                "h": 628
+              }
+            },
+            "statuses": [
+              "Making your picture…",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Keep drawing while this is made"
+          },
+          "260s": {
+            "dialogs": [
+              "AI Result"
+            ],
+            "card": {
+              "x": 10,
+              "y": 261,
+              "w": 370,
+              "h": 280
+            },
+            "text": "That didn't work Hmm, that didn't work Let's give it one more go. Try again Report a problem",
+            "controls": [
+              {
+                "name": "Close",
+                "box": {
+                  "x": 320,
+                  "y": 273,
+                  "w": 48,
+                  "h": 48
+                }
+              },
+              {
+                "name": "Try again",
+                "box": {
+                  "x": 34,
+                  "y": 460,
+                  "w": 322,
+                  "h": 56
+                }
+              },
+              {
+                "name": "Report a problem",
+                "box": {
+                  "x": 246,
+                  "y": 545,
+                  "w": 120,
+                  "h": 48
+                }
+              }
+            ],
+            "picture": null,
+            "statuses": [
+              "That didn't work",
+              "Splotch - Drawing for Kids"
+            ],
+            "wand": "Create AI image, 10 free left",
+            "polaroid": null,
+            "focus": "Close"
+          }
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1707,
+          "frames": 6,
+          "shot": "shots/ai-poll-260s-web-prod.webp",
+          "digest": "4f37049ac15a9eec588d8e3f3693f4b734e729f0732c7199aef1b263d4713ea5"
+        },
+        "polls": 79,
+        "retried": true,
+        "afterRetry": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "card": {
+            "x": 10,
+            "y": 101,
+            "w": 370,
+            "h": 599
+          },
+          "text": "Your picture is ready Download AI-generated picture · Report",
+          "controls": [
+            {
+              "name": "Close",
+              "box": {
+                "x": 320,
+                "y": 113,
+                "w": 48,
+                "h": 48
+              }
+            },
+            {
+              "name": "Download",
+              "box": {
+                "x": 127,
+                "y": 636,
+                "w": 137,
+                "h": 48
+              }
+            },
+            {
+              "name": "Report this picture",
+              "box": {
+                "x": 235,
+                "y": 705,
+                "w": 58,
+                "h": 48
+              }
+            }
+          ],
+          "picture": {
+            "decoded": true,
+            "box": {
+              "x": 26,
+              "y": 117,
+              "w": 338,
+              "h": 507
+            }
+          },
+          "statuses": [
+            "Your picture is ready",
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Create AI image, 9 free left",
+          "polaroid": null,
+          "focus": "Your picture is ready Download AI-generated picture · Report Splotch - Drawing for Kids"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 202
+          },
+          {
+            "request": "GET /api/generation-result",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 202
+          },
+          {
+            "request": "GET /api/generation-result",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 202
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "AI image request failed (504): The creation did not arrive in time"
+        ]
+      }
+    }
+  },
+  "browser": "chromium 141.0.7390.37 (headless)"
+}

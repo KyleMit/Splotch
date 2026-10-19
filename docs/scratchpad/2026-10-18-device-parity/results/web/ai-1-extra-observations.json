@@ -1,0 +1,495 @@
+{
+  "cells": {
+    "ai-badge-before-grant": {
+      "ranAt": "2026-10-19T20:04:35.684Z",
+      "ms": 28402,
+      "rn-web": {
+        "firstLaunch": "Create AI image, 7 free left",
+        "beforeGrant": "Checking AI image availability",
+        "shot": {
+          "settled": true,
+          "settleMs": 1773,
+          "frames": 6,
+          "shot": "shots/ai-badge-before-grant-rn-web.webp",
+          "digest": "18e00500174d2cd06af69a9adb9c50285d5d4a6e290093d0f0933ac8b72c5423"
+        },
+        "afterGrant": "Create AI image, 7 free left",
+        "grants": 2,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "firstLaunch": "Create AI image, 7 free left",
+        "beforeGrant": "Checking AI image availability",
+        "shot": {
+          "settled": true,
+          "settleMs": 1729,
+          "frames": 6,
+          "shot": "shots/ai-badge-before-grant-web-prod.webp",
+          "digest": "6561139666584e5130555e5b47891707f2250558fc35cf26eb244b69b0af218d"
+        },
+        "afterGrant": "Create AI image, 7 free left",
+        "grants": 2,
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-reload-mid-run": {
+      "ranAt": "2026-10-19T20:05:04.087Z",
+      "ms": 101843,
+      "rn-web": {
+        "running": [
+          "AI Result"
+        ],
+        "afterReload": {
+          "dialogs": [],
+          "polaroid": null
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1729,
+          "frames": 6,
+          "shot": "shots/ai-reload-mid-run-rn-web.webp",
+          "digest": "18e00500174d2cd06af69a9adb9c50285d5d4a6e290093d0f0933ac8b72c5423"
+        },
+        "nextTap": {
+          "dialogs": [],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "Pick a color and draw."
+          ],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "body 10 Pick a color and draw."
+        },
+        "posts": 1,
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "running": [
+          "AI Result"
+        ],
+        "afterReload": {
+          "dialogs": [],
+          "polaroid": null
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1764,
+          "frames": 6,
+          "shot": "shots/ai-reload-mid-run-web-prod.webp",
+          "digest": "5f348c44e0830c5111042b65602f7e493980dd39f8c2a3806c5e5f15fee7b9fb"
+        },
+        "nextTap": {
+          "dialogs": [],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "body"
+        },
+        "posts": 1,
+        "external": [],
+        "consoleErrors": [
+          "TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:5400/_app/immutable/chunks/WY_gSIeX.js:1:1411)\n    at Q (http://127.0.0.1:5400/_app/immutable/chunks/CcwmR15G.js:2:5778)"
+        ]
+      }
+    },
+    "ai-exhausted-mid-run": {
+      "ranAt": "2026-10-19T20:06:45.935Z",
+      "ms": 37267,
+      "rn-web": {
+        "state": {
+          "dialogs": [
+            "Settings"
+          ],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [],
+          "wand": "Create AI image, 10 free left",
+          "polaroid": null,
+          "focus": "h2 AI Art"
+        },
+        "settingsText": [
+          "AI Art Create AI Images A finished drawing can now be turned into an AI picture based on it. 10 free AI creations left. No setup is needed. After those are used, add your own OpenAI API key to keep cr"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1636,
+          "frames": 6,
+          "shot": "shots/ai-exhausted-mid-run-rn-web.webp",
+          "digest": "e0f5a18a34dadf7aa6ec35c3ec1afe2f3cd6394b3a032183b484e224181b0b65"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 403
+          },
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+        ]
+      },
+      "web-prod": {
+        "state": {
+          "dialogs": [
+            "Settings"
+          ],
+          "card": null,
+          "text": null,
+          "controls": [],
+          "picture": null,
+          "statuses": [
+            "Splotch - Drawing for Kids"
+          ],
+          "wand": "Set up AI image",
+          "polaroid": null,
+          "focus": "button Back"
+        },
+        "settingsText": [
+          "AI Art Create AI Images A finished drawing can now be turned into an AI picture based on it. Your 10 free AI creations are used up. Add your own OpenAI API key to keep creating. Your key is saved only"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1879,
+          "frames": 7,
+          "shot": "shots/ai-exhausted-mid-run-web-prod.webp",
+          "digest": "b6dbf86cb36dc9243c55e0b9142422486311cf2bf928af4ca9ebbfceb3a9a288"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 403
+          }
+        ],
+        "external": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+        ]
+      }
+    },
+    "ai-drawer-button": {
+      "ranAt": "2026-10-19T20:07:23.204Z",
+      "ms": 24389,
+      "rn-web": {
+        "withoutAi": [
+          "Brushes@8,786",
+          "Stroke width@8,724",
+          "Coloring books@8,662",
+          "Save screenshot@8,600",
+          "Undo@8,538",
+          "Collapse controls@9,486"
+        ],
+        "closedDrawerWand": null,
+        "withAi": [
+          "Brushes@8,786",
+          "Stroke width@8,724",
+          "Coloring books@8,662",
+          "Save screenshot@8,600",
+          "Create AI image, 10 free left@8,538",
+          "Undo@8,476",
+          "Collapse controls@9,424"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1769,
+          "frames": 6,
+          "shot": "shots/ai-drawer-button-rn-web.webp",
+          "digest": "c593f92e11a8877c668aff6e889021c87493c2a8d68f4dba1c2bf9a852023c09"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "withoutAi": [
+          "Brushes@8,786",
+          "Stroke width@8,724",
+          "Coloring books@8,662",
+          "Save screenshot@8,600",
+          "Undo@8,538",
+          "Collapse controls@9,486"
+        ],
+        "closedDrawerWand": "Create AI image, 10 free left",
+        "withAi": [
+          "Brushes@8,786",
+          "Stroke width@8,724",
+          "Coloring books@8,662",
+          "Save screenshot@8,600",
+          "Create AI image, 10 free left@8,538",
+          "Undo@8,476",
+          "Collapse controls@9,424"
+        ],
+        "shot": {
+          "settled": true,
+          "settleMs": 1780,
+          "frames": 6,
+          "shot": "shots/ai-drawer-button-web-prod.webp",
+          "digest": "5f348c44e0830c5111042b65602f7e493980dd39f8c2a3806c5e5f15fee7b9fb"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-polaroid-mid-run": {
+      "ranAt": "2026-10-19T20:07:47.594Z",
+      "ms": 55221,
+      "rn-web": {
+        "reopened": true,
+        "state": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait"
+        },
+        "shot": {
+          "settled": false,
+          "settleMs": 10000,
+          "frames": 30,
+          "shot": "shots/ai-polaroid-mid-run-rn-web.webp",
+          "digest": "124866fdb9119f8ce98d1cc30a662ae8faf3fe58de32473e66fd6af25f786405"
+        },
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "reopened": true,
+        "state": {
+          "dialogs": [
+            "AI Result"
+          ],
+          "text": "Making your picture… Making your picture… This takes about 30 seconds Keep drawing while you wait"
+        },
+        "shot": {
+          "settled": false,
+          "settleMs": 10168,
+          "frames": 30,
+          "shot": "shots/ai-polaroid-mid-run-web-prod.webp",
+          "digest": "11abc81c797a3a0b85a6450078a79d235062c9d570f7d2343c6b4f4c36acd783"
+        },
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-legacy-plaintext-credentials": {
+      "ranAt": "2026-10-19T20:08:42.816Z",
+      "ms": 9635,
+      "rn-web": {
+        "remaining": [
+          "splotch-ai-user-api-key",
+          "splotch-ai-access-token"
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "remaining": [],
+        "external": [],
+        "consoleErrors": []
+      }
+    },
+    "ai-report-hangs": {
+      "ranAt": "2026-10-19T20:11:36.794Z",
+      "ms": 130635,
+      "rn-web": {
+        "marks": {
+          "10s": [
+            "nt to the AI go to a grown-up at Splotch. We look within 24 hours, and the report is deleted after 30 days. The AI picture The drawing behind it Cancel Sending…"
+          ],
+          "45s": [
+            "Your picture is ready Download That's taking too long — please try again. Try again"
+          ]
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1824,
+          "frames": 6,
+          "shot": "shots/ai-report-hangs-rn-web.webp",
+          "digest": "977863d70b0c6c292067ee0a856ab71883fc62e167a743312089bbb35dd7bd51"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4014,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": true,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 145792,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "output:image/jpeg",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": "hang"
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      },
+      "web-prod": {
+        "marks": {
+          "10s": [
+            "at Splotch. We look within 24 hours, and the report is deleted after 30 days. The AI picture The drawing behind it Cancel Sending… AI-generated picture · Report",
+            "nt to the AI go to a grown-up at Splotch. We look within 24 hours, and the report is deleted after 30 days. The AI picture The drawing behind it Cancel Sending…"
+          ],
+          "45s": [
+            "Your picture is ready Download That's taking too long — please try again. Try again"
+          ]
+        },
+        "shot": {
+          "settled": true,
+          "settleMs": 1845,
+          "frames": 6,
+          "shot": "shots/ai-report-hangs-web-prod.webp",
+          "digest": "df6a00f3cba6bc7a5d2a6dff7096a87a877732e9c9aedfcca974bc6290050300"
+        },
+        "requests": [
+          {
+            "request": "GET /api/free-generation-grant",
+            "crossOrigin": false,
+            "origin": "absent",
+            "upload": null,
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/generate-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "image/webp",
+              "bytes": 4022,
+              "format": "webp",
+              "width": 780,
+              "height": 1538
+            },
+            "credential": [
+              "x-installation-id"
+            ],
+            "reply": 200
+          },
+          {
+            "request": "POST /api/report-image",
+            "crossOrigin": false,
+            "origin": "present",
+            "upload": {
+              "contentType": "multipart/form-data",
+              "bytes": 147401,
+              "parts": [
+                "kind",
+                "drawing:image/png",
+                "output:image/jpeg",
+                "style"
+              ]
+            },
+            "credential": [
+              "x-installation-id",
+              "x-report-token"
+            ],
+            "reply": "hang"
+          }
+        ],
+        "external": [],
+        "consoleErrors": []
+      }
+    }
+  },
+  "browser": "chromium 141.0.7390.37 (headless)"
+}
