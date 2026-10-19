@@ -11,8 +11,10 @@ targets and arms, or to an explicit classification. Target qualification, curren
 reconciliation inside each protocol, and final-head evidence are unfinished. There are no accepted
 final-head device passes in this inventory: **zero device, simulator and browser cells are
 verified.** The first desk protocol, AC-1, verified 24 logic requirements by two-sided automated
-contract and failed one (`results/ac-1-2026-10-19.md`). Diagnostic build inspections are recorded
-separately.
+contract and failed one (`results/ac-1-2026-10-19.md`). The DS-2 slice
+(`results/ds2-slice-2026-10-19.md`) failed five more rows, each linked to its defect issue. The
+LIFE-1, SAVE-1, A11Y-2 and Android DS-1 slices in `results/` changed no row and found no `rn`
+defect. Diagnostic build inspections are recorded separately.
 
 ## Execution plan
 
@@ -23,14 +25,14 @@ emulators. A native target pairs the RN candidate with the reconstructed v1.6.0 
 same runtime; RN web pairs with production web source. Physical devices are reserved for
 physical-only properties and one drawing-screen sanity check.
 
-| Classification   | Requirements | Status today                                         |
-| ---------------- | -----------: | ---------------------------------------------------- |
-| `protocol`       |         1234 | `unverified`; 14 `blocked` by an iOS network subcase |
-| `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone  |
-| `automated-test` |           25 | AC-1: 24 `verified`, 1 `failed` (L0161, #3008)       |
-| `settled`        |           18 | Accepted owner decisions, never defects              |
-| `out-of-scope`   |          136 | Each with a stated reason                            |
-| **Total**        |         1541 | **24 `verified`** (logic contracts only)             |
+| Classification   | Requirements | Status today                                             |
+| ---------------- | -----------: | -------------------------------------------------------- |
+| `protocol`       |         1234 | `unverified`; 14 `blocked`; 5 `failed` by the DS-2 slice |
+| `physical-only`  |          128 | `unverified`; 3 `blocked` without a physical iPhone      |
+| `automated-test` |           25 | AC-1: 24 `verified`, 1 `failed` (L0161, #3008)           |
+| `settled`        |           18 | Accepted owner decisions, never defects                  |
+| `out-of-scope`   |          136 | Each with a stated reason                                |
+| **Total**        |         1541 | **24 `verified`** (logic contracts only)                 |
 
 A mapping to a protocol or test is not a pass. A row becomes `verified` only when its protocols have
 run on all their targets and arms at one candidate head and the public result record is linked.
